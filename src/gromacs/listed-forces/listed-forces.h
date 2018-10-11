@@ -66,6 +66,8 @@
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -152,5 +154,30 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 struct t_fcdata                *fcd,
                 int                            *global_atom_index,
                 int                             flags);
+
+namespace gmx
+{
+
+/*! \brief Checks whether the GROMACS build allows to compute bonded interactions on a GPU.
+ *
+ * \param[out] error  If non-null, the diagnostic message when bondeds cannot run on a GPU.
+ *
+ * \returns true when this build can run bonded interactions on a GPU, false otherwise.
+ *
+ * \throws std::bad_alloc when out of memory.
+ */
+bool buildSupportsGpuBondeds(std::string *error);
+
+/*! \brief Checks whether the input system allows to compute bonded interactions on a GPU.
+ *
+ * \param[in]  ir     Input system.
+ * \param[out] error  If non-null, the error message if the input is not supported on GPU.
+ *
+ * \returns true if PME can run on GPU with this input, false otherwise.
+ */
+bool inputSupportsGpuBondeds(const t_inputrec &ir,
+                             std::string      *error);
+
+}   // namespace gmx
 
 #endif

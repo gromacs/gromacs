@@ -309,6 +309,8 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     /* Pointer to struct for managing threading of bonded force calculation */
     struct bonded_threading_t *bondedThreading;
 
+    void                      *gpuBondedLists;
+
     /* Ewald correction thread local virial and energy data */
     int                         nthread_ewc;
     struct ewald_corr_thread_t *ewc_t;

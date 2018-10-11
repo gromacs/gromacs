@@ -75,6 +75,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/printhardware.h"
 #include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
@@ -174,6 +175,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.nbpu_opt        = nbpu_opt;
     newRunner.pme_opt         = pme_opt;
     newRunner.pme_fft_opt     = pme_fft_opt;
+    newRunner.bonded_opt      = bonded_opt;
     newRunner.nstlist_cmdline = nstlist_cmdline;
     newRunner.replExParams    = replExParams;
     newRunner.pforce          = pforce;
@@ -461,6 +463,7 @@ int Mdrunner::mdrunner()
     auto       nonbondedTarget = findTaskTarget(nbpu_opt);
     auto       pmeTarget       = findTaskTarget(pme_opt);
     auto       pmeFftTarget    = findTaskTarget(pme_fft_opt);
+    auto       bondedTarget    = findTaskTarget(bonded_opt);
     PmeRunMode pmeRunMode      = PmeRunMode::None;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
@@ -653,23 +656,34 @@ int Mdrunner::mdrunner()
     // having an assertion?
     //
     // Note that these variables describe only their own node.
+    //
+    // Note that when bonded interactions run on a GPU they always run
+    // alongside a nonbonded task, so do not influence task assignment
+    // even though they affect the force calculation schedule.
     bool useGpuForNonbonded = false;
     bool useGpuForPme       = false;
+    bool useGpuForBonded    = false;
     try
     {
         // It's possible that there are different numbers of GPUs on
         // different nodes, which is the user's responsibilty to
         // handle. If unsuitable, we will notice that during task
         // assignment.
-        bool gpusWereDetected = hwinfo->ngpu_compatible_tot > 0;
+        bool gpusWereDetected  = hwinfo->ngpu_compatible_tot > 0;
+        bool usingVerletScheme = inputrec->cutoff_scheme == ecutsVERLET;
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
-                                                                emulateGpuNonbonded, inputrec->cutoff_scheme == ecutsVERLET,
+                                                                emulateGpuNonbonded, usingVerletScheme,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
         auto canUseGpuForPme   = pme_gpu_supports_build(nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
                                                     canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
+        auto canUseGpuForBonded = buildSupportsGpuBondeds(nullptr) && inputSupportsGpuBondeds(*inputrec, nullptr);
+        useGpuForBonded =
+            decideWhetherToUseGpusForBonded(useGpuForNonbonded, useGpuForPme, usingVerletScheme,
+                                            bondedTarget, canUseGpuForBonded, cr->nnodes,
+                                            domdecOptions.numPmeRanks, gpusWereDetected);
 
         pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
         if (pmeRunMode == PmeRunMode::GPU)
@@ -959,7 +973,7 @@ int Mdrunner::mdrunner()
     // Note that in general useGpuForNonbonded, etc. can have a value
     // that is inconsistent with the presence of actual GPUs on any
     // rank, and that is not known to be a problem until the
-    // duty of the ranks on a node become node.
+    // duty of the ranks on a node become known.
     //
     // TODO Later we might need the concept of computeTasksOnThisRank,
     // from which we construct gpuTasksOnThisRank.
@@ -976,6 +990,8 @@ int Mdrunner::mdrunner()
     {
         if (useGpuForNonbonded)
         {
+            // Note that any bonded tasks on a GPU always accompany a
+            // non-bonded task.
             if (haveGpus)
             {
                 gpuTasksOnThisRank.push_back(GpuTask::Nonbonded);
@@ -983,6 +999,10 @@ int Mdrunner::mdrunner()
             else if (nonbondedTarget == TaskTarget::Gpu)
             {
                 gmx_fatal(FARGS, "Cannot run short-ranged nonbonded interactions on a GPU because there is none detected.");
+            }
+            else if (bondedTarget == TaskTarget::Gpu)
+            {
+                gmx_fatal(FARGS, "Cannot run bonded interactions on a GPU because there is none detected.");
             }
         }
     }
@@ -1173,6 +1193,7 @@ int Mdrunner::mdrunner()
                       opt2fn("-tablep", filenames().size(), filenames().data()),
                       opt2fns("-tableb", filenames().size(), filenames().data()),
                       *hwinfo, nonbondedDeviceInfo,
+                      useGpuForBonded,
                       FALSE,
                       pforce);
 
@@ -1500,6 +1521,8 @@ class Mdrunner::BuilderImplementation
 
         void addPME(const char* pme_opt_, const char* pme_fft_opt_);
 
+        void addBondedTaskAssignment(const char* bonded_opt);
+
         void addHardwareOptions(const gmx_hw_opt_t &hardwareOptions);
 
         void addFilenames(const MdFilenames &filenames);
@@ -1517,6 +1540,7 @@ class Mdrunner::BuilderImplementation
         const char* nbpu_opt_    = nullptr;
         const char* pme_opt_     = nullptr;
         const char* pme_fft_opt_ = nullptr;
+        const char *bonded_opt_  = nullptr;
 
         MdrunOptions                          mdrunOptions_;
 
@@ -1677,6 +1701,15 @@ Mdrunner Mdrunner::BuilderImplementation::build()
         GMX_THROW(gmx::APIError("MdrunnerBuilder::addElectrostatics() is required before build()"));
     }
 
+    if (bonded_opt_)
+    {
+        newRunner.bonded_opt = bonded_opt_;
+    }
+    else
+    {
+        GMX_THROW(gmx::APIError("MdrunnerBuilder::addBondedTaskAssignment() is required before build()"));
+    }
+
     return newRunner;
 }
 
@@ -1690,6 +1723,11 @@ void Mdrunner::BuilderImplementation::addPME(const char* pme_opt,
 {
     pme_opt_     = pme_opt;
     pme_fft_opt_ = pme_fft_opt;
+}
+
+void Mdrunner::BuilderImplementation::addBondedTaskAssignment(const char* bonded_opt)
+{
+    bonded_opt_ = bonded_opt;
 }
 
 void Mdrunner::BuilderImplementation::addHardwareOptions(const gmx_hw_opt_t &hardwareOptions)
@@ -1770,6 +1808,12 @@ MdrunnerBuilder &MdrunnerBuilder::addElectrostatics(const char* pme_opt,
     {
         GMX_THROW(gmx::InvalidInputError("addElectrostatics() arguments must be non-null pointers."));
     }
+    return *this;
+}
+
+MdrunnerBuilder &MdrunnerBuilder::addBondedTaskAssignment(const char* bonded_opt)
+{
+    impl_->addBondedTaskAssignment(bonded_opt);
     return *this;
 }
 
