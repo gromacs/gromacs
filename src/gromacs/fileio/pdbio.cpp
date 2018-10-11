@@ -97,21 +97,20 @@ static void xlate_atomname_pdb2gmx(char *name)
     }
 }
 
-static void xlate_atomname_gmx2pdb(char *name)
+// Deliberately taking a copy of name to return it later
+static std::string xlate_atomname_gmx2pdb(std::string name)
 {
-    int  i, length;
-    char temp;
-
-    length = std::strlen(name);
+    size_t length = name.size();
     if (length > 3 && std::isdigit(name[length-1]))
     {
-        temp = name[length-1];
-        for (i = length-1; i > 0; --i)
+        char temp = name[length-1];
+        for (size_t i = length-1; i > 0; --i)
         {
             name[i] = name[i-1];
         }
         name[0] = temp;
     }
+    return name;
 }
 
 
@@ -311,7 +310,6 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                            bool usePqrFormat)
 {
     gmx_conect_t     *gc = static_cast<gmx_conect_t *>(conect);
-    char              resnm[6], nm[6];
     int               i, ii;
     int               resind, resnr;
     enum PDB_record   type;
@@ -372,13 +370,11 @@ void write_pdbfile_indexed(FILE *out, const char *title,
             lastchainnum    = chainnum;
         }
 
-        strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm)-1);
-        resnm[sizeof(resnm)-1] = 0;
-        strncpy(nm, *atoms->atomname[i], sizeof(nm)-1);
-        nm[sizeof(nm)-1] = 0;
+        std::string resnm = *atoms->resinfo[resind].name;
+        std::string nm    = *atoms->atomname[i];
 
         /* rename HG12 to 2HG1, etc. */
-        xlate_atomname_gmx2pdb(nm);
+        nm    = xlate_atomname_gmx2pdb(nm);
         resnr = atoms->resinfo[resind].nr;
         resic = atoms->resinfo[resind].ic;
         if (chainid != ' ')
@@ -420,9 +416,9 @@ void write_pdbfile_indexed(FILE *out, const char *title,
             gmx_fprintf_pdb_atomline(out,
                                      type,
                                      i+1,
-                                     nm,
+                                     nm.c_str(),
                                      altloc,
-                                     resnm,
+                                     resnm.c_str(),
                                      ch,
                                      resnr,
                                      resic,
@@ -434,7 +430,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
             if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
             {
                 fprintf(out, "ANISOU%5d  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
-                        (i+1)%100000, nm, resnm, ch, resnr,
+                        (i+1)%100000, nm.c_str(), resnm.c_str(), ch, resnr,
                         (resic == '\0') ? ' ' : resic,
                         atoms->pdbinfo[i].uij[0], atoms->pdbinfo[i].uij[1],
                         atoms->pdbinfo[i].uij[2], atoms->pdbinfo[i].uij[3],
@@ -446,8 +442,8 @@ void write_pdbfile_indexed(FILE *out, const char *title,
             gmx_fprintf_pqr_atomline(out,
                                      type,
                                      i+1,
-                                     nm,
-                                     resnm,
+                                     nm.c_str(),
+                                     resnm.c_str(),
                                      ch,
                                      resnr,
                                      10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ],
@@ -573,7 +569,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
     char   nc = '\0';
     real   eval;
 
-    if (TRUE || !atoms->pdbinfo)
+    if (!atoms->pdbinfo)
     {
         gmx_incons("Trying to deduce atomnumbers when no pdb information is present");
     }
@@ -815,18 +811,17 @@ gmx_bool is_dummymass(const char *nm)
 
 static void gmx_conect_addline(gmx_conect_t *con, char *line)
 {
-    int  n, ai, aj;
-    char format[32], form2[32];
+    int         n, ai, aj;
 
-    sprintf(form2, "%%*s");
-    sprintf(format, "%s%%d", form2);
-    if (sscanf(line, format, &ai) == 1)
+    std::string form2  = "%%*s";
+    std::string format = form2 + "%%d";
+    if (sscanf(line, format.c_str(), &ai) == 1)
     {
         do
         {
-            std::strcat(form2, "%*s");
-            sprintf(format, "%s%%d", form2);
-            n = sscanf(line, format, &aj);
+            form2 += "%*s";
+            format = form2 + "%%d";
+            n      = sscanf(line, format.c_str(), &aj);
             if (n == 1)
             {
                 srenew(con->conect, ++con->nconect);
