@@ -45,6 +45,8 @@
 
 #include "listed-forces.h"
 
+#include "config.h"
+
 #include <cassert>
 
 #include <algorithm>
@@ -69,9 +71,11 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "listed-internal.h"
 
@@ -740,3 +744,60 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
         }
     }
 }
+
+namespace gmx
+{
+
+/*! \brief Help build a descriptive message in \c error if there are
+ * \c errorReasons why bondeds on a GPU are not supported.
+ *
+ * \returns Whether the lack of errorReasons indicate there is support. */
+static bool
+addMessageIfNotSupported(ArrayRef <const std::string> errorReasons,
+                         std::string                 *error)
+{
+    bool foundErrorReasons = errorReasons.empty();
+    if (!foundErrorReasons && error)
+    {
+        *error  = "Bonded interactions cannot run on GPUs: ";
+        *error += gmx::joinStrings(errorReasons, "; ") + ".";
+    }
+    return foundErrorReasons;
+}
+
+bool buildSupportsGpuBondeds(std::string *error)
+{
+    std::vector<std::string> errorReasons;
+    if (GMX_DOUBLE)
+    {
+        errorReasons.emplace_back("double precision");
+    }
+    if (GMX_GPU != GMX_GPU_CUDA)
+    {
+        errorReasons.emplace_back("non-CUDA build of GROMACS");
+    }
+    return addMessageIfNotSupported(errorReasons, error);
+}
+
+bool inputSupportsGpuBondeds(const t_inputrec &ir,
+                             std::string      *error)
+{
+    std::vector<std::string> errorReasons;
+    if (ir.nwall > 0)
+    {
+        errorReasons.emplace_back("walls are present");
+    }
+    if (ir.cutoff_scheme == ecutsGROUP)
+    {
+        errorReasons.emplace_back("group cutoff scheme");
+    }
+    // TODO Is this necessary?
+    if (!EI_DYNAMICS(ir.eI))
+    {
+        errorReasons.emplace_back("not a dynamical integrator");
+    }
+    // TODO exclude QMMM, but MiMiC is probably OK
+    return addMessageIfNotSupported(errorReasons, error);
+}
+
+} // namespace gmx
