@@ -45,4 +45,9 @@ const char* MDModule::name() const
     return "MDModule";
 }
 
+std::shared_ptr<::gmx::IRestraintPotential> MDModule::getRestraint()
+{
+    return nullptr;
+}
+
 } // end namespace gmxapi
