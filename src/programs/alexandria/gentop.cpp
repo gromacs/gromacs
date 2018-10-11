@@ -99,7 +99,7 @@ int alex_gentop(int argc, char *argv[])
         { efTOP, "-p",        "out",       ffOPTWR },
         { efITP, "-oi",       "out",       ffOPTWR },
         { efSTO, "-c",        "out",       ffWRITE },
-        { efLOG, "-g03",      "gauss",     ffRDMULT},
+        { efLOG, "-g03",      "gauss",     ffOPTRDMULT},
         { efNDX, "-n",        "renum",     ffOPTWR },
         { efDAT, "-q",        "qout",      ffOPTWR },
         { efDAT, "-mpdb",     "molprops",  ffOPTRD },
