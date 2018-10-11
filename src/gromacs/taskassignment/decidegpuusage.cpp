@@ -408,4 +408,70 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
     return false;
 }
 
+bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
+                                     const bool /*useGpuForPme*/,
+                                     const bool       usingVerletScheme,
+                                     const TaskTarget bondedTarget,
+                                     const bool       canUseGpuForBonded,
+                                     const int        /*numRanksPerSimulation*/,
+                                     const int        /*numPmeRanksPerSimulation*/,
+                                     const bool       gpusWereDetected)
+{
+    if (bondedTarget == TaskTarget::Cpu)
+    {
+        return false;
+    }
+
+    if (!usingVerletScheme)
+    {
+        if (bondedTarget == TaskTarget::Gpu)
+        {
+            GMX_THROW(InconsistentInputError
+                          ("Bonded interactions on the GPU were required, which requires using "
+                          "the Verlet scheme. Either use the Verlet scheme, or do not require using GPUs."));
+        }
+
+        return false;
+    }
+
+    if (!canUseGpuForBonded)
+    {
+        if (bondedTarget == TaskTarget::Gpu)
+        {
+            GMX_THROW(InconsistentInputError
+                          ("Bonded interactions on the GPU were required, but not supported for these "
+                          "simulation settings. Change your settings, or do not require using GPUs."));
+        }
+
+        return false;
+    }
+
+    if (!useGpuForNonbonded)
+    {
+        if (bondedTarget == TaskTarget::Gpu)
+        {
+            GMX_THROW(InconsistentInputError
+                          ("Bonded interactions on the GPU were required, but this requires that "
+                          "short-ranged non-bonded interactions are also run on the GPU. Change "
+                          "your settings, or do not require using GPUs."));
+        }
+
+        return false;
+    }
+
+    // TODO If the bonded kernels do not get fused, then performance
+    // overheads might suggest alternative choices here.
+
+    if (bondedTarget == TaskTarget::Gpu)
+    {
+        // We still don't know whether it is an error if no GPUs are
+        // found.
+        return true;
+    }
+
+    // If we get here, then the user permitted GPUs, which we should
+    // use for bonded interactions if any were detected.
+    return gpusWereDetected;
+}
+
 }  // namespace gmx
