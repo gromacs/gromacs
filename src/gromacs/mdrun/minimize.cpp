@@ -84,7 +84,7 @@
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdrunutility/accumulateglobals.h"
+#include "gromacs/mdrunutility/accumulator.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -808,7 +808,7 @@ class EnergyEvaluator
         //! Coordinates global reduction.
         gmx_global_stat_t       gstat;
         //! Accumulates globals;
-        gmx::AccumulateGlobals  accumulateGlobals_;
+        std::unique_ptr< gmx::Accumulator<gmx::ISimulationAccumulatorClient> > accumulator_;
         //! Handles virtual sites.
         gmx_vsite_t            *vsite;
         //! Handles constraints.
@@ -899,7 +899,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
 
         global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                     inputrec, nullptr, nullptr, nullptr, 1, &terminate,
-                    accumulateGlobals_.getReductionView(),
+                    accumulator_->getReductionView(),
                     nullptr, FALSE,
                     CGLO_ENERGY |
                     CGLO_PRESSURE |
@@ -1157,7 +1157,7 @@ Integrator::do_cg()
         fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
-        accumulateGlobalsBuilder_->build(),
+        simulationAccumulatorBuilder_->build(cr),
         vsite, constr, fcd, graph,
         mdAtoms, fr, enerd
     };
@@ -1830,7 +1830,7 @@ Integrator::do_lbfgs()
         fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
-        accumulateGlobalsBuilder_->build(),
+        simulationAccumulatorBuilder_->build(cr),
         vsite, constr, fcd, graph,
         mdAtoms, fr, enerd
     };
@@ -2480,7 +2480,7 @@ Integrator::do_steep()
         fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
-        accumulateGlobalsBuilder_->build(),
+        simulationAccumulatorBuilder_->build(cr),
         vsite, constr, fcd, graph,
         mdAtoms, fr, enerd
     };
@@ -2777,7 +2777,7 @@ Integrator::do_nm()
         fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
-        accumulateGlobalsBuilder_->build(),
+        simulationAccumulatorBuilder_->build(cr),
         vsite, constr, fcd, graph,
         mdAtoms, fr, enerd
     };

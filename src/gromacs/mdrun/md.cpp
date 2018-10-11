@@ -101,7 +101,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdrunutility/accumulateglobals.h"
+#include "gromacs/mdrunutility/accumulator.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -441,7 +441,14 @@ void gmx::Integrator::do_md()
     // This must be prepared before the first stage of global
     // communication, and also before the first client module code
     // that needs it.
-    AccumulateGlobals accumulateGlobals = accumulateGlobalsBuilder_->build();
+    auto simulationAccumulator = simulationAccumulatorBuilder_->build(cr);
+    std::unique_ptr< Accumulator<IMultiSimulationAccumulatorClient> > multiSimulationAccumulator =
+        nullptr;
+    if (simulationsShareState)
+    {
+        multiSimulationAccumulator = multiSimulationAccumulatorBuilder_->build(cr, ms);
+    }
+
 
     if (!ir->bContinuation)
     {
@@ -530,7 +537,7 @@ void gmx::Integrator::do_md()
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, &nullSignaller, state->box,
-                        &accumulateGlobals,
+                        simulationAccumulator.get(),
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags_iteration
                         | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     }
@@ -548,7 +555,7 @@ void gmx::Integrator::do_md()
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, &nullSignaller, state->box,
-                        &accumulateGlobals,
+                        simulationAccumulator.get(),
                         nullptr, &bSumEkinhOld,
                         cglo_flags & ~CGLO_PRESSURE);
     }
@@ -779,7 +786,7 @@ void gmx::Integrator::do_md()
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
                             constr, &nullSignaller, state->box,
-                            &accumulateGlobals,
+                            simulationAccumulator.get(),
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
             checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
@@ -934,7 +941,7 @@ void gmx::Integrator::do_md()
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, &nullSignaller, state->box,
-                                &accumulateGlobals,
+                                simulationAccumulator.get(),
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
                                 | CGLO_ENERGY
@@ -990,7 +997,7 @@ void gmx::Integrator::do_md()
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                     wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
                                     constr, &nullSignaller, state->box,
-                                    &accumulateGlobals,
+                                    simulationAccumulator.get(),
                                     nullptr, &bSumEkinhOld,
                                     CGLO_GSTAT | CGLO_TEMPERATURE);
                     wallcycle_start(wcycle, ewcUPDATE);
@@ -1167,7 +1174,7 @@ void gmx::Integrator::do_md()
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                             constr, &nullSignaller, lastbox,
-                            &accumulateGlobals,
+                            simulationAccumulator.get(),
                             nullptr, &bSumEkinhOld,
                             (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
                             );
@@ -1252,11 +1259,20 @@ void gmx::Integrator::do_md()
                 bool                doIntraSimSignal = true;
                 SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
+                if (simulationsShareState && multiSimulationAccumulator->isReductionRequired())
+                {
+                    /* When algorithms start using this infrastructure, these calls might have
+                     * to be inverted or duplicated (e.g. first local reduction, intrasimulation
+                     * communication, second local reduction).
+                     */
+                    multiSimulationAccumulator->performReduction();
+                }
+
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, &signaller,
                                 lastbox,
-                                &accumulateGlobals,
+                                simulationAccumulator.get(),
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
                                 | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0)

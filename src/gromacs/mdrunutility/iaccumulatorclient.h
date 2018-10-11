@@ -50,7 +50,7 @@
 namespace gmx
 {
 
-class AccumulateGlobals;
+template <typename T> class Accumulator;
 
 /*! \libinternal
  * \brief Interface for classes of objects that need to register with
@@ -76,18 +76,32 @@ class AccumulateGlobals;
  * framework, then AccumulateGlobals should take the responsibility
  * for doing the reduction.
  */
-class IAccumulateGlobalsClient
+class ISimulationAccumulatorClient
 {
     protected:
-        virtual ~IAccumulateGlobalsClient()                   = 0;
+        virtual ~ISimulationAccumulatorClient() = 0;
     public:
         //! Return the number of values to reduce required by this module.
-        virtual int getNumGlobalsRequired() const             = 0;
+        virtual int getNumSimulationGlobalsRequired() const = 0;
         //! Called to notify this module where to write and later read the values for reduction.
-        virtual void setViewForGlobals(AccumulateGlobals *accumulateGlobals,
-                                       ArrayRef<double>   view) = 0;
+        virtual void setViewForSimulationGlobals(Accumulator<ISimulationAccumulatorClient> *accumulator,
+                                                 ArrayRef<double>                           view) = 0;
         //! Called (in debug mode) after MPI reduction is complete.
-        virtual void notifyAfterCommunication()               = 0;
+        virtual void notifyAfterSimulationCommunication() = 0;
+};
+
+class IMultiSimulationAccumulatorClient
+{
+    protected:
+        virtual ~IMultiSimulationAccumulatorClient() = 0;
+    public:
+        //! Return the number of values to reduce required by this module.
+        virtual int getNumMultiSimulationGlobalsRequired() const = 0;
+        //! Called to notify this module where to write and later read the values for reduction.
+        virtual void setViewForMultiSimulationGlobals(Accumulator<IMultiSimulationAccumulatorClient> *accumulator,
+                                                      ArrayRef<double>                                view) = 0;
+        //! Called (in debug mode) after MPI reduction is complete.
+        virtual void notifyAfterMultiSimulationCommunication() = 0;
 };
 
 } // namespace gmx

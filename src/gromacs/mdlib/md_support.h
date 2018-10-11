@@ -44,7 +44,6 @@ struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
 struct gmx_multisim_t;
-struct gmx_signalling_t;
 struct t_extmass;
 struct t_forcerec;
 struct t_grpopts;
@@ -55,8 +54,9 @@ struct t_trxframe;
 
 namespace gmx
 {
-class AccumulateGlobals;
+template <typename T> class Accumulator;
 class Constraints;
+class ISimulationAccumulatorClient;
 class MDLogger;
 class SimulationSignaller;
 }
@@ -127,7 +127,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,
                      gmx::SimulationSignaller *signalCoordinator,
                      matrix box,
-                     gmx::AccumulateGlobals *accumulateGlobals,
+                     gmx::Accumulator<gmx::ISimulationAccumulatorClient> *accumulator,
                      int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */

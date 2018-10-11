@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_libgromacs_sources(
-    accumulateglobals.cpp
+        accumulator.cpp
     handlerestart.cpp
     mdmodules.cpp
     threadaffinity.cpp

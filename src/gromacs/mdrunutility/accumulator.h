@@ -113,16 +113,18 @@
 #ifndef GMX_MDRUNUTILITY_ACCUMULATEGLOBALS_H
 #define GMX_MDRUNUTILITY_ACCUMULATEGLOBALS_H
 
-#include <vector>
+#include <memory>
 
 #include "gromacs/compat/pointers.h"
-#include "gromacs/mdrunutility/iaccumulateglobalsclient.h"
-#include "gromacs/utility/arrayref.h"
+#include "gromacs/mdrunutility/iaccumulatorclient.h"
+
+struct t_commrec;
+struct gmx_multisim_t;
 
 namespace gmx
 {
 
-class AccumulateGlobalsBuilder;
+template <typename T> class AccumulatorBuilder;
 
 /*! \libinternal
  * \brief Class to manage the buffer used for MPI reduction of simulation globals.
@@ -133,10 +135,11 @@ class AccumulateGlobalsBuilder;
  * ranks, e.g. with PP duty. Then several methods including
  * getReductionView() will no longer be needed.
  */
-class AccumulateGlobals
+template <typename T>
+class Accumulator
 {
     // Permit the builder access to do its job.
-    friend class AccumulateGlobalsBuilder;
+    friend class AccumulatorBuilder<T>;
     public:
         /*! \brief Permits clients to notify that MPI reduction is required this step.
          *
@@ -144,7 +147,7 @@ class AccumulateGlobals
          *                              this pointer, so in a debug build it will be
          *                              notified after accumulate has completed.
          */
-        void notifyReductionRequired(compat::not_null<IAccumulateGlobalsClient *> clientNotifying);
+        void notifyReductionRequired(compat::not_null<T*> clientNotifying);
         //! Whether any client requires that the current contents are reduced.
         bool isReductionRequired() const;
         //! Getter for the view to be reduced over MPI.
@@ -155,13 +158,21 @@ class AccumulateGlobals
          * Also clears the flag that requires reduction, in preparation
          * for next MD step. */
         void notifyClientsAfterCommunication();
+        //! Perform the reduction
+        void performReduction();
     private:
         /*! \brief The buffer used for MPI reduction to accumulate global values. */
-        std::vector<double>                     values_;
+        std::vector<double>                  values_;
         //! The subset of clients to notify after this reduction completes.
-        std::vector < compat::not_null < IAccumulateGlobalsClient * >> clientsToNotifyThisStep_;
+        std::vector < compat::not_null<T*> > clientsToNotifyThisStep_;
         //! Whether reduction is required.
-        bool reductionRequired_;
+        bool                                 reductionRequired_ = false;
+
+        const t_commrec                     *cr = nullptr;
+        const gmx_multisim_t                *ms = nullptr;
+
+        //! Wrap template calls
+        void notifyAfterCommunication(compat::not_null<T*> client) const;
 };
 
 /*! \libinternal
@@ -178,23 +189,38 @@ class AccumulateGlobals
  * must exceed the lifetime of both AccumulateGlobals and
  * AccumulateGlobalsBuilder.
  */
-class AccumulateGlobalsBuilder
+template <typename T>
+class AccumulatorBuilder
 {
     public:
+        AccumulatorBuilder<T>()
+        {
+            GMX_RELEASE_ASSERT(
+                    (std::is_base_of<ISimulationAccumulatorClient, T>::value ||
+                     std::is_base_of<IMultiSimulationAccumulatorClient, T>::value),
+                    "AccumulatorBuilder can only build accumulators based on the "
+                    "ISimulationAccumulatorClient or IMultiSimulationAccumulatorClient "
+                    "interfaces.");
+        }
         //! Registers a client that may need to reduce global values.
-        void registerClient(compat::not_null<IAccumulateGlobalsClient *> newClient);
+        void registerClient(compat::not_null<T*> newClient);
         /*! \brief Determine and fulfil client requirements for an
          * AccumulateGlobals.
          *
          * Calls the registered clients to learn how much memory is required,
          * allocates memory, and notifies each client of the view they can
          * later use. */
-        AccumulateGlobals build() const;
+        std::unique_ptr< Accumulator<T> > build(const t_commrec *cr, const gmx_multisim_t *ms = nullptr) const;
     private:
-        //! The registered clients.
-        std::vector < compat::not_null < IAccumulateGlobalsClient * >> clients_;
+        //! The registered clients
+        std::vector< compat::not_null<T*> > clients_;
+        //! Wrap template calls
+        int getNumGlobalsRequired(compat::not_null<T*> client) const;
+        void setViewForGlobals(
+            compat::not_null<T*> client,
+            Accumulator<T>      *accumulator,
+            ArrayRef<double>     view) const;
 };
-
 } // namespace gmx
 
 #endif
