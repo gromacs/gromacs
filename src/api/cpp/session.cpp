@@ -42,14 +42,19 @@
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
+#include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/init.h"
 
+#include "gmxapi/context.h"
+#include "gmxapi/exceptions.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
+#include "gmxapi/md/mdmodule.h"
 
 #include "session-impl.h"
+#include "sessionresources.h"
 
 namespace gmxapi
 {
@@ -216,8 +221,16 @@ Status SessionImpl::addRestraint(std::shared_ptr<gmxapi::MDModule> module)
             if (restraint != nullptr)
             {
                 restraints_.emplace(std::make_pair(name, restraint));
-                runner_->addPotential(restraint, module->name());
-                status = true;
+                auto sessionResources = createResources(module);
+                if (!sessionResources)
+                {
+                    status = false;
+                }
+                else
+                {
+                    runner_->addPotential(restraint, module->name());
+                    status = true;
+                }
             }
         }
     }
@@ -232,6 +245,49 @@ gmx::Mdrunner *SessionImpl::getRunner()
         runner = runner_.get();
     }
     return runner;
+}
+
+gmxapi::SessionResources *SessionImpl::getResources(const std::string &name) const noexcept
+{
+    gmxapi::SessionResources * resources = nullptr;
+    try
+    {
+        resources = resources_.at(name).get();
+    }
+    catch (const std::out_of_range &e)
+    {
+        // named operation does not have any resources registered.
+    }
+
+    return resources;
+}
+
+gmxapi::SessionResources *SessionImpl::createResources(std::shared_ptr<gmxapi::MDModule> module) noexcept
+{
+    // check if resources already exist for this module
+    // If not, create resources and return handle.
+    // Return nullptr for any failure.
+    gmxapi::SessionResources * resources = nullptr;
+    const auto                &name      = module->name();
+    if (resources_.find(name) == resources_.end())
+    {
+        auto resourcesInstance = gmx::compat::make_unique<SessionResources>(this, name);
+        resources_.emplace(std::make_pair(name, std::move(resourcesInstance)));
+        resources = resources_.at(name).get();
+
+        std::shared_ptr<gmx::IRestraintPotential> restraint = nullptr;
+        if (restraints_.find(name) != restraints_.end())
+        {
+            auto restraintRef = restraints_.at(name);
+            auto restraint    = restraintRef.lock();
+            if (restraint)
+            {
+                restraint->bindSession(resources);
+            }
+        }
+    }
+    ;
+    return resources;
 }
 
 Session::Session(std::unique_ptr<SessionImpl> impl) noexcept
@@ -317,5 +373,22 @@ std::shared_ptr<Session> launchSession(Context* context, const Workflow &work) n
 }
 
 SessionImpl::~SessionImpl() = default;
+
+SessionResources::SessionResources(gmxapi::SessionImpl *session,
+                                   std::string          name) :
+    sessionImpl_(session),
+    name_(std::move(name))
+{
+    // Avoid compiler warning.
+    // TODO: remove void cast when sessionImpl_ is used in future functionality.
+    (void)sessionImpl_;
+}
+
+SessionResources::~SessionResources() = default;
+
+const std::string SessionResources::name() const
+{
+    return name_;
+}
 
 } // end namespace gmxapi

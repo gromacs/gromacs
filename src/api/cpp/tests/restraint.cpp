@@ -76,6 +76,11 @@ class NullRestraint : public gmx::IRestraintPotential
         {
             return {{0, 1}};
         }
+
+        void bindSession(gmxapi::SessionResources* resources) override
+        {
+            (void)resources;
+        }
         //! \endcond
 
         /*!
