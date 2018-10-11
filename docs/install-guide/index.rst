@@ -715,6 +715,11 @@ so that the GPU kernels match the characteristics of the hardware.
 The `Neo driver <https://github.com/intel/compute-runtime/releases>`_
 is recommended.
 
+To build with support for Intel GPUs, it is required to add
+``-DGMX_OPENCL_NB_CLUSTER_SIZE=4`` to the cmake command line. The
+`Neo driver <https://github.com/intel/compute-runtime/releases>`_ is
+recommended.
+
 On Mac OS, an AMD GPU can be used only with OS version 10.10.4 and
 higher; earlier OS versions are known to run incorrectly.
 
