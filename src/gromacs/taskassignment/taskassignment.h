@@ -56,6 +56,8 @@ struct gmx_hw_info_t;
 struct gmx_multisim_t;
 struct t_commrec;
 
+enum class PmeRunMode;
+
 namespace gmx
 {
 
@@ -108,6 +110,8 @@ using GpuTaskAssignments = std::vector<GpuTaskAssignment>;
  * \param[in]  physicalNodeComm           Communication object for this physical node.
  * \param[in]  gpuTasksOnThisRank         Information about what GPU tasks
  *                                        exist on this rank.
+ * \param[in]  useGpuForBonded            Whether GPU PP tasks will do bonded work on the GPU
+ * \param[in]  pmeRunMode                 Describes the execution of PME tasks
  *
  * \returns  A GPU task assignment for this rank.
  *
@@ -122,7 +126,9 @@ runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
                   const t_commrec                *cr,
                   const gmx_multisim_t           *ms,
                   const PhysicalNodeCommunicator &physicalNodeComm,
-                  const std::vector<GpuTask>     &gpuTasksOnThisRank);
+                  const std::vector<GpuTask>     &gpuTasksOnThisRank,
+                  bool                            useGpuForBonded,
+                  PmeRunMode                      pmeRunMode);
 
 //! Function for whether the task of \c mapping has value \c TaskType.
 template<GpuTask TaskType>

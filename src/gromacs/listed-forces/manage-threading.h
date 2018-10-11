@@ -46,9 +46,14 @@
 
 #include <cstdio>
 
-#include "gromacs/mdtypes/forcerec.h"
+#include <string>
+
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
+
+struct bonded_threading_t;
+struct gmx_mtop_t;
+struct t_inputrec;
 
 /*! \internal \brief Struct for storing lists of bonded interaction for evaluation on a GPU */
 struct GpuBondedLists
@@ -56,6 +61,34 @@ struct GpuBondedLists
     InteractionLists iLists;           /**< The interaction lists */
     bool             haveInteractions; /**< Tells whether there are any interaction in iLists */
 };
+
+
+namespace gmx
+{
+
+/*! \brief Checks whether the GROMACS build allows to compute bonded interactions on a GPU.
+ *
+ * \param[out] error  If non-null, the diagnostic message when bondeds cannot run on a GPU.
+ *
+ * \returns true when this build can run bonded interactions on a GPU, false otherwise.
+ *
+ * \throws std::bad_alloc when out of memory.
+ */
+bool buildSupportsGpuBondeds(std::string *error);
+
+/*! \brief Checks whether the input system allows to compute bonded interactions on a GPU.
+ *
+ * \param[in]  ir     Input system.
+ * \param[in]  mtop   Complete system topology to search for supported interactions.
+ * \param[out] error  If non-null, the error message if the input is not supported on GPU.
+ *
+ * \returns true if PME can run on GPU with this input, false otherwise.
+ */
+bool inputSupportsGpuBondeds(const t_inputrec &ir,
+                             const gmx_mtop_t &mtop,
+                             std::string      *error);
+
+}   // namespace gmx
 
 /*! \brief Copy bonded interactions assigned to the GPU to \p gpuBondedLists */
 void assign_bondeds_to_gpu(GpuBondedLists           *gpuBondedLists,
@@ -83,6 +116,6 @@ void tear_down_bonded_threading(bonded_threading_t *bt);
  * A pointer to this struct is returned as \p *bb_ptr.
  */
 void init_bonded_threading(FILE *fplog, int nenergrp,
-                           struct bonded_threading_t **bt_ptr);
+                           bonded_threading_t **bt_ptr);
 
 #endif

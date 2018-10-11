@@ -50,6 +50,8 @@
 
 #include "gromacs/taskassignment/taskassignment.h"
 
+enum class PmeRunMode;
+
 namespace gmx
 {
 
@@ -67,6 +69,8 @@ class MDLogger;
  * \param[in]  numGpuTasksOnThisNode               The number of GPU tasks on this node.
  * \param[in]  numPpRanks                          Number of PP ranks on this node
  * \param[in]  bPrintHostName                      Print the hostname in the usage information
+ * \param[in]  useGpuForBonded                     Whether GPU PP tasks will do bonded work on the GPU
+ * \param[in]  pmeRunMode                          Describes the execution of PME tasks
  *
  * \throws     std::bad_alloc if out of memory */
 void
@@ -75,8 +79,9 @@ reportGpuUsage(const MDLogger                &mdlog,
                const GpuTaskAssignments      &gpuTaskAssignmentOnRanksOfThisNode,
                size_t                         numGpuTasksOnThisNode,
                size_t                         numPpRanks,
-               bool                           bPrintHostName);
-
+               bool                           bPrintHostName,
+               bool                           useGpuForBonded,
+               PmeRunMode                     pmeRunMode);
 
 }  // namespace gmx
 
