@@ -62,12 +62,12 @@ class GpuEventSynchronizer
     public:
         GpuEventSynchronizer()
         {
-            cudaError_t stat = cudaEventCreateWithFlags(&event_, cudaEventDisableTiming);
+            cudaError_t gmx_used_in_debug stat = cudaEventCreateWithFlags(&event_, cudaEventDisableTiming);
             GMX_RELEASE_ASSERT(stat == cudaSuccess, "cudaEventCreate failed");
         }
         ~GpuEventSynchronizer()
         {
-            cudaError_t stat = cudaEventDestroy(event_);
+            cudaError_t gmx_used_in_debug stat = cudaEventDestroy(event_);
             GMX_ASSERT(stat == cudaSuccess, "cudaEventDestroy failed");
         }
         //! No copying
@@ -82,13 +82,13 @@ class GpuEventSynchronizer
          */
         inline void markEvent(CommandStream stream)
         {
-            cudaError_t stat = cudaEventRecord(event_, stream);
+            cudaError_t gmx_used_in_debug stat = cudaEventRecord(event_, stream);
             GMX_ASSERT(stat == cudaSuccess, "cudaEventRecord failed");
         }
         /*! \brief Synchronizes the host thread on the marked event. */
         inline void waitForEvent()
         {
-            cudaError_t stat = cudaEventSynchronize(event_);
+            cudaError_t gmx_used_in_debug stat = cudaEventSynchronize(event_);
             GMX_ASSERT(stat == cudaSuccess, "cudaEventSynchronize failed");
         }
 

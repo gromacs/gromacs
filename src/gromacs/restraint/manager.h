@@ -88,7 +88,7 @@ class RestraintManager final
          */
         RestraintManager(const RestraintManager &manager) = default;
         RestraintManager               &operator=(const RestraintManager &manager)     = default;
-        RestraintManager(RestraintManager && manager) noexcept                         = default;
+        RestraintManager(RestraintManager &&) noexcept                                 = default;
         RestraintManager               &operator=(RestraintManager &&manager) noexcept = default;
         /*! \} */
 
