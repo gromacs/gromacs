@@ -280,7 +280,7 @@ void gmx::Integrator::do_rerun()
     groups                 = &top_global->groups;
     if (ir->eI == eiMimic)
     {
-        top_global->intermolecularExclusions = genQmmmIndices(*top_global);
+        top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
     }
 
     /* Initial values */

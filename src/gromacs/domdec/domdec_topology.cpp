@@ -1995,7 +1995,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                         make_exclusions_zone(dd, zones, mtop->moltype, cginfo,
                                              excl_t, izone, cg0t,
                                              cg1t,
-                                             mtop->intermolecularExclusions);
+                                             mtop->intermolecularExclusionGroup);
                     }
                     else
                     {

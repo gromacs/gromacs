@@ -225,9 +225,9 @@ void gmx::Integrator::do_mimic()
         ir->nsteps = mimicCommunicator.getStepNumber();
     }
 
-    ir->nstxout_compressed               = 0;
-    groups                               = &top_global->groups;
-    top_global->intermolecularExclusions = genQmmmIndices(*top_global);
+    ir->nstxout_compressed                   = 0;
+    groups                                   = &top_global->groups;
+    top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
 
     /* Initial values */
     init_rerun(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
