@@ -178,8 +178,10 @@ Signal getMdrunnerSignal(SessionResources *resources,
         throw gmxapi::NotImplementedError("This signaller only handles stop signals.");
     }
 
-    // TODO: replace with an exception.
-    GMX_RELEASE_ASSERT(resources, "Caller must provide a valid SessionResources to getMdrunnerSignal.");
+    if (resources == nullptr)
+    {
+        throw gmxapi::UsageError("Caller must provide a valid SessionResources to getMdrunnerSignal.");
+    }
 
     auto signaller = resources->getMdrunnerSignal(signal);
 
