@@ -44,7 +44,7 @@ set(ALEXANDRIA_SOURCES
            composition.cpp
            fill_inputrec.cpp
            gauss2molprop.cpp
-           gauss_io.cpp
+           babel_io.cpp
            gen_table.cpp
            gentop.cpp
            getmdlogger.cpp

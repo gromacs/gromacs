@@ -51,7 +51,7 @@
 #include "gromacs/utility/real.h"
 
 #include "alex_modules.h"
-#include "gauss_io.h"
+#include "babel_io.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
@@ -131,8 +131,16 @@ int alex_gauss2molprop(int argc, char *argv[])
     for (auto &i : fns)
     {
         alexandria::MolProp mmm;
-        ReadGauss(i.c_str(), mmm, molnm, iupac, conf, basis,
-                  maxpot, nsymm, pd.getForceField().c_str(), jobtype);
+        readBabel(i.c_str(), 
+                  mmm, 
+                  molnm, 
+                  iupac, 
+                  conf, 
+                  basis,
+                  maxpot, 
+                  nsymm, 
+                  pd.getForceField().c_str(), 
+                  jobtype);
         mp.push_back(std::move(mmm));
     }
 

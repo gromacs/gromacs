@@ -45,8 +45,8 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
+#include "babel_io.h"
 #include "fill_inputrec.h"
-#include "gauss_io.h"
 #include "getmdlogger.h"
 #include "molprop_xml.h"
 #include "mymol.h"
@@ -175,7 +175,7 @@ int alex_gentop(int argc, char *argv[])
     static const char               *cqdist[]       = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", "Yang", "Bultinck", "Rappe", nullptr};
     static const char               *cqgen[]        = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
-    static const char               *lot            = "B3LYP/aug-cc-pVTZ";
+    static const char               *lot            = "AFF/ACM";
     static const char               *dzatoms        = "";
     static const char               *ff             = "alexandria";
 
@@ -400,7 +400,7 @@ int alex_gentop(int argc, char *argv[])
             for (auto &i : fns)
             {
                 alexandria::MolProp  mp;
-                ReadGauss(i.c_str(),
+                readBabel(i.c_str(),
                           mp,
                           molnm,
                           iupac,

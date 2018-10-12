@@ -31,13 +31,10 @@
  */
 
 #include "gmxpre.h"
-
-#include "gauss_io.h"
-
+#include "babel_io.h"
 #include "config.h"
 
 #include <cstdio>
-
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -84,6 +81,12 @@
 #undef KOKO
 #endif
 
+
+enum einformat{
+    einfGaussian    = 0,
+    einfNotGaussian = 1,
+    einfNR
+};
 
 BabelFile::BabelFile(BabelFileType      ftype,
                      const std::string &ext,
@@ -133,7 +136,9 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
     }
 }
 
-static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mol)
+static OpenBabel::OBConversion *readBabel(const       char *g09, 
+                                          OpenBabel::OBMol *mol,
+                                          einformat        *inputformat)
 {
     std::ifstream g09f;
     bool          isGzip = false;
@@ -155,6 +160,12 @@ static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mo
     OpenBabel::OBConversion *conv       = new OpenBabel::OBConversion(&g09f, &std::cout); // Read from g09f
     auto                     babelfiles = BabelFiles();
     auto                     informat   = babelfiles.findBabelFile(g09)->informat().c_str();
+    
+    if (strcmp (informat, "g03") == 0 || strcmp (informat, "g09") == 0)
+    {
+        *inputformat = einfGaussian;
+    }
+    
     if (conv->SetInFormat(informat, isGzip))
     {
         if (conv->Read(mol, &g09f))
@@ -175,7 +186,7 @@ static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mo
     return nullptr;
 }
 
-void ReadGauss(const char          *g09,
+void readBabel(const char          *g09,
                alexandria::MolProp &mpt,
                const char          *molnm,
                const char          *iupac,
@@ -186,7 +197,21 @@ void ReadGauss(const char          *g09,
                std::string          forcefield,
                const char          *jobType)
 {
-    /* Read a gaussian log file */
+    int                        bondid;
+    std::string                formula;
+    std::string                attr;
+    std::string                value;
+    einformat                  inputformat = einfNotGaussian;
+    const char                *reference   = "Ghahremanpour2016a";
+    const char                *mymol       = "AMM";
+    const char                *myprogram   = "Alexandria-2018";
+    const char                *mymethod    = "AFF";
+    const char                *mybasis     = "ACM";
+   
+    
+    /* Variables to read a Gaussian log file */
+    char                      *QM_charge_model  = nullptr;
+    char                      *g09ptr;
     OpenBabel::OBMol           mol;
     OpenBabel::OBAtomIterator  OBai;
     OpenBabel::OBBondIterator  OBbi;
@@ -197,20 +222,11 @@ void ReadGauss(const char          *g09,
     OpenBabel::OBMatrixData   *quadrupole;
     OpenBabel::OBMatrixData   *pol_tensor;
     OpenBabel::OBFreeGrid     *esp;
-    alexandria::jobType        jobtype = alexandria::string2jobType(jobType);
-
     std::vector<alexandria::ElectrostaticPotential> espv;
-    std::vector<std::string> charge_scheme = {"Mulliken charges", "ESP charges", "Hirshfeld charges", "CM5 charges"};
-    const char              *reference     = "Ghahremanpour2016a";
-    const char              *unknown       = "unknown";
-    char                    *charge_model  = nullptr;
-    char                    *g09ptr;
-    std::string              formula;
-    std::string              attr;
-    std::string              value;
-    int                      bondid;
+    std::vector<std::string> QM_charge_models = {"Mulliken charges", "ESP charges", "Hirshfeld charges", "CM5 charges"};
 
-    OpenBabel::OBConversion *conv = read_babel(g09, &mol);
+    alexandria::jobType        jobtype = alexandria::string2jobType(jobType);    
+    OpenBabel::OBConversion    *conv   = readBabel(g09, &mol, &inputformat);
     if (nullptr == conv)
     {
         fprintf(stderr, "Failed reading %s\n", g09);
@@ -219,7 +235,7 @@ void ReadGauss(const char          *g09,
     delete conv;
     conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
 
-    // Classification info.
+    // Chemical Categories
     if (conv->SetOutFormat("fpt"))
     {
         const char    *exclude[] = {
@@ -233,8 +249,7 @@ void ReadGauss(const char          *g09,
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
         conv->AddOption("s");
         conv->Convert();
-        // We need a copy here because WriteString removes the H.
-        OpenBabel::OBMol         mol2 = mol;
+        OpenBabel::OBMol         mol2 = mol;  // We need a copy here because WriteString removes the H.
         std::string              ss   = conv->WriteString(&mol2, false);
         std::vector<std::string> vs   = gmx::splitString(ss);
         for (const auto &i : vs)
@@ -250,10 +265,7 @@ void ReadGauss(const char          *g09,
             if (j == nexclude)
             {
                 std::string dup = i;
-                std::replace_if(dup.begin(), dup.end(),
-                                [](const char c) {
-                                    return c == '_';
-                                }, ' ');
+                std::replace_if(dup.begin(), dup.end(), [](const char c) {return c == '_';}, ' ');
                 mpt.AddCategory(dup);
             }
         }
@@ -277,19 +289,19 @@ void ReadGauss(const char          *g09,
     }
     else
     {
-        basis.assign(unknown);
+        basis.assign(mybasis);
     }
 
     // QM Program
-    std::string program(unknown);
+    std::string program(myprogram);
     OBpd = (OpenBabel::OBPairData *)mol.GetData("program");
     if (nullptr != OBpd)
     {
         program.assign(OBpd->GetValue());
     }
 
-    // Method or Level of Theory
-    std::string method(unknown);
+    // Method
+    std::string method(mymethod);
     OBpd = (OpenBabel::OBPairData *)mol.GetData("method");
     if (nullptr != OBpd)
     {
@@ -322,7 +334,7 @@ void ReadGauss(const char          *g09,
     }
     else
     {
-        mpt.SetMolname(unknown);
+        mpt.SetMolname(mymol);
     }
 
     if (nullptr != iupac)
@@ -331,7 +343,7 @@ void ReadGauss(const char          *g09,
     }
     else
     {
-        mpt.SetIupac(unknown);
+        mpt.SetIupac(mymol);
     }
 
     // Thermochemistry
@@ -433,31 +445,38 @@ void ReadGauss(const char          *g09,
             }
             if (nullptr != debug)
             {
-                fprintf(debug, "XXX atom %d gafftype %s OBtype %s\n", atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
+                fprintf(debug, "atom %d gafftype %s OBtype %s\n", atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
             }
+            
             alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
+            
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(100*atom->x(), 100*atom->y(), 100*atom->z());
-            for (const auto &cs : charge_scheme)
-            {
-                OBpd = (OpenBabel::OBPairData *) mol.GetData(cs);
-                if (nullptr != OBpd)
+
+            if (inputformat == einfGaussian)
+            {   
+                
+                for (const auto &cs : QM_charge_models)
                 {
-                    charge_model       = strdup(OBpd->GetValue().c_str());
-                    OBpc               = (OpenBabel::OBPcharge *) mol.GetData(charge_model);
-                    auto                     PartialCharge = OBpc->GetPartialCharge();
-                    alexandria::AtomicCharge aq(charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
+                    OBpd = (OpenBabel::OBPairData *) mol.GetData(cs);
+                    if (nullptr != OBpd)
+                    {
+                        QM_charge_model    = strdup(OBpd->GetValue().c_str());
+                        OBpc               = (OpenBabel::OBPcharge *) mol.GetData(QM_charge_model);
+                        auto                     PartialCharge = OBpc->GetPartialCharge();
+                        alexandria::AtomicCharge aq(QM_charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
+                        ca.AddCharge(aq);
+                    }
+                }
+                if (nullptr == QM_charge_model)
+                {
+                    printf("\n"
+                           "WARNING: None of the QM charge models known to Alexandria found in %s\n"
+                           "         Partial charge is assigned to zero for atom %d\n\n",
+                           g09, atom->GetIdx());
+                    alexandria::AtomicCharge aq("UnknownQMCharge", "e", 0.0, 0.0);
                     ca.AddCharge(aq);
                 }
-            }
-            if (nullptr == charge_model)
-            {
-                printf("\n"
-                       "WARNING: None of the charge schemes known to Alexandria found in %s\n"
-                       "         Partial charge is assigned to zero for atom %d\n\n",
-                       g09, atom->GetIdx());
-                alexandria::AtomicCharge aq(unknown, "e", 0.0, 0.0);
-                ca.AddCharge(aq);
             }
             mpt.LastExperiment()->AddAtom(ca);
         }

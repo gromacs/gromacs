@@ -31,8 +31,8 @@
  */
  
  
-#ifndef GAUSS_IO_H
-#define GAUSS_IO_H
+#ifndef BABEL_IO_H
+#define BABEL_IO_H
 
 #include "molprop.h"
 
@@ -98,7 +98,7 @@ class BabelFiles
  * \param[in] forcefield One of the force fields supported by OpenBabel used for atomtypes
  * \ingroup module_alexandria
  */
-void ReadGauss(const char          *g98,
+void readBabel(const char          *g98,
                alexandria::MolProp &mp,
                const char          *molnm,
                const char          *iupac,
