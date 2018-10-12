@@ -41,7 +41,7 @@ namespace gmx
 {
 
 PotentialPointData::PotentialPointData() :
-    PotentialPointData {Vector(), real(0.0)}
+    PotentialPointData {Vector(0., 0., 0.), real(0.0)}
 {}
 
 PotentialPointData::PotentialPointData(const Vector &f, const real e) :
