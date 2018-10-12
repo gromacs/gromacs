@@ -44,8 +44,10 @@
 #define GMX_MDLIB_NBNXN_GPU_H
 
 #include "gromacs/gpu_utils/gpu_macros.h"
+#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
+#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -181,8 +183,28 @@ void nbnxn_gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
                                 real            gmx_unused *e_el,
                                 rvec            gmx_unused *fshift) GPU_FUNC_TERM
 
+
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
 int nbnxn_gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
+
+GPU_FUNC_QUALIFIER
+gmx_bool nbnxn_gpu_x_to_nbat_x(int                 ncxy,
+                               int                 g,
+                               gmx_bool            FillLocal,
+                               const nbnxn_search *nbs,
+                               gmx_nbnxn_gpu_t    *gpu_nbv,
+                               gmx_pme_t         * pmedata,
+                               const int          *a,
+                               int                 a_nalloc,
+                               const int         * na_all,
+                               const int         * cxy_ind,
+                               int                 cell0,
+                               int                 na_sc,
+                               int                 iloc,
+                               rvec              * x,
+                               bool                bNS,
+                               bool                copyCoord) GPU_FUNC_TERM
+
 
 #endif

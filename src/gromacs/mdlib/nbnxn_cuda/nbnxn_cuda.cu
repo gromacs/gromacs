@@ -54,8 +54,10 @@
 #include "nbnxn_cuda.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/ewald/pme.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_gpu_common.h"
 #include "gromacs/mdlib/nbnxn_gpu_common_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
@@ -65,7 +67,7 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "nbnxn_cuda_types.h"
-
+#include "nbnxn_gpu_x_to_nbat_x_kernel.cuh"
 
 /***** The kernel declarations/definitions come here *****/
 
@@ -348,8 +350,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* HtoD x, q */
-    cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
-                      adat_len * sizeof(*adat->xq), stream);
+    if (!nb->bGpuBufferOps) //otherwise nbat conversion will be done on GPU
+    {
+        cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
+                          adat_len * sizeof(*adat->xq), stream);
+    }
 
     if (bDoTime)
     {
@@ -694,4 +699,207 @@ void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)
             CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
         }
     }
+}
+
+/* X buffer operations on GPU: performs conversion from rvec to nb format.
+ * returns true if GPU buffer ops are completed. */
+gmx_bool nbnxn_gpu_x_to_nbat_x(int                 ncxy,
+                               int                 g,
+                               gmx_bool            FillLocal,
+                               const nbnxn_search *nbs,
+                               gmx_nbnxn_gpu_t    *gpu_nbv,
+                               gmx_pme_t         * pmedata,
+                               const int          *a,
+                               int                 a_nalloc,
+                               const int         * na_all,
+                               const int         * cxy_ind,
+                               int                 cell0,
+                               int                 na_sc,
+                               int                 iloc,
+                               rvec              * x,
+                               bool                bNS,
+                               bool                copyCoord)
+{
+    cudaError_t          stat;
+    /* CUDA kernel launch-related stuff */
+    dim3                 dim_block, dim_grid;
+
+    cu_atomdata_t       *adat    = gpu_nbv->atdat;
+    cudaStream_t         stream  = gpu_nbv->stream[iloc];
+
+    if (bNS) //perform initialisation and return
+    {
+
+        if (iloc == 0)
+        {
+
+
+            if (gpu_nbv->xrvec)
+            {
+                stat = cudaFree(gpu_nbv->xrvec);
+                CU_RET_ERR(stat, "cudaFree failed on gpu_nbv->xrvec");
+            }
+
+            stat = cudaMalloc(&gpu_nbv->xrvec,  nbs->natoms_nonlocal*sizeof(rvec));
+            CU_RET_ERR(stat, "cudaMalloc failed on gpu_nbv->xrvec");
+
+            gpu_nbv->bGpuBufferOps = false;
+
+
+            if (gpu_nbv->abufops)
+            {
+                stat = cudaFree(gpu_nbv->abufops);
+                CU_RET_ERR(stat, "cudaFree failed on gpu_nbv->abufops");
+            }
+            stat = cudaMalloc(&gpu_nbv->abufops, a_nalloc*sizeof(int));
+            CU_RET_ERR(stat, "cudaMalloc failed on gpu_nbv->abufops");
+
+            //wrapper doesn't work her because source pointer is const
+            //cu_copy_H2D_async(gpu_nbv->abufops, src,
+            //                  a_nalloc*sizeof(int), stream);
+            stat = cudaMemcpy(gpu_nbv->abufops, a, a_nalloc*sizeof(int),
+                              cudaMemcpyHostToDevice);
+            CU_RET_ERR(stat, "cudaMemcpy failed on gpu_nbv->abufops");
+        }
+
+
+
+        if (gpu_nbv->nabufops[iloc])
+        {
+            stat = cudaFree(gpu_nbv->nabufops[iloc]);
+            CU_RET_ERR(stat, "cudaFree failed on gpu_nbv->nabufops");
+        }
+        stat = cudaMalloc(&gpu_nbv->nabufops[iloc], ncxy*sizeof(int));
+        CU_RET_ERR(stat, "cudaMalloc failed on gpu_nbv->nabufops");
+
+
+        if (gpu_nbv->cxybufops[iloc])
+        {
+            stat = cudaFree(gpu_nbv->cxybufops[iloc]);
+            CU_RET_ERR(stat, "cudaFree failed on gpu_nbv->cxybufops");
+        }
+        stat = cudaMalloc(&gpu_nbv->cxybufops[iloc], ncxy*sizeof(int));
+        CU_RET_ERR(stat, "cudaMalloc failed on gpu_nbv->cxybufops");
+
+        //wrapper doesn't work her because source pointer is const
+        //cu_copy_H2D_async(gpu_nbv->nabufops[iloc], na_all,
+        //                  ncxy*sizeof(int), stream);
+        stat = cudaMemcpy(gpu_nbv->nabufops[iloc], na_all, ncxy*sizeof(int),
+                          cudaMemcpyHostToDevice);
+        CU_RET_ERR(stat, "cudaMemcpy failed on gpu_nbv->nabufops");
+
+        //wrapper doesn't work her because source pointer is const
+        //cu_copy_H2D_async(gpu_nbv->cxybufops[iloc], cxy_ind,
+        //                  ncxy*sizeof(int), stream);
+        stat = cudaMemcpy(gpu_nbv->cxybufops[iloc], cxy_ind, ncxy*sizeof(int),
+                          cudaMemcpyHostToDevice);
+        CU_RET_ERR(stat, "cudaMmemcpy failed on gpu_nbv->cxybufops");
+
+
+        return false;
+    }
+
+    gpu_nbv->bGpuBufferOps = true;
+
+    int na_round_max = 0;
+    for (int cxy = 0; cxy < ncxy; cxy++)
+    {
+
+
+        int na = na_all[cxy];
+        int na_round;
+        if (g == 0 && FillLocal)
+        {
+            na_round =
+                (cxy_ind[cxy+1] - cxy_ind[cxy])*na_sc;
+        }
+        else
+        {
+            /* We fill only the real particle locations.
+             * We assume the filling entries at the end have been
+             * properly set before during pair-list generation.
+             */
+            na_round = na;
+        }
+
+
+        if (na_round > na_round_max)
+        {
+            na_round_max = na_round;
+        }
+
+    }
+
+    int nCopyAtoms;
+    int copyAtomStart;
+    if (iloc == 0) //local stream
+    {
+        nCopyAtoms    = nbs->natoms_local;
+        copyAtomStart = 0;
+    }
+    else //non-local stream
+    {
+        nCopyAtoms    = nbs->natoms_nonlocal-nbs->natoms_local;
+        copyAtomStart = nbs->natoms_local;
+    }
+
+    rvec *x_d;
+
+    // copy X-coordinate data to device
+    if (copyCoord)
+    {
+        cu_copy_H2D_async(&gpu_nbv->xrvec[copyAtomStart][0], &x[copyAtomStart][0],
+                          nCopyAtoms*sizeof(rvec), stream);
+        x_d = gpu_nbv->xrvec;
+    }
+    else //coordinates have already been copied by PME stream
+    {
+        x_d = (rvec*) pmedata->gpu->kernelParams->atoms.d_coordinates;
+    }
+
+    /* launch kernel on GPU */
+    int                threadsPerBlock = 128;
+
+    KernelLaunchConfig config;
+    config.blockSize[0]     = threadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = ((na_round_max+1)+threadsPerBlock-1)/threadsPerBlock;
+    config.gridSize[1]      = ncxy;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
+    config.stream           = stream;
+
+
+    //kernel argument setup wrapper gives error:
+    //error: no instance of function template "prepareGpuKernelArguments" matches the argument list
+    // void (*kernelFn)(int,float*,int,gmx_bool,const rvec*,const int*,int*,int*,int,int);
+    // kernelFn=nbnxn_gpu_x_to_nbat_x_kernel;
+    // const auto kernelArgs  = prepareGpuKernelArguments(kernelFn,
+    //                                                    config,
+    //                                                    ncxy,
+    //                                                    (float*) adat->xq,
+    //                                                    g,
+    //                                                    FillLocal,
+    //                                                    gpu_nbv->xrvec,
+    //                                                    gpu_nbv->abufops,
+    //                                                    gpu_nbv->nabufops[iloc],
+    //                                                    gpu_nbv->cxybufops[iloc],
+    //                                                    cell0,
+    //                                                    na_sc);
+    //    launchGpuKernel(kernelfn, config, nullptr, "XbufferOps", kernelArgs);
+
+    // launch directly
+    dim3 tpb(config.blockSize[0], config.blockSize[1], config.blockSize[2]);
+    dim3 bpg(config.gridSize[0], config.gridSize[1], config.gridSize[2]);
+
+    nbnxn_gpu_x_to_nbat_x_kernel
+    <<< bpg, tpb, config.sharedMemorySize, config.stream>>>
+    (ncxy, (float*) adat->xq, g, FillLocal,
+     x_d, gpu_nbv->abufops, gpu_nbv->nabufops[iloc],
+     gpu_nbv->cxybufops[iloc], cell0, na_sc);
+
+
+    return true;
+
 }
