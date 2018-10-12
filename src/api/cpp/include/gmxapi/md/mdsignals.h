@@ -131,6 +131,7 @@ class Signal
  * \return Callable function object handle to issue a stop signal.
  *
  * \throws gmxapi::NotImplementedError for unknown values of signal.
+ * \throws gmxapi::UsageError for invalid resources argument.
  *
  * \ingroup gmxapi_md
  */
