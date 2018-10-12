@@ -1051,10 +1051,10 @@ static void copyExclsFromMtop(const gmx_mtop_t &mtop,
 /*! \brief Updates inter-molecular exclusion lists
  *
  * This function updates inter-molecular exclusions to exclude all
- * non-bonded interactions between QM atoms
+ * non-bonded interactions between a given list of atoms
  *
  * \param[inout]    excls   existing exclusions in local topology
- * \param[in]       ids     list of global QM atoms IDs
+ * \param[in]       ids     list of global IDs of atoms
  */
 static void addMimicExclusions(t_blocka                      *excls,
                                const gmx::ArrayRef<const int> ids)
@@ -1121,10 +1121,10 @@ static void gen_local_top(const gmx_mtop_t  &mtop,
     copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
     copyCgsFromMtop(mtop, &top->cgs);
     copyExclsFromMtop(mtop, &top->excls);
-    if (!mtop.intermolecularExclusions.empty())
+    if (!mtop.intermolecularExclusionGroup.empty())
     {
         addMimicExclusions(&top->excls,
-                           mtop.intermolecularExclusions);
+                           mtop.intermolecularExclusionGroup);
     }
 }
 

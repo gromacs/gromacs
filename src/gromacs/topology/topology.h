@@ -163,7 +163,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     /*! \brief List of global atom indices of atoms between which
      * non-bonded interactions must be excluded.
      */
-    std::vector<int>                  intermolecularExclusions;
+    std::vector<int>                  intermolecularExclusionGroup;
 
     /* Derived data  below */
     //! Indices for each molblock entry for fast lookup of atom properties
