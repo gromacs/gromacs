@@ -30,7 +30,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "qgen_eem.h"
+#include "qgen_acm.h"
 
 #include <cctype>
 
@@ -51,7 +51,7 @@
 namespace alexandria
 {
 
-void QgenEem::setInfo(const Poldata            &pd,
+void QgenAcm::setInfo(const Poldata            &pd,
                       t_atoms                  *atoms,
                       ChargeDistributionModel   iChargeDistributionModel,
                       double                    hfac,
@@ -182,7 +182,7 @@ void QgenEem::setInfo(const Poldata            &pd,
     }
 }
 
-void QgenEem::updateInfo(const Poldata &pd)
+void QgenAcm::updateInfo(const Poldata &pd)
 {
     for (auto i = 0; i < natom_; i++)
     {
@@ -196,7 +196,7 @@ void QgenEem::updateInfo(const Poldata &pd)
     }
 }
 
-int QgenEem::getNzeta( int atom)
+int QgenAcm::getNzeta( int atom)
 {
     if ((0 <= atom) && (atom < natom_))
     {
@@ -205,7 +205,7 @@ int QgenEem::getNzeta( int atom)
     return 0;
 }
 
-double QgenEem::getQ(int atom, int z)
+double QgenAcm::getQ(int atom, int z)
 {
     if ((0 <= atom) && (atom < natom_) &&
         (0 <= z) && (z <= nZeta_[atom]))
@@ -215,7 +215,7 @@ double QgenEem::getQ(int atom, int z)
     return 0;
 }
 
-int QgenEem::getRow( int atom, int z)
+int QgenAcm::getRow( int atom, int z)
 {
     if ((0 <= atom) && (atom < natom_) &&
         (0 <= z) && (z <= nZeta_[atom]))
@@ -226,7 +226,7 @@ int QgenEem::getRow( int atom, int z)
 
 }
 
-double QgenEem::getZeta(int atom, int z)
+double QgenAcm::getZeta(int atom, int z)
 {
     if ((0 <= atom) && (atom < natom_) &&
         (0 <= z) && (z <= nZeta_[atom]))
@@ -241,7 +241,7 @@ static double Coulomb_PP(double r)
     return 1/r;
 }
 
-void QgenEem::dump(FILE *fp, t_atoms *atoms)
+void QgenAcm::dump(FILE *fp, t_atoms *atoms)
 {
     auto  i  = 0, j = 0;
     rvec  mu = { 0, 0, 0 };
@@ -293,7 +293,7 @@ void QgenEem::dump(FILE *fp, t_atoms *atoms)
     }
 }
 
-const char *QgenEem::message() const
+const char *QgenAcm::message() const
 {
     switch (eQGEN_)
     {
@@ -310,7 +310,7 @@ const char *QgenEem::message() const
     return nullptr;
 }
 
-double QgenEem::calcSij(int i, int j)
+double QgenAcm::calcSij(int i, int j)
 {
     double dist, dism, Sij = 1.0;
     rvec   dx;
@@ -409,7 +409,7 @@ double QgenEem::calcSij(int i, int j)
     return Sij;
 }
 
-double QgenEem::calcJ(ChargeDistributionModel iChargeDistributionModel,
+double QgenAcm::calcJ(ChargeDistributionModel iChargeDistributionModel,
                       rvec                    xI,
                       rvec                    xJ,
                       double                  zetaI,
@@ -435,6 +435,7 @@ double QgenEem::calcJ(ChargeDistributionModel iChargeDistributionModel,
     {
         case eqdAXp:
         case eqdAXpp:
+        case eqdBultinck:
             eTot = Coulomb_PP(r);
             break;
         case eqdAXs:
@@ -453,7 +454,7 @@ double QgenEem::calcJ(ChargeDistributionModel iChargeDistributionModel,
     return (ONE_4PI_EPS0*eTot)/ELECTRONVOLT;
 }
 
-void QgenEem::calcJcc(t_atoms *atoms)
+void QgenAcm::calcJcc(t_atoms *atoms)
 {
     auto Jcc = 0.0;
     auto i   = 0;
@@ -509,7 +510,7 @@ void QgenEem::calcJcc(t_atoms *atoms)
     }
 }
 
-void QgenEem::calcJcs(t_atoms *atoms,
+void QgenAcm::calcJcs(t_atoms *atoms,
                       int      core_ndx_gromacs,
                       int      core_ndx_eem)
 {
@@ -555,7 +556,7 @@ void QgenEem::calcJcs(t_atoms *atoms,
     }
 }
 
-void QgenEem::calcRhs(t_atoms *atoms)
+void QgenAcm::calcRhs(t_atoms *atoms)
 {
     auto   qcore     = 0.0;
     auto   qshell    = 0.0;
@@ -576,7 +577,7 @@ void QgenEem::calcRhs(t_atoms *atoms)
     rhs_[natom_] = qcore;
 }
 
-void QgenEem::copyChargesToAtoms(t_atoms *atoms)
+void QgenAcm::copyChargesToAtoms(t_atoms *atoms)
 {
     if (bHaveShell_)
     {
@@ -603,7 +604,7 @@ void QgenEem::copyChargesToAtoms(t_atoms *atoms)
     }
 }
 
-void QgenEem::updatePositions(gmx::HostVector<gmx::RVec> x,
+void QgenAcm::updatePositions(gmx::HostVector<gmx::RVec> x,
                               t_atoms                   *atoms)
 {
     for (auto i = 0; i < atoms->nr; i++)
@@ -612,7 +613,7 @@ void QgenEem::updatePositions(gmx::HostVector<gmx::RVec> x,
     }
 }
 
-void QgenEem::checkSupport(const Poldata &pd)
+void QgenAcm::checkSupport(const Poldata &pd)
 {
     bool bSupport = true;
     for (auto i = 0; i < natom_; i++)
@@ -634,7 +635,7 @@ void QgenEem::checkSupport(const Poldata &pd)
     }
 }
 
-void QgenEem::solveQEem(FILE *fp)
+void QgenAcm::solveQEem(FILE *fp)
 {
     double              qtot;
     int                 i, j, n;
@@ -688,7 +689,7 @@ void QgenEem::solveQEem(FILE *fp)
     }
 }
 
-int QgenEem::generateCharges(FILE                      *fp,
+int QgenAcm::generateCharges(FILE                      *fp,
                              const std::string          molname,
                              const Poldata             &pd,
                              t_atoms                   *atoms,

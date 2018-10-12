@@ -1349,17 +1349,17 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
         }
         break;
-        case eqgEEM:
+        case eqgACM:
         {
-            Qgeem_.setInfo(pd,
+            Qgacm_.setInfo(pd,
                            &topology_->atoms,
                            iChargeDistributionModel,
                            hfac,
                            molProp()->getCharge(),
                            bHaveShells_);
 
-            auto q     = Qgeem_.q();
-            auto natom = Qgeem_.natom();
+            auto q     = Qgacm_.q();
+            auto natom = Qgacm_.natom();
 
             qq.resize(natom + 1);
             for (auto i = 0; i < natom + 1; i++)
@@ -1369,7 +1369,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             iter = 0;
             do
             {
-                if (eQGEN_OK == Qgeem_.generateCharges(debug,
+                if (eQGEN_OK == Qgacm_.generateCharges(debug,
                                                        molProp()->getMolname().c_str(),
                                                        pd,
                                                        &topology_->atoms,
@@ -1384,7 +1384,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                     {
                         computeForces(nullptr, cr);
                     }
-                    q       = Qgeem_.q();
+                    q       = Qgacm_.q();
                     EemRms_ = 0;
                     for (auto i = 0; i < natom + 1; i++)
                     {

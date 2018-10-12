@@ -225,7 +225,7 @@ void OptEEM::setEEM()
             {
                 bHaveShells = true;
             }
-            mymol.Qgeem_.setInfo(poldata(), &(mymol.topology_->atoms),
+            mymol.Qgacm_.setInfo(poldata(), &(mymol.topology_->atoms),
                                  iChargeDistributionModel(),
                                  hfac(),
                                  mymol.molProp()->getCharge(),
@@ -264,8 +264,8 @@ void OptEEM::calcDeviation()
         if ((mymol.eSupp_ == eSupportLocal) ||
             (final() && (mymol.eSupp_ == eSupportRemote)))
         {
-            auto q     = mymol.Qgeem_.q();
-            auto natom = mymol.Qgeem_.natom();
+            auto q     = mymol.Qgacm_.q();
+            auto natom = mymol.Qgacm_.natom();
 
             qq.resize(natom + 1);
             for (auto i = 0; i < natom + 1; i++)
@@ -293,13 +293,13 @@ void OptEEM::calcDeviation()
                         mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;
                 }
 
-                mymol.Qgeem_.generateCharges(debug,
+                mymol.Qgacm_.generateCharges(debug,
                                              mymol.molProp()->getMolname().c_str(),
                                              poldata(),
                                              &(mymol.topology_->atoms),
                                              mymol.x());
 
-                q       = mymol.Qgeem_.q();
+                q       = mymol.Qgacm_.q();
                 EemRms  = 0;
                 for (auto i = 0; i < natom + 1; i++)
                 {
@@ -955,7 +955,7 @@ int alex_tune_eem(int argc, char *argv[])
     {
         opt.addEspPoint();
     }
-    if (opt.iChargeGenerationAlgorithm() != eqgEEM)
+    if (opt.iChargeGenerationAlgorithm() != eqgACM)
     {
         opt.setEEM();
     }

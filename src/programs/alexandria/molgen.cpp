@@ -79,7 +79,7 @@ namespace alexandria
 {
 
 static const char *cqdist[] = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
-static const char *cqgen[]  = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
+static const char *cqgen[]  = {nullptr, "None", "ACM", "ESP", "RESP", nullptr};
 
 static void dump_index_count(const IndexCount       *ic,
                              FILE                   *fp,

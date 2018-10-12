@@ -42,12 +42,12 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "programs/alexandria/fill_inputrec.h"
-#include "programs/alexandria/gauss_io.h"
+#include "programs/alexandria/babel_io.h"
 #include "programs/alexandria/getmdlogger.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
 #include "programs/alexandria/poldata_xml.h"
-#include "programs/alexandria/qgen_eem.h"
+#include "programs/alexandria/qgen_acm.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -106,7 +106,7 @@ class EemTest : public gmx::test::CommandLineTestBase
             //Read input file for molprop
             std::string             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
             alexandria::MolProp     molprop;
-            ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
+            readBabel(dataName.c_str(), molprop, molnm, iupac, conf, basis,
                       maxpot, nsymm, pd_.getForceField().c_str(), jobtype);
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
@@ -134,7 +134,7 @@ class EemTest : public gmx::test::CommandLineTestBase
             real           qtol                  = 1e-3;
 
             mp_.GenerateCharges(pd_, mdlog, aps_, model,
-                                eqgEEM, watoms, hfac, lot,
+                                eqgACM, watoms, hfac, lot,
                                 true, symm_string, cr,
                                 nullptr, hwinfo, qcycle,
                                 maxpot, qtol, nullptr);

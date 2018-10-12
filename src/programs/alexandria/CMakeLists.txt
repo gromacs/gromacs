@@ -21,7 +21,7 @@
 set(ALEXANDRIA_SOURCES
 	   gentop_core.cpp
 	   gentop_vsite.cpp
-           qgen_eem.cpp
+           qgen_acm.cpp
 	   qgen_resp.cpp
            qgen_resp_atom.cpp
 	   gmx_simple_comm.cpp

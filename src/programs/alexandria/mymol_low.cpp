@@ -869,7 +869,7 @@ void put_in_box(int natom, matrix box, rvec x[], real dbox)
 }
 
 void write_zeta_q(FILE                   *fp,
-                  QgenEem                *qgen,
+                  QgenAcm                *qgen,
                   t_atoms                *atoms,
                   ChargeDistributionModel iChargeDistributionModel)
 {
@@ -952,7 +952,7 @@ void write_zeta_q(FILE                   *fp,
     fprintf(fp, "\n");
 }
 
-void write_zeta_q2(QgenEem                *qgen,
+void write_zeta_q2(QgenAcm                *qgen,
                    gpp_atomtype_t          atype,
                    t_atoms                *atoms,
                    ChargeDistributionModel iChargeDistributionModel)

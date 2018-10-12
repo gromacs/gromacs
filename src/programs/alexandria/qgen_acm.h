@@ -31,8 +31,8 @@
  */
  
  
-#ifndef QGEN_EEM_H
-#define QGEN_EEM_H
+#ifndef QGEN_ACM_H
+#define QGEN_ACM_H
 
 #include <cstdio>
 
@@ -53,18 +53,18 @@ enum {
 
 enum ChargeGenerationAlgorithm {
     eqgNONE, 
-    eqgEEM, 
+    eqgACM, 
     eqgESP
 };
 
 namespace alexandria
 {
 
-class QgenEem
+class QgenAcm
 {
     public:
     
-        QgenEem(){};
+        QgenAcm(){};
     
         void setInfo(const Poldata            &pd,
                      t_atoms                 *atoms,

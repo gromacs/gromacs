@@ -43,7 +43,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "programs/alexandria/fill_inputrec.h"
-#include "programs/alexandria/gauss_io.h"
+#include "programs/alexandria/babel_io.h"
 #include "programs/alexandria/getmdlogger.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
@@ -88,7 +88,7 @@ class RespTest : public gmx::test::CommandLineTestBase
 
             //Read input file for molprop
             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
-            ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
+            readBabel(dataName.c_str(), molprop, molnm, iupac, conf, basis,
                       maxpot, nsymm, pd_.getForceField(), jobtype);
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);

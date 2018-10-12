@@ -55,7 +55,7 @@
 #include "molselect.h"
 #include "mymol_low.h"
 #include "poldata.h"
-#include "qgen_eem.h"
+#include "qgen_acm.h"
 #include "qgen_resp.h"
 
 
@@ -278,7 +278,7 @@ class MyMol
         gmx::PaddedArrayRef<gmx::RVec> optf_;
         std::vector<int>               symmetric_charges_;
         QgenResp                       Qgresp_;
-        QgenEem                        Qgeem_;
+        QgenAcm                        Qgacm_;
         std::vector<PlistWrapper>      plist_;
         gmx_mtop_t                    *mtop_;
         gmx_localtop_t                *ltop_;

@@ -173,7 +173,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bSkipVSites    = true;
 
     static const char               *cqdist[]       = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", "Yang", "Bultinck", "Rappe", nullptr};
-    static const char               *cqgen[]        = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
+    static const char               *cqgen[]        = {nullptr, "None", "ACM", "ESP", "RESP", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = "AFF/ACM";
     static const char               *dzatoms        = "";

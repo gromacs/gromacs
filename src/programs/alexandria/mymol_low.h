@@ -44,7 +44,7 @@
 #include "gentop_core.h"
 #include "gentop_vsite.h"
 #include "poldata.h"
-#include "qgen_eem.h"
+#include "qgen_acm.h"
 #include "qgen_resp.h"
 
 
@@ -152,11 +152,11 @@ void mtop_update_cgs(gmx_mtop_t *mtop);
 void put_in_box(int natom, matrix box, rvec x[], real dbox);
 
 void write_zeta_q(FILE                   *fp,
-                  QgenEem                *qgen,
+                  QgenAcm                *qgen,
                   t_atoms                *atoms,
                   ChargeDistributionModel iChargeDistributionModel);
 
-void write_zeta_q2(QgenEem                *qgen,
+void write_zeta_q2(QgenAcm                *qgen,
                    gpp_atomtype_t          atype,
                    t_atoms                *atoms,
                    ChargeDistributionModel iChargeDistributionModel);
