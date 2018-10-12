@@ -237,6 +237,8 @@ void pme_gpu_copy_input_coordinates(const PmeGpu *pmeGpu, const rvec *h_coordina
     copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates, h_coordinatesFloat,
                        0, pmeGpu->kernelParams->atoms.nAtoms * DIM,
                        pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+    //sync required since the copied data will be used by PP stream when using single GPU for both
+    pme_gpu_synchronize(pmeGpu);
 #endif
 }
 

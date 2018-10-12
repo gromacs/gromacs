@@ -851,3 +851,24 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
 
     return kernel_type;
 }
+
+/* dummy function for C buffer ops. Returns false, so callee will instead use CPU version. */
+gmx_bool nbnxn_gpu_x_to_nbat_x(int                 ncxy,
+                               int                 g,
+                               gmx_bool            FillLocal,
+                               const nbnxn_search *nbs,
+                               gmx_nbnxn_gpu_t    *gpu_nbv,
+                               gmx_pme_t         * pmedata,
+                               const int          *a,
+                               int                 a_nalloc,
+                               const int         * na_all,
+                               const int         * cxy_ind,
+                               int                 cell0,
+                               int                 na_sc,
+                               int                 iloc,
+                               rvec              * x,
+                               bool                bNS,
+                               bool                copyCoord)
+{
+    return false;
+}
