@@ -172,6 +172,19 @@ class NotImplementedError : public BasicException<NotImplementedError>
         using BasicException<NotImplementedError>::BasicException;
 };
 
+/*!
+ * \brief Unacceptable API usage.
+ *
+ * Usage error. Examples include calling a function with invalid arguments.
+ *
+ * \ingroup gmxapi_exceptions
+ */
+class UsageError : public BasicException<UsageError>
+{
+    public:
+        using BasicException<UsageError>::BasicException;
+};
+
 }      // end namespace gmxapi
 
 #endif // header guard
