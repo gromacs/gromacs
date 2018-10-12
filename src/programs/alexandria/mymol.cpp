@@ -1408,7 +1408,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
             if (!converged)
             {
-                printf("EEM did not converge to %g. rms: %g\n", tolerance, EemRms_);
+                printf("Alexandri Charge Model did not converge to %g. rms: %g\n", tolerance, sqrt(EemRms_));
             }
         }
         break;

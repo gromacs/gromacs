@@ -156,7 +156,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             auto           pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             auto           mdlog                 = getMdLogger(cr, stdout);
             auto           hwinfo                = gmx_detect_hardware(mdlog, pnc);
-            int            qcycle                = 1;
+            int            qcycle                = 100;
             real           qtol                  = 1e-3;
 
             mp_.GenerateCharges(pd_, mdlog, aps_, model,
