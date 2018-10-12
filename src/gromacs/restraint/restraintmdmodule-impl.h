@@ -85,6 +85,7 @@ class Site
          */
         explicit Site(int globalIndex) :
             index_(globalIndex),
+            t_(0.),
             r_(0, 0, 0)
         {};
 
@@ -98,6 +99,7 @@ class Site
          */
         Site(const Site &site) :
             index_(site.index_),
+            t_(site.t_),
             r_(site.r_)
         {}
 
@@ -134,51 +136,76 @@ class Site
         RVec centerOfMass(const t_commrec                &cr,
                           size_t                          nx,
                           ArrayRef<const RVec>            x,
-                          double               gmx_unused t)
+                          double                          t)
         {
-            // Center of mass to return for the site. Currently the only form of site
-            // implemented is as a global atomic coordinate.
-            gmx::RVec r = {0, 0, 0};
-            if (DOMAINDECOMP(&cr)) // Domain decomposition
+            // I think I'm overlooking a better way to do this, but I think we should move to an issuer
+            // of futures instead of explicitly locking, so it might not be worth looking into. I'm trying
+            // to avoid locking the mutex if possible, but if we wait for a lock, we might perform the
+            // cache update several times, and yet it would be nice not to have to make any lock at all
+            // if the cache is already up-to-date. The other thing we can do is to require that someone
+            // trigger the Sites update at the global atom position update(s) and make it an error to
+            // request site positions for the wrong time, since it is likely that all threads will request
+            // site position data at almost exactly the same time. Finally, we could just use a barrier,
+            // but then we have to make assumptions or keep track of which threads are interested.
+            // Also, we should manage all sites at once instead of one at a time.
+            if (t_ <= t) // Do we need to update the cache?
             {
-                // Get global-to-local indexing structure
-                auto crossRef = cr.dd->ga2la;
-                GMX_ASSERT(crossRef, "Domain decomposition must provide global/local cross-reference.");
-                if (auto localIndex = crossRef->findHome(index_))
+                std::lock_guard<std::mutex> cacheLock(cacheMutex_);
+                // Now that we've got the lock, check again whether the cache was updated while we were waiting.
+                // Declaring t_ volatile should tell the compiler that t_ may have changed since the previous
+                // line and should be reloaded.
+                if (t_ <= t)
                 {
-                    assert(*localIndex < static_cast<decltype(*localIndex)>(nx));
-                    // If the atom was not available locally, we should not have entered this branch.
-                    assert(*localIndex >= 0);
-                    // If atom is local, get its location
-                    copy_rvec(x[*localIndex], r);
-                }
+                    gmx::RVec r = {0, 0, 0};
+                    if (DOMAINDECOMP(&cr)) // Domain decomposition
+                    {
+                        // Get global-to-local indexing structure
+                        auto crossRef = cr.dd->ga2la;
+                        GMX_ASSERT(crossRef, "Domain decomposition must provide global/local cross-reference.");
+                        if (auto localIndex = crossRef->findHome(index_))
+                        {
+                            assert(*localIndex < static_cast<decltype(*localIndex)>(nx));
+                            // If the atom was not available locally, we should not have entered this branch.
+                            assert(*localIndex >= 0);
+                            // If atom is local, get its location
+                            copy_rvec(x[*localIndex], r);
+                        }
+                        else
+                        {
+                            // Nothing to contribute on this rank. Leave position == [0,0,0].
+                        }
+                        // AllReduce across the ranks of the simulation to get the center-of-mass
+                        // of the site locally available everywhere. For single-atom sites, this
+                        // is trivial: exactly one rank should have a non-zero position.
+                        // For future multi-atom selections,
+                        // we will receive weighted center-of-mass contributions from
+                        // each rank and combine to get the global center of mass.
+                        // \todo use generalized "pull group" facility when available.
+                        std::array<double, 3> buffer {{r[0], r[1], r[2]}};
+                        // This should be an all-reduce sum, which gmx_sumd appears to be.
+                        gmx_sumd(3, buffer.data(), &cr);
+                        r[0] = static_cast<real>(buffer[0]);
+                        r[1] = static_cast<real>(buffer[1]);
+                        r[2] = static_cast<real>(buffer[2]);
+
+                    }   // end domain decomposition branch
+                    else
+                    {
+                        // No DD so all atoms are local.
+                        copy_rvec(x[index_], r);
+                    }
+                    // Update cache and cache status.
+                    copy_rvec(r, r_);
+                    t_ = t;
+                }   // end inner check if (t_ <= t)
                 else
                 {
-                    // Nothing to contribute on this rank. Leave position == [0,0,0].
-                }
-                // AllReduce across the ranks of the simulation to get the center-of-mass
-                // of the site locally available everywhere. For single-atom sites, this
-                // is trivial: exactly one rank should have a non-zero position.
-                // For future multi-atom selections,
-                // we will receive weighted center-of-mass contributions from
-                // each rank and combine to get the global center of mass.
-                // \todo use generalized "pull group" facility when available.
-                std::array<double, 3> buffer {{r[0], r[1], r[2]}};
-                // This should be an all-reduce sum, which gmx_sumd appears to be.
-                gmx_sumd(3, buffer.data(), &cr);
-                r[0] = static_cast<real>(buffer[0]);
-                r[1] = static_cast<real>(buffer[1]);
-                r[2] = static_cast<real>(buffer[2]);
+                    // else the cache was updated while we were waiting for the lock. We're done here.
 
-            }   // end domain decomposition branch
-            else
-            {
-                // No DD so all atoms are local.
-                copy_rvec(x[index_], r);
-                (void)nx;
-            }
-            // Update cache and cache status.
-            copy_rvec(r, r_);
+                    // Avoid compiler warnings in which nx may appear to be unused.
+                    (void)nx;
+                }
+            }     // end outer check if (t_ <= t). release lock at end of block.
 
             return r_;
         }
@@ -193,11 +220,21 @@ class Site
         const int               index_;
 
         /*!
+         * \brief Simulation time corresponding to position r_.
+         */
+        volatile double         t_;
+
+        /*!
          * \brief Last known value of the center-of-mass.
          *
          * Updated with centerOfMass().
          */
         RVec                    r_;
+
+        /*!
+         * \brief Make sure to only update the cache from one thread in a process.
+         */
+        std::mutex              cacheMutex_;
 };
 
 /*! \internal
