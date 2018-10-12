@@ -41,7 +41,7 @@ gmx_add_unit_test(
     # files with code for tests
     molpropTest.cpp
     poldataTest.cpp	
-    qgen_eemTest.cpp
+    qgen_acmTest.cpp
     qgen_respTest.cpp
     regression.cpp
     #rotationTest.cpp

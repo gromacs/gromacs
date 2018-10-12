@@ -87,7 +87,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
             //Read input file for molprop
-            dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
+            dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
             readBabel(dataName.c_str(), molprop, molnm, iupac, conf, basis,
                       maxpot, nsymm, pd_.getForceField(), jobtype);
             std::vector<MolProp> vmp;
@@ -106,7 +106,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         void testResp(ChargeDistributionModel qdist)
         {
             //Generate charges and topology
-            const char   *lot        = "B3LYP/aug-cc-pVTZ";
+            const char   *lot        = "B3LYP/Gen";
             t_inputrec    inputrec;
             fill_inputrec(&inputrec);
             mp_.SetForceField("gaff");

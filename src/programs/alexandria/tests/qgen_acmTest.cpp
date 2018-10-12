@@ -32,7 +32,6 @@
 
 
 #include <math.h>
-
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
@@ -60,7 +59,13 @@ namespace alexandria
 namespace
 {
 
-class EemTest : public gmx::test::CommandLineTestBase
+enum informat{
+    einfLOG = 0,
+    einfPDB = 1, 
+    einfNR
+};
+
+class AcmTest : public gmx::test::CommandLineTestBase
 {
     protected:
         gmx::test::TestReferenceChecker checker_;
@@ -69,7 +74,7 @@ class EemTest : public gmx::test::CommandLineTestBase
         gmx_atomprop_t                  aps_;
 
         //init set tolerance
-        EemTest () : checker_(this->rootChecker())
+        AcmTest () : checker_(this->rootChecker())
         {
             aps_ = gmx_atomprop_init();
 
@@ -91,29 +96,50 @@ class EemTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testEem(ChargeDistributionModel model)
-        {
-            // Needed for ReadGauss
-            const char *molnm   = (char *)"XXX";
-            const char *iupac   = (char *)"";
-            const char *conf    = (char *)"minimum";
-            const char *basis   = (char *)"";
-            const char *jobtype = (char *)"Pop";
+        void testAcm(ChargeDistributionModel model, informat inputformat)
+        {                       
+            int        maxpot    = 100; 
+            int        nsymm     = 0;
+            const char *lot      = nullptr;
+            const char *dihopt[] = { nullptr, "No", "Single", "All", nullptr };            
+            const char *molnm    = (char *)"1-butanol";
+            const char *iupac    = (char *)"1-butanol";
+            const char *conf     = (char *)"minimum";
+            const char *basis    = (char *)"";
+            const char *jobtype  = (char *)"Opt";
+            
+            std::string           dataName;
+            alexandria::MolProp   molprop;
+            std::vector<MolProp>  vmp;
 
-            int         maxpot   = 100;
-            int         nsymm    = 0;
-
-            //Read input file for molprop
-            std::string             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
-            alexandria::MolProp     molprop;
-            readBabel(dataName.c_str(), molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd_.getForceField().c_str(), jobtype);
-            std::vector<MolProp> vmp;
+            if (inputformat == einfLOG)
+            {
+                lot      = "B3LYP/Gen";
+                dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
+            }
+            else
+            {
+                lot      = "AFF/ACM";
+                dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol.pdb");
+            }
+            
+            readBabel(dataName.c_str(), 
+                      molprop, 
+                      molnm, 
+                      iupac, 
+                      conf, 
+                      basis,
+                      maxpot, 
+                      nsymm, 
+                      pd_.getForceField().c_str(), 
+                      jobtype);
+            
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
+            
+            
             // Generate charges and topology
-            const char     *lot        = "B3LYP/aug-cc-pVTZ";
-            const char     *dihopt[]   = { NULL, "No", "Single", "All", NULL };
+            
             eDih            edih       = (eDih) get_option(dihopt);
             t_inputrec      inputrecInstance;
             t_inputrec     *inputrec   = &inputrecInstance;
@@ -145,12 +171,9 @@ class EemTest : public gmx::test::CommandLineTestBase
                 qtotValues.push_back(mp_.topology_->atoms.atom[atom].q);
             }
             char buf[256];
-            snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%d",
-                     static_cast<int>(ChargeGenerationAlgorithm()));
-            checker_.checkInteger(static_cast<int>(qtotValues.size()),
-                                  "qtotSize");
-            checker_.checkSequence(qtotValues.begin(),
-                                   qtotValues.end(), buf);
+            snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%d", static_cast<int>(ChargeGenerationAlgorithm()));
+            checker_.checkInteger(static_cast<int>(qtotValues.size()), "qtotSize");
+            checker_.checkSequence(qtotValues.begin(), qtotValues.end(), buf);
         }
 
         static void TearDownTestCase()
@@ -159,38 +182,56 @@ class EemTest : public gmx::test::CommandLineTestBase
 
 };
 
-TEST_F (EemTest, Bultinck)
+TEST_F (AcmTest, BultinckLog)
 {
-    testEem(eqdBultinck);
+    testAcm(eqdBultinck, einfLOG);
 }
 
-TEST_F (EemTest, Rappe)
+TEST_F (AcmTest, BultinckPDB)
 {
-    testEem(eqdRappe);
+    testAcm(eqdBultinck, einfPDB);
 }
 
-TEST_F (EemTest, Yang)
+TEST_F (AcmTest, RappeLog)
 {
-    testEem(eqdYang);
+    testAcm(eqdRappe, einfLOG);
 }
 
-// The tests below are outcommented since we do not have a parameters for the AX? methods.
-/*
-   TEST_F (EemTest, AXp)
-   {
-    testEem(eqdAXp);
-   }
+TEST_F (AcmTest, RappePDB)
+{
+    testAcm(eqdRappe, einfPDB);
+}
 
-   TEST_F (EemTest, AXg)
-   {
-    testEem(eqdAXg);
-   }
+TEST_F (AcmTest, YangLog)
+{
+    testAcm(eqdYang, einfLOG);
+}
 
-   TEST_F (EemTest, AXs)
-   {
-    testEem(eqdAXs);
-   }
- */
+TEST_F (AcmTest, YangPDB)
+{
+    testAcm(eqdYang, einfPDB);
+}
+
+TEST_F (AcmTest, AXpgLOG)
+{
+    testAcm(eqdAXpg, einfLOG);
+}
+
+TEST_F (AcmTest, AXpgPDB)
+{
+    testAcm(eqdAXpg, einfPDB);
+}
+
+TEST_F (AcmTest, AXpsLOG)
+{
+    testAcm(eqdAXps, einfLOG);
+}
+
+TEST_F (AcmTest, AXpsPDB)
+{
+    testAcm(eqdAXps, einfPDB);
+}
+ 
 
 }
 
