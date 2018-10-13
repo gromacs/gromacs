@@ -38,11 +38,20 @@
 # \todo replace command line wrapper with API utilities or test framework facilities.
 add_custom_command(
     OUTPUT topol.tpr
-    COMMAND gmx grompp -o topol.tpr
+    COMMAND gmx grompp
+        # Note: at time of writing, these are insufficient to suppress all output.
+        -quiet
+        -nocopyright
+        -nov
+        -o topol.tpr
         -f ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.mdp
         -c ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.gro
         -n ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.ndx
         -p ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.top
+        # The following syntax is platform dependent to redirect stdout and stderr
+        # to the null device, but initial gmxapi support is limited, anyway.
+        # TODO: Find a quieter way to generate this input data on all platforms.
+        > /dev/null 2>&1
     DEPENDS gmx
             data/spc-and-methanol.gro
             data/spc-and-methanol.mdp
@@ -52,7 +61,7 @@ add_custom_command(
 
 add_custom_target(spc_and_methanol_tpr
                   DEPENDS topol.tpr
-                  COMMENT "Preparing test reference data."
+                  COMMENT "Preparing gmxapi test reference data."
                   )
 
 configure_file(testingconfiguration.in.cpp testingconfiguration.cpp)
