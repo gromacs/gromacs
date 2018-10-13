@@ -53,3 +53,7 @@ const std::vector<std::string> gmxapi::testing::mdArgs {
 // failures when testing on large nodes.
 //    "-ntomp", "1"
 };
+
+const double gmxapi::testing::testingTimestep = $ {
+    GMXAPI_TEST_TIMESTEP
+};
