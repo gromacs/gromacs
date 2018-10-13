@@ -52,6 +52,7 @@ gmx_add_gtest_executable(
     gmxapi-test
     restraint.cpp
     status.cpp
+    stopsignaler.cpp
     system.cpp
     version.cpp
     )
@@ -83,6 +84,7 @@ gmx_add_gtest_executable(
     gmxapi-mpi-test MPI
     restraint.cpp
     status.cpp
+    stopsignaler.cpp
     system.cpp
     version.cpp
     )

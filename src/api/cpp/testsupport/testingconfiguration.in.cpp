@@ -53,3 +53,7 @@ const std::vector<std::string> gmxapi::testing::mdArgs {
 // failures when testing on large nodes.
 //    "-ntomp", "1"
 };
+
+// Time step size provided during build configuration through
+// internal CMake variable GMXAPI_TEST_TIMESTEP
+const double gmxapi::testing::testingTimestep = @GMXAPI_TEST_TIMESTEP@;

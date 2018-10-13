@@ -50,7 +50,9 @@ extern const std::string              sample_tprfilename;
 
 extern const std::vector<std::string> mdArgs;
 
-} // end namespace gmxapi::testing
+extern const double                   testingTimestep;
+
+} // end namespace testing
 
 } // end namespace gmxapi
 

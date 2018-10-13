@@ -35,7 +35,14 @@
 # Build test input files to test directory.
 # Note that CMake interprets `gmx` in `COMMAND gmx` as the executable produced
 # by the `add_executable` command that defined the `gmx` target.
+
+set(GMXAPI_TEST_TIMESTEP 0.001953125) # 2e-9
+# Note that the CMake configure_file below substitutes GMXAPI_TEST_TIMESTEP for the mdp `dt` value.
 # \todo replace command line wrapper with API utilities or test framework facilities.
+# Directly manage input data instead of relying on the following in-repo input files.
+# \todo When migrating to an API-based testing configuration, use GMXAPI_TEST_TIMESTEP for `dt`
+configure_file(data/spc-and-methanol.mdp.in
+               ${CMAKE_CURRENT_BINARY_DIR}/data/spc-and-methanol.mdp)
 add_custom_command(
     OUTPUT topol.tpr
     COMMAND gmx grompp
@@ -44,7 +51,7 @@ add_custom_command(
         -nocopyright
         -nov
         -o topol.tpr
-        -f ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.mdp
+        -f ${CMAKE_CURRENT_BINARY_DIR}/data/spc-and-methanol.mdp
         -c ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.gro
         -n ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.ndx
         -p ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.top
@@ -54,7 +61,7 @@ add_custom_command(
         > /dev/null 2>&1
     DEPENDS gmx
             data/spc-and-methanol.gro
-            data/spc-and-methanol.mdp
+            ${CMAKE_CURRENT_BINARY_DIR}/data/spc-and-methanol.mdp
             data/spc-and-methanol.top
             data/spc-and-methanol.ndx
 )

@@ -1,5 +1,6 @@
 integrator = md
 cutoff-scheme = Verlet
+dt = ${GMXAPI_TEST_TIMESTEP}
 nsteps = 10000
 nstxout = 2
 nstvout = 2
