@@ -60,7 +60,7 @@ if(NOT GMX_USE_OPENCL)
     # the same process.
     # TODO: include this with the other test sources once the issue is resolved
     # Ref https://redmine.gromacs.org/issues/2689
-    target_sources(gmxapi-test PRIVATE runner.cpp)
+    target_sources(gmxapi-test PRIVATE runner.cpp stopsignaler.cpp)
 endif()
 add_dependencies(gmxapi-test spc_and_methanol_tpr)
 
@@ -91,7 +91,7 @@ if(NOT GMX_USE_OPENCL)
     # the same process.
     # TODO: include this with the other test sources once the issue is resolved
     # Ref https://redmine.gromacs.org/issues/2689
-    target_sources(gmxapi-mpi-test PRIVATE runner.cpp)
+    target_sources(gmxapi-mpi-test PRIVATE runner.cpp stopsignaler.cpp)
 endif()
 add_dependencies(gmxapi-mpi-test spc_and_methanol_tpr)
 
