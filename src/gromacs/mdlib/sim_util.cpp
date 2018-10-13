@@ -63,7 +63,6 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
-#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -1207,17 +1206,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
 
         nbnxn_atomdata_set(nbv->nbat, nbv->nbs.get(), mdatoms, fr->cginfo);
-
-        /* Now we put all atoms on the grid, we can assign bonded interactions
-         * to the GPU, where the grid order is needed.
-         */
-        if (fr->gpuBondedLists)
-        {
-            assign_bondeds_to_gpu(fr->gpuBondedLists,
-                                  nbnxn_get_gridindices(fr->nbv->nbs.get()),
-                                  top->idef);
-        }
-
         wallcycle_stop(wcycle, ewcNS);
     }
 
@@ -1266,11 +1254,50 @@ static void do_force_cutsVERLET(FILE *fplog,
                                     eintLocal);
         }
         wallcycle_stop(wcycle, ewcNS);
+
+        /* Inital call with bNS=true only perfoms setup */
+        if (bUseGPU)
+        {
+            nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                eatLocal,
+                                                FALSE,
+                                                nbv->nbat,
+                                                nbv->gpu_nbv,
+                                                fr->pmedata,
+                                                eintLocal,
+                                                as_rvec_array(x.data()),
+                                                bNS,
+                                                false);
+        }
+
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.data()),
-                                        nbv->nbat, wcycle);
+
+        gmx_bool gpuBufferOpsCompleted = false;
+        if (bUseGPU)
+        {
+
+            gmx_bool copyCoord = !thisRankHasDuty(cr, DUTY_PME);
+            gpuBufferOpsCompleted = nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                                        eatLocal,
+                                                                        FALSE,
+                                                                        nbv->nbat,
+                                                                        nbv->gpu_nbv,
+                                                                        fr->pmedata,
+                                                                        eintLocal,
+                                                                        as_rvec_array(x.data()),
+                                                                        bNS,
+                                                                        copyCoord);
+        }
+        if (!bUseGPU || !gpuBufferOpsCompleted)
+        {
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE,
+                                            as_rvec_array(x.data()),
+                                            nbv->nbat, wcycle);
+        }
+
+
     }
 
     if (bUseGPU)
@@ -1330,13 +1357,44 @@ static void do_force_cutsVERLET(FILE *fplog,
                                         eintNonlocal);
             }
             wallcycle_stop(wcycle, ewcNS);
+
+            /* Inital call with bNS=true only perfoms setup */
+            nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                eatNonlocal,
+                                                FALSE,
+                                                nbv->nbat,
+                                                nbv->gpu_nbv,
+                                                fr->pmedata,
+                                                eintNonlocal,
+                                                as_rvec_array(x.data()),
+                                                bNS,
+                                                false);
+
         }
         else
         {
             dd_move_x(cr->dd, box, x, wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.data()),
-                                            nbv->nbat, wcycle);
+            gmx_bool gpuBufferOpsCompleted = false;
+            if (bUseGPU)
+            {
+                gmx_bool copyCoord = !thisRankHasDuty(cr, DUTY_PME);
+                gpuBufferOpsCompleted = nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                                            eatNonlocal,
+                                                                            FALSE,
+                                                                            nbv->nbat,
+                                                                            nbv->gpu_nbv,
+                                                                            fr->pmedata,
+                                                                            eintNonlocal,
+                                                                            as_rvec_array(x.data()),
+                                                                            bNS,
+                                                                            copyCoord);
+            }
+            if (!bUseGPU || !gpuBufferOpsCompleted)
+            {
+                nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.data()),
+                                                nbv->nbat, wcycle);
+            }
         }
 
         if (bUseGPU)
