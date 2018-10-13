@@ -851,3 +851,45 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
 
     return kernel_type;
 }
+
+/* dummy function for C buffer ops. Returns false, so callee will instead use CPU version. */
+#define UNU
+gmx_bool nbnxn_gpu_x_to_nbat_x(int                 ncxy,
+                               int                 g,
+                               gmx_bool            FillLocal,
+                               const nbnxn_search *nbs,
+                               gmx_nbnxn_gpu_t    *gpu_nbv,
+                               gmx_pme_t          *pmedata,
+                               const int          *a,
+                               int                 a_nalloc,
+                               const int          *na_all,
+                               const int          *cxy_ind,
+                               int                 cell0,
+                               int                 na_sc,
+                               int                 iloc,
+                               rvec               *x,
+                               bool                bNS,
+                               bool                copyCoord)
+{
+
+    //supress compiler unused parameter warnings
+    (void)ncxy;
+    (void)g;
+    (void)FillLocal;
+    (void)nbs;
+    (void)gpu_nbv;
+    (void)pmedata;
+    (void)a;
+    (void)a_nalloc;
+    (void)na_all;
+    (void)cxy_ind;
+    (void)cell0;
+    (void)na_sc;
+    (void)iloc;
+    (void)x;
+    (void)bNS;
+    (void)copyCoord;
+
+
+    return false;
+}
