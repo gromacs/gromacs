@@ -429,7 +429,7 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
     const int        atomIndexOffset = blockIndex * atomsPerBlock;
 
     /* Early return for fully empty blocks at the end
-     * (should only happen on Fermi or billions of input atoms)
+     * (should only happen for billions of input atoms)
      */
     if (atomIndexOffset >= kernelParams.atoms.nAtoms)
     {

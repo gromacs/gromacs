@@ -203,8 +203,7 @@ least NVIDIA compute capability |REQUIRED_CUDA_COMPUTE_CAPABILITY| are
 required. You are strongly recommended to
 get the latest CUDA version and driver that supports your hardware, but
 beware of possible performance regressions in newer CUDA versions on
-older hardware. Note that compute capability 2.0 (Fermi)
-devices are no longer supported from CUDA 9.0 and later.
+older hardware.
 While some CUDA compilers (nvcc) might not
 officially support recent versions of gcc as the back-end compiler, we
 still recommend that you at least use a gcc version recent enough to

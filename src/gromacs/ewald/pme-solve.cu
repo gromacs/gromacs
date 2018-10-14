@@ -240,7 +240,6 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
     /* Optional energy/virial reduction */
     if (computeEnergyAndVirial)
     {
-#if (GMX_PTX_ARCH >= 300)
         /* A tricky shuffle reduction inspired by reduce_force_j_warp_shfl.
          * The idea is to reduce 7 energy/virial components into a single variable (aligned by 8).
          * We will reduce everything into virxx.
@@ -337,63 +336,6 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
                 atomicAdd(gm_virialAndEnergy + componentIndex, output);
             }
         }
-#else
-        /* Shared memory reduction with atomics for compute capability < 3.0.
-         * Each component is first reduced into warp_size positions in the shared memory;
-         * Then first c_virialAndEnergyCount warps reduce everything further and add to the global memory.
-         * This can likely be improved, but is anyway faster than the previous straightforward reduction,
-         * which was using too much shared memory (for storing all 7 floats on each thread).
-         * [48KB (shared mem limit per SM on CC2.x) / sizeof(float) (4) / c_solveMaxThreadsPerBlock (256) / c_virialAndEnergyCount (7) ==
-         * 6 blocks per SM instead of 16 which is maximum on CC2.x].
-         */
-
-        const int        lane      = threadLocalId & (warp_size - 1);
-        const int        warpIndex = threadLocalId / warp_size;
-        const bool       firstWarp = (warpIndex == 0);
-        __shared__ float sm_virialAndEnergy[c_virialAndEnergyCount * warp_size];
-        if (firstWarp)
-        {
-            sm_virialAndEnergy[0 * warp_size + lane] = virxx;
-            sm_virialAndEnergy[1 * warp_size + lane] = viryy;
-            sm_virialAndEnergy[2 * warp_size + lane] = virzz;
-            sm_virialAndEnergy[3 * warp_size + lane] = virxy;
-            sm_virialAndEnergy[4 * warp_size + lane] = virxz;
-            sm_virialAndEnergy[5 * warp_size + lane] = viryz;
-            sm_virialAndEnergy[6 * warp_size + lane] = energy;
-        }
-        __syncthreads();
-        if (!firstWarp)
-        {
-            atomicAdd(sm_virialAndEnergy + 0 * warp_size + lane, virxx);
-            atomicAdd(sm_virialAndEnergy + 1 * warp_size + lane, viryy);
-            atomicAdd(sm_virialAndEnergy + 2 * warp_size + lane, virzz);
-            atomicAdd(sm_virialAndEnergy + 3 * warp_size + lane, virxy);
-            atomicAdd(sm_virialAndEnergy + 4 * warp_size + lane, virxz);
-            atomicAdd(sm_virialAndEnergy + 5 * warp_size + lane, viryz);
-            atomicAdd(sm_virialAndEnergy + 6 * warp_size + lane, energy);
-        }
-        __syncthreads();
-
-        GMX_UNUSED_VALUE(activeWarps);
-        assert(activeWarps >= c_virialAndEnergyCount); // we need to cover all components, or have multiple iterations otherwise
-        const int componentIndex = warpIndex;
-        if (componentIndex < c_virialAndEnergyCount)
-        {
-            const int targetIndex = threadLocalId;
-#pragma unroll
-            for (int reductionStride = warp_size >> 1; reductionStride >= 1; reductionStride >>= 1)
-            {
-                if (lane < reductionStride)
-                {
-                    sm_virialAndEnergy[targetIndex] += sm_virialAndEnergy[targetIndex + reductionStride];
-                }
-            }
-            if (lane == 0)
-            {
-                atomicAdd(gm_virialAndEnergy + componentIndex, sm_virialAndEnergy[targetIndex]);
-            }
-        }
-#endif
     }
 }
 

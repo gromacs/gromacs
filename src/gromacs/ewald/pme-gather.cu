@@ -90,7 +90,6 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
                                                    float                &fy,
                                                    float                &fz)
 {
-#if (GMX_PTX_ARCH >= 300)
     if (!(order & (order - 1))) // Only for orders of power of 2
     {
         const unsigned int activeMask = c_fullWarpMask;
@@ -136,7 +135,6 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
         }
     }
     else
-#endif
     {
         // We use blockSize shared memory elements to read fx, or fy, or fz, and then reduce them to fit into smemPerDim elements
         // which are stored separately (first 2 dimensions only)
@@ -248,7 +246,7 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
     const int         atomIndexGlobal   = atomIndexOffset + atomIndexLocal;
 
     /* Early return for fully empty blocks at the end
-     * (should only happen on Fermi or billions of input atoms)
+     * (should only happen for billions of input atoms)
      */
     if (atomIndexOffset >= kernelParams.atoms.nAtoms)
     {

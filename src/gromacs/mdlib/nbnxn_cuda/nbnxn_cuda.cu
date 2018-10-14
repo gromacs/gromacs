@@ -252,25 +252,19 @@ static inline int calc_shmem_required_nonbonded(const int num_threads_z, const g
     shmem  = c_numClPerSupercl * c_clSize * sizeof(float4);
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
-    if (dinfo->prop.major >= 3)
+
+    if (nbp->vdwtype == evdwCuCUTCOMBGEOM ||
+        nbp->vdwtype == evdwCuCUTCOMBLB)
     {
-        if (nbp->vdwtype == evdwCuCUTCOMBGEOM ||
-            nbp->vdwtype == evdwCuCUTCOMBLB)
-        {
-            /* i-atom LJ combination parameters in shared memory */
-            shmem += c_numClPerSupercl * c_clSize * sizeof(float2);
-        }
-        else
-        {
-            /* i-atom types in shared memory */
-            shmem += c_numClPerSupercl * c_clSize * sizeof(int);
-        }
+        /* i-atom LJ combination parameters in shared memory */
+        shmem += c_numClPerSupercl * c_clSize * sizeof(float2);
     }
-    if (dinfo->prop.major < 3)
+    else
     {
-        /* force reduction buffers in shared memory */
-        shmem += c_clSize * c_clSize * 3 * sizeof(float);
+        /* i-atom types in shared memory */
+        shmem += c_numClPerSupercl * c_clSize * sizeof(int);
     }
+
     return shmem;
 }
 
@@ -666,7 +660,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     }
 }
 
-void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)
+void nbnxn_cuda_set_cacheconfig()
 {
     cudaError_t stat;
 
@@ -674,23 +668,11 @@ void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)
     {
         for (int j = 0; j < evdwCuNR; j++)
         {
-            if (devinfo->prop.major >= 3)
-            {
-                /* Default kernel on sm 3.x and later 32/32 kB Shared/L1 */
-                cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferEqual);
-                cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferEqual);
-                cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferEqual);
-                stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferEqual);
-            }
-            else
-            {
-                /* On Fermi prefer L1 gives 2% higher performance */
-                /* Default kernel on sm_2.x 16/48 kB Shared/L1 */
-                cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferL1);
-                cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferL1);
-                cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferL1);
-                stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferL1);
-            }
+            /* Default kernel 32/32 kB Shared/L1 */
+            cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferEqual);
+            cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferEqual);
+            cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferEqual);
+            stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferEqual);
             CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
         }
     }

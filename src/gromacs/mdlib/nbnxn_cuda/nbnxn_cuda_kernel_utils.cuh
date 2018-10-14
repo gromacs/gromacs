@@ -507,9 +507,8 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
 }
 
 /*! Final j-force reduction; this implementation only with power of two
- *  array sizes and with sm >= 3.0
+ *  array sizes.
  */
-#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_force_j_warp_shfl(float3 f, float3 *fout,
                               int tidxi, int aidx,
@@ -539,7 +538,6 @@ void reduce_force_j_warp_shfl(float3 f, float3 *fout,
         atomicAdd((&fout[aidx].x) + tidxi, f.x);
     }
 }
-#endif
 
 /*! Final i-force reduction; this generic implementation works with
  *  arbitrary array sizes.
@@ -634,9 +632,8 @@ void reduce_force_i(float *f_buf, float3 *f,
 }
 
 /*! Final i-force reduction; this implementation works only with power of two
- *  array sizes and with sm >= 3.0
+ *  array sizes.
  */
-#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float *fshift_buf, bool bCalcFshift,
@@ -671,7 +668,6 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
         }
     }
 }
-#endif
 
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes.
@@ -711,9 +707,8 @@ void reduce_energy_pow2(volatile float *buf,
 }
 
 /*! Energy reduction; this implementation works only with power of two
- *  array sizes and with sm >= 3.0
+ *  array sizes.
  */
-#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_energy_warp_shfl(float E_lj, float E_el,
                              float *e_lj, float *e_el,
@@ -738,6 +733,5 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
         atomicAdd(e_el, E_el);
     }
 }
-#endif /* GMX_PTX_ARCH */
 
 #endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */

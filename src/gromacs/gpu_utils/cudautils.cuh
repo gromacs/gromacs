@@ -179,14 +179,12 @@ int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cud
  * \param[out] texObj    texture object to be initialized
  * \param[in]  h_ptr     pointer to the host memory to be uploaded to the device
  * \param[in]  numElem   number of elements in the h_ptr
- * \param[in]  devInfo   pointer to the info struct of the device in use
  */
 template <typename T>
 void initParamLookupTable(T                        * &d_ptr,
                           cudaTextureObject_t        &texObj,
                           const T                    *h_ptr,
-                          int                         numElem,
-                          const gmx_device_info_t    *devInfo);
+                          int                         numElem);
 
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.
@@ -200,12 +198,10 @@ extern template void initParamLookupTable<float>(float * &, cudaTextureObject_t 
  * \tparam[in] T         Raw data type
  * \param[in]  d_ptr     Device pointer to the memory to be deallocated
  * \param[in]  texObj    Texture object to be deinitialized
- * \param[in]  devInfo   Pointer to the info struct of the device in use
  */
 template <typename T>
 void destroyParamLookupTable(T                       *d_ptr,
-                             cudaTextureObject_t      texObj,
-                             const gmx_device_info_t *devInfo);
+                             cudaTextureObject_t      texObj);
 
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.

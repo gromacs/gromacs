@@ -134,18 +134,6 @@ int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s 
     return cu_copy_H2D(d_dest, h_src, bytes, GpuApiCallBehavior::Async, s);
 }
 
-/*! \brief Return whether texture objects are used on this device.
- *
- * \param[in]   pointer to the GPU device info structure to inspect for texture objects support
- * \return      true if texture objects are used on this device
- */
-static inline bool use_texobj(const gmx_device_info_t *dev_info)
-{
-    assert(!c_disableCudaTextures);
-    /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-    return (dev_info->prop.major >= 3);
-}
-
 /*! \brief Set up texture object for an array of type T.
  *
  * Set up texture object for an array of type T and bind it to the device memory
@@ -183,8 +171,7 @@ template <typename T>
 void initParamLookupTable(T                        * &d_ptr,
                           cudaTextureObject_t        &texObj,
                           const T                    *h_ptr,
-                          int                         numElem,
-                          const gmx_device_info_t    *devInfo)
+                          int                         numElem)
 {
     const size_t sizeInBytes = numElem * sizeof(*d_ptr);
     cudaError_t  stat        = cudaMalloc((void **)&d_ptr, sizeInBytes);
@@ -193,24 +180,17 @@ void initParamLookupTable(T                        * &d_ptr,
 
     if (!c_disableCudaTextures)
     {
-        if (use_texobj(devInfo))
-        {
-            setup1DTexture<T>(texObj, d_ptr, sizeInBytes);
-        }
+        setup1DTexture<T>(texObj, d_ptr, sizeInBytes);
     }
 }
 
 template <typename T>
 void destroyParamLookupTable(T                       *d_ptr,
-                             cudaTextureObject_t      texObj,
-                             const gmx_device_info_t *devInfo)
+                             cudaTextureObject_t      texObj)
 {
     if (!c_disableCudaTextures)
     {
-        if (use_texobj(devInfo))
-        {
-            CU_RET_ERR(cudaDestroyTextureObject(texObj), "cudaDestroyTextureObject on texObj failed");
-        }
+        CU_RET_ERR(cudaDestroyTextureObject(texObj), "cudaDestroyTextureObject on texObj failed");
     }
     CU_RET_ERR(cudaFree(d_ptr), "cudaFree failed");
 }
@@ -219,7 +199,7 @@ void destroyParamLookupTable(T                       *d_ptr,
  * One should also verify that the result of cudaCreateChannelDesc<T>() during texture setup
  * looks reasonable, when instantiating the templates for new types - just in case.
  */
-template void initParamLookupTable<float>(float * &, cudaTextureObject_t &, const float *, int, const gmx_device_info_t *);
-template void destroyParamLookupTable<float>(float *, cudaTextureObject_t, const gmx_device_info_t *);
-template void initParamLookupTable<int>(int * &, cudaTextureObject_t &, const int *, int, const gmx_device_info_t *);
-template void destroyParamLookupTable<int>(int *, cudaTextureObject_t, const gmx_device_info_t *);
+template void initParamLookupTable<float>(float * &, cudaTextureObject_t &, const float *, int);
+template void destroyParamLookupTable<float>(float *, cudaTextureObject_t);
+template void initParamLookupTable<int>(int * &, cudaTextureObject_t &, const int *, int);
+template void destroyParamLookupTable<int>(int *, cudaTextureObject_t);
