@@ -64,9 +64,6 @@ if (GMX_CUDA_TARGET_SM)
         list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_${_target}")
     endforeach()
 else()
-    if(CUDA_VERSION VERSION_LESS "9.00") # < 9.0
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_20")
-    endif()
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_30")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_35")
     # clang 6.0 + CUDA 9.0 seems to have issues generating code for sm_37

@@ -140,14 +140,14 @@ T gmx_shfl_down_sync(const unsigned int activeMask,
 
 /*! \brief Allow disabling CUDA textures using the GMX_DISABLE_CUDA_TEXTURES macro.
  *
- *  Only texture objects supported, disable textures for <= CC 2.0 (but not in host code).
+ *  Only texture objects supported.
  *  Disable texture support missing in clang (all versions up to <=5.0-dev as of writing).
  *
  *  This option will not influence functionality. All features using textures ought
  *  to have fallback for texture-less reads (direct/LDG loads), all new code needs
  *  to provide fallback code.
  */
-#if defined(GMX_DISABLE_CUDA_TEXTURES) || (GMX_PTX_ARCH > 0 && GMX_PTX_ARCH < 300) || (defined(__clang__) && defined(__CUDA__))
+#if defined(GMX_DISABLE_CUDA_TEXTURES) || (defined(__clang__) && defined(__CUDA__))
 #define DISABLE_CUDA_TEXTURES 1
 #else
 #define DISABLE_CUDA_TEXTURES 0
@@ -163,10 +163,7 @@ static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
  *
  */
 #if GMX_PTX_ARCH > 0
-    #if   GMX_PTX_ARCH <= 210  // CC 2.x
-        #define GMX_CUDA_MAX_BLOCKS_PER_MP   8
-        #define GMX_CUDA_MAX_THREADS_PER_MP  1536
-    #elif GMX_PTX_ARCH <= 370  // CC 3.x
+    #if GMX_PTX_ARCH <= 370  // CC 3.x
         #define GMX_CUDA_MAX_BLOCKS_PER_MP   16
         #define GMX_CUDA_MAX_THREADS_PER_MP  2048
     #else // CC 5.x, 6.x

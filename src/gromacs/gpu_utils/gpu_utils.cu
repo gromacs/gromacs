@@ -87,7 +87,8 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
         gmx_fatal(FARGS,
                   "The %s binary does not include support for the CUDA architecture "
                   "of the selected GPU (device ID #%d, compute capability %d.%d). "
-                  "By default, GROMACS supports all common architectures, so your GPU "
+                  "By default, GROMACS supports all architectures of compute "
+                  "capability >= 3.0, so your GPU "
                   "might be rare, or some architectures were disabled in the build. "
                   "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
                   "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture.",
@@ -96,16 +97,6 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
     }
 
     CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
-
-    if (devInfo->prop.major >= 3 && attributes.ptxVersion < 30)
-    {
-        gmx_fatal(FARGS,
-                  "The GPU device code was compiled at runtime from 2.0 source which is "
-                  "not compatible with the selected GPU (device ID #%d, compute capability %d.%d). "
-                  "Pass the appropriate target in GMX_CUDA_TARGET_SM or a >=30 value to GMX_CUDA_TARGET_COMPUTE.",
-                  devInfo->id,
-                  devInfo->prop.major, devInfo->prop.minor);
-    }
 }
 
 bool isHostMemoryPinned(const void *h_ptr)
@@ -311,7 +302,7 @@ gmx_device_info_t *getDeviceInfo(const gmx_gpu_info_t &gpu_info,
  */
 static bool is_gmx_supported_gpu(const cudaDeviceProp *dev_prop)
 {
-    return (dev_prop->major >= 2);
+    return (dev_prop->major >= 3);
 }
 
 /*! \brief Checks if a GPU with a given ID is supported by the native GROMACS acceleration.

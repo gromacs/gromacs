@@ -818,17 +818,16 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
      * TODO: decide if dev_info parameter should be added to recognize NVIDIA CC>=3.0 devices.
      *
      */
-    //if ((dev_info->prop.major >= 3 || bForceAnalyticalEwald) && !bForceTabulatedEwald)
-    if (!bForceTabulatedEwald)
+    /* By default use analytical Ewald. */
+    bUseAnalyticalEwald = true;
+    if (bForceAnalyticalEwald)
     {
-        bUseAnalyticalEwald = true;
-
         if (debug)
         {
             fprintf(debug, "Using analytical Ewald OpenCL kernels\n");
         }
     }
-    else
+    else if (bForceTabulatedEwald)
     {
         bUseAnalyticalEwald = false;
 
