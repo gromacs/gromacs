@@ -182,7 +182,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_x2top, "x2top",
                    "Generate a primitive topology from coordinates");
 
-    registerModuleNoNice(manager, &gmx_mdrun, "mdrun",
+    registerModuleNoNice(manager, &gmx::gmx_mdrun, "mdrun",
                          "Perform a simulation, do a normal mode analysis or an energy minimization");
 
     gmx::ICommandLineOptionsModule::registerModuleFactory(

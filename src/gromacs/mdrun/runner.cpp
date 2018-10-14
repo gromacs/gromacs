@@ -96,6 +96,7 @@
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/stophandler.h"
+#include "gromacs/mdrun/legacyoptions.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
 #include "gromacs/mdrun/simulationcontext.h"
@@ -437,7 +438,7 @@ int Mdrunner::mdrunner()
     t_inputrec                     *inputrec = &inputrecInstance;
     gmx_mtop_t                      mtop;
 
-    bool doMembed = opt2bSet("-membed", filenames().size(), filenames().data());
+    bool doMembed = opt2bSet("-membed", filenames.size(), filenames.data());
     bool doRerun  = mdrunOptions.rerun;
 
     // Handle task-assignment related user options.
@@ -550,7 +551,7 @@ int Mdrunner::mdrunner()
         globalState = compat::make_unique<t_state>();
 
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPR, filenames().size(), filenames().data()), inputrec, globalState.get(), &mtop);
+        read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()), inputrec, globalState.get(), &mtop);
 
         /* In rerun, set velocities to zero if present */
         if (doRerun && ((globalState->flags & (1 << estV)) != 0))
@@ -834,7 +835,7 @@ int Mdrunner::mdrunner()
          */
         gmx_bool bReadEkin;
 
-        load_checkpoint(opt2fn_master("-cpi", filenames().size(), filenames().data(), cr),
+        load_checkpoint(opt2fn_master("-cpi", filenames.size(), filenames.data(), cr),
                         logFileHandle,
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
@@ -1177,7 +1178,7 @@ int Mdrunner::mdrunner()
         /* Note that membed cannot work in parallel because mtop is
          * changed here. Fix this if we ever want to make it run with
          * multiple ranks. */
-        membed = init_membed(fplog, filenames().size(), filenames().data(), &mtop, inputrec, globalState.get(), cr,
+        membed = init_membed(fplog, filenames.size(), filenames.data(), &mtop, inputrec, globalState.get(), cr,
                              &mdrunOptions
                                  .checkpointOptions.period);
     }
@@ -1193,9 +1194,9 @@ int Mdrunner::mdrunner()
         fr->forceProviders = mdModules->initForceProviders();
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
-                      opt2fn("-table", filenames().size(), filenames().data()),
-                      opt2fn("-tablep", filenames().size(), filenames().data()),
-                      opt2fns("-tableb", filenames().size(), filenames().data()),
+                      opt2fn("-table", filenames.size(), filenames.data()),
+                      opt2fn("-tablep", filenames.size(), filenames.data()),
+                      opt2fns("-tableb", filenames.size(), filenames.data()),
                       *hwinfo, nonbondedDeviceInfo,
                       FALSE,
                       pforce);
@@ -1334,7 +1335,7 @@ int Mdrunner::mdrunner()
             if (EI_DYNAMICS(inputrec->eI) && MASTER(cr))
             {
                 init_pull_output_files(inputrec->pull_work,
-                                       filenames().size(), filenames().data(), oenv,
+                                       filenames.size(), filenames.data(), oenv,
                                        continuationOptions);
             }
         }
@@ -1345,8 +1346,8 @@ int Mdrunner::mdrunner()
             /* Initialize enforced rotation code */
             enforcedRotation = init_rot(fplog,
                                         inputrec,
-                                        filenames().size(),
-                                        filenames().data(),
+                                        filenames.size(),
+                                        filenames.data(),
                                         cr,
                                         &atomSets,
                                         globalState.get(),
@@ -1358,7 +1359,7 @@ int Mdrunner::mdrunner()
         if (inputrec->eSwapCoords != eswapNO)
         {
             /* Initialize ion swapping code */
-            init_swapcoords(fplog, inputrec, opt2fn_master("-swap", filenames().size(), filenames().data(), cr),
+            init_swapcoords(fplog, inputrec, opt2fn_master("-swap", filenames.size(), filenames.data(), cr),
                             &mtop, globalState.get(), &observablesHistory,
                             cr, &atomSets, oenv, mdrunOptions);
         }
@@ -1366,7 +1367,7 @@ int Mdrunner::mdrunner()
         /* Let makeConstraints know whether we have essential dynamics constraints.
          * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
          */
-        bool doEssentialDynamics = (opt2fn_null("-ei", filenames().size(), filenames().data()) != nullptr
+        bool doEssentialDynamics = (opt2fn_null("-ei", filenames.size(), filenames.data()) != nullptr
                                     || observablesHistory.edsamHistory);
         auto constr              = makeConstraints(mtop, *inputrec, doEssentialDynamics,
                                                    fplog, *mdAtoms->mdatoms(),
@@ -1386,7 +1387,7 @@ int Mdrunner::mdrunner()
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to integrator.");
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
-            fplog, cr, ms, mdlog, static_cast<int>(filenames().size()), filenames().data(),
+            fplog, cr, ms, mdlog, static_cast<int>(filenames.size()), filenames.data(),
             oenv,
             mdrunOptions,
             vsite.get(), constr.get(),
@@ -1550,7 +1551,7 @@ class Mdrunner::BuilderImplementation
 
         void addHardwareOptions(const gmx_hw_opt_t &hardwareOptions);
 
-        void addFilenames(const MdFilenames &filenames);
+        void addFilenames(ArrayRef <const t_filenm> filenames);
 
         void addOutputEnvironment(gmx_output_env_t* outputEnvironment);
 
@@ -1598,7 +1599,7 @@ class Mdrunner::BuilderImplementation
         gmx_hw_opt_t hardwareOptions_;
 
         //! filename options for simulation.
-        std::unique_ptr<MdFilenames> filenames_ = nullptr;
+        ArrayRef<const t_filenm> filenames_;
 
         /*! \brief Handle to output environment.
          *
@@ -1676,15 +1677,7 @@ Mdrunner Mdrunner::BuilderImplementation::build()
 
     newRunner.replExParams    = replicaExchangeParameters_;
 
-    // \todo determine an invariant to checkout or establish that all MdFilenames objects are valid
-    if (filenames_)
-    {
-        newRunner.filenames = *filenames_;
-    }
-    else
-    {
-        GMX_THROW(gmx::APIError("MdrunnerBuilder::addFilenames() is required before build()"));
-    }
+    newRunner.filenames = filenames_;
 
     GMX_ASSERT(context_->communicationRecord_, "SimulationContext communications not initialized.");
     newRunner.cr = context_->communicationRecord_;
@@ -1763,9 +1756,9 @@ void Mdrunner::BuilderImplementation::addHardwareOptions(const gmx_hw_opt_t &har
     hardwareOptions_ = hardwareOptions;
 }
 
-void Mdrunner::BuilderImplementation::addFilenames(const MdFilenames &filenames)
+void Mdrunner::BuilderImplementation::addFilenames(ArrayRef<const t_filenm> filenames)
 {
-    filenames_ = compat::make_unique<MdFilenames>(filenames);
+    filenames_ = filenames;
 }
 
 void Mdrunner::BuilderImplementation::addOutputEnvironment(gmx_output_env_t* outputEnvironment)
@@ -1855,7 +1848,7 @@ MdrunnerBuilder &MdrunnerBuilder::addHardwareOptions(const gmx_hw_opt_t &hardwar
     return *this;
 }
 
-MdrunnerBuilder &MdrunnerBuilder::addFilenames(const MdFilenames &filenames)
+MdrunnerBuilder &MdrunnerBuilder::addFilenames(ArrayRef<const t_filenm> filenames)
 {
     impl_->addFilenames(filenames);
     return *this;

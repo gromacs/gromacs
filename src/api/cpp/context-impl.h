@@ -44,6 +44,8 @@
 #include <memory>
 #include <string>
 
+#include "gromacs/mdrun/mdfilenames.h"
+
 #include "gmxapi/context.h"
 #include "gmxapi/session.h"
 
@@ -138,6 +140,11 @@ class ContextImpl final : public std::enable_shared_from_this<ContextImpl>
          * evolves.
          */
         MDArgs                  mdArgs_;
+
+        /*!
+         * \brief Ensure lifetime of MD filenames options object exceeds that of session.
+         */
+        gmx::MdFilenames mdFilenames_;
 };
 
 }      // end namespace gmxapi

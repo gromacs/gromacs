@@ -50,7 +50,6 @@
 #include <memory>
 
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/mdrun/mdfilenames.h"
 
 struct t_filenm;
 struct t_commrec;
@@ -70,6 +69,9 @@ namespace gmx
  * The public interface of SimulationContext is not yet well-specified.
  * Client code can create an instance with gmx::createSimulationContext()
  *
+ * \todo This class should also handle aspects of simulation
+ * environment such as working directory and environment variables.
+ *
  * \ingroup module_mdrun
  * \inlibraryapi
  *
@@ -78,7 +80,7 @@ namespace gmx
  * Interfaces for different API levels are not yet final, but also depend on
  * additional development of t_commrec and other resources.
  * \todo Impose sensible access restrictions.
- * Either the Context should be passed to the Runner as logically constant or
+ * Either the SimulationContext should be passed to the Mdrunner as logically constant or
  * a separate handle class can provide access to resources that have been
  * allocated by (negotiated with) the client for the current simulation
  * (or simulation segment).
@@ -142,8 +144,6 @@ class SimulationContext final
  * values or newer initialization interfaces.
  *
  * \param simulationCommunicator Handle to communication data structure.
- *
- * \todo move filenames to separate builder method.
  *
  * \ingroup module_mdrun
  */
