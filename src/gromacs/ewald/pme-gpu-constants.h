@@ -173,8 +173,8 @@ constexpr int c_solveMaxThreadsPerBlock = (c_solveMaxWarpsPerBlock * warp_size);
 
 //! Gathering max block size in threads
 constexpr int c_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock * warp_size;
-//! Gathering min blocks per CUDA multiprocessor - for CC2.x, we just take the CUDA limit of 8 to avoid the warning
-constexpr int c_gatherMinBlocksPerMP = (GMX_PTX_ARCH < 300) ? GMX_CUDA_MAX_BLOCKS_PER_MP : (GMX_CUDA_MAX_THREADS_PER_MP / c_gatherMaxThreadsPerBlock);
+//! Gathering min blocks per CUDA multiprocessor
+constexpr int c_gatherMinBlocksPerMP = GMX_CUDA_MAX_THREADS_PER_MP / c_gatherMaxThreadsPerBlock;
 
 #endif // GMX_GPU == GMX_GPU_CUDA
 

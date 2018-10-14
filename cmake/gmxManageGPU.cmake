@@ -107,7 +107,7 @@ Compute capability information not available, consult the NVIDIA website:
 https://developer.nvidia.com/cuda-gpus")
     endif()
 
-        set(CUDA_NOTFOUND_MESSAGE "mdrun supports native GPU acceleration on NVIDIA hardware with compute capability >= ${REQUIRED_CUDA_COMPUTE_CAPABILITY} (Fermi or later). This requires the NVIDIA CUDA toolkit, which was not found. Its location can be hinted by setting the CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable). The typical location would be /usr/local/cuda[-version]. Note that CPU or GPU acceleration can be selected at runtime.
+        set(CUDA_NOTFOUND_MESSAGE "mdrun supports native GPU acceleration on NVIDIA hardware with compute capability >= ${REQUIRED_CUDA_COMPUTE_CAPABILITY} (Kepler or later). This requires the NVIDIA CUDA toolkit, which was not found. Its location can be hinted by setting the CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable). The typical location would be /usr/local/cuda[-version]. Note that CPU or GPU acceleration can be selected at runtime.
 
 ${_msg}")
         unset(_msg)

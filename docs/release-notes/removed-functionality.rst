@@ -10,6 +10,13 @@ useful when root permissions were available to the user. It may become less usef
 as GROMACS evolves, complicated the GROMACS code, and wasn't regularly tested or maintained.
 It might return if some of these conditions change.
 
+Support for CUDA compute capability 2.x removed
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The Fermi-era GPUs (cira 2010) are no longer in widespread use, are
+not tested in Jenkins, complicated the code, and are no longer
+supported. It is possible that they can still be used with the OpenCL
+build of |Gromacs|.
+
 Contrib directory removed
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 This code had not been maintained in years, so likely didn't work, and
