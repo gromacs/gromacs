@@ -788,6 +788,9 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
         }
     }
 
+    cl_error = clEnqueueMarkerWithWaitList(stream, 0, nullptr, &nb->nbTaskDone[iloc]);
+    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
+
     if (bDoTime)
     {
         t->nb_d2h[iloc].closeTimingRegion(stream);
@@ -850,4 +853,14 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
     }
 
     return kernel_type;
+}
+
+static inline bool nbnxn_gpu_check_completion(gmx_nbnxn_ocl_t *nb,
+                                              int              iLocality)
+{
+    cl_int result, clError;
+    clError = clGetEventInfo(nb->nbTaskDone[iLocality], CL_EVENT_COMMAND_EXECUTION_STATUS,
+                             sizeof(cl_int), &result, nullptr);
+    GMX_ASSERT(CL_SUCCESS == clError, ("clGetEventInfo failed: " + ocl_get_error_string(clError)).c_str());
+    return (result == CL_COMPLETE);
 }

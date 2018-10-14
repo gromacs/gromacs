@@ -260,6 +260,7 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
     pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid));
+    pme_gpu_mark_task_done(pme->gpu);
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
@@ -303,9 +304,7 @@ bool pme_gpu_try_finish_task(const gmx_pme_t                *pme,
 
     wallcycle_start_nocount(wcycle, ewcWAIT_GPU_PME_GATHER);
 
-    constexpr bool c_streamQuerySupported = (GMX_GPU == GMX_GPU_CUDA);
-    // TODO: implement c_streamQuerySupported with an additional GpuEventSynchronizer per stream (#2521)
-    if ((completionKind == GpuTaskCompletion::Check) && c_streamQuerySupported)
+    if (completionKind == GpuTaskCompletion::Check)
     {
         // Query the PME stream for completion of all tasks enqueued and
         // if we're not done, stop the timer before early return.

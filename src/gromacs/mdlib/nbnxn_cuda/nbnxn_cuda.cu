@@ -695,3 +695,9 @@ void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)
         }
     }
 }
+
+static inline bool nbnxn_gpu_check_completion(gmx_nbnxn_ocl_t *nb,
+                                              int              iLocality)
+{
+    return haveStreamTasksCompleted(nb->stream[iLocality]);
+}

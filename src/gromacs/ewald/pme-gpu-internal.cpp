@@ -116,6 +116,10 @@ int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGpu)
 void pme_gpu_synchronize(const PmeGpu *pmeGpu)
 {
     gpuStreamSynchronize(pmeGpu->archSpecific->pmeStream);
+    // when blocking-waiting for the GPU clear the completion event
+    // used for polling
+    bool result = pmeGpu->archSpecific->pmeTaskComplete.hasEventTriggered();
+    GMX_ASSERT(result == true, "After gpuStreamSynchronize hasEventTriggered should return true");
 }
 
 void pme_gpu_alloc_energy_virial(PmeGpu *pmeGpu)
@@ -426,7 +430,7 @@ void pme_gpu_free_fract_shifts(const PmeGpu *pmeGpu)
 
 bool pme_gpu_stream_query(const PmeGpu *pmeGpu)
 {
-    return haveStreamTasksCompleted(pmeGpu->archSpecific->pmeStream);
+    return pmeGpu->archSpecific->pmeTaskComplete.hasEventTriggered();
 }
 
 void pme_gpu_copy_input_gather_grid(const PmeGpu *pmeGpu, float *h_grid)
@@ -491,6 +495,11 @@ void pme_gpu_copy_input_gather_atom_data(const PmeGpu *pmeGpu)
 void pme_gpu_sync_spread_grid(const PmeGpu *pmeGpu)
 {
     pmeGpu->archSpecific->syncSpreadGridD2H.waitForEvent();
+}
+
+void pme_gpu_mark_task_done(const PmeGpu *pmeGpu)
+{
+    pmeGpu->archSpecific->pmeTaskComplete.markEvent(pmeGpu->archSpecific->pmeStream);
 }
 
 void pme_gpu_init_internal(PmeGpu *pmeGpu)

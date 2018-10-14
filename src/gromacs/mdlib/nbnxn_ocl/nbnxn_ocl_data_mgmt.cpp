@@ -1089,6 +1089,16 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
         clReleaseEvent(nb->misc_ops_and_local_H2D_done);
         nb->misc_ops_and_local_H2D_done = nullptr;
     }
+    if (nb->nbTaskDone[eintLocal])
+    {
+        clReleaseEvent(nb->nbTaskDone[eintLocal]);
+        nb->nbTaskDone[eintLocal] = nullptr;
+    }
+    if (nb->nbTaskDone[eintNonlocal])
+    {
+        clReleaseEvent(nb->nbTaskDone[eintNonlocal]);
+        nb->nbTaskDone[eintNonlocal] = nullptr;
+    }
 
     free_gpu_device_runtime_data(nb->dev_rundata);
     sfree(nb->dev_rundata);

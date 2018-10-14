@@ -300,6 +300,8 @@ static inline void nbnxn_gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timin
     }
 }
 
+static inline bool nbnxn_gpu_check_completion(gmx_nbnxn_ocl_t *, int);
+
 //TODO: move into shared source file with gmx_compile_cpp_as_cuda
 //NOLINTNEXTLINE(misc-definitions-in-headers)
 bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
@@ -320,7 +322,7 @@ bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
         // Query the state of the GPU stream and return early if we're not done
         if (completionKind == GpuTaskCompletion::Check)
         {
-            if (!haveStreamTasksCompleted(nb->stream[iLocality]))
+            if (!nbnxn_gpu_check_completion(nb, iLocality))
             {
                 // Early return to skip the steps below that we have to do only
                 // after the NB task completed

@@ -82,6 +82,9 @@ struct PmeGpuSpecific
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
     GpuEventSynchronizer syncSpreadGridD2H;
 
+    /*! \brief Triggered after the PME task is complete (including the transfoer of results). */
+    GpuEventSynchronizer pmeTaskComplete;
+
     /* Settings which are set at the start of the run */
     /*! \brief A boolean which tells whether the complex and real grids for cu/clFFT are different or same. Currenty true. */
     bool performOutOfPlaceFFT;

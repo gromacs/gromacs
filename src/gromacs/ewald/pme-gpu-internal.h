@@ -327,6 +327,13 @@ void pme_gpu_copy_input_gather_atom_data(const PmeGpu *pmeGpu);
 void pme_gpu_sync_spread_grid(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
+* Marks the PME tasks done; to be called after all tasks, including copies are launched.
+*
+* \param[in] pmeGpu  The PME GPU structure.
+*/
+void pme_gpu_mark_task_done(const PmeGpu *pmeGpu);
+
+/*! \libinternal \brief
  * Does the one-time GPU-framework specific PME initialization.
  * For CUDA, the PME stream is created with the highest priority.
  *

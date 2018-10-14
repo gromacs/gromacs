@@ -47,6 +47,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/gpu_utils/gpueventsynchronizer_ocl.h"
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/mdlib/nbnxn_gpu_types_common.h"
@@ -294,6 +295,8 @@ struct gmx_nbnxn_ocl_t
                                                    the local stream that need to precede the
                                                    non-local force calculations are done
                                                    (e.g. f buffer 0-ing, local x/q H2D) */
+    cl_event nbTaskDone[2];                     /**< event triggered when nonbonded tasks, both local- or non-local
+                                                   are done, including device copies */
 
     cl_bool                           bDoTime;  /**< True if event-based timing is enabled.                     */
     cl_timers_t                      *timers;   /**< OpenCL event-based timers.                                 */

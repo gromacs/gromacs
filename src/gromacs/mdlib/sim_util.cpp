@@ -964,6 +964,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
 
             if (isPmeGpuDone)
             {
+                fprintf(stderr, ">>> PME done\n");
                 pme_gpu_reduce_outputs(wcycle, forceWithVirial, pmeGpuForces,
                                        enerd, vir_Q, Vlr_q);
             }
@@ -987,6 +988,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
+                fprintf(stderr, ">>> NB done\n");
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
                                                nbv->nbat, as_rvec_array(force->data()), wcycle);
             }
@@ -1603,6 +1605,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
     if (alternateGpuWait)
     {
+        fprintf(stderr, "==========================> ALTERNATE <============================\n");
         alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, wcycle);
     }
 
