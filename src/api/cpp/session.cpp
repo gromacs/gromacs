@@ -39,6 +39,8 @@
 
 #include "gmxapi/session.h"
 
+#include <cassert>
+
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/sighandler.h"
@@ -336,7 +338,6 @@ gmxapi::SessionResources *SessionImpl::createResources(std::shared_ptr<gmxapi::M
         resources = resources_.at(name).get();
         // To do: This should be more dynamic.
         getSignalManager()->addSignaller(name);
-        std::shared_ptr<gmx::IRestraintPotential> restraint = nullptr;
         if (restraints_.find(name) != restraints_.end())
         {
             auto restraintRef = restraints_.at(name);
@@ -412,9 +413,13 @@ Status addSessionRestraint(Session                         * session,
 
     if (session != nullptr && restraint != nullptr)
     {
+        // \todo Improve the external / library API facets
+        // so the public API does not need to offer raw pointers.
         auto sessionImpl = session->getRaw();
 
         GMX_ASSERT(sessionImpl, "Session invariant implies valid implementation object handle.");
+        // GMX_ASSERT alone is not strong enough to convince linters not to warn of possible nullptr.
+        assert(sessionImpl);
         status = sessionImpl->addRestraint(std::move(restraint));
     }
     return status;
