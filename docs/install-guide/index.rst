@@ -752,6 +752,21 @@ simulation using MPI libraries (e.g. Cray).
   default to static linking, the required flags have to be specified. On
   Linux, this is usually ``CFLAGS=-static CXXFLAGS=-static``.
 
+gmxapi external API
+~~~~~~~~~~~~~~~~~~~
+
+For dynamic linking builds and on non-Windows platforms, an extra library and
+headers are installed by setting ``-DGMXAPI=ON`` (default).
+Build targets ``gmxapi_cppdocs`` and ``gmxapi_cppdocs_dev`` produce documentation in
+``docs/api-user`` and ``docs/api-dev``, respectively.
+For more project information and use cases,
+refer to the tracked :issue:`2585`,
+associated GitHub `gmxapi <https://github.com/kassonlab/gmxapi>`_ projects,
+or DOI `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bty484>`_.
+
+gmxapi is not yet tested on Windows or with static linking, but these use cases
+are targeted for future versions.
+
 Portability aspects
 ~~~~~~~~~~~~~~~~~~~
 

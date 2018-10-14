@@ -29,3 +29,31 @@ reference atom, which can sometimes move a lot during the simulation.
 With this option the PBC reference atom is only used at initialization.
 This can be of use when using large pull groups or groups with potentially
 large relative movement of atoms.
+
+Transitional external API headers and library
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Library access to |Gromacs| is transitioning to new infrastructure.
+gmxapi 0.0.7 provides abstractions for execution environment and simulation work,
+as well as development tools for extending MD simulation code without patching
+the |Gromacs| source.
+Client code may be built against a |Gromacs| installation.
+MD plugin code may apply externally calculated forces (see restraint module) or
+issue simulation stop signals through session resources available at run time
+to registered plugins.
+For more project information and use cases,
+refer to the tracked :issue:`2585` and to
+DOI `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bty484>`_.
+For a few examples of building on and extending |Gromacs|, refer to the
+`Python package <https://github.com/kassonlab/gmxapi>`_ and sample
+`restraint plugin <https://github.com/kassonlab/sample_restraint>`_ repository.
+
+Restraint module for gmxapi MD extension code
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Provides functionality that was previously accessed by modifying the "pull" code in the
+|Gromacs| source.
+Client software may be built against an unmodified |Gromacs| installation.
+Separately compiled MD extensions can be registered with the new Restraint
+functionality at run time using simulation client code built with the new ``gmxapi`` tools.
+(See above.)

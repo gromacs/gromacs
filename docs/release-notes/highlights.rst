@@ -15,7 +15,4 @@ your simulations and hardware. They are:
 
 There are some new features available also:
 
-* Cool thing
-* Boring thing
-* Automated citation bot
-* Add your Spotify playlists to GROMACS quotes
+* |Gromacs| external API beta: gmxapi 0.0.7
