@@ -64,6 +64,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdrun/legacyoptions.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
 #include "gromacs/mdrun/replicaexchange.h"
@@ -71,11 +72,15 @@
 #include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "mdrun_main.h"
+
+namespace gmx
+{
 
 /*! \brief Return whether the command-line parameter that
  *  will trigger a multi-simulation is set */
@@ -91,11 +96,14 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
     return false;
 }
 
+//! Helper function.
+static int launchMdrun(LegacyOptions                       &&options,
+                       compat::not_null<SimulationContext *> context);
+
 //! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
 {
-    using namespace gmx;
-    const char   *desc[] = {
+    std::vector<const char *>desc = {
         "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
         "but it can also perform Stochastic Dynamics, Energy Minimization,",
@@ -241,159 +249,43 @@ int gmx_mdrun(int argc, char *argv[])
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
 
-    // Ongoing collection of mdrun options
-    MdrunOptions                     mdrunOptions;
-    // Options for the domain decomposition.
-    DomdecOptions                    domdecOptions;
-    // Parallelism-related user options.
-    gmx_hw_opt_t                     hw_opt;
-    // Command-line override for the duration of a neighbor list with the Verlet scheme.
-    int                              nstlist_cmdline = 0;
-    // Parameters for replica-exchange simulations.
-    ReplicaExchangeParameters        replExParams;
-
-    // Filenames and properties from command-line argument values.
-    auto filenames = gmx::MdFilenames();
-
-    // Print a warning if any force is larger than this (in kJ/mol nm).
-    real                             pforce = -1;
-
-    // Output context for writing text files
-    // \todo Clarify initialization, ownership, and lifetime.
-    gmx_output_env_t                *oenv = nullptr;
-
-    /* Command line options */
-    rvec              realddxyz                                               = {0, 0, 0};
-    const char       *ddrank_opt_choices[static_cast<int>(DdRankOrder::nr)+1] =
-    { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
-    const char       *dddlb_opt_choices[static_cast<int>(DlbOption::nr)+1] =
-    { nullptr, "auto", "no", "yes", nullptr };
-    const char       *thread_aff_opt_choices[threadaffNR+1] =
-    { nullptr, "auto", "on", "off", nullptr };
-    const char       *nbpu_opt_choices[] =
-    { nullptr, "auto", "cpu", "gpu", nullptr };
-    const char       *pme_opt_choices[] =
-    { nullptr, "auto", "cpu", "gpu", nullptr };
-    const char       *pme_fft_opt_choices[] =
-    { nullptr, "auto", "cpu", "gpu", nullptr };
-    gmx_bool          bTryToAppendFiles     = TRUE;
-    const char       *gpuIdsAvailable       = "";
-    const char       *userGpuTaskAssignment = "";
-
-    ImdOptions       &imdOptions = mdrunOptions.imdOptions;
-
-    t_pargs           pa[] = {
-
-        { "-dd",      FALSE, etRVEC, {&realddxyz},
-          "Domain decomposition grid, 0 is optimize" },
-        { "-ddorder", FALSE, etENUM, {ddrank_opt_choices},
-          "DD rank order" },
-        { "-npme",    FALSE, etINT, {&domdecOptions.numPmeRanks},
-          "Number of separate ranks to be used for PME, -1 is guess" },
-        { "-nt",      FALSE, etINT, {&hw_opt.nthreads_tot},
-          "Total number of threads to start (0 is guess)" },
-        { "-ntmpi",   FALSE, etINT, {&hw_opt.nthreads_tmpi},
-          "Number of thread-MPI ranks to start (0 is guess)" },
-        { "-ntomp",   FALSE, etINT, {&hw_opt.nthreads_omp},
-          "Number of OpenMP threads per MPI rank to start (0 is guess)" },
-        { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
-          "Number of OpenMP threads per MPI rank to start (0 is -ntomp)" },
-        { "-pin",     FALSE, etENUM, {thread_aff_opt_choices},
-          "Whether mdrun should try to set thread affinities" },
-        { "-pinoffset", FALSE, etINT, {&hw_opt.core_pinning_offset},
-          "The lowest logical core number to which mdrun should pin the first thread" },
-        { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
-          "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
-        { "-gpu_id",  FALSE, etSTR, {&gpuIdsAvailable},
-          "List of unique GPU device IDs available to use" },
-        { "-gputasks",  FALSE, etSTR, {&userGpuTaskAssignment},
-          "List of GPU device IDs, mapping each PP task on each node to a device" },
-        { "-ddcheck", FALSE, etBOOL, {&domdecOptions.checkBondedInteractions},
-          "Check for all bonded interactions with DD" },
-        { "-ddbondcomm", FALSE, etBOOL, {&domdecOptions.useBondedCommunication},
-          "HIDDENUse special bonded atom communication when [TT]-rdd[tt] > cut-off" },
-        { "-rdd",     FALSE, etREAL, {&domdecOptions.minimumCommunicationRange},
-          "The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
-        { "-rcon",    FALSE, etREAL, {&domdecOptions.constraintCommunicationRange},
-          "Maximum distance for P-LINCS (nm), 0 is estimate" },
-        { "-dlb",     FALSE, etENUM, {dddlb_opt_choices},
-          "Dynamic load balancing (with DD)" },
-        { "-dds",     FALSE, etREAL, {&domdecOptions.dlbScaling},
-          "Fraction in (0,1) by whose reciprocal the initial DD cell size will be increased in order to "
-          "provide a margin in which dynamic load balancing can act while preserving the minimum cell size." },
-        { "-ddcsx",   FALSE, etSTR, {&domdecOptions.cellSizeX},
-          "HIDDENA string containing a vector of the relative sizes in the x "
-          "direction of the corresponding DD cells. Only effective with static "
-          "load balancing." },
-        { "-ddcsy",   FALSE, etSTR, {&domdecOptions.cellSizeY},
-          "HIDDENA string containing a vector of the relative sizes in the y "
-          "direction of the corresponding DD cells. Only effective with static "
-          "load balancing." },
-        { "-ddcsz",   FALSE, etSTR, {&domdecOptions.cellSizeZ},
-          "HIDDENA string containing a vector of the relative sizes in the z "
-          "direction of the corresponding DD cells. Only effective with static "
-          "load balancing." },
-        { "-gcom",    FALSE, etINT, {&mdrunOptions.globalCommunicationInterval},
-          "Global communication frequency (deprecated)" },
-        { "-nb",      FALSE, etENUM, {nbpu_opt_choices},
-          "Calculate non-bonded interactions on" },
-        { "-nstlist", FALSE, etINT, {&nstlist_cmdline},
-          "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
-        { "-tunepme", FALSE, etBOOL, {&mdrunOptions.tunePme},
-          "Optimize PME load between PP/PME ranks or GPU/CPU (only with the Verlet cut-off scheme)" },
-        { "-pme",     FALSE, etENUM, {pme_opt_choices},
-          "Perform PME calculations on" },
-        { "-pmefft", FALSE, etENUM, {pme_fft_opt_choices},
-          "Perform PME FFT calculations on" },
-        { "-v",       FALSE, etBOOL, {&mdrunOptions.verbose},
-          "Be loud and noisy" },
-        { "-pforce",  FALSE, etREAL, {&pforce},
-          "Print all forces larger than this (kJ/mol nm)" },
-        { "-reprod",  FALSE, etBOOL, {&mdrunOptions.reproducible},
-          "Try to avoid optimizations that affect binary reproducibility" },
-        { "-cpt",     FALSE, etREAL, {&mdrunOptions.checkpointOptions.period},
-          "Checkpoint interval (minutes)" },
-        { "-cpnum",   FALSE, etBOOL, {&mdrunOptions.checkpointOptions.keepAndNumberCheckpointFiles},
-          "Keep and number checkpoint files" },
-        { "-append",  FALSE, etBOOL, {&bTryToAppendFiles},
-          "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
-        { "-nsteps",  FALSE, etINT64, {&mdrunOptions.numStepsCommandline},
-          "Run this number of steps, overrides .mdp file option (-1 means infinite, -2 means use mdp option, smaller is invalid) (deprecated)" },
-        { "-maxh",   FALSE, etREAL, {&mdrunOptions.maximumHoursToRun},
-          "Terminate after 0.99 times this time (hours)" },
-        { "-replex",  FALSE, etINT, {&replExParams.exchangeInterval},
-          "Attempt replica exchange periodically with this period (steps)" },
-        { "-nex",  FALSE, etINT, {&replExParams.numExchanges},
-          "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
-        { "-reseed",  FALSE, etINT, {&replExParams.randomSeed},
-          "Seed for replica exchange, -1 is generate a seed" },
-        { "-imdport",    FALSE, etINT, {&imdOptions.port},
-          "HIDDENIMD listening port" },
-        { "-imdwait",  FALSE, etBOOL, {&imdOptions.wait},
-          "HIDDENPause the simulation while no IMD client is connected" },
-        { "-imdterm",  FALSE, etBOOL, {&imdOptions.terminatable},
-          "HIDDENAllow termination of the simulation from IMD client" },
-        { "-imdpull",  FALSE, etBOOL, {&imdOptions.pull},
-          "HIDDENAllow pulling in the simulation from IMD client" },
-        { "-rerunvsite", FALSE, etBOOL, {&mdrunOptions.rerunConstructVsites},
-          "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
-        { "-confout", FALSE, etBOOL, {&mdrunOptions.writeConfout},
-          "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step (deprecated)" },
-        { "-stepout", FALSE, etINT, {&mdrunOptions.verboseStepPrintInterval},
-          "HIDDENFrequency of writing the remaining wall clock time for the run (deprecated)" },
-        { "-resetstep", FALSE, etINT, {&mdrunOptions.timingOptions.resetStep},
-          "HIDDENReset cycle counters after these many time steps (deprecated)" },
-        { "-resethway", FALSE, etBOOL, {&mdrunOptions.timingOptions.resetHalfway},
-          "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt] (deprecated)" }
-    };
-    int               rc;
+    LegacyOptions            options;
 
     // pointer-to-t_commrec is the de facto handle type for communications record.
-    // Complete shared / borrowed ownership requires a reference to this stack variable
-    // (or pointer-to-pointer-to-t_commrec) since borrowing code may update the pointer.
     // \todo Define the ownership and lifetime management semantics for a communication record, handle or value type.
-    t_commrec       * cr = init_commrec();
+    options.cr = init_commrec();
 
+    if (options.updateFromCommandLine(argc, argv, desc) == 0)
+    {
+        return 0;
+    }
+
+    if (MASTER(options.cr))
+    {
+        options.logFileGuard = openLogFile(ftp2fn(efLOG,
+                                                  options.filenames.size(),
+                                                  options.filenames.data()),
+                                           options.mdrunOptions.continuationOptions.appendFiles,
+                                           options.cr->nodeid,
+                                           options.cr->nnodes);
+    }
+
+    /* The SimulationContext is a resource owned by the client code.
+     * A more complete design should address handles to resources with appropriate
+     * lifetimes and invariants for the resources allocated to the client,
+     * to the current simulation and to scheduled tasks within the simulation.
+     *
+     * \todo Clarify Context lifetime-management requirements and reconcile with scoped ownership.
+     *
+     * \todo Take ownership of and responsibility for communications record (cr).
+     */
+    auto context = createSimulationContext(options.cr);
+
+    return launchMdrun(std::move(options), compat::not_null<SimulationContext *>(&context));
+}
+
+int LegacyOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<const char *> desc)
+{
     unsigned long     PCA_Flags = PCA_CAN_SET_DEFFNM;
     // With -multidir, the working directory still needs to be
     // changed, so we can't check for the existence of files during
@@ -405,8 +297,8 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
     if (!parse_common_args(&argc, argv, PCA_Flags,
-                           static_cast<int>(filenames().size()), filenames().data(), asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+                           static_cast<int>(filenames.size()), filenames.data(), asize(pa), pa,
+                           static_cast<int>(desc.size()), desc.data(), 0, nullptr, &oenv))
     {
         sfree(cr);
         return 0;
@@ -454,9 +346,9 @@ int gmx_mdrun(int argc, char *argv[])
     hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
 
     // now check for a multi-simulation
-    gmx::ArrayRef<const std::string> multidir = opt2fnsIfOptionSet("-multidir",
-                                                                   static_cast<int>(filenames().size()),
-                                                                   filenames().data());
+    ArrayRef<const std::string> multidir = opt2fnsIfOptionSet("-multidir",
+                                                              static_cast<int>(filenames.size()),
+                                                              filenames.data());
 
     if (replExParams.exchangeInterval != 0 && multidir.size() < 2)
     {
@@ -468,7 +360,7 @@ int gmx_mdrun(int argc, char *argv[])
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
 
-    gmx_multisim_t* ms = init_multisystem(MPI_COMM_WORLD, multidir);
+    ms = init_multisystem(MPI_COMM_WORLD, multidir);
 
     /* Prepare the intra-simulation communication */
     // TODO consolidate this with init_commrec, after changing the
@@ -485,7 +377,7 @@ int gmx_mdrun(int argc, char *argv[])
 #endif
 
     if (!opt2bSet("-cpi",
-                  static_cast<int>(filenames().size()), filenames().data()))
+                  static_cast<int>(filenames.size()), filenames.data()))
     {
         // If we are not starting from a checkpoint we never allow files to be appended
         // to, since that has caused a ton of strange behaviour and bugs in the past.
@@ -506,26 +398,15 @@ int gmx_mdrun(int argc, char *argv[])
     continuationOptions.appendFilesOptionSet = opt2parg_bSet("-append", asize(pa), pa);
 
     handleRestart(cr, ms, bTryToAppendFiles,
-                  static_cast<int>(filenames().size()),
-                  filenames().data(),
+                  static_cast<int>(filenames.size()),
+                  filenames.data(),
                   &continuationOptions.appendFiles,
                   &continuationOptions.startedFromCheckpoint);
 
     mdrunOptions.rerun            = opt2bSet("-rerun",
-                                             static_cast<int>(filenames().size()),
-                                             filenames().data());
+                                             static_cast<int>(filenames.size()),
+                                             filenames.data());
     mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
-
-    LogFilePtr logFileGuard(nullptr);
-    if (MASTER(cr))
-    {
-        logFileGuard = openLogFile(ftp2fn(efLOG,
-                                          filenames().size(),
-                                          filenames().data()),
-                                   continuationOptions.appendFiles,
-                                   cr->nodeid,
-                                   cr->nnodes);
-    }
 
     domdecOptions.rankOrder    = static_cast<DdRankOrder>(nenum(ddrank_opt_choices));
     domdecOptions.dlbOption    = static_cast<DlbOption>(nenum(dddlb_opt_choices));
@@ -533,48 +414,12 @@ int gmx_mdrun(int argc, char *argv[])
     domdecOptions.numCells[YY] = roundToInt(realddxyz[YY]);
     domdecOptions.numCells[ZZ] = roundToInt(realddxyz[ZZ]);
 
-    if (logFileGuard != nullptr && !mdrunOptions.continuationOptions.appendFiles)
-    {
-        FILE *fplog = gmx_fio_getfp(logFileGuard.get());
-        if (opt2parg_bSet("-gcom", asize(pa), pa))
-        {
-            fprintf(fplog, "Note that gmx mdrun -gcom is deprecated, and will be removed\n"
-                    "in a future version of GROMACS.\n\n");
-        }
-        if (opt2bSet("-table", filenames().size(), filenames().data()) ||
-            opt2bSet("-tablep", filenames().size(), filenames().data()) ||
-            opt2bSet("-tableb", filenames().size(), filenames().data()))
-        {
-            fprintf(fplog, "Note that gmx mdrun -table options are deprecated. Table reading\n"
-                    "will likely be supported by grompp in a future version of GROMACS.\n\n");
-        }
-        if (opt2parg_bSet("-confout", asize(pa), pa) ||
-            opt2parg_bSet("-resetstep", asize(pa), pa) ||
-            opt2parg_bSet("-resethway", asize(pa), pa))
-        {
-            fprintf(fplog, "Note that gmx mdrun options intended for benchmarking, including\n"
-                    "-confout, -resetstep, and -resethway are deprecated. They will\n"
-                    "likely be supported by gmx benchmark in a future version of GROMACS.\n\n");
-        }
-        if (opt2parg_bSet("-nsteps", asize(pa), pa))
-        {
-            fprintf(fplog, "Note that gmx mdrun -nsteps is deprecated. Use gmx convert-tpr\n"
-                    "or gmx grompp to change the intended number of steps for your\n"
-                    "simulation.\n\n");
-        }
-    }
+    return 1;
+}
 
-    /* The Context is a shared resource owned by the client code.
-     * A more complete design should address handles to resources with appropriate
-     * lifetimes and invariants for the resources allocated to the client,
-     * to the current simulation and to scheduled tasks within the simulation.
-     *
-     * \todo Clarify Context lifetime-management requirements and reconcile with scoped ownership.
-     *
-     * \todo Take ownership of and responsibility for communications record (cr).
-     */
-    auto context = gmx::createSimulationContext(cr);
-
+int launchMdrun(LegacyOptions                       &&options,
+                compat::not_null<SimulationContext *> context)
+{
     /* The named components for the builder exposed here are descriptive of the
      * state of mdrun at implementation and are not intended to be prescriptive
      * of future design. (Note the ICommandLineOptions... framework used elsewhere.)
@@ -586,36 +431,40 @@ int gmx_mdrun(int argc, char *argv[])
      * We would prefer to rebuild resources only as necessary, but we defer such
      * details to future optimizations.
      */
-    auto builder = gmx::MdrunnerBuilder(compat::not_null<decltype( &context)>(&context));
-    builder.addSimulationMethod(mdrunOptions, pforce);
-    builder.addDomainDecomposition(domdecOptions);
+    auto builder = MdrunnerBuilder(context);
+    builder.addSimulationMethod(options.mdrunOptions, options.pforce);
+    builder.addDomainDecomposition(options.domdecOptions);
     // \todo pass by value
-    builder.addNonBonded(nbpu_opt_choices[0]);
+    builder.addNonBonded(options.nbpu_opt_choices[0]);
     // \todo pass by value
-    builder.addElectrostatics(pme_opt_choices[0], pme_fft_opt_choices[0]);
-    builder.addNeighborList(nstlist_cmdline);
-    builder.addReplicaExchange(replExParams);
+    builder.addElectrostatics(options.pme_opt_choices[0], options.pme_fft_opt_choices[0]);
+    builder.addNeighborList(options.nstlist_cmdline);
+    builder.addReplicaExchange(options.replExParams);
     // \todo take ownership of multisim resources (ms)
-    builder.addMultiSim(ms);
+    builder.addMultiSim(options.ms);
     // \todo Provide parallelism resources through SimulationContext.
     // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
-    builder.addHardwareOptions(hw_opt);
+    builder.addHardwareOptions(options.hw_opt);
     // \todo File names are parameters that should be managed modularly through further factoring.
-    builder.addFilenames(filenames);
+    builder.addFilenames(options.filenames);
     // Note: The gmx_output_env_t life time is not managed after the call to parse_common_args.
     // \todo Implement lifetime management for gmx_output_env_t.
     // \todo Output environment should be configured outside of Mdrunner and provided as a resource.
-    builder.addOutputEnvironment(oenv);
-    builder.addLogFile(logFileGuard.get());
+    builder.addOutputEnvironment(options.oenv);
+    builder.addLogFile(options.logFileGuard.get());
 
     auto runner = builder.build();
 
-    rc = runner.mdrunner();
+    return runner.mdrunner();
+}
 
+LegacyOptions::~LegacyOptions()
+{
     if (GMX_LIB_MPI)
     {
         done_commrec(cr);
     }
     done_multisim(ms);
-    return rc;
+}
+
 }
