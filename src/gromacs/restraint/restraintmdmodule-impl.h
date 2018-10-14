@@ -86,7 +86,7 @@ class Site
         explicit Site(int globalIndex) :
             index_(globalIndex),
             r_(0, 0, 0)
-        {};
+        {}
 
         /*!
          * \brief Explicitly define copies.
@@ -115,7 +115,7 @@ class Site
          * \return global index provided at construction.
          *
          */
-        int index() const { return index_; };
+        int index() const { return index_; }
 
         /*!
          * \brief Get the position of this site at time t.
