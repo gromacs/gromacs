@@ -29,3 +29,39 @@ reference atom, which can sometimes move a lot during the simulation.
 With this option the PBC reference atom is only used at initialization.
 This can be of use when using large pull groups or groups with potentially
 large relative movement of atoms.
+
+Transitional external API headers and library
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Library access to |Gromacs| is transitioning to new infrastructure.
+gmxapi 0.0.7 provides abstractions for execution environment and simulation work,
+as well as development tools for extending MD simulation code without patching
+the |Gromacs| source.
+Client code may be built against a |Gromacs| installation (CMake support through
+`find_package(gmxapi)` after sourcing `GMXRC`).
+MD plugin code may apply externally calculated forces (see restraint module) or
+issue simulation stop signals through session resources available at run time
+to registered plugins.
+In supported environments,
+CMake build option `-DGMXAPI=ON` (default) causes headers to be
+installed in a `gmxapi` directory next to the previously available `gromacs`
+headers directory.
+Build targets `gmxapi_cppdocs` and `gmxapi_cppdocs_dev` produce documentation in
+`docs/api-user` and `docs/api-dev`, respectively.
+For more project information and use cases,
+refer to the `tracked issue <https://redmine.gromacs.org/issues/2585>`,
+associated `GitHub projects <https://github.com/kassonlab/gmxapi>`,
+or DOI `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bty484>`
+
+Restraint module
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Functionality that was previously accessed by modifying the "pull" code in the
+|Gromacs| source is available to client software developed against an
+unmodified |Gromacs| installation. Separately compiled MD extensions can be
+registered with the new Restraint functionality at run time using simulation
+client code built with the new `gmxapi` tools.
+For more project information and use cases,
+refer to the `tracked issue <https://redmine.gromacs.org/issues/2585>`,
+associated `GitHub projects <https://github.com/kassonlab/gmxapi>`,
+or DOI `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bty484>`
