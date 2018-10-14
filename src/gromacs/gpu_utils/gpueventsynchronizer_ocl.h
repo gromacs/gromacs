@@ -102,18 +102,38 @@ class GpuEventSynchronizer
             {
                 GMX_THROW(gmx::InternalError("Failed to synchronize on the GPU event: " + ocl_get_error_string(clError)));
             }
+            eventCleanup();
+        }
+        /*! \brief Checks whether the event has been triggered. */
+        inline bool hasEventTriggered()
+        {
+            cl_int result;
+            cl_int clError = clGetEventInfo(event_, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &result, nullptr);
+            if (CL_SUCCESS != clError)
+            {
+                GMX_THROW(gmx::InternalError("Failed to retrieve event info: " + ocl_get_error_string(clError)));
+            }
 
+            bool hasTriggered = (result == CL_COMPLETE);
+            if (hasTriggered)
+            {
+                eventCleanup();
+            }
+            return hasTriggered;
+        }
+
+    private:
+        void eventCleanup()
+        {
             // Reference count can't be checked after the event's released, it seems (segfault on NVIDIA).
             ensureReferenceCount(event_, 1);
-            clError = clReleaseEvent(event_);
+            cl_int clError = clReleaseEvent(event_);
             if (CL_SUCCESS != clError)
             {
                 GMX_THROW(gmx::InternalError("Failed to release the GPU event: " + ocl_get_error_string(clError)));
             }
             event_ = nullptr;
         }
-
-    private:
         cl_event event_;
 };
 

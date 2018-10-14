@@ -91,6 +91,16 @@ class GpuEventSynchronizer
             cudaError_t gmx_used_in_debug stat = cudaEventSynchronize(event_);
             GMX_ASSERT(stat == cudaSuccess, "cudaEventSynchronize failed");
         }
+        /*! \brief Checks whether the event has been triggered. */
+        inline void hasEventTriggered()
+        {
+            cudaError_t stat = cudaEventQuery(event_);
+            GMX_ASSERT((stat != cudaErrorInvalidValue) &&
+                       (stat != cudaErrorInvalidResourceHandle) &&
+                       (stat != cudaErrorLaunchFailure),
+                       "cudaEventQuery failed");
+            return (stat == cudaSuccess);
+        }
 
     private:
         cudaEvent_t event_;
