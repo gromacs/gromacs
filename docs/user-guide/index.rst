@@ -42,3 +42,4 @@ For background on algorithms and implementations, see the
    environment-variables
    floating-point
    deprecation-policy
+   security

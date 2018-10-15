@@ -371,6 +371,7 @@ if (SPHINX_FOUND)
         user-guide/mdrun-performance.rst
         user-guide/run-time-errors.rst
         user-guide/system-preparation.rst
+        user-guide/security.rst
         user-guide/terminology.rst
         )
 
