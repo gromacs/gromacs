@@ -98,17 +98,6 @@ enum {
 
 
 /*---------------- BONDED CUDA kernels--------------*/
-__global__ void
-reset_gpu_bonded_kernel(float *vtot)
-{
-    int a = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (a < F_NRE)
-    {
-        vtot[a] = 0.0f;
-    }
-}
-
 
 /* Harmonic */
 __device__
@@ -1324,15 +1313,7 @@ bonded_gpu_get_energies(t_forcerec *fr, const int flags,  gmx_enerdata_t *enerd)
    }
     cudaStreamSynchronize(*stream); // needed if we have no copies for bufferops sync
 
-    dim3 blocks  ((F_NRE + TPB_BONDED - 1)/TPB_BONDED, 1, 1);
-    dim3 threads (TPB_BONDED, 1, 1);
-
-    reset_gpu_bonded_kernel <<< blocks, threads, 0, *stream>>>
-    (gpuBondedLists->vtotDevice);
-
-    stat = cudaGetLastError();
-    CU_RET_ERR(stat, "reset bonded kernel failed");
-
+    clearDeviceBufferAsync(&gpuBondedLists->vtotDevice, 0, F_NRE, *stream);
 }
 
 

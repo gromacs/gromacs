@@ -73,8 +73,8 @@ struct GpuBondedLists
 
     t_iparams             *forceparamsDevice = nullptr;
     t_ilist                iListsDevice[F_NRE]; /**< Interaction lists on the device */
-    std::vector<real>      vtot;
-    real                  *vtotDevice   = nullptr;
+    std::vector<float>     vtot;
+    float                 *vtotDevice   = nullptr;
 
     void                  *stream;
 };
