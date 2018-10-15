@@ -209,9 +209,9 @@ static void check_viol(FILE *log,
         dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[label];
 
         snew(fshift, SHIFTS);
-        interaction_function[F_DISRES].ifunc(n, &forceatoms[i], forceparams,
-                                             x, f, fshift,
-                                             pbc, g, lam, &dvdl, nullptr, fcd, nullptr);
+        ta_disres(n, &forceatoms[i], forceparams,
+                  x, f, fshift,
+                  pbc, g, lam, &dvdl, nullptr, fcd, nullptr);
         sfree(fshift);
         viol = fcd->disres.sumviol;
 
