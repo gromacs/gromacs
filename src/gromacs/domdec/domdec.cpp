@@ -106,9 +106,11 @@
 #include "redistribute.h"
 #include "utility.h"
 
-static const char *edlbs_names[int(DlbState::nr)] = { "off", "auto", "locked", "on", "on" };
+#define DD_NLOAD_MAX 9
 
-/* The size per atom group of the cggl_flag buffer in gmx_domdec_comm_t */
+static const char *edlbs_names[int(DlbState::nr)] = { "off", "off", "off", "locked", "on", "on" };
+
+/* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
 
 /* The flags for the cggl_flag buffer in gmx_domdec_comm_t */
