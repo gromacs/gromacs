@@ -51,14 +51,13 @@ struct PbcAiuc
 template <bool returnShift>
 __forceinline__ __device__
 int pbcDxAiuc(const PbcAiuc &pbcAiuc,
-              const fvec     x1,
-              const fvec     x2,
+              const float4  &x1,
+              const float4  &x2,
               fvec           dx)
 {
-    for (int m = 0; m < DIM; m++)
-    {
-        dx[m] = x1[m] - x2[m];
-    }
+    dx[XX] = x1.x - x2.x;
+    dx[YY] = x1.y - x2.y;
+    dx[ZZ] = x1.z - x2.z;
 
     float shz  = rintf(dx[ZZ]*pbcAiuc.invBoxDiagZ);
     dx[XX]    -= shz*pbcAiuc.boxZX;
@@ -87,3 +86,4 @@ int pbcDxAiuc(const PbcAiuc &pbcAiuc,
         return 0;
     }
 }
+
