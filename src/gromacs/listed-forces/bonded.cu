@@ -1324,11 +1324,17 @@ bonded_gpu_get_energies(t_forcerec *fr, const int flags,  gmx_enerdata_t *enerd)
    }
     cudaStreamSynchronize(*stream); // needed if we have no copies for bufferops sync
 
-    dim3 blocks  ((F_NRE + TPB_BONDED - 1)/TPB_BONDED, 1, 1);
-    dim3 threads (TPB_BONDED, 1, 1);
+    KernelLaunchConfig config;
+    config.blockSize[0] = TPB_BONDED;
+    config.blockSize[1] = 1;
+    config.blockSize[2] = 1;
+    config.gridSize[0]  = (F_NRE + TPB_BONDED - 1)/TPB_BONDED;
+    config.gridSize[1]  = 1;
+    config.gridSize[2]  = 1;
+    config.stream       = *stream;
 
-    reset_gpu_bonded_kernel <<< blocks, threads, 0, *stream>>>
-    (gpuBondedLists->vtotDevice);
+    const auto kernelArgs = prepareGpuKernelArguments(reset_gpu_bonded_kernel, config, gpuBondedLists->vtotDevice);
+    launchGpuKernel(reset_gpu_bonded_kernel, config, nullptr, "reset_gpu_bonded_kernel", kernelArgs);
 
     stat = cudaGetLastError();
     CU_RET_ERR(stat, "reset bonded kernel failed");
