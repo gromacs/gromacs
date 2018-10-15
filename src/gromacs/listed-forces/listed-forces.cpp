@@ -48,6 +48,7 @@
 #include <cassert>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -74,6 +75,121 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "listed-internal.h"
+
+struct BondedInteractions
+{
+    BondedFunction function;
+    int            nrnbIndex;
+};
+
+/*! \brief Lookup table of bonded interaction functions
+ *
+ * This must have as many entries as interaction_function in ifunc.cpp */
+static std::array<BondedInteractions, F_NRE> s_bondedInteractionFunctions
+    = {
+    BondedInteractions {bonds, eNR_BONDS },                       // F_BONDS
+    BondedInteractions {g96bonds, eNR_BONDS },                    // F_G96BONDS
+    BondedInteractions {morse_bonds, eNR_MORSE },                 // F_MORSE
+    BondedInteractions {cubic_bonds, eNR_CUBICBONDS },            // F_CUBICBONDS
+    BondedInteractions {unimplemented, -1 },                      // F_CONNBONDS
+    BondedInteractions {bonds, eNR_BONDS },                       // F_HARMONIC
+    BondedInteractions {FENE_bonds, eNR_FENEBONDS },              // F_FENEBONDS
+    BondedInteractions {tab_bonds, eNR_TABBONDS },                // F_TABBONDS
+    BondedInteractions {tab_bonds, eNR_TABBONDS },                // F_TABBONDSNC
+    BondedInteractions {restraint_bonds, eNR_RESTRBONDS },        // F_RESTRBONDS
+    BondedInteractions {angles, eNR_ANGLES },                     // F_ANGLES
+    BondedInteractions {g96angles, eNR_ANGLES },                  // F_G96ANGLES
+    BondedInteractions {restrangles, eNR_ANGLES },                // F_RESTRANGLES
+    BondedInteractions {linear_angles, eNR_ANGLES },              // F_LINEAR_ANGLES
+    BondedInteractions {cross_bond_bond, eNR_CROSS_BOND_BOND },   // F_CROSS_BOND_BONDS
+    BondedInteractions {cross_bond_angle, eNR_CROSS_BOND_ANGLE }, // F_CROSS_BOND_ANGLES
+    BondedInteractions {urey_bradley, eNR_UREY_BRADLEY },         // F_UREY_BRADLEY
+    BondedInteractions {quartic_angles, eNR_QANGLES },            // F_QUARTIC_ANGLES
+    BondedInteractions {tab_angles, eNR_TABANGLES },              // F_TABANGLES
+    BondedInteractions {pdihs, eNR_PROPER },                      // F_PDIHS
+    BondedInteractions {rbdihs, eNR_RB },                         // F_RBDIHS
+    BondedInteractions {restrdihs, eNR_PROPER },                  // F_RESTRDIHS
+    BondedInteractions {cbtdihs, eNR_RB },                        // F_CBTDIHS
+    BondedInteractions {rbdihs, eNR_FOURDIH },                    // F_FOURDIHS
+    BondedInteractions {idihs, eNR_IMPROPER },                    // F_IDIHS
+    BondedInteractions {pdihs, eNR_IMPROPER },                    // F_PIDIHS
+    BondedInteractions {tab_dihs, eNR_TABDIHS },                  // F_TABDIHS
+    BondedInteractions {unimplemented, eNR_CMAP },                // F_CMAP
+    BondedInteractions {unimplemented, -1 },                      // F_GB12_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_GB13_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_GB14_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_GBPOL_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_NPSOLVATION_NOLONGERUSED
+    BondedInteractions {unimplemented, eNR_NB14 },                // F_LJ14
+    BondedInteractions {unimplemented, -1 },                      // F_COUL14
+    BondedInteractions {unimplemented, eNR_NB14 },                // F_LJC14_Q
+    BondedInteractions {unimplemented, eNR_NB14 },                // F_LJC_PAIRS_NB
+    BondedInteractions {unimplemented, -1 },                      // F_LJ
+    BondedInteractions {unimplemented, -1 },                      // F_BHAM
+    BondedInteractions {unimplemented, -1 },                      // F_LJ_LR_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_BHAM_LR_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_DISPCORR
+    BondedInteractions {unimplemented, -1 },                      // F_COUL_SR
+    BondedInteractions {unimplemented, -1 },                      // F_COUL_LR_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_RF_EXCL
+    BondedInteractions {unimplemented, -1 },                      // F_COUL_RECIP
+    BondedInteractions {unimplemented, -1 },                      // F_LJ_RECIP
+    BondedInteractions {unimplemented, -1 },                      // F_DPD
+    BondedInteractions {polarize, eNR_POLARIZE },                 // F_POLARIZATION
+    BondedInteractions {water_pol, eNR_WPOL },                    // F_WATER_POL
+    BondedInteractions {thole_pol, eNR_THOLE },                   // F_THOLE_POL
+    BondedInteractions {anharm_polarize, eNR_ANHARM_POL },        // F_ANHARM_POL
+    BondedInteractions {unimplemented, -1 },                      // F_POSRES
+    BondedInteractions {unimplemented, -1 },                      // F_FBPOSRES
+    BondedInteractions {ta_disres, eNR_DISRES },                  // F_DISRES
+    BondedInteractions {unimplemented, -1 },                      // F_DISRESVIOL
+    BondedInteractions {orires, eNR_ORIRES },                     // F_ORIRES
+    BondedInteractions {unimplemented, -1 },                      // F_ORIRESDEV
+    BondedInteractions {angres, eNR_ANGRES },                     // F_ANGRES
+    BondedInteractions {angresz, eNR_ANGRESZ },                   // F_ANGRESZ
+    BondedInteractions {dihres, eNR_DIHRES },                     // F_DIHRES
+    BondedInteractions {unimplemented, -1 },                      // F_DIHRESVIOL
+    BondedInteractions {unimplemented, -1 },                      // F_CONSTR
+    BondedInteractions {unimplemented, -1 },                      // F_CONSTRNC
+    BondedInteractions {unimplemented, -1 },                      // F_SETTLE
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE2
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE3
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE3FD
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE3FAD
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE3OUT
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE4FD
+    BondedInteractions {unimplemented, -1 },                      // F_VSITE4FDN
+    BondedInteractions {unimplemented, -1 },                      // F_VSITEN
+    BondedInteractions {unimplemented, -1 },                      // F_COM_PULL
+    BondedInteractions {unimplemented, -1 },                      // F_EQM
+    BondedInteractions {unimplemented, -1 },                      // F_EPOT
+    BondedInteractions {unimplemented, -1 },                      // F_EKIN
+    BondedInteractions {unimplemented, -1 },                      // F_ETOT
+    BondedInteractions {unimplemented, -1 },                      // F_ECONSERVED
+    BondedInteractions {unimplemented, -1 },                      // F_TEMP
+    BondedInteractions {unimplemented, -1 },                      // F_VTEMP_NOLONGERUSED
+    BondedInteractions {unimplemented, -1 },                      // F_PDISPCORR
+    BondedInteractions {unimplemented, -1 },                      // F_PRES
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_CONSTR
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL
+    BondedInteractions {unimplemented, -1 },                      // F_DKDL
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_COUL
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_VDW
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_BONDED
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_RESTRAINT
+    BondedInteractions {unimplemented, -1 },                      // F_DVDL_TEMPERATURE
+    };
+
+BondedFunction bondedFunction(int ftype)
+{
+    return s_bondedInteractionFunctions[ftype].function;
+}
+
+//! Getter for finding the flop count for an \c ftype interaction.
+static int nrnbIndex(int ftype)
+{
+    return s_bondedInteractionFunctions[ftype].nrnbIndex;
+}
 
 namespace
 {
@@ -375,11 +491,11 @@ calc_one_bond(int thread,
 #endif
         else
         {
-            v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
-                                                  idef->iparams,
-                                                  x, f, fshift,
-                                                  pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
-                                                  md, fcd, global_atom_index);
+            v = bondedFunction(ftype)(nbn, iatoms+nb0,
+                                      idef->iparams,
+                                      x, f, fshift,
+                                      pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
+                                      md, fcd, global_atom_index);
         }
     }
     else
@@ -395,7 +511,7 @@ calc_one_bond(int thread,
 
     if (thread == 0)
     {
-        inc_nrnb(nrnb, interaction_function[ftype].nrnb_ind, nbonds);
+        inc_nrnb(nrnb, nrnbIndex(ftype), nbonds);
     }
 
     return v;

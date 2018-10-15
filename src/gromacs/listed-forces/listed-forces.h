@@ -67,6 +67,7 @@
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_enerdata_t;
@@ -87,6 +88,18 @@ namespace gmx
 {
 class ForceWithVirial;
 }
+
+//! Type of CPU function to compute a bonded interaction.
+using BondedFunction = real(*)(int nbonds, const t_iatom iatoms[],
+                               const t_iparams iparams[],
+                               const rvec x[], rvec4 f[], rvec fshift[],
+                               const t_pbc *pbc, const t_graph *g,
+                               real lambda, real *dvdlambda,
+                               const t_mdatoms *md, t_fcdata *fcd,
+                               int *ddgatindex);
+
+//! Getter for finding a callable CPU function to compute an \c ftype interaction.
+BondedFunction bondedFunction(int ftype);
 
 /*! \brief Return whether this is an interaction that actually
  * calculates a potential and works on multiple atoms (not e.g. a
