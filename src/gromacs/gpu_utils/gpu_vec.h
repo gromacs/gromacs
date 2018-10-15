@@ -207,7 +207,7 @@ float cos_angle_gpu(const fvec a, const fvec b)
     int     m;
     float   aa, bb, ip, ipa, ipb, ipab;
 
-    ip = ipa = ipb = 0.0;
+    ip = ipa = ipb = 0.0f;
     for (m = 0; (m < DIM); m++)
     {
         aa   = a[m];
@@ -217,21 +217,21 @@ float cos_angle_gpu(const fvec a, const fvec b)
         ipb += bb*bb;
     }
     ipab = ipa*ipb;
-    if (ipab > 0)
+    if (ipab > 0.0f)
     {
         cosval = ip*rsqrt(ipab);
     }
     else
     {
-        cosval = 1;
+        cosval = 1.0f;
     }
-    if (cosval > 1.0)
+    if (cosval > 1.0f)
     {
-        return 1.0;
+        return 1.0f;
     }
-    if (cosval < -1.0)
+    if (cosval < -1.0f)
     {
-        return -1.0;
+        return -1.0f;
     }
 
     return cosval;

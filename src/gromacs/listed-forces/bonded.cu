@@ -97,17 +97,6 @@ enum {
 
 
 /*---------------- BONDED CUDA kernels--------------*/
-__global__ void
-reset_gpu_bonded_kernel(float *vtot)
-{
-    int a = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (a < F_NRE)
-    {
-        vtot[a] = 0.0f;
-    }
-}
-
 
 /* Harmonic */
 __device__
@@ -1021,17 +1010,14 @@ init_gpu_bonded(GpuBondedLists       *gpuBondedLists,
                 const gmx_ffparams_t &ffparams,
                 void                 *streamPtr)
 {
-    cudaError_t stat;
-
     gpuBondedLists->stream = streamPtr;
 
     cudaStream_t   *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
 
     allocateDeviceBuffer(&gpuBondedLists->forceparamsDevice, ffparams.numTypes(), nullptr);
-    stat = cudaMemcpyAsync(gpuBondedLists->forceparamsDevice, ffparams.iparams.data(), ffparams.numTypes()*sizeof(t_iparams),
-                           cudaMemcpyHostToDevice, *stream);
-    CU_RET_ERR(stat, "cudaMemcpyAsync failed");
-
+    copyToDeviceBuffer(&gpuBondedLists->forceparamsDevice, ffparams.iparams.data(),
+                       0, ffparams.numTypes(),
+                       *stream, GpuApiCallBehavior::Async, nullptr);
     gpuBondedLists->vtot.resize(F_NRE);
     allocateDeviceBuffer(&gpuBondedLists->vtotDevice, F_NRE, nullptr);
 }
@@ -1082,19 +1068,15 @@ launch_bonded_kernels(t_forcerec   *fr,
 
     int           nat1, nbonds;
 
-    float4       *xq    = static_cast<float4 *>(xqDevicePtr);
+    const float4 *xq    = static_cast<float4 *>(xqDevicePtr);
     fvec         *force = static_cast<fvec *>(forceDevicePtr);
-
-    cudaError_t   stat;
 
     PbcAiuc       pbcAiuc;
     setPbcAiuc(fr->bMolPBC ? ePBC2npbcdim(fr->ePBC) : 0, box, &pbcAiuc);
 
-    t_iparams      *forceparams_d    = gpuBondedLists->forceparamsDevice;
-    real           *vtot_d           = gpuBondedLists->vtotDevice;
+    const t_iparams *forceparams_d = gpuBondedLists->forceparamsDevice;
+    float           *vtot_d        = gpuBondedLists->vtotDevice;
 
-// launch kernels
-// reordered for better overlap
     dim3 blocks;
     dim3 threads (TPB_BONDED, 1, 1);
     for (int ftype : ftypesOnGpu)
@@ -1107,7 +1089,7 @@ launch_bonded_kernels(t_forcerec   *fr,
             nbonds          = iList.size()/nat1;
             blocks.x        = (nbonds+TPB_BONDED-1)/TPB_BONDED;
 
-            t_iatom *iatoms = gpuBondedLists->iListsDevice[ftype].iatoms;
+            const t_iatom *iatoms = gpuBondedLists->iListsDevice[ftype].iatoms;
 
             if (ftype == F_PDIHS || ftype == F_PIDIHS)
             {
@@ -1129,11 +1111,9 @@ launch_bonded_kernels(t_forcerec   *fr,
             nat1            = interaction_function[ftype].nratoms + 1;
             nbonds          = iList.size()/nat1;
             blocks.x        = (nbonds+TPB_BONDED-1)/TPB_BONDED;
-// in the main code they have a function pointer for this
-// so we need something like that for final version
-// note temp array here for output forces
 
-            t_iatom *iatoms = gpuBondedLists->iListsDevice[ftype].iatoms;
+            // TODO consider using a map to assign the fn pointers to ftypes
+            const t_iatom *iatoms = gpuBondedLists->iListsDevice[ftype].iatoms;
 
             if (ftype == F_BONDS)
             {
@@ -1182,6 +1162,27 @@ launch_bonded_kernels(t_forcerec   *fr,
 
             if (ftype == F_LJ14)
             {
+#if 0
+                // FIXME
+                KernelLaunchConfig config;
+                config.blockSize[0] = TPB_BONDED;
+                config.blockSize[1] = 1;
+                config.blockSize[2] = 1;
+                config.gridSize[0]  = (nbonds + TPB_BONDED - 1)/TPB_BONDED;
+                config.gridSize[1]  = 1;
+                config.gridSize[2]  = 1;
+                config.stream       = *stream;
+                auto kernelPtr      = pairs_gpu<calcEnerVir>;
+
+                const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
+                                                                  ftype, nbonds,
+                                                                  iatoms, forceparams_d,
+                                                                  xq, force, fshiftDevicePtr,
+                                                                  pbcAiuc,
+                                                                  fr->ic->epsfac*fr->fudgeQQ,
+                                                                  &vtot_d[F_LJ14], &vtot_d[F_COUL14]);
+                launchGpuKernel(kernelPtr, config, nullptr, "pairs_gpu<calcEnerVir>", kernelArgs);
+#else
                 pairs_gpu<calcEnerVir> <<< blocks, threads, 0, *stream>>>
                 (ftype, nbonds,
                  iatoms, forceparams_d,
@@ -1189,10 +1190,11 @@ launch_bonded_kernels(t_forcerec   *fr,
                  pbcAiuc,
                  fr->ic->epsfac*fr->fudgeQQ,
                  &vtot_d[F_LJ14], &vtot_d[F_COUL14]);
+#endif
             }
         }
     }
-    stat = cudaGetLastError();
+    cudaError_t stat = cudaGetLastError();
     CU_RET_ERR(stat, "kernels failed");
     return;
 }
@@ -1225,18 +1227,13 @@ bonded_gpu_get_energies(t_forcerec *fr,  gmx_enerdata_t *enerd)
         return;
     }
 
-    cudaStream_t      *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
-
-    cudaError_t        stat;
-
-    gmx_grppairener_t *grppener = &enerd->grpp;
-
-    // copy energies back
-    real *vtot = gpuBondedLists->vtot.data();
-    stat = cudaMemcpyAsync(vtot, gpuBondedLists->vtotDevice,
-                           F_NRE*sizeof(float), cudaMemcpyDeviceToHost, *stream);
-    cudaStreamSynchronize(*stream);
-    CU_RET_ERR(stat, "cudaMemcpy failed");
+    cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
+    float        *vtot = gpuBondedLists->vtot.data();
+    copyFromDeviceBuffer(vtot, &gpuBondedLists->vtotDevice,
+                         0, F_NRE,
+                         *stream, GpuApiCallBehavior::Async, nullptr);
+    cudaError_t stat = cudaStreamSynchronize(*stream);
+    CU_RET_ERR(stat, "D2H transfer failed");
 
     for (int ftype : ftypesOnGpu)
     {
@@ -1246,25 +1243,15 @@ bonded_gpu_get_energies(t_forcerec *fr,  gmx_enerdata_t *enerd)
         }
     }
 
-    cudaStreamSynchronize(*stream);
-
     // Note: We do not support energy groups here
+    gmx_grppairener_t *grppener = &enerd->grpp;
     GMX_RELEASE_ASSERT(grppener->nener == 1, "No energy group support for bondeds on the GPU");
     grppener->ener[egLJ14][0]   += vtot[F_LJ14];
     grppener->ener[egCOUL14][0] += vtot[F_COUL14];
-    cudaStreamSynchronize(*stream); // needed if we have no copies for bufferops sync
 
-    dim3 blocks  ((F_NRE + TPB_BONDED - 1)/TPB_BONDED, 1, 1);
-    dim3 threads (TPB_BONDED, 1, 1);
-
-    reset_gpu_bonded_kernel <<< blocks, threads, 0, *stream>>>
-    (gpuBondedLists->vtotDevice);
-
-    stat = cudaGetLastError();
-    CU_RET_ERR(stat, "reset bonded kernel failed");
-
+    // TODO: move this to the end of the step where the rest of the clearin happens
+    clearDeviceBufferAsync(&gpuBondedLists->vtotDevice, 0, F_NRE, *stream);
 }
-
 
 bool bonded_gpu_have_interactions(GpuBondedLists gmx_unused *gpuBondedLists)
 {
