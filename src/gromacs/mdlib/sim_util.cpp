@@ -1305,7 +1305,9 @@ static void do_force_cutsVERLET(FILE *fplog,
         // we can only launch the kernel after non-local coordinates have been received.
         if (ppForceWorkload->haveGpuBondedWork && !DOMAINDECOMP(cr))
         {
+            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_BONDED);
             fr->gpuBonded->launchKernels(fr, flags, box);
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
         }
 
         /* launch local nonbonded work on GPU */
@@ -1377,7 +1379,9 @@ static void do_force_cutsVERLET(FILE *fplog,
 
             if (ppForceWorkload->haveGpuBondedWork)
             {
+                wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
                 fr->gpuBonded->launchKernels(fr, flags, box);
+                wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
             }
 
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
@@ -1730,13 +1734,14 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
     {
-        // TODO The launch call could come earlier in the
-        // force-calculation sequence.
-        fr->gpuBonded->launchEnergyTransfer();
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
         fr->gpuBonded->accumulateEnergyTerms(enerd);
         // TODO The clearing call could come later in the
         // force-calculation sequence.
         fr->gpuBonded->clearEnergies();
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
+        wallcycle_sub_stop(wcycle, ewcLAUNCH_GPU);
     }
 
     if (DOMAINDECOMP(cr))
