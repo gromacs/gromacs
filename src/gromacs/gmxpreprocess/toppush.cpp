@@ -55,6 +55,7 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/arrayref.h"
@@ -2384,36 +2385,7 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
     }
 }
 
-void init_block2(t_block2 *b2, int natom)
-{
-    int i;
-
-    b2->nr = natom;
-    snew(b2->nra, b2->nr);
-    snew(b2->a, b2->nr);
-    for (i = 0; (i < b2->nr); i++)
-    {
-        b2->a[i] = nullptr;
-    }
-}
-
-void done_block2(t_block2 *b2)
-{
-    int i;
-
-    if (b2->nr)
-    {
-        for (i = 0; (i < b2->nr); i++)
-        {
-            sfree(b2->a[i]);
-        }
-        sfree(b2->a);
-        sfree(b2->nra);
-        b2->nr = 0;
-    }
-}
-
-void push_excl(char *line, t_block2 *b2, warninp_t wi)
+void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp_t wi)
 {
     int  i, j;
     int  n;
@@ -2458,88 +2430,6 @@ void push_excl(char *line, t_block2 *b2, warninp_t wi)
         }
     }
     while (n == 1);
-}
-
-void b_to_b2(t_blocka *b, t_block2 *b2)
-{
-    int     i;
-    int     j, a;
-
-    for (i = 0; (i < b->nr); i++)
-    {
-        for (j = b->index[i]; (j < b->index[i+1]); j++)
-        {
-            a = b->a[j];
-            srenew(b2->a[i], ++b2->nra[i]);
-            b2->a[i][b2->nra[i]-1] = a;
-        }
-    }
-}
-
-void b2_to_b(t_block2 *b2, t_blocka *b)
-{
-    int     i, nra;
-    int     j;
-
-    nra = 0;
-    for (i = 0; (i < b2->nr); i++)
-    {
-        b->index[i] = nra;
-        for (j = 0; (j < b2->nra[i]); j++)
-        {
-            b->a[nra+j] = b2->a[i][j];
-        }
-        nra += b2->nra[i];
-    }
-    /* terminate list */
-    b->index[i] = nra;
-}
-
-void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
-{
-    int     i, k;
-    int     j;
-    int     nra;
-
-    if (!b2->nr)
-    {
-        return;
-    }
-    else if (b2->nr != excl->nr)
-    {
-        auto message = gmx::formatString("DEATH HORROR: b2->nr = %d, while excl->nr = %d",
-                                         b2->nr, excl->nr);
-        warning_error_and_exit(wi, message, FARGS);
-    }
-
-    /* First copy all entries from excl to b2 */
-    b_to_b2(excl, b2);
-
-    /* Count and sort the exclusions */
-    nra = 0;
-    for (i = 0; (i < b2->nr); i++)
-    {
-        if (b2->nra[i] > 0)
-        {
-            /* remove double entries */
-            std::sort(b2->a[i], b2->a[i]+b2->nra[i]);
-            k = 1;
-            for (j = 1; (j < b2->nra[i]); j++)
-            {
-                if (b2->a[i][j] != b2->a[i][k-1])
-                {
-                    b2->a[i][k] = b2->a[i][j];
-                    k++;
-                }
-            }
-            b2->nra[i] = k;
-            nra       += b2->nra[i];
-        }
-    }
-    excl->nra = nra;
-    srenew(excl->a, excl->nra);
-
-    b2_to_b(b2, excl);
 }
 
 int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype_t at,

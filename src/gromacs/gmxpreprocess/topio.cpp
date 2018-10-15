@@ -68,6 +68,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
@@ -430,32 +431,32 @@ static char **read_topol(const char *infile, const char *outfile,
                          bool        usingFullRangeElectrostatics,
                          warninp_t       wi)
 {
-    FILE           *out;
-    int             i, sl, nb_funct;
-    char           *pline = nullptr, **title = nullptr;
-    char            line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
-    char            genpairs[32];
-    char           *dirstr, *dummy2;
-    int             nrcopies, nmol, nscan, ncombs, ncopy;
-    double          fLJ, fQQ, fPOW;
-    t_molinfo      *mi0   = nullptr;
-    DirStack       *DS;
-    directive       d, newd;
-    t_nbparam     **nbparam, **pair;
-    t_block2       *block2;
-    real            fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
-    bool            bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
-    double          qt = 0, qBt = 0; /* total charge */
-    t_bond_atomtype batype;
-    int             lastcg = -1;
-    int             dcatt  = -1, nmol_couple;
+    FILE                 *out;
+    int                   i, sl, nb_funct;
+    char                 *pline = nullptr, **title = nullptr;
+    char                  line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
+    char                  genpairs[32];
+    char                 *dirstr, *dummy2;
+    int                   nrcopies, nmol, nscan, ncombs, ncopy;
+    double                fLJ, fQQ, fPOW;
+    t_molinfo            *mi0   = nullptr;
+    DirStack             *DS;
+    directive             d, newd;
+    t_nbparam           **nbparam, **pair;
+    gmx::ExclusionBlocks *exclusionBlocks;
+    real                  fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
+    bool                  bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
+    double                qt = 0, qBt = 0; /* total charge */
+    t_bond_atomtype       batype;
+    int                   lastcg = -1;
+    int                   dcatt  = -1, nmol_couple;
     /* File handling variables */
-    int             status;
-    bool            done;
-    gmx_cpp_t       handle;
-    char           *tmp_line = nullptr;
-    char            warn_buf[STRLEN];
-    const char     *floating_point_arithmetic_tip =
+    int                   status;
+    bool                  done;
+    gmx_cpp_t             handle;
+    char                 *tmp_line = nullptr;
+    char                  warn_buf[STRLEN];
+    const char           *floating_point_arithmetic_tip =
         "Total charge should normally be an integer. See\n"
         "http://www.gromacs.org/Documentation/Floating_Point_Arithmetic\n"
         "for discussion on how close it should be to an integer.\n";
@@ -480,13 +481,13 @@ static char **read_topol(const char *infile, const char *outfile,
     }
 
     /* some local variables */
-    DS_Init(&DS);         /* directive stack			 */
-    nmol     = 0;         /* no molecules yet...			 */
-    d        = d_invalid; /* first thing should be a directive   */
-    nbparam  = nullptr;   /* The temporary non-bonded matrix       */
-    pair     = nullptr;   /* The temporary pair interaction matrix */
-    block2   = nullptr;   /* the extra exclusions			 */
-    nb_funct = F_LJ;
+    DS_Init(&DS);                /* directive stack	*/
+    nmol            = 0;         /* no molecules yet...	*/
+    d               = d_invalid; /* first thing should be a directive */
+    nbparam         = nullptr;   /* The temporary non-bonded matrix */
+    pair            = nullptr;   /* The temporary pair interaction matrix */
+    exclusionBlocks = nullptr;   /* the extra exclusions */
+    nb_funct        = F_LJ;
 
     *reppow  = 12.0;      /* Default value for repulsion power     */
 
@@ -774,14 +775,14 @@ static char **read_topol(const char *infile, const char *outfile,
                             }
 
                             push_molt(symtab, &nmol, molinfo, pline, wi);
-                            srenew(block2, nmol);
-                            block2[nmol-1].nr      = 0;
-                            mi0                    = &((*molinfo)[nmol-1]);
-                            mi0->atoms.haveMass    = TRUE;
-                            mi0->atoms.haveCharge  = TRUE;
-                            mi0->atoms.haveType    = TRUE;
-                            mi0->atoms.haveBState  = TRUE;
-                            mi0->atoms.havePdbInfo = FALSE;
+                            srenew(exclusionBlocks, nmol);
+                            exclusionBlocks[nmol-1].nr      = 0;
+                            mi0                             = &((*molinfo)[nmol-1]);
+                            mi0->atoms.haveMass             = TRUE;
+                            mi0->atoms.haveCharge           = TRUE;
+                            mi0->atoms.haveType             = TRUE;
+                            mi0->atoms.haveBState           = TRUE;
+                            mi0->atoms.havePdbInfo          = FALSE;
                             break;
                         }
                         case d_atoms:
@@ -825,12 +826,12 @@ static char **read_topol(const char *infile, const char *outfile,
                             push_vsitesn(d, mi0->plist, &(mi0->atoms), pline, wi);
                             break;
                         case d_exclusions:
-                            GMX_ASSERT(block2, "block2 must always be allocated so exclusions can be processed");
-                            if (!block2[nmol-1].nr)
+                            GMX_ASSERT(exclusionBlocks, "exclusionBlocks must always be allocated so exclusions can be processed");
+                            if (!exclusionBlocks[nmol-1].nr)
                             {
-                                init_block2(&(block2[nmol-1]), mi0->atoms.nr);
+                                initExclusionBlocks(&(exclusionBlocks[nmol-1]), mi0->atoms.nr);
                             }
-                            push_excl(pline, &(block2[nmol-1]), wi);
+                            push_excl(pline, &(exclusionBlocks[nmol-1]), wi);
                             break;
                         case d_system:
                             trim(pline);
@@ -872,8 +873,8 @@ static char **read_topol(const char *infile, const char *outfile,
                                               mi0->plist,
                                               &nnb,
                                               &(mi0->excls));
-                                merge_excl(&(mi0->excls), &(block2[whichmol]), wi);
-                                done_block2(&(block2[whichmol]));
+                                gmx::mergeExclusions(&(mi0->excls), &(exclusionBlocks[whichmol]));
+                                gmx::doneExclusionBlocks(&(exclusionBlocks[whichmol]));
                                 make_shake(mi0->plist, &mi0->atoms, opts->nshake);
 
 
@@ -968,9 +969,9 @@ static char **read_topol(const char *infile, const char *outfile,
     DS_Done (&DS);
     for (i = 0; i < nmol; i++)
     {
-        done_block2(&(block2[i]));
+        gmx::doneExclusionBlocks(&(exclusionBlocks[i]));
     }
-    free(block2);
+    free(exclusionBlocks);
 
     done_bond_atomtype(&batype);
 
@@ -1051,11 +1052,10 @@ char **do_top(bool                          bVerbose,
  * @param molt molecule type with QM atoms
  * @param grpnr group informatio
  * @param ir input record
- * @param wi warning handler
  * @param qmmmMode QM/MM mode switch: original/MiMiC
  */
 static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *grpnr,
-                                    t_inputrec *ir, warninp_t wi, GmxQmmmMode qmmmMode)
+                                    t_inputrec *ir, GmxQmmmMode qmmmMode)
 {
     /* This routine expects molt->ilist to be of size F_NRE and ordered. */
 
@@ -1312,11 +1312,11 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
     /* and merging with the exclusions already present in sys.
      */
 
-    t_block2  qmexcl2;
-    init_block2(&qmexcl2, molt->atoms.nr);
-    b_to_b2(&qmexcl, &qmexcl2);
-    merge_excl(&(molt->excls), &qmexcl2, wi);
-    done_block2(&qmexcl2);
+    gmx::ExclusionBlocks  qmexcl2;
+    initExclusionBlocks(&qmexcl2, molt->atoms.nr);
+    gmx::blockaToExclusionBlocks(&qmexcl, &qmexcl2);
+    gmx::mergeExclusions(&(molt->excls), &qmexcl2);
+    gmx::doneExclusionBlocks(&qmexcl2);
 
     /* Finally, we also need to get rid of the pair interactions of the
      * classical atom bonded to the boundary QM atoms with the QMatoms,
@@ -1437,7 +1437,7 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t wi, GmxQmmmMode 
                     /* Set the molecule type for the QMMM molblock */
                     molb->type = sys->moltype.size() - 1;
                 }
-                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, wi, qmmmMode);
+                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, qmmmMode);
             }
             if (grpnr)
             {

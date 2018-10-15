@@ -42,10 +42,10 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "gromacs/gmxpreprocess/toppush.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
@@ -1103,13 +1103,13 @@ static void addMimicExclusions(t_blocka                      *excls,
 
     inter_excl.index[inter_excl.nr] = n_q * n_q;
 
-    t_block2  qmexcl2 {};
-    init_block2(&qmexcl2, excls->nr);
-    b_to_b2(&inter_excl, &qmexcl2);
+    gmx::ExclusionBlocks qmexcl2 {};
+    initExclusionBlocks(&qmexcl2, excls->nr);
+    gmx::blockaToExclusionBlocks(&inter_excl, &qmexcl2);
 
     // Merge the created exclusion list with the existing one
-    merge_excl(excls, &qmexcl2, nullptr);
-    done_block2(&qmexcl2);
+    gmx::mergeExclusions(excls, &qmexcl2);
+    gmx::doneExclusionBlocks(&qmexcl2);
 }
 
 static void gen_local_top(const gmx_mtop_t  &mtop,
