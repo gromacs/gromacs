@@ -52,6 +52,7 @@
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/gpu_vec.h"
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/listed-forces/manage-threading.h"
@@ -66,16 +67,12 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/utility/gmxassert.h"
 
 #if defined(_MSVC)
 #include <limits>
 #endif
-
-// TODO remove after integrating
-#define BO_MAX_RANKS 32
-#include "gromacs/utility/gmxmpi.h"
-//
 
 //CUDA threads per block
 #define TPB_BONDED 256
@@ -102,35 +99,13 @@ enum {
 
 /*---------------- BONDED CUDA kernels--------------*/
 __global__ void
-reset_gpu_bonded_kernel(float *vtot, fvec *force,
-                        const int size, float *energygrp_elec, float *energygrp_vdw,
-                        const int nener, fvec *f_shift)
+reset_gpu_bonded_kernel(float *vtot)
 {
     int a = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (a < F_NRE)
     {
         vtot[a] = 0.0f;
-    }
-
-    if (a < size)
-    {
-        force[a][XX] = 0.0f;
-        force[a][YY] = 0.0f;
-        force[a][ZZ] = 0.0f;
-    }
-
-    if (a < nener)
-    {
-        energygrp_vdw[a]  = 0.0f;
-        energygrp_elec[a] = 0.0f;
-    }
-
-    if (a < SHIFTS)
-    {
-        f_shift[a][XX] = 0.0f;
-        f_shift[a][YY] = 0.0f;
-        f_shift[a][ZZ] = 0.0f;
     }
 }
 
@@ -151,9 +126,9 @@ static void harmonic_gpu(const float kA, const float xA, const float x, float *V
 
 template <bool calcEnerVir>
 __global__
-void bonds_gpu(float *vtot, const int nbonds, const int natoms,
+void bonds_gpu(float *vtot, const int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const fvec x[], fvec force[], fvec fshift[],
+               const float4 xq[], fvec force[], fvec fshift[],
                const PbcAiuc pbcAiuc)
 {
     const int        i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -184,7 +159,7 @@ void bonds_gpu(float *vtot, const int nbonds, const int natoms,
 
         /* dx = xi - xj, corrected for periodic boundry conditions. */
         fvec  dx;
-        int   ki = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[aj], dx);
+        int   ki = pbcDxAiuc<calcEnerVir>(pbcAiuc, xq[ai], xq[aj], dx);
 
         float dr2 = iprod_gpu(dx, dx);
         float dr  = sqrt(dr2);
@@ -235,7 +210,7 @@ void bonds_gpu(float *vtot, const int nbonds, const int natoms,
 
 template <bool returnShift>
 __device__
-static float bond_angle_gpu(const fvec xi, const fvec xj, const fvec xk,
+static float bond_angle_gpu(const float4 xi, const float4 xj, const float4 xk,
                             const PbcAiuc &pbcAiuc,
                             fvec r_ij, fvec r_kj, float *costh,
                             int *t1, int *t2)
@@ -252,9 +227,9 @@ static float bond_angle_gpu(const fvec xi, const fvec xj, const fvec xk,
 
 template <bool calcEnerVir>
 __global__
-void angles_gpu(float *vtot, const int nbonds, const int natoms,
+void angles_gpu(float *vtot, const int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
-                const fvec x[], fvec force[], fvec fshift[],
+                const float4 x[], fvec force[], fvec fshift[],
                 const PbcAiuc pbcAiuc)
 {
     __shared__ float vtot_loc;
@@ -359,9 +334,9 @@ void angles_gpu(float *vtot, const int nbonds, const int natoms,
 
 template <bool calcEnerVir>
 __global__
-void urey_bradley_gpu(float *vtot, const int nbonds, const int natoms,
+void urey_bradley_gpu(float *vtot, const int nbonds,
                       const t_iatom forceatoms[], const t_iparams forceparams[],
-                      const fvec x[], fvec force[], fvec fshift[],
+                      const float4 x[], fvec force[], fvec fshift[],
                       const PbcAiuc pbcAiuc)
 {
     __shared__ float vtot_loc;
@@ -494,9 +469,9 @@ void urey_bradley_gpu(float *vtot, const int nbonds, const int natoms,
     }
 }
 
-template <bool returnShift>
+template <bool returnShift, typename T>
 __device__
-static float dih_angle_gpu(const fvec xi, const fvec xj, const fvec xk, const fvec xl,
+static float dih_angle_gpu(const T xi, const T xj, const T xk, const T xl,
                            const PbcAiuc &pbcAiuc,
                            fvec r_ij, fvec r_kj, fvec r_kl, fvec m, fvec n,
                            int *t1, int *t2, int *t3)
@@ -530,11 +505,11 @@ static void dopdihs_gpu(const float cpA, const float phiA, const int mult,
 
 template <bool calcVir>
 __device__
-static void do_dih_fup_gpu(const int i, const int j, const int k, const int l, const int natoms,
+static void do_dih_fup_gpu(const int i, const int j, const int k, const int l,
                            const float ddphi, const fvec r_ij, const fvec r_kj, const fvec r_kl,
                            const fvec m, const fvec n, fvec force[], fvec fshift[],
                            const PbcAiuc &pbcAiuc,
-                           const fvec x[], const int t1, const int t2, const int t3)
+                           const float4 x[], const int t1, const int t2, const int t3)
 {
     float iprm  = iprod_gpu(m, m);
     float iprn  = iprod_gpu(n, n);
@@ -589,9 +564,9 @@ static void do_dih_fup_gpu(const int i, const int j, const int k, const int l, c
 
 template <bool calcEnerVir>
 __global__
-void  pdihs_gpu(float *vtot, const int nbonds, const int natoms,
+void  pdihs_gpu(float *vtot, const int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
-                const fvec x[], fvec f[], fvec fshift[],
+                const float4 x[], fvec f[], fvec fshift[],
                 const PbcAiuc pbcAiuc)
 {
     const int        i = blockIdx.x*blockDim.x + threadIdx.x;
@@ -643,7 +618,7 @@ void  pdihs_gpu(float *vtot, const int nbonds, const int natoms,
 
         atomicAdd(&vtot_loc, vpd);
 
-        do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al, natoms,
+        do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al,
                                     ddphi, r_ij, r_kj, r_kl, m, n,
                                     f, fshift_loc, pbcAiuc,
                                     x, t1, t2, t3);
@@ -667,9 +642,9 @@ void  pdihs_gpu(float *vtot, const int nbonds, const int natoms,
 
 template <bool calcEnerVir>
 __global__
-void rbdihs_gpu(float *vtot, const int nbonds, const int natoms,
+void rbdihs_gpu(float *vtot, const int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
-                const fvec x[], fvec f[], fvec fshift[],
+                const float4 x[], fvec f[], fvec fshift[],
                 const PbcAiuc pbcAiuc)
 {
     constexpr float  c0 = 0.0f, c1 = 1.0f, c2 = 2.0f, c3 = 3.0f, c4 = 4.0f, c5 = 5.0f;
@@ -779,7 +754,7 @@ void rbdihs_gpu(float *vtot, const int nbonds, const int natoms,
 
         ddphi = -ddphi*sin_phi;
 
-        do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al, natoms,
+        do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al,
                                     ddphi, r_ij, r_kj, r_kl, m, n,
                                     f, fshift_loc, pbcAiuc,
                                     x, t1, t2, t3);
@@ -820,9 +795,9 @@ static void make_dp_periodic_gpu(float *dp)
 
 template <bool calcEnerVir>
 __global__
-void  idihs_gpu(float *vtot, const int nbonds, const int natoms,
+void  idihs_gpu(float *vtot, const int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
-                const fvec x[], fvec f[], fvec fshift[],
+                const float4 x[], fvec f[], fvec fshift[],
                 const PbcAiuc pbcAiuc)
 {
     const int        i = blockIdx.x*blockDim.x + threadIdx.x;
@@ -883,7 +858,7 @@ void  idihs_gpu(float *vtot, const int nbonds, const int natoms,
 
         float ddphi = -kA*dp;
 
-        do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al, natoms,
+        do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al,
                                     -ddphi, r_ij, r_kj, r_kl, m, n,
                                     f, fshift_loc, pbcAiuc,
                                     x, t1, t2, t3);
@@ -911,14 +886,12 @@ void  idihs_gpu(float *vtot, const int nbonds, const int natoms,
 
 template <bool calcEnerVir>
 __global__
-void pairs_gpu(int ftype, const int nbonds, const int natoms,
+void pairs_gpu(int ftype, const int nbonds,
                const t_iatom iatoms[], const t_iparams iparams[],
-               const fvec x[], fvec force[], fvec fshift[],
+               const float4 xq[], fvec force[], fvec fshift[],
                const PbcAiuc pbcAiuc,
-               const float md_chargeA[], const unsigned short md_cENER[],
-               float energygrp_elec[], float energygrp_vdw[],
                const float scale_factor,
-               int numEnergyGroups)
+               float *vtotVdw, float *vtotElec)
 {
     const int       i = blockIdx.x*blockDim.x+threadIdx.x;
 
@@ -941,13 +914,13 @@ void pairs_gpu(int ftype, const int nbonds, const int natoms,
         int   ai    = iatoms[3*i + 1];
         int   aj    = iatoms[3*i + 2];
 
-        float qq    = md_chargeA[ai]*md_chargeA[aj];
+        float qq    = xq[ai].w*xq[aj].w;
         float c6    = iparams[itype].lj14.c6A;
         float c12   = iparams[itype].lj14.c12A;
 
         /* Do we need to apply full periodic boundary conditions? */
         fvec  dr;
-        int   fshift_index = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[aj], dr);
+        int   fshift_index = pbcDxAiuc<calcEnerVir>(pbcAiuc, xq[ai], xq[aj], dr);
 
         float r2    = norm2_gpu(dr);
         float rinv  = rsqrtf(r2);
@@ -974,16 +947,8 @@ void pairs_gpu(int ftype, const int nbonds, const int natoms,
 
         if (calcEnerVir)
         {
-            int gid = GID(md_cENER[ai], md_cENER[aj], numEnergyGroups);
-
-            atomicAdd(&energygrp_elec[gid], velec);
-            atomicAdd(&energygrp_vdw[gid], (c12*rinv6 - c6)*rinv6);
-
-            if (fshift_index != CENTRAL)
-            {
-                fvec_inc_atomic(fshift_loc[fshift_index], f);
-                fvec_dec_atomic(fshift_loc[CENTRAL], f);
-            }
+            atomicAdd(vtotElec, velec);
+            atomicAdd(vtotVdw, (c12*rinv6 - c6)*rinv6);
         }
     }
 
@@ -1043,89 +1008,37 @@ static void setPbcAiuc(int           numPbcDim,
 }
 
 /*------------------------------------------------------------------------------*/
-
-/* static variables internal to module. Separate instances are needed
- * for each MPI rank (because, when using threadMPI, we need to avoid
- * interference and allow a global view of memory)
- */
-
-/* variables to be integrated */
-
-static cudaStream_t    streamBonded[BO_MAX_RANKS];
-
-/*------------------------------------------------------------------------------*/
 // bonded forces //
 
 // initial setup (called once)
-static void
-init_gpu_bonded(GpuBondedLists    *gpuBondedLists,
-                const int          rank,
-                const t_idef      &idef,
-                gmx_grppairener_t *grppener)
+void
+init_gpu_bonded(GpuBondedLists       *gpuBondedLists,
+                const gmx_ffparams_t &ffparams,
+                void                 *streamPtr)
 {
     cudaError_t stat;
 
-    allocateDeviceBuffer(&gpuBondedLists->forceparamsDevice,idef.ntypes,nullptr);
-    stat = cudaMemcpyAsync(gpuBondedLists->forceparamsDevice, idef.iparams, idef.ntypes*sizeof(t_iparams), cudaMemcpyHostToDevice, streamBonded[rank]);
+    gpuBondedLists->stream = streamPtr;
+
+    cudaStream_t   *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
+
+    allocateDeviceBuffer(&gpuBondedLists->forceparamsDevice, ffparams.numTypes(), nullptr);
+    stat = cudaMemcpyAsync(gpuBondedLists->forceparamsDevice, ffparams.iparams.data(), ffparams.numTypes()*sizeof(t_iparams),
+                           cudaMemcpyHostToDevice, *stream);
     CU_RET_ERR(stat, "cudaMemcpyAsync failed");
 
     gpuBondedLists->vtot.resize(F_NRE);
-    allocateDeviceBuffer(&gpuBondedLists->vtotDevice,F_NRE,nullptr);
-
-    gpuBondedLists->energygrpElec.resize(grppener->nener);
-    allocateDeviceBuffer(&gpuBondedLists->energygrpElecDevice,grppener->nener,nullptr);
-
-    gpuBondedLists->energygrpVdw.resize(grppener->nener);
-    allocateDeviceBuffer(&gpuBondedLists->energygrpVdwDevice,grppener->nener,nullptr);
-
-    allocateDeviceBuffer(&gpuBondedLists->fshiftDevice,SHIFTS,nullptr);
-    gpuBondedLists->fshift.resize(SHIFTS);
-
-    stat = cudaStreamCreate(&streamBonded[rank]);
-    CU_RET_ERR(stat, "cudaStreamCreate failed");
+    allocateDeviceBuffer(&gpuBondedLists->vtotDevice, F_NRE, nullptr);
 }
 
 //----//
 // update after a neighbour list update step
 void
-update_gpu_bonded(GpuBondedLists *gpuBondedLists, const t_idef *idef,
-                  const int xsize, const t_mdatoms *md, gmx_grppairener_t *grppener)
+update_gpu_bonded(GpuBondedLists *gpuBondedLists)
 {
     GMX_RELEASE_ASSERT(gpuBondedLists, "Need a valid gpuBondedLists object");
 
-    cudaError_t stat;
-    int         rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    // Temporary hack to detect uninitialized data
-    if (gpuBondedLists->forceparamsDevice == nullptr)
-    {
-        init_gpu_bonded(gpuBondedLists, rank, *idef, grppener);
-    }
-
-    // All x/f allocation below are temporary hacks which will be replaced with nbnxn buffers
-    int  x_needed = (xsize > md->nr) ? xsize : md->nr;
-
-    gpuBondedLists->f.resize(x_needed);
-
-    int  n;
-    int  nalloc = gpuBondedLists->nalloc;
-    reallocateDeviceBuffer(&gpuBondedLists->xDevice, x_needed, &n, &nalloc, nullptr);
-    nalloc = gpuBondedLists->nalloc;
-    reallocateDeviceBuffer(&gpuBondedLists->fDevice, x_needed, &n, &nalloc, nullptr);
-    nalloc = gpuBondedLists->nalloc;
-    reallocateDeviceBuffer(&gpuBondedLists->qDevice, x_needed, &n, &nalloc, nullptr);
-    nalloc = gpuBondedLists->nalloc;
-    reallocateDeviceBuffer(&gpuBondedLists->cEnerDevice, x_needed, &n, &nalloc, nullptr);
-    gpuBondedLists->nalloc = nalloc;
-
-    if (gpuBondedLists->iLists[F_LJ14].size() > 0)
-    {
-        stat = cudaMemcpy(gpuBondedLists->cEnerDevice, md->cENER, md->nr*sizeof(unsigned short), cudaMemcpyHostToDevice);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-        stat = cudaMemcpy(gpuBondedLists->qDevice, md->chargeA, md->nr*sizeof(float), cudaMemcpyHostToDevice);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-    }
+    cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
 
     // forceatoms
     for (int i = 0; i < F_NRE; i++)
@@ -1138,110 +1051,82 @@ update_gpu_bonded(GpuBondedLists *gpuBondedLists, const t_idef *idef,
 
             reallocateDeviceBuffer(&iListDevice.iatoms, iList.size(), &iListDevice.nr, &iListDevice.nalloc, nullptr);
 
-            //copy  the data
-            // Still uses idef ilists because of atom ordering
-            stat = cudaMemcpy(iListDevice.iatoms, idef->il[i].iatoms, iList.size()*sizeof(t_iatom),
+#if 0                               
+            cudaError_t stat =
+                cudaMemcpy(iListDevice.iatoms, iList.iatoms.data(), iList.size()*sizeof(t_iatom),
                               cudaMemcpyHostToDevice);
             CU_RET_ERR(stat, "cudaMemcpy failed");
+#endif
+            copyToDeviceBuffer(&iListDevice.iatoms, iList.iatoms.data(),
+                               0, iList.size(),
+                               *stream, GpuApiCallBehavior::Sync, nullptr);
         }
     }
 }
 
-
-/* -------------- */
-// reset the internal variables
-void
-reset_gpu_bonded(GpuBondedLists *gpuBondedLists,
-                 const int       size,
-                 const int       nener)
-{
-    int rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    dim3 blocks ( (size+TPB_BONDED-1)/TPB_BONDED, 1, 1);
-    dim3 threads (TPB_BONDED, 1, 1);
-
-    cudaError_t stat;
-
-    fvec       *f_d_in    = gpuBondedLists->fDevice;
-    fvec       *f_shift_d = gpuBondedLists->fshiftDevice;
-
-    reset_gpu_bonded_kernel <<< blocks, threads, 0, streamBonded[rank]>>>
-    (gpuBondedLists->vtotDevice, f_d_in, size, gpuBondedLists->energygrpElecDevice,
-     gpuBondedLists->energygrpVdwDevice, nener, f_shift_d);
-
-    stat = cudaGetLastError();
-    CU_RET_ERR(stat, "reset bonded kernel failed");
-}
-
 /* -------------- */
 void
-do_bonded_gpu(t_forcerec *fr,
-              int numEnergyGroups,
-              const int flags, int natoms, fvec x[],
-              const matrix box)
+do_bonded_gpu(t_forcerec   *fr,
+              const int     flags,
+              void         *xqVoid,
+              const matrix  box,
+              void         *fVoid,
+              void         *fshiftVoid)
 {
-    if (!fr->gpuBondedLists->haveInteractions)
+    GpuBondedLists *gpuBondedLists = fr->gpuBondedLists;
+
+    if (!gpuBondedLists->haveInteractions)
     {
         return;
     }
 
+    cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
+
     int   nat1, nbonds;
     bool  bCalcEnerVir = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
 
-    int   rank  = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    fvec       *x_d_in = fr->gpuBondedLists->xDevice;
-    fvec       *f_d_in = fr->gpuBondedLists->fDevice;
+    float4     *x_d_in    = static_cast<float4 *>(xqVoid);
+    fvec       *f_d_in    = static_cast<fvec *>(fVoid);
+    fvec       *f_shift_d = static_cast<fvec *>(fshiftVoid);
 
     cudaError_t stat;
 
     PbcAiuc     pbcAiuc;
     setPbcAiuc(fr->bMolPBC ? ePBC2npbcdim(fr->ePBC) : 0, box, &pbcAiuc);
 
-    stat = cudaMemcpyAsync(x_d_in, x,
-                           natoms*sizeof(fvec), cudaMemcpyHostToDevice, streamBonded[rank]);
-    CU_RET_ERR(stat, "cudaMemcpy failed");
-
-    t_iparams      *forceparams_d    = fr->gpuBondedLists->forceparamsDevice;
-    real           *charge_d         = fr->gpuBondedLists->qDevice;
-    fvec           *f_shift_d        = fr->gpuBondedLists->fshiftDevice;
-    unsigned short *md_cENER_d       = fr->gpuBondedLists->cEnerDevice;
-    real           *vtot_d           = fr->gpuBondedLists->vtotDevice;
-    real           *energygrp_elec_d = fr->gpuBondedLists->energygrpElecDevice;
-    real           *energygrp_vdw_d  = fr->gpuBondedLists->energygrpVdwDevice;
+    t_iparams      *forceparams_d    = gpuBondedLists->forceparamsDevice;
+    real           *vtot_d           = gpuBondedLists->vtotDevice;
 
 // launch kernels
 // reordered for better overlap
-    dim3 blocks, blocks_natoms;
+    dim3 blocks;
     dim3 threads (TPB_BONDED, 1, 1);
     for (int ftype = 0; (ftype < F_NRE); ftype++)
     {
-        const InteractionList &iList = fr->gpuBondedLists->iLists[ftype];
+        const InteractionList &iList = gpuBondedLists->iLists[ftype];
 
         if (iList.size() > 0)
         {
             nat1            = interaction_function[ftype].nratoms + 1;
             nbonds          = iList.size()/nat1;
             blocks.x        = (nbonds+TPB_BONDED-1)/TPB_BONDED;
-            blocks_natoms.x = (natoms+TPB_BONDED-1)/TPB_BONDED;
 
-            t_iatom *iatoms = fr->gpuBondedLists->iListsDevice[ftype].iatoms;
+            t_iatom *iatoms = gpuBondedLists->iListsDevice[ftype].iatoms;
 
             if (ftype == F_PDIHS || ftype == F_PIDIHS)
             {
                 if (bCalcEnerVir)
                 {
-                    pdihs_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[ftype], nbonds, natoms,
+                    pdihs_gpu<true> <<< blocks, threads, 0, *stream>>>
+                    (&vtot_d[ftype], nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, f_shift_d,
                      pbcAiuc);
                 }
                 else
                 {
-                    pdihs_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
+                    pdihs_gpu<false> <<< blocks, threads, 0, *stream>>>
+                    (nullptr, nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, nullptr,
                      pbcAiuc);
@@ -1259,27 +1144,26 @@ do_bonded_gpu(t_forcerec *fr,
             nat1            = interaction_function[ftype].nratoms + 1;
             nbonds          = iList.size()/nat1;
             blocks.x        = (nbonds+TPB_BONDED-1)/TPB_BONDED;
-            blocks_natoms.x = (natoms+TPB_BONDED-1)/TPB_BONDED;
 // in the main code they have a function pointer for this
 // so we need something like that for final version
 // note temp array here for output forces
 
-            t_iatom *iatoms = fr->gpuBondedLists->iListsDevice[ftype].iatoms;
+            t_iatom *iatoms = gpuBondedLists->iListsDevice[ftype].iatoms;
 
             if (ftype == F_BONDS)
             {
                 if (bCalcEnerVir)
                 {
-                    bonds_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[ftype], nbonds, natoms,
+                    bonds_gpu<true> <<< blocks, threads, 0, *stream>>>
+                    (&vtot_d[ftype], nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, f_shift_d,
                      pbcAiuc);
                 }
                 else
                 {
-                    bonds_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
+                    bonds_gpu<false> <<< blocks, threads, 0, *stream>>>
+                    (nullptr, nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, nullptr,
                      pbcAiuc);
@@ -1290,16 +1174,16 @@ do_bonded_gpu(t_forcerec *fr,
             {
                 if (bCalcEnerVir)
                 {
-                    angles_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[ftype], nbonds, natoms,
+                    angles_gpu<true> <<< blocks, threads, 0, *stream>>>
+                    (&vtot_d[ftype], nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, f_shift_d,
                      pbcAiuc);
                 }
                 else
                 {
-                    angles_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
+                    angles_gpu<false> <<< blocks, threads, 0, *stream>>>
+                    (nullptr, nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, nullptr,
                      pbcAiuc);
@@ -1310,16 +1194,16 @@ do_bonded_gpu(t_forcerec *fr,
             {
                 if (bCalcEnerVir)
                 {
-                    urey_bradley_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[ftype], nbonds, natoms,
+                    urey_bradley_gpu<true> <<< blocks, threads, 0, *stream>>>
+                    (&vtot_d[ftype], nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, f_shift_d,
                      pbcAiuc);
                 }
                 else
                 {
-                    urey_bradley_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
+                    urey_bradley_gpu<false> <<< blocks, threads, 0, *stream>>>
+                    (nullptr, nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, nullptr,
                      pbcAiuc);
@@ -1330,16 +1214,16 @@ do_bonded_gpu(t_forcerec *fr,
             {
                 if (bCalcEnerVir)
                 {
-                    rbdihs_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[ftype], nbonds, natoms,
+                    rbdihs_gpu<true> <<< blocks, threads, 0, *stream>>>
+                    (&vtot_d[ftype], nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, f_shift_d,
                      pbcAiuc);
                 }
                 else
                 {
-                    rbdihs_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
+                    rbdihs_gpu<false> <<< blocks, threads, 0, *stream>>>
+                    (nullptr, nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, nullptr,
                      pbcAiuc);
@@ -1350,16 +1234,16 @@ do_bonded_gpu(t_forcerec *fr,
             {
                 if (bCalcEnerVir)
                 {
-                    idihs_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[ftype], nbonds, natoms,
+                    idihs_gpu<true> <<< blocks, threads, 0, *stream>>>
+                    (&vtot_d[ftype], nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, f_shift_d,
                      pbcAiuc);
                 }
                 else
                 {
-                    idihs_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
+                    idihs_gpu<false> <<< blocks, threads, 0, *stream>>>
+                    (nullptr, nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, nullptr,
                      pbcAiuc);
@@ -1370,27 +1254,23 @@ do_bonded_gpu(t_forcerec *fr,
             {
                 if (bCalcEnerVir)
                 {
-                    pairs_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (ftype, nbonds, natoms,
+                    pairs_gpu<true> <<< blocks, threads, 0, *stream>>>
+                    (ftype, nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, f_shift_d,
                      pbcAiuc,
-                     charge_d, md_cENER_d,
-                     energygrp_elec_d, energygrp_vdw_d,
                      fr->ic->epsfac*fr->fudgeQQ,
-                     numEnergyGroups);
+                     &vtot_d[F_LJ14], &vtot_d[F_COUL14]);
                 }
                 else
                 {
-                    pairs_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (ftype, nbonds, natoms,
+                    pairs_gpu<false> <<< blocks, threads, 0, *stream>>>
+                    (ftype, nbonds,
                      iatoms, forceparams_d,
                      x_d_in, f_d_in, nullptr,
                      pbcAiuc,
-                     charge_d, md_cENER_d,
-                     nullptr, nullptr,
                      fr->ic->epsfac*fr->fudgeQQ,
-                     numEnergyGroups);
+                     &vtot_d[F_LJ14], &vtot_d[F_COUL14]);
                 }
             }
         }
@@ -1401,79 +1281,58 @@ do_bonded_gpu(t_forcerec *fr,
 }
 
 void
-do_bonded_gpu_finalize(t_forcerec *fr, const int flags, const int natoms,
-                       rvec *input_force, gmx_enerdata_t *enerd)
+bonded_gpu_get_energies(t_forcerec *fr, const int flags,  gmx_enerdata_t *enerd)
 {
-    if (!fr->gpuBondedLists->haveInteractions)
+    GpuBondedLists *gpuBondedLists = fr->gpuBondedLists;
+
+    if (!gpuBondedLists->haveInteractions)
     {
         return;
     }
 
-    bool               bCalcEnerVir = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
+    if (!(flags & GMX_FORCE_ENERGY))
+    {
+        return;
+    }
+
+    cudaStream_t      *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
+
     cudaError_t        stat;
 
     gmx_grppairener_t *grppener;
     grppener = &enerd->grpp;
 
-    int rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    fvec* f_d_in = fr->gpuBondedLists->fDevice;
-
-//copy forces back
-    rvec *f = as_rvec_array(fr->gpuBondedLists->f.data());
-    stat = cudaMemcpyAsync(f, f_d_in,
-                           natoms*sizeof(fvec), cudaMemcpyDeviceToHost, streamBonded[rank]);
-    cudaStreamSynchronize(streamBonded[rank]);
+    // copy energies back
+    real *vtot = gpuBondedLists->vtot.data();
+    stat = cudaMemcpyAsync(vtot, gpuBondedLists->vtotDevice,
+                           F_NRE*sizeof(float), cudaMemcpyDeviceToHost, *stream);
+    cudaStreamSynchronize(*stream);
     CU_RET_ERR(stat, "cudaMemcpy failed");
 
-    for (int i = 0; i < natoms; i++)
+    for (int i = 0; i < F_NRE; i++)
     {
-        rvec_inc(input_force[i], f[i]);
-    }
-
-    if (bCalcEnerVir)
-    {
-        // shift Forces
-        rvec *fshift = as_rvec_array(fr->gpuBondedLists->fshift.data());
-        stat = cudaMemcpyAsync(fshift, fr->gpuBondedLists->fshiftDevice,
-                               SHIFTS*sizeof(fvec), cudaMemcpyDeviceToHost, streamBonded[rank]);
-        cudaStreamSynchronize(streamBonded[rank]);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-
-        for (int i = 0; i < SHIFTS; i++)
-        {
-            rvec_inc(fr->fshift[i], fshift[i]);
-        }
-
-        // copy energies back
-        real *vtot = fr->gpuBondedLists->vtot.data();
-        stat = cudaMemcpyAsync(vtot, fr->gpuBondedLists->vtotDevice,
-                               F_NRE*sizeof(float), cudaMemcpyDeviceToHost, streamBonded[rank]);
-        cudaStreamSynchronize(streamBonded[rank]);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-
-        for (int i = 0; i < F_NRE; i++)
+        if (i != F_LJ14 && i != F_COUL14)
         {
             enerd->term[i] += vtot[i];
         }
-
-        real *energygrpVdw = fr->gpuBondedLists->energygrpVdw.data();
-        stat = cudaMemcpyAsync(energygrpVdw, fr->gpuBondedLists->energygrpVdwDevice,
-                               sizeof(float)*grppener->nener, cudaMemcpyDeviceToHost, streamBonded[rank]);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-
-        real *energygrpElec = fr->gpuBondedLists->energygrpElec.data();
-        stat = cudaMemcpyAsync(energygrpElec, fr->gpuBondedLists->energygrpElecDevice,
-                               sizeof(float)*grppener->nener, cudaMemcpyDeviceToHost, streamBonded[rank]);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-        cudaStreamSynchronize(streamBonded[rank]);
-        for (int i = 0; i < grppener->nener; i++)
-        {
-            grppener->ener[egCOUL14][i] += energygrpElec[i];
-            grppener->ener[egLJ14][i]   += energygrpVdw[i];
-        }
     }
-    cudaStreamSynchronize(streamBonded[rank]); // needed if we have no copies for bufferops sync
+
+    cudaStreamSynchronize(*stream);
+    for (int i = 0; i < grppener->nener; i++)
+    {
+        grppener->ener[egLJ14][i]   += vtot[F_LJ14];
+        grppener->ener[egCOUL14][i] += vtot[F_COUL14];
+   }
+    cudaStreamSynchronize(*stream); // needed if we have no copies for bufferops sync
+
+    dim3 blocks  ((F_NRE + TPB_BONDED - 1)/TPB_BONDED, 1, 1);
+    dim3 threads (TPB_BONDED, 1, 1);
+
+    reset_gpu_bonded_kernel <<< blocks, threads, 0, *stream>>>
+    (gpuBondedLists->vtotDevice);
+
+    stat = cudaGetLastError();
+    CU_RET_ERR(stat, "reset bonded kernel failed");
+
 }
 /*------------------------------------------------------------------------------*/
