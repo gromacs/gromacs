@@ -97,17 +97,6 @@ enum {
 
 
 /*---------------- BONDED CUDA kernels--------------*/
-__global__ void
-reset_gpu_bonded_kernel(float *vtot)
-{
-    int a = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (a < F_NRE)
-    {
-        vtot[a] = 0.0f;
-    }
-}
-
 
 /* Harmonic */
 __device__
@@ -1090,11 +1079,9 @@ launch_bonded_kernels(t_forcerec   *fr,
     PbcAiuc       pbcAiuc;
     setPbcAiuc(fr->bMolPBC ? ePBC2npbcdim(fr->ePBC) : 0, box, &pbcAiuc);
 
-    t_iparams      *forceparams_d    = gpuBondedLists->forceparamsDevice;
-    real           *vtot_d           = gpuBondedLists->vtotDevice;
+    t_iparams     *forceparams_d    = gpuBondedLists->forceparamsDevice;
+    float         *vtot_d           = gpuBondedLists->vtotDevice;
 
-// launch kernels
-// reordered for better overlap
     dim3 blocks;
     dim3 threads (TPB_BONDED, 1, 1);
     for (int ftype : ftypesOnGpu)
@@ -1129,10 +1116,8 @@ launch_bonded_kernels(t_forcerec   *fr,
             nat1            = interaction_function[ftype].nratoms + 1;
             nbonds          = iList.size()/nat1;
             blocks.x        = (nbonds+TPB_BONDED-1)/TPB_BONDED;
-// in the main code they have a function pointer for this
-// so we need something like that for final version
-// note temp array here for output forces
 
+            // TODO consider using a map to assign the fn pointers to ftypes
             t_iatom *iatoms = gpuBondedLists->iListsDevice[ftype].iatoms;
 
             if (ftype == F_BONDS)
@@ -1225,14 +1210,9 @@ bonded_gpu_get_energies(t_forcerec *fr,  gmx_enerdata_t *enerd)
         return;
     }
 
-    cudaStream_t      *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
-
-    cudaError_t        stat;
-
-    gmx_grppairener_t *grppener = &enerd->grpp;
-
-    // copy energies back
-    real *vtot = gpuBondedLists->vtot.data();
+    cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
+    cudaError_t   stat;
+    float        *vtot = gpuBondedLists->vtot.data();
     stat = cudaMemcpyAsync(vtot, gpuBondedLists->vtotDevice,
                            F_NRE*sizeof(float), cudaMemcpyDeviceToHost, *stream);
     cudaStreamSynchronize(*stream);
@@ -1246,25 +1226,15 @@ bonded_gpu_get_energies(t_forcerec *fr,  gmx_enerdata_t *enerd)
         }
     }
 
-    cudaStreamSynchronize(*stream);
-
     // Note: We do not support energy groups here
+    gmx_grppairener_t *grppener = &enerd->grpp;
     GMX_RELEASE_ASSERT(grppener->nener == 1, "No energy group support for bondeds on the GPU");
     grppener->ener[egLJ14][0]   += vtot[F_LJ14];
     grppener->ener[egCOUL14][0] += vtot[F_COUL14];
-    cudaStreamSynchronize(*stream); // needed if we have no copies for bufferops sync
 
-    dim3 blocks  ((F_NRE + TPB_BONDED - 1)/TPB_BONDED, 1, 1);
-    dim3 threads (TPB_BONDED, 1, 1);
-
-    reset_gpu_bonded_kernel <<< blocks, threads, 0, *stream>>>
-    (gpuBondedLists->vtotDevice);
-
-    stat = cudaGetLastError();
-    CU_RET_ERR(stat, "reset bonded kernel failed");
-
+    // TODO: move this to the end of the step where the rest of the clearin happens
+    clearDeviceBufferAsync(&gpuBondedLists->vtotDevice, 0, F_NRE, *stream);
 }
-
 
 bool bonded_gpu_have_interactions(GpuBondedLists gmx_unused *gpuBondedLists)
 {
