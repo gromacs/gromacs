@@ -53,13 +53,16 @@
 
 #include "nbnxn_cuda.h"
 
+#include "gromacs/ewald/pme.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_common.h"
 #include "gromacs/mdlib/nbnxn_gpu_common_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_gpu_x_to_nbat_x_kernel.cuh"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -341,19 +344,24 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         adat_len    = adat->natoms - adat->natoms_local;
     }
 
-    /* beginning of timed HtoD section */
-    if (bDoTime)
-    {
-        t->nb_h2d[iloc].openTimingRegion(stream);
-    }
-
     /* HtoD x, q */
-    cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
-                      adat_len * sizeof(*adat->xq), stream);
-
-    if (bDoTime)
+    if (!nb->bGpuBufferOps) //otherwise nbat conversion will be done on GPU
     {
-        t->nb_h2d[iloc].closeTimingRegion(stream);
+
+        /* beginning of timed HtoD section */
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].openTimingRegion(stream);
+        }
+
+        cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
+                          adat_len * sizeof(*adat->xq), stream);
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
+
     }
 
     /* When we get here all misc operations issues in the local stream as well as
@@ -694,4 +702,296 @@ void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)
             CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
         }
     }
+}
+
+/* Initialization for X buffer operations on GPU */
+void nbnxn_gpu_init_x_to_nbat_x(int                 ncxy,
+                                const nbnxn_search *nbs,
+                                gmx_nbnxn_gpu_t    *gpu_nbv,
+                                const int          *a,
+                                int                 a_nalloc,
+                                const int          *na_all,
+                                const int          *cxy_ind,
+                                int                 iloc)
+{
+    /* CUDA kernel launch-related stuff */
+    dim3                 dim_block, dim_grid;
+
+    cudaError_t          stat;
+    cudaStream_t         stream  = gpu_nbv->stream[iloc];
+
+    bool                 bDoTime = gpu_nbv->bDoTime;
+    cu_timers_t         *t       = gpu_nbv->timers;
+
+    if (LOCAL_I(iloc))
+    {
+
+
+        if (gpu_nbv->xrvec)
+        {
+            stat = cudaFree(gpu_nbv->xrvec);
+            CU_RET_ERR(stat, "cudaFree failed on gpu_nbv->xrvec");
+        }
+
+
+        stat = cudaMalloc(&gpu_nbv->xrvec,  nbs->natoms_nonlocal*sizeof(rvec));
+        CU_RET_ERR(stat, "cudaMalloc failed on gpu_nbv->xrvec");
+
+        gpu_nbv->bGpuBufferOps = false;
+
+
+        if (gpu_nbv->abufops)
+        {
+            stat = cudaFree(gpu_nbv->abufops);
+            CU_RET_ERR(stat, "cudaFree failed on gpu_nbv->abufops");
+        }
+        stat = cudaMalloc(&gpu_nbv->abufops, a_nalloc*sizeof(int));
+        CU_RET_ERR(stat, "cudaMalloc failed on gpu_nbv->abufops");
+
+        // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+        stat = cudaHostRegister((void*) a, a_nalloc*sizeof(int), cudaHostRegisterDefault);
+        CU_RET_ERR(stat, "cudaHostRegister failed on a");
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].openTimingRegion(stream);
+        }
+
+        cu_copy_H2D_async(gpu_nbv->abufops, (void*) a,
+                          a_nalloc*sizeof(int), stream);
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
+
+        stat = cudaHostUnregister((void*) a);
+        CU_RET_ERR(stat, "cudaHostUnRegister failed on a");
+
+    }
+
+
+
+    if (gpu_nbv->nabufops[iloc])
+    {
+        stat = cudaFree(gpu_nbv->nabufops[iloc]);
+        CU_RET_ERR(stat, "cudaFree failed on gpu_nbv->nabufops");
+    }
+    stat = cudaMalloc(&gpu_nbv->nabufops[iloc], ncxy*sizeof(int));
+    CU_RET_ERR(stat, "cudaMalloc failed on gpu_nbv->nabufops");
+
+
+    if (gpu_nbv->cxybufops[iloc])
+    {
+        stat = cudaFree(gpu_nbv->cxybufops[iloc]);
+        CU_RET_ERR(stat, "cudaFree failed on gpu_nbv->cxybufops");
+    }
+    stat = cudaMalloc(&gpu_nbv->cxybufops[iloc], ncxy*sizeof(int));
+    CU_RET_ERR(stat, "cudaMalloc failed on gpu_nbv->cxybufops");
+
+    // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+    stat = cudaHostRegister((void*) na_all, ncxy*sizeof(int), cudaHostRegisterDefault);
+    CU_RET_ERR(stat, "cudaHostRegister failed on na_all");
+
+    if (bDoTime)
+    {
+        t->nb_h2d[iloc].openTimingRegion(stream);
+    }
+
+    cu_copy_H2D_async(gpu_nbv->nabufops[iloc], (void*) na_all,
+                      ncxy*sizeof(int), stream);
+
+    if (bDoTime)
+    {
+        t->nb_h2d[iloc].closeTimingRegion(stream);
+    }
+
+    stat = cudaHostUnregister((void*) na_all);
+    CU_RET_ERR(stat, "cudaHostUnRegister failed on na_all");
+
+    // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+    stat = cudaHostRegister((void*) cxy_ind, ncxy*sizeof(int), cudaHostRegisterDefault);
+    CU_RET_ERR(stat, "cudaHostRegister failed on cxy_ind");
+
+
+    if (bDoTime)
+    {
+        t->nb_h2d[iloc].openTimingRegion(stream);
+    }
+
+    cu_copy_H2D_async(gpu_nbv->cxybufops[iloc], (void*) cxy_ind,
+                      ncxy*sizeof(int), stream);
+
+    if (bDoTime)
+    {
+        t->nb_h2d[iloc].closeTimingRegion(stream);
+    }
+
+
+    stat = cudaHostUnregister((void*) cxy_ind);
+    CU_RET_ERR(stat, "cudaHostUnRegister failed on cxy_ind");
+
+    return;
+
+}
+
+/* X buffer operations on GPU: performs conversion from rvec to nb format.
+ * returns true if GPU buffer ops are completed. */
+gmx_bool nbnxn_gpu_x_to_nbat_x(int                  ncxy,
+                               int                  g,
+                               gmx_bool             FillLocal,
+                               const nbnxn_search  *nbs,
+                               gmx_nbnxn_gpu_t     *gpu_nbv,
+                               gmx_pme_t           *pmedata,
+                               const int           *na_all,
+                               const int           *cxy_ind,
+                               int                  cell0,
+                               int                  na_sc,
+                               int                  iloc,
+                               rvec                *x)
+{
+
+
+    /* CUDA kernel launch-related stuff */
+    dim3                 dim_block, dim_grid;
+
+    cudaError_t          stat;
+    cu_atomdata_t       *adat    = gpu_nbv->atdat;
+    cudaStream_t         stream  = gpu_nbv->stream[iloc];
+
+    bool                 bDoTime = gpu_nbv->bDoTime;
+    cu_timers_t         *t       = gpu_nbv->timers;
+
+
+    gpu_nbv->bGpuBufferOps = true;
+
+    int na_round_max = 0;
+    for (int cxy = 0; cxy < ncxy; cxy++)
+    {
+
+
+        int na = na_all[cxy];
+        int na_round;
+        if (g == 0 && FillLocal)
+        {
+            na_round =
+                (cxy_ind[cxy+1] - cxy_ind[cxy])*na_sc;
+        }
+        else
+        {
+            /* We fill only the real particle locations.
+             * We assume the filling entries at the end have been
+             * properly set before during pair-list generation.
+             */
+            na_round = na;
+        }
+
+
+        if (na_round > na_round_max)
+        {
+            na_round_max = na_round;
+        }
+
+    }
+
+
+    if (nbs == nullptr) // empty domain
+    {
+        gpu_nbv->bGpuBufferOps = false;
+        return false;
+    }
+
+    int nCopyAtoms;
+    int copyAtomStart;
+    if (LOCAL_I(iloc)) //local stream
+    {
+        nCopyAtoms    = nbs->natoms_local;
+        copyAtomStart = 0;
+    }
+    else //non-local stream
+    {
+        nCopyAtoms    = nbs->natoms_nonlocal-nbs->natoms_local;
+        copyAtomStart = nbs->natoms_local;
+    }
+
+    rvec *x_d;
+    bool  copyCoord = (pmedata == nullptr) || (pmedata->gpu == nullptr)
+        || (pmedata->gpu->kernelParams == nullptr)
+        || (pmedata->gpu->kernelParams->atoms.d_coordinates == nullptr);
+
+    // copy X-coordinate data to device
+    if (copyCoord)
+    {
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].openTimingRegion(stream);
+        }
+
+        //TO DO: use H2D wrapper when multi-GPU pinning issue with x has been resolved
+        //cu_copy_H2D_async(&gpu_nbv->xrvec[copyAtomStart][0], &x[copyAtomStart][0],
+        //                  nCopyAtoms*sizeof(rvec), stream);
+        stat = cudaMemcpyAsync(&gpu_nbv->xrvec[copyAtomStart][0], &x[copyAtomStart][0],
+                               nCopyAtoms*sizeof(rvec), cudaMemcpyHostToDevice, stream);
+        CU_RET_ERR(stat, "cudaMemcpy failed on gpu_nbv->xrvec");
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
+
+
+
+        x_d = gpu_nbv->xrvec;
+    }
+    else //coordinates have already been copied by PME stream
+    {
+        x_d = (rvec*) pmedata->gpu->kernelParams->atoms.d_coordinates;
+    }
+
+    /* launch kernel on GPU */
+    int                threadsPerBlock = 128;
+
+    KernelLaunchConfig config;
+    config.blockSize[0]     = threadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = ((na_round_max+1)+threadsPerBlock-1)/threadsPerBlock;
+    config.gridSize[1]      = ncxy;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
+    config.stream           = stream;
+
+
+    //kernel argument setup wrapper gives error:
+    //error: no instance of function template "prepareGpuKernelArguments" matches the argument list
+    // void (*kernelFn)(int,float*,int,gmx_bool,const rvec*,const int*,int*,int*,int,int);
+    // kernelFn=nbnxn_gpu_x_to_nbat_x_kernel;
+    // const auto kernelArgs  = prepareGpuKernelArguments(kernelFn,
+    //                                                    config,
+    //                                                    ncxy,
+    //                                                    (float*) adat->xq,
+    //                                                    g,
+    //                                                    FillLocal,
+    //                                                    gpu_nbv->xrvec,
+    //                                                    gpu_nbv->abufops,
+    //                                                    gpu_nbv->nabufops[iloc],
+    //                                                    gpu_nbv->cxybufops[iloc],
+    //                                                    cell0,
+    //                                                    na_sc);
+    //    launchGpuKernel(kernelfn, config, nullptr, "XbufferOps", kernelArgs);
+
+    // launch directly
+    dim3 tpb(config.blockSize[0], config.blockSize[1], config.blockSize[2]);
+    dim3 bpg(config.gridSize[0], config.gridSize[1], config.gridSize[2]);
+
+    nbnxn_gpu_x_to_nbat_x_kernel
+    <<< bpg, tpb, config.sharedMemorySize, config.stream>>>
+    (ncxy, (float*) adat->xq, g, FillLocal,
+     x_d, gpu_nbv->abufops, gpu_nbv->nabufops[iloc],
+     gpu_nbv->cxybufops[iloc], cell0, na_sc);
+
+
+    return true;
+
 }
