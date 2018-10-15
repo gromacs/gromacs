@@ -53,14 +53,6 @@ typedef int t_iatom;
  */
 typedef real rvec4[4];
 
-typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
-                      const t_iparams iparams[],
-                      const rvec x[], rvec4 f[], rvec fshift[],
-                      const struct t_pbc *pbc, const struct t_graph *g,
-                      real lambda, real *dvdlambda,
-                      const struct t_mdatoms *md, struct t_fcdata *fcd,
-                      int *ddgatindex);
-
 /*
  * The function type t_ifunc() calculates one interaction, using iatoms[]
  * and iparams. Within the function the number of atoms to be used is
@@ -106,8 +98,6 @@ struct t_interaction_function // NOLINT (clang-analyzer-optin.performance.Paddin
                               /* iparams struct! (see idef.h)                 */
     /* A and B are for normal and free energy components respectively.    */
     unsigned int    flags;    /* Flags (see above)                            */
-    int             nrnb_ind; /* index for nrnb (-1 if unknown)               */
-    t_ifunc        *ifunc;    /* the function it self				*/
 };
 
 #define NRFPA(ftype) (interaction_function[(ftype)].nrfpA)

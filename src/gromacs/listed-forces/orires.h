@@ -96,7 +96,12 @@ void diagonalize_orires_tensors(t_oriresdata *od);
 void print_orires_log(FILE *log, t_oriresdata *od);
 
 //! Calculates the orientation restraint forces.
-t_ifunc orires;
+real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
+            const rvec x[], rvec4 f[], rvec fshift[],
+            const t_pbc *pbc, const t_graph *g,
+            real lambda, real *dvdlambda,
+            const t_mdatoms *md, t_fcdata *fcd,
+            int *global_atom_index);
 
 //! Copies the new time averages that have been calculated in calc_orires_dev.
 void update_orires_history(const t_fcdata *fcd, history_t *hist);
