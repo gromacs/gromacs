@@ -107,6 +107,7 @@ void readBabel(const char          *g98,
                int                  maxpot,
                int                  nsymm,
                std::string          forcefield,
-               const char          *jobtype);
+               const char          *jobtype,
+               double               qtot);
 
 #endif

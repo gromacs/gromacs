@@ -140,7 +140,8 @@ int alex_gauss2molprop(int argc, char *argv[])
                   maxpot, 
                   nsymm, 
                   pd.getForceField().c_str(), 
-                  jobtype);
+                  jobtype,
+                  0.0);
         mp.push_back(std::move(mmm));
     }
 

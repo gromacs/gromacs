@@ -423,7 +423,8 @@ class MyMol
                                   int                        qcycle,
                                   int                        maxESP,
                                   real                       qtol,
-                                  const gmx_output_env_t    *oenv);
+                                  const gmx_output_env_t    *oenv,
+                                  gmx_bool                  bPlotESP);
 
         /*! \brief
          * Return the root-mean square deviation of

@@ -128,6 +128,7 @@ int alex_gentop(int argc, char *argv[])
     static real                      kp             = 5;
     static real                      btol           = 0.2;
     static real                      qtol           = 1e-6;
+    static real                      qtot           = 0;
     static real                      zmin           = 5;
     static real                      zmax           = 100;
     static real                      delta_z        = -1;
@@ -161,6 +162,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bEntropy       = false;
     static gmx_bool                  bGenVSites     = false;
     static gmx_bool                  bDihedral      = false;
+    static gmx_bool                  bPlotESP       = false;
     static gmx_bool                  b13            = false;
     static gmx_bool                  bLOG           = false;
     static gmx_bool                  bCUBE          = false;
@@ -268,12 +270,16 @@ int alex_gentop(int argc, char *argv[])
           "Charge distribution used" },
         { "-qtol",   FALSE, etREAL, {&qtol},
           "Tolerance for assigning charge generation algorithm" },
+        { "-qtot",   FALSE, etREAL, {&qtot},
+          "Total charge of the molecule. If the input file is a Gaussian log file, qtot will be taken from the log file." },
         { "-qcycle", FALSE, etINT, {&qcycle},
           "Max number of tries for optimizing the charges. The trial with lowest chi2 will be used for generating a topology. Will be turned off if randzeta is No." },
         { "-hfac",    FALSE, etREAL, {&hfac},
           "HIDDENFudge factor for AXx algorithms that modulates J00 for hydrogen atoms by multiplying it by (1 + hfac*qH). This hack is originally due to Rappe & Goddard." },
         { "-qsymm",  FALSE, etBOOL, {&bQsym},
-          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
+          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },                    
+        { "-plotESP",  FALSE, etBOOL, {&bPlotESP},
+          "Plot Alexandria ESP vs QM ESP read from the log file." },          
         { "-symm",   FALSE, etSTR, {&symm_string},
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
         { "-cgsort", FALSE, etSTR, {cgopt},
@@ -409,13 +415,14 @@ int alex_gentop(int argc, char *argv[])
                           maxpot,
                           nsymm,
                           pd.getForceField().c_str(),
-                          jobtype);
+                          jobtype,
+                          qtot);
                 mps.push_back(mp);
             }
         }
         else
         {
-            gmx_fatal(FARGS, "No input file has been specified");
+            gmx_fatal(FARGS, "No input file has been specified.");
         }
     }
     for (auto mpi = mps.begin(); mpi < mps.end(); mpi++)
@@ -454,7 +461,8 @@ int alex_gentop(int argc, char *argv[])
                                        qcycle,
                                        maxpot,
                                        qtol,
-                                       oenv);
+                                       oenv,
+                                       bPlotESP);
     }
     if (bCUBE && immOK == imm)
     {
@@ -507,7 +515,7 @@ int alex_gentop(int argc, char *argv[])
     }
     else
     {
-        printf("\nWARNING: alexandria ended prematurely due to \"%s\"\n", alexandria::immsg(imm));
+        printf("\nWARNING: Alexandria gentop ended prematurely due to \"%s\"\n", alexandria::immsg(imm));
     }
     return 0;
 }

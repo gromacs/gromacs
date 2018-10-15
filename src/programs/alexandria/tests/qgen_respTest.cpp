@@ -89,7 +89,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Read input file for molprop
             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
             readBabel(dataName.c_str(), molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd_.getForceField(), jobtype);
+                      maxpot, nsymm, pd_.getForceField(), jobtype, 0.0);
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
@@ -133,7 +133,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
                                 hfac, lot, false, symm_string, cr, 
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
-                                hwinfo, qcycle, maxpot, qtol, nullptr);
+                                hwinfo, qcycle, maxpot, qtol, nullptr, false);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)

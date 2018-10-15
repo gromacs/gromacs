@@ -132,7 +132,8 @@ class AcmTest : public gmx::test::CommandLineTestBase
                       maxpot, 
                       nsymm, 
                       pd_.getForceField().c_str(), 
-                      jobtype);
+                      jobtype,
+                      0.0);
             
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
@@ -163,7 +164,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                                 eqgACM, watoms, hfac, lot,
                                 true, symm_string, cr,
                                 nullptr, hwinfo, qcycle,
-                                maxpot, qtol, nullptr);
+                                maxpot, qtol, nullptr, false);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.topology_->atoms.nr; atom++)

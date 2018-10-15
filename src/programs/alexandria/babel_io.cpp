@@ -82,6 +82,10 @@
 #endif
 
 
+static inline double A2PM(double a) {return a*1.0e+2;} /* Angstrom to pm */
+
+static inline double NM_cubed_to_A_cubed(double a) {return a*1.0e+3;} /* nm^3 to A^3 */
+
 enum einformat{
     einfGaussian    = 0,
     einfNotGaussian = 1,
@@ -195,9 +199,9 @@ void readBabel(const char          *g09,
                int                  maxPotential,
                int                  nsymm,
                std::string          forcefield,
-               const char          *jobType)
+               const char          *jobType,
+               double               qtot)
 {
-    int                        bondid;
     std::string                formula;
     std::string                attr;
     std::string                value;
@@ -223,7 +227,6 @@ void readBabel(const char          *g09,
     OpenBabel::OBMatrixData   *pol_tensor;
     OpenBabel::OBFreeGrid     *esp;
     std::vector<alexandria::ElectrostaticPotential> espv;
-    std::vector<std::string> QM_charge_models = {"Mulliken charges", "ESP charges", "Hirshfeld charges", "CM5 charges"};
 
     alexandria::jobType        jobtype = alexandria::string2jobType(jobType);    
     OpenBabel::OBConversion    *conv   = readBabel(g09, &mol, &inputformat);
@@ -238,33 +241,30 @@ void readBabel(const char          *g09,
     // Chemical Categories
     if (conv->SetOutFormat("fpt"))
     {
-        const char    *exclude[] = {
+        std::vector<std::string> excluded_categories = {
             ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond",
             "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond",
             "Trans_double_bond"
         };
 
-#define nexclude (sizeof(exclude)/sizeof(exclude[0]))
-
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
         conv->AddOption("s");
         conv->Convert();
-        OpenBabel::OBMol         mol2 = mol;  // We need a copy here because WriteString removes the H.
-        std::string              ss   = conv->WriteString(&mol2, false);
-        std::vector<std::string> vs   = gmx::splitString(ss);
-        for (const auto &i : vs)
+        OpenBabel::OBMol         mol_copy   = mol;  // We need a copy here because WriteString removes the H.
+        std::vector<std::string> categories = gmx::splitString(conv->WriteString(&mol_copy, false));
+        for (const auto &category : categories)
         {
             size_t j;
-            for (j = 0; (j < nexclude); j++)
+            for (j = 0; j < excluded_categories.size(); j++)
             {
-                if (strcasecmp(exclude[j], i.c_str()) == 0)
+                if (excluded_categories[j] == category)
                 {
                     break;
                 }
             }
-            if (j == nexclude)
+            if (j == excluded_categories.size())
             {
-                std::string dup = i;
+                std::string dup = category;
                 std::replace_if(dup.begin(), dup.end(), [](const char c) {return c == '_';}, ' ');
                 mpt.AddCategory(dup);
             }
@@ -323,10 +323,26 @@ void readBabel(const char          *g09,
 
     alexandria::Experiment exp(program, method, basis, reference, conformation, g09ptr, jobtype);
     mpt.AddExperiment(exp);
-    mpt.SetCharge(mol.GetTotalCharge());
     mpt.SetMass(mol.GetMolWt());
     mpt.SetMultiplicity(mol.GetTotalSpinMultiplicity());
     mpt.SetFormula(mol.GetFormula());
+    
+    if (inputformat == einfGaussian)
+    {
+        mpt.SetCharge(mol.GetTotalCharge());
+        if (debug)
+        {
+            fprintf(debug, "The total charge of the molecule (%0.2f) is taken from %s\n", qtot, g09);
+        }
+    }
+    else
+    {
+        mpt.SetCharge(qtot);
+        if (debug)
+        {
+            fprintf(debug, "The total charge of the molecule (%0.2f) is assigned from the gentop command line\n", qtot);
+        }
+    }
 
     if (nullptr != molnm)
     {
@@ -347,8 +363,11 @@ void readBabel(const char          *g09,
     }
 
     // Thermochemistry
+    if (inputformat == einfGaussian)
     {
-        double              temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T, CVT, CPT, ZPE;
+        double              temperature = 0, DeltaHf0 = 0, DeltaHfT = 0;
+        double              DeltaGfT    = 0, DeltaSfT = 0, S0T      = 0;
+        double              CVT         = 0, CPT      = 0, ZPE      = 0;
         std::vector<double> Scomponents;
         if (extract_thermochemistry(mol, false, &nsymm,
                                     0, 0.0,
@@ -451,11 +470,11 @@ void readBabel(const char          *g09,
             alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
             
             ca.SetUnit(unit2string(eg2cPm));
-            ca.SetCoords(100*atom->x(), 100*atom->y(), 100*atom->z());
+            ca.SetCoords(A2PM(atom->x()), A2PM(atom->y()), A2PM(atom->z()));
 
             if (inputformat == einfGaussian)
             {   
-                
+                std::vector<std::string> QM_charge_models = {"Mulliken charges", "ESP charges", "Hirshfeld charges", "CM5 charges"};
                 for (const auto &cs : QM_charge_models)
                 {
                     OBpd = (OpenBabel::OBPairData *) mol.GetData(cs);
@@ -463,7 +482,7 @@ void readBabel(const char          *g09,
                     {
                         QM_charge_model    = strdup(OBpd->GetValue().c_str());
                         OBpc               = (OpenBabel::OBPcharge *) mol.GetData(QM_charge_model);
-                        auto                     PartialCharge = OBpc->GetPartialCharge();
+                        auto PartialCharge = OBpc->GetPartialCharge();
                         alexandria::AtomicCharge aq(QM_charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
                         ca.AddCharge(aq);
                     }
@@ -487,15 +506,20 @@ void readBabel(const char          *g09,
     }
 
     // Bonds
-    OBbi   = mol.BeginBonds();
-    bondid = 1;
-    for (OBb = mol.BeginBond(OBbi); (nullptr != OBb); OBb = mol.NextBond(OBbi))
+    OBbi = mol.BeginBonds();    
+    if (OBbi != mol.EndBonds())
     {
-        alexandria::Bond ab(1+OBb->GetBeginAtom()->GetIndex(),
-                            1+OBb->GetEndAtom()->GetIndex(),
-                            OBb->GetBondOrder());
-        mpt.AddBond(ab);
-        bondid++;
+        for (OBb = mol.BeginBond(OBbi); (nullptr != OBb); OBb = mol.NextBond(OBbi))
+        {
+            alexandria::Bond ab(1+OBb->GetBeginAtom()->GetIndex(),
+                                1+OBb->GetEndAtom()->GetIndex(),
+                                OBb->GetBondOrder());
+            mpt.AddBond(ab);
+        }
+    }
+    else
+    {
+        gmx_fatal(FARGS, "No bond is found for %s\n", g09);
     }
 
     // Dipole
@@ -506,8 +530,11 @@ void readBabel(const char          *g09,
         alexandria::MolecularDipole   dp("electronic",
                                          unit2string(eg2cDebye),
                                          0.0,
-                                         v3.GetX(), v3.GetY(), v3.GetZ(),
-                                         v3.length(), 0.0);
+                                         v3.GetX(), 
+                                         v3.GetY(), 
+                                         v3.GetZ(),
+                                         v3.length(), 
+                                         0.0);
         mpt.LastExperiment()->AddDipole(dp);
     }
 
@@ -534,7 +561,7 @@ void readBabel(const char          *g09,
         double               mm[9], alpha, fac;
         int                  i;
         m3.GetArray(mm);
-        fac = 1000*pow(convert2gmx(1, eg2cBohr), 3);
+        fac = NM_cubed_to_A_cubed(pow(convert2gmx(1, eg2cBohr), 3));
         for (i = 0; i < 9; i++)
         {
             mm[i] *= fac;
@@ -564,9 +591,9 @@ void readBabel(const char          *g09,
         for (fgp = esp->BeginPoint(fgpi); (nullptr != fgp); fgp = esp->NextPoint(fgpi))
         {
             alexandria::ElectrostaticPotential ep(xyz_unit, V_unit, ++espid,
-                                                  100*fgp->GetX(),
-                                                  100*fgp->GetY(),
-                                                  100*fgp->GetZ(),
+                                                  A2PM(fgp->GetX()),
+                                                  A2PM(fgp->GetY()),
+                                                  A2PM(fgp->GetZ()),
                                                   fgp->GetV());
             espv.push_back(ep);
         }
