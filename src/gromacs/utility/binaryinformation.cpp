@@ -51,6 +51,10 @@
 #include <fftw3.h>
 #endif
 
+#if GMX_FFT_ARMPL
+#include <armpl.h>
+#endif
+
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
@@ -75,6 +79,7 @@
 #include "buildinfo.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
@@ -189,11 +194,12 @@ void printCopyright(gmx::TextWriter *writer)
     }
 }
 
+
 // Construct a string that describes the library that provides FFT support to this build
 const char *getFftDescriptionString()
 {
 // Define the FFT description string
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 && !GMX_FFT_ARMPL
 #  if GMX_NATIVE_WINDOWS
     // Don't buy trouble
     return "fftw3";
@@ -208,6 +214,21 @@ const char *getFftDescriptionString()
 #endif
 #if GMX_FFT_MKL
     return "Intel MKL";
+#endif
+#if  GMX_FFT_ARMPL
+    // For ARMPL appled to the FFTW version string the version number of the library
+    int         major, minor, patch;
+    const char *build = (char *)malloc(1024*sizeof(*build));
+    armplversion(&major, &minor, &patch, (const char**)&build);
+    const char *versionPrefix =
+#    if GMX_DOUBLE
+        fftw_version;
+#    else
+        fftwf_version;
+#    endif
+    fprintf(stderr, "%s", formatString("---> %s %d.%d.%d [%s]", versionPrefix, major, minor, patch, build).c_str());
+//    fflush(stderr);
+    return formatString("%s %d.%d.%d", versionPrefix, major, minor, patch).c_str();
 #endif
 #if GMX_FFT_FFTPACK
     return "fftpack (built-in)";
@@ -293,6 +314,7 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine("CUDA driver:        " + gmx::getCudaDriverVersionString());
     writer->writeLine("CUDA runtime:       " + gmx::getCudaRuntimeVersionString());
 #endif
+
 }
 
 //! \endcond
