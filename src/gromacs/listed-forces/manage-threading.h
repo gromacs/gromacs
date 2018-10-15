@@ -73,20 +73,10 @@ struct GpuBondedLists
 
     t_iparams             *forceparamsDevice = nullptr;
     t_ilist                iListsDevice[F_NRE]; /**< Interaction lists on the device */
-    rvec                  *xDevice = nullptr;
-    std::vector<gmx::RVec> f;
-    rvec                  *fDevice = nullptr;
-    std::vector<gmx::RVec> fshift;
-    rvec                  *fshiftDevice = nullptr;
-    real                  *qDevice      = nullptr;
-    unsigned short        *cEnerDevice  = nullptr;
-    int                    nalloc       = 0;
     std::vector<real>      vtot;
     real                  *vtotDevice   = nullptr;
-    std::vector<real>      energygrpElec;
-    real                  *energygrpElecDevice = nullptr;
-    std::vector<real>      energygrpVdw;
-    real                  *energygrpVdwDevice = nullptr;
+
+    void                  *stream;
 };
 
 
