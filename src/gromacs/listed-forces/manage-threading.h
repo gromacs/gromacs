@@ -98,15 +98,15 @@ struct GpuBondedLists
     }
 #endif
 
-    InteractionLists   iLists;           /**< The interaction lists */
-    bool               haveInteractions; /**< Tells whether there are any interaction in iLists */
+    InteractionLists    iLists;           /**< The interaction lists */
+    bool                haveInteractions; /**< Tells whether there are any interaction in iLists */
 
-    t_iparams         *forceparamsDevice = nullptr;
-    t_ilist            iListsDevice[F_NRE]; /**< Interaction lists on the device */
-    std::vector<real>  vtot;
-    real              *vtotDevice   = nullptr;
+    t_iparams          *forceparamsDevice = nullptr;
+    t_ilist             iListsDevice[F_NRE]; /**< Interaction lists on the device */
+    std::vector<float>  vtot;
+    float              *vtotDevice   = nullptr;
 
-    void              *stream;
+    void               *stream;
 };
 
 
