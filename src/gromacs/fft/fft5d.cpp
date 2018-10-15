@@ -82,7 +82,7 @@
 FILE* debug = 0;
 #endif
 
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 && !GMX_FFT_ARMPL
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/mutex.h"
@@ -91,7 +91,7 @@ FILE* debug = 0;
 static gmx::Mutex big_fftw_mutex;
 #define FFTW_LOCK try { big_fftw_mutex.lock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 #define FFTW_UNLOCK try { big_fftw_mutex.unlock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-#endif /* GMX_FFT_FFTW3 */
+#endif /* GMX_FFT_FFTW3 && !GMX_FFT_ARMPL */
 
 #if GMX_MPI
 /* largest factor smaller than sqrt */
@@ -439,7 +439,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         fprintf(debug, "Running on %d threads\n", nthreads);
     }
 
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 && !GMX_FFT_ARMPL
     /* Don't add more stuff here! We have already had at least one bug because we are reimplementing
      * the low-level FFT interface instead of using the Gromacs FFT module. If we need more
      * generic functionality it is far better to extend the interface so we can use it for
@@ -569,7 +569,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     }
     if (!plan->p3d) /* for decomposition and if 3d plan did not work */
     {
-#endif              /* GMX_FFT_FFTW3 */
+#endif              /* GMX_FFT_FFTW3 && !GMX_FFT_ARMPL */
     for (s = 0; s < 3; s++)
     {
         if (debug)
@@ -605,7 +605,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         }
     }
 
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 && !GMX_FFT_ARMPL
 }
 #endif
     if ((flags&FFT5D_ORDER_YZ))   /*plan->cart is in the order of transposes */
@@ -977,7 +977,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
     int    s = 0, tstart, tend, bParallelDim;
 
 
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 && !GMX_FFT_ARMPL
     if (plan->p3d)
     {
         if (thread == 0)
@@ -1269,7 +1269,7 @@ void fft5d_destroy(fft5d_plan plan)
             plan->oNout[s] = nullptr;
         }
     }
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 && !GMX_FFT_ARMPL
     FFTW_LOCK;
 #ifdef FFT5D_MPI_TRANSPOS
     for (s = 0; s < 2; s++)
@@ -1282,7 +1282,7 @@ void fft5d_destroy(fft5d_plan plan)
         FFTW(destroy_plan)(plan->p3d);
     }
     FFTW_UNLOCK;
-#endif /* GMX_FFT_FFTW3 */
+#endif /* GMX_FFT_FFTW3 && !GMX_FFT_ARMPL */
 
     if (!(plan->flags&FFT5D_NOMALLOC))
     {
