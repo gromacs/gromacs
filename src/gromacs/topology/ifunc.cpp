@@ -39,6 +39,7 @@
 
 #include "ifunc.h"
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
