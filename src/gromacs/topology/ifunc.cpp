@@ -39,89 +39,85 @@
 
 #include "ifunc.h"
 
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/listed-forces/disre.h"
-#include "gromacs/listed-forces/orires.h"
+#define  def_bonded(str, lstr, nra, nrpa, nrpb) \
+    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND}
 
-#define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND,                        (ind), (func)}
+#define  def_bondedz(str, lstr, nra, nrpa, nrpb) \
+    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_LIMZERO}
 
-#define  def_bondedz(str, lstr, nra, nrpa, nrpb, ind, func) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_LIMZERO,           (ind), (func)}
+#define  def_bondedt(str, lstr, nra, nrpa, nrpb) \
+    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_TABULATED}
 
-#define  def_bondedt(str, lstr, nra, nrpa, nrpb, ind, func) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_TABULATED,         (ind), (func)}
+#define  def_bondedtz(str, lstr, nra, nrpa, nrpb) \
+    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_TABULATED | IF_LIMZERO}
 
-#define  def_bondedtz(str, lstr, nra, nrpa, nrpb, ind, func) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_TABULATED | IF_LIMZERO, (ind), (func)}
+#define   def_angle(str, lstr, nra, nrpa, nrpb) \
+    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_ATYPE}
 
-#define   def_angle(str, lstr, nra, nrpa, nrpb, ind, func) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_ATYPE, (ind), (func)}
+#define    def_bond(str, lstr, nra, nrpa, nrpb) \
+    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_CHEMBOND | IF_BTYPE}
 
-#define    def_bond(str, lstr, nra, nrpa, nrpb, ind, func) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_CHEMBOND | IF_BTYPE, (ind), (func)}
+#define    def_bondt(str, lstr, nra, nrpa, nrpb) \
+    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_CHEMBOND | IF_TABULATED}
 
-#define    def_bondt(str, lstr, nra, nrpa, nrpb, ind, func) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_CHEMBOND | IF_TABULATED, (ind), (func)}
-
-#define  def_bondnb(str, lstr, nra, nrpa, nrpb, ind, func) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_CHEMBOND, (ind), (func)}
+#define  def_bondnb(str, lstr, nra, nrpa, nrpb) \
+    {str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_CHEMBOND}
 
 #define   def_vsite(str, lstr, nra, nrpa) \
-    {str, lstr, (nra), (nrpa),     0, IF_VSITE,                  -1, unimplemented}
+    {str, lstr, (nra), (nrpa),     0, IF_VSITE}
 
 #define     def_shk(str, lstr, nra, nrpa, nrpb) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_CONSTRAINT,             -1, unimplemented}
+    {str, lstr, (nra), (nrpa), (nrpb), IF_CONSTRAINT}
 
 #define   def_shkcb(str, lstr, nra, nrpa, nrpb) \
-    {str, lstr, (nra), (nrpa), (nrpb), IF_CONSTRAINT | IF_CHEMBOND, -1, unimplemented}
+    {str, lstr, (nra), (nrpa), (nrpb), IF_CONSTRAINT | IF_CHEMBOND}
 
 #define      def_nb(str, lstr, nra, nrp) \
-    {str, lstr, (nra), (nrp),     0, IF_NULL,                    -1, unimplemented}
+    {str, lstr, (nra), (nrp),     0, IF_NULL}
 
 #define    def_nofc(str, lstr) \
-    {str, lstr,    0,     0,     0, IF_NULL,                    -1, unimplemented}
+    {str, lstr,    0,     0,     0, IF_NULL}
 
 /* this MUST correspond to the enum in src/gromacs/topology/idef.h */
 const t_interaction_function interaction_function[F_NRE] =
 {
-    def_bond    ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds         ),
-    def_bond    ("G96BONDS", "G96Bond",         2, 2, 2,  eNR_BONDS,  g96bonds      ),
-    def_bond    ("MORSE",    "Morse",           2, 3, 3,  eNR_MORSE,  morse_bonds   ),
-    def_bond    ("CUBICBONDS", "Cubic Bonds",    2, 3, 0,  eNR_CUBICBONDS, cubic_bonds),
-    def_bondnb  ("CONNBONDS", "Connect Bonds",   2, 0, 0,  0,      unimplemented     ),
-    def_bonded  ("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds         ),
-    def_bondnb  ("FENEBONDS", "FENE Bonds",     2, 2, 0,  eNR_FENEBONDS, FENE_bonds ),
-    def_bondt   ("TABBONDS", "Tab. Bonds",      2, 2, 2,  eNR_TABBONDS, tab_bonds   ),
-    def_bondedtz("TABBONDSNC", "Tab. Bonds NC", 2, 2, 2,  eNR_TABBONDS, tab_bonds   ),
-    def_bonded  ("RESTRAINTPOT", "Restraint Pot.", 2, 4, 4,  eNR_RESTRBONDS,  restraint_bonds ),
-    def_angle   ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles        ),
-    def_angle   ("G96ANGLES", "G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
-    def_angle   ("RESTRANGLES", "Restricted Angles", 3, 2, 2,  eNR_ANGLES, restrangles),
-    def_angle   ("LINEAR_ANGLES", "Lin. Angle", 3, 2, 2,  eNR_LINEAR_ANGLES, linear_angles ),
-    def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0, eNR_CROSS_BOND_BOND, cross_bond_bond ),
-    def_bonded  ("CROSS_BOND_ANGLE", "BA-Cross",   3, 4, 0, eNR_CROSS_BOND_ANGLE, cross_bond_angle ),
-    def_angle   ("UREY_BRADLEY", "U-B",          3, 4, 4,  eNR_UREY_BRADLEY, urey_bradley ),
-    def_angle   ("QANGLES", "Quartic Angles",    3, 6, 0,  eNR_QANGLES, quartic_angles ),
-    def_bondedt ("TABANGLES", "Tab. Angles",    3, 2, 2,  eNR_TABANGLES, tab_angles ),
-    def_bonded  ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs         ),
-    def_bonded  ("RBDIHS",   "Ryckaert-Bell.",  4, 6, 6,  eNR_RB, rbdihs            ),
-    def_bonded  ("RESTRDIHS",  "Restricted Dih.",     4, 2, 2,  eNR_PROPER,  restrdihs),
-    def_bonded  ("CBTDIHS",   "CBT Dih.",  4, 6, 6,  eNR_RB, cbtdihs            ),
-    def_bonded  ("FOURDIHS", "Fourier Dih.",    4, 4, 4,  eNR_FOURDIH, rbdihs       ),
-    def_bonded  ("IDIHS",    "Improper Dih.",   4, 2, 2,  eNR_IMPROPER, idihs        ),
-    def_bonded  ("PIDIHS",   "Improper Dih.",   4, 3, 3,  eNR_IMPROPER, pdihs       ),
-    def_bondedt ("TABDIHS", "Tab. Dih.",        4, 2, 2,  eNR_TABDIHS, tab_dihs     ),
-    def_bonded  ("CMAP",  "CMAP Dih.",          5, -1, -1,  eNR_CMAP,   unimplemented ),
+    def_bond    ("BONDS",    "Bond",            2, 2, 2),
+    def_bond    ("G96BONDS", "G96Bond",         2, 2, 2),
+    def_bond    ("MORSE",    "Morse",           2, 3, 3),
+    def_bond    ("CUBICBONDS", "Cubic Bonds",    2, 3, 0),
+    def_bondnb  ("CONNBONDS", "Connect Bonds",   2, 0, 0),
+    def_bonded  ("HARMONIC", "Harmonic Pot.",   2, 2, 2),
+    def_bondnb  ("FENEBONDS", "FENE Bonds",     2, 2, 0),
+    def_bondt   ("TABBONDS", "Tab. Bonds",      2, 2, 2),
+    def_bondedtz("TABBONDSNC", "Tab. Bonds NC", 2, 2, 2),
+    def_bonded  ("RESTRAINTPOT", "Restraint Pot.", 2, 4, 4),
+    def_angle   ("ANGLES",   "Angle",           3, 2, 2),
+    def_angle   ("G96ANGLES", "G96Angle",        3, 2, 2),
+    def_angle   ("RESTRANGLES", "Restricted Angles", 3, 2, 2),
+    def_angle   ("LINEAR_ANGLES", "Lin. Angle", 3, 2, 2),
+    def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0),
+    def_bonded  ("CROSS_BOND_ANGLE", "BA-Cross",   3, 4, 0),
+    def_angle   ("UREY_BRADLEY", "U-B",          3, 4, 4),
+    def_angle   ("QANGLES", "Quartic Angles",    3, 6, 0),
+    def_bondedt ("TABANGLES", "Tab. Angles",    3, 2, 2),
+    def_bonded  ("PDIHS",    "Proper Dih.",     4, 3, 3),
+    def_bonded  ("RBDIHS",   "Ryckaert-Bell.",  4, 6, 6),
+    def_bonded  ("RESTRDIHS",  "Restricted Dih.",     4, 2, 2),
+    def_bonded  ("CBTDIHS",   "CBT Dih.",  4, 6, 6),
+    def_bonded  ("FOURDIHS", "Fourier Dih.",    4, 4, 4),
+    def_bonded  ("IDIHS",    "Improper Dih.",   4, 2, 2),
+    def_bonded  ("PIDIHS",   "Improper Dih.",   4, 3, 3),
+    def_bondedt ("TABDIHS", "Tab. Dih.",        4, 2, 2),
+    def_bonded  ("CMAP",  "CMAP Dih.",          5, -1, -1),
     def_nofc    ("GB12",     "GB 1-2 Pol. (unused)" ),
     def_nofc    ("GB13",     "GB 1-3 Pol. (unused)" ),
     def_nofc    ("GB14",     "GB 1-4 Pol. (unused)" ),
     def_nofc    ("GBPOL",    "GB Polarization (unused)" ),
     def_nofc    ("NPSOLVATION", "Nonpolar Sol. (unused)" ),
-    def_bondedz ("LJ14",     "LJ-14",           2, 2, 2,  eNR_NB14,   unimplemented ),
+    def_bondedz ("LJ14",     "LJ-14",           2, 2, 2),
     def_nofc    ("COUL14",   "Coulomb-14"                                           ),
-    def_bondedz ("LJC14_Q",  "LJC-14 q",        2, 5, 0,  eNR_NB14,   unimplemented ),
-    def_bondedz ("LJC_NB",   "LJC Pairs NB",    2, 4, 0,  eNR_NB14,   unimplemented ),
+    def_bondedz ("LJC14_Q",  "LJC-14 q",        2, 5, 0),
+    def_bondedz ("LJC_NB",   "LJC Pairs NB",    2, 4, 0),
     def_nb      ("LJ_SR",    "LJ (SR)",         2, 2                                ),
     def_nb      ("BHAM",     "Buck.ham (SR)",   2, 3                                ),
     def_nofc    ("LJ_LR",    "LJ (unused)"                                          ),
@@ -133,19 +129,19 @@ const t_interaction_function interaction_function[F_NRE] =
     def_nofc    ("COUL_RECIP", "Coul. recip."                                       ),
     def_nofc    ("LJ_RECIP", "LJ recip."                                            ),
     def_nofc    ("DPD",      "DPD"                                                  ),
-    def_bondnb  ("POLARIZATION", "Polarization", 2, 1, 0,  eNR_POLARIZE, polarize      ),
-    def_bonded  ("WATERPOL", "Water Pol.",      5, 6, 0,  eNR_WPOL,   water_pol     ),
-    def_bonded  ("THOLE",    "Thole Pol.",      4, 3, 0,  eNR_THOLE,  thole_pol     ),
-    def_bondnb  ("ANHARM_POL", "Anharm. Pol.", 2, 3, 0, eNR_ANHARM_POL, anharm_polarize      ),
-    def_bonded  ("POSRES",   "Position Rest.",  1, 3, 3,  eNR_POSRES, unimplemented ),
-    def_bonded  ("FBPOSRES", "Flat-bottom posres", 1, 3, 0, eNR_FBPOSRES, unimplemented ),
-    def_bonded  ("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres     ),
+    def_bondnb  ("POLARIZATION", "Polarization", 2, 1, 0),
+    def_bonded  ("WATERPOL", "Water Pol.",      5, 6, 0),
+    def_bonded  ("THOLE",    "Thole Pol.",      4, 3, 0),
+    def_bondnb  ("ANHARM_POL", "Anharm. Pol.", 2, 3, 0),
+    def_bonded  ("POSRES",   "Position Rest.",  1, 3, 3),
+    def_bonded  ("FBPOSRES", "Flat-bottom posres", 1, 3, 0),
+    def_bonded  ("DISRES",   "Dis. Rest.",      2, 6, 0),
     def_nofc    ("DISRESVIOL",   "D.R.Viol. (nm)"                                       ),
-    def_bonded  ("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires        ),
+    def_bonded  ("ORIRES",   "Orient. Rest.",   2, 6, 0),
     def_nofc    ("ORDEV",    "Ori. R. RMSD"                                         ),
-    def_bonded  ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres        ),
-    def_bonded  ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ, angresz       ),
-    def_bonded  ("DIHRES",   "Dih. Rest.",      4, 3, 3,  eNR_DIHRES, dihres        ),
+    def_bonded  ("ANGRES",   "Angle Rest.",     4, 3, 3),
+    def_bonded  ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3),
+    def_bonded  ("DIHRES",   "Dih. Rest.",      4, 3, 3),
     def_nofc    ("DIHRESVIOL",  "Dih. Rest. Viol."                                     ), /* obsolete */
     def_shkcb   ("CONSTR",   "Constraint",      2, 1, 1                             ),
     def_shk     ("CONSTRNC", "Constr. No Conn.", 2, 1, 1                             ),
