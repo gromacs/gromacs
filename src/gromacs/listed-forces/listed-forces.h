@@ -73,6 +73,7 @@
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
 struct gmx_multisim_t;
+struct gmx_ffparams_t;
 struct GpuBondedLists;
 class history_t;
 struct t_commrec;
@@ -146,33 +147,35 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 int                            *global_atom_index,
                 int                             flags);
 
+/*! \brief Initializes the GPU bonded setup */
+CUDA_FUNC_QUALIFIER
+void
+init_gpu_bonded(GpuBondedLists       *gpuBondedLists,
+                const gmx_ffparams_t &ffparams,
+                void                 *streamPtr) CUDA_FUNC_TERM
+
 /*! \brief Updates the bonded work to run on a GPU
  *
  * Intended to be called after each domain decomposition stage. */
 CUDA_FUNC_QUALIFIER
-void update_gpu_bonded(GpuBondedLists gmx_unused    *gpuBondedLists,
-                       const t_idef gmx_unused      *idef,
-                       int gmx_unused                size,
-                       const t_mdatoms gmx_unused   *md,
-                       gmx_grppairener_t gmx_unused *grppener) CUDA_FUNC_TERM
+void update_gpu_bonded(GpuBondedLists gmx_unused *gpuBondedLists) CUDA_FUNC_TERM
 
 /*! \brief Launches bonded kernels on a GPU */
 CUDA_FUNC_QUALIFIER
-void do_bonded_gpu(t_forcerec gmx_unused *fr,
-                   int gmx_unused numEnergyGroups,
-                   int gmx_unused flags,
-                   int gmx_unused natoms, rvec gmx_unused x[],
-                   const matrix gmx_unused box) CUDA_FUNC_TERM
+void do_bonded_gpu(t_forcerec gmx_unused   *fr,
+                   int gmx_unused           flags,
+                   void gmx_unused         *xq,
+                   const matrix gmx_unused  box,
+                   void gmx_unused         *f,
+                   rvec gmx_unused         *fshift) CUDA_FUNC_TERM
 
-/*! \brief Waits for bonded kernels on a GPU and returns energies and forces. */
+/*! \brief Copies back the bonded energies. */
 CUDA_FUNC_QUALIFIER
-void do_bonded_gpu_finalize(t_forcerec gmx_unused *fr, int gmx_unused flags, int gmx_unused natoms,
-                            rvec gmx_unused *input_force, gmx_enerdata_t gmx_unused *enerd) CUDA_FUNC_TERM
+void bonded_gpu_get_energies(t_forcerec gmx_unused *fr, int gmx_unused flags,
+                             gmx_enerdata_t gmx_unused *enerd) CUDA_FUNC_TERM
 
-/*! \brief Clears GPU buffers between force calculations */
+/*! \brief Copies back the bonded energies. */
 CUDA_FUNC_QUALIFIER
-void reset_gpu_bonded(GpuBondedLists gmx_unused *gpuBondedLists,
-                      int gmx_unused             size,
-                      int gmx_unused             nener) CUDA_FUNC_TERM
+bool bonded_gpu_have_interactions(GpuBondedLists gmx_unused *gpuBondedLists) GPU_FUNC_TERM_WITH_RETURN(false)
 
 #endif
