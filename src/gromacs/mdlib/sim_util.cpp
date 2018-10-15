@@ -1287,6 +1287,16 @@ static void do_force_cutsVERLET(FILE *fplog,
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+
+        if (!DOMAINDECOMP(cr))
+        {
+            do_bonded_gpu(fr,
+                          flags,
+                          nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
+                          nbnxn_gpu_get_f(nbv->gpu_nbv),
+                          nbnxn_gpu_get_fshift(nbv->gpu_nbv));
+
+        }
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
@@ -1348,6 +1358,13 @@ static void do_force_cutsVERLET(FILE *fplog,
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
                          step, nrnb, wcycle);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+
+            do_bonded_gpu(fr,
+                          flags,
+                          nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
+                          nbnxn_gpu_get_f(nbv->gpu_nbv),
+                          nbnxn_gpu_get_fshift(nbv->gpu_nbv));
+
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
     }
@@ -1535,28 +1552,13 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         update_QMMMrec(cr, fr, as_rvec_array(x.data()), mdatoms, box);
     }
-    if (fr->gpuBondedLists)
+
+    if (bNS && fr->gpuBondedLists)
     {
-        if (bNS)
-        {
-            update_gpu_bonded(fr->gpuBondedLists, &(top->idef),
-                              x.size(), mdatoms, &(enerd->grpp));
-        }
-        reset_gpu_bonded(fr->gpuBondedLists, nbv->nbs->natoms_nonlocal, enerd->grpp.nener);
+        update_gpu_bonded(fr->gpuBondedLists);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
-    if (fr->gpuBondedLists)
-    {
-        /* NOTE: Currently top->idef is used instead of fr->gpuBondedLists,
-         *       because we still pass normal x/f instead of the nbnxn x/f.
-         */
-        do_bonded_gpu(fr, mdatoms->nenergrp,
-                      flags, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()),
-                      box);
-        do_bonded_gpu_finalize(fr, flags, nbv->nbs->natoms_nonlocal, f, enerd);
-    }
-
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
@@ -1708,6 +1710,11 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
                                        nbv->nbat, f, wcycle);
+    }
+
+    if (fr->gpuBondedLists)
+    {
+        do_bonded_gpu_finalize(fr, flags, enerd);
     }
 
     if (DOMAINDECOMP(cr))
