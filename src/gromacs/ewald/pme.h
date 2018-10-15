@@ -425,4 +425,6 @@ GPU_FUNC_QUALIFIER bool pme_gpu_try_finish_task(const gmx_pme_t                *
 GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme),
                                                    gmx_wallcycle   *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
 
+
+CUDA_FUNC_QUALIFIER void *pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) CUDA_FUNC_TERM
 #endif
