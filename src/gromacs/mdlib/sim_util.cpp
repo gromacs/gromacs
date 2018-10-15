@@ -1297,13 +1297,14 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (haveGpuBondedWork && !DOMAINDECOMP(cr))
         {
+            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_BONDED);
             bool calcEnergyAndOrVirial = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
             do_bonded_gpu(fr,
                           calcEnergyAndOrVirial,
                           nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
                           nbnxn_gpu_get_f(nbv->gpu_nbv),
                           nbnxn_gpu_get_fshift(nbv->gpu_nbv));
-
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
         }
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
@@ -1367,12 +1368,14 @@ static void do_force_cutsVERLET(FILE *fplog,
                          step, nrnb, wcycle);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
+            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_BONDED);
             bool calcEnergyAndOrVirial = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
             do_bonded_gpu(fr,
                           calcEnergyAndOrVirial,
                           nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
                           nbnxn_gpu_get_f(nbv->gpu_nbv),
                           nbnxn_gpu_get_fshift(nbv->gpu_nbv));
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
 
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
@@ -1719,7 +1722,9 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
     {
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
         bonded_gpu_get_energies(fr, enerd);
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
     }
 
     if (DOMAINDECOMP(cr))
