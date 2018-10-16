@@ -377,6 +377,22 @@ using AllocatorTypesToTest = ::testing::Types<HostAllocator<real>,
 
 TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
 
+TEST(HostAllocatorTest, WorksWithStdVector)
+{
+    {
+        std::vector<int, HostAllocator<int>> defaultVector;
+        EXPECT_FALSE(isPinned(defaultVector));
+        defaultVector.resize(1);
+        EXPECT_FALSE(isPinned(defaultVector));
+    }
+    {
+        std::vector<int, HostAllocator<int>> pinnedVector(HostAllocator<int>(PinningPolicy::PinnedIfSupported));
+        EXPECT_FALSE(isPinned(pinnedVector));
+        pinnedVector.resize(1);
+        EXPECT_TRUE(isPinned(pinnedVector));
+    }
+}
+
 } // namespace test
 } // namespace gmx
 
