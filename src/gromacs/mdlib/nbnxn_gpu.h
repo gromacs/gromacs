@@ -43,9 +43,11 @@
 #ifndef GMX_MDLIB_NBNXN_GPU_H
 #define GMX_MDLIB_NBNXN_GPU_H
 
+#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
+#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -184,5 +186,30 @@ void nbnxn_gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
 int nbnxn_gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
+
+GPU_FUNC_QUALIFIER
+void nbnxn_gpu_init_x_to_nbat_x(int                gmx_unused  ncxy,
+                                const nbnxn_search gmx_unused *nbs,
+                                gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
+                                const int          gmx_unused *a,
+                                int                gmx_unused  a_nalloc,
+                                const int          gmx_unused *na_all,
+                                const int          gmx_unused *cxy_ind,
+                                int                gmx_unused  iloc) GPU_FUNC_TERM
+
+GPU_FUNC_QUALIFIER
+bool nbnxn_gpu_x_to_nbat_x(int                gmx_unused  ncxy,
+                           int                gmx_unused  g,
+                           gmx_bool           gmx_unused  FillLocal,
+                           const nbnxn_search gmx_unused *nbs,
+                           gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
+                           void               gmx_unused *xPmeDevicePtr,
+                           const int          gmx_unused *na_all,
+                           const int          gmx_unused *cxy_ind,
+                           int                gmx_unused  cell0,
+                           int                gmx_unused  na_sc,
+                           int                gmx_unused  iloc,
+                           rvec               gmx_unused *x) GPU_FUNC_TERM_WITH_RETURN(false)
+
 
 #endif
