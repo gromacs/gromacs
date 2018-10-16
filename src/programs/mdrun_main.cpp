@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,5 +53,5 @@ void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
 int main(int argc, char *argv[])
 {
     return gmx::CommandLineModuleManager::runAsMainCMainWithSettings(
-            argc, argv, &gmx_mdrun, &initSettingsNoNice);
+            argc, argv, &gmx::gmx_mdrun, &initSettingsNoNice);
 }

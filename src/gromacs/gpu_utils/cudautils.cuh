@@ -188,8 +188,8 @@ void initParamLookupTable(T                        * &d_ptr,
 
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.
-extern template void initParamLookupTable<int>(int * &, cudaTextureObject_t &, const int *, int, const gmx_device_info_t *);
-extern template void initParamLookupTable<float>(float * &, cudaTextureObject_t &, const float *, int, const gmx_device_info_t *);
+extern template void initParamLookupTable<int>(int * &, cudaTextureObject_t &, const int *, int);
+extern template void initParamLookupTable<float>(float * &, cudaTextureObject_t &, const float *, int);
 
 /*! \brief Destroy parameter lookup table.
  *
@@ -205,8 +205,8 @@ void destroyParamLookupTable(T                       *d_ptr,
 
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.
-extern template void destroyParamLookupTable<int>(int *, cudaTextureObject_t, const gmx_device_info_t *);
-extern template void destroyParamLookupTable<float>(float *, cudaTextureObject_t, const gmx_device_info_t *);
+extern template void destroyParamLookupTable<int>(int *, cudaTextureObject_t);
+extern template void destroyParamLookupTable<float>(float *, cudaTextureObject_t);
 
 /*! \brief Add a triplets stored in a float3 to an rvec variable.
  *
