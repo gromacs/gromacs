@@ -45,6 +45,7 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
@@ -172,7 +173,17 @@ static OpenBabel::OBConversion *readBabel(const       char *g09,
     
     if (conv->SetInFormat(informat, isGzip))
     {
-        if (conv->Read(mol, &g09f))
+        bool read_ok = false;
+        try
+        {
+            read_ok = conv->Read(mol, &g09f);
+        }
+        catch (const std::exception& ex)
+        {        
+            gmx::printFatalErrorMessage(stderr, ex);
+        }
+        
+        if (read_ok)
         {
             g09f.close();
             return conv; // exit with success

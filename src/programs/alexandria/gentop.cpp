@@ -116,32 +116,17 @@ int alex_gentop(int argc, char *argv[])
     };
 
     const  int                       NFILE          = asize(fnm);
-
+    
     static int                       maxpot         = 100;
-    static int                       seed           = 0;
     static int                       nsymm          = 0;
     static int                       qcycle         = 1000;
-    static int                       nmol           = 1;
     static int                       nexcl          = 2;
-    static real                      kb             = 4e5;
-    static real                      kt             = 400;
-    static real                      kp             = 5;
     static real                      btol           = 0.2;
     static real                      qtol           = 1e-6;
     static real                      qtot           = 0;
-    static real                      zmin           = 5;
-    static real                      zmax           = 100;
-    static real                      delta_z        = -1;
     static real                      hfac           = 0;
-    static real                      qweight        = 1e-3;
-    static real                      bhyper         = 0.1;
-    static real                      th_toler       = 170;
-    static real                      ph_toler       = 5;
     static real                      watoms         = 0;
     static real                      spacing        = 0.1;
-    static real                      dbox           = 0.370424;
-    static real                      penalty_fac    = 1;
-    static real                      rDecrZeta      = -1;
     static real                      efield         = 0;
     static char                     *molnm          = (char *)"";
     static char                     *iupac          = (char *)"";
@@ -150,35 +135,22 @@ int alex_gentop(int argc, char *argv[])
     static char                     *conf           = (char *)"minimum";
     static char                     *basis          = (char *)"";
     static char                     *jobtype        = (char *)"unknown";
-    static gmx_bool                  bRemoveDih     = false;
     static gmx_bool                  bQsym          = false;
-    static gmx_bool                  bCONECT        = false;
-    static gmx_bool                  bFitCube       = false;
-    static gmx_bool                  bParam         = false;
     static gmx_bool                  bITP           = false;
     static gmx_bool                  bPairs         = false;
     static gmx_bool                  bUsePDBcharge  = false;
-    static gmx_bool                  bFitZeta       = false;
-    static gmx_bool                  bEntropy       = false;
     static gmx_bool                  bGenVSites     = false;
     static gmx_bool                  bDihedral      = false;
     static gmx_bool                  bPlotESP       = false;
-    static gmx_bool                  b13            = false;
     static gmx_bool                  bLOG           = false;
     static gmx_bool                  bCUBE          = false;
-    static gmx_bool                  bZatype        = true;
     static gmx_bool                  bH14           = true;
-    static gmx_bool                  bRound         = true;
-    static gmx_bool                  bPBC           = true;
     static gmx_bool                  bVerbose       = true;
-    static gmx_bool                  bRandQ         = true;
-    static gmx_bool                  bSkipVSites    = true;
 
     static const char               *cqdist[]       = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", "Yang", "Bultinck", "Rappe", nullptr};
     static const char               *cqgen[]        = {nullptr, "None", "ACM", "ESP", "RESP", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = "AFF/ACM";
-    static const char               *dzatoms        = "";
     static const char               *ff             = "alexandria";
 
     t_pargs                          pa[]     = {
@@ -194,12 +166,8 @@ int alex_gentop(int argc, char *argv[])
           "Use this method and level of theory when selecting coordinates and charges" },
         { "-dih",    FALSE, etBOOL, {&bDihedral},
           "Add dihedrals to the topology" },
-        { "-ub",    FALSE, etBOOL, {&b13},
-          "Add urey-bradely to the topology" },
         { "-H14",    FALSE, etBOOL, {&bH14},
           "HIDDENUse 3rd neighbour interactions for hydrogen atoms" },
-        { "-remdih", FALSE, etBOOL, {&bRemoveDih},
-          "HIDDENRemove dihedrals on the same bond as an improper" },
         { "-pairs",  FALSE, etBOOL, {&bPairs},
           "HIDDENOutput 1-4 interactions (pairs) in topology file. Check consistency of your option with the [TT]-nexcl[tt] flag." },
         { "-name",   FALSE, etSTR,  {&molnm},
@@ -214,56 +182,16 @@ int alex_gentop(int argc, char *argv[])
           "Fraction of potential points to read from the gaussian file (percent). If 100 all points are registered, else a selection of points evenly spread over the range of values is taken" },
         { "-nsymm", FALSE, etINT, {&nsymm},
           "Symmetry number of the molecule can be supplied here if you know there is an error in the input file" },
-        { "-pbc",    FALSE, etBOOL, {&bPBC},
-          "Use periodic boundary conditions." },
-        { "-seed",   FALSE, etINT,  {&seed},
-          "Random number seed. If zero, a seed will be generated." },
-        { "-conect", FALSE, etBOOL, {&bCONECT},
-          "HIDDENUse CONECT records in an input pdb file to signify bonds" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
           "Generate virtual sites. Check and double check." },
-        { "-skipvsites", FALSE, etBOOL, {&bSkipVSites},
-          "HIDDENSkip virtual sites in the input file" },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
           "HIDDENUse the B-factor supplied in a pdb file for the atomic charges" },
         { "-btol",  FALSE, etREAL, {&btol},
           "HIDDENRelative tolerance for determining whether two atoms are bonded." },
         { "-spacing", FALSE, etREAL, {&spacing},
           "Spacing of grid points for computing the potential (not used when a reference file is read)." },
-        { "-dbox", FALSE, etREAL, {&dbox},
-          "HIDDENExtra space around the molecule when generating an ESP output file with the [TT]-pot[tt] option. The strange default value corresponds to 0.7 a.u. that is sometimes used in other programs." },
-        { "-qweight", FALSE, etREAL, {&qweight},
-          "Restraining force constant for the RESP algorithm (AXp only, and with [TT]-axpresp[tt])." },
-        { "-bhyper", FALSE, etREAL, {&bhyper},
-          "Hyperbolic term for the RESP algorithm (AXp only), and with [TT]-axpresp[tt])." },
-        { "-entropy", FALSE, etBOOL, {&bEntropy},
-          "HIDDENUse maximum entropy criterion for optimizing to ESP data rather than good ol' RMS" },
-        { "-fitcube", FALSE, etBOOL, {&bFitCube},
-          "HIDDENFit to the potential in the cube file rather than the log file. This typically gives incorrect results if it converges at all, because points close to the atoms are taken into account on equal footing with points further away." },
-        { "-zmin",  FALSE, etREAL, {&zmin},
-          "HIDDENMinimum allowed zeta (1/nm) when fitting models containing gaussian or Slater charges to the ESP" },
-        { "-zmax",  FALSE, etREAL, {&zmax},
-          "HIDDENMaximum allowed zeta (1/nm) when fitting models containing gaussian or Slater charges to the ESP" },
-        { "-deltaz", FALSE, etREAL, {&delta_z},
-          "HIDDENMaximum allowed deviation from the starting value of zeta. If this option is set then both zmin and zmax will be ignored. A reasonable value would be 10/nm." },
-        { "-dzatoms", FALSE, etSTR, {&dzatoms},
-          "HIDDENList of atomtypes for which the fitting is restrained by the -deltaz option." },
-        { "-zatype", FALSE, etBOOL, {&bZatype},
-          "HIDDENUse the same zeta for each atom with the same atomtype in a molecule when fitting gaussian or Slater charges to the ESP" },
-        { "-decrzeta", FALSE, etREAL, {&rDecrZeta},
-          "HIDDENGenerate decreasing zeta with increasing row numbers for atoms that have multiple distributed charges. In this manner the 1S electrons are closer to the nucleus than 2S electrons and so on. If this number is < 0, nothing is done, otherwise a penalty is imposed in fitting if the Z2-Z1 < this number." },
-        { "-randq", FALSE, etBOOL, {&bRandQ},
-          "HIDDENUse random charges to start with when optimizing against Gaussian ESP data. Makes the optimization non-deterministic." },
-        { "-fitzeta", FALSE, etBOOL, {&bFitZeta},
-          "HIDDENControls whether or not the Gaussian/Slater widths are optimized when fitting to a QM computed ESP" },
-        { "-pfac",   FALSE, etREAL, {&penalty_fac},
-          "HIDDENFactor for weighing penalty function for e.g. [TT]-decrzeta[tt] option." },
         { "-watoms", FALSE, etREAL, {&watoms},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use 0. For point+smeared charges 1 is recommended." },
-        { "-param", FALSE, etBOOL, {&bParam},
-          "Print parameters in the output" },
-        { "-round",  FALSE, etBOOL, {&bRound},
-          "Round off measured values for distances and angles" },
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
         { "-qdist",   FALSE, etENUM, {cqdist},
@@ -284,18 +212,6 @@ int alex_gentop(int argc, char *argv[])
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
         { "-cgsort", FALSE, etSTR, {cgopt},
           "HIDDENOption for assembling charge groups: based on Atom (default, does not change the atom order), Group (e.g. CH3 groups are kept together), or Neutral sections (try to find groups that together are neutral). If the order of atoms is changed an index file is written in order to facilitate changing the order in old files." },
-        { "-nmolsort", FALSE, etINT, {&nmol},
-          "HIDDENNumber of molecules to output to the index file in case of sorting. This is a convenience option to reorder trajectories for use with a new force field." },
-        { "-th_toler", FALSE, etREAL, {&th_toler},
-          "HIDDENIf bond angles are larger than this value the group will be treated as a linear one and a virtual site will be created to keep the group linear" },
-        { "-ph_toler", FALSE, etREAL, {&ph_toler},
-          "HIDDENIf dihedral angles are less than this (in absolute value) the atoms will be treated as a planar group with an improper dihedral being added to keep the group planar" },
-        { "-kb",    FALSE, etREAL, {&kb},
-          "HIDDENBonded force constant (kJ/mol/nm^2)" },
-        { "-kt",    FALSE, etREAL, {&kt},
-          "HIDDENAngle force constant (kJ/mol/rad^2)" },
-        { "-kp",    FALSE, etREAL, {&kp},
-          "HIDDENDihedral angle force constant (kJ/mol/rad^2)" },
         { "-nexcl",    FALSE, etINT, {&nexcl},
           "HIDDENNumber of exclusion" },
         { "-jobtype",  FALSE, etSTR, {&jobtype},
