@@ -339,7 +339,7 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
 }
 //! Converts \p src with atom indices in state order to \p dest in nbnxn order
 static void convertIlistToNbnxnOrder(const t_ilist            &src,
-                                     InteractionList          *dest,
+                                     HostInteractionList      *dest,
                                      int                       numAtomsPerInteraction,
                                      gmx::ArrayRef<const int>  nbnxnAtomOrder)
 {
