@@ -1018,7 +1018,7 @@ update_gpu_bonded(GpuBondedLists *gpuBondedLists)
     // forceatoms
     for (int ftype : ftypesOnGpu)
     {
-        const InteractionList &iList = gpuBondedLists->iLists[ftype];
+        const auto &iList = gpuBondedLists->iLists[ftype];
 
         if (iList.size() > 0)
         {
@@ -1028,7 +1028,7 @@ update_gpu_bonded(GpuBondedLists *gpuBondedLists)
 
             copyToDeviceBuffer(&iListDevice.iatoms, iList.iatoms.data(),
                                0, iList.size(),
-                               *stream, GpuApiCallBehavior::Sync, nullptr);
+                               *stream, GpuApiCallBehavior::Async, nullptr);
         }
     }
 }
@@ -1063,7 +1063,7 @@ launch_bonded_kernels(t_forcerec   *fr,
 
     for (int ftype : ftypesOnGpu)
     {
-        const InteractionList &iList = gpuBondedLists->iLists[ftype];
+        const auto &iList = gpuBondedLists->iLists[ftype];
 
         if (iList.size() > 0)
         {
@@ -1097,7 +1097,7 @@ launch_bonded_kernels(t_forcerec   *fr,
 
     for (int ftype : ftypesOnGpu)
     {
-        const InteractionList &iList = fr->gpuBondedLists->iLists[ftype];
+        const auto &iList = fr->gpuBondedLists->iLists[ftype];
 
         if (iList.size() > 0)
         {
@@ -1223,7 +1223,7 @@ bonded_gpu_get_energies(t_forcerec *fr,  gmx_enerdata_t *enerd)
     float        *vtot   = gpuBondedLists->vtot.data();
     copyFromDeviceBuffer(vtot, &gpuBondedLists->vtotDevice,
                          0, F_NRE,
-                         *stream, GpuApiCallBehavior::Sync, nullptr);
+                         *stream, GpuApiCallBehavior::Async, nullptr);
     cudaError_t stat = cudaStreamSynchronize(*stream);
     CU_RET_ERR(stat, "D2H transfer failed");
 
