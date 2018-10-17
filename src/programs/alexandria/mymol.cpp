@@ -1487,6 +1487,7 @@ void MyMol::CalcDipole()
     rvec mu;
     CalcDipole(mu);
     set_muQM(qtCalc, mu);
+    rotateDipole(mu_qm_[qtCalc], mu_qm_[qtESP]);  
 }
 
 void MyMol::CalcDipole(rvec mu)
