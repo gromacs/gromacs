@@ -316,6 +316,10 @@ Performance and Run Control
         turns off solvent optimizations; automatic if ``GMX_NB_GENERIC``
         is enabled.
 
+``GNX_NO_UPDATEGROUPS``
+        turns off update groups. May allow for a decomposition of more
+        domains for small systems at the cost of communication during update.
+
 ``GMX_NSCELL_NCG``
         the ideal number of charge groups per neighbor searching grid cell is hard-coded
         to a value of 10. Setting this environment variable to any other integer value overrides this hard-coded

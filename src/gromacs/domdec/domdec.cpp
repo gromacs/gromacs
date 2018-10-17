@@ -2088,7 +2088,9 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
     }
 
     comm->updateGroupingPerMoleculetype = gmx::makeUpdateGroups(mtop);
-    comm->useUpdateGroups               = !comm->updateGroupingPerMoleculetype.empty();
+    comm->useUpdateGroups               =
+        (!comm->updateGroupingPerMoleculetype.empty() &&
+         getenv("GMX_NO_UPDATEGROUPS") == nullptr);
 
     if (comm->useUpdateGroups)
     {
