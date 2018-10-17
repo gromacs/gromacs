@@ -32,6 +32,13 @@ empty file name strings.
 
 :issue:`2653`
 
+Fix helix segmentation fault
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The .tpr file is now read correctly. 
+
+:issue:`2701`
+
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
