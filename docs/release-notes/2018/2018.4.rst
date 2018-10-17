@@ -32,6 +32,14 @@ empty file name strings.
 
 :issue:`2653`
 
+Fix helix segmentation fault
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+gmx helix would segfault because it required a mtop to compare atom numbers but passed
+a nullptr to the function. Fixed by providing valid mtop.
+
+:issue:`2701`
+
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
