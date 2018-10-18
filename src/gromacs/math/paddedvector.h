@@ -46,6 +46,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/allocator.h"
@@ -54,6 +55,7 @@
 namespace gmx
 {
 
+// TODO remove this when making use of ArrayRefWithPadding
 /*! \brief Temporary definition of a type usable for SIMD-style loads of RVec quantities from a view.
  *
  * \todo Find a more permanent solution that permits the update code to safely
@@ -381,11 +383,13 @@ class PaddedVector
         reference operator[](int i) { return storage_[i]; }
         //! Indexing operator as const.
         const_reference operator[](int i) const { return storage_[i]; }
+        // TODO rename this when making use of ArrayRefWithPadding
         //! Returns an ArrayRef of elements that includes the padding region, e.g. for use in SIMD code.
         PaddedArrayRef<T> paddedArrayRef()
         {
             return PaddedArrayRef<T>(storage_);
         }
+        // TODO rename this when making use of ArrayRefWithPadding
         //! Returns an ArrayRef of const elements that includes the padding region, e.g. for use in SIMD code.
         PaddedArrayRef<const T> paddedConstArrayRef() const
         {
