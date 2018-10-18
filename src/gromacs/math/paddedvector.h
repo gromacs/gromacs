@@ -46,6 +46,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/allocator.h"
@@ -53,13 +54,6 @@
 
 namespace gmx
 {
-
-/*! \brief Temporary definition of a type usable for SIMD-style loads of RVec quantities from a view.
- *
- * \todo Find a more permanent solution that permits the update code to safely
- * use a padded, aligned array-ref type. */
-template <typename T>
-using PaddedArrayRef = ArrayRef<T>;
 
 namespace detail
 {
@@ -382,14 +376,14 @@ class PaddedVector
         //! Indexing operator as const.
         const_reference operator[](int i) const { return storage_[i]; }
         //! Returns an ArrayRef of elements that includes the padding region, e.g. for use in SIMD code.
-        PaddedArrayRef<T> paddedArrayRef()
+        ArrayRefWithPadding<T> arrayRefWithPadding()
         {
-            return PaddedArrayRef<T>(storage_);
+            return ArrayRefWithPadding<T>(data(), data()+size(), data()+paddedSize());
         }
         //! Returns an ArrayRef of const elements that includes the padding region, e.g. for use in SIMD code.
-        PaddedArrayRef<const T> paddedConstArrayRef() const
+        ArrayRefWithPadding<const T> constArrayRefWithPadding() const
         {
-            return PaddedArrayRef<const T>(storage_);
+            return ArrayRefWithPadding<const T>(data(), data()+size(), data()+paddedSize());
         }
         //! Returns an rvec * pointer for containers of RVec, for use with legacy code.
         template <typename AlsoT = T,
