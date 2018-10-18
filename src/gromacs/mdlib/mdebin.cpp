@@ -1115,6 +1115,9 @@ void upd_mdebin(t_mdebin       *md,
             real delta_lambda  = fep->all_lambda[efptBONDED][i] - state->lambda[efptBONDED];
             md->dE[i]         += delta_lambda*enerd->term[F_DVDL_CONSTR];
 
+            delta_lambda       = fep->all_lambda[efptMASS][i] - state->lambda[efptMASS];
+            md->dE[i]         += delta_lambda*enerd->term[F_DKDL];
+
             if (md->temperatures != nullptr)
             {
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
