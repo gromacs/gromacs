@@ -1297,9 +1297,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (haveGpuBondedWork && !DOMAINDECOMP(cr))
         {
-            bool calcEnergyAndOrVirial = ( (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0);
-            do_bonded_gpu(fr,
-                          calcEnergyAndOrVirial,
+            do_bonded_gpu(fr, flags,
                           nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
                           nbnxn_gpu_get_f(nbv->gpu_nbv),
                           nbnxn_gpu_get_fshift(nbv->gpu_nbv));
@@ -1369,9 +1367,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
             if (haveGpuBondedWork)
             {
-                bool calcEnergyAndOrVirial = ( (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0);
-                do_bonded_gpu(fr,
-                              calcEnergyAndOrVirial,
+                do_bonded_gpu(fr, flags,
                               nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
                               nbnxn_gpu_get_f(nbv->gpu_nbv),
                               nbnxn_gpu_get_fshift(nbv->gpu_nbv));
@@ -1720,19 +1716,11 @@ static void do_force_cutsVERLET(FILE *fplog,
                                        nbv->nbat, f, wcycle);
     }
 
-    if (haveGpuBondedWork)
+    if (haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
     {
-        if (flags & GMX_FORCE_ENERGY)
-        {
-            bonded_gpu_get_energies(fr, enerd);
-        }
-        /* We also call this function when we only asked for the virial,
-         * since we then also computed the energies and need to clear those.
-         */
-        if (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY))
-        {
-            bonded_gpu_clear_energies(fr->gpuBondedLists);
-        }
+        bonded_gpu_get_energies(fr, enerd);
+
+        bonded_gpu_clear_energies(fr->gpuBondedLists);
     }
 
     if (DOMAINDECOMP(cr))
