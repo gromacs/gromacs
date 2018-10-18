@@ -1111,9 +1111,11 @@ void upd_mdebin(t_mdebin       *md,
             /* Add the constraint contribution, when present, as a linear
              * extrapolation. This is an approximation, but usually quite
              * accurate since constraints will change little between lambdas.
+             * Note that the mass (kinetic) contribution is exact.
              */
             real delta_lambda  = fep->all_lambda[efptBONDED][i] - state->lambda[efptBONDED];
-            md->dE[i]         += delta_lambda*enerd->term[F_DVDL_CONSTR];
+            md->dE[i]         += delta_lambda*(enerd->term[F_DVDL_CONSTR] +
+                                               enerd->term[F_DKDL]);
 
             if (md->temperatures != nullptr)
             {
