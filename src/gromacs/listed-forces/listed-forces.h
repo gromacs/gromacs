@@ -176,7 +176,7 @@ void update_gpu_bonded(GpuBondedLists gmx_unused *gpuBondedLists) CUDA_FUNC_TERM
 /*! \brief Launches bonded kernels on a GPU */
 CUDA_FUNC_QUALIFIER
 void do_bonded_gpu(t_forcerec gmx_unused   *fr,
-                   bool gmx_unused          calcEnergyAndOrVirial,
+                   int gmx_unused           forceFlags,
                    void gmx_unused         *xqDevicePtr,
                    const matrix gmx_unused  box,
                    void gmx_unused         *forceDevicePtr,
@@ -186,7 +186,6 @@ void do_bonded_gpu(t_forcerec gmx_unused   *fr,
 CUDA_FUNC_QUALIFIER
 void bonded_gpu_get_energies(t_forcerec gmx_unused     *fr,
                              gmx_enerdata_t gmx_unused *enerd) CUDA_FUNC_TERM
-
 
 /*! \brief Clears the device side energy buffer */
 CUDA_FUNC_QUALIFIER
