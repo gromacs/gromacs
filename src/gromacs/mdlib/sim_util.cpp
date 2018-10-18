@@ -65,6 +65,7 @@
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/orires.h"
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -938,7 +939,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  */
 static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv,
                                         const gmx_pme_t                     *pmedata,
-                                        gmx::PaddedArrayRef<gmx::RVec>      *force,
+                                        gmx::ArrayRefWithPadding<gmx::RVec> *force,
                                         gmx::ForceWithVirial                *forceWithVirial,
                                         rvec                                 fshift[],
                                         gmx_enerdata_t                      *enerd,
@@ -988,7 +989,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
-                                               nbv->nbat, as_rvec_array(force->data()), wcycle);
+                                               nbv->nbat, as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
             }
         }
     }
@@ -1041,9 +1042,9 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 gmx_wallcycle_t wcycle,
                                 const gmx_localtop_t *top,
                                 const gmx_groups_t * /* groups */,
-                                matrix box, gmx::PaddedArrayRef<gmx::RVec> x,
+                                matrix box, gmx::ArrayRefWithPadding<gmx::RVec> x,
                                 history_t *hist,
-                                gmx::PaddedArrayRef<gmx::RVec> force,
+                                gmx::ArrayRefWithPadding<gmx::RVec> force,
                                 tensor vir_force,
                                 const t_mdatoms *mdatoms,
                                 gmx_enerdata_t *enerd, t_fcdata *fcd,
@@ -1120,7 +1121,7 @@ static void do_force_cutsVERLET(FILE *fplog,
              * This makes it possible to sum them over nodes faster.
              */
             calc_mu(start, homenr,
-                    x, mdatoms->chargeA, mdatoms->chargeB, mdatoms->nChargePerturbed,
+                    x.unpaddedArrayRef(), mdatoms->chargeA, mdatoms->chargeB, mdatoms->nChargePerturbed,
                     mu, mu+DIM);
         }
     }
@@ -1137,12 +1138,12 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (bCalcCGCM)
         {
-            put_atoms_in_box_omp(fr->ePBC, box, x.subArray(0, homenr));
+            put_atoms_in_box_omp(fr->ePBC, box, x.unpaddedArrayRef().subArray(0, homenr));
             inc_nrnb(nrnb, eNR_SHIFTX, homenr);
         }
         else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
         {
-            unshift_self(graph, box, as_rvec_array(x.data()));
+            unshift_self(graph, box, as_rvec_array(x.unpaddedArrayRef().data()));
         }
     }
 
@@ -1157,7 +1158,7 @@ static void do_force_cutsVERLET(FILE *fplog,
          * and domain decomposition does not use the graph,
          * we do not need to worry about shifting.
          */
-        gmx_pme_send_coordinates(cr, box, as_rvec_array(x.data()),
+        gmx_pme_send_coordinates(cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
                                  lambda[efptCOUL], lambda[efptVDW],
                                  (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
                                  step, wcycle);
@@ -1166,7 +1167,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (useGpuPme)
     {
-        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.data()), flags, wcycle);
+        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.unpaddedArrayRef().data()), flags, wcycle);
     }
 
     /* do gridding for pair search */
@@ -1175,7 +1176,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (graph && bStateChanged)
         {
             /* Calculate intramolecular shift vectors to make molecules whole */
-            mk_mshift(fplog, graph, fr->ePBC, box, as_rvec_array(x.data()));
+            mk_mshift(fplog, graph, fr->ePBC, box, as_rvec_array(x.unpaddedArrayRef().data()));
         }
 
         clear_rvec(vzero);
@@ -1190,7 +1191,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             nbnxn_put_on_grid(nbv->nbs.get(), fr->ePBC, box,
                               0, vzero, box_diag,
                               nullptr, 0, mdatoms->homenr, -1,
-                              fr->cginfo, x,
+                              fr->cginfo, x.unpaddedArrayRef(),
                               0, nullptr,
                               nbv->grp[eintLocal].kernel_type,
                               nbv->nbat);
@@ -1200,7 +1201,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_NONLOCAL);
             nbnxn_put_on_grid_nonlocal(nbv->nbs.get(), domdec_zones(cr->dd),
-                                       fr->cginfo, x,
+                                       fr->cginfo, x.unpaddedArrayRef(),
                                        nbv->grp[eintNonlocal].kernel_type,
                                        nbv->nbat);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
@@ -1269,7 +1270,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.data()),
+        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
                                         nbv->nbat, wcycle);
     }
 
@@ -1333,9 +1334,9 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
         else
         {
-            dd_move_x(cr->dd, box, x, wcycle);
+            dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.data()),
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
                                             nbv->nbat, wcycle);
         }
 
@@ -1410,19 +1411,19 @@ static void do_force_cutsVERLET(FILE *fplog,
     if (inputrec->bRot)
     {
         wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.data()), t, step, bNS);
+        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.unpaddedArrayRef().data()), t, step, bNS);
         wallcycle_stop(wcycle, ewcROT);
     }
 
     /* Temporary solution until all routines take PaddedRVecVector */
-    rvec *const f = as_rvec_array(force.data());
+    rvec *const f = as_rvec_array(force.unpaddedArrayRef().data());
 
     /* Start the force cycle counter.
      * Note that a different counter is used for dynamic load balancing.
      */
     wallcycle_start(wcycle, ewcFORCE);
 
-    gmx::ArrayRef<gmx::RVec> forceRef = force;
+    gmx::ArrayRef<gmx::RVec> forceRef = force.unpaddedArrayRef();
     if (bDoForces)
     {
         /* If we need to compute the virial, we might need a separate
@@ -1474,7 +1475,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (fr->nbv->grp[eintLocal].nbl_lists.nbl_fep[0]->nrj > 0)
         {
             do_nb_verlet_fep(&fr->nbv->grp[eintLocal].nbl_lists,
-                             fr, as_rvec_array(x.data()), f, mdatoms,
+                             fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
         }
@@ -1483,7 +1484,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             fr->nbv->grp[eintNonlocal].nbl_lists.nbl_fep[0]->nrj > 0)
         {
             do_nb_verlet_fep(&fr->nbv->grp[eintNonlocal].nbl_lists,
-                             fr, as_rvec_array(x.data()), f, mdatoms,
+                             fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
         }
@@ -1532,13 +1533,13 @@ static void do_force_cutsVERLET(FILE *fplog,
     /* update QMMMrec, if necessary */
     if (fr->bQMMM)
     {
-        update_QMMMrec(cr, fr, as_rvec_array(x.data()), mdatoms, box);
+        update_QMMMrec(cr, fr, as_rvec_array(x.unpaddedArrayRef().data()), mdatoms, box);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
-                      as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
+                      as_rvec_array(x.unpaddedArrayRef().data()), hist, f, &forceWithVirial, enerd, fcd,
                       box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
 
@@ -1546,7 +1547,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
                          step, t, wcycle,
-                         fr->forceProviders, box, x, mdatoms, lambda,
+                         fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
 
@@ -1594,7 +1595,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
         if (bDoForces)
         {
-            dd_move_f(cr->dd, force, fr->fshift, wcycle);
+            dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
         }
     }
 
@@ -1701,14 +1702,14 @@ static void do_force_cutsVERLET(FILE *fplog,
          */
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
-            spread_vsite_f(vsite, as_rvec_array(x.data()), f, fr->fshift, FALSE, nullptr, nrnb,
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fr->fshift, FALSE, nullptr, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Calculation of the virial must be done after vsites! */
-            calc_virial(0, mdatoms->homenr, as_rvec_array(x.data()), f,
+            calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), f,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
@@ -1724,7 +1725,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     if (bDoForces)
     {
         post_process_forces(cr, step, nrnb, wcycle,
-                            top, box, as_rvec_array(x.data()), f, &forceWithVirial,
+                            top, box, as_rvec_array(x.unpaddedArrayRef().data()), f, &forceWithVirial,
                             vir_force, mdatoms, graph, fr, vsite,
                             flags);
     }
@@ -1752,9 +1753,9 @@ static void do_force_cutsGROUP(FILE *fplog,
                                gmx_wallcycle_t wcycle,
                                gmx_localtop_t *top,
                                const gmx_groups_t *groups,
-                               matrix box, gmx::PaddedArrayRef<gmx::RVec> x,
+                               matrix box, gmx::ArrayRefWithPadding<gmx::RVec> x,
                                history_t *hist,
-                               gmx::PaddedArrayRef<gmx::RVec> force,
+                               gmx::ArrayRefWithPadding<gmx::RVec> force,
                                tensor vir_force,
                                const t_mdatoms *mdatoms,
                                gmx_enerdata_t *enerd,
@@ -1812,7 +1813,7 @@ static void do_force_cutsGROUP(FILE *fplog,
              * This makes it possible to sum them over nodes faster.
              */
             calc_mu(start, homenr,
-                    x, mdatoms->chargeA, mdatoms->chargeB, mdatoms->nChargePerturbed,
+                    x.unpaddedArrayRef(), mdatoms->chargeA, mdatoms->chargeB, mdatoms->nChargePerturbed,
                     mu, mu+DIM);
         }
     }
@@ -1830,18 +1831,18 @@ static void do_force_cutsGROUP(FILE *fplog,
         if (bCalcCGCM)
         {
             put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, box,
-                                     &(top->cgs), as_rvec_array(x.data()), fr->cg_cm);
+                                     &(top->cgs), as_rvec_array(x.unpaddedArrayRef().data()), fr->cg_cm);
             inc_nrnb(nrnb, eNR_CGCM, homenr);
             inc_nrnb(nrnb, eNR_RESETX, cg1-cg0);
         }
         else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
         {
-            unshift_self(graph, box, as_rvec_array(x.data()));
+            unshift_self(graph, box, as_rvec_array(x.unpaddedArrayRef().data()));
         }
     }
     else if (bCalcCGCM)
     {
-        calc_cgcm(fplog, cg0, cg1, &(top->cgs), as_rvec_array(x.data()), fr->cg_cm);
+        calc_cgcm(fplog, cg0, cg1, &(top->cgs), as_rvec_array(x.unpaddedArrayRef().data()), fr->cg_cm);
         inc_nrnb(nrnb, eNR_CGCM, homenr);
     }
 
@@ -1858,7 +1859,7 @@ static void do_force_cutsGROUP(FILE *fplog,
          * and domain decomposition does not use the graph,
          * we do not need to worry about shifting.
          */
-        gmx_pme_send_coordinates(cr, box, as_rvec_array(x.data()),
+        gmx_pme_send_coordinates(cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
                                  lambda[efptCOUL], lambda[efptVDW],
                                  (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
                                  step, wcycle);
@@ -1868,7 +1869,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     /* Communicate coordinates and sum dipole if necessary */
     if (DOMAINDECOMP(cr))
     {
-        dd_move_x(cr->dd, box, x, wcycle);
+        dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
         /* No GPU support, no move_x overlap, so reopen the balance region here */
         if (ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
@@ -1919,7 +1920,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         if (graph && bStateChanged)
         {
             /* Calculate intramolecular shift vectors to make molecules whole */
-            mk_mshift(fplog, graph, fr->ePBC, box, as_rvec_array(x.data()));
+            mk_mshift(fplog, graph, fr->ePBC, box, as_rvec_array(x.unpaddedArrayRef().data()));
         }
 
         /* Do the actual neighbour searching */
@@ -1939,19 +1940,19 @@ static void do_force_cutsGROUP(FILE *fplog,
     if (inputrec->bRot)
     {
         wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.data()), t, step, bNS);
+        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.unpaddedArrayRef().data()), t, step, bNS);
         wallcycle_stop(wcycle, ewcROT);
     }
 
     /* Temporary solution until all routines take PaddedRVecVector */
-    rvec *f = as_rvec_array(force.data());
+    rvec *f = as_rvec_array(force.unpaddedArrayRef().data());
 
     /* Start the force cycle counter.
      * Note that a different counter is used for dynamic load balancing.
      */
     wallcycle_start(wcycle, ewcFORCE);
 
-    gmx::ArrayRef<gmx::RVec> forceRef = force;
+    gmx::ArrayRef<gmx::RVec> forceRef = force.paddedArrayRef();
     if (bDoForces)
     {
         /* If we need to compute the virial, we might need a separate
@@ -1980,13 +1981,13 @@ static void do_force_cutsGROUP(FILE *fplog,
     /* update QMMMrec, if necessary */
     if (fr->bQMMM)
     {
-        update_QMMMrec(cr, fr, as_rvec_array(x.data()), mdatoms, box);
+        update_QMMMrec(cr, fr, as_rvec_array(x.unpaddedArrayRef().data()), mdatoms, box);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
-                      as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
+                      as_rvec_array(x.unpaddedArrayRef().data()), hist, f, &forceWithVirial, enerd, fcd,
                       box, inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
                       flags,
@@ -2006,7 +2007,7 @@ static void do_force_cutsGROUP(FILE *fplog,
 
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
                          step, t, wcycle,
-                         fr->forceProviders, box, x, mdatoms, lambda,
+                         fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
 
@@ -2015,7 +2016,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         /* Communicate the forces */
         if (DOMAINDECOMP(cr))
         {
-            dd_move_f(cr->dd, force, fr->fshift, wcycle);
+            dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
             /* Do we need to communicate the separate force array
              * for terms that do not contribute to the single sum virial?
              * Position restraints and electric fields do not introduce
@@ -2035,14 +2036,14 @@ static void do_force_cutsGROUP(FILE *fplog,
          */
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
-            spread_vsite_f(vsite, as_rvec_array(x.data()), f, fr->fshift, FALSE, nullptr, nrnb,
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fr->fshift, FALSE, nullptr, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Calculation of the virial must be done after vsites! */
-            calc_virial(0, mdatoms->homenr, as_rvec_array(x.data()), f,
+            calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), f,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
@@ -2058,7 +2059,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     if (bDoForces)
     {
         post_process_forces(cr, step, nrnb, wcycle,
-                            top, box, as_rvec_array(x.data()), f, &forceWithVirial,
+                            top, box, as_rvec_array(x.unpaddedArrayRef().data()), f, &forceWithVirial,
                             vir_force, mdatoms, graph, fr, vsite,
                             flags);
     }
@@ -2088,9 +2089,9 @@ void do_force(FILE                                     *fplog,
               gmx_localtop_t                           *top,
               const gmx_groups_t                       *groups,
               matrix                                    box,
-              gmx::PaddedArrayRef<gmx::RVec>            x,
+              gmx::ArrayRefWithPadding<gmx::RVec>       x,
               history_t                                *hist,
-              gmx::PaddedArrayRef<gmx::RVec>            force,
+              gmx::ArrayRefWithPadding<gmx::RVec>       force,
               tensor                                    vir_force,
               const t_mdatoms                          *mdatoms,
               gmx_enerdata_t                           *enerd,

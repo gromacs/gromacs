@@ -646,8 +646,8 @@ Integrator::do_tpi()
             std::feholdexcept(&floatingPointEnvironment);
             do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
                      step, nrnb, wcycle, top, &top_global->groups,
-                     state_global->box, state_global->x.paddedArrayRef(), &state_global->hist,
-                     f.paddedArrayRef(), force_vir, mdatoms, enerd, fcd,
+                     state_global->box, state_global->x.arrayRefWithPadding(), &state_global->hist,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state_global->lambda,
                      nullptr, fr, nullptr, mu_tot, t, nullptr,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |

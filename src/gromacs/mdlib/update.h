@@ -123,7 +123,7 @@ void update_coords(int64_t                              step,
                    const t_inputrec                    *inputrec, /* input record and box stuff	*/
                    const t_mdatoms                     *md,
                    t_state                             *state,
-                   gmx::PaddedArrayRef<gmx::RVec>       f, /* forces on home particles */
+                   gmx::ArrayRefWithPadding<gmx::RVec>  f, /* forces on home particles */
                    const t_fcdata                      *fcd,
                    const gmx_ekindata_t                *ekind,
                    const matrix                         M,
