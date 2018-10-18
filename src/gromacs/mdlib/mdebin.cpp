@@ -1107,6 +1107,14 @@ void upd_mdebin(t_mdebin       *md,
         {
             /* zero for simulated tempering */
             md->dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];
+
+            /* Add the constraint contribution, when present, as a linear
+             * extrapolation. This is an approximation, but usually quite
+             * accurate since constraints will change little between lambdas.
+             */
+            real delta_lambda  = fep->all_lambda[efptBONDED][i] - state->lambda[efptBONDED];
+            md->dE[i]         += delta_lambda*enerd->term[F_DVDL_CONSTR];
+
             if (md->temperatures != nullptr)
             {
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
