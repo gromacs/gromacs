@@ -856,7 +856,7 @@ void gmx::Integrator::do_md()
                                 enforcedRotation, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
-                                state, f.paddedArrayRef(), force_vir, mdatoms,
+                                state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, t, mu_tot,
                                 vsite,
@@ -884,8 +884,8 @@ void gmx::Integrator::do_md()
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation,
                      step, nrnb, wcycle, top, groups,
-                     state->box, state->x.paddedArrayRef(), &state->hist,
-                     f.paddedArrayRef(), force_vir, mdatoms, enerd, fcd,
+                     state->box, state->x.arrayRefWithPadding(), &state->hist,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
@@ -915,7 +915,7 @@ void gmx::Integrator::do_md()
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            update_coords(step, ir, mdatoms, state, f.paddedArrayRef(), fcd,
+            update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
                           ekind, M, upd, etrtVELOCITY1,
                           cr, constr);
 
@@ -1138,7 +1138,7 @@ void gmx::Integrator::do_md()
         if (EI_VV(ir->eI))
         {
             /* velocity half-step update */
-            update_coords(step, ir, mdatoms, state, f, fcd,
+            update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
                           ekind, M, upd, etrtVELOCITY2,
                           cr, constr);
         }
@@ -1159,7 +1159,7 @@ void gmx::Integrator::do_md()
             copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
         }
 
-        update_coords(step, ir, mdatoms, state, f, fcd,
+        update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
                       ekind, M, upd, etrtPOSITION, cr, constr);
         wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1194,7 +1194,7 @@ void gmx::Integrator::do_md()
             /* now we know the scaling, we can compute the positions again again */
             copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
 
-            update_coords(step, ir, mdatoms, state, f.paddedArrayRef(), fcd,
+            update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 

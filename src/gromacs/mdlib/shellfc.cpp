@@ -994,7 +994,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
                          gmx_enerdata_t                           *enerd,
                          t_fcdata                                 *fcd,
                          t_state                                  *state,
-                         gmx::PaddedArrayRef<gmx::RVec>            f,
+                         gmx::ArrayRefWithPadding<gmx::RVec>       f,
                          tensor                                    force_vir,
                          const t_mdatoms                          *md,
                          t_nrnb                                   *nrnb,
@@ -1054,12 +1054,16 @@ void relax_shell_flexcon(FILE                                     *fplog,
     }
 
     /* Create views that we can swap */
-    gmx::PaddedArrayRef<gmx::RVec> pos[2];
-    gmx::PaddedArrayRef<gmx::RVec> force[2];
+    gmx::ArrayRefWithPadding<gmx::RVec> posWithPadding[2];
+    gmx::ArrayRefWithPadding<gmx::RVec> forceWithPadding[2];
+    gmx::ArrayRef<gmx::RVec>            pos[2];
+    gmx::ArrayRef<gmx::RVec>            force[2];
     for (i = 0; (i < 2); i++)
     {
-        pos[i]   = shfc->x[i].paddedArrayRef();
-        force[i] = shfc->f[i].paddedArrayRef();
+        posWithPadding[i]   = shfc->x[i].arrayRefWithPadding();
+        pos[i]              = posWithPadding[i].paddedArrayRef();
+        forceWithPadding[i] = shfc->f[i].arrayRefWithPadding();
+        force[i]            = forceWithPadding[i].paddedArrayRef();
     }
 
     if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
@@ -1070,7 +1074,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
          */
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            auto xRef = state->x.paddedArrayRef();
+            auto xRef = state->x.arrayRefWithPadding().paddedArrayRef();
             put_atoms_in_box_omp(fr->ePBC, state->box, xRef.subArray(0, md->homenr));
         }
         else
@@ -1137,8 +1141,8 @@ void relax_shell_flexcon(FILE                                     *fplog,
     }
     do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation,
              mdstep, nrnb, wcycle, top, groups,
-             state->box, state->x.paddedArrayRef(), &state->hist,
-             force[Min], force_vir, md, enerd, fcd,
+             state->box, state->x.arrayRefWithPadding(), &state->hist,
+             forceWithPadding[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
              fr, vsite, mu_tot, t, nullptr,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags,
@@ -1161,7 +1165,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
 
     Epot[Min] = enerd->term[F_EPOT];
 
-    df[Min] = rms_force(cr, shfc->f[Min].paddedArrayRef(), nshell, shell, nflexcon, &sf_dir, &Epot[Min]);
+    df[Min] = rms_force(cr, forceWithPadding[Min].paddedArrayRef(), nshell, shell, nflexcon, &sf_dir, &Epot[Min]);
     df[Try] = 0;
     if (debug)
     {
@@ -1179,8 +1183,12 @@ void relax_shell_flexcon(FILE                                     *fplog,
          * shell positions are updated, therefore the other particles must
          * be set here.
          */
-        pos[Min] = state->x.paddedArrayRef();
-        pos[Try] = state->x.paddedArrayRef();
+        std::copy(state->x.begin(),
+                  state->x.end(),
+                  posWithPadding[Min].paddedArrayRef().begin());
+        std::copy(state->x.begin(),
+                  state->x.end(),
+                  posWithPadding[Try].paddedArrayRef().begin());
     }
 
     if (bVerbose && MASTER(cr))
@@ -1218,7 +1226,9 @@ void relax_shell_flexcon(FILE                                     *fplog,
         {
             init_adir(shfc,
                       constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, state->x.rvec_array(), as_rvec_array(pos[Min].data()), as_rvec_array(force[Min].data()), acc_dir,
+                      x_old, state->x.rvec_array(),
+                      as_rvec_array(pos[Min].data()),
+                      as_rvec_array(force[Min].data()), acc_dir,
                       state->box, state->lambda, &dum);
 
             directional_sd(pos[Min], pos[Try], acc_dir, end, fr->fc_stepsize);
@@ -1241,8 +1251,8 @@ void relax_shell_flexcon(FILE                                     *fplog,
         /* Try the new positions */
         do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation,
                  1, nrnb, wcycle,
-                 top, groups, state->box, pos[Try], &state->hist,
-                 force[Try], force_vir,
+                 top, groups, state->box, posWithPadding[Try], &state->hist,
+                 forceWithPadding[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, nullptr,
                  force_flags,
@@ -1258,8 +1268,10 @@ void relax_shell_flexcon(FILE                                     *fplog,
         {
             init_adir(shfc,
                       constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, state->x.rvec_array(), as_rvec_array(pos[Try].data()), as_rvec_array(force[Try].data()), acc_dir,
-                      state->box, state->lambda, &dum);
+                      x_old, state->x.rvec_array(),
+                      as_rvec_array(pos[Try].data()),
+                      as_rvec_array(force[Try].data()),
+                      acc_dir, state->box, state->lambda, &dum);
 
             for (i = 0; i < end; i++)
             {
@@ -1343,7 +1355,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
 
     /* Copy back the coordinates and the forces */
     std::copy(pos[Min].begin(), pos[Min].end(), makeArrayRef(state->x).data());
-    std::copy(force[Min].begin(), force[Min].end(), f.begin());
+    std::copy(force[Min].begin(), force[Min].end(), f.unpaddedArrayRef().begin());
 }
 
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shfc, int64_t numSteps)
