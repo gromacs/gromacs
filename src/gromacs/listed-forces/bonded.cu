@@ -57,6 +57,7 @@
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/units.h"
+#include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h" // TODO try remove when integrating
 #include "gromacs/mdtypes/group.h"
@@ -96,7 +97,7 @@ static void harmonic_gpu(const float kA, const float xA, const float x, float *V
     *V = half*kA*dx2;
 }
 
-template <bool calcEnerVir>
+template <bool calcVir, bool calcEner>
 __global__
 void bonds_gpu(float *vtot, const int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -108,7 +109,7 @@ void bonds_gpu(float *vtot, const int nbonds,
     __shared__ float vtot_loc;
     __shared__ fvec  fshift_loc[SHIFTS];
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         if (threadIdx.x == 0)
         {
@@ -131,7 +132,7 @@ void bonds_gpu(float *vtot, const int nbonds,
 
         /* dx = xi - xj, corrected for periodic boundry conditions. */
         fvec  dx;
-        int   ki = pbcDxAiuc<calcEnerVir>(pbcAiuc, xq[ai], xq[aj], dx);
+        int   ki = pbcDxAiuc<calcVir>(pbcAiuc, xq[ai], xq[aj], dx);
 
         float dr2 = iprod_gpu(dx, dx);
         float dr  = sqrt(dr2);
@@ -142,7 +143,7 @@ void bonds_gpu(float *vtot, const int nbonds,
                      forceparams[type].harmonic.rA,
                      dr, &vbond, &fbond);
 
-        if (calcEnerVir)
+        if (calcEner)
         {
             atomicAdd(&vtot_loc, vbond);
         }
@@ -157,7 +158,7 @@ void bonds_gpu(float *vtot, const int nbonds,
                 float fij = fbond*dx[m];
                 atomicAdd(&force[ai][m], fij);
                 atomicAdd(&force[aj][m], -fij);
-                if (calcEnerVir && ki != CENTRAL)
+                if (calcVir && ki != CENTRAL)
                 {
                     atomicAdd(&fshift_loc[ki][m], fij);
                     atomicAdd(&fshift_loc[CENTRAL][m], -fij);
@@ -166,14 +167,14 @@ void bonds_gpu(float *vtot, const int nbonds,
         }
     }
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         __syncthreads();
-        if (threadIdx.x == 0)
+        if (calcEner && threadIdx.x == 0)
         {
             atomicAdd(vtot, vtot_loc);
         }
-        if (threadIdx.x < SHIFTS)
+        if (calcVir && threadIdx.x < SHIFTS)
         {
             fvec_inc_atomic(fshift[threadIdx.x], fshift_loc[threadIdx.x]);
         }
@@ -197,7 +198,7 @@ static float bond_angle_gpu(const float4 xi, const float4 xj, const float4 xk,
     return th;
 }
 
-template <bool calcEnerVir>
+template <bool calcVir, bool calcEner>
 __global__
 void angles_gpu(float *vtot, const int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -209,7 +210,7 @@ void angles_gpu(float *vtot, const int nbonds,
 
     const int        i = blockIdx.x*blockDim.x + threadIdx.x;
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         if (threadIdx.x == 0)
         {
@@ -238,8 +239,8 @@ void angles_gpu(float *vtot, const int nbonds,
         int   t1;
         int   t2;
         float theta =
-            bond_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], pbcAiuc,
-                                        r_ij, r_kj, &cos_theta, &t1, &t2);
+            bond_angle_gpu<calcVir>(x[ai], x[aj], x[ak], pbcAiuc,
+                                    r_ij, r_kj, &cos_theta, &t1, &t2);
 
         float va;
         float dVdt;
@@ -247,7 +248,7 @@ void angles_gpu(float *vtot, const int nbonds,
                      forceparams[type].harmonic.rA*DEG2RAD,
                      theta, &va, &dVdt);
 
-        if (calcEnerVir)
+        if (calcEner)
         {
             atomicAdd(&vtot_loc, va);
         }
@@ -279,7 +280,7 @@ void angles_gpu(float *vtot, const int nbonds,
                 atomicAdd(&force[aj][m], f_j[m]);
                 atomicAdd(&force[ak][m], f_k[m]);
             }
-            if (calcEnerVir)
+            if (calcVir)
             {
                 fvec_inc_atomic(fshift_loc[t1], f_i);
                 fvec_inc_atomic(fshift_loc[CENTRAL], f_j);
@@ -289,22 +290,22 @@ void angles_gpu(float *vtot, const int nbonds,
 
     }
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         __syncthreads();
 
-        if (threadIdx.x == 0)
+        if (calcEner && threadIdx.x == 0)
         {
             atomicAdd(vtot, vtot_loc);
         }
-        if (threadIdx.x < SHIFTS)
+        if (calcVir && threadIdx.x < SHIFTS)
         {
             fvec_inc_atomic(fshift[threadIdx.x], fshift_loc[threadIdx.x]);
         }
     }
 }
 
-template <bool calcEnerVir>
+template <bool calcVir, bool calcEner>
 __global__
 void urey_bradley_gpu(float *vtot, const int nbonds,
                       const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -316,7 +317,7 @@ void urey_bradley_gpu(float *vtot, const int nbonds,
 
     const int        i = blockIdx.x*blockDim.x + threadIdx.x;
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         if (threadIdx.x == 0)
         {
@@ -349,20 +350,20 @@ void urey_bradley_gpu(float *vtot, const int nbonds,
         float cos_theta;
         int   t1;
         int   t2;
-        float theta = bond_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], pbcAiuc,
-                                                  r_ij, r_kj, &cos_theta, &t1, &t2);
+        float theta = bond_angle_gpu<calcVir>(x[ai], x[aj], x[ak], pbcAiuc,
+                                              r_ij, r_kj, &cos_theta, &t1, &t2);
 
         float va;
         float dVdt;
         harmonic_gpu(kthA, th0A, theta, &va, &dVdt);
 
-        if (calcEnerVir)
+        if (calcEner)
         {
             atomicAdd(&vtot_loc, va);
         }
 
         fvec  r_ik;
-        int   ki = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[ak], r_ik);
+        int   ki = pbcDxAiuc<calcVir>(pbcAiuc, x[ai], x[ak], r_ik);
 
         float dr2  = iprod_gpu(r_ik, r_ik);
         float dr   = dr2*rsqrtf(dr2);
@@ -404,7 +405,7 @@ void urey_bradley_gpu(float *vtot, const int nbonds,
         /* Time for the bond calculations */
         if (dr2 != 0.0f)
         {
-            if (calcEnerVir)
+            if (calcEner)
             {
                 atomicAdd(&vtot_loc, vbond);
             }
@@ -417,7 +418,7 @@ void urey_bradley_gpu(float *vtot, const int nbonds,
                 atomicAdd(&force[ai][m], fik);
                 atomicAdd(&force[ak][m], -fik);
 
-                if (calcEnerVir && ki != CENTRAL)
+                if (calcVir && ki != CENTRAL)
                 {
                     atomicAdd(&fshift_loc[ki][m], fik);
                     atomicAdd(&fshift_loc[CENTRAL][m], -fik);
@@ -426,15 +427,15 @@ void urey_bradley_gpu(float *vtot, const int nbonds,
         }
     }
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         __syncthreads();
 
-        if (threadIdx.x == 0)
+        if (calcEner && threadIdx.x == 0)
         {
             atomicAdd(vtot, vtot_loc);
         }
-        if (threadIdx.x < SHIFTS)
+        if (calcVir && threadIdx.x < SHIFTS)
         {
             fvec_inc_atomic(fshift[threadIdx.x], fshift_loc[threadIdx.x]);
         }
@@ -534,7 +535,7 @@ static void do_dih_fup_gpu(const int i, const int j, const int k, const int l,
     }
 }
 
-template <bool calcEnerVir>
+template <bool calcVir, bool calcEner>
 __global__
 void  pdihs_gpu(float *vtot, const int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -546,7 +547,7 @@ void  pdihs_gpu(float *vtot, const int nbonds,
     __shared__ float vtot_loc;
     __shared__ fvec  fshift_loc[SHIFTS];
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         if (threadIdx.x == 0)
         {
@@ -578,8 +579,8 @@ void  pdihs_gpu(float *vtot, const int nbonds,
         int   t2;
         int   t3;
         float phi  =
-            dih_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], x[al], pbcAiuc,
-                                       r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+            dih_angle_gpu<calcVir>(x[ai], x[aj], x[ak], x[al], pbcAiuc,
+                                   r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
 
         float vpd;
         float ddphi;
@@ -588,31 +589,34 @@ void  pdihs_gpu(float *vtot, const int nbonds,
                     forceparams[type].pdihs.mult,
                     phi, &vpd, &ddphi);
 
-        atomicAdd(&vtot_loc, vpd);
+        if (calcEner)
+        {
+            atomicAdd(&vtot_loc, vpd);
+        }
 
-        do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al,
-                                    ddphi, r_ij, r_kj, r_kl, m, n,
-                                    f, fshift_loc, pbcAiuc,
-                                    x, t1, t2, t3);
+        do_dih_fup_gpu<calcVir>(ai, aj, ak, al,
+                                ddphi, r_ij, r_kj, r_kl, m, n,
+                                f, fshift_loc, pbcAiuc,
+                                x, t1, t2, t3);
 
     }
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         __syncthreads();
 
-        if (threadIdx.x == 0)
+        if (calcEner && threadIdx.x == 0)
         {
             atomicAdd(vtot, vtot_loc);
         }
-        if (threadIdx.x < SHIFTS)
+        if (calcVir && threadIdx.x < SHIFTS)
         {
             fvec_inc_atomic(fshift[threadIdx.x], fshift_loc[threadIdx.x]);
         }
     }
 }
 
-template <bool calcEnerVir>
+template <bool calcVir, bool calcEner>
 __global__
 void rbdihs_gpu(float *vtot, const int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -626,7 +630,7 @@ void rbdihs_gpu(float *vtot, const int nbonds,
 
     const int        i = blockIdx.x*blockDim.x + threadIdx.x;
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         if (threadIdx.x == 0)
         {
@@ -659,8 +663,8 @@ void rbdihs_gpu(float *vtot, const int nbonds,
         int   t2;
         int   t3;
         float phi  =
-            dih_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], x[al], pbcAiuc,
-                                       r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+            dih_angle_gpu<calcVir>(x[ai], x[aj], x[ak], x[al], pbcAiuc,
+                                   r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
 
         /* Change to polymer convention */
         if (phi < c0)
@@ -691,60 +695,60 @@ void rbdihs_gpu(float *vtot, const int nbonds,
         float rbp    = parm[1];
         ddphi       += rbp*cosfac;
         cosfac      *= cos_phi;
-        if (calcEnerVir)
+        if (calcEner)
         {
             v       += cosfac*rbp;
         }
         rbp          = parm[2];
         ddphi       += c2*rbp*cosfac;
         cosfac      *= cos_phi;
-        if (calcEnerVir)
+        if (calcEner)
         {
             v       += cosfac*rbp;
         }
         rbp          = parm[3];
         ddphi       += c3*rbp*cosfac;
         cosfac      *= cos_phi;
-        if (calcEnerVir)
+        if (calcEner)
         {
             v       += cosfac*rbp;
         }
         rbp          = parm[4];
         ddphi       += c4*rbp*cosfac;
         cosfac      *= cos_phi;
-        if (calcEnerVir)
+        if (calcEner)
         {
             v       += cosfac*rbp;
         }
         rbp          = parm[5];
         ddphi       += c5*rbp*cosfac;
         cosfac      *= cos_phi;
-        if (calcEnerVir)
+        if (calcEner)
         {
             v       += cosfac*rbp;
         }
 
         ddphi = -ddphi*sin_phi;
 
-        do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al,
-                                    ddphi, r_ij, r_kj, r_kl, m, n,
-                                    f, fshift_loc, pbcAiuc,
-                                    x, t1, t2, t3);
-        if (calcEnerVir)
+        do_dih_fup_gpu<calcVir>(ai, aj, ak, al,
+                                ddphi, r_ij, r_kj, r_kl, m, n,
+                                f, fshift_loc, pbcAiuc,
+                                x, t1, t2, t3);
+        if (calcEner)
         {
             atomicAdd(&vtot_loc, v);
         }
     }
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         __syncthreads();
 
-        if (threadIdx.x == 0)
+        if (calcEner && threadIdx.x == 0)
         {
             atomicAdd(vtot, vtot_loc);
         }
-        if (threadIdx.x < SHIFTS)
+        if (calcVir && threadIdx.x < SHIFTS)
         {
             fvec_inc_atomic(fshift[threadIdx.x], fshift_loc[threadIdx.x]);
         }
@@ -765,7 +769,7 @@ static void make_dp_periodic_gpu(float *dp)
     }
 }
 
-template <bool calcEnerVir>
+template <bool calcVir, bool calcEner>
 __global__
 void  idihs_gpu(float *vtot, const int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -777,7 +781,7 @@ void  idihs_gpu(float *vtot, const int nbonds,
     __shared__ float vtot_loc;
     __shared__ fvec  fshift_loc[SHIFTS];
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         if (threadIdx.x == 0)
         {
@@ -809,8 +813,8 @@ void  idihs_gpu(float *vtot, const int nbonds,
         int   t2;
         int   t3;
         float phi  =
-            dih_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], x[al], pbcAiuc,
-                                       r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+            dih_angle_gpu<calcVir>(x[ai], x[aj], x[ak], x[al], pbcAiuc,
+                                   r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
 
         /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
          * force changes if we just apply a normal harmonic.
@@ -830,33 +834,33 @@ void  idihs_gpu(float *vtot, const int nbonds,
 
         float ddphi = -kA*dp;
 
-        do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al,
-                                    -ddphi, r_ij, r_kj, r_kl, m, n,
-                                    f, fshift_loc, pbcAiuc,
-                                    x, t1, t2, t3);
+        do_dih_fup_gpu<calcVir>(ai, aj, ak, al,
+                                -ddphi, r_ij, r_kj, r_kl, m, n,
+                                f, fshift_loc, pbcAiuc,
+                                x, t1, t2, t3);
 
-        if (calcEnerVir)
+        if (calcEner)
         {
             atomicAdd(&vtot_loc, -0.5f*ddphi*dp);
         }
     }
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         __syncthreads();
 
-        if (threadIdx.x == 0)
+        if (calcEner && threadIdx.x == 0)
         {
             atomicAdd(vtot, vtot_loc);
         }
-        if (threadIdx.x < SHIFTS)
+        if (calcVir && threadIdx.x < SHIFTS)
         {
             fvec_inc_atomic(fshift[threadIdx.x], fshift_loc[threadIdx.x]);
         }
     }
 }
 
-template <bool calcEnerVir>
+template <bool calcVir, bool calcEner>
 __global__
 void pairs_gpu(const int nbonds,
                const t_iatom iatoms[], const t_iparams iparams[],
@@ -871,7 +875,7 @@ void pairs_gpu(const int nbonds,
     __shared__ float vtotElec_loc;
     __shared__ fvec  fshift_loc[SHIFTS];
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         if (threadIdx.x == 0)
         {
@@ -900,7 +904,7 @@ void pairs_gpu(const int nbonds,
 
         /* Do we need to apply full periodic boundary conditions? */
         fvec  dr;
-        int   fshift_index = pbcDxAiuc<calcEnerVir>(pbcAiuc, xq[ai], xq[aj], dr);
+        int   fshift_index = pbcDxAiuc<calcVir>(pbcAiuc, xq[ai], xq[aj], dr);
 
         float r2    = norm2_gpu(dr);
         float rinv  = rsqrtf(r2);
@@ -925,29 +929,29 @@ void pairs_gpu(const int nbonds,
             atomicAdd(&force[aj][m], -f[m]);
         }
 
-        if (calcEnerVir)
+        if (calcEner)
         {
             atomicAdd(&vtotVdw_loc, (c12*rinv6 - c6)*rinv6);
             atomicAdd(&vtotElec_loc, velec);
+        }
 
-            if (fshift_index != CENTRAL)
-            {
-                fvec_inc_atomic(fshift_loc[fshift_index], f);
-                fvec_dec_atomic(fshift_loc[CENTRAL], f);
-            }
+        if (calcVir && fshift_index != CENTRAL)
+        {
+            fvec_inc_atomic(fshift_loc[fshift_index], f);
+            fvec_dec_atomic(fshift_loc[CENTRAL], f);
         }
     }
 
-    if (calcEnerVir)
+    if (calcVir || calcEner)
     {
         __syncthreads();
 
-        if (threadIdx.x == 0)
+        if (calcEner && threadIdx.x == 0)
         {
             atomicAdd(vtotVdw, vtotVdw_loc);
             atomicAdd(vtotElec, vtotElec_loc);
         }
-        if (threadIdx.x < SHIFTS)
+        if (calcVir && threadIdx.x < SHIFTS)
         {
             fvec_inc_atomic(fshift[threadIdx.x], fshift_loc[threadIdx.x]);
         }
@@ -1048,7 +1052,7 @@ update_gpu_bonded(GpuBondedLists *gpuBondedLists)
     }
 }
 
-template <bool calcEnerVir>
+template <bool calcVir, bool calcEner>
 static void
 launch_bonded_kernels(t_forcerec   *fr,
                       void         *xqDevicePtr,
@@ -1098,14 +1102,14 @@ launch_bonded_kernels(t_forcerec   *fr,
 
             if (ftype == F_PDIHS || ftype == F_PIDIHS)
             {
-                auto       kernelPtr      = pdihs_gpu<calcEnerVir>;
+                auto       kernelPtr      = pdihs_gpu<calcVir, calcEner>;
                 float     *ftypeEnergyPtr = vtot_d + ftype;
                 const auto kernelArgs     = prepareGpuKernelArguments(kernelPtr, config,
                                                                       &ftypeEnergyPtr, &nbonds,
                                                                       &iatoms, &forceparams_d,
                                                                       &xq, &force, &fshiftDevicePtr,
                                                                       &pbcAiuc);
-                launchGpuKernel(kernelPtr, config, nullptr, "pdihs_gpu<calcEnerVir>", kernelArgs);
+                launchGpuKernel(kernelPtr, config, nullptr, "pdihs_gpu<calcVir, calcEner>", kernelArgs);
             }
         }
     }
@@ -1134,62 +1138,62 @@ launch_bonded_kernels(t_forcerec   *fr,
             // TODO consider using a map to assign the fn pointers to ftypes
             if (ftype == F_BONDS)
             {
-                auto       kernelPtr  = bonds_gpu<calcEnerVir>;
+                auto       kernelPtr  = bonds_gpu<calcVir, calcEner>;
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
                                                                   &xq, &force, &fshiftDevicePtr,
                                                                   &pbcAiuc);
-                launchGpuKernel(kernelPtr, config, nullptr, "bonds_gpu<calcEnerVir>", kernelArgs);
+                launchGpuKernel(kernelPtr, config, nullptr, "bonds_gpu<calcVir, calcEner>", kernelArgs);
             }
 
             if (ftype == F_ANGLES)
             {
-                auto       kernelPtr  = angles_gpu<calcEnerVir>;
+                auto       kernelPtr  = angles_gpu<calcVir, calcEner>;
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
                                                                   &xq, &force, &fshiftDevicePtr,
                                                                   &pbcAiuc);
-                launchGpuKernel(kernelPtr, config, nullptr, "angles_gp<calcEnerVir>", kernelArgs);
+                launchGpuKernel(kernelPtr, config, nullptr, "angles_gp<calcVir, calcEner>", kernelArgs);
             }
 
             if (ftype == F_UREY_BRADLEY)
             {
-                auto       kernelPtr  = urey_bradley_gpu<calcEnerVir>;
+                auto       kernelPtr  = urey_bradley_gpu<calcVir, calcEner>;
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
                                                                   &xq, &force, &fshiftDevicePtr,
                                                                   &pbcAiuc);
-                launchGpuKernel(kernelPtr, config, nullptr, "urey_bradley_gpu<calcEnerVir>", kernelArgs);
+                launchGpuKernel(kernelPtr, config, nullptr, "urey_bradley_gpu<calcVir, calcEner>", kernelArgs);
             }
 
             if (ftype == F_RBDIHS)
             {
-                auto       kernelPtr  = rbdihs_gpu<calcEnerVir>;
+                auto       kernelPtr  = rbdihs_gpu<calcVir, calcEner>;
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
                                                                   &xq, &force, &fshiftDevicePtr,
                                                                   &pbcAiuc);
-                launchGpuKernel(kernelPtr, config, nullptr, "rbdihs_gpu<calcEnerVir>", kernelArgs);
+                launchGpuKernel(kernelPtr, config, nullptr, "rbdihs_gpu<calcVir, calcEner>", kernelArgs);
             }
 
             if (ftype == F_IDIHS)
             {
-                auto       kernelPtr  = idihs_gpu<calcEnerVir>;
+                auto       kernelPtr  = idihs_gpu<calcVir, calcEner>;
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
                                                                   &xq, &force, &fshiftDevicePtr,
                                                                   &pbcAiuc);
-                launchGpuKernel(kernelPtr, config, nullptr, "idihs_gpu<calcEnerVir>", kernelArgs);
+                launchGpuKernel(kernelPtr, config, nullptr, "idihs_gpu<calcVir, calcEner>", kernelArgs);
             }
 
             if (ftype == F_LJ14)
             {
-                auto       kernelPtr       = pairs_gpu<calcEnerVir>;
+                auto       kernelPtr       = pairs_gpu<calcVir, calcEner>;
                 float      scale_factor    = fr->ic->epsfac*fr->fudgeQQ;
                 float     *lj14Energy      = vtot_d + F_LJ14;
                 float     *coulomb14Energy = vtot_d + F_COUL14;
@@ -1200,7 +1204,7 @@ launch_bonded_kernels(t_forcerec   *fr,
                                                                        &pbcAiuc,
                                                                        &scale_factor,
                                                                        &lj14Energy, &coulomb14Energy);
-                launchGpuKernel(kernelPtr, config, nullptr, "pairs_gpu<calcEnerVir>", kernelArgs);
+                launchGpuKernel(kernelPtr, config, nullptr, "pairs_gpu<calcVir, calcEner>", kernelArgs);
             }
         }
     }
@@ -1208,19 +1212,27 @@ launch_bonded_kernels(t_forcerec   *fr,
 
 void
 do_bonded_gpu(t_forcerec   *fr,
-              bool          calcEnergyAndOrVirial,
+              int           forceFlags,
               void         *xqDevicePtr,
               const matrix  box,
               void         *forceDevicePtr,
               fvec         *fshiftDevicePtr)
 {
-    if (calcEnergyAndOrVirial)
+    if (forceFlags & GMX_FORCE_ENERGY)
     {
-        launch_bonded_kernels<true>(fr, xqDevicePtr, box, forceDevicePtr, fshiftDevicePtr);
+        // When we need the energy, we also need the virial
+        launch_bonded_kernels<true, true>
+            (fr, xqDevicePtr, box, forceDevicePtr, fshiftDevicePtr);
+    }
+    else if (forceFlags & GMX_FORCE_VIRIAL)
+    {
+        launch_bonded_kernels<true, false>
+            (fr, xqDevicePtr, box, forceDevicePtr, fshiftDevicePtr);
     }
     else
     {
-        launch_bonded_kernels<false>(fr, xqDevicePtr, box, forceDevicePtr, fshiftDevicePtr);
+        launch_bonded_kernels<false, false>
+            (fr, xqDevicePtr, box, forceDevicePtr, fshiftDevicePtr);
     }
 }
 
