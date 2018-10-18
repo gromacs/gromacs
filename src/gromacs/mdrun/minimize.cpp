@@ -866,8 +866,8 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
      */
     do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
              count, nrnb, wcycle, top, &top_global->groups,
-             ems->s.box, ems->s.x.paddedArrayRef(), &ems->s.hist,
-             ems->f.paddedArrayRef(), force_vir, mdAtoms->mdatoms(), enerd, fcd,
+             ems->s.box, ems->s.x.arrayRefWithPadding(), &ems->s.hist,
+             ems->f.arrayRefWithPadding(), force_vir, mdAtoms->mdatoms(), enerd, fcd,
              ems->s.lambda, graph, fr, vsite, mu_tot, t, nullptr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
@@ -2867,7 +2867,7 @@ Integrator::do_nm()
                                         enerd,
                                         fcd,
                                         &state_work.s,
-                                        state_work.f.paddedArrayRef(),
+                                        state_work.f.arrayRefWithPadding(),
                                         vir,
                                         mdatoms,
                                         nrnb,
