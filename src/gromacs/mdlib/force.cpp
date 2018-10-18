@@ -778,16 +778,24 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
      * For the constraints this is not exact, but we have no other option
      * without literally changing the lengths and reevaluating the energies at each step.
      * (try to remedy this post 4.6 - MRS)
+     *
+     * Note that we can not clear term[F_DVDL_CONSTR] here since we need it
+     * for foreign lambda differences later. The entry itself is not used
+     * or output, so it is not double counted.
      */
     if (fepvals->separate_dvdl[efptBONDED])
     {
+        /* I disagree with adding the Hamilitonian derivative constraint term
+         * to a potential energy bonded term. Mainly because these are
+         * conceptually very different, but also because a constraint
+         * in general does not have to be a bonded interaction. (BH)
+         */
         enerd->term[F_DVDL_BONDED] += enerd->term[F_DVDL_CONSTR];
     }
     else
     {
         enerd->term[F_DVDL] += enerd->term[F_DVDL_CONSTR];
     }
-    enerd->term[F_DVDL_CONSTR] = 0;
 
     for (int i = 0; i < fepvals->n_lambda; i++)
     {
@@ -866,6 +874,7 @@ void reset_enerdata(gmx_enerdata_t *enerd)
     enerd->term[F_DVDL_VDW]        = 0.0;
     enerd->term[F_DVDL_BONDED]     = 0.0;
     enerd->term[F_DVDL_RESTRAINT]  = 0.0;
+    enerd->term[F_DVDL_CONSTR]     = 0.0;
     enerd->term[F_DKDL]            = 0.0;
     if (enerd->n_lambda > 0)
     {
