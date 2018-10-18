@@ -28,6 +28,14 @@ constraints was missing from the foreign Hamiltonian values.
 
 :issue: `2703`
 
+Add mass contribution to foreign Hamiltonian differences
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For free energy calculations with perturbed masss, the kinetic energy
+contribution was missing from the foreign Hamiltonian values.
+
+:issue: `2703`
+
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
