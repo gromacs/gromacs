@@ -37,6 +37,9 @@
  * Declares gmx::ArrayRef
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Roland Schulz <roland.schulz@intel.com>
+ * \author Berk Hess <hess@kth.se>
  * \inpublicapi
  * \ingroup module_utility
  */
@@ -68,8 +71,8 @@ namespace gmx
  */
 struct EmptyArrayRef {};
 
-/*! \brief STL-like container for an interface to a C array of T (or part
- * of a std::vector<T, A> or std::array<T>).
+/*! \brief STL-like interface to a C array of T (or part
+ * of a std container of T).
  *
  * \tparam T  Value type of elements.
  *
@@ -112,23 +115,23 @@ template <typename T>
 class ArrayRef
 {
     public:
-        //! Type of values stored in the container.
+        //! Type of values stored in the reference.
         typedef T         value_type;
-        //! Type for representing size of the container.
+        //! Type for representing size of the reference.
         typedef index     size_type;
-        //! Type for representing difference between two container indices.
+        //! Type for representing difference between two indices.
         typedef ptrdiff_t difference_type;
-        //! Const reference to a container element.
+        //! Const reference to an element.
         typedef const T  &const_reference;
-        //! Const pointer to a container element.
+        //! Const pointer to an element.
         typedef const T  *const_pointer;
-        //! Const iterator type for the container.
+        //! Const iterator type to an element.
         typedef const T  *const_iterator;
-        //! Reference to a container element.
+        //! Reference to an element.
         typedef T        &reference;
-        //! Pointer to a container element.
+        //! Pointer to an element.
         typedef T        *pointer;
-        //! Iterator type for the container.
+        //! Iterator type to an element.
         typedef T        *iterator;
         //! Standard reverse iterator.
         typedef std::reverse_iterator<iterator>       reverse_iterator;
@@ -205,30 +208,30 @@ class ArrayRef
         }
         //! \endcond
 
-        //! Returns a reference to part of the container.
+        //! Returns a reference to part of the memory.
         ArrayRef subArray(size_type start, size_type count) const
         {
             return {begin_+start, begin_+start+count};
         }
-        //! Returns an iterator to the beginning of the container.
+        //! Returns an iterator to the beginning of the reference.
         iterator begin() const { return begin_; }
-        //! Returns an iterator to the end of the container.
+        //! Returns an iterator to the end of the reference.
         iterator end() const { return end_; }
-        //! Returns an iterator to the reverse beginning of the container.
+        //! Returns an iterator to the reverse beginning of the reference.
         reverse_iterator rbegin() const { return reverse_iterator(end()); }
-        //! Returns an iterator to the reverse end of the container.
+        //! Returns an iterator to the reverse end of the reference.
         reverse_iterator rend() const { return reverse_iterator(begin()); }
 
-        //! Returns the size of the container.
+        //! Returns the size of the reference.
         size_type size() const { return end_ - begin_; }
         //! Identical to size().
         size_type capacity() const { return end_ - begin_; }
-        //! Whether the container is empty.
+        //! Whether the reference refers to no memory.
         bool empty() const { return begin_ == end_; }
 
-        //! Access container element.
+        //! Access an element.
         reference operator[](size_type n) const { return begin_[n]; }
-        //! Access container element (throws on out-of-range error).
+        //! Access an element (throws on out-of-range error).
         reference at(size_type n) const
         {
             if (n >= size())
@@ -237,9 +240,9 @@ class ArrayRef
             }
             return begin_[n];
         }
-        //! Returns the first element in the container.
+        //! Returns the first element.
         reference front() const { return *begin_; }
-        //! Returns the first element in the container.
+        //! Returns the first element.
         reference back() const { return *(end_ - 1); }
 
         //! Returns a raw pointer to the contents of the array.
