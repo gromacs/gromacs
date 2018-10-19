@@ -38,6 +38,7 @@ gmx_version_string = '@GMX_VERSION_STRING@'
 gmx_version_string_full = '@GMX_VERSION_STRING_FULL@'
 regressiontest_version = '@REGRESSIONTEST_VERSION@'
 gmx_min_sphinx = '@EXPECTED_SPHINX_VERSION@'
+gmx_image_convert = '@IMAGE_CONVERT_STRING@'
 variables = [
         ('EXPECTED_DOXYGEN_VERSION', '@EXPECTED_DOXYGEN_VERSION@'),
         ('EXPECTED_SPHINX_VERSION', '@EXPECTED_SPHINX_VERSION@'),
