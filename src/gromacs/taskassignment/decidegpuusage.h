@@ -193,8 +193,9 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
  * \param[in]  usingVerletScheme         Whether the nonbondeds are using the Verlet scheme.
  * \param[in]  bondedTarget              The user's choice for mdrun -bonded for where to assign tasks.
  * \param[in]  canUseGpuForBonded        Whether the bonded interactions can run on a GPU
- * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
- * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
+ * \param[in]  usingLJPme                Whether Vdw interactions use LJ-PME.
+ * \param[in]  usingElecPmeOrEwald       Whether a PME or Ewald type method is used for electrostatics.
+ * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation, can be -1 for auto.
  * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
  *
  * \returns    Whether the simulation will run bondeded tasks on GPUs.
@@ -206,7 +207,8 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
                                      bool       usingVerletScheme,
                                      TaskTarget bondedTarget,
                                      bool       canUseGpuForBonded,
-                                     int        numRanksPerSimulation,
+                                     bool       usingLJPme,
+                                     bool       usingElecPmeOrEwald,
                                      int        numPmeRanksPerSimulation,
                                      bool       gpusWereDetected);
 
