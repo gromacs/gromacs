@@ -694,7 +694,9 @@ int Mdrunner::mdrunner()
         auto canUseGpuForBonded = buildSupportsGpuBondeds(nullptr) && inputSupportsGpuBondeds(*inputrec, mtop, nullptr);
         useGpuForBonded =
             decideWhetherToUseGpusForBonded(useGpuForNonbonded, useGpuForPme, usingVerletScheme,
-                                            bondedTarget, canUseGpuForBonded, cr->nnodes,
+                                            bondedTarget, canUseGpuForBonded,
+                                            EVDW_PME(inputrec->vdwtype),
+                                            EEL_PME_EWALD(inputrec->coulombtype),
                                             domdecOptions.numPmeRanks, gpusWereDetected);
 
         pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
