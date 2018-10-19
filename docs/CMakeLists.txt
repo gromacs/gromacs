@@ -450,15 +450,11 @@ if (SPHINX_FOUND)
             file-formats.rst
             plots/plotje.png
             plots/xvgr.png)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual-minimal TO reference-manual
+        gmx_add_sphinx_rename_files(
             FILES
-            index.rst)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/user-guide-old TO user-guide
-            FILES
-            index.rst
-            flow.rst)
+            reference-manual/index-without-images.rst
+            user-guide/index-without-images.rst
+            user-guide/flow-without-images.rst)
     endif()
     gmx_add_sphinx_input_target(sphinx-input-rst)
     gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)
