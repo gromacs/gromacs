@@ -362,6 +362,8 @@ if (SPHINX_FOUND)
         user-guide/environment-variables.rst
         user-guide/faq.rst
         user-guide/floating-point.rst
+        user-guide/flow.rst
+        user-guide/index.rst
         user-guide/system-preparation.rst
         user-guide/force-fields.rst
         user-guide/getting-started.rst
@@ -402,10 +404,17 @@ if (SPHINX_FOUND)
       set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} https://doi.org/${GMX_SOURCE_DOI}.")
     endif()
 
+    if(IMAGE_CONVERT_POSSIBLE)
+        set(IMAGE_CONVERT_STRING "possible")
+    else()
+        set(IMAGE_CONVERT_STRING "impossible")
+    endif()
+
     set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
     gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
         EXTRA_VARS
             SPHINX_EXTENSION_PATH RELENG_PATH
+            IMAGE_CONVERT_STRING
             EXPECTED_DOXYGEN_VERSION
             EXPECTED_SPHINX_VERSION
             CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
@@ -431,34 +440,16 @@ if (SPHINX_FOUND)
             dev-manual/releng/jenkins-ui.rst
             )
     endif()
+    gmx_add_sphinx_source_files(
+        FILES
+        ${REFERENCEMANUAL_SPHINX_FILES})
     if (IMAGE_CONVERT_POSSIBLE)
-        gmx_add_sphinx_source_files(
-            FILES
-            ${REFERENCEMANUAL_SPHINX_FILES}
-            user-guide/index.rst
-            user-guide/flow.rst)
         gmx_add_sphinx_source_files(
             FILES
             ${REFERENCEMANUAL_IMAGE_FILES})
         gmx_add_sphinx_image_conversion_files(
             FILES
             ${REFERENCEMANUAL_IMAGE_FILES})
-    else()
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual TO user-guide
-            FILES
-            file-formats.rst
-            plots/plotje.png
-            plots/xvgr.png)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual-minimal TO reference-manual
-            FILES
-            index.rst)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/user-guide-old TO user-guide
-            FILES
-            index.rst
-            flow.rst)
     endif()
     gmx_add_sphinx_input_target(sphinx-input-rst)
     gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)
