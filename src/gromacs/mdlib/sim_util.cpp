@@ -194,8 +194,6 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
     time_t temp_time = static_cast<time_t>(the_time);
 
     auto   timebuf = gmx_ctime_r(&temp_time);
-    // Retain only the characters before the first space
-    timebuf.erase(std::find(timebuf.begin(), timebuf.end(), ' '), timebuf.end());
 
     fprintf(fplog, "%s on rank %d %s\n", title, nodeid, timebuf.c_str());
 }
