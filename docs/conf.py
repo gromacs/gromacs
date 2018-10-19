@@ -125,6 +125,11 @@ exclude_patterns = ['fragments']
 if not tags.has('do_man'):
     exclude_patterns += ['man']
 
+# Set variable if documentation build can convert images or not
+# to selectively include files in reference manual
+def setup(app):
+    app.add_config_value('gmx_image_convert', 'impossible', 'env')
+
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
 #default_role = None

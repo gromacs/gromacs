@@ -107,13 +107,40 @@ if (SPHINX_FOUND)
     endif()
     # The reference manual still contains the individual sections from the
     # LaTeX document, with the files below grouped and annotated by chapter.
-    set(REFERENCEMANUAL_SPHINX_FILES
+    set(REFERENCEMANUAL_SPHINX_FILES_GENERAL
         # Main index file, preface and introduction.
         reference-manual/index.rst
         reference-manual/preface.rst
         reference-manual/introduction.rst
         # Definitions and Units chapter
         reference-manual/definitions.rst
+        # Topologies chapter
+        reference-manual/topologies.rst
+        reference-manual/topologies/particle-type.rst
+        reference-manual/topologies/parameter-files.rst
+        reference-manual/topologies/molecule-definition.rst
+        reference-manual/topologies/constraint-algorithm-section.rst
+        reference-manual/topologies/pdb2gmx-input-files.rst
+        reference-manual/topologies/topology-file-formats.rst
+        reference-manual/topologies/force-field-organization.rst
+        # File formats chapter
+        reference-manual/file-formats.rst
+        # Run parameters and programs chapter
+        reference-manual/run-parameters.rst
+        # Implementation details chapter
+        reference-manual/details.rst
+        # Averages and fluctations chapter
+        reference-manual/averages.rst
+        # References
+        reference-manual/references.rst
+        # PNG formated plot files that don't need to be converted into PNG
+        # for the web page.
+        reference-manual/plots/peregrine.png
+        reference-manual/plots/adress.png
+        reference-manual/plots/plotje.png
+        reference-manual/plots/xvgr.png
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_WITH_IMAGES
         # Algorithms chapter
         reference-manual/algorithms.rst
         reference-manual/algorithms/periodic-boundary-conditions.rst
@@ -142,17 +169,6 @@ if (SPHINX_FOUND)
         reference-manual/functions/nonbonded-interactions.rst
         reference-manual/functions/polarization.rst
         reference-manual/functions/restraints.rst
-        # Topologies chapter
-        reference-manual/topologies.rst
-        reference-manual/topologies/particle-type.rst
-        reference-manual/topologies/parameter-files.rst
-        reference-manual/topologies/molecule-definition.rst
-        reference-manual/topologies/constraint-algorithm-section.rst
-        reference-manual/topologies/pdb2gmx-input-files.rst
-        reference-manual/topologies/topology-file-formats.rst
-        reference-manual/topologies/force-field-organization.rst
-        # File formats chapter
-        reference-manual/file-formats.rst
         # Special topics chapter
         reference-manual/special.rst
         reference-manual/special/free-energy-implementation.rst
@@ -168,8 +184,6 @@ if (SPHINX_FOUND)
         reference-manual/special/qmmm.rst
         reference-manual/special/vmd-imd.rst
         reference-manual/special/membrane-embedding.rst
-        # Run parameters and programs chapter
-        reference-manual/run-parameters.rst
         # Analysis chapter
         reference-manual/analysis.rst
         reference-manual/analysis/using-groups.rst
@@ -185,20 +199,7 @@ if (SPHINX_FOUND)
         reference-manual/analysis/covariance-analysis.rst
         reference-manual/analysis/dihedral-pca.rst
         reference-manual/analysis/protein-related.rst
-        reference-manual/analysis/interface-related.rst
-        # Implementation details chapter
-        reference-manual/details.rst
-        # Averages and fluctations chapter
-        reference-manual/averages.rst
-        # References
-        reference-manual/references.rst
-        # PNG formated plot files that don't need to be converted into PNG
-        # for the web page.
-        reference-manual/plots/peregrine.png
-        reference-manual/plots/adress.png
-        reference-manual/plots/plotje.png
-        reference-manual/plots/xvgr.png
-        )
+        reference-manual/analysis/interface-related.rst)
     # The image files have also been ordered by the respective
     # chapter they are included in in the reference manual
     set(REFERENCEMANUAL_IMAGE_FILES
@@ -362,8 +363,10 @@ if (SPHINX_FOUND)
         user-guide/environment-variables.rst
         user-guide/faq.rst
         user-guide/floating-point.rst
+        user-guide/flow.rst
         user-guide/force-fields.rst
         user-guide/getting-started.rst
+        user-guide/index.rst
         user-guide/managing-simulations.rst
         user-guide/mdp-options.rst
         user-guide/mdrun-features.rst
@@ -401,10 +404,17 @@ if (SPHINX_FOUND)
       set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} https://doi.org/${GMX_SOURCE_DOI}.")
     endif()
 
+    if(IMAGE_CONVERT_POSSIBLE)
+        set(IMAGE_CONVERT_STRING "possible")
+    else()
+        set(IMAGE_CONVERT_STRING "impossible")
+    endif()
+
     set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
     gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
         EXTRA_VARS
             SPHINX_EXTENSION_PATH RELENG_PATH
+            IMAGE_CONVERT_STRING
             EXPECTED_DOXYGEN_VERSION
             EXPECTED_SPHINX_VERSION
             CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
@@ -430,34 +440,17 @@ if (SPHINX_FOUND)
             dev-manual/releng/jenkins-ui.rst
             )
     endif()
+    gmx_add_sphinx_source_files(
+        FILES
+        ${REFERENCEMANUAL_SPHINX_FILES_GENERAL})
     if (IMAGE_CONVERT_POSSIBLE)
         gmx_add_sphinx_source_files(
             FILES
-            ${REFERENCEMANUAL_SPHINX_FILES}
-            user-guide/index.rst
-            user-guide/flow.rst)
-        gmx_add_sphinx_source_files(
-            FILES
+            ${REFERENCEMANUAL_SPHINX_FILES_WITH_IMAGES}
             ${REFERENCEMANUAL_IMAGE_FILES})
         gmx_add_sphinx_image_conversion_files(
             FILES
             ${REFERENCEMANUAL_IMAGE_FILES})
-    else()
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual TO user-guide
-            FILES
-            file-formats.rst
-            plots/plotje.png
-            plots/xvgr.png)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual-minimal TO reference-manual
-            FILES
-            index.rst)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/user-guide-old TO user-guide
-            FILES
-            index.rst
-            flow.rst)
     endif()
     gmx_add_sphinx_input_target(sphinx-input-rst)
     gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)
