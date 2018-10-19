@@ -90,6 +90,36 @@ macro(gmx_add_sphinx_input_target TARGETNAME)
         DEPENDS ${_SPHINX_INPUT_FILES})
 endmacro()
 
+function(gmx_add_sphinx_rename_files)
+    set(_one_value_args FROM TO PREFIX)
+    cmake_parse_arguments(ARG "" "${_one_value_args}" "FILES" ${ARGN})
+    if (NOT ARG_FROM)
+        set(ARG_FROM ${CMAKE_CURRENT_SOURCE_DIR})
+    endif()
+    if (ARG_TO)
+        set(ARG_TO ${ARG_TO}/)
+    endif()
+    foreach(_file ${ARG_FILES})
+        set(_source ${ARG_FROM}/${_file})
+        get_filename_component(_filepath ${_file} DIRECTORY)
+        get_filename_component(_filename ${_source} NAME)
+        set(_targetdir ${_SPHINX_INPUT_ROOT}${ARG_TO}/${_filepath})
+        string(REGEX REPLACE "-without-images" "" _temp ${_file})
+        set(_target ${_SPHINX_INPUT_ROOT}/${ARG_TO}${_temp})
+        if (NOT EXISTS ${_targetdir})
+            file(MAKE_DIRECTORY ${_targetdir})
+        endif()
+        add_custom_command(
+            OUTPUT  ${_target}
+            COMMAND ${CMAKE_COMMAND} -E copy ${_source} ${_target}
+            DEPENDS ${_source}
+            COMMENT "Copying Sphinx input file ${ARG_PREFIX}${_file}"
+            VERBATIM)
+        list(APPEND _SPHINX_INPUT_FILES ${_target})
+    endforeach()
+    set(_SPHINX_INPUT_FILES "${_SPHINX_INPUT_FILES}" PARENT_SCOPE)
+endfunction()
+
 function(gmx_add_sphinx_image_conversion_files)
     set(_one_value_args FROM TO PREFIX)
     cmake_parse_arguments(ARG "" "${_one_value_args}" "FILES" ${ARGN})
