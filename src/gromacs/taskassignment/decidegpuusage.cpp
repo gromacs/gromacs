@@ -409,12 +409,13 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 }
 
 bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
-                                     const bool /*useGpuForPme*/,
+                                     const bool       useGpuForPme,
                                      const bool       usingVerletScheme,
                                      const TaskTarget bondedTarget,
                                      const bool       canUseGpuForBonded,
-                                     const int        /*numRanksPerSimulation*/,
-                                     const int        /*numPmeRanksPerSimulation*/,
+                                     const bool       usingLJPme,
+                                     const bool       usingElecPmeOrEwald,
+                                     const int        numPmeRanksPerSimulation,
                                      const bool       gpusWereDetected)
 {
     if (bondedTarget == TaskTarget::Cpu)
@@ -470,8 +471,14 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     }
 
     // If we get here, then the user permitted GPUs, which we should
-    // use for bonded interactions if any were detected.
-    return gpusWereDetected;
+    // use for bonded interactions if any were detected and the CPU
+    // is busy, for which we currently only check PME or Ewald.
+    // (It would be better to dynamically assign bondeds based on timings)
+    // Note that here we assume that the auto setting of PME ranks will not
+    // choose seperate PME ranks when nonBonded are assigned to the GPU.
+    bool usingOurCpuForPmeOrEwald = (usingLJPme || (usingElecPmeOrEwald && !useGpuForPme && numPmeRanksPerSimulation <= 0));
+
+    return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
 }  // namespace gmx
