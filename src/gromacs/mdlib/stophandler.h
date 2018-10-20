@@ -86,8 +86,35 @@ namespace gmx
  */
 enum class StopSignal
 {
-    noSignal, stopAtNextNSStep, stopImmediately
+    noSignal = 0, stopAtNextNSStep = 1, stopImmediately = -1
 };
+
+/*! \brief Convert signed char (as used by SimulationSignal) to StopSignal enum
+ *
+ * * Expected values are
+ *   sig ==  0 -- no signal
+ *   sig ==  1 -- stop at next NS
+ *   sig == -1 -- stop asap
+ * If the signal gets reduced repeatedly before being handled, sig > 1 can result
+ * instead of sig == 1, and sig < -1 instead of sig == -1. We are accepting this
+ * silently by converting sig >= 1 to StopSignal::stopAtNextNSStep and sig <= -1
+ * to StopSignal::stopImmediately.
+ */
+static inline StopSignal convertToStopSignal(signed char sig)
+{
+    if (sig <= -1)
+    {
+        return StopSignal::stopImmediately;
+    }
+    else if (sig >= 1)
+    {
+        return StopSignal::stopAtNextNSStep;
+    }
+    else  // sig == 0
+    {
+        return StopSignal::noSignal;
+    }
+}
 
 /*! \libinternal
  * \brief Class handling the stop signal
@@ -151,8 +178,8 @@ class StopHandler final
          */
         bool stoppingAfterCurrentStep(bool bNS) const
         {
-            return static_cast<StopSignal>(signal_.set) == StopSignal::stopImmediately ||
-                   (static_cast<StopSignal>(signal_.set) == StopSignal::stopAtNextNSStep &&
+            return convertToStopSignal(signal_.set) == StopSignal::stopImmediately ||
+                   (convertToStopSignal(signal_.set) == StopSignal::stopAtNextNSStep &&
                     (bNS || neverUpdateNeighborlist_));
         }
 

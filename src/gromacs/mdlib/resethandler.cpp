@@ -58,6 +58,21 @@
 
 namespace gmx
 {
+
+/*! \brief Convert signed char (as used by SimulationSignal) to ResetSignal enum
+ *
+ * Expected values are
+ *   sig == 0 -- no signal
+ *   sig == 1 -- signal received
+ * If the signal gets reduced repeatedly before being handled, sig > 1 can result
+ * instead of sig == 1. We are accepting this silently by converting sig >= 1 to
+ * ResetSignal::doResetCounters.
+ */
+static inline ResetSignal convertToResetSignal(signed char sig)
+{
+    return sig >= 1 ? ResetSignal::doResetCounters : ResetSignal::noSignal;
+}
+
 ResetHandler::ResetHandler(
         compat::not_null<SimulationSignal*> signal,
         bool                                simulationsShareState,
@@ -132,8 +147,8 @@ bool ResetHandler::resetCountersImpl(
         gmx_wallcycle_t             wcycle,
         gmx_walltime_accounting_t   walltime_accounting)
 {
-    /* Reset either if signal has been passed,  */
-    if (static_cast<ResetSignal>(signal_.set) == ResetSignal::doResetCounters ||
+    /* Reset either if signal has been passed, or if reset step has been reached */
+    if (convertToResetSignal(signal_.set) == ResetSignal::doResetCounters ||
         step_rel == wcycle_get_reset_counters(wcycle))
     {
         if (pme_loadbal_is_active(pme_loadbal))
