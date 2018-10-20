@@ -296,10 +296,20 @@ nbnxn_search_work_t::~nbnxn_search_work_t()
 nbnxn_search::nbnxn_search(const ivec               *n_dd_cells,
                            const gmx_domdec_zones_t *zones,
                            gmx_bool                  bFEP,
+                           bool                      bUseGPU,
                            int                       nthread_max) :
     bFEP(bFEP),
     ePBC(epbcNONE), // The correct value will be set during the gridding
     zones(zones),
+    // Require that atom indices will be pinned if a supported GPU is
+    // in use.
+    a(decltype(a) ::allocator_type
+      {
+          bUseGPU ?
+          gmx::PinningPolicy::PinnedIfSupported :
+          gmx::PinningPolicy::CannotBePinned
+      }
+      ),
     natoms_local(0),
     natoms_nonlocal(0),
     search_count(0),
@@ -323,19 +333,11 @@ nbnxn_search::nbnxn_search(const ivec               *n_dd_cells,
         }
     }
 
-    grid.resize(numGrids);
+    grid.resize(numGrids, nbnxn_grid_t(bUseGPU));
 
     /* Initialize detailed nbsearch cycle counting */
     print_cycles = (getenv("GMX_NBNXN_CYCLE") != nullptr);
     nbs_cycle_clear(cc);
-}
-
-nbnxn_search *nbnxn_init_search(const ivec                *n_dd_cells,
-                                const gmx_domdec_zones_t  *zones,
-                                gmx_bool                   bFEP,
-                                int                        nthread_max)
-{
-    return new nbnxn_search(n_dd_cells, zones, bFEP, nthread_max);
 }
 
 static void init_buffer_flags(nbnxn_buffer_flags_t *flags,

@@ -2193,6 +2193,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
     nbv->nbs = gmx::compat::make_unique<nbnxn_search>(DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
                                                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
                                                       bFEP_NonBonded,
+                                                      nbv->bUseGPU,
                                                       gmx_omp_nthreads_get(emntPairsearch));
 
     gpu_set_host_malloc_and_free(nbv->grp[0].kernel_type == nbnxnk8x8x8_GPU,

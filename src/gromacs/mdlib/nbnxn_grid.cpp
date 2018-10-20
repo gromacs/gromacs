@@ -1409,6 +1409,21 @@ calc_cell_indices(nbnxn_search                   *nbs,
     }
 }
 
+nbnxn_grid_t::nbnxn_grid_t(bool bUseGPU)
+    : bUseGPU_(bUseGPU),
+      // If the grid will be used on a GPU, make sure any relevant
+      // allocations are pinned. Since the grids have no size yet,
+      // there is no question of reallocation at this time.
+      cxy_na(decltype(cxy_na) ::allocator_type
+             {
+                 bUseGPU_ ?
+                 gmx::PinningPolicy::PinnedIfSupported :
+                 gmx::PinningPolicy::CannotBePinned
+             }
+             )
+{
+}
+
 /* Sets up a grid and puts the atoms on the grid.
  * This function only operates on one domain of the domain decompostion.
  * Note that without domain decomposition there is only one domain.

@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/simd/simd.h"
@@ -157,48 +158,58 @@ typedef struct {
  */
 struct nbnxn_grid_t
 {
-    rvec     c0;                   /* The lower corner of the (local) grid        */
-    rvec     c1;                   /* The upper corner of the (local) grid        */
-    rvec     size;                 /* c1 - c0                                     */
-    real     atom_density;         /* The atom number density for the local grid  */
-    real     maxAtomGroupRadius;   /* The maximum distance an atom can be outside
-                                    * of a cell and outside of the grid
-                                    */
+    /* \brief Constructor
+     *
+     * \param[in] bUseGPU      Whether the pair-search grid will be used for a list used on a GPU device.
+     */
+    nbnxn_grid_t(bool bUseGPU);
 
-    gmx_bool bSimple;              /* Is this grid simple or super/sub            */
-    int      na_c;                 /* Number of atoms per cluster                 */
-    int      na_cj;                /* Number of atoms for list j-clusters         */
-    int      na_sc;                /* Number of atoms per super-cluster           */
-    int      na_c_2log;            /* 2log of na_c                                */
+    //! Whether the pair-search grid will be used for a list used on a GPU device.
+    bool     bUseGPU_;
 
-    int      numCells[DIM - 1];    /* Number of cells along x/y                   */
-    int      nc;                   /* Total number of cells                       */
+    rvec     c0                 = {0};   /* The lower corner of the (local) grid        */
+    rvec     c1                 = {0};   /* The upper corner of the (local) grid        */
+    rvec     size               = {0};   /* c1 - c0                                     */
+    real     atom_density       = 0;     /* The atom number density for the local grid  */
+    real     maxAtomGroupRadius = 0;     /* The maximum distance an atom can be outside
+                                          * of a cell and outside of the grid */
 
-    real     cellSize[DIM - 1];    /* size of a cell                              */
-    real     invCellSize[DIM - 1]; /* 1/cellSize                                  */
+    gmx_bool bSimple   = false;          /* Is this grid simple or super/sub            */
+    int      na_c      = 0;              /* Number of atoms per cluster                 */
+    int      na_cj     = 0;              /* Number of atoms for list j-clusters         */
+    int      na_sc     = 0;              /* Number of atoms per super-cluster           */
+    int      na_c_2log = 0;              /* 2log of na_c                                */
 
-    int      cell0;                /* Index in nbs->cell corresponding to cell 0  */
+    int      numCells[DIM - 1] = {0};    /* Number of cells along x/y                   */
+    int      nc                = 0;      /* Total number of cells                       */
+
+    real     cellSize[DIM - 1]    = {0}; /* size of a cell                              */
+    real     invCellSize[DIM - 1] = {0}; /* 1/cellSize                                  */
+
+    int      cell0 = 0;                  /* Index in nbs->cell corresponding to cell 0  */
 
     /* Grid data */
-    std::vector<int> cxy_na;        /* The number of atoms for each column in x,y  */
-    std::vector<int> cxy_ind;       /* Grid (super)cell index, offset from cell0   */
+    gmx::HostStdVector<int> cxy_na;  /* The number of atoms for each column in x,y  */
+    std::vector<int>        cxy_ind; /* Grid (super)cell index, offset from cell0   */
 
-    std::vector<int> nsubc;         /* The number of sub cells for each super cell */
+    std::vector<int>        nsubc;   /* The number of sub cells for each super cell */
 
     /* Bounding boxes */
-    std::vector<float>                                    bbcz;                /* Bounding boxes in z for the cells */
-    std::vector < nbnxn_bb_t, gmx::AlignedAllocator < nbnxn_bb_t>> bb;         /* 3D bounding boxes for the sub cells */
-    std::vector < nbnxn_bb_t, gmx::AlignedAllocator < nbnxn_bb_t>> bbjStorage; /* 3D j-bounding boxes for the case where
-                                                                                * the i- and j-cluster sizes are different */
-    gmx::ArrayRef<nbnxn_bb_t>                              bbj;                /* 3D j-bounding boxes */
-    std::vector < float, gmx::AlignedAllocator < float>>            pbb;       /* 3D b. boxes in xxxx format per super cell   */
+    template <typename T>
+    using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
+    std::vector<float>        bbcz;       /* Bounding boxes in z for the cells */
+    AlignedVector<nbnxn_bb_t> bb;         /* 3D bounding boxes for the sub cells */
+    AlignedVector<nbnxn_bb_t> bbjStorage; /* 3D j-bounding boxes for the case where
+                                           * the i- and j-cluster sizes are different */
+    gmx::ArrayRef<nbnxn_bb_t> bbj;        /* 3D j-bounding boxes */
+    AlignedVector<float>      pbb;        /* 3D b. boxes in xxxx format per super cell   */
 
     /* Bit-flag information */
-    std::vector<int>          flags;     /* Flags for properties of clusters in each cell */
-    std::vector<unsigned int> fep;       /* FEP signal bits for atoms in each cluster */
+    std::vector<int>          flags;      /* Flags for properties of clusters in each cell */
+    std::vector<unsigned int> fep;        /* FEP signal bits for atoms in each cluster */
 
     /* Statistics */
-    int                       nsubc_tot; /* Total number of subcell, used for printing  */
+    int                       nsubc_tot = 0; /* Total number of subcell, used for printing  */
 };
 
 /* Working data for the actual i-supercell during pair search */
@@ -281,12 +292,14 @@ struct nbnxn_search
      * \param[in] n_dd_cells   The number of domain decomposition cells per dimension, without DD nullptr should be passed
      * \param[in] zones        The domain decomposition zone setup, without DD nullptr should be passed
      * \param[in] bFEP         Tells whether non-bonded interactions are perturbed
+     * \param[in] bUseGPU      Whether the pair list will be used on a GPU device.
      * \param[in] nthread_max  The maximum number of threads used in the search
      */
 
     nbnxn_search(const ivec               *n_dd_cells,
                  const gmx_domdec_zones_t *zones,
                  gmx_bool                  bFEP,
+                 bool                      bUseGPU,
                  int                       nthread_max);
 
     gmx_bool                   bFEP;            /* Do we have perturbed atoms? */
@@ -299,7 +312,7 @@ struct nbnxn_search
 
     std::vector<nbnxn_grid_t>  grid;            /* Array of grids, size ngrid                 */
     std::vector<int>           cell;            /* Actual allocated cell array for all grids  */
-    std::vector<int>           a;               /* Atom index for grid, the inverse of cell   */
+    gmx::HostStdVector<int>    a;               /* Atom index for grid, the inverse of cell   */
 
     int                        natoms_local;    /* The local atoms run from 0 to natoms_local */
     int                        natoms_nonlocal; /* The non-local atoms run from natoms_local
