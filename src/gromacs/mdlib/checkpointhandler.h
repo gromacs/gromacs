@@ -73,7 +73,7 @@ namespace gmx
  */
 enum class CheckpointSignal
 {
-    noSignal, doCheckpoint
+    noSignal = 0, doCheckpoint = 1
 };
 
 /*! \libinternal
