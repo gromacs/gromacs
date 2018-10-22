@@ -413,7 +413,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
                     stagingForces[i] = forces[i];
                 }
             }
-            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid));
+            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid), true);
             for (index i = 0; i != forces.size(); ++i)
             {
                 forces[i] = stagingForces[i];
