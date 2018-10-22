@@ -259,9 +259,16 @@ endif()
 if (HAS_NO_UNUSED)
     target_compile_options(libgromacs_generated PRIVATE "-Wno-unused;-Wno-unused-parameter")
 endif()
-if (HAS_NO_MISSING_DECL)
+if (HAS_NO_MISSING_DECL AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-declarations")
 endif()
+# TODO The group scheme kernels don't use proper function prototype
+# declarations, and clang warns about such use, which we suppress
+# rather than fix. We would prefer to use no suppressions. However
+# other compilers do not support such a warning suppression for C++
+# source files, and issue warnings about that. Remove the use of
+# -Wno-missing-prototypes here and above when the group scheme is
+# removed.
 if (HAS_NO_MISSING_PROTO)
     target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
 endif()
