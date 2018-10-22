@@ -192,101 +192,16 @@ if (SPHINX_FOUND)
         reference-manual/averages.rst
         # References
         reference-manual/references.rst
-        # PNG formated plot files that don't need to be converted into PNG
-        # for the web page.
-        reference-manual/plots/peregrine.png
-        reference-manual/plots/adress.png
-        reference-manual/plots/plotje.png
-        reference-manual/plots/xvgr.png
         )
-    # The image files have also been ordered by the respective
-    # chapter they are included in in the reference manual
-    set(REFERENCEMANUAL_IMAGE_FILES
-        # General folder
-        reference-manual/plots/decomp.pdf
-        reference-manual/plots/dih.pdf
-        reference-manual/plots/drift-all.pdf
-        reference-manual/plots/f-angle.pdf
-        reference-manual/plots/f-bond.pdf
-        reference-manual/plots/fp-highres.pdf
-        reference-manual/plots/int-mat.pdf
-        reference-manual/plots/mdpar.pdf
-        reference-manual/plots/parsort.pdf
-        reference-manual/plots/ring.pdf
-        reference-manual/plots/shiftf.pdf
-        # Algorithms chapter
-        reference-manual/algorithms/plots/dd-cells.pdf
-        reference-manual/algorithms/plots/dd-tric.pdf
-        reference-manual/algorithms/plots/flowchart.pdf
-        reference-manual/algorithms/plots/free1.pdf
-        reference-manual/algorithms/plots/free2.pdf
-        reference-manual/algorithms/plots/leapfrog.pdf
-        reference-manual/algorithms/plots/lincs.pdf
-        reference-manual/algorithms/plots/maxwell.pdf
-        reference-manual/algorithms/plots/mpmd-pme.pdf
-        reference-manual/algorithms/plots/nstric.pdf
-        reference-manual/algorithms/plots/par-lincs2.pdf
-        reference-manual/algorithms/plots/pbctric.pdf
-        reference-manual/algorithms/plots/rhododec.pdf
-        reference-manual/algorithms/plots/truncoct.pdf
-        reference-manual/algorithms/plots/verlet-drift.pdf
-        # Interaction functions chapter
-        reference-manual/functions/plots/angle.pdf
-        reference-manual/functions/plots/bstretch.pdf
-        reference-manual/functions/plots/chain.pdf
-        reference-manual/functions/plots/dummies.pdf
-        reference-manual/functions/plots/f-bham.pdf
-        reference-manual/functions/plots/fbposres.pdf
-        reference-manual/functions/plots/f-dih.pdf
-        reference-manual/functions/plots/f-dr.pdf
-        reference-manual/functions/plots/fig-02.pdf
-        reference-manual/functions/plots/fig-04.pdf
-        reference-manual/functions/plots/f-imps.pdf
-        reference-manual/functions/plots/f-lj.pdf
-        reference-manual/functions/plots/f-morse.pdf
-        reference-manual/functions/plots/f-pr.pdf
-        reference-manual/functions/plots/f-rbs.pdf
-        reference-manual/functions/plots/ring-imp.pdf
-        reference-manual/functions/plots/softcore.pdf
-        reference-manual/functions/plots/subst-im.pdf
-        reference-manual/functions/plots/tetra-im.pdf
-        reference-manual/functions/plots/vcrf.pdf
-        reference-manual/functions/plots/vsite-4fdn.pdf
-        # Special topics chapter
-        reference-manual/special/plots/awh-invN.pdf
-        reference-manual/special/plots/awh-pmfs.pdf
-        reference-manual/special/plots/awh-sampleweights.pdf
-        reference-manual/special/plots/awh-traj.pdf
-        reference-manual/special/plots/compelsetup.pdf
-        reference-manual/special/plots/dumaro.pdf
-        reference-manual/special/plots/dumtypes.pdf
-        reference-manual/special/plots/equipotential.pdf
-        reference-manual/special/plots/field.pdf
-        reference-manual/special/plots/gaussians.pdf
-        reference-manual/special/plots/pulldirrel.pdf
-        reference-manual/special/plots/pull.pdf
-        reference-manual/special/plots/pullref.pdf
-        reference-manual/special/plots/rotation.pdf
-        # Analysis chapter
-        reference-manual/analysis/plots/dih-def.pdf
-        reference-manual/analysis/plots/distm.pdf
-        reference-manual/analysis/plots/dssp.pdf
-        reference-manual/analysis/plots/hbond-insert.pdf
-        reference-manual/analysis/plots/hbond.pdf
-        reference-manual/analysis/plots/hpr-wheel.pdf
-        reference-manual/analysis/plots/msdwater.pdf
-        reference-manual/analysis/plots/ngmxdump.pdf
-        reference-manual/analysis/plots/phipsi.pdf
-        reference-manual/analysis/plots/rama.pdf
-        reference-manual/analysis/plots/rdfO-O.pdf
-        reference-manual/analysis/plots/rdf.pdf
-        reference-manual/analysis/plots/sgangle.pdf 
-        )
+    # Source files are split according to the sections they are included in.
+    # New files should always be placed in the corresponding section of the list below.
     set(SPHINX_SOURCE_FILES
+        # General files
         index.rst
         download.rst
         conf.py
         links.dat
+        # Development manual section
         dev-manual/build-system.rst
         dev-manual/change-management.rst
         dev-manual/commitstyle.rst
@@ -310,13 +225,17 @@ if (SPHINX_FOUND)
         dev-manual/testutils.rst
         dev-manual/tools.rst
         dev-manual/uncrustify.rst
+        # List generated from binary
         fragments/doxygen-links.rst
+        # How to section
         how-to/index.rst
         how-to/beginners.rst
         how-to/topology.rst
         how-to/special.rst
         how-to/visualize.rst
+        # Install guide section
         install-guide/index.rst
+        # Release notes section
         release-notes/index.rst
         release-notes/highlights.rst
         release-notes/features.rst
@@ -352,16 +271,15 @@ if (SPHINX_FOUND)
         release-notes/2016/major/removed-features.rst
         release-notes/2016/major/miscellaneous.rst
         release-notes/older/index.rst
-        # the entry for user-guide/index.rst should not appear here,
-        # as it will be included conditionally further down depending on
-        # if the documentation will be build with the full reference
-        # manual or without.
+        # User guide section
+        user-guide/index.rst
         user-guide/cmdline.rst
         user-guide/cutoff-schemes.rst
         user-guide/deprecation-policy.rst
         user-guide/environment-variables.rst
         user-guide/faq.rst
         user-guide/floating-point.rst
+        user-guide/flow.rst
         user-guide/system-preparation.rst
         user-guide/force-fields.rst
         user-guide/getting-started.rst
@@ -418,52 +336,39 @@ if (SPHINX_FOUND)
             GMX_SOURCE_DOI_STRING
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
-    gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})
+    gmx_add_sphinx_source_files(
+        FILES 
+        ${SPHINX_SOURCE_FILES})
     if (EXISTS ${RELENG_PATH}/docs/FileList.cmake)
         include(${RELENG_PATH}/docs/FileList.cmake)
         gmx_add_sphinx_source_files(
             FROM ${RELENG_PATH}/docs TO dev-manual/releng PREFIX releng/docs/
-            FILES ${RELENG_SPHINX_FILES})
+            FILES
+            ${RELENG_SPHINX_FILES})
     else()
-        gmx_add_sphinx_source_files(FILES
+        gmx_add_sphinx_source_files(
+            FILES
             dev-manual/releng/index.rst
             dev-manual/releng/jenkins-howto.rst
             dev-manual/releng/jenkins-ui.rst
             )
     endif()
-    if (IMAGE_CONVERT_POSSIBLE)
+
+    include(${CMAKE_CURRENT_SOURCE_DIR}/PngFileList.cmake)
+    gmx_add_sphinx_source_files(
+        FILES
+        ${REFERENCEMANUAL_SPHINX_FILES}
+        ${DOCUMENTATION_PNG_FILES})
+    if (MANUAL_BUILD_IS_POSSIBLE)
+        include(${CMAKE_CURRENT_SOURCE_DIR}/PdfFileList.cmake)
         gmx_add_sphinx_source_files(
             FILES
-            ${REFERENCEMANUAL_SPHINX_FILES}
-            user-guide/index.rst
-            user-guide/flow.rst)
-        gmx_add_sphinx_source_files(
-            FILES
-            ${REFERENCEMANUAL_IMAGE_FILES})
-        gmx_add_sphinx_image_conversion_files(
-            FILES
-            ${REFERENCEMANUAL_IMAGE_FILES})
-    else()
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual TO user-guide
-            FILES
-            file-formats.rst
-            plots/plotje.png
-            plots/xvgr.png)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual-minimal TO reference-manual
-            FILES
-            index.rst)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/user-guide-old TO user-guide
-            FILES
-            index.rst
-            flow.rst)
+            ${DOCUMENTATION_PDF_FILES})
     endif()
+
     gmx_add_sphinx_input_target(sphinx-input-rst)
-    gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)
     add_custom_target(sphinx-input)
-    add_dependencies(sphinx-input sphinx-input-rst sphinx-image-conversion)
+    add_dependencies(sphinx-input sphinx-input-rst)
     # Remove other rst files from the build tree, since they confuse Sphinx.
     # Skip generated files in onlinehelp/, and fragments.
     # The latter do not cause issues with obsolete files, as they
@@ -514,7 +419,6 @@ if (SPHINX_FOUND)
     add_custom_target(webpage-sphinx
         DEPENDS sphinx-programs
         DEPENDS sphinx-input
-        DEPENDS sphinx-image-conversion 
         COMMAND
             ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
         COMMAND

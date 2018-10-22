@@ -38,9 +38,7 @@ option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OF
 mark_as_advanced(GMX_BUILD_MANUAL)
 
 set(MANUAL_BUILD_IS_POSSIBLE ON)
-set(IMAGE_CONVERT_POSSIBLE ON)
 set(MANUAL_BUILD_NOT_POSSIBLE_REASON)
-set(NO_IMAGE_CONVERT_REASON)
 if (NOT GMX_BUILD_MANUAL)
     # Make sure we only do detection of manual-building dependencies
     # when the user opted in for that.
@@ -61,10 +59,6 @@ else()
     if(NOT PDFLATEX_COMPILER OR NOT IMAGEMAGICK_CONVERT)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
         set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex or some other dependency (ImageMagick convert) is not available")
-        if (NOT IMAGEMAGICK_CONVERT)
-            set(IMAGE_CONVERT_POSSIBLE OFF)
-            set(NO_IMAGE_CONVERT_REASON "Can not convert files for online or pdf manual")
-        endif()
         # TODO Later, identify other dependencies like bibtex,
         # make_index, date, some graphics conversion program,
         # etc. Perhaps patch UseLATEX.cmake and contribute upstream.
@@ -129,4 +123,3 @@ else()
 endif()
 
 set(MANUAL_BUILD_IS_POSSIBLE ${MANUAL_BUILD_IS_POSSIBLE} PARENT_SCOPE)
-set(IMAGE_CONVERT_POSSIBLE ${IMAGE_CONVERT_POSSIBLE} PARENT_SCOPE)
