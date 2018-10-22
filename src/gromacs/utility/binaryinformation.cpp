@@ -110,11 +110,13 @@ void printCopyright(gmx::TextWriter *writer)
         "Paul Bauer",
         "Herman J.C. Berendsen",
         "Par Bjelkmar",
+        "Christian Blau",
         "Aldert van Buuren",
         "Rudi van Drunen",
         "Anton Feenstra",
         "Gerrit Groenhof",
         "Aleksei Iupinov",
+        "M. Eric Irrgang",
         "Christoph Junghans",
         "Anca Hamuraru",
         "Vincent Hindriksen",
@@ -142,7 +144,7 @@ void printCopyright(gmx::TextWriter *writer)
     };
     static const char * const CopyrightText[] = {
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-        "Copyright (c) 2001-2017, The GROMACS development team at",
+        "Copyright (c) 2001-2018, The GROMACS development team at",
         "Uppsala University, Stockholm University and",
         "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
