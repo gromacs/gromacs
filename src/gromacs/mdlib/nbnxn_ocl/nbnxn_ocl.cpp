@@ -881,6 +881,7 @@ gmx_bool nbnxn_gpu_x_to_nbat_x(int                 ncxy,
                                const nbnxn_search *nbs,
                                gmx_nbnxn_gpu_t    *gpu_nbv,
                                void               *xPmeDevicePtr,
+                               GpuEventSynchronizer gmx_unused *syncCoordH2D,
                                const int          *na_all,
                                const int          *cxy_ind,
                                int                 cell0,
@@ -896,6 +897,7 @@ gmx_bool nbnxn_gpu_x_to_nbat_x(int                 ncxy,
     (void)nbs;
     (void)gpu_nbv;
     (void)xPmeDevicePtr;
+    (void)syncCoordH2D;
     (void)na_all;
     (void)cxy_ind;
     (void)cell0;

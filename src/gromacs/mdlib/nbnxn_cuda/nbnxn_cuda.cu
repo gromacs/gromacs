@@ -54,6 +54,7 @@
 #include "nbnxn_cuda.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_common.h"
@@ -808,6 +809,7 @@ bool nbnxn_gpu_x_to_nbat_x(int                   ncxy,
                            const nbnxn_search   *nbs,
                            gmx_nbnxn_gpu_t      *gpu_nbv,
                            void                 *xPmeDevicePtr,
+                           GpuEventSynchronizer *syncCoordH2D,
                            const int            *na_all,
                            const int            *cxy_ind,
                            int                   cell0,
@@ -905,6 +907,7 @@ bool nbnxn_gpu_x_to_nbat_x(int                   ncxy,
     }
     else //coordinates have already been copied by PME stream
     {
+        syncCoordH2D->enqueueWaitEvent(stream);
         x_d = (rvec*) xPmeDevicePtr;
     }
 

@@ -91,6 +91,12 @@ class GpuEventSynchronizer
             cudaError_t gmx_used_in_debug stat = cudaEventSynchronize(event_);
             GMX_ASSERT(stat == cudaSuccess, "cudaEventSynchronize failed");
         }
+        /*! \brief Enqueues a wait for the recorded event in steam \p stream */
+        inline void enqueueWaitEvent(CommandStream stream)
+        {
+            cudaError_t gmx_used_in_debug stat = cudaStreamWaitEvent(stream, event_, 0);
+            GMX_ASSERT(stat == cudaSuccess, "cudaStreamWaitEvent failed");
+        }
 
     private:
         cudaEvent_t event_;
