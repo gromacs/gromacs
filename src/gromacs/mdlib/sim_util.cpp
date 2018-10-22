@@ -1288,6 +1288,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                                         nbv->nbat,
                                                                         nbv->gpu_nbv,
                                                                         pme_gpu_get_device_x(fr->pmedata),
+                                                                        pme_gpu_get_x_syncronizer(fr->pmedata),
                                                                         eintLocal,
                                                                         as_rvec_array(x.data()));
         }
@@ -1381,6 +1382,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                                             nbv->nbat,
                                                                             nbv->gpu_nbv,
                                                                             pme_gpu_get_device_x(fr->pmedata),
+                                                                            pme_gpu_get_x_syncronizer(fr->pmedata),
                                                                             eintNonlocal,
                                                                             as_rvec_array(x.data()));
             }

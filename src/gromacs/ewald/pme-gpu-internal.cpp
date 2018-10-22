@@ -237,10 +237,8 @@ void pme_gpu_copy_input_coordinates(const PmeGpu *pmeGpu, const rvec *h_coordina
     copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates, h_coordinatesFloat,
                        0, pmeGpu->kernelParams->atoms.nAtoms * DIM,
                        pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
-    // FIXME: sync required since the copied data will be used by PP stream when using single GPU for both
-    //        Remove after adding the required event-based sync between the above H2D and the transform kernel
-    pme_gpu_synchronize(pmeGpu);
 
+    pmeGpu->archSpecific->syncCoordH2D.markEvent(pmeGpu->archSpecific->pmeStream);
 #endif
 }
 
@@ -1246,5 +1244,16 @@ void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *pmeGpu)
     {
         return nullptr;
     }
+}
 
+GpuEventSynchronizer *pme_gpu_get_coordinate_h2d_synchronizer(const PmeGpu *pmeGpu)
+{
+    if (pmeGpu && pmeGpu->kernelParams)
+    {
+        return &pmeGpu->archSpecific->syncCoordH2D;
+    }
+    else
+    {
+        return nullptr;
+    }
 }

@@ -71,6 +71,7 @@ struct NumPmeDomains;
 
 enum class GpuTaskCompletion;
 class PmeGpuProgram;
+class GpuEventSynchronizer;
 //! Convenience name.
 using PmeGpuProgramHandle = const PmeGpuProgram *;
 
@@ -428,4 +429,8 @@ GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARG
 
 /*! \brief Get pointer to device copy of coordinate data. */
 GPU_FUNC_QUALIFIER void *pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(NULL)
+
+
+/*! \brief Get pointer to the device synchronizer object that allow syncing on the coordinate host-to-device copy. */
+GPU_FUNC_QUALIFIER GpuEventSynchronizer *pme_gpu_get_x_syncronizer(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(NULL)
 #endif

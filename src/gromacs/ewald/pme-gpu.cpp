@@ -364,3 +364,13 @@ void *pme_gpu_get_device_x(const gmx_pme_t *pme)
     }
     return pme_gpu_get_kernelparam_coordinates(pme->gpu);
 }
+
+GpuEventSynchronizer * pme_gpu_get_x_syncronizer(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+
+    return pme_gpu_get_coordinate_h2d_synchronizer(pme->gpu);
+}
