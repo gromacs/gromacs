@@ -32,6 +32,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Clang warns about missing prototype
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag(-Wno-missing-prototypes HAS_NO_MISSING_PROTO)
+    if (HAS_NO_MISSING_PROTO)
+         target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
+    endif()
+endif()
+
 # Sources that should always be built
 file(GLOB NONBONDED_SOURCES *.cpp)
 if(NOT GMX_CLANG_ANALYZER)
