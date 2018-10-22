@@ -246,7 +246,8 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
 
 void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
                            gmx_wallcycle gmx_unused        *wcycle,
-                           PmeForceOutputHandling           forceTreatment)
+                           PmeForceOutputHandling           forceTreatment,
+                           bool                             bCopyBack)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -259,7 +260,7 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
     wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
-    pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid));
+    pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid), bCopyBack);
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
@@ -354,4 +355,22 @@ void pme_gpu_reinit_computation(const gmx_pme_t *pme,
 
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+}
+
+void *pme_gpu_get_device_x(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+    return pme_gpu_get_kernelparam_coordinates(pme->gpu);
+}
+
+void *pme_gpu_get_device_f(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+    return pme_gpu_get_kernelparam_forces(pme->gpu);
 }
