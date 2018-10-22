@@ -441,6 +441,9 @@ addMessageIfNotSupported(ArrayRef <const std::string> errorReasons,
 bool buildSupportsGpuBondeds(std::string *error)
 {
     std::vector<std::string> errorReasons;
+    // TODO When integrating the support for CUDA bonded interactions,
+    // remove the next line.
+    errorReasons.emplace_back("not yet implemented");
     if (GMX_DOUBLE)
     {
         errorReasons.emplace_back("not supported with double precision");
