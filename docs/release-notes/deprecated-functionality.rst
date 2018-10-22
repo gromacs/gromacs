@@ -1,43 +1,13 @@
-Changes anticipated to GROMACS 2019 functionality
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. _anticipated-changes:
 
-``gmx mdrun -membed``
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-The feature for embedding a protein in a membrane will be retained,
-but probably in a different form, such as ``gmx membed``.
+Changes anticipated to |Gromacs| NEXT functionality
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``gmx mdrun -rerun``
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-The feature for computing potential energy quantities from a
-trajectory will be retained, but probably in a different form, such as
-``gmx rerun`` and ``gmx test-particle-insertion``.
+Functionality deprecated in |Gromacs| NEXT
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Integrator .mdp options will only contain dynamical integrators
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Energy minimization will be accessed in a differt form, perhaps with
-``gmx minimize`` and interpret an .mdp field for which minimizer to
-use. Normal-mode analysis may be accessed with e.g. ``gmx
-normal-modes``. The command-line help for these tools will thenx
-be better able to document which functionality is supported when.
-
-Much functionality in ``trjconv``, ``editconf``, ``eneconv`` and ``trjcat``
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-The functionality in such tools is being separated to make it
-available in composable modules, that we plan to make available as
-simpler tools, and eventually via the GROMACS API that is under
-development.
-
-``gmx do_dssp`` to be replaced
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-This tool is deprecated, because it is problematic for some users to
-obtain and install a separate DSSP binary, so we plan to replace the
-implementation at some point with a native implementation, likely
-based upon xssp, and make it available under a new gmx tool name.
-
-.. _deprecated-functionality:
-
-Functionality deprecated in GROMACS 2019
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Functionality deprecated in |Gromacs| 2019
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Generation of virtual sites to replace aromatic rings in standard residues
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -69,8 +39,8 @@ call to ``gmx grompp``. The convenience of this mdrun option was
 outweighted by the doubtful quality of its implementation, no clear
 record in the log file, and lack of maintenance.
 
-Functionality deprecated before GROMACS 2019
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Functionality deprecated before |Gromacs| NEXT
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This functionality has been declared as deprecated in previous versions
 of |Gromacs|, but has not yet been removed.
 

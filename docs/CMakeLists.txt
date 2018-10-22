@@ -318,6 +318,15 @@ if (SPHINX_FOUND)
         how-to/visualize.rst
         install-guide/index.rst
         release-notes/index.rst
+        release-notes/highlights.rst
+        release-notes/features.rst
+        release-notes/performance.rst
+        release-notes/tools.rst
+        release-notes/bugs-fixed.rst
+        release-notes/removed-functionality.rst
+        release-notes/deprecated-functionality.rst
+        release-notes/portability.rst
+        release-notes/miscellaneous.rst
         release-notes/2019/major/highlights.rst
         release-notes/2019/major/features.rst
         release-notes/2019/major/performance.rst
