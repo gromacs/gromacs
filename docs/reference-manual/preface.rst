@@ -5,17 +5,16 @@ Preface and Disclaimer
 
 Contributions from:
 
-Emile Apol, Rossen Apostolov, Paul Bauer,
-Herman J.C. Berendsen, Pär Bjelkmar, Aldert van Buuren,
-Rudi van Drunen, Anton Feenstra, Gerrit Groenhof,
-Aleksei Iupinov, Christoph Junghans, Anca Hamuraru,
-Vincent Hindriksen, Dimitrios Karkoulis, Peter Kasson,
-Jiri Kraus, Carsten Kutzner, Per Larsson,
-Justin A. Lemkul, Viveca Lindahl, Magnus Lundborg,
-Pieter Meulenhoff, Erik Marklund, Teemu Murtola,
-Szilárd Páll, Sander Pronk, Roland Schulz,
-Alexey Shvetsov, Michael Shirts, Alfons Sijbers,
-Peter Tieleman, Teemu Virolainen, Christian Wennberg and Maarten Wolf.
+Emile Apol, Rossen Apostolov, Paul Bauer, Herman J.C. Berendsen,
+Pär Bjelkmar, Christian Blau, Viacheslav Bolnykh, Kevin Boyd,
+Aldert van Buuren, Rudi van Drunen, Anton Feenstra, Gerrit Groenhof,
+Anca Hamuraru, Vincent Hindriksen, M. Eric Irrgang, Aleksei Iupinov,
+Christoph Junghans, Joe Jordan, Dimitrios Karkoulis, Peter Kasson,
+Jiri Kraus, Carsten Kutzner, Per Larsson, Justin A. Lemkul,
+Viveca Lindahl, Magnus Lundborg, Erik Marklund,Pascal Merz,
+Pieter Meulenhoff, Teemu Murtola, Szilárd Páll, Sander Pronk,
+Roland Schulz, Michael Shirts, Alexey Shvetsov, Alfons Sijbers,
+Peter Tieleman, Teemu Virolainen, Christian Wennberg, and Maarten Wolf.
 
 Mark Abraham, Berk Hess, David van der Spoel, and Erik Lindahl.
 
