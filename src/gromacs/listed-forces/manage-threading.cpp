@@ -252,8 +252,8 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
         int            nrToAssignToCpuThreads = il.nr;
 
         if (useGpuForBondeds &&
-                     // TODO remove the next line when we have GPU bonded kernels
-            false && // NOLINT readability-simplify-boolean-expr
+                       // TODO remove the next line when we have GPU bonded kernels
+            (false) && // NOLINT readability-simplify-boolean-expr
             ftypeGpuIndex < ftypesOnGpu.size() &&
             ftypesOnGpu[ftypeGpuIndex] == ftype)
         {
