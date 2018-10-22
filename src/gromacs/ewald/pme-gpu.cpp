@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -156,10 +156,13 @@ void pme_gpu_prepare_computation(gmx_pme_t            *pme,
     }
 }
 
+void gpuUpdateConstraintsCopyXToPMEOnDevice(PmeGpu *pmeGpu);
 
 void pme_gpu_launch_spread(gmx_pme_t            *pme,
                            const rvec           *x,
-                           gmx_wallcycle        *wcycle)
+                           gmx_wallcycle        *wcycle,
+                           bool                  bNS,
+                           bool                  bDutyPPAndPME)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -169,7 +172,17 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
     wallcycle_start(wcycle, ewcLAUNCH_GPU);
     // The only spot of PME GPU where ewcsLAUNCH_GPU_PME subcounter increases call-count
     wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_PME);
-    pme_gpu_copy_input_coordinates(pmeGpu, x);
+    if (bNS)
+    {
+        pme_gpu_copy_input_coordinates(pmeGpu, x);
+    }
+    else if (bDutyPPAndPME)
+    {
+        //TODO refactor this function to a better place
+        gpuUpdateConstraintsCopyXToPMEOnDevice(pmeGpu);
+    }
+    // or else PME GPU directly gathers coordinates from other PP GPUs
+
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 
@@ -246,7 +259,8 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
 
 void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
                            gmx_wallcycle gmx_unused        *wcycle,
-                           PmeForceOutputHandling           forceTreatment)
+                           PmeForceOutputHandling           forceTreatment,
+                           bool                             bCopyBack)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -259,7 +273,7 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
     wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
-    pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid));
+    pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid), bCopyBack);
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
@@ -354,4 +368,22 @@ void pme_gpu_reinit_computation(const gmx_pme_t *pme,
 
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+}
+
+void *pme_gpu_get_device_x(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+    return pme_gpu_get_kernelparam_coordinates(pme->gpu);
+}
+
+void *pme_gpu_get_device_f(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+    return pme_gpu_get_kernelparam_forces(pme->gpu);
 }
