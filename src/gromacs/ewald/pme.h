@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -218,7 +218,7 @@ void gmx_pme_send_parameters(const t_commrec *cr,
 void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              int64_t step, gmx_wallcycle *wcycle);
+                              int64_t step, gmx_wallcycle *wcycle, bool bNS);
 
 /*! \brief Tell our PME-only node to finish */
 void gmx_pme_send_finish(const t_commrec *cr);
@@ -231,7 +231,7 @@ void gmx_pme_receive_f(const t_commrec *cr,
                        gmx::ForceWithVirial *forceWithVirial,
                        real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
-                       float *pme_cycles);
+                       float *pme_cycles, bool bNS);
 
 /*! \brief
  * This function updates the local atom data on GPU after DD (charges, coordinates, etc.).
@@ -345,7 +345,9 @@ GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *GPU_FUNC_ARG
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t      *GPU_FUNC_ARGUMENT(pme),
                                               const rvec     *GPU_FUNC_ARGUMENT(x),
-                                              gmx_wallcycle  *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
+                                              gmx_wallcycle  *GPU_FUNC_ARGUMENT(wcycle),
+                                              bool            GPU_FUNC_ARGUMENT(bNS),
+                                              bool            GPU_FUNC_ARGUMENT(bDutyPPAndPME)) GPU_FUNC_TERM
 
 /*! \brief
  * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.
@@ -364,10 +366,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_complex_transforms(gmx_pme_t       *GPU_F
  * \param[in]  forceTreatment    Tells how data should be treated. The gathering kernel either stores
  *                               the output reciprocal forces into the host array, or copies its contents to the GPU first
  *                               and accumulates. The reduction is non-atomic.
+ * \param[in]  bCopyBack         Specifies whether the device->host copy should occur.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t        *GPU_FUNC_ARGUMENT(pme),
                                               gmx_wallcycle          *GPU_FUNC_ARGUMENT(wcycle),
-                                              PmeForceOutputHandling  GPU_FUNC_ARGUMENT(forceTreatment)) GPU_FUNC_TERM
+                                              PmeForceOutputHandling  GPU_FUNC_ARGUMENT(forceTreatment),
+                                              bool                    GPU_FUNC_ARGUMENT(bCopyBack)) GPU_FUNC_TERM
 
 /*! \brief
  * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
@@ -427,5 +431,12 @@ GPU_FUNC_QUALIFIER bool pme_gpu_try_finish_task(const gmx_pme_t                *
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme),
                                                    gmx_wallcycle   *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
+
+
+/*! \brief Get pointer to device copy of coordinate data. */
+GPU_FUNC_QUALIFIER void *pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(NULL)
+
+/*! \brief Get pointer to device copy of force data. */
+GPU_FUNC_QUALIFIER void *pme_gpu_get_device_f(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(NULL)
 
 #endif

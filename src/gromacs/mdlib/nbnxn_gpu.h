@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,8 @@
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
+#include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -191,5 +193,56 @@ void nbnxn_gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
 int nbnxn_gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
+
+/*! \brief Initialization for X buffer operations on GPU.
+ * Called on the NS step and performs (re-)allocations and memory copies. !*/
+/* TODO  Remove explicit pinning from host arrays from here and manage in a more natural way*/
+GPU_FUNC_QUALIFIER
+void nbnxn_gpu_init_x_to_nbat_x(int                gmx_unused  ncxy,
+                                const nbnxn_search gmx_unused *nbs,
+                                gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
+                                const int          gmx_unused *a,
+                                int                gmx_unused  a_nalloc,
+                                const int          gmx_unused *na_all,
+                                const int          gmx_unused *cxy_ind,
+                                int                gmx_unused  iloc,
+                                int                gmx_unused  xsize) GPU_FUNC_TERM
+
+/*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
+ * returns true if GPU buffer ops are completed. !*/
+GPU_FUNC_QUALIFIER
+gmx_bool nbnxn_gpu_x_to_nbat_x(int                gmx_unused  ncxy,
+                               int                gmx_unused  g,
+                               gmx_bool           gmx_unused  FillLocal,
+                               const nbnxn_search gmx_unused *nbs,
+                               gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
+                               void               gmx_unused *xPmeDevicePtr,
+                               const int          gmx_unused *na_all,
+                               const int          gmx_unused *cxy_ind,
+                               int                gmx_unused  cell0,
+                               int                gmx_unused  na_sc,
+                               int                gmx_unused  iloc,
+                               rvec               gmx_unused *x,
+                               const t_commrec    gmx_unused *cr) GPU_FUNC_TERM_WITH_RETURN(false)
+
+
+/*! \brief Initialization for F buffer operations on GPU */
+GPU_FUNC_QUALIFIER
+void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
+                                    const nbnxn_search      gmx_unused *nbs,
+                                    gmx_nbnxn_gpu_t         gmx_unused *gpu_nbv,
+                                    int                     gmx_unused  a1) GPU_FUNC_TERM
+
+/*! \brief F buffer operations on GPU: adds nb format force to rvec format. */
+GPU_FUNC_QUALIFIER
+void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_search      gmx_unused      *nbs,
+                               const nbnxn_atomdata_t       gmx_unused *nbat,
+                               gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
+                               void                         gmx_unused *fPmeDevicePtr,
+                               int                          gmx_unused  a0,
+                               int                          gmx_unused  a1,
+                               rvec                         gmx_unused *f,
+                               const t_commrec              gmx_unused *cr) GPU_FUNC_TERM
+
 
 #endif
