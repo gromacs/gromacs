@@ -851,3 +851,59 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
 
     return kernel_type;
 }
+
+/* dummy function for C buffer ops. Returns false, so callee will instead use CPU version. */
+void nbnxn_gpu_init_x_to_nbat_x(int                 ncxy,
+                                const nbnxn_search *nbs,
+                                gmx_nbnxn_gpu_t    *gpu_nbv,
+                                const int          *a,
+                                int                 a_nalloc,
+                                const int          *na_all,
+                                const int          *cxy_ind,
+                                int                 iloc)
+{
+
+    //supress compiler unused parameter warnings
+    (void)ncxy;
+    (void)nbs;
+    (void)gpu_nbv;
+    (void)a;
+    (void)a_nalloc;
+    (void)na_all;
+    (void)cxy_ind;
+    (void)iloc;
+
+    return;
+}
+
+gmx_bool nbnxn_gpu_x_to_nbat_x(int                 ncxy,
+                               int                 g,
+                               gmx_bool            FillLocal,
+                               const nbnxn_search *nbs,
+                               gmx_nbnxn_gpu_t    *gpu_nbv,
+                               void               *xPmeDevicePtr,
+                               const int          *na_all,
+                               const int          *cxy_ind,
+                               int                 cell0,
+                               int                 na_sc,
+                               int                 iloc,
+                               rvec               *x)
+{
+
+    //supress compiler unused parameter warnings
+    (void)ncxy;
+    (void)g;
+    (void)FillLocal;
+    (void)nbs;
+    (void)gpu_nbv;
+    (void)xPmeDevicePtr;
+    (void)na_all;
+    (void)cxy_ind;
+    (void)cell0;
+    (void)na_sc;
+    (void)iloc;
+    (void)x;
+
+
+    return false;
+}
