@@ -51,6 +51,7 @@ class MDLogger;
 
 struct t_mdatoms;
 struct gmx_wallcycle;
+class GpuEventSynchronizer;
 
 /* Default nbnxn allocation routine, allocates 32 byte aligned,
  * which works for plain C and aligned SSE and AVX loads/stores.
@@ -135,6 +136,7 @@ gmx_bool nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
                                              nbnxn_atomdata_t     *nbat,
                                              gmx_nbnxn_gpu_t      *gpu_nbv,
                                              void                 *xPmeDevicePtr,
+                                             GpuEventSynchronizer *syncCoordH2D,
                                              int                   iloc,
                                              rvec                 *x);
 

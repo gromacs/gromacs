@@ -79,6 +79,8 @@ struct PmeGpuSpecific
     Context context;
 
     /* Synchronization events */
+    /*! \brief Triggered after the coordinates have been copied to the GPU */
+    GpuEventSynchronizer syncCoordH2D;
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
     GpuEventSynchronizer syncSpreadGridD2H;
 

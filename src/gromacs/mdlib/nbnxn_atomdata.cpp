@@ -1185,6 +1185,7 @@ bool nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
                                          nbnxn_atomdata_t     *nbat,
                                          gmx_nbnxn_gpu_t      *gpu_nbv,
                                          void                 *xPmeDevicePtr,
+                                         GpuEventSynchronizer *syncCoordH2D,
                                          int                   iloc,
                                          rvec                 *x)
 {
@@ -1219,7 +1220,7 @@ bool nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
         const nbnxn_grid_t &grid       = nbs->grid[g];
 
         gpuBufferOpsCompleted = nbnxn_gpu_x_to_nbat_x(grid.numCells[XX]*grid.numCells[YY],
-                                                      g, FillLocal, nbs, gpu_nbv, xPmeDevicePtr,
+                                                      g, FillLocal, nbs, gpu_nbv, xPmeDevicePtr, syncCoordH2D,
                                                       grid.cxy_na.data(),
                                                       grid.cxy_ind.data(),
                                                       grid.cell0, grid.na_sc,

@@ -446,6 +446,10 @@ GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *GPU_FUNC_ARGUMENT(
 /*! \brief Return pointer to device copy of coordinate data. */
 GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(NULL)
 
+
+/*! \brief Return pointer to the sync object triggered after the coordinate H2D. */
+GPU_FUNC_QUALIFIER GpuEventSynchronizer *pme_gpu_get_coordinate_h2d_synchronizer(const PmeGpu *pmeGpu) GPU_FUNC_TERM_WITH_RETURN(NULL)
+
 /* The inlined convenience PME GPU status getters */
 
 /*! \libinternal \brief

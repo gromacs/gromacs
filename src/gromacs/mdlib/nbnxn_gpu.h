@@ -52,6 +52,7 @@
 
 struct nbnxn_atomdata_t;
 enum class GpuTaskCompletion;
+class GpuEventSynchronizer;
 
 /*! \brief
  * Launch asynchronously the nonbonded force calculations.
@@ -202,18 +203,19 @@ void nbnxn_gpu_init_x_to_nbat_x(int                gmx_unused  ncxy,
 /*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
  * returns true if GPU buffer ops are completed. !*/
 GPU_FUNC_QUALIFIER
-gmx_bool nbnxn_gpu_x_to_nbat_x(int                gmx_unused  ncxy,
-                               int                gmx_unused  g,
-                               gmx_bool           gmx_unused  FillLocal,
-                               const nbnxn_search gmx_unused *nbs,
-                               gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
-                               void               gmx_unused *xPmeDevicePtr,
-                               const int          gmx_unused *na_all,
-                               const int          gmx_unused *cxy_ind,
-                               int                gmx_unused  cell0,
-                               int                gmx_unused  na_sc,
-                               int                gmx_unused  iloc,
-                               rvec               gmx_unused *x) GPU_FUNC_TERM_WITH_RETURN(false)
+gmx_bool nbnxn_gpu_x_to_nbat_x(int                gmx_unused    ncxy,
+                               int                gmx_unused    g,
+                               gmx_bool           gmx_unused    FillLocal,
+                               const nbnxn_search gmx_unused   *nbs,
+                               gmx_nbnxn_gpu_t    gmx_unused   *gpu_nbv,
+                               void               gmx_unused   *xPmeDevicePtr,
+                               GpuEventSynchronizer gmx_unused *syncCoordH2D,
+                               const int          gmx_unused   *na_all,
+                               const int          gmx_unused   *cxy_ind,
+                               int                gmx_unused    cell0,
+                               int                gmx_unused    na_sc,
+                               int                gmx_unused    iloc,
+                               rvec               gmx_unused   *x) GPU_FUNC_TERM_WITH_RETURN(false)
 
 
 #endif
