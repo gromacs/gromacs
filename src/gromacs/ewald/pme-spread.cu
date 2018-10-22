@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013-2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@
  *
  * TODO: estimate if this should be a boolean parameter (and add it to the unit test if so).
  */
-#define PME_GPU_PARALLEL_SPLINE 0
+#define PME_GPU_PARALLEL_SPLINE 1
 
 
 /*! \brief
@@ -230,16 +230,19 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
                                           tableIndex);
             gm_gridlineIndices[atomIndexOffset * DIM + sharedMemoryIndex] = sm_gridlineIndices[sharedMemoryIndex];
         }
+    }
+    gmx_syncwarp();
 
+    const int   chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
+    int         o           = orderIndex; // This is an index that is set once for PME_GPU_PARALLEL_SPLINE == 1
+    float       div;
+    const float dr = sm_fractCoords[sharedMemoryIndex];
+    if (localCheck && globalCheck)
+    {
         /* B-spline calculation */
 
-        const int chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
         if (chargeCheck)
         {
-            float       div;
-            int         o = orderIndex; // This is an index that is set once for PME_GPU_PARALLEL_SPLINE == 1
-
-            const float dr = sm_fractCoords[sharedMemoryIndex];
             assert(isfinite(dr));
 
             /* dr is relative offset from lower cell limit */
@@ -260,6 +263,14 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
                 *SPLINE_DATA_PTR(0) = div * (1.0f - dr) * SPLINE_DATA(0);
             }
 
+        }
+    }
+    gmx_syncwarp();
+
+    if (localCheck && globalCheck)
+    {
+        if (chargeCheck)
+        {
             const int thetaIndexBase        = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
             const int thetaGlobalOffsetBase = atomIndexOffset * DIM * order;
 

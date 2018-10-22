@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -227,7 +227,8 @@ static gmx_pme_t *gmx_pmeonly_switch(std::vector<gmx_pme_t *> *pmedata,
  * \retval pmerecvqxSWITCHGRID    Only grid_size and *ewaldcoeff were set.
  * \retval pmerecvqxRESETCOUNTERS *step was set.
  */
-static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
+static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t  *pme,
+                                      gmx_pme_pp        *pme_pp,
                                       int               *natoms,
                                       matrix             box,
                                       int               *maxshift_x,
@@ -239,7 +240,9 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
                                       ivec              *grid_size,
                                       real              *ewaldcoeff_q,
                                       real              *ewaldcoeff_lj,
-                                      bool              *atomSetChanged)
+                                      bool              *atomSetChanged,
+                                      bool               useGpuForPme,
+                                      bool              *bNS_ptr)
 {
     int status = -1;
     int nat    = 0;
@@ -257,6 +260,14 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
         MPI_Recv(&cnb, sizeof(cnb), MPI_BYTE,
                  pme_pp->peerRankId, eCommType_CNB,
                  pme_pp->mpi_comm_mysim, MPI_STATUS_IGNORE);
+
+        if (!(cnb.flags & PP_PME_RESETCOUNTERS))
+        {
+            /* Receive flag on whether this is a neighbour search step */
+            MPI_Recv(bNS_ptr, sizeof(gmx_bool), MPI_BYTE,
+                     pme_pp->peerRankId, eCommType_CNB,
+                     pme_pp->mpi_comm_mysim, MPI_STATUS_IGNORE);
+        }
 
         /* We accumulate all received flags */
         flags |= cnb.flags;
@@ -398,6 +409,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
 
         if (cnb.flags & PP_PME_COORD)
         {
+
             /* The box, FE flag and lambda are sent along with the coordinates
              *  */
             copy_mat(cnb.box, box);
@@ -412,11 +424,31 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             {
                 if (sender.numAtoms > 0)
                 {
-                    MPI_Irecv(pme_pp->x[nat],
-                              sender.numAtoms*sizeof(rvec),
-                              MPI_BYTE,
-                              sender.rankId, eCommType_COORD,
-                              pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+
+                    if (useGpuForPme && !*bNS_ptr)
+                    {
+
+                        //Do transfers directly on GPU. Matching MPI calls are
+                        //in nbnxn_gpu_x_to_nbat_x()
+                        float* x_d = (float*) pme_gpu_get_device_x(pme);
+
+                        //recieve data from PP rank
+                        MPI_Irecv(&x_d[nat*3], sender.numAtoms*3, MPI_FLOAT,
+                                  sender.rankId, 0, pme_pp->mpi_comm_mysim,
+                                  &pme_pp->req[messages++]);
+
+                    }
+                    else
+                    {
+                        MPI_Irecv(pme_pp->x[nat],
+                                  sender.numAtoms*sizeof(rvec),
+                                  MPI_BYTE,
+                                  sender.rankId, eCommType_COORD,
+                                  pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+                    }
+
+
+
                     nat += sender.numAtoms;
                     if (debug)
                     {
@@ -433,6 +465,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
         /* Wait for the coordinates and/or charges to arrive */
         MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
         messages = 0;
+
     }
     while (status == -1);
 #else
@@ -461,33 +494,22 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
 }
 
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
-static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
+static void gmx_pme_send_force_vir_ener(struct gmx_pme_t *pme,
+                                        gmx_pme_pp *pme_pp,
                                         const rvec *f,
                                         matrix vir_q, real energy_q,
                                         matrix vir_lj, real energy_lj,
                                         real dvdlambda_q, real dvdlambda_lj,
-                                        float cycles)
+                                        float cycles,
+                                        bool useGpuForPme, bool bNS)
 {
 #if GMX_MPI
     gmx_pme_comm_vir_ene_t cve;
     int                    messages, ind_start, ind_end;
     cve.cycles = cycles;
 
-    /* Now the evaluated forces have to be transferred to the PP nodes */
     messages = 0;
-    ind_end  = 0;
-    for (const auto &receiver : pme_pp->ppRanks)
-    {
-        ind_start = ind_end;
-        ind_end   = ind_start + receiver.numAtoms;
-        if (MPI_Isend(const_cast<void *>(static_cast<const void *>(f[ind_start])),
-                      (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
-                      receiver.rankId, 0,
-                      pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
-        {
-            gmx_comm("MPI_Isend failed in do_pmeonly");
-        }
-    }
+
 
     /* send virial and energy to our last PP node */
     copy_mat(vir_q, cve.vir_q);
@@ -510,8 +532,51 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
               pme_pp->peerRankId, 1,
               pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
 
+
+    /* Now the evaluated forces have to be transferred to the PP nodes */
+    ind_end  = 0;
+    for (const auto &receiver : pme_pp->ppRanks)
+    {
+        ind_start = ind_end;
+        ind_end   = ind_start + receiver.numAtoms;
+
+
+        if (useGpuForPme && !bNS)
+        {
+
+            //Do transfers directly on GPU. Matching MPI calls are
+            //in nbnxn_gpu_add_f_to_nbat_f()
+            float* f_d = (float*) pme_gpu_get_device_f(pme);
+
+
+            //Send data to PP rank
+            MPI_Isend(&f_d[ind_start*3], (ind_end-ind_start)*3, MPI_FLOAT,
+                      receiver.rankId, 0,
+                      pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+
+
+        }
+        else
+        {
+            if (MPI_Isend(const_cast<void *>(static_cast<const void *>(f[ind_start])),
+                          (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
+                          receiver.rankId, 0,
+                          pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
+            {
+                gmx_comm("MPI_Isend failed in do_pmeonly");
+            }
+        }
+    }
+
+
+
+
     /* Wait for the forces to arrive */
     MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
+
+
+
+
 #else
     gmx_call("MPI not enabled");
     GMX_UNUSED_VALUE(pme_pp);
@@ -544,6 +609,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     int                count;
     gmx_bool           bEnerVir = FALSE;
     int64_t            step;
+    bool               bNS;
 
     /* This data will only use with PME tuning, i.e. switching PME grids */
     std::vector<gmx_pme_t *> pmedata;
@@ -560,6 +626,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
     init_nrnb(mynrnb);
 
+
     count = 0;
     do /****** this is a quasi-loop over time steps! */
     {
@@ -570,7 +637,8 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             ivec newGridSize;
             bool atomSetChanged = false;
             real ewaldcoeff_q   = 0, ewaldcoeff_lj = 0;
-            ret = gmx_pme_recv_coeffs_coords(pme_pp.get(),
+            ret = gmx_pme_recv_coeffs_coords(pme,
+                                             pme_pp.get(),
                                              &natoms,
                                              box,
                                              &maxshift_x, &maxshift_y,
@@ -580,7 +648,9 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                                              &newGridSize,
                                              &ewaldcoeff_q,
                                              &ewaldcoeff_lj,
-                                             &atomSetChanged);
+                                             &atomSetChanged,
+                                             useGpuForPme,
+                                             &bNS);
 
             if (ret == pmerecvqxSWITCHGRID)
             {
@@ -634,9 +704,9 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags);
-            pme_gpu_launch_spread(pme, pme_pp->x.rvec_array(), wcycle);
+            pme_gpu_launch_spread(pme, pme_pp->x.rvec_array(), wcycle, bNS, false);
             pme_gpu_launch_complex_transforms(pme, wcycle);
-            pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set);
+            pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set, bNS);
             pme_gpu_wait_finish_task(pme, wcycle, &forces, vir_q, &energy_q);
             pme_gpu_reinit_computation(pme, wcycle);
         }
@@ -655,10 +725,9 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
-        gmx_pme_send_force_vir_ener(pme_pp.get(), as_rvec_array(forces.data()),
+        gmx_pme_send_force_vir_ener(pme, pme_pp.get(), as_rvec_array(forces.data()),
                                     vir_q, energy_q, vir_lj, energy_lj,
-                                    dvdlambda_q, dvdlambda_lj, cycles);
-
+                                    dvdlambda_q, dvdlambda_lj, cycles, useGpuForPme, bNS);
         count++;
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);

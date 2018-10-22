@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -148,6 +148,23 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
     const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
     char                   buf[STRLEN];
 
+
+    //NVHACK
+    fflush(stdout);
+    int size = 0;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (size > 1)
+    {
+        nstlist_cmdline = 500;
+        printf("NVIDIA HACK: overwriting nstlist to 500\n"); fflush(stdout);
+    }
+    if (size == 2)
+    {
+        printf("NVIDIA ERROR: 2-GPU runs not yet supported in this version\n"); fflush(stdout);
+        MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+    //END NVHACK
+
     if (nstlist_cmdline <= 0)
     {
         if (ir->nstlist == 1)
@@ -263,6 +280,7 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
                 rlist_inc, rlist_ok, rlist_max);
     }
 
+
     nstlist_prev = nstlist_orig;
     rlist_prev   = ir->rlist;
     do
@@ -345,6 +363,10 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
         }
         ir->rlist     = rlist_new;
     }
+
+
+
+
 }
 
 /*! \brief The interval in steps at which we perform dynamic, rolling pruning on a GPU.
