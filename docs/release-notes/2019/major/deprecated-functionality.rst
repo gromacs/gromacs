@@ -1,5 +1,3 @@
-.. _anticipated-changes:
-
 Changes anticipated to GROMACS 2019 functionality
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
