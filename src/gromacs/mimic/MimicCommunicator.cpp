@@ -57,7 +57,7 @@ constexpr int TYPE_INT = 0, TYPE_DOUBLE = 0;
  */
 static void MCL_init_client(const char *) // NOLINT(readability-named-parameter)
 {
-    gmx_fatal(FARGS, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
+    GMX_RELEASE_ASSERT(GMX_MIMIC, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
 }
 
 /*! \brief Stub communication library function to call in case if
@@ -65,7 +65,7 @@ static void MCL_init_client(const char *) // NOLINT(readability-named-parameter)
  */
 static void MCL_send(void *, int, int, int) // NOLINT(readability-named-parameter)
 {
-    gmx_fatal(FARGS, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
+    GMX_RELEASE_ASSERT(GMX_MIMIC, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
 }
 
 /*! \brief Stub communication library function to call in case if
@@ -73,15 +73,15 @@ static void MCL_send(void *, int, int, int) // NOLINT(readability-named-paramete
  */
 static void MCL_receive(void *, int, int, int) // NOLINT(readability-named-parameter)
 {
-    gmx_fatal(FARGS, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
+    GMX_RELEASE_ASSERT(GMX_MIMIC, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
 }
 
 /*! \brief Stub communication library function to call in case if
  * GROMACS is compiled without MiMiC. Calling causes GROMACS to exit!
  */
-static void MCL_destroy() // NOLINT(readability-named-parameter)
+static void MCL_destroy()
 {
-    gmx_fatal(FARGS, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
+    GMX_RELEASE_ASSERT(GMX_MIMIC, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
 }
 #endif
 
