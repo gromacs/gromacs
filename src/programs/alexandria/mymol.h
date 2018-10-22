@@ -273,7 +273,6 @@ class MyMol
         tensor                         alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         tensor                         alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         eSupport                       eSupp_;
-        //gmx::PaddedArrayRef<gmx::RVec> f_;
         PaddedRVecVector               f_;
         gmx::PaddedArrayRef<gmx::RVec> optf_;
         std::vector<int>               symmetric_charges_;

@@ -58,5 +58,5 @@ void fill_inputrec(t_inputrec *ir)
     ir->opts.ngener      = 1;
     snew(ir->fepvals, 1);
     snew(ir->opts.egp_flags, 1);
-    ir->params = new gmx::KeyValueTreeObject();
+    ir->params           = new gmx::KeyValueTreeObject();
 }

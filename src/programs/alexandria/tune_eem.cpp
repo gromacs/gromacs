@@ -238,7 +238,7 @@ void OptEEM::calcDeviation()
 {
     int                 i         = 0;
     int                 j         = 0;
-    int                 maxiter   = 10;
+    int                 maxiter   = 20;
     int                 iter      = 0;
     double              qtot      = 0;
     double              EemRms    = 0;
@@ -638,32 +638,32 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
                         penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
                     }
                     //Penalize if N_chi <= P_chi or N_J0 <= P_J0
-                    if ((ai_atn == 7  && aj_atn == 15 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                        (ai_atn == 15 && aj_atn == 7  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
+                    else if ((ai_atn == 7  && aj_atn == 15 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
+                             (ai_atn == 15 && aj_atn == 7  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                     {
                         penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
                     }
                     //Penalize if O_chi <= S_chi or N_J0 <= P_J0
-                    if ((ai_atn == 8  && aj_atn == 16 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                        (ai_atn == 16 && aj_atn == 8  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
+                    else if ((ai_atn == 8  && aj_atn == 16 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
+                             (ai_atn == 16 && aj_atn == 8  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                     {
                         penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
                     }
                     //Penalize if F_chi <= Cl_chi or F_J0 <= Cl_J0
-                   if ((ai_atn == 9  && aj_atn == 17 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                       (ai_atn == 17 && aj_atn == 9  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
+                    else if ((ai_atn == 9  && aj_atn == 17 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
+                             (ai_atn == 17 && aj_atn == 9  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                     {
                         penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
                     }
                     //Penalize if Cl_chi <= Br_chi or Cl_J0 <= Br_J0
-                    if ((ai_atn == 17  && aj_atn == 35 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                        (ai_atn == 35  && aj_atn == 17 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
+                    else if ((ai_atn == 17  && aj_atn == 35 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
+                             (ai_atn == 35  && aj_atn == 17 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                     {
                         penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
                     }
                      //Penalize if Br_chi <= I_chi or Br_J0 <= I_J0
-                    if ((ai_atn == 35  && aj_atn == 53 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                        (ai_atn == 53  && aj_atn == 35 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
+                    else if ((ai_atn == 35  && aj_atn == 53 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
+                             (ai_atn == 53  && aj_atn == 35 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                     {
                         penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
                     }
@@ -887,7 +887,7 @@ int alex_tune_eem(int argc, char *argv[])
     real                        quad_toler    = 5;
     real                        alpha_toler   = 3;
     real                        factor        = 0.8;
-    real                        efield        = 1;
+    real                        efield        = 10;
     char                       *opt_elem      = nullptr;
     char                       *const_elem    = nullptr;
     gmx_bool                    bRandom       = false;

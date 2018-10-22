@@ -307,9 +307,9 @@ void print_electric_props(FILE                           *fp,
                                        mol.x());
             
             mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
-            //mol.Qgresp_.updateAtomCoords(mol.x());                
+            mol.Qgresp_.updateAtomCoords(mol.x());                
             mol.Qgresp_.calcPot();           
-            if (mol.espRms() < 7e-3) // do not add outlier to statistics
+            if (mol.espRms() < 7e-3)
             {
                 for (size_t i = 0; i < nEsp; i++)
                 {
@@ -377,11 +377,11 @@ void print_electric_props(FILE                           *fp,
                     auto at = fa->getZtype();
                     if (indexCount->isOptimized(at))
                     {
-                        auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
-                                                      [at](const ZetaTypeLsq &atlsq)
-                                                      {
-                                                          return atlsq.ztype.compare(at) == 0;
-                                                      });
+                        auto  k  = std::find_if(lsqt.begin(), lsqt.end(),
+                                                [at](const ZetaTypeLsq &atlsq)
+                                                {
+                                                    return atlsq.ztype.compare(at) == 0;
+                                                });
                         if (k != lsqt.end())
                         {
                             qCalc = mol.topology_->atoms.atom[j].q;
@@ -412,9 +412,8 @@ void print_electric_props(FILE                           *fp,
                 }
             }
             fprintf(fp, "\n");
-            qrmsd /= mol.topology_->atoms.nr;
-            qrmsd = sqrt(qrmsd);
-            fprintf(fp, "q rms: %g (e) %s\n", qrmsd, (qrmsd > 5e-2) ? "XXX" : "");
+            qrmsd = sqrt(qrmsd/mol.topology_->atoms.nr);
+            fprintf(fp, "q rmsd: %g (e) %s\n", qrmsd, (qrmsd > 5e-2) ? "XXX" : "");
             n++;
         }
     }

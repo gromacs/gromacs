@@ -1221,7 +1221,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  int                        maxESP,
                                  real                       tolerance,
                                  const gmx_output_env_t    *oenv,
-                                 gmx_bool                  bPlotESP)
+                                 gmx_bool                   bPlotESP)
 {
     std::vector<double> qq;
     immStatus           imm         = immOK;
@@ -1338,7 +1338,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 cur       = 1-cur;
                 iter++;
             }
-            while ((!converged) && (iter < 5));
+            while ((!converged) && (iter < maxiter));
             for (auto i = 0; i < topology_->atoms.nr; i++)
             {
                 topology_->atoms.atom[i].q      =
