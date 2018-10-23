@@ -229,14 +229,14 @@ static void update_QMMM_coord(const rvec *x, const t_forcerec *fr, t_QMrec *qm, 
 
 /* QMMM core routines */
 
-static t_QMrec *mk_QMrec(void)
+static t_QMrec *mk_QMrec()
 {
     t_QMrec *qm;
     snew(qm, 1);
     return qm;
 } /* mk_QMrec */
 
-static t_MMrec *mk_MMrec(void)
+static t_MMrec *mk_MMrec()
 {
     t_MMrec *mm;
     snew(mm, 1);
@@ -340,7 +340,7 @@ static t_QMrec *copy_QMrec(t_QMrec *qm)
 
 } /*copy_QMrec */
 
-t_QMMMrec *mk_QMMMrec(void)
+t_QMMMrec *mk_QMMMrec()
 {
 
     t_QMMMrec *qr;
@@ -364,14 +364,11 @@ void init_QMMMrec(const t_commrec  *cr,
 
     gmx_groups_t            *groups;
     int                     *qm_arr = nullptr, vsite, ai, aj;
-    int                      qm_max = 0, qm_nr = 0, i, j, jmax, k, l, nrvsite2 = 0;
+    int                      qm_max = 0, qm_nr = 0, i, j, jmax, k, l;
     t_QMMMrec               *qr;
     t_MMrec                 *mm;
-    t_iatom                 *iatoms;
     gmx_mtop_atomloop_all_t  aloop;
-    gmx_mtop_ilistloop_all_t iloop;
     int                      a_offset;
-    const t_ilist           *ilist_mol;
 
     if (ir->cutoff_scheme != ecutsGROUP)
     {
@@ -462,17 +459,16 @@ void init_QMMMrec(const t_commrec  *cr,
              * are part of the current QM layer it needs to be removed from
              * qm_arr[].  */
 
-            iloop = gmx_mtop_ilistloop_all_init(mtop);
-            while (gmx_mtop_ilistloop_all_next(iloop, &ilist_mol, &a_offset))
+            gmx_mtop_ilistloop_all_t iloop = gmx_mtop_ilistloop_all_init(mtop);
+            int nral1 = 1 + NRAL(F_VSITE2);
+            while (const InteractionLists *ilists = gmx_mtop_ilistloop_all_next(iloop, &a_offset))
             {
-                nrvsite2 = ilist_mol[F_VSITE2].nr;
-                iatoms   = ilist_mol[F_VSITE2].iatoms;
-
-                for (k = 0; k < nrvsite2; k += 4)
+                const InteractionList &ilist = (*ilists)[F_VSITE2];
+                for (int i = 0; i < ilist.size(); i += nral1)
                 {
-                    vsite = a_offset + iatoms[k+1]; /* the vsite         */
-                    ai    = a_offset + iatoms[k+2]; /* constructing atom */
-                    aj    = a_offset + iatoms[k+3]; /* constructing atom */
+                    vsite = a_offset + ilist.iatoms[i  ]; /* the vsite         */
+                    ai    = a_offset + ilist.iatoms[i+1]; /* constructing atom */
+                    aj    = a_offset + ilist.iatoms[i+2]; /* constructing atom */
                     if (getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, ai)
                         &&
                         getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, aj))
@@ -715,8 +711,8 @@ void update_QMMMrec(const t_commrec  *cr,
             {
                 if ((i == 0 || mm_j_particles[i].j != mm_j_particles[i-1].j)
                     && !md->bQM[mm_j_particles[i].j]
-                    && (md->chargeA[mm_j_particles[i].j]
-                        || (md->chargeB && md->chargeB[mm_j_particles[i].j])))
+                    && ((md->chargeA[mm_j_particles[i].j] != 0.0_real)
+                        || (md->chargeB && (md->chargeB[mm_j_particles[i].j] != 0.0_real))))
                 {
                     mm_j_particles[mm_nr_new++] = mm_j_particles[i];
                 }
