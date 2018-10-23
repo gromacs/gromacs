@@ -1,0 +1,7 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Submitted-by: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Submitted-at: Tue, 23 Oct 2018 12:05:14 +0200
+Reviewed-on: https://gerrit.gromacs.org/8586
+Project: gromacs
+Branch: refs/heads/release-2019
