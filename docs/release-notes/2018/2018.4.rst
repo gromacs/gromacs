@@ -20,6 +20,15 @@ perturbed.
 
 :issue: `2640`
 
+Add constraint contribution to foreign Hamiltonian differences
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The contribution of perturbed constraints was missing from the foreign
+Hamiltonian values. This is important for free energy calculations,
+such as BAR.
+
+:issue: `2703`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
