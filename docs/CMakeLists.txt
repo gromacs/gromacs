@@ -65,7 +65,13 @@ if (DEFINED PYTHON_EXECUTABLE)
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
 find_package(PythonInterp 2.7)
-find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
+
+
+if (NOT ${PYTHON_VERSION_MAJOR} EQUAL 3)
+    find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
+else()
+    MESSAGE(STATUS "Can not build documentation with Python 3")
+endif()
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -87,6 +93,45 @@ if (SOURCE_IS_SOURCE_DISTRIBUTION)
 endif()
 
 add_subdirectory(doxygen)
+
+# TODO: Consider whether this could just be replaced by using
+# GMX_DEVELOPER_BUILD to control this as well.
+option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
+mark_as_advanced(GMX_BUILD_MANUAL)
+
+set(MANUAL_BUILD_IS_POSSIBLE ON)
+set(MANUAL_BUILD_NOT_POSSIBLE_REASON)
+set(NO_IMAGE_CONVERT_REASON)
+if (NOT GMX_BUILD_MANUAL)
+    # Make sure we only do detection of manual-building dependencies
+    # when the user opted in for that.
+    set(MANUAL_BUILD_IS_POSSIBLE OFF)
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "GMX_BUILD_MANUAL is not ON")
+elseif (BUILD_IS_INSOURCE)
+    # UseLATEX.cmake does not work with an in-source build
+    set(MANUAL_BUILD_IS_POSSIBLE OFF)
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "the build is in-source")
+else()
+    include(manual/UseLATEX.cmake)
+    if(${PYTHON_VERSION_MAJOR} EQUAL 3)
+        set(MANUAL_BUILD_IS_POSSIBLE OFF)
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "We can not build the documentation when using python3")
+    elseif(NOT SPHINX_FOUND)
+        set(MANUAL_BUILD_IS_POSSIBLE OFF)
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx has not been found and is needed to create the LaTex input files")
+    elseif(NOT PDFLATEX_COMPILER OR NOT IMAGE_CONVERT_POSSIBLE)
+        set(MANUAL_BUILD_IS_POSSIBLE OFF)
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex or some other dependency (ImageMagick convert) is not available")
+        if (NOT IMAGE_CONVERT_POSSIBLE)
+            set(NO_IMAGE_CONVERT_REASON "Can not convert files for online or pdf manual")
+        endif()
+        # TODO Later, identify other dependencies like bibtex,
+        # make_index, date, some graphics conversion program,
+        # etc. Perhaps patch UseLATEX.cmake and contribute upstream.
+    endif()
+
+endif()
+
 if (SPHINX_FOUND)
     # We need to have all the Sphinx input files in a single directory, and
     # since some of them are generated, we copy everything into the build tree,
