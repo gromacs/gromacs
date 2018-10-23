@@ -32,46 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# TODO: Consider whether this could just be replaced by using
-# GMX_DEVELOPER_BUILD to control this as well.
-option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
-mark_as_advanced(GMX_BUILD_MANUAL)
-
-set(MANUAL_BUILD_IS_POSSIBLE ON)
-set(IMAGE_CONVERT_POSSIBLE ON)
-set(MANUAL_BUILD_NOT_POSSIBLE_REASON)
-set(NO_IMAGE_CONVERT_REASON)
-if (NOT GMX_BUILD_MANUAL)
-    # Make sure we only do detection of manual-building dependencies
-    # when the user opted in for that.
-    set(MANUAL_BUILD_IS_POSSIBLE OFF)
-    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "GMX_BUILD_MANUAL is not ON")
-elseif (BUILD_IS_INSOURCE)
-    # UseLATEX.cmake does not work with an in-source build
-    set(MANUAL_BUILD_IS_POSSIBLE OFF)
-    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "the build is in-source")
-else()
-    include(UseLATEX.cmake)
-
-    if(NOT SPHINX_FOUND)
-        set(MANUAL_BUILD_IS_POSSIBLE OFF)
-        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx has not been found and is needed to create the LaTex input files")
-    endif()
-
-    if(NOT PDFLATEX_COMPILER OR NOT IMAGEMAGICK_CONVERT)
-        set(MANUAL_BUILD_IS_POSSIBLE OFF)
-        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex or some other dependency (ImageMagick convert) is not available")
-        if (NOT IMAGEMAGICK_CONVERT)
-            set(IMAGE_CONVERT_POSSIBLE OFF)
-            set(NO_IMAGE_CONVERT_REASON "Can not convert files for online or pdf manual")
-        endif()
-        # TODO Later, identify other dependencies like bibtex,
-        # make_index, date, some graphics conversion program,
-        # etc. Perhaps patch UseLATEX.cmake and contribute upstream.
-    endif()
-
-endif()
-
 if(MANUAL_BUILD_IS_POSSIBLE)
     add_custom_command(
         OUTPUT ${SPHINX_LATEX_FILE}
