@@ -111,7 +111,7 @@ function(gmx_add_sphinx_image_conversion_files)
         endif()
         add_custom_command(
             OUTPUT  ${_target}
-            COMMAND convert ${_source} -antialias -quality 03 -quiet -pointsize 12 -density 1200 -units PixelsPerInch  ${_target}
+            COMMAND ${ImageMagick_convert_EXECUTABLE} ${_source} -antialias -quality 03 -quiet -pointsize 12 -density 1200 -units PixelsPerInch  ${_target}
             DEPENDS ${_source}
             COMMENT "Converting Sphinx input graphics file ${_file} to png"
             VERBATIM)
