@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -98,6 +98,24 @@ then
         exit 1
     elif [ $stat -ne 0 ] ; then
         echo "Source code formatting check failed"
+        exit 1
+    fi
+fi
+
+# Stuff for clang-tidy
+clang_tidy_path=`which clang-tidy`
+if [ -z "$clang_tidy_path" ]
+then
+    echo "Please install clang-tidy to automatically clean your commits"
+    exit 1
+else
+    run-clang-tidy -quiet -fix -header-filter '.*' $(git diff "$against" --name-only)
+    git_diff=`git diff`
+    stat=$?
+    if ! [ -z "$git_diff" ] ; then
+        exit 1
+    elif [ $stat -ne 0 ] ; then
+        echo "Source code fixing failed"
         exit 1
     fi
 fi
