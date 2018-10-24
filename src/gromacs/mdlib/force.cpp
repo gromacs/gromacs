@@ -724,7 +724,6 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
 void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda *fepvals)
 {
     int    index;
-    double dlam;
 
     enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW];  /* include dispersion correction */
     enerd->term[F_DVDL]       = 0.0;
@@ -792,11 +791,14 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
            current lambda, because the contributions to the current
            lambda are automatically zeroed */
 
+        double &enerpart_lambda = enerd->enerpart_lambda[i + 1];
+
         for (size_t j = 0; j < lambda.size(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
-            dlam = (fepvals->all_lambda[j][i] - lambda[j]);
-            enerd->enerpart_lambda[i+1] += dlam*enerd->dvdl_lin[j];
+            const double dlam  = fepvals->all_lambda[j][i] - lambda[j];
+
+            enerpart_lambda   += dlam*enerd->dvdl_lin[j];
 
             /* Constraints can not be evaluated at foreign lambdas, so we add
              * a linear extrapolation. This is an approximation, but usually
@@ -805,14 +807,19 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
             if ((j == efptBONDED && fepvals->separate_dvdl[efptBONDED]) ||
                 (j == efptFEP && !fepvals->separate_dvdl[efptBONDED]))
             {
-                enerd->enerpart_lambda[i + 1] += dlam*enerd->term[F_DVDL_CONSTR];
+                enerpart_lambda += dlam*enerd->term[F_DVDL_CONSTR];
+            }
+
+            if (j == efptMASS)
+            {
+                enerpart_lambda += dlam*enerd->term[F_DKDL];
             }
 
             if (debug)
             {
                 fprintf(debug, "enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
                         fepvals->all_lambda[j][i], efpt_names[j],
-                        (enerd->enerpart_lambda[i+1] - enerd->enerpart_lambda[0]),
+                        enerpart_lambda - enerd->enerpart_lambda[0],
                         dlam, enerd->dvdl_lin[j]);
             }
         }
