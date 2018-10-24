@@ -40,6 +40,8 @@
 
 #if GMX_QMMM_GAMESS
 
+#include "qm_gamess.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,28 +56,28 @@
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-
 
 /* QMMM sub routines */
 /* mopac interface routines */
 
 
 void
-    F77_FUNC(inigms, IMIGMS) (void);
+    F77_FUNC(inigms, IMIGMS) ();
 
 void
-    F77_FUNC(endgms, ENDGMS) (void);
+    F77_FUNC(endgms, ENDGMS) ();
 
 void
-    F77_FUNC(grads, GRADS) (int *nrqmat, real *qmcrd, int *nrmmat, real *mmchrg,
+    F77_FUNC(grads, GRADS) (const int *nrqmat, real *qmcrd, const int *nrmmat, const real *mmchrg,
                             real *mmcrd, real *qmgrad, real *mmgrad, real *energy);
 
 
 
-void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
+void init_gamess(const t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 {
     /* it works hopelessly complicated :-)
      * first a file is written. Then the standard gamess input/output
@@ -208,7 +210,7 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
     }
 }
 
-real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
+real call_gamess(const t_forcerec *fr, const t_QMrec *qm, const t_MMrec *mm,
                  rvec f[], rvec fshift[])
 {
     /* do the actual QMMM calculation using GAMESS-UK. In this
