@@ -38,6 +38,8 @@
 
 #include "qm_orca.h"
 
+#include "config.h"
+
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -61,6 +63,11 @@ void init_orca(t_QMrec *qm)
 {
     char *buf;
     snew(buf, 200);
+
+    if (!GMX_QMMM_ORCA)
+    {
+        gmx_fatal(FARGS, "Cannot call ORCA unless linked against it. Use cmake -DGMX_QMMM_PROGRAM=ORCA, and ensure that linking will work correctly.");
+    }
 
     /* ORCA settings on the system */
     buf = getenv("GMX_QM_ORCA_BASENAME");
@@ -97,7 +104,7 @@ void init_orca(t_QMrec *qm)
 }
 
 
-static void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
+static void write_orca_input(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
     int        i;
     t_QMMMrec *QMMMrec;
@@ -186,7 +193,7 @@ static void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
     fclose(out);
 }  /* write_orca_input */
 
-static real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
+static real read_orca_output(rvec QMgrad[], rvec MMgrad[], const t_forcerec *fr,
                              t_QMrec *qm, t_MMrec *mm)
 {
     int
@@ -338,7 +345,7 @@ static void do_orca(char *orca_dir, char *basename)
     }
 }
 
-real call_orca(t_forcerec *fr,
+real call_orca(const t_forcerec *fr,
                t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 {
     /* normal orca jobs */
