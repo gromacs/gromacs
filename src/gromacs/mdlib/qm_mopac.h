@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,16 +32,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MDLIB_QMMOPAC_H
+#define GMX_MDLIB_QMMOPAC_H
+
 #include "gromacs/mdlib/qmmm.h"
 
-#ifndef GMX_MDLIB_QM_ORCA_H
-#define GMX_MDLIB_QM_ORCA_H
-
+/*! \brief
+ * Initialize mopac datastructures.
+ *
+ * \param[in] qm QM forcerec.
+ */
 void
-init_orca(t_QMrec *qm);
+init_mopac(t_QMrec *qm);
 
+/*! \brief
+ * Run calculation with MOPAC.
+ *
+ * \param[in] qm QM part of forcerec.
+ * \param[in] mm MM part of forcerec.
+ * \param[in] f  Force vector.
+ * \param[in] fshift Force shift vector.
+ */
 real
-call_orca(const t_forcerec *fr, t_QMrec *qm,
-          t_MMrec *mm, rvec f[], rvec fshift[]);
+call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
+
+/*! \brief
+ * Run surface-hopping calculation with MOPAC.
+ *
+ * \param[in] qm QM part of forcerec.
+ * \param[in] mm MM part of forcerec.
+ * \param[in] f  Force vector.
+ * \param[in] fshift Force shift vector.
+ */
+real
+call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
 #endif
