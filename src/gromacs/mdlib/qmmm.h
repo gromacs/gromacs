@@ -44,6 +44,24 @@
 
 #define GMX_QMMM (GMX_QMMM_MOPAC || GMX_QMMM_GAMESS || GMX_QMMM_GAUSSIAN || GMX_QMMM_ORCA)
 
+#if GMX_QMMM_GAMESS
+#define gmx_noreturn_without_gamess
+#else
+#define gmx_noreturn_without_gamess [[noreturn]]
+#endif
+
+#if GMX_QMMM_MOPAC
+#define gmx_noreturn_without_mopac
+#else
+#define gmx_noreturn_without_mopac [[noreturn]]
+#endif
+
+#if GMX_QMMM_ORCA
+#define gmx_noreturn_without_orca
+#else
+#define gmx_noreturn_without_orca [[noreturn]]
+#endif
+
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct t_commrec;
@@ -113,12 +131,9 @@ void atomic_number(int nr, char ***atomtype, int *nucnum);
 t_QMMMrec *mk_QMMMrec();
 /* allocates memory for QMMMrec */
 
-#if !GMX_QMMM
-[[noreturn]]
-#endif
 void init_QMMMrec(const t_commrec  *cr,
-                  gmx_mtop_t       *mtop,
-                  t_inputrec       *ir,
+                  const gmx_mtop_t *mtop,
+                  const t_inputrec *ir,
                   const t_forcerec *fr);
 
 /* init_QMMMrec initializes the QMMM record. From
@@ -127,9 +142,6 @@ void init_QMMMrec(const t_commrec  *cr,
  * resp. inputrec->QMmult the nelecs and multiplicity are determined
  * and md->cQMMM gives numbers of the MM and QM atoms
  */
-#if !GMX_QMMM
-[[noreturn]]
-#endif
 void update_QMMMrec(const t_commrec  *cr,
                     const t_forcerec *fr,
                     const rvec       *x,
