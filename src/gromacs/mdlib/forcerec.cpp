@@ -3004,15 +3004,26 @@ void init_forcerec(FILE                             *fp,
         }
     }
 
-    /* QM/MM initialization if requested
-     */
-    if (ir->bQMMM)
+    // QM/MM initialization if requested
+    fr->bQMMM = ir->bQMMM;
+    if (fr->bQMMM)
     {
-        fprintf(stderr, "QM/MM calculation requested.\n");
+        // Initialize QM/MM if supported
+        if (GMX_QMMM)
+        {
+            GMX_LOG(mdlog.info).asParagraph().
+                appendText("Large parts of the QM/MM support is deprecated, and may be removed in a future "
+                           "version. Please get in touch with the developers if you find the support useful, "
+                           "as help is needed if the functionality is to continue to be available.");
+            fr->qr = mk_QMMMrec();
+            init_QMMMrec(cr, mtop, ir, fr);
+        }
+        else
+        {
+            gmx_incons("QM/MM was requested, but is only available when GROMACS "
+                       "is configured with QM/MM support");
+        }
     }
-
-    fr->bQMMM      = ir->bQMMM;
-    fr->qr         = mk_QMMMrec();
 
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp, mtop, fr, bNoSolvOpt,

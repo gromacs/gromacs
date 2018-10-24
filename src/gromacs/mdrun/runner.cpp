@@ -1225,16 +1225,6 @@ int Mdrunner::mdrunner()
                       FALSE,
                       pforce);
 
-        /* Initialize QM-MM */
-        if (fr->bQMMM)
-        {
-            GMX_LOG(mdlog.info).asParagraph().
-                appendText("Large parts of the QM/MM support is deprecated, and may be removed in a future "
-                           "version. Please get in touch with the developers if you find the support useful, "
-                           "as help is needed if the functionality is to continue to be available.");
-            init_QMMMrec(cr, &mtop, inputrec, fr);
-        }
-
         /* Initialize the mdAtoms structure.
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.

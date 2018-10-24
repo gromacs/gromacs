@@ -82,3 +82,8 @@ All remaining aspects of the group cutoff scheme will be removed, once
 a few remaining features (e.g. tabulated interactions, energy-group
 exclusions, and vacuum simulations) are available with the Verlet
 scheme. Deprecated in GROMACS 5.1
+
+QM/MM support for ORCA, GAMESS and MOPAC
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+These interfaces are untested, and no maintainer has been found for them.
+Deprecated in GROMACS 2018.
