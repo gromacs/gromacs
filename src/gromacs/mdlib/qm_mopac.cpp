@@ -38,7 +38,7 @@
 
 #include "config.h"
 
-#if GMX_QMMM_MOPAC
+#include "qm_mopac.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +67,21 @@ void
                             double mmchrg[], double mmcrd[], double qmgrad[],
                             double mmgrad[], double *energy, double qmcharges[]);
 
+#if !GMX_QMMM_MOPAC
+// Stub definitions to make compilation succeed when not configured
+// for MOPAC support. In that case, the module gives a fatal erron
+// when the initialization function is called, so there is no need to
+// issue fatal errors here, because that introduces problems with
+// tools suggesting and prohibiting noreturn attributes.
+void F77_FUNC(domldt, DOMLDT) (int *, int [], char []) {
+}
+
+void F77_FUNC(domop, DOMOP) (int *, double [], int *,
+                             double [], double [], double [],
+                             double [], double *, double []) {
+}
+
+#endif
 
 
 void init_mopac(t_QMrec *qm)
@@ -79,6 +94,11 @@ void init_mopac(t_QMrec *qm)
      */
     char
     *keywords;
+
+    if (!GMX_QMMM_MOPAC)
+    {
+        gmx_fatal(FARGS, "Cannot call MOPAC unless linked against it. Use cmake -DGMX_QMMM_PROGRAM=MOPAC, and ensure that linking will work correctly.");
+    }
 
     snew(keywords, 240);
 
@@ -222,4 +242,3 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
     free(qmcrd);
     return (QMener);
 } /* call_mopac_SH */
-#endif

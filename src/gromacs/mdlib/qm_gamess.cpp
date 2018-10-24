@@ -38,7 +38,7 @@
 
 #include "config.h"
 
-#if GMX_QMMM_GAMESS
+#include "qm_gamess.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,28 +54,42 @@
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-
 
 /* QMMM sub routines */
 /* mopac interface routines */
 
 
 void
-    F77_FUNC(inigms, IMIGMS) (void);
+    F77_FUNC(inigms, IMIGMS) ();
 
 void
-    F77_FUNC(endgms, ENDGMS) (void);
+    F77_FUNC(endgms, ENDGMS) ();
 
 void
-    F77_FUNC(grads, GRADS) (int *nrqmat, real *qmcrd, int *nrmmat, real *mmchrg,
+    F77_FUNC(grads, GRADS) (const int *nrqmat, real *qmcrd, const int *nrmmat, const real *mmchrg,
                             real *mmcrd, real *qmgrad, real *mmgrad, real *energy);
 
+#if !GMX_QMMM_GAMESS
+// Stub definitions to make compilation succeed when not configured
+// for GAMESS support. In that case, the module gives a fatal erron
+// when the initialization function is called, so there is no need to
+// issue fatal errors here, because that introduces problems with
+// tools suggesting and prohibiting noreturn attributes.
+void F77_FUNC(inigms, IMIGMS) () {
+};
+void F77_FUNC(endgms, ENDGMS) () {
+};
+void F77_FUNC(grads, GRADS) (const int *, real *, const int *, const real *,
+                             real *, real *, real *, real *) {
+};
+#endif
 
 
-void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
+void init_gamess(const t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 {
     /* it works hopelessly complicated :-)
      * first a file is written. Then the standard gamess input/output
@@ -97,6 +111,10 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga",
         "Ge", "As", "Se", "Br", "Kr"
     };
+    if (!GMX_QMMM_GAMESS)
+    {
+        gmx_fatal(FARGS, "Cannot call GAMESS unless linked against it. Use cmake -DGMX_QMMM_PROGRAM=GAMESS, and ensure that linking will work correctly.");
+    }
 
     if (PAR(cr))
     {
@@ -208,7 +226,7 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
     }
 }
 
-real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
+real call_gamess(const t_forcerec *fr, const t_QMrec *qm, const t_MMrec *mm,
                  rvec f[], rvec fshift[])
 {
     /* do the actual QMMM calculation using GAMESS-UK. In this
@@ -278,4 +296,3 @@ real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     QMener = energy*HARTREE2KJ*AVOGADRO;
     return(QMener);
 }
-#endif
