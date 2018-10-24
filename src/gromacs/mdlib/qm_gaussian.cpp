@@ -36,11 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
-#if GMX_QMMM_GAUSSIAN
-
 #include "qm_gaussian.h"
+
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -83,6 +81,11 @@ void init_gaussian(t_QMrec *qm)
        *buf = nullptr;
     int
         i;
+
+    if (!GMX_QMMM_GAUSSIAN)
+    {
+        gmx_fatal(FARGS, "Cannot call GAUSSIAN unless linked against it. Use cmake -DGMX_QMMM_PROGRAM=GAUSSIAN, and ensure that linking will work correctly.");
+    }
 
     /* using the ivec above to convert the basis read form the mdp file
      * in a human readable format into some numbers for the gaussian
@@ -1022,6 +1025,3 @@ real call_gaussian_SH(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], 
     return(QMener);
 
 } /* call_gaussian_SH */
-
-/* end of gaussian sub routines */
-#endif

@@ -36,9 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "qm_mopac.h"
 
-#if GMX_QMMM_MOPAC
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,6 +58,7 @@
 #include "gromacs/utility/smalloc.h"
 
 
+#if GMX_QMMM_MOPAC
 /* mopac interface routines */
 void
     F77_FUNC(domldt, DOMLDT) (int *nrqmat, int labels[], char keywords[]);
@@ -67,6 +68,24 @@ void
                             double mmchrg[], double mmcrd[], double qmgrad[],
                             double mmgrad[], double *energy, double qmcharges[]);
 
+#else /* GMX_QMMM_MOPAC */
+// Stub definitions to make compilation succeed when not configured
+// for MOPAC support. In that case, the module gives a fatal error
+// when the initialization function is called, so there is no need to
+// issue fatal errors here, because that introduces problems with
+// tools suggesting and prohibiting noreturn attributes.
+
+static void F77_FUNC(domldt, DOMLDT) (int * /*unused*/, int  /*unused*/[], char  /*unused*/[])
+{
+}
+
+static void F77_FUNC(domop, DOMOP) (int * /*unused*/, double  /*unused*/[], int * /*unused*/,
+                                    double  /*unused*/[], double  /*unused*/[], double  /*unused*/[],
+                                    double  /*unused*/[], double * /*unused*/, double  /*unused*/[])
+{
+}
+
+#endif
 
 
 void init_mopac(t_QMrec *qm)
@@ -79,6 +98,11 @@ void init_mopac(t_QMrec *qm)
      */
     char
     *keywords;
+
+    if (!GMX_QMMM_MOPAC)
+    {
+        gmx_fatal(FARGS, "Cannot call MOPAC unless linked against it. Use cmake -DGMX_QMMM_PROGRAM=MOPAC, and ensure that linking will work correctly.");
+    }
 
     snew(keywords, 240);
 
@@ -107,8 +131,8 @@ real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
      */
     double /* always double as the MOPAC routines are always compiled in
               double precission! */
-    *qmcrd = NULL, *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
-    *qmgrad, *mmgrad = NULL, energy;
+    *qmcrd = nullptr, *qmchrg = nullptr, *mmcrd = nullptr, *mmchrg = nullptr,
+    *qmgrad, *mmgrad = nullptr, energy = 0;
     int
         i, j;
     real
@@ -122,7 +146,7 @@ real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
     {
         for (j = 0; j < DIM; j++)
         {
-            qmcrd[3*i+j] = (double)qm->xQM[i][j]*10;
+            qmcrd[3*i+j] = static_cast<double>(qm->xQM[i][j])*10;
         }
     }
     if (mm->nrMMatoms)
@@ -149,11 +173,11 @@ real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
         {
             for (j = 0; j < DIM; j++)
             {
-                f[i][j]       = (real)10*CAL2JOULE*qmgrad[3*i+j];
-                fshift[i][j]  = (real)10*CAL2JOULE*qmgrad[3*i+j];
+                f[i][j]       = static_cast<real>(10)*CAL2JOULE*qmgrad[3*i+j];
+                fshift[i][j]  = static_cast<real>(10)*CAL2JOULE*qmgrad[3*i+j];
             }
         }
-        QMener = (real)CAL2JOULE*energy;
+        QMener = static_cast<real>CAL2JOULE*energy;
         /* do we do something with the mulliken charges?? */
 
         free(qmchrg);
@@ -170,8 +194,8 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 
     double /* always double as the MOPAC routines are always compiled in
               double precission! */
-    *qmcrd = NULL, *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
-    *qmgrad, *mmgrad = NULL, energy;
+    *qmcrd = nullptr, *qmchrg = nullptr, *mmcrd = nullptr, *mmchrg = nullptr,
+    *qmgrad, *mmgrad = nullptr, energy = 0;
     int
         i, j;
     real
@@ -186,7 +210,7 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
     {
         for (j = 0; j < DIM; j++)
         {
-            qmcrd[3*i+j] = (double)qm->xQM[i][j]*10;
+            qmcrd[3*i+j] = static_cast<double>(qm->xQM[i][j])*10;
         }
     }
     if (mm->nrMMatoms)
@@ -212,14 +236,13 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
         {
             for (j = 0; j < DIM; j++)
             {
-                f[i][j]      = (real)10*CAL2JOULE*qmgrad[3*i+j];
-                fshift[i][j] = (real)10*CAL2JOULE*qmgrad[3*i+j];
+                f[i][j]      = static_cast<real>(10)*CAL2JOULE*qmgrad[3*i+j];
+                fshift[i][j] = static_cast<real>(10)*CAL2JOULE*qmgrad[3*i+j];
             }
         }
-        QMener = (real)CAL2JOULE*energy;
+        QMener = static_cast<real>CAL2JOULE*energy;
     }
     free(qmgrad);
     free(qmcrd);
     return (QMener);
 } /* call_mopac_SH */
-#endif
