@@ -42,6 +42,7 @@ gmx_add_libgromacs_sources(
     replicaexchange.cpp
     rerun.cpp
     mimic.cpp
+    membed.cpp
     runner.cpp
     simulationcontext.cpp
     tpi.cpp

@@ -82,6 +82,9 @@ void Integrator::run(unsigned int ei, bool doRerun)
                 do_mimic();
             }
             break;
+        case eiMembed:
+            do_membed();
+            break;
         case eiSteep:
             do_steep();
             break;
