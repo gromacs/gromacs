@@ -9,11 +9,61 @@ earlier, which you can find described in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Correct PME forces with free energy without perturbed charges/LJ
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energies calculations with lambda not set to zero and no
+actual perturbed charges or atom types for Lennard-Jones, the Coulomb
+or LJ PME mesh forces would be scaled with lambda. Note that this bug
+did not affect the, usual, setup where charges or atom types are actually
+perturbed.
+
+:issue: `2640`
+
+Add constraint contribution to foreign Hamiltonian differences
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The contribution of perturbed constraints was missing from the foreign
+Hamiltonian values. This is important for free energy calculations,
+such as BAR.
+
+:issue: `2703`
+
+Add mass contribution to foreign Hamiltonian differences
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For free energy calculations with perturbed masses, the kinetic energy
+contribution was missing from the foreign Hamiltonian values.
+
+:issue: `2703`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix mindist output file checks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+mindist would not check if the output file needed to print residue names and
+residue contacts over time was actually defined, leading to errors with
+empty file name strings.
+
+:issue:`2653`
+
+Fix helix segmentation fault
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The .tpr file is now read correctly. 
+
+:issue:`2701`
+
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Fixed an issue where the log file could sometimes report an incorrect
+initial dynamic load balancing state
+
+:issue:`2631`

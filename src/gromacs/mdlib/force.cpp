@@ -696,7 +696,6 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
 void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda *fepvals)
 {
     int    index;
-    double dlam;
 
     enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW];  /* include dispersion correction */
     enerd->term[F_DVDL]       = 0.0;
@@ -744,13 +743,6 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
         }
     }
 
-    /* Notes on the foreign lambda free energy difference evaluation:
-     * Adding the potential and ekin terms that depend linearly on lambda
-     * as delta lam * dvdl to the energy differences is exact.
-     * For the constraints this is not exact, but we have no other option
-     * without literally changing the lengths and reevaluating the energies at each step.
-     * (try to remedy this post 4.6 - MRS)
-     */
     if (fepvals->separate_dvdl[efptBONDED])
     {
         enerd->term[F_DVDL_BONDED] += enerd->term[F_DVDL_CONSTR];
@@ -759,7 +751,6 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
     {
         enerd->term[F_DVDL] += enerd->term[F_DVDL_CONSTR];
     }
-    enerd->term[F_DVDL_CONSTR] = 0;
 
     for (int i = 0; i < fepvals->n_lambda; i++)
     {
@@ -772,20 +763,42 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
            current lambda, because the contributions to the current
            lambda are automatically zeroed */
 
+        double &enerpart_lambda = enerd->enerpart_lambda[i + 1];
+
         for (gmx::index j = 0; j < lambda.size(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
-            dlam = (fepvals->all_lambda[j][i] - lambda[j]);
-            enerd->enerpart_lambda[i+1] += dlam*enerd->dvdl_lin[j];
+            const double dlam  = fepvals->all_lambda[j][i] - lambda[j];
+
+            enerpart_lambda   += dlam*enerd->dvdl_lin[j];
+
+            /* Constraints can not be evaluated at foreign lambdas, so we add
+             * a linear extrapolation. This is an approximation, but usually
+             * quite accurate since constraints change little between lambdas.
+             */
+            if ((j == efptBONDED && fepvals->separate_dvdl[efptBONDED]) ||
+                (j == efptFEP && !fepvals->separate_dvdl[efptBONDED]))
+            {
+                enerpart_lambda += dlam*enerd->term[F_DVDL_CONSTR];
+            }
+
+            if (j == efptMASS)
+            {
+                enerpart_lambda += dlam*enerd->term[F_DKDL];
+            }
+
             if (debug)
             {
                 fprintf(debug, "enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
                         fepvals->all_lambda[j][i], efpt_names[j],
-                        (enerd->enerpart_lambda[i+1] - enerd->enerpart_lambda[0]),
+                        enerpart_lambda - enerd->enerpart_lambda[0],
                         dlam, enerd->dvdl_lin[j]);
             }
         }
     }
+
+    /* The constrain contribution is now included in other terms, so clear it */
+    enerd->term[F_DVDL_CONSTR] = 0;
 }
 
 
