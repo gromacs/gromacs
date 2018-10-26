@@ -1129,6 +1129,16 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     const gmx_bool       bBackFFT                = (flags & (GMX_PME_CALC_F | GMX_PME_CALC_POT)) != 0;
     const gmx_bool       bCalcF                  = (flags & GMX_PME_CALC_F) != 0;
 
+    /* We could be passing lambda!=1 while no q or LJ is actually perturbed */
+    if (!pme->bFEP_q)
+    {
+        lambda_q  = 1;
+    }
+    if (!pme->bFEP_lj)
+    {
+        lambda_lj = 1;
+    }
+
     assert(pme->nnodes > 0);
     assert(pme->nnodes == 1 || pme->ndecompdim > 0);
 
