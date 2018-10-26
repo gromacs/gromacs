@@ -233,12 +233,18 @@ User documentation
   of the user documentation, as well as the :file:`INSTALL` file for the source
   package.
   The build rules are in :file:`docs/CMakeLists.txt`.
+:file:`docs/reference-manual/`
+  Contains reStructuredText source files to generate the reference manual for
+  html and LaTeX.
 :file:`docs/manual/`
-  Contains LaTeX source files and build rules for the reference (PDF) manual.
+  Contains LaTeX helper files to build the reference (PDF) manual.
 :file:`docs/user-guide/`
-  Contains reStructuredText source files for building the user guide section
+  Contains reStructuredText source files used to build the user guide section
   of the user documentation.
   The build rules are in :file:`docs/CMakeLists.txt`.
+:file:`docs/how-to/`
+  Contains reStructuredText source files building the how-to section of
+  the user focused documentation.
 
 Unix man pages
 ^^^^^^^^^^^^^^
