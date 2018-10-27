@@ -68,7 +68,7 @@ typedef enum {
     NOT_USED, NORMAL, X, Y, Z, LATERAL
 } msd_type;
 
-typedef struct {
+struct t_corr {
     real          t0;         /* start time and time increment between  */
     real          delta_t;    /* time between restart points */
     real          beginfit,   /* the begin/end time for fits as reals between */
@@ -94,7 +94,69 @@ typedef struct {
     int          *n_offs;
     int         **ndata;      /* the number of msds (particles/mols) per data
                                  point. */
-} t_corr;
+    t_corr(int nrgrp, int type, int axis, real dim_factor, int nmol,
+           gmx_bool bTen, gmx_bool bMass, real dt, const t_topology *top,
+           real beginfit, real endfit) :
+        t0(0),
+        delta_t(dt),
+        beginfit((1 - 2*GMX_REAL_EPS)*beginfit),
+        endfit((1 + 2*GMX_REAL_EPS)*endfit),
+        dim_factor(dim_factor),
+        data(nullptr),
+        time(nullptr),
+        mass(nullptr),
+        datam(nullptr),
+        x0(nullptr),
+        com(nullptr),
+        lsq(nullptr),
+        type(static_cast<msd_type>(type)),
+        axis(axis),
+        ncoords(0),
+        nrestart(0),
+        nmol(nmol),
+        nframes(0),
+        nlast(0),
+        ngrp(nrgrp),
+        n_offs(nullptr),
+        ndata(nullptr)
+    {
+        snew(ndata, nrgrp);
+        snew(data, nrgrp);
+        if (bTen)
+        {
+            snew(datam, nrgrp);
+        }
+        for (int i = 0; (i < nrgrp); i++)
+        {
+            ndata[i] = nullptr;
+            data[i]  = nullptr;
+            if (bTen)
+            {
+                datam[i] = nullptr;
+            }
+        }
+        if (nmol > 0)
+        {
+            snew(mass, nmol);
+            for (int i = 0; i < nmol; i++)
+            {
+                mass[i] = 1;
+            }
+        }
+        else
+        {
+            if (bMass)
+            {
+                const t_atoms *atoms = &top->atoms;
+                snew(mass, atoms->nr);
+                for (int i = 0; (i < atoms->nr); i++)
+                {
+                    mass[i] = atoms->atom[i].m;
+                }
+            }
+        }
+    }
+};
 
 typedef real t_calc_func (t_corr *curr, int nx, const int index[], int nx0, rvec xc[],
                           const rvec dcom, gmx_bool bTen, matrix mat);
@@ -107,69 +169,6 @@ static real thistime(t_corr *curr)
 static int in_data(t_corr *curr, int nx00)
 {
     return curr->nframes-curr->n_offs[nx00];
-}
-
-static t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
-                         int nmol, gmx_bool bTen, gmx_bool bMass, real dt, const t_topology *top,
-                         real beginfit, real endfit)
-{
-    t_corr  *curr;
-    int      i;
-
-    snew(curr, 1);
-    curr->type       = static_cast<msd_type>(type);
-    curr->axis       = axis;
-    curr->ngrp       = nrgrp;
-    curr->nrestart   = 0;
-    curr->delta_t    = dt;
-    curr->beginfit   = (1 - 2*GMX_REAL_EPS)*beginfit;
-    curr->endfit     = (1 + 2*GMX_REAL_EPS)*endfit;
-    curr->x0         = nullptr;
-    curr->n_offs     = nullptr;
-    curr->nframes    = 0;
-    curr->nlast      = 0;
-    curr->dim_factor = dim_factor;
-
-    snew(curr->ndata, nrgrp);
-    snew(curr->data, nrgrp);
-    if (bTen)
-    {
-        snew(curr->datam, nrgrp);
-    }
-    for (i = 0; (i < nrgrp); i++)
-    {
-        curr->ndata[i] = nullptr;
-        curr->data[i]  = nullptr;
-        if (bTen)
-        {
-            curr->datam[i] = nullptr;
-        }
-    }
-    curr->time = nullptr;
-    curr->lsq  = nullptr;
-    curr->nmol = nmol;
-    if (curr->nmol > 0)
-    {
-        snew(curr->mass, curr->nmol);
-        for (i = 0; i < curr->nmol; i++)
-        {
-            curr->mass[i] = 1;
-        }
-    }
-    else
-    {
-        if (bMass)
-        {
-            const t_atoms *atoms = &top->atoms;
-            snew(curr->mass, atoms->nr);
-            for (i = 0; (i < atoms->nr); i++)
-            {
-                curr->mass[i] = atoms->atom[i].m;
-            }
-        }
-    }
-
-    return curr;
 }
 
 static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *title,
@@ -912,9 +911,9 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
         index_atom2mol(&gnx[0], index[0], &top->mols);
     }
 
-    msd = init_corr(nrgrp, type, axis, dim_factor,
-                    mol_file == nullptr ? 0 : gnx[0], bTen, bMW, dt, top,
-                    beginfit, endfit);
+    msd = new t_corr(nrgrp, type, axis, dim_factor,
+                     mol_file == nullptr ? 0 : gnx[0], bTen, bMW, dt, top,
+                     beginfit, endfit);
 
     nat_trx =
         corr_loop(msd, trx_file, top, ePBC, mol_file ? gnx[0] != 0 : false, gnx, index,
