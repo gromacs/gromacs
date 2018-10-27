@@ -32,8 +32,26 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Reference https://crascit.com/2016/04/09/using-ccache-with-cmake/
-#
+# Permit the use of ccache (when available), which wraps the
+# CMAKE_C_COMPILER and CMAKE_CXX_COMPILER to speed up build
+# times. Reference https://ccache.samba.org and
+# https://crascit.com/2016/04/09/using-ccache-with-cmake/
+
+option(ENABLE_CCACHE "Allow CMake to use ccache compiler wrappers if available." OFF)
+
+if(NOT ENABLE_CCACHE)
+    return()
+endif()
+
+if(GMX_CLANG_TIDY)
+    message(FATAL_ERROR "ccache does not work with the wrapper script used for "
+        "clang-tidy builds. Use -DENABLE_CCACHE=off.")
+endif()
+if(GMX_CLANG_ANALYZER)
+    message(FATAL_ERROR "ccache does not work with the wrapper script used for "
+        "clang-analyzer builds. Use -DENABLE_CCACHE=off.")
+endif()
+
 # Here we try to make sure that ccache is invoked as `/.../ccache compiler args` to best handle more than one local
 # compiler or a compiler wrapper, whereas it is otherwise common to replace the default compilers with symbolic links
 # to the ccache binary.
@@ -76,7 +94,7 @@ if(CCACHE_PROGRAM)
             # Support Unix Makefiles and Ninja
             set(CMAKE_C_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/launch-c")
         endif()
-    endif(GMX_CACHE_C_COMPILER)
+    endif()
 
     # Check whether CXX compiler wrapper has been set up
     if(NOT DEFINED GMX_CACHE_CXX_COMPILER)
@@ -112,5 +130,9 @@ if(CCACHE_PROGRAM)
             # Support Unix Makefiles and Ninja
             set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/launch-cxx")
         endif()
-    endif(GMX_CACHE_CXX_COMPILER)
-endif(CCACHE_PROGRAM) # ccache program
+    endif()
+else()
+    message(FATAL_ERROR "ENABLE_CCACHE requires that the ccache executable "
+        "can be found in the CMAKE_INSTALL_PREFIX path")
+endif() # ccache program
+
