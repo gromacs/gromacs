@@ -946,23 +946,32 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                                 }
                             }
 
-                            GMX_ASSERT(dim2 >= 0 && dim2 < DIM, "Keep the static analyzer happy");
-
-                            /* Check of we are not at the box edge.
-                             * pbc is only handled in the first step above,
-                             * but this check could move over pbc while
-                             * the first step did not due to different rounding.
+                            /* Without update groups atoms should be exactly
+                             * in their domain decomposition cell, because we
+                             * check for that during the nbnxn gridding
+                             * (to catch potential bugs).
                              */
-                            if (pos_d >= cell_x1[dim2] &&
-                                dd->ci[dim2] != dd->nc[dim2]-1)
+                            if (!comm->useUpdateGroups)
                             {
-                                flag |= DD_FLAG_FW(d2);
+                                GMX_ASSERT(dim2 >= 0 && dim2 < DIM, "Keep the static analyzer happy");
+
+                                /* Check of we are not at the box edge.
+                                 * pbc is only handled in the first step above,
+                                 * but this check could move over pbc while
+                                 * the first step did not due to different rounding.
+                                 */
+                                if (pos_d >= cell_x1[dim2] &&
+                                    dd->ci[dim2] != dd->nc[dim2]-1)
+                                {
+                                    flag |= DD_FLAG_FW(d2);
+                                }
+                                else if (pos_d < cell_x0[dim2] &&
+                                         dd->ci[dim2] != 0)
+                                {
+                                    flag |= DD_FLAG_BW(d2);
+                                }
                             }
-                            else if (pos_d < cell_x0[dim2] &&
-                                     dd->ci[dim2] != 0)
-                            {
-                                flag |= DD_FLAG_BW(d2);
-                            }
+
                             flagBuffer.buffer[cg*DD_CGIBS + 1] = flag;
                         }
                     }
