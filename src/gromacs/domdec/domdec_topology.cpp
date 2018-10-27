@@ -1360,6 +1360,9 @@ check_assign_interactions_atom(int i, int i_gl,
                              iz <  zones->izone[kz].j1));
                     if (bUse)
                     {
+                        GMX_ASSERT(ftype != F_CONSTR || (iz == 0 && kz == 0),
+                                   "Constraint assigned here should only involve home atoms");
+
                         tiatoms[1] = i;
                         tiatoms[2] = entry->la;
                         /* If necessary check the cgcm distance */
