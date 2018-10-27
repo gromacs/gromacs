@@ -710,7 +710,7 @@ To trigger an OpenCL_ build the following CMake flags must be set
     cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
 
 To build with support for Intel integrated GPUs, it is required
-to add ``-DGMX_OCL_NB_CLUSTER_SIZE=4`` to the cmake command line,
+to add ``-DGMX_OPENCL_NB_CLUSTER_SIZE=4`` to the cmake command line,
 so that the GPU kernels match the characteristics of the hardware.
 The `Neo driver <https://github.com/intel/compute-runtime/releases>`_
 is recommended.
