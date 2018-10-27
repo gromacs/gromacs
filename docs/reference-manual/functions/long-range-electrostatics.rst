@@ -25,18 +25,17 @@ interactions of the periodic images in crystals \ :ref:`105 <refEwald21>`. The 
 is to convert the single slowly-converging sum :eq:`eqn. %s <eqntotalcoulomb>`
 into two quickly-converging terms and a constant term:
 
-.. math::
-
-   \begin{aligned}
-   V &=& V_{\mathrm{dir}} + V_{\mathrm{rec}} + V_{0} \\[0.5ex]
-   V_{\mathrm{dir}} &=& \frac{f}{2} \sum_{i,j}^{N}
-   \sum_{n_x}\sum_{n_y}
-   \sum_{n_{z}*} q_i q_j \frac{\mbox{erfc}(\beta {r}_{ij,{\bf n}} )}{{r}_{ij,{\bf n}}} \\[0.5ex]
-   V_{\mathrm{rec}} &=& \frac{f}{2 \pi V} \sum_{i,j}^{N} q_i q_j
-   \sum_{m_x}\sum_{m_y}
-   \sum_{m_{z}*} \frac{\exp{\left( -(\pi {\bf m}/\beta)^2 + 2 \pi i
-         {\bf m} \cdot ({\bf r}_i - {\bf r}_j)\right)}}{{\bf m}^2} \\[0.5ex]
-   V_{0} &=& -\frac{f \beta}{\sqrt{\pi}}\sum_{i}^{N} q_i^2,\end{aligned}
+.. math:: \begin{aligned}
+          V &=& V_{\mathrm{dir}} + V_{\mathrm{rec}} + V_{0} \\[0.5ex]
+          V_{\mathrm{dir}} &=& \frac{f}{2} \sum_{i,j}^{N}
+          \sum_{n_x}\sum_{n_y}
+          \sum_{n_{z}*} q_i q_j \frac{\mbox{erfc}(\beta {r}_{ij,{\bf n}} )}{{r}_{ij,{\bf n}}} \\[0.5ex]
+          V_{\mathrm{rec}} &=& \frac{f}{2 \pi V} \sum_{i,j}^{N} q_i q_j
+          \sum_{m_x}\sum_{m_y}
+          \sum_{m_{z}*} \frac{\exp{\left( -(\pi {\bf m}/\beta)^2 + 2 \pi i
+                {\bf m} \cdot ({\bf r}_i - {\bf r}_j)\right)}}{{\bf m}^2} \\[0.5ex]
+          V_{0} &=& -\frac{f \beta}{\sqrt{\pi}}\sum_{i}^{N} q_i^2,\end{aligned}
+          :label: eqntotalcoloumbseparate
 
 where :math:`\beta` is a parameter that determines the relative weight
 of the direct and reciprocal sums and :math:`{\bf m}=(m_x,m_y,m_z)`. In

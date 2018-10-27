@@ -25,6 +25,7 @@ coordinate :math:`\xi(x)` is coupled to :math:`\lambda` with a harmonic
 potential
 
 .. math:: Q(\xi,\lambda) = \frac{1}{2} \beta k (\xi - \lambda)^2,
+          :label: eqnawhbasic
 
 so that for large force constants :math:`k`,
 :math:`\xi \approx \lambda`. Note the use of dimensionless energies for
@@ -104,6 +105,7 @@ free energy update that has the same form but which can be applied
 repeatedly with limited and localized sampling,
 
 .. math:: \Delta F_n = -\ln \frac{W_n(\lambda) + \sum_t \omega_n(\lambda|x(t))}{W_n(\lambda) + \sum_t\rho_n(\lambda)) }.
+          :label: eqnawhsampling
 
 Here :math:`W_n(\lambda)` is the *reference weight histogram*
 representing prior sampling. The update for :math:`W(\lambda)`,
@@ -333,6 +335,7 @@ The target distribution :math:`\rho(\lambda)` is traditionally chosen to
 be uniform
 
 .. math:: \rho_{\mathrm{const}}(\lambda) = \mathrm{const.}
+          :label: eqnawhuniformdist
 
 This choice exactly flattens :math:`F(\lambda)` in user-defined
 sampling interval :math:`I`. Generally,
@@ -379,11 +382,13 @@ considering. In this case :math:`\rho` is a function of the reference
 weight histogram
 
 .. math:: \rho_{\mathrm{Boltz,loc}}(\lambda) \propto W(\lambda), 
+          :label: eqnawhweighthistogram
 
 and the update of the weight histogram is modified (cf.
 :eq:`Eq. %s <eqawhwupdate>`)
 
 .. math:: W_{n+1}(\lambda) =  W_{n}(\lambda) + s_{\beta}\sum_t \omega(\lambda | x(t)).
+          :label: eqnawhupdateweighthist
 
 Thus, here the weight histogram equals the real history of samples, but
 scaled by :math:`s_\beta`. This target distribution is called *local*
@@ -405,6 +410,7 @@ Lastly, the target distribution can be modulated by arbitrary
 probability weights
 
 .. math:: \rho(\lambda) = \rho_0(\lambda) w_{\mathrm{user}}(\lambda).
+          :label: eqnawhpropweigth
 
 where :math:`w_{\mathrm{user}}(\lambda)` is provided by user data and
 in principle :math:`\rho_0(\lambda)` can be any of the target

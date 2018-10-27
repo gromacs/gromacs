@@ -11,12 +11,11 @@ changes of molecules solvated in the liquid.
 The viscosity can be calculated from an equilibrium simulation using an
 Einstein relation:
 
-.. math::
-
-   \eta = \frac{1}{2}\frac{V}{k_B T} \lim_{t \rightarrow \infty}
-   \frac{\mbox{d}}{\mbox{d} t} \left\langle 
-   \left( \int_{t_0}^{{t_0}+t} P_{xz}(t') \mbox{d} t' \right)^2
-   \right\rangle_{t_0}
+.. math::  \eta = \frac{1}{2}\frac{V}{k_B T} \lim_{t \rightarrow \infty}
+           \frac{\mbox{d}}{\mbox{d} t} \left\langle 
+           \left( \int_{t_0}^{{t_0}+t} P_{xz}(t') \mbox{d} t' \right)^2
+           \right\rangle_{t_0}
+           :label: eqneinsteinrelation
 
 This can be done with :ref:`gmx energy <gmx energy>`. This method converges
 very slowly \ :ref:`149 <refHess2002a>`, and as such a nanosecond simulation might not
@@ -34,31 +33,34 @@ a Newtonian liquid adding a small force will result in a velocity
 gradient according to the following equation:
 
 .. math:: a_x(z) + \frac{\eta}{\rho} \frac{\partial^2 v_x(z)}{\partial z^2} = 0
+          :label: eqnviscositygradiant
 
 Here we have applied an acceleration :math:`a_x(z)` in the
 :math:`x`-direction, which is a function of the :math:`z`-coordinate. In
 |Gromacs| the acceleration profile is:
 
 .. math:: a_x(z) = A \cos\left(\frac{2\pi z}{l_z}\right)
+          :label: eqnviscosityacceleration
 
 where :math:`l_z` is the height of the box. The generated velocity
 profile is:
 
 .. math:: v_x(z) = V \cos\left(\frac{2\pi z}{l_z}\right)
+          :label: eqnviscosityprofile1
 
 .. math:: V = A \frac{\rho}{\eta}\left(\frac{l_z}{2\pi}\right)^2
+          :label: eqnviscosityprofile2
 
 The viscosity can be calculated from :math:`A` and :math:`V`:
 
 .. math:: \eta = \frac{A}{V}\rho \left(\frac{l_z}{2\pi}\right)^2
-          :label: eqvisc
+          :label: eqnvisc
 
 In the simulation :math:`V` is defined as:
 
-.. math::
-
-   V = \frac{\displaystyle \sum_{i=1}^N m_i v_{i,x} 2 \cos\left(\frac{2\pi z}{l_z}\right)}
-            {\displaystyle \sum_{i=1}^N m_i}
+.. math:: V = \frac{\displaystyle \sum_{i=1}^N m_i v_{i,x} 2 \cos\left(\frac{2\pi z}{l_z}\right)}
+          {\displaystyle \sum_{i=1}^N m_i}
+          :label: eqnsimulationviscosity
 
 The generated velocity profile is not coupled to the heat bath.
 Moreover, the velocity profile is excluded from the kinetic energy. One
@@ -67,10 +69,9 @@ However, the shear rate should not be so high that the system gets too
 far from equilibrium. The maximum shear rate occurs where the cosine is
 zero, the rate being:
 
-.. math::
-
-   \mbox{sh}_{\max} =  \max_z \left| \frac{\partial v_x(z)}{\partial z} \right|
-   = A \frac{\rho}{\eta} \frac{l_z}{2\pi}
+.. math:: \mbox{sh}_{\max} =  \max_z \left| \frac{\partial v_x(z)}{\partial z} \right|
+          = A \frac{\rho}{\eta} \frac{l_z}{2\pi}
+          :label: eqnshearrate
 
 For a simulation with: :math:`\eta=10^{-3}`
 [kgm:math:`^{-1}`\ s\ :math:`^{-1}`],
@@ -93,6 +94,7 @@ shift \ :ref:`31 <refBerendsen91>`, which can be written in terms of the
 shear rate as:
 
 .. math:: T_s = \frac{\eta\,\tau}{2 \rho\,C_v} \mbox{sh}_{\max}^2
+          :label: eqnberendsentempshift
 
 where :math:`\tau` is the coupling time for the Berendsen thermostat
 and :math:`C_v` is the heat capacity. Using the values of the example
@@ -108,5 +110,5 @@ of the correlation time of the liquid.
 
 Two quantities are written to the energy file, along with their averages
 and fluctuations: :math:`V` and :math:`1/\eta`, as obtained from
-(:eq:`%s <eqvisc>`).
+(:eq:`%s <eqnvisc>`).
 

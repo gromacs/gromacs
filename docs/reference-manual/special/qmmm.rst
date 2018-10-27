@@ -44,7 +44,7 @@ subsystems are supported in this version:
       H^{QM/MM} =
       H^{QM}_e-\sum_i^n\sum_J^M\frac{e^2Q_J}{4\pi\epsilon_0r_{iJ}}+\sum_A^N\sum_J^M\frac{e^2Z_AQ_J}{e\pi\epsilon_0R_{AJ}},
 
-#  where :math:`n` and :math:`N` are the number of electrons and nuclei
+   where :math:`n` and :math:`N` are the number of electrons and nuclei
    in the QM region, respectively, and :math:`M` is the number of
    charged MM atoms. The first term on the right hand side is the
    original electronic Hamiltonian of an isolated QM system. The first
@@ -75,7 +75,7 @@ subsystems are supported in this version:
       E_{tot} = E_{I}^{QM}
       +E_{I+II}^{MM}-E_{I}^{MM},
 
-#  where the subscripts I and II refer to the QM and MM subsystems,
+   where the subscripts I and II refer to the QM and MM subsystems,
    respectively. The superscripts indicate at what level of theory the
    energies are computed. The ONIOM scheme has the advantage that it is
    not restricted to a two-layer QM/MM description, but can easily
