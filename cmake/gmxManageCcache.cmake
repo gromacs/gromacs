@@ -32,8 +32,27 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Reference https://crascit.com/2016/04/09/using-ccache-with-cmake/
-#
+# Permit the use of ccache (when available in the system path or
+# CMAKE_PREFIX_PATH), which wraps the CMAKE_C_COMPILER and
+# CMAKE_CXX_COMPILER to speed up build times. Reference
+# https://ccache.samba.org and
+# https://crascit.com/2016/04/09/using-ccache-with-cmake/
+
+option(GMX_ENABLE_CCACHE "Allow CMake to use ccache compiler wrappers if available." OFF)
+
+if(NOT GMX_ENABLE_CCACHE)
+    return()
+endif()
+
+if(GMX_CLANG_TIDY)
+    message(FATAL_ERROR "ccache does not work with the wrapper script used for "
+        "clang-tidy builds. Use -DGMX_ENABLE_CCACHE=off.")
+endif()
+if(GMX_CLANG_ANALYZER)
+    message(FATAL_ERROR "ccache does not work with the wrapper script used for "
+        "clang-analyzer builds. Use -DGMX_ENABLE_CCACHE=off.")
+endif()
+
 # Here we try to make sure that ccache is invoked as `/.../ccache compiler args` to best handle more than one local
 # compiler or a compiler wrapper, whereas it is otherwise common to replace the default compilers with symbolic links
 # to the ccache binary.
@@ -58,8 +77,9 @@ if(CCACHE_PROGRAM)
                  )
             set(_cacheable ON)
         else()
-            message(STATUS "Disabling ccache set up. Not confirmed to work with compiler ID ${CMAKE_C_COMPILER_ID}.")
-        endif() # GNU C compiler
+            message(FATAL_ERROR "Cannot set up ccache, as it is not confirmed to "
+                "work with compiler ID ${CMAKE_C_COMPILER_ID}.")
+        endif()
         set(GMX_CCACHE_C_COMPILER ${_cacheable} CACHE INTERNAL "Whether the C compiler will be wrapped for caching.")
         unset(_cacheable)
     endif() # defined
@@ -92,8 +112,9 @@ if(CCACHE_PROGRAM)
                 )
             set(_cacheable ON)
         else()
-            message(STATUS "Skipping ccache set up. Not confirmed to work with compiler ID ${CMAKE_CXX_COMPILER_ID}.")
-        endif() # GNU C++ compiler
+            message(FATAL_ERROR "Cannot set up ccache, as it is not confirmed to "
+                "work with compiler ID ${CMAKE_CXX_COMPILER_ID}.")
+        endif()
         set(GMX_CCACHE_CXX_COMPILER ${_cacheable} CACHE INTERNAL "Whether the C++ compiler will be wrapped for caching.")
         unset(_cacheable)
     endif() # defined
@@ -109,4 +130,7 @@ if(CCACHE_PROGRAM)
             set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/ccache-wrapper-cxx")
         endif()
     endif()
-endif(CCACHE_PROGRAM) # ccache program
+else()
+    message(FATAL_ERROR "GMX_ENABLE_CCACHE requires that the ccache executable "
+        "can be found. Add its path to the CMAKE_PREFIX_PATH path")
+endif()
