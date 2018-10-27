@@ -47,5 +47,5 @@
 /* Names of the GPU detection/check results (see e_gpu_detect_res_t in hw_info.h). */
 const char * const gpu_detect_res_str[egpuNR] =
 {
-    "compatible", "nonexistent", "incompatible", "incompatible (please recompile with GMX_OCL_NB_CLUSTER_SIZE=4)", "insane"
+    "compatible", "nonexistent", "incompatible", "incompatible (please recompile with GMX_OPENCL_NB_CLUSTER_SIZE=4)", "insane"
 };

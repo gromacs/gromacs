@@ -117,7 +117,7 @@ static int is_gmx_supported_gpu_id(gmx_device_info_t *ocl_gpu_device)
         case OCL_VENDOR_AMD:
             return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
         case OCL_VENDOR_INTEL:
-            return GMX_OCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
+            return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
         default:
             return egpuIncompatible;
     }
