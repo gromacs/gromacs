@@ -105,11 +105,13 @@ MD simulations solve Newton’s equations of motion for a system of
 :math:`N` interacting atoms:
 
 .. math:: m_i \frac{\partial^2 \mathbf{r}_i}{\partial t^2}  = \mathbf{F}_i, \;i=1 \ldots N.
+          :label: eqnnewtonslaws
 
 The forces are the negative derivatives of a potential function
 :math:`V(\mathbf{r}_1, \mathbf{r}_2, \ldots, \mathbf{r}_N)`:
 
 .. math:: \mathbf{F}_i = - \frac{\partial V}{\partial \mathbf{r}_i}
+          :label: eqnmdforces
 
 The equations are solved simultaneously in small time steps. The system
 is followed for some time, taking care that the temperature and pressure
@@ -142,15 +144,13 @@ of the simulation. We list the approximations below.
       appreciably from that of a real quantum oscillator when the
       resonance frequency :math:`\nu` approximates or exceeds
       :math:`k_BT/h`. Now at room temperature the wavenumber
-      :math:`\sigma = 1/\lambda =
-      \nu/c` at which :math:`h
+      :math:`\sigma = 1/\lambda = \nu/c` at which :math:`h
       \nu = k_BT` is approximately 200 cm\ :math:`^{-1}`. Thus, all
       frequencies higher than, say, 100 cm\ :math:`^{-1}` may misbehave
       in classical simulations. This means that practically all bond and
       bond-angle vibrations are suspect, and even hydrogen-bonded
       motions as translational or librational H-bond vibrations are
-      beyond the classical limit (see
-      :numref:`Table %s <tab-vibrations>`)
+      beyond the classical limit (see :numref:`Table %s <tab-vibrations>`)
       What can we do? 
 
 .. |H2CX| replace:: H\ :math:`_2`\ CX
@@ -199,13 +199,11 @@ of the simulation. We list the approximations below.
             heat of a one-dimensional oscillator with frequency :math:`\nu`
             are: \ :ref:`11 <refMcQuarrie76>`
 
-            .. math:: 
+            .. math:: U^{QM} = U^{cl} +kT \left( {\frac{1}{2}}x - 1 + \frac{x}{e^x-1} \right)
+                      :label: eqnmdqmcorr
 
-               U^{QM} = U^{cl} +kT \left( {\frac{1}{2}}x - 1 + \frac{x}{e^x-1} \right)
-
-            .. math:: 
-
-               C_V^{QM} = C_V^{cl} + k \left( \frac{x^2e^x}{(e^x-1)^2} - 1 \right)
+            .. math:: C_V^{QM} = C_V^{cl} + k \left( \frac{x^2e^x}{(e^x-1)^2} - 1 \right)
+                      :label: eqnmdqmcorr2
 
             where :math:`x=h\nu /kT`. The classical oscillator absorbs too
             much energy (:math:`kT`), while the high-frequency quantum
