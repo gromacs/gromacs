@@ -50,10 +50,8 @@ if(CCACHE_PROGRAM)
             OR CMAKE_C_COMPILER_ID MATCHES "AppleClang"
             OR CMAKE_C_COMPILER_ID MATCHES "Clang")
             message(STATUS "Setting up ccache wrapper for ${CMAKE_C_COMPILER_ID} C compiler ${CMAKE_C_COMPILER}")
-            set(_c_launcher "${CCACHE_PROGRAM}")
-            configure_file(launch-c.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/launch-c)
-            unset(_c_launcher)
-            file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/launch-c
+            configure_file(${CMAKE_CURRENT_SOURCE_DIR}/admin/ccache-wrapper-c.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-c)
+            file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-c
                  DESTINATION ${CMAKE_BINARY_DIR}
                  FILE_PERMISSIONS
                  OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
@@ -70,11 +68,11 @@ if(CCACHE_PROGRAM)
         if(CMAKE_GENERATOR STREQUAL "Xcode")
             # Set Xcode project attributes to route compilation and linking
             # through our scripts
-            set(CMAKE_XCODE_ATTRIBUTE_CC "${CMAKE_BINARY_DIR}/launch-c")
-            set(CMAKE_XCODE_ATTRIBUTE_LD "${CMAKE_BINARY_DIR}/launch-c")
+            set(CMAKE_XCODE_ATTRIBUTE_CC "${CMAKE_BINARY_DIR}/ccache-wrapper-c")
+            set(CMAKE_XCODE_ATTRIBUTE_LD "${CMAKE_BINARY_DIR}/ccache-wrapper-c")
         else()
             # Support Unix Makefiles and Ninja
-            set(CMAKE_C_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/launch-c")
+            set(CMAKE_C_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/ccache-wrapper-c")
         endif()
     endif(GMX_CACHE_C_COMPILER)
 
@@ -86,10 +84,8 @@ if(CCACHE_PROGRAM)
             OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang"
             OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             message(STATUS "Setting up ccache wrapper for ${CMAKE_CXX_COMPILER_ID} CXX compiler ${CMAKE_CXX_COMPILER}")
-            set(_cxx_launcher "${CCACHE_PROGRAM}")
-            configure_file(launch-cxx.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/launch-cxx)
-            unset(_cxx_launcher)
-            file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/launch-cxx
+            configure_file(${CMAKE_CURRENT_SOURCE_DIR}/admin/ccache-wrapper-cxx.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-cxx)
+            file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-cxx
                  DESTINATION ${CMAKE_BINARY_DIR}
                  FILE_PERMISSIONS
                  OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
@@ -106,11 +102,11 @@ if(CCACHE_PROGRAM)
         if(CMAKE_GENERATOR STREQUAL "Xcode")
             # Set Xcode project attributes to route compilation and linking
             # through our scripts
-            set(CMAKE_XCODE_ATTRIBUTE_CXX "${CMAKE_BINARY_DIR}/launch-cxx")
-            set(CMAKE_XCODE_ATTRIBUTE_LDPLUSPLUS "${CMAKE_BINARY_DIR}/launch-cxx")
+            set(CMAKE_XCODE_ATTRIBUTE_CXX "${CMAKE_BINARY_DIR}/ccache-wrapper-cxx")
+            set(CMAKE_XCODE_ATTRIBUTE_LDPLUSPLUS "${CMAKE_BINARY_DIR}/ccache-wrapper-cxx")
         else()
             # Support Unix Makefiles and Ninja
-            set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/launch-cxx")
+            set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/ccache-wrapper-cxx")
         endif()
     endif(GMX_CACHE_CXX_COMPILER)
 endif(CCACHE_PROGRAM) # ccache program
