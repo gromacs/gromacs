@@ -43,17 +43,15 @@
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
     # Check whether C compiler wrapper has been set up.
-    if(NOT DEFINED GMX_CACHE_C_COMPILER)
+    if(NOT DEFINED GMX_CCACHE_C_COMPILER)
         # Determine whether we have a cacheable compiler.
         set(_cacheable OFF)
         if (CMAKE_C_COMPILER_ID MATCHES "GNU"
             OR CMAKE_C_COMPILER_ID MATCHES "AppleClang"
             OR CMAKE_C_COMPILER_ID MATCHES "Clang")
             message(STATUS "Setting up ccache wrapper for ${CMAKE_C_COMPILER_ID} C compiler ${CMAKE_C_COMPILER}")
-            set(_c_launcher "${CCACHE_PROGRAM}")
-            configure_file(launch-c.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/launch-c)
-            unset(_c_launcher)
-            file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/launch-c
+            configure_file(${CMAKE_CURRENT_SOURCE_DIR}/admin/ccache-wrapper-c.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-c)
+            file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-c
                  DESTINATION ${CMAKE_BINARY_DIR}
                  FILE_PERMISSIONS
                  OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
@@ -62,34 +60,32 @@ if(CCACHE_PROGRAM)
         else()
             message(STATUS "Disabling ccache set up. Not confirmed to work with compiler ID ${CMAKE_C_COMPILER_ID}.")
         endif() # GNU C compiler
-        set(GMX_CACHE_C_COMPILER ${_cacheable} CACHE INTERNAL "Whether the C compiler will be wrapped for caching.")
+        set(GMX_CCACHE_C_COMPILER ${_cacheable} CACHE INTERNAL "Whether the C compiler will be wrapped for caching.")
         unset(_cacheable)
     endif() # defined
     # Check whether we should use the wrapper. If so, set CMAKE variables.
-    if(GMX_CACHE_C_COMPILER)
+    if(GMX_CCACHE_C_COMPILER)
         if(CMAKE_GENERATOR STREQUAL "Xcode")
             # Set Xcode project attributes to route compilation and linking
             # through our scripts
-            set(CMAKE_XCODE_ATTRIBUTE_CC "${CMAKE_BINARY_DIR}/launch-c")
-            set(CMAKE_XCODE_ATTRIBUTE_LD "${CMAKE_BINARY_DIR}/launch-c")
+            set(CMAKE_XCODE_ATTRIBUTE_CC "${CMAKE_BINARY_DIR}/ccache-wrapper-c")
+            set(CMAKE_XCODE_ATTRIBUTE_LD "${CMAKE_BINARY_DIR}/ccache-wrapper-c")
         else()
             # Support Unix Makefiles and Ninja
-            set(CMAKE_C_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/launch-c")
+            set(CMAKE_C_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/ccache-wrapper-c")
         endif()
-    endif(GMX_CACHE_C_COMPILER)
+    endif()
 
     # Check whether CXX compiler wrapper has been set up
-    if(NOT DEFINED GMX_CACHE_CXX_COMPILER)
+    if(NOT DEFINED GMX_CCACHE_CXX_COMPILER)
         # Determine whether we have a cacheable compiler.
         set(_cacheable OFF)
         if (CMAKE_CXX_COMPILER_ID MATCHES "GNU"
             OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang"
             OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             message(STATUS "Setting up ccache wrapper for ${CMAKE_CXX_COMPILER_ID} CXX compiler ${CMAKE_CXX_COMPILER}")
-            set(_cxx_launcher "${CCACHE_PROGRAM}")
-            configure_file(launch-cxx.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/launch-cxx)
-            unset(_cxx_launcher)
-            file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/launch-cxx
+            configure_file(${CMAKE_CURRENT_SOURCE_DIR}/admin/ccache-wrapper-cxx.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-cxx)
+            file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-cxx
                  DESTINATION ${CMAKE_BINARY_DIR}
                  FILE_PERMISSIONS
                  OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
@@ -98,19 +94,19 @@ if(CCACHE_PROGRAM)
         else()
             message(STATUS "Skipping ccache set up. Not confirmed to work with compiler ID ${CMAKE_CXX_COMPILER_ID}.")
         endif() # GNU C++ compiler
-        set(GMX_CACHE_CXX_COMPILER ${_cacheable} CACHE INTERNAL "Whether the C++ compiler will be wrapped for caching.")
+        set(GMX_CCACHE_CXX_COMPILER ${_cacheable} CACHE INTERNAL "Whether the C++ compiler will be wrapped for caching.")
         unset(_cacheable)
     endif() # defined
     # Check whether we should use the wrapper. If so, set CMAKE variables.
-    if(GMX_CACHE_CXX_COMPILER)
+    if(GMX_CCACHE_CXX_COMPILER)
         if(CMAKE_GENERATOR STREQUAL "Xcode")
             # Set Xcode project attributes to route compilation and linking
             # through our scripts
-            set(CMAKE_XCODE_ATTRIBUTE_CXX "${CMAKE_BINARY_DIR}/launch-cxx")
-            set(CMAKE_XCODE_ATTRIBUTE_LDPLUSPLUS "${CMAKE_BINARY_DIR}/launch-cxx")
+            set(CMAKE_XCODE_ATTRIBUTE_CXX "${CMAKE_BINARY_DIR}/ccache-wrapper-cxx")
+            set(CMAKE_XCODE_ATTRIBUTE_LDPLUSPLUS "${CMAKE_BINARY_DIR}/ccache-wrapper-cxx")
         else()
             # Support Unix Makefiles and Ninja
-            set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/launch-cxx")
+            set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_BINARY_DIR}/ccache-wrapper-cxx")
         endif()
-    endif(GMX_CACHE_CXX_COMPILER)
+    endif()
 endif(CCACHE_PROGRAM) # ccache program
