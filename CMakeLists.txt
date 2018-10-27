@@ -40,9 +40,14 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_
 
 project(Gromacs)
 
-# Use ccache if available to wrap CMAKE_C_COMPILER and CMAKE_CXX_COMPILER.
-# Reference https://ccache.samba.org
-option(ENABLE_CCACHE "Allow CMake to use ccache compiler wrappers if available." ON)
+# Use ccache if available to wrap CMAKE_C_COMPILER and CMAKE_CXX_COMPILER,
+# but not when building for clang-tidy or clang-analyzer, which use
+# incompatible wrapper scripts of their own. Reference https://ccache.samba.org
+set(DEFAULT_FOR_ENABLE_CCACHE ON)
+if(GMX_CLANG_TIDY OR GMX_CLANG_ANALYZER)
+    set(DEFAULT_FOR_ENABLE_CCACHE OFF)
+endif()
+option(ENABLE_CCACHE "Allow CMake to use ccache compiler wrappers if available." ${DEFAULT_FOR_ENABLE_CCACHE})
 # CMAKE_C_COMPILER and CMAKE_CXX_COMPILER do not change after this line.
 if(ENABLE_CCACHE)
     include(gmxCcache)
