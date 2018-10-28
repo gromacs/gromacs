@@ -717,6 +717,11 @@ void gmx::Integrator::do_md()
             bDoFEP       = ((ir->efep != efepNO) && do_per_step(step, nstfep));
             bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
                             && (ir->bExpanded) && (step > 0) && (!startingFromCheckpoint));
+            /* Check nstexpanded here, because the grompp check was broken */
+            if (bDoExpanded && ir->expandedvals->nstexpanded % ir->nstcalcenergy != 0)
+            {
+                gmx_fatal(FARGS, "With expanded ensemble, nstexpanded should be a multiple of nstcalcenergy");
+            }
         }
 
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep &&
