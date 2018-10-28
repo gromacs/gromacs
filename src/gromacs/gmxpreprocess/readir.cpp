@@ -528,6 +528,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 /* nstdhdl should be a multiple of nstcalcenergy */
                 check_nst("nstcalcenergy", ir->nstcalcenergy,
                           "nstdhdl", &ir->fepvals->nstdhdl, wi);
+            }
+            if (ir->bExpanded)
+            {
                 /* nstexpanded should be a multiple of nstcalcenergy */
                 check_nst("nstcalcenergy", ir->nstcalcenergy,
                           "nstexpanded", &ir->expandedvals->nstexpanded, wi);
