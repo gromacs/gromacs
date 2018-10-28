@@ -341,6 +341,11 @@ void gmx::Integrator::do_md()
 
     if (ir->bExpanded)
     {
+        /* Check nstexpanded here, because the grompp check was broken */
+        if (ir->expandedvals->nstexpanded % ir->nstcalcenergy != 0)
+        {
+            gmx_fatal(FARGS, "With expanded ensemble, nstexpanded should be a multiple of nstcalcenergy");
+        }
         init_expanded_ensemble(startingFromCheckpoint, ir, state->dfhist);
     }
 
