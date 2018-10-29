@@ -53,7 +53,7 @@
  * files like fft_fftw3.c or fft_mkl.c for that.
  */
 
-#if !GMX_FFT_FFTW3
+#if !GMX_FFT_FFTW3 && !GMX_FFT_ARMPL_FFTW3
 
 struct gmx_many_fft {
     int       howmany;
