@@ -810,13 +810,7 @@ void gmx::Integrator::do_md()
          */
         if (EI_VV(ir->eI) && (!bInitStep))
         {
-            /* for vv, the first half of the integration actually corresponds
-               to the previous step.  bCalcEner is only required to be evaluated on the 'next' step,
-               but the virial needs to be calculated on both the current step and the 'next' step. Future
-               reorganization may be able to get rid of one of the bCalcVir=TRUE steps. */
-
-            /* TODO: This is probably not what we want, we will write to energy file one step after nstcalcenergy steps. */
-            bCalcEnerStep = do_per_step(step - 1, ir->nstcalcenergy);
+            bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
             bCalcVir      = bCalcEnerStep ||
                 (ir->epc != epcNO && (do_per_step(step, ir->nstpcouple) || do_per_step(step-1, ir->nstpcouple)));
         }
