@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@ if (GMX_FFT_FFTPACK)
         fft_fftpack.cpp
         ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.c)
 endif()
-if (GMX_FFT_FFTW3)
+if (GMX_FFT_FFTW3 OR GMX_FFT_ARMPL_FFTW3)
     gmx_add_libgromacs_sources(fft_fftw3.cpp)
 endif()
 if (GMX_FFT_MKL)
