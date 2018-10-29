@@ -44,7 +44,7 @@ if (GMX_FFT_FFTPACK)
         fft_fftpack.cpp
         ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.c)
 endif()
-if (GMX_FFT_FFTW3)
+if (GMX_FFT_FFTW3 OR GMX_FFT_ARMPL_FFTW3)
     gmx_add_libgromacs_sources(fft_fftw3.cpp)
 endif()
 if (GMX_FFT_MKL)
