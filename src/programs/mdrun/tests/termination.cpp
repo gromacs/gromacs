@@ -94,5 +94,20 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksWithNoAppend)
     helper.runSecondMdrunWithNoAppend();
 }
 
+/*
+ * TEST_F(MdrunTerminationTest, CheckpointDeathTestWhenStepsExceeded)
+ * {
+ *     CommandLine       mdrunCaller;
+ *     mdrunCaller.append("mdrun");
+ *     TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
+ *
+ *     organizeMdpFile(&runner_);
+ *     EXPECT_EQ(0, runner_.callGrompp());
+ *
+ *     helper.runFirstMdrun(runner_.cptFileName_);
+ *     helper.abortRunWhenAlreadyCompleted();
+ * }
+ */
+
 } // namespace
 } // namespace

@@ -86,6 +86,8 @@ class TerminationHelper
         void runSecondMdrun();
         //! Check that the restart works without appending, but don't do any more MD steps.
         void runSecondMdrunWithNoAppend();
+        //! Check that a run won't be continued when the number of steps has been reached or exceeded.
+        // void abortRunWhenAlreadyCompleted();
     protected:
         //! Object to help call mdrun
         CommandLine      *mdrunCaller_;

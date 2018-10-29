@@ -80,7 +80,7 @@ void TerminationHelper::runSecondMdrun()
 {
     CommandLine secondPart(*mdrunCaller_);
     secondPart.addOption("-cpi", runner_->cptFileName_);
-    secondPart.addOption("-nsteps", 2);
+    secondPart.addOption("-nsteps", 100);
     ASSERT_EQ(0, runner_->callMdrun(secondPart));
 }
 
@@ -88,10 +88,20 @@ void TerminationHelper::runSecondMdrunWithNoAppend()
 {
     CommandLine secondPart(*mdrunCaller_);
     secondPart.addOption("-cpi", runner_->cptFileName_);
-    secondPart.addOption("-nsteps", 2);
+    secondPart.addOption("-nsteps", 100);
     secondPart.append("-noappend");
     ASSERT_EQ(0, runner_->callMdrun(secondPart));
 }
+/*
+ * void TerminationHelper::abortRunWhenAlreadyCompleted()
+ * {
+ *     CommandLine secondPart(*mdrunCaller_);
+ *     secondPart.addOption("-cpi", runner_->cptFileName_);
+ *     secondPart.addOption("-nsteps", 2);
+ *     ASSERT_DEATH_IF_SUPPORTED(runner_->callMdrun(secondPart),
+ *                               "Total number of steps 2 is less than initial number");
+ * }
+ */
 
 } // namespace
 } // namespace
