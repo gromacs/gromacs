@@ -12,8 +12,9 @@ Welcome to the |Gromacs| documentation!
 
         The complete documentation is also available as a `printable PDF here`_.
 
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    download
    release-notes/index
