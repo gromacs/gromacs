@@ -1008,7 +1008,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
         else
         {
-            bLastStep = (step_rel == ir->nsteps);
+            bLastStep = (step_rel >= ir->nsteps);
             t         = t0 + step*ir->delta_t;
         }
 
