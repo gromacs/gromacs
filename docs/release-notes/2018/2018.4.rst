@@ -37,6 +37,17 @@ contribution was missing from the foreign Hamiltonian values.
 
 :issue: `2703`
 
+Checkpoint continuations require suitable .tpr files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The step of a checkpoint file used for an mdrun restart must now be
+less than the number of steps in the .tpr. Formerly, the step in the
+checkpoint could be any number, and mdrun -nsteps could be used to get
+a particular result, but the use of that option is already deprecated.
+Use gmx grompp or gmx convert-tpr to make a .tpr file that expresses
+the intent.
+
+:issue: `2717`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
