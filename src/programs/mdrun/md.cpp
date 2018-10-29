@@ -125,6 +125,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "deform.h"
 #include "membed.h"
@@ -315,6 +316,17 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   gmx_membed_t *membed,
                   gmx_walltime_accounting_t walltime_accounting)
 {
+    if (EI_VV(ir->eI) && ir->nstcalcenergy > 1)
+    {
+        std::string note =
+            gmx::formatString("NOTE: Integrator %s may produce incorrect energy output "
+                              "and incorrect free-energy and expanded ensemble sampling "
+                              "with nstcalcenergy > 1, setting nstcalcenergy to 1.",
+                              ei_names[ir->eI]);
+        GMX_LOG(mdlog.warning).asParagraph().appendText(note);
+        ir->nstcalcenergy = 1;
+    }
+
     gmx_mdoutf_t    outf = nullptr;
     gmx_int64_t     step, step_rel;
     double          elapsed_time;
