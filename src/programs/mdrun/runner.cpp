@@ -859,6 +859,12 @@ int Mdrunner::mdrunner()
     /* override nsteps with value set on the commamdline */
     override_nsteps_cmdline(mdlog, mdrunOptions.numStepsCommandline, inputrec);
 
+    if (inputrec->init_step > inputrec->nsteps)
+    {
+        gmx_fatal(FARGS, gmx::formatString("Total number of steps %ld is "
+                                           "less than initial number of steps %ld", inputrec->nsteps, inputrec->init_step).c_str());
+    }
+
     if (SIMMASTER(cr))
     {
         copy_mat(globalState->box, box);
