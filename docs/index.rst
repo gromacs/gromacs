@@ -10,18 +10,32 @@ Welcome to the |Gromacs| documentation!
 
 .. only:: html
 
-        The complete documentation is also available as a `printable PDF here`_.
+         The complete documentation is also available as a `printable PDF here`_.
 
-.. toctree::
-   :maxdepth: 2
+         .. toctree::
+            :maxdepth: 1
+         
+            download
+            release-notes/index
+            install-guide/index
+            user-guide/index
+            how-to/index
+            reference-manual/index
+            dev-manual/index
 
-   download
-   release-notes/index
-   install-guide/index
-   user-guide/index
-   how-to/index
-   reference-manual/index
-   dev-manual/index
+.. only:: latex
+
+   .. toctree::
+      :maxdepth: 3
+
+      download
+      release-notes/index
+      install-guide/index
+      user-guide/index
+      how-to/index
+      reference-manual/index
+      dev-manual/index
+
 
 ==================
 Indices and tables
