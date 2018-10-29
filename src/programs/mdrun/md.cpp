@@ -827,6 +827,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                         gmx_step_str(ir->init_step+ir->nsteps, sbuf), tbuf,
                         gmx_step_str(ir->init_step, sbuf2),
                         ir->init_step*ir->delta_t);
+                if (ir->init_step > ir->nsteps)
+                {
+                    fprintf(stderr, "Requested simulation time of %s is more than total "
+                            "simulation length of %8.1f. Simulation will not be continued.\n",
+                            tbuf, ir->init_step*ir->delta_t);
+                    gmx_fatal(FARGS, "Total run time already exceeded");
+                }
             }
             else
             {
