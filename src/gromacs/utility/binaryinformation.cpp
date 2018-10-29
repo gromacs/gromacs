@@ -46,7 +46,7 @@
 
 #include "config.h"
 
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
 // Needed for construction of the FFT library description string
 #include <fftw3.h>
 #endif
@@ -75,6 +75,7 @@
 #include "buildinfo.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
@@ -199,7 +200,7 @@ void printCopyright(gmx::TextWriter *writer)
 const char *getFftDescriptionString()
 {
 // Define the FFT description string
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
 #  if GMX_NATIVE_WINDOWS
     // Don't buy trouble
     return "fftw3";
@@ -299,6 +300,7 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine("CUDA driver:        " + gmx::getCudaDriverVersionString());
     writer->writeLine("CUDA runtime:       " + gmx::getCudaRuntimeVersionString());
 #endif
+
 }
 
 //! \endcond
