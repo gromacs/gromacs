@@ -46,7 +46,7 @@
 
 #include "config.h"
 
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
 // Needed for construction of the FFT library description string
 #include <fftw3.h>
 #endif
@@ -202,7 +202,7 @@ void printCopyright(gmx::TextWriter *writer)
 const char *getFftDescriptionString()
 {
 // Define the FFT description string
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
 #  if GMX_NATIVE_WINDOWS
     // Don't buy trouble
     return "fftw3";

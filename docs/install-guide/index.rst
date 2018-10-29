@@ -334,6 +334,24 @@ If you need to customize this further, use
 
 The full list and order(!) of libraries you require are found in Intel's MKL documentation for your system.
 
+Using ARM Performance Libraries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ARM Performance Libraries provides FFT transforms implementation for ARM
+architectures.
+Preliminary support is provided for ARMPL in |Gromacs| through its FFTW-compatible API.
+Assuming that the ARM HPC toolchain environment including the ARMPL paths
+are set up (e.g. through loading the appropriate modules like
+``module load Module-Prefix/arm-hpc-compiler-X.Y/armpl/X.Y``) use the following cmake
+options:
+
+::
+
+    cmake -DGMX_FFT_LIBRARY=fftw3 \
+          -DFFTWF_LIBRARY="${ARMPL_DIR}/lib/libarmpl_lp64.so" \
+          -DFFTWF_INCLUDE_DIR=${ARMPL_DIR}/include
+
+
 Other optional build components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -821,7 +839,8 @@ is found, and otherwise fall back on a version of BLAS internal to
 accordingly. The internal versions are fine for normal use. If you
 need to specify a non-standard path to search, use
 ``-DCMAKE_PREFIX_PATH=/path/to/search``. If you need to specify a
-library with a non-standard name (e.g. ESSL on Power machines), then
+library with a non-standard name (e.g. ESSL on Power machines
+or ARMPL on ARM machines), then
 set ``-DGMX_BLAS_USER=/path/to/reach/lib/libwhatever.a``.
 
 If you are using Intel MKL_ for FFT, then the BLAS and
