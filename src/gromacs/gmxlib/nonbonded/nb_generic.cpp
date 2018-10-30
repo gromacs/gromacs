@@ -255,8 +255,18 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             dy               = iy - jy;
             dz               = iz - jz;
             rsq              = dx*dx+dy*dy+dz*dz;
-            rinv             = gmx::invsqrt(rsq);
-            rinvsq           = rinv*rinv;
+            if (rsq > 0)
+            {
+                rinv   = gmx::invsqrt(rsq);
+                rinvsq = rinv*rinv;
+                r      = rsq*rinv;
+            }
+            else
+            {
+                r      = 0;
+                rinv   = 0;
+                rinvsq = 0;
+            }
             felec            = 0;
             fvdw             = 0;
             velec            = 0;
@@ -269,7 +279,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
             if (ielec == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE || ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE)
             {
-                r                = rsq*rinv;
                 rt               = r*tabscale;
                 n0               = rt;
                 eps              = rt-n0;
@@ -299,7 +308,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         {
                             if (irow == 0 && jrow == 0)
                             {
-                                r           = rsq*rinv;
                                 velec       = qq*Coulomb_GG(r, izeta, jzeta);
                                 felec       = (qq*rinv)*DCoulomb_GG(r, izeta, jzeta);
                             }
@@ -311,7 +319,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                                 }
                                 else
                                 {
-                                    r     = rsq*rinv;
                                     velec = qq*Coulomb_SS(r, irow, jrow, izeta, jzeta);
                                     felec = (qq*rinv)*DCoulomb_SS(r, irow, jrow, izeta, jzeta);
                                 }
