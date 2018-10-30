@@ -340,6 +340,8 @@ immStatus updatePlist(const Poldata             &pd,
                         }
                         else if (!bBASTAT)
                         {
+                            printf("Could not find bond information for %s - %s\n",
+                                   aai.c_str(), aaj.c_str());
                             if (debug)
                             {
                                 fprintf(debug, "Could not find bond information for %s - %s\n",
@@ -383,6 +385,13 @@ immStatus updatePlist(const Poldata             &pd,
                         }
                         else if (!bBASTAT)
                         {
+                            printf("Could not find angle information for %s - %s - %s\n",
+                                   aai.c_str(), aaj.c_str(), aak.c_str());
+                            if (debug)
+                            {
+                                fprintf(debug, "Could not find angle information for %s - %s - %s\n",
+                                        aai.c_str(), aaj.c_str(), aak.c_str());
+                            }
                             return immNotSupportedAngle;
                         }
                     }
@@ -426,6 +435,13 @@ immStatus updatePlist(const Poldata             &pd,
                         }
                         else if (!bBASTAT)
                         {
+                            printf("Could not find dihedral information for %s - %s - %s - %s\n",
+                                   aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                            if (debug)
+                            {
+                                fprintf(debug, "Could not find dihedral information for %s - %s - %s - %s\n",
+                                        aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                            }
                             return immNotSupportedDihedral;
                         }
                     }

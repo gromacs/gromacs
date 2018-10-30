@@ -402,21 +402,6 @@ int alex_gentop(int argc, char *argv[])
         imm = mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
 
-    if (debug)
-    {
-        mymol.computeForces(debug, cr);
-        fprintf(debug, "Morse %g Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g\n",
-                mymol.enerd_->term[F_MORSE],
-                mymol.enerd_->term[F_UREY_BRADLEY],
-                mymol.enerd_->term[F_LINEAR_ANGLES],
-                mymol.enerd_->term[F_PDIHS],
-                mymol.enerd_->term[F_IDIHS],
-                mymol.enerd_->term[F_COUL_SR],
-                mymol.enerd_->term[F_LJ],
-                mymol.enerd_->term[F_BHAM],
-                mymol.enerd_->term[F_POLARIZATION]);
-    }
-
     if (immOK == imm)
     {
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
