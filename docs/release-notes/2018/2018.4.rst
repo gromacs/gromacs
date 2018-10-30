@@ -37,6 +37,17 @@ contribution was missing from the foreign Hamiltonian values.
 
 :issue: `2703`
 
+Work around bugs with expanded ensemble runs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With expanded ensemble runs, the energies would be outdated or zero
+with the velocity Verlet integrator with nstcalcenergy>1 or with
+other integrators when nstexpanded was not a multiple of nstcalcenergy.
+In these cases mdrun now sets nstcalcenergy to 1.
+
+:issue: `2714`
+:issue: `2718`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
