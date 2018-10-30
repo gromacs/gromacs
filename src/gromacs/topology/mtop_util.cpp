@@ -1239,11 +1239,13 @@ std::vector<int> get_atom_index(const gmx_mtop_t *mtop)
     int                       nmol, j = 0;
     while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
     {
+      for (int k=0;k<nmol;k++){
         if (atom->ptype == eptAtom)
         {
             atom_index.push_back(j);
         }
         j++;
+      }
     }
     return atom_index;
 }
