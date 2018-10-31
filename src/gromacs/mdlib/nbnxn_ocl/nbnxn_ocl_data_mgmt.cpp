@@ -765,7 +765,7 @@ nbnxn_gpu_clear_outputs(gmx_nbnxn_ocl_t   *nb,
 
 //! This function is documented in the header file
 void nbnxn_gpu_init_pairlist(gmx_nbnxn_ocl_t        *nb,
-                             const nbnxn_pairlist_t *h_plist,
+                             const NbnxnPairlistGpu *h_plist,
                              int                     iloc)
 {
     char             sbuf[STRLEN];

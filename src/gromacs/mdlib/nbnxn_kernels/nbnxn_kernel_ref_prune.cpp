@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,9 @@
 #include "gromacs/utility/gmxassert.h"
 
 
-/* Prune a single nbnxn_pairlist_t entry with distance rlistInner */
+/* Prune a single NbnxnPairlistCpu entry with distance rlistInner */
 void
-nbnxn_kernel_prune_ref(nbnxn_pairlist_t *         nbl,
+nbnxn_kernel_prune_ref(NbnxnPairlistCpu *         nbl,
                        const nbnxn_atomdata_t *   nbat,
                        const rvec * gmx_restrict  shift_vec,
                        real                       rlistInner)

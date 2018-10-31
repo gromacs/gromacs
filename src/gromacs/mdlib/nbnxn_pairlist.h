@@ -173,33 +173,46 @@ typedef struct {
                                             */
 } nbnxn_excl_t;
 
-typedef struct nbnxn_pairlist_t {
-    gmx_cache_protect_t cp0;
-
-    nbnxn_alloc_t      *alloc;
-    nbnxn_free_t       *free;
-
-    gmx_bool            bSimple;         /* Simple list has na_sc=na_s and uses cj   *
-                                          * Complex list uses cj4                    */
+struct NbnxnPairlistCpu
+{
+    gmx_cache_protect_t     cp0;
 
     int                     na_ci;       /* The number of atoms per i-cluster        */
     int                     na_cj;       /* The number of atoms per j-cluster        */
-    int                     na_sc;       /* The number of atoms per super cluster    */
     real                    rlist;       /* The radius for constructing the list     */
     int                     nci;         /* The number of i-clusters in the list     */
     int                     nciOuter;    /* The number of i-clusters in the outer, unpruned list, -1 when invalid */
     nbnxn_ci_t             *ci;          /* The i-cluster list, size nci             */
     nbnxn_ci_t             *ciOuter;     /* The outer, unpruned i-cluster list, size nciOuter(=-1 when invalid) */
     int                     ci_nalloc;   /* The allocation size of ci/ciOuter        */
-    int                     nsci;        /* The number of i-super-clusters in the list */
-    nbnxn_sci_t            *sci;         /* The i-super-cluster list                 */
-    int                     sci_nalloc;  /* The allocation size of sci               */
 
     int                     ncj;         /* The number of j-clusters in the list     */
     nbnxn_cj_t             *cj;          /* The j-cluster list, size ncj             */
     nbnxn_cj_t             *cjOuter;     /* The outer, unpruned j-cluster list, size ncj    */
     int                     cj_nalloc;   /* The allocation size of cj/cj0            */
     int                     ncjInUse;    /* The number of j-clusters that are used by ci entries in this list, will be <= ncj */
+
+    int                     nci_tot;     /* The total number of i clusters           */
+
+    struct nbnxn_list_work *work;
+
+    gmx_cache_protect_t     cp1;
+};
+
+struct NbnxnPairlistGpu
+{
+    gmx_cache_protect_t     cp0;
+
+    nbnxn_alloc_t          *alloc;
+    nbnxn_free_t           *free;
+
+    int                     na_ci;       /* The number of atoms per i-cluster        */
+    int                     na_cj;       /* The number of atoms per j-cluster        */
+    int                     na_sc;       /* The number of atoms per super cluster    */
+    real                    rlist;       /* The radius for constructing the list     */
+    int                     nsci;        /* The number of i-super-clusters in the list */
+    nbnxn_sci_t            *sci;         /* The i-super-cluster list                 */
+    int                     sci_nalloc;  /* The allocation size of sci               */
 
     int                     ncj4;        /* The total number of 4*j clusters         */
     nbnxn_cj4_t            *cj4;         /* The 4*j cluster list, size ncj4          */
@@ -212,12 +225,13 @@ typedef struct nbnxn_pairlist_t {
     struct nbnxn_list_work *work;
 
     gmx_cache_protect_t     cp1;
-} nbnxn_pairlist_t;
+};
 
 typedef struct {
     int                nnbl;                  /* number of lists */
-    nbnxn_pairlist_t **nbl;                   /* lists */
-    nbnxn_pairlist_t **nbl_work;              /* work space for rebalancing lists */
+    NbnxnPairlistCpu **nbl;                   /* lists for CPU */
+    NbnxnPairlistCpu **nbl_work;              /* work space for rebalancing lists */
+    NbnxnPairlistGpu **nblGpu;                /* lists for GPU */
     gmx_bool           bCombined;             /* TRUE if lists get combined into one (the 1st) */
     gmx_bool           bSimple;               /* TRUE if the list of of type "simple"
                                                  (na_sc=na_s, no super-clusters used) */
