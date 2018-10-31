@@ -83,7 +83,7 @@ icell_set_x_simd_4xn(int ci,
  */
 static inline void
 makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
-                       nbnxn_pairlist_t *        nbl,
+                       NbnxnPairlistCpu *        nbl,
                        int                       icluster,
                        int                       firstCell,
                        int                       lastCell,

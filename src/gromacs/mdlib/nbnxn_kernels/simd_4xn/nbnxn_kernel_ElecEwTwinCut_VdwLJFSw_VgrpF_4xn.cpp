@@ -64,7 +64,7 @@
 
 #ifdef CALC_ENERGIES
 void
-nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VgrpF_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
+nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VgrpF_4xn(const NbnxnPairlistCpu    gmx_unused *nbl,
                                               const nbnxn_atomdata_t    gmx_unused *nbat,
                                               const interaction_const_t gmx_unused *ic,
                                               rvec                      gmx_unused *shift_vec,
@@ -74,7 +74,7 @@ nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VgrpF_4xn(const nbnxn_pairlist_t    gmx_unus
                                               real                      gmx_unused *Vc)
 #else /* CALC_ENERGIES */
 void
-nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VgrpF_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
+nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VgrpF_4xn(const NbnxnPairlistCpu    gmx_unused *nbl,
                                               const nbnxn_atomdata_t    gmx_unused *nbat,
                                               const interaction_const_t gmx_unused *ic,
                                               rvec                      gmx_unused *shift_vec,

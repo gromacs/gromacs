@@ -62,7 +62,7 @@
 
 #ifdef CALC_ENERGIES
 void
-nbnxn_kernel_ElecEw_VdwLJFSw_VF_2xnn(const nbnxn_pairlist_t    gmx_unused *nbl,
+nbnxn_kernel_ElecEw_VdwLJFSw_VF_2xnn(const NbnxnPairlistCpu    gmx_unused *nbl,
                                      const nbnxn_atomdata_t    gmx_unused *nbat,
                                      const interaction_const_t gmx_unused *ic,
                                      rvec                      gmx_unused *shift_vec,
@@ -72,7 +72,7 @@ nbnxn_kernel_ElecEw_VdwLJFSw_VF_2xnn(const nbnxn_pairlist_t    gmx_unused *nbl,
                                      real                      gmx_unused *Vc)
 #else /* CALC_ENERGIES */
 void
-nbnxn_kernel_ElecEw_VdwLJFSw_VF_2xnn(const nbnxn_pairlist_t    gmx_unused *nbl,
+nbnxn_kernel_ElecEw_VdwLJFSw_VF_2xnn(const NbnxnPairlistCpu    gmx_unused *nbl,
                                      const nbnxn_atomdata_t    gmx_unused *nbat,
                                      const interaction_const_t gmx_unused *ic,
                                      rvec                      gmx_unused *shift_vec,

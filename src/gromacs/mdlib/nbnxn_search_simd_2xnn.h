@@ -77,7 +77,7 @@ icell_set_x_simd_2xnn(int ci,
  */
 static inline void
 makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
-                        nbnxn_pairlist_t *        nbl,
+                        NbnxnPairlistCpu *        nbl,
                         int                       icluster,
                         int                       firstCell,
                         int                       lastCell,
