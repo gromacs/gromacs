@@ -67,3 +67,12 @@ Fixed an issue where the log file could sometimes report an incorrect
 initial dynamic load balancing state
 
 :issue:`2631`
+
+Made normal-mode analysis work for more than one molecule
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed an issue where normal mode analysis would only consider
+the first copy of each molecule in a system.
+
+:issue:`2720`
+
