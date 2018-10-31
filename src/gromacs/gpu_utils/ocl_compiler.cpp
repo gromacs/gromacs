@@ -253,7 +253,23 @@ getSourceRootPath(const std::string &sourceRelativePath)
     return Path::normalize(sourceRootPath);
 }
 
-size_t getWarpSize(cl_context context, cl_device_id deviceId)
+size_t getKernelWarpSize(cl_kernel kernel, cl_device_id deviceId)
+{
+    size_t warpSize = 0;
+    cl_int cl_error = clGetKernelWorkGroupInfo(kernel, deviceId, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
+                                               sizeof(warpSize), &warpSize, nullptr);
+    if (cl_error != CL_SUCCESS)
+    {
+        GMX_THROW(InternalError("Could not query OpenCL preferred workgroup size, error was " + ocl_get_error_string(cl_error)));
+    }
+    if (warpSize == 0)
+    {
+        GMX_THROW(InternalError(formatString("Invalid OpenCL warp size encountered")));
+    }
+    return warpSize;
+}
+
+size_t getDeviceWarpSize(cl_context context, cl_device_id deviceId)
 {
     cl_int      cl_error;
     const char *warpSizeKernel = "__kernel void test(__global int* test){test[get_local_id(0)] = 0;}";
@@ -275,17 +291,7 @@ size_t getWarpSize(cl_context context, cl_device_id deviceId)
         GMX_THROW(InternalError("Could not create OpenCL kernel to determine warp size, error was " + ocl_get_error_string(cl_error)));
     }
 
-    size_t warpSize = 0;
-    cl_error = clGetKernelWorkGroupInfo(kernel, deviceId, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
-                                        sizeof(warpSize), &warpSize, nullptr);
-    if (cl_error != CL_SUCCESS)
-    {
-        GMX_THROW(InternalError("Could not measure OpenCL warp size, error was " + ocl_get_error_string(cl_error)));
-    }
-    if (warpSize == 0)
-    {
-        GMX_THROW(InternalError(formatString("Did not measure a valid OpenCL warp size")));
-    }
+    size_t warpSize = getKernelWarpSize(kernel, deviceId);
 
     cl_error = clReleaseKernel(kernel);
     if (cl_error != CL_SUCCESS)
@@ -431,7 +437,7 @@ compileProgram(FILE              *fplog,
     /* Make the build options */
     std::string preprocessorOptions = makePreprocessorOptions(kernelRootPath,
                                                               includeRootPath,
-                                                              getWarpSize(context, deviceId),
+                                                              getDeviceWarpSize(context, deviceId),
                                                               deviceVendorId,
                                                               extraDefines);
 
