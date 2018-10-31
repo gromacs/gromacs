@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,16 +58,49 @@ extern "C"
 /* Canonical values of the helix phi/psi angles */
 
 
-typedef struct {
-    real     phi, psi, pprms2;
+/*! \internal \brief Struct containing properties of a residue in a protein backbone. */
+struct t_bb {
+    //! Protein backbone phi angle.
+    real     phi;
+    //! Protein backbone psi angle.
+    real     psi;
+    //! RMS distance of phi and psi angles from ideal helix
+    real     pprms2;
+    //! Estimated J-coupling value
     real     jcaha;
-    real     d3, d4, d5, rmsa;
+    //! Value of 3 turn helix?
+    real     d3;
+    //! Value of 4 turn helix?
+    real     d4;
+    //! Value of 5 turn?
+    real     d5;
+    //! Average of RMS for analysis.
+    real     rmsa;
+    //! If the structure is helical.
     gmx_bool bHelix;
+    //! Number of elliptical elements
     int      nhx;
-    int      nrms, resno;
-    int      Cprev, N, H, CA, C, O, Nnext;
+    //! Average RMS Deviation when atoms of this residue are fitted to ideal helix
+    int      nrms;
+    //! Residue index for output, relative to gmx_helix -r0 value
+    int      resno;
+    //! Index for previous carbon.
+    int      Cprev;
+    //! Index for backbone nitrogen.
+    int      N;
+    //! Index for backbone NH hydrogen.
+    int      H;
+    //! Index for alpha carbon.
+    int      CA;
+    //! Index for carbonyl carbon.
+    int      C;
+    //! Index for carbonyl oxygen.
+    int      O;
+    //! Index for next backbone nitrogen.
+    int      Nnext;
+    //! Name for this residue.
     char     label[32];
-} t_bb;
+};
 
 enum {
     efhRAD,  efhTWIST, efhRISE, efhLEN,
@@ -109,6 +142,17 @@ extern void av_hblen(FILE *fp3, FILE *fp3a,
 extern void av_phipsi(FILE *fphi, FILE *fpsi, FILE *fphi2, FILE *fpsi2,
                       real t, int nres, t_bb bb[]);
 
+/*! \brief Allocate and fill an array of information about residues in a protein backbone.
+ *
+ * The user is propted for an index group of protein residues (little
+ * error checking occurs). For the number of residues found in the
+ * selected group, nbb entries are made in the returned array.  Each
+ * entry contains the atom indices of the N, H, CA, C and O atoms (for
+ * PRO, H means CD), as well as the C of the previous residue and the
+ * N of the next (-1 if not found).
+ *
+ * In the output array, the first residue will be numbered starting
+ * from res0. */
 extern t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
                      int *nall, int **index,
                      char ***atomname, t_atom atom[],
