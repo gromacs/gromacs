@@ -78,3 +78,12 @@ Fixed an issue where the log file could sometimes report an incorrect
 initial dynamic load balancing state
 
 :issue:`2631`
+
+Fix Bromine parameters in amber forcefield files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The forcefield entries for Bromine and Iron were missing the actual values to define
+sigma and epsilon. The proper values have been included from parm99.dat for Bromine.
+As Iron has no corresponding parameters, the entry has been removed.
+
+:issue:`2711`
