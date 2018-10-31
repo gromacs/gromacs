@@ -93,7 +93,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 #undef NBK_FUNC_NAME
 #undef NBK_FUNC_NAME2
-(const nbnxn_pairlist_t     *nbl,
+(const NbnxnPairlistCpu     *nbl,
  const nbnxn_atomdata_t     *nbat,
  const interaction_const_t  *ic,
  rvec                       *shift_vec,
