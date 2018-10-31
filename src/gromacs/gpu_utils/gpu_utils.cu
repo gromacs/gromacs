@@ -759,7 +759,11 @@ void findGpus(gmx_gpu_info_t *gpu_info)
             }
         }
     }
-    GMX_RELEASE_ASSERT(cudaSuccess == cudaPeekAtLastError(), "We promise to return with clean CUDA state!");
+
+    stat = cudaPeekAtLastError();
+    GMX_RELEASE_ASSERT(stat == cudaSuccess,
+                       gmx::formatString("We promise to return with clean CUDA state, but non-success state encountered: %s: %s",
+                                         cudaGetErrorName(stat), cudaGetErrorString(stat)).c_str());
 
     gpu_info->n_dev   = ndev;
     gpu_info->gpu_dev = devs;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,6 +99,24 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              const VerletbufListSetup *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist);
+
+/* Determines the mininum cell size based on atom displacement
+ *
+ * The value returned is the minimum size for which the chance that
+ * an atom crosses to non nearest-neighbor cells is <= chanceRequested
+ * within ir.nstlist steps.
+ * Without T-coupling, SD or BD, we can not estimate atom displacements
+ * and fall back to the, crude, estimate of using the pairlist buffer size.
+ *
+ * Note: Like the Verlet buffer estimate, this estimate is based on
+ *       non-interacting atoms and constrained atom-pairs. Therefore for
+ *       any system that is not an ideal gas, this will be an overestimate.
+ *
+ * Note: This size increases (very slowly) with system size.
+ */
+real minCellSizeForAtomDisplacement(const gmx_mtop_t &mtop,
+                                    const t_inputrec &ir,
+                                    real              chanceRequested);
 
 /* Struct for unique atom type for calculating the energy drift.
  * The atom displacement depends on mass and constraints.

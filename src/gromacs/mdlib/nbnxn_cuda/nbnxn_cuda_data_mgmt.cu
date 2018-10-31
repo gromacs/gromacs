@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,6 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
-#include "gromacs/mdlib/nbnxn_gpu_common_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -530,13 +529,8 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
                              const nbnxn_pairlist_t *h_plist,
                              int                     iloc)
 {
-    if (canSkipWork(nb, iloc))
-    {
-        return;
-    }
-
     char          sbuf[STRLEN];
-    bool          bDoTime    = nb->bDoTime;
+    bool          bDoTime    =  (nb->bDoTime && h_plist->nsci > 0);
     cudaStream_t  stream     = nb->stream[iloc];
     cu_plist_t   *d_plist    = nb->plist[iloc];
 

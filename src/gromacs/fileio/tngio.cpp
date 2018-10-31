@@ -65,6 +65,10 @@
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/unique_cptr.h"
 
+#if !GMX_USE_TNG
+using tng_trajectory_t = void *;
+#endif
+
 /*! \brief Gromacs Wrapper around tng datatype
  *
  * This could in principle hold any GROMACS-specific requirements not yet
@@ -90,6 +94,7 @@ struct gmx_tng_trajectory
     bool             timePerFrameIsSet;   //!< True if we have set the time per frame
 };
 
+#if GMX_USE_TNG
 static const char *modeToVerb(char mode)
 {
     const char *p;
@@ -111,6 +116,7 @@ static const char *modeToVerb(char mode)
     }
     return p;
 }
+#endif
 
 void gmx_tng_open(const char           *filename,
                   char                  mode,

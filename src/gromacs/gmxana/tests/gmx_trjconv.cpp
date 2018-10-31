@@ -104,4 +104,34 @@ INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
                         TrjconvWithIndexGroupSubset,
                             ::testing::ValuesIn(trajectoryFileNames));
 
+class TrjconvWithoutTopologyFile : public gmx::test::CommandLineTestBase,
+                                   public ::testing::WithParamInterface<const char *>
+{
+    public:
+        void runTest(const char *fileName)
+        {
+            auto &cmdline = commandLine();
+
+            setInputFile("-f", fileName);
+            setInputFile("-n", "spc2.ndx");
+            setOutputFile("-o", "spc-traj.trr", gmx::test::NoTextMatch());
+
+            gmx::test::StdioTestHelper stdioHelper(&fileManager());
+            stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
+
+            /* As mentioned above, the tests don't check much besides
+             * that trjconv does not crash.
+             */
+            ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+        }
+};
+
+TEST_P(TrjconvWithoutTopologyFile, WithDifferentInputFormats)
+{
+    runTest(GetParam());
+}
+
+INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
+                        TrjconvWithoutTopologyFile,
+                            ::testing::ValuesIn(trajectoryFileNames));
 } // namespace

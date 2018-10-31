@@ -64,6 +64,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -129,7 +130,7 @@ struct gmx_domdec_master_t
 
 #define DD_NLOAD_MAX 9
 
-const char *edlbs_names[edlbsNR] = { "off", "auto", "locked", "on", "on" };
+static const char *edlbs_names[edlbsNR] = { "off", "off", "off", "locked", "on", "on" };
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
@@ -6402,15 +6403,37 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     }
     comm->cutoff_mbody = 0;
 
+    /* Determine the minimum cell size limit, affected by many factors */
     comm->cellsize_limit = 0;
     comm->bBondComm      = FALSE;
 
-    /* Atoms should be able to move by up to half the list buffer size (if > 0)
-     * within nstlist steps. Since boundaries are allowed to displace by half
-     * a cell size, DD cells should be at least the size of the list buffer.
+    /* We do not allow home atoms to move beyond the neighboring domain
+     * between domain decomposition steps, which limits the cell size.
+     * Get an estimate of cell size limit due to atom displacement.
+     * In most cases this is a large overestimate, because it assumes
+     * non-interaction atoms.
+     * We set the chance to 1 in a trillion steps.
      */
+    constexpr real c_chanceThatAtomMovesBeyondDomain = 1e-12;
+    const real     limitForAtomDisplacement          =
+        minCellSizeForAtomDisplacement(*mtop, *ir, c_chanceThatAtomMovesBeyondDomain);
+    if (fplog)
+    {
+        fprintf(fplog,
+                "Minimum cell size due to atom displacement: %.3f nm\n",
+                limitForAtomDisplacement);
+    }
     comm->cellsize_limit = std::max(comm->cellsize_limit,
-                                    ir->rlist - std::max(ir->rvdw, ir->rcoulomb));
+                                    limitForAtomDisplacement);
+
+    /* TODO: PME decomposition currently requires atoms not to be more than
+     *       2/3 of comm->cutoff, which is >=rlist, outside of their domain.
+     *       In nearly all cases, limitForAtomDisplacement will be smaller
+     *       than 2/3*rlist, so the PME requirement is satisfied.
+     *       But it would be better for both correctness and performance
+     *       to use limitForAtomDisplacement instead of 2/3*comm->cutoff.
+     *       Note that we would need to improve the pairlist buffer case.
+     */
 
     if (comm->bInterCGBondeds)
     {

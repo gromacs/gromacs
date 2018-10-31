@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <GroFile Name="Header">
+        <String Name="Title">Test system for solvate</String>
+        <Int Name="Number of atoms">12141</Int>
+      </GroFile>
+    </File>
+    <File Name="-p">
+      <String Name="Contents"><![CDATA[
+[ system ]
+; Name
+simple system in water
+
+[ molecules ]
+; Compound  #mols
+A         1
+B         1
+HOH              1876
+SOL              2169
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

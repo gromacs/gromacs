@@ -310,6 +310,15 @@ behavior.
     For more information about GPU tasks, please refer to
     :ref:`Types of GPU tasks<gmx-gpu-tasks>`.
 
+``-pmefft``
+    Allows choosing whether to execute the 3D FFT computation on a CPU or GPU.
+    Can be set to "auto", "cpu", "gpu.".
+    When PME is offloaded to a GPU ``-pmefft gpu`` is the default,
+    and the entire PME calculation is executed on the GPU. However,
+    in some cases, e.g. with a relatively slow or older generation GPU
+    combined with fast CPU cores in a run, moving some work off of the GPU
+    back to the CPU by computing FFTs on the CPU can improve performance.
+
 Examples for :ref:`mdrun <gmx mdrun>` on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -460,7 +469,7 @@ any aspect of OpenMP during the optimization.
 Examples for :ref:`mdrun <gmx mdrun>` on more than one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The examples and explanations for for single-node :ref:`mdrun <gmx mdrun>` are
-still relevant, but ``-nt`` is no longer the way
+still relevant, but ``-ntmpi`` is no longer the way
 to choose the number of MPI ranks.
 
 ::
@@ -494,7 +503,7 @@ each.
 
 ::
 
-    mpirun -np 4 gmx mdrun -ntomp 6 -nb gpu -gputasks 00
+    mpirun -np 4 gmx_mpi mdrun -ntomp 6 -nb gpu -gputasks 00
 
 Starts :ref:`mdrun_mpi` on a machine with two nodes, using
 four total ranks, each rank with six OpenMP threads,
@@ -502,7 +511,7 @@ and both ranks on a node sharing GPU with ID 0.
 
 ::
 
-    mpirun -np 8 gmx mdrun -ntomp 3 -gputasks 0000
+    mpirun -np 8 gmx_mpi mdrun -ntomp 3 -gputasks 0000
 
 Using a same/similar hardware as above,
 starts :ref:`mdrun_mpi` on a machine with two nodes, using
@@ -806,6 +815,9 @@ Known limitations
 
 - Free energy calculations where charges are perturbed are not supported,
   because only single PME grids can be calculated.
+
+- Only dynamical integrators are supported (ie. leap-frog, Velocity Verlet,
+  stochastic dynamics)
 
 - LJ PME is not supported on GPUs.
 

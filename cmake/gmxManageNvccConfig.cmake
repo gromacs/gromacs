@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,21 +35,13 @@
 # Manage CUDA nvcc compilation configuration, try to be smart to ease the users'
 # pain as much as possible:
 # - use the CUDA_HOST_COMPILER if defined by the user, otherwise
-# - auto-detect compatible nvcc host compiler and set nvcc -ccbin (if not MPI wrapper)
-# - set icc compatibility mode to gcc 4.8.1
+# - check if nvcc works with CUDA_HOST_COMPILER and the generated nvcc and C++ flags
+#
 # - (advanced) variables set:
-#   * CUDA_HOST_COMPILER            - the host compiler for nvcc (only with cmake <2.8.10)
 #   * CUDA_HOST_COMPILER_OPTIONS    - the full host-compiler related option list passed to nvcc
 #
 # Note that from CMake 2.8.10 FindCUDA defines CUDA_HOST_COMPILER internally,
 # so we won't set it ourselves, but hope that the module does a good job.
-
-gmx_check_if_changed(CUDA_HOST_COMPILER_CHANGED CUDA_HOST_COMPILER)
-
-# CUDA_HOST_COMPILER changed hence it is not auto-set anymore
-if (CUDA_HOST_COMPILER_CHANGED AND CUDA_HOST_COMPILER_AUTOSET)
-    unset(CUDA_HOST_COMPILER_AUTOSET CACHE)
-endif()
 
 # glibc 2.23 changed string.h in a way that breaks CUDA compilation in
 # many projects, but which has a trivial workaround. It would be nicer
@@ -67,6 +59,8 @@ function(work_around_glibc_2_23)
         set(CUDA_HOST_COMPILER_OPTIONS ${CUDA_HOST_COMPILER_OPTIONS} PARENT_SCOPE)
     endif()
 endfunction()
+
+gmx_check_if_changed(CUDA_HOST_COMPILER_CHANGED CUDA_HOST_COMPILER)
 
 # set up host compiler and its options
 if(CUDA_HOST_COMPILER_CHANGED)
@@ -175,6 +169,32 @@ endif()
 
 # assemble the CUDA host compiler flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
+
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
+gmx_check_if_changed(_cuda_nvcc_executable_or_flags_changed CUDA_NVCC_EXECUTABLE CUDA_NVCC_FLAGS CUDA_NVCC_FLAGS_${_build_type})
+
+if(_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT GMX_NVCC_WORKS)
+    message(STATUS "Check for working NVCC/C compiler combination")
+    execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -ccbin ${CUDA_HOST_COMPILER} -c ${CUDA_NVCC_FLAGS} ${CUDA_NVCC_FLAGS_${_build_type}} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
+        RESULT_VARIABLE _cuda_test_res
+        OUTPUT_VARIABLE _cuda_test_out
+        ERROR_VARIABLE  _cuda_test_err
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    if(${_cuda_test_res})
+        message(${_cuda_test_err})
+        message(STATUS "Check for working NVCC/C compiler combination - broken")
+        if(${_cuda_test_err} MATCHES "nsupported")
+            message(FATAL_ERROR "NVCC/C compiler combination does not seem to be supported. CUDA frequently does not support the latest versions of the host compiler, so you might want to try an earlier C/C++ compiler version and make sure your CUDA compiler and driver are as recent as possible.")
+        else()
+            message(FATAL_ERROR "CUDA compiler does not seem to be functional.")
+        endif()
+    elseif(NOT GMX_CUDA_TEST_COMPILER_QUIETLY)
+        message(STATUS "Check for working NVCC/C compiler combination - works")
+        set(GMX_NVCC_WORKS TRUE CACHE INTERNAL "Nvcc can compile a trivial test program")
+    endif()
+endif() # GMX_CHECK_NVCC
+
 
 # The flags are set as local variables which shadow the cache variables. The cache variables
 # (can be set by the user) are appended. This is done in a macro to set the flags when all

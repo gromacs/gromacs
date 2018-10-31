@@ -730,7 +730,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     sfree(mtop->mols.index);
     mtop->mols.index = new_mols;
     mtop->natoms    -= n;
-    state->natoms   -= n;
+    state_change_natoms(state, state->natoms - n);
     snew(x_tmp, state->natoms);
     snew(v_tmp, state->natoms);
 

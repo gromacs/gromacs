@@ -125,6 +125,7 @@ if (SPHINX_FOUND)
         fragments/doxygen-links.rst
         install-guide/index.rst
         release-notes/index.rst
+        release-notes/2018/2018.4.rst
         release-notes/2018/2018.3.rst
         release-notes/2018/2018.2.rst
         release-notes/2018/2018.1.rst
@@ -165,6 +166,7 @@ if (SPHINX_FOUND)
         user-guide/file-formats.rst
         user-guide/cmdline.rst
         user-guide/environment-variables.rst
+        user-guide/security.rst
         user-guide/terminology.rst
         user-guide/plotje.gif
         user-guide/xvgr.gif

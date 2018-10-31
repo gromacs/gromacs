@@ -101,7 +101,7 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
         case efENT:
         case efPQR:
             out = gmx_fio_fopen(outfile, "w");
-            write_pdbfile_indexed(out, title, atoms, x, ePBC, box, ' ', -1, nindex, index, nullptr, TRUE, TRUE);
+            write_pdbfile_indexed(out, title, atoms, x, ePBC, box, ' ', -1, nindex, index, nullptr, TRUE, ftp == efPQR ? TRUE : FALSE);
             gmx_fio_fclose(out);
             break;
         case efESP:
