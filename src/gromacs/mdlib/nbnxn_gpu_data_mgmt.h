@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 
 struct nonbonded_verlet_group_t;
-struct nbnxn_pairlist_t;
+struct NbnxnPairlistGpu;
 struct nbnxn_atomdata_t;
 struct NbnxnListParameters;
 struct gmx_wallclock_gpu_nbnxn_t;
@@ -69,7 +69,7 @@ void nbnxn_gpu_init(gmx_nbnxn_gpu_t gmx_unused            **p_nb,
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_init_pairlist(gmx_nbnxn_gpu_t gmx_unused               *nb,
-                             const struct nbnxn_pairlist_t gmx_unused *h_nblist,
+                             const struct NbnxnPairlistGpu gmx_unused *h_nblist,
                              int                    gmx_unused         iloc) GPU_FUNC_TERM
 
 /** Initializes atom-data on the GPU, called at every pair search step. */

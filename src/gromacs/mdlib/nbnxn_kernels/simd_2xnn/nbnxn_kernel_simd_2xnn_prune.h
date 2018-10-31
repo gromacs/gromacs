@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,15 +46,15 @@
 #include "gromacs/utility/real.h"
 
 struct nbnxn_atomdata_t;
-struct nbnxn_pairlist_t;
+struct NbnxnPairlistCpu;
 
-/*! \brief Prune a single nbnxn_pairlist_t entry with distance \p rlistInner
+/*! \brief Prune a single NbnxnPairlistCpu entry with distance \p rlistInner
  *
  * Reads a cluster pairlist \p nbl->ciOuter, \p nbl->cjOuter and writes
  * all cluster pairs within \p rlistInner to \p nbl->ci, \p nbl->cj.
  */
 void
-nbnxn_kernel_prune_2xnn(nbnxn_pairlist_t *         nbl,
+nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu *         nbl,
                         const nbnxn_atomdata_t *   nbat,
                         const rvec * gmx_restrict  shift_vec,
                         real                       rlistInner);
