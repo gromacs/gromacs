@@ -54,7 +54,7 @@ struct interaction_const_t;
 
 /*! \brief Pair-interaction kernel type that also calculates energies.
  */
-typedef void (nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
+typedef void (nbk_func_ener)(const NbnxnPairlistCpu     *nbl,
                              const nbnxn_atomdata_t     *nbat,
                              const interaction_const_t  *ic,
                              rvec                       *shift_vec,
@@ -69,7 +69,7 @@ typedef nbk_func_ener *p_nbk_func_ener;
 
 /*! \brief Pair-interaction kernel type that does not calculates energies.
  */
-typedef void (nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
+typedef void (nbk_func_noener)(const NbnxnPairlistCpu     *nbl,
                                const nbnxn_atomdata_t     *nbat,
                                const interaction_const_t  *ic,
                                rvec                       *shift_vec,
