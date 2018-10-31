@@ -60,13 +60,13 @@ empty file name strings.
 
 :issue:`2653`
 
-Fix helix segmentation fault
+Fix gmx helix segmentation faults
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The .tpr file is now read correctly. 
+The .tpr file is now read correctly, and the helix analysis correctly
+handles selections that include proline residues.
 
 :issue:`2701`
-
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

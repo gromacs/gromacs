@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -339,7 +339,7 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
 #define NBB asize(bb_nm)
     t_bb               *bb;
     char               *grpname;
-    int                 ai, i, i0, i1, j, k, ri, rnr, gnx, r0, r1;
+    int                 ai, i, i0, i1, j, k, rnr, gnx, r0, r1;
 
     fprintf(stderr, "Please select a group containing the entire backbone\n");
     rd_index(fn, 1, &gnx, index, &grpname);
@@ -362,40 +362,45 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     for (i = j = 0; (i < gnx); i++)
     {
         ai = (*index)[i];
-        ri = atom[ai].resind-r0;
-        if (std::strcmp(*(resinfo[ri].name), "PRO") == 0)
+        // Create an index into the residue index for the topology.
+        int resindex = atom[ai].resind;
+        // Create an index into the residues present in the selected
+        // index group.
+        int bbindex  = resindex -r0;
+        if (std::strcmp(*(resinfo[resindex].name), "PRO") == 0)
         {
+            // For PRO in a peptide, there is no H bound to backbone
+            // N, so use CD instead.
             if (std::strcmp(*(atomname[ai]), "CD") == 0)
             {
-                bb[ri].H = ai;
+                bb[bbindex].H = ai;
             }
         }
         for (k = 0; (k < NBB); k++)
         {
             if (std::strcmp(bb_nm[k], *(atomname[ai])) == 0)
             {
-                j++;
                 break;
             }
         }
         switch (k)
         {
             case 0:
-                bb[ri].N = ai;
+                bb[bbindex].N = ai;
                 break;
             case 1:
             case 5:
                 /* No attempt to address the case where some weird input has both H and HN atoms in the group */
-                bb[ri].H = ai;
+                bb[bbindex].H = ai;
                 break;
             case 2:
-                bb[ri].CA = ai;
+                bb[bbindex].CA = ai;
                 break;
             case 3:
-                bb[ri].C = ai;
+                bb[bbindex].C = ai;
                 break;
             case 4:
-                bb[ri].O = ai;
+                bb[bbindex].O = ai;
                 break;
             default:
                 break;
@@ -449,8 +454,8 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     /* Set the labels */
     for (i = 0; (i < rnr); i++)
     {
-        ri = atom[bb[i].CA].resind;
-        sprintf(bb[i].label, "%s%d", *(resinfo[ri].name), ri+res0);
+        int resindex = atom[bb[i].CA].resind;
+        sprintf(bb[i].label, "%s%d", *(resinfo[resindex].name), resinfo[resindex].nr);
     }
 
     *nres = rnr;
