@@ -515,7 +515,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 }
 
 void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
-                             const nbnxn_pairlist_t *h_plist,
+                             const NbnxnPairlistGpu *h_plist,
                              int                     iloc)
 {
     char          sbuf[STRLEN];

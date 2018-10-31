@@ -48,7 +48,7 @@
 
 /* Prune a single nbnxn_pairtlist_t entry with distance rlistInner */
 void
-nbnxn_kernel_prune_2xnn(nbnxn_pairlist_t *         nbl,
+nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu *         nbl,
                         const nbnxn_atomdata_t *   nbat,
                         const rvec * gmx_restrict  shift_vec,
                         real                       rlistInner)

@@ -474,7 +474,7 @@ static void do_nb_verlet(const t_forcerec *fr,
             break;
 
         case nbnxnk8x8x8_PlainC:
-            nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nbl[0],
+            nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nblGpu[0],
                                  nbv->nbat, ic,
                                  fr->shift_vec,
                                  flags,
@@ -1269,7 +1269,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             /* initialize local pair-list on the GPU */
             nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
-                                    nbv->grp[eintLocal].nbl_lists.nbl[0],
+                                    nbv->grp[eintLocal].nbl_lists.nblGpu[0],
                                     eintLocal);
         }
         wallcycle_stop(wcycle, ewcNS);
@@ -1342,7 +1342,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             {
                 /* initialize non-local pair-list on the GPU */
                 nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
-                                        nbv->grp[eintNonlocal].nbl_lists.nbl[0],
+                                        nbv->grp[eintNonlocal].nbl_lists.nblGpu[0],
                                         eintNonlocal);
             }
             wallcycle_stop(wcycle, ewcNS);
@@ -1599,7 +1599,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             }
 
             /* skip the reduction if there was no non-local work to do */
-            if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
+            if (nbv->grp[eintNonlocal].nbl_lists.nblGpu[0]->nsci > 0)
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatNonlocal,
                                                nbv->nbat, f, wcycle);
