@@ -11,7 +11,7 @@
 
 # Test on ARM v7
 # Test ARM_NEON SIMD
-gcc-4.8 simd=ARM_NEON release-with-assert
+gcc-4.8 simd=ARM_NEON no-hwloc release-with-assert
 
 # Test on ARM v8
 # Test ARM_NEON_ASIMD SIMD
