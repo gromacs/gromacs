@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@
 
 #ifdef CALC_ENERGIES
 void
-nbnxn_kernel_ElecQSTab_VdwLJPSw_VgrpF_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
+nbnxn_kernel_ElecQSTab_VdwLJPSw_VgrpF_4xn(const NbnxnPairlistCpu    gmx_unused *nbl,
                                           const nbnxn_atomdata_t    gmx_unused *nbat,
                                           const interaction_const_t gmx_unused *ic,
                                           rvec                      gmx_unused *shift_vec,
@@ -73,7 +73,7 @@ nbnxn_kernel_ElecQSTab_VdwLJPSw_VgrpF_4xn(const nbnxn_pairlist_t    gmx_unused *
                                           real                      gmx_unused *Vc)
 #else /* CALC_ENERGIES */
 void
-nbnxn_kernel_ElecQSTab_VdwLJPSw_VgrpF_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
+nbnxn_kernel_ElecQSTab_VdwLJPSw_VgrpF_4xn(const NbnxnPairlistCpu    gmx_unused *nbl,
                                           const nbnxn_atomdata_t    gmx_unused *nbat,
                                           const interaction_const_t gmx_unused *ic,
                                           rvec                      gmx_unused *shift_vec,

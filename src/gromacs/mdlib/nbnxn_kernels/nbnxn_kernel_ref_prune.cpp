@@ -42,9 +42,9 @@
 #include "gromacs/utility/gmxassert.h"
 
 
-/* Prune a single nbnxn_pairlist_t entry with distance rlistInner */
+/* Prune a single NbnxnPairlistCpu entry with distance rlistInner */
 void
-nbnxn_kernel_prune_ref(nbnxn_pairlist_t *         nbl,
+nbnxn_kernel_prune_ref(NbnxnPairlistCpu *         nbl,
                        const nbnxn_atomdata_t *   nbat,
                        const rvec * gmx_restrict  shift_vec,
                        real                       rlistInner)

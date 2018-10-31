@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,13 +49,6 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_zones_t;
-
-
-/* The number of clusters in a pair-search cell, used for GPU */
-static const int c_gpuNumClusterPerCellZ = 2;
-static const int c_gpuNumClusterPerCellY = 2;
-static const int c_gpuNumClusterPerCellX = 2;
-static const int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ*c_gpuNumClusterPerCellY*c_gpuNumClusterPerCellX;
 
 
 /* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
