@@ -73,7 +73,9 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo)
     }
 
     // kernel parameters
-    warpSize            = gmx::ocl::getWarpSize(context, deviceId);
+    warpSize            = gmx::ocl::getDeviceWarpSize(context, deviceId);
+    // TODO: for Intel ideally we'd want to set these based on the compiler warp size
+    // but given that we've done no tuning for Intel iGPU, this is as good as anything.
     spreadWorkGroupSize = std::min(c_spreadMaxWarpsPerBlock * warpSize,
                                    deviceInfo->maxWorkGroupSize);
     solveMaxWorkGroupSize = std::min(c_solveMaxWarpsPerBlock * warpSize,
@@ -100,6 +102,31 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
     stat |= clReleaseContext(context);
     GMX_ASSERT(stat == CL_SUCCESS, gmx::formatString("Failed to release PME OpenCL resources %d: %s",
                                                      stat, ocl_get_error_string(stat).c_str()).c_str());
+}
+
+/*! \brief Ensure that spread/gather kernels have been compiled to a suitable warp size
+ *
+ * On Intel the exec width/warp is decided at compile-time and can be
+ * smaller than the minimum order^2 required in spread/gather ATM which
+ * we need to check for.
+ */
+static void checkRequiredWarpSize(const cl_kernel          kernel,
+                                  const char*              kernelName,
+                                  const gmx_device_info_t *deviceInfo)
+{
+    if (deviceInfo->vendor_e == OCL_VENDOR_INTEL)
+    {
+        size_t kernelWarpSize = gmx::ocl::getKernelWarpSize(kernel, deviceInfo->ocl_gpu_id.ocl_device_id);
+
+        if (kernelWarpSize < c_pmeSpreadGatherMinWarpSize)
+        {
+            const std::string errorString = gmx::formatString("PME OpenCL kernels require >=%d execution width, but the %s kernel "
+                                                              "has been compiled for the device %s to a %zu width and therefore it cna not eecute correctly.",
+                                                              c_pmeSpreadGatherMinWarpSize, kernelName,
+                                                              deviceInfo->device_name, kernelWarpSize);
+            GMX_THROW(gmx::InternalError(errorString));
+        }
+    }
 }
 
 void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
@@ -201,18 +228,22 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
         else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernel"))
         {
             splineAndSpreadKernel = kernel;
+            checkRequiredWarpSize(splineAndSpreadKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeSpreadKernel"))
         {
             spreadKernel = kernel;
+            checkRequiredWarpSize(spreadKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherKernel"))
         {
             gatherKernel = kernel;
+            checkRequiredWarpSize(gatherKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherReduceWithInputKernel"))
         {
             gatherReduceWithInputKernel = kernel;
+            checkRequiredWarpSize(gatherReduceWithInputKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernel"))
         {

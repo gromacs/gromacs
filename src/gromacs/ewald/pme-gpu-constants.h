@@ -121,6 +121,13 @@ constexpr int c_virialAndEnergyCount = 7;
  */
 #define PME_SPREADGATHER_THREADS_PER_ATOM (order * order)
 
+/*! Minimum execution width of the PME spread and gather kernels.
+ *
+ * Due to the one thread per atom and order=4 implementation constraints, order^2 threads
+ * should execute without synchronization needed. See PME_SPREADGATHER_THREADS_PER_ATOM
+ */
+constexpr int c_pmeSpreadGatherMinWarpSize = 16;
+
 /*! \brief
  * Atom data alignment (in terms of number of atoms).
  * This is the least common multiple of number of atoms processed by
@@ -130,6 +137,7 @@ constexpr int c_virialAndEnergyCount = 7;
  * There are debug asserts for this divisibility in pme_gpu_spread() and pme_gpu_gather().
  */
 #define PME_ATOM_DATA_ALIGNMENT 32
+
 
 /*
  * The execution widths for PME GPU kernels, used both on host and device for correct scheduling.
