@@ -121,6 +121,13 @@ constexpr int c_virialAndEnergyCount = 7;
  */
 #define PME_SPREADGATHER_THREADS_PER_ATOM (order * order)
 
+/*! \brief Minimum execution width of the PME spread and gather kernels.
+ *
+ * Due to the one thread per atom and order=4 implementation constraints, order^2 threads
+ * should execute without synchronization needed. See PME_SPREADGATHER_THREADS_PER_ATOM
+ */
+constexpr int c_pmeSpreadGatherMinWarpSize = 16;
+
 /*! \brief
  * Atom data alignment (in terms of number of atoms).
  * This is the least common multiple of number of atoms processed by
