@@ -55,7 +55,8 @@ extra_options = {
     'openmp': Option.bool,
     'nranks': Option.string,
     'npme': Option.string,
-    'gpu_id': Option.string
+    'gpu_id': Option.string,
+    'hwloc': Option.bool
 }
 
 extra_projects = [Project.REGRESSIONTESTS]
@@ -123,6 +124,9 @@ def do_build(context):
     if context.opts.mkl or context.opts.atlas:
         cmake_opts['GMX_EXTERNAL_BLAS'] = 'ON'
         cmake_opts['GMX_EXTERNAL_LAPACK'] = 'ON'
+
+    if context.opts.hwloc is False:
+        cmake_opts['GMX_HWLOC'] = 'OFF'
 
     if context.opts.x11:
         cmake_opts['GMX_X11'] = 'ON'
