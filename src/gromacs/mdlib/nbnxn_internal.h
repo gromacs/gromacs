@@ -51,13 +51,6 @@
 struct gmx_domdec_zones_t;
 
 
-/* The number of clusters in a pair-search cell, used for GPU */
-static const int c_gpuNumClusterPerCellZ = 2;
-static const int c_gpuNumClusterPerCellY = 2;
-static const int c_gpuNumClusterPerCellX = 2;
-static const int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ*c_gpuNumClusterPerCellY*c_gpuNumClusterPerCellX;
-
-
 /* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
 #define STRIDE_XYZ         3
 #define STRIDE_XYZQ        4

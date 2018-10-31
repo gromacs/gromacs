@@ -60,7 +60,7 @@ void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t *nbvg,
 #pragma omp parallel for schedule(static) num_threads(nthreads)
     for (int i = 0; i < nbl_lists->nnbl; i++)
     {
-        nbnxn_pairlist_t *nbl = nbl_lists->nbl[i];
+        NbnxnPairlistCpu *nbl = nbl_lists->nbl[i];
 
         switch (nbvg->kernel_type)
         {
