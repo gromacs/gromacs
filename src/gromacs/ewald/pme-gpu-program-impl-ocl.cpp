@@ -140,7 +140,6 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
          * files outside as macros, to avoid including those files
          * in the JIT compilation that happens at runtime.
          */
-        constexpr int     order         = 4;
         const std::string commonDefines = gmx::formatString(
                     "-Dwarp_size=%zd "
                     "-Dorder=%d "
@@ -161,7 +160,7 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
                     // decomposition parameter placeholders
                     "-DwrapX=true -DwrapY=true ",
                     warpSize,
-                    order,
+                    c_pmeGpuOrder,
                     warpSize / PME_SPREADGATHER_THREADS_PER_ATOM,
                     PME_SPREADGATHER_THREADS_PER_ATOM,
                     static_cast<float>(c_pmeMaxUnitcellShift),

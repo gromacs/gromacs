@@ -114,19 +114,25 @@ constexpr int c_virialAndEnergyCount = 7;
     The corresponding defines follow.
  */
 
+/*! \brief PME order parameter
+ *
+ *  Note that the GPU code, unlike the CPU, only supports order 4.
+ */
+constexpr int c_pmeGpuOrder = 4;
+
 /*! \brief
  * The number of GPU threads used for computing spread/gather contributions of a single atom as function of the PME order.
  * The assumption is currently that any thread processes only a single atom's contributions.
  * TODO: this assumption leads to minimum execution width of 16. See Redmine #2516
  */
-#define PME_SPREADGATHER_THREADS_PER_ATOM (order * order)
+#define PME_SPREADGATHER_THREADS_PER_ATOM (c_pmeGpuOrder * c_pmeGpuOrder)
 
 /*! \brief Minimum execution width of the PME spread and gather kernels.
  *
  * Due to the one thread per atom and order=4 implementation constraints, order^2 threads
  * should execute without synchronization needed. See PME_SPREADGATHER_THREADS_PER_ATOM
  */
-constexpr int c_pmeSpreadGatherMinWarpSize = 16;
+constexpr int c_pmeSpreadGatherMinWarpSize = PME_SPREADGATHER_THREADS_PER_ATOM;
 
 /*! \brief
  * Atom data alignment (in terms of number of atoms).
