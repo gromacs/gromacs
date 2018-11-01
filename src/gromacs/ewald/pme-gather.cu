@@ -233,11 +233,12 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
     float * __restrict__        gm_forces           = kernelParams.atoms.d_forces;
 
     /* Some sizes */
-    const int    atomsPerBlock  = (c_gatherMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM);
-    const int    atomDataSize   = PME_SPREADGATHER_THREADS_PER_ATOM; /* Number of data components and threads for a single atom */
-    const int    blockSize      = atomsPerBlock * atomDataSize;
-    const int    atomsPerWarp   = PME_SPREADGATHER_ATOMS_PER_WARP;
+    const int    atomsPerBlock  = (c_gatherMaxThreadsPerBlock / c_pmeSpreadGatherThreadsPerAtom);
+    const int    atomDataSize   = c_pmeSpreadGatherThreadsPerAtom; /* Number of data components and threads for a single atom */
+    const int    atomsPerWarp   = c_pmeSpreadGatherAtomsPerWarp;
 
+    const int    blockSize      = atomsPerBlock * atomDataSize;
+    assert(blockSize == blockDim.x * blockDim.y * blockDim.z);
     const int    blockIndex = blockIdx.y * gridDim.x + blockIdx.x;
 
     /* These are the atom indices - for the shared and global memory */

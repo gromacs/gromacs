@@ -40,7 +40,7 @@
  * This closely mirrors pme-gpu-utils.h (which is used in CUDA and unit tests), except with no templates.
  * Instead of templated parameters this file expects following defines during compilation:
  * - order - PME interpolation order;
- * - PME_SPREADGATHER_ATOMS_PER_WARP - number of atoms processed by a warp (fixed for spread and gather kernels to be the same);
+ * - atomsPerWarp - number of atoms processed by a warp (fixed for spread and gather kernels to be the same);
  * - c_usePadding and c_skipNeutralAtoms - same as in pme-gpu-constants.h.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
@@ -53,20 +53,20 @@
  * Feed the result into getSplineParamIndex() to get a full index.
  * TODO: it's likely that both parameters can be just replaced with a single atom index, as they are derived from it.
  * Do that, verifying that the generated code is not bloated, and/or revise the spline indexing scheme.
- * Removing warp dependency would also be nice (and would probably coincide with removing PME_SPREADGATHER_ATOMS_PER_WARP).
+ * Removing warp dependency would also be nice (and would probably coincide with removing atomsPerWarp).
  *
  * \param[in] warpIndex        Warp index wrt the block.
- * \param[in] atomWarpIndex    Atom index wrt the warp (from 0 to PME_SPREADGATHER_ATOMS_PER_WARP - 1).
+ * \param[in] atomWarpIndex    Atom index wrt the warp (from 0 to atomsPerWarp - 1).
  *
  * \returns Index into theta or dtheta array using GPU layout.
  */
 inline int getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
 {
-    assert((atomWarpIndex >= 0) && (atomWarpIndex < PME_SPREADGATHER_ATOMS_PER_WARP));
+    assert((atomWarpIndex >= 0) && (atomWarpIndex < atomsPerWarp));
     const int dimIndex    = 0;
     const int splineIndex = 0;
     // The zeroes are here to preserve the full index formula for reference
-    return (((splineIndex + order * warpIndex) * DIM + dimIndex) * PME_SPREADGATHER_ATOMS_PER_WARP + atomWarpIndex);
+    return (((splineIndex + order * warpIndex) * DIM + dimIndex) * atomsPerWarp + atomWarpIndex);
 }
 
 /*! \internal \brief
@@ -87,7 +87,7 @@ inline int getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex
 {
     assert((dimIndex >= XX) && (dimIndex < DIM));
     assert((splineIndex >= 0) && (splineIndex < order));
-    return (paramIndexBase + (splineIndex * DIM + dimIndex) * PME_SPREADGATHER_ATOMS_PER_WARP);
+    return (paramIndexBase + (splineIndex * DIM + dimIndex) * atomsPerWarp);
 }
 
 /*! \brief

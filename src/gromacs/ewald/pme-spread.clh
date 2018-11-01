@@ -132,16 +132,16 @@ inline void calculate_splines(const struct PmeOpenCLKernelParams  kernelParams,
     /* Thread index w.r.t. warp */
     const int threadWarpIndex = threadLocalIndex % warp_size;
     /* Atom index w.r.t. warp - alternating 0 1 0 1 .. */
-    const int atomWarpIndex = threadWarpIndex % PME_SPREADGATHER_ATOMS_PER_WARP;
+    const int atomWarpIndex = threadWarpIndex % atomsPerWarp;
     /* Atom index w.r.t. block/shared memory */
-    const int atomIndexLocal = warpIndex * PME_SPREADGATHER_ATOMS_PER_WARP + atomWarpIndex;
+    const int atomIndexLocal = warpIndex * atomsPerWarp + atomWarpIndex;
 
     /* Atom index w.r.t. global memory */
     const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
     /* Spline contribution index in one dimension */
-    const int orderIndex = threadWarpIndex / (PME_SPREADGATHER_ATOMS_PER_WARP * DIM);
+    const int orderIndex = threadWarpIndex / (atomsPerWarp * DIM);
     /* Dimension index */
-    const int dimIndex = (threadWarpIndex - orderIndex * (PME_SPREADGATHER_ATOMS_PER_WARP * DIM)) / PME_SPREADGATHER_ATOMS_PER_WARP;
+    const int dimIndex = (threadWarpIndex - orderIndex * (atomsPerWarp * DIM)) / atomsPerWarp;
 
     /* Multi-purpose index of rvec/ivec atom data */
     const int sharedMemoryIndex = atomIndexLocal * DIM + dimIndex;
@@ -343,9 +343,9 @@ inline void spread_charges(const struct PmeOpenCLKernelParams  kernelParams,
         }
 
         /* Atom index w.r.t. warp - alternating 0 1 0 1 .. */
-        const int    atomWarpIndex  = atomIndexLocal % PME_SPREADGATHER_ATOMS_PER_WARP;
+        const int    atomWarpIndex   = atomIndexLocal % atomsPerWarp;
         /* Warp index w.r.t. block - could probably be obtained easier? */
-        const int    warpIndex   = atomIndexLocal / PME_SPREADGATHER_ATOMS_PER_WARP;
+        const int    warpIndex       = atomIndexLocal / atomsPerWarp;
 
         const int    splineIndexBase = getSplineParamIndexBase(warpIndex, atomWarpIndex);
         const int    splineIndexZ    = getSplineParamIndex(splineIndexBase, ZZ, ithz);

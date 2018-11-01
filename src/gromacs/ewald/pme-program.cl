@@ -57,7 +57,7 @@
 
 /* SPREAD/SPLINE */
 
-#define atomsPerBlock  (c_spreadWorkGroupSize / PME_SPREADGATHER_THREADS_PER_ATOM)
+#define atomsPerBlock  (c_spreadWorkGroupSize / threadsPerAtom)
 
 // spline/spread fused
 #define computeSplines 1
@@ -92,7 +92,7 @@
 
 /* GATHER */
 
-#define atomsPerBlock (c_gatherWorkGroupSize / PME_SPREADGATHER_THREADS_PER_ATOM)
+#define atomsPerBlock (c_gatherWorkGroupSize / threadsPerAtom)
 
 // gather
 #define overwriteForces 1
