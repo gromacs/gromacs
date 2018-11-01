@@ -106,7 +106,7 @@ inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
     // TODO: implement AMD intrinsics reduction, like with shuffles in CUDA version. #2514
 
     /* Number of data components and threads for a single atom */
-#define atomDataSize PME_SPREADGATHER_THREADS_PER_ATOM
+#define atomDataSize threadsPerAtom
     // We use blockSize local memory elements to read fx, or fy, or fz, and then reduce them to fit into smemPerDim elements
     // All those guys are defines and not consts, because they go into the local memory array size.
 #define blockSize (atomsPerBlock * atomDataSize)
@@ -210,6 +210,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
 
     /* Some sizes which are defines and not consts because they go into the array size */
     #define blockSize (atomsPerBlock * atomDataSize)
+    assert(blockSize == (get_local_size(0) * get_local_size(1) * get_local_size(2)));
     #define smemPerDim warp_size
     #define smemReserved  ((DIM - 1) * smemPerDim)
     #define totalSharedMemory (smemReserved + blockSize)
@@ -266,8 +267,8 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
         const int    pny       = kernelParams.grid.realGridSizePadded[YY];
         const int    pnz       = kernelParams.grid.realGridSizePadded[ZZ];
 
-        const int    atomWarpIndex = atomIndexLocal % PME_SPREADGATHER_ATOMS_PER_WARP;
-        const int    warpIndex     = atomIndexLocal / PME_SPREADGATHER_ATOMS_PER_WARP;
+        const int    atomWarpIndex = atomIndexLocal % atomsPerWarp;
+        const int    warpIndex     = atomIndexLocal / atomsPerWarp;
 
         const int    splineIndexBase = getSplineParamIndexBase(warpIndex, atomWarpIndex);
         const int    splineIndexY    = getSplineParamIndex(splineIndexBase, YY, ithy);
