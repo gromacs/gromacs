@@ -88,10 +88,10 @@ class RestraintManager final
          * \param manager original manager to copy or move
          * \{
          */
-        RestraintManager(const RestraintManager &manager) = default;
-        RestraintManager               &operator=(const RestraintManager &manager)     = default;
-        RestraintManager(RestraintManager &&) noexcept                                 = default;
-        RestraintManager               &operator=(RestraintManager &&manager) noexcept = default;
+        RestraintManager(const RestraintManager &/* unused */) = default;
+        RestraintManager               &operator=(const RestraintManager & /* unused */)     = default;
+        RestraintManager(RestraintManager &&) noexcept                                       = default;
+        RestraintManager               &operator=(RestraintManager && /* unused */) noexcept = default;
         /*! \} */
 
         /*!
