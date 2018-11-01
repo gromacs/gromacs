@@ -1063,11 +1063,8 @@ launch_bonded_kernels(t_forcerec   *fr,
     GpuBondedLists *gpuBondedLists = fr->gpuBondedLists;
 
     GMX_ASSERT(gpuBondedLists, "Need a valid bonded lists object");
-
-    if (!gpuBondedLists->haveInteractions)
-    {
-        return;
-    }
+    GMX_ASSERT(gpuBondedLists->haveInteractions,
+               "Cannot launch bonded GPU kernels unless bonded GPU work was scheduled");
 
     cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
 
@@ -1241,10 +1238,8 @@ bonded_gpu_get_energies(t_forcerec *fr,  gmx_enerdata_t *enerd)
 {
     GpuBondedLists *gpuBondedLists = fr->gpuBondedLists;
 
-    if (!gpuBondedLists->haveInteractions)
-    {
-        return;
-    }
+    GMX_ASSERT(gpuBondedLists->haveInteractions,
+               "Cannot get bonded GPU energies unless bonded GPU work was scheduled");
 
     cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
     float        *vtot   = gpuBondedLists->vtot.data();

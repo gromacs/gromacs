@@ -75,6 +75,7 @@
 #include "gromacs/mdlib/calcvir.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/forcecalculationschedule.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -1053,6 +1054,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 real *lambda,
                                 t_graph *graph,
                                 t_forcerec *fr,
+                                gmx::ForceCalculationSchedule *schedule,
                                 interaction_const_t *ic,
                                 const gmx_vsite_t *vsite,
                                 rvec mu_tot,
@@ -1221,12 +1223,11 @@ static void do_force_cutsVERLET(FILE *fplog,
                                   top->idef);
 
             update_gpu_bonded(fr->gpuBondedLists);
+            schedule->haveGpuBondedWork = bonded_gpu_have_interactions(fr->gpuBondedLists);
         }
 
         wallcycle_stop(wcycle, ewcNS);
     }
-
-    const bool haveGpuBondedWork = (bUseGPU && bonded_gpu_have_interactions(fr->gpuBondedLists));
 
     /* initialize the GPU atom data and copy shift vector */
     if (bUseGPU)
@@ -1294,7 +1295,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
-        if (haveGpuBondedWork && !DOMAINDECOMP(cr))
+        if (schedule->haveGpuBondedWork && !DOMAINDECOMP(cr))
         {
             do_bonded_gpu(fr, flags,
                           nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
@@ -1364,7 +1365,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                          step, nrnb, wcycle);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
-            if (haveGpuBondedWork)
+            if (schedule->haveGpuBondedWork)
             {
                 do_bonded_gpu(fr, flags,
                               nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
@@ -1384,10 +1385,10 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (DOMAINDECOMP(cr))
         {
             nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                     flags, eatNonlocal, haveGpuBondedWork);
+                                     flags, eatNonlocal, schedule->haveGpuBondedWork);
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                 flags, eatLocal, haveGpuBondedWork);
+                                 flags, eatLocal, schedule->haveGpuBondedWork);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
@@ -1585,7 +1586,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
                 nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
                                            flags, eatNonlocal,
-                                           haveGpuBondedWork,
+                                           schedule->haveGpuBondedWork,
                                            enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                            fr->fshift);
                 cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
@@ -1629,7 +1630,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, haveGpuBondedWork, wcycle);
+        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, schedule->haveGpuBondedWork, wcycle);
     }
 
     if (!alternateGpuWait && useGpuPme)
@@ -1653,7 +1654,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
         nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
-                                   flags, eatLocal, haveGpuBondedWork,
+                                   flags, eatLocal, schedule->haveGpuBondedWork,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
         float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
@@ -1715,7 +1716,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                        nbv->nbat, f, wcycle);
     }
 
-    if (haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
+    if (schedule->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
     {
         bonded_gpu_get_energies(fr, enerd);
 
@@ -2131,6 +2132,7 @@ void do_force(FILE                                     *fplog,
               gmx::ArrayRef<real>                       lambda,
               t_graph                                  *graph,
               t_forcerec                               *fr,
+              gmx::ForceCalculationSchedule            *schedule,
               const gmx_vsite_t                        *vsite,
               rvec                                      mu_tot,
               double                                    t,
@@ -2157,7 +2159,9 @@ void do_force(FILE                                     *fplog,
                                 mdatoms,
                                 enerd, fcd,
                                 lambda.data(), graph,
-                                fr, fr->ic,
+                                fr,
+                                schedule,
+                                fr->ic,
                                 vsite, mu_tot,
                                 t, ed,
                                 flags,
