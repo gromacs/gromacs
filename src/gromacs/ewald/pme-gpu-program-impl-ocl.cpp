@@ -140,12 +140,11 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
          * files outside as macros, to avoid including those files
          * in the JIT compilation that happens at runtime.
          */
-        constexpr int     order         = 4;
         const std::string commonDefines = gmx::formatString(
                     "-Dwarp_size=%zd "
                     "-Dorder=%d "
-                    "-DPME_SPREADGATHER_ATOMS_PER_WARP=%zd "
-                    "-DPME_SPREADGATHER_THREADS_PER_ATOM=%d "
+                    "-Dc_pmeSpreadGatherAtomsPerWarp=%zd "
+                    "-Dc_pmeSpreadGatherThreadsPerAtom=%d "
                     // forwarding from pme-grid.h, used for spline computation table sizes only
                     "-Dc_pmeMaxUnitcellShift=%f "
                     // forwarding PME behavior constants from pme-gpu-constants.h
@@ -161,9 +160,9 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
                     // decomposition parameter placeholders
                     "-DwrapX=true -DwrapY=true ",
                     warpSize,
-                    order,
-                    warpSize / PME_SPREADGATHER_THREADS_PER_ATOM,
-                    PME_SPREADGATHER_THREADS_PER_ATOM,
+                    c_pmeGpuOrder,
+                    warpSize / c_pmeSpreadGatherThreadsPerAtom,
+                    c_pmeSpreadGatherThreadsPerAtom,
                     static_cast<float>(c_pmeMaxUnitcellShift),
                     c_usePadding,
                     c_skipNeutralAtoms,
