@@ -39,6 +39,8 @@
 /*! \libinternal \file
  * \brief Library interface for RestraintMDModule
  *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ *
  * \inlibraryapi
  * \ingroup module_restraint
  */

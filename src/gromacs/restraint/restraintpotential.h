@@ -47,6 +47,8 @@
 /*! \file
  * \brief Declare generic interface for restraint implementations.
  *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ *
  * \inpublicapi
  * \ingroup module_restraint
  */

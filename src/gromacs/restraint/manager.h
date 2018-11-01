@@ -39,6 +39,8 @@
 /*! \libinternal \file
  * \brief Declare the Manager for restraint potentials.
  *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ *
  * \inlibraryapi
  * \ingroup module_restraint
  */
