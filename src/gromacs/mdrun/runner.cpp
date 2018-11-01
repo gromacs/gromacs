@@ -82,6 +82,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
+#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/makeconstraints.h"
@@ -671,7 +672,7 @@ int Mdrunner::mdrunner()
     //
     // Note that when bonded interactions run on a GPU they always run
     // alongside a nonbonded task, so do not influence task assignment
-    // even though they affect the force calculation schedule.
+    // even though they affect the force calculation workload.
     bool useGpuForNonbonded = false;
     bool useGpuForPme       = false;
     bool useGpuForBonded    = false;
@@ -1402,6 +1403,8 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
+        PpForceWorkload ppForceWorkload;
+
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to integrator.");
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
@@ -1417,6 +1420,7 @@ int Mdrunner::mdrunner()
             globalState.get(),
             &observablesHistory,
             mdAtoms.get(), nrnb, wcycle, fr,
+            &ppForceWorkload,
             replExParams,
             membed,
             walltime_accounting,
