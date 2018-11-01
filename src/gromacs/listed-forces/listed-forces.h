@@ -66,7 +66,6 @@
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
-#include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -74,8 +73,6 @@
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
 struct gmx_multisim_t;
-struct gmx_ffparams_t;
-struct GpuBondedLists;
 class history_t;
 struct t_commrec;
 struct t_fcdata;
@@ -159,36 +156,5 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 struct t_fcdata                *fcd,
                 int                            *global_atom_index,
                 int                             flags);
-
-/*! \brief Initializes the GPU bonded setup */
-CUDA_FUNC_QUALIFIER
-void
-init_gpu_bonded(GpuBondedLists gmx_unused       *gpuBondedLists,
-                const gmx_ffparams_t gmx_unused &ffparams,
-                void gmx_unused                 *streamPtr) CUDA_FUNC_TERM
-
-/*! \brief Updates the bonded work to run on a GPU
- *
- * Intended to be called after each domain decomposition stage. */
-CUDA_FUNC_QUALIFIER
-void update_gpu_bonded(GpuBondedLists gmx_unused *gpuBondedLists) CUDA_FUNC_TERM
-
-/*! \brief Launches bonded kernels on a GPU */
-CUDA_FUNC_QUALIFIER
-void do_bonded_gpu(t_forcerec gmx_unused   *fr,
-                   int gmx_unused           forceFlags,
-                   void gmx_unused         *xqDevicePtr,
-                   const matrix gmx_unused  box,
-                   void gmx_unused         *forceDevicePtr,
-                   rvec gmx_unused         *fshiftDevicePtr) CUDA_FUNC_TERM
-
-/*! \brief Copies back the bonded energies */
-CUDA_FUNC_QUALIFIER
-void bonded_gpu_get_energies(t_forcerec gmx_unused     *fr,
-                             gmx_enerdata_t gmx_unused *enerd) CUDA_FUNC_TERM
-
-/*! \brief Clears the device side energy buffer */
-CUDA_FUNC_QUALIFIER
-void bonded_gpu_clear_energies(GpuBondedLists gmx_unused *gpuBondedLists) CUDA_FUNC_TERM
 
 #endif

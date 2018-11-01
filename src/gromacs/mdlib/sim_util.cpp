@@ -63,7 +63,7 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
-#include "gromacs/listed-forces/listed-forces.h"
+#include "gromacs/listed-forces/gpubonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/arrayrefwithpadding.h"
@@ -1061,7 +1061,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 rvec mu_tot,
                                 double t,
                                 gmx_edsam *ed,
-                                int flags,
+                                const int flags,
                                 DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
                                 DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
@@ -1214,19 +1214,6 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         nbnxn_atomdata_set(nbv->nbat, nbv->nbs.get(), mdatoms, fr->cginfo);
 
-        /* Now we put all atoms on the grid, we can assign bonded interactions
-         * to the GPU, where the grid order is needed.
-         */
-        if (fr->gpuBondedLists)
-        {
-            assign_bondeds_to_gpu(fr->gpuBondedLists,
-                                  nbnxn_get_gridindices(fr->nbv->nbs.get()),
-                                  top->idef);
-
-            update_gpu_bonded(fr->gpuBondedLists);
-            ppForceWorkload->haveGpuBondedWork = bonded_gpu_have_interactions(fr->gpuBondedLists);
-        }
-
         wallcycle_stop(wcycle, ewcNS);
     }
 
@@ -1244,6 +1231,25 @@ static void do_force_cutsVERLET(FILE *fplog,
         nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat);
 
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+
+        if (bNS && fr->gpuBonded)
+        {
+            /* Now we put all atoms on the grid, we can assign bonded
+             * interactions to the GPU, where the grid order is
+             * needed. Also the xq, f and fshift device buffers have
+             * been reallocated if needed, so the bonded code can
+             * learn about them. */
+            // TODO the xq, f, and fshift buffers are now shared
+            // resources, so they should be maintained by a
+            // higher-level object than the nb module.
+            fr->gpuBonded->updateInteractionListsAndDeviceBuffers(nbnxn_get_gridindices(fr->nbv->nbs.get()),
+                                                                  top->idef,
+                                                                  nbnxn_gpu_get_xq(nbv->gpu_nbv),
+                                                                  nbnxn_gpu_get_f(nbv->gpu_nbv),
+                                                                  nbnxn_gpu_get_fshift(nbv->gpu_nbv));
+            ppForceWorkload->haveGpuBondedWork = fr->gpuBonded->haveInteractions();
+        }
+
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
@@ -1298,11 +1304,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (ppForceWorkload->haveGpuBondedWork && !DOMAINDECOMP(cr))
         {
-            do_bonded_gpu(fr, flags,
-                          nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
-                          nbnxn_gpu_get_f(nbv->gpu_nbv),
-                          nbnxn_gpu_get_fshift(nbv->gpu_nbv));
-
+            fr->gpuBonded->launchKernels(fr, flags, box);
         }
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
@@ -1368,10 +1370,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
             if (ppForceWorkload->haveGpuBondedWork)
             {
-                do_bonded_gpu(fr, flags,
-                              nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
-                              nbnxn_gpu_get_f(nbv->gpu_nbv),
-                              nbnxn_gpu_get_fshift(nbv->gpu_nbv));
+                fr->gpuBonded->launchKernels(fr, flags, box);
             }
 
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -1719,9 +1718,13 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
     {
-        bonded_gpu_get_energies(fr, enerd);
-
-        bonded_gpu_clear_energies(fr->gpuBondedLists);
+        // TODO The launch call could come earlier in the
+        // force-calculation sequence.
+        fr->gpuBonded->launchEnergyTransfer();
+        fr->gpuBonded->accumulateEnergyTerms(enerd);
+        // TODO The clearing call could come later in the
+        // force-calculation sequence.
+        fr->gpuBonded->clearEnergies();
     }
 
     if (DOMAINDECOMP(cr))

@@ -32,8 +32,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GPU_UTILS_GPU_VEC_CUH
+#define GMX_GPU_UTILS_GPU_VEC_CUH
 
-typedef float  fvec[DIM];
+/* Note that because of the duplicate of ivec, this header (or an
+ * OpenCL port of it) cannot be included in a translation unit that
+ * also includes the normal vectypes.h */
+#define XX      0 /* Defines for indexing in */
+#define YY      1 /* vectors                 */
+#define ZZ      2
+#define DIM     3 /* Dimension of vectors    */
+typedef int   ivec[DIM];
+typedef float fvec[DIM];
 
 /* maths operations */
 /* imported from cpu versions in math/vec.h */
@@ -248,3 +258,5 @@ static inline void unitv_gpu(const fvec src, fvec dest)
     dest[YY] = linv*src[YY];
     dest[ZZ] = linv*src[ZZ];
 }
+
+#endif
