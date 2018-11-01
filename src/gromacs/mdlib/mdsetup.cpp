@@ -144,7 +144,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
 
     setup_bonded_threading(fr->bondedThreading,
                            fr->natoms_force,
-                           fr->gpuBondedLists != nullptr,
+                           fr->gpuBonded != nullptr,
                            top->idef);
 
     gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);

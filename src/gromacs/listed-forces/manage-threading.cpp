@@ -53,21 +53,16 @@
 #include <cstdlib>
 
 #include <algorithm>
-#include <array>
 #include <string>
 
-#include "gromacs/listed-forces/listed-forces.h"
+#include "gromacs/listed-forces/gpubonded.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "listed-internal.h"
 #include "utilities.h"
@@ -235,8 +230,8 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
         int            nrToAssignToCpuThreads = il.nr;
 
         if (useGpuForBondeds &&
-            ftypeGpuIndex < ftypesOnGpu.size() &&
-            ftypesOnGpu[ftypeGpuIndex] == ftype)
+            ftypeGpuIndex < gmx::ftypesOnGpu.size() &&
+            gmx::ftypesOnGpu[ftypeGpuIndex] == ftype)
         {
             ftypeGpuIndex++;
 
@@ -334,165 +329,6 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
                 }
                 fprintf(debug, "\n");
             }
-        }
-    }
-}
-//! Converts \p src with atom indices in state order to \p dest in nbnxn order
-static void convertIlistToNbnxnOrder(const t_ilist            &src,
-                                     HostInteractionList      *dest,
-                                     int                       numAtomsPerInteraction,
-                                     gmx::ArrayRef<const int>  nbnxnAtomOrder)
-{
-    GMX_ASSERT(src.size() == 0 || !nbnxnAtomOrder.empty(), "We need the nbnxn atom order");
-
-    dest->iatoms.resize(src.size());
-
-    for (int i = 0; i < src.size(); i += 1 + numAtomsPerInteraction)
-    {
-        dest->iatoms[i] = src.iatoms[i];
-        for (int a = 0; a < numAtomsPerInteraction; a++)
-        {
-            dest->iatoms[i + 1 + a] = nbnxnAtomOrder[src.iatoms[i + 1 + a]];
-        }
-    }
-}
-
-namespace gmx
-{
-
-//! Returns whether there are any interactions suitable for a GPU.
-static bool someInteractionsCanRunOnGpu(const InteractionLists &ilists)
-{
-    for (int ftype : ftypesOnGpu)
-    {
-        if (!ilists[ftype].iatoms.empty())
-        {
-            // Perturbation is not implemented in the GPU bonded
-            // kernels. If all the interactions were actually
-            // perturbed, then that will be detected later on each
-            // domain, and work will never run on the GPU. This is
-            // very unlikely to occur, and has little run-time cost,
-            // so we don't complicate the code by catering for it
-            // here.
-            return true;
-        }
-    }
-    return false;
-}
-
-//! Returns whether there are any interactions suitable for a GPU.
-static bool bondedInteractionsCanRunOnGpu(const gmx_mtop_t &mtop)
-{
-    // Check the regular molecule types
-    for (const auto &moltype : mtop.moltype)
-    {
-        if (someInteractionsCanRunOnGpu(moltype.ilist))
-        {
-            return true;
-        }
-    }
-    // Check the inter-molecular interactions.
-    if (mtop.intermolecular_ilist)
-    {
-        if (someInteractionsCanRunOnGpu(*mtop.intermolecular_ilist))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-/*! \brief Help build a descriptive message in \c error if there are
- * \c errorReasons why bondeds on a GPU are not supported.
- *
- * \returns Whether the lack of errorReasons indicate there is support. */
-static bool
-addMessageIfNotSupported(ArrayRef <const std::string> errorReasons,
-                         std::string                 *error)
-{
-    bool isSupported = errorReasons.empty();
-    if (!isSupported && error)
-    {
-        *error  = "Bonded interactions cannot run on GPUs: ";
-        *error += joinStrings(errorReasons, "; ") + ".";
-    }
-    return isSupported;
-}
-
-bool buildSupportsGpuBondeds(std::string *error)
-{
-    std::vector<std::string> errorReasons;
-
-    if (GMX_DOUBLE)
-    {
-        errorReasons.emplace_back("not supported with double precision");
-    }
-    if (GMX_GPU == GMX_GPU_OPENCL)
-    {
-        errorReasons.emplace_back("not supported with OpenCL build of GROMACS");
-    }
-    else if (GMX_GPU == GMX_GPU_NONE)
-    {
-        errorReasons.emplace_back("not supported with CPU-only build of GROMACS");
-    }
-    return addMessageIfNotSupported(errorReasons, error);
-}
-
-bool inputSupportsGpuBondeds(const t_inputrec &ir,
-                             const gmx_mtop_t &mtop,
-                             std::string      *error)
-{
-    std::vector<std::string> errorReasons;
-
-    if (!bondedInteractionsCanRunOnGpu(mtop))
-    {
-        errorReasons.emplace_back("No supported bonded interactions are present");
-    }
-    if (ir.cutoff_scheme == ecutsGROUP)
-    {
-        errorReasons.emplace_back("group cutoff scheme");
-    }
-    if (!EI_DYNAMICS(ir.eI))
-    {
-        errorReasons.emplace_back("not a dynamical integrator");
-    }
-    if (EI_MIMIC(ir.eI))
-    {
-        errorReasons.emplace_back("MiMiC");
-    }
-    if (ir.opts.ngener > 1)
-    {
-        errorReasons.emplace_back("Cannot run with multiple energy groups");
-    }
-    return addMessageIfNotSupported(errorReasons, error);
-}
-
-} // namespace gmx
-
-//! Divides bonded interactions over threads and GPU
-void assign_bondeds_to_gpu(GpuBondedLists           *gpuBondedLists,
-                           gmx::ArrayRef<const int>  nbnxnAtomOrder,
-                           const t_idef             &idef)
-{
-    gpuBondedLists->haveInteractions = false;
-
-    for (int ftype : ftypesOnGpu)
-    {
-        /* Perturbation is not implemented in the GPU bonded kernels.
-         * But instead of doing all on the CPU, we could do only
-         * the actually perturbed interactions on the CPU.
-         */
-        if (idef.il[ftype].nr > 0 && !ftypeHasPerturbedEntries(idef, ftype))
-        {
-            gpuBondedLists->haveInteractions = true;
-
-            convertIlistToNbnxnOrder(idef.il[ftype],
-                                     &gpuBondedLists->iLists[ftype],
-                                     NRAL(ftype), nbnxnAtomOrder);
-        }
-        else
-        {
-            gpuBondedLists->iLists[ftype].iatoms.clear();
         }
     }
 }
