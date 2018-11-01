@@ -32,14 +32,25 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB LISTED_FORCES_SOURCES *.cpp)
+gmx_add_libgromacs_sources(
+    bonded.cpp
+    disre.cpp
+    gpubonded-impl.cpp
+    listed-forces.cpp
+    listed-internal.cpp
+    manage-threading.cpp
+    orires.cpp
+    pairs.cpp
+    position-restraints.cpp
+    restcbt.cpp
+    )
 
 if(GMX_USE_CUDA)
-   file(GLOB BONDED_CUDA_KERNEL_SOURCES
-       bonded.cu)
+    gmx_add_libgromacs_sources(
+       gpubonded-impl.cu
+       gpubondedkernels.cu
+       )
 endif()
-
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${LISTED_FORCES_SOURCES} ${BONDED_CUDA_KERNEL_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
      add_subdirectory(tests)
