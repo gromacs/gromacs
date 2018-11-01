@@ -413,7 +413,7 @@ calc_one_bond(int thread,
     nbonds    = idef->il[ftype].nr/nat1;
     iatoms    = idef->il[ftype].iatoms;
 
-    GMX_ASSERT(fr->gpuBondedLists != nullptr || bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads + 1) + bondedThreading.nthreads] == idef->il[ftype].nr, "The thread division should match the topology");
+    GMX_ASSERT(fr->gpuBonded != nullptr || bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads + 1) + bondedThreading.nthreads] == idef->il[ftype].nr, "The thread division should match the topology");
 
     nb0 = bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads+1)+thread];
     nbn = bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads+1)+thread+1] - nb0;
