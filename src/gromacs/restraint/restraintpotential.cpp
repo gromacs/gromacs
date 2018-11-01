@@ -40,21 +40,4 @@
 namespace gmx
 {
 
-PotentialPointData::PotentialPointData() :
-    PotentialPointData {Vector(0., 0., 0.), real(0.0)}
-{}
-
-PotentialPointData::PotentialPointData(const Vector &f, const real e) :
-    force(f),
-    energy(e)
-{}
-
-void IRestraintPotential::update(gmx::Vector gmx_unused v,
-                                 gmx::Vector gmx_unused v0,
-                                 double gmx_unused      t)
-{}
-
-void IRestraintPotential::bindSession(gmxapi::SessionResources* /* resources */)
-{}
-
 } // end namespace gmx
