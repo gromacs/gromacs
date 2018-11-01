@@ -449,7 +449,7 @@ void gmx::Integrator::do_mimic()
                                 constr, enerd, fcd,
                                 state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
-                                shellfc, fr, t, mu_tot,
+                                shellfc, fr, ppForceWorkload, t, mu_tot,
                                 vsite,
                                 ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
@@ -467,7 +467,7 @@ void gmx::Integrator::do_mimic()
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
-                     fr, vsite, mu_tot, t, ed,
+                     fr, ppForceWorkload, vsite, mu_tot, t, ed,
                      GMX_FORCE_NS | force_flags,
                      ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
