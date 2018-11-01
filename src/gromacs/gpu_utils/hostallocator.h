@@ -93,9 +93,13 @@ class HostAllocationPolicy;
 template <class T>
 using HostAllocator = Allocator<T, HostAllocationPolicy>;
 
-//! Convenience alias for std::vector that uses HostAllocator.
+//! Convenience alias for PaddedVector that uses HostAllocator.
 template <class T>
 using HostVector = PaddedVector<T, HostAllocator<T> >;
+
+//! Convenience alias for std::vector that uses HostAllocator.
+template <class T>
+using HostStdVector = std::vector<T, HostAllocator<T> >;
 
 /*! \libinternal
  * \brief Policy class for configuring gmx::Allocator, to manage
