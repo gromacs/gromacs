@@ -82,6 +82,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
+#include "gromacs/mdlib/forcecalculationschedule.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/makeconstraints.h"
@@ -1412,6 +1413,8 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
+        ForceCalculationSchedule schedule;
+
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to integrator.");
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
@@ -1427,6 +1430,7 @@ int Mdrunner::mdrunner()
             globalState.get(),
             &observablesHistory,
             mdAtoms.get(), nrnb, wcycle, fr,
+            &schedule,
             replExParams,
             membed,
             walltime_accounting,
