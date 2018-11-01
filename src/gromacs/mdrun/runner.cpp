@@ -75,7 +75,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/printhardware.h"
 #include "gromacs/listed-forces/disre.h"
-#include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/listed-forces/gpubonded.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"

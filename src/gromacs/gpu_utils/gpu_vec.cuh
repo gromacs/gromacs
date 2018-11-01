@@ -32,6 +32,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GPU_UTILS_GPU_VEC_CUH
+#define GMX_GPU_UTILS_GPU_VEC_CUH
+
+#include "gromacs/math/vectypes.h"
 
 typedef float  fvec[DIM];
 
@@ -248,3 +252,5 @@ static inline void unitv_gpu(const fvec src, fvec dest)
     dest[YY] = linv*src[YY];
     dest[ZZ] = linv*src[ZZ];
 }
+
+#endif
