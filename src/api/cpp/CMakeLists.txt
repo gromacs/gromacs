@@ -158,6 +158,14 @@ target_include_directories(gmxapi-detail
                            INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(BUILD_TESTING)
-    add_subdirectory(tests)
-    add_subdirectory(workflow/tests)
+    # TODO: Remove this fatal error when test inputs are prepared through API instead of grompp.
+    if(CMAKE_CROSSCOMPILING)
+        message(FATAL_ERROR "gmxapi tests cannot be built when cross-compiling."
+                " Either set CMake variable GMXAPI=off or set BUILD_TESTING=off."
+                " Reference https://cmake.org/cmake/help/latest/variable/CMAKE_CROSSCOMPILING.html"
+                " and https://redmine.gromacs.org/issues/2729")
+    else()
+        add_subdirectory(tests)
+        add_subdirectory(workflow/tests)
+    endif()
 endif()
