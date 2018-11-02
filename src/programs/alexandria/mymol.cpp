@@ -943,6 +943,16 @@ void MyMol::addShells(const Poldata          &pd,
                             pol /= vsite->nvsite();
                         }
                     }
+                  
+                    if (nexcl_ == 0)
+                    {
+                        /*
+                          This is an ugly hack to turn off the Polarize
+                          routine. If we can make nexcl_ = 0 work, it should
+                          be implemenetd in a nice way.
+                        */
+                        pol = 1e+10;
+                    }
                     p.c[0] = convert2gmx(pol, polarUnit);
                     add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
                 }
@@ -980,11 +990,20 @@ void MyMol::addShells(const Poldata          &pd,
     auto pw = SearchPlist(plist_, F_POLARIZATION);
     if (plist_.end() != pw)
     {
-        // Exclude the vsites and the atoms from their own shell.
-        for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+        /*
+          Exclude the vsites and the atoms from their own shell.
+          This step will be done if the number of exclusions is
+          bigger than zero, otherwsie, the vsite or the core will
+          interact with its own shell.
+        */
+        if (nexcl_ > 0)
         {
-            add_excl_pair(newexcls, j->a[0], j->a[1]);
+            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+            {
+                add_excl_pair(newexcls, j->a[0], j->a[1]);
+            }
         }
+        
         // Make a copy of the exclusions of the Atom or Vsite for the shell.
         for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
         {
@@ -1486,8 +1505,7 @@ void MyMol::CalcDipole()
 {
     rvec mu;
     CalcDipole(mu);
-    set_muQM(qtCalc, mu);
-    rotateDipole(mu_qm_[qtCalc], mu_qm_[qtESP]);  
+    set_muQM(qtCalc, mu);  
 }
 
 void MyMol::CalcDipole(rvec mu)

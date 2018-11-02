@@ -300,6 +300,8 @@ class MyMol
          * Return QM dipole corresponding to charge type qt
          */
         const rvec &muQM(qType qt) const { return mu_qm_[qt]; }
+        
+        rvec &muQM(qType qt) { return mu_qm_[qt]; }
 
         /*! \brief
          * Return QM quadrupole corresponding to charge type qt.

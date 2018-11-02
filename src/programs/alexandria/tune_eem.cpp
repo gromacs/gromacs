@@ -370,6 +370,7 @@ void OptEEM::calcDeviation()
             if (weight(ermsMU))
             {
                 mymol.CalcDipole();
+                mymol.rotateDipole(mymol.muQM(qtCalc), mymol.muQM(qtElec));
                 if (bQM())
                 {
                     rvec dmu;
@@ -581,7 +582,8 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
 
     auto           ei      = pd.findEem(iChargeDistributionModel(), ai->name());
     auto           ai_elem = pd.ztype2elem(ei->getName());
-    auto           ai_row  = ei->getRow(0);
+    auto           nzeta   = ei->getNzeta();
+    auto           ai_row  = ei->getRow(nzeta-1);
     auto           ai_chi  = ei->getChi0();
     auto           ai_J0   = ei->getJ0();
     auto           ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
@@ -594,6 +596,11 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
             penalty += penalty_;
         }
     }
+    
+    if (ai_atn == 6 && ai_chi > 10)
+    {
+       penalty += penalty_;
+    }
 
     auto *ic = indexCount();
     for (auto aj = ic->beginIndex(); aj < ic->endIndex(); ++aj)
@@ -602,7 +609,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
         {
             const auto ej      = pd.findEem(iChargeDistributionModel(), aj->name());
             const auto aj_elem = pd.ztype2elem(ej->getName());
-            auto       aj_row  = ej->getRow(0);
+            auto       aj_row  = ej->getRow(nzeta-1);
             auto       aj_atn  = gmx_atomprop_atomnumber(atomprop(), aj_elem.c_str());
 
             if (ai_atn != aj_atn)
@@ -612,6 +619,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
                 if (ai_row == aj_row)
                 {
                     //Chi and J0 increase from left to right
+                    /*
                     if (ai_atn > aj_atn)
                     {
                         if (ai_chi <= aj_chi || ai_J0 <= aj_J0)
@@ -625,7 +633,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
                         {
                             penalty += ((aj_atn - ai_atn) * penalty_);
                         }
-                    }
+                    }*/
                 }
                 else
                 {
@@ -638,6 +646,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
                         penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
                     }
                     //Penalize if N_chi <= P_chi or N_J0 <= P_J0
+                    /*
                     else if ((ai_atn == 7  && aj_atn == 15 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
                              (ai_atn == 15 && aj_atn == 7  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                     {
@@ -666,7 +675,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
                              (ai_atn == 53  && aj_atn == 35 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                     {
                         penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
-                    }
+                    }*/
                 }
             }
         }

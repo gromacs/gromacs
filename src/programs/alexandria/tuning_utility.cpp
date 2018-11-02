@@ -300,12 +300,6 @@ void print_electric_props(FILE                           *fp,
             auto nEsp     = mol.Qgresp_.nEsp();
             auto EspPoint = mol.Qgresp_.espPoint();
             
-            mol.Qgacm_.generateCharges(debug,
-                                       mol.molProp()->getMolname().c_str(),
-                                       pd, 
-                                       &(mol.topology_->atoms),
-                                       mol.x());
-            
             mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
             mol.Qgresp_.updateAtomCoords(mol.x());                
             mol.Qgresp_.calcPot();           
@@ -319,6 +313,7 @@ void print_electric_props(FILE                           *fp,
             fprintf(fp, "ESP rms: %g (Hartree/e) %s\n", mol.espRms(), (mol.espRms() > 7e-3) ? "XXX" : "");
                        
             mol.CalcDipole();
+            mol.rotateDipole(mol.muQM(qtCalc), mol.muQM(qtElec));
             print_dipole(fp, &mol, qtElec, dip_toler);
             for (int j = 0; j < qtElec; j++)
             {
