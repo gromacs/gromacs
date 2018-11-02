@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o"></File>
+    <File Name="-p">
+      <String Name="Contents"><![CDATA[
+#include "gromos43a1.ff/forcefield.itp"
+#include "gromos43a1.ff/spc.itp"
+
+[ system ]
+; Name
+spc
+
+[ molecules ]
+; Compound  #mols
+SOL         216
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>
