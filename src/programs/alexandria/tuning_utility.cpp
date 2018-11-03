@@ -300,6 +300,12 @@ void print_electric_props(FILE                           *fp,
             auto nEsp     = mol.Qgresp_.nEsp();
             auto EspPoint = mol.Qgresp_.espPoint();
             
+            mol.Qgacm_.generateCharges(debug,
+                                       mol.molProp()->getMolname().c_str(),
+                                       pd, 
+                                       &(mol.topology_->atoms),
+                                       mol.x());
+            
             mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
             mol.Qgresp_.updateAtomCoords(mol.x());                
             mol.Qgresp_.calcPot();           
