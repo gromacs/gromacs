@@ -104,12 +104,7 @@ TEST_F(SolvateTest, cs_cp_p_Works)
         "solvate", "-cs"
     };
     setInputFile("-cp", "spc-and-methanol.gro");
-
-    // TODO: Consider adding a convenience method for this.
-    std::string topFileName           = gmx::test::TestFileManager::getInputFilePath("spc-and-methanol.top");
-    std::string modifiableTopFileName = fileManager().getTemporaryFilePath(".top");
-    gmx_file_copy(topFileName.c_str(), modifiableTopFileName.c_str(), true);
-    commandLine().addOption("-p", modifiableTopFileName);
+    setModifiableInputFile("-p", "spc-and-methanol.top");
 
     runTest(CommandLine(cmdline));
 }
@@ -134,14 +129,7 @@ TEST_F(SolvateTest, update_Topology_Works)
     };
     setInputFile("-cs", "mixed_solvent.gro");
     setInputFile("-cp", "simple.gro");
-
-    // TODO: Consider adding a convenience method for this.
-    // Copies topology file to where it would be found as an output file, so the copied
-    // .top file is used as both input and output
-    std::string topFileName           = gmx::test::TestFileManager::getInputFilePath("simple.top");
-    std::string modifiableTopFileName = fileManager().getTemporaryFilePath("simple.top");
-    gmx_file_copy(topFileName.c_str(), modifiableTopFileName.c_str(), true);
-    setOutputFile("-p", "simple.top", ExactTextMatch());
+    setInputAndOutputFile("-p", "simple.top", ExactTextMatch());
 
     runTest(CommandLine(cmdline));
 }

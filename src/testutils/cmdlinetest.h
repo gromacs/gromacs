@@ -390,6 +390,17 @@ class CommandLineTestBase : public ::testing::Test
         //! \copydoc setInputFile(const char *, const char *);
         void setInputFile(const char *option, const std::string &filename);
         /*! \brief
+         * Sets an input file that may be modified. The file is copied to a
+         * temporary file, which is used as the test input
+         *
+         * \param[in]     option    Option to set.
+         * \param[in]     filename  Name of the input file.
+         *
+         */
+        void setModifiableInputFile(const char *option, const char *filename);
+        //! \copydoc setModifiableInputFile(const char *, const char *);
+        void setModifiableInputFile(const char *option, const std::string &filename);
+        /*! \brief
          * Generates and sets an input file.
          *
          * \see CommandLineTestHelper::setInputFileContents()
@@ -419,6 +430,15 @@ class CommandLineTestBase : public ::testing::Test
          */
         void setOutputFile(const char *option, const char *filename,
                            const IFileMatcherSettings &matcher);
+        /*! \brief
+         * Sets a file parameter that is used for input and modified as output. The input file
+         * is copied to a temporary file that is used as input and can be modified.
+         */
+        void setInputAndOutputFile(const char *option, const char *filename,
+                                   const ITextBlockMatcherSettings &matcher);
+        //! \copydoc setInputAndOutputFile(const char *, const char *, const ITextBlockMatcherSettings&);
+        void setInputAndOutputFile(const char *option, const char *filename,
+                                   const IFileMatcherSettings &matcher);
 
         /*! \brief
          * Returns the internal CommandLine object used to construct the
