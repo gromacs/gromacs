@@ -55,6 +55,7 @@
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"
@@ -441,6 +442,21 @@ void CommandLineTestBase::setInputFile(
     setInputFile(option, filename.c_str());
 }
 
+void CommandLineTestBase::setModifiableInputFile(
+        const char *option, const std::string &filename)
+{
+    setModifiableInputFile(option, filename.c_str());
+}
+
+void CommandLineTestBase::setModifiableInputFile(
+        const char *option, const char *filename)
+{
+    std::string originalFileName   = gmx::test::TestFileManager::getInputFilePath(filename);
+    std::string modifiableFileName = fileManager().getTemporaryFilePath(filename);
+    gmx_file_copy(originalFileName.c_str(), modifiableFileName.c_str(), true);
+    impl_->cmdline_.addOption(option, modifiableFileName);
+}
+
 void CommandLineTestBase::setInputFileContents(
         const char *option, const char *extension, const std::string &contents)
 {
@@ -467,6 +483,26 @@ void CommandLineTestBase::setOutputFile(
         const char *option, const char *filename,
         const IFileMatcherSettings &matcher)
 {
+    impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
+}
+
+void CommandLineTestBase::setInputAndOutputFile(
+        const char *option, const char *filename,
+        const ITextBlockMatcherSettings &matcher)
+{
+    std::string originalFileName   = gmx::test::TestFileManager::getInputFilePath(filename);
+    std::string modifiableFileName = fileManager().getTemporaryFilePath(filename);
+    gmx_file_copy(originalFileName.c_str(), modifiableFileName.c_str(), true);
+    impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
+}
+
+void CommandLineTestBase::setInputAndOutputFile(
+        const char *option, const char *filename,
+        const IFileMatcherSettings &matcher)
+{
+    std::string originalFileName   = gmx::test::TestFileManager::getInputFilePath(filename);
+    std::string modifiableFileName = fileManager().getTemporaryFilePath(filename);
+    gmx_file_copy(originalFileName.c_str(), modifiableFileName.c_str(), true);
     impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
 }
 
