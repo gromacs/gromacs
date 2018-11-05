@@ -67,7 +67,7 @@ icc-18 msvc-2017 fftpack simd=avx2_256 release
 #gcc-7 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release
 
 # Test ARM HPC compier toolchain with armclang
-#armclang-18.2 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release-with-assert
+armclang-18.4 armhpc-18.4 openmp simd=ARM_NEON_ASIMD release-with-assert
 
 # TODO
 # Add SIMD + OpenMP + CUDA asan build
