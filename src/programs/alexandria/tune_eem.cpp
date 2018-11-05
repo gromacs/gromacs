@@ -597,9 +597,19 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
         }
     }
     
-    if (ai_atn == 6 && ai_chi > 10)
+    if (ai->name() == "z_c3" && ai_chi > 8)
     {
-       penalty += penalty_;
+        penalty += (ai_atn * penalty_);
+    }
+
+    if (ai->name() == "z_hc" && ai_chi < 3.5)
+    {
+        penalty += (6 * penalty_);
+    }
+
+    if (ai->name() == "z_ha" && ai_chi > 3.5)
+    {
+       penalty += (6 * penalty_);
     }
 
     auto *ic = indexCount();
@@ -614,68 +624,14 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
 
             if (ai_atn != aj_atn)
             {
+                //Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0
+                
                 auto aj_chi = ej->getChi0();
                 auto aj_J0  = ej->getJ0();
-                if (ai_row == aj_row)
+                if ((ai_atn == 1 && aj_atn > 1  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)) ||
+                    (ai_atn > 1  && aj_atn == 1 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                 {
-                    //Chi and J0 increase from left to right
-                    /*
-                    if (ai_atn > aj_atn)
-                    {
-                        if (ai_chi <= aj_chi || ai_J0 <= aj_J0)
-                        {
-                            penalty += ((ai_atn - aj_atn) * penalty_);
-                        }
-                    }
-                    else if (aj_atn > ai_atn)
-                    {
-                        if (aj_chi <= ai_chi || aj_J0 <= ai_J0)
-                        {
-                            penalty += ((aj_atn - ai_atn) * penalty_);
-                        }
-                    }*/
-                }
-                else
-                {
-                    //Chi and J0 decrease from top to bottom, except H.
-                    
-                    //Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0
-                    if ((ai_atn == 1 && aj_atn > 1  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)) ||
-                        (ai_atn > 1  && aj_atn == 1 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
-                    {
-                        penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
-                    }
-                    //Penalize if N_chi <= P_chi or N_J0 <= P_J0
-                    /*
-                    else if ((ai_atn == 7  && aj_atn == 15 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                             (ai_atn == 15 && aj_atn == 7  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
-                    {
-                        penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
-                    }
-                    //Penalize if O_chi <= S_chi or N_J0 <= P_J0
-                    else if ((ai_atn == 8  && aj_atn == 16 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                             (ai_atn == 16 && aj_atn == 8  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
-                    {
-                        penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
-                    }
-                    //Penalize if F_chi <= Cl_chi or F_J0 <= Cl_J0
-                    else if ((ai_atn == 9  && aj_atn == 17 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                             (ai_atn == 17 && aj_atn == 9  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
-                    {
-                        penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
-                    }
-                    //Penalize if Cl_chi <= Br_chi or Cl_J0 <= Br_J0
-                    else if ((ai_atn == 17  && aj_atn == 35 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                             (ai_atn == 35  && aj_atn == 17 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
-                    {
-                        penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
-                    }
-                     //Penalize if Br_chi <= I_chi or Br_J0 <= I_J0
-                    else if ((ai_atn == 35  && aj_atn == 53 && (ai_chi <= aj_chi || ai_J0 <= aj_J0)) ||
-                             (ai_atn == 53  && aj_atn == 35 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
-                    {
-                        penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
-                    }*/
+                    penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
                 }
             }
         }
