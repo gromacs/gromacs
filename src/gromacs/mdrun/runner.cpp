@@ -619,7 +619,7 @@ int Mdrunner::mdrunner()
                     inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
-            auto canUseGpuForPme   = pme_gpu_supports_build(nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
+            auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
                     (useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment,
                     canUseGpuForPme, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
@@ -687,7 +687,7 @@ int Mdrunner::mdrunner()
                                                                 emulateGpuNonbonded, usingVerletScheme,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
-        auto canUseGpuForPme   = pme_gpu_supports_build(nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
+        auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
                                                     canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
