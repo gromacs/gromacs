@@ -81,7 +81,7 @@ gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 mpi simd=avx2_256
 
 # Test AMD OpenCL
 # Test external clFFT (for build speed)
-# Test AVX_128_FMA SIMD
+# Test AVX2_256 SIMD
 # Test newest gcc at time of release
 gcc-8 openmp simd=avx2_256 gpuhw=amd opencl-1.2 clFFT-2.14
 
