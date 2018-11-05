@@ -176,7 +176,7 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
             program = gmx::ocl::compileProgram(stderr,
-                                               "src/gromacs/ewald",
+                                               "gromacs/ewald",
                                                "pme-program.cl",
                                                commonDefines,
                                                context,
