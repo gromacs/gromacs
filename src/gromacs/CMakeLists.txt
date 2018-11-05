@@ -383,8 +383,52 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
 endif()
 
 if(GMX_USE_OPENCL)
-    set(OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS})
+    # Install the utility headers
+    file(GLOB OPENCL_INSTALLED_FILES
+        gpu_utils/vectype_ops.clh
+        gpu_utils/device_utils.clh
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/gpu_utils
+        COMPONENT libraries)
+    file(GLOB OPENCL_INSTALLED_FILES
+        pbcutil/ishift.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/pbcutil
+        COMPONENT libraries)
 
-    install(FILES ${OPENCL_KERNELS} DESTINATION
-        ${GMX_INSTALL_OCLDIR} COMPONENT libraries)
+    # Install the NB source and headers
+    file(GLOB OPENCL_INSTALLED_FILES
+        mdlib/nbnxn_consts.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib
+        COMPONENT libraries)
+    file(GLOB OPENCL_INSTALLED_FILES
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.cl
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_pruneonly.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen_add_twincut.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_utils.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_consts.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib/nbnxn_ocl
+        COMPONENT libraries)
+
+    # Install the PME source and headers
+    file(GLOB OPENCL_INSTALLED_FILES
+        ewald/pme-spread.clh
+        ewald/pme-solve.clh
+        ewald/pme-gather.clh
+        ewald/pme-gpu-utils.clh
+        ewald/pme-program.cl
+        ewald/pme-gpu-types.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/ewald
+        COMPONENT libraries)
 endif()

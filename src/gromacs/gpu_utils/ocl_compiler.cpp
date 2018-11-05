@@ -216,7 +216,7 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
  * behavior by defining GMX_OCL_FILE_PATH environment variable.
  *
  * \param[in] sourceRelativePath    Relative path to the kernel or other file in the source tree,
- *                                  e.g. "src/gromacs/mdlib/nbnxn_ocl" for NB kernels.
+ *                                  from src, e.g. "gromacs/mdlib/nbnxn_ocl" for NB kernels.
  * \return OS-normalized path string to the folder storing OpenCL source file
  *
  * \throws std::bad_alloc    if out of memory.
@@ -235,9 +235,9 @@ getSourceRootPath(const std::string &sourceRelativePath)
            root path from the path to the binary that is running. */
         InstallationPrefixInfo      info           = getProgramContext().installationPrefix();
         std::string                 dataPathSuffix = (info.bSourceLayout ?
-                                                      sourceRelativePath :
+                                                      "src" :
                                                       GMX_INSTALL_OCLDIR);
-        sourceRootPath = Path::join(info.path, dataPathSuffix);
+        sourceRootPath = Path::join(info.path, dataPathSuffix, sourceRelativePath);
     }
     else
     {
@@ -246,7 +246,7 @@ getSourceRootPath(const std::string &sourceRelativePath)
             GMX_THROW(FileIOError(formatString("GMX_OCL_FILE_PATH must point to the directory where OpenCL"
                                                "kernels are found, but '%s' does not exist", gmxOclFilePath)));
         }
-        sourceRootPath = gmxOclFilePath;
+        sourceRootPath = Path::join(gmxOclFilePath, sourceRelativePath);
     }
 
     // Make sure we return an OS-correct path format
@@ -425,8 +425,10 @@ compileProgram(FILE              *fplog,
                ocl_vendor_id_t    deviceVendorId)
 {
     cl_int      cl_error;
+    // Let the kernel find include files from its module.
     std::string kernelRootPath  = getSourceRootPath(kernelRelativePath);
-    std::string includeRootPath = getSourceRootPath("src");
+    // Let the kernel find include files from other modules.
+    std::string rootPath = getSourceRootPath("");
 
     GMX_RELEASE_ASSERT(fplog != nullptr, "Need a valid log file for building OpenCL programs");
 
@@ -436,7 +438,7 @@ compileProgram(FILE              *fplog,
 
     /* Make the build options */
     std::string preprocessorOptions = makePreprocessorOptions(kernelRootPath,
-                                                              includeRootPath,
+                                                              rootPath,
                                                               getDeviceWarpSize(context, deviceId),
                                                               deviceVendorId,
                                                               extraDefines);
