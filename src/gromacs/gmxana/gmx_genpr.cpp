@@ -61,17 +61,6 @@ int gmx_genpr(int argc, char *argv[])
         "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-direction based on",
         "the contents of the [TT]-f[tt] file. A single isotropic force constant may",
         "be given on the command line instead of three components.[PAR]",
-        "WARNING: Position restraints are interactions within molecules, therefore",
-        "they must be included within the correct [TT][ moleculetype ][tt]",
-        "block in the topology. The atom indices within the",
-        "[TT][ position_restraints ][tt] block must be within the range of the",
-        "atom indices for that molecule type. Since the atom numbers in every",
-        "moleculetype in the topology start at 1 and the numbers in the input file",
-        "for [THISMODULE] number consecutively from 1, [THISMODULE] will only",
-        "produce a useful file for the first molecule. You may wish to",
-        "edit the resulting index file to remove the lines for later atoms,",
-        "or construct a suitable index group to provide",
-        "as input to [THISMODULE].[PAR]",
         "The [TT]-of[tt] option produces an index file that can be used for",
         "freezing atoms. In this case, the input file must be a [REF].pdb[ref] file.[PAR]",
         "With the [TT]-disre[tt] option, half a matrix of distance restraints",
@@ -254,7 +243,7 @@ int gmx_genpr(int argc, char *argv[])
         for (i = 0; i < igrp; i++)
         {
             fprintf(out, "%4d %4d %10g %10g %10g\n",
-                    ind_grp[i]+1, 1, fc[XX], fc[YY], fc[ZZ]);
+                    i+1, 1, fc[XX], fc[YY], fc[ZZ]);
         }
         gmx_ffclose(out);
     }
