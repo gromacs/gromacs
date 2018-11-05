@@ -220,7 +220,7 @@ class IRestraintPotential
             (void)v;
             (void)v0;
             (void)t;
-        };
+        }
 
 
         /*!
@@ -240,7 +240,7 @@ class IRestraintPotential
          * \internal
          * \todo This should be more general than the RestraintPotential interface.
          */
-        virtual void bindSession(gmxapi::SessionResources* resources) { (void)resources; };
+        virtual void bindSession(gmxapi::SessionResources* resources) { (void)resources; }
 };
 
 }      // end namespace gmx
