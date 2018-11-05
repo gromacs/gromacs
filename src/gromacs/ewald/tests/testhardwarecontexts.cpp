@@ -111,7 +111,7 @@ void PmeTestEnvironment::SetUp()
     hardwareContexts_.emplace_back(compat::make_unique<TestHardwareContext>(CodePath::CPU, "", nullptr));
 
     hardwareInfo_ = hardwareInit();
-    if (!pme_gpu_supports_build(nullptr))
+    if (!pme_gpu_supports_build(*hardwareInfo_, nullptr))
     {
         // PME can only run on the CPU, so don't make any more test contexts.
         return;
