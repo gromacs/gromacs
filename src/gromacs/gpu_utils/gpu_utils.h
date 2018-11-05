@@ -203,6 +203,21 @@ void get_gpu_device_info_string(char *GPU_FUNC_ARGUMENT(s),
                                 const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
                                 int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM
 
+/*! \brief Returns whether all compatible OpenCL devices are from AMD.
+ *
+ * This is currently the most useful and best tested platform for
+ * supported OpenCL devices, so some modules may need to check what
+ * degree of support they should offer.
+ *
+ * \todo An enumeration visible in the hardware module would make such
+ * checks more configurable, if we discover other needs in future.
+ *
+ * \returns whether all detected compatible devices have AMD for the vendor.
+ */
+OPENCL_FUNC_QUALIFIER
+bool areAllGpuDevicesFromAmd(const gmx_gpu_info_t &OPENCL_FUNC_ARGUMENT(gpuInfo))
+OPENCL_FUNC_TERM_WITH_RETURN(false)
+
 /*! \brief Returns the size of the gpu_dev_info struct.
  *
  * The size of gpu_dev_info can be used for allocation and communication.

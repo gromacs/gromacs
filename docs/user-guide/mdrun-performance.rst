@@ -1049,6 +1049,8 @@ Limitations in the current OpenCL support of interest to |Gromacs| users:
 - On NVIDIA GPUs the OpenCL kernels achieve much lower performance
   than the equivalent CUDA kernels due to limitations of the NVIDIA OpenCL
   compiler.
+- PME is currently only supported on AMD devices, because of known
+  issues with devices from other vendors
 
 Limitations of interest to |Gromacs| developers:
 

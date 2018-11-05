@@ -384,6 +384,21 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int ind
     }
 }
 
+bool areAllGpuDevicesFromAmd(const gmx_gpu_info_t &gpuInfo)
+{
+    bool result = true;
+    for (int i = 0; i < gpuInfo.n_dev; ++i)
+    {
+        if ((gpuInfo.gpu_dev[i].stat == egpuCompatible) &&
+            (gpuInfo.gpu_dev[i].vendor_e != OCL_VENDOR_AMD))
+        {
+            result = false;
+            break;
+        }
+    }
+    return result;
+}
+
 //! This function is documented in the header file
 void init_gpu(const gmx_device_info_t *deviceInfo)
 {

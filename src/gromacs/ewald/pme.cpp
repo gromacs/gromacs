@@ -88,6 +88,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
@@ -103,6 +104,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -141,7 +143,8 @@ addMessageIfNotSupported(const std::list<std::string> &errorReasons,
     return foundErrorReasons;
 }
 
-bool pme_gpu_supports_build(std::string *error)
+bool pme_gpu_supports_build(const gmx_hw_info_t &hwinfo,
+                            std::string         *error)
 {
     std::list<std::string> errorReasons;
     if (GMX_DOUBLE)
@@ -151,6 +154,13 @@ bool pme_gpu_supports_build(std::string *error)
     if (GMX_GPU == GMX_GPU_NONE)
     {
         errorReasons.emplace_back("non-GPU build of GROMACS");
+    }
+    if (GMX_GPU == GMX_GPU_OPENCL)
+    {
+        if (!areAllGpuDevicesFromAmd(hwinfo.gpu_info))
+        {
+            errorReasons.emplace_back("only AMD devices are supported");
+        }
     }
     return addMessageIfNotSupported(errorReasons, error);
 }
