@@ -68,7 +68,7 @@
 namespace alexandria
 {
 
-class OptEEM : public MolGen
+class OptACM : public MolGen
 {
     using param_type = std::vector<double>;
 
@@ -78,7 +78,7 @@ class OptEEM : public MolGen
         gmx_bool       bFitZeta_;
         gmx_bool       bUseCM5_;
 
-        Bayes <double> TuneEEM_;
+        Bayes <double> TuneACM_;
         param_type     param_, lower_, upper_, best_;
         param_type     orig_, psigma_, pmean_;
 
@@ -86,7 +86,7 @@ class OptEEM : public MolGen
 
     public:
 
-        OptEEM()
+        OptACM()
             :
               bFullTensor_(false),
               bFitAlpha_(false),
@@ -95,7 +95,7 @@ class OptEEM : public MolGen
               penalty_(0)
         {}
 
-        ~OptEEM() {}
+        ~OptACM() {}
 
         gmx_bool bESP() const { return weight(ermsESP); }
 
@@ -131,7 +131,7 @@ class OptEEM : public MolGen
                 pargs->push_back(pa[i]);
             }
             addOptions(pargs);
-            TuneEEM_.add_pargs(pargs);
+            TuneACM_.add_pargs(pargs);
         }
 
         double l2_regularizer (double x,
@@ -143,11 +143,11 @@ class OptEEM : public MolGen
 
         void addEspPoint();
 
-        void setEEM();
+        void setACM();
 
-        void polData2TuneEEM();
+        void polData2TuneACM();
 
-        void TuneEEM2PolData();
+        void TuneACM2PolData();
 
         void InitOpt(real factor);
 
@@ -165,7 +165,7 @@ class OptEEM : public MolGen
                     const char             *xvgepot);
 };
 
-void OptEEM::addEspPoint()
+void OptACM::addEspPoint()
 {
     for (auto &mymol : mymols())
     {
@@ -214,7 +214,7 @@ void OptEEM::addEspPoint()
     }
 }
 
-void OptEEM::setEEM()
+void OptACM::setACM()
 {
     for (auto &mymol : mymols())
     {
@@ -234,7 +234,7 @@ void OptEEM::setEEM()
     }
 }
 
-void OptEEM::calcDeviation()
+void OptACM::calcDeviation()
 {
     int                 i         = 0;
     int                 j         = 0;
@@ -404,7 +404,7 @@ void OptEEM::calcDeviation()
     printEnergies(debug);
 }
 
-void OptEEM::polData2TuneEEM()
+void OptACM::polData2TuneACM()
 {
     param_.clear();
     auto *ic = indexCount();
@@ -461,7 +461,7 @@ void OptEEM::polData2TuneEEM()
     }
 }
 
-void OptEEM::TuneEEM2PolData()
+void OptACM::TuneACM2PolData()
 {
     char     zstr[STRLEN];
     char     z_sig[STRLEN];
@@ -552,9 +552,9 @@ void OptEEM::TuneEEM2PolData()
     }
 }
 
-void OptEEM::InitOpt(real  factor)
+void OptACM::InitOpt(real  factor)
 {
-    polData2TuneEEM();
+    polData2TuneACM();
 
     orig_.resize(param_.size(), 0);
     best_.resize(param_.size(), 0);
@@ -575,15 +575,13 @@ void OptEEM::InitOpt(real  factor)
     }
 }
 
-double OptEEM::calcPenalty(AtomIndexIterator ai)
+double OptACM::calcPenalty(AtomIndexIterator ai)
 {
     double         penalty = 0;
     const auto    &pd      = poldata();
 
     auto           ei      = pd.findEem(iChargeDistributionModel(), ai->name());
     auto           ai_elem = pd.ztype2elem(ei->getName());
-    auto           nzeta   = ei->getNzeta();
-    auto           ai_row  = ei->getRow(nzeta-1);
     auto           ai_chi  = ei->getChi0();
     auto           ai_J0   = ei->getJ0();
     auto           ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
@@ -619,7 +617,6 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
         {
             const auto ej      = pd.findEem(iChargeDistributionModel(), aj->name());
             const auto aj_elem = pd.ztype2elem(ej->getName());
-            auto       aj_row  = ej->getRow(nzeta-1);
             auto       aj_atn  = gmx_atomprop_atomnumber(atomprop(), aj_elem.c_str());
 
             if (ai_atn != aj_atn)
@@ -639,7 +636,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
     return penalty;
 }
 
-double OptEEM::objFunction(const double v[])
+double OptACM::objFunction(const double v[])
 {
     double bound   = 0;
     double penalty = 0;
@@ -651,7 +648,7 @@ double OptEEM::objFunction(const double v[])
         param_[i] = v[i];
     }
 
-    TuneEEM2PolData();
+    TuneACM2PolData();
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
@@ -696,7 +693,7 @@ double OptEEM::objFunction(const double v[])
     return energy(ermsTOT);
 }
 
-void OptEEM::optRun(FILE                   *fp,
+void OptACM::optRun(FILE                   *fp,
                     FILE                   *fplog,
                     int                     nrun,
                     const gmx_output_env_t *oenv,
@@ -717,12 +714,12 @@ void OptEEM::optRun(FILE                   *fp,
         {
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
-                gmx_send_int(commrec(), dest, (nrun*TuneEEM_.maxIter()*param_.size()));
+                gmx_send_int(commrec(), dest, (nrun*TuneACM_.maxIter()*param_.size()));
             }
         }
         chi2 = chi2_min = GMX_REAL_MAX;
-        TuneEEM_.setFunc(func, param_, lower_, upper_, &chi2);
-        TuneEEM_.Init(xvgconv, xvgepot, oenv);
+        TuneACM_.setFunc(func, param_, lower_, upper_, &chi2);
+        TuneACM_.Init(xvgconv, xvgepot, oenv);
 
         for (auto n = 0; n < nrun; n++)
         {
@@ -730,10 +727,10 @@ void OptEEM::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-            TuneEEM_.simulate();
-            TuneEEM_.getBestParam(optb);
-            TuneEEM_.getPsigma(opts);
-            TuneEEM_.getPmean(optm);
+            TuneACM_.simulate();
+            TuneACM_.getBestParam(optb);
+            TuneACM_.getPsigma(opts);
+            TuneACM_.getPmean(optm);
             if (chi2 < chi2_min)
             {
                 bMinimum = true;
@@ -745,7 +742,7 @@ void OptEEM::optRun(FILE                   *fp,
                 }
                 chi2_min = chi2;
             }
-            TuneEEM_.setParam(best_);
+            TuneACM_.setParam(best_);
         }
         if (bMinimum)
         {
@@ -903,7 +900,7 @@ int alex_tune_eem(int argc, char *argv[])
     {
         pargs.push_back(pa[i]);
     }
-    alexandria::OptEEM opt;
+    alexandria::OptACM opt;
     opt.add_pargs(&pargs);
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
@@ -963,7 +960,7 @@ int alex_tune_eem(int argc, char *argv[])
     }
     if (opt.iChargeGenerationAlgorithm() != eqgACM)
     {
-        opt.setEEM();
+        opt.setACM();
     }
 
     opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
