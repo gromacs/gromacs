@@ -74,7 +74,7 @@ namespace test
  * This is used to provide input files for the tests, and also to
  * store test reference data persistently (see TestReferenceData).
  *
- * Note that setInputDataDirectory() and
+ * Note that setInputDataDirectory(), setTestSimulationDataBaseDirectory() and
  * setGlobalOutputTempDirectory() must be called in setup code, before
  * creating any objects of this class that are used for accessing the
  * paths for these respective directories. Code in tests should avoid
@@ -173,6 +173,13 @@ class TestFileManager
         static std::string getInputFilePath(const std::string &filename);
 
         /*! \brief
+         * Returns the path to the simulation input database directory.
+         *
+         * \returns Path to simulation input database directory.
+         */
+        static const char *getTestSimulationDatabaseDirectory();
+
+        /*! \brief
          * Returns the path to the test input directory.
          *
          * \returns Path to input data directory for the test executable.
@@ -190,6 +197,18 @@ class TestFileManager
          * initTestUtils().
          */
         static void setInputDataDirectory(const std::string &path);
+
+        /*! \brief
+         * Sets the input directory for simulation input files.
+         *
+         * \param[in] path Path to look up the directory for simulation input files.
+         *
+         * \p path must name an exisitng directory.
+         *
+         * This function is automatically called by unittest_main.cpp through
+         * initTestUtils().
+         */
+        static void setTestSimulationDatabaseDirectory(const std::string &path);
 
         /*! \brief Returns the path to the global test output
          * temporary directory for future TestFileManager objects.
