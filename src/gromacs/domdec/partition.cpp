@@ -361,15 +361,21 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
 
     if (dd->ndim >= 2)
     {
-        int dim = dd->dim[1];
-        for (int i = 0; i < 2; i++)
+        const int  dim              = dd->dim[1];
+        const bool applyPbc         = (dim < ddbox->npbcdim);
+        const bool receiveValidData = (applyPbc || dd->ci[dim] > 0);
+
+        if (receiveValidData)
         {
-            if (debug)
+            for (int i = 0; i < 2; i++)
             {
-                print_ddzone(debug, 1, i, 0, &comm->zone_d1[i]);
+                if (debug)
+                {
+                    print_ddzone(debug, 1, i, 0, &comm->zone_d1[i]);
+                }
+                cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d1[i].min0);
+                cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d1[i].max1);
             }
-            cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d1[i].min0);
-            cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d1[i].max1);
         }
     }
     if (dd->ndim >= 3)
