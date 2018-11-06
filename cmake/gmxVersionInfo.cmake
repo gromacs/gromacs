@@ -235,7 +235,7 @@ if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND
 endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
-set(REGRESSIONTEST_BRANCH "refs/heads/master")
+set(REGRESSIONTEST_BRANCH "refs/heads/release-2019")
 # Run the regressiontests packaging job with the correct pakage
 # version string, and the release box checked, in order to have it
 # build the regressiontests tarball with all the right naming. The
