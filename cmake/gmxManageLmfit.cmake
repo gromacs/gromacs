@@ -43,6 +43,7 @@ gmx_option_multichoice(GMX_USE_LMFIT
     "How to handle the lmfit dependency of GROMACS"
     INTERNAL
     INTERNAL EXTERNAL NONE)
+mark_as_advanced(GMX_USE_LMFIT)
 
 # Make a fully functional lmfit library target that libgromacs can
 # depend on regardless of how the user directed lmfit support and/or
