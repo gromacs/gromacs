@@ -78,6 +78,9 @@ class TestFileManager::Impl
         //! Global test input data path set with setDataInputDirectory().
         static std::string s_inputDirectory;
 
+        //! Global path to simulation input database set with setTestSimulationDataBaseDirectory().
+        static std::string s_simulationDatabaseDirectory;
+
         //! Global temporary output directory for tests, set with setGlobalOutputTempDirectory().
         static const char *s_globalOutputTempDirectory;
 
@@ -112,6 +115,7 @@ class TestFileManager::Impl
 };
 
 std::string TestFileManager::Impl::s_inputDirectory;
+std::string TestFileManager::Impl::s_simulationDatabaseDirectory;
 const char *TestFileManager::Impl::s_globalOutputTempDirectory = nullptr;
 /** Controls whether TestFileManager should delete temporary files
     after the test finishes. */
@@ -195,7 +199,18 @@ std::string TestFileManager::getTestSpecificFileName(const char *suffix)
 
 std::string TestFileManager::getInputFilePath(const char *filename)
 {
-    return Path::join(getInputDataDirectory(), filename);
+    // Check first if file exists in global simulation input database.
+    // This means that the file needs to be specified with the complete extension!
+    if (File::exists(Path::join(getTestSimulationDataBaseDirectory(), filename), File::returnFalseOnError))
+    {
+        return Path::join(getTestSimulationDataBaseDirectory(), filename);
+    }
+    // Assume the file is in the local directory otherwise, possibly with extension
+    // not provided with the file name.
+    else
+    {
+        return Path::join(getInputDataDirectory(), filename);
+    }
 }
 
 std::string TestFileManager::getInputFilePath(const std::string &filename)
@@ -220,6 +235,12 @@ const char *TestFileManager::getOutputTempDirectory() const
     return impl_->outputTempDirectory_.c_str();
 }
 
+const char *TestFileManager::getTestSimulationDataBaseDirectory()
+{
+    GMX_RELEASE_ASSERT(!Impl::s_simulationDatabaseDirectory.empty(), "Path for simulation input database directory is not set");
+    return Impl::s_simulationDatabaseDirectory.c_str();
+}
+
 void TestFileManager::setInputDataDirectory(const std::string &path)
 {
     // There is no need to protect this by a mutex, as this is called in early
@@ -227,6 +248,15 @@ void TestFileManager::setInputDataDirectory(const std::string &path)
     GMX_RELEASE_ASSERT(Directory::exists(path),
                        "Test data directory does not exist");
     Impl::s_inputDirectory = path;
+}
+
+void TestFileManager::setTestSimulationDataBaseDirectory(const std::string &path)
+{
+    // There is no need to protect this by a mutex, as this is called in early
+    // initialization of the tests.
+    GMX_RELEASE_ASSERT(Directory::exists(path),
+                       "Simulation database directory does not exist");
+    Impl::s_simulationDatabaseDirectory = path;
 }
 
 void TestFileManager::setGlobalOutputTempDirectory(const char *path)
