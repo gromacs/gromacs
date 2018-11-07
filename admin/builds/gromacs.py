@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 import os.path
+import subprocess
 
 # These are accessible later in the script, just like other
 # declared options, via e.g. context.opts.release.
@@ -234,3 +235,9 @@ def do_build(context):
             if context.opts.asan:
                 context.env.set_env_var('ASAN_OPTIONS', 'detect_leaks=0')
             context.run_cmd(cmd, shell=True, failure_message='Regression tests failed to execute')
+
+            test_dir = os.path.join(context.workspace.install_dir, 'bin', 'tests')
+            context.chdir(test_dir)
+            if context.opts.gmxapi:
+                gmxapi_cmd = 'bash  ' + os.path.join(context.workspace.get_project_dir(Project.GROMACS), 'admin', 'builds','gmxapitest.sh')
+                context.run_cmd(cmd, shell=True, failure_message='Tests for gmx api failed to execute')
