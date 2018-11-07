@@ -1,9 +1,9 @@
 GROMACS 2018.4 release notes
 ----------------------------
 
-This version was released on TODO, 2018. These release notes document
+This version was released on November 12, 2018. These release notes document
 the changes that have taken place in GROMACS since version 2018.3, to fix known
-issues. It also incorporates all fixes made in version TODO and
+issues. It also incorporates all fixes made in version 2016.5 and
 earlier, which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
@@ -87,3 +87,10 @@ sigma and epsilon. The proper values have been included from parm99.dat for Brom
 As Iron has no corresponding parameters, the entry has been removed.
 
 :issue:`2711`
+
+Fix issue when building |Gromacs| without TNG
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Some compiler errors have been resolved that could show when building
+|Gromacs| without TNG support enabled.
+
