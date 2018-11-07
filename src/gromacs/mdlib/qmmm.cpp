@@ -73,6 +73,11 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+// When not built in a configuration with QMMM support, much of this
+// code is unreachable by design. Tell clang not to warn about it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunreachable-code"
+
 /* this struct and these comparison functions are needed for creating
  * a QMMM input for the QM routines from the QMMM neighbor list.
  */
@@ -978,3 +983,5 @@ real calculate_QMMM(const t_commrec  *cr,
     }
     return(QMener);
 } /* calculate_QMMM */
+
+#pragma GCC diagnostic pop

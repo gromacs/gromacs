@@ -301,11 +301,12 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
         #      unreferenced local variable (only C)
         #      conversion from 'size_t' to 'int', possible loss of data
         #      conversion from 'const char*' to 'void*', different 'const' qualifiers (only C)
+        #      unknown pragma (4068)
         if(NOT CMAKE_CONFIGURATION_TYPES)
-            GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CFLAGS)
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267" GMXC_CXXFLAGS)
-        else() #Projects only use the C++ flags
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CXXFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090 /wd4068" GMXC_CFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267 /wd4068" GMXC_CXXFLAGS)
+        else() # MSVC projects only use the C++ flags
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090 /wd4068" GMXC_CXXFLAGS)
         endif()
     endif()
 
