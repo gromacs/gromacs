@@ -240,3 +240,9 @@ def do_build(context):
             if context.opts.asan:
                 context.env.set_env_var('ASAN_OPTIONS', 'detect_leaks=0')
             context.run_cmd(cmd, shell=True, failure_message='Regression tests failed to execute')
+
+            if context.opts.gmxapi:
+                gmxrc_cmd = '. ' + os.path.join(context.workspace.install_dir, 'bin', 'GMXRC')
+                context.env.run_env_script(gmxrc_cmd)
+                gmxapi_cmd = 'bash  ' + os.path.join(context.workspace.get_project_dir(Project.GROMACS), 'admin', 'builds','gmxapitest.sh') + ' ' + context.env.gmxapi_version + ' ' + context.env.c_compiler + ' ' + context.env.cxx_compiler
+                context.run_cmd(gmxapi_cmd, shell=True, failure_message='Tests for gmx api failed to execute')
