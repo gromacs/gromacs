@@ -57,7 +57,7 @@ gcc-6 npme=1 nranks=2 opencl-1.2 gpuhw=nvidia simd=sse2 release
 # Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
 # Test no hwloc build, tests internal CPU topology detection (mainly for x86)
-gcc-5 gpuhw=nvidia nranks=4 gpu_id=1 cuda-8.0 no-hwloc release-with-assert
+gcc-5 gpuhw=nvidia nranks=4 gpu_id=1 cuda-8.0 no-hwloc release-with-assert gmxapi-0.0.7
 
 # Test icc on Windows
 # Test icc with SIMD in mixed precision in release mode
