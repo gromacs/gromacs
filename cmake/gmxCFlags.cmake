@@ -315,6 +315,9 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
         endif()
         if (GMX_COMPILER_WARNINGS)
             GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
+            # In some build configurations, we need stub functions
+            # that do nothing but issue a fatal error.
+            GMX_TEST_CXXFLAG(CFLAGS_NOWARN_MISSING_NORETURN "-Wno-missing-noreturn" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wpointer-arith" GMXC_CFLAGS_EXTRA)
         endif()
     endif()
@@ -329,6 +332,9 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith -Wmissing-prototypes" GMXC_CXXFLAGS)
+            # In some build configurations, we need stub functions
+            # that do nothing but issue a fatal error.
+            GMX_TEST_CXXFLAG(CXXFLAGS_NOWARN_MISSING_NORETURN "-Wno-missing-noreturn" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEPRECATED "-Wdeprecated" GMXC_CXXFLAGS)
         endif()
     endif()
