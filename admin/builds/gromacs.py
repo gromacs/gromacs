@@ -55,7 +55,7 @@ extra_options = {
     'npme': Option.string,
     'gpu_id': Option.string,
     'hwloc': Option.bool,
-    'tng': Option.bool
+    'tng': Option.bool,
 }
 
 extra_projects = [Project.REGRESSIONTESTS]
@@ -240,3 +240,7 @@ def do_build(context):
             if context.opts.asan:
                 context.env.set_env_var('ASAN_OPTIONS', 'detect_leaks=0')
             context.run_cmd(cmd, shell=True, failure_message='Regression tests failed to execute')
+
+            if context.opts.gmxapi:
+                gmxapi_cmd = 'bash  ' + os.path.join(context.workspace.get_project_dir(Project.GROMACS), 'admin', 'builds','gmxapitest.sh' + ' ' + context.env.gmxapi_version)
+                context.run_cmd(gmxapi_cmd, shell=True, failure_message='Tests for gmx api failed to execute')
