@@ -34,7 +34,7 @@ gcc-7 gpuhw=nvidia gpu_id=1 cuda-10.0 thread-mpi openmp cmake-3.6.1 release-with
 
 # Test with libcxx
 # Test with ThreadSanitizer + OpenMP + SIMD
-clang-7 no-hwloc tsan libcxx-7 openmp cmake-3.12.1 simd=avx2_256
+clang-7 no-hwloc tsan libcxx-7 openmp cmake-3.12.1 simd=avx2_256 gmxapi-0.0.7
 
 # Test on MacOS (the gcc-8 and/or x11 flags implicitly steer jobs to the OSX agent)
 # Test X11 build
@@ -51,7 +51,7 @@ gcc-8 double x11 no-tng fftpack simd=sse4.1
 # Test thread-MPI
 # Test AVX_128_FMA SIMD + Double (Important for Simd4N=Simd4 and sizeof(SimdInt32)!=4*GMX_SIMD_REAL_WIDTH)
 # Test with TNG support
-clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.4.3 tng
+clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.4.3 tng gmxapi-0.0.7
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
