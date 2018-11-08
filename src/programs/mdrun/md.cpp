@@ -444,6 +444,19 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         ir->nstlist       = 1;
         ir->nstcalcenergy = 1;
         nstglobalcomm     = 1;
+
+        /* Rerun can't work if output file name is the same as input file name.
+         * If this is the case, the user will get an error telling them what the issue is.
+         */
+        if (strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-o", nfile, fnm)) == 0)
+        {
+            gmx_fatal(FARGS, "When rerunning, the name of the input file for rerun %s can "
+                      "not be identical to the output file %s given with -o or -deffnm.",
+                      opt2fn("-rerun", nfile, fnm),
+                      opt2fn("-o", nfile, fnm));
+        }
+
+
     }
 
     nstglobalcomm   = check_nstglobalcomm(mdlog, nstglobalcomm, ir);
