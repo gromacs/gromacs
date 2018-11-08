@@ -499,6 +499,22 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     handleRestart(cr, bTryToAppendFiles, nfile, fnm, &continuationOptions.appendFiles, &continuationOptions.startedFromCheckpoint);
 
     mdrunOptions.rerun            = opt2bSet("-rerun", nfile, fnm);
+
+    if (mdrunOptions.rerun)
+    {
+        /* Rerun can't work if an output file name is the same as the input file name.
+         * If this is the case, the user will get an error telling them what the issue is.
+         */
+        if (strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-o", nfile, fnm)) == 0 ||
+            strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-x", nfile, fnm)) == 0)
+        {
+            gmx_fatal(FARGS, "When using mdrun -rerun, the name of the input trajectory file "
+                      "%s cannot be identical to the name of an output file (whether "
+                      "given explicitly with -o or -x, or by default)",
+                      opt2fn("-rerun", nfile, fnm));
+        }
+    }
+
     mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
 
     /* We postpone opening the log file if we are appending, so we can
