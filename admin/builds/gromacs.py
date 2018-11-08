@@ -119,12 +119,18 @@ def do_build(context):
         cmake_opts['GMX_FFT_LIBRARY'] = 'mkl'
     elif context.opts.fftpack:
         cmake_opts['GMX_FFT_LIBRARY'] = 'fftpack'
-    if context.opts.mkl or context.opts.atlas:
+    if context.opts.mkl or context.opts.atlas or context.opts.armpl:
         cmake_opts['GMX_EXTERNAL_BLAS'] = 'ON'
         cmake_opts['GMX_EXTERNAL_LAPACK'] = 'ON'
     if context.opts.clFFT:
         cmake_opts['GMX_EXTERNAL_CLFFT'] = 'ON'
         cmake_opts['clFFT_ROOT'] = context.env.clFFT_root
+
+    if context.opts.armpl:
+        cmake_opts['FFTWF_LIBRARY'] = os.path.join(context.env.armpl_dir, 'lib/libarmpl_lp64.so')
+        cmake_opts['FFTWF_INCLUDE_DIR'] = os.path.join(context.env.armpl_dir, '/include')
+        cmake_opts['GMX_BLAS_USER'] = os.path.join(context.env.armpl_dir, '/lib/libarmpl_lp64.so')
+        cmake_opts['GMX_LAPACK_USER'] = os.path.join(context.env.armpl_dir, '/lib/libarmpl_lp64.so')
 
     if context.opts.hwloc is False:
         cmake_opts['GMX_HWLOC'] = 'OFF'
