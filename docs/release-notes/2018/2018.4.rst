@@ -98,3 +98,13 @@ sigma and epsilon. The proper values have been included from parm99.dat for Brom
 As Iron has no corresponding parameters, the entry has been removed.
 
 :issue:`2711`
+
+Disallow rerun using same filename as output file
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using identical filenames for ``-rerun`` a cryptic error was thrown because
+the same file would be used for reading and writing. Now :ref:`mdrun <gmx mdrun>`
+will give a helpful error message to get around this.
+
+:issue:`2634`
+
