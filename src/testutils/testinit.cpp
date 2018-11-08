@@ -161,7 +161,9 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
                    bool usesHardwareDetection, int *argc, char ***argv)
 {
 #ifndef NDEBUG
-    gmx_feenableexcept();
+    // Disabled for the rest of the lifetime of release-2018 branch
+    // to prevent false positives.
+    // gmx_feenableexcept();
 #endif
     const CommandLineProgramContext &context = initForCommandLine(argc, argv);
     try

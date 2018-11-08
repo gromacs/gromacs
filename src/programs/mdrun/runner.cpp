@@ -952,6 +952,9 @@ int Mdrunner::mdrunner()
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
+    // Disabled for the rest of the lifetime of release-2018 branch
+    // to prevent false positives.
+    /*
 #ifndef NDEBUG
     if (EI_TPI(inputrec->eI) &&
         inputrec->cutoff_scheme == ecutsVERLET)
@@ -959,6 +962,7 @@ int Mdrunner::mdrunner()
         gmx_feenableexcept();
     }
 #endif
+    */
 
     // Build a data structure that expresses which kinds of non-bonded
     // task are handled by this rank.
