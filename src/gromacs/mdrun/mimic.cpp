@@ -392,10 +392,6 @@ void gmx::Integrator::do_mimic()
         if (MASTER(cr))
         {
             mimicCommunicator.getCoords(&state_global->x, state_global->natoms);
-            for (int i = 0; i < state_global->natoms; i++)
-            {
-                copy_rvec(state_global->x[i], state->x[i]);
-            }
         }
 
         if (ir->efep != efepNO)
