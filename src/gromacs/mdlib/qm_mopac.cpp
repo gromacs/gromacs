@@ -58,6 +58,11 @@
 #include "gromacs/utility/smalloc.h"
 
 
+// When not built in a configuration with QMMM support, much of this
+// code is unreachable by design. Tell clang not to warn about it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
+
 #if GMX_QMMM_MOPAC
 /* mopac interface routines */
 void
@@ -246,3 +251,5 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
     free(qmcrd);
     return (QMener);
 } /* call_mopac_SH */
+
+#pragma GCC diagnostic pop

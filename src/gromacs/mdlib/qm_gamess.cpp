@@ -59,6 +59,11 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+// When not built in a configuration with QMMM support, much of this
+// code is unreachable by design. Tell clang not to warn about it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
+
 /* QMMM sub routines */
 /* mopac interface routines */
 
@@ -291,3 +296,5 @@ real call_gamess(const t_QMrec *qm, const t_MMrec *mm,
     QMener = energy*HARTREE2KJ*AVOGADRO;
     return(QMener);
 }
+
+#pragma GCC diagnostic pop
