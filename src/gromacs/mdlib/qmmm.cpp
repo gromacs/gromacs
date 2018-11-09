@@ -77,6 +77,7 @@
 // code is unreachable by design. Tell clang not to warn about it.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunreachable-code"
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
 
 /* this struct and these comparison functions are needed for creating
  * a QMMM input for the QM routines from the QMMM neighbor list.

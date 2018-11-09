@@ -60,6 +60,11 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+// When not built in a configuration with QMMM support, much of this
+// code is unreachable by design. Tell clang not to warn about it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
+
 /* TODO: this should be made thread-safe */
 
 /* Gaussian interface routines */
@@ -1025,3 +1030,5 @@ real call_gaussian_SH(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], 
     return(QMener);
 
 } /* call_gaussian_SH */
+
+#pragma GCC diagnostic pop

@@ -57,6 +57,11 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+// When not built in a configuration with QMMM support, much of this
+// code is unreachable by design. Tell clang not to warn about it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
+
 /* ORCA interface routines */
 
 void init_orca(t_QMrec *qm)
@@ -393,3 +398,5 @@ real call_orca(const t_forcerec *fr,
 } /* call_orca */
 
 /* end of orca sub routines */
+
+#pragma GCC diagnostic pop
