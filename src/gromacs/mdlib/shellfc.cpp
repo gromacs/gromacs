@@ -1160,8 +1160,12 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
          * shell positions are updated, therefore the other particles must
          * be set here.
          */
-        pos[Min] = state->x;
-        pos[Try] = state->x;
+        std::copy(state->x.begin(),
+                  state->x.end(),
+                  pos[Min].begin());
+        std::copy(state->x.begin(),
+                  state->x.end(),
+                  pos[Try].begin());
     }
 
     if (bVerbose && MASTER(cr))
