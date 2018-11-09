@@ -1,7 +1,7 @@
-GROMACS 2018.4 release notes
+GROMACS 2018.5 release notes
 ----------------------------
 
-This version was released on TODO, 2019. These release notes document
+This version was released on TODO, 2018. These release notes document
 the changes that have taken place in GROMACS since version 2018.4, to fix known
 issues. It also incorporates all fixes made in version TODO and
 earlier, which you can find described in the :ref:`release-notes`.
@@ -17,4 +17,12 @@ Fixes to improve portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Fixed efficiency issue with shell code minimization
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Code cleanup touching unnecessarily complex code created an efficiency
+issue.  Both the issue and some of the complexity are now fixed.
+
+:issue: `2705`
 
