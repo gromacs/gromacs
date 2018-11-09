@@ -37,6 +37,14 @@ contribution was missing from the foreign Hamiltonian values.
 
 :issue: `2703`
 
+Fixed efficiency issue with shell code minimization
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Code cleanup touching unnecessarily complex code created an efficiency
+issue.  Both the issue and some of the complexity are now fixed.
+
+:issue: `2705`
+
 Work around bugs with expanded ensemble runs
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
