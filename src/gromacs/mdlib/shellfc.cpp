@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1037,15 +1037,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         shfc->f[i].resize(gmx::paddedRVecVectorSize(nat));
     }
 
-    /* Create views that we can swap */
-    gmx::PaddedArrayRef<gmx::RVec> pos[2];
-    gmx::PaddedArrayRef<gmx::RVec> force[2];
-    for (i = 0; (i < 2); i++)
-    {
-        pos[i]   = shfc->x[i];
-        force[i] = shfc->f[i];
-    }
-
     if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
     {
         /* This is the only time where the coordinates are used
@@ -1119,7 +1110,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     }
     do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle, top, groups,
              state->box, state->x, &state->hist,
-             force[Min], force_vir, md, enerd, fcd,
+             shfc->f[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
              fr, vsite, mu_tot, t, nullptr, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags,
@@ -1130,7 +1121,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     {
         init_adir(fplog, shfc,
                   constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
-                  shfc->x_old, as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), as_rvec_array(force[Min].data()),
+                  shfc->x_old, as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), as_rvec_array(shfc->f[Min].data()),
                   shfc->acc_dir,
                   fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
@@ -1151,17 +1142,21 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
     if (gmx_debug_at)
     {
-        pr_rvecs(debug, 0, "force0", as_rvec_array(force[Min].data()), md->nr);
+        pr_rvecs(debug, 0, "force0", as_rvec_array(shfc->f[Min].data()), md->nr);
     }
 
     if (nshell+nflexcon > 0)
     {
-        /* Copy x to pos[Min] & pos[Try]: during minimization only the
+        /* Copy x to shfc->x[Min] & shfc->x[Try]: during minimization only the
          * shell positions are updated, therefore the other particles must
          * be set here.
          */
-        pos[Min] = state->x;
-        pos[Try] = state->x;
+        std::copy(state->x.begin(),
+                  state->x.end(),
+                  shfc->x[Min].begin());
+        std::copy(state->x.begin(),
+                  state->x.end(),
+                  shfc->x[Try].begin());
     }
 
     if (bVerbose && MASTER(cr))
@@ -1189,7 +1184,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     {
         if (vsite)
         {
-            construct_vsites(vsite, as_rvec_array(pos[Min].data()),
+            construct_vsites(vsite, as_rvec_array(shfc->x[Min].data()),
                              inputrec->delta_t, as_rvec_array(state->v.data()),
                              idef->iparams, idef->il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
@@ -1199,30 +1194,30 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         {
             init_adir(fplog, shfc,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Min].data()), as_rvec_array(force[Min].data()), acc_dir,
+                      x_old, as_rvec_array(state->x.data()), as_rvec_array(shfc->x[Min].data()), as_rvec_array(shfc->f[Min].data()), acc_dir,
                       fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
-            directional_sd(pos[Min], pos[Try], acc_dir, end, fr->fc_stepsize);
+            directional_sd(shfc->x[Min], shfc->x[Try], acc_dir, end, fr->fc_stepsize);
         }
 
         /* New positions, Steepest descent */
-        shell_pos_sd(pos[Min], pos[Try], force[Min], nshell, shell, count);
+        shell_pos_sd(shfc->x[Min], shfc->x[Try], shfc->f[Min], nshell, shell, count);
 
         /* do_force expected the charge groups to be in the box */
         if (graph)
         {
-            unshift_self(graph, state->box, as_rvec_array(pos[Try].data()));
+            unshift_self(graph, state->box, as_rvec_array(shfc->x[Try].data()));
         }
 
         if (gmx_debug_at)
         {
-            pr_rvecs(debug, 0, "RELAX: pos[Min]  ", as_rvec_array(pos[Min].data()), homenr);
-            pr_rvecs(debug, 0, "RELAX: pos[Try]  ", as_rvec_array(pos[Try].data()), homenr);
+            pr_rvecs(debug, 0, "RELAX: shfc->x[Min]  ", as_rvec_array(shfc->x[Min].data()), homenr);
+            pr_rvecs(debug, 0, "RELAX: shfc->x[Try]  ", as_rvec_array(shfc->x[Try].data()), homenr);
         }
         /* Try the new positions */
         do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
-                 top, groups, state->box, pos[Try], &state->hist,
-                 force[Try], force_vir,
+                 top, groups, state->box, shfc->x[Try], &state->hist,
+                 shfc->f[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, nullptr, bBornRadii,
                  force_flags,
@@ -1230,15 +1225,15 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
         if (gmx_debug_at)
         {
-            pr_rvecs(debug, 0, "RELAX: force[Min]", as_rvec_array(force[Min].data()), homenr);
-            pr_rvecs(debug, 0, "RELAX: force[Try]", as_rvec_array(force[Try].data()), homenr);
+            pr_rvecs(debug, 0, "RELAX: shfc->f[Min]", as_rvec_array(shfc->f[Min].data()), homenr);
+            pr_rvecs(debug, 0, "RELAX: shfc->f[Try]", as_rvec_array(shfc->f[Try].data()), homenr);
         }
         sf_dir = 0;
         if (nflexcon)
         {
             init_adir(fplog, shfc,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Try].data()), as_rvec_array(force[Try].data()), acc_dir,
+                      x_old, as_rvec_array(state->x.data()), as_rvec_array(shfc->x[Try].data()), as_rvec_array(shfc->f[Try].data()), acc_dir,
                       fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
             for (i = 0; i < end; i++)
@@ -1249,7 +1244,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
         Epot[Try] = enerd->term[F_EPOT];
 
-        df[Try] = rms_force(cr, force[Try], nshell, shell, nflexcon, &sf_dir, &Epot[Try]);
+        df[Try] = rms_force(cr, shfc->f[Try], nshell, shell, nflexcon, &sf_dir, &Epot[Try]);
 
         if (debug)
         {
@@ -1260,12 +1255,12 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         {
             if (gmx_debug_at)
             {
-                pr_rvecs(debug, 0, "F na do_force", as_rvec_array(force[Try].data()), homenr);
+                pr_rvecs(debug, 0, "F na do_force", as_rvec_array(shfc->f[Try].data()), homenr);
             }
             if (gmx_debug_at)
             {
                 fprintf(debug, "SHELL ITER %d\n", count);
-                dump_shells(debug, pos[Try], force[Try], ftol, nshell, shell);
+                dump_shells(debug, shfc->x[Try], shfc->f[Try], ftol, nshell, shell);
             }
         }
 
@@ -1290,7 +1285,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                 {
                     for (d = 0; d < DIM; d++)
                     {
-                        state->v[i][d] += (pos[Try][i][d] - pos[Min][i][d])*invdt;
+                        state->v[i][d] += (shfc->x[Try][i][d] - shfc->x[Min][i][d])*invdt;
                     }
                 }
             }
@@ -1321,8 +1316,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     }
 
     /* Copy back the coordinates and the forces */
-    std::copy(pos[Min].begin(), pos[Min].end(), state->x.begin());
-    std::copy(force[Min].begin(), force[Min].end(), f->begin());
+    std::copy(shfc->x[Min].begin(), shfc->x[Min].end(), state->x.begin());
+    std::copy(shfc->f[Min].begin(), shfc->f[Min].end(), f->begin());
 }
 
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shfc, gmx_int64_t numSteps)
