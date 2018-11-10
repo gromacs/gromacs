@@ -50,6 +50,7 @@
 
 #include "gromacs/gpu_utils/gpu_vec.cuh"
 #include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed-forces/gpubonded.h"
 #include "gromacs/topology/idef.h"
@@ -78,8 +79,7 @@ class GpuBonded::Impl
 {
     public:
         //! Constructor
-        Impl(const gmx_ffparams_t &ffparams,
-             void                 *streamPtr);
+        Impl(const gmx_ffparams_t &ffparams);
         /*! \brief Destructor, non-default needed for freeing
          * device-side buffers */
         ~Impl();
@@ -99,8 +99,9 @@ class GpuBonded::Impl
         /*! \brief Launches bonded kernels on a GPU */
         template <bool calcVir, bool calcEner>
         void
-        launchKernels(const t_forcerec *fr,
-                      const matrix      box);
+        launchKernels(const t_forcerec  *fr,
+                      const matrix       box,
+                      const cudaEvent_t *nbDependencyEvent);
         /*! \brief Returns whether there are bonded interactions
          * assigned to the GPU */
         bool haveInteractions() const;
@@ -110,6 +111,8 @@ class GpuBonded::Impl
         void getEnergyTerms(gmx_enerdata_t *enerd);
         /*! \brief Clears the device side energy buffer */
         void clearEnergies();
+        /*! \brief Getter for a pointer to the device synchronizer object that allows syncing with the completion of the bonded computation. */
+        GpuEventSynchronizer *getSynchronizer();
     private:
         /*! \brief The interaction lists
          *
@@ -133,9 +136,13 @@ class GpuBonded::Impl
         HostStdVector <float> vtot = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
         //! \brief Device-side total virial
         float                *vtotDevice   = nullptr;
+        //! \brief Event to sync and enforece data dependency with the nonbonded streams' tasks */
+        cudaEvent_t          *nbDependencyEvent;
 
-        //! \brief Bonded GPU stream, not owned by this module
+        //! \brief Bonded GPU stream
         CommandStream         stream;
+        //! \brief Synchronizer event triggered after all bonded computation has completed on the GPU
+        GpuEventSynchronizer  bondedComputeDone;
 };
 
 }   // namespace gmx

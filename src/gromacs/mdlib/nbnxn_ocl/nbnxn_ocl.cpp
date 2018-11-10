@@ -698,11 +698,12 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
  */
-void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
-                              const struct nbnxn_atomdata_t *nbatom,
-                              int                            flags,
-                              int                            aloc,
-                              bool                           haveOtherWork)
+void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t                 *nb,
+                              const struct nbnxn_atomdata_t   *nbatom,
+                              int                              flags,
+                              int                              aloc,
+                              bool                             haveOtherWork,
+                              GpuEventSynchronizer gmx_unused *syncBondedCompute)
 {
     cl_int gmx_unused cl_error;
     int               adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */

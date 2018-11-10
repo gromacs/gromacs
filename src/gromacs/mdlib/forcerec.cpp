@@ -2265,7 +2265,8 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
                        nbv->listParams.get(),
                        nbv->nbat,
                        cr->nodeid,
-                       (nbv->ngrp > 1));
+                       (nbv->ngrp > 1),
+                       true /* FIXME pass whether bonded offload is active */ );
 
         if ((env = getenv("GMX_NB_MIN_CI")) != nullptr)
         {
@@ -3076,13 +3077,9 @@ void init_forcerec(FILE                             *fp,
 
         if (useGpuForBonded)
         {
-            auto stream = DOMAINDECOMP(cr) ?
-                nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintNonlocal) :
-                nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintLocal);
             // TODO the heap allocation is only needed while
             // t_forcerec lacks a constructor.
-            fr->gpuBonded = new gmx::GpuBonded(mtop->ffparams,
-                                               stream);
+            fr->gpuBonded = new gmx::GpuBonded(mtop->ffparams);
         }
     }
 

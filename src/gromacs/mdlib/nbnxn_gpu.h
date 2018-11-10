@@ -51,6 +51,7 @@
 
 struct nbnxn_atomdata_t;
 enum class GpuTaskCompletion;
+class GpuEventSynchronizer;
 
 /*! \brief
  * Launch asynchronously the nonbonded force calculations.
@@ -119,7 +120,8 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               const struct nbnxn_atomdata_t gmx_unused *nbatom,
                               int                    gmx_unused         flags,
                               int                    gmx_unused         aloc,
-                              bool                   gmx_unused         haveOtherWork) GPU_FUNC_TERM
+                              bool                   gmx_unused         haveOtherWork,
+                              GpuEventSynchronizer   gmx_unused        *syncBondedCompute) GPU_FUNC_TERM
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *

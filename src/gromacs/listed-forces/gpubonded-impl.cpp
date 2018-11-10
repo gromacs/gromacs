@@ -168,8 +168,7 @@ class GpuBonded::Impl
 {
 };
 
-GpuBonded::GpuBonded(const gmx_ffparams_t & /* ffparams */,
-                     void                 * /*streamPtr */)
+GpuBonded::GpuBonded(const gmx_ffparams_t & /* ffparams */)
     : impl_(nullptr)
 {
 }
@@ -194,7 +193,8 @@ GpuBonded::haveInteractions() const
 void
 GpuBonded::launchKernels(const t_forcerec * /* fr */,
                          int            /* forceFlags */,
-                         const matrix   /* box */)
+                         const matrix   /* box */,
+                         void             * /* nbDependencyEvent */)
 {
 }
 
@@ -211,6 +211,12 @@ GpuBonded::getEnergyTerms(gmx_enerdata_t * /* enerd */)
 void
 GpuBonded::clearEnergies()
 {
+}
+
+GpuEventSynchronizer *
+GpuBonded::getSynchronizer()
+{
+    return nullptr;
 }
 
 #endif /* GMX_GPU != GMX_GPU_CUDA */
