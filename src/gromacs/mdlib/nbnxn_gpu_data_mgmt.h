@@ -64,7 +64,8 @@ void nbnxn_gpu_init(gmx_nbnxn_gpu_t gmx_unused            **p_nb,
                     const nbnxn_atomdata_t gmx_unused      *nbat,
                     int gmx_unused                          rank,
                     /* true if both local and non-local are done on GPU */
-                    gmx_bool gmx_unused                     bLocalAndNonlocal) GPU_FUNC_TERM
+                    gmx_bool gmx_unused                     bLocalAndNonlocal,
+                    bool     gmx_unused                     /*bondedOffloadActive*/) GPU_FUNC_TERM
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
@@ -120,8 +121,8 @@ gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_gpu_t gmx_unused *
  *  Note: CUDA only.
  */
 CUDA_FUNC_QUALIFIER
-void *nbnxn_gpu_get_command_stream(gmx_nbnxn_gpu_t gmx_unused *nb,
-                                   int gmx_unused              iloc) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+void *nbnxn_gpu_command_stream(gmx_nbnxn_gpu_t gmx_unused *nb,
+                               int gmx_unused              iloc) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
 
 /** Returns an opaque pointer to the GPU coordinate+charge array
  *  Note: CUDA only.
@@ -140,5 +141,18 @@ void *nbnxn_gpu_get_f(gmx_nbnxn_gpu_t gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN
  */
 CUDA_FUNC_QUALIFIER
 rvec *nbnxn_gpu_get_fshift(gmx_nbnxn_gpu_t gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+/** Returns an opaque pointer to the event object that represents the readyness of the local nb coordinate data.
+ *  Note: CUDA only.
+ */
+CUDA_FUNC_QUALIFIER
+void *nbnxn_gpu_get_local_syncobj(gmx_nbnxn_gpu_t gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+/** Returns an opaque pointer to the event object that represents the readyness of the local nb coordinate data.
+ *  Note: CUDA only.
+ */
+CUDA_FUNC_QUALIFIER
+void *nbnxn_gpu_get_nonlocal_syncobj(gmx_nbnxn_gpu_t gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
 
 #endif

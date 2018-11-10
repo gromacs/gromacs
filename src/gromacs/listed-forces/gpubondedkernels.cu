@@ -1009,11 +1009,16 @@ namespace gmx
 
 template <bool calcVir, bool calcEner>
 void
-GpuBonded::Impl::launchKernels(const t_forcerec *fr,
-                               const matrix      box)
+GpuBonded::Impl::launchKernels(const t_forcerec  *fr,
+                               const matrix       box,
+                               const cudaEvent_t *nbDependencyEvent)
 {
     GMX_ASSERT(haveInteractions_,
                "Cannot launch bonded GPU kernels unless bonded GPU work was scheduled");
+
+    // insert dependency on the NB stream's events
+    cudaError_t stat = cudaStreamWaitEvent(stream, *nbDependencyEvent,  0);
+    CU_RET_ERR(stat, "cudaStreamWaitEvent on nbDependencyEvent in the bonded stream failed" );
 
     PbcAiuc       pbcAiuc;
     setPbcAiuc(fr->bMolPBC ? ePBC2npbcdim(fr->ePBC) : 0, box, &pbcAiuc);
@@ -1152,28 +1157,32 @@ GpuBonded::Impl::launchKernels(const t_forcerec *fr,
             }
         }
     }
+    bondedComputeDone.markEvent(stream);
 }
 
 void
 GpuBonded::launchKernels(const t_forcerec *fr,
                          int               forceFlags,
-                         const matrix      box)
+                         const matrix      box,
+                         void             *nbDependencyEvent)
 {
+    const cudaEvent_t *eventPtr = static_cast<cudaEvent_t*>(nbDependencyEvent);
+
     if (forceFlags & GMX_FORCE_ENERGY)
     {
         // When we need the energy, we also need the virial
         impl_->launchKernels<true, true>
-            (fr, box);
+            (fr, box, eventPtr);
     }
     else if (forceFlags & GMX_FORCE_VIRIAL)
     {
         impl_->launchKernels<true, false>
-            (fr, box);
+            (fr, box, eventPtr);
     }
     else
     {
         impl_->launchKernels<false, false>
-            (fr, box);
+            (fr, box, eventPtr);
     }
 }
 

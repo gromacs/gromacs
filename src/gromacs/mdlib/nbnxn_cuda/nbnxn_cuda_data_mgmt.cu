@@ -427,7 +427,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
                     const NbnxnListParameters *listParams,
                     const nbnxn_atomdata_t    *nbat,
                     int                        /*rank*/,
-                    gmx_bool                   bLocalAndNonlocal)
+                    gmx_bool                   bLocalAndNonlocal,
+                    bool                       bondedOffloadActive)
 {
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
@@ -446,7 +447,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
         snew(nb->plist[eintNonlocal], 1);
     }
 
-    nb->bUseTwoStreams = bLocalAndNonlocal;
+    nb->bUseTwoStreams  = bLocalAndNonlocal;
+    nb->nbBondedShareXF = bondedOffloadActive;
 
     nb->timers = new cu_timers_t();
     snew(nb->timings, 1);
@@ -487,6 +489,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     CU_RET_ERR(stat, "cudaEventCreate on nonlocal_done failed");
     stat = cudaEventCreateWithFlags(&nb->misc_ops_and_local_H2D_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on misc_ops_and_local_H2D_done failed");
+    stat = cudaEventCreateWithFlags(&nb->nonlocal_H2D_done, cudaEventDisableTiming);
+    CU_RET_ERR(stat, "cudaEventCreate on nonlocal_H2D_done failed");
 
     /* WARNING: CUDA timings are incorrect with multiple streams.
      *          This is the main reason why they are disabled by default.
@@ -735,6 +739,8 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->nonlocal_done");
     stat = cudaEventDestroy(nb->misc_ops_and_local_H2D_done);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_and_local_H2D_done");
+    stat = cudaEventDestroy(nb->nonlocal_H2D_done);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->nonlocal_H2D_done");
 
     delete nb->timers;
     if (nb->bDoTime)
@@ -838,8 +844,8 @@ gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_cuda_t *nb)
             (nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
 }
 
-void *nbnxn_gpu_get_command_stream(gmx_nbnxn_gpu_t *nb,
-                                   int              iloc)
+void *nbnxn_gpu_command_stream(gmx_nbnxn_gpu_t *nb,
+                               int              iloc)
 {
     assert(nb);
 
@@ -865,4 +871,16 @@ rvec *nbnxn_gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
     assert(nb);
 
     return reinterpret_cast<rvec *>(nb->atdat->fshift);
+}
+
+void *nbnxn_gpu_get_local_syncobj(gmx_nbnxn_gpu_t *nb)
+{
+    assert (nb);
+    return reinterpret_cast<void *>(&nb->misc_ops_and_local_H2D_done);
+}
+
+void *nbnxn_gpu_get_nonlocal_syncobj(gmx_nbnxn_gpu_t *nb)
+{
+    assert (nb);
+    return reinterpret_cast<void *>(&nb->nonlocal_H2D_done);
 }

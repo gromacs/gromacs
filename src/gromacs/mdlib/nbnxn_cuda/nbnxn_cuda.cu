@@ -54,6 +54,7 @@
 #include "nbnxn_cuda.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_common.h"
@@ -353,7 +354,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* When we get here all misc operations issues in the local stream as well as
        the local xq H2D are done,
        so we record that in the local stream and wait for it in the nonlocal one. */
-    if (nb->bUseTwoStreams)
+    if (nb->bUseTwoStreams || nb->nbBondedShareXF)
     {
         if (iloc == eintLocal)
         {
@@ -362,6 +363,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         }
         else
         {
+            if (nb->nbBondedShareXF)
+            {
+                stat = cudaEventRecord(nb->nonlocal_H2D_done, stream);
+                CU_RET_ERR(stat, "cudaEventRecord on nonlocal_H2D_done failed");
+            }
             stat = cudaStreamWaitEvent(stream, nb->misc_ops_and_local_H2D_done, 0);
             CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_and_local_H2D_done failed");
         }
@@ -583,7 +589,8 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
                               const nbnxn_atomdata_t *nbatom,
                               int                     flags,
                               int                     aloc,
-                              bool                    haveOtherWork)
+                              bool                    haveOtherWork,
+                              GpuEventSynchronizer   *syncBondedCompute)
 {
     cudaError_t stat;
     int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -619,6 +626,17 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     {
         stat = cudaStreamWaitEvent(stream, nb->nonlocal_done, 0);
         CU_RET_ERR(stat, "cudaStreamWaitEvent on nonlocal_done failed");
+    }
+
+    // If bonded work shared the force output with nonbondeds we need to wait
+    //  for the bondeds to complete:
+    // - in the nonlocal stream
+    // - in the local stream witout DD (with DD the above wait for the nonlocal_done implicitly syncs)
+    GMX_ASSERT(nbBondedShareXF && syncBondedCompute, "syncBondedCompute has to be valid when bondeds are active");
+    if (nb->nbBondedShareXF &&
+        (iloc == eintNonlocal || (!nb->bUseTwoStreams && iloc == eintLocal)))
+    {
+        syncBondedCompute->enqueueWaitEvent(stream);
     }
 
     /* DtoH f */

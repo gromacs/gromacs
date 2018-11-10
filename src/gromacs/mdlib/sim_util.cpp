@@ -1305,7 +1305,8 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (schedule->haveGpuBondedWork && !DOMAINDECOMP(cr))
         {
-            fr->gpuBonded->launchKernels(fr, flags, box);
+            fr->gpuBonded->launchKernels(fr, flags, box,
+                                         nbnxn_gpu_get_local_syncobj(nbv->gpu_nbv));
         }
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
@@ -1371,7 +1372,8 @@ static void do_force_cutsVERLET(FILE *fplog,
 
             if (schedule->haveGpuBondedWork)
             {
-                fr->gpuBonded->launchKernels(fr, flags, box);
+                fr->gpuBonded->launchKernels(fr, flags, box,
+                                             nbnxn_gpu_get_local_syncobj(nbv->gpu_nbv));
             }
 
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -1386,10 +1388,12 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (DOMAINDECOMP(cr))
         {
             nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                     flags, eatNonlocal, schedule->haveGpuBondedWork);
+                                     flags, eatNonlocal, schedule->haveGpuBondedWork,
+                                     fr->gpuBonded->getSynchronizer());
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                 flags, eatLocal, schedule->haveGpuBondedWork);
+                                 flags, eatLocal, schedule->haveGpuBondedWork,
+                                 fr->gpuBonded->getSynchronizer());
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }

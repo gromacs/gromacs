@@ -59,6 +59,7 @@ struct gmx_mtop_t;
 struct t_forcerec;
 struct t_idef;
 struct t_inputrec;
+class GpuEventSynchronizer;
 
 namespace gmx
 {
@@ -111,8 +112,7 @@ class GpuBonded
 {
     public:
         //! Construct the manager with constant data and the stream to use.
-        GpuBonded(const gmx_ffparams_t &ffparams,
-                  void                 *streamPtr);
+        GpuBonded(const gmx_ffparams_t &ffparams);
         //! Destructor
         ~GpuBonded();
 
@@ -134,13 +134,16 @@ class GpuBonded
         /*! \brief Launches bonded kernels on a GPU */
         void launchKernels(const t_forcerec *fr,
                            int               forceFlags,
-                           const matrix      box);
+                           const matrix      box,
+                           void             *nbDependencyEvent);
         /*! \brief Launches the transfer of computed bonded energies. */
         void launchEnergyTransfer();
         /*! \brief Waits on the energy transfer, and copies back the bonded energies to \c enerd. */
         void getEnergyTerms(gmx_enerdata_t *enerd);
         /*! \brief Clears the device side energy buffer */
         void clearEnergies();
+        /*! \brief Getter for a pointer to the device synchronizer object that allows syncing with the completion of the bonded computation. */
+        GpuEventSynchronizer *getSynchronizer();
 
     private:
         class Impl;

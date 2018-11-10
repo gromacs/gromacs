@@ -64,12 +64,16 @@ namespace gmx
 
 // ---- GpuBonded::Impl
 
-GpuBonded::Impl::Impl(const gmx_ffparams_t &ffparams,
-                      void                 *streamPtr)
+GpuBonded::Impl::Impl(const gmx_ffparams_t &ffparams)
 {
-    stream = *static_cast<CommandStream*>(streamPtr);
+    int         highestPriority, lowestPriority;
+    cudaError_t stat;
+    stat = cudaDeviceGetStreamPriorityRange(&lowestPriority, &highestPriority);
+    CU_RET_ERR(stat, "cudaDeviceGetStreamPriorityRange failed");
+    // TODO: decide on the priority here
+    stat = cudaStreamCreateWithPriority(&stream, cudaStreamDefault, highestPriority);
+    CU_RET_ERR(stat, "cudaStreamCreateWithPriority on the bonded stream failed");
 
-    allocateDeviceBuffer(&forceparamsDevice, ffparams.numTypes(), nullptr);
     // TODO This can be Async when the source is pinned, so long as it
     // uses the same stream as the kernels.
     copyToDeviceBuffer(&forceparamsDevice, ffparams.iparams.data(),
@@ -97,6 +101,9 @@ GpuBonded::Impl::~Impl()
             iListsDevice[ftype].iatoms = nullptr;
         }
     }
+
+    cudaError_t stat = cudaStreamDestroy(stream);
+    CU_RET_ERR(stat, "cudaStreamDestroy failed");
 
     freeDeviceBuffer(&forceparamsDevice);
     freeDeviceBuffer(&vtotDevice);
@@ -233,11 +240,16 @@ GpuBonded::Impl::clearEnergies()
     clearDeviceBufferAsync(&vtotDevice, 0, F_NRE, stream);
 }
 
+
+GpuEventSynchronizer *
+GpuBonded::Impl::getSynchronizer()
+{
+    return &bondedComputeDone;
+}
 // ---- GpuBonded
 
-GpuBonded::GpuBonded(const gmx_ffparams_t &ffparams,
-                     void                 *streamPtr)
-    : impl_(new Impl(ffparams, streamPtr))
+GpuBonded::GpuBonded(const gmx_ffparams_t &ffparams)
+    : impl_(new Impl(ffparams))
 {
 }
 
@@ -276,6 +288,12 @@ void
 GpuBonded::clearEnergies()
 {
     impl_->clearEnergies();
+}
+
+GpuEventSynchronizer *
+GpuBonded::getSynchronizer()
+{
+    return impl_->getSynchronizer();
 }
 
 }   // namespace gmx

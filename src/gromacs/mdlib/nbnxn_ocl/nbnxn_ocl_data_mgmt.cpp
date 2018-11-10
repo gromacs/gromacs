@@ -606,13 +606,14 @@ static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
 
 
 //! This function is documented in the header file
-void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
-                    const gmx_device_info_t   *deviceInfo,
-                    const interaction_const_t *ic,
-                    const NbnxnListParameters *listParams,
-                    const nbnxn_atomdata_t    *nbat,
-                    int                        rank,
-                    gmx_bool                   bLocalAndNonlocal)
+void nbnxn_gpu_init(gmx_nbnxn_ocl_t                   **p_nb,
+                    const gmx_device_info_t            *deviceInfo,
+                    const interaction_const_t          *ic,
+                    const NbnxnListParameters          *listParams,
+                    const nbnxn_atomdata_t             *nbat,
+                    int                                 rank,
+                    gmx_bool                            bLocalAndNonlocal,
+                    bool gmx_unused                     bondedOffloadActive)
 {
     gmx_nbnxn_ocl_t            *nb;
     cl_int                      cl_error;

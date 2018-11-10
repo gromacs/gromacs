@@ -211,14 +211,15 @@ typedef struct nbnxn_gpu_timers_t cu_timers_t;
  */
 struct gmx_nbnxn_cuda_t
 {
-    const gmx_device_info_t  *dev_info;       /**< CUDA device information                              */
-    bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
-    cu_atomdata_t            *atdat;          /**< atom data                                            */
-    cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */
-    cu_plist_t               *plist[2];       /**< pair-list data structures (local and non-local)      */
-    nb_staging_t              nbst;           /**< staging area where fshift/energies get downloaded    */
+    const gmx_device_info_t  *dev_info;        /**< CUDA device information                              */
+    bool                      bUseTwoStreams;  /**< true if doing both local/non-local NB work on GPU    */
+    bool                      nbBondedShareXF; /**< true if the bonded GPU tasks are active and share input and outpus with the nonbondeds */
+    cu_atomdata_t            *atdat;           /**< atom data                                            */
+    cu_nbparam_t             *nbparam;         /**< parameters required for the non-bonded calc.         */
+    cu_plist_t               *plist[2];        /**< pair-list data structures (local and non-local)      */
+    nb_staging_t              nbst;            /**< staging area where fshift/energies get downloaded    */
 
-    cudaStream_t              stream[2];      /**< local and non-local GPU streams                      */
+    cudaStream_t              stream[2];       /**< local and non-local GPU streams                      */
 
     /** events used for synchronization */
     cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
@@ -227,6 +228,7 @@ struct gmx_nbnxn_cuda_t
                                                    the local stream that need to precede the
                                                    non-local force calculations are done
                                                    (e.g. f buffer 0-ing, local x/q H2D) */
+    cudaEvent_t    nonlocal_H2D_done;           /**< triggered when the coordinate transfer in the nonlocal stream completes */
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
