@@ -428,11 +428,8 @@ int Mdrunner::mdrunner()
     int                       nChargePerturbed = -1, nTypePerturbed = 0;
     gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = nullptr;
-    int                       rc;
-    int64_t                   reset_counters;
-    int                       nthreads_pme = 1;
-    gmx_membed_t *            membed       = nullptr;
-    gmx_hw_info_t            *hwinfo       = nullptr;
+    gmx_membed_t *            membed              = nullptr;
+    gmx_hw_info_t            *hwinfo              = nullptr;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -451,19 +448,6 @@ int Mdrunner::mdrunner()
     try
     {
         gpuIdsAvailable = parseUserGpuIds(hw_opt.gpuIdsAvailable);
-        // TODO We could put the GPU IDs into a std::map to find
-        // duplicates, but for the small numbers of IDs involved, this
-        // code is simple and fast.
-        for (size_t i = 0; i != gpuIdsAvailable.size(); ++i)
-        {
-            for (size_t j = i+1; j != gpuIdsAvailable.size(); ++j)
-            {
-                if (gpuIdsAvailable[i] == gpuIdsAvailable[j])
-                {
-                    GMX_THROW(InvalidInputError(formatString("The string of available GPU device IDs '%s' may not contain duplicate device IDs", hw_opt.gpuIdsAvailable.c_str())));
-                }
-            }
-        }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -1140,23 +1124,12 @@ int Mdrunner::mdrunner()
         }
     }
 
-    /* getting number of PP/PME threads
+    /* getting number of PP/PME threads on this MPI / tMPI rank.
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
      */
-    nthreads_pme = gmx_omp_nthreads_get(emntPME);
-
-    int numThreadsOnThisRank;
-    /* threads on this MPI process or TMPI thread */
-    if (thisRankHasDuty(cr, DUTY_PP))
-    {
-        numThreadsOnThisRank = gmx_omp_nthreads_get(emntNonbonded);
-    }
-    else
-    {
-        numThreadsOnThisRank = nthreads_pme;
-    }
-
+    int numThreadsOnThisRank =
+        thisRankHasDuty(cr, DUTY_PP) ? gmx_omp_nthreads_get(emntNonbonded) : gmx_omp_nthreads_get(emntPME);
     checkHardwareOversubscription(numThreadsOnThisRank, cr->nodeid,
                                   *hwinfo->hardwareTopology,
                                   physicalNodeComm, mdlog);
@@ -1191,7 +1164,7 @@ int Mdrunner::mdrunner()
     {
         /* Master synchronizes its value of reset_counters with all nodes
          * including PME only nodes */
-        reset_counters = wcycle_get_reset_counters(wcycle);
+        int64_t reset_counters = wcycle_get_reset_counters(wcycle);
         gmx_bcast_sim(sizeof(reset_counters), &reset_counters, cr);
         wcycle_set_reset_counters(wcycle, reset_counters);
     }
@@ -1321,7 +1294,7 @@ int Mdrunner::mdrunner()
                                        mtop.natoms, nChargePerturbed != 0, nTypePerturbed != 0,
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
-                                       nthreads_pme,
+                                       gmx_omp_nthreads_get(emntPME),
                                        pmeRunMode, nullptr,
                                        pmeDeviceInfo, pmeGpuProgram.get(), mdlog);
             }
@@ -1512,7 +1485,7 @@ int Mdrunner::mdrunner()
         gmx_fedisableexcept();
     }
 
-    rc = static_cast<int>(gmx_get_stop_condition());
+    int rc = static_cast<int>(gmx_get_stop_condition());
 
 #if GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they
