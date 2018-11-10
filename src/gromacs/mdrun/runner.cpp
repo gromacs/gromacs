@@ -430,9 +430,9 @@ int Mdrunner::mdrunner()
     gmx_walltime_accounting_t walltime_accounting = nullptr;
     int                       rc;
     int64_t                   reset_counters;
-    int                       nthreads_pme = 1;
-    gmx_membed_t *            membed       = nullptr;
-    gmx_hw_info_t            *hwinfo       = nullptr;
+    int                       nthreads_pme        = 1;
+    gmx_membed_t *            membed              = nullptr;
+    gmx_hw_info_t            *hwinfo              = nullptr;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -450,27 +450,14 @@ int Mdrunner::mdrunner()
     std::vector<int>    gpuIdsAvailable;
     try
     {
-        gpuIdsAvailable = parseUserGpuIds(hw_opt.gpuIdsAvailable);
-        // TODO We could put the GPU IDs into a std::map to find
-        // duplicates, but for the small numbers of IDs involved, this
-        // code is simple and fast.
-        for (size_t i = 0; i != gpuIdsAvailable.size(); ++i)
-        {
-            for (size_t j = i+1; j != gpuIdsAvailable.size(); ++j)
-            {
-                if (gpuIdsAvailable[i] == gpuIdsAvailable[j])
-                {
-                    GMX_THROW(InvalidInputError(formatString("The string of available GPU device IDs '%s' may not contain duplicate device IDs", hw_opt.gpuIdsAvailable.c_str())));
-                }
-            }
-        }
+        gpuIdsAvailable = parseUserGpuIdString(hw_opt.gpuIdsAvailable);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     std::vector<int> userGpuTaskAssignment;
     try
     {
-        userGpuTaskAssignment = parseUserGpuIds(hw_opt.userGpuTaskAssignment);
+        userGpuTaskAssignment = parseUserTaskAssignmentString(hw_opt.userGpuTaskAssignment);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     auto       nonbondedTarget = findTaskTarget(nbpu_opt);

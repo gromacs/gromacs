@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,22 +59,42 @@ struct gmx_gpu_info_t;
 namespace gmx
 {
 
-/*! \brief Parse a GPU ID string into a container describing the task types and associated device IDs.
+/*! \brief Parse a GPU ID specifier string into a container describing device IDs exposed to the run.
  *
  * \param[in]   gpuIdString  String like "013" or "0,1,3" typically
- *                           supplied by the user to mdrun -gpu_id or -gputasks.
+ *                           supplied by the user to mdrun -gpu_id.
+ *                           Must contain only unique decimal digits, or only decimal
+ *                           digits separated by comma delimiters. A terminal
+ *                           comma is accceptable (and required to specify a
+ *                           single ID that is larger than 9).
+ *
+ * \returns  A vector of unique list of GPU IDs.
+ *
+ * \throws   std::bad_alloc     If out of memory.
+ *           InvalidInputError  If an invalid character is found (ie not a digit or ',') or if
+ *                              identifiers are duplicated in the specifier list.
+ */
+std::vector<int>
+parseUserGpuIdString(const std::string &gpuIdString);
+
+/*! \brief Parse a GPU ID specifier string into a container describing device ID to task mapping.
+ *
+ * \param[in]   gpuIdString  String like "0011" or "0,0,1,1" typically
+ *                           supplied by the user to mdrun -gputasks.
  *                           Must contain only decimal digits, or only decimal
  *                           digits separated by comma delimiters. A terminal
  *                           comma is accceptable (and required to specify a
  *                           single ID that is larger than 9).
  *
- * \returns  A vector of GPU ID task mappings, like { 0, 1, 3 }
+ * \returns  A vector of GPU IDs.
  *
  * \throws   std::bad_alloc     If out of memory.
  *           InvalidInputError  If an invalid character is found (ie not a digit or ',').
  */
 std::vector<int>
-parseUserGpuIds(const std::string &gpuIdString);
+parseUserTaskAssignmentString(const std::string &gpuIdString);
+
+
 
 /*! \brief Make a vector containing \c numGpuTasks IDs of the IDs found in \c compatibleGpus.
  *
