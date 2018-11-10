@@ -79,6 +79,15 @@ handles selections that include proline residues.
 
 :issue:`2701`
 
+Fix bug in entropy calculation in gmx anaeig
+""""""""""""""""""""""""""""""""""""""""""""
+
+When gmx anaeig received an inconsistent number of atoms and
+eigenvectors (fewer eigenvectors than three times the number of
+atoms) the entropy calculations would used uninitialized values.
+
+:issue:`2668`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
