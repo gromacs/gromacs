@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,9 +59,10 @@ namespace test
 namespace
 {
 
-TEST(GpuIdStringHandlingTest, ParsingAndReconstructionWork)
+TEST(UserTaskAssignmentStringHandlingTest, ParsingAndReconstructionWork)
 {
     using ::testing::UnorderedElementsAreArray;
+    using ::testing::ElementsAreArray;
 
     // TODO It would be nicer to use EXPECT_THAT(assignment,
     // UnorderedElementsAreArray({0,1}) but MSVC 2015 does
@@ -72,17 +73,20 @@ TEST(GpuIdStringHandlingTest, ParsingAndReconstructionWork)
         const char *strings[] = { "01", "0,1", "0,1," };
         for (const auto &s : strings)
         {
-            auto assignment = parseUserGpuIds(s);
+            auto assignment = parseUserTaskAssignmentString(s);
             auto matcher    = UnorderedElementsAreArray<int, 2>({0, 1});
             EXPECT_THAT(assignment, matcher) << "for string " << s;
             EXPECT_EQ("0",     makeGpuIdString(assignment, 1));
             EXPECT_EQ("0,1",   makeGpuIdString(assignment, 2));
             EXPECT_EQ("0,0,1", makeGpuIdString(assignment, 3));
+
+            auto gpuidList  = parseUserGpuIdString(s);
+            EXPECT_THAT(gpuidList, ElementsAreArray(assignment));
         }
     }
     // Test an input that could be a single large index, or two small indices; and back mappings
     {
-        auto assignment = parseUserGpuIds("11");
+        auto assignment = parseUserTaskAssignmentString("11");
         auto matcher    = UnorderedElementsAreArray<int, 2>({1, 1});
         EXPECT_THAT(assignment, matcher);
         EXPECT_EQ("1",     makeGpuIdString(assignment, 1));
@@ -91,19 +95,23 @@ TEST(GpuIdStringHandlingTest, ParsingAndReconstructionWork)
     }
     // Test an input that must be a single large index; and back mappings
     {
-        auto assignment = parseUserGpuIds("11,");
-        auto matcher    = UnorderedElementsAreArray<int, 1>({11});
+        const char *s          = "11,";
+        auto        assignment = parseUserTaskAssignmentString(s);
+        auto        matcher    = UnorderedElementsAreArray<int, 1>({11});
         EXPECT_THAT(assignment, matcher);
         EXPECT_EQ("11",       makeGpuIdString(assignment, 1));
         EXPECT_EQ("11,11",    makeGpuIdString(assignment, 2));
         EXPECT_EQ("11,11,11", makeGpuIdString(assignment, 3));
+
+        auto gpuidList  = parseUserGpuIdString(s);
+        EXPECT_THAT(gpuidList, ElementsAreArray(assignment));
     }
     // Test multiple large indices; and back mappings
     {
         const char *strings[] = { "11,12", "11,12," };
         for (const auto &s : strings)
         {
-            auto assignment = parseUserGpuIds(s);
+            auto assignment = parseUserTaskAssignmentString(s);
             auto matcher    = UnorderedElementsAreArray<int, 2>({11, 12});
             EXPECT_THAT(assignment, matcher) << "for string " << s;
             EXPECT_EQ("11",       makeGpuIdString(assignment, 1));
@@ -113,26 +121,37 @@ TEST(GpuIdStringHandlingTest, ParsingAndReconstructionWork)
     }
 }
 
-TEST(GpuIdStringHandlingTest, EmptyStringCanBeValid)
+TEST(UserTaskAssignmentStringHandlingTest, EmptyStringCanBeValid)
 {
     using ::testing::IsEmpty;
 
-    auto assignment = parseUserGpuIds("");
+    auto assignment = parseUserTaskAssignmentString("");
     EXPECT_THAT(assignment, IsEmpty());
     EXPECT_EQ("", makeGpuIdString(assignment, 0));
 }
 
-TEST(GpuIdStringHandlingTest, InvalidInputsThrow)
+TEST(GpuIdAndAssignmentStringHandlingTest, InvalidInputsThrow)
 {
     {
-        const char *strings[] = {
+        // common invalid strings
+        const char *commonStrings[] = {
             "a", "0a", ",01", ",0,1", ",0,1,",
             ":0", "0a:1b", "0:1:2",
             ",", ";", ":", "-", "=",
         };
-        for (const auto &s : strings)
+        for (const auto &s : commonStrings)
         {
-            EXPECT_THROW(parseUserGpuIds(s), InvalidInputError) << "for string " << s;
+            EXPECT_THROW(parseUserTaskAssignmentString(s), InvalidInputError) << "for string " << s;
+            EXPECT_THROW(parseUserGpuIdString(s), InvalidInputError) << "for string " << s;
+        }
+
+        // strings invalid only in user GPU ID strings
+        const char *gpuidStrings[] = {
+            "00", "0,0"
+        };
+        for (const auto &s : gpuidStrings)
+        {
+            EXPECT_THROW(parseUserGpuIdString(s), InvalidInputError) << "for string " << s;
         }
     }
 }
