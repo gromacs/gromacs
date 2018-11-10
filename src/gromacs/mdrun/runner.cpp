@@ -429,7 +429,6 @@ int Mdrunner::mdrunner()
     gmx_walltime_accounting_t walltime_accounting = nullptr;
     int                       rc;
     int64_t                   reset_counters;
-    int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = nullptr;
     gmx_hw_info_t            *hwinfo       = nullptr;
 
@@ -1139,8 +1138,6 @@ int Mdrunner::mdrunner()
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
      */
-    nthreads_pme = gmx_omp_nthreads_get(emntPME);
-
     int numThreadsOnThisRank;
     /* threads on this MPI process or TMPI thread */
     if (thisRankHasDuty(cr, DUTY_PP))
@@ -1149,7 +1146,7 @@ int Mdrunner::mdrunner()
     }
     else
     {
-        numThreadsOnThisRank = nthreads_pme;
+        numThreadsOnThisRank = gmx_omp_nthreads_get(emntPME);
     }
 
     checkHardwareOversubscription(numThreadsOnThisRank, cr->nodeid,
