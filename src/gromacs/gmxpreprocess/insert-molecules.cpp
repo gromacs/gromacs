@@ -42,6 +42,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -140,11 +141,14 @@ static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
                                const std::vector<real>         &exclusionDistances_insrt,
                                const t_atoms                   &atoms,
                                const std::set<int>             &removableAtoms,
-                               gmx::AtomsRemover               *remover)
+                               gmx::AtomsRemover               *remover,
+                               std::unordered_map<char *, int> *namesRemovedCounts)
 {
     gmx::AnalysisNeighborhoodPositions  pos(x);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search->startPairSearch(pos);
     gmx::AnalysisNeighborhoodPair       pair;
+    // map of which residues will be removed index by resid
+    std::unordered_map<int, char *>     resids2remove;
     while (pairSearch.findNextPair(&pair))
     {
         const real r1 = exclusionDistances[pair.refIndex()];
@@ -157,7 +161,22 @@ static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
             }
             // TODO: If molecule information is available, this should ideally
             // use it to remove whole molecules.
+            char *str    = *(atoms.resinfo[atoms.atom[pair.refIndex()].resind].name);
+            int   resind = atoms.atom[pair.refIndex()].resind;
+            resids2remove[resind] = str;
             remover->markResidue(atoms, pair.refIndex(), true);
+        }
+    }
+    // now that we have the residues to remove, count them
+    for (auto it = resids2remove.begin(); it != resids2remove.end(); ++it)
+    {
+        if (namesRemovedCounts->count(it->second) == 0)
+        {
+            namesRemovedCounts->insert({it->second, 1});
+        }
+        else
+        {
+            namesRemovedCounts->at(it->second) += 1;
         }
     }
     return true;
@@ -170,7 +189,8 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                         const t_atoms &atoms_insrt, gmx::ArrayRef<RVec> x_insrt,
                         int ePBC, matrix box,
                         const std::string &posfn, const rvec deltaR,
-                        RotationType enum_rot)
+                        RotationType enum_rot,
+                        std::unordered_map<char *, int> *namesRemovedCounts)
 {
     fprintf(stderr, "Initialising inter-atomic distances...\n");
     gmx_atomprop_t          aps = gmx_atomprop_init();
@@ -241,7 +261,6 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     int                                  firstTrial = 0;
     int                                  failed     = 0;
     gmx::UniformRealDistribution<real>   dist;
-
     while (mol < nmol_insrt && trial < ntry*nmol_insrt)
     {
         rvec offset_x;
@@ -276,7 +295,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         gmx::AnalysisNeighborhoodPositions pos(*x);
         gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
         if (isInsertionAllowed(&search, exclusionDistances, x_n, exclusionDistances_insrt,
-                               *atoms, removableAtoms, &remover))
+                               *atoms, removableAtoms, &remover, namesRemovedCounts))
         {
             x->insert(x->end(), x_n.begin(), x_n.end());
             exclusionDistances.insert(exclusionDistances.end(),
@@ -295,14 +314,17 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
             mol - failed, nmol_insrt);
 
     const int originalAtomCount    = atoms->nr;
-    const int originalResidueCount = atoms->nres;
     remover.refreshAtomCount(*atoms);
     remover.removeMarkedElements(x);
     remover.removeMarkedAtoms(atoms);
     if (atoms->nr < originalAtomCount)
     {
-        fprintf(stderr, "Replaced %d residues (%d atoms)\n",
-                originalResidueCount - atoms->nres,
+        for (auto it = namesRemovedCounts->begin(); it != namesRemovedCounts->end(); ++it)
+        {
+            fprintf(stderr, "Replaced %d residues of molecule type %s\n",
+                    it->second, it->first);
+        }
+        fprintf(stderr, "Replaced a total of %d atoms\n",
                 originalAtomCount - atoms->nr);
     }
 
@@ -572,13 +594,15 @@ int InsertMolecules::run()
         center_molecule(xInserted);
     }
 
-    auto              symtabInserted = duplicateSymtab(&topInfo_.mtop()->symtab);
-    const sfree_guard symtabInsertedGuard(symtabInserted);
+    auto                                 symtabInserted = duplicateSymtab(&topInfo_.mtop()->symtab);
+    const sfree_guard                    symtabInsertedGuard(symtabInserted);
+    // map of which residues will be removed name
+    std::unordered_map<char *, int>      namesRemovedCounts;
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
                 atomsSolute.get(), symtabInserted, &xOutput, removableAtoms, *atomsInserted, xInserted,
-                ePBCForOutput, box, positionFile_, deltaR_, enumRot_);
+                ePBCForOutput, box, positionFile_, deltaR_, enumRot_, &namesRemovedCounts);
 
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n",
