@@ -814,6 +814,8 @@ std::string getCoolQuote()
         { "Why would the backup server database get corrupted anyway?", "Stefan Fleischmann -- system administrator, physicist, optimist." },
         { "Teaching quantum computing is like teaching computer science at Hogwarts.", "Thomas Sterling, ISC2018 keynote" },
         { "It is unfortunate that the authors did not make better use of all the electric power energy that went into these massive computations.", "An anonymous referee" },
+        { "This is extremely unlikely.", "Berk Hess" },
+        { "Nothing is more anarchic than power.", "Pier Paolo Pasolini" },
     };
 
     if (beCool())
