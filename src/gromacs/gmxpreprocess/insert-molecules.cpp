@@ -42,6 +42,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -134,17 +135,19 @@ static void generate_trial_conf(gmx::ArrayRef<RVec> xin,
     }
 }
 
-static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
-                               const std::vector<real>         &exclusionDistances,
-                               const std::vector<RVec>         &x,
-                               const std::vector<real>         &exclusionDistances_insrt,
-                               const t_atoms                   &atoms,
-                               const std::set<int>             &removableAtoms,
-                               gmx::AtomsRemover               *remover)
+static std::unordered_map<int,char *>
+isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
+                   const std::vector<real>         &exclusionDistances,
+                   const std::vector<RVec>         &x,
+                   const std::vector<real>         &exclusionDistances_insrt,
+                   const t_atoms                   &atoms,
+                   const std::set<int>             &removableAtoms,
+                   gmx::AtomsRemover               *remover)
 {
     gmx::AnalysisNeighborhoodPositions  pos(x);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search->startPairSearch(pos);
     gmx::AnalysisNeighborhoodPair       pair;
+    std::unordered_map<int, char *> seenIdx;
     while (pairSearch.findNextPair(&pair))
     {
         const real r1 = exclusionDistances[pair.refIndex()];
@@ -153,14 +156,22 @@ static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
         {
             if (removableAtoms.count(pair.refIndex()) == 0)
             {
-                return false;
+                return seenIdx;
             }
             // TODO: If molecule information is available, this should ideally
             // use it to remove whole molecules.
+            char *str = *(atoms.resinfo[atoms.atom[pair.refIndex()].resind].name);
+            int resind = atoms.atom[pair.refIndex()].resind;
+            seenIdx[resind] = str;
             remover->markResidue(atoms, pair.refIndex(), true);
         }
     }
-    return true;
+    std::unordered_map<char *, int> mols2remove;
+    for ( auto it = seenIdx.begin(); it != seenIdx.end(); ++it )
+    {
+        printf("name %s idx %d\n",it->second, it->first);
+    }
+    return seenIdx;
 }
 
 static void insert_mols(int nmol_insrt, int ntry, int seed,
@@ -275,8 +286,10 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         generate_trial_conf(x_insrt, offset_x, enum_rot, &rng, &x_n);
         gmx::AnalysisNeighborhoodPositions pos(*x);
         gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
-        if (isInsertionAllowed(&search, exclusionDistances, x_n, exclusionDistances_insrt,
-                               *atoms, removableAtoms, &remover))
+        std::unordered_map<int, char *> seen = isInsertionAllowed(&search, exclusionDistances,
+                                                                  x_n, exclusionDistances_insrt,
+                                                                  *atoms, removableAtoms, &remover);
+        if (!seen.empty())
         {
             x->insert(x->end(), x_n.begin(), x_n.end());
             exclusionDistances.insert(exclusionDistances.end(),
