@@ -208,6 +208,16 @@ Variables affecting compilation/linking
    subcounters which are available.
    Defaults to ``OFF``.
 
+.. cmake:: GMX_ENABLE_CCACHE
+
+    If set to ``ON``, attempts to set up the `ccache <https://ccache.samba.org>`_
+    caching compiler wrapper to speed up repeated builds.
+    The ``ccache`` executable is searched for with ``find_package()`` if CMake
+    is being run with a compatible build type.
+    If the executable is found and a compatible compiler is configured,
+    CMake launch wrapper scripts are set.
+    Disabled by default, since this is mostly useful to developers.
+
 .. cmake:: GMX_INSTALL_DATASUBDIR
 
    Sets the subdirectory under CMAKE_INSTALL_DATADIR where GROMACS-specific
