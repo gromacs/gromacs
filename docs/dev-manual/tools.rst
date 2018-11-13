@@ -63,16 +63,6 @@ Build system
 CMake
   Main tool used in the build system.
 
-ccache
-  When ``GMX_ENABLE_CCACHE`` is set, the `ccache
-  <https://ccache.samba.org>`_ caching compiler wrapper must be found
-  on the PATH, together with a supported compiler, so that a caching
-  compiler wrapper will be used with CMake.  Not all compilers are
-  supported. Refer to the ``GMX_ENABLE_CCACHE`` option in
-  ``CMakeLists.txt`` and to ``cmake/gmxManageCcache.cmake`` for
-  details. Please submit updates if you find that the current
-  configuration is too conservative.
-
 packaging for distribution (CPack)
 
 unit testing (CTest)
