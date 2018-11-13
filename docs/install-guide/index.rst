@@ -764,7 +764,7 @@ gmxapi external API
 
 For dynamic linking builds and on non-Windows platforms, an extra library and
 headers are installed by setting ``-DGMXAPI=ON`` (default).
-Build targets ``gmxapi_cppdocs`` and ``gmxapi_cppdocs_dev`` produce documentation in
+Build targets ``gmxapi-cppdocs`` and ``gmxapi-cppdocs-dev`` produce documentation in
 ``docs/api-user`` and ``docs/api-dev``, respectively.
 For more project information and use cases,
 refer to the tracked :issue:`2585`,
