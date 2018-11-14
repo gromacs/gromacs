@@ -425,7 +425,7 @@ class MyMol
                                   int                        maxESP,
                                   real                       qtol,
                                   const gmx_output_env_t    *oenv,
-                                  gmx_bool                  bPlotESP);
+                                  gmx_bool                   bPlotESP);
 
         /*! \brief
          * Return the root-mean square deviation of

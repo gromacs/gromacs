@@ -292,7 +292,9 @@ class MolGen
 
         //! \brief Return non-const communication record
         t_commrec *commrec() { return cr_; }
-
+        
+        gmx_hw_info_t *hwinfo() {return hwinfo_;}
+        
         //! \brief Is this the last calculation?
         bool final() const { return bFinal_; }
 

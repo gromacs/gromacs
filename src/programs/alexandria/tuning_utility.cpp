@@ -228,6 +228,18 @@ static void print_dipole(FILE              *fp,
 void print_electric_props(FILE                           *fp,
                           std::vector<alexandria::MyMol>  mymol,
                           const Poldata                  &pd,
+                          const gmx::MDLogger            &fplog,
+                          gmx_atomprop_t                  ap,
+                          ChargeDistributionModel         qdist,
+                          ChargeGenerationAlgorithm       qgen,
+                          real                            watoms,
+                          real                            hfac,
+                          const char                     *lot,
+                          const char                     *tabfn,
+                          gmx_hw_info_t                  *hwinfo,
+                          int                             qcycle,
+                          int                             maxESP,
+                          real                            qtol,
                           const char                     *qhisto,
                           const char                     *DipCorr,
                           const char                     *MuCorr,
@@ -300,20 +312,20 @@ void print_electric_props(FILE                           *fp,
             auto nEsp     = mol.Qgresp_.nEsp();
             auto EspPoint = mol.Qgresp_.espPoint();
             
-            mol.Qgacm_.generateCharges(debug,
-                                       mol.molProp()->getMolname().c_str(),
-                                       pd, 
-                                       &(mol.topology_->atoms),
-                                       mol.x());
-            
+            mol.GenerateCharges(pd, fplog, ap, qdist, qgen,
+                                watoms, hfac, lot, false, nullptr,
+                                cr, tabfn, hwinfo, qcycle,
+                                maxESP, qtol, nullptr, false);
+                                                            
             mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
             mol.Qgresp_.updateAtomCoords(mol.x());                
-            mol.Qgresp_.calcPot();           
+            mol.Qgresp_.calcPot();    
+                   
             if (mol.espRms() < 7e-3)
             {
                 for (size_t i = 0; i < nEsp; i++)
                 {
-                    gmx_stats_add_point(lsq_esp, gmx2convert(EspPoint[i].v(), eg2cHartree_e), gmx2convert(EspPoint[i].vCalc(), eg2cHartree_e), 0, 0);
+                    gmx_stats_add_point(lsq_esp, EspPoint[i].v(), EspPoint[i].vCalc(), 0, 0);
                 }
             }
             fprintf(fp, "ESP rms: %g (Hartree/e) %s\n", mol.espRms(), (mol.espRms() > 7e-3) ? "XXX" : "");
@@ -423,7 +435,7 @@ void print_electric_props(FILE                           *fp,
     fprintf(fp, "Quadrupoles are %s in Calc Parametrization.\n", (bQuadrupole ? "used" : "not used"));
     fprintf(fp, "\n"); 
     
-    print_stats(fp, "ESP  (Hartree/e)",  lsq_esp, true,  "Electronic", "Calculated");
+    print_stats(fp, "ESP  (kJ/mol e)",  lsq_esp, true,  "Electronic", "Calculated");
     fprintf(fp, "\n");
     
     print_stats(fp, "Atomic Partial Charge  (e)",  lsq_charge, true,  "CM5", "Calculated");
