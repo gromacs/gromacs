@@ -116,6 +116,7 @@ void printCopyright(gmx::TextWriter *writer)
         "Aldert van Buuren",
         "Rudi van Drunen",
         "Anton Feenstra",
+        "Alan Gray",
         "Gerrit Groenhof",
         "Anca Hamuraru",
         "Vincent Hindriksen",
@@ -142,6 +143,7 @@ void printCopyright(gmx::TextWriter *writer)
         "Alexey Shvetsov",
         "Alfons Sijbers",
         "Peter Tieleman",
+        "Jon Vincent",
         "Teemu Virolainen",
         "Christian Wennberg",
         "Maarten Wolf"
