@@ -231,26 +231,21 @@ class PaddedVector
             storage_(),
             unpaddedEnd_(begin())
         {}
-        /*! \brief Constructor that specifes the initial size.
-         *
-         * \todo This should also be specialized by allocator, but
-         * std::vector for storage_ doesn't have such a constructor
-         * before C++14. Resolve. */
-        explicit PaddedVector(size_type count) :
-            storage_(count),
+        /*! \brief Constructor that specifes the initial size. */
+        explicit PaddedVector(size_type count,
+                              const allocator_type &allocator = Allocator()) :
+            storage_(count, allocator),
             unpaddedEnd_(begin() + count)
         {
             // The count elements have been default inserted, and now
             // the padding elements are added
             resizeWithPadding(count);
         }
-        /*! \brief Constructor that specifes the initial size and an element to copy.
-         *
-         * \todo This should also be specialized by allocator, but
-         * std::vector for storage_ doesn't have such a constructor
-         * before C++14. Resolve. */
-        explicit PaddedVector(size_type count, value_type const &v) :
-            storage_(count, v),
+        /*! \brief Constructor that specifes the initial size and an element to copy. */
+        explicit PaddedVector(size_type count,
+                              value_type const &v,
+                              const allocator_type &allocator = Allocator()) :
+            storage_(count, v, allocator),
             unpaddedEnd_(begin() + count)
         {
             // The count elements have been default inserted, and now
