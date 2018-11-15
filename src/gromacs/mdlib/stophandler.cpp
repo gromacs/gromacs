@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -187,8 +187,8 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD (
 {
     if (!GMX_THREAD_MPI || isMaster)
     {
-        // TODO: Use unique_ptr once we switch to C++14 (unique_ptr can not easily be
-        //       captured in lambda functions in C++11)
+        // Using shared ptr because move-only callable not supported by std::function.
+        // Would require replacement such as fu2::function or cxx_function.
         auto stopConditionSignal = std::make_shared<StopConditionSignal>(
                     nstList, makeBinaryReproducibleSimulation, nstSignalComm);
         registerStopCondition(
@@ -198,8 +198,6 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD (
 
     if (isMaster && maximumHoursToRun > 0)
     {
-        // TODO: Use unique_ptr once we switch to C++14 (unique_ptr can not easily be
-        //       captured in lambda functions in C++11)
         auto stopConditionTime = std::make_shared<StopConditionTime>(
                     nstList, maximumHoursToRun, nstSignalComm);
         registerStopCondition(

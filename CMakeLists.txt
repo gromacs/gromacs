@@ -40,6 +40,10 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_
 
 project(Gromacs)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 include(gmxManageCcache)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -138,40 +142,6 @@ endif()
 # SIMD.
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
-
-# Permit the user to specify a particular standard library, e.g. compiling
-# with "-stdlib=libc++" and linking with "-lc++abi -lc++" to get clang's libcxx.
-set(GMX_STDLIB_CXX_FLAGS "" CACHE STRING "Compiler flag for a C++ standard library flavour")
-set(GMX_STDLIB_LIBRARIES "" CACHE STRING "Linker libraries for a particular C++ standard library")
-mark_as_advanced(GMX_STDLIB_CXX_FLAGS)
-mark_as_advanced(GMX_STDLIB_LIBRARIES)
-
-########################################################################
-# Detect CXX11 support and flags
-########################################################################
-# The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
-# are used with permission from CMake v3.0.0 so that GROMACS can detect
-# invalid options with the Intel Compilers, and we have added a line
-# to detect warnings with the Fujitsu compilers on K computer and ICC.
-# CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
-# a semicolon. Since this is also used as a separator in lists inside CMake,
-# that string ends up being split into two separate patterns, and the last
-# part is just a single word that also matches other messages. We solved this
-# by replacing the semicolon with a period that matches any character.
-#
-# These files should be removed from the source tree when a CMake version that
-# includes the features in question becomes required for building GROMACS.
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-# This must come early, since some of our configuration flag tests
-# depend on being able to compile C++11 source files.
-include(gmxTestCXX11)
-gmx_test_cxx11(GMX_CXX11_FLAGS GMX_STDLIB_CXX_FLAGS GMX_STDLIB_LIBRARIES)
-
-# Make sure all C++ code will be compiled in C++11 mode, with the
-# expected standard library.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX11_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
 
 ########################################################################
 # User input options                                                   #
@@ -689,8 +659,6 @@ gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
-
-check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
