@@ -39,9 +39,6 @@
  * Adapted from the Guidelines Support Library v2.0.0. at
  * https://github.com/Microsoft/GSL
  *
- * \todo Replace comments referring to c++14-constexpr with constexpr
- * when we require C++14.
- *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_compat
  * \inlibraryapi
@@ -96,14 +93,14 @@ class not_null
 
         //! Move constructor. Asserts in debug mode if \c is nullptr.
         template <typename U, typename = typename std::enable_if<std::is_convertible<U, T>::value>::type >
-        /*c++14-constexpr*/ explicit not_null(U &&u) : ptr_(std::forward<U>(u))
+        constexpr explicit not_null(U &&u) : ptr_(std::forward<U>(u))
         {
             Expects(ptr_ != nullptr);
         }
 
         //! Simple constructor. Asserts in debug mode if \c u is nullptr.
         template <typename = typename std::enable_if<!std::is_same<std::nullptr_t, T>::value>::type >
-        /*c++14-constexpr*/ explicit not_null(T u) : ptr_(u)
+        constexpr explicit not_null(T u) : ptr_(u)
         {
             Expects(ptr_ != nullptr);
         }
@@ -123,7 +120,7 @@ class not_null
 
         //! Getters
         //! \{
-        /*c++14-constexpr*/ T get() const
+        constexpr T get() const
         {
             Ensures(ptr_ != nullptr);
             return ptr_;
