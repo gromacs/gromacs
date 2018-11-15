@@ -832,6 +832,7 @@ int Mdrunner::mdrunner()
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
                         &bReadEkin, &observablesHistory,
+                        mdrunOptions.maximumHoursToRun,
                         continuationOptions.appendFiles,
                         continuationOptions.appendFilesOptionSet,
                         mdrunOptions.reproducible);

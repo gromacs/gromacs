@@ -2586,6 +2586,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
                      ObservablesHistory *observablesHistory,
+                     real maxHoursToRun,
                      gmx_bool bAppend, gmx_bool bForceAppend,
                      gmx_bool reproducibilityRequested)
 {
@@ -2614,16 +2615,20 @@ void load_checkpoint(const char *fn, FILE **fplog,
     // write successful output. But perhaps that is not desirable.
     if (ir->nsteps < step)
     {
-        // Note that we do not intend to support the use of mdrun
-        // -nsteps to circumvent this condition.
-        char nstepsString[STEPSTRSIZE], stepString[STEPSTRSIZE];
-        gmx_step_str(ir->nsteps, nstepsString);
-        gmx_step_str(step, stepString);
-        gmx_fatal(FARGS, "The input requested %s steps, however the checkpoint "
-                  "file has already reached step %s. The simulation will not "
-                  "proceed, because either your simulation is already complete, "
-                  "or your combination of input files don't match.",
-                  nstepsString, stepString);
+        // Need work around to running with -maxh flag.
+        if (maxHoursToRun <= 0)
+        {
+            // Note that we do not intend to support the use of mdrun
+            // -nsteps to circumvent this condition.
+            char nstepsString[STEPSTRSIZE], stepString[STEPSTRSIZE];
+            gmx_step_str(ir->nsteps, nstepsString);
+            gmx_step_str(step, stepString);
+            gmx_fatal(FARGS, "The input requested %s steps, however the checkpoint "
+                      "file has already reached step %s. The simulation will not "
+                      "proceed, because either your simulation is already complete, "
+                      "or your combination of input files don't match.",
+                      nstepsString, stepString);
+        }
     }
     if (ir->nsteps >= 0)
     {
