@@ -65,6 +65,12 @@ TestStruct::TestStruct() : b(0) {}
         if(WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.5.0")
             message(WARNING "Using Clang on Windows requires Clang 3.5.0")
         endif()
+	string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.6" AND
+	   "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${_cmake_build_type}}" MATCHES "-g")
+	    message(FATAL_ERROR "Clang <3.6 doesn't support generating debug symbols for C++14. "
+	            "Either build with Clang >=3.6 or without -g (e.g. CMAKE_BUILD_TYPE=Release).")
+	endif()
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI")
         message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC, ICC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
     endif()
