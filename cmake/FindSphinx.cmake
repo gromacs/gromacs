@@ -50,7 +50,17 @@ if (SPHINX_EXECUTABLE AND NOT DEFINED SPHINX_EXECUTABLE_VERSION)
         ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-    string(REGEX REPLACE ".*build[ )]*" "" SPHINX_EXECUTABLE_VERSION "${SPHINX_VERSION_OUTPUT_VARIABLE}")
+    # Need extra check for older versions that have a different output of the version string - awesome!
+    string(REGEX REPLACE "Sphinx v" "" SPHINX_TEMP_STRING "${SPHINX_VERSION_OUTPUT_VARIABLE}")
+
+    STRING(COMPARE EQUAL "${SPHINX_VERSION_OUTPUT_VARIABLE}" "${SPHINX_TEMP_STRING}" _cmp)
+    # If the strings are equal, we are having the later output and can proceed with the setting
+    # using one regex, otherwise we need another regex.
+    if (_cmp)
+        string(REGEX REPLACE ".*build[ )]*" "" SPHINX_EXECUTABLE_VERSION "${SPHINX_VERSION_OUTPUT_VARIABLE}")
+    else()
+        string(REGEX REPLACE "\n.*" "" SPHINX_EXECUTABLE_VERSION "${SPHINX_TEMP_STRING}")
+    endif()
     set(SPHINX_EXECUTABLE_VERSION "${SPHINX_EXECUTABLE_VERSION}" CACHE INTERNAL "Version of ${SPHINX_EXECUTABLE}")
 endif()
 
