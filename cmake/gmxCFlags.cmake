@@ -191,8 +191,9 @@ macro (gmx_c_flags)
             endif()
             if (GMX_COMPILER_WARNINGS)
 #only on Windows
+#161: unrecognized pragma
 #1786 function was declared deprecated (is issued for stdlib function such as strncpy which have a _s version)
-GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd1786 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280" GMXC_CFLAGS)
+GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd161 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd1786 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280" GMXC_CFLAGS)
             endif()
             GMX_TEST_CFLAG(CFLAGS_OPT "/Qip" GMXC_CFLAGS_RELEASE)
         endif()
@@ -229,8 +230,9 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
                 GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd3180" GMXC_CFLAGS)
             endif()
             if (GMX_COMPILER_WARNINGS)
+#161: unrecognized pragma
 #809: exception specification for virtual function X is incompatible with that of overridden function
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd304 /wd383 /wd411 /wd444 /wd809 /wd869 /wd981 /wd1418 /wd1572 /wd1599 /wd1786 /wd2259 /wd2547 /wd3280 /wd11074 /wd11076 /wd2282" GMXC_CXXFLAGS)
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd161 /wd177 /wd304 /wd383 /wd411 /wd444 /wd809 /wd869 /wd981 /wd1418 /wd1572 /wd1599 /wd1786 /wd2259 /wd2547 /wd3280 /wd11074 /wd11076 /wd2282" GMXC_CXXFLAGS)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
@@ -301,11 +303,12 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
         #      unreferenced local variable (only C)
         #      conversion from 'size_t' to 'int', possible loss of data
         #      conversion from 'const char*' to 'void*', different 'const' qualifiers (only C)
+        #      unknown pragma (4068)
         if(NOT CMAKE_CONFIGURATION_TYPES)
-            GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CFLAGS)
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267" GMXC_CXXFLAGS)
-        else() #Projects only use the C++ flags
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CXXFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090 /wd4068" GMXC_CFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267 /wd4068" GMXC_CXXFLAGS)
+        else() # MSVC projects only use the C++ flags
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090 /wd4068" GMXC_CXXFLAGS)
         endif()
     endif()
 

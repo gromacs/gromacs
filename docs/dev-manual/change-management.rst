@@ -259,7 +259,7 @@ their voting rights.
 
 For further documentation:
 
--  `|Gromacs| specific manual <https://gerrit.gromacs.org/Documentation/index.html>`__
+-  |Gromacs| `specific manual <https://gerrit.gromacs.org/Documentation/index.html>`__
 -  `General tutorials <https://gerrit-documentation.storage.googleapis.com/Documentation/2.15.3/index.html#_tutorials>`__
 
 FAQs

@@ -31,10 +31,12 @@ the cut-off distance :math:`r_c`. The dispersion energy between two
 particles is written as:
 
 .. math:: V({r_{ij}}) ~=~- C_6\,{r_{ij}}^{-6}
+          :label: eqnlrljEdisp
 
 and the corresponding force is:
 
 .. math:: \mathbf{F}_ij ~=~- 6\,C_6\,r_{ij}^{-8}\mathbf{r}_ij
+          :label: eqnlrljFdisp
 
 In a periodic system it is not easy to calculate the full potentials,
 so usually a cut-off is applied, which can be abrupt or smooth. We will
@@ -54,28 +56,25 @@ and is 0 beyond the cut-off distance :math:`r_c`. We can integrate
 :math:`r_1` is equal to the global density and the radial distribution
 function :math:`g(r)` is 1 beyond :math:`r_1`:
 
-.. math::
-
-   \begin{aligned}
-   \nonumber
-   V_{lr}  &=& {\frac{1}{2}}N \left(
-     \rho\int_0^{r_1}  4\pi r^2 g(r) \, C_6 \,S\,{{{\rm d}r}}
-   + \rho\int_{r_1}^{r_c}  4\pi r^2 \left( V(r) -V_c(r) \right) {{{\rm d}r}}
-   + \rho\int_{r_c}^{\infty}  4\pi r^2 V(r) \, {{{\rm d}r}}
-   \right) \\
-   & = & {\frac{1}{2}}N \left(\left(\frac{4}{3}\pi \rho r_1^{3} - 1\right) C_6 \,S
-   + \rho\int_{r_1}^{r_c} 4\pi r^2 \left( V(r) -V_c(r) \right) {{{\rm d}r}}
-   -\frac{4}{3} \pi N \rho\, C_6\,r_c^{-3}
-   \right)\end{aligned}
+.. math:: \begin{aligned}
+          V_{lr}  &=& {\frac{1}{2}}N \left(
+            \rho\int_0^{r_1}  4\pi r^2 g(r) \, C_6 \,S\,{{{\rm d}r}}
+          + \rho\int_{r_1}^{r_c}  4\pi r^2 \left( V(r) -V_c(r) \right) {{{\rm d}r}}
+          + \rho\int_{r_c}^{\infty}  4\pi r^2 V(r) \, {{{\rm d}r}}
+          \right) \\
+          & = & {\frac{1}{2}}N \left(\left(\frac{4}{3}\pi \rho r_1^{3} - 1\right) C_6 \,S
+          + \rho\int_{r_1}^{r_c} 4\pi r^2 \left( V(r) -V_c(r) \right) {{{\rm d}r}}
+          -\frac{4}{3} \pi N \rho\, C_6\,r_c^{-3}
+          \right)\end{aligned}
+          :label: eqnlrljshift
 
 where the term :math:`-1` corrects for the self-interaction. For a
 plain cut-off we only need to assume that :math:`g(r)` is 1 beyond
 :math:`r_c` and the correction reduces to \ :ref:`108 <refAllen87>`:
 
-.. math::
-
-   \begin{aligned}
-   V_{lr} & = & -\frac{2}{3} \pi N \rho\, C_6\,r_c^{-3}\end{aligned}
+.. math:: \begin{aligned}
+          V_{lr} & = & -\frac{2}{3} \pi N \rho\, C_6\,r_c^{-3}\end{aligned}
+          :label: eqnlrljcorrreduced
 
 If we consider, for example, a box of pure water, simulated with a
 cut-off of 0.9 nm and a density of 1 g cm\ :math:`^{-3}` this correction
@@ -101,30 +100,33 @@ The scalar virial of the system due to the dispersion interaction
 between two particles :math:`i` and :math:`j` is given by:
 
 .. math:: \Xi~=~-{\frac{1}{2}} \mathbf{r}_ij \cdot \mathbf{F}_ij ~=~ 3\,C_6\,r_{ij}^{-6}
+          :label: eqnlrljdispvirial
 
 The pressure is given by:
 
 .. math:: P~=~\frac{2}{3\,V}\left(E_{kin} - \Xi\right)
+          :label: eqnlrljpressure
 
 The long-range correction to the virial is given by:
 
 .. math:: \Xi_{lr} ~=~ {\frac{1}{2}}N \rho \int_0^{\infty} 4\pi r^2 g(r) (\Xi -\Xi_c) \,{{\rm d}r}
+          :label: eqnlrljcorrvirial
 
 We can again integrate the long-range contribution to the virial
 assuming :math:`g(r)` is 1 beyond :math:`r_1`:
 
-.. math::
-
-   \begin{aligned}
-   \Xi_{lr}&=&	{\frac{1}{2}}N \rho \left(
-       \int_{r_1}^{r_c}  4 \pi r^2 (\Xi -\Xi_c)  \,{{\rm d}r}+ \int_{r_c}^{\infty} 4 \pi r^2 3\,C_6\,{r_{ij}}^{-6}\,  {{\rm d}r}\right)	\nonumber\\
-           &=&     {\frac{1}{2}}N \rho \left(
-       \int_{r_1}^{r_c} 4 \pi r^2 (\Xi -\Xi_c) \, {{\rm d}r}+ 4 \pi C_6 \, r_c^{-3} \right)\end{aligned}
+.. math:: \begin{aligned}
+          \Xi_{lr}&=&	{\frac{1}{2}}N \rho \left(
+              \int_{r_1}^{r_c}  4 \pi r^2 (\Xi -\Xi_c)  \,{{\rm d}r}+ \int_{r_c}^{\infty} 4 \pi r^2 3\,C_6\,{r_{ij}}^{-6}\,  {{\rm d}r}\right)	\nonumber\\
+                  &=&     {\frac{1}{2}}N \rho \left(
+              \int_{r_1}^{r_c} 4 \pi r^2 (\Xi -\Xi_c) \, {{\rm d}r}+ 4 \pi C_6 \, r_c^{-3} \right)\end{aligned}
+          :label: eqnlrljvirialcontrib
 
 For a plain cut-off the correction to the pressure
 is \ :ref:`108 <refAllen87>`:
 
 .. math:: P_{lr}~=~-\frac{4}{3} \pi C_6\, \rho^2 r_c^{-3}
+          :label: eqnlrljpressurecorr
 
 Using the same example of a water box, the correction to the virial is
 0.75 kJ mol\ :math:`^{-1}` per molecule, the corresponding correction to
@@ -155,11 +157,11 @@ this case the modified Ewald equations become
           \end{aligned}
           :label: eqnljpmerealspace
 
-.. math::
-   \begin{aligned} 
-   V_{\mathrm{rec}} &=& \frac{{\pi}^{\frac{3}{2}} \beta^{3}}{2V} \sum_{m_x}\sum_{m_y}\sum_{m_{z}*}
-   f(\pi |{\mathbf m}|/\beta) \times \sum_{i,j}^{N} C^{ij}_6 {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
-   V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C^{ii}_6\end{aligned}
+.. math:: \begin{aligned} 
+          V_{\mathrm{rec}} &=& \frac{{\pi}^{\frac{3}{2}} \beta^{3}}{2V} \sum_{m_x}\sum_{m_y}\sum_{m_{z}*}
+          f(\pi | {\mathbf m} | /\beta) \times \sum_{i,j}^{N} C^{ij}_6 {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
+          V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C^{ii}_6\end{aligned}
+          :label: eqnljpmerealspace2
 
 where :math:`{\bf m}=(m_x,m_y,m_z)`, :math:`\beta` is the parameter
 determining the weight between direct and reciprocal space, and
@@ -171,23 +173,24 @@ particles. Following the derivation by
 Essmann \ :ref:`15 <refEssmann95>`, the functions :math:`f` and :math:`g`
 introduced above are defined as
 
-.. math::
-
-   \begin{aligned}
-   f(x)&=&1/3\left[(1-2x^2){\mathrm{exp}}(-x^2) + 2{x^3}\sqrt{\pi}\,{\mathrm{erfc}}(x) \right] \\
-   g(x)&=&{\mathrm{exp}}(-x^2)(1+x^2+\frac{x^4}{2}).\end{aligned}
+.. math:: \begin{aligned}
+          f(x)&=&1/3\left[(1-2x^2){\mathrm{exp}}(-x^2) + 2{x^3}\sqrt{\pi}\,{\mathrm{erfc}}(x) \right] \\
+          g(x)&=&{\mathrm{exp}}(-x^2)(1+x^2+\frac{x^4}{2}).\end{aligned}
+          :label: eqnljpmerealdistance
 
 The above methodology works fine as long as the dispersion parameters
 can be combined geometrically (:eq:`eqn. %s <eqncomb>`) in the same way as the
 charges for electrostatics
 
 .. math:: C^{ij}_{6,\mathrm{geom}} = \left(C^{ii}_6 \, C^{jj}_6\right)^{1/2}
+          :label: eqnljpmegeom
 
 For Lorentz-Berthelot combination rules (:eq:`eqn. %s <eqnlorentzberthelot>`),
 the reciprocal part of this sum has to be calculated seven times due to
 the splitting of the dispersion parameter according to
 
 .. math:: C^{ij}_{6,\mathrm{L-B}} = (\sigma_i+\sigma_j)^6=\sum_{n=0}^{6} P_{n}\sigma_{i}^{n}\sigma_{j}^{(6-n)},
+          :label: eqnljpmelorenztberthelot
 
 for :math:`P_{n}` the Pascal triangle coefficients. This introduces a
 non-negligible cost to the reciprocal part, requiring seven separate
@@ -197,12 +200,11 @@ geometrical combination rules in order to calculate an approximate
 interaction parameter for the reciprocal part of the potential, yielding
 a total interaction of
 
-.. math::
-
-   \begin{aligned}
-   V(r<r_c) & = & \underbrace{C^{\mathrm{dir}}_6 g(\beta r) r^{-6}}_{\mathrm{Direct \  space}} + \underbrace{C^\mathrm{recip}_{6,\mathrm{geom}} [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}} \nonumber \\
-   &=& C^\mathrm{recip}_{6,\mathrm{geom}}r^{-6} + \left(C^{\mathrm{dir}}_6-C^\mathrm{recip}_{6,\mathrm{geom}}\right)g(\beta r)r^{-6} \\
-   V(r>r_c) & = & \underbrace{C^\mathrm{recip}_{6,\mathrm{geom}} [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}}.\end{aligned}
+.. math:: \begin{aligned}
+          V(r<r_c) & = & \underbrace{C^{\mathrm{dir}}_6 g(\beta r) r^{-6}}_{\mathrm{Direct \  space}} + \underbrace{C^\mathrm{recip}_{6,\mathrm{geom}} [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}} \nonumber \\
+          &=& C^\mathrm{recip}_{6,\mathrm{geom}}r^{-6} + \left(C^{\mathrm{dir}}_6-C^\mathrm{recip}_{6,\mathrm{geom}}\right)g(\beta r)r^{-6} \\
+          V(r>r_c) & = & \underbrace{C^\mathrm{recip}_{6,\mathrm{geom}} [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}}.\end{aligned}
+          :label: eqnpmearith
 
 This will preserve a well-defined Hamiltonian and significantly
 increase the performance of the simulations. The approximation does
@@ -231,10 +233,9 @@ interaction is given by
           \end{aligned}
           :label: eqnljpmecorr2
 
-.. math::
-
-   \begin{aligned} 
-   V(r>r_c) &=& C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}.\end{aligned}
+.. math:: \begin{aligned} 
+          V(r>r_c) &=& C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}.\end{aligned}
+          :label: eqnljpmecorr3
 
 For the case when :math:`C^{\mathrm{dir}}_6 \neq C^\mathrm{recip}_6`
 this will retain an unmodified LJ force up to the cut-off, and the error
@@ -244,6 +245,7 @@ reciprocal space. When using a VdW interaction modifier of
 potential-shift, the constant
 
 .. math:: \left(-C^{\mathrm{dir}}_6 + C^\mathrm{recip}_6 [1 - g(\beta r_c)]\right) r_c^{-6}
+          :label: eqnljpmeconstant
 
 is added to :eq:`eqn. %s <eqnljpmecorr2>` in order to ensure that the potential
 is continuous at the cutoff. Note that, in the same way as

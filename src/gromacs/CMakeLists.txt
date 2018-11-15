@@ -262,7 +262,14 @@ endif()
 if (HAS_NO_MISSING_DECL)
     target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-declarations")
 endif()
-if (HAS_NO_MISSING_PROTO)
+# TODO The group scheme kernels don't use proper function prototype
+# declarations, and clang warns about such use, which we suppress
+# rather than fix. We would prefer to use no suppressions. However
+# other compilers do not support such a warning suppression for C++
+# source files, and issue warnings about that. Remove the use of
+# -Wno-missing-prototypes here and above when the group scheme is
+# removed.
+if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
 endif()
 if (HAS_NO_MSVC_UNUSED)
@@ -376,8 +383,52 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
 endif()
 
 if(GMX_USE_OPENCL)
-    set(OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS})
+    # Install the utility headers
+    file(GLOB OPENCL_INSTALLED_FILES
+        gpu_utils/vectype_ops.clh
+        gpu_utils/device_utils.clh
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/gpu_utils
+        COMPONENT libraries)
+    file(GLOB OPENCL_INSTALLED_FILES
+        pbcutil/ishift.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/pbcutil
+        COMPONENT libraries)
 
-    install(FILES ${OPENCL_KERNELS} DESTINATION
-        ${GMX_INSTALL_OCLDIR} COMPONENT libraries)
+    # Install the NB source and headers
+    file(GLOB OPENCL_INSTALLED_FILES
+        mdlib/nbnxn_consts.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib
+        COMPONENT libraries)
+    file(GLOB OPENCL_INSTALLED_FILES
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.cl
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_pruneonly.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen_add_twincut.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_utils.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_consts.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib/nbnxn_ocl
+        COMPONENT libraries)
+
+    # Install the PME source and headers
+    file(GLOB OPENCL_INSTALLED_FILES
+        ewald/pme-spread.clh
+        ewald/pme-solve.clh
+        ewald/pme-gather.clh
+        ewald/pme-gpu-utils.clh
+        ewald/pme-program.cl
+        ewald/pme-gpu-types.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/ewald
+        COMPONENT libraries)
 endif()

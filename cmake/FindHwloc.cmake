@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -85,6 +85,7 @@ if(HWLOC_INCLUDE_DIRS)
     # If we are not cross-compiling we try to use the hwloc-info program
     if(NOT CMAKE_CROSSCOMPILING)
         find_program(HWLOC_INFO "hwloc-info")
+        mark_as_advanced(HWLOC_INFO)
 
         if(HWLOC_INFO)
             execute_process(COMMAND ${HWLOC_INFO} "--version"

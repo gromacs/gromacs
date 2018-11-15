@@ -32,10 +32,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Define targets gmxapi_cppdocs and gmxapi_cppdocs_dev when GMXAPI is enabled.
-# gmxapi_cppdocs produces public API documentation in docs/api-user
+# Define targets gmxapi-cppdocs and gmxapi-cppdocs-dev when GMXAPI is enabled.
+# gmxapi-cppdocs produces public API documentation in docs/api-user
 # extracted from the gmxapi public headers files.
-# gmxapi_cppdocs_dev produces more complete documentation in docs/api-dev
+# gmxapi-cppdocs-dev produces more complete documentation in docs/api-dev
 # with internal interfaces and implementation details.
 
 file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/../../../docs/api-user" GMXAPI_USERDOC_OUTPUT)
@@ -60,12 +60,12 @@ configure_file(Doxyfile-dev.in Doxyfile-dev @ONLY)
 ################################
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
-    add_custom_target( gmxapi_cppdocs
+    add_custom_target( gmxapi-cppdocs
         COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating API user documentation for ${GMXAPI_USERDOC_OUTPUT}"
         VERBATIM )
-    add_custom_target( gmxapi_cppdocs_dev
+    add_custom_target( gmxapi-cppdocs-dev
         COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile-dev
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating API developer documentation for ${GMXAPI_DEVDOC_OUTPUT}"

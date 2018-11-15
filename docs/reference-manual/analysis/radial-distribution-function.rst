@@ -6,14 +6,13 @@ Radial distribution functions
   :math:`g_{AB}(r)` between particles of type :math:`A` and :math:`B` is
   defined in the following way:
 
-.. math::
-
-   \begin{array}{rcl}
-   g_{AB}(r)&=&    {\displaystyle \frac{\langle \rho_B(r) \rangle}{\langle\rho_B\rangle_{local}}}         \\
-            &=&    {\displaystyle \frac{1}{\langle\rho_B\rangle_{local}}}{\displaystyle \frac{1}{N_A}}
-                   \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} 
-                   {\displaystyle \frac{\delta( r_{ij} - r )}{4 \pi r^2}}         \\
-   \end{array}
+.. math:: \begin{array}{rcl}
+          g_{AB}(r)&=&    {\displaystyle \frac{\langle \rho_B(r) \rangle}{\langle\rho_B\rangle_{local}}}         \\
+                   &=&    {\displaystyle \frac{1}{\langle\rho_B\rangle_{local}}}{\displaystyle \frac{1}{N_A}}
+                          \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} 
+                          {\displaystyle \frac{\delta( r_{ij} - r )}{4 \pi r^2}}         \\
+          \end{array}
+          :label: eqnrdfdefine
 
 with :math:`\langle\rho_B(r)\rangle` the particle density of type
 :math:`B` at a distance :math:`r` around particles :math:`A`, and
@@ -52,11 +51,13 @@ dependent rdf :math:`g_{AB}(r,\theta)`, where the angle :math:`\theta`
 is defined with respect to a certain laboratory axis :math:`{\bf e}`,
 see :numref:`Fig. %s <fig-rdfex>` B.
 
-.. math::
+.. math:: g_{AB}(r,\theta) = {1 \over \langle\rho_B\rangle_{local,\:\theta }} 
+          {1 \over N_A} \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} {\delta( r_{ij} - r ) 
+          \delta(\theta_{ij} -\theta) \over 2 \pi r^2 sin(\theta)}
+          :label: eqnrdfangleaxis1
 
-   \begin{aligned}
-   g_{AB}(r,\theta) &=& {1 \over \langle\rho_B\rangle_{local,\:\theta }} {1 \over N_A} \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} {\delta( r_{ij} - r ) \delta(\theta_{ij} -\theta) \over 2 \pi r^2 sin(\theta)}\\
-   cos(\theta_{ij}) &=& {{\bf r}_{ij} \cdot {\bf e} \over \|r_{ij}\| \;\| e\| }\end{aligned}
+.. math:: cos(\theta_{ij}) = {{\bf r}_{ij} \cdot {\bf e} \over \|r_{ij}\| \;\| e\| }
+          :label: eqnrdfangleaxis2
 
 This :math:`g_{AB}(r,\theta)` is useful for analyzing anisotropic
 systems. **Note** that in this case the normalization

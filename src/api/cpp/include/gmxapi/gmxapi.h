@@ -125,7 +125,7 @@
  * For maximal compatibility with other libgmxapi clients (such as third-party
  * Python modules), client code should use the wrappers and protocols in the
  * gmxapi.h header. Note that there is a separate CMake target to build the full
- * developer documentation for gmxapi: `gmxapi_cppdocs_dev`.
+ * developer documentation for gmxapi: `gmxapi-cppdocs-dev`.
  *
  * # Possible Example
  *

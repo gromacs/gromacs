@@ -28,16 +28,16 @@ We define the *lowercase* subscripts :math:`i`, :math:`j`, :math:`k` and
 :math:`l` to denote particles: :math:`\mathbf{r}_i` is the
 *position vector* of particle :math:`i`, and using this notation:
 
-.. math::
-
-   \begin{aligned}
-   \mathbf{r}_{ij}	=	\mathbf{r}_j-\mathbf{r}_i\\
-   r_{ij}=	| \mathbf{r}_{ij} | \end{aligned}
+.. math:: \begin{aligned}
+          \mathbf{r}_{ij}	=	\mathbf{r}_j-\mathbf{r}_i\\
+          r_{ij}=	| \mathbf{r}_{ij} | \end{aligned}
+          :label: eqnnotation
 
 The force on particle :math:`i` is denoted by
 :math:`\mathbf{F}_i` and
 
 .. math:: \mathbf{F}_{ij} = \mbox{force on $i$ exerted by $j$}
+          :label: eqbforcenotation
 
 MD units
 --------
@@ -140,6 +140,7 @@ The **electric conversion factor**
 It relates the mechanical quantities to the electrical quantities as in
 
 .. math:: V = f \frac{q^2}{r} \mbox{\ \ or\ \ } F = f \frac{q^2}{r^2}
+          :label: eqnelecconv
 
 Electric potentials :math:`\Phi` and electric fields
 :math:`\mathbf{E}` are intermediate quantities in the
@@ -149,11 +150,10 @@ units. We strongly recommend following the usual practice of including
 the factor :math:`f` in expressions that evaluate :math:`\Phi` and
 :math:`\mathbf{E}`:
 
-.. math::
-
-   \begin{aligned}
-   \Phi(\mathbf{r}) = f \sum_j \frac{q_j}{| \mathbf{r}-\mathbf{r}_j | } 	\\
-   \mathbf{E}(\mathbf{r}) = f \sum_j q_j \frac{(\mathbf{r}-\mathbf{r}_j)}{| \mathbf{r}-\mathbf{r}_j| ^3}\end{aligned}
+.. math:: \begin{aligned}
+          \Phi(\mathbf{r}) = f \sum_j \frac{q_j}{| \mathbf{r}-\mathbf{r}_j | } 	\\
+          \mathbf{E}(\mathbf{r}) = f \sum_j q_j \frac{(\mathbf{r}-\mathbf{r}_j)}{| \mathbf{r}-\mathbf{r}_j| ^3}\end{aligned}
+          :label: eqnelecfacinclude
 
 With these definitions, :math:`q\Phi` is an energy and
 :math:`q\mathbf{E}` is a force. The units are those given
@@ -221,11 +221,11 @@ reduced temperature. A |Gromacs| temperature :math:`T=1` means a reduced
 temperature of :math:`0.008\ldots` units; if a reduced temperature of 1
 is required, the |Gromacs| temperature should be :math:`120.272\,36`.
 
-In :numref:`Table %s <table-reduced>`
-quantities are given for LJ
+In :numref:`Table %s <table-reduced>` quantities are given for LJ
 potentials:
 
 .. math:: V_{LJ} = 4\epsilon \left[ \left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^{6} \right]
+          :label: eqnbaseljpotentials
 
 .. _table-reduced:
 

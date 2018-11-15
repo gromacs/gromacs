@@ -55,6 +55,10 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/ns.h"
+#include "gromacs/mdlib/qm_gamess.h"
+#include "gromacs/mdlib/qm_gaussian.h"
+#include "gromacs/mdlib/qm_mopac.h"
+#include "gromacs/mdlib/qm_orca.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -69,48 +73,12 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/* declarations of the interfaces to the QM packages. The _SH indicate
- * the QM interfaces can be used for Surface Hopping simulations
- */
-#if GMX_QMMM_GAMESS
-/* GAMESS interface */
+// When not built in a configuration with QMMM support, much of this
+// code is unreachable by design. Tell clang not to warn about it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunreachable-code"
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
 
-void
-init_gamess(const t_commrec *cr, t_QMrec *qm, t_MMrec *mm);
-
-real
-call_gamess(const t_forcerec *fr,
-            t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
-
-#elif GMX_QMMM_MOPAC
-/* MOPAC interface */
-
-void
-init_mopac(t_QMrec *qm);
-
-real
-call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
-
-real
-call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
-
-#elif GMX_QMMM_GAUSSIAN
-/* GAUSSIAN interface */
-
-void
-init_gaussian(t_QMrec *qm);
-
-real
-call_gaussian_SH(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
-
-real
-call_gaussian(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
-
-#elif GMX_QMMM_ORCA
-#include "gromacs/mdlib/qm_orca.h"
-#endif
-
-#if GMX_QMMM
 /* this struct and these comparison functions are needed for creating
  * a QMMM input for the QM routines from the QMMM neighbor list.
  */
@@ -135,41 +103,54 @@ static real call_QMroutine(const t_commrec gmx_unused *cr, const t_forcerec gmx_
 
     if (qm->QMmethod < eQMmethodRHF && !(mm->nrMMatoms))
     {
-#if GMX_QMMM_MOPAC
-        if (qm->bSH)
+        if (GMX_QMMM_MOPAC)
         {
-            return call_mopac_SH(qm, mm, f, fshift);
+            if (qm->bSH)
+            {
+                return call_mopac_SH(qm, mm, f, fshift);
+            }
+            else
+            {
+                return call_mopac(qm, mm, f, fshift);
+            }
         }
         else
         {
-            return call_mopac(qm, mm, f, fshift);
+            gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
         }
-#else
-        gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
-#endif
     }
     else
     {
         /* do an ab-initio calculation */
         if (qm->bSH && qm->QMmethod == eQMmethodCASSCF)
         {
-#if GMX_QMMM_GAUSSIAN
-            return call_gaussian_SH(fr, qm, mm, f, fshift);
-#else
-            gmx_fatal(FARGS, "Ab-initio Surface-hopping only supported with Gaussian.");
-#endif
+            if (GMX_QMMM_GAUSSIAN)
+            {
+                return call_gaussian_SH(fr, qm, mm, f, fshift);
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Ab-initio Surface-hopping only supported with Gaussian.");
+            }
         }
         else
         {
-#if GMX_QMMM_GAMESS
-            return call_gamess(fr, qm, mm, f, fshift);
-#elif GMX_QMMM_GAUSSIAN
-            return call_gaussian(fr, qm, mm, f, fshift);
-#elif GMX_QMMM_ORCA
-            return call_orca(fr, qm, mm, f, fshift);
-#else
-            gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
-#endif
+            if (GMX_QMMM_GAMESS)
+            {
+                return call_gamess(qm, mm, f, fshift);
+            }
+            else if (GMX_QMMM_GAUSSIAN)
+            {
+                return call_gaussian(fr, qm, mm, f, fshift);
+            }
+            else if (GMX_QMMM_ORCA)
+            {
+                return call_orca(fr, qm, mm, f, fshift);
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
+            }
         }
     }
 }
@@ -180,25 +161,35 @@ static void init_QMroutine(const t_commrec gmx_unused *cr, t_QMrec gmx_unused *q
      */
     if (qm->QMmethod < eQMmethodRHF)
     {
-#if GMX_QMMM_MOPAC
-        /* do a semi-empiprical calculation */
-        init_mopac(qm);
-#else
-        gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
-#endif
+        if (GMX_QMMM_MOPAC)
+        {
+            /* do a semi-empiprical calculation */
+            init_mopac(qm);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
+        }
     }
     else
     {
         /* do an ab-initio calculation */
-#if GMX_QMMM_GAMESS
-        init_gamess(cr, qm, mm);
-#elif GMX_QMMM_GAUSSIAN
-        init_gaussian(qm);
-#elif GMX_QMMM_ORCA
-        init_orca(qm);
-#else
-        gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
-#endif
+        if (GMX_QMMM_GAMESS)
+        {
+            init_gamess(cr, qm, mm);
+        }
+        else if (GMX_QMMM_GAUSSIAN)
+        {
+            init_gaussian(qm);
+        }
+        else if (GMX_QMMM_ORCA)
+        {
+            init_orca(qm);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
+        }
     }
 } /* init_QMroutine */
 
@@ -229,14 +220,14 @@ static void update_QMMM_coord(const rvec *x, const t_forcerec *fr, t_QMrec *qm, 
 
 /* QMMM core routines */
 
-static t_QMrec *mk_QMrec(void)
+static t_QMrec *mk_QMrec()
 {
     t_QMrec *qm;
     snew(qm, 1);
     return qm;
 } /* mk_QMrec */
 
-static t_MMrec *mk_MMrec(void)
+static t_MMrec *mk_MMrec()
 {
     t_MMrec *mm;
     snew(mm, 1);
@@ -244,7 +235,7 @@ static t_MMrec *mk_MMrec(void)
 } /* mk_MMrec */
 
 static void init_QMrec(int grpnr, t_QMrec *qm, int nr, const int *atomarray,
-                       gmx_mtop_t *mtop, t_inputrec *ir)
+                       const gmx_mtop_t *mtop, const t_inputrec *ir)
 {
     /* fills the t_QMrec struct of QM group grpnr
      */
@@ -340,20 +331,29 @@ static t_QMrec *copy_QMrec(t_QMrec *qm)
 
 } /*copy_QMrec */
 
-t_QMMMrec *mk_QMMMrec(void)
-{
+#if GMX_QMMM
 
+t_QMMMrec *mk_QMMMrec()
+{
     t_QMMMrec *qr;
 
     snew(qr, 1);
 
     return qr;
 
+}     /* mk_QMMMrec */
+
+#else /* GMX_QMMM */
+
+t_QMMMrec *mk_QMMMrec()
+{
+    gmx_incons("Compiled without QMMM");
 } /* mk_QMMMrec */
+#endif
 
 void init_QMMMrec(const t_commrec  *cr,
-                  gmx_mtop_t       *mtop,
-                  t_inputrec       *ir,
+                  const gmx_mtop_t *mtop,
+                  const t_inputrec *ir,
                   const t_forcerec *fr)
 {
     /* we put the atomsnumbers of atoms that belong to the QMMM group in
@@ -362,16 +362,17 @@ void init_QMMMrec(const t_commrec  *cr,
      * simply contains true/false for QM and MM (the other) atoms.
      */
 
-    gmx_groups_t            *groups;
     int                     *qm_arr = nullptr, vsite, ai, aj;
-    int                      qm_max = 0, qm_nr = 0, i, j, jmax, k, l, nrvsite2 = 0;
+    int                      qm_max = 0, qm_nr = 0, i, j, jmax, k, l;
     t_QMMMrec               *qr;
     t_MMrec                 *mm;
-    t_iatom                 *iatoms;
     gmx_mtop_atomloop_all_t  aloop;
-    gmx_mtop_ilistloop_all_t iloop;
     int                      a_offset;
-    const t_ilist           *ilist_mol;
+
+    if (!GMX_QMMM)
+    {
+        gmx_incons("Compiled without QMMM");
+    }
 
     if (ir->cutoff_scheme != ecutsGROUP)
     {
@@ -419,7 +420,7 @@ void init_QMMMrec(const t_commrec  *cr,
         qr->nrQMlayers = 1;
     }
 
-    groups = &mtop->groups;
+    const gmx_groups_t *groups = &mtop->groups;
 
     /* there are jmax groups of QM atoms. In case of multiple QM groups
      * I assume that the users wants to do ONIOM. However, maybe it
@@ -462,17 +463,16 @@ void init_QMMMrec(const t_commrec  *cr,
              * are part of the current QM layer it needs to be removed from
              * qm_arr[].  */
 
-            iloop = gmx_mtop_ilistloop_all_init(mtop);
-            while (gmx_mtop_ilistloop_all_next(iloop, &ilist_mol, &a_offset))
+            gmx_mtop_ilistloop_all_t iloop = gmx_mtop_ilistloop_all_init(mtop);
+            int nral1 = 1 + NRAL(F_VSITE2);
+            while (const InteractionLists *ilists = gmx_mtop_ilistloop_all_next(iloop, &a_offset))
             {
-                nrvsite2 = ilist_mol[F_VSITE2].nr;
-                iatoms   = ilist_mol[F_VSITE2].iatoms;
-
-                for (k = 0; k < nrvsite2; k += 4)
+                const InteractionList &ilist = (*ilists)[F_VSITE2];
+                for (int i = 0; i < ilist.size(); i += nral1)
                 {
-                    vsite = a_offset + iatoms[k+1]; /* the vsite         */
-                    ai    = a_offset + iatoms[k+2]; /* constructing atom */
-                    aj    = a_offset + iatoms[k+3]; /* constructing atom */
+                    vsite = a_offset + ilist.iatoms[i  ]; /* the vsite         */
+                    ai    = a_offset + ilist.iatoms[i+1]; /* constructing atom */
+                    aj    = a_offset + ilist.iatoms[i+2]; /* constructing atom */
                     if (getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, ai)
                         &&
                         getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, aj))
@@ -550,25 +550,35 @@ void init_QMMMrec(const t_commrec  *cr,
          */
         if (qr->qm[0]->QMmethod < eQMmethodRHF)
         {
-#if GMX_QMMM_MOPAC
-            /* semi-empiprical 1-layer ONIOM calculation requested (mopac93) */
-            init_mopac(qr->qm[0]);
-#else
-            gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
-#endif
+            if (GMX_QMMM_MOPAC)
+            {
+                /* semi-empiprical 1-layer ONIOM calculation requested (mopac93) */
+                init_mopac(qr->qm[0]);
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
+            }
         }
         else
         {
             /* ab initio calculation requested (gamess/gaussian/ORCA) */
-#if GMX_QMMM_GAMESS
-            init_gamess(cr, qr->qm[0], qr->mm);
-#elif GMX_QMMM_GAUSSIAN
-            init_gaussian(qr->qm[0]);
-#elif GMX_QMMM_ORCA
-            init_orca(qr->qm[0]);
-#else
-            gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
-#endif
+            if (GMX_QMMM_GAMESS)
+            {
+                init_gamess(cr, qr->qm[0], qr->mm);
+            }
+            else if (GMX_QMMM_GAUSSIAN)
+            {
+                init_gaussian(qr->qm[0]);
+            }
+            else if (GMX_QMMM_ORCA)
+            {
+                init_orca(qr->qm[0]);
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
+            }
         }
     }
 } /* init_QMMMrec */
@@ -605,6 +615,11 @@ void update_QMMMrec(const t_commrec  *cr,
         pbc;
     int
        *parallelMMarray = nullptr;
+
+    if (!GMX_QMMM)
+    {
+        gmx_incons("Compiled without QMMM");
+    }
 
     /* every cpu has this array. On every processor we fill this array
      * with 1's and 0's. 1's indicate the atoms is a QM atom on the
@@ -689,7 +704,7 @@ void update_QMMMrec(const t_commrec  *cr,
 
 
             std::sort(qm_i_particles, qm_i_particles+QMMMlist->nri, struct_comp);
-            /* The mm_j_particles argument to qsort is not allowed to be NULL */
+            /* The mm_j_particles argument to qsort is not allowed to be nullptr */
             if (mm_nr > 0)
             {
                 std::sort(mm_j_particles, mm_j_particles+mm_nr, struct_comp);
@@ -715,8 +730,8 @@ void update_QMMMrec(const t_commrec  *cr,
             {
                 if ((i == 0 || mm_j_particles[i].j != mm_j_particles[i-1].j)
                     && !md->bQM[mm_j_particles[i].j]
-                    && (md->chargeA[mm_j_particles[i].j]
-                        || (md->chargeB && md->chargeB[mm_j_particles[i].j])))
+                    && ((md->chargeA[mm_j_particles[i].j] != 0.0_real)
+                        || (md->chargeB && (md->chargeB[mm_j_particles[i].j] != 0.0_real))))
                 {
                     mm_j_particles[mm_nr_new++] = mm_j_particles[i];
                 }
@@ -861,6 +876,12 @@ real calculate_QMMM(const t_commrec  *cr,
     *forces2 = nullptr, *fshift2 = nullptr; /* needed for multilayer ONIOM */
     int
         i, j, k;
+
+    if (!GMX_QMMM)
+    {
+        gmx_incons("Compiled without QMMM");
+    }
+
     /* make a local copy the QMMMrec pointer
      */
     qr = fr->qr;
@@ -963,32 +984,5 @@ real calculate_QMMM(const t_commrec  *cr,
     }
     return(QMener);
 } /* calculate_QMMM */
-#else
-real calculate_QMMM(const t_commrec  * /*unused*/,
-                    rvec             * /*unused*/,
-                    const t_forcerec * /*unused*/)
-{
-    gmx_incons("Compiled without QMMM");
-}
-t_QMMMrec *mk_QMMMrec()
-{
-    return nullptr;
-}
-void init_QMMMrec(const t_commrec  * /*unused*/,
-                  gmx_mtop_t       * /*unused*/,
-                  t_inputrec       * /*unused*/,
-                  const t_forcerec * /*unused*/)
-{
-    gmx_incons("Compiled without QMMM");
-}
-void update_QMMMrec(const t_commrec  * /*unused*/,
-                    const t_forcerec * /*unused*/,
-                    const rvec       * /*unused*/,
-                    const t_mdatoms  * /*unused*/,
-                    const matrix       /*unused*/)
-{
-    gmx_incons("Compiled without QMMM");
-}
-#endif
 
-/* end of QMMM core routines */
+#pragma GCC diagnostic pop

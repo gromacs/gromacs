@@ -97,13 +97,32 @@ void write_tpx_state(const char *fn,
 void read_tpx_state(const char *fn,
                     t_inputrec *ir, t_state *state,
                     gmx_mtop_t *mtop);
+
+/*! \brief
+ * Read a file and close it again.
+ *
+ * Reads a topology input file and populates the fields if the passed
+ * variables are valid. It is possible to pass \p ir, \p natoms,
+ * \p x, \p v or \p mtop as nullptr to the function. In those cases,
+ * the variables will not be populated from the input file. Passing both
+ * \p x and \p v as nullptr is not supported. If both \p natoms and
+ * \p mtop are passed as valid objects to the function, the total atom
+ * number from \p mtop will be set in \p natoms. Otherwise \p natoms
+ * will not be changed. If \p box is valid, the box will be set from
+ * the information read in from the file.
+ *
+ * \param[in] fn Input file name.
+ * \param[out] ir Input parameters to be set, or nullptr.
+ * \param[out] box Box matrix.
+ * \param[out] natoms Total atom numbers to be set, or nullptr.
+ * \param[out] x Positions to be filled from file, or nullptr.
+ * \param[out] v Velocities to be filled from file, or nullptr.
+ * \param[out] mtop Topology to be populated, or nullptr.
+ * \returns ir->ePBC if it was read from the file.
+ */
 int read_tpx(const char *fn,
              t_inputrec *ir, matrix box, int *natoms,
              rvec *x, rvec *v, gmx_mtop_t *mtop);
-/* Read a file, and close it again.
- * When step, t or lambda are NULL they will not be stored.
- * Returns ir->ePBC, if it could be read from the file.
- */
 
 int read_tpx_top(const char *fn,
                  t_inputrec *ir, matrix box, int *natoms,

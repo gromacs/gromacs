@@ -39,6 +39,8 @@
 /*! \libinternal \file
  * \brief Implementation details for RestraintMDModule
  *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ *
  * \ingroup module_restraint
  */
 

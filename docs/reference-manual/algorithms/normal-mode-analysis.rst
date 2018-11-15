@@ -5,12 +5,11 @@ Normal-mode analysis \ :ref:`54 <refLevitt83>`\ :ref:`56 <refBBrooks83b>`
 can be performed using |Gromacs|, by diagonalization of the
 mass-weighted Hessian :math:`H`:
 
-.. math::
-
-   \begin{aligned}
-   R^T M^{-1/2} H M^{-1/2} R   &=& \mbox{diag}(\lambda_1,\ldots,\lambda_{3N})
-   \\
-   \lambda_i &=& (2 \pi \omega_i)^2\end{aligned}
+.. math:: \begin{aligned}
+          R^T M^{-1/2} H M^{-1/2} R   &=& \mbox{diag}(\lambda_1,\ldots,\lambda_{3N})
+          \\
+          \lambda_i &=& (2 \pi \omega_i)^2\end{aligned}
+          :label: eqnNMA
 
 where :math:`M` contains the atomic masses, :math:`R` is a matrix that
 contains the eigenvectors as columns, :math:`\lambda_i` are the
@@ -19,22 +18,20 @@ eigenvalues and :math:`\omega_i` are the corresponding frequencies.
 First the Hessian matrix, which is a :math:`3N \times 3N` matrix where
 :math:`N` is the number of atoms, needs to be calculated:
 
-.. math::
-
-   \begin{aligned}
-   H_{ij}  &=&     \frac{\partial^2 V}{\partial x_i \partial x_j}\end{aligned}
+.. math:: \begin{aligned}
+          H_{ij}  &=&     \frac{\partial^2 V}{\partial x_i \partial x_j}\end{aligned}
+          :label: eqnNMAhessian
 
 where :math:`x_i` and :math:`x_j` denote the atomic x, y or z
 coordinates. In practice, this equation is not used, but the Hessian is
 calculated numerically from the force as:
 
-.. math::
-
-   \begin{aligned}
-   H_{ij} &=& -
-     \frac{f_i({\bf x}+h{\bf e}_j) - f_i({\bf x}-h{\bf e}_j)}{2h}
-   \\
-   f_i     &=& - \frac{\partial V}{\partial x_i}\end{aligned}
+.. math:: \begin{aligned}
+          H_{ij} &=& -
+            \frac{f_i({\bf x}+h{\bf e}_j) - f_i({\bf x}-h{\bf e}_j)}{2h}
+          \\
+          f_i     &=& - \frac{\partial V}{\partial x_i}\end{aligned}
+          :label: eqnNMAhessianfromforce
 
 where :math:`{\bf e}_j` is the unit vector in direction :math:`j`. It
 should be noted that for a usual normal-mode calculation, it is

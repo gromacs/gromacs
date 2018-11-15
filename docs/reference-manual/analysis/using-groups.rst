@@ -4,7 +4,7 @@ Using Groups
 ------------
 
 | In chapter :ref:`algorithms`, it was explained how *groups of atoms* can
-  be used in mdrun (see sec. :ref:`groupconcept`). In most analysis
+  be used in :ref:`mdrun <gmx mdrun>` (see sec. :ref:`groupconcept`). In most analysis
   programs, groups of atoms must also be chosen. Most programs can
   generate several default index groups, but groups can always be read
   from an index file. Let’s consider the example of a simulation of a
@@ -13,6 +13,7 @@ Using Groups
   to B, we have to calculate:
 
   .. math:: 4\pi r^2 g_{AB}(r)      ~=~     V~\sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} P(r)
+            :label: eqnanalysisrdf
 
 | where :math:`V` is the volume and :math:`P(r)` is the probability of
   finding a B atom at distance :math:`r` from an A atom.

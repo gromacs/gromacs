@@ -36,17 +36,16 @@ Hydrogen bonds
   and acceptors A. To determine if an H-bond exists, a geometrical
   criterion is used, see also :numref:`Fig. %s <fig-hbond>`:
 
-  .. math::
-
-     \begin{array}{rclcl}
-     r       & \leq  & r_{HB}        & = & 0.35~\mbox{nm}    \\
-     \alpha  & \leq  & \alpha_{HB}   & = & 30^o              \\
-     \end{array}
+  .. math:: \begin{array}{rclcl}
+            r       & \leq  & r_{HB}        & = & 0.35~\mbox{nm}    \\
+            \alpha  & \leq  & \alpha_{HB}   & = & 30^o              \\
+            \end{array}
+            :label: eqnhbondgeomtric
 
 .. _fig-hbond:
 
 .. figure:: plots/hbond.*
-   :width: 2.50000cm
+   :width: 7.50000cm
 
    Geometrical Hydrogen bond criterion.
 
@@ -61,7 +60,7 @@ the following ways:
 .. _fig-hbondinsert:
 
 .. figure:: plots/hbond-insert.*
-    :width: 3.50000cm
+    :width: 7.50000cm
 
     Insertion of water into an H-bond. (1) Normal H-bond between two
     residues. (2) H-bonding bridge via a water molecule.

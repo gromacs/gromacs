@@ -7,6 +7,7 @@ variables that can be sampled over. The probability of any given state
 can be written as:
 
 .. math:: P(\vec{x},k) \propto \exp\left(-\beta_k U_k + g_k\right),
+          :label: eqnexpandensemble
 
 where :math:`\beta_k = \frac{1}{k_B T_k}` is the :math:`\beta`
 corresponding to the :math:`k`\ th thermodynamic state, and :math:`g_k`

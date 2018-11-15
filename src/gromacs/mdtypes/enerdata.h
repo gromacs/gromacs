@@ -56,9 +56,14 @@ struct gmx_enerdata_t
     struct gmx_grppairener_t grpp;
     double                   dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
     double                   dvdl_nonlin[efptNR]; /* Idem, but non-linear dependence                  */
+    /* The idea is that dvdl terms with linear lambda dependence will be added
+     * automatically to enerpart_lambda. Terms with non-linear lambda dependence
+     * should explicitly determine the energies at foreign lambda points
+     * when n_lambda > 0. */
+
     int                      n_lambda;
     int                      fep_state;           /*current fep state -- just for printing */
-    double                  *enerpart_lambda;     /* Partial energy for lambda and flambda[] */
+    double                  *enerpart_lambda;     /* Partial Hamiltonian for lambda and flambda[], includes at least all perturbed terms */
     real                     foreign_term[F_NRE]; /* alternate array for storing foreign lambda energies */
     struct gmx_grppairener_t foreign_grpp;        /* alternate array for storing foreign lambda energies */
 };

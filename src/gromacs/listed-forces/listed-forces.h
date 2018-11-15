@@ -50,7 +50,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
  */
-/*! \file
+/*! \libinternal \file
  *
  * \brief This file contains declarations of high-level functions used
  * by mdrun to compute energies and forces for listed interactions.
@@ -60,12 +60,13 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
- * \inpublicapi
+ * \inlibraryapi
  * \ingroup module_listed-forces
  */
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
+#include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -73,12 +74,14 @@
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
 struct gmx_multisim_t;
+struct gmx_ffparams_t;
+struct GpuBondedLists;
 class history_t;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
 struct t_idef;
-struct t_inputrec;
+struct t_graph;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
@@ -100,15 +103,6 @@ using BondedFunction = real(*)(int nbonds, const t_iatom iatoms[],
 
 //! Getter for finding a callable CPU function to compute an \c ftype interaction.
 BondedFunction bondedFunction(int ftype);
-
-/*! \brief Return whether this is an interaction that actually
- * calculates a potential and works on multiple atoms (not e.g. a
- * connection or a position restraint).
- *
- * \todo This function could go away when idef is not a big bucket of
- * everything. */
-gmx_bool
-ftype_is_bonded_potential(int ftype);
 
 /*! \brief Calculates all listed force interactions.
  *
@@ -165,5 +159,36 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 struct t_fcdata                *fcd,
                 int                            *global_atom_index,
                 int                             flags);
+
+/*! \brief Initializes the GPU bonded setup */
+CUDA_FUNC_QUALIFIER
+void
+init_gpu_bonded(GpuBondedLists gmx_unused       *gpuBondedLists,
+                const gmx_ffparams_t gmx_unused &ffparams,
+                void gmx_unused                 *streamPtr) CUDA_FUNC_TERM
+
+/*! \brief Updates the bonded work to run on a GPU
+ *
+ * Intended to be called after each domain decomposition stage. */
+CUDA_FUNC_QUALIFIER
+void update_gpu_bonded(GpuBondedLists gmx_unused *gpuBondedLists) CUDA_FUNC_TERM
+
+/*! \brief Launches bonded kernels on a GPU */
+CUDA_FUNC_QUALIFIER
+void do_bonded_gpu(t_forcerec gmx_unused   *fr,
+                   int gmx_unused           forceFlags,
+                   void gmx_unused         *xqDevicePtr,
+                   const matrix gmx_unused  box,
+                   void gmx_unused         *forceDevicePtr,
+                   rvec gmx_unused         *fshiftDevicePtr) CUDA_FUNC_TERM
+
+/*! \brief Copies back the bonded energies */
+CUDA_FUNC_QUALIFIER
+void bonded_gpu_get_energies(t_forcerec gmx_unused     *fr,
+                             gmx_enerdata_t gmx_unused *enerd) CUDA_FUNC_TERM
+
+/*! \brief Clears the device side energy buffer */
+CUDA_FUNC_QUALIFIER
+void bonded_gpu_clear_energies(GpuBondedLists gmx_unused *gpuBondedLists) CUDA_FUNC_TERM
 
 #endif

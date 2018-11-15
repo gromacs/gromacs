@@ -3003,7 +3003,10 @@ int read_tpx(const char *fn,
     fio     = open_tpx(fn, "r");
     ePBC    = do_tpx(fio, TRUE, ir, &state, x, v, mtop);
     close_tpx(fio);
-    *natoms = mtop->natoms;
+    if (mtop != nullptr && natoms != nullptr)
+    {
+        *natoms = mtop->natoms;
+    }
     if (box)
     {
         copy_mat(state.box, box);
