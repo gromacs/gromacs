@@ -263,8 +263,7 @@ void print_electric_props(FILE                           *fp,
 {
     int            i    = 0, j     = 0, n     = 0;
     int            nout = 0, mm    = 0, nn    = 0;
-    real           sse  = 0, sigma = 0;
-    real           aver = 0, error = 0, qCalc = 0;
+    real           sse  = 0, sigma = 0, qCalc = 0;
 
     FILE          *dipc, *muc,  *Qc;
     FILE          *hh,   *espc, *alphac, *isopolc, *anisopolc, *qc;
@@ -300,6 +299,7 @@ void print_electric_props(FILE                           *fp,
         k.lsq = gmx_stats_init();
         lsqt.push_back(std::move(k));
     }
+    
     for (auto &mol : mymol)
     {
         if (mol.eSupp_ != eSupportNo)
@@ -309,27 +309,30 @@ void print_electric_props(FILE                           *fp,
                     mol.molProp()->getCharge(),
                     mol.molProp()->getMultiplicity());
             
-            auto nEsp     = mol.Qgresp_.nEsp();
-            auto EspPoint = mol.Qgresp_.espPoint();
-            
+            // Recalculate the atomic charges using the optmized pd.
             mol.GenerateCharges(pd, fplog, ap, qdist, qgen,
                                 watoms, hfac, lot, false, nullptr,
                                 cr, tabfn, hwinfo, qcycle,
                                 maxESP, qtol, nullptr, false);
-                                                            
-            mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
-            mol.Qgresp_.updateAtomCoords(mol.x());                
-            mol.Qgresp_.calcPot();    
-                   
+            
+            // Electrostatic potentials
+            if (qgen != eqgESP)
+            {
+                mol.Qgresp_.updateZeta(&mol.topology_->atoms, pd);                                                
+                mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
+                mol.Qgresp_.updateAtomCoords(mol.x());                
+                mol.Qgresp_.calcPot();
+            }         
             if (mol.espRms() < 7e-3)
             {
-                for (size_t i = 0; i < nEsp; i++)
+                for (size_t i = 0; i < mol.Qgresp_.nEsp(); i++)
                 {
-                    gmx_stats_add_point(lsq_esp, EspPoint[i].v(), EspPoint[i].vCalc(), 0, 0);
+                    gmx_stats_add_point(lsq_esp, mol.Qgresp_.espPoint()[i].v(), mol.Qgresp_.espPoint()[i].vCalc(), 0, 0);
                 }
             }
             fprintf(fp, "ESP rms: %g (Hartree/e) %s\n", mol.espRms(), (mol.espRms() > 7e-3) ? "XXX" : "");
-                       
+            
+            // Dipoles           
             mol.CalcDipole();
             mol.rotateDipole(mol.muQM(qtCalc), mol.muQM(qtElec));
             print_dipole(fp, &mol, qtElec, dip_toler);
@@ -339,12 +342,11 @@ void print_electric_props(FILE                           *fp,
                 print_dipole(fp, &mol, qt,   dip_toler);
                 gmx_stats_add_point(lsq_dip[j], mol.dipQM(qtElec), mol.dipQM(qt), 0, 0);
             }
-
             sse += gmx::square(mol.dipQM(qtElec) - mol.dipQM(qtCalc));
 
+            // Quadrupoles
             mol.CalcQuadrupole();
             print_quadrapole(fp, &mol, qtElec, quad_toler);
-
             for (int j = 0; j < qtElec; j++)
             {
                 qType qt = static_cast<qType>(j);
@@ -361,6 +363,8 @@ void print_electric_props(FILE                           *fp,
                     }
                 }
             }
+            
+            // Polarizability
             if (bPolar)
             {
                 mol.CalcPolarizability(efield, cr, nullptr);
@@ -377,6 +381,7 @@ void print_electric_props(FILE                           *fp,
                 }
             }
             
+            // Atomic charges
             fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_CM5     q_HPA     q_MPA       x       y       z\n");
             auto qcm5 = mol.chargeQM(qtCM5);
             auto x    = mol.x();
@@ -543,17 +548,15 @@ void print_electric_props(FILE                           *fp,
         fclose(anisopolc);
     }
 
-    gmx_stats_get_ase(lsq_mu[qtCalc], &aver, &sigma, &error);
-    sigma = sqrt(sse/n);
-    nout  = 0;
+    // List outliers based on the deviation in the total dipole moment
+    sigma = sqrt(sse/n);   
     fprintf(fp, "Overview of dipole moment outliers (> %.3f off)\n", 2*sigma);
     fprintf(fp, "----------------------------------\n");
     fprintf(fp, "%-20s  %12s  %12s  %12s\n", "Name", "Calc", "Electronic", "Deviation (Debye)");
-
     for (auto &mol : mymol)
     {
         auto deviation = std::abs(mol.dipQM(qtCalc) - mol.dipQM(qtElec));
-        if ((mol.eSupp_ != eSupportNo) &&
+        if ((mol.eSupp_ != eSupportNo)  &&
             (mol.dipQM(qtElec) > sigma) &&
             (deviation > 2*sigma))
         {
@@ -571,6 +574,8 @@ void print_electric_props(FILE                           *fp,
     {
         printf("No outliers! Well done.\n");
     }
+    
+    // Free allocated memory
     for (int i = 0; i < qtNR; i++)
     {
         gmx_stats_free(lsq_quad[i]);
