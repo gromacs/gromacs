@@ -2612,7 +2612,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
     // pass a checkpoint written by an normal completion to a restart,
     // mdrun will read all input, does some work but no steps, and
     // write successful output. But perhaps that is not desirable.
-    if (ir->nsteps < step)
+    if ((ir->nsteps >= 0) && (ir->nsteps < step))
     {
         // Note that we do not intend to support the use of mdrun
         // -nsteps to circumvent this condition.
