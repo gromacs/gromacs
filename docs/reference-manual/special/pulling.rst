@@ -110,12 +110,11 @@ axis along this one dimension. To avoid jumps in the pull force,
 contributions of atoms are weighted as a function of distance (in
 addition to the mass weighting):
 
-.. math::
-
-   \begin{aligned}
-   w(r < r_\mathrm{cyl}) & = &
-   1-2 \left(\frac{r}{r_\mathrm{cyl}}\right)^2 + \left(\frac{r}{r_\mathrm{cyl}}\right)^4 \\
-   w(r \geq r_\mathrm{cyl}) & = & 0\end{aligned}
+.. math:: \begin{aligned}
+          w(r < r_\mathrm{cyl}) & = &
+          1-2 \left(\frac{r}{r_\mathrm{cyl}}\right)^2 + \left(\frac{r}{r_\mathrm{cyl}}\right)^4 \\
+          w(r \geq r_\mathrm{cyl}) & = & 0\end{aligned}
+          :label: eqnpulldistmassweight
 
 Note that the radial dependence on the weight causes a radial force on
 both cylinder group and the other pull group. This is an undesirable,
@@ -156,19 +155,20 @@ either by supplying weights in the input or due to cylinder geometry or
 due to cosine weighting, the weights need to be scaled to conserve
 momentum:
 
-.. math::
-
-   w'_i = w_i
-   \left. \sum_{j=1}^N w_j \, m_j \right/ \sum_{j=1}^N w_j^2 \, m_j
+.. math:: w'_i = w_i
+          \left. \sum_{j=1}^N w_j \, m_j \right/ \sum_{j=1}^N w_j^2 \, m_j
+          :label: eqnpullmassscale
 
 where :math:`m_j` is the mass of atom :math:`j` of the group. The mass
 of the group, required for calculating the constraint force, is:
 
 .. math:: M = \sum_{i=1}^N w'_i \, m_i
+          :label: eqnpullconstraint
 
 The definition of the weighted center of mass is:
 
 .. math:: \mathbf{r}_{com} = \left. \sum_{i=1}^N w'_i \, m_i \, \mathbf{r}_i \right/ M
+          :label: eqnpullcom
 
 From the centers of mass the AFM, constraint, or umbrella force
 :math:`\mathbf{F}_{\!com}` on each group can be
@@ -176,6 +176,7 @@ calculated. The force on the center of mass of a group is redistributed
 to the atoms as follows:
 
 .. math:: \mathbf{F}_{\!i} = \frac{w'_i \, m_i}{M} \, \mathbf{F}_{\!com}
+          :label: eqnpullcomforce
 
 Definition of the pull direction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

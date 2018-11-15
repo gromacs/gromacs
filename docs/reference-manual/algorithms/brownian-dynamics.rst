@@ -7,6 +7,7 @@ over-damped systems, *i.e.* systems in which the inertia effects are
 negligible. The equation is
 
 .. math:: {{\mbox{d}}\mathbf{r}_i \over {\mbox{d}}t} = \frac{1}{\gamma_i} \mathbf{F}_i(\mathbf{r}) + {\stackrel{\circ}{\mathbf{r}}}_i
+          :label: eqnbrowniandyn
 
 where :math:`\gamma_i` is the friction coefficient
 :math:`[\mbox{amu/ps}]` and
@@ -15,11 +16,10 @@ process with
 :math:`\langle {\stackrel{\circ}{r}}_i\!\!(t) {\stackrel{\circ}{r}}_j\!\!(t+s) \rangle = 2 \delta(s) \delta_{ij} k_B T / \gamma_i`.
 In |Gromacs| the equations are integrated with a simple, explicit scheme
 
-.. math::
-
-   \mathbf{r}_i(t+\Delta t) = \mathbf{r}_i(t) +
-           {\Delta t \over \gamma_i} \mathbf{F}_i(\mathbf{r}(t)) 
-           + \sqrt{2 k_B T {\Delta t \over \gamma_i}}\, {\mathbf{r}^G}_i,
+.. math:: \mathbf{r}_i(t+\Delta t) = \mathbf{r}_i(t) +
+          {\Delta t \over \gamma_i} \mathbf{F}_i(\mathbf{r}(t)) 
+          + \sqrt{2 k_B T {\Delta t \over \gamma_i}}\, {\mathbf{r}^G}_i,
+          :label: eqnbrowniandynint
 
 where :math:`{\mathbf{r}^G}_i` is Gaussian distributed
 noise with :math:`\mu = 0`, :math:`\sigma = 1`. The friction

@@ -87,10 +87,12 @@ To compute free energies with a vector :math:`\lambda` using
 thermodynamic integration, then the TI equation becomes vector equation:
 
 .. math:: \Delta F = \int \langle \nabla H \rangle \cdot d\vec{\lambda}
+          :label: eqnfepti
 
 or for finite differences:
 
 .. math:: \Delta F \approx \int \sum \langle \nabla H \rangle \cdot \Delta\lambda
+          :label: eqnfepfinitediff
 
 The external `pymbar script <https://SimTK.org/home/pymbar>`_
 can compute this integral automatically
@@ -134,6 +136,7 @@ groups \ :ref:`134 <refRMNeumann1980a>`. For a system of two
 non-interacting masses the potential of mean force is:
 
 .. math:: V_{pmf}(r) = -(n_c - 1) k_B T \log(r)
+          :label: eqnfepentropy
 
 where :math:`n_c` is the number of dimensions in which the constraint
 works (i.e. :math:`n_c=3` for a normal constraint and :math:`n_c=1` when

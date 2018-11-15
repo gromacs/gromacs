@@ -44,10 +44,13 @@
 #ifndef GMX_LISTED_FORCES_MANAGE_THREADING_H
 #define GMX_LISTED_FORCES_MANAGE_THREADING_H
 
+#include "config.h"
+
 #include <cstdio>
 
 #include <string>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
 
@@ -55,11 +58,79 @@ struct bonded_threading_t;
 struct gmx_mtop_t;
 struct t_inputrec;
 
+/*! \brief The number on bonded function types supported on GPUs */
+constexpr int c_numFtypesOnGpu = 8;
+
+/*! \brief List of all bonded function types supported on GPUs
+ *
+ * \note This list should be in sync with the actual GPU code.
+ * \note Perturbed interactions are not supported on GPUs.
+ * \note The function types in the list are ordered on increasing value.
+ * \note Currently bonded are only supported with CUDA, not with OpenCL.
+ */
+constexpr std::array<int, c_numFtypesOnGpu> ftypesOnGpu =
+{
+    F_BONDS,
+    F_ANGLES,
+    F_UREY_BRADLEY,
+    F_PDIHS,
+    F_RBDIHS,
+    F_IDIHS,
+    F_PIDIHS,
+    F_LJ14
+};
+
+/*! \libinternal \brief Version of InteractionList that supports pinning */
+struct HostInteractionList
+{
+    /*! \brief Returns the total number of elements in iatoms */
+    int size() const
+    {
+        return iatoms.size();
+    }
+
+    /*! \brief List of interactions, see explanation further down */
+    std::vector < int, gmx::HostAllocator < int>> iatoms = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
+};
+
+/*! \brief Convenience alias for set of pinned interaction lists */
+using HostInteractionLists = std::array<HostInteractionList, F_NRE>;
+
 /*! \internal \brief Struct for storing lists of bonded interaction for evaluation on a GPU */
 struct GpuBondedLists
 {
-    InteractionLists iLists;           /**< The interaction lists */
-    bool             haveInteractions; /**< Tells whether there are any interaction in iLists */
+    GpuBondedLists()
+    {
+        for (int ftype = 0; ftype < F_NRE; ftype++)
+        {
+            iListsDevice[ftype].nr     = 0;
+            iListsDevice[ftype].iatoms = nullptr;
+            iListsDevice[ftype].nalloc = 0;
+        }
+    }
+
+    /*! \brief Destructor, non-default needed for freeing device side buffers */
+    ~GpuBondedLists()
+#if GMX_GPU == GMX_GPU_CUDA
+    ;
+#else
+    {
+    }
+#endif
+
+    HostInteractionLists  iLists;                      /**< The interaction lists */
+    bool                  haveInteractions;            /**< Tells whether there are any interaction in iLists */
+
+    t_iparams            *forceparamsDevice = nullptr; /**< Bonded parameters for device-side use */
+    t_ilist               iListsDevice[F_NRE];         /**< Interaction lists on the device */
+
+    //! \brief Host-side virial buffer
+    std::vector < float, gmx::HostAllocator < float>> vtot = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
+    //! \brief Device-side total virial
+    float                *vtotDevice   = nullptr;
+
+    //! \brief Bonded GPU stream
+    void                 *stream;
 };
 
 
@@ -117,5 +188,11 @@ void tear_down_bonded_threading(bonded_threading_t *bt);
  */
 void init_bonded_threading(FILE *fplog, int nenergrp,
                            bonded_threading_t **bt_ptr);
+
+/*! \brief Returns whether there are bonded interactions assigned to the GPU */
+static inline bool bonded_gpu_have_interactions(GpuBondedLists *gpuBondedLists)
+{
+    return (gpuBondedLists != nullptr && gpuBondedLists->haveInteractions);
+}
 
 #endif

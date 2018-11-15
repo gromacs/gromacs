@@ -815,6 +815,8 @@ std::string getCoolQuote()
         { "Teaching quantum computing is like teaching computer science at Hogwarts.", "Thomas Sterling, ISC2018 keynote" },
         { "It is unfortunate that the authors did not make better use of all the electric power energy that went into these massive computations.", "An anonymous referee" },
         { "Doctor, doctor, it hurts when I hit myself in the head with the hammer! - So don't do it!", "Bjarne Stroustrup at CppCon2015" },
+        { "This is extremely unlikely.", "Berk Hess" },
+        { "Nothing is more anarchic than power.", "Pier Paolo Pasolini" },
     };
 
     if (beCool())

@@ -31,6 +31,7 @@ implemented in |Gromacs|.
 The following form is used:
 
 .. math:: V_{pr}(\mathbf{r}_i) = {\frac{1}{2}}k_{pr}|\mathbf{r}_i-\mathbf{R}_i|^2
+          :label: eqnposrestform
 
 The potential is plotted in :numref:`Fig. %s <fig-positionrestraint>`.
 
@@ -44,16 +45,16 @@ The potential is plotted in :numref:`Fig. %s <fig-positionrestraint>`.
 The potential form can be rewritten without loss of generality as:
 
 .. math:: V_{pr}(\mathbf{r}_i) = {\frac{1}{2}} \left[ k_{pr}^x (x_i-X_i)^2 ~{\hat{\bf x}} + k_{pr}^y (y_i-Y_i)^2 ~{\hat{\bf y}} + k_{pr}^z (z_i-Z_i)^2 ~{\hat{\bf z}}\right]
+         :label: eqnposrestgeneral
 
 Now the forces are:
 
-.. math::
-
-   \begin{array}{rcl}
-   F_i^x &=& -k_{pr}^x~(x_i - X_i) \\
-   F_i^y &=& -k_{pr}^y~(y_i - Y_i) \\
-   F_i^z &=& -k_{pr}^z~(z_i - Z_i)
-   \end{array}
+.. math:: \begin{array}{rcl}
+          F_i^x &=& -k_{pr}^x~(x_i - X_i) \\
+          F_i^y &=& -k_{pr}^y~(y_i - Y_i) \\
+          F_i^z &=& -k_{pr}^z~(z_i - Z_i)
+          \end{array}
+          :label: eqnposrestforce
 
 Using three different force constants the position restraints can be
 turned on or off in each spatial dimension; this means that atoms can be
@@ -74,6 +75,7 @@ position :math:`\mathbf{R}_i`). The following general
 potential is used (:numref:`Figure %s <fig-fbposres>` A):
 
 .. math:: V_\mathrm{fb}(\mathbf{r}_i) = \frac{1}{2}k_\mathrm{fb} [d_g(\mathbf{r}_i;\mathbf{R}_i) - r_\mathrm{fb}]^2\,H[d_g(\mathbf{r}_i;\mathbf{R}_i) - r_\mathrm{fb}],
+          :label: eqnflatbottomposrest
 
 where :math:`\mathbf{R}_i` is the reference position,
 :math:`r_\mathrm{fb}` is the distance from the center with a flat
@@ -99,6 +101,7 @@ flat-bottomed potential.
   the center of the sphere. The following distance calculation is used:
 
   .. math:: d_g(\mathbf{r}_i;\mathbf{R}_i) = | \mathbf{r}_i-\mathbf{R}_i |
+            :label: eqnfbsphereposrest
 
 | **Cylinder** (:math:`g=6,7,8`): The particle is kept in a cylinder of
   given radius parallel to the :math:`x` (:math:`g=6`), :math:`y`
@@ -110,17 +113,17 @@ flat-bottomed potential.
   zero. For a cylinder aligned along the :math:`z`-axis:
 
   .. math:: d_g(\mathbf{r}_i;\mathbf{R}_i) = \sqrt{ (x_i-X_i)^2 + (y_i - Y_i)^2 }
+            :label: eqnfbcylinderposrest
 
 | **Layer** (:math:`g=3,4,5`): The particle is kept in a layer defined
   by the thickness and the normal of the layer. The layer normal can be
   parallel to the :math:`x`, :math:`y`, or :math:`z`-axis. The force
   acts parallel to the layer normal.
 
-  .. math::
-
-     d_g(\mathbf{r}_i;\mathbf{R}_i) = |x_i-X_i|, \;\;\;\mbox{or}\;\;\; 
-      d_g(\mathbf{r}_i;\mathbf{R}_i) = |y_i-Y_i|, \;\;\;\mbox{or}\;\;\; 
-     d_g(\mathbf{r}_i;\mathbf{R}_i) = |z_i-Z_i|.
+  .. math:: d_g(\mathbf{r}_i;\mathbf{R}_i) = |x_i-X_i|, \;\;\;\mbox{or}\;\;\; 
+            d_g(\mathbf{r}_i;\mathbf{R}_i) = |y_i-Y_i|, \;\;\;\mbox{or}\;\;\; 
+            d_g(\mathbf{r}_i;\mathbf{R}_i) = |z_i-Z_i|.
+            :label: eqnfblayerposrest
 
 It is possible to apply multiple independent flat-bottomed position
 restraints of different geometry on one particle. For example, applying
@@ -136,11 +139,10 @@ particle *outside* of the volume defined by
 negative :math:`r_\mathrm{fb}` in the topology. The following potential
 is used (:numref:`Figure %s <fig-fbposres>` B):
 
-.. math::
-
-   V_\mathrm{fb}^{\mathrm{inv}}(\mathbf{r}_i) = \frac{1}{2}k_\mathrm{fb}
-     [d_g(\mathbf{r}_i;\mathbf{R}_i) - | r_\mathrm{fb} | ]^2\,
-     H[ -(d_g(\mathbf{r}_i;\mathbf{R}_i) - | r_\mathrm{fb} | )].
+.. math:: V_\mathrm{fb}^{\mathrm{inv}}(\mathbf{r}_i) = \frac{1}{2}k_\mathrm{fb}
+          [d_g(\mathbf{r}_i;\mathbf{R}_i) - | r_\mathrm{fb} | ]^2\,
+          H[ -(d_g(\mathbf{r}_i;\mathbf{R}_i) - | r_\mathrm{fb} | )].
+          :label: eqninvertrest
 
 Angle restraints
 ~~~~~~~~~~~~~~~~
@@ -149,24 +151,22 @@ These are used to restrain the angle between two pairs of particles or
 between one pair of particles and the :math:`z`-axis. The functional
 form is similar to that of a proper dihedral. For two pairs of atoms:
 
-.. math::
-
-   V_{ar}(\mathbf{r}_i,\mathbf{r}_j,\mathbf{r}_k,\mathbf{r}_l)
-           = k_{ar}(1 - \cos(n (\theta - \theta_0))
-           )
-   ,~~~~\mbox{where}~~
-   \theta = \arccos\left(\frac{\mathbf{r}_j -\mathbf{r}_i}{\|\mathbf{r}_j -\mathbf{r}_i\|}
-    \cdot \frac{\mathbf{r}_l -\mathbf{r}_k}{\|\mathbf{r}_l -\mathbf{r}_k\|} \right)
+.. math:: V_{ar}(\mathbf{r}_i,\mathbf{r}_j,\mathbf{r}_k,\mathbf{r}_l)
+                  = k_{ar}(1 - \cos(n (\theta - \theta_0))
+                  )
+          ,~~~~\mbox{where}~~
+          \theta = \arccos\left(\frac{\mathbf{r}_j -\mathbf{r}_i}{\|\mathbf{r}_j -\mathbf{r}_i\|}
+          \cdot \frac{\mathbf{r}_l -\mathbf{r}_k}{\|\mathbf{r}_l -\mathbf{r}_k\|} \right)
+          :label: eqnanglerest
 
 For one pair of atoms and the :math:`z`-axis:
 
-.. math::
-
-   V_{ar}(\mathbf{r}_i,\mathbf{r}_j) = k_{ar}(1 - \cos(n (\theta - \theta_0))
-           )
-   ,~~~~\mbox{where}~~
-   \theta = \arccos\left(\frac{\mathbf{r}_j -\mathbf{r}_i}{\|\mathbf{r}_j -\mathbf{r}_i\|}
-    \cdot \left( \begin{array}{c} 0 \\ 0 \\ 1 \\ \end{array} \right) \right)
+.. math:: V_{ar}(\mathbf{r}_i,\mathbf{r}_j) = k_{ar}(1 - \cos(n (\theta - \theta_0))
+                  )
+          ,~~~~\mbox{where}~~
+          \theta = \arccos\left(\frac{\mathbf{r}_j -\mathbf{r}_i}{\|\mathbf{r}_j -\mathbf{r}_i\|}
+          \cdot \left( \begin{array}{c} 0 \\ 0 \\ 1 \\ \end{array} \right) \right)
+          :label: eqnanglerestzaxis
 
 A multiplicity (:math:`n`) of 2 is useful when you do not want to
 distinguish between parallel and anti-parallel vectors. The equilibrium
@@ -248,18 +248,17 @@ beyond the largest bound (see :numref:`Fig. %s <fig-dist>`).
 
 The forces are
 
-.. math::
-
-   \mathbf{F}_i~=~ \left\{
-   \begin{array}{lcllllll}
-   -k_{dr}(r_{ij}-r_0)\frac{\mathbf{r}_ij}{r_{ij}} 
-                   &\mbox{for}&     &     & r_{ij} & < & r_0       \\[1.5ex]
-   0               &\mbox{for}& r_0 & \le & r_{ij} & < & r_1       \\[1.5ex]
-   -k_{dr}(r_{ij}-r_1)\frac{\mathbf{r}_ij}{r_{ij}} 
-                   &\mbox{for}& r_1 & \le & r_{ij} & < & r_2       \\[1.5ex]
-   -k_{dr}(r_2-r_1)\frac{\mathbf{r}_ij}{r_{ij}}    
-                   &\mbox{for}& r_2 & \le & r_{ij} &   &
-   \end{array} \right.
+.. math:: \mathbf{F}_i~=~ \left\{
+          \begin{array}{lcllllll}
+          -k_{dr}(r_{ij}-r_0)\frac{\mathbf{r}_ij}{r_{ij}} 
+                          &\mbox{for}&     &     & r_{ij} & < & r_0       \\[1.5ex]
+          0               &\mbox{for}& r_0 & \le & r_{ij} & < & r_1       \\[1.5ex]
+          -k_{dr}(r_{ij}-r_1)\frac{\mathbf{r}_ij}{r_{ij}} 
+                          &\mbox{for}& r_1 & \le & r_{ij} & < & r_2       \\[1.5ex]
+          -k_{dr}(r_2-r_1)\frac{\mathbf{r}_ij}{r_{ij}}    
+                          &\mbox{for}& r_2 & \le & r_{ij} &   &
+          \end{array} \right.
+          :label: eqndisreforce
 
 For restraints not derived from NMR data, this functionality will
 usually suffice and a section of ``[ bonds ]`` type 10 can be used to apply individual
@@ -276,18 +275,17 @@ reduce the fluctuations in a molecule significantly. This problem can be
 overcome by restraining to a *time averaged*
 distance \ :ref:`91 <refTorda89>`. The forces with time averaging are:
 
-.. math::
-
-   \mathbf{F}_i~=~ \left\{
-   \begin{array}{lcllllll}
-   -k^a_{dr}(\bar{r}_{ij}-r_0)\frac{\mathbf{r}_ij}{r_{ij}}   
-                   &\mbox{for}&     &     & \bar{r}_{ij} & < & r_0 \\[1.5ex]
-   0               &\mbox{for}& r_0 & \le & \bar{r}_{ij} & < & r_1 \\[1.5ex]
-   -k^a_{dr}(\bar{r}_{ij}-r_1)\frac{\mathbf{r}_ij}{r_{ij}}   
-                   &\mbox{for}& r_1 & \le & \bar{r}_{ij} & < & r_2 \\[1.5ex]
-   -k^a_{dr}(r_2-r_1)\frac{\mathbf{r}_ij}{r_{ij}}    
-                   &\mbox{for}& r_2 & \le & \bar{r}_{ij} &   &
-   \end{array} \right.
+.. math:: \mathbf{F}_i~=~ \left\{
+          \begin{array}{lcllllll}
+          -k^a_{dr}(\bar{r}_{ij}-r_0)\frac{\mathbf{r}_ij}{r_{ij}}   
+                          &\mbox{for}&     &     & \bar{r}_{ij} & < & r_0 \\[1.5ex]
+          0               &\mbox{for}& r_0 & \le & \bar{r}_{ij} & < & r_1 \\[1.5ex]
+          -k^a_{dr}(\bar{r}_{ij}-r_1)\frac{\mathbf{r}_ij}{r_{ij}}   
+                          &\mbox{for}& r_1 & \le & \bar{r}_{ij} & < & r_2 \\[1.5ex]
+          -k^a_{dr}(r_2-r_1)\frac{\mathbf{r}_ij}{r_{ij}}    
+                          &\mbox{for}& r_2 & \le & \bar{r}_{ij} &   &
+          \end{array} \right.
+          :label: eqntimeaveragerest
 
 where :math:`\bar{r}_{ij}` is given by an exponential running average
 with decay time :math:`\tau`:
@@ -299,6 +297,7 @@ The force constant :math:`k^a_{dr}` is switched on slowly to compensate
 for the lack of history at the beginning of the simulation:
 
 .. math:: k^a_{dr} = k_{dr} \left(1-\exp\left(-\frac{t}{\tau}\right)\right)
+          :label: eqnforceconstantswitch
 
 Because of the time averaging, we can no longer speak of a distance
 restraint potential.
@@ -327,18 +326,17 @@ distance is within the bounds, otherwise the violation is the square
 root of the product of the instantaneous violation and the time averaged
 violation:
 
-.. math::
-
-   \mathbf{F}_i~=~ \left\{
-   \begin{array}{lclll}
-   k^a_{dr}\sqrt{(r_{ij}-r_0)(\bar{r}_{ij}-r_0)}\frac{\mathbf{r}_ij}{r_{ij}}   
-       & \mbox{for} & r_{ij} < r_0 & \mbox{and} & \bar{r}_{ij} < r_0 \\[1.5ex]
-   -k^a _{dr} \,
-     \mbox{min}\left(\sqrt{(r_{ij}-r_1)(\bar{r}_{ij}-r_1)},r_2-r_1\right)
-     \frac{\mathbf{r}_ij}{r_{ij}}   
-       & \mbox{for} & r_{ij} > r_1 & \mbox{and} & \bar{r}_{ij} > r_1 \\[1.5ex]
-   0               &\mbox{otherwise}
-   \end{array} \right.
+.. math:: \mathbf{F}_i~=~ \left\{
+          \begin{array}{lclll}
+          k^a_{dr}\sqrt{(r_{ij}-r_0)(\bar{r}_{ij}-r_0)}\frac{\mathbf{r}_ij}{r_{ij}}   
+              & \mbox{for} & r_{ij} < r_0 & \mbox{and} & \bar{r}_{ij} < r_0 \\[1.5ex]
+          -k^a _{dr} \,
+            \mbox{min}\left(\sqrt{(r_{ij}-r_1)(\bar{r}_{ij}-r_1)},r_2-r_1\right)
+            \frac{\mathbf{r}_ij}{r_{ij}}   
+              & \mbox{for} & r_{ij} > r_1 & \mbox{and} & \bar{r}_{ij} > r_1 \\[1.5ex]
+          0               &\mbox{otherwise}
+          \end{array} \right.
+          :label: eqntimeaverageviolation
 
 Averaging over multiple pairs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -381,26 +379,24 @@ heating of the protons.
 It is also possible to use *ensemble averaging* using multiple (protein)
 molecules. In this case the bounds should be lowered as in:
 
-.. math::
-
-   \begin{array}{rcl}
-   r_1     &~=~&   r_1 * M^{-1/6}  \\
-   r_2     &~=~&   r_2 * M^{-1/6}
-   \end{array}
+.. math:: \begin{array}{rcl}
+          r_1     &~=~&   r_1 * M^{-1/6}  \\
+          r_2     &~=~&   r_2 * M^{-1/6}
+          \end{array}
+          :label: eqnrestforceensembleaverage
 
 where :math:`M` is the number of molecules. The |Gromacs| preprocessor
 :ref:`grompp <gmx grompp>` can do this automatically when the appropriate
 option is given. The resulting “distance” is then used to calculate the
 scalar force according to:
 
-.. math::
-
-   \mathbf{F}_i~=~\left\{
-   \begin{array}{rcl}
-   ~& 0 \hspace{4cm}  & r_{N} < r_1         \\
-    & k_{dr}(r_{N}-r_1)\frac{\mathbf{r}_ij}{r_{ij}} & r_1 \le r_{N} < r_2 \\
-    & k_{dr}(r_2-r_1)\frac{\mathbf{r}_ij}{r_{ij}}    & r_{N} \ge r_2 
-   \end{array} \right.
+.. math:: \mathbf{F}_i~=~\left\{
+          \begin{array}{rcl}
+          ~& 0 \hspace{4cm}  & r_{N} < r_1         \\
+           & k_{dr}(r_{N}-r_1)\frac{\mathbf{r}_ij}{r_{ij}} & r_1 \le r_{N} < r_2 \\
+           & k_{dr}(r_2-r_1)\frac{\mathbf{r}_ij}{r_{ij}}    & r_{N} \ge r_2 
+          \end{array} \right.
+          :label: eqnrestscalarforce
 
 where :math:`i` and :math:`j` denote the atoms of all the pairs that
 contribute to the NOE signal.
@@ -462,6 +458,7 @@ examples of such orientation measurements are residual dipolar couplings
 vector :math:`\mathbf{r}_i` can be written as follows:
 
 .. math:: \delta_i = \frac{2}{3} \mbox{tr}({{\mathbf S}}{{\mathbf D}}_i)
+          :label: eqnorrestvector
 
 where :math:`{{\mathbf S}}` is the dimensionless order tensor of the
 molecule. The tensor :math:`{{\mathbf D}}_i` is given by:
@@ -474,18 +471,18 @@ molecule. The tensor :math:`{{\mathbf D}}_i` is given by:
           \end{array} \right)
           :label: eqnorientdef
 
-.. math::
-
-   \mbox{with:} \quad 
-   x=\frac{r_{i,x}}{\|\mathbf{r}_i\|}, \quad
-   y=\frac{r_{i,y}}{\|\mathbf{r}_i\|}, \quad 
-   z=\frac{r_{i,z}}{\|\mathbf{r}_i\|}
+.. math:: \mbox{with:} \quad 
+          x=\frac{r_{i,x}}{\|\mathbf{r}_i\|}, \quad
+          y=\frac{r_{i,y}}{\|\mathbf{r}_i\|}, \quad 
+          z=\frac{r_{i,z}}{\|\mathbf{r}_i\|}
+          :label: eqnorientdef2
 
 For a dipolar coupling :math:`\mathbf{r}_i` is the vector
 connecting the two nuclei, :math:`\alpha=3` and the constant :math:`c_i`
 is given by:
 
 .. math:: c_i = \frac{\mu_0}{4\pi} \gamma_1^i \gamma_2^i \frac{\hbar}{4\pi}
+          :label: eqnorrestconstant
 
 where :math:`\gamma_1^i` and :math:`\gamma_2^i` are the gyromagnetic
 ratios of the two nuclei.
@@ -494,13 +491,12 @@ The order tensor is symmetric and has trace zero. Using a rotation
 matrix :math:`{\mathbf T}` it can be transformed into the following
 form:
 
-.. math::
-
-   {\mathbf T}^T {{\mathbf S}}{\mathbf T} = s \left( \begin{array}{ccc}
-   -\frac{1}{2}(1-\eta) & 0                    & 0 \\
-   0                    & -\frac{1}{2}(1+\eta) & 0 \\
-   0                    & 0                    & 1
-   \end{array} \right)
+.. math:: {\mathbf T}^T {{\mathbf S}}{\mathbf T} = s \left( \begin{array}{ccc}
+          -\frac{1}{2}(1-\eta) & 0                    & 0 \\
+          0                    & -\frac{1}{2}(1+\eta) & 0 \\
+          0                    & 0                    & 1
+          \end{array} \right)
+          :label: eqnorresttensor
 
 where :math:`-1 \leq s \leq 1` and :math:`0 \leq \eta \leq 1`.
 :math:`s` is called the order parameter and :math:`\eta` the asymmetry
@@ -527,6 +523,7 @@ the structure is taken from the first subsystem. The calculated
 The calculated orientation for vector :math:`i` is given by:
 
 .. math:: \delta^c_i(t) = \frac{2}{3} \mbox{tr}({{\mathbf S}}(t){{\mathbf D}}_i^c(t))
+          :label: eqnDrotvector
 
 The order tensor :math:`{{\mathbf S}}(t)` is usually unknown. A
 reasonable choice for the order tensor is the tensor which minimizes the
@@ -557,19 +554,19 @@ molecule, the tensor can be averaged in an axis system that rotates with
 the molecule, as expressed by :eq:`equation %s <eqnDrot>`). The time-averaged
 tensors are calculated using an exponentially decaying memory function:
 
-.. math::
-
-   {{\mathbf D}}^a_i(t) = \frac{\displaystyle
-   \int_{u=t_0}^t {{\mathbf D}}^c_i(u) \exp\left(-\frac{t-u}{\tau}\right)\mbox{d} u
-   }{\displaystyle
-   \int_{u=t_0}^t \exp\left(-\frac{t-u}{\tau}\right)\mbox{d} u
-   }
+.. math:: {{\mathbf D}}^a_i(t) = \frac{\displaystyle
+          \int_{u=t_0}^t {{\mathbf D}}^c_i(u) \exp\left(-\frac{t-u}{\tau}\right)\mbox{d} u
+          }{\displaystyle
+          \int_{u=t_0}^t \exp\left(-\frac{t-u}{\tau}\right)\mbox{d} u
+          }
+          :label: eqnorresttimeaverage
 
 Assuming that the order tensor :math:`{{\mathbf S}}` fluctuates slower
 than the :math:`{{\mathbf D}}_i`, the time-averaged orientation can be
 calculated as:
 
 .. math:: \delta_i^a(t) = \frac{2}{3} \mbox{tr}({{\mathbf S}}(t) {{\mathbf D}}_i^a(t))
+          :label: eqnorresttimeaveorient
 
 where the order tensor :math:`{{\mathbf S}}(t)` is calculated using
 expression :eq:`%s <eqnSmsd>` with :math:`\delta_i^c(t)` replaced by
@@ -584,6 +581,7 @@ experimental orientations. When no time averaging is applied, a proper
 potential can be defined as:
 
 .. math:: V = \frac{1}{2} k \sum_{i=1}^N w_i (\delta_i^c (t) -\delta_i^{exp})^2
+          :label: eqnorrestsimrest
 
 where the unit of :math:`k` is the unit of energy. Thus the effective
 force constant for restraint :math:`i` is :math:`k w_i`. The forces are
@@ -591,14 +589,13 @@ given by minus the gradient of :math:`V`. The force
 :math:`\mathbf{F}\!_i` working on vector
 :math:`\mathbf{r}_i` is:
 
-.. math::
-
-   \begin{aligned}
-   \mathbf{F}\!_i(t) 
-   & = & - \frac{\mbox{d} V}{\mbox{d}\mathbf{r}_i} \\
-   & = & -k w_i (\delta_i^c (t) -\delta_i^{exp}) \frac{\mbox{d} \delta_i (t)}{\mbox{d}\mathbf{r}_i} \\
-   & = & -k w_i (\delta_i^c (t) -\delta_i^{exp})
-   \frac{2 c_i}{\|\mathbf{r}\|^{2+\alpha}} \left(2 {{\mathbf R}}^T {{\mathbf S}}{{\mathbf R}}\mathbf{r}_i - \frac{2+\alpha}{\|\mathbf{r}\|^2} \mbox{tr}({{\mathbf R}}^T {{\mathbf S}}{{\mathbf R}}\mathbf{r}_i \mathbf{r}_i^T) \mathbf{r}_i \right)\end{aligned}
+.. math:: \begin{aligned}
+          \mathbf{F}\!_i(t) 
+          & = & - \frac{\mbox{d} V}{\mbox{d}\mathbf{r}_i} \\
+          & = & -k w_i (\delta_i^c (t) -\delta_i^{exp}) \frac{\mbox{d} \delta_i (t)}{\mbox{d}\mathbf{r}_i} \\
+          & = & -k w_i (\delta_i^c (t) -\delta_i^{exp})
+          \frac{2 c_i}{\|\mathbf{r}\|^{2+\alpha}} \left(2 {{\mathbf R}}^T {{\mathbf S}}{{\mathbf R}}\mathbf{r}_i - \frac{2+\alpha}{\|\mathbf{r}\|^2} \mbox{tr}({{\mathbf R}}^T {{\mathbf S}}{{\mathbf R}}\mathbf{r}_i \mathbf{r}_i^T) \mathbf{r}_i \right)\end{aligned}
+          :label: eqnorrestsimrestforce
 
 Ensemble averaging
 ^^^^^^^^^^^^^^^^^^
@@ -608,18 +605,16 @@ subsystems that each contain an identical set of orientation restraints.
 The systems only interact via the orientation restraint potential which
 is defined as:
 
-.. math::
-
-   V = M \frac{1}{2} k \sum_{i=1}^N w_i 
-   \langle \delta_i^c (t) -\delta_i^{exp} \rangle^2
+.. math:: V = M \frac{1}{2} k \sum_{i=1}^N w_i 
+          \langle \delta_i^c (t) -\delta_i^{exp} \rangle^2
+          :label: eqnorrestensembleave
 
 The force on vector :math:`\mathbf{r}_{i,m}` in subsystem
 :math:`m` is given by:
 
-.. math::
-
-   \mathbf{F}\!_{i,m}(t) = - \frac{\mbox{d} V}{\mbox{d}\mathbf{r}_{i,m}} =
-   -k w_i \langle \delta_i^c (t) -\delta_i^{exp} \rangle \frac{\mbox{d} \delta_{i,m}^c (t)}{\mbox{d}\mathbf{r}_{i,m}} \\
+.. math:: \mathbf{F}\!_{i,m}(t) = - \frac{\mbox{d} V}{\mbox{d}\mathbf{r}_{i,m}} =
+          -k w_i \langle \delta_i^c (t) -\delta_i^{exp} \rangle \frac{\mbox{d} \delta_{i,m}^c (t)}{\mbox{d}\mathbf{r}_{i,m}}
+          :label: eqnorrestensaveforce 
 
 Time averaging
 ^^^^^^^^^^^^^^
@@ -628,41 +623,37 @@ When using time averaging it is not possible to define a potential. We
 can still define a quantity that gives a rough idea of the energy stored
 in the restraints:
 
-.. math::
-
-   V = M \frac{1}{2} k^a \sum_{i=1}^N w_i 
-   \langle \delta_i^a (t) -\delta_i^{exp} \rangle^2
+.. math:: V = M \frac{1}{2} k^a \sum_{i=1}^N w_i 
+          \langle \delta_i^a (t) -\delta_i^{exp} \rangle^2
+          :label: eqntimeavepot
 
 The force constant :math:`k_a` is switched on slowly to compensate for
 the lack of history at times close to :math:`t_0`. It is exactly
 proportional to the amount of average that has been accumulated:
 
-.. math::
-
-   k^a =
-    k \, \frac{1}{\tau}\int_{u=t_0}^t \exp\left(-\frac{t-u}{\tau}\right)\mbox{d} u
+.. math:: k^a =
+          k \, \frac{1}{\tau}\int_{u=t_0}^t \exp\left(-\frac{t-u}{\tau}\right)\mbox{d} u
+          :label: eqntimeaveforceswitch
 
 What really matters is the definition of the force. It is chosen to be
 proportional to the square root of the product of the time-averaged and
 the instantaneous deviation. Using only the time-averaged deviation
 induces large oscillations. The force is given by:
 
-.. math::
+.. math:: \mathbf{F}\!_{i,m}(t) =
+          \left\{ \begin{array}{ll}
+          0 & \quad \mbox{for} \quad a\, b \leq 0 \\
+          \displaystyle
+          k^a w_i \frac{a}{|a|} \sqrt{a\, b} \, \frac{\mbox{d} \delta_{i,m}^c (t)}{\mbox{d}\mathbf{r}_{i,m}}
+          & \quad \mbox{for} \quad a\, b > 0 
+          \end{array}
+          \right.
+          :label: eqntimeaveforce
 
-   \mathbf{F}\!_{i,m}(t) =
-   \left\{ \begin{array}{ll}
-   0 & \quad \mbox{for} \quad a\, b \leq 0 \\
-   \displaystyle
-   k^a w_i \frac{a}{|a|} \sqrt{a\, b} \, \frac{\mbox{d} \delta_{i,m}^c (t)}{\mbox{d}\mathbf{r}_{i,m}}
-   & \quad \mbox{for} \quad a\, b > 0 
-   \end{array}
-   \right.
-
-.. math::
-
-   \begin{aligned}
-   a &=& \langle \delta_i^a (t) -\delta_i^{exp} \rangle \\
-   b &=& \langle \delta_i^c (t) -\delta_i^{exp} \rangle\end{aligned}
+.. math:: \begin{aligned}
+          a &=& \langle \delta_i^a (t) -\delta_i^{exp} \rangle \\
+          b &=& \langle \delta_i^c (t) -\delta_i^{exp} \rangle\end{aligned}
+          :label: eqntimeaveforce2
 
 Using orientation restraints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

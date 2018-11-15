@@ -32,29 +32,41 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MDLIB_QMGAUSSIAN_H
+#define GMX_MDLIB_QMGAUSSIAN_H
 
-#include "gmxpre.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/qmmm.h"
 
-#include "restraintpotential.h"
+struct t_forcerec;
 
-namespace gmx
-{
+/*! \brief
+ * Initialize gaussian datastructures.
+ *
+ * \param[in] qm QM forcerec.
+ */
+void init_gaussian(t_QMrec *qm);
 
-PotentialPointData::PotentialPointData() :
-    PotentialPointData {Vector(0., 0., 0.), real(0.0)}
-{}
+/*! \brief
+ * Call gaussian to do qm calculation.
+ *
+ * \param[in] fr Global forcerec.
+ * \param[in] qm QM part of forcerec.
+ * \param[in] mm mm part of forcerec.
+ * \param[in] f  force vector.
+ * \param[in] fshift shift of force vector.
+ */
+real call_gaussian(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
-PotentialPointData::PotentialPointData(const Vector &f, const real e) :
-    force(f),
-    energy(e)
-{}
+/*! \brief
+ * Call gaussian SH(?) to do qm calculation.
+ *
+ * \param[in] fr Global forcerec.
+ * \param[in] qm QM part of forcerec.
+ * \param[in] mm mm part of forcerec.
+ * \param[in] f  force vector.
+ * \param[in] fshift shift of force vector.
+ */
+real call_gaussian_SH(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
-void IRestraintPotential::update(gmx::Vector gmx_unused v,
-                                 gmx::Vector gmx_unused v0,
-                                 double gmx_unused      t)
-{}
-
-void IRestraintPotential::bindSession(gmxapi::SessionResources* /* resources */)
-{}
-
-} // end namespace gmx
+#endif

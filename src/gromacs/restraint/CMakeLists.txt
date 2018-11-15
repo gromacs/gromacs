@@ -33,12 +33,10 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 
-set(RESTRAINT_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/manager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/restraintmdmodule.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/restraintpotential.cpp
+gmx_add_libgromacs_sources(
+    manager.cpp
+    restraintmdmodule.cpp
     )
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${RESTRAINT_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(restraintpotential.h)
 

@@ -619,7 +619,7 @@ int Mdrunner::mdrunner()
                     inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
-            auto canUseGpuForPme   = pme_gpu_supports_build(nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
+            auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
                     (useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment,
                     canUseGpuForPme, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
@@ -687,14 +687,16 @@ int Mdrunner::mdrunner()
                                                                 emulateGpuNonbonded, usingVerletScheme,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
-        auto canUseGpuForPme   = pme_gpu_supports_build(nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
+        auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
                                                     canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
         auto canUseGpuForBonded = buildSupportsGpuBondeds(nullptr) && inputSupportsGpuBondeds(*inputrec, mtop, nullptr);
         useGpuForBonded =
             decideWhetherToUseGpusForBonded(useGpuForNonbonded, useGpuForPme, usingVerletScheme,
-                                            bondedTarget, canUseGpuForBonded, cr->nnodes,
+                                            bondedTarget, canUseGpuForBonded,
+                                            EVDW_PME(inputrec->vdwtype),
+                                            EEL_PME_EWALD(inputrec->coulombtype),
                                             domdecOptions.numPmeRanks, gpusWereDetected);
 
         pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
@@ -1222,16 +1224,6 @@ int Mdrunner::mdrunner()
                       useGpuForBonded,
                       FALSE,
                       pforce);
-
-        /* Initialize QM-MM */
-        if (fr->bQMMM)
-        {
-            GMX_LOG(mdlog.info).asParagraph().
-                appendText("Large parts of the QM/MM support is deprecated, and may be removed in a future "
-                           "version. Please get in touch with the developers if you find the support useful, "
-                           "as help is needed if the functionality is to continue to be available.");
-            init_QMMMrec(cr, &mtop, inputrec, fr);
-        }
 
         /* Initialize the mdAtoms structure.
          * mdAtoms is not filled with atom data,

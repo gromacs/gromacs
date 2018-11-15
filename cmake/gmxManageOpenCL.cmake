@@ -64,8 +64,8 @@ add_definitions(${OpenCL_DEFINITIONS})
 
 include_directories(SYSTEM ${OpenCL_INCLUDE_DIRS})
 
-set(GMX_OCL_NB_CLUSTER_SIZE 8 CACHE STRING "Cluster size used by nonbonded OpenCL kernel. Set to 4 for Intel GPUs.")
-mark_as_advanced(GMX_OCL_NB_CLUSTER_SIZE)
+set(GMX_OPENCL_NB_CLUSTER_SIZE 8 CACHE STRING "Cluster size used by nonbonded OpenCL kernel. Set to 4 for Intel GPUs.")
+mark_as_advanced(GMX_OPENCL_NB_CLUSTER_SIZE)
 
 macro(gmx_gpu_setup)
     # no OpenMP is no good!

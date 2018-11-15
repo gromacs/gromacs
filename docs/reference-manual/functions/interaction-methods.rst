@@ -129,16 +129,16 @@ can be found in ref. \ :ref:`104 <refBerendsen84b>`. We can write the
 potential energy as:
 
 .. math:: V = V(\mathbf{r}_s,\mathbf{r}_1,\ldots,\mathbf{r}_n) = V^*(\mathbf{r}_1,\ldots,\mathbf{r}_n)
+          :label: eqnvsiteepot
 
 The force on the particle :math:`i` is then:
 
-.. math::
-
-   \mathbf{F}_i = -\frac{\partial V^*}{\partial \mathbf{r}_i} 
-            = -\frac{\partial V}{\partial \mathbf{r}_i} - 
-               \frac{\partial V}{\partial \mathbf{r}_s} 
-               \frac{\partial \mathbf{r}_s}{\partial \mathbf{r}_i}
-            = \mathbf{F}_i^{direct} + \mathbf{F}_i
+.. math:: \mathbf{F}_i = -\frac{\partial V^*}{\partial \mathbf{r}_i} 
+          = -\frac{\partial V}{\partial \mathbf{r}_i} - 
+             \frac{\partial V}{\partial \mathbf{r}_s} 
+             \frac{\partial \mathbf{r}_s}{\partial \mathbf{r}_i}
+          = \mathbf{F}_i^{direct} + \mathbf{F}_i
+          :label: eqnvsiteforce
 
 The first term is the normal force. The second term is the force on
 particle :math:`i` due to the virtual site, which can be written in
@@ -185,10 +185,12 @@ the available virtual site constructions. The conceptually simplest
 construction types are linear combinations:
 
 .. math:: \mathbf{r}_s = \sum_{i=1}^N w_i \, \mathbf{r}_i
+          :label: eqnvsitelincomb
 
 The force is then redistributed using the same weights:
 
 .. math:: \mathbf{F}_i = w_i \, \mathbf{F}_{s}
+          :label: eqnvsitelincombforce
 
 The types of virtual sites supported in |Gromacs| are given in the list
 below. Constructing atoms in virtual sites can be virtual sites
@@ -199,6 +201,7 @@ can be constructed from “particles” that are simpler virtual sites.
    (:numref:`Fig. %s <fig-vsites>` 2):
 
    .. math:: w_i = 1 - a ~,~~ w_j = a
+             :label: eqnvsitelin2atom
 
 -  In this case the virtual site is on the line through atoms :math:`i`
    and :math:`j`.
@@ -207,6 +210,7 @@ can be constructed from “particles” that are simpler virtual sites.
    (:numref:`Fig. %s <fig-vsites>` 3):
 
    .. math:: w_i = 1 - a - b ~,~~ w_j = a ~,~~ w_k = b
+             :label: eqnvsitelin3atom
 
 -  In this case the virtual site is in the plane of the other three
    particles.
@@ -214,29 +218,27 @@ can be constructed from “particles” that are simpler virtual sites.
 -  In the plane of three atoms, with a fixed distance
    (:numref:`Fig. %s <fig-vsites>` 3fd):
 
-   .. math::
-
-      \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{  \mathbf{r}_ij + a \mathbf{r}_{jk}  }
-                                          { | \mathbf{r}_ij + a \mathbf{r}_{jk} | }
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{  \mathbf{r}_ij + a \mathbf{r}_{jk}  }
+                                                  { | \mathbf{r}_ij + a \mathbf{r}_{jk} | }
+             :label: eqnvsiteplane3atom
 
 -  In this case the virtual site is in the plane of the other three
    particles at a distance of :math:`|b|` from :math:`i`. The force on
    particles :math:`i`, :math:`j` and :math:`k` due to the force on the
    virtual site can be computed as:
 
-   .. math::
-
-      \begin{array}{lcr}
-              \mathbf{F}_i &=& \displaystyle \mathbf{F}_{s} - \gamma ( \mathbf{F}_is - \mathbf{p} ) \\[1ex]
-              \mathbf{F}_j &=& \displaystyle (1-a)\gamma (\mathbf{F}_{s} - \mathbf{p})      \\[1ex]
-              \mathbf{F}_k &=& \displaystyle a \gamma (\mathbf{F}_{s} - \mathbf{p})         \\
-              \end{array}
-              ~\mbox{~ where~ }~
-              \begin{array}{c}
-      \displaystyle \gamma = \frac{b}{ | \mathbf{r}_ij + a \mathbf{r}_{jk} | } \\[2ex]
-      \displaystyle \mathbf{p} = \frac{ \mathbf{r}_{is} \cdot \mathbf{F}_{s} }
-                            { \mathbf{r}_{is} \cdot \mathbf{r}_is } \mathbf{r}_is
-              \end{array}
+   .. math:: \begin{array}{lcr}
+                     \mathbf{F}_i &=& \displaystyle \mathbf{F}_{s} - \gamma ( \mathbf{F}_is - \mathbf{p} ) \\[1ex]
+                     \mathbf{F}_j &=& \displaystyle (1-a)\gamma (\mathbf{F}_{s} - \mathbf{p})      \\[1ex]
+                     \mathbf{F}_k &=& \displaystyle a \gamma (\mathbf{F}_{s} - \mathbf{p})         \\
+                     \end{array}
+                     ~\mbox{~ where~ }~
+                     \begin{array}{c}
+             \displaystyle \gamma = \frac{b}{ | \mathbf{r}_ij + a \mathbf{r}_{jk} | } \\[2ex]
+             \displaystyle \mathbf{p} = \frac{ \mathbf{r}_{is} \cdot \mathbf{F}_{s} }
+                                   { \mathbf{r}_{is} \cdot \mathbf{r}_is } \mathbf{r}_is
+             \end{array}
+             :label: eqnvsiteplane3atomforce
 
 -  In the plane of three atoms, with a fixed angle and
    distance (:numref:`Fig. %s <fig-vsites>` 3fad):
@@ -262,66 +264,63 @@ can be constructed from “particles” that are simpler virtual sites.
    :math:`\mathbf{r}_\perp` as defined in
    :eq:`eqn. %s <eqnvsite2fadF>`):
 
-   .. math::
-
-      \begin{array}{c}
-              \begin{array}{lclllll}
-              \mathbf{F}_i &=& \mathbf{F}_{s} &-& 
-                      \dfrac{d \cos \theta}{ | \mathbf{r}_ij | } \mathbf{F}_1 &+&
-                      \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \left( 
-                      \dfrac{ \mathbf{r}_ij \cdot \mathbf{r}_{jk} }
-                           { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{F}_2     +
-                      \mathbf{F}_3 \right)                                \\[3ex]
-              \mathbf{F}_j &=& &&
-                      \dfrac{d \cos \theta}{ | \mathbf{r}_ij | } \mathbf{F}_1 &-&
-                      \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \left(
-                       \mathbf{F}_2 + 
-                       \dfrac{ \mathbf{r}_ij \cdot \mathbf{r}_{jk} }
-                              { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{F}_2 +
-                      \mathbf{F}_3 \right)                                \\[3ex]
-              \mathbf{F}_k &=& && &&
-                      \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \mathbf{F}_2  \\[3ex]
-              \end{array}                                             \\[5ex]
-              \mbox{where ~}
-              \mathbf{F}_1 = \mathbf{F}_{s} -
-                        \dfrac{ \mathbf{r}_ij \cdot \mathbf{F}_{s} }
-                              { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{r}_{ij}
-              \mbox{\,, ~}
-              \mathbf{F}_2 = \mathbf{F}_1 -
-                        \dfrac{ \mathbf{r}_\perp \cdot \mathbf{F}_{s} }
-                              { \mathbf{r}_\perp \cdot \mathbf{r}_\perp } \mathbf{r}_\perp
-              \mbox{~and ~}
-              \mathbf{F}_3 = \dfrac{ \mathbf{r}_ij \cdot \mathbf{F}_{s} }
-                               { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{r}_\perp
-      \end{array}
+   .. math:: \begin{array}{c}
+                     \begin{array}{lclllll}
+                     \mathbf{F}_i &=& \mathbf{F}_{s} &-& 
+                             \dfrac{d \cos \theta}{ | \mathbf{r}_ij | } \mathbf{F}_1 &+&
+                             \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \left( 
+                             \dfrac{ \mathbf{r}_ij \cdot \mathbf{r}_{jk} }
+                                  { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{F}_2     +
+                             \mathbf{F}_3 \right)                                \\[3ex]
+                     \mathbf{F}_j &=& &&
+                             \dfrac{d \cos \theta}{ | \mathbf{r}_ij | } \mathbf{F}_1 &-&
+                             \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \left(
+                              \mathbf{F}_2 + 
+                              \dfrac{ \mathbf{r}_ij \cdot \mathbf{r}_{jk} }
+                                     { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{F}_2 +
+                             \mathbf{F}_3 \right)                                \\[3ex]
+                     \mathbf{F}_k &=& && &&
+                             \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \mathbf{F}_2  \\[3ex]
+                     \end{array}                                             \\[5ex]
+                     \mbox{where ~}
+                     \mathbf{F}_1 = \mathbf{F}_{s} -
+                               \dfrac{ \mathbf{r}_ij \cdot \mathbf{F}_{s} }
+                                     { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{r}_{ij}
+                     \mbox{\,, ~}
+                     \mathbf{F}_2 = \mathbf{F}_1 -
+                               \dfrac{ \mathbf{r}_\perp \cdot \mathbf{F}_{s} }
+                                     { \mathbf{r}_\perp \cdot \mathbf{r}_\perp } \mathbf{r}_\perp
+                     \mbox{~and ~}
+                     \mathbf{F}_3 = \dfrac{ \mathbf{r}_ij \cdot \mathbf{F}_{s} }
+                                      { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{r}_\perp
+             \end{array}
+             :label: eqnvsite2fadFforce
 
 -  As a non-linear combination of three atoms, out of
    plane (:numref:`Fig. %s <fig-vsites>` 3out):
 
-   .. math::
-
-      \mathbf{r}_s ~=~ \mathbf{r}_i + a \mathbf{r}_ij + b \mathbf{r}_{ik} +
-                      c (\mathbf{r}_ij \times \mathbf{r}_{ik})
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + a \mathbf{r}_ij + b \mathbf{r}_{ik} +
+                              c (\mathbf{r}_ij \times \mathbf{r}_{ik})
+             :label: eqnvsitenonlin3atom
 
 -  This enables the construction of virtual sites out of the plane of
    the other atoms. The force on particles :math:`i,j` and :math:`k` due
    to the force on the virtual site can be computed as:
 
-   .. math::
-
-      \begin{array}{lcl}
-      \mathbf{F}_j &=& \left[\begin{array}{ccc}
-       a              &  -c\,z_{ik}   & c\,y_{ik}     \\[0.5ex]
-       c\,z_{ik}      &   a           & -c\,x_{ik}    \\[0.5ex]
-      -c\,y_{ik}      &   c\,x_{ik}   & a
-      \end{array}\right]\mathbf{F}_{s}                                 \\
-      \mathbf{F}_k &=& \left[\begin{array}{ccc}
-       b              &   c\,z_{ij}   & -c\,y_{ij}    \\[0.5ex]
-      -c\,z_{ij}      &   b           & c\,x_{ij}     \\[0.5ex]
-       c\,y_{ij}      &  -c\,x_{ij}   & b
-      \end{array}\right]\mathbf{F}_{s}                                 \\
-      \mathbf{F}_i &=& \mathbf{F}_{s} - \mathbf{F}_j - \mathbf{F}_k
-      \end{array}
+   .. math:: \begin{array}{lcl}
+             \mathbf{F}_j &=& \left[\begin{array}{ccc}
+              a              &  -c\,z_{ik}   & c\,y_{ik}     \\[0.5ex]
+              c\,z_{ik}      &   a           & -c\,x_{ik}    \\[0.5ex]
+             -c\,y_{ik}      &   c\,x_{ik}   & a
+             \end{array}\right]\mathbf{F}_{s}                                 \\
+             \mathbf{F}_k &=& \left[\begin{array}{ccc}
+              b              &   c\,z_{ij}   & -c\,y_{ij}    \\[0.5ex]
+             -c\,z_{ij}      &   b           & c\,x_{ij}     \\[0.5ex]
+              c\,y_{ij}      &  -c\,x_{ij}   & b
+             \end{array}\right]\mathbf{F}_{s}                                 \\
+             \mathbf{F}_i &=& \mathbf{F}_{s} - \mathbf{F}_j - \mathbf{F}_k
+             \end{array}
+             :label: eqnvsitenonlin3atomforce
 
 -  From four atoms, with a fixed distance, see
    separate :numref:`Fig. %s <fig-vsite4fdn>`. This construction is a bit complex,
@@ -367,6 +366,7 @@ can be constructed from “particles” that are simpler virtual sites.
    weights :math:`a_i`. The weight for atom :math:`i` is:
 
    .. math:: w_i = a_i \left(\sum_{j=1}^N a_j \right)^{-1}
+             :label: eqnvsiterelweight
 
 -   There are three options for setting the weights:
 

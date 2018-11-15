@@ -19,32 +19,29 @@ spline interpolation for :math:`x_i \leq x < x_{i+1}` looks like this:
 where the table spacing :math:`h` and fraction :math:`\epsilon` are
 given by:
 
-.. math::
-
-   \begin{aligned}
-   h	&=&	x_{i+1} - x_i	\\
-   \epsilon&=&	(x - x_i)/h\end{aligned}
+.. math::  \begin{aligned}
+           h	&=&	x_{i+1} - x_i	\\
+           \epsilon&=&	(x - x_i)/h\end{aligned}
+           :label: eqntablespaceing
 
 so that :math:`0 \le \epsilon < 1`. From this, we can calculate the
 derivative in order to determine the forces:
 
-.. math::
-
-   -V_s'(x) ~=~ 
-   -\frac{{\rm d}V_s(x)}{{\rm d}\epsilon}\frac{{\rm d}\epsilon}{{\rm d}x} ~=~
-   -(A_1 + 2 A_2 \,\epsilon + 3 A_3 \,\epsilon^2)/h
+.. math::  -V_s'(x) ~=~ 
+           -\frac{{\rm d}V_s(x)}{{\rm d}\epsilon}\frac{{\rm d}\epsilon}{{\rm d}x} ~=~
+           -(A_1 + 2 A_2 \,\epsilon + 3 A_3 \,\epsilon^2)/h
+           :label: eqntablederivative
 
 The four coefficients are determined from the four conditions that
 :math:`V_s` and :math:`-V_s'` at both ends of each interval should match
 the exact potential :math:`V` and force :math:`-V'`. This results in the
 following errors for each interval:
 
-.. math::
-
-   \begin{aligned}
-   | V_s  - V  | _{max} &=& V'''' \frac{h^4}{384} + O(h^5) \\
-   | V_s' - V' | _{max} &=& V'''' \frac{h^3}{72\sqrt{3}} + O(h^4) \\
-   | V_s''- V''| _{max} &=& V'''' \frac{h^2}{12}  + O(h^3)\end{aligned}
+.. math:: \begin{aligned}
+          | V_s  - V  | _{max} &=& V'''' \frac{h^4}{384} + O(h^5) \\
+          | V_s' - V' | _{max} &=& V'''' \frac{h^3}{72\sqrt{3}} + O(h^4) \\
+          | V_s''- V''| _{max} &=& V'''' \frac{h^2}{12}  + O(h^3)\end{aligned}
+          :label: eqntableerrors
 
 V and V’ are continuous, while V” is the first discontinuous
 derivative. The number of points per nanometer is 500 and 2000 for
@@ -90,6 +87,7 @@ You can also use your own potential functions without editing the
 following equation
 
 .. math:: V(r_{ij}) ~=~ \frac{q_i q_j}{4 \pi\epsilon_0} f(r_{ij}) + C_6 \,g(r_{ij}) + C_{12} \,h(r_{ij})
+          :label: eqnuserpotfunction
 
 where :math:`f`, :math:`g`, and :math:`h` are user defined functions.
 **Note** that if :math:`g(r)` represents a normal dispersion

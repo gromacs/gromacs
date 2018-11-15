@@ -48,6 +48,11 @@
 #include <MessageApi.h>
 #endif
 
+// When not built in a configuration with QMMM support, much of this
+// code is unreachable by design. Tell clang not to warn about it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
+
 #if !GMX_MIMIC
 //! \brief Definitions to stub the ones defined in DataTypes.h
 constexpr int TYPE_INT = 0, TYPE_DOUBLE = 0;
@@ -268,3 +273,5 @@ void gmx::MimicCommunicator::finalize()
 {
     MCL_destroy();
 }
+
+#pragma GCC diagnostic pop

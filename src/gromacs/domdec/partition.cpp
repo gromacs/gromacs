@@ -149,13 +149,14 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
         gmx_ddzone_t &zp  = (d == 1) ? comm->zone_d1[0] : comm->zone_d2[0][0];
 
         /* Copy the base sizes of the home zone */
-        zp.min0 = cell_ns_x0[dim];
-        zp.max1 = cell_ns_x1[dim];
-        zp.min1 = cell_ns_x1[dim];
-        zp.mch0 = cell_ns_x0[dim];
-        zp.mch1 = cell_ns_x1[dim];
-        zp.p1_0 = cell_ns_x0[dim];
-        zp.p1_1 = cell_ns_x1[dim];
+        zp.min0    = cell_ns_x0[dim];
+        zp.max1    = cell_ns_x1[dim];
+        zp.min1    = cell_ns_x1[dim];
+        zp.mch0    = cell_ns_x0[dim];
+        zp.mch1    = cell_ns_x1[dim];
+        zp.p1_0    = cell_ns_x0[dim];
+        zp.p1_1    = cell_ns_x1[dim];
+        zp.dataSet = 1;
     }
 
     gmx::ArrayRef<DDCellsizesWithDlb> cellsizes = comm->cellsizesWithDlb;
@@ -180,15 +181,18 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
          */
         for (int d1 = d; d1 < dd->ndim-1; d1++)
         {
+            gmx_ddzone_t &buf = buf_s[pos];
+
             /* We invert the order to be able to use the same loop for buf_e */
-            buf_s[pos].min0 = extr_s[d1][1];
-            buf_s[pos].max1 = extr_s[d1][0];
-            buf_s[pos].min1 = extr_s[d1][2];
-            buf_s[pos].mch0 = 0;
-            buf_s[pos].mch1 = 0;
+            buf.min0    = extr_s[d1][1];
+            buf.max1    = extr_s[d1][0];
+            buf.min1    = extr_s[d1][2];
+            buf.mch0    = 0;
+            buf.mch1    = 0;
             /* Store the cell corner of the dimension we communicate along */
-            buf_s[pos].p1_0 = comm->cell_x0[dim];
-            buf_s[pos].p1_1 = 0;
+            buf.p1_0    = comm->cell_x0[dim];
+            buf.p1_1    = 0;
+            buf.dataSet = 1;
             pos++;
         }
 
@@ -356,6 +360,20 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
                     pos++;
                 }
             }
+            else
+            {
+                if (d == 1 || (d == 0 && dd->ndim == 3))
+                {
+                    for (int i = d; i < 2; i++)
+                    {
+                        comm->zone_d2[1 - d][i].dataSet = 0;
+                    }
+                }
+                if (d == 0)
+                {
+                    comm->zone_d1[1].dataSet = 0;
+                }
+            }
         }
     }
 
@@ -364,12 +382,15 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
         int dim = dd->dim[1];
         for (int i = 0; i < 2; i++)
         {
-            if (debug)
+            if (comm->zone_d1[i].dataSet != 0)
             {
-                print_ddzone(debug, 1, i, 0, &comm->zone_d1[i]);
+                if (debug)
+                {
+                    print_ddzone(debug, 1, i, 0, &comm->zone_d1[i]);
+                }
+                cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d1[i].min0);
+                cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d1[i].max1);
             }
-            cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d1[i].min0);
-            cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d1[i].max1);
         }
     }
     if (dd->ndim >= 3)
@@ -379,12 +400,15 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
         {
             for (int j = 0; j < 2; j++)
             {
-                if (debug)
+                if (comm->zone_d2[i][j].dataSet != 0)
                 {
-                    print_ddzone(debug, 2, i, j, &comm->zone_d2[i][j]);
+                    if (debug)
+                    {
+                        print_ddzone(debug, 2, i, j, &comm->zone_d2[i][j]);
+                    }
+                    cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d2[i][j].min0);
+                    cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d2[i][j].max1);
                 }
-                cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d2[i][j].min0);
-                cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d2[i][j].max1);
             }
         }
     }
