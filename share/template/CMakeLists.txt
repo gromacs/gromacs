@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 add_executable(template template.cpp)
-target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
+target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
 
 set(DOCUMENTATION_HTTP_URL_BASE
     http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc)
