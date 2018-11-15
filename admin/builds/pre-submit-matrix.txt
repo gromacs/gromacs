@@ -21,7 +21,7 @@
 # Test MPI with CUDA
 # Test MPI with gcc
 # Test MPMD PME with library MPI
-gcc-5 gpuhw=nvidia cuda-8.0 cmake-3.10.0 mpi npme=1 nranks=2 openmp
+gcc-5 gpuhw=nvidia cuda-9.0 cmake-3.10.0 mpi npme=1 nranks=2 openmp
 
 # Test non-default use of mdrun -gpu_id
 # Test newest gcc supported by newest CUDA at time of release
@@ -47,7 +47,7 @@ gcc-8 double x11 no-tng fftpack simd=sse4.1
 # Test thread-MPI
 # Test AVX_128_FMA SIMD + Double (Important for Simd4N=Simd4 and sizeof(SimdInt32)!=4*GMX_SIMD_REAL_WIDTH)
 # Test with TNG support
-clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.11.4 tng
+clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.11.4 tng release
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
