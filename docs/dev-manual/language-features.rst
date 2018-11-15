@@ -7,7 +7,7 @@ reason for deviating from them.
 Portability considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-|Gromacs| uses C99 for C files and C++11 for C++ files. 
+|Gromacs| uses C99 for C files and C++14 for C++ files. 
 C++ has a lot of features, but to keep the source code maintainable and easy to read, 
 we will avoid using some of them in |Gromacs| code. The basic principle is to keep things 
 as simple as possible.
@@ -24,7 +24,7 @@ these standards fully.
 C++ Standard Library
 --------------------
 
-|Gromacs| code must support the lowest common denominator of C++11 standard library
+|Gromacs| code must support the lowest common denominator of C++14 standard library
 features available on supported platforms.
 Some modern features are useful enough to warrant back-porting.
 Consistent and forward-compatible headers are provided in ``src/gromacs/compat/``
