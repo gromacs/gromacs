@@ -50,8 +50,19 @@ if (SPHINX_EXECUTABLE AND NOT DEFINED SPHINX_EXECUTABLE_VERSION)
         ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-    string(REGEX REPLACE ".*build[ )]*" "" SPHINX_EXECUTABLE_VERSION "${SPHINX_VERSION_OUTPUT_VARIABLE}")
-    set(SPHINX_EXECUTABLE_VERSION "${SPHINX_EXECUTABLE_VERSION}" CACHE INTERNAL "Version of ${SPHINX_EXECUTABLE}")
+
+    # Detect the sphinx version. First try to match the error message
+    # from old versions that didn't even support --version, then try
+    # to detect more modern sphinx versions. If nothing is found, then
+    # the cache variable is set to an empty value.
+    set(_version "")
+    if(SPHINX_VERSION_OUTPUT_VARIABLE MATCHES "Sphinx v([0-9\.]+)\n.*")
+        set(_version ${CMAKE_MATCH_1})
+    elseif (SPHINX_VERSION_OUTPUT_VARIABLE MATCHES ".*build[ )]*(.*)")
+        set(_version ${CMAKE_MATCH_1})
+    endif()
+
+    set(SPHINX_EXECUTABLE_VERSION ${_version} CACHE INTERNAL "Version of ${SPHINX_EXECUTABLE}")
 endif()
 
 set(_find_deps_options)
