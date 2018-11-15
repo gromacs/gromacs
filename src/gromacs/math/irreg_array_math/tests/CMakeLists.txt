@@ -35,4 +35,5 @@
 gmx_add_unit_test(IrregArrayMathUnitTests irreg-array-math-test
                   irreg_array_math_test_commons.cpp
                   irreg_array_math.cpp
+                  mdspan_math.cpp
                   )

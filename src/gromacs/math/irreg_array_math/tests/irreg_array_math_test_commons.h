@@ -160,7 +160,6 @@ std::ostream &operator<<(std::ostream &output, const std::vector<TReal, Alloc> &
     return output;
 }
 
-
 }      // namespace irreg_array_math_test
 
 }      // namespace gmx
