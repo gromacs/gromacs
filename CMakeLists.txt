@@ -40,11 +40,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_
 
 project(Gromacs)
 
-if (MSVC)
-    set(CMAKE_CXX_STANDARD 14)
-else()
-    set(CMAKE_CXX_STANDARD 11)
-endif()
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -146,9 +142,6 @@ endif()
 # SIMD.
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
-
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
 
 ########################################################################
 # User input options                                                   #

@@ -104,20 +104,20 @@ PowerPC including POWER8, ARM v7, ARM v8, and SPARC VIII.
 Compiler
 ^^^^^^^^
 
-|Gromacs| can be compiled on any platform with ANSI C99 and C++11
+|Gromacs| can be compiled on any platform with ANSI C99 and C++14
 compilers, and their respective standard C/C++ libraries. Good
 performance on an OS and architecture requires choosing a good
 compiler. We recommend gcc, because it is free, widely available and
 frequently provides the best performance.
 
 You should strive to use the most recent version of your
-compiler. Since we require full C++11 support the minimum supported
+compiler. Since we require full C++14 support the minimum supported
 compiler versions are
 
 * GNU (gcc) 5.1
 * Intel (icc) 17.0.1
 * LLVM (clang) 3.6
-* Microsoft (MSVC) 2017 (C++14 is used)
+* Microsoft (MSVC) 2017
 
 Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
@@ -131,7 +131,7 @@ You may also need the most recent version of other compiler toolchain
 components beside the compiler itself (e.g. assembler or linker);
 these are often shipped by your OS distribution's binutils package.
 
-C++11 support requires adequate support in both the compiler and the
+C++14 support requires adequate support in both the compiler and the
 C++ library. The gcc and MSVC compilers include their own standard
 libraries and require no further configuration. For configuration of
 other compilers, read on.

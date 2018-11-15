@@ -7,7 +7,7 @@ reason for deviating from them.
 Portability considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-|Gromacs| uses C99 for C files and C++11 for C++ files. 
+Most |Gromacs| files compile as C++14, but some files remain that compile as C99.
 C++ has a lot of features, but to keep the source code maintainable and easy to read, 
 we will avoid using some of them in |Gromacs| code. The basic principle is to keep things 
 as simple as possible.
@@ -15,16 +15,13 @@ For compatiblity, certain work-arounds are required because not all compilers su
 these standards fully.
 
 * MSVC supports only a subset of C99 and work-arounds are required in those cases.
-* Before 7.0 (partial support in 6.5) CUDA didn't support C++11. Therefore any
-  header file which is needed (or likely will be nedded) by CUDA should not use C++11.
-* We should be able to use virtually all C++ features outside of the header files
-  required by CUDA code (and OpenCL kernels), since we have gradually moved to
-  compilers that have full support for C++11.
+* We should be able to use virtually all C++11 features outside of OpenCL kernels
+  (which compile as C), and for consistency also in CUDA kernels.
 
 C++ Standard Library
 --------------------
 
-|Gromacs| code must support the lowest common denominator of C++11 standard library
+|Gromacs| code must support the lowest common denominator of C++14 standard library
 features available on supported platforms.
 Some modern features are useful enough to warrant back-porting.
 Consistent and forward-compatible headers are provided in ``src/gromacs/compat/``
@@ -108,7 +105,7 @@ a release.
   make sure that they do what you
   want). ``src/gromacs/utility/classhelpers.h`` has some convenience
   macros for doing this well.
-  Starting from c++11, you can also use deleted functions in this case.
+  You can also use deleted functions in this case.
 * Declare all constructors with one parameter as explicit unless you
   really know what you are doing. Otherwise, they can be used for
   implicit type conversions, which can make the code difficult to
