@@ -363,6 +363,10 @@ void OptACM::calcDeviation()
                 {
                     mymol.Qgresp_.updateAtomCoords(mymol.x());
                 }
+                if (bFitZeta_)
+                {
+                    mymol.Qgresp_.updateZeta(&mymol.topology_->atoms, poldata());
+                }
                 mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
                 mymol.Qgresp_.calcPot();
                 increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
@@ -391,8 +395,7 @@ void OptACM::calcDeviation()
                     {
                         if (bFullTensor_ || mm == nn)
                         {
-                            increaseEnergy(ermsQUAD,
-                                           gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
+                            increaseEnergy(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                         }
                     }
                 }
