@@ -46,7 +46,7 @@ function (do_pkgconfig)
             set(PKG_CFLAGS "${PKG_CFLAGS} ${_def}")
         endforeach()
     endif()
-    set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS} ${GMX_CXX11_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
+    set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 
     configure_file(libgromacs.pc.cmakein
                    libgromacs.pc @ONLY)
