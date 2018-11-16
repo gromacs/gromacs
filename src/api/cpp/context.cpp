@@ -120,23 +120,22 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
          * a microstate for gmxapi interfaces.
          */
 
-        // Note: these output options normalize the file names, but not their
-        // paths. gmxapi 0.0.7 changes working directory for each session, so the
-        // relative paths are appropriate, but a near-future version will avoid
-        // changing directories once the process starts and manage file paths explicitly.
-        using gmxapi::c_majorVersion;
-        using gmxapi::c_minorVersion;
-        using gmxapi::c_patchVersion;
-        static_assert(!(c_majorVersion != 0 || c_minorVersion != 0 || c_patchVersion > 7),
-                      "Developer notice: check assumptions about working directory and relative file paths for this "
-                      "software version.");
-
         // Set input TPR name
         mdArgs_.emplace_back("-s");
         mdArgs_.emplace_back(filename);
+
         // Set checkpoint file name
         mdArgs_.emplace_back("-cpi");
         mdArgs_.emplace_back("state.cpt");
+        /* Note: we normalize the checkpoint file name, but not its full path.
+         * Through version 0.0.8, gmxapi clients change working directory
+         * for each session, so relative path(s) below are appropriate.
+         * A future gmxapi version should avoid changing directories once the
+         * process starts and instead manage files (paths) in an absolute and
+         * immutable way, with abstraction provided through the Context chain-of-responsibility.
+         * TODO: API abstractions for initializing simulations that may be new or partially complete.
+         * Reference gmxapi milestone 13 at https://redmine.gromacs.org/issues/2585
+         */
 
         // Create a mock argv. Note that argv[0] is expected to hold the program name.
         const int  offset = 1;
