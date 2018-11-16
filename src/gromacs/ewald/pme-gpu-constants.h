@@ -157,7 +157,7 @@ constexpr int c_spreadMaxWarpsPerBlock = 8;
 
 //! Solving kernel max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime
 //! (560Ti (CC2.1), 660Ti (CC3.0) and 750 (CC5.0)))
-constexpr int c_solveMaxWarpsPerBlock = 8;
+constexpr int c_solveMaxWarpsPerBlock = 16;
 
 //! Gathering max block width in warps - picked empirically among 2, 4, 8, 16 for max. occupancy and min. runtime
 constexpr int c_gatherMaxWarpsPerBlock = 4;
