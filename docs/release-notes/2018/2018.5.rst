@@ -18,3 +18,12 @@ Fixes to improve portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Warn for problematic coupling times with Nose-Hoover and Parrinello-Rahman
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When combining the Nose-Hoover and Parrinello-Rahman coupling algorithms,
+resonances in the kinetic energy and pressure/volume can appear when
+the two coupling times involved are similar. Now grompp warns when tau-p is
+less than two times tau-t.
+
+:issue: `2749`
