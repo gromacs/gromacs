@@ -126,6 +126,8 @@ class GmxApiTest : public gmx::test::MdrunTestFixture
             mdArgs.emplace_back(runner_.edrFileName_);
             mdArgs.emplace_back("-cpo");
             mdArgs.emplace_back(runner_.cptFileName_);
+            mdArgs.emplace_back("-ntomp");
+            mdArgs.emplace_back("1");
 
             return mdArgs;
         }
