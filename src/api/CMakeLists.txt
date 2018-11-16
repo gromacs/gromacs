@@ -46,7 +46,7 @@
 # release string. For roadmap details, see https://redmine.gromacs.org/issues/2585
 set(GMXAPI_MAJOR 0)
 set(GMXAPI_MINOR 0)
-set(GMXAPI_PATCH 7)
+set(GMXAPI_PATCH 8)
 set(GMXAPI_RELEASE ${GMXAPI_MAJOR}.${GMXAPI_MINOR}.${GMXAPI_PATCH})
 
 ###############################
