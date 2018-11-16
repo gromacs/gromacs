@@ -70,6 +70,4 @@ target_link_libraries(workflow-details-mpi-test Gromacs::gmxapi gmxapi-detail)
 # Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
 # when GMX_THREAD_MPI is true, but the test executables in this directory do not
 # yet understand that command-line option.
-if(NOT GMX_THREAD_MPI)
-    gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
-endif()
+gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2 INTEGRATION_TEST)

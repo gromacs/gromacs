@@ -105,9 +105,4 @@ target_include_directories(gmxapi-mpi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi)
 
-# Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
-# when GMX_THREAD_MPI is true, but the test executables in this directory do not
-# yet understand that command-line option.
-if(NOT GMX_THREAD_MPI)
-    gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
-endif()
+gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
