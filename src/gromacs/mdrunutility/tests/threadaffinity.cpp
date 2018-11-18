@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,6 @@ TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyUserSetThreads)
 TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyAutoSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
-    helper_.setTotNumThreadsIsAuto(true);
     helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
     helper_.setAffinity(8);
 }
@@ -182,7 +181,6 @@ TEST_F(ThreadAffinityTest, PinsMultipleThreadsWithStrideWhenForced)
 TEST_F(ThreadAffinityTest, PinsWithAutoAndFewerAutoSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
-    helper_.setTotNumThreadsIsAuto(true);
     helper_.expectPinningMessage(false, 2);
     helper_.expectAffinitySet({0, 2});
     helper_.setAffinity(2);
