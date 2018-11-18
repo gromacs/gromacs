@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,8 @@
 
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
-
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 namespace gmx
 {
 class CpuInfo;
@@ -120,5 +121,137 @@ struct gmx_hw_opt_t
     //! Tells whether mdrun is free to choose the total number of threads (by choosing the number of OpenMP and/or thread-MPI threads).
     bool          totNumThreadsIsAuto;
 };
+
+/*! \brief Contains and manages changes to hardware options.
+ *
+ * Keeps track of whether the user has set hardware options at the command line, and
+ * disallows modifications if so. The modification state of the options can be queried,
+ * which is clearer than checking if an option is set to 0.
+ */
+class hardwareOptionsManager
+{
+    public:
+        /*! \brief Container class for a single hardware option
+         *
+         * At construction, saves whether or not a value was explicitly
+         * set by the user. Continually keeps track of whether or not the
+         * option has been set (by the user or the program). Disallows any
+         * attempts to modify a user-set parameter
+         */
+        template <typename T> class hardwareOption
+        {
+            public:
+                //! No construction without a reference.
+                hardwareOption() = delete;
+                //! Compare to default value - not set by user if equal
+                hardwareOption<T>(T value, T defaultValue);
+
+                //! Access parameter value
+                T operator()() const {return value_; }
+                //! Check if user has set value explicitly
+                bool isSetByUser() const {return isSetByUser_; }
+                //! Check is value is currently set
+                bool isSet() const {return isSet_; }
+                //! Attempt to set value. Will update isSet_ if successful
+                void set(T newValue)
+                {
+                    if (isSetByUser_)
+                    {
+                        GMX_THROW(gmx::APIError("User-defined hardware options should not be overwritten"));
+                    }
+                    value_ = newValue;
+                    isSet_ = true;
+                }
+            private:
+                //! Parameter is currently set, either by the user or Gromacs
+                bool isSet_;
+                //! Parameter is set by the user
+                bool isSetByUser_;
+                //! Hardware option parameter
+                T    value_;
+        };
+
+        //! Default constructor
+        hardwareOptionsManager();
+        //! construct from initial options
+        explicit hardwareOptionsManager(const gmx_hw_opt_t &user_hw_opt);
+        //! copy construct from another instance
+        hardwareOptionsManager(const hardwareOptionsManager &optionsManager) = default;
+        //! copy assign from another instance
+        hardwareOptionsManager &operator=(const hardwareOptionsManager &rhs) = default;
+        //! move construct
+        hardwareOptionsManager(hardwareOptionsManager &&optionsManager) = default;
+        //! move assign
+        hardwareOptionsManager &operator=(hardwareOptionsManager &&rhs) = default;
+        //! destructor
+        ~hardwareOptionsManager() = default;
+
+        //! Total threads
+        hardwareOption<int>         nthreads_tot;
+        //! Total mpi or thread-mpi ranks
+        hardwareOption<int>         nthreads_tmpi;
+        //! openMP threads per rank
+        hardwareOption<int>         nthreads_omp;
+        //! openMP threads per pme rank. Defaults to nthreads_omp
+        hardwareOption<int>         nthreads_omp_pme;
+        //! Setting of thread affinity, options are in enum
+        hardwareOption<int>         threadAffinity;
+        //! Stride of core pinning. Usually 1
+        hardwareOption<int>         corePinningStride;
+        //! Core offset from 0. Useful when running multiple simulations on a node
+        hardwareOption<int>         corePinningOffset;
+        //! String of GPU IDs for Gromacs to use
+        hardwareOption<std::string> gpuIdsAvailable;
+        //! String mapping tasks to GPU IDs
+        hardwareOption<std::string> gpuTaskAssignment;
+
+};
+
+
+inline hardwareOptionsManager::hardwareOptionsManager() :
+    nthreads_tot(0, 0),
+    nthreads_tmpi(0, 0),
+    nthreads_omp(0, 0),
+    nthreads_omp_pme(0, 0),
+    // SEL = 0, AUTO = 1, sel and auto are equivalent
+    threadAffinity(threadaffSEL, threadaffAUTO),
+    corePinningStride(0, 0),
+    corePinningOffset(0, 0),
+    gpuIdsAvailable("", ""),
+    gpuTaskAssignment("", "")
+{}
+
+inline hardwareOptionsManager::hardwareOptionsManager(const gmx_hw_opt_t &user_hw_opt) :
+    nthreads_tot(user_hw_opt.nthreads_tot, 0),
+    nthreads_tmpi(user_hw_opt.nthreads_tmpi, 0),
+    nthreads_omp(user_hw_opt.nthreads_omp, 0),
+    nthreads_omp_pme(user_hw_opt.nthreads_omp_pme, 0),
+    threadAffinity(user_hw_opt.thread_affinity, threadaffAUTO),
+    corePinningStride(user_hw_opt.core_pinning_stride, 0),
+    corePinningOffset(user_hw_opt.core_pinning_offset, 0),
+    gpuIdsAvailable(user_hw_opt.gpuIdsAvailable, ""),
+    gpuTaskAssignment(user_hw_opt.userGpuTaskAssignment, "")
+{}
+
+
+
+template<typename T> hardwareOptionsManager::hardwareOption<T>::hardwareOption(T value, T defaultValue)
+{
+    value_     = value;
+    // check if value is greater than default (mostly zeros), to account for
+    // user defined -1's, which aren't really "set" by the user, but an indication
+    // that Gromacs should set them. Also works for the enums and strings
+    isSetByUser_ = (value > defaultValue);
+    isSet_       = isSetByUser_;
+}
+
+
+//! \brief Checks if the total thread count is fixed or can be set by Gromacs
+inline bool totNumThreadsIsAuto(const hardwareOptionsManager &hardwareOptions)
+{
+    return (!hardwareOptions.nthreads_tot.isSet() &&
+            !hardwareOptions.nthreads_tmpi.isSet() &&
+            !hardwareOptions.nthreads_omp.isSet());
+}
 
 #endif
