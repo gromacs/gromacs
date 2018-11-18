@@ -278,7 +278,7 @@ int gmx_mdrun(int argc, char *argv[])
     builder.addMultiSim(options.ms);
     // \todo Provide parallelism resources through SimulationContext.
     // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
-    builder.addHardwareOptions(options.hw_opt);
+    builder.addHardwareOptions(HardwareOptionsManager(options.hw_opt));
     // \todo File names are parameters that should be managed modularly through further factoring.
     builder.addFilenames(options.filenames);
     // Note: The gmx_output_env_t life time is not managed after the call to parse_common_args.
