@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -276,7 +276,7 @@ int gmx_mdrun(int argc, char *argv[])
     builder.addMultiSim(options.ms);
     // \todo Provide parallelism resources through SimulationContext.
     // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
-    builder.addHardwareOptions(options.hw_opt);
+    builder.addHardwareOptions(HardwareOptionsManager(options.hw_opt));
     // \todo File names are parameters that should be managed modularly through further factoring.
     builder.addFilenames(options.filenames);
     // Note: The gmx_output_env_t life time is not managed after the call to parse_common_args.

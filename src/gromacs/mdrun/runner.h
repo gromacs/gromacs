@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -194,10 +194,10 @@ class Mdrunner
          * member initialization list (which is true for the default constructor),
          * then they are initialized with any default member initializer specified
          * when they were declared, or default initialized. */
-        Mdrunner() = default;
+        Mdrunner(HardwareOptionsManager hardwareOptions);
 
         //! Parallelism-related user options.
-        gmx_hw_opt_t             hw_opt;
+        HardwareOptionsManager             hardwareOptions;
 
         //! Filenames and properties from command-line argument values.
         ArrayRef<const t_filenm> filenames;
@@ -507,11 +507,11 @@ class MdrunnerBuilder final
         /*!
          * \brief Specify parameters determining hardware resource allocation.
          *
-         * Optional. If not provided, default-constructed gmx_hw_opt_t will be used.
+         * Optional. If not provided, default-constructed hardwareOptionsManager will be used.
          *
          * \param hardwareOptions Parallelism-related user options.
          */
-        MdrunnerBuilder &addHardwareOptions(const gmx_hw_opt_t &hardwareOptions);
+        MdrunnerBuilder &addHardwareOptions(const HardwareOptionsManager &hardwareOptions);
 
         /*!
          * \brief Provide the filenames options structure with option values chosen

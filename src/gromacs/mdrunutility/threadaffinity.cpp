@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -385,18 +385,18 @@ void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator &physicalNodeC
    if only PME is using threads.
  */
 void
-gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
-                        const t_commrec             *cr,
-                        const gmx_hw_opt_t          *hw_opt,
-                        const gmx::HardwareTopology &hwTop,
-                        int                          numThreadsOnThisRank,
-                        int                          numThreadsOnThisNode,
-                        int                          intraNodeThreadOffset,
-                        gmx::IThreadAffinityAccess  *affinityAccess)
+gmx_set_thread_affinity(const gmx::MDLogger                   &mdlog,
+                        const t_commrec                       *cr,
+                        const HardwareOptionsManager          &hardwareOptions,
+                        const gmx::HardwareTopology           &hwTop,
+                        int                                    numThreadsOnThisRank,
+                        int                                    numThreadsOnThisNode,
+                        int                                    intraNodeThreadOffset,
+                        gmx::IThreadAffinityAccess            *affinityAccess)
 {
     int *localityOrder = nullptr;
 
-    if (hw_opt->thread_affinity == threadaffOFF)
+    if (hardwareOptions.threadAffinity() == threadaffOFF)
     {
         /* Nothing to do */
         return;
@@ -422,16 +422,16 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
         return;
     }
 
-    int  offset              = hw_opt->core_pinning_offset;
-    int  core_pinning_stride = hw_opt->core_pinning_stride;
+    int  offset              = hardwareOptions.corePinningOffset();
+    int  core_pinning_stride = hardwareOptions.corePinningStride();
     if (offset != 0)
     {
         GMX_LOG(mdlog.warning).appendTextFormatted("Applying core pinning offset %d", offset);
     }
 
     bool affinityIsAutoAndNumThreadsIsNotAuto =
-        (hw_opt->thread_affinity == threadaffAUTO &&
-         !hw_opt->totNumThreadsIsAuto);
+        (hardwareOptions.threadAffinity() == threadaffAUTO &&
+         !totNumThreadsIsAuto(hardwareOptions));
     bool issuedWarning;
     bool validLayout
         = get_thread_affinity_layout(mdlog, cr, hwTop, numThreadsOnThisNode,
@@ -463,13 +463,13 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
  * Note that this will only work on Linux as we use a GNU feature.
  */
 void
-gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
-                              const t_commrec     *cr,
-                              gmx_hw_opt_t        *hw_opt,
-                              int  gmx_unused      nthreads_hw_avail,
-                              gmx_bool             bAfterOpenmpInit)
+gmx_check_thread_affinity_set(const gmx::MDLogger           &mdlog,
+                              const t_commrec               *cr,
+                              HardwareOptionsManager        *hardwareOptions,
+                              int  gmx_unused                nthreads_hw_avail,
+                              gmx_bool                       bAfterOpenmpInit)
 {
-    GMX_RELEASE_ASSERT(hw_opt, "hw_opt must be a non-NULL pointer");
+    GMX_RELEASE_ASSERT(hardwareOptions, "hw_opt must be a non-NULL pointer");
 
     if (!bAfterOpenmpInit)
     {
@@ -478,19 +478,19 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
          * thread-MPI whether it should do pinning when spawning threads.
          * TODO: the above no longer holds, we should move these checks later
          */
-        if (hw_opt->thread_affinity != threadaffOFF)
+        if (hardwareOptions->threadAffinity() != threadaffOFF)
         {
             char *message;
             if (!gmx_omp_check_thread_affinity(&message))
             {
                 /* We only pin automatically with totNumThreadsIsAuto=true */
-                if (hw_opt->thread_affinity == threadaffON ||
-                    hw_opt->totNumThreadsIsAuto)
+                if (hardwareOptions->threadAffinity() == threadaffON ||
+                    totNumThreadsIsAuto(*hardwareOptions))
                 {
                     GMX_LOG(mdlog.warning).asParagraph().appendText(message);
                 }
                 sfree(message);
-                hw_opt->thread_affinity = threadaffOFF;
+                hardwareOptions->threadAffinity.set(threadaffOFF);
             }
         }
 
@@ -512,7 +512,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
     int       ret;
     cpu_set_t mask_current;
 
-    if (hw_opt->thread_affinity == threadaffOFF)
+    if (hardwareOptions->threadAffinity() == threadaffOFF)
     {
         /* internal affinity setting is off, don't bother checking process affinity */
         return;
@@ -568,7 +568,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
 
     if (!bAllSet)
     {
-        if (hw_opt->thread_affinity == threadaffAUTO)
+        if (hardwareOptions->threadAffinity() == threadaffAUTO)
         {
             if (!bAfterOpenmpInit)
             {
@@ -581,7 +581,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
                         "Non-default thread affinity set probably by the OpenMP library,\n"
                         "disabling internal thread affinity");
             }
-            hw_opt->thread_affinity = threadaffOFF;
+            hardwareOptions->threadAffinity.set(threadaffOFF);
         }
         else
         {
