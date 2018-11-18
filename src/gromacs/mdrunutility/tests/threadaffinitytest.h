@@ -85,12 +85,12 @@ class ThreadAffinityTestHelper
         }
         void setAffinityOption(int affinityOption)
         {
-            hwOpt_.thread_affinity = affinityOption;
+            hardwareOptions_.threadAffinity.set(affinityOption);
         }
         void setOffsetAndStride(int offset, int stride)
         {
-            hwOpt_.core_pinning_offset = offset;
-            hwOpt_.core_pinning_stride = stride;
+            hardwareOptions_.corePinningOffset.set(offset);
+            hardwareOptions_.corePinningStride.set(stride);
         }
 
         void setPhysicalNodeId(int nodeId)
@@ -100,9 +100,9 @@ class ThreadAffinityTestHelper
 
         void setLogicalProcessorCount(int logicalProcessorCount);
 
-        void setTotNumThreadsIsAuto(bool isAuto)
+        void setUserThreadCount(int userThreadCount)
         {
-            hwOpt_.totNumThreadsIsAuto = isAuto;
+            hardwareOptions_.nthreads_tot.set(userThreadCount);
         }
 
         void expectAffinitySet(int core)
@@ -175,14 +175,14 @@ class ThreadAffinityTestHelper
                                      numThreadsOnThisRank,
                                      &numThreadsOnThisNode,
                                      &indexWithinNodeOfFirstThreadOnThisRank);
-            gmx_set_thread_affinity(logHelper_.logger(), cr_, &hwOpt_, *hwTop_,
+            gmx_set_thread_affinity(logHelper_.logger(), cr_, hardwareOptions_, *hwTop_,
                                     numThreadsOnThisRank, numThreadsOnThisNode,
                                     indexWithinNodeOfFirstThreadOnThisRank, &affinityAccess_);
         }
 
     private:
         t_commrec                         *cr_;
-        gmx_hw_opt_t                       hwOpt_;
+        hardwareOptionsManager             hardwareOptions_;
         std::unique_ptr<HardwareTopology>  hwTop_;
         MockThreadAffinityAccess           affinityAccess_;
         LoggerTestHelper                   logHelper_;
