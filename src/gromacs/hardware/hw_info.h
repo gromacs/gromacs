@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
 
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
-
+#include "gromacs/utility/gmxassert.h"
 namespace gmx
 {
 class CpuInfo;
@@ -118,7 +118,105 @@ struct gmx_hw_opt_t
     //! Empty, or a string provided by the user mapping GPU tasks to devices.
     std::string   userGpuTaskAssignment = "";
     //! Tells whether mdrun is free to choose the total number of threads (by choosing the number of OpenMP and/or thread-MPI threads).
-    bool          totNumThreadsIsAuto;
+    bool          totNumThreadsIsAuto = 0;
 };
+
+/*! \internal \brief Manages changes to hardware options.
+ *
+ * Keeps track of whether the user has set hardware options at the command line, and
+ * disallows modifications if so. The modification state of the options can be queried,
+ * which is clearer than checking if an option is set to 0.
+ */
+class hardwareOptionsManager
+{
+    public:
+
+        template <typename T> class hardwareOption
+        {
+            public:
+                hardwareOption() = delete;
+                hardwareOption<T>(T value, T defaultValue);
+                T get() const {return value_; }
+                bool isSetByUser() const {return isSetByUser_; }
+                bool isSet() const {return isSet_; }
+                void set(T newValue)
+                {
+                    GMX_ASSERT(!isSetByUser_, "User-defined hardware options should not be overwritten");
+                    value_ = newValue;
+                    isSet_ = true;
+                }
+            private:
+                bool isSet_;
+                bool isSetByUser_;
+                T    value_;
+        };
+
+        // Default constructor assumes no user-defined values
+        hardwareOptionsManager();
+        // construct from initial options
+        explicit hardwareOptionsManager(const gmx_hw_opt_t &user_hw_opt);
+        // copy construct from another instance
+        hardwareOptionsManager(const hardwareOptionsManager &optionsManager) = default;
+        // copy assign from another instance
+        hardwareOptionsManager &operator=(const hardwareOptionsManager &rhs) = default;
+        // move construct
+        hardwareOptionsManager(hardwareOptionsManager &&optionsManager) = default;
+        // move assign
+        hardwareOptionsManager &operator=(hardwareOptionsManager &&rhs) = default;
+        // destructor
+        ~hardwareOptionsManager() = default;
+
+        hardwareOption<int>         nthreads_tot;
+        hardwareOption<int>         nthreads_tmpi;
+        hardwareOption<int>         nthreads_omp;
+        hardwareOption<int>         nthreads_omp_pme;
+        hardwareOption<int>         threadAffinity;
+        hardwareOption<int>         corePinningStride;
+        hardwareOption<int>         corePinningOffset;
+        hardwareOption<std::string> gpuIdsAvailable;
+        hardwareOption<std::string> gpuTaskAssignment;
+
+        bool totNumThreadsIsAuto() const;
+};
+
+
+inline hardwareOptionsManager::hardwareOptionsManager() :
+    nthreads_tot(0, 0),
+    nthreads_tmpi(0, 0),
+    nthreads_omp(0, 0),
+    nthreads_omp_pme(0, 0),
+    threadAffinity(threadaffSEL, threadaffSEL),
+    corePinningStride(0, 0),
+    corePinningOffset(0, 0),
+    gpuIdsAvailable("", ""),
+    gpuTaskAssignment("", "")
+{}
+
+inline hardwareOptionsManager::hardwareOptionsManager(const gmx_hw_opt_t &user_hw_opt) :
+    nthreads_tot(user_hw_opt.nthreads_tot, 0),
+    nthreads_tmpi(user_hw_opt.nthreads_tmpi, 0),
+    nthreads_omp(user_hw_opt.nthreads_omp, 0),
+    nthreads_omp_pme(user_hw_opt.nthreads_omp_pme, 0),
+    threadAffinity(user_hw_opt.thread_affinity, threadaffSEL),
+    corePinningStride(user_hw_opt.core_pinning_stride, 0),
+    corePinningOffset(user_hw_opt.core_pinning_offset, 0),
+    gpuIdsAvailable(user_hw_opt.gpuIdsAvailable, ""),
+    gpuTaskAssignment(user_hw_opt.userGpuTaskAssignment, "")
+{}
+
+inline bool hardwareOptionsManager::totNumThreadsIsAuto() const
+{
+    return (!nthreads_tot.isSet() && !nthreads_tmpi.isSet() && !nthreads_omp.isSet());
+}
+
+template<typename T> hardwareOptionsManager::hardwareOption<T>::hardwareOption(T value, T defaultValue)
+{
+    value_     = value;
+    // check if value is greater than default (mostly zeros), to account for
+    // user defined -1's, which aren't really "set" by the user, but an indication
+    // that Gromacs should set them
+    isSetByUser_ = (value > defaultValue);
+    isSet_       = isSetByUser_;
+}
 
 #endif

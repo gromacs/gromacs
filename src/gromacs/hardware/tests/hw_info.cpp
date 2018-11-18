@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,62 +32,61 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
+/*! \internal \file
+ * \brief
+ * Tests for hardwareOptions
+ *
+ * \author Kevin Boyd <kevin.boyd@uconn.edu>
+ * \ingroup module_hardware
+ */
 
-#include "threadaffinitytest.h"
+#include "gromacs/hardware/hw_info.h"
 
-#include "config.h"
+#include <gtest/gtest.h>
 
-#include <gmock/gmock.h>
-
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/hardware/hardwaretopology.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/smalloc.h"
-
-namespace gmx
-{
 namespace test
 {
-
-MockThreadAffinityAccess::MockThreadAffinityAccess()
-    : supported_(true)
+namespace
 {
-    using ::testing::_;
-    using ::testing::Return;
-    ON_CALL(*this, setCurrentThreadAffinityToCore(_))
-        .WillByDefault(Return(true));
+
+TEST(hardwareOptionsManagerTest, assignmentAndAccessingWorks)
+{
+    // construct default hw_opt_t, change some but not all of the options
+    gmx_hw_opt_t userOptions;
+    userOptions.nthreads_tmpi   = 4;
+    userOptions.gpuIdsAvailable = "01";
+
+    hardwareOptionsManager hwOpts(userOptions);
+    // user set options
+    EXPECT_EQ(4, hwOpts.nthreads_tmpi.get());
+    EXPECT_EQ("01", hwOpts.gpuIdsAvailable.get());
+
+    // default options
+    EXPECT_EQ(0, hwOpts.nthreads_tot.get());
+    EXPECT_EQ("", hwOpts.gpuTaskAssignment.get());
+
+    // check boolean queries
+    EXPECT_TRUE(hwOpts.nthreads_tmpi.isSetByUser());
+    EXPECT_FALSE(hwOpts.nthreads_tot.isSetByUser());
+
 }
 
-MockThreadAffinityAccess::~MockThreadAffinityAccess()
+TEST(hardwareOptionsManagerTest, setOptionsWork)
 {
+    gmx_hw_opt_t           userOptions;
+    userOptions.nthreads_tmpi = 4;
+    hardwareOptionsManager hwOpts(userOptions);
+
+    // amend a value not defined by a user
+    hwOpts.nthreads_tot.set(2);
+    EXPECT_EQ(2, hwOpts.nthreads_tot.get());
+
+    // try to amend a user-set value, should trip assert
+    // TODO How to expect an assertion fail in testing framework?
+    // EXPECT_ANY_THROW(hwOpts.nthreads_tmpi.set(2));
 }
 
+// TODO check that isSet_ and setbyuser_ work
 
-ThreadAffinityTestHelper::ThreadAffinityTestHelper()
-{
-    snew(cr_, 1);
-    cr_->nnodes         = gmx_node_num();
-    cr_->nodeid         = gmx_node_rank();
-    cr_->duty           = DUTY_PP;
-#if GMX_MPI
-    cr_->mpi_comm_mysim = MPI_COMM_WORLD;
-#endif
-    hardwareOptions_.threadAffinity.set(threadaffAUTO);
-    physicalNodeId_            = 0;
-}
-
-ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
-{
-    sfree(cr_);
-}
-
-void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
-{
-    hwTop_ = gmx::compat::make_unique<HardwareTopology>(logicalProcessorCount);
-}
-
+} // namespace
 } // namespace test
-} // namespace gmx

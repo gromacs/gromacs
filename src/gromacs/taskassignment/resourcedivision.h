@@ -49,6 +49,7 @@
 #include <vector>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_hw_info_t;
@@ -74,7 +75,7 @@ class PhysicalNodeCommunicator;
  * If necessary, this function will modify hw_opt->nthreads_omp.
  */
 int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
-                     gmx_hw_opt_t           *hw_opt,
+                     hardwareOptionsManager *hardwareOptions,
                      const std::vector<int> &gpuIdsToUse,
                      bool                    nonbondedOnGpu,
                      bool                    pmeOnGpu,
@@ -98,26 +99,26 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         const gmx::MDLogger &mdlog);
 
 /*! \brief Checks we can do when we don't (yet) know the cut-off scheme */
-void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
-                               gmx_hw_opt_t        *hw_opt,
-                               const t_commrec     *cr,
-                               int                  nPmeRanks);
+void check_and_update_hw_opt_1(const gmx::MDLogger    &mdlog,
+                               hardwareOptionsManager *hardwareOptions,
+                               const t_commrec        *cr,
+                               int                     nPmeRanks);
 
 /*! \brief Checks we can do when we know the cut-off scheme */
-void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
-                               int           cutoff_scheme);
+void check_and_update_hw_opt_2(hardwareOptionsManager *hardwareOptions,
+                               int                     cutoff_scheme);
 
 /*! \brief Check, and if necessary update, the number of OpenMP threads requested
  *
  * Should be called when we know the MPI rank count and PME run mode.
  */
-void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
-                                             const gmx_hw_info_t  &hwinfo,
-                                             const t_commrec      *cr,
-                                             const gmx_multisim_t *ms,
-                                             int                   numRanksOnThisNode,
-                                             PmeRunMode            pmeRunMode,
-                                             const gmx_mtop_t     &mtop);
+void checkAndUpdateRequestedNumOpenmpThreads(hardwareOptionsManager         *hardwareOptions,
+                                             const gmx_hw_info_t            &hwinfo,
+                                             const t_commrec                *cr,
+                                             const gmx_multisim_t           *ms,
+                                             int                             numRanksOnThisNode,
+                                             PmeRunMode                      pmeRunMode,
+                                             const gmx_mtop_t               &mtop);
 
 namespace gmx
 {
