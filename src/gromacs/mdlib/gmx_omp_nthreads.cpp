@@ -44,6 +44,7 @@
 #include <cstring>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -174,14 +175,13 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
     gmx_omp_nthreads_set(m, nth);
 }
 
-void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
-                               int                 *nthreads_omp)
+void gmx_omp_nthreads_read_env(const gmx::MDLogger    &mdlog,
+                               hardwareOptionsManager *hardwareOptions)
 {
     char    *env;
-    gmx_bool bCommandLineSetNthreadsOMP = *nthreads_omp > 0;
+    int      nthreads_omp               = hardwareOptions->nthreads_omp();
+    gmx_bool bCommandLineSetNthreadsOMP = hardwareOptions->nthreads_omp.isSetByUser();
     char     buffer[STRLEN];
-
-    GMX_RELEASE_ASSERT(nthreads_omp, "nthreads_omp must be a non-NULL pointer");
 
     if ((env = getenv("OMP_NUM_THREADS")) != nullptr)
     {
@@ -193,13 +193,13 @@ void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
             gmx_fatal(FARGS, "OMP_NUM_THREADS is invalid: '%s'", env);
         }
 
-        if (bCommandLineSetNthreadsOMP && nt_omp != *nthreads_omp)
+        if (bCommandLineSetNthreadsOMP && nt_omp != nthreads_omp)
         {
-            gmx_fatal(FARGS, "Environment variable OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values. Either omit one, or set them both to the same value.", nt_omp, *nthreads_omp);
+            gmx_fatal(FARGS, "Environment variable OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values. Either omit one, or set them both to the same value.", nt_omp, nthreads_omp);
         }
 
         /* Setting the number of OpenMP threads. */
-        *nthreads_omp = nt_omp;
+        hardwareOptions->nthreads_omp.set(nt_omp);
 
         /* Output the results */
         sprintf(buffer,

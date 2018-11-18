@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct t_commrec;
@@ -117,7 +118,7 @@ void gmx_omp_nthreads_set(int mod, int nthreads);
 /*! \brief
  * Read the OMP_NUM_THREADS env. var. and check against the value set on the
  * command line. */
-void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
-                               int                 *nthreads_omp);
+void gmx_omp_nthreads_read_env(const gmx::MDLogger    &mdlog,
+                               hardwareOptionsManager *hardwareOptions);
 
 #endif

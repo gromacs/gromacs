@@ -44,6 +44,7 @@
 
 #include <cstdio>
 
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_hw_opt_t;
@@ -83,7 +84,7 @@ void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator &physicalNodeC
  *
  * \param[out] mdlog                  Logger.
  * \param[in]  cr                     Communication handler.
- * \param[in]  hw_opt                 Accesses user choices for thread affinity handling.
+ * \param[in]  hardwareOptions        Accesses user choices for thread affinity handling.
  * \param[in]  hwTop                  Detected hardware topology.
  * \param[in]  numThreadsOnThisRank   The number of threads on this rank.
  * \param[in]  numThreadsOnThisNode   The number of threads on all ranks of this node.
@@ -92,14 +93,14 @@ void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator &physicalNodeC
  * \param[in]  affinityAccess         Interface for low-level access to affinity details.
  */
 void
-gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
-                        const t_commrec             *cr,
-                        const gmx_hw_opt_t          *hw_opt,
-                        const gmx::HardwareTopology &hwTop,
-                        int                          numThreadsOnThisRank,
-                        int                          numThreadsOnThisNode,
-                        int                          intraNodeThreadOffset,
-                        gmx::IThreadAffinityAccess  *affinityAccess);
+gmx_set_thread_affinity(const gmx::MDLogger          &mdlog,
+                        const t_commrec              *cr,
+                        const hardwareOptionsManager &hardwareOptions,
+                        const gmx::HardwareTopology  &hwTop,
+                        int                           numThreadsOnThisRank,
+                        int                           numThreadsOnThisNode,
+                        int                           intraNodeThreadOffset,
+                        gmx::IThreadAffinityAccess   *affinityAccess);
 
 /*! \brief
  * Checks the process affinity mask and if it is found to be non-zero,
@@ -117,7 +118,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
  */
 void
 gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                              gmx_hw_opt_t *hw_opt, int ncpus,
+                              hardwareOptionsManager *hardwareOptions, int ncpus,
                               gmx_bool bAfterOpenmpInit);
 
 #endif
