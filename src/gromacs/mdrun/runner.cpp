@@ -178,8 +178,8 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     // Copy members of master runner.
     // \todo Replace with builder when Simulation context and/or runner phases are better defined.
     // Ref https://redmine.gromacs.org/issues/2587 and https://redmine.gromacs.org/issues/2375
-    newRunner.hw_opt    = hw_opt;
-    newRunner.filenames = filenames;
+    newRunner.hardwareOptions    = hardwareOptions;
+    newRunner.filenames          = filenames;
 
     newRunner.oenv                = oenv;
     newRunner.mdrunOptions        = mdrunOptions;
@@ -450,7 +450,7 @@ int Mdrunner::mdrunner()
     std::vector<int>    gpuIdsAvailable;
     try
     {
-        gpuIdsAvailable = parseUserGpuIds(hw_opt.gpuIdsAvailable);
+        gpuIdsAvailable = parseUserGpuIds(hardwareOptions.gpuIdsAvailable());
         // TODO We could put the GPU IDs into a std::map to find
         // duplicates, but for the small numbers of IDs involved, this
         // code is simple and fast.
@@ -460,7 +460,8 @@ int Mdrunner::mdrunner()
             {
                 if (gpuIdsAvailable[i] == gpuIdsAvailable[j])
                 {
-                    GMX_THROW(InvalidInputError(formatString("The string of available GPU device IDs '%s' may not contain duplicate device IDs", hw_opt.gpuIdsAvailable.c_str())));
+                    GMX_THROW(InvalidInputError(formatString("The string of available GPU device IDs '%s' may not contain duplicate device IDs",
+                                                             hardwareOptions.gpuIdsAvailable().c_str())));
                 }
             }
         }
@@ -470,7 +471,7 @@ int Mdrunner::mdrunner()
     std::vector<int> userGpuTaskAssignment;
     try
     {
-        userGpuTaskAssignment = parseUserGpuIds(hw_opt.userGpuTaskAssignment);
+        userGpuTaskAssignment = parseUserGpuIds(hardwareOptions.gpuTaskAssignment());
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     auto       nonbondedTarget = findTaskTarget(nbpu_opt);
@@ -588,24 +589,24 @@ int Mdrunner::mdrunner()
     }
 
     /* Check and update the hardware options for internal consistency */
-    check_and_update_hw_opt_1(mdlog, &hw_opt, cr, domdecOptions.numPmeRanks);
+    check_and_update_hw_opt_1(mdlog, &hardwareOptions, domdecOptions.numPmeRanks);
 
     /* Early check for externally set process affinity. */
     gmx_check_thread_affinity_set(mdlog, cr,
-                                  &hw_opt, hwinfo->nthreads_hw_avail, FALSE);
+                                  &hardwareOptions, hwinfo->nthreads_hw_avail, FALSE);
 
     if (GMX_THREAD_MPI && SIMMASTER(cr))
     {
-        if (domdecOptions.numPmeRanks > 0 && hw_opt.nthreads_tmpi <= 0)
+        if (domdecOptions.numPmeRanks > 0 && hardwareOptions.nthreads_tmpi.isSet())
         {
             gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
         }
 
-        /* Since the master knows the cut-off scheme, update hw_opt for this.
+        /* Since the master knows the cut-off scheme, update hardwareOptions for this.
          * This is done later for normal MPI and also once more with tMPI
          * for all tMPI ranks.
          */
-        check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
+        check_and_update_hw_opt_2(&hardwareOptions, inputrec->cutoff_scheme);
 
         bool useGpuForNonbonded = false;
         bool useGpuForPme       = false;
@@ -619,31 +620,38 @@ int Mdrunner::mdrunner()
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
                     inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
-                    hw_opt.nthreads_tmpi);
+                    hardwareOptions.nthreads_tmpi());
             auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
                     (useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment,
-                    canUseGpuForPme, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
+                    canUseGpuForPme, hardwareOptions.nthreads_tmpi(), domdecOptions.numPmeRanks);
 
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-        /* Determine how many thread-MPI ranks to start.
-         *
-         * TODO Over-writing the user-supplied value here does
-         * prevent any possible subsequent checks from working
-         * correctly. */
-        hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
-                                                &hw_opt,
+        /* Determine how many thread-MPI ranks to start. If no algorithmic restraints and
+         * nthreads are user selected, will return user selection
+         */
+        int nThreadsSelected = get_nthreads_mpi(hwinfo,
+                                                &hardwareOptions,
                                                 gpuIdsToUse,
                                                 useGpuForNonbonded,
                                                 useGpuForPme,
                                                 inputrec, &mtop,
                                                 mdlog,
                                                 doMembed);
+        if (hardwareOptions.nthreads_tmpi.isSetByUser() &&
+            (hardwareOptions.nthreads_tmpi() != nThreadsSelected))
+        {
+            gmx_fatal(FARGS, "Cannot use user-select value of -ntmpi");
+        }
+        else if (!hardwareOptions.nthreads_tmpi.isSetByUser())
+        {
+            hardwareOptions.nthreads_tmpi.set(nThreadsSelected);
+        }
 
         // Now start the threads for thread MPI.
-        cr = spawnThreads(hw_opt.nthreads_tmpi);
+        cr = spawnThreads(hardwareOptions.nthreads_tmpi());
         /* The main thread continues here with a new cr. We don't deallocate
            the old cr because other threads may still be reading it. */
         // TODO Both master and spawned threads call dup_tfn and
@@ -955,17 +963,17 @@ int Mdrunner::mdrunner()
 #endif
 
     /* Check and update hw_opt for the cut-off scheme */
-    check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
+    check_and_update_hw_opt_2(&hardwareOptions, inputrec->cutoff_scheme);
 
     /* Check and update the number of OpenMP threads requested */
-    checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, ms, physicalNodeComm.size_,
+    checkAndUpdateRequestedNumOpenmpThreads(&hardwareOptions, *hwinfo, cr, ms, physicalNodeComm.size_,
                                             pmeRunMode, mtop);
 
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
                           physicalNodeComm.size_,
-                          hw_opt.nthreads_omp,
-                          hw_opt.nthreads_omp_pme,
+                          hardwareOptions.nthreads_omp(),
+                          hardwareOptions.nthreads_omp_pme(),
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
@@ -1157,21 +1165,21 @@ int Mdrunner::mdrunner()
                                   *hwinfo->hardwareTopology,
                                   physicalNodeComm, mdlog);
 
-    if (hw_opt.thread_affinity != threadaffOFF)
+    if (hardwareOptions.threadAffinity() != threadaffOFF)
     {
         /* Before setting affinity, check whether the affinity has changed
          * - which indicates that probably the OpenMP library has changed it
          * since we first checked).
          */
         gmx_check_thread_affinity_set(mdlog, cr,
-                                      &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
+                                      &hardwareOptions, hwinfo->nthreads_hw_avail, TRUE);
 
         int numThreadsOnThisNode, intraNodeThreadOffset;
         analyzeThreadsOnThisNode(physicalNodeComm, numThreadsOnThisRank, &numThreadsOnThisNode,
                                  &intraNodeThreadOffset);
 
         /* Set the CPU affinity */
-        gmx_set_thread_affinity(mdlog, cr, &hw_opt, *hwinfo->hardwareTopology,
+        gmx_set_thread_affinity(mdlog, cr, hardwareOptions, *hwinfo->hardwareTopology,
                                 numThreadsOnThisRank, numThreadsOnThisNode,
                                 intraNodeThreadOffset, nullptr);
     }
@@ -1581,7 +1589,7 @@ class Mdrunner::BuilderImplementation
 
         void addBondedTaskAssignment(const char* bonded_opt);
 
-        void addHardwareOptions(const gmx_hw_opt_t &hardwareOptions);
+        void addHardwareOptions(const HardwareOptionsManager &hardwareOptions);
 
         void addFilenames(ArrayRef <const t_filenm> filenames);
 
@@ -1629,7 +1637,7 @@ class Mdrunner::BuilderImplementation
         SimulationContext* context_ = nullptr;
 
         //! \brief Parallelism information.
-        gmx_hw_opt_t hardwareOptions_;
+        HardwareOptionsManager hardwareOptions_;
 
         //! filename options for simulation.
         ArrayRef<const t_filenm> filenames_;
@@ -1703,7 +1711,7 @@ Mdrunner Mdrunner::BuilderImplementation::build()
     newRunner.domdecOptions   = domdecOptions_;
 
     // \todo determine an invariant to check or confirm that all gmx_hw_opt_t objects are valid
-    newRunner.hw_opt          = hardwareOptions_;
+    newRunner.hardwareOptions          = hardwareOptions_;
 
     // No invariant to check. This parameter exists to optionally override other behavior.
     newRunner.nstlist_cmdline = nstlist_;
@@ -1798,7 +1806,7 @@ void Mdrunner::BuilderImplementation::addBondedTaskAssignment(const char* bonded
     bonded_opt_ = bonded_opt;
 }
 
-void Mdrunner::BuilderImplementation::addHardwareOptions(const gmx_hw_opt_t &hardwareOptions)
+void Mdrunner::BuilderImplementation::addHardwareOptions(const HardwareOptionsManager &hardwareOptions)
 {
     hardwareOptions_ = hardwareOptions;
 }
@@ -1895,7 +1903,7 @@ Mdrunner MdrunnerBuilder::build()
     return impl_->build();
 }
 
-MdrunnerBuilder &MdrunnerBuilder::addHardwareOptions(const gmx_hw_opt_t &hardwareOptions)
+MdrunnerBuilder &MdrunnerBuilder::addHardwareOptions(const HardwareOptionsManager &hardwareOptions)
 {
     impl_->addHardwareOptions(hardwareOptions);
     return *this;

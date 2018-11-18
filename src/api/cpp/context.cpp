@@ -191,7 +191,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         builder.addMultiSim(options_.ms);
         // \todo Provide parallelism resources through SimulationContext.
         // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
-        builder.addHardwareOptions(options_.hw_opt);
+        builder.addHardwareOptions(HardwareOptionsManager(options_.hw_opt));
         // \todo File names are parameters that should be managed modularly through further factoring.
         builder.addFilenames(options_.filenames);
         // Note: The gmx_output_env_t life time is not managed after the call to parse_common_args.

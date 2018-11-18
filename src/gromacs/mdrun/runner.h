@@ -197,7 +197,7 @@ class Mdrunner
         Mdrunner() = default;
 
         //! Parallelism-related user options.
-        gmx_hw_opt_t             hw_opt;
+        HardwareOptionsManager             hardwareOptions;
 
         //! Filenames and properties from command-line argument values.
         ArrayRef<const t_filenm> filenames;
@@ -507,11 +507,11 @@ class MdrunnerBuilder final
         /*!
          * \brief Specify parameters determining hardware resource allocation.
          *
-         * Optional. If not provided, default-constructed gmx_hw_opt_t will be used.
+         * Optional. If not provided, default-constructed hardwareOptionsManager will be used.
          *
          * \param hardwareOptions Parallelism-related user options.
          */
-        MdrunnerBuilder &addHardwareOptions(const gmx_hw_opt_t &hardwareOptions);
+        MdrunnerBuilder &addHardwareOptions(const HardwareOptionsManager &hardwareOptions);
 
         /*!
          * \brief Provide the filenames options structure with option values chosen
