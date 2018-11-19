@@ -41,6 +41,7 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <unordered_map>
 
 #include "gromacs/math/vecdump.h"
 #include "gromacs/topology/atoms.h"
@@ -652,5 +653,44 @@ void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)
     for (int i = 0; i < F_NRE; ++i)
     {
         dst->ilist[i] = src->ilist[i];
+    }
+}
+
+void count_molecules(const gmx_mtop_t *mtop, std::unordered_map<char *, int> *molTypeCounts)
+{
+    for (const gmx_molblock_t &molb : mtop->molblock)
+    {
+        const t_atoms *atoms = &mtop->moltype[molb.type].atoms;
+        for (int m = 0; m < molb.nmol; m++)
+        {
+            for (int i = 0; i < atoms->nres; i++)
+            {
+                char *name = *(atoms->resinfo[i].name);
+                if (molTypeCounts->count(name) == 0)
+                {
+                    molTypeCounts->insert({name, 1});
+                }
+                else
+                {
+                    molTypeCounts->at(name) += 1;
+                }
+            }
+        }
+    }
+}
+
+void count_molecules(const t_atoms *atoms, std::unordered_map<char *, int> *molTypeCounts)
+{
+    for (int i = 0; i < atoms->nres; i++)
+    {
+        char *name = *(atoms->resinfo[i].name);
+        if (molTypeCounts->count(name) == 0)
+        {
+            molTypeCounts->insert({name, 1});
+        }
+        else
+        {
+            molTypeCounts->at(name) += 1;
+        }
     }
 }

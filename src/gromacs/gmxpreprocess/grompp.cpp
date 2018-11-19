@@ -44,6 +44,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <unordered_map>
 #include <vector>
 
 #include <sys/types.h>
@@ -122,7 +123,7 @@ static int check_atom_names(const char *fn1, const char *fn2,
 {
     int      m, i, j, nmismatch;
     t_atoms *tat;
-#define MAXMISMATCH 20
+    #define MAXMISMATCH 20
 
     if (mtop->natoms != at->nr)
     {
@@ -158,6 +159,35 @@ static int check_atom_names(const char *fn1, const char *fn2,
     }
 
     return nmismatch;
+}
+
+static void check_mols_same(const char *fn1, const char *fn2,
+                            gmx_mtop_t *mtop, const t_atoms *at)
+{
+    if (mtop->natoms != at->nr)
+    {
+        gmx_incons("comparing atom names");
+    }
+    std::unordered_map<char *, int> conftopTypeCounts;
+    count_molecules(at, &conftopTypeCounts);
+    std::unordered_map<char *, int> confTypeCounts;
+    count_molecules(mtop, &confTypeCounts);
+
+    for (auto it = conftopTypeCounts.begin(); it != conftopTypeCounts.end(); it++)
+    {
+        char *name=it->first;
+        const std::string newname = name;
+        if (confTypeCounts.count(name) == 0)
+        {
+            gmx_fatal(FARGS, "The number of molecules of type %s in %s is %d, but there are %d molecules of type %s in %s\n",
+                      name, fn1, conftopTypeCounts[name], 0, name, fn2);
+        }
+        if (confTypeCounts.at(name) != conftopTypeCounts.at(name))
+        {
+            gmx_fatal(FARGS, "The number of molecules of type %s in %s is %d, but there are %d molecules of type %s in %s\n",
+                      name, fn1, conftopTypeCounts[name], confTypeCounts[name], name, fn2);
+        }
+    }
 }
 
 static void check_eg_vs_cg(gmx_mtop_t *mtop)
@@ -630,6 +660,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     /* This call fixes the box shape for runs with pressure scaling */
     set_box_rel(ir, state);
 
+    check_mols_same(topfile, confin, sys, &conftop->atoms);
     nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
     done_top(conftop);
     sfree(conftop);
