@@ -1110,7 +1110,13 @@ int gmx_anaeig(int argc, char *argv[])
     read_eigenvectors(VecFile, &natoms, &bFit1,
                       &xref1, &bDMR1, &xav1, &bDMA1,
                       &nvec1, &eignr1, &eigvec1, &eigval1);
-    neig1 = DIM*natoms;
+    neig1 = std::min(nvec1, DIM*natoms);
+    if (nvec1 != DIM*natoms)
+    {
+        fprintf(stderr, "Warning: number of eigenvectors %d does not match three times\n"
+                "the number of atoms %d in %s. Using %d eigenvectors.\n\n",
+                nvec1, natoms, VecFile, neig1);
+    }
 
     /* Overwrite eigenvalues from separate files if the user provides them */
     if (EigFile != nullptr)
