@@ -39,6 +39,7 @@
 
 #include <cstdio>
 
+#include <unordered_map>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -233,5 +234,8 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
 using ExpandedTopologyPtr = gmx::unique_cptr<gmx_localtop_t, done_and_sfree_localtop>;
 
 void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst);
+
+void count_molecules(const gmx_mtop_t *mtop, std::unordered_map<char *, int> *molTypeCounts);
+void count_molecules(const t_atoms *atoms, std::unordered_map<char *, int> *molTypeCounts);
 
 #endif

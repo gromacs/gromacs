@@ -44,6 +44,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <unordered_map>
 #include <vector>
 
 #include <sys/types.h>
@@ -158,6 +159,52 @@ static int check_atom_names(const char *fn1, const char *fn2,
     }
 
     return nmismatch;
+}
+
+static void check_mols_same(const char *topfile, const char *conffile,
+                            gmx_mtop_t *mtop, const t_atoms *atoms)
+{
+    std::unordered_map<char *, int> conftopTypeCounts;
+    count_molecules(mtop, &conftopTypeCounts);
+    std::unordered_map<char *, int> confTypeCounts;
+    count_molecules(atoms, &confTypeCounts);
+
+    for (auto topIter = conftopTypeCounts.begin(); topIter != conftopTypeCounts.end(); topIter++)
+    {
+        char *topname  = topIter->first;
+        int   topcount = topIter->second;
+        trim(topname);
+        for (auto confIter = confTypeCounts.begin(); confIter != confTypeCounts.end(); confIter++)
+        {
+            char *confname  = confIter->first;
+            int   confcount = confIter->second;
+            trim(confname);
+            if (confIter == confTypeCounts.end())
+            {
+                auto message = gmx::formatString("The number of molecules of type %s in %s is %d, "
+                                                 "but there are %d molecules of type %s in %s\n",
+                                                 topname, topfile, topcount, 0, confname, conffile);
+                GMX_THROW(gmx::InconsistentInputError(message));
+            }
+            if (strcmp(topname, confname) == 0)
+            {
+                if (confTypeCounts.count(confname) == 0)
+                {
+                    auto message = gmx::formatString("The number of molecules of type %s in %s is %d, "
+                                                     "but there are %d molecules of type %s in %s\n",
+                                                     topname, topfile, topcount, confcount, confname, conffile);
+                    GMX_THROW(gmx::InconsistentInputError(message));
+                }
+                if (topcount != confcount)
+                {
+                    auto message = gmx::formatString("The number of molecules of type %s in %s is %d, "
+                                                     "but there are %d molecules of type %s in %s\n",
+                                                     topname, topfile, topcount, confcount, confname, conffile);
+                    GMX_THROW(gmx::InconsistentInputError(message));
+                }
+            }
+        }
+    }
 }
 
 static void check_eg_vs_cg(gmx_mtop_t *mtop)
@@ -630,6 +677,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     /* This call fixes the box shape for runs with pressure scaling */
     set_box_rel(ir, state);
 
+    check_mols_same(topfile, confin, sys, &conftop->atoms);
     nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
     done_top(conftop);
     sfree(conftop);
