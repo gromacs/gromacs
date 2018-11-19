@@ -2886,7 +2886,7 @@ Integrator::do_nm()
                 }
                 else
                 {
-                    energyEvaluator.run(&state_work, mu_tot, vir, pres, atom*2+dx, FALSE);
+                    energyEvaluator.run(&state_work, mu_tot, vir, pres, aid*2+dx, FALSE);
                 }
 
                 cr->nnodes = nnodes;
@@ -2919,7 +2919,7 @@ Integrator::do_nm()
             }
             else
             {
-                for (node = 0; (node < nnodes && atom+node < atom_index.size()); node++)
+                for (node = 0; (node < nnodes && aid+node < atom_index.size()); node++)
                 {
                     if (node > 0)
                     {
@@ -2931,7 +2931,7 @@ Integrator::do_nm()
 #endif
                     }
 
-                    row = (atom + node)*DIM + d;
+                    row = (aid + node)*DIM + d;
 
                     for (size_t j = 0; j < atom_index.size(); j++)
                     {

@@ -4036,6 +4036,27 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         warning(wi, "You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
     }
 
+    if (ir->epc == epcPARRINELLORAHMAN &&
+        ir->etc == etcNOSEHOOVER)
+    {
+        real tau_t_max = 0;
+        for (int g = 0; g < ir->opts.ngtc; g++)
+        {
+            tau_t_max = std::max(tau_t_max, ir->opts.tau_t[g]);
+        }
+        if (ir->tau_p < 1.9*tau_t_max)
+        {
+            std::string message =
+                gmx::formatString("With %s T-coupling and %s p-coupling, "
+                                  "%s (%g) should be at least twice as large as %s (%g) to avoid resonances",
+                                  etcoupl_names[ir->etc],
+                                  epcoupl_names[ir->epc],
+                                  "tau-p", ir->tau_p,
+                                  "tau-t", tau_t_max);
+            warning(wi, message.c_str());
+        }
+    }
+
     /* Check for pressure coupling with absolute position restraints */
     if (ir->epc != epcNO && ir->refcoord_scaling == erscNO)
     {
