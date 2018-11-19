@@ -226,7 +226,7 @@ class SessionImpl
         /*!
          * \brief An active session owns the resources it is using.
          */
-        gmx::SimulationContext simulationContext_;
+        gmx::SimulationContext gmx_unused simulationContext_;
 
         /*! \brief Handle to file used for logging.
          *
