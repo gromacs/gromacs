@@ -77,6 +77,7 @@ class OptACM : public MolGen
         gmx_bool       bFullTensor_;
         gmx_bool       bFitAlpha_;
         gmx_bool       bFitZeta_;
+        gmx_bool       bFitChi_;
         gmx_bool       bUseCM5_;
 
         Bayes <double> TuneACM_;
@@ -92,6 +93,7 @@ class OptACM : public MolGen
               bFullTensor_(false),
               bFitAlpha_(false),
               bFitZeta_(false),
+              bFitChi_(true),
               bUseCM5_(false),
               penalty_(0)
         {}
@@ -107,6 +109,8 @@ class OptACM : public MolGen
         gmx_bool fullTensor() const { return bFullTensor_; }
 
         gmx_bool fitZeta() const { return bFitZeta_; }
+        
+        gmx_bool fitChi() const { return bFitChi_; }
 
         gmx_bool useCM5() const {return bUseCM5_; }
 
@@ -122,6 +126,8 @@ class OptACM : public MolGen
                   "Calibrate atomic polarizability." },
                 { "-fitzeta", FALSE, etBOOL, {&bFitZeta_},
                   "Calibrate orbital exponent." },
+                { "-fitchi", FALSE, etBOOL, {&bFitChi_},
+                  "Calibrate electronegativity and hardness." },
                 { "-penalty", FALSE, etREAL, {&penalty_},
                   "penalty to keep the Chi0 and J0 in order." },
                 { "-cm5", FALSE, etBOOL, {&bUseCM5_},
@@ -386,14 +392,17 @@ void OptACM::polData2TuneACM()
         {
             auto ei   = poldata().findEem(iChargeDistributionModel(), ai->name());
             GMX_RELEASE_ASSERT(ei != poldata().EndEemprops(), "Cannot find eemprops");
-
-            auto J00  = ei->getJ0();
-            param_.push_back(std::move(J00));
-
-            if (ai->name().compare(fixchi()) != 0)
+            
+            if (bFitChi_)
             {
-                auto Chi0 = ei->getChi0();
-                param_.push_back(std::move(Chi0));
+                auto J00  = ei->getJ0();
+                param_.push_back(std::move(J00));
+                
+                if (ai->name().compare(fixchi()) != 0)
+                {
+                    auto Chi0 = ei->getChi0();
+                    param_.push_back(std::move(Chi0));
+                }
             }
             if (bFitZeta_)
             {
@@ -454,13 +463,16 @@ void OptACM::TuneACM2PolData()
             auto ei = pd.findEem(iChargeDistributionModel(), ai->name());
             GMX_RELEASE_ASSERT(ei != pd.EndEemprops(), "Cannot find eemprops");
 
-            ei->setJ0(param_[n]);
-            ei->setJ0_sigma(psigma_[n++]);
-
-            if (ai->name().compare(fixchi()) != 0)
+            if (bFitChi_)
             {
-                ei->setChi0(param_[n]);
-                ei->setChi0_sigma(psigma_[n++]);
+                ei->setJ0(param_[n]);
+                ei->setJ0_sigma(psigma_[n++]);
+                
+                if (ai->name().compare(fixchi()) != 0)
+                {
+                    ei->setChi0(param_[n]);
+                    ei->setChi0_sigma(psigma_[n++]);
+                }
             }
             if (bFitZeta_)
             {
@@ -626,13 +638,20 @@ double OptACM::objFunction(const double v[])
         if (!ai->isConst())
         {
             auto name = ai->name();
-            auto J00  = param_[n++];
-            bound    += l2_regularizer(J00, J0Min(), J0Max());
-
-            if (strcasecmp(name.c_str(), fixchi()) != 0)
+            
+            if (bFitChi_)
             {
-                auto Chi0 = param_[n++];
-                bound    += l2_regularizer(Chi0, chi0Min(), chi0Max());
+                auto J00  = param_[n++];
+                bound    += l2_regularizer(J00, J0Min(), J0Max());
+                if (strcasecmp(name.c_str(), fixchi()) != 0)
+                {
+                    auto Chi0 = param_[n++];
+                    bound    += l2_regularizer(Chi0, chi0Min(), chi0Max());
+                }
+                if (penalize())
+                {
+                    penalty += calcPenalty(ai);
+                }
             }
             if (bFitZeta_)
             {
@@ -642,10 +661,6 @@ double OptACM::objFunction(const double v[])
                     auto zeta = param_[n++];
                     bound += l2_regularizer(zeta, zetaMin(), zetaMax());
                 }
-            }
-            if (penalize())
-            {
-                penalty += calcPenalty(ai);
             }
         }
     }
