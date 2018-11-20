@@ -2737,7 +2737,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     /* added with respect to mdrun */
     int                       row, col;
-    real                      der_range = sqrt(GMX_REAL_EPS);
+    real                      der_range = 10.0*sqrt(GMX_REAL_EPS);
     real                      x_min;
     bool                      bIsMaster = MASTER(cr);
     auto                      mdatoms   = mdAtoms->mdatoms();
