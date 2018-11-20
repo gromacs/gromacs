@@ -100,11 +100,11 @@ using RespAtomTypeConstIterator = typename std::vector<RespAtomType>::const_iter
 class RespAtom
 {
     public:
-        RespAtom(int atomnumber, int atype, double q, double qref, gmx::RVec x)
-            : atomnumber_(atomnumber), atype_(atype), q_(q), qref_(qref), x_(x)
+ RespAtom(int atomnumber, int atype, int ptype, double q, double qref, gmx::RVec x)
+         : atomnumber_(atomnumber), atype_(atype), pType_(ptype), q_(q), qref_(qref), x_(x)
         {
             qindex_ = -1;
-            fixedQ_ = (q != 0);
+            fixedQ_ = (pType_ != eptAtom);
         }
 
         //! Return the atom type
@@ -151,6 +151,8 @@ class RespAtom
         int       atomnumber_;
         //! Atom type
         int       atype_;
+        //! Particle type
+        int       pType_;
         //! Total charge of the atom (which is optimized in resp)
         double    q_;
         //! Reference charge

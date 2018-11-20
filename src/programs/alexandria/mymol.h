@@ -257,6 +257,7 @@ class MyMol
          * \param[in] q      The charges
          */
         void setQandMoments(qType qt, int natom, real q[]);
+        
 
     public:
         double                         chieq_         = 0;
@@ -426,6 +427,15 @@ class MyMol
                                   real                       qtol,
                                   const gmx_output_env_t    *oenv,
                                   gmx_bool                   bPlotESP);
+        /*! \brief
+         * Init the Qgresp class
+         *
+         */                          
+        void initQgresp(const Poldata             &pd,
+                        ChargeDistributionModel    iChargeDistributionModel,
+                        const char                *lot,
+                        real                       watoms,
+                        int                        maxESP);
 
         /*! \brief
          * Return the root-mean square deviation of

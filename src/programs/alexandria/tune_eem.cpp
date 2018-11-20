@@ -60,6 +60,7 @@
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
 #include "molgen.h"
+#include "mymol_low.h"
 #include "optparam.h"
 #include "poldata.h"
 #include "poldata_xml.h"
@@ -141,9 +142,9 @@ class OptACM : public MolGen
             return (x < min) ? (0.5 * gmx::square(x-min)) : ((x > max) ? (0.5 * gmx::square(x-max)) : 0);
         }
 
-        void addEspPoint();
+        void initQgresp();
 
-        void setACM();
+        void initQgacm();
 
         void polData2TuneACM();
 
@@ -165,67 +166,35 @@ class OptACM : public MolGen
                     const char             *xvgepot);
 };
 
-void OptACM::addEspPoint()
-{
-    for (auto &mymol : mymols())
-    {
-        if (mymol.eSupp_ == eSupportLocal)
-        {
-            mymol.Qgresp_.setChargeDistributionModel(iChargeDistributionModel());
-            mymol.Qgresp_.setAtomWeight(watoms());
-            mymol.Qgresp_.setAtomInfo(&mymol.topology_->atoms, poldata(), mymol.x(), mymol.molProp()->getCharge());
-            mymol.Qgresp_.setAtomSymmetry(mymol.symmetric_charges_);
-            mymol.Qgresp_.setMolecularCharge(mymol.molProp()->getCharge());
-            mymol.Qgresp_.summary(debug);
-
-            auto ci = mymol.molProp()->getLotPropType(lot(), MPO_POTENTIAL, nullptr);
-            if (ci != mymol.molProp()->EndExperiment())
-            {
-                size_t iesp = 0;
-                for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
-                {
-                    if (mymol.Qgresp_.myWeight(iesp) == 0)
-                    {
-                        continue;
-                    }
-                    int xu = string2unit(epi->getXYZunit().c_str());
-                    int vu = string2unit(epi->getVunit().c_str());
-                    if (-1 == xu)
-                    {
-                        gmx_fatal(FARGS, "No such length unit '%s' for potential",
-                                  epi->getXYZunit().c_str());
-                    }
-                    if (-1 == vu)
-                    {
-                        gmx_fatal(FARGS, "No such potential unit '%s' for potential",
-                                  epi->getVunit().c_str());
-                    }
-                    mymol.Qgresp_.addEspPoint(convert2gmx(epi->getX(), xu),
-                                              convert2gmx(epi->getY(), xu),
-                                              convert2gmx(epi->getZ(), xu),
-                                              convert2gmx(epi->getV(), vu));
-                }
-                if (debug)
-                {
-                    fprintf(debug, "Added %zu ESP points to the RESP structure.\n", mymol.Qgresp_.nEsp());
-                }
-            }
-        }
-    }
-}
-
-void OptACM::setACM()
+void OptACM::initQgresp()
 {
     for (auto &mymol : mymols())
     {
         if (mymol.eSupp_ != eSupportNo)
         {
-            bool bHaveShells = false;
+            mymol.initQgresp(poldata(), 
+                             iChargeDistributionModel(), 
+                             lot(),
+                             watoms(), 
+                             maxPot());
+        }
+    }
+}
+
+void OptACM::initQgacm()
+{
+    bool bHaveShells = false;
+    for (auto &mymol : mymols())
+    {
+        if (mymol.eSupp_ != eSupportNo)
+        {
+            bHaveShells = false;
             if (nullptr != mymol.shellfc_)
             {
                 bHaveShells = true;
             }
-            mymol.Qgacm_.setInfo(poldata(), &(mymol.topology_->atoms),
+            mymol.Qgacm_.setInfo(poldata(), 
+                                 &(mymol.topology_->atoms),
                                  iChargeDistributionModel(),
                                  hfac(),
                                  mymol.molProp()->getCharge(),
@@ -624,8 +593,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
 
             if (ai_atn != aj_atn)
             {
-                //Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0
-                
+                //Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0                
                 auto aj_chi = ej->getChi0();
                 auto aj_J0  = ej->getJ0();
                 if ((ai_atn == 1 && aj_atn > 1  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)) ||
@@ -959,11 +927,11 @@ int alex_tune_eem(int argc, char *argv[])
     }
     if (opt.iChargeGenerationAlgorithm() != eqgESP)
     {
-        opt.addEspPoint();
+        opt.initQgresp();
     }
     if (opt.iChargeGenerationAlgorithm() != eqgACM)
     {
-        opt.setACM();
+        opt.initQgacm();
     }
 
     opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,

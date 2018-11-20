@@ -1223,6 +1223,54 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     }
 }
 
+void MyMol::initQgresp(const Poldata             &pd,
+                       ChargeDistributionModel    iChargeDistributionModel,
+                       const char                *lot,
+                       real                       watoms,
+                       int                        maxESP)
+{
+    Qgresp_.setChargeDistributionModel(iChargeDistributionModel);
+    Qgresp_.setAtomWeight(watoms);
+    Qgresp_.setAtomInfo(&topology_->atoms, pd, state_->x, molProp()->getCharge());
+    Qgresp_.setAtomSymmetry(symmetric_charges_);
+    Qgresp_.setMolecularCharge(molProp()->getCharge());
+    Qgresp_.summary(debug);
+    
+    auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
+    if (ci != molProp()->EndExperiment())
+    {
+        int mod  = 100/maxESP;
+        int iesp = 0;
+        for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
+        {
+            if (Qgresp_.myWeight(iesp) == 0 || ((iesp-ci->NAtom()) % mod) != 0)
+            {
+                continue;
+            }
+            auto xu = string2unit(epi->getXYZunit().c_str());
+            auto vu = string2unit(epi->getVunit().c_str());
+            if (-1 == xu)
+            {
+                gmx_fatal(FARGS, "No such length unit '%s' for potential",
+                          epi->getXYZunit().c_str());
+            }
+            if (-1 == vu)
+            {
+                gmx_fatal(FARGS, "No such potential unit '%s' for potential",
+                          epi->getVunit().c_str());
+            }
+            Qgresp_.addEspPoint(convert2gmx(epi->getX(), xu),
+                                convert2gmx(epi->getY(), xu),
+                                convert2gmx(epi->getZ(), xu),
+                                convert2gmx(epi->getV(), vu));
+        }
+        if (debug)
+        {
+            fprintf(debug, "Added %zu ESP points to the RESP structure.\n", Qgresp_.nEsp());
+        }
+    }
+}
+
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  const gmx::MDLogger       &mdlog,
                                  gmx_atomprop_t             ap,
@@ -1251,6 +1299,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeDistributionModel);
     if (bSymmetricCharges)
     {
+        symmetric_charges_.clear();
         auto bonds = SearchPlist(plist_, eitBONDS);
         if (plist_.end() != bonds)
         {
@@ -1280,53 +1329,14 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             return immOK;
         case eqgESP:
         {
-            Qgresp_.setChargeDistributionModel(iChargeDistributionModel);
-            Qgresp_.setAtomWeight(watoms);
-            Qgresp_.setAtomInfo(&topology_->atoms, pd, state_->x, molProp()->getCharge());
-            Qgresp_.setAtomSymmetry(symmetric_charges_);
-            Qgresp_.setMolecularCharge(molProp()->getCharge());
-            Qgresp_.summary(debug);
-
-            auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
-            if (ci != molProp()->EndExperiment())
-            {
-                int mod  = 100/maxESP;
-                int iesp = 0;
-                for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
-                {
-                    if (Qgresp_.myWeight(iesp) == 0 || ((iesp-ci->NAtom()) % mod) != 0)
-                    {
-                        continue;
-                    }
-                    auto xu = string2unit(epi->getXYZunit().c_str());
-                    auto vu = string2unit(epi->getVunit().c_str());
-                    if (-1 == xu)
-                    {
-                        gmx_fatal(FARGS, "No such length unit '%s' for potential",
-                                  epi->getXYZunit().c_str());
-                    }
-                    if (-1 == vu)
-                    {
-                        gmx_fatal(FARGS, "No such potential unit '%s' for potential",
-                                  epi->getVunit().c_str());
-                    }
-                    Qgresp_.addEspPoint(convert2gmx(epi->getX(), xu),
-                                        convert2gmx(epi->getY(), xu),
-                                        convert2gmx(epi->getZ(), xu),
-                                        convert2gmx(epi->getV(), vu));
-                }
-                if (debug)
-                {
-                    fprintf(debug, "Added %zu ESP points to the RESP structure.\n", Qgresp_.nEsp());
-                }
-            }
             double chi2[2]   = {1e8, 1e8};
             real   rrms      = 0;
             real   wtot      = 0;
             int    cur       = 0;
             EspRms_          = 0;
             iter             = 0;
-
+            
+            initQgresp(pd, iChargeDistributionModel, lot, watoms, maxESP);
             Qgresp_.optimizeCharges();
             Qgresp_.calcPot();
             EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms);
@@ -1479,10 +1489,10 @@ bool MyMol::getOptimizedGeometry(rvec *x)
 {
     double  xx, yy, zz;
     int     unit, natom = 0;
-    bool    opt = false;
+    bool    bopt = false;
 
     for (auto ei = molProp()->BeginExperiment();
-         (!opt) && (ei < molProp()->EndExperiment()); ++ei)
+         (!bopt) && (ei < molProp()->EndExperiment()); ++ei)
     {
         if (JOB_OPT == ei->getJobtype())
         {
@@ -1495,10 +1505,10 @@ bool MyMol::getOptimizedGeometry(rvec *x)
                 x[natom][ZZ] = convert2gmx(zz, unit);
                 natom++;
             }
-            opt = true;
+            bopt = true;
         }
     }
-    return opt;
+    return bopt;
 }
 
 void MyMol::CalcDipole()
@@ -1719,10 +1729,10 @@ void MyMol::PrintTopology(FILE                   *fp,
     char                     buf[256];
     t_mols                   printmol;
     std::vector<std::string> commercials;
-    rvec                     vec;
-    double                   value, error, T;
+    rvec                     vec, mu;
+    tensor                   myQ;
+    double                   value = 0, error = 0, T = -1;
     std::string              myref, mylot;
-    rvec                     mu;
 
     if (fp == nullptr)
     {
@@ -1730,7 +1740,6 @@ void MyMol::PrintTopology(FILE                   *fp,
     }
 
     CalcQPol(pd, mu);
-
     if (molProp()->getMolname().size() > 0)
     {
         printmol.name = strdup(molProp()->getMolname().c_str());
@@ -1759,9 +1768,9 @@ void MyMol::PrintTopology(FILE                   *fp,
              mu[XX], mu[YY], mu[ZZ],
              norm(mu));
     commercials.push_back(buf);
-
-    tensor myQ;
-    if (molProp()->getPropRef(MPO_DIPOLE, iqmBoth, lot, "",
+    
+    T = -1;
+    if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, "",
                               (char *)"electronic", &value, &error,
                               &T, myref, mylot, vec, myQ))
     {
@@ -1776,13 +1785,20 @@ void MyMol::PrintTopology(FILE                   *fp,
                  mu_qm_[qtElec][XX], mu_qm_[qtElec][YY], mu_qm_[qtElec][ZZ],
                  norm(mu_qm_[qtElec]));
         commercials.push_back(buf);
+        
+        printf("QM dipole found\n");
+    }
+    else
+    {
+        printf("QM dipole not found\n");
     }
 
     add_tensor(&commercials,
                "Alexandria Traceless Quadrupole Moments (Buckingham)",
                QQM(qtCalc));
 
-    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmBoth, lot, "",
+    T = -1;
+    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM, lot, "",
                               (char *)"electronic", &value, &error,
                               &T, myref, mylot, vec, myQ))
     {
@@ -1806,7 +1822,8 @@ void MyMol::PrintTopology(FILE                   *fp,
         snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n", anisoPol_calc_);
         commercials.push_back(buf);
 
-        if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
+        T = -1;
+        if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, lot, "",
                                   (char *)"electronic", &isoPol_elec_, &error,
                                   &T, myref, mylot, vec, alpha_elec_))
         {

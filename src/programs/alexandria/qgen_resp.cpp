@@ -218,6 +218,7 @@ void QgenResp::setAtomInfo(t_atoms                         *atoms,
         }
         ra_.push_back(RespAtom(atoms->atom[i].atomnumber,
                                atoms->atom[i].type,
+                               atoms->atom[i].ptype,
                                q,
                                qref,
                                x[i]));
