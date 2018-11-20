@@ -1,9 +1,9 @@
 GROMACS 2018.4 release notes
 ----------------------------
 
-This version was released on TODO, 2018. These release notes document
+This version was released on November 12, 2018. These release notes document
 the changes that have taken place in GROMACS since version 2018.3, to fix known
-issues. It also incorporates all fixes made in version TODO and
+issues. It also incorporates all fixes made in version 2016.5 and
 earlier, which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
@@ -37,6 +37,28 @@ contribution was missing from the foreign Hamiltonian values.
 
 :issue: `2703`
 
+Work around bugs with expanded ensemble runs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With expanded ensemble runs, the energies would be outdated or zero
+with the velocity Verlet integrator with nstcalcenergy>1 or with
+other integrators when nstexpanded was not a multiple of nstcalcenergy.
+In these cases mdrun now sets nstcalcenergy to 1.
+
+:issue: `2714`
+:issue: `2718`
+
+Checkpoint continuations require suitable .tpr files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The step of a checkpoint file used for an mdrun restart must now be
+less than the number of steps in the .tpr. Formerly, the step in the
+checkpoint could be any number, and mdrun -nsteps could be used to get
+a particular result, but the use of that option is already deprecated.
+Use gmx grompp or gmx convert-tpr to make a .tpr file that expresses
+the intent.
+
+:issue: `2717`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -49,13 +71,22 @@ empty file name strings.
 
 :issue:`2653`
 
-Fix helix segmentation fault
+Fix gmx helix segmentation faults
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The .tpr file is now read correctly. 
+The .tpr file is now read correctly, and the helix analysis correctly
+handles selections that include proline residues.
 
 :issue:`2701`
 
+Fix bug in entropy calculation in gmx anaeig
+""""""""""""""""""""""""""""""""""""""""""""
+
+When gmx anaeig received an inconsistent number of atoms and
+eigenvectors (fewer eigenvectors than three times the number of
+atoms) the entropy calculations would use uninitialized values.
+
+:issue:`2668`
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -67,3 +98,37 @@ Fixed an issue where the log file could sometimes report an incorrect
 initial dynamic load balancing state
 
 :issue:`2631`
+
+Fix Bromine parameters in amber forcefield files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The forcefield entries for Bromine and Iron were missing the actual values to define
+sigma and epsilon. The proper values have been included from parm99.dat for Bromine.
+As Iron has no corresponding parameters, the entry has been removed.
+
+:issue:`2711`
+
+Made normal-mode analysis work for more than one molecule
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed an issue where normal mode analysis would only consider
+the first copy of each molecule in a system. Also fixed issues
+with vsites or shells in normal modes.
+
+:issue:`2720`
+
+Disallow rerun using same filename as output file
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using identical filenames for ``-rerun`` a cryptic error was thrown because
+the same file would be used for reading and writing. Now :ref:`mdrun <gmx mdrun>`
+will give a helpful error message to get around this.
+
+:issue:`2634`
+
+Fix issue when building |Gromacs| without TNG
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Some compiler errors have been resolved that could show when building
+|Gromacs| without TNG support enabled.
+
