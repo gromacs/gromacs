@@ -41,11 +41,14 @@
  * \inpublicapi
  * \brief Apply restraints during MD integration.
  *
- * The classes here are available through the public API, but only gmx::RestraintPotential
- * is necessary to implement a restraint plugin.
+ * The classes here are available through the public API. To write a restraint
+ * plugin, implement gmx::IRestraintPotential with a calculation method that
+ * produces a PotentialPointData for each site to which MD forces will be applied.
  */
 /*! \file
  * \brief Declare generic interface for restraint implementations.
+ *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
  *
  * \inpublicapi
  * \ingroup module_restraint
@@ -103,7 +106,9 @@ class PotentialPointData
         /*!
          * \brief Initialize a new data structure.
          */
-        PotentialPointData();
+        PotentialPointData() :
+            PotentialPointData {Vector(0., 0., 0.), real(0.0)}
+        {}
 
         /*!
          * \brief Initialize from an argument list
@@ -113,10 +118,11 @@ class PotentialPointData
          *
          * Note that if force was calculated as a scalar, it needs to be multiplied by a unit
          * vector in the direction to which it should be applied.
-         * If this calculation is in a subclass of gmx::RestraintPotential,
-         * you should be able to use the make_force_vec() helper function (not yet implemented).
          */
-        PotentialPointData(const Vector &f, real e);
+        PotentialPointData(const Vector &f, const real e) :
+            force(f),
+            energy(e)
+        {}
 
         /*!
          * \brief Force vector calculated for first position.
@@ -209,7 +215,12 @@ class IRestraintPotential
          */
         virtual void update(gmx::Vector v,
                             gmx::Vector v0,
-                            double      t);
+                            double      t)
+        {
+            (void)v;
+            (void)v0;
+            (void)t;
+        }
 
 
         /*!
@@ -229,7 +240,7 @@ class IRestraintPotential
          * \internal
          * \todo This should be more general than the RestraintPotential interface.
          */
-        virtual void bindSession(gmxapi::SessionResources* resources);
+        virtual void bindSession(gmxapi::SessionResources* resources) { (void)resources; }
 };
 
 }      // end namespace gmx

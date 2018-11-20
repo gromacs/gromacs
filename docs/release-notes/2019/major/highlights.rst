@@ -16,7 +16,7 @@ simulations and hardware. They are:
   include both constraints and virtual sites. This improves performance
   by eliminating overheads during the update, at no cost.
 * Intel integrated GPUs are now supported with OpenCL.
-* PME long-ranged interactions can now also run on a single GPU using
-  OpenCL, which  means many fewer CPU cores are needed for good
+* PME long-ranged interactions can now also run on a single AMD GPU
+  using OpenCL, which means many fewer CPU cores are needed for good
   performance with such hardware.
 * TODO Other stuff

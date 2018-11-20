@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,13 @@ namespace test
  * error occurs.
  *
  * This function is automatically called by unittest_main.cpp.
+ *
+ * \param[in] dataPath Filepath to input files.
+ * \param[in] tempPath Filepath to temporary files.
+ * \param[in] usesMpi  If the test is run with MPI or not.
+ * \param[in] usesHardwareDetection If hardwaredetection is enabled.
+ * \param[in] argc Number of cmdline options
+ * \param[in] argv Cmdline options.
  *
  * \ingroup module_testutils
  */

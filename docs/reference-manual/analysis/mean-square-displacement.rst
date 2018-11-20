@@ -9,10 +9,9 @@ Mean Square Displacement
   particles of type :math:`A`, one can use the Einstein
   relation :ref:`108 <refAllen87>`:
 
-  .. math::
-
-     \lim_{t \rightarrow \infty} \langle
-     \|{\bf r}_i(t) - {\bf r}_i(0)\|^2 \rangle_{i \in A} ~=~ 6 D_A t
+  .. math:: \lim_{t \rightarrow \infty} \langle
+            \|{\bf r}_i(t) - {\bf r}_i(0)\|^2 \rangle_{i \in A} ~=~ 6 D_A t
+            :label: eqnmsd
 
 | This *mean square displacement* and :math:`D_A` are calculated by the
   program :ref:`gmx msd <gmx msd>`. Normally

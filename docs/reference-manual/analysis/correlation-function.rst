@@ -19,6 +19,7 @@ cross-correlation function from two properties :math:`f(t)` and
 :math:`g(t)`:
 
 .. math:: C_{fg}(t) ~=~   \left\langle f(\xi) g(\xi+t)\right\rangle_{\xi}
+          :label: eqncrosscorr
 
 however, in |Gromacs| there is no standard mechanism to do this
 (**note:** you can use the ``xmgr`` program to compute cross correlations).
@@ -49,6 +50,7 @@ of length :math:`M\Delta t`, where :math:`M \leq N/2` we can compute all
 points with the same statistical accuracy:
 
 .. math:: C_f(j\Delta t)  ~=~ \frac{1}{M}\sum_{i=0}^{N-1-M} f(i\Delta t)f((i+j)\Delta t)
+          :label: eqncorrstataccuracy
 
 Here of course :math:`j < M`. :math:`M` is sometimes referred to as the
 time lag of the correlation function. When we decide to do this, we
@@ -63,6 +65,7 @@ the time lag are included, *e.g.* using :math:`k` time origins with
 spacing of :math:`M\Delta t` (where :math:`kM \leq N`):
 
 .. math:: C_f(j\Delta t)  ~=~ \frac{1}{k}\sum_{i=0}^{k-1} f(iM\Delta t)f((iM+j)\Delta t)
+          :label: eqncorrblockaveraging
 
 However, one needs very long simulations to get good accuracy this way,
 because there are many fewer points that contribute to the ACF.
@@ -112,11 +115,13 @@ The program :ref:`gmx velacc <gmx velacc>`
 calculates the *velocity autocorrelation function*.
 
 .. math:: C_{\mathbf{v}} (\tau) ~=~ \langle {\mathbf{v}}_i(\tau) \cdot {\mathbf{v}}_i(0) \rangle_{i \in A}
+          :label: eqnvelocityautocorr
 
 The self diffusion coefficient can be calculated using the Green-Kubo
 relation \ :ref:`108 <refAllen87>`:
 
 .. math:: D_A ~=~ {1\over 3} \int_0^{\infty} \langle {\bf v}_i(t) \cdot {\bf v}_i(0) \rangle_{i \in A} \; dt
+          :label: eqndiffcoeff
 
 which is just the integral of the velocity autocorrelation function.
 There is a widely-held belief that the velocity ACF converges faster
@@ -130,10 +135,9 @@ Another important quantity is the dipole correlation time. The *dipole
 correlation function* for particles of type :math:`A` is calculated as
 follows by :ref:`gmx dipoles <gmx dipoles>`:
 
-.. math::
-
-   C_{\mu} (\tau) ~=~
-   \langle {\bf \mu}_i(\tau) \cdot {\bf \mu}_i(0) \rangle_{i \in A}
+.. math:: C_{\mu} (\tau) ~=~
+          \langle {\bf \mu}_i(\tau) \cdot {\bf \mu}_i(0) \rangle_{i \in A}
+          :label: eqndipolecorrfunc
 
 with :math:`{\bf \mu}_i = \sum_{j \in i} {\bf r}_j q_j`. The dipole
 correlation time can be computed using :eq:`eqn. %s <eqncorrtime>`. 

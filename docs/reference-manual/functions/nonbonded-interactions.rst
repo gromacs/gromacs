@@ -4,8 +4,10 @@ Non-bonded interactions
 Non-bonded interactions in |Gromacs| are pair-additive:
 
 .. math:: V(\mathbf{r}_1,\ldots \mathbf{r}_N) = \sum_{i<j}V_{ij}(\mathbf{r}_ij);
+          :label: eqnnbinteractions1
 
 .. math:: \mathbf{F}_i = -\sum_j \frac{dV_{ij}(r_{ij})}{dr_{ij}} \frac{\mathbf{r}_ij}{r_{ij}}
+          :label: eqnnbinteractions2
 
 Since the potential only depends on the scalar distance, interactions
 will be centro-symmetric, i.e. the vectorial partial force on particle
@@ -26,10 +28,9 @@ The Lennard-Jones interaction
 
 The Lennard-Jones potential :math:`V_{LJ}` between two atoms equals:
 
-.. math::
-
-   V_{LJ}({r_{ij}}) =  \frac{C_{ij}^{(12)}}{{r_{ij}}^{12}} -
-                           \frac{C_{ij}^{(6)}}{{r_{ij}}^6}
+.. math:: V_{LJ}({r_{ij}}) =  \frac{C_{ij}^{(12)}}{{r_{ij}}^{12}} -
+                              \frac{C_{ij}^{(6)}}{{r_{ij}}^6}
+          :label: eqnnblj
 
 See also :numref:`Fig. %s <fig-lj>` The parameters :math:`C^{(12)}_{ij}` and
 :math:`C^{(6)}_{ij}` depend on pairs of *atom types*; consequently they
@@ -48,6 +49,7 @@ The force derived from this potential is:
 
 .. math:: \mathbf{F}_i(\mathbf{r}_ij) = \left( 12~\frac{C_{ij}^{(12)}}{{r_{ij}}^{13}} -
                                     6~\frac{C_{ij}^{(6)}}{{r_{ij}}^7} \right) {\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+          :label: eqnljforce
 
 The LJ potential may also be written in the following form:
 
@@ -82,6 +84,7 @@ finally an geometric average for both parameters can be used (type 3):
           \sigma_{ij}   &=& \left({\sigma_{ii} \, \sigma_{jj}}\right)^{1/2}        \\
           \epsilon_{ij} &=& \left({\epsilon_{ii} \, \epsilon_{jj}}\right)^{1/2}
           \end{array}
+          :label: eqnnbgeometricaverage
 
 This last rule is used by the OPLS force field.
 
@@ -92,10 +95,9 @@ The Buckingham potential has a more flexible and realistic repulsion
 term than the Lennard-Jones interaction, but is also more expensive to
 compute. The potential form is:
 
-.. math::
-
-   V_{bh}({r_{ij}}) = A_{ij} \exp(-B_{ij} {r_{ij}}) -
-                           \frac{C_{ij}}{{r_{ij}}^6}
+.. math:: V_{bh}({r_{ij}}) = A_{ij} \exp(-B_{ij} {r_{ij}}) -
+                             \frac{C_{ij}}{{r_{ij}}^6}
+          :label: eqnnbbuckingham
 
 .. _fig-bham:
 
@@ -106,10 +108,9 @@ compute. The potential form is:
 
 See also :numref:`Fig. %s <fig-bham>`. The force derived from this is:
 
-.. math::
-
-   \mathbf{F}_i({r_{ij}}) = \left[ A_{ij}B_{ij}\exp(-B_{ij} {r_{ij}}) -
-                                    6\frac{C_{ij}}{{r_{ij}}^7} \right] {\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+.. math:: \mathbf{F}_i({r_{ij}}) = \left[ A_{ij}B_{ij}\exp(-B_{ij} {r_{ij}}) -
+                                   6\frac{C_{ij}}{{r_{ij}}^7} \right] {\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+          :label: eqnnbbuckinghamforce
 
 .. _coul:
 
@@ -138,6 +139,7 @@ See also :numref:`Fig. %s <fig-coul>`, where
 The force derived from this potential is:
 
 .. math:: \mathbf{F}_i(\mathbf{r}_ij) = f \frac{q_i q_j}{{\varepsilon_r}{r_{ij}}^2}{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+          :label: eqnfcoul
 
 A plain Coulomb interaction should only be used without cut-off or when
 all pairs fall within the cut-off, since there is an abrupt, large
@@ -174,6 +176,7 @@ to neutralization with a homogeneous background charge. We can rewrite
 :eq:`eqn. %s <eqnvcrf>` for simplicity as
 
 .. math:: V_{crf} ~=~     f \frac{q_i q_j}{{\varepsilon_r}}\left[\frac{1}{{r_{ij}}} + k_{rf}~ {r_{ij}}^2 -c_{rf}\right]
+          :label: eqnvcrfrewrite
 
 with
 
@@ -257,84 +260,87 @@ van der Waals force acting on particle :math:`i` by particle :math:`j`
 as:
 
 .. math:: \mathbf{F}_i = c \, F(r_{ij}) \frac{\mathbf{r}_ij}{r_{ij}}
+          :label: eqnswitch
 
 For pure Coulomb or Lennard-Jones interactions
 :math:`F(r) = F_\alpha(r) = \alpha \, r^{-(\alpha+1)}`. The switched
 force :math:`F_s(r)` can generally be written as:
 
-.. math::
-
-   \begin{array}{rcl}
-   F_s(r)~=&~F_\alpha(r)   & r < r_1               \\
-   F_s(r)~=&~F_\alpha(r)+S(r)      & r_1 \le r < r_c       \\
-   F_s(r)~=&~0             & r_c \le r     
-   \end{array}
+.. math::  \begin{array}{rcl}
+           F_s(r)~=&~F_\alpha(r)   & r < r_1               \\
+           F_s(r)~=&~F_\alpha(r)+S(r)      & r_1 \le r < r_c       \\
+           F_s(r)~=&~0             & r_c \le r     
+           \end{array}
+           :label: eqnswitchforce
 
 When :math:`r_1=0` this is a traditional shift function, otherwise it
 acts as a switch function. The corresponding shifted potential function
 then reads:
 
 .. math:: V_s(r) =  \int^{\infty}_r~F_s(x)\, dx
+          :label: eqnswitchpotential
 
 The |Gromacs| **force switch** function :math:`S_F(r)` should be smooth at
 the boundaries, therefore the following boundary conditions are imposed
 on the switch function:
 
-.. math::
-
-   \begin{array}{rcl}
-   S_F(r_1)          &=&0            \\
-   S_F'(r_1)         &=&0            \\
-   S_F(r_c)          &=&-F_\alpha(r_c)       \\
-   S_F'(r_c)         &=&-F_\alpha'(r_c)
-   \end{array}
+.. math:: \begin{array}{rcl}
+          S_F(r_1)          &=&0            \\
+          S_F'(r_1)         &=&0            \\
+          S_F(r_c)          &=&-F_\alpha(r_c)       \\
+          S_F'(r_c)         &=&-F_\alpha'(r_c)
+          \end{array}
+          :label: eqnswitchforcefunction
 
 A 3\ :math:`^{rd}` degree polynomial of the form
 
 .. math:: S_F(r) = A(r-r_1)^2 + B(r-r_1)^3
+          :label: eqnswitchforcepoly
 
 fulfills these requirements. The constants A and B are given by the
 boundary condition at :math:`r_c`:
 
-.. math::
-
-   \begin{array}{rcl}
-   A &~=~& -\alpha \, \displaystyle
-           \frac{(\alpha+4)r_c~-~(\alpha+1)r_1} {r_c^{\alpha+2}~(r_c-r_1)^2} \\
-   B &~=~& \alpha \, \displaystyle
-           \frac{(\alpha+3)r_c~-~(\alpha+1)r_1}{r_c^{\alpha+2}~(r_c-r_1)^3}
-   \end{array}
+.. math:: \begin{array}{rcl}
+          A &~=~& -\alpha \, \displaystyle
+                  \frac{(\alpha+4)r_c~-~(\alpha+1)r_1} {r_c^{\alpha+2}~(r_c-r_1)^2} \\
+          B &~=~& \alpha \, \displaystyle
+                  \frac{(\alpha+3)r_c~-~(\alpha+1)r_1}{r_c^{\alpha+2}~(r_c-r_1)^3}
+          \end{array}
+          :label: eqnforceswitchboundary
 
 Thus the total force function is:
 
 .. math:: F_s(r) = \frac{\alpha}{r^{\alpha+1}} + A(r-r_1)^2 + B(r-r_1)^3
+          :label: eqnswitchfinalforce
 
 and the potential function reads:
 
 .. math:: V_s(r) = \frac{1}{r^\alpha} - \frac{A}{3} (r-r_1)^3 - \frac{B}{4} (r-r_1)^4 - C
+          :label: eqnswitchfinalpotential
 
 where
 
 .. math:: C =  \frac{1}{r_c^\alpha} - \frac{A}{3} (r_c-r_1)^3 - \frac{B}{4} (r_c-r_1)^4
+          :label: eqnswitchpotentialexp
 
 The |Gromacs| **potential-switch** function :math:`S_V(r)` scales the
 potential between :math:`r_1` and :math:`r_c`, and has similar boundary
 conditions, intended to produce smoothly-varying potential and forces:
 
-.. math::
-
-   \begin{array}{rcl}
-   S_V(r_1)          &=&1 \\
-   S_V'(r_1)         &=&0 \\
-   S_V''(r_1)        &=&0 \\
-   S_V(r_c)          &=&0 \\
-   S_V'(r_c)         &=&0 \\
-   S_V''(r_c)        &=&0
-   \end{array}
+.. math:: \begin{array}{rcl}
+          S_V(r_1)          &=&1 \\
+          S_V'(r_1)         &=&0 \\
+          S_V''(r_1)        &=&0 \\
+          S_V(r_c)          &=&0 \\
+          S_V'(r_c)         &=&0 \\
+          S_V''(r_c)        &=&0
+          \end{array}
+          :label: eqnpotentialswitch
 
 The fifth-degree polynomial that has these properties is
 
 .. math:: S_V(r; r_1, r_c) = \frac{1 - 10(r-r_1)^3(r_c-r_1)^2 + 15(r-r_1)^4(r_c-r_1) - 6(r-r_1)}{(r_c-r_1)^5}
+          :label: eqn5polynomal
 
 This implementation is found in several other simulation
 packages,\ :ref:`73 <refOhmine1988>`\ :ref:`75 <refGuenot1993>` but
@@ -354,6 +360,7 @@ cut-off, instead of the force. In this case the short range potential is
 given by:
 
 .. math:: V(r) = f \frac{\mbox{erfc}(\beta r_{ij})}{r_{ij}} q_i q_j,
+          :label: eqnewaldsrmod
 
 where :math:`\beta` is a parameter that determines the relative weight
 between the direct space sum and the reciprocal space sum and

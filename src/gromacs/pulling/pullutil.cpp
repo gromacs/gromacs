@@ -115,7 +115,7 @@ static void pullAllReduce(const t_commrec *cr,
 #else
             std::vector<T> buf(n);
 
-            MPI_Allreduce(data, buf, n, mpiDatatype(data), MPI_SUM,
+            MPI_Allreduce(data, buf.data(), n, mpiDatatype(data), MPI_SUM,
                           comm->mpi_comm_com);
 
             /* Copy the result from the buffer to the input/output data */

@@ -36,6 +36,8 @@
 /*! \internal \file
  * \brief Implement the restraint manager.
  *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ *
  * \ingroup module_restraint
  */
 

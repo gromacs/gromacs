@@ -25,6 +25,7 @@ in this case the polarizability volume is 0.001 nm\ :math:`^3` (or 1
 is used \ :ref:`45 <refMaaren2001a>`:
 
 .. math:: k_{cs} ~=~ \frac{q_s^2}{\alpha}
+          :label: eqnsimplepol
 
 where :math:`q_s` is the charge on the shell particle.
 
@@ -36,11 +37,10 @@ McKerell \ :ref:`93 <refLopes2013a>` it was found that some particles can
 overpolarize and this was fixed by introducing a higher order term in
 the polarization energy:
 
-.. math::
-
-   \begin{aligned}
-   V_{pol} ~=& \frac{k_{cs}}{2} r_{cs}^2 & r_{cs} \le \delta \\
-               =& \frac{k_{cs}}{2} r_{cs}^2 + k_{hyp} (r_{cs}-\delta)^4 & r_{cs} > \delta\end{aligned}
+.. math:: \begin{aligned}
+          V_{pol} ~=& \frac{k_{cs}}{2} r_{cs}^2 & r_{cs} \le \delta \\
+                      =& \frac{k_{cs}}{2} r_{cs}^2 + k_{hyp} (r_{cs}-\delta)^4 & r_{cs} > \delta\end{aligned}
+          :label: eqnanharmpol
 
 where :math:`\delta` is a user-defined constant that is set to 0.02 nm
 for anions in the Drude force field \ :ref:`94 <refHYu2010>`. Since this
@@ -75,11 +75,13 @@ would be too strong. The potential between two shell particles :math:`i`
 and :math:`j` is:
 
 .. math:: V_{thole} ~=~ \frac{q_i q_j}{r_{ij}}\left[1-\left(1+\frac{{\bar{r}_{ij}}}{2}\right){\rm exp}^{-{\bar{r}_{ij}}}\right]
+          :label: eqntholepol
 
-**Note** that there is a sign error in Equation 1 of Noskov *et
-al.* :ref:`98 <refNoskov2005a>`:
+**Note** that there is a sign error in Equation 1 of Noskov
+*et al.*  :ref:`98 <refNoskov2005a>`:
 
 .. math:: {\bar{r}_{ij}}~=~ a\frac{r_{ij}}{(\alpha_i \alpha_j)^{1/6}}
+          :label: eqntholsignerror
 
 where :math:`a` is a magic (dimensionless) constant, usually chosen to
 be 2.6 \ :ref:`98 <refNoskov2005a>`; :math:`\alpha_i` and

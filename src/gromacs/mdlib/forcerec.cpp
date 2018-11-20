@@ -58,6 +58,7 @@
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/functions.h"
@@ -3003,15 +3004,26 @@ void init_forcerec(FILE                             *fp,
         }
     }
 
-    /* QM/MM initialization if requested
-     */
-    if (ir->bQMMM)
+    // QM/MM initialization if requested
+    fr->bQMMM = ir->bQMMM;
+    if (fr->bQMMM)
     {
-        fprintf(stderr, "QM/MM calculation requested.\n");
+        // Initialize QM/MM if supported
+        if (GMX_QMMM)
+        {
+            GMX_LOG(mdlog.info).asParagraph().
+                appendText("Large parts of the QM/MM support is deprecated, and may be removed in a future "
+                           "version. Please get in touch with the developers if you find the support useful, "
+                           "as help is needed if the functionality is to continue to be available.");
+            fr->qr = mk_QMMMrec();
+            init_QMMMrec(cr, mtop, ir, fr);
+        }
+        else
+        {
+            gmx_incons("QM/MM was requested, but is only available when GROMACS "
+                       "is configured with QM/MM support");
+        }
     }
-
-    fr->bQMMM      = ir->bQMMM;
-    fr->qr         = mk_QMMMrec();
 
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp, mtop, fr, bNoSolvOpt,
@@ -3077,6 +3089,15 @@ void init_forcerec(FILE                             *fp,
         init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
                        cr, hardwareInfo, deviceInfo,
                        mtop, box);
+
+        if (useGpuForBonded)
+        {
+            init_gpu_bonded(fr->gpuBondedLists,
+                            mtop->ffparams,
+                            DOMAINDECOMP(cr) ?
+                            nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintNonlocal) :
+                            nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintLocal));
+        }
     }
 
     if (fp != nullptr)
@@ -3102,7 +3123,7 @@ void init_forcerec(FILE                             *fp,
  * \todo Remove physical node barrier from this function after making sure
  * that it's not needed anymore (with a shared GPU run).
  */
-void free_gpu_resources(const t_forcerec                    *fr,
+void free_gpu_resources(t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator)
 {
     bool isPPrankUsingGPU = (fr != nullptr) && (fr->nbv != nullptr) && fr->nbv->bUseGPU;
@@ -3114,6 +3135,12 @@ void free_gpu_resources(const t_forcerec                    *fr,
     {
         /* free nbnxn data in GPU memory */
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
+
+        if (fr->gpuBondedLists)
+        {
+            delete fr->gpuBondedLists;
+            fr->gpuBondedLists = nullptr;
+        }
     }
 
     /* With tMPI we need to wait for all ranks to finish deallocation before
@@ -3148,7 +3175,7 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
     done_ns(fr->ns, numEnergyGroups);
     sfree(fr->ewc_t);
     tear_down_bonded_threading(fr->bondedThreading);
-    delete fr->gpuBondedLists;
+    GMX_RELEASE_ASSERT(fr->gpuBondedLists == nullptr, "Should have been deleted earlier, when used");
     fr->bondedThreading = nullptr;
     sfree(fr);
 }

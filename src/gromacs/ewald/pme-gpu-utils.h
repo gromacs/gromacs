@@ -64,7 +64,7 @@
  * Feed the result into getSplineParamIndex() to get a full index.
  * TODO: it's likely that both parameters can be just replaced with a single atom index, as they are derived from it.
  * Do that, verifying that the generated code is not bloated, and/or revise the spline indexing scheme.
- * Removing warp dependency would also be nice (and would probably coincide with removing PME_SPREADGATHER_ATOMS_PER_WARP).
+ * Removing warp dependency would also be nice (and would probably coincide with removing c_pmeSpreadGatherAtomsPerWarp).
  *
  * \tparam order               PME order
  * \tparam atomsPerWarp        Number of atoms processed by a warp

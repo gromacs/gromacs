@@ -70,7 +70,9 @@ namespace gmx
 namespace test
 {
 
-bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
+bool pmeSupportsInputForMode(const gmx_hw_info_t &hwinfo,
+                             const t_inputrec    *inputRec,
+                             CodePath             mode)
 {
     bool       implemented;
     gmx_mtop_t mtop;
@@ -81,7 +83,7 @@ bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
             break;
 
         case CodePath::GPU:
-            implemented = (pme_gpu_supports_build(nullptr) &&
+            implemented = (pme_gpu_supports_build(hwinfo, nullptr) &&
                            pme_gpu_supports_input(*inputRec, mtop, nullptr));
             break;
 

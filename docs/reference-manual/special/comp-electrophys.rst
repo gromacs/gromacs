@@ -12,6 +12,7 @@ membrane, which gives rise to a potential difference :math:`\Delta U`
 according to the membrane capacitance:
 
 .. math:: \Delta U = \Delta q / C_{membrane}
+          :label: eqnmembcap
 
 The transmembrane electric field and concentration gradients are
 controlled by :ref:`mdp` options, which allow the user to set
@@ -55,6 +56,7 @@ average channel conductance :math:`G` in each interval :math:`\Delta t`
 is determined by:
 
 .. math:: G = \frac{\sum_{i} n_{i}q_{i}}{\Delta t \, \Delta U} \, .
+          :label: eqnchannelcond
 
 The ion selectivity is calculated as the number flux ratio of different
 species. Best results are obtained by averaging these values over

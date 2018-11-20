@@ -82,7 +82,7 @@ std::string generateTprInput(TestFileManager *fileManager, const std::string &fi
         CommandLine caller;
         caller.append("grompp");
         caller.addOption("-f", mdpInputFileName);
-        caller.addOption("-p", TestFileManager::getInputFilePath(filename));
+        caller.addOption("-p", TestFileManager::getInputFilePath(filename + ".top"));
         caller.addOption("-c", TestFileManager::getInputFilePath(filename + ".pdb"));
         caller.addOption("-o", tprName);
         EXPECT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));

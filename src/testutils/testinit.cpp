@@ -203,6 +203,9 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         {
             TestFileManager::setGlobalOutputTempDirectory(tempPath);
         }
+        TestFileManager::setTestSimulationDatabaseDirectory(
+                GMX_TESTSIMULATIONDATABASE_DIR);
+
         bool        bHelp = false;
         std::string sourceRoot;
         Options     options;

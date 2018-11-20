@@ -36,9 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "qm_gaussian.h"
 
-#if GMX_QMMM_GAUSSIAN
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,6 +52,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -59,15 +60,19 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+// When not built in a configuration with QMMM support, much of this
+// code is unreachable by design. Tell clang not to warn about it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
+
 /* TODO: this should be made thread-safe */
 
 /* Gaussian interface routines */
 
 void init_gaussian(t_QMrec *qm)
 {
-    FILE *out = NULL;
     ivec
-          basissets[eQMbasisNR] = {{0, 3, 0},
+        basissets[eQMbasisNR] = {{0, 3, 0},
                                  {0, 3, 0}, /*added for double sto-3g entry in names.c*/
                                  {5, 0, 0},
                                  {5, 0, 1},
@@ -78,9 +83,14 @@ void init_gaussian(t_QMrec *qm)
                                  {1, 6, 11},
                                  {4, 6, 0}};
     char
-         *buf = NULL;
+       *buf = nullptr;
     int
-          i;
+        i;
+
+    if (!GMX_QMMM_GAUSSIAN)
+    {
+        gmx_fatal(FARGS, "Cannot call GAUSSIAN unless linked against it. Use cmake -DGMX_QMMM_PROGRAM=GAUSSIAN, and ensure that linking will work correctly.");
+    }
 
     /* using the ivec above to convert the basis read form the mdp file
      * in a human readable format into some numbers for the gaussian
@@ -214,9 +224,8 @@ void init_gaussian(t_QMrec *qm)
 }
 
 
-
-void write_gaussian_SH_input(int step, gmx_bool swap,
-                             t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
+static void write_gaussian_SH_input(int step, gmx_bool swap,
+                                    const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
     int
         i;
@@ -423,7 +432,7 @@ void write_gaussian_SH_input(int step, gmx_bool swap,
     fclose(out);
 }  /* write_gaussian_SH_input */
 
-void write_gaussian_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
+static void write_gaussian_input(int step, const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
     int
         i;
@@ -572,10 +581,10 @@ void write_gaussian_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 
 }  /* write_gaussian_input */
 
-real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm)
+static real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm)
 {
     int
-        i, j, atnum;
+        i;
     char
         buf[300];
     real
@@ -592,7 +601,7 @@ real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm
     /* the next line is the energy and in the case of CAS, the energy
      * difference between the two states.
      */
-    if (NULL == fgets(buf, 300, in))
+    if (nullptr == fgets(buf, 300, in))
     {
         gmx_fatal(FARGS, "Error reading Gaussian output");
     }
@@ -605,7 +614,7 @@ real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm
     /* next lines contain the gradients of the QM atoms */
     for (i = 0; i < qm->nrQMatoms; i++)
     {
-        if (NULL == fgets(buf, 300, in))
+        if (nullptr == fgets(buf, 300, in))
         {
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
@@ -626,7 +635,7 @@ real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm
     {
         for (i = 0; i < mm->nrMMatoms; i++)
         {
-            if (NULL == fgets(buf, 300, in))
+            if (nullptr == fgets(buf, 300, in))
             {
                 gmx_fatal(FARGS, "Error reading Gaussian output");
             }
@@ -647,7 +656,7 @@ real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm
     return(QMener);
 }
 
-real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm, t_MMrec *mm)
+static real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm, t_MMrec *mm)
 {
     int
         i;
@@ -662,7 +671,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
     /* first line is the energy and in the case of CAS, the energy
      * difference between the two states.
      */
-    if (NULL == fgets(buf, 300, in))
+    if (nullptr == fgets(buf, 300, in))
     {
         gmx_fatal(FARGS, "Error reading Gaussian output");
     }
@@ -691,11 +700,11 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
     }
 
     /* for debugging: */
-    fprintf(stderr, "Gap = %5f,SA = %3d\n", DeltaE, (qm->SAstep > 0));
+    fprintf(stderr, "Gap = %5f,SA = %3d\n", DeltaE, static_cast<int>(qm->SAstep > 0));
     /* next lines contain the gradients of the QM atoms */
     for (i = 0; i < qm->nrQMatoms; i++)
     {
-        if (NULL == fgets(buf, 300, in))
+        if (nullptr == fgets(buf, 300, in))
         {
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
@@ -716,7 +725,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
 
     for (i = 0; i < mm->nrMMatoms; i++)
     {
-        if (NULL == fgets(buf, 300, in))
+        if (nullptr == fgets(buf, 300, in))
         {
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
@@ -734,7 +743,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
     }
 
     /* the next line contains the two CI eigenvector elements */
-    if (NULL == fgets(buf, 300, in))
+    if (nullptr == fgets(buf, 300, in))
     {
         gmx_fatal(FARGS, "Error reading Gaussian output");
     }
@@ -760,7 +769,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
     /* first vector */
     for (i = 0; i < qm->CIdim; i++)
     {
-        if (NULL == fgets(buf, 300, in))
+        if (nullptr == fgets(buf, 300, in))
         {
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
@@ -773,7 +782,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
     /* second vector */
     for (i = 0; i < qm->CIdim; i++)
     {
-        if (NULL == fgets(buf, 300, in))
+        if (nullptr == fgets(buf, 300, in))
         {
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
@@ -787,7 +796,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
     return(QMener);
 }
 
-real inproduct(real *a, real *b, int n)
+static real inproduct(const real *a, const real *b, int n)
 {
     int
         i;
@@ -804,7 +813,7 @@ real inproduct(real *a, real *b, int n)
     return(dot);
 }
 
-int hop(int step, t_QMrec *qm)
+static int hop(int step, t_QMrec *qm)
 {
     int
         swap = 0;
@@ -838,7 +847,7 @@ int hop(int step, t_QMrec *qm)
     return(swap);
 }
 
-void do_gaussian(int step, char *exe)
+static void do_gaussian(int step, char *exe)
 {
     char
         buf[STRLEN];
@@ -868,7 +877,7 @@ void do_gaussian(int step, char *exe)
     }
 }
 
-real call_gaussian(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
+real call_gaussian(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 {
     /* normal gaussian jobs */
     static int
@@ -915,7 +924,7 @@ real call_gaussian(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshi
 
 } /* call_gaussian */
 
-real call_gaussian_SH(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
+real call_gaussian_SH(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 {
     /* a gaussian call routine intended for doing diabatic surface
      * "sliding". See the manual for the theoretical background of this
@@ -980,12 +989,12 @@ real call_gaussian_SH(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec f
     {
         if (!swapped)
         {
-            swap    = (step && hop(step, qm));
+            swap    = ((step != 0) && (hop(step, qm) != 0));
             swapped = swap;
         }
         else /* already on the other surface, so check if we go back */
         {
-            swap    = (step && hop(step, qm));
+            swap    = ((step != 0) && (hop(step, qm) != 0));
             swapped = !swap; /* so swapped shoud be false again */
         }
         if (swap)            /* change surface, so do another call */
@@ -1015,12 +1024,11 @@ real call_gaussian_SH(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec f
     }
     QMener = QMener*HARTREE2KJ*AVOGADRO;
     fprintf(stderr, "step %5d, SA = %5d, swap = %5d\n",
-            step, (qm->SAstep > 0), swapped);
+            step, static_cast<int>(qm->SAstep > 0), static_cast<int>(swapped));
     step++;
     free(exe);
     return(QMener);
 
 } /* call_gaussian_SH */
 
-/* end of gaussian sub routines */
-#endif
+#pragma GCC diagnostic pop

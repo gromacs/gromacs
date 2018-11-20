@@ -57,6 +57,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_hw_info_t;
 struct interaction_const_t;
 struct t_commrec;
 struct t_inputrec;
@@ -250,11 +251,13 @@ void gmx_pme_reinit_atoms(const gmx_pme_t *pme, int nAtoms, const real *charges)
  * pme_gpu_check_restrictions(), except that works with a
  * formed gmx_pme_t structure. Should that one go away/work with inputrec?
  *
- * \param[out] error  If non-null, the error message when PME is not supported on GPU.
+ * \param[in]  hwinfo  Information about the detected hardware
+ * \param[out] error   If non-null, the error message when PME is not supported on GPU.
  *
  * \returns true if PME can run on GPU on this build, false otherwise.
  */
-bool pme_gpu_supports_build(std::string *error);
+bool pme_gpu_supports_build(const gmx_hw_info_t &hwinfo,
+                            std::string         *error);
 
 /*! \brief Checks whether the input system allows to run PME on GPU.
  * TODO: this partly duplicates an internal PME assert function

@@ -93,16 +93,16 @@ TYPED_TEST(PaddedVectorTest, ConstructsResizesAndReserves)
     fillInput(&v, 1);
 
     EXPECT_EQ(v.size(), v.size());
-    EXPECT_EQ(v.paddedSize(),   v.paddedArrayRef().size());
-    EXPECT_LE(v.size(), v.paddedArrayRef().size());
+    EXPECT_EQ(v.paddedSize(), v.arrayRefWithPadding().size());
+    EXPECT_LE(v.size(), v.arrayRefWithPadding().size());
 
     VectorType vReserved;
     vReserved.reserveWithPadding(5);
     fillInput(&vReserved, 1);
 
     EXPECT_EQ(vReserved.size(), vReserved.size());
-    EXPECT_EQ(vReserved.paddedSize(), vReserved.paddedArrayRef().size());
-    EXPECT_LE(vReserved.size(), vReserved.paddedArrayRef().size());
+    EXPECT_EQ(vReserved.paddedSize(), vReserved.arrayRefWithPadding().size());
+    EXPECT_LE(vReserved.size(), vReserved.arrayRefWithPadding().size());
 
     EXPECT_LE(v.paddedSize(), vReserved.paddedSize());
 }
@@ -116,7 +116,8 @@ TYPED_TEST(PaddedVectorTest, CanCopyAssign)
     fillInput(&w, 2);
 
     w = v;
-    compareViews(v.paddedArrayRef(),   w.paddedArrayRef());
+    compareViews(v.arrayRefWithPadding().unpaddedArrayRef(),
+                 w.arrayRefWithPadding().unpaddedArrayRef());
     compareViews(makeArrayRef(v), makeArrayRef(v));
 }
 
@@ -130,14 +131,16 @@ TYPED_TEST(PaddedVectorTest, CanMoveAssign)
     fillInput(&x, 1);
 
     SCOPED_TRACE("Comparing padded views before move");
-    compareViews(v.paddedArrayRef(),   x.paddedArrayRef());
+    compareViews(v.arrayRefWithPadding().unpaddedArrayRef(),
+                 x.arrayRefWithPadding().unpaddedArrayRef());
     SCOPED_TRACE("Comparing unpadded views before move");
     compareViews(makeArrayRef(v), makeArrayRef(x));
 
     w = std::move(x);
 
     SCOPED_TRACE("Comparing padded views");
-    compareViews(v.paddedArrayRef(),   w.paddedArrayRef());
+    compareViews(v.arrayRefWithPadding().unpaddedArrayRef(),
+                 w.arrayRefWithPadding().unpaddedArrayRef());
     SCOPED_TRACE("Comparing unpadded views");
     compareViews(makeArrayRef(v), makeArrayRef(w));
 }
@@ -152,7 +155,8 @@ TYPED_TEST(PaddedVectorTest, CanSwap)
     fillInput(&x, 1);
 
     std::swap(w, x);
-    compareViews(v.paddedArrayRef(),   w.paddedArrayRef());
+    compareViews(v.arrayRefWithPadding().unpaddedArrayRef(),
+                 w.arrayRefWithPadding().unpaddedArrayRef());
     compareViews(makeArrayRef(v), makeArrayRef(w));
 }
 

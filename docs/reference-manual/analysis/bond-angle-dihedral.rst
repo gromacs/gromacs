@@ -85,7 +85,7 @@ uses the normal vector perpendicular to the plane. See
 .. _fig-sgangle:
 
 .. figure:: plots/sgangle.*
-    :width: 3.50000cm
+    :width: 10.00000cm
 
     Angle options of :ref:`gmx gangle <gmx gangle>`: A. Angle between two
     vectors. B. Angle between two planes. C. Angle between a vector and the

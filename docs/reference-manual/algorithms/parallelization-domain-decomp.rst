@@ -236,6 +236,7 @@ by the minimum cell size :math:`L_C`, which has the following lower
 limit:
 
 .. math:: L_C \geq \max(r_{\mathrm{mb}},r_{\mathrm{con}})
+          :label: eqnDDmincellsize
 
 Without dynamic load balancing the system is actually allowed to scale
 beyond this limit when pressure scaling is used. **Note** that for

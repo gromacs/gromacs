@@ -13,10 +13,10 @@ SHAKE
 The SHAKE \ :ref:`46 <refRyckaert77>` algorithm changes a
 set of unconstrained coordinates :math:`\mathbf{r}^{'}` to
 a set of coordinates :math:`\mathbf{r}''` that fulfill a
-list of distance constraints, using a set
-:math:`\mathbf{r}` reference, as
+list of distance constraints, using a set :math:`\mathbf{r}` reference, as
 
 .. math:: {\rm SHAKE}(\mathbf{r}^{'} \rightarrow \mathbf{r}'';\, \mathbf{r})
+          :label: eqnshakebase
 
 This action is consistent with solving a set of Lagrange multipliers in
 the constrained equations of motion. SHAKE needs a *relative tolerance*;
@@ -29,29 +29,25 @@ Assume the equations of motion must fulfill :math:`K` holonomic
 constraints, expressed as
 
 .. math:: \sigma_k(\mathbf{r}_1 \ldots \mathbf{r}_N) = 0; \;\; k=1 \ldots K.
+          :label: eqnshakemotconstr
 
-For example,
-:math:`(\mathbf{r}_1 - \mathbf{r}_2)^2 - b^2 = 0`.
+For example, :math:`(\mathbf{r}_1 - \mathbf{r}_2)^2 - b^2 = 0`.
 Then the forces are defined as
 
-.. math::
-
-   - \frac{\partial}{\partial \mathbf{r}_i} \left( V + \sum_{k=1}^K \lambda_k
-   \sigma_k \right),
+.. math:: - \frac{\partial}{\partial \mathbf{r}_i} \left( V + \sum_{k=1}^K \lambda_k
+          \sigma_k \right),
+          :label: eqnshakeforce
 
 where :math:`\lambda_k` are Lagrange multipliers which must be solved
 to fulfill the constraint equations. The second part of this sum
-determines the *constraint forces* :math:`\mathbf{G}_i`,
-defined by
+determines the *constraint forces* :math:`\mathbf{G}_i`, defined by
 
-.. math::
-
-   \mathbf{G}_i = -\sum_{k=1}^K \lambda_k \frac{\partial \sigma_k}{\partial
-   \mathbf{r}_i}
+.. math:: \mathbf{G}_i = -\sum_{k=1}^K \lambda_k \frac{\partial \sigma_k}{\partial
+          \mathbf{r}_i}
+          :label: eqnshakeconstrforces
 
 The displacement due to the constraint forces in the leap-frog or
-Verlet algorithm is equal to
-:math:`(\mathbf{G}_i/m_i)({{\Delta t}})^2`. Solving the
+Verlet algorithm is equal to :math:`(\mathbf{G}_i/m_i)({{\Delta t}})^2`. Solving the
 Lagrange multipliers (and hence the displacements) requires the solution
 of a set of coupled equations of the second degree. These are solved
 iteratively by SHAKE. :ref:`settle` 
@@ -141,15 +137,18 @@ equation shows how the new constrained coordinates
 coordinates :math:`\mathbf{r}_{n+1}^{unc}` by
 
 .. math::  \begin{array}{c}
-     \mathbf{r}_{n+1}=(\mathbf{I}-\mathbf{T}_n \mathbf{B}_n) \mathbf{r}_{n+1}^{unc} + {\mathbf{T}}_n \mathbf{d}=  
-     \\[2mm]
-     \mathbf{r}_{n+1}^{unc} - 
-   {{\mathbf{M}}^{-1}}\mathbf{B}_n ({\mathbf{B}}_n {{\mathbf{M}}^{-1}}{\mathbf{B}}_n^T)^{-1} ({\mathbf{B}}_n \mathbf{r}_{n+1}^{unc} - \mathbf{d}) 
-   \end{array}
-   :label: eqnm0
+           \mathbf{r}_{n+1}=(\mathbf{I}-\mathbf{T}_n \mathbf{B}_n) \mathbf{r}_{n+1}^{unc} + {\mathbf{T}}_n \mathbf{d}=  
+           \\[2mm]
+           \mathbf{r}_{n+1}^{unc} - 
+           {{\mathbf{M}}^{-1}}\mathbf{B}_n ({\mathbf{B}}_n {{\mathbf{M}}^{-1}}{\mathbf{B}}_n^T)^{-1} ({\mathbf{B}}_n \mathbf{r}_{n+1}^{unc} - \mathbf{d}) 
+           \end{array}
+           :label: eqnm0
 
 where
-:math:`{\mathbf{T}}= {{\mathbf{M}}^{-1}}{\mathbf{B}}^T ({\mathbf{B}}{{\mathbf{M}}^{-1}}{\mathbf{B}}^T)^{-1}`.
+
+.. math:: {\mathbf{T}}= {{\mathbf{M}}^{-1}}{\mathbf{B}}^T ({\mathbf{B}}{{\mathbf{M}}^{-1}}{\mathbf{B}}^T)^{-1}
+          :label: eqnnm01
+
 The derivation of this equation from :eq:`eqns. %s <eqnc1>` and
 :eq:`%s <eqnc2>` can be found in :ref:`49 <refHess97>`.
 
@@ -159,13 +158,13 @@ the bonds. To correct for the rotation of bond :math:`i`, the projection
 of the bond, :math:`p_i`, on the old direction is set to
 
 .. math::  p_i=\sqrt{2 d_i^2 - l_i^2},
-   :label: eqnm1a
+           :label: eqnm1a
 
 where :math:`l_i` is the bond length after the first projection. The
 corrected positions are
 
 .. math::  \mathbf{r}_{n+1}^*=(\mathbf{I}-\mathbf{T}_n \mathbf{B}_n)\mathbf{r}_{n+1} + {\mathbf{T}}_n \mathbf{p}.
-   :label: eqnm1b
+           :label: eqnm1b
 
 This correction for rotational effects is actually an iterative
 process, but during MD only one iteration is applied. The relative

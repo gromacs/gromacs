@@ -392,10 +392,6 @@ void gmx::Integrator::do_mimic()
         if (MASTER(cr))
         {
             mimicCommunicator.getCoords(&state_global->x, state_global->natoms);
-            for (int i = 0; i < state_global->natoms; i++)
-            {
-                copy_rvec(state_global->x[i], state->x[i]);
-            }
         }
 
         if (ir->efep != efepNO)
@@ -451,7 +447,7 @@ void gmx::Integrator::do_mimic()
                                 enforcedRotation, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
-                                state, f, force_vir, mdatoms,
+                                state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, t, mu_tot,
                                 vsite,
@@ -468,8 +464,8 @@ void gmx::Integrator::do_mimic()
             gmx_edsam *ed  = nullptr;
             do_force(fplog, cr, ms, ir, awh, enforcedRotation,
                      step, nrnb, wcycle, top, groups,
-                     state->box, state->x, &state->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
+                     state->box, state->x.arrayRefWithPadding(), &state->hist,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, ed,
                      GMX_FORCE_NS | force_flags,

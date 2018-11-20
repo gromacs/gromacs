@@ -8,11 +8,10 @@ involves simulating multiple replicas of the same system at different
 temperatures and randomly exchanging the complete state of two replicas
 at regular intervals with the probability:
 
-.. math::
-
-   P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
-   \left(\frac{1}{k_B T_1} - \frac{1}{k_B T_2}\right)(U_1 - U_2)
-    \right] \right)
+.. math:: P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
+          \left(\frac{1}{k_B T_1} - \frac{1}{k_B T_2}\right)(U_1 - U_2)
+          \right] \right)
+          :label: eqnREX
 
 where :math:`T_1` and :math:`T_2` are the reference temperatures and
 :math:`U_1` and :math:`U_2` are the instantaneous potential energies of
@@ -37,17 +36,17 @@ How should one choose the temperatures? The energy difference can be
 written as:
 
 .. math:: U_1 - U_2 =  N_{df} \frac{c}{2} k_B (T_1 - T_2)
+          :label: eqnREXEdiff
 
 where :math:`N_{df}` is the total number of degrees of freedom of one
 replica and :math:`c` is 1 for harmonic potentials and around 2 for
 protein/water systems. If :math:`T_2 = (1+\epsilon) T_1` the probability
 becomes:
 
-.. math::
-
-   P(1 \leftrightarrow 2)
-     = \exp\left( -\frac{\epsilon^2 c\,N_{df}}{2 (1+\epsilon)} \right)
-   \approx \exp\left(-\epsilon^2 \frac{c}{2} N_{df} \right)
+.. math:: P(1 \leftrightarrow 2)
+            = \exp\left( -\frac{\epsilon^2 c\,N_{df}}{2 (1+\epsilon)} \right)
+          \approx \exp\left(-\epsilon^2 \frac{c}{2} N_{df} \right)
+          :label: eqnREXprob
 
 Thus for a probability of :math:`e^{-2}\approx 0.135` one obtains
 :math:`\epsilon \approx 2/\sqrt{c\,N_{df}}`. With all bonds constrained
@@ -64,12 +63,11 @@ An extension to the REMD for the isobaric-isothermal ensemble was
 proposed by Okabe et al. :ref:`63 <refOkabe2001a>`. In this work the
 exchange probability is modified to:
 
-.. math::
-
-   P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
-   \left(\frac{1}{k_B T_1} - \frac{1}{k_B T_2}\right)(U_1 - U_2) +
-   \left(\frac{P_1}{k_B T_1} - \frac{P_2}{k_B T_2}\right)\left(V_1-V_2\right)
-    \right] \right)
+.. math:: P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
+          \left(\frac{1}{k_B T_1} - \frac{1}{k_B T_2}\right)(U_1 - U_2) +
+          \left(\frac{P_1}{k_B T_1} - \frac{P_2}{k_B T_2}\right)\left(V_1-V_2\right)
+          \right] \right)
+          :label: eqnREXexchangeprob
 
 where :math:`P_1` and :math:`P_2` are the respective reference
 pressures and :math:`V_1` and :math:`V_2` are the respective
@@ -83,12 +81,10 @@ Hamiltonian replica exchange, each replica has a different Hamiltonian,
 defined by the free energy pathway specified for the simulation. The
 exchange probability to maintain the correct ensemble probabilities is:
 
-.. math::
-
-   P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
-       \left(\frac{1}{k_B T} - \frac{1}{k_B T}\right)((U_1(x_2) - U_1(x_1)) + (U_2(x_1) - U_2(x_2)))
-   \right]
-   \right)
+.. math:: P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
+          \left(\frac{1}{k_B T} - \frac{1}{k_B T}\right)((U_1(x_2) - U_1(x_1)) + (U_2(x_1) - U_2(x_2)))
+          \right]\right)
+          :label: eqnREXcorrectensemble
 
 The separate Hamiltonians are defined by the free energy functionality
 of |Gromacs|, with swaps made between the different values of
@@ -97,11 +93,10 @@ of |Gromacs|, with swaps made between the different values of
 Hamiltonian and temperature replica exchange can also be performed
 simultaneously, using the acceptance criteria:
 
-.. math::
-
-   P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
-   \left(\frac{1}{k_B T} - \right)(\frac{U_1(x_2) - U_1(x_1)}{k_B T_1} + \frac{U_2(x_1) - U_2(x_2)}{k_B T_2})
-    \right] \right)
+.. math:: P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
+          \left(\frac{1}{k_B T} - \right)(\frac{U_1(x_2) - U_1(x_1)}{k_B T_1} + \frac{U_2(x_1) - U_2(x_2)}{k_B T_2})
+          \right] \right)
+          :label: eqnREXacceptance
 
 Gibbs sampling replica exchange has also been implemented in
 |Gromacs| :ref:`64 <refChodera2011>`. In Gibbs sampling replica exchange,

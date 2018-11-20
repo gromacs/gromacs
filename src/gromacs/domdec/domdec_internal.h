@@ -275,10 +275,11 @@ struct gmx_ddzone_t
     real mch1;    /* The maximum top communicaton height for this zone      */
     real p1_0;    /* The bottom value of the first cell in this zone        */
     real p1_1;    /* The top value of the first cell in this zone           */
+    real dataSet; /* Bool disguised as a real, 1 when the above data has been set. 0 otherwise */
 };
 
 /*! \brief The number of reals in gmx_ddzone_t */
-constexpr int c_ddzoneNumReals = 7;
+constexpr int c_ddzoneNumReals = 8;
 
 template<typename T> class DDBufferAccess;
 

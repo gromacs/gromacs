@@ -113,12 +113,9 @@ void atomic_number(int nr, char ***atomtype, int *nucnum);
 t_QMMMrec *mk_QMMMrec();
 /* allocates memory for QMMMrec */
 
-#if !GMX_QMMM
-[[noreturn]]
-#endif
 void init_QMMMrec(const t_commrec  *cr,
-                  gmx_mtop_t       *mtop,
-                  t_inputrec       *ir,
+                  const gmx_mtop_t *mtop,
+                  const t_inputrec *ir,
                   const t_forcerec *fr);
 
 /* init_QMMMrec initializes the QMMM record. From
@@ -127,9 +124,6 @@ void init_QMMMrec(const t_commrec  *cr,
  * resp. inputrec->QMmult the nelecs and multiplicity are determined
  * and md->cQMMM gives numbers of the MM and QM atoms
  */
-#if !GMX_QMMM
-[[noreturn]]
-#endif
 void update_QMMMrec(const t_commrec  *cr,
                     const t_forcerec *fr,
                     const rvec       *x,

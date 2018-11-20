@@ -124,7 +124,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
     float * __restrict__ gm_dtheta          = kernelParams.atoms.d_dtheta;
     int * __restrict__   gm_gridlineIndices = kernelParams.atoms.d_gridlineIndices;
 
-    const int            atomsPerWarp = PME_SPREADGATHER_ATOMS_PER_WARP;
+    const int            atomsPerWarp = c_pmeSpreadGatherAtomsPerWarp;
 
     /* Fractional coordinates */
     __shared__ float sm_fractCoords[atomsPerBlock * DIM];
@@ -332,7 +332,7 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
     float * __restrict__ gm_grid = kernelParams.grid.d_realGrid;
 
 
-    const int atomsPerWarp = PME_SPREADGATHER_ATOMS_PER_WARP;
+    const int atomsPerWarp = c_pmeSpreadGatherAtomsPerWarp;
 
     const int nx  = kernelParams.grid.realGridSize[XX];
     const int ny  = kernelParams.grid.realGridSize[YY];
@@ -417,7 +417,7 @@ template <
 __launch_bounds__(c_spreadMaxThreadsPerBlock)
 __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernelParams)
 {
-    const int        atomsPerBlock = c_spreadMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM;
+    const int        atomsPerBlock = c_spreadMaxThreadsPerBlock / c_pmeSpreadGatherThreadsPerAtom;
     // Gridline indices, ivec
     __shared__ int   sm_gridlineIndices[atomsPerBlock * DIM];
     // Charges

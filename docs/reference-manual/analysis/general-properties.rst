@@ -11,6 +11,7 @@ General properties
 The *center-of-mass velocity*, defined as
 
 .. math:: {\bf v}_{com} = {1 \over M} \sum_{i=1}^N m_i {\bf v}_i
+          :label: eqncomvelocity
 
 with :math:`M = \sum_{i=1}^N m_i` the total mass of the system, can be
 monitored in time by the program :ref:`gmx traj <gmx traj>` ``-com -ov``. It is however
