@@ -32,6 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+gmx_install_headers(extents.h)
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
