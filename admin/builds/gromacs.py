@@ -132,6 +132,9 @@ def do_build(context):
     if context.opts.tng is False:
         cmake_opts['GMX_USE_TNG'] = 'OFF'
 
+    if context.opts.hwloc is False:
+        cmake_opts['GMX_HWLOC'] = 'OFF'
+
     if context.opts.x11:
         cmake_opts['GMX_X11'] = 'ON'
 

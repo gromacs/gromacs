@@ -2761,6 +2761,23 @@ void load_checkpoint(const char *fn, t_fileio *logfio,
         gmx_bcast(sizeof(*bReadEkin), bReadEkin, cr);
     }
     ir->bContinuation    = TRUE;
+    // TODO Should the following condition be <=? Currently if you
+    // pass a checkpoint written by an normal completion to a restart,
+    // mdrun will read all input, does some work but no steps, and
+    // write successful output. But perhaps that is not desirable.
+    if ((ir->nsteps >= 0) && (ir->nsteps < headerContents.step))
+    {
+        // Note that we do not intend to support the use of mdrun
+        // -nsteps to circumvent this condition.
+        char nstepsString[STEPSTRSIZE], stepString[STEPSTRSIZE];
+        gmx_step_str(ir->nsteps, nstepsString);
+        gmx_step_str(headerContents.step, stepString);
+        gmx_fatal(FARGS, "The input requested %s steps, however the checkpoint "
+                  "file has already reached step %s. The simulation will not "
+                  "proceed, because either your simulation is already complete, "
+                  "or your combination of input files don't match.",
+                  nstepsString, stepString);
+    }
     if (ir->nsteps >= 0)
     {
         ir->nsteps          += ir->init_step - headerContents.step;
