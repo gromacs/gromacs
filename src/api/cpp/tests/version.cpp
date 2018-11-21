@@ -36,7 +36,13 @@
 #include <climits>
 
 #include "gmxapi/version.h"
-#include <gtest/gtest.h>
+#include "testingconfiguration.h"
+
+namespace gmxapi
+{
+
+namespace testing
+{
 
 namespace
 {
@@ -56,7 +62,7 @@ const int current_patch = gmxapi::c_patchVersion;
 /*!
  * \brief Check basic Version interface functionality.
  */
-TEST(VersionTest, SaneComparisons)
+TEST_F(GmxApiTest, SaneVersionComparisons)
 {
     EXPECT_TRUE(Version::isAtLeast(0,
                                    0,
@@ -95,10 +101,14 @@ TEST(VersionTest, SaneComparisons)
  * until they are implemented, then toggled to ``EXPECT_TRUE`` as implemented as
  * extensions of the current API spec. (There aren't any yet.)
  */
-TEST(VersionTest, Named0_1_Features)
+TEST_F(GmxApiTest, VersionNamed0_1_Features)
 {
     EXPECT_FALSE(Version::hasFeature(""));
     EXPECT_FALSE(Version::hasFeature("nonexistent feature"));
 }
 
 } // end anonymous namespace
+
+} // namespace testing
+
+} // namespace gmxapi

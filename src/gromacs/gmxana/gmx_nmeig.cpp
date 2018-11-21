@@ -790,6 +790,7 @@ int gmx_nmeig(int argc, char *argv[])
     {
         analyzeThermochemistry(stdout, top, top_x, atom_index, eigenvalues,
                                T, P, sigma_r, scale_factor, linear_toler);
+        please_cite(stdout, "Spoel2018a");
     }
     else
     {
