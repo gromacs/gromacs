@@ -1139,13 +1139,14 @@ void relax_shell_flexcon(FILE                                     *fplog,
     {
         pr_rvecs(debug, 0, "x b4 do_force", state->x.rvec_array(), homenr);
     }
+    int shellfc_flags = force_flags | (bVerbose ? GMX_FORCE_ENERGY : 0);
     do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation,
              mdstep, nrnb, wcycle, top, groups,
              state->box, state->x.arrayRefWithPadding(), &state->hist,
              forceWithPadding[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
              fr, vsite, mu_tot, t, nullptr,
-             (bDoNS ? GMX_FORCE_NS : 0) | force_flags,
+             (bDoNS ? GMX_FORCE_NS : 0) | shellfc_flags,
              ddOpenBalanceRegion, ddCloseBalanceRegion);
 
     sf_dir = 0;
@@ -1162,7 +1163,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
             sf_dir += md->massT[i]*norm2(shfc->acc_dir[i]);
         }
     }
-
+    sum_epot(&(enerd->grpp), enerd->term);
     Epot[Min] = enerd->term[F_EPOT];
 
     df[Min] = rms_force(cr, forceWithPadding[Min].paddedArrayRef(), nshell, shell, nflexcon, &sf_dir, &Epot[Min]);
@@ -1181,7 +1182,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
     {
         /* Copy x to pos[Min] & pos[Try]: during minimization only the
          * shell positions are updated, therefore the other particles must
-         * be set here.
+         * be set here, in advance.
          */
         std::copy(state->x.begin(),
                   state->x.end(),
@@ -1255,9 +1256,9 @@ void relax_shell_flexcon(FILE                                     *fplog,
                  forceWithPadding[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, nullptr,
-                 force_flags,
+                 shellfc_flags,
                  ddOpenBalanceRegion, ddCloseBalanceRegion);
-
+        sum_epot(&(enerd->grpp), enerd->term);
         if (gmx_debug_at)
         {
             pr_rvecs(debug, 0, "RELAX: force[Min]", as_rvec_array(force[Min].data()), homenr);
@@ -1345,11 +1346,11 @@ void relax_shell_flexcon(FILE                                     *fplog,
         if (fplog)
         {
             fprintf(fplog,
-                    "step %s: EM did not converge in %d iterations, RMS force %.3f\n",
+                    "step %s: EM did not converge in %d iterations, RMS force %6.2e\n",
                     gmx_step_str(mdstep, sbuf), number_steps, df[Min]);
         }
         fprintf(stderr,
-                "step %s: EM did not converge in %d iterations, RMS force %.3f\n",
+                "step %s: EM did not converge in %d iterations, RMS force %6.2e\n",
                 gmx_step_str(mdstep, sbuf), number_steps, df[Min]);
     }
 
