@@ -126,11 +126,11 @@ def do_build(context):
         cmake_opts['GMX_EXTERNAL_CLFFT'] = 'ON'
         cmake_opts['clFFT_ROOT'] = context.env.clFFT_root
 
-    if context.opts.hwloc is False:
-        cmake_opts['GMX_HWLOC'] = 'OFF'
-
     if context.opts.tng is False:
         cmake_opts['GMX_USE_TNG'] = 'OFF'
+
+    if context.opts.hwloc is False:
+        cmake_opts['GMX_HWLOC'] = 'OFF'
 
     if context.opts.x11:
         cmake_opts['GMX_X11'] = 'ON'
