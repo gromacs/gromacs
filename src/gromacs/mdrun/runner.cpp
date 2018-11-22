@@ -870,7 +870,7 @@ int Mdrunner::mdrunner()
         {
             // Now we can start normal logging to the truncated log file.
             fplog    = gmx_fio_getfp(logFileHandle);
-            prepareLogAppending(cr->nodeid, cr->nnodes, fplog);
+            prepareLogAppending(fplog);
             logOwner = buildLogger(fplog, cr);
             mdlog    = logOwner.logger();
         }

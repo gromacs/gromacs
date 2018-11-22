@@ -237,9 +237,7 @@ int gmx_mdrun(int argc, char *argv[])
         options.logFileGuard = openLogFile(ftp2fn(efLOG,
                                                   options.filenames.size(),
                                                   options.filenames.data()),
-                                           options.mdrunOptions.continuationOptions.appendFiles,
-                                           options.cr->nodeid,
-                                           options.cr->nnodes);
+                                           options.mdrunOptions.continuationOptions.appendFiles);
     }
 
     /* The SimulationContext is a resource owned by the client code.

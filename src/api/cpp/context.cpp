@@ -173,9 +173,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             options_.logFileGuard = openLogFile(ftp2fn(efLOG,
                                                        options_.filenames.size(),
                                                        options_.filenames.data()),
-                                                options_.mdrunOptions.continuationOptions.appendFiles,
-                                                options_.cr->nodeid,
-                                                options_.cr->nnodes);
+                                                options_.mdrunOptions.continuationOptions.appendFiles);
         }
 
         auto simulationContext = createSimulationContext(options_.cr);
