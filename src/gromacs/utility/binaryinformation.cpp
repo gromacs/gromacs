@@ -80,6 +80,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "cuda_version_information.h"
@@ -391,6 +392,7 @@ void printBinaryInformation(TextWriter                      *writer,
     {
         writer->writeLine(formatString("%sWorking dir:  %s%s", prefix, workingDir.c_str(), suffix));
     }
+    writer->writeLine(formatString("%sProcess ID:   %d%s", prefix, gmx_getpid(), suffix));
     const char *const commandLine = programContext.commandLine();
     if (!gmx::isNullOrEmpty(commandLine))
     {
