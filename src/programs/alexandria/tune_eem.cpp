@@ -842,6 +842,7 @@ int alex_tune_eem(int argc, char *argv[])
     gmx_bool                    bcompress     = false;
     gmx_bool                    bZPE          = false;
     gmx_bool                    bZero         = true;
+    gmx_bool                    bOptimize     = true;
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -873,7 +874,9 @@ int alex_tune_eem(int argc, char *argv[])
         { "-factor", FALSE, etREAL, {&factor},
           "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
         { "-efield",  FALSE, etREAL, {&efield},
-          "The magnitude of the external electeric field to calculate polarizability tensor." }
+          "The magnitude of the external electeric field to calculate polarizability tensor." },
+        { "-optimize",     FALSE, etBOOL, {&bOptimize},
+          "Optimize zeta values" },
     };
 
     FILE                       *fp;
@@ -936,10 +939,7 @@ int alex_tune_eem(int argc, char *argv[])
         fprintf(fp, "In the total data set of %zu molecules we have:\n",
                 opt.mymols().size());
     }
-    if (MASTER(opt.commrec()))
-    {
-        opt.InitOpt(factor);
-    }
+    
     if (opt.iChargeGenerationAlgorithm() != eqgESP)
     {
         opt.initQgresp();
@@ -949,12 +949,20 @@ int alex_tune_eem(int argc, char *argv[])
         opt.initQgacm();
     }
 
-    opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
-               fp,
-               nrun,
-               oenv,
-               opt2fn("-conv", NFILE, fnm),
-               opt2fn("-epot", NFILE, fnm));
+    if (bOptimize)
+    {
+        if (MASTER(opt.commrec()))
+        {
+            opt.InitOpt(factor);
+        }
+        
+        opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
+                   fp,
+                   nrun,
+                   oenv,
+                   opt2fn("-conv", NFILE, fnm),
+                   opt2fn("-epot", NFILE, fnm));                   
+    }
 
     if (MASTER(opt.commrec()))
     {

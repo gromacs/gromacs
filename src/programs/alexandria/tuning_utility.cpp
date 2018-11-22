@@ -264,6 +264,7 @@ void print_electric_props(FILE                           *fp,
     int            i    = 0, j     = 0, n     = 0;
     int            nout = 0, mm    = 0, nn    = 0;
     real           sse  = 0, sigma = 0, qCalc = 0;
+    real           rrms = 0, wtot  = 0;
 
     FILE          *dipc, *muc,  *Qc;
     FILE          *hh,   *espc, *alphac, *isopolc, *anisopolc, *qc;
@@ -322,16 +323,17 @@ void print_electric_props(FILE                           *fp,
                 mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
                 mol.Qgresp_.updateAtomCoords(mol.x());                
                 mol.Qgresp_.calcPot();
-            }         
-            if (mol.espRms() < 7e-3)
-            {
-                for (size_t i = 0; i < mol.Qgresp_.nEsp(); i++)
-                {
-                    gmx_stats_add_point(lsq_esp, mol.Qgresp_.espPoint()[i].v(), mol.Qgresp_.espPoint()[i].vCalc(), 0, 0);
-                }
             }
-            fprintf(fp, "ESP rms: %g (Hartree/e) %s\n", mol.espRms(), (mol.espRms() > 7e-3) ? "XXX" : "");
+            rrms   = 0;
+            wtot   = 0;
+            auto  espRms = convert2gmx(mol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e);         
+            fprintf(fp, "ESP rms: %g (kJ/mol e) %s\n", espRms, (espRms > 11) ? "XXX" : "");
             
+            for (size_t i = 0; i < mol.Qgresp_.nEsp(); i++)
+            {
+                gmx_stats_add_point(lsq_esp, mol.Qgresp_.espPoint()[i].v(), mol.Qgresp_.espPoint()[i].vCalc(), 0, 0);
+            }
+           
             // Dipoles           
             mol.CalcDipole();
             mol.rotateDipole(mol.muQM(qtCalc), mol.muQM(qtElec));

@@ -581,8 +581,8 @@ int alex_tune_zeta(int argc, char *argv[])
     char                       *const_elem    = nullptr;
     gmx_bool                    bcompress     = false;
     gmx_bool                    bZPE          = false;
-    gmx_bool                    bZero         = true;
     gmx_bool                    bPrintTable   = false;
+    gmx_bool                    bZero         = true;    
     gmx_bool                    bOptimize     = true;
 
     t_pargs                     pa[]          = {
