@@ -1274,19 +1274,21 @@ dd_print_load(gmx_domdec_t *dd,
 //! Prints DD load balance report in mdrun verbose mode.
 static void dd_print_load_verbose(gmx_domdec_t *dd)
 {
+    std::string report;
     if (isDlbOn(dd->comm))
     {
-        fprintf(stderr, "vol %4.2f%c ",
-                dd_vol_min(dd), dd_load_flags(dd) ? '!' : ' ');
+        report.append(gmx::formatString("vol %4.2f%c ",
+                                        dd_vol_min(dd), dd_load_flags(dd) ? '!' : ' '));
     }
     if (dd->nnodes > 1)
     {
-        fprintf(stderr, "imb F %2d%% ", gmx::roundToInt(dd_f_imbal(dd)*100));
+        report.append(gmx::formatString("imb F %2d%% ", gmx::roundToInt(dd_f_imbal(dd)*100)));
     }
     if (dd->comm->cycl_n[ddCyclPME])
     {
-        fprintf(stderr, "pme/F %4.2f ", dd_pme_f_ratio(dd));
+        report.append(gmx::formatString("pme/F %4.2f ", dd_pme_f_ratio(dd)));
     }
+    fprintf(stderr, "%s", report.c_str());
 }
 
 //! Turns on dynamic load balancing if possible and needed.

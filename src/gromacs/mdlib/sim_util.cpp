@@ -159,8 +159,11 @@ void print_time(FILE                     *out,
             {
                 finish = static_cast<time_t>(seconds_since_epoch + dt);
                 auto timebuf = gmx_ctime_r(&finish);
+                timebuf.erase(std::remove(timebuf.begin(), timebuf.end(), '\n'),
+                              timebuf.end());
                 fputs(", will finish ", out);
                 fputs(timebuf.c_str(), out);
+                fputs("          ", out);
             }
             else
             {
