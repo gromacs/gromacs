@@ -270,6 +270,18 @@ void gmx::Integrator::do_rerun()
         gmx_fatal(FARGS, "Simulated annealing not supported by rerun.");
     }
 
+    /* Rerun can't work if an output file name is the same as the input file name.
+     * If this is the case, the user will get an error telling them what the issue is.
+     */
+    if (strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-o", nfile, fnm)) == 0 ||
+        strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-x", nfile, fnm)) == 0)
+    {
+        gmx_fatal(FARGS, "When using mdrun -rerun, the name of the input trajectory file "
+                  "%s cannot be identical to the name of an output file (whether "
+                  "given explicitly with -o or -x, or by default)",
+                  opt2fn("-rerun", nfile, fnm));
+    }
+
     /* Settings for rerun */
     ir->nstlist       = 1;
     ir->nstcalcenergy = 1;

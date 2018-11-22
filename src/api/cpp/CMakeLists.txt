@@ -44,7 +44,6 @@
 # does not expose lower level headers.
 
 add_subdirectory(include)
-add_subdirectory(testsupport)
 
 # The include directory should be mostly empty so that we can use it internally as
 # the public interface include directory during build and testing.
@@ -136,7 +135,6 @@ configure_package_config_file(
     cmake/gmxapi-config.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config.cmake"
     INSTALL_DESTINATION share/cmake/gmxapi/
-    PATH_VARS CMAKE_INSTALL_LIBDIR
 )
 write_basic_package_version_file(
     ${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config-version.cmake

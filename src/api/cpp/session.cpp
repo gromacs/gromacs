@@ -217,6 +217,7 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
     GMX_ASSERT(mpiContextManager_, "SessionImpl invariant implies valid MpiContextManager guard.");
     GMX_ASSERT(simulationContext_.communicationRecord_, "SessionImpl invariant implies valid commrec.");
     GMX_UNUSED_VALUE(multiSim_);
+    GMX_UNUSED_VALUE(simulationContext_);
 
     // \todo Session objects can have logic specialized for the runtime environment.
 

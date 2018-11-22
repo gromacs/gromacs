@@ -34,8 +34,6 @@
  */
 #include <memory>
 
-#include <gtest/gtest.h>
-
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
@@ -53,11 +51,14 @@
 
 #include "testingconfiguration.h"
 
-namespace
+namespace gmxapi
 {
 
-//! Input file for testing is built by CMake script and filename is compiled into in testingconfiguration binary.
-const auto &filename = gmxapi::testing::sample_tprfilename;
+namespace testing
+{
+
+namespace
+{
 
 /*!
  * \brief Restraint that can optionally issue an immediate stop signal.
@@ -82,13 +83,10 @@ class StopSignalIssuer : public gmx::IRestraintPotential
         {}
 
         /*! \cond Implement IRestraintPotential */
-        gmx::PotentialPointData evaluate(gmx::Vector r_site,
-                                         gmx::Vector r_ref,
+        gmx::PotentialPointData evaluate(gmx::       Vector /* r_site */,
+                                         gmx::       Vector /*  r_ref */,
                                          double      t) override
         {
-            (void)r_site;
-            (void)r_ref;
-            (void)t;
             // Note that evaluate gets called once for each site,
             // which is twice per time step for a pair restraint.
             // The following initialization logic is not atomic, but it is sufficient.
@@ -186,7 +184,7 @@ class SimpleSignalingClient : public gmxapi::MDModule
             const auto timeElapsed =
                 restraint_->lastSimulationTime_ - restraint_->simulationStartTime_;
 
-            const auto numSteps    = timeElapsed / gmxapi::testing::testingTimestep;
+            const auto numSteps    = timeElapsed / getTestStepSize();
             return gmx::roundToInt(numSteps);
         }
 
@@ -198,21 +196,17 @@ class SimpleSignalingClient : public gmxapi::MDModule
 /*!
  * \brief Check that we can bind to and use the stop signaler.
  */
-TEST(ApiRunner, StopSignalClient)
+TEST_F(GmxApiTest, ApiRunnerStopSignalClient)
 {
-
-    auto system  = gmxapi::fromTprFile(filename);
+    makeTprFile(3);
+    auto system  = gmxapi::fromTprFile(runner_.tprFileName_);
     auto context = std::make_shared<gmxapi::Context>();
 
     // Check assumptions about basic simulation behavior.
     {
-        gmxapi::MDArgs args    = gmxapi::testing::mdArgs;
-        args.emplace_back("-nsteps");
-        args.emplace_back("3");
+        gmxapi::MDArgs args    = makeMdArgs();
         args.emplace_back("-nstlist");
         args.emplace_back("1");
-        // Work around unclean working directory.
-        args.emplace_back("-noappend");
 
         context->setMDArgs(args);
 
@@ -235,13 +229,12 @@ TEST(ApiRunner, StopSignalClient)
 
     // Make sure that stop signal shortens simulation.
     {
-        gmxapi::MDArgs args    = gmxapi::testing::mdArgs;
-        args.emplace_back("-nsteps");
-        args.emplace_back("3");
+        gmxapi::MDArgs args    = makeMdArgs();
         args.emplace_back("-nstlist");
         args.emplace_back("1");
-        // Work around unclean working directory.
-        args.emplace_back("-noappend");
+        // TODO should use api functionality to extend simulation instead
+        args.emplace_back("-nsteps");
+        args.emplace_back("6");
 
         context->setMDArgs(args);
 
@@ -265,3 +258,7 @@ TEST(ApiRunner, StopSignalClient)
 }
 
 } // end anonymous namespace
+
+} // end namespace testing
+
+} // end namespace gmxapi
