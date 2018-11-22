@@ -1,0 +1,12 @@
+This directory contains a stripped-down and modified-for-GROMACS version
+of a reference implementation of the LEWG P0009 proposal, revision 8:
+"mdspan: A Non-Owning Multidimensional Array Reference"
+
+The full version is available from
+https://github.com/ORNL/cpp-proposals-pub/tree/master/P0009
+
+
+The following modifications were carried out:
+* reformatted code with uncrustify
+* added GROMACS header to all files
+* added doxygen comments to all files
