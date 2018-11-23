@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <System Name="scaled-water">
+    <Integrator Name="nm">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>7</Real>
+          <Real>-1.7244e-08</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>8</Real>
+          <Real>1.68908e-09</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>9</Real>
+          <Real>8.01278e-08</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>10</Real>
+          <Real>1.22131e-07</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>11</Real>
+          <Real>3.82339e-06</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">2</Int>
+          <Real>12</Real>
+          <Real>2.40214e-05</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">2</Int>
+          <Real>13</Real>
+          <Real>13.9062</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">2</Int>
+          <Real>14</Real>
+          <Real>13.9063</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">2</Int>
+          <Real>15</Real>
+          <Real>5243.66</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">2</Int>
+          <Real>16</Real>
+          <Real>5243.66</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">2</Int>
+          <Real>17</Real>
+          <Real>5352.67</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">2</Int>
+          <Real>18</Real>
+          <Real>5352.67</Real>
+        </Sequence>
+      </XvgData>
+    </Integrator>
+  </System>
+</ReferenceData>
