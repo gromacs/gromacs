@@ -375,20 +375,6 @@ void gmx::Integrator::do_md()
                  * should not be reset.
                  */
             }
-            if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
-            {
-                /* Copy the pull group COM of the previous step from the checkpoint state to the pull state */
-                setPrevStepPullComFromState(ir->pull_work, state);
-            }
-        }
-        else if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
-        {
-            allocStatePrevStepPullCom(state, ir->pull_work);
-            t_pbc pbc;
-            set_pbc(&pbc, ir->ePBC, state->box);
-            initPullComFromPrevStep(cr, ir->pull_work, mdatoms, &pbc, as_rvec_array(state->x.data()));
-            updatePrevStepCom(ir->pull_work);
-            setStatePrevStepPullCom(ir->pull_work, state);
         }
         if (observablesHistory->energyHistory == nullptr)
         {
@@ -400,6 +386,41 @@ void gmx::Integrator::do_md()
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
+    }
+
+    if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
+    {
+        allocStatePrevStepPullCom(state, ir->pull_work);
+        if (startingFromCheckpoint)
+        {
+            if (PAR(cr))
+            {
+                if (MASTER(cr))
+                {
+                    /* Copy the COM that has been read from the checkpoint */
+                    copyPrevStepPullComState(state_global, state);
+                }
+                /* Only the master rank has the checkpointed COM from the previous step */
+                gmx_bcast(sizeof(double) * state->com_prev_step.size(), &state->com_prev_step[0], cr);
+            }
+            setPrevStepPullComFromState(ir->pull_work, state);
+        }
+        else
+        {
+            if (MASTER(cr))
+            {
+                allocStatePrevStepPullCom(state_global, ir->pull_work);
+            }
+            t_pbc pbc;
+            set_pbc(&pbc, ir->ePBC, state->box);
+            initPullComFromPrevStep(cr, ir->pull_work, mdatoms, &pbc, state->x.rvec_array());
+            updatePrevStepCom(ir->pull_work);
+            setStatePrevStepPullCom(ir->pull_work, state);
+        }
+        if (PAR(cr) && MASTER(cr))
+        {
+            setStatePrevStepPullCom(ir->pull_work, state_global);
+        }
     }
 
     // TODO: Remove this by converting AWH into a ForceProvider
@@ -1172,10 +1193,14 @@ void gmx::Integrator::do_md()
                       state, graph,
                       nrnb, wcycle, upd, constr);
 
-        if (MASTER(cr) && ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
+        if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
         {
             updatePrevStepCom(ir->pull_work);
             setStatePrevStepPullCom(ir->pull_work, state);
+            if (PAR(cr) && MASTER(cr))
+            {
+                setStatePrevStepPullCom(ir->pull_work, state_global);
+            }
         }
 
         if (ir->eI == eiVVAK)

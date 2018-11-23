@@ -1008,6 +1008,21 @@ void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state)
     }
 }
 
+void copyPrevStepPullComState(const t_state *srcState, t_state *dstState)
+{
+    if (srcState == nullptr || dstState == nullptr || srcState == dstState)
+    {
+        return;
+    }
+    size_t comPrevStepSize = srcState->com_prev_step.size();
+
+    if (dstState->com_prev_step.size() != comPrevStepSize)
+    {
+        dstState->com_prev_step.resize(comPrevStepSize, NAN);
+    }
+    dstState->com_prev_step = srcState->com_prev_step;
+}
+
 void updatePrevStepCom(struct pull_t *pull)
 {
     for (size_t g = 0; g < pull->group.size(); g++)
@@ -1045,8 +1060,15 @@ void initPullComFromPrevStep(const t_commrec *cr,
     pull_comm_t *comm   = &pull->comm;
     size_t       ngroup = pull->group.size();
 
-    comm->pbcAtomBuffer.resize(ngroup);
-    comm->comBuffer.resize(ngroup*DIM);
+    if (!comm->bParticipate)
+    {
+        return;
+    }
+
+    GMX_ASSERT(comm->pbcAtomBuffer.size() == pull->group.size(), "pbcAtomBuffer should have size number of groups");
+    GMX_ASSERT(comm->comBuffer.size() == pull->group.size()*DIM, "comBuffer should have size #group*DIM");
+
+    pull_set_pbcatoms(cr, pull, x, comm->pbcAtomBuffer);
 
     for (size_t g = 0; g < ngroup; g++)
     {
@@ -1060,7 +1082,6 @@ void initPullComFromPrevStep(const t_commrec *cr,
                        "use the COM from the previous step as reference.");
 
             rvec x_pbc = { 0, 0, 0 };
-            pull_set_pbcatoms(cr, pull, x, comm->pbcAtomBuffer);
             copy_rvec(comm->pbcAtomBuffer[g], x_pbc);
 
             if (debug)
@@ -1114,11 +1135,15 @@ void initPullComFromPrevStep(const t_commrec *cr,
             }
 
             /* Copy local sums to a buffer for global summing */
-            copy_dvec(comSumsTotal.sum_wmx,  comm->comBuffer[g*3]);
-            copy_dvec(comSumsTotal.sum_wmxp, comm->comBuffer[g*3 + 1]);
-            comm->comBuffer[g*3 + 2][0] = comSumsTotal.sum_wm;
-            comm->comBuffer[g*3 + 2][1] = comSumsTotal.sum_wwm;
-            comm->comBuffer[g*3 + 2][2] = 0;
+            auto localSums = comm->comBuffer.begin() + g*3;
+
+            *localSums = comSumsTotal.sum_wmx;
+            ++localSums;
+            *localSums = comSumsTotal.sum_wmxp;
+            ++localSums;
+            (*localSums)[0] = comSumsTotal.sum_wm;
+            (*localSums)[1] = comSumsTotal.sum_wwm;
+            (*localSums)[2] = 0;
         }
     }
 
@@ -1133,11 +1158,12 @@ void initPullComFromPrevStep(const t_commrec *cr,
         {
             if (pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
             {
+                auto   localSums = comm->comBuffer.begin() + g*3;
                 double wmass, wwmass;
 
                 /* Determine the inverse mass */
-                wmass             = comm->comBuffer[g*3+2][0];
-                wwmass            = comm->comBuffer[g*3+2][1];
+                wmass             = localSums[2][0];
+                wwmass            = localSums[2][1];
                 pgrp->mwscale     = 1.0/wmass;
                 /* invtm==0 signals a frozen group, so then we should keep it zero */
                 if (pgrp->invtm != 0)
@@ -1148,11 +1174,8 @@ void initPullComFromPrevStep(const t_commrec *cr,
                 /* Divide by the total mass */
                 for (int m = 0; m < DIM; m++)
                 {
-                    pgrp->x[m]    = comm->comBuffer[g*3  ][m]*pgrp->mwscale;
-                    if (pgrp->epgrppbc == epgrppbcREFAT || pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
-                    {
-                        pgrp->x[m]     += comm->pbcAtomBuffer[g][m];
-                    }
+                    pgrp->x[m]  = localSums[0][m]*pgrp->mwscale;
+                    pgrp->x[m] += comm->pbcAtomBuffer[g][m];
                 }
                 if (debug)
                 {

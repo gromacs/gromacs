@@ -361,6 +361,19 @@ void setStatePrevStepPullCom(const struct pull_t *pull, t_state *state);
  */
 void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state);
 
+/*! \brief Copies the pull group COM from one state to another state.
+ *
+ * Copies the contents of com_prev_step from srcState to dstState.
+ * If srcState or dstState is null (nullptr) or if srcState == dstState
+ * nothing will be done.
+ * The size of comPrevStepSize of dstState will be modified (resized) to fit the data
+ * in srcState.
+ *
+ * \param[in]   srcState The source state
+ * \param[in]   dstState The destination state
+ */
+void copyPrevStepPullComState(const t_state *srcState, t_state *dstState);
+
 /*! \brief Sets the previous step COM to the current COM
  *
  * \param[in]   pull The COM pull force calculation data structure
