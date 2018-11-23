@@ -302,6 +302,7 @@ void dd_collect_state(gmx_domdec_t *dd,
             }
         }
         state->baros_integral = state_local->baros_integral;
+        state->com_prev_step  = state_local->com_prev_step;
     }
     if (state_local->flags & (1 << estX))
     {

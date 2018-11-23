@@ -2199,11 +2199,12 @@ void dd_init_local_state(gmx_domdec_t *dd,
 
     if (DDMASTER(dd))
     {
-        buf[0] = state_global->flags;
-        buf[1] = state_global->ngtc;
-        buf[2] = state_global->nnhpres;
-        buf[3] = state_global->nhchainlength;
-        buf[4] = state_global->dfhist ? state_global->dfhist->nlambda : 0;
+        buf[0]                     = state_global->flags;
+        buf[1]                     = state_global->ngtc;
+        buf[2]                     = state_global->nnhpres;
+        buf[3]                     = state_global->nhchainlength;
+        buf[4]                     = state_global->dfhist ? state_global->dfhist->nlambda : 0;
+        state_local->com_prev_step = state_global->com_prev_step;
     }
     dd_bcast(dd, NITEM_DD_INIT_LOCAL_STATE*sizeof(int), buf);
 
