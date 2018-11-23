@@ -301,7 +301,8 @@ void dd_collect_state(gmx_domdec_t *dd,
                 state->nhpres_vxi[i*nh+j]       = state_local->nhpres_vxi[i*nh+j];
             }
         }
-        state->baros_integral = state_local->baros_integral;
+        state->baros_integral      = state_local->baros_integral;
+        state->pull_com_prev_step  = state_local->pull_com_prev_step;
     }
     if (state_local->flags & (1 << estX))
     {
