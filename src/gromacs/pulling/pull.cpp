@@ -1691,6 +1691,21 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull)
 
             comm->bParticipate = bWillParticipate;
             comm->nparticipate = count[0];
+
+            /* When we use the previous COM for PBC, we need to broadcast
+             * the previous COM to ranks that have joined the communicator.
+             */
+            for (pull_group_work_t &group : pull->group)
+            {
+                if (group.epgrppbc == epgrppbcPREVSTEPCOM)
+                {
+                    GMX_ASSERT(comm->bParticipate || !MASTER(cr),
+                               "The master rank has to participate, as it should pass an up to date prev. COM "
+                               "to bcast here as well as to e.g. checkpointing");
+
+                    gmx_bcast(sizeof(dvec), group.x_prev_step, cr);
+                }
+            }
         }
     }
 
@@ -1877,7 +1892,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         /* Set up the global to local atom mapping for PBC atoms */
         for (pull_group_work_t &group : pull->group)
         {
-            if (group.epgrppbc == epgrppbcREFAT)
+            if (group.epgrppbc == epgrppbcREFAT || group.epgrppbc == epgrppbcPREVSTEPCOM)
             {
                 /* pbcAtomSet consists of a single atom */
                 group.pbcAtomSet = gmx::compat::make_unique<gmx::LocalAtomSet>(atomSets->add({&group.params.pbcatom, &group.params.pbcatom + 1}));
@@ -1893,7 +1908,6 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->bFOutAverage = pull_params->bFOutAverage;
 
     GMX_RELEASE_ASSERT(pull->group[0].params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
-    pull->group[0].x_prev_step[XX] = NAN;
 
     pull->numCoordinatesWithExternalPotential = 0;
 
@@ -2160,8 +2174,6 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             init_pull_group_index(fplog, cr, g, pgrp,
                                   bConstraint, pulldim_con,
                                   mtop, ir, lambda);
-
-            pgrp->x_prev_step[XX] = NAN;
         }
         else
         {
