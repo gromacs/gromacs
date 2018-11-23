@@ -1227,7 +1227,7 @@ static int do_cpt_state(XDR *xd,
                 case estDISRE_RM3TAV: ret         = do_cpte_n_reals(xd, part, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
                 case estORIRE_INITF:  ret         = do_cpte_real (xd, part, i, sflags, &state->hist.orire_initf, list); break;
                 case estORIRE_DTAV:   ret         = do_cpte_n_reals(xd, part, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
-                case estPREVSTEPCOM:  ret         = doVector<double>(xd, part, i, sflags, &state->com_prev_step, list); break;
+                case estPULLCOMPREVSTEP:      ret = doVector<double>(xd, part, i, sflags, &state->pull_com_prev_step, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown state entry %d\n"
                               "You are reading a checkpoint file written by different code, which is not supported", i);
