@@ -112,6 +112,8 @@ class SimulationRunner
         int callGromppOnThisRank(const CommandLine &callerRef);
         //! Convenience wrapper for a default call to \c callGromppOnThisRank
         int callGromppOnThisRank();
+        //! Calls nmeig for testing
+        int callNmeig();
         //! Calls mdrun for testing with a customized command line
         int callMdrun(const CommandLine &callerRef);
         /*! \brief Convenience wrapper for calling mdrun for testing
@@ -139,6 +141,7 @@ class SimulationRunner
         std::string tprFileName_;
         std::string logFileName_;
         std::string edrFileName_;
+        std::string mtxFileName_;
         std::string cptFileName_;
         std::string swapFileName_;
         int         nsteps_;
