@@ -217,15 +217,15 @@ class t_state
         ekinstate_t                ekinstate;      //!< The state of the kinetic energy
 
         /* History for special algorithms, should be moved to a history struct */
-        history_t                         hist;            //!< Time history for restraints
-        df_history_t                     *dfhist;          //!< Free-energy history for free energy analysis
-        std::shared_ptr<gmx::AwhHistory>  awhHistory;      //!< Accelerated weight histogram history
+        history_t                         hist;               //!< Time history for restraints
+        df_history_t                     *dfhist;             //!< Free-energy history for free energy analysis
+        std::shared_ptr<gmx::AwhHistory>  awhHistory;         //!< Accelerated weight histogram history
 
-        int                               ddp_count;       //!< The DD partitioning count for this state
-        int                               ddp_count_cg_gl; //!< The DD partitioning count for index_gl
-        std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
+        int                               ddp_count;          //!< The DD partitioning count for this state
+        int                               ddp_count_cg_gl;    //!< The DD partitioning count for index_gl
+        std::vector<int>                  cg_gl;              //!< The global cg number of the local cgs
 
-        std::vector<double>               com_prev_step;   //!< The COM of the previous step of each pull group
+        std::vector<double>               pull_com_prev_step; //!< The COM of the previous step of each pull group
 };
 
 #ifndef DOXYGEN
