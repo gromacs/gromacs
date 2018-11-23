@@ -47,6 +47,7 @@
 
 #include <cstdio>
 
+#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/options/basicoptions.h"
@@ -96,6 +97,7 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
     tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
     logFileName_(fileManager->getTemporaryFilePath(".log")),
     edrFileName_(fileManager->getTemporaryFilePath(".edr")),
+    mtxFileName_(fileManager->getTemporaryFilePath(".mtx")),
     nsteps_(-2),
     fileManager_(*fileManager)
 {
@@ -141,6 +143,14 @@ SimulationRunner::useTopGroAndNdxFromDatabase(const std::string &name)
 {
     topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top");
     groFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".gro");
+    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx");
+}
+
+void
+SimulationRunner::useTopG96AndNdxFromDatabase(const std::string &name)
+{
+    topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top");
+    groFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".g96");
     ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx");
 }
 
@@ -209,6 +219,25 @@ SimulationRunner::callGrompp()
 }
 
 int
+SimulationRunner::callNmeig()
+{
+    /* Conforming to style guide by not passing a non-const reference
+       to this function. Passing a non-const reference might make it
+       easier to write code that incorrectly re-uses callerRef after
+       the call to this function. */
+
+    CommandLine caller;
+    caller.append("nmeig");
+    caller.addOption("-s", tprFileName_);
+    caller.addOption("-f", mtxFileName_);
+    caller.addOption("-first", "7");
+    caller.addOption("-last", "50");
+    caller.addOption("-xvg", "none");
+
+    return gmx_nmeig(caller.argc(), caller.argv());
+}
+
+int
 SimulationRunner::callMdrun(const CommandLine &callerRef)
 {
     /* Conforming to style guide by not passing a non-const reference
@@ -223,6 +252,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
 
     caller.addOption("-g", logFileName_);
     caller.addOption("-e", edrFileName_);
+    caller.addOption("-mtx", mtxFileName_);
     caller.addOption("-o", fullPrecisionTrajectoryFileName_);
     caller.addOption("-x", reducedPrecisionTrajectoryFileName_);
 
