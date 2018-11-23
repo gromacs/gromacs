@@ -1877,7 +1877,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         /* Set up the global to local atom mapping for PBC atoms */
         for (pull_group_work_t &group : pull->group)
         {
-            if (group.epgrppbc == epgrppbcREFAT)
+            if (group.epgrppbc == epgrppbcREFAT || group.epgrppbc == epgrppbcPREVSTEPCOM)
             {
                 /* pbcAtomSet consists of a single atom */
                 group.pbcAtomSet = gmx::compat::make_unique<gmx::LocalAtomSet>(atomSets->add({&group.params.pbcatom, &group.params.pbcatom + 1}));
@@ -1893,7 +1893,6 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->bFOutAverage = pull_params->bFOutAverage;
 
     GMX_RELEASE_ASSERT(pull->group[0].params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
-    pull->group[0].x_prev_step[XX] = NAN;
 
     pull->numCoordinatesWithExternalPotential = 0;
 
@@ -2160,8 +2159,6 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             init_pull_group_index(fplog, cr, g, pgrp,
                                   bConstraint, pulldim_con,
                                   mtop, ir, lambda);
-
-            pgrp->x_prev_step[XX] = NAN;
         }
         else
         {
