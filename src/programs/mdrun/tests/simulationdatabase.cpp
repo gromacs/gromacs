@@ -168,6 +168,15 @@ const MdpFileValues mdpFileValueDatabase_g
                                               1, 2, 3, 4, 5, 6, 7, 8, 9
                                           } }
     },
+    // Scaled water for NMA
+    {
+        "scaled-water", { { },
+                          {
+                              // TODO This test case is not currently used, so we
+                              // have not tested which rank counts work.
+                              1, 2, 3, 4, 5, 6 // TODO tpi test
+                          } }
+    },
     // Nonanol molecule in vacuo, topology suitable for testing FEP
     // on KE, angles, dihedral restraints, coulomb and vdw
     {
