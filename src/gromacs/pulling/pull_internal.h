@@ -259,4 +259,32 @@ struct pull_t
     int                numExternalPotentialsStillToBeAppliedThisStep;
 };
 
+/*! \brief Copies the pull group COM of the previous step from the checkpoint state to the pull state
+ *
+ * \param[in]   pull  The COM pull force calculation data structure
+ * \param[in]   state The global state container
+ */
+void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state);
+
+/*! \brief Copies the pull group COM from one state to another state.
+ *
+ * Copies the contents of com_prev_step from srcState to dstState.
+ * If srcState or dstState is null (nullptr) or if srcState == dstState
+ * nothing will be done.
+ * The size of comPrevStepSize of dstState will be modified (resized) to fit the data
+ * in srcState.
+ *
+ * \param[in]   srcState The source state
+ * \param[in]   dstState The destination state
+ */
+void copyPrevStepPullComState(const t_state *srcState, t_state *dstState);
+
+/*! \brief Resizes the vector, in the state container, containing the COMs from the previous step
+ *
+ * \param[in]   state The global state container
+ * \param[in]   pull  The COM pull force calculation data structure
+ */
+void allocStatePrevStepPullCom(t_state *state, pull_t *pull);
+
+
 #endif

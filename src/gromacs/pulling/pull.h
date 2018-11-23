@@ -354,25 +354,24 @@ real max_pull_distance2(const pull_coord_work_t *pcrd,
  */
 void setStatePrevStepPullCom(const struct pull_t *pull, t_state *state);
 
-/*! \brief Copies the pull group COM of the previous step from the checkpoint state to the pull state
- *
- * \param[in]   pull  The COM pull force calculation data structure
- * \param[in]   state The global state container
- */
-void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state);
-
 /*! \brief Sets the previous step COM to the current COM
  *
  * \param[in]   pull The COM pull force calculation data structure
  */
 void updatePrevStepCom(struct pull_t *pull);
 
-/*! \brief Resizes the vector, in the state container, containing the COMs from the previous step
+/*! \brief Allocates, initializes and communicates the previous step pull COM (if that option is set to true).
  *
- * \param[in]   state The global state container
- * \param[in]   pull  The COM pull force calculation data structure
+ * If ir->pull->bSetPbcRefToPrevStepCOM is not true nothing is done.
+ *
+ * \param[in] ir                     The input options/settings of the simulation.
+ * \param[in] md                     All atoms.
+ * \param[in] state                  The local (to this rank) state.
+ * \param[in] state_global           The global state.
+ * \param[in] cr                     Struct for communication info.
+ * \param[in] startingFromCheckpoint Is the simulation starting from a checkpoint?
  */
-void allocStatePrevStepPullCom(t_state *state, pull_t *pull);
+void preparePrevStepPullCom(const t_inputrec *ir, const t_mdatoms *md, t_state *state, t_state *state_global, const t_commrec *cr, bool startingFromCheckpoint);
 
 /*! \brief Initializes the COM of the previous step (set to initial COM)
  *

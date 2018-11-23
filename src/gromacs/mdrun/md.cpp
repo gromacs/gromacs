@@ -375,20 +375,6 @@ void gmx::Integrator::do_md()
                  * should not be reset.
                  */
             }
-            if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
-            {
-                /* Copy the pull group COM of the previous step from the checkpoint state to the pull state */
-                setPrevStepPullComFromState(ir->pull_work, state);
-            }
-        }
-        else if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
-        {
-            allocStatePrevStepPullCom(state, ir->pull_work);
-            t_pbc pbc;
-            set_pbc(&pbc, ir->ePBC, state->box);
-            initPullComFromPrevStep(cr, ir->pull_work, mdatoms, &pbc, as_rvec_array(state->x.data()));
-            updatePrevStepCom(ir->pull_work);
-            setStatePrevStepPullCom(ir->pull_work, state);
         }
         if (observablesHistory->energyHistory == nullptr)
         {
@@ -401,6 +387,8 @@ void gmx::Integrator::do_md()
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
     }
+
+    preparePrevStepPullCom(ir, mdatoms, state, state_global, cr, startingFromCheckpoint);
 
     // TODO: Remove this by converting AWH into a ForceProvider
     auto awh = prepareAwhModule(fplog, *ir, state_global, cr, ms, startingFromCheckpoint,
@@ -1172,10 +1160,14 @@ void gmx::Integrator::do_md()
                       state, graph,
                       nrnb, wcycle, upd, constr);
 
-        if (MASTER(cr) && ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
+        if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
         {
             updatePrevStepCom(ir->pull_work);
             setStatePrevStepPullCom(ir->pull_work, state);
+            if (PAR(cr) && MASTER(cr))
+            {
+                setStatePrevStepPullCom(ir->pull_work, state_global);
+            }
         }
 
         if (ir->eI == eiVVAK)
