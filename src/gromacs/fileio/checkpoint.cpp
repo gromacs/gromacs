@@ -1944,7 +1944,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
         if (bRead)
         {
             do_cpt_string_err(xd, "output filename", buf, list);
-            std::strncpy(outputfile.filename, buf.data(), buf.size()-1);
+            std::copy(std::begin(buf), std::end(buf), std::begin(outputfile.filename));
 
             if (do_cpt_int(xd, "file_offset_high", &offset_high, list) != 0)
             {
