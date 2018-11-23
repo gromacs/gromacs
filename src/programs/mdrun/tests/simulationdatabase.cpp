@@ -168,6 +168,13 @@ const MdpFileValues mdpFileValueDatabase_g
                                               1, 2, 3, 4, 5, 6, 7, 8, 9
                                           } }
     },
+    // Scaled water for NMA
+    {
+        "scaled-water", { { },
+                          {
+                              1, 2, 3, 4, 5, 6
+                          } }
+    },
     // Nonanol molecule in vacuo, topology suitable for testing FEP
     // on KE, angles, dihedral restraints, coulomb and vdw
     {
