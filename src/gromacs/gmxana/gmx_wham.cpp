@@ -1262,17 +1262,18 @@ static void copy_pullgrp_to_synthwindow(t_UmbrellaWindow *synthWindow,
 static void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
                              t_UmbrellaOptions *opt, const char *fnhist, const char *xlabel)
 {
-    int    i, j, k, nbin;
-    double last;
-    char  *fn = nullptr, *buf = nullptr;
-    FILE  *fp = nullptr;
+    int         i, j, k, nbin;
+    double      last;
+    std::string fn, buf;
+    FILE       *fp = nullptr;
 
     if (opt->bs_verbose)
     {
-        snew(fn, std::strlen(fnhist)+10);
-        snew(buf, std::strlen(fnhist)+10);
-        sprintf(fn, "%s_cumul.xvg", std::strncpy(buf, fnhist, std::strlen(fnhist)-4));
-        fp = xvgropen(fn, "CDFs of umbrella windows", xlabel, "CDF", opt->oenv);
+        buf.resize(std::strlen(fnhist)+10);
+        buf = gmx_strdup(fnhist);
+        buf.resize(std::strlen(fnhist)-4);
+        fn = gmx::formatString("%s_cumul.xvg", buf.c_str());
+        fp = xvgropen(fn.c_str(), "CDFs of umbrella windows", xlabel, "CDF", opt->oenv);
     }
 
     nbin = opt->bins;
@@ -1312,10 +1313,8 @@ static void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
             }
             fprintf(fp, "\n");
         }
-        printf("Wrote cumulative distribution functions to %s\n", fn);
+        printf("Wrote cumulative distribution functions to %s\n", fn.c_str());
         xvgrclose(fp);
-        sfree(fn);
-        sfree(buf);
     }
 }
 
@@ -1505,24 +1504,24 @@ static void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWind
 static void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindows,
                              int bs_index, t_UmbrellaOptions *opt, const char *xlabel)
 {
-    char *fn = nullptr, *buf = nullptr, title[256];
-    FILE *fp;
-    int   bins, l, i, j;
+    std::string buf, fn, title;
+    FILE       *fp;
+    int         bins, l, i, j;
 
     if (bs_index >= 0)
     {
-        snew(fn, std::strlen(fnhist)+10);
-        snew(buf, std::strlen(fnhist)+1);
-        sprintf(fn, "%s_bs%d.xvg", std::strncpy(buf, fnhist, std::strlen(fnhist)-4), bs_index);
-        sprintf(title, "Umbrella histograms. Bootstrap #%d", bs_index);
+        buf = gmx_strdup(fnhist);
+        buf.resize(std::strlen(fnhist)-4);
+        fn    = gmx::formatString("%s_bs%d.xvg", buf.c_str(), bs_index);
+        title = gmx::formatString("Umbrella histograms. Bootstrap #%d", bs_index);
     }
     else
     {
-        fn = gmx_strdup(fnhist);
-        std::strcpy(title, "Umbrella histograms");
+        fn    = gmx_strdup(fnhist);
+        title = gmx::formatString("Umbrella histograms");
     }
 
-    fp   = xvgropen(fn, title, xlabel, "count", opt->oenv);
+    fp   = xvgropen(fn.c_str(), title.c_str(), xlabel, "count", opt->oenv);
     bins = opt->bins;
 
     /* Write histograms */
@@ -1540,12 +1539,7 @@ static void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int 
     }
 
     xvgrclose(fp);
-    printf("Wrote %s\n", fn);
-    if (bs_index >= 0)
-    {
-        sfree(buf);
-    }
-    sfree(fn);
+    printf("Wrote %s\n", fn.c_str());
 }
 
 //! Make random weights for histograms for the Bayesian bootstrap of complete histograms)

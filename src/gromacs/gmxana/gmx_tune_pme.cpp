@@ -1075,7 +1075,9 @@ static void make_benchmark_tprs(
         info->fsz[j]       = fac*fourierspacing;
 
         /* Write the benchmark tpr file */
-        std::strncpy(fn_bench_tprs[j], fn_sim_tpr, std::strlen(fn_sim_tpr)-std::strlen(".tpr"));
+        std::string tprString(fn_sim_tpr);
+        tprString.erase(tprString.find_last_of(".tpr", tprString.length()), 4);
+        std::strncpy(fn_bench_tprs[j], tprString.c_str(), tprString.length());
         sprintf(buf, "_bench%.2d.tpr", j);
         std::strcat(fn_bench_tprs[j], buf);
         fprintf(stdout, "Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
