@@ -1,0 +1,11 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Kevin Boyd <kevin.boyd@uconn.edu>
+Verified+1: Kevin Boyd <kevin.boyd@uconn.edu>
+Code-Review+2: Carsten Kutzner <ckutzne@gwdg.de>
+Verified+1: Carsten Kutzner <ckutzne@gwdg.de>
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-by: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-at: Mon, 26 Nov 2018 11:23:21 +0100
+Reviewed-on: https://gerrit.gromacs.org/8741
+Project: gromacs
+Branch: refs/heads/release-2019
