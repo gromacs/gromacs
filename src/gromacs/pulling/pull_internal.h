@@ -188,6 +188,9 @@ struct ComSums
     int    dummy[32];
 };
 
+/*! \brief The normal COM buffer needs 3 elements per group */
+static constexpr int c_comBufferStride = 3;
+
 /*! \brief The cylinder buffer needs 9 elements per group */
 static constexpr int c_cylinderBufferStride = 9;
 

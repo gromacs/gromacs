@@ -2226,7 +2226,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     }
 
     comm->pbcAtomBuffer.resize(pull->group.size());
-    comm->comBuffer.resize(pull->group.size()*DIM);
+    comm->comBuffer.resize(pull->group.size()*c_comBufferStride);
     if (pull->bCylinder)
     {
         comm->cylinderBuffer.resize(pull->coord.size()*c_cylinderBufferStride);
