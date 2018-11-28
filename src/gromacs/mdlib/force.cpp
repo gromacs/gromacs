@@ -526,6 +526,8 @@ void do_force_lowlevel(t_forcerec           *fr,
         }
 
         /* Note that with separate PME nodes we get the real energies later */
+        // TODO it would be simpler if we just accumulated a single
+        // long-range virial contribution.
         forceWithVirial->addVirialContribution(ewaldOutput.vir_q);
         forceWithVirial->addVirialContribution(ewaldOutput.vir_lj);
         enerd->dvdl_lin[efptCOUL] += ewaldOutput.dvdl[efptCOUL];
