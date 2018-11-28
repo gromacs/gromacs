@@ -22,5 +22,6 @@ the use of |Gromacs| for specific scientific problems.
    special/qmmm
    special/vmd-imd
    special/membrane-embedding
+   special/mimic-qmmm
 
 
