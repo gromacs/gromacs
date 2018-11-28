@@ -532,23 +532,28 @@ inline bool pme_gpu_is_testing(const PmeGpu *pmeGpu)
 /* A block of C++ functions that live in pme-gpu-internal.cpp */
 
 /*! \libinternal \brief
- * Returns the GPU gathering staging forces buffer.
+ * Returns the energy and virial GPU outputs, useful for testing.
  *
- * \param[in] pmeGpu             The PME GPU structure.
- * \returns                      The input/output forces.
+ * It is the caller's responsibility to be aware of whether the GPU
+ * handled the solve stage.
+ *
+ * \param[in] pme                The PME structure.
+ * \returns                      The output object.
  */
-GPU_FUNC_QUALIFIER gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(gmx::EmptyArrayRef())
+GPU_FUNC_QUALIFIER PmeOutput
+pme_gpu_getEnergyAndVirial(const gmx_pme_t &GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(PmeOutput {})
 
 /*! \libinternal \brief
- * Returns the output virial and energy of the PME solving.
+ * Returns the GPU outputs (forces, energy and virial)
  *
- * \param[in] pmeGpu             The PME GPU structure.
- * \param[out] energy            The output energy.
- * \param[out] virial            The output virial matrix.
+ * \param[in] pme                The PME structure.
+ * \param[in] flags              The combination of flags that affected this PME computation.
+ *                               The flags are the GMX_PME_ flags from pme.h.
+ * \returns                      The output object.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_get_energy_virial(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
-                                                  real *GPU_FUNC_ARGUMENT(energy),
-                                                  matrix GPU_FUNC_ARGUMENT(virial)) GPU_FUNC_TERM
+GPU_FUNC_QUALIFIER PmeOutput
+    pme_gpu_getOutput(const gmx_pme_t &GPU_FUNC_ARGUMENT(pme),
+                      int              GPU_FUNC_ARGUMENT(flags)) GPU_FUNC_TERM_WITH_RETURN(PmeOutput {})
 
 /*! \libinternal \brief
  * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_prepare_computation().
@@ -666,5 +671,20 @@ GPU_FUNC_QUALIFIER void pme_gpu_reinit_atoms(PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
  */
 void pme_gpu_reinit_computation(const PmeGpu *pmeGpu);
 
+/*! \brief
+ * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
+ * (if they were to be computed).
+ *
+ * \param[in]  pme            The PME data structure.
+ * \param[in]  flags          The combination of flags to affect this PME computation.
+ *                            The flags are the GMX_PME_ flags from pme.h.
+ * \param[out] wcycle         The wallclock counter.
+ * \return     The output forces, energy and virial
+ */
+GPU_FUNC_QUALIFIER PmeOutput
+pme_gpu_wait_finish_task(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
+                         int                   GPU_FUNC_ARGUMENT(flags),
+                         gmx_wallcycle        *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM_WITH_RETURN(PmeOutput {}
+                                                                                                    )
 
 #endif

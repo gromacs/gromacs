@@ -225,21 +225,6 @@ static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
     }
 }
 
-static void pme_gpu_reduce_outputs(gmx_wallcycle_t                 wcycle,
-                                   gmx::ForceWithVirial           *forceWithVirial,
-                                   gmx::ArrayRef<const gmx::RVec>  pmeForces,
-                                   gmx_enerdata_t                 *enerd,
-                                   const tensor                    vir_Q,
-                                   real                            Vlr_q)
-{
-    wallcycle_start(wcycle, ewcPME_GPU_F_REDUCTION);
-    GMX_ASSERT(forceWithVirial, "Invalid force pointer");
-    forceWithVirial->addVirialContribution(vir_Q);
-    enerd->term[F_COUL_RECIP] += Vlr_q;
-    sum_forces(as_rvec_array(forceWithVirial->force_.data()), pmeForces);
-    wallcycle_stop(wcycle, ewcPME_GPU_F_REDUCTION);
-}
-
 static void calc_virial(int start, int homenr, const rvec x[], const rvec f[],
                         tensor vir_part, const t_graph *graph, const matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
@@ -890,18 +875,16 @@ computeSpecialForces(FILE                          *fplog,
  * \param[in]  box           The box matrix
  * \param[in]  x             Coordinate array
  * \param[in]  flags         Force flags
+ * \param[in]  pmeFlags      PME flags
  * \param[in]  wcycle        The wallcycle structure
  */
 static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
                                       matrix          box,
                                       rvec            x[],
                                       int             flags,
+                                      int             pmeFlags,
                                       gmx_wallcycle_t wcycle)
 {
-    int pmeFlags = GMX_PME_SPREAD | GMX_PME_SOLVE;
-    pmeFlags |= (flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0;
-    pmeFlags |= (flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0;
-
     pme_gpu_prepare_computation(pmedata, (flags & GMX_FORCE_DYNAMICBOX) != 0, box, wcycle, pmeFlags);
     pme_gpu_launch_spread(pmedata, x, wcycle);
 }
@@ -930,22 +913,24 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  * one of the reductions, regardless of the GPU task completion order.
  *
  * \param[in]     nbv              Nonbonded verlet structure
- * \param[in]     pmedata          PME module data
+ * \param[in,out] pmedata          PME module data
  * \param[in,out] force            Force array to reduce task outputs into.
  * \param[in,out] forceWithVirial  Force and virial buffers
  * \param[in,out] fshift           Shift force output vector results are reduced into
  * \param[in,out] enerd            Energy data structure results are reduced into
  * \param[in]     flags            Force flags
+ * \param[in]     pmeFlags         PME flags
  * \param[in]     haveOtherWork    Tells whether there is other work than non-bonded in the stream(s)
  * \param[in]     wcycle           The wallcycle structure
  */
 static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv,
-                                        const gmx_pme_t                     *pmedata,
+                                        gmx_pme_t                           *pmedata,
                                         gmx::ArrayRefWithPadding<gmx::RVec> *force,
                                         gmx::ForceWithVirial                *forceWithVirial,
                                         rvec                                 fshift[],
                                         gmx_enerdata_t                      *enerd,
                                         int                                  flags,
+                                        int                                  pmeFlags,
                                         bool                                 haveOtherWork,
                                         gmx_wallcycle_t                      wcycle)
 {
@@ -959,18 +944,8 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
     {
         if (!isPmeGpuDone)
         {
-            matrix            vir_Q;
-            real              Vlr_q;
-
             GpuTaskCompletion completionType = (isNbGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
-            isPmeGpuDone = pme_gpu_try_finish_task(pmedata, wcycle, &pmeGpuForces,
-                                                   vir_Q, &Vlr_q, completionType);
-
-            if (isPmeGpuDone)
-            {
-                pme_gpu_reduce_outputs(wcycle, forceWithVirial, pmeGpuForces,
-                                       enerd, vir_Q, Vlr_q);
-            }
+            isPmeGpuDone = pme_gpu_try_finish_task(pmedata, pmeFlags, wcycle, forceWithVirial, enerd, completionType);
         }
 
         if (!isNbGpuDone)
@@ -1085,6 +1060,10 @@ static void do_force_cutsVERLET(FILE *fplog,
     // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
     const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && thisRankHasDuty(cr, DUTY_PME) &&
         ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Mixed));
+    const int  pmeFlags = GMX_PME_SPREAD | GMX_PME_SOLVE |
+        ((flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0) |
+        ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
+        ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -1172,7 +1151,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (useGpuPme)
     {
-        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.unpaddedArrayRef().data()), flags, wcycle);
+        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.unpaddedArrayRef().data()), flags, pmeFlags, wcycle);
     }
 
     /* do gridding for pair search */
@@ -1630,16 +1609,12 @@ static void do_force_cutsVERLET(FILE *fplog,
     bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, ppForceWorkload->haveGpuBondedWork, wcycle);
+        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, pmeFlags, ppForceWorkload->haveGpuBondedWork, wcycle);
     }
 
     if (!alternateGpuWait && useGpuPme)
     {
-        gmx::ArrayRef<const gmx::RVec> pmeGpuForces;
-        matrix vir_Q;
-        real   Vlr_q = 0.0;
-        pme_gpu_wait_finish_task(fr->pmedata, wcycle, &pmeGpuForces, vir_Q, &Vlr_q);
-        pme_gpu_reduce_outputs(wcycle, &forceWithVirial, pmeGpuForces, enerd, vir_Q, Vlr_q);
+        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceWithVirial, enerd);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */

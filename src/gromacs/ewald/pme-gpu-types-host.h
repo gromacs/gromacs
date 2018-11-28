@@ -105,6 +105,19 @@ struct PmeGpuSettings
     int                currentFlags;
 };
 
+// TODO There's little value in computing the Coulomb and LJ virial
+// separately, so we should simplify that.
+// TODO The matrices might be best as a view, but not currently
+// possible. Use mdspan?
+struct PmeOutput
+{
+    gmx::ArrayRef<gmx::RVec> forces_;
+    real                     coulombEnergy_;
+    matrix                   coulombVirial_;
+    real                     lennardJonesEnergy_;
+    matrix                   lennardJonesVirial_;
+};
+
 /*! \internal \brief
  * The PME GPU intermediate buffers structure, included in the main PME GPU structure by value.
  * Buffers are managed by the PME GPU module.
