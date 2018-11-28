@@ -124,7 +124,7 @@ else()
         set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex is not available")
     elseif(NOT IMAGE_CONVERT_POSSIBLE)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
-        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "ImageMagick convert is not available")
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "a working form ImageMagick convert is not available")
         set(NO_IMAGE_CONVERT_REASON "Can not convert files for online or pdf manual")
         # TODO Later, identify other dependencies like bibtex,
         # make_index, date, some graphics conversion program,
