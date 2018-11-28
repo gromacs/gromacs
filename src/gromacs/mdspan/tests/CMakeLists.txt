@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(MDSpanTests mdspan-test
+                  accessor_policy.cpp
                   extents.cpp
                   layouts.cpp
                  )
