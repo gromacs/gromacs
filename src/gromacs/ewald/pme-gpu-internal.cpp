@@ -86,6 +86,7 @@
 #include "pme-gpu-utils.h"
 #include "pme-grid.h"
 #include "pme-internal.h"
+#include "pme-solve.h"
 
 /*! \internal \brief
  * Wrapper for getting a pointer to the plain C++ part of the GPU kernel parameters structure.
@@ -627,27 +628,42 @@ int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int atomIn
     return result;
 }
 
-gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *pmeGpu)
+PmeOutput pme_gpu_getOutput(const gmx_pme_t &pme,
+                            const int        flags)
 {
-    return pmeGpu->staging.h_forces;
-}
+    PmeOutput output;
+    PmeGpu   *pmeGpu = pme.gpu;
+    output.forces_ = pmeGpu->staging.h_forces;
 
-void pme_gpu_get_energy_virial(const PmeGpu *pmeGpu, real *energy, matrix virial)
-{
-    for (int j = 0; j < c_virialAndEnergyCount; j++)
+    const bool haveComputedEnergyAndVirial = (flags & GMX_PME_CALC_ENER_VIR) != 0;
+    if (!haveComputedEnergyAndVirial)
     {
-        GMX_ASSERT(std::isfinite(pmeGpu->staging.h_virialAndEnergy[j]), "PME GPU produces incorrect energy/virial.");
+        // The caller knows from the flags that the energy and the virial are not usable
+        return output;
     }
 
-    GMX_ASSERT(energy, "Invalid energy output pointer in PME GPU");
-    unsigned int j = 0;
-    virial[XX][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[YY][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[ZZ][ZZ] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[XX][YY] = virial[YY][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[XX][ZZ] = virial[ZZ][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[YY][ZZ] = virial[ZZ][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    *energy        = 0.5f * pmeGpu->staging.h_virialAndEnergy[j++];
+    if (pme_gpu_performs_solve(pmeGpu))
+    {
+        for (int j = 0; j < c_virialAndEnergyCount; j++)
+        {
+            GMX_ASSERT(std::isfinite(pmeGpu->staging.h_virialAndEnergy[j]), "PME GPU produces incorrect energy/virial.");
+        }
+
+        unsigned int j = 0;
+        output.coulombVirial_[XX][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+        output.coulombVirial_[YY][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+        output.coulombVirial_[ZZ][ZZ] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+        output.coulombVirial_[XX][YY] = output.coulombVirial_[YY][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+        output.coulombVirial_[XX][ZZ] = output.coulombVirial_[ZZ][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+        output.coulombVirial_[YY][ZZ] = output.coulombVirial_[ZZ][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+        output.coulombEnergy_         = 0.5f * pmeGpu->staging.h_virialAndEnergy[j++];
+    }
+    else
+    {
+        get_pme_ener_vir_q(pme.solve_work, pme.nthread, &output);
+    }
+
+    return output;
 }
 
 void pme_gpu_update_input_box(PmeGpu gmx_unused       *pmeGpu,

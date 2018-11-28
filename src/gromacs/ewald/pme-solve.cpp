@@ -182,39 +182,35 @@ void pme_free_all_work(struct pme_solve_work_t **work, int nthread)
     *work = nullptr;
 }
 
-void get_pme_ener_vir_q(struct pme_solve_work_t *work, int nthread,
-                        real *mesh_energy, matrix vir)
+void get_pme_ener_vir_q(pme_solve_work_t *work, int nthread, PmeOutput *output)
 {
+    GMX_ASSERT(output != nullptr, "Need valid output buffer");
     /* This function sums output over threads and should therefore
      * only be called after thread synchronization.
      */
-    int thread;
+    output->coulombEnergy_ = work[0].energy_q;
+    copy_mat(work[0].vir_q, output->coulombVirial_);
 
-    *mesh_energy = work[0].energy_q;
-    copy_mat(work[0].vir_q, vir);
-
-    for (thread = 1; thread < nthread; thread++)
+    for (int thread = 1; thread < nthread; thread++)
     {
-        *mesh_energy += work[thread].energy_q;
-        m_add(vir, work[thread].vir_q, vir);
+        output->coulombEnergy_ += work[thread].energy_q;
+        m_add(output->coulombVirial_, work[thread].vir_q, output->coulombVirial_);
     }
 }
 
-void get_pme_ener_vir_lj(struct pme_solve_work_t *work, int nthread,
-                         real *mesh_energy, matrix vir)
+void get_pme_ener_vir_lj(pme_solve_work_t *work, int nthread, PmeOutput *output)
 {
+    GMX_ASSERT(output != nullptr, "Need valid output buffer");
     /* This function sums output over threads and should therefore
      * only be called after thread synchronization.
      */
-    int thread;
+    output->lennardJonesEnergy_ = work[0].energy_lj;
+    copy_mat(work[0].vir_lj, output->lennardJonesVirial_);
 
-    *mesh_energy = work[0].energy_lj;
-    copy_mat(work[0].vir_lj, vir);
-
-    for (thread = 1; thread < nthread; thread++)
+    for (int thread = 1; thread < nthread; thread++)
     {
-        *mesh_energy += work[thread].energy_lj;
-        m_add(vir, work[thread].vir_lj, vir);
+        output->lennardJonesEnergy_ += work[thread].energy_lj;
+        m_add(output->lennardJonesVirial_, work[thread].vir_lj, output->lennardJonesVirial_);
     }
 }
 

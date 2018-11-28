@@ -1124,8 +1124,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     real                *grid       = nullptr;
     rvec                *f_d;
     real                *coefficient = nullptr;
-    real                 energy_AB[4];
-    matrix               vir_AB[4];
+    PmeOutput            output[2]; // The second is used for the B state with FEP
     real                 scale, lambda;
     gmx_bool             bClearF;
     gmx_parallel_3dfft_t pfft_setup;
@@ -1440,11 +1439,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
              */
             if (grid_index < 2)
             {
-                get_pme_ener_vir_q(pme->solve_work, pme->nthread, &energy_AB[grid_index], vir_AB[grid_index]);
+                get_pme_ener_vir_q(pme->solve_work, pme->nthread, &output[grid_index % 2]);
             }
             else
             {
-                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy_AB[grid_index], vir_AB[grid_index]);
+                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output[grid_index % 2]);
             }
         }
         bFirst = FALSE;
@@ -1620,7 +1619,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 /* This should only be called on the master thread and
                  * after the threads have synchronized.
                  */
-                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy_AB[2+fep_state], vir_AB[2+fep_state]);
+                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output[fep_state]);
             }
 
             if (bBackFFT)
@@ -1740,19 +1739,19 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         {
             if (!pme->bFEP_q)
             {
-                *energy_q = energy_AB[0];
-                m_add(vir_q, vir_AB[0], vir_q);
+                *energy_q = output[0].coulombEnergy_;
+                m_add(vir_q, output[0].coulombVirial_, vir_q);
             }
             else
             {
-                *energy_q       = (1.0-lambda_q)*energy_AB[0] + lambda_q*energy_AB[1];
-                *dvdlambda_q   += energy_AB[1] - energy_AB[0];
+                *energy_q       = (1.0-lambda_q)*output[0].coulombEnergy_ + lambda_q*output[1].coulombEnergy_;
+                *dvdlambda_q   += output[1].coulombEnergy_ - output[0].coulombEnergy_;
                 for (i = 0; i < DIM; i++)
                 {
                     for (j = 0; j < DIM; j++)
                     {
-                        vir_q[i][j] += (1.0-lambda_q)*vir_AB[0][i][j] +
-                            lambda_q*vir_AB[1][i][j];
+                        vir_q[i][j] += (1.0-lambda_q)*output[0].coulombVirial_[i][j] +
+                            lambda_q*output[1].coulombVirial_[i][j];
                     }
                 }
             }
@@ -1770,18 +1769,18 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         {
             if (!pme->bFEP_lj)
             {
-                *energy_lj = energy_AB[2];
-                m_add(vir_lj, vir_AB[2], vir_lj);
+                *energy_lj = output[0].lennardJonesEnergy_;
+                m_add(vir_lj, output[0].lennardJonesVirial_, vir_lj);
             }
             else
             {
-                *energy_lj     = (1.0-lambda_lj)*energy_AB[2] + lambda_lj*energy_AB[3];
-                *dvdlambda_lj += energy_AB[3] - energy_AB[2];
+                *energy_lj     = (1.0-lambda_lj)*output[0].lennardJonesEnergy_ + lambda_lj*output[1].lennardJonesEnergy_;
+                *dvdlambda_lj += output[1].lennardJonesEnergy_ - output[0].lennardJonesEnergy_;
                 for (i = 0; i < DIM; i++)
                 {
                     for (j = 0; j < DIM; j++)
                     {
-                        vir_lj[i][j] += (1.0-lambda_lj)*vir_AB[2][i][j] + lambda_lj*vir_AB[3][i][j];
+                        vir_lj[i][j] += (1.0-lambda_lj)*output[0].lennardJonesVirial_[i][j] + lambda_lj*output[1].lennardJonesVirial_[i][j];
                     }
                 }
             }
