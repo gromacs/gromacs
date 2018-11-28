@@ -86,6 +86,7 @@
 #include "pme-gpu-utils.h"
 #include "pme-grid.h"
 #include "pme-internal.h"
+#include "pme-solve.h"
 
 /*! \internal \brief
  * Wrapper for getting a pointer to the plain C++ part of the GPU kernel parameters structure.
@@ -627,27 +628,55 @@ int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int atomIn
     return result;
 }
 
-gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *pmeGpu)
+PmeOutput pme_gpu_getEnergyAndVirial(const gmx_pme_t &pme)
 {
-    return pmeGpu->staging.h_forces;
-}
+    PmeOutput output;
 
-void pme_gpu_get_energy_virial(const PmeGpu *pmeGpu, real *energy, matrix virial)
-{
+    PmeGpu *pmeGpu = pme.gpu;
     for (int j = 0; j < c_virialAndEnergyCount; j++)
     {
         GMX_ASSERT(std::isfinite(pmeGpu->staging.h_virialAndEnergy[j]), "PME GPU produces incorrect energy/virial.");
     }
 
-    GMX_ASSERT(energy, "Invalid energy output pointer in PME GPU");
     unsigned int j = 0;
-    virial[XX][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[YY][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[ZZ][ZZ] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[XX][YY] = virial[YY][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[XX][ZZ] = virial[ZZ][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    virial[YY][ZZ] = virial[ZZ][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
-    *energy        = 0.5f * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[XX][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[YY][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[ZZ][ZZ] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[XX][YY] = output.coulombVirial_[YY][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[XX][ZZ] = output.coulombVirial_[ZZ][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombVirial_[YY][ZZ] = output.coulombVirial_[ZZ][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    output.coulombEnergy_         = 0.5f * pmeGpu->staging.h_virialAndEnergy[j++];
+
+    return output;
+}
+
+PmeOutput pme_gpu_getOutput(const gmx_pme_t &pme,
+                            const int        flags)
+{
+    PmeGpu *pmeGpu = pme.gpu;
+    const bool haveComputedEnergyAndVirial = (flags & GMX_PME_CALC_ENER_VIR) != 0;
+    if (!haveComputedEnergyAndVirial)
+    {
+        // The caller knows from the flags that the energy and the virial are not usable
+        PmeOutput output;
+        output.forces_ = pmeGpu->staging.h_forces;
+        return output;
+    }
+
+    if (pme_gpu_performs_solve(pmeGpu))
+    {
+        PmeOutput output = pme_gpu_getEnergyAndVirial(pme);
+        output.forces_ = pmeGpu->staging.h_forces;
+        return output;
+    }
+    else
+    {
+        PmeOutput output;
+        get_pme_ener_vir_q(pme.solve_work, pme.nthread, &output);
+        output.forces_ = pmeGpu->staging.h_forces;
+        return output;
+    }
+
 }
 
 void pme_gpu_update_input_box(PmeGpu gmx_unused       *pmeGpu,

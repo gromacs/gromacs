@@ -194,9 +194,9 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                         if (computeEnergyAndVirial)
                         {
                             // Extract the energy and virial
-                            real       energy;
-                            Matrix3x3  virial;
-                            std::tie(energy, virial) = pmeGetReciprocalEnergyAndVirial(pmeSafe.get(), codePath, method);
+                            const auto  output          = pmeGetReciprocalEnergyAndVirial(pmeSafe.get(), codePath, method);
+                            const auto &energy          = (method == PmeSolveAlgorithm::Coulomb) ? output.coulombEnergy_ : output.lennardJonesEnergy_;
+                            const auto &virial          = (method == PmeSolveAlgorithm::Coulomb) ? output.coulombVirial_ : output.lennardJonesVirial_;
 
                             // These quantities are computed based on the grid values, so must have
                             // checking relative tolerances at least as large. Virial needs more flops
@@ -229,7 +229,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                                 for (int j = 0; j <= i; j++)
                                 {
                                     std::string valueId = formatString("Cell %d %d", i, j);
-                                    virialChecker.checkReal(virial[i * DIM + j], valueId.c_str());
+                                    virialChecker.checkReal(virial[i][j], valueId.c_str());
                                 }
                             }
                         }
