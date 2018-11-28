@@ -83,18 +83,6 @@ appropriate value instead of ``xxx`` :
 * ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw3``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
 * ``-DCMAKE_BUILD_TYPE=Debug`` to build |Gromacs| in debug mode
 
-Building with MiMiC QM/MM support
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-MiMiC QM/MM interface integration will require linking against MiMiC
-communication library, that establishes the communication channel between
-|Gromacs| and CPMD. Check that the installation folder of the library
-is added to CMAKE_PREFIX_PATH if it is installed in non-standard location.
-Building QM/MM-capable version requires double-precision version of |Gromacs|
-compiled with MPI support:
-
-* ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
-
 Building older versions
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -850,6 +838,22 @@ over-ridden with ``GMX_BLAS_USER``, etc.
 On Apple platforms where the Accelerate Framework is available, these
 will be automatically used for BLAS and LAPACK. This could be
 over-ridden with ``GMX_BLAS_USER``, etc.
+
+.. _installing with MiMiC:
+
+Building with MiMiC QM/MM support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MiMiC QM/MM interface integration will require linking against MiMiC
+communication library, that establishes the communication channel
+between |Gromacs| and CPMD. The MiMiC Communication library can be
+downloaded `here <https://gitlab.com/MiMiC-projects/CommLib>`__.
+Compile and install it. Check that the installation folder of the
+MiMiC library is added to CMAKE_PREFIX_PATH if it is installed in
+non-standard location. Building QM/MM-capable version requires
+double-precision version of |Gromacs| compiled with MPI support:
+
+* ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
 
 Changing the names of |Gromacs| binaries and libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

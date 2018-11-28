@@ -229,6 +229,7 @@ if (SPHINX_FOUND)
         reference-manual/special/qmmm.rst
         reference-manual/special/vmd-imd.rst
         reference-manual/special/membrane-embedding.rst
+        reference-manual/special/mimic-qmmm.rst
         # Analysis chapter
         reference-manual/analysis.rst
         reference-manual/analysis/using-groups.rst
