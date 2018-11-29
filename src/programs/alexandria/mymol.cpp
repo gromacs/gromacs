@@ -33,7 +33,6 @@
 #include "mymol.h"
 
 #include <assert.h>
-
 #include <cstdio>
 #include <cstring>
 
