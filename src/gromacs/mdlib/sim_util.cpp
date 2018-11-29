@@ -63,7 +63,7 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
-#include "gromacs/listed-forces/listed-forces.h"
+#include "gromacs/listed-forces/gpubonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/arrayrefwithpadding.h"
@@ -83,6 +83,7 @@
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
@@ -159,6 +160,7 @@ void print_time(FILE                     *out,
             {
                 finish = static_cast<time_t>(seconds_since_epoch + dt);
                 auto timebuf = gmx_ctime_r(&finish);
+                timebuf.erase(timebuf.find_first_of('\n'));
                 fputs(", will finish ", out);
                 fputs(timebuf.c_str(), out);
             }
@@ -1053,12 +1055,13 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 real *lambda,
                                 t_graph *graph,
                                 t_forcerec *fr,
+                                gmx::PpForceWorkload *ppForceWorkload,
                                 interaction_const_t *ic,
                                 const gmx_vsite_t *vsite,
                                 rvec mu_tot,
                                 double t,
                                 gmx_edsam *ed,
-                                int flags,
+                                const int flags,
                                 DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
                                 DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
@@ -1211,22 +1214,8 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         nbnxn_atomdata_set(nbv->nbat, nbv->nbs.get(), mdatoms, fr->cginfo);
 
-        /* Now we put all atoms on the grid, we can assign bonded interactions
-         * to the GPU, where the grid order is needed.
-         */
-        if (fr->gpuBondedLists)
-        {
-            assign_bondeds_to_gpu(fr->gpuBondedLists,
-                                  nbnxn_get_gridindices(fr->nbv->nbs.get()),
-                                  top->idef);
-
-            update_gpu_bonded(fr->gpuBondedLists);
-        }
-
         wallcycle_stop(wcycle, ewcNS);
     }
-
-    const bool haveGpuBondedWork = (bUseGPU && bonded_gpu_have_interactions(fr->gpuBondedLists));
 
     /* initialize the GPU atom data and copy shift vector */
     if (bUseGPU)
@@ -1242,6 +1231,25 @@ static void do_force_cutsVERLET(FILE *fplog,
         nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat);
 
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+
+        if (bNS && fr->gpuBonded)
+        {
+            /* Now we put all atoms on the grid, we can assign bonded
+             * interactions to the GPU, where the grid order is
+             * needed. Also the xq, f and fshift device buffers have
+             * been reallocated if needed, so the bonded code can
+             * learn about them. */
+            // TODO the xq, f, and fshift buffers are now shared
+            // resources, so they should be maintained by a
+            // higher-level object than the nb module.
+            fr->gpuBonded->updateInteractionListsAndDeviceBuffers(nbnxn_get_gridindices(fr->nbv->nbs.get()),
+                                                                  top->idef,
+                                                                  nbnxn_gpu_get_xq(nbv->gpu_nbv),
+                                                                  nbnxn_gpu_get_f(nbv->gpu_nbv),
+                                                                  nbnxn_gpu_get_fshift(nbv->gpu_nbv));
+            ppForceWorkload->haveGpuBondedWork = fr->gpuBonded->haveInteractions();
+        }
+
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
@@ -1294,13 +1302,9 @@ static void do_force_cutsVERLET(FILE *fplog,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
-        if (haveGpuBondedWork && !DOMAINDECOMP(cr))
+        if (ppForceWorkload->haveGpuBondedWork && !DOMAINDECOMP(cr))
         {
-            do_bonded_gpu(fr, flags,
-                          nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
-                          nbnxn_gpu_get_f(nbv->gpu_nbv),
-                          nbnxn_gpu_get_fshift(nbv->gpu_nbv));
-
+            fr->gpuBonded->launchKernels(fr, flags, box);
         }
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
@@ -1364,12 +1368,9 @@ static void do_force_cutsVERLET(FILE *fplog,
                          step, nrnb, wcycle);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
-            if (haveGpuBondedWork)
+            if (ppForceWorkload->haveGpuBondedWork)
             {
-                do_bonded_gpu(fr, flags,
-                              nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
-                              nbnxn_gpu_get_f(nbv->gpu_nbv),
-                              nbnxn_gpu_get_fshift(nbv->gpu_nbv));
+                fr->gpuBonded->launchKernels(fr, flags, box);
             }
 
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -1384,10 +1385,10 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (DOMAINDECOMP(cr))
         {
             nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                     flags, eatNonlocal, haveGpuBondedWork);
+                                     flags, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                 flags, eatLocal, haveGpuBondedWork);
+                                 flags, eatLocal, ppForceWorkload->haveGpuBondedWork);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
@@ -1585,7 +1586,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
                 nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
                                            flags, eatNonlocal,
-                                           haveGpuBondedWork,
+                                           ppForceWorkload->haveGpuBondedWork,
                                            enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                            fr->fshift);
                 cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
@@ -1629,7 +1630,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, haveGpuBondedWork, wcycle);
+        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, ppForceWorkload->haveGpuBondedWork, wcycle);
     }
 
     if (!alternateGpuWait && useGpuPme)
@@ -1653,7 +1654,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
         nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
-                                   flags, eatLocal, haveGpuBondedWork,
+                                   flags, eatLocal, ppForceWorkload->haveGpuBondedWork,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
         float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
@@ -1715,11 +1716,15 @@ static void do_force_cutsVERLET(FILE *fplog,
                                        nbv->nbat, f, wcycle);
     }
 
-    if (haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
+    if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
     {
-        bonded_gpu_get_energies(fr, enerd);
-
-        bonded_gpu_clear_energies(fr->gpuBondedLists);
+        // TODO The launch call could come earlier in the
+        // force-calculation sequence.
+        fr->gpuBonded->launchEnergyTransfer();
+        fr->gpuBonded->accumulateEnergyTerms(enerd);
+        // TODO The clearing call could come later in the
+        // force-calculation sequence.
+        fr->gpuBonded->clearEnergies();
     }
 
     if (DOMAINDECOMP(cr))
@@ -2131,6 +2136,7 @@ void do_force(FILE                                     *fplog,
               gmx::ArrayRef<real>                       lambda,
               t_graph                                  *graph,
               t_forcerec                               *fr,
+              gmx::PpForceWorkload                     *ppForceWorkload,
               const gmx_vsite_t                        *vsite,
               rvec                                      mu_tot,
               double                                    t,
@@ -2157,7 +2163,9 @@ void do_force(FILE                                     *fplog,
                                 mdatoms,
                                 enerd, fcd,
                                 lambda.data(), graph,
-                                fr, fr->ic,
+                                fr,
+                                ppForceWorkload,
+                                fr->ic,
                                 vsite, mu_tot,
                                 t, ed,
                                 flags,

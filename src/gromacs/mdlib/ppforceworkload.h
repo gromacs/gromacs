@@ -33,44 +33,41 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
- *
- * \brief Declares the MD log file handling routines.
+ * \brief Declares force calculation workload manager.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdlib
  * \inlibraryapi
- * \ingroup module_mdrun
  */
-#ifndef GMX_MDRUN_LOGGING_H
-#define GMX_MDRUN_LOGGING_H
-
-#include <memory>
-
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/unique_cptr.h"
-
-struct t_fileio;
+#ifndef GMX_MDLIB_PPFORCEWORKLOAD_H
+#define GMX_MDLIB_PPFORCEWORKLOAD_H
 
 namespace gmx
 {
 
-/*! \brief Close the log file */
-void closeLogFile(t_fileio *logfio);
-
-//! Simple guard pointer See unique_cptr for details.
-using LogFilePtr = std::unique_ptr < t_fileio, functor_wrapper < t_fileio, closeLogFile>>;
-
-/*! \brief Open the log file for writing/appending.
+/*! \libinternal
+ * \brief Manage what force calculation work is required each step.
  *
- * \throws FileIOError when the log file cannot be opened. */
-LogFilePtr openLogFile(const char *lognm,
-                       bool        appendFiles);
-
-/*! \brief Prepare to use the open log file when appending.
+ * An object of this type is updated every neighbour search stage to
+ * reflect what work is required during normal MD steps, e.g. whether
+ * there are bonded interactions in this PP task.
  *
- * Does not throw.
- */
-void prepareLogAppending(FILE *fplog);
+ * This will remove the desire for inline getters from modules that
+ * describe whether they have work to do, because that can be set up
+ * once per simulation or neighborlist lifetime and not changed
+ * thereafter.
+ *
+ * \todo Add more responsibilities, including whether GPUs are in use,
+ * whether there is PME work, whether DD is active, whether NB
+ * local/nonlocal regions have work, whether forces/virial/energy are
+ * required. */
+class PpForceWorkload
+{
+    public:
+        //! Whether this MD step has bonded work to run on a GPU.
+        bool haveGpuBondedWork = false;
+};
 
-}    // namespace gmx
+} // namespace gmx
 
 #endif

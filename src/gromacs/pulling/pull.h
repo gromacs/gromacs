@@ -347,32 +347,25 @@ gmx_bool pull_have_constraint(const struct pull_t *pull);
 real max_pull_distance2(const pull_coord_work_t *pcrd,
                         const t_pbc             *pbc);
 
-/*! \brief Copies the COM from the previous step of all pull groups to the checkpoint state container
+/*! \brief Sets the previous step COM in pull to the current COM and updates the pull_com_prev_step in the state
  *
  * \param[in]   pull  The COM pull force calculation data structure
- * \param[in]   state The global state container
+ * \param[in]   state The local (to this rank) state.
  */
-void setStatePrevStepPullCom(const struct pull_t *pull, t_state *state);
+void updatePrevStepPullCom(struct pull_t *pull, t_state *state);
 
-/*! \brief Copies the pull group COM of the previous step from the checkpoint state to the pull state
+/*! \brief Allocates, initializes and communicates the previous step pull COM (if that option is set to true).
  *
- * \param[in]   pull  The COM pull force calculation data structure
- * \param[in]   state The global state container
- */
-void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state);
-
-/*! \brief Sets the previous step COM to the current COM
+ * If ir->pull->bSetPbcRefToPrevStepCOM is not true nothing is done.
  *
- * \param[in]   pull The COM pull force calculation data structure
+ * \param[in] ir                     The input options/settings of the simulation.
+ * \param[in] md                     All atoms.
+ * \param[in] state                  The local (to this rank) state.
+ * \param[in] state_global           The global state.
+ * \param[in] cr                     Struct for communication info.
+ * \param[in] startingFromCheckpoint Is the simulation starting from a checkpoint?
  */
-void updatePrevStepCom(struct pull_t *pull);
-
-/*! \brief Resizes the vector, in the state container, containing the COMs from the previous step
- *
- * \param[in]   state The global state container
- * \param[in]   pull  The COM pull force calculation data structure
- */
-void allocStatePrevStepPullCom(t_state *state, pull_t *pull);
+void preparePrevStepPullCom(const t_inputrec *ir, const t_mdatoms *md, t_state *state, const t_state *state_global, const t_commrec *cr, bool startingFromCheckpoint);
 
 /*! \brief Initializes the COM of the previous step (set to initial COM)
  *

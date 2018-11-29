@@ -46,7 +46,7 @@
 
 #include "config.h"
 
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
 // Needed for construction of the FFT library description string
 #include <fftw3.h>
 #endif
@@ -80,6 +80,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "cuda_version_information.h"
@@ -201,7 +202,7 @@ void printCopyright(gmx::TextWriter *writer)
 const char *getFftDescriptionString()
 {
 // Define the FFT description string
-#if GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
 #  if GMX_NATIVE_WINDOWS
     // Don't buy trouble
     return "fftw3";
@@ -391,6 +392,7 @@ void printBinaryInformation(TextWriter                      *writer,
     {
         writer->writeLine(formatString("%sWorking dir:  %s%s", prefix, workingDir.c_str(), suffix));
     }
+    writer->writeLine(formatString("%sProcess ID:   %d%s", prefix, gmx_getpid(), suffix));
     const char *const commandLine = programContext.commandLine();
     if (!gmx::isNullOrEmpty(commandLine))
     {

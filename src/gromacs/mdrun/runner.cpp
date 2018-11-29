@@ -75,7 +75,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/printhardware.h"
 #include "gromacs/listed-forces/disre.h"
-#include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/listed-forces/gpubonded.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
@@ -93,6 +93,7 @@
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_tuning.h"
+#include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
@@ -671,7 +672,7 @@ int Mdrunner::mdrunner()
     //
     // Note that when bonded interactions run on a GPU they always run
     // alongside a nonbonded task, so do not influence task assignment
-    // even though they affect the force calculation schedule.
+    // even though they affect the force calculation workload.
     bool useGpuForNonbonded = false;
     bool useGpuForPme       = false;
     bool useGpuForBonded    = false;
@@ -869,7 +870,7 @@ int Mdrunner::mdrunner()
         {
             // Now we can start normal logging to the truncated log file.
             fplog    = gmx_fio_getfp(logFileHandle);
-            prepareLogAppending(cr->nodeid, cr->nnodes, fplog);
+            prepareLogAppending(fplog);
             logOwner = buildLogger(fplog, cr);
             mdlog    = logOwner.logger();
         }
@@ -1402,6 +1403,13 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
+        // TODO This is not the right place to manage the lifetime of
+        // this data structure, but currently it's the easiest way to
+        // make it work. Later, it should probably be made/updated
+        // after the workload for the lifetime of a PP domain is
+        // understood.
+        PpForceWorkload ppForceWorkload;
+
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to integrator.");
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
@@ -1417,6 +1425,7 @@ int Mdrunner::mdrunner()
             globalState.get(),
             &observablesHistory,
             mdAtoms.get(), nrnb, wcycle, fr,
+            &ppForceWorkload,
             replExParams,
             membed,
             walltime_accounting,
