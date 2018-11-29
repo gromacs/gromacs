@@ -356,18 +356,21 @@ void gmx::Integrator::do_md()
             /* Update mdebin with energy history if appending to output files */
             if (continuationOptions.appendFiles)
             {
-                restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
-            }
-            else
-            {
-                if (observablesHistory->energyHistory != nullptr)
+                /* If no history is available (because a checkpoint is from before
+                 * it was written) make a new one later, otherwise restore it.
+                 */
+                if (observablesHistory->energyHistory)
                 {
-                    /* We might have read an energy history from checkpoint.
-                     * As we are not appending, we want to restart the statistics.
-                     * Free the allocated memory and reset the counts.
-                     */
-                    observablesHistory->energyHistory = {};
+                    restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
                 }
+            }
+            else if (observablesHistory->energyHistory)
+            {
+                /* We might have read an energy history from checkpoint.
+                 * As we are not appending, we want to restart the statistics.
+                 * Free the allocated memory and reset the counts.
+                 */
+                observablesHistory->energyHistory = {};
                 /* We might have read a pull history from checkpoint.
                  * We will still want to keep the statistics, so that the files
                  * can be joined and still be meaningful.
@@ -390,11 +393,11 @@ void gmx::Integrator::do_md()
             updatePrevStepCom(ir->pull_work);
             setStatePrevStepPullCom(ir->pull_work, state);
         }
-        if (observablesHistory->energyHistory == nullptr)
+        if (!observablesHistory->energyHistory)
         {
             observablesHistory->energyHistory = compat::make_unique<energyhistory_t>();
         }
-        if (observablesHistory->pullHistory == nullptr)
+        if (!observablesHistory->pullHistory)
         {
             observablesHistory->pullHistory = compat::make_unique<PullHistory>();
         }
