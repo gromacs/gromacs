@@ -237,7 +237,7 @@ class MdSpanTest : public ::testing::Test
 
 using mdspan_int   = basic_mdspan < int, extents<5, dynamic_extent, 3, dynamic_extent, 1>, layout_right, accessor_basic < int>>;
 using mdspan_float = basic_mdspan < float, extents<5, dynamic_extent, 3, dynamic_extent, 1>, layout_right, accessor_basic < float>>;
-using MyTypes      = ::testing::Types<mdspan_int, mdspan_float>;
+using MyTypes      = ::testing::Types<mdspan_int, mdspan_float, mdspan<int, 5, dynamic_extent, 3, dynamic_extent, 1>>;
 TYPED_TEST_CASE(MdSpanTest, MyTypes);
 
 TYPED_TEST(MdSpanTest, Construction) {

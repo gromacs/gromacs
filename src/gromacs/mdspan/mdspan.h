@@ -269,6 +269,10 @@ class basic_mdspan
         pointer       ptr_;
 };
 
+//! basic_mdspan with wrapped indices, basic_accessor policiy and right-aligned  memory layout.
+template<class T, ptrdiff_t... Indices>
+using mdspan = basic_mdspan<T,extents<Indices...>,layout_right,accessor_basic<T> > ;
+
 }      // namespace gmx
 
 #endif /* end of include guard: MDSPAN_MDSPAN_H */
