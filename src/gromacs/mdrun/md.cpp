@@ -353,27 +353,27 @@ void gmx::Integrator::do_md()
     {
         if (startingFromCheckpoint)
         {
-            /* Update mdebin with energy history if appending to output files */
-            if (continuationOptions.appendFiles)
+            if (observablesHistory->energyHistory.get() != nullptr)
             {
-                restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
-            }
-            else
-            {
-                if (observablesHistory->energyHistory != nullptr)
+                /* Update mdebin with energy history if appending to output files */
+                if (continuationOptions.appendFiles)
+                {
+                    restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
+                }
+                else
                 {
                     /* We might have read an energy history from checkpoint.
                      * As we are not appending, we want to restart the statistics.
                      * Free the allocated memory and reset the counts.
                      */
                     observablesHistory->energyHistory = {};
+                    /* We might have read a pull history from checkpoint.
+                     * We will still want to keep the statistics, so that the files
+                     * can be joined and still be meaningful.
+                     * This means that observablesHistory->pullHistory
+                     * should not be reset.
+                     */
                 }
-                /* We might have read a pull history from checkpoint.
-                 * We will still want to keep the statistics, so that the files
-                 * can be joined and still be meaningful.
-                 * This means that observablesHistory->pullHistory
-                 * should not be reset.
-                 */
             }
             if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
             {
