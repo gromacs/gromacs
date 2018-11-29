@@ -600,18 +600,21 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     {
         if (startingFromCheckpoint)
         {
-            /* Update mdebin with energy history if appending to output files */
-            if (continuationOptions.appendFiles)
+            if (observablesHistory->energyHistory.get() != nullptr)
             {
-                restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
-            }
-            else if (observablesHistory->energyHistory.get() != nullptr)
-            {
-                /* We might have read an energy history from checkpoint.
-                 * As we are not appending, we want to restart the statistics.
-                 * Free the allocated memory and reset the counts.
-                 */
-                observablesHistory->energyHistory = {};
+                /* Update mdebin with energy history if appending to output files */
+                if (continuationOptions.appendFiles)
+                {
+                    restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
+                }
+                else
+                {
+                    /* We might have read an energy history from checkpoint.
+                     * As we are not appending, we want to restart the statistics.
+                     * Free the allocated memory and reset the counts.
+                     */
+                    observablesHistory->energyHistory = {};
+                }
             }
         }
         if (observablesHistory->energyHistory.get() == nullptr)
