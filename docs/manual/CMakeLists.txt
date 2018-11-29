@@ -87,5 +87,3 @@ else()
         "Cannot build PDF manual, because ${MANUAL_BUILD_NOT_POSSIBLE_REASON}"
         VERBATIM)
 endif()
-
-set(MANUAL_BUILD_IS_POSSIBLE ${MANUAL_BUILD_IS_POSSIBLE} PARENT_SCOPE)
