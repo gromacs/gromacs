@@ -603,9 +603,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* Update mdebin with energy history if appending to output files */
             if (continuationOptions.appendFiles)
             {
-                restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
+                /* If no history is available (because a checkpoint is from before
+                 * it was written) make a new one later, otherwise restore it.
+                 */
+                if (observablesHistory->energyHistory)
+                {
+                    restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
+                }
             }
-            else if (observablesHistory->energyHistory.get() != nullptr)
+            else if (observablesHistory->energyHistory)
             {
                 /* We might have read an energy history from checkpoint.
                  * As we are not appending, we want to restart the statistics.
@@ -614,7 +620,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 observablesHistory->energyHistory = {};
             }
         }
-        if (observablesHistory->energyHistory.get() == nullptr)
+        if (!observablesHistory->energyHistory)
         {
             observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
         }
