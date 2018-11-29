@@ -275,7 +275,7 @@ class MyMol
         tensor                         alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         eSupport                       eSupp_;
         PaddedRVecVector               f_;
-        gmx::PaddedArrayRef<gmx::RVec> optf_;
+        PaddedRVecVector               optf_;
         std::vector<int>               symmetric_charges_;
         QgenResp                       Qgresp_;
         QgenAcm                        Qgacm_;

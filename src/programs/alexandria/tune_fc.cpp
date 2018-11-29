@@ -1622,6 +1622,8 @@ void Optimization::calcDeviation()
 
                         mymol.f_.clear();
                         mymol.f_.resize(2*natoms);
+                        mymol.optf_.clear();
+                        mymol.optf_.resize(2*natoms);
 
                         dbcopy = debug;
                         debug  = nullptr;
