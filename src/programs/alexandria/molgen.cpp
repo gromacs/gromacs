@@ -489,7 +489,7 @@ void MolGen::Read(FILE            *fp,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         if (pd_.getNexcl() != nexcl_)
         {
-            fprintf(fp, "Exclusion number changed from %d to %d read from the command line.\n",
+            fprintf(stderr, "Exclusion number changed from %d in gentop.dat to %d read from the command line.\n",
                     pd_.getNexcl(), nexcl_);
             pd_.setNexcl(nexcl_);
         }

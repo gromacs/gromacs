@@ -523,6 +523,11 @@ void MyMol::MakeAngles(bool bPairs,
 
     t_blocka *EXCL;
     snew(EXCL, 1);
+    if (debug)
+    {
+        fprintf(debug, "Will generate %d exclusions for %d atoms\n",
+                nexcl_, topology_->atoms.nr);
+    }
     generate_excl(nexcl_, topology_->atoms.nr, plist, &nnb, EXCL);
     for (int i = 0; i < EXCL->nr; i++)
     {
