@@ -18,3 +18,5 @@ The following modifications were carried out:
 * use minimial includes in all header files instead of just including mdspan
 * move tests into a subdirectory tests and rename test_foo.cpp to foo.cpp
 * renamed tests and test fixture class to match GROMACS conventions
+* changed variable signature to from const to const & in constructors
+* Updated the mdspan test to a typed test 
