@@ -137,6 +137,14 @@ SimulationRunner::useStringAsNdxFile(const char *ndxString)
 }
 
 void
+SimulationRunner::useTopG96AndNdxFromDatabase(const std::string &name)
+{
+    topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top");
+    groFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".g96");
+    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx");
+}
+
+void
 SimulationRunner::useTopGroAndNdxFromDatabase(const std::string &name)
 {
     topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top");
