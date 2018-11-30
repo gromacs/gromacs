@@ -229,6 +229,8 @@ MdpFieldValues prepareDefaultMdpFieldValues(const char *simulationName)
     mdpFieldValues.insert(MdpField("compressibility", "5e-5"));
     mdpFieldValues.insert(MdpField("constraints", "none"));
     mdpFieldValues.insert(MdpField("other", ""));
+    mdpFieldValues.insert(MdpField("rcoulomb", "0.7"));
+    mdpFieldValues.insert(MdpField("rvdw", "0.7"));
 
     return mdpFieldValues;
 }
@@ -289,8 +291,8 @@ prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
      * energies were not computed with those from rerun on the same
      * coordinates.
      */
-    return formatString(R"(rcoulomb                = 0.7
-                           rvdw                    = 0.7
+    return formatString(R"(rcoulomb                = %s
+                           rvdw                    = %s
                            rlist                   = -1
                            bd-fric                 = 1000
                            verlet-buffer-tolerance = 0.000001
@@ -316,6 +318,8 @@ prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
                            lincs-order             = 2
                            lincs-iter              = 5
                            %s)",
+                        mdpFieldValues.at("rcoulomb").c_str(),
+                        mdpFieldValues.at("rvdw").c_str(),
                         mdpFieldValues.at("nsteps").c_str(),
                         mdpFieldValues.at("integrator").c_str(),
                         mdpFieldValues.at("tcoupl").c_str(),

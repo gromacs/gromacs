@@ -98,6 +98,8 @@ class SimulationRunner
         void useStringAsMdpFile(const std::string &mdpString);
         //! Use a string as -n input to grompp
         void useStringAsNdxFile(const char *ndxString);
+        //! Use a standard .top and .g96 file as input to grompp
+        void useTopG96AndNdxFromDatabase(const std::string &name);
         //! Use a standard .top and .gro file as input to grompp
         void useTopGroAndNdxFromDatabase(const std::string &name);
         //! Use a standard .gro file as input to grompp
