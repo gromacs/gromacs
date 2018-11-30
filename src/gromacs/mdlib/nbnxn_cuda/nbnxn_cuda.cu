@@ -270,7 +270,8 @@ static inline int calc_shmem_required_nonbonded(const int num_threads_z, const g
 
 void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
                               const nbnxn_atomdata_t *nbatom,
-                              int                     iloc)
+                              int                     iloc,
+                              bool                    haveOtherWork)
 {
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
@@ -281,13 +282,16 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
 
     bool                 bDoTime     = nb->bDoTime;
 
-    /* Don't launch the non-local H2D copy if there is no non-local work to do.
+    /* Don't launch the non-local H2D copy if there is no dependent
+       work to do: neither non-local nor other (e.g. bonded) work
+       to do that has as input the nbnxn coordaintes.
        Doing the same for the local kernel is more complicated, since the
        local part of the force array also depends on the non-local kernel.
        So to avoid complicating the code and to reduce the risk of bugs,
        we always call the local local x+q copy (and the rest of the local
-       work in nbnxn_gpu_launch_kernel(). */
-    if (canSkipWork(nb, iloc))
+       work in nbnxn_gpu_launch_kernel().
+     */
+    if (!haveOtherWork && canSkipWork(nb, iloc))
     {
         plist->haveFreshList = false;
 
