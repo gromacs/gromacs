@@ -363,7 +363,8 @@ static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
 void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
                               const nbnxn_atomdata_t *nbatom,
-                              int                     iloc)
+                              int                     iloc,
+                              bool                    haveOtherWork)
 {
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
@@ -374,13 +375,16 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
 
     bool                 bDoTime     = (nb->bDoTime) != 0;
 
-    /* Don't launch the non-local H2D copy if there is no non-local work to do.
+    /* Don't launch the non-local H2D copy if there is no dependent
+       work to do: neither non-local nor other (e.g. bonded) work
+       to do that has as input the nbnxn coordaintes.
        Doing the same for the local kernel is more complicated, since the
        local part of the force array also depends on the non-local kernel.
        So to avoid complicating the code and to reduce the risk of bugs,
        we always call the local local x+q copy (and the rest of the local
-       work in nbnxn_gpu_launch_kernel(). */
-    if (canSkipWork(nb, iloc))
+       work in nbnxn_gpu_launch_kernel().
+     */
+    if (!haveOtherWork && canSkipWork(nb, iloc))
     {
         plist->haveFreshList = false;
 
