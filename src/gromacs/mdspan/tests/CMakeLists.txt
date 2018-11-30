@@ -37,4 +37,5 @@ gmx_add_unit_test(MDSpanTests mdspan-test
                   extents.cpp
                   layouts.cpp
                   mdspan.cpp
+                  subspan.cpp
                  )
