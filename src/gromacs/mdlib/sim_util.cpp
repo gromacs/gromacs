@@ -1296,17 +1296,20 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
 
         wallcycle_start(wcycle, ewcLAUNCH_GPU);
+
+        // bonded local work not split, so with DD can only launch after
+        // coordinates have been received.
+        if (ppForceWorkload->haveGpuBondedWork && !DOMAINDECOMP(cr))
+        {
+            fr->gpuBonded->launchKernels(fr, flags, box);
+        }
+
         wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         /* launch local nonbonded work on GPU */
         nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatLocal, ppForceWorkload->haveGpuBondedWork);
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-
-        if (ppForceWorkload->haveGpuBondedWork && !DOMAINDECOMP(cr))
-        {
-            fr->gpuBonded->launchKernels(fr, flags, box);
-        }
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
@@ -1363,17 +1366,18 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (bUseGPU)
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
+
+            if (ppForceWorkload->haveGpuBondedWork)
+            {
+                fr->gpuBonded->launchKernels(fr, flags, box);
+            }
+
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             /* launch non-local nonbonded tasks on GPU */
             nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
                          step, nrnb, wcycle);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-
-            if (ppForceWorkload->haveGpuBondedWork)
-            {
-                fr->gpuBonded->launchKernels(fr, flags, box);
-            }
 
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
