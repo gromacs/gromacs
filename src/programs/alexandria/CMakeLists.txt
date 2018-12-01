@@ -45,6 +45,7 @@ set(ALEXANDRIA_SOURCES
            fill_inputrec.cpp
            gauss2molprop.cpp
            babel_io.cpp
+           fit_qs_zeta.cpp
            gen_table.cpp
            gentop.cpp
            getmdlogger.cpp

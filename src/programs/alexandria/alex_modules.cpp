@@ -82,6 +82,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Generate tables for interaction functions used in mdrun");
     registerModule(manager, &alex_poldata_test, "poldata_test",
                    "Test the force field file I/O");
+    registerModule(manager, &alex_fit_qs_zeta, "fit_qs_zeta",
+                   "Fit qshell and zeta based on polarizability");
     registerModule(manager, &alex_molprop_test, "molprop_test",
                    "Test the molecular property file I/O");
     registerModule(manager, &alex_molprop_check, "molprop_check",
