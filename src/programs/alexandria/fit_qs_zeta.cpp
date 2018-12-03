@@ -193,7 +193,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
 
     const  int         NFILE          = asize(fnm);
     static const char *cqdist[]       = { nullptr, "AXpg", "AXps", nullptr };
-    gmx_bool           bVerbose       = TRUE;
+    bool               bVerbose       = false;
     real               alpha          = 0;
     real               delta_q        = 0;
     real               rmax           = 0.005;
@@ -245,30 +245,31 @@ int alex_fit_qs_zeta(int argc, char *argv[])
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         for(auto ai = pd.getAtypeBegin(); ai < pd.getAtypeEnd(); ++ai)
         {
-            auto eem = pd.findEem(iChargeDistributionModel, ai->getType());
-            if (pd.EndEemprops() != eem)
+            alexandria::ChargeDistributionModel cdm[2] = 
+                {
+                    alexandria::eqdAXpg, 
+                    alexandria::eqdAXps
+                };
+
+            for(int i = 0; i < 2; i++)
             {
-                auto pname = ai->getPtype();
-                auto zname = ai->getZtype();
-                if (true || pname == zname)
+                auto eem = pd.findEem(cdm[i], ai->getType());
+                if (pd.EndEemprops() != eem)
                 {
                     double zeta, qs;
+                    auto pname = ai->getPtype();
                     auto ptype = pd.findPtype(pname);
                     fit_polarization(ptype->getPolarizability()/1000, 
                                      0.5, rmax, 
                                      eem->getRow(1),
-                                     iChargeDistributionModel, 
+                                     cdm[i], 
                                      maxiter, tolerance,
-                                     &zeta, &qs, true);
+                                     &zeta, &qs, bVerbose);
                     printf("atype %s zeta_old %7g qs_old %3g alpha %7g zeta_new %7g qs_new %7g\n",
                            ai->getType().c_str(), eem->getZeta(1), eem->getQ(1),  
                            ptype->getPolarizability(), zeta, qs);
                     eem->setZeta(1, zeta);
                     eem->setQ(1, qs);
-                }
-                else
-                {
-                    fprintf(stderr, "Ignoring atomtype %s because ptype %s differs from ztype %s\n", ai->getType().c_str(), pname.c_str(), zname.c_str());
                 }
             }
         }
@@ -279,7 +280,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
         double zeta, qs;
         fit_polarization(alpha, delta_q, rmax, row,
                          iChargeDistributionModel, maxiter, tolerance,
-                         &zeta, &qs, true);
+                         &zeta, &qs, bVerbose);
         if (zeta > 0)
         {
             printf("qdist = %s alpha = %g delta_q = %g zeta = %g qs = %g\n",

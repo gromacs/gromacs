@@ -792,7 +792,7 @@ class RowZetaQ
          */
         void setQ(double q)
         {
-            GMX_RELEASE_ASSERT(!fixedQ_, "Trying to modify a fixed charge");
+            //GMX_RELEASE_ASSERT(!fixedQ_, "Trying to modify a fixed charge");
             q_ = q;
         }
 
