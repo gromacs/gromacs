@@ -1,0 +1,10 @@
+Code-Review+1: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Carsten Kutzner <ckutzne@gwdg.de>
+Verified+1: Carsten Kutzner <ckutzne@gwdg.de>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Mon, 03 Dec 2018 10:03:16 +0100
+Reviewed-on: https://gerrit.gromacs.org/8760
+Project: gromacs
+Branch: refs/heads/release-2018
