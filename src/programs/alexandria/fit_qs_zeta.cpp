@@ -62,16 +62,16 @@ static double chi2_coulomb(double zeta, double qs, double alpha,
     for(int i = 1; i<=imax; i++)
     {
         double r        = i*(rmax/imax);
-        double fpol     = qs*r/alpha;
+        double fpol     = -qs*r/alpha;
         double fcoulomb = 0;
         
         switch (iChargeDistributionModel)
         {
         case alexandria::eqdAXpg:
-            fcoulomb = -DNuclear_GG(r, zeta);
+            fcoulomb = DNuclear_GG(r, zeta);
             break;
         case alexandria::eqdAXps:
-            fcoulomb = -DNuclear_SS(r, row, zeta);
+            fcoulomb = DNuclear_SS(r, row, zeta);
             break;
         default:
             fcoulomb = 0;
@@ -82,71 +82,98 @@ static double chi2_coulomb(double zeta, double qs, double alpha,
     return chi2;
 }
 
+static void print_stats(bool verbose, int iter,
+                        double chi2, double qs, double zeta)
+{
+    if (verbose)
+    {
+        printf("Iter: %5d  chi2: %8g  qs: %7.3f  zeta: %7.3f\n", iter, chi2, qs, zeta);
+    }
+}
+
+static double zeta0(alexandria::ChargeDistributionModel iChargeDistributionModel,
+                    double alpha)
+{
+    double zeta = 0;
+    if (alpha > 0)
+    {
+        zeta = std::pow(3.0*std::sqrt(M_PI)/(4.0*alpha), 1.0/3.0);
+    }
+    if (iChargeDistributionModel == alexandria::eqdAXps)
+    {
+        zeta *= 2.0;
+    }
+    return zeta;
+}
+
 static void fit_polarization(double alpha, double delta_q, double rmax, int row,
                              alexandria::ChargeDistributionModel iChargeDistributionModel,
                              int maxiter, double tolerance,
-                             double *zeta_opt, double *qs_opt)
+                             double *zeta_opt, double *qs_opt,
+                             bool verbose)
 {
-    double zeta = 0;
-    double qs   = -4;
-            
-    if (alpha > 0)
+    *zeta_opt       = 0;
+    *qs_opt         = -4;
+    
+    if (alpha <= 0)
     {
-        // Guess for delta_q == 0 and ChargeDistributionModel == eqdAXpg
-        zeta = std::pow(3.0*std::sqrt(M_PI)/(4.0*alpha), 1.0/3.0);
-        printf("zeta0 %g qs %g delta_q %g\n", zeta, qs, delta_q);
-        if (delta_q != 0.0)
+        return;
+    }
+     
+    double zeta[2] = {   0,   0 };
+    double qs[2]   = {  -4,  -4 };
+    double chi2[2] = { 1e8, 1e8 };
+    int    Min     = 0;
+#define Try (1-Min)
+     
+    gmx::ThreeFry2x64<64>              rng(123457, gmx::RandomDomain::Other);
+    gmx::NormalDistribution<real>      dist(1.0, 0.02);
+    gmx::UniformRealDistribution<real> mc(0.0, 1.0);
+    double qs_min    = -8;
+    double qs_max    = -1;
+    double zeta_max  = 40;
+    double zeta_min  = 2;
+    
+    int    iter = 0;
+    do
+    {
+        if (iter % 100 == 0)
         {
-            double qs_min    = 2*qs;
-            double qs_max    = qs/2;
-            double zeta_max  = 2*zeta;
-            double zeta_min  = zeta/2;
-            double chi2      = chi2_coulomb(zeta, qs, alpha, delta_q, rmax, row, 
-                                            iChargeDistributionModel);
-            double chi2_opt  = chi2;
-            double kT        = 1;// 100*tolerance;
-            bool   bZeta     = true;
-            int    iter      = 0;
-            gmx::ThreeFry2x64<64>         rng(123457, gmx::RandomDomain::Other);
-            gmx::NormalDistribution<real> dist(1.0, 0.02);
-            gmx::NormalDistribution<real> mc(0.0, 1.0);
-            printf("Iter: %5d  chi2: %8g  qs: %7.3f  zeta: %7.3f\n", iter, chi2, qs, zeta);
-            while (chi2 > tolerance && iter < maxiter)
+            zeta[Try] = zeta_min + (zeta_max-zeta_min)*mc(rng);
+            qs[Try]   = qs_min   + (qs_max-qs_min)*mc(rng);
+        }
+        else
+        {
+            double factor   = dist(rng);
+            if (iter % 2)
             {
-                double zeta_new = zeta, qs_new = qs;
-                real factor = dist(rng);
-                if (bZeta)
-                {
-                    zeta_new = std::max(zeta_min, std::min(zeta_max, zeta*factor));
-                }
-                else
-                {
-                    qs_new = std::min(qs_max, std::max(qs_min, qs*factor));
-                }
-                double chi2_new = chi2_coulomb(zeta_new, qs_new, alpha, delta_q, rmax, row, 
-                                               iChargeDistributionModel);
-                                           
-                if (chi2_new < chi2 || std::exp(-(chi2_new - chi2)/chi2) < mc(rng))
-                {
-                    if (chi2_new < chi2_opt)
-                    {
-                        *qs_opt   = qs_new;
-                        *zeta_opt = zeta_new;
-                        chi2_opt  = chi2_new;
-                    }
-                    qs   = qs_new;
-                    zeta = zeta_new;
-                    chi2 = chi2_new;
-                    printf("Iter: %5d  chi2: %8g  qs: %7.3f  zeta: %7.3f\n", iter, chi2_opt, *qs_opt, *zeta_opt);
-                }
-                bZeta = !bZeta;
-                iter += 1;
+                zeta[Try] = std::max(zeta_min, std::min(zeta_max, zeta[Min]*factor));
             }
-            if (chi2 > tolerance)
+            else
             {
-                zeta = 0;
+                qs[Try] = std::min(qs_max, std::max(qs_min, qs[Min]*factor));
             }
         }
+        chi2[Try] = chi2_coulomb(zeta[Try], qs[Try],
+                                 alpha, delta_q, rmax, row, 
+                                 iChargeDistributionModel);
+        if (chi2[Try] < chi2[Min])
+        {
+            Min = Try;
+            print_stats(verbose, iter, chi2[Min], qs[Min], zeta[Min]);
+        }
+        iter += 1;
+    } 
+    while (chi2[Min] > tolerance && iter <= maxiter);
+
+    if (chi2[Min] <= tolerance)
+    {
+        *zeta_opt = zeta[Min];
+        *qs_opt   = qs[Min];
+    }
+    else
+    {
+        *zeta_opt = 0;
     }
 }
 
@@ -216,13 +243,43 @@ int alex_fit_qs_zeta(int argc, char *argv[])
             alexandria::readPoldata(gentop_fnm ? gentop_fnm : "", pd, aps);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+        for(auto ai = pd.getAtypeBegin(); ai < pd.getAtypeEnd(); ++ai)
+        {
+            auto eem = pd.findEem(iChargeDistributionModel, ai->getType());
+            if (pd.EndEemprops() != eem)
+            {
+                auto pname = ai->getPtype();
+                auto zname = ai->getZtype();
+                if (true || pname == zname)
+                {
+                    double zeta, qs;
+                    auto ptype = pd.findPtype(pname);
+                    fit_polarization(ptype->getPolarizability()/1000, 
+                                     0.5, rmax, 
+                                     eem->getRow(1),
+                                     iChargeDistributionModel, 
+                                     maxiter, tolerance,
+                                     &zeta, &qs, true);
+                    printf("atype %s zeta_old %7g qs_old %3g alpha %7g zeta_new %7g qs_new %7g\n",
+                           ai->getType().c_str(), eem->getZeta(1), eem->getQ(1),  
+                           ptype->getPolarizability(), zeta, qs);
+                    eem->setZeta(1, zeta);
+                    eem->setQ(1, qs);
+                }
+                else
+                {
+                    fprintf(stderr, "Ignoring atomtype %s because ptype %s differs from ztype %s\n", ai->getType().c_str(), pname.c_str(), zname.c_str());
+                }
+            }
+        }
+        writePoldata(opt2fn("-do", NFILE, fnm), pd, true);
     }
     else
     {
         double zeta, qs;
         fit_polarization(alpha, delta_q, rmax, row,
                          iChargeDistributionModel, maxiter, tolerance,
-                         &zeta, &qs);
+                         &zeta, &qs, true);
         if (zeta > 0)
         {
             printf("qdist = %s alpha = %g delta_q = %g zeta = %g qs = %g\n",
