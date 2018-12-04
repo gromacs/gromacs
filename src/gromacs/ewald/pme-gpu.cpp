@@ -105,6 +105,18 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
         errorReasons.push_back("not a dynamical integrator");
     }
 
+    /* This equals c_solveMaxThreadsPerBlock */
+    constexpr int c_gpuSolveMaxComplexSizeMinorDim = 8*32;
+    /* NOTE: This check assumes that the minor dimension is Z
+     *       This is not the case with DD. When DD support is
+     *       added, the check needs to be updated.
+     */
+    const int complexSizeMinorDim = (ir->nkz + 1)/2;
+    if (complexSizeMinorDim > c_gpuSolveMaxComplexSizeMinorDim)
+    {
+        errorReasons.emplace_back(gmx::formatString("PME grid size along Z larger than %d", c_gpuSolveMaxComplexSizeMinorDim*2));
+    }
+
     bool inputSupported = errorReasons.empty();
     if (!inputSupported && error)
     {
