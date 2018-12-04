@@ -1132,18 +1132,16 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     const size_t maxBlockSize      = pmeGpu->programHandle_->impl_->solveMaxWorkGroupSize;
 
     const int    gridLineSize       = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
-    const int    gridLinesPerBlock  = std::max(maxBlockSize / gridLineSize, 1UL);
     const int    blocksPerGridLine  = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
-    const int    cellsPerBlock      = gridLineSize * gridLinesPerBlock;
     const size_t warpSize           = pmeGpu->programHandle_->impl_->warpSize;
-    const int    blockSize          = (cellsPerBlock + warpSize - 1) / warpSize * warpSize;
+    const int    blockSize          = ((gridLineSize + blocksPerGridLine - 1)/blocksPerGridLine + warpSize - 1) / warpSize * warpSize;
 
 
     KernelLaunchConfig config;
     config.blockSize[0] = blockSize;
     config.gridSize[0]  = blocksPerGridLine;
     // rounding up to full warps so that shuffle operations produce defined results
-    config.gridSize[1]  = (pmeGpu->kernelParams->grid.complexGridSize[middleDim] + gridLinesPerBlock - 1) / gridLinesPerBlock;
+    config.gridSize[1]  = pmeGpu->kernelParams->grid.complexGridSize[middleDim];
     config.gridSize[2]  = pmeGpu->kernelParams->grid.complexGridSize[majorDim];
     config.stream       = pmeGpu->archSpecific->pmeStream;
 

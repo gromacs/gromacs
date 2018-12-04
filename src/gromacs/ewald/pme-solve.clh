@@ -105,13 +105,9 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_solve_kernel)(const struct PmeOpenCLKer
      * that can range from a part of a single gridline to several complete gridlines.
      */
     const int threadLocalId     = get_local_id(XX);
-    const int gridLineSize      = localCountMinor;
-    const int gridLineIndex     = threadLocalId / gridLineSize;
-    const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
-    const int gridLinesPerBlock = get_local_size(XX) / gridLineSize;
     const int activeWarps       = (get_local_size(XX) / warp_size);
-    const int indexMinor        = get_group_id(XX) * get_local_size(XX) + gridLineCellIndex;
-    const int indexMiddle       = get_group_id(YY) * gridLinesPerBlock + gridLineIndex;
+    const int indexMinor        = get_group_id(XX) * get_local_size(XX) + threadLocalId;
+    const int indexMiddle       = get_group_id(YY);
     const int indexMajor        = get_group_id(ZZ);
 
     /* Optional outputs */
@@ -124,7 +120,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_solve_kernel)(const struct PmeOpenCLKer
     float virzz  = 0.0f;
 
     assert(indexMajor < kernelParams.grid.complexGridSize[majorDim]);
-    if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor) & (gridLineIndex < gridLinesPerBlock))
+    if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor))
     {
         /* The offset should be equal to the global thread index for coalesced access */
         const int                      gridIndex     = (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
