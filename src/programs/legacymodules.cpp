@@ -276,8 +276,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Analyze density of states and properties based on that");
     registerModule(manager, &gmx_dyecoupl, "dyecoupl",
                    "Extract dye dynamics from trajectories");
-    registerModule(manager, &gmx_dyndom, "dyndom",
-                   "Interpolate and extrapolate structure rotations");
     registerModule(manager, &gmx_enemat, "enemat",
                    "Extract an energy matrix from an energy file");
     registerModule(manager, &gmx_energy, "energy",
@@ -416,7 +414,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Tools");
         group.addModule("analyze");
         group.addModule("awh");
-        group.addModule("dyndom");
         group.addModule("filter");
         group.addModule("lie");
         group.addModule("morph");

@@ -99,9 +99,6 @@ int
 gmx_dyecoupl(int argc, char *argv[]);
 
 int
-gmx_dyndom(int argc, char *argv[]);
-
-int
 gmx_editconf(int argc, char *argv[]);
 
 int
