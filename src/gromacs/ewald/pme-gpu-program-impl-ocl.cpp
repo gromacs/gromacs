@@ -78,10 +78,9 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo)
     // but given that we've done no tuning for Intel iGPU, this is as good as anything.
     spreadWorkGroupSize = std::min(c_spreadMaxWarpsPerBlock * warpSize,
                                    deviceInfo->maxWorkGroupSize);
-    solveMaxWorkGroupSize = std::min(c_solveMaxWarpsPerBlock * warpSize,
+    solveMaxWorkGroupSize = deviceInfo->maxWorkGroupSize;
+    gatherWorkGroupSize   = std::min(c_gatherMaxWarpsPerBlock * warpSize,
                                      deviceInfo->maxWorkGroupSize);
-    gatherWorkGroupSize = std::min(c_gatherMaxWarpsPerBlock * warpSize,
-                                   deviceInfo->maxWorkGroupSize);
 
     compileKernels(deviceInfo);
 }
