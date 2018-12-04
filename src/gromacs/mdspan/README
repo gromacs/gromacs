@@ -4,9 +4,17 @@ of a reference implementation of the LEWG P0009 proposal, revision 8:
 
 The full version is available from
 https://github.com/ORNL/cpp-proposals-pub/tree/master/P0009
+SHA1 of the commit used is f433984ba897298069b510aa1311145040dd860c.
 
+This work orginated from "Kokkos" and is distributed under the BSD license as
+stated in COPYING.
 
 The following modifications were carried out:
 * reformatted code with uncrustify
 * added GROMACS header to all files
 * added doxygen comments to all files
+* temporarily removed constexpr from functions, so they compile with C++11
+* put all headers from bits/ into this directory
+* use minimial includes in all header files instead of just including mdspan
+* move tests into a subdirectory tests and rename test_foo.cpp to foo.cpp
+* renamed tests and test fixture class to match GROMACS conventions
