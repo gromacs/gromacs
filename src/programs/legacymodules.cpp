@@ -300,8 +300,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate residue contact maps");
     registerModule(manager, &gmx_mindist, "mindist",
                    "Calculate the minimum distance between two groups");
-    registerModule(manager, &gmx_morph, "morph",
-                   "Interpolate linearly between conformations");
     registerModule(manager, &gmx_msd, "msd",
                    "Calculates mean square displacements");
     registerModule(manager, &gmx_nmeig, "nmeig",
@@ -416,7 +414,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("awh");
         group.addModule("filter");
         group.addModule("lie");
-        group.addModule("morph");
         group.addModule("pme_error");
         group.addModule("sham");
         group.addModule("spatial");
