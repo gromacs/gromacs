@@ -109,13 +109,9 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
      * that can range from a part of a single gridline to several complete gridlines.
      */
     const int threadLocalId     = threadIdx.x;
-    const int gridLineSize      = localCountMinor;
-    const int gridLineIndex     = threadLocalId / gridLineSize;
-    const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
-    const int gridLinesPerBlock = blockDim.x / gridLineSize;
     const int activeWarps       = (blockDim.x / warp_size);
-    const int indexMinor        = blockIdx.x * blockDim.x + gridLineCellIndex;
-    const int indexMiddle       = blockIdx.y * gridLinesPerBlock + gridLineIndex;
+    const int indexMinor        = blockIdx.x*blockDim.x + threadLocalId;
+    const int indexMiddle       = blockIdx.y;
     const int indexMajor        = blockIdx.z;
 
     /* Optional outputs */
@@ -128,7 +124,7 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
     float virzz  = 0.0f;
 
     assert(indexMajor < kernelParams.grid.complexGridSize[majorDim]);
-    if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor) & (gridLineIndex < gridLinesPerBlock))
+    if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor))
     {
         /* The offset should be equal to the global thread index for coalesced access */
         const int             gridIndex     = (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
@@ -296,8 +292,9 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
         /* Reduce 7 outputs per warp in the shared memory */
         const int        stride              = 8; // this is c_virialAndEnergyCount==7 rounded up to power of 2 for convenience, hence the assert
         assert(c_virialAndEnergyCount == 7);
-        const int        reductionBufferSize = (c_solveMaxThreadsPerBlock / warp_size) * stride;
-        __shared__ float sm_virialAndEnergy[reductionBufferSize];
+        const int        maxReductionBufferSize = (c_solveMaxThreadsPerBlock / warp_size) * stride;
+        const int        reductionBufferSize    = activeWarps * stride;
+        __shared__ float sm_virialAndEnergy[maxReductionBufferSize];
 
         if (validComponentIndex)
         {
