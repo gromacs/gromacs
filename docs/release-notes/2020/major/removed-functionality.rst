@@ -5,3 +5,8 @@ gmx anadock
 """""""""""
 The gmx anadock tool was removed since it does not belong in gromacs
 (it analyzes AutoDock outputs).
+
+gmx dyndom
+""""""""""
+The gmx dyndom tool was removed since it does not belong in gromacs
+(it analyzes DynDom outputs).
