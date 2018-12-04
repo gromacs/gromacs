@@ -155,10 +155,6 @@ constexpr int c_pmeAtomDataAlignment = 32;
 //! Spreading max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime in most cases
 constexpr int c_spreadMaxWarpsPerBlock = 8;
 
-//! Solving kernel max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime
-//! (560Ti (CC2.1), 660Ti (CC3.0) and 750 (CC5.0)))
-constexpr int c_solveMaxWarpsPerBlock = 8;
-
 //! Gathering max block width in warps - picked empirically among 2, 4, 8, 16 for max. occupancy and min. runtime
 constexpr int c_gatherMaxWarpsPerBlock = 4;
 
@@ -182,7 +178,7 @@ constexpr int c_pmeSpreadGatherAtomsPerWarp = (warp_size / c_pmeSpreadGatherThre
 constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;
 
 //! Solving kernel max block size in threads
-constexpr int c_solveMaxThreadsPerBlock = (c_solveMaxWarpsPerBlock * warp_size);
+constexpr int c_solveMaxThreadsPerBlock = 256;
 
 //! Gathering max block size in threads
 constexpr int c_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock * warp_size;
