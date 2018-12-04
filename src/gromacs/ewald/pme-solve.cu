@@ -109,13 +109,8 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
      * that can range from a part of a single gridline to several complete gridlines.
      */
     const int threadLocalId     = threadIdx.x;
-    const int gridLineSize      = localCountMinor;
-    const int gridLineIndex     = threadLocalId / gridLineSize;
-    const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
-    const int gridLinesPerBlock = blockDim.x / gridLineSize;
-    const int activeWarps       = (blockDim.x / warp_size);
-    const int indexMinor        = blockIdx.x * blockDim.x + gridLineCellIndex;
-    const int indexMiddle       = blockIdx.y * gridLinesPerBlock + gridLineIndex;
+    const int indexMinor        = blockIdx.x*blockDim.x + threadLocalId;
+    const int indexMiddle       = blockIdx.y;
     const int indexMajor        = blockIdx.z;
 
     /* Optional outputs */
@@ -128,7 +123,7 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
     float virzz  = 0.0f;
 
     assert(indexMajor < kernelParams.grid.complexGridSize[majorDim]);
-    if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor) & (gridLineIndex < gridLinesPerBlock))
+    if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor))
     {
         /* The offset should be equal to the global thread index for coalesced access */
         const int             gridIndex     = (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
@@ -293,48 +288,12 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
 
         const int        componentIndex      = threadLocalId & (warp_size - 1);
         const bool       validComponentIndex = (componentIndex < c_virialAndEnergyCount);
-        /* Reduce 7 outputs per warp in the shared memory */
-        const int        stride              = 8; // this is c_virialAndEnergyCount==7 rounded up to power of 2 for convenience, hence the assert
-        assert(c_virialAndEnergyCount == 7);
-        const int        reductionBufferSize = (c_solveMaxThreadsPerBlock / warp_size) * stride;
-        __shared__ float sm_virialAndEnergy[reductionBufferSize];
-
+        assert(c_virialAndEnergyCount <= warp_size);
+        /* Final output */
         if (validComponentIndex)
         {
-            const int warpIndex = threadLocalId / warp_size;
-            sm_virialAndEnergy[warpIndex * stride + componentIndex] = virxx;
-        }
-        __syncthreads();
-
-        /* Reduce to the single warp size */
-        const int targetIndex = threadLocalId;
-#pragma unroll
-        for (int reductionStride = reductionBufferSize >> 1; reductionStride >= warp_size; reductionStride >>= 1)
-        {
-            const int sourceIndex = targetIndex + reductionStride;
-            if ((targetIndex < reductionStride) & (sourceIndex < activeWarps * stride))
-            {
-                // TODO: the second conditional is only needed on first iteration, actually - see if compiler eliminates it!
-                sm_virialAndEnergy[targetIndex] += sm_virialAndEnergy[sourceIndex];
-            }
-            __syncthreads();
-        }
-
-        /* Now use shuffle again */
-        if (threadLocalId < warp_size)
-        {
-            float output = sm_virialAndEnergy[threadLocalId];
-#pragma unroll
-            for (int delta = stride; delta < warp_size; delta <<= 1)
-            {
-                output += gmx_shfl_down_sync(activeMask, output, delta, warp_size);
-            }
-            /* Final output */
-            if (validComponentIndex)
-            {
-                assert(isfinite(output));
-                atomicAdd(gm_virialAndEnergy + componentIndex, output);
-            }
+            assert(isfinite(virxx));
+            atomicAdd(gm_virialAndEnergy + componentIndex, virxx);
         }
     }
 }
