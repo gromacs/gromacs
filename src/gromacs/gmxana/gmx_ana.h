@@ -39,9 +39,6 @@
 #define _gmx_ana_h
 
 int
-gmx_anadock(int argc, char *argv[]);
-
-int
 gmx_analyze(int argc, char *argv[]);
 
 int
