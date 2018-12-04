@@ -231,8 +231,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_xpm2ps, "xpm2ps",
                    "Convert XPM (XPixelMap) matrices to postscript or XPM");
 
-    registerModule(manager, &gmx_anadock, "anadock",
-                   "Cluster structures from Autodock runs");
     registerModule(manager, &gmx_anaeig, "anaeig",
                    "Analyze eigenvectors/normal modes");
     registerModule(manager, &gmx_analyze, "analyze",
@@ -475,7 +473,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Structural properties");
-        group.addModule("anadock");
         group.addModule("bundle");
         group.addModule("clustsize");
         group.addModule("disre");
