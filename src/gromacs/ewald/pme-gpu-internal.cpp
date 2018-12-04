@@ -1138,6 +1138,9 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     const size_t warpSize           = pmeGpu->programHandle_->impl_->warpSize;
     const int    blockSize          = (cellsPerBlock + warpSize - 1) / warpSize * warpSize;
 
+    static_assert(c_gpuSolveMaxComplexSizeMinorDim == c_spreadMaxThreadsPerBlock);
+    GMX_ASSERT(static_cast<size_t>(blockSize) <= maxBlockSize,
+               "The block size can not be larger than the maximum");
 
     KernelLaunchConfig config;
     config.blockSize[0] = blockSize;

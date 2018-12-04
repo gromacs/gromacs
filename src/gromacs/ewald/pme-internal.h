@@ -96,6 +96,13 @@ static const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 }
  */
 #define PME_ORDER_MAX 12
 
+/*! \brief Maximum number of grid points allowed along the minor dimension for solve on GPU
+ *
+ * Note there is a static_assert that ensures this matches
+ * the corresponding GPU side constexpr thread count.
+ */
+constexpr int c_gpuSolveMaxComplexSizeMinorDim = 8*32;
+
 /*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients, from pme_src.
  * This is only called when the PME cut-off/grid size changes.
  */
