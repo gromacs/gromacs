@@ -195,6 +195,18 @@ bool pme_gpu_supports_input(const t_inputrec &ir, const gmx_mtop_t &mtop, std::s
     {
         errorReasons.emplace_back("not a dynamical integrator");
     }
+    /* TODO: On OpenCL the max workgroup size might actually be
+     *       less than 256, we should take this into account.
+     *
+     * NOTE: This check assumes that the minor dimension is Z
+     *       This is not the case with DD. When DD support is
+     *       added, the check needs to be updated.
+     */
+    const int complexSizeMinorDim = ir.nkz/2 + 1;
+    if (complexSizeMinorDim > c_gpuSolveMaxComplexSizeMinorDim)
+    {
+        errorReasons.emplace_back(gmx::formatString("PME grid size along Z larger than %d", c_gpuSolveMaxComplexSizeMinorDim*2 - 1));
+    }
     return addMessageIfNotSupported(errorReasons, error);
 }
 
