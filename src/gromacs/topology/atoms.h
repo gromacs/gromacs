@@ -167,7 +167,15 @@ void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
 void pr_atomtypes(FILE *fp, int indent, const char *title,
                   const t_atomtypes *atomtypes, gmx_bool bShowNumbers);
 
-void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real abstol);
+/*! \brief Compare information in the t_atoms data structure.
+ *
+ * \param[in] fp Pointer to file to write to.
+ * \param[in] a1 Pointer to first data structure to compare.
+ * \param[in] a2 Pointer to second data structure or nullptr.
+ * \param[in] ftol Relative floating point comparison tolerance.
+ * \param[in] abstol Absolute floating point comparison tolerance.
+ */
+void compareAtoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real abstol);
 
 /*! \brief Set mass for each atom using the atom and residue names using a database
  *
