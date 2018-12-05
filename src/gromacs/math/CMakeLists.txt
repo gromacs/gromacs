@@ -41,6 +41,7 @@ gmx_install_headers(
     do_fit.h
     functions.h
     gmxcomplex.h
+    matrix.h
     units.h
     utilities.h
     vec.h
