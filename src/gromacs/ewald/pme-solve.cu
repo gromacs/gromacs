@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,7 +132,7 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
     const int gridLineSize      = localCountMinor;
     const int gridLineIndex     = threadLocalId / gridLineSize;
     const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
-    const int gridLinesPerBlock = blockDim.x / gridLineSize;
+    const int gridLinesPerBlock = max(blockDim.x / gridLineSize, 1);
     const int activeWarps       = (blockDim.x / warp_size);
     const int indexMinor        = blockIdx.x * blockDim.x + gridLineCellIndex;
     const int indexMiddle       = blockIdx.y * gridLinesPerBlock + gridLineIndex;
@@ -454,7 +454,15 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     const int gridLineSize      = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
     const int gridLinesPerBlock = std::max(maxBlockSize / gridLineSize, 1);
     const int blocksPerGridLine = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
-    const int cellsPerBlock     = gridLineSize * gridLinesPerBlock;
+    int       cellsPerBlock;
+    if (blocksPerGridLine == 1)
+    {
+        cellsPerBlock           = gridLineSize * gridLinesPerBlock;
+    }
+    else
+    {
+        cellsPerBlock           = (gridLineSize + blocksPerGridLine - 1) / blocksPerGridLine;
+    }
     const int blockSize         = (cellsPerBlock + warp_size - 1) / warp_size * warp_size;
     // rounding up to full warps so that shuffle operations produce defined results
     dim3 threads(blockSize);

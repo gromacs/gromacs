@@ -19,6 +19,14 @@ was reduced to near machine precision. The change does not affect
 the results for non-polarizable systems, such as proteins or small
 molecules.
 
+Make large PME grids work on GPU
+"""""""""""""""""""""""""""""""""""""""""""
+
+PME grids with size along Z larger than 511 would make mdrun exit
+with a cryptic CUDA error.
+
+:issue: `2779`
+        
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
