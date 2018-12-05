@@ -420,7 +420,7 @@ void init_QMMMrec(const t_commrec  *cr,
         qr->nrQMlayers = 1;
     }
 
-    const gmx_groups_t *groups = &mtop->groups;
+    const gmx_groups_t &groups = mtop->groups;
 
     /* there are jmax groups of QM atoms. In case of multiple QM groups
      * I assume that the users wants to do ONIOM. However, maybe it

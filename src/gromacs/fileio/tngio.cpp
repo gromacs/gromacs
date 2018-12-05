@@ -588,7 +588,7 @@ static gmx_bool all_atoms_selected(const gmx_mtop_t *mtop,
         {
             for (int atomIndex = 0; atomIndex < atoms.nr; atomIndex++, i++)
             {
-                if (getGroupType(&mtop->groups, gtype, i) != 0)
+                if (getGroupType(mtop->groups, gtype, i) != 0)
                 {
                     return FALSE;
                 }
@@ -664,7 +664,7 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                 char *res_name;
                 int   res_id;
 
-                if (getGroupType(&mtop->groups, egcCompressedX, i) != 0)
+                if (getGroupType(mtop->groups, egcCompressedX, i) != 0)
                 {
                     continue;
                 }
@@ -707,8 +707,8 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                             int atom1, atom2;
                             atom1 = ilist.iatoms[l] + atom_offset;
                             atom2 = ilist.iatoms[l + 1] + atom_offset;
-                            if (getGroupType(&mtop->groups, egcCompressedX, atom1) == 0 &&
-                                getGroupType(&mtop->groups, egcCompressedX, atom2) == 0)
+                            if (getGroupType(mtop->groups, egcCompressedX, atom1) == 0 &&
+                                getGroupType(mtop->groups, egcCompressedX, atom2) == 0)
                             {
                                 tng_molecule_bond_add(tng, mol, ilist.iatoms[l],
                                                       ilist.iatoms[l + 1], &tngBond);
@@ -724,14 +724,14 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                     atom1 = ilist.iatoms[l] + atom_offset;
                     atom2 = ilist.iatoms[l + 1] + atom_offset;
                     atom3 = ilist.iatoms[l + 2] + atom_offset;
-                    if (getGroupType(&mtop->groups, egcCompressedX, atom1) == 0)
+                    if (getGroupType(mtop->groups, egcCompressedX, atom1) == 0)
                     {
-                        if (getGroupType(&mtop->groups, egcCompressedX, atom2) == 0)
+                        if (getGroupType(mtop->groups, egcCompressedX, atom2) == 0)
                         {
                             tng_molecule_bond_add(tng, mol, atom1,
                                                   atom2, &tngBond);
                         }
-                        if (getGroupType(&mtop->groups, egcCompressedX, atom3) == 0)
+                        if (getGroupType(mtop->groups, egcCompressedX, atom3) == 0)
                         {
                             tng_molecule_bond_add(tng, mol, atom1,
                                                   atom3, &tngBond);

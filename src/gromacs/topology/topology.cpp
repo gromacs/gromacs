@@ -47,6 +47,7 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -580,6 +581,243 @@ static void cmp_blocka(FILE *fp, const t_blocka *b1, const t_blocka *b2, const c
     cmp_int(fp, buf, -1, b1->nra, b2->nra);
 }
 
+static void compareFfparams(FILE *fp, const gmx_ffparams_t &ff1, const gmx_ffparams_t &ff2, real ftol, real abstol)
+{
+    fprintf(fp, "comparing ffparams\n");
+    cmp_int(fp, "numTypes", -1, ff1.numTypes(), ff2.numTypes());
+    cmp_int(fp, "atnr", -1, ff1.atnr, ff1.atnr);
+    cmp_double(fp, "reppow", -1, ff1.reppow, ff2.reppow, ftol, abstol);
+    cmp_real(fp, "fudgeQQ", -1, ff1.fudgeQQ, ff2.fudgeQQ, ftol, abstol);
+    cmp_cmap(fp, &ff1.cmap_grid, &ff2.cmap_grid, ftol, abstol);
+    int nr = std::min(ff1.numTypes(), ff2.numTypes());
+    for (int i = 0; i < nr; i++)
+    {
+        std::string buf = gmx::formatString("ffparams->functype[%d]", i);
+        cmp_int(fp, buf.c_str(), i, ff1.functype[i], ff2.functype[i]);
+        buf = gmx::formatString("ffparams->iparams[%d]", i);
+        cmp_iparm(fp, buf.c_str(), ff1.functype[i], ff1.iparams[i], ff2.iparams[i], ftol, abstol);
+    }
+
+}
+
+static void compareAtom(FILE *fp, int atom, const t_atom &a1, const t_atom &a2, real ftol, real abstol)
+{
+    fprintf(fp, "comparing t_atom\n");
+    cmp_real(fp, "m", atom, a1.m, a2.m, ftol, abstol);
+    cmp_real(fp, "q", atom, a1.q, a2.q, ftol, abstol);
+    cmp_us(fp, "type", atom, a1.type, a2.type);
+    cmp_us(fp, "typeB", atom, a1.typeB, a2.typeB);
+    cmp_int(fp, "ptype", atom, a1.ptype, a2.ptype);
+    cmp_int(fp, "resind", atom, a1.resind, a2.resind);
+    cmp_int(fp, "atomnumber", atom, a1.atomnumber, a2.atomnumber);
+    cmp_str(fp, "elem", atom, a1.elem, a2.elem);
+}
+
+static void compareResinfo(FILE *fp, int residue, const t_resinfo &r1, const t_resinfo &r2)
+{
+    fprintf(fp, "comparing t_resinfo\n");
+    cmp_str(fp, "name", residue, *r1.name, *r2.name);
+    cmp_int(fp, "nr", residue, r1.nr, r2.nr);
+    cmp_uc(fp, "ic", residue, r1.ic, r2.ic);
+    cmp_int(fp, "chainnum", residue, r1.chainnum, r2.chainnum);
+    cmp_uc(fp, "chainid", residue, r1.chainid, r2.chainid);
+    if ((r1.rtp || r2.rtp ) && (!r1.rtp || !r2.rtp))
+    {
+        fprintf(fp, "rtp info is present in topology %d but not in the other\n", r1.rtp ? 1 : 2);
+    }
+    if (r1.rtp && r2.rtp)
+    {
+        cmp_str(fp, "rtp", residue, *r1.rtp, *r2.rtp);
+    }
+}
+
+static void comparePdbinfo(FILE *fp, int pdb, const t_pdbinfo &pdb1, const t_pdbinfo &pdb2, real ftol, real abstol)
+{
+    fprintf(fp, "comparing t_pdbinfo\n");
+    cmp_int(fp, "type", pdb, pdb1.type, pdb2.type);
+    cmp_int(fp, "atomnr", pdb, pdb1.atomnr, pdb2.atomnr);
+    cmp_uc(fp, "altloc", pdb, pdb1.altloc, pdb2.altloc);
+    cmp_str(fp, "atomnm", pdb, pdb1.atomnm, pdb2.atomnm);
+    cmp_real(fp, "occup", pdb, pdb1.occup, pdb2.occup, ftol, abstol);
+    cmp_real(fp, "bfac", pdb, pdb1.bfac, pdb2.bfac, ftol, abstol);
+    cmp_bool(fp, "bAnistropic", pdb, pdb1.bAnisotropic, pdb2.bAnisotropic);
+    for (int i = 0; i < 6; i++)
+    {
+        std::string buf = gmx::formatString("uij[%d]", i);
+        cmp_int(fp, buf.c_str(), pdb, pdb1.uij[i], pdb2.uij[i]);
+    }
+}
+
+static void compareAtoms(FILE *fp, const t_atoms &a1, const t_atoms &a2, real ftol, real abstol)
+{
+    fprintf(fp, "comparing t_atoms\n");
+    cmp_int(fp, "nr", -1, a1.nr, a2.nr);
+    cmp_int(fp, "nres", -1, a1.nres, a2.nres);
+    cmp_bool(fp, "haveMass", -1, a1.haveMass, a2.haveMass);
+    cmp_bool(fp, "haveCharge", -1, a1.haveCharge, a2.haveCharge);
+    cmp_bool(fp, "haveType", -1, a1.haveType, a2.haveType);
+    cmp_bool(fp, "haveBState", -1, a1.haveBState, a2.haveBState);
+    cmp_bool(fp, "havePdbInfo", -1, a1.havePdbInfo, a2.havePdbInfo);
+
+    if ((a1.atom || a2.atom) && (!a1.atom || !a2.atom))
+    {
+        fprintf(fp, "t_atoms are present in topology %d but not in the other\n", a1.atom ? 1 : 2);
+    }
+    int nr = std::min(a1.nr, a2.nr);
+    for (int i = 0; i < nr; i++)
+    {
+        if (a1.atom && a2.atom)
+        {
+            compareAtom(fp, i, a1.atom[i], a2.atom[i], ftol, abstol);
+        }
+        if (a1.atomname && a2.atomname)
+        {
+            cmp_str(fp, "atomname", i, *a1.atomname[i], *a2.atomname[i]);
+        }
+        if (a1.havePdbInfo && a2.havePdbInfo)
+        {
+            comparePdbinfo(fp, i, a1.pdbinfo[i], a2.pdbinfo[i], ftol, abstol);
+        }
+        if (a1.haveType && a2.haveType)
+        {
+            cmp_str(fp, "atomtype", i, *a1.atomtype[i], *a2.atomtype[i]);
+        }
+        if (a1.haveBState && a2.haveBState)
+        {
+            cmp_str(fp, "atomtypeB", i, *a1.atomtypeB[i], *a2.atomtypeB[i]);
+        }
+    }
+    nr = std::min(a1.nres, a2.nres);
+    for (int i = 0; i < nr; i++)
+    {
+        compareResinfo(fp, i, a1.resinfo[i], a2.resinfo[i]);
+    }
+}
+
+static void compareIntermolecular(FILE *fp, const InteractionLists *il1, const InteractionLists *il2)
+{
+    fprintf(fp, "comparing InteractionLists\n");
+    if ((il1 || il2) && (!il1 || !il2))
+    {
+        fprintf(fp, "InteractionLists is present in topology %d but not in the other\n", il1 ? 1 : 2);
+    }
+    if (il1 && il2)
+    {
+        for (int i = 0; i < F_NRE; i++)
+        {
+            cmp_int(fp, "InteractionList size", i, il1->at(i).size(), il2->at(i).size());
+            int nr = std::min(il1->at(i).size(), il2->at(i).size());
+            for (int j = 0; j < nr; j++)
+            {
+                cmp_int(fp, "InteractionList entry", j, il1->at(i).iatoms.at(j), il2->at(i).iatoms.at(j));
+            }
+        }
+    }
+}
+
+static void compareMoltypes(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, gmx::ArrayRef<const gmx_moltype_t> mt2, real ftol, real abstol)
+{
+    fprintf(fp, "comparing moltypes\n");
+    cmp_int(fp, "moltype size", -1, mt1.size(), mt2.size());
+    int nr = std::min(mt1.size(), mt2.size());
+    for (int i = 0; i < nr; i++)
+    {
+        cmp_str(fp, "Name", i, *mt1[i].name, *mt2[i].name);
+        compareAtoms(fp, mt1[i].atoms, mt2[i].atoms, ftol, abstol);
+        compareIntermolecular(fp, &mt1[i].ilist, &mt2[i].ilist);
+        std::string buf = gmx::formatString("cgs[%d]", i);
+        cmp_block(fp, &mt1[i].cgs, &mt2[i].cgs, buf.c_str());
+        buf = gmx::formatString("excls[%d]", i);
+        cmp_blocka(fp, &mt1[i].excls, &mt2[i].excls, buf.c_str());
+    }
+}
+
+static void compareMolblocks(FILE *fp, gmx::ArrayRef<const gmx_molblock_t> mb1, gmx::ArrayRef<const gmx_molblock_t> mb2)
+{
+    fprintf(fp, "comparing molblocks\n");
+    cmp_int(fp, "molblock size", -1, mb1.size(), mb2.size());
+    int nr = std::min(mb1.size(), mb2.size());
+    for (int i = 0; i < nr; i++)
+    {
+        cmp_int(fp, "type", i, mb1[i].type, mb2[i].type);
+        cmp_int(fp, "nmol", i, mb1[i].nmol, mb2[i].nmol);
+        // Only checking size of restraint vectors for now
+        cmp_int(fp, "posres_xA size", i, mb1[i].posres_xA.size(), mb2[i].posres_xA.size());
+        cmp_int(fp, "posres_xB size", i, mb1[i].posres_xB.size(), mb2[i].posres_xB.size());
+    }
+
+}
+
+static void compareAtomtypes(FILE *fp, const t_atomtypes &at1, const t_atomtypes &at2)
+{
+    fprintf(fp, "comparing atomtypes\n");
+    cmp_int(fp, "nr", -1, at1.nr, at2.nr);
+    int nr = std::min(at1.nr, at2.nr);
+    if (nr > 0)
+    {
+        for (int i = 0; i < nr; i++)
+        {
+            cmp_int(fp, "atomtype", i, at1.atomnumber[i], at2.atomnumber[i]);
+        }
+    }
+
+}
+
+static void compareIntermolecularExclusions(FILE *fp, gmx::ArrayRef<const int> ime1, gmx::ArrayRef<const int> ime2)
+{
+    fprintf(fp, "comparing intermolecular exclusions\n");
+    cmp_int(fp, "exclusion number", -1, ime1.size(), ime2.size());
+    int nr = std::min(ime1.size(), ime2.size());
+    if (nr > 0)
+    {
+        for (int i = 0; i < nr; i++)
+        {
+            cmp_int(fp, "exclusion", i, ime1[i], ime2[i]);
+        }
+    }
+
+}
+
+static void compareBlockIndices(FILE *fp, gmx::ArrayRef<const MoleculeBlockIndices> mbi1, gmx::ArrayRef<const MoleculeBlockIndices> mbi2)
+{
+    fprintf(fp, "comparing moleculeBlockIndices\n");
+    cmp_int(fp, "size", -1, mbi1.size(), mbi2.size());
+    int nr = std::min(mbi1.size(), mbi2.size());
+    for (int i = 0; i < nr; i++)
+    {
+        cmp_int(fp, "numAtomsPerMolecule", i, mbi1[i].numAtomsPerMolecule, mbi2[i].numAtomsPerMolecule);
+        cmp_int(fp, "globalAtomStart", i, mbi1[i].globalAtomStart, mbi2[i].globalAtomStart);
+        cmp_int(fp, "globalAtomEnd", i, mbi1[i].globalAtomEnd, mbi2[i].globalAtomEnd);
+        cmp_int(fp, "globalResidueStart", i, mbi1[i].globalResidueStart, mbi2[i].globalResidueStart);
+        cmp_int(fp, "moleculeIndexStart", i, mbi1[i].moleculeIndexStart, mbi2[i].moleculeIndexStart);
+    }
+}
+
+void compareMtop(FILE *fp, const gmx_mtop_t *mtop1, const gmx_mtop_t *mtop2, real ftol, real abstol)
+{
+    fprintf(fp, "comparing top\n");
+    if (mtop2)
+    {
+        cmp_str(fp, "Name", -1, *mtop1->name, *mtop2->name);
+        cmp_int(fp, "natoms", -1, mtop1->natoms, mtop2->natoms);
+        cmp_int(fp, "maxres_renum", -1, mtop1->maxres_renum, mtop2->maxres_renum);
+        cmp_int(fp, "maxresnr", -1, mtop1->maxresnr, mtop2->maxresnr);
+        cmp_bool(fp, "bIntermolecularInteractions", -1, mtop1->bIntermolecularInteractions, mtop2->bIntermolecularInteractions);
+        cmp_bool(fp, "haveMoleculeIndices", -1, mtop1->haveMoleculeIndices, mtop2->haveMoleculeIndices);
+
+        compareFfparams(fp, mtop1->ffparams, mtop2->ffparams, ftol, abstol);
+        compareMoltypes(fp, mtop1->moltype, mtop2->moltype, ftol, abstol);
+        compareMolblocks(fp, mtop1->molblock, mtop2->molblock);
+        compareIntermolecular(fp, mtop1->intermolecular_ilist.get(), mtop2->intermolecular_ilist.get());
+        compareAtomtypes(fp, mtop1->atomtypes, mtop2->atomtypes);
+        compareGmxGroups(fp, mtop1->groups, mtop2->groups, mtop1->natoms, mtop2->natoms);
+        compareIntermolecularExclusions(fp, mtop1->intermolecularExclusionGroup, mtop2->intermolecularExclusionGroup);
+        compareBlockIndices(fp, mtop1->moleculeBlockIndices, mtop2->moleculeBlockIndices);
+
+    }
+
+}
+
 void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol)
 {
     fprintf(fp, "comparing top\n");
@@ -599,30 +837,28 @@ void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, re
     }
 }
 
-void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
-                int natoms0, int natoms1)
+void compareGmxGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
+                      int natoms0, int natoms1)
 {
-    char buf[32];
-
     fprintf(fp, "comparing groups\n");
 
     for (int i = 0; i < egcNR; i++)
     {
-        sprintf(buf, "grps[%d].nr", i);
-        cmp_int(fp, buf, -1, g0->grps[i].nr, g1->grps[i].nr);
-        if (g0->grps[i].nr == g1->grps[i].nr)
+        std::string buf = gmx::formatString("grps[%d].nr", i);
+        cmp_int(fp, buf.c_str(), -1, g0.grps[i].nr, g1.grps[i].nr);
+        if (g0.grps[i].nr == g1.grps[i].nr)
         {
-            for (int j = 0; j < g0->grps[i].nr; j++)
+            for (int j = 0; j < g0.grps[i].nr; j++)
             {
-                sprintf(buf, "grps[%d].name[%d]", i, j);
-                cmp_str(fp, buf, -1,
-                        *g0->grpname[g0->grps[i].nm_ind[j]],
-                        *g1->grpname[g1->grps[i].nm_ind[j]]);
+                buf = gmx::formatString("grps[%d].name[%d]", i, j);
+                cmp_str(fp, buf.c_str(), -1,
+                        *g0.grpname[g0.grps[i].nm_ind[j]],
+                        *g1.grpname[g1.grps[i].nm_ind[j]]);
             }
         }
-        cmp_int(fp, "ngrpnr", i, g0->ngrpnr[i], g1->ngrpnr[i]);
-        if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1 &&
-            (g0->grpnr[i] != nullptr || g1->grpnr[i] != nullptr))
+        cmp_int(fp, "ngrpnr", i, g0.ngrpnr[i], g1.ngrpnr[i]);
+        if (g0.ngrpnr[i] == g1.ngrpnr[i] && natoms0 == natoms1 &&
+            (g0.grpnr[i] != nullptr || g1.grpnr[i] != nullptr))
         {
             for (int j = 0; j < natoms0; j++)
             {
@@ -635,9 +871,9 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
      */
 }
 
-int getGroupType(const gmx_groups_t *group, int type, int atom)
+int getGroupType(const gmx_groups_t &group, int type, int atom)
 {
-    return (group->grpnr[type] ? group->grpnr[type][atom] : 0);
+    return (group.grpnr[type] ? group.grpnr[type][atom] : 0);
 }
 
 void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)
