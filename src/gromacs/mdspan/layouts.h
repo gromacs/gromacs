@@ -84,6 +84,7 @@
  */
 #ifndef MDSPAN_LAYOUTS_H
 #define MDSPAN_LAYOUTS_H
+#include <array>
 #include <cstddef>
 
 #include <type_traits>
@@ -223,6 +224,158 @@ class layout_right
         }; // class mapping
 
 };         // class layout_right
+
+/*! \libinternal \brief Strided array layout indexer.
+ * Carries the mapping class performing the translation from multidimensional
+ * index to one-dimensional number.
+ */
+class layout_stride
+{
+    public:
+        /*! \libinternal \brief Mapping from multidimensional integers within extents to one-dimensional integers.
+         * \tparam Extents the extents of the multidimensional integers for the mapping.
+         */
+        template<class Extents>
+        class mapping
+        {
+            private:
+
+                using stride_t = std::array<ptrdiff_t, Extents::rank()>;
+
+                //! The extents.
+                Extents   m_extents;
+                //! The stride.
+                stride_t  m_stride;
+                //! Is this mapping contiguous.
+                bool      m_contig;
+
+            public:
+                //! exposing the type of indices
+                using index_type = ptrdiff_t;
+                //! exposing the type of the extents
+                using extents_type = Extents;
+                //! Default constructor.
+                constexpr mapping() noexcept = default;
+                //! Default move constructor.
+                constexpr mapping( mapping && ) noexcept = default;
+                //! Default copy constructor.
+                constexpr mapping( const mapping & ) noexcept = default;
+                //! Default move assignment
+                mapping &operator= ( mapping && ) noexcept = default;
+                //! Default copy assignment
+                mapping &operator= ( const mapping & ) noexcept = default;
+                /*! \brief Construct mapping, setting extents and strides
+                 * \param[in] ext the extents
+                 * \param[in] str the strides
+                 */
+                mapping( const Extents &ext, const stride_t &str ) noexcept
+                    : m_extents(ext), m_stride(str), m_contig(true)
+                {
+                    int p[ Extents::rank() > 0 ? Extents::rank() : 1 ];
+
+                    // Permute strides, such that the smallest stride is first.
+                    //   m_stride[ p[i] ] <= m_stride[ p[i+1] ]
+                    //
+                    for (size_t i = 0; i < Extents::rank(); ++i)
+                    {
+
+                        int j = i;
+
+                        while (j > 0 && m_stride[i] <= m_stride[ p[j-1] ])
+                        {
+                            p[j] = p[j-1];
+                            --j;
+                        }
+
+                        p[j] = i;
+                    }
+                    // check if memory layout is contiguous by comparing
+                    // strides to strides expected from extent
+                    for (size_t i = 1; i < Extents::rank(); ++i)
+                    {
+                        const int        j    = p[i-1];
+                        const int        k    = p[i];
+                        const index_type prev = m_stride[j] * m_extents.extent(j);
+                        if (m_stride[k] != prev)
+                        {
+                            m_contig = false;
+                        }
+                    }
+                }
+                /*! \brief Return the extents.
+                 * \returns extents
+                 */
+                constexpr const Extents &extents() const noexcept { return m_extents; }
+
+            private:
+
+                /* \brief End recursion helper function for static offset calculation.
+                 * \returns The offset.
+                 */
+                constexpr index_type offset(size_t /*r*/) const noexcept { return 0; }
+
+                /* \brief Statically calculate offset from index and extent.
+                 * With index i,
+                 * offset = i0 * Stride0 + i1 * Stride1 + i2 * Stride2 + ...
+                 * \param[in] sum current sum up to this rank
+                 * \param[in] i index
+                 * \param[in] r current rank
+                 * \retruns The offset.
+                 */
+                template<class ... Indices >
+                constexpr index_type offset( const size_t r, const index_type i, Indices... indices ) const noexcept
+                {
+                    return i * m_stride[r] + offset(r+1, indices ...);
+                }
+
+            public:
+                /*! \brief Return the size of the underlying one-dimensional
+                 * data structure, so that the mapping is always valid.
+                 *
+                 * \returns number of span elements
+                 */
+                index_type required_span_size() const noexcept
+                {
+                    index_type size = 0;
+                    for (size_t i = 0; i < Extents::rank(); ++i)
+                    {
+                        size += m_stride[i] * ( m_extents.extent(i) - 1 );
+                    }
+                    return size;
+                }
+                /*! \brief Map the multidimensional indices to one-D.
+                 * Requires number of indicies have the same dimensionality as the mapping.
+                 * \tparam Indices type of the indices to be mapped
+                 * \param[in] indices the indices to be mapped
+                 * \returns One-dimensional integer index.
+                 * TODO C++14 activation of constexpr
+                 */
+                template<class ... Indices >
+                constexpr
+                typename std::enable_if<sizeof ... (Indices) == Extents::rank(), index_type>::type
+                operator()( Indices ... indices ) const noexcept
+                { return offset(0, indices ... ); }
+
+                //! Report that this mapping is always unique.
+                static constexpr bool is_always_unique()     noexcept { return true; }
+                //! Report that this mapping is always contiguous.
+                static constexpr bool is_always_contiguous() noexcept { return false; }
+                //! Report that this mapping is always strided.
+                static constexpr bool is_always_strided()    noexcept { return true; }
+
+                //! Report that this mapping is unique.
+                constexpr bool is_unique()     const noexcept { return true; }
+                //! Report that this mapping is contiguous.
+                constexpr bool is_contiguous() const noexcept { return m_contig; }
+                //! Report that this mapping is strided.
+                constexpr bool is_strided()    const noexcept { return true; }
+                //! Report the stride along a rank
+                constexpr index_type stride(size_t r) const noexcept
+                { return m_stride[r]; }
+
+        }; // class mapping
+
+};         // class layout_stride
 
 }          // namespace gmx
 #endif     /* end of include guard: MDSPAN_LAYOUTS_H */
