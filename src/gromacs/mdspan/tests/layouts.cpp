@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,19 +50,17 @@
 namespace gmx
 {
 
-template<class Layout, ptrdiff_t ... E_STATIC>
+template<class Mapping>
 struct LayoutTests {
+    using mapping_type = Mapping;
+    using extents_type = typename Mapping::extents_type;
 
-    typedef Layout layout_type;
-    typedef extents<E_STATIC...> extents_type;
-    typedef typename Layout::template mapping<extents_type> mapping_type;
+    mapping_type my_mapping_explicit;
+    mapping_type my_mapping_copy;
 
-    mapping_type my_mapping_explicit, my_mapping_copy;
-
-    template<class ... E>
-    LayoutTests(E ... e)
+    LayoutTests(Mapping map)
     {
-        my_mapping_explicit = mapping_type(extents_type(e ...));
+        my_mapping_explicit = mapping_type(map);
         my_mapping_copy     = mapping_type(my_mapping_explicit);
     }
 
@@ -105,18 +103,18 @@ struct LayoutTests {
     void check_properties(bool always_unique, bool always_contiguous, bool always_strided,
                           bool unique, bool contiguous, bool strided)
     {
-        EXPECT_EQ(my_mapping_explicit.is_always_unique() ? 1 : 0, always_unique ? 1 : 0);
-        EXPECT_EQ(my_mapping_explicit.is_always_contiguous() ? 1 : 0, always_contiguous ? 1 : 0);
-        EXPECT_EQ(my_mapping_explicit.is_always_strided() ? 1 : 0, always_strided ? 1 : 0);
-        EXPECT_EQ(my_mapping_explicit.is_unique() ? 1 : 0, unique ? 1 : 0);
-        EXPECT_EQ(my_mapping_explicit.is_contiguous() ? 1 : 0, contiguous ? 1 : 0);
-        EXPECT_EQ(my_mapping_explicit.is_strided() ? 1 : 0, strided ? 1 : 0);
-        EXPECT_EQ(my_mapping_copy.is_always_unique() ? 1 : 0, always_unique ? 1 : 0);
-        EXPECT_EQ(my_mapping_copy.is_always_contiguous() ? 1 : 0, always_contiguous ? 1 : 0);
-        EXPECT_EQ(my_mapping_copy.is_always_strided() ? 1 : 0, always_strided ? 1 : 0);
-        EXPECT_EQ(my_mapping_copy.is_unique() ? 1 : 0, unique ? 1 : 0);
-        EXPECT_EQ(my_mapping_copy.is_contiguous() ? 1 : 0, contiguous ? 1 : 0);
-        EXPECT_EQ(my_mapping_copy.is_strided() ? 1 : 0, strided ? 1 : 0);
+        EXPECT_EQ(my_mapping_explicit.is_always_unique(), always_unique);
+        EXPECT_EQ(my_mapping_explicit.is_always_contiguous(), always_contiguous);
+        EXPECT_EQ(my_mapping_explicit.is_always_strided(), always_strided);
+        EXPECT_EQ(my_mapping_explicit.is_unique(), unique);
+        EXPECT_EQ(my_mapping_explicit.is_contiguous(), contiguous);
+        EXPECT_EQ(my_mapping_explicit.is_strided(), strided);
+        EXPECT_EQ(my_mapping_copy.is_always_unique(), always_unique);
+        EXPECT_EQ(my_mapping_copy.is_always_contiguous(), always_contiguous);
+        EXPECT_EQ(my_mapping_copy.is_always_strided(), always_strided);
+        EXPECT_EQ(my_mapping_copy.is_unique(), unique);
+        EXPECT_EQ(my_mapping_copy.is_contiguous(), contiguous);
+        EXPECT_EQ(my_mapping_copy.is_strided(), strided);
     }
 
     template<class ... E>
@@ -128,9 +126,18 @@ struct LayoutTests {
 
 };
 
-TEST(LayoutTests, LayoutRightConstruction) {
-    LayoutTests<layout_right, 5, dynamic_extent, 3, dynamic_extent, 1> test(4, 2);
+namespace
+{
+//! define extents for test
+using test_extents       = extents< 5, dynamic_extent, 3, dynamic_extent, 1>;
+//! define mapping for layout right test
+using test_layout_right  = layout_right::mapping<test_extents>;
+//! define mapping for layout left test
+using test_layout_stride = layout_stride::mapping<test_extents>;
+}   // namespace
 
+TEST(LayoutTests, LayoutRightConstruction) {
+    LayoutTests<test_layout_right> test({{4, 2}});
     test.check_rank(5);
     test.check_rank_dynamic(2);
     test.check_extents(5, 4, 3, 2, 1);
@@ -138,14 +145,47 @@ TEST(LayoutTests, LayoutRightConstruction) {
 }
 
 TEST(LayoutTests, LayoutRightProperties) {
-    LayoutTests<layout_right, 5, dynamic_extent, 3, dynamic_extent, 1> test(4, 2);
+    LayoutTests<test_layout_right> test({{4, 2}});
 
-    test.check_properties(true, true, true, true, true, true);
+    const bool                     always_unique     = true;
+    const bool                     always_contiguous = true;
+    const bool                     always_strided    = true;
+    const bool                     unique            = true;
+    const bool                     contiguous        = true;
+    const bool                     strided           = true;
+
+    test.check_properties(always_unique, always_contiguous, always_strided, unique, contiguous, strided);
 }
 
 TEST(LayoutTests, LayoutRightOperator) {
-    LayoutTests<layout_right, 5, dynamic_extent, 3, dynamic_extent, 1> test(4, 2);
+    LayoutTests<test_layout_right> test({{4, 2}});
+    test.check_operator(107, 4, 1, 2, 1, 0);
+    test.check_operator(0, 0, 0, 0, 0, 0);
+}
 
+TEST(LayoutTests, LayoutStrideConstruction) {
+    LayoutTests<test_layout_stride> test({{4, 2}, {{24, 6, 2, 1, 1}}});
+    test.check_rank(5);
+    test.check_rank_dynamic(2);
+    test.check_extents(5, 4, 3, 2, 1);
+    test.check_strides(24, 6, 2, 1, 1);
+}
+
+TEST(LayoutTests, LayoutStrideProperties) {
+    LayoutTests<test_layout_stride> test({{4, 2}, {{24, 6, 2, 1, 1}}});
+
+    const bool always_unique     = true;
+    const bool always_contiguous = false;
+    const bool always_strided    = true;
+    const bool unique            = true;
+    const bool contiguous        = true;
+    const bool strided           = true;
+
+    test.check_properties(always_unique, always_contiguous, always_strided, unique, contiguous, strided);
+}
+
+TEST(LayoutTests, LayoutStrideOperator) {
+    LayoutTests<test_layout_stride> test({{4, 2}, {{24, 6, 2, 1, 1}}});
     test.check_operator(107, 4, 1, 2, 1, 0);
     test.check_operator(0, 0, 0, 0, 0, 0);
 }
