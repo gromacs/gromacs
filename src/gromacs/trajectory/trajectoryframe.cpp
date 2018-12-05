@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
     }
     if (cmp_bool(fp, "bAtoms", -1, fr1->bAtoms, fr2->bAtoms))
     {
-        cmp_atoms(fp, fr1->atoms, fr2->atoms, ftol, abstol);
+        compareAtoms(fp, fr1->atoms, fr2->atoms, ftol, abstol);
     }
     if (cmp_bool(fp, "bPrec", -1, fr1->bPrec, fr2->bPrec))
     {
