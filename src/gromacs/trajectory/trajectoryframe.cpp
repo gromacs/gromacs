@@ -68,7 +68,7 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
     }
     if (cmp_bool(fp, "bAtoms", -1, fr1->bAtoms, fr2->bAtoms))
     {
-        cmp_atoms(fp, fr1->atoms, fr2->atoms, ftol, abstol);
+        compareAtoms(fp, fr1->atoms, fr2->atoms, ftol, abstol);
     }
     if (cmp_bool(fp, "bPrec", -1, fr1->bPrec, fr2->bPrec))
     {
