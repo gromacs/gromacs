@@ -53,7 +53,7 @@
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/index.h"
-#include "gromacs/topology/topology.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -96,7 +96,8 @@ struct t_corr {
     int         **ndata;      /* the number of msds (particles/mols) per data
                                  point. */
     t_corr(int nrgrp, int type, int axis, real dim_factor, int nmol,
-           gmx_bool bTen, gmx_bool bMass, real dt, const t_topology *top,
+           gmx_bool bTen, gmx_bool bMass, real dt,
+           gmx::TopologyInformation &topologyInformation,
            real beginfit, real endfit) :
         t0(0),
         delta_t(dt),
@@ -148,9 +149,9 @@ struct t_corr {
         {
             if (bMass)
             {
-                const t_atoms *atoms = &top->atoms;
+                const t_atoms *atoms = topologyInformation.atoms();
                 snew(mass, atoms->nr);
-                for (int i = 0; (i < atoms->nr); i++)
+                for (int i = 0; i < atoms->nr; i++)
                 {
                     mass[i] = atoms->atom[i].m;
                 }
@@ -324,28 +325,27 @@ static real calc1_norm(t_corr *curr, int nx, const int index[], int nx0, rvec xc
 }
 
 /* calculate the com of molecules in x and put it into xa */
-static void calc_mol_com(int nmol, const int *molindex, const t_block *mols, const t_atoms *atoms,
+static void calc_mol_com(const gmx::RangePartitioning &molindex,
+                         const t_atoms *atoms,
                          rvec *x, rvec *xa)
 {
-    int  m, mol, i, d;
     rvec xm;
-    real mass, mtot;
-
-    for (m = 0; m < nmol; m++)
+    int  m = 0;
+    for (int mol = 0; mol < molindex.numBlocks(); mol++)
     {
-        mol = molindex[m];
         clear_rvec(xm);
-        mtot = 0;
-        for (i = mols->index[mol]; i < mols->index[mol+1]; i++)
+        real mtot = 0;
+        for (auto i = molindex.block(mol).begin(); i < molindex.block(mol).end(); i++)
         {
-            mass = atoms->atom[i].m;
-            for (d = 0; d < DIM; d++)
+            real mass = atoms->atom[i].m;
+            for (int d = 0; d < DIM; d++)
             {
                 xm[d] += mass*x[i][d];
             }
             mtot += mass;
         }
         svmul(1/mtot, xm, xa[m]);
+        m++;
     }
 }
 
@@ -545,7 +545,10 @@ static real calc1_mol(t_corr *curr, int nx, const int gmx_unused index[], int nx
 }
 
 static void printmol(t_corr *curr, const char *fn,
-                     const char *fn_pdb, const int *molindex, const t_topology *top,
+                     const char *fn_pdb,
+                     const gmx::RangePartitioning &molindex,
+                     const t_atoms *atoms,
+                     std::vector<t_pdbinfo> *pdbinfo,
                      rvec *x, int ePBC, matrix box, const gmx_output_env_t *oenv)
 {
 #define NDIST 100
@@ -553,17 +556,8 @@ static void printmol(t_corr *curr, const char *fn,
     gmx_stats_t lsq1;
     int         i, j;
     real        a, b, D, Dav, D2av, VarD, sqrtD, sqrtD_max, scale;
-    t_pdbinfo  *pdbinfo = nullptr;
-    const int  *mol2a   = nullptr;
 
-    out = xvgropen(fn, "Diffusion Coefficients / Molecule", "Molecule", "D", oenv);
-
-    if (fn_pdb)
-    {
-        pdbinfo = top->atoms.pdbinfo;
-        mol2a   = top->mols.index;
-    }
-
+    out       = xvgropen(fn, "Diffusion Coefficients / Molecule", "Molecule", "D", oenv);
     Dav       = D2av = 0;
     sqrtD_max = 0;
     for (i = 0; (i < curr->nmol); i++)
@@ -588,17 +582,14 @@ static void printmol(t_corr *curr, const char *fn,
         Dav  += D;
         D2av += gmx::square(D);
         fprintf(out, "%10d  %10g\n", i, D);
-        if (pdbinfo)
+        sqrtD = std::sqrt(D);
+        if (sqrtD > sqrtD_max)
         {
-            sqrtD = std::sqrt(D);
-            if (sqrtD > sqrtD_max)
-            {
-                sqrtD_max = sqrtD;
-            }
-            for (j = mol2a[molindex[i]]; j < mol2a[molindex[i]+1]; j++)
-            {
-                pdbinfo[j].bfac = sqrtD;
-            }
+            sqrtD_max = sqrtD;
+        }
+        for (auto j : molindex.block(i))
+        {
+            (*pdbinfo)[j].bfac = sqrtD;
         }
     }
     xvgrclose(out);
@@ -622,12 +613,11 @@ static void printmol(t_corr *curr, const char *fn,
         {
             scale *= 10;
         }
-        GMX_RELEASE_ASSERT(pdbinfo != nullptr, "Internal error - pdbinfo not set for PDB input");
-        for (i = 0; i < top->atoms.nr; i++)
+        for (i = 0; i < atoms->nr; i++)
         {
-            pdbinfo[i].bfac *= scale;
+            (*pdbinfo)[i].bfac *= scale;
         }
-        write_sto_conf(fn_pdb, "molecular MSD", &top->atoms, x, nullptr, ePBC, box);
+        write_sto_conf(fn_pdb, "molecular MSD", atoms, x, nullptr, ePBC, box);
     }
 }
 
@@ -635,7 +625,10 @@ static void printmol(t_corr *curr, const char *fn,
  * fx and nx are file pointers to things like read_first_x and
  * read_next_x
  */
-static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
+static int corr_loop(t_corr *curr, const char *fn,
+                     const t_atoms *atoms,
+                     const t_idef *idef, int ePBC,
+                     const gmx::RangePartitioning &molindex,
                      gmx_bool bMol, int gnx[], int *index[],
                      t_calc_func *calc1, gmx_bool bTen, int *gnx_com, int *index_com[],
                      real dt, real t_pdb, rvec **x_pdb, matrix box_pdb,
@@ -656,9 +649,9 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
 #ifdef DEBUG
     fprintf(stderr, "Read %d atoms for first frame\n", natoms);
 #endif
-    if ((gnx_com != nullptr) && natoms < top->atoms.nr)
+    if ((gnx_com != nullptr) && natoms < atoms->nr)
     {
-        fprintf(stderr, "WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n", natoms, top->atoms.nr);
+        fprintf(stderr, "WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n", natoms, atoms->nr);
     }
 
     snew(x[prev], natoms);
@@ -687,7 +680,7 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
 
     if (bMol)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(idef, ePBC, natoms);
     }
 
     /* the loop over all frames */
@@ -785,7 +778,7 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         // data becomes overwritten by the molecule data.
         if (bMol)
         {
-            calc_mol_com(gnx[0], index[0], &top->mols, &top->atoms, x[cur], xa[cur]);
+            calc_mol_com(molindex, atoms, x[cur], xa[cur]);
         }
 
         /* for the first frame, the previous frame is a copy of the first frame */
@@ -805,7 +798,7 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         if (gnx_com)
         {
             calc_com(bMol, gnx_com[0], index_com[0], xa[cur], xa[prev], box,
-                     &top->atoms, com);
+                     atoms, com);
         }
 
         /* loop over all groups in index file */
@@ -837,43 +830,22 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
     return natoms;
 }
 
-static void index_atom2mol(int *n, int *index, const t_block *mols)
+static void index_atom2mol(const gmx::RangePartitioning &molindex,
+                           std::vector<int>             *index)
 {
-    int nat, i, nmol, mol, j;
-
-    nat  = *n;
-    i    = 0;
-    nmol = 0;
-    mol  = 0;
-    while (i < nat)
+    for (int m = 0; m < molindex.numBlocks(); m++)
     {
-        while (index[i] > mols->index[mol])
+        for (gmx_unused int k : molindex.block(m))
         {
-            mol++;
-            if (mol >= mols->nr)
-            {
-                gmx_fatal(FARGS, "Atom index out of range: %d", index[i]+1);
-            }
+            index->push_back(m);
         }
-        for (j = mols->index[mol]; j < mols->index[mol+1]; j++)
-        {
-            if (i >= nat || index[i] != j)
-            {
-                gmx_fatal(FARGS, "The index group does not consist of whole molecules");
-            }
-            i++;
-        }
-        index[nmol++] = mol;
     }
-
-    fprintf(stderr, "Split group of %d atoms into %d molecules\n", nat, nmol);
-
-    *n = nmol;
 }
 
 static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
                     const char *mol_file, const char *pdb_file, real t_pdb,
-                    int nrgrp, t_topology *top, int ePBC,
+                    int nrgrp,
+                    gmx::TopologyInformation &topologyInformation,
                     gmx_bool bTen, gmx_bool bMW, gmx_bool bRmCOMM,
                     int type, real dim_factor, int axis,
                     real dt, real beginfit, real endfit, const gmx_output_env_t *oenv)
@@ -889,13 +861,15 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
     int                    *gnx_com     = nullptr; /* the COM removal group size  */
     int                   **index_com   = nullptr; /* the COM removal group atom indices */
     char                  **grpname_com = nullptr; /* the COM removal group name */
+    std::vector<int>        atom2mol;
 
     snew(gnx, nrgrp);
     snew(index, nrgrp);
     snew(grpname, nrgrp);
 
+    const t_atoms *atoms = topologyInformation.atoms();
     fprintf(stderr, "\nSelect a group to calculate mean squared displacement for:\n");
-    get_index(&top->atoms, ndx_file, nrgrp, gnx, index, grpname);
+    get_index(atoms, ndx_file, nrgrp, gnx, index, grpname);
 
     if (bRmCOMM)
     {
@@ -904,20 +878,33 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
         snew(grpname_com, 1);
 
         fprintf(stderr, "\nNow select a group for center of mass removal:\n");
-        get_index(&top->atoms, ndx_file, 1, gnx_com, index_com, grpname_com);
+        get_index(atoms, ndx_file, 1, gnx_com, index_com, grpname_com);
     }
-
+    gmx::RangePartitioning molindex;
+    const auto            *mtop = topologyInformation.mtop();
+    for (auto &mb : mtop->molblock)
+    {
+        int type = mb.type;
+        for (int j = 0; j < mb.nmol; j++)
+        {
+            molindex.appendBlock(mtop->moltype[type].atoms.nr);
+        }
+    }
+    std::vector<int>       atoms2mol;
     if (mol_file)
     {
-        index_atom2mol(&gnx[0], index[0], &top->mols);
+        index_atom2mol(molindex, &atoms2mol);
     }
-
+    auto *local_top = topologyInformation.expandedTopology();
     msd = gmx::compat::make_unique<t_corr>(nrgrp, type, axis, dim_factor,
                                            mol_file == nullptr ? 0 : gnx[0],
-                                           bTen, bMW, dt, top, beginfit, endfit);
-
+                                           bTen, bMW, dt, topologyInformation,
+                                           beginfit, endfit);
+    topologyInformation.getBox(box);
     nat_trx =
-        corr_loop(msd.get(), trx_file, top, ePBC, mol_file ? gnx[0] != 0 : false, gnx, index,
+        corr_loop(msd.get(), trx_file, atoms, &local_top->idef,
+                  topologyInformation.ePBC(), molindex,
+                  mol_file ? gnx[0] != 0 : false, gnx, index,
                   (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
                   bTen, gnx_com, index_com, dt, t_pdb,
                   pdb_file ? &x : nullptr, box, oenv);
@@ -935,6 +922,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
         }
     }
 
+    std::vector<t_pdbinfo> pdbinfo;
     if (mol_file)
     {
         if (pdb_file && x == nullptr)
@@ -942,14 +930,8 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
             fprintf(stderr, "\nNo frame found need time tpdb = %g ps\n"
                     "Can not write %s\n\n", t_pdb, pdb_file);
         }
-        i             = top->atoms.nr;
-        top->atoms.nr = nat_trx;
-        if (pdb_file && top->atoms.pdbinfo == nullptr)
-        {
-            snew(top->atoms.pdbinfo, top->atoms.nr);
-        }
-        printmol(msd.get(), mol_file, pdb_file, index[0], top, x, ePBC, box, oenv);
-        top->atoms.nr = i;
+        printmol(msd.get(), mol_file, pdb_file, molindex, atoms, &pdbinfo,
+                 x, topologyInformation.ePBC(), box, oenv);
     }
 
     DD     = nullptr;
@@ -1116,12 +1098,8 @@ int gmx_msd(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    t_topology        top;
-    int               ePBC;
-    matrix            box;
+    gmx_mtop_t        mtop;
     const char       *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
-    rvec             *xdum;
-    gmx_bool          bTop;
     int               axis, type;
     real              dim_factor;
     gmx_output_env_t *oenv;
@@ -1191,9 +1169,9 @@ int gmx_msd(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Can only calculate the full tensor for 3D msd");
     }
-
-    bTop = read_tps_conf(tps_file, &top, &ePBC, &xdum, nullptr, box, bMW || bRmCOMM);
-    if (mol_file && !bTop)
+    gmx::TopologyInformation topologyInformation;
+    topologyInformation.fillFromInputFile(tps_file);
+    if (mol_file && !topologyInformation.hasTopology())
     {
         gmx_fatal(FARGS,
                   "Could not read a topology from %s. Try a tpr file instead.",
@@ -1201,8 +1179,8 @@ int gmx_msd(int argc, char *argv[])
     }
 
     do_corr(trx_file, ndx_file, msd_file, mol_file, pdb_file, t_pdb, ngroup,
-            &top, ePBC, bTen, bMW, bRmCOMM, type, dim_factor, axis, dt, beginfit, endfit,
-            oenv);
+            topologyInformation, bTen, bMW, bRmCOMM, type,
+            dim_factor, axis, dt, beginfit, endfit, oenv);
 
     view_all(oenv, NFILE, fnm);
 
