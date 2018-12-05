@@ -225,7 +225,24 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
 void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
             gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
-void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
+/*! \brief Compare two mtop topologies.
+ *
+ * \param[in] fp File pointer to write to.
+ * \param[in] mtop1 First topology to compare.
+ * \param[in] mtop2 Second topology to compare.
+ * \param[in] ftol Relative tolerance for comparison.
+ * \param[in] abstol Absolute tolerance for comparison.
+ */
+void compareMtop(FILE *fp, const gmx_mtop_t &mtop1, const gmx_mtop_t &mtop2, real ftol, real abstol);
+
+/*! \brief Check peturbation parameters in topology.
+ *
+ * \param[in] fp File pointer to write to.
+ * \param[in] mtop1 Topology to check perturbation parameters in.
+ * \param[in] ftol Relative tolerance for comparison.
+ * \param[in] abstol Absolute tolerance for comparison.
+ */
+void compareMtopAB(FILE *fp, const gmx_mtop_t &mtop1, real ftol, real abstol);
 
 /*! \brief Compare groups.
  *
