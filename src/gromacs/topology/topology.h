@@ -118,7 +118,7 @@ typedef struct gmx_groups_t
  * \param[in] type  Type of group to check.
  * \param[in] atom  Atom to check if it has an entry.
  */
-int getGroupType (const gmx_groups_t *group, int type, int atom);
+int getGroupType (const gmx_groups_t &group, int type, int atom);
 
 /* The global, complete system topology struct, based on molecule types.
  * This structure should contain no data that is O(natoms) in memory.
@@ -225,9 +225,26 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
 void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
             gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
-void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
-void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
-                int natoms0, int natoms1);
+/*! \brief Compare two mtop topologies.
+ *
+ * \param[in] fp File pointer to write to.
+ * \param[in] mtop1 First topology to compare.
+ * \param[in] mtop2 Second topology to compare.
+ * \param[in] ftol Relative tolerance for comparison.
+ * \param[in] abstol Absolute tolerance for comparison.
+ */
+void compareMtop(FILE *fp, const gmx_mtop_t *mtop1, const gmx_mtop_t *mtop2, real ftol, real abstol);
+
+/*! \brief Compare groups.
+ *
+ * \param[in] fp File pointer to write to.
+ * \param[in] g0 First group for comparison.
+ * \param[in] g1 Second group for comparison.
+ * \param[in] natoms0 Number of atoms for first group.
+ * \param[in] natoms1 Number of atoms for second group.
+ */
+void compareGmxGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
+                      int natoms0, int natoms1);
 
 //! Deleter for gmx_localtop_t, needed until it has a proper destructor.
 using ExpandedTopologyPtr = gmx::unique_cptr<gmx_localtop_t, done_and_sfree_localtop>;
