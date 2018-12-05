@@ -195,6 +195,36 @@ bool pme_gpu_supports_input(const t_inputrec &ir, const gmx_mtop_t &mtop, std::s
     {
         errorReasons.emplace_back("not a dynamical integrator");
     }
+    /* TODO: It would be better to get this from the runtime */
+    int maxKernelGridSize = 0;
+    if (GMX_GPU == GMX_GPU_CUDA)
+    {
+        /* Limit is actually larger on some dims, but 65535 is large */
+        maxKernelGridSize = 65535;
+    }
+    else if (GMX_GPU == GMX_GPU_OPENCL)
+    {
+        maxKernelGridSize = 1024;
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "Unhandled case");
+    }
+    /* NOTE: This check assumes that the minor dimension is Z
+     *       This is not the case with DD. When DD support is
+     *       added, the check needs to be updated.
+     */
+    if (ir.nkx > maxKernelGridSize ||
+        ir.nky > maxKernelGridSize ||
+        ir.nkz > maxKernelGridSize*2 - 1)
+    {
+        std::string mesg =
+            gmx::formatString("PME grid size larger than %d x %d x %d",
+                              maxKernelGridSize,
+                              maxKernelGridSize,
+                              maxKernelGridSize*2 - 1);
+        errorReasons.emplace_back(mesg);
+    }
     return addMessageIfNotSupported(errorReasons, error);
 }
 
