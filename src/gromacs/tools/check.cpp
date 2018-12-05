@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,6 @@ static void comp_tpx(const char *fn1, const char *fn2,
     t_inputrec    *ir[2];
     t_state        state[2];
     gmx_mtop_t     mtop[2];
-    t_topology     top[2];
     int            i;
 
     ff[0] = fn1;
@@ -111,15 +110,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
     if (fn2)
     {
         cmp_inputrec(stdout, ir[0], ir[1], ftol, abstol);
-        /* Convert gmx_mtop_t to t_topology.
-         * We should implement direct mtop comparison,
-         * but it might be useful to keep t_topology comparison as an option.
-         */
-        top[0] = gmx_mtop_t_to_t_topology(&mtop[0], false);
-        top[1] = gmx_mtop_t_to_t_topology(&mtop[1], false);
-        cmp_top(stdout, &top[0], &top[1], ftol, abstol);
-        compareAtomGroups(stdout, mtop[0].groups, mtop[1].groups,
-                          mtop[0].natoms, mtop[1].natoms);
+        compareMtop(stdout, mtop[0], mtop[1], ftol, abstol);
         comp_state(&state[0], &state[1], bRMSD, ftol, abstol);
     }
     else
@@ -134,12 +125,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
             {
                 comp_pull_AB(stdout, ir[0]->pull, ftol, abstol);
             }
-            /* Convert gmx_mtop_t to t_topology.
-             * We should implement direct mtop comparison,
-             * but it might be useful to keep t_topology comparison as an option.
-             */
-            top[0] = gmx_mtop_t_to_t_topology(&mtop[0], true);
-            cmp_top(stdout, &top[0], nullptr, ftol, abstol);
+            compareMtopAB(stdout, mtop[0], ftol, abstol);
         }
     }
 }
