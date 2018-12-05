@@ -1134,10 +1134,21 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     const int    gridLineSize       = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
     const int    gridLinesPerBlock  = std::max(maxBlockSize / gridLineSize, 1UL);
     const int    blocksPerGridLine  = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
-    const int    cellsPerBlock      = gridLineSize * gridLinesPerBlock;
-    const size_t warpSize           = pmeGpu->programHandle_->impl_->warpSize;
+    int          cellsPerBlock;
+    if (blocksPerGridLine == 1)
+    {
+        cellsPerBlock               = gridLineSize * gridLinesPerBlock;
+    }
+    else
+    {
+        cellsPerBlock               = (gridLineSize + blocksPerGridLine - 1) / blocksPerGridLine;
+    }
+    const int    warpSize           = pmeGpu->programHandle_->impl_->warpSize;
     const int    blockSize          = (cellsPerBlock + warpSize - 1) / warpSize * warpSize;
 
+    static_assert(GMX_GPU != GMX_GPU_CUDA || c_solveMaxWarpsPerBlock/2 >= 4,
+                  "The CUDA solve energy kernels needs at least 4 warps. "
+                  "Here we launch at least half of the max warps.");
 
     KernelLaunchConfig config;
     config.blockSize[0] = blockSize;
