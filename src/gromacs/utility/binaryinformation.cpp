@@ -392,7 +392,8 @@ void printBinaryInformation(TextWriter                      *writer,
     {
         writer->writeLine(formatString("%sWorking dir:  %s%s", prefix, workingDir.c_str(), suffix));
     }
-    writer->writeLine(formatString("%sProcess ID:   %d%s", prefix, gmx_getpid(), suffix));
+    /* This does not work with the output checking pdb2gmx */
+    /* writer->writeLine(formatString("%sProcess ID:   %d%s", prefix, gmx_getpid(), suffix)); */
     const char *const commandLine = programContext.commandLine();
     if (!gmx::isNullOrEmpty(commandLine))
     {
