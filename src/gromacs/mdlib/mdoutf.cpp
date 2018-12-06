@@ -209,7 +209,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         of->natoms_x_compressed = 0;
         for (i = 0; (i < top_global->natoms); i++)
         {
-            if (getGroupType(of->groups, egcCompressedX, i) == 0)
+            if (getGroupType(*of->groups, egcCompressedX, i) == 0)
             {
                 of->natoms_x_compressed++;
             }
@@ -361,7 +361,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                 auto x = makeArrayRef(state_global->x);
                 for (i = 0, j = 0; (i < of->natoms_global); i++)
                 {
-                    if (getGroupType(of->groups, egcCompressedX, i) == 0)
+                    if (getGroupType(*of->groups, egcCompressedX, i) == 0)
                     {
                         copy_rvec(x[i], xxtc[j++]);
                     }
