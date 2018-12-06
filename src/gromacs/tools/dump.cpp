@@ -85,7 +85,6 @@ static void list_tpx(const char *fn,
     t_state       state;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
-    gmx_groups_t *groups;
     t_topology    top;
 
     read_tpxheader(fn, &tpx, TRUE);
@@ -144,12 +143,12 @@ static void list_tpx(const char *fn,
             pr_rvecs(stdout, indent, "v", tpx.bV ? state.v.rvec_array() : nullptr, state.natoms);
         }
 
-        groups = &mtop.groups;
+        const gmx_groups_t &groups = mtop.groups;
 
         snew(gcount, egcNR);
         for (i = 0; (i < egcNR); i++)
         {
-            snew(gcount[i], groups->grps[i].nr);
+            snew(gcount[i], groups.grps[i].nr);
         }
 
         for (i = 0; (i < mtop.natoms); i++)
@@ -164,7 +163,7 @@ static void list_tpx(const char *fn,
         {
             atot = 0;
             printf("%-12s: ", gtypes[i]);
-            for (j = 0; (j < groups->grps[i].nr); j++)
+            for (j = 0; (j < groups.grps[i].nr); j++)
             {
                 printf("  %5d", gcount[i][j]);
                 atot += gcount[i][j];
