@@ -71,14 +71,13 @@ static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
 
 static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 {
-    const gmx_groups_t     *groups;
     gmx_mtop_atomloop_all_t aloop;
     int                     i, grp;
     const t_atom           *atom;
 
     if (ngacc > 0)
     {
-        groups = &mtop->groups;
+        const gmx_groups_t &groups = mtop->groups;
         aloop  = gmx_mtop_atomloop_all_init(mtop);
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
