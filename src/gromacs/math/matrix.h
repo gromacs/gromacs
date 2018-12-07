@@ -52,17 +52,46 @@ namespace gmx
 {
 
 template <typename T>
-class basicMatrix3x3
+class Matrix3x3
 {
     public:
 
         using mdspan = basic_mdspan<T, extents<3, 3>, layout_right>;
 
 
-        explicit basicMatrix3x3()
+        explicit Matrix3x3()
         {
             view_ = mdspan(data_.data(), extents<>());
         }
+
+        Matrix3x3(T xx, T xy, T xz,
+                  T yx, T yy, T yz,
+                  T zx, T zy, T zz)
+        {
+            data_[XX][XX] = xx;
+            data_[XX][YY] = xy;
+            data_[XX][ZZ] = xz;
+            data_[YY][XX] = yx;
+            data_[YY][YY] = yy;
+            data_[YY][ZZ] = yz;
+            data_[ZZ][XX] = zx;
+            data_[ZZ][YY] = zy;
+            data_[ZZ][ZZ] = zz;
+        }
+
+
+        //! Constructs a matrix from C-style 2D array.
+        explicit Matrix3x3(const T x[])
+        {
+            for (int i = 0; i < DIM; i++)
+            {
+                for (int j = 0; j < DIM; j++)
+                {
+                    data_[i][j] = x[i][j];
+                }
+            }
+        }
+
 
         template<typename ... Args>
         T &operator()(Args && ... args)
@@ -76,7 +105,7 @@ class basicMatrix3x3
             return view_(std::forward<Args>(args) ...);
         };
 
-        constexpr T &operator[](int index) const
+        constexpr T *operator[](int index) const
         {
             return view_(index);
         };

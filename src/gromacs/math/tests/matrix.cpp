@@ -46,3 +46,32 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/matrix.h"
+#include "gromacs/math/vec.h"
+namespace gmx
+{
+
+
+TEST(Matrix3x3, CanConstruct) {
+    Matrix3x3<int> x;
+    x(1, 1) = 1;
+}
+
+
+TEST(Matrix3x3Test, CanBeStoredInVector)
+{
+    std::vector < Matrix3x3 < int>> v;
+    v.emplace_back(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    v.resize(2);
+    EXPECT_EQ(1, v[0][XX][XX]);
+    EXPECT_EQ(2, v[0][XX][YY]);
+    EXPECT_EQ(3, v[0][XX][ZZ]);
+    EXPECT_EQ(4, v[0][YY][XX]);
+    EXPECT_EQ(5, v[0][YY][YY]);
+    EXPECT_EQ(6, v[0][YY][ZZ]);
+    EXPECT_EQ(7, v[0][ZZ][XX]);
+    EXPECT_EQ(8, v[0][ZZ][YY]);
+    EXPECT_EQ(9, v[0][ZZ][ZZ]);
+}
+
+
+} // namespace gmx
