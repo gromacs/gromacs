@@ -108,6 +108,17 @@ shakedata *shake_init()
     return d;
 }
 
+void done_shake(shakedata *d)
+{
+    sfree(d->rij);
+    sfree(d->half_of_reduced_mass);
+    sfree(d->distance_squared_tolerance);
+    sfree(d->constraint_distance_squared);
+    sfree(d->sblock);
+    sfree(d->scaled_lagrange_multiplier);
+    sfree(d);
+}
+
 typedef struct {
     int iatom[3];
     int blocknr;
@@ -184,6 +195,7 @@ make_shake_sblock_serial(shakedata *shaked,
     ncons = idef->il[F_CONSTR].nr/3;
 
     init_blocka(&sblocks);
+    sfree(sblocks.index); // To solve memory leak
     gen_sblocks(nullptr, 0, md.homenr, idef, &sblocks, FALSE);
 
     /*

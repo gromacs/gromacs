@@ -34,6 +34,7 @@
 
 gmx_add_unit_test(MdlibUnitTest mdlib-test
                   calc_verletbuf.cpp
+                  constr.cpp
                   mdebin.cpp
                   settle.cpp
                   shake.cpp
