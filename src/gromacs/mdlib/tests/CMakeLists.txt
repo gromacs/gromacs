@@ -39,4 +39,5 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
                   shake.cpp
                   simulationsignal.cpp
                   updategroups.cpp
-                  updategroupscog.cpp)
+                  updategroupscog.cpp
+                  lincs.cpp)
