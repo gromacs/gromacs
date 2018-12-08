@@ -175,6 +175,43 @@ const MdpFileValues mdpFileValueDatabase_g
                               1, 2, 3, 4, 5, 6
                           } }
     },
+    // Villin for NMA
+    {
+        "villin", { { },
+                    {
+                        1, 2, 3, 4, 5, 6
+                    } }
+    },
+    // SPC-Dimer for NMA
+    {
+        "spc-dimer", { { },
+                       {
+                           1, 2, 3, 4, 5, 6
+                       } }
+    },
+    // SW-Dimer for NMA
+    {
+        "sw-dimer", { { {
+                            "nstcalcenergy", "1"
+                        } },
+                      {
+                          1, 2, 3, 4, 5, 6
+                      } }
+    },
+    // TIP5P for NMA
+    {
+        "one-tip5p", { { },
+                       {
+                           1, 2, 3, 4, 5, 6
+                       } }
+    },
+    // ICE-Binding protein for NMA
+    {
+        "ice-binding", { { },
+                         {
+                             1, 2, 3, 4, 5, 6
+                         } }
+    },
     // Nonanol molecule in vacuo, topology suitable for testing FEP
     // on KE, angles, dihedral restraints, coulomb and vdw
     {
@@ -238,6 +275,7 @@ MdpFieldValues prepareDefaultMdpFieldValues(const char *simulationName)
     mdpFieldValues.insert(MdpField("other", ""));
     mdpFieldValues.insert(MdpField("rcoulomb", "0.7"));
     mdpFieldValues.insert(MdpField("rvdw", "0.7"));
+    mdpFieldValues.insert(MdpField("nstcalcenergy", "100"));
 
     return mdpFieldValues;
 }
@@ -324,6 +362,7 @@ prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
                            constraint-algorithm    = lincs
                            lincs-order             = 2
                            lincs-iter              = 5
+                           nstcalcenergy           = %s
                            %s)",
                         mdpFieldValues.at("rcoulomb").c_str(),
                         mdpFieldValues.at("rvdw").c_str(),
@@ -335,6 +374,7 @@ prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
                         mdpFieldValues.at("tau-p").c_str(),
                         mdpFieldValues.at("compressibility").c_str(),
                         mdpFieldValues.at("constraints").c_str(),
+                        mdpFieldValues.at("nstcalcenergy").c_str(),
                         mdpFieldValues.at("other").c_str());
 }
 
