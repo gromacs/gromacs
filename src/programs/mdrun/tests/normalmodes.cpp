@@ -124,7 +124,6 @@ TEST_P(NormalModesTest, WithinTolerances)
     // prepare the .tpr file
     {
         CommandLine caller;
-        caller.append("grompp");
         runner_.useTopG96AndNdxFromDatabase(simulationName);
         runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
         EXPECT_EQ(0, runner_.callGrompp(caller));
@@ -132,7 +131,6 @@ TEST_P(NormalModesTest, WithinTolerances)
     // Do mdrun, preparing to check the normal modes later
     {
         CommandLine mdrunCaller;
-        mdrunCaller.append("mdrun");
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
     }
     // Now run gmx nmeig and check the output
@@ -150,7 +148,7 @@ TEST_P(NormalModesTest, WithinTolerances)
 
 //! Containers of systems and integrators to test.
 //! \{
-std::vector<std::string> systemsToTest_g     = { "scaled-water" };
+std::vector<std::string> systemsToTest_g     = { "scaled-water", "villin", "spc-dimer", "one-tip5p", "sw-dimer" };
 std::vector<std::string> integratorsToTest_g = { "nm" };
 
 //! \}
