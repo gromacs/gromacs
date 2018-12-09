@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -167,6 +167,13 @@ const MdpFileValues mdpFileValueDatabase_g
                                           {
                                               1, 2, 3, 4, 5, 6, 7, 8, 9
                                           } }
+    },
+    // Simple mdrun tests of energy
+    {
+        "angles1", { { },
+                     {
+                         1, 2
+                     } }
     },
     // Scaled water for NMA
     {
