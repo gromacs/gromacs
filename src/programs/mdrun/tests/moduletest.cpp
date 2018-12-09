@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,11 +93,13 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 }       // namespace
 
 SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
+    fullPrecisionTrajectoryFileName_(fileManager->getTemporaryFilePath(".trr")),
     mdpOutputFileName_(fileManager->getTemporaryFilePath("output.mdp")),
     tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
     logFileName_(fileManager->getTemporaryFilePath(".log")),
     edrFileName_(fileManager->getTemporaryFilePath(".edr")),
     mtxFileName_(fileManager->getTemporaryFilePath(".mtx")),
+
     nsteps_(-2),
     fileManager_(*fileManager)
 {
