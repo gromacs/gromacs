@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Simulation Name="angles1">
+    <Mdrun Name="md">
+      <Energy Name="Kinetic En.">
+        <Real Name="Time 0.000000 Step 0 in frame 0">8.8827049229659867</Real>
+        <Real Name="Time 0.004000 Step 4 in frame 1">8.6853411978925283</Real>
+        <Real Name="Time 0.008000 Step 8 in frame 2">9.0476379091110388</Real>
+        <Real Name="Time 0.012000 Step 12 in frame 3">9.8917199248002738</Real>
+        <Real Name="Time 0.016000 Step 16 in frame 4">10.970729795432904</Real>
+        <Real Name="Time 0.020000 Step 20 in frame 5">11.969598016517832</Real>
+        <Real Name="Time 0.024000 Step 24 in frame 6">12.62026794388975</Real>
+        <Real Name="Time 0.028000 Step 28 in frame 7">12.784778605942696</Real>
+        <Real Name="Time 0.032000 Step 32 in frame 8">12.481797526143698</Real>
+        <Real Name="Time 0.036000 Step 36 in frame 9">11.859180066366569</Real>
+        <Real Name="Time 0.040000 Step 40 in frame 10">11.133173167819184</Real>
+        <Real Name="Time 0.044000 Step 44 in frame 11">10.519456636414681</Real>
+        <Real Name="Time 0.048000 Step 48 in frame 12">10.175948192781616</Real>
+        <Real Name="Time 0.050000 Step 50 in frame 13">10.130095229541354</Real>
+      </Energy>
+      <Energy Name="Pressure">
+        <Real Name="Time 0.000000 Step 0 in frame 0">0.050796915464453078</Real>
+        <Real Name="Time 0.004000 Step 4 in frame 1">0.049668265065138127</Real>
+        <Real Name="Time 0.008000 Step 8 in frame 2">0.051740106421168469</Real>
+        <Real Name="Time 0.012000 Step 12 in frame 3">0.056567100356897659</Real>
+        <Real Name="Time 0.016000 Step 16 in frame 4">0.062737560105270637</Real>
+        <Real Name="Time 0.020000 Step 20 in frame 5">0.068449719298513387</Real>
+        <Real Name="Time 0.024000 Step 24 in frame 6">0.072170660789040511</Real>
+        <Real Name="Time 0.028000 Step 28 in frame 7">0.07311143662993308</Real>
+        <Real Name="Time 0.032000 Step 32 in frame 8">0.071378799507417989</Real>
+        <Real Name="Time 0.036000 Step 36 in frame 9">0.067818279739478529</Real>
+        <Real Name="Time 0.040000 Step 40 in frame 10">0.063666513878522027</Real>
+        <Real Name="Time 0.044000 Step 44 in frame 11">0.0601568952392392</Real>
+        <Real Name="Time 0.048000 Step 48 in frame 12">0.058192497060544718</Real>
+        <Real Name="Time 0.050000 Step 50 in frame 13">0.057930280864272009</Real>
+      </Energy>
+      <Energy Name="Potential">
+        <Real Name="Time 0.000000 Step 0 in frame 0">4.1472047198540372</Real>
+        <Real Name="Time 0.004000 Step 4 in frame 1">4.3456029525254678</Real>
+        <Real Name="Time 0.008000 Step 8 in frame 2">3.9826669068572804</Real>
+        <Real Name="Time 0.012000 Step 12 in frame 3">3.1365732905081485</Real>
+        <Real Name="Time 0.016000 Step 16 in frame 4">2.0549883062522021</Real>
+        <Real Name="Time 0.020000 Step 20 in frame 5">1.0539093055450899</Real>
+        <Real Name="Time 0.024000 Step 24 in frame 6">0.40206460374611186</Real>
+        <Real Name="Time 0.028000 Step 28 in frame 7">0.23763430982970407</Real>
+        <Real Name="Time 0.032000 Step 32 in frame 8">0.54173749646275193</Real>
+        <Real Name="Time 0.036000 Step 36 in frame 9">1.1660367172499504</Real>
+        <Real Name="Time 0.040000 Step 40 in frame 10">1.8937346262505983</Real>
+        <Real Name="Time 0.044000 Step 44 in frame 11">2.508691833692589</Real>
+        <Real Name="Time 0.048000 Step 48 in frame 12">2.8527119645828241</Real>
+        <Real Name="Time 0.050000 Step 50 in frame 13">2.8985177691298398</Real>
+      </Energy>
+    </Mdrun>
+  </Simulation>
+</ReferenceData>
