@@ -78,6 +78,7 @@ gmx_add_gtest_executable(
     minimize.cpp
     normalmodes.cpp
     rerun.cpp
+    simple_mdrun.cpp
     tpitest.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
