@@ -86,6 +86,23 @@ gmx_add_gtest_executable(
     )
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
 
+# To avoid running into test timeouts, some end-to-end tests of mdrun
+# functionality are split off. This can be rearranged in future as we
+# see fit.
+set(testname "MdrunRegressionTests")
+set(exename "mdrun-regression-test")
+
+gmx_add_gtest_executable(
+    ${exename}
+    # files with code for tests
+    simple_mdrun.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    )
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
+
 # To permit other end-to-end tests to run with multiple OpenMP
 # threads, test cases that still use the group scheme are separated.
 set(testname "LegacyGroupSchemeMdrunTests")
