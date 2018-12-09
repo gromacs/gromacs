@@ -93,11 +93,13 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 }       // namespace
 
 SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
+    fullPrecisionTrajectoryFileName_(fileManager->getTemporaryFilePath(".trr")),
     mdpOutputFileName_(fileManager->getTemporaryFilePath("output.mdp")),
     tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
     logFileName_(fileManager->getTemporaryFilePath(".log")),
     edrFileName_(fileManager->getTemporaryFilePath(".edr")),
     mtxFileName_(fileManager->getTemporaryFilePath(".mtx")),
+
     nsteps_(-2),
     fileManager_(*fileManager)
 {
