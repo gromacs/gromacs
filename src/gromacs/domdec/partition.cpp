@@ -1090,7 +1090,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         float imbalance = comm->load_max*numPpRanks/comm->load_sum - 1;
         lossFraction    = dd_force_imb_perf_loss(dd);
 
-        std::string msg         = "\n Dynamic load balancing report:\n";
+        std::string msg         = "\nDynamic load balancing report:\n";
         std::string dlbStateStr;
 
         switch (dd->comm->dlbState)
@@ -1127,7 +1127,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         msg += gmx::formatString(" Part of the total run time spent waiting due to load imbalance: %.1f%%.\n",
                                  lossFraction*100);
         fprintf(fplog, "%s", msg.c_str());
-        fprintf(stderr, "%s", msg.c_str());
+        fprintf(stderr, "\n%s", msg.c_str());
     }
 
     /* Print during what percentage of steps the  load balancing was limited */
@@ -1176,19 +1176,30 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
 
     if (lossFraction >= DD_PERF_LOSS_WARN)
     {
-        sprintf(buf,
-                "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
-                "      in the domain decomposition.\n", lossFraction*100);
+        std::string message = gmx::formatString(
+                    "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
+                    "      in the domain decomposition.\n", lossFraction*100);
+
+        bool hadSuggestion = false;
         if (!isDlbOn(comm))
         {
-            sprintf(buf+strlen(buf), "      You might want to use dynamic load balancing (option -dlb.)\n");
+            message      += "      You might want to use dynamic load balancing (option -dlb.)\n";
+            hadSuggestion = true;
         }
         else if (dlbWasLimited)
         {
-            sprintf(buf+strlen(buf), "      You might want to decrease the cell size limit (options -rdd, -rcon and/or -dds).\n");
+            message      += "      You might want to decrease the cell size limit (options -rdd, -rcon and/or -dds).\n";
+            hadSuggestion = true;
         }
-        fprintf(fplog, "%s\n", buf);
-        fprintf(stderr, "%s\n", buf);
+        message += gmx::formatString(
+                    "      You can %sconsider manually changing the decomposition (option -dd);\n"
+                    "      e.g. by using fewer domains along the box dimension in which there is\n"
+                    "      considerable inhomogeneity in the simulated system).",
+                    hadSuggestion ? "also " : "");
+
+
+        fprintf(fplog, "%s\n", message.c_str());
+        fprintf(stderr, "%s\n", message.c_str());
     }
     if (numPmeRanks > 0 && std::fabs(lossFractionPme) >= DD_PERF_LOSS_WARN)
     {
