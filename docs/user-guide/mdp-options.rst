@@ -741,7 +741,9 @@ Electrostatics
 .. mdp:: rcoulomb
 
    (1) [nm]
-   distance for the Coulomb cut-off
+   The distance for the Coulomb cut-off. Note that with PME this value
+   can be increased by the PME tuning in :ref:`gmx mdrun` along with
+   the PME grid spacing.
 
 .. mdp:: epsilon-r
 
@@ -922,7 +924,8 @@ Ewald
    the particle-particle interactions and the mesh part of PME, it is
    useful to know that the accuracy of the electrostatics remains
    nearly constant when the Coulomb cut-off and the PME grid spacing
-   are scaled by the same factor.
+   are scaled by the same factor. Note that this spacing can be scaled
+   up along with :mdp:`rcoulomb` by the PME tuning in :ref:`gmx mdrun`.
 
 .. mdp:: fourier-nx
 .. mdp:: fourier-ny
@@ -932,7 +935,9 @@ Ewald
    Highest magnitude of wave vectors in reciprocal space when using Ewald.
    Grid size when using PME or P3M. These values override
    :mdp:`fourierspacing` per direction. The best choice is powers of
-   2, 3, 5 and 7. Avoid large primes.
+   2, 3, 5 and 7. Avoid large primes. Note that these grid sizes can
+   be reduced along with scaling up :mdp:`rcoulomb` by the PME tuning
+   in :ref:`gmx mdrun`.
 
 .. mdp:: pme-order
 
