@@ -104,9 +104,7 @@ enum class PmeSolveAlgorithm
 // Misc.
 
 //! Tells if this generally valid PME input is supported for this mode
-bool pmeSupportsInputForMode(const gmx_hw_info_t &hwinfo,
-                             const t_inputrec    *inputRec,
-                             CodePath             mode);
+bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode);
 
 //! Spline moduli are computed in double precision, so they're very good in single precision
 constexpr int64_t c_splineModuliSinglePrecisionUlps = 1;

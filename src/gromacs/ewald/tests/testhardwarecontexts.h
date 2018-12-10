@@ -49,9 +49,8 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/ewald/pme-gpu-program.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
-
-struct gmx_hw_info_t;
 
 namespace gmx
 {
@@ -119,8 +118,6 @@ class PmeTestEnvironment : public ::testing::Environment
         void TearDown() override;
         //! Get available hardware contexts.
         const TestHardwareContexts &getHardwareContexts() const {return hardwareContexts_; }
-        //! Get available hardware information.
-        const gmx_hw_info_t *hwinfo() const { return hardwareInfo_; }
 };
 
 //! Get the test environment
