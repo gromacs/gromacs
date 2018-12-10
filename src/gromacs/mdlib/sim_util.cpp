@@ -1385,6 +1385,13 @@ static void do_force_cutsVERLET(FILE *fplog,
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
                                  flags, eatLocal, ppForceWorkload->haveGpuBondedWork);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
+        if (ppForceWorkload->haveGpuBondedWork)
+        {
+            fr->gpuBonded->launchEnergyTransfer();
+        }
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
@@ -1699,6 +1706,22 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
+    if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
+    {
+        wallcycle_start(wcycle, ewcWAIT_GPU_BONDED);
+        // in principle this should be included in the DD balancing region,
+        // but generally it is infrequent so we'll omit it for the sake of
+        // simpler code
+        fr->gpuBonded->accumulateEnergyTerms(enerd);
+        wallcycle_start(wcycle, ewcWAIT_GPU_BONDED);
+
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
+        fr->gpuBonded->clearEnergies();
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    }
+
     /* Do the nonbonded GPU (or emulation) force buffer reduction
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
@@ -1706,20 +1729,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
                                        nbv->nbat, f, wcycle);
     }
-
-    if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
-    {
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
-        fr->gpuBonded->launchEnergyTransfer();
-        fr->gpuBonded->accumulateEnergyTerms(enerd);
-        // TODO The clearing call could come later in the
-        // force-calculation sequence.
-        fr->gpuBonded->clearEnergies();
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
-    }
-
     if (DOMAINDECOMP(cr))
     {
         dd_force_flop_stop(cr->dd, nrnb);
