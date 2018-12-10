@@ -313,6 +313,7 @@ namespace gmx
 
 BinaryInformationSettings::BinaryInformationSettings()
     : bExtendedInfo_(false), bCopyright_(false),
+      bProcessId_(false),
       bGeneratedByHeader_(false), prefix_(""), suffix_("")
 {
 }
@@ -392,7 +393,10 @@ void printBinaryInformation(TextWriter                      *writer,
     {
         writer->writeLine(formatString("%sWorking dir:  %s%s", prefix, workingDir.c_str(), suffix));
     }
-    writer->writeLine(formatString("%sProcess ID:   %d%s", prefix, gmx_getpid(), suffix));
+    if (settings.bProcessId_)
+    {
+        writer->writeLine(formatString("%sProcess ID:   %d%s", prefix, gmx_getpid(), suffix));
+    }
     const char *const commandLine = programContext.commandLine();
     if (!gmx::isNullOrEmpty(commandLine))
     {

@@ -69,7 +69,9 @@ static void prepareLogFile(BinaryInformationSettings settings,
 
     try
     {
-        settings.extendedInfo(true);
+        settings
+            .extendedInfo(true)
+            .processId(true);
         printBinaryInformation(fplog, getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
