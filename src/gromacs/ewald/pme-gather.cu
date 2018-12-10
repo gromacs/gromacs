@@ -150,9 +150,9 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
 #endif
     {
         // We use blockSize shared memory elements to read fx, or fy, or fz, and then reduce them to fit into smemPerDim elements
-        // which are stored separately (first 2 dimensions only)
+        // which are stored separately
         const int         smemPerDim   = warp_size;
-        const int         smemReserved = (DIM - 1) * smemPerDim;
+        const int         smemReserved = DIM * smemPerDim;
         __shared__ float  sm_forceReduction[smemReserved + blockSize];
         __shared__ float *sm_forceTemp[DIM];
 

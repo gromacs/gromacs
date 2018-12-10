@@ -26,6 +26,14 @@ PME grids with size along Z larger than 511 would make mdrun exit
 with a cryptic CUDA error.
 
 :issue: `2779`
+
+Fixed PME force errors on NVIDIA Fermi GPUs
+"""""""""""""""""""""""""""""""""""""""""""
+
+When running PME on an NVIDIA Fermi GPU, the z-component of the PME
+mesh forces could be incorrect.
+
+:issue: `2702`
         
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
