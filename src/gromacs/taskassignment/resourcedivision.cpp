@@ -36,6 +36,7 @@
  * \brief Defines utility functionality for dividing resources and
  * checking for consistency and usefulness.
  *
+ * \author Berk Hess <hess@kth.se>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_taskassignment
  */
@@ -124,17 +125,17 @@ constexpr int nthreads_omp_faster_AMD_Ryzen = 16;
 constexpr int nthreads_omp_faster_gpu_fac   =  2;
 
 /* This is the case with MPI (2 or more MPI PP ranks).
- * By default we will terminate with a fatal error when more than 8
+ * By default we will terminate with a fatal error when more than 12
  * OpenMP thread are (indirectly) requested, since using less threads
  * nearly always results in better performance.
  * With thread-mpi and multiple GPUs or one GPU and too many threads
- * we first try 6 OpenMP threads and then less until the number of MPI ranks
+ * we first try 8 OpenMP threads and then less until the number of MPI ranks
  * is divisible by the number of GPUs.
  */
-constexpr int nthreads_omp_mpi_ok_max              =  8;
+constexpr int nthreads_omp_mpi_ok_max              = 12;
 constexpr int nthreads_omp_mpi_ok_min_cpu          =  1;
 constexpr int nthreads_omp_mpi_ok_min_gpu          =  2;
-constexpr int nthreads_omp_mpi_target_max          =  6;
+constexpr int nthreads_omp_mpi_target_max          =  8;
 
 /**@}*/
 
