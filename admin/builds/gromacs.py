@@ -67,7 +67,7 @@ def do_build(context):
     cmake_opts['CMAKE_BUILD_TYPE'] = 'Debug'
     cmake_opts['GMX_USE_RDTSCP'] = 'DETECT'
 
-    if context.env.compiler != Compiler.MSVC:
+    if !context.opts.msvc:
         cmake_opts['GMXAPI'] = 'ON'
 
     if context.opts.reference:
