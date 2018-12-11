@@ -58,6 +58,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
@@ -74,6 +75,7 @@
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
@@ -82,7 +84,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/smalloc.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
@@ -93,31 +94,23 @@ namespace gmx
 struct Task
 {
     //! First constraint for this task.
-    int    b0 = 0;
+    int              b0 = 0;
     //! b1-1 is the last constraint for this task.
-    int    b1 = 0;
+    int              b1 = 0;
     //! The number of constraints in triangles.
-    int    ntriangle = 0;
+    int              ntriangle = 0;
     //! The list of triangle constraints.
-    int   *triangle = nullptr;
+    std::vector<int> triangle;
     //! The bits tell if the matrix element should be used.
-    int   *tri_bits = nullptr;
-    //! Allocation size of triangle and tri_bits.
-    int    tri_alloc = 0;
-    //! Number of indices.
-    int    nind = 0;
+    std::vector<int> tri_bits;
     //! Constraint index for updating atom data.
-    int   *ind = nullptr;
-    //! Number of indices.
-    int    nind_r = 0;
+    std::vector<int> ind;
     //! Constraint index for updating atom data.
-    int   *ind_r = nullptr;
-    //! Allocation size of ind and ind_r.
-    int    ind_nalloc = 0;
+    std::vector<int> ind_r;
     //! Temporary variable for virial calculation.
-    tensor vir_r_m_dr = {{0}};
+    tensor           vir_r_m_dr = {{0}};
     //! Temporary variable for lambda derivative.
-    real   dhdlambda;
+    real             dhdlambda;
 };
 
 /*! \brief Data for LINCS algorithm.
@@ -139,47 +132,43 @@ class Lincs
         int             max_connect = 0;
 
         //! The number of real constraints.
-        int             nc_real = 0;
+        int              nc_real = 0;
         //! The number of constraints including padding for SIMD.
-        int             nc = 0;
-        //! The number we allocated memory for.
-        int             nc_alloc = 0;
+        int              nc = 0;
         //! The number of constraint connections.
-        int             ncc = 0;
-        //! The number we allocated memory for.
-        int             ncc_alloc = 0;
+        int              ncc = 0;
         //! The FE lambda value used for filling blc and blmf.
-        real            matlam = 0;
+        real             matlam = 0;
         //! mapping from topology to LINCS constraints.
-        int            *con_index = nullptr;
+        std::vector<int> con_index;
         //! The reference distance in topology A.
-        real           *bllen0 = nullptr;
+        std::vector < real, AlignedAllocator < real>> bllen0;
         //! The reference distance in top B - the r.d. in top A.
-        real           *ddist = nullptr;
+        std::vector < real, AlignedAllocator < real>> ddist;
         //! The atom pairs involved in the constraints.
-        int            *bla = nullptr;
+        std::vector<int> bla;
         //! 1/sqrt(invmass1  invmass2).
-        real           *blc = nullptr;
+        std::vector < real, AlignedAllocator < real>> blc;
         //! As blc, but with all masses 1.
-        real           *blc1 = nullptr;
+        std::vector < real, AlignedAllocator < real>> blc1;
         //! Index into blbnb and blmf.
-        int            *blnr = nullptr;
+        std::vector<int>  blnr;
         //! List of constraint connections.
-        int            *blbnb = nullptr;
+        std::vector<int>  blbnb;
         //! The local number of constraints in triangles.
-        int             ntriangle = 0;
+        int               ntriangle = 0;
         //! The number of constraint connections in triangles.
-        int             ncc_triangle = 0;
+        int               ncc_triangle = 0;
         //! Communicate before each LINCS interation.
-        bool            bCommIter = false;
+        bool              bCommIter = false;
         //! Matrix of mass factors for constraint connections.
-        real           *blmf = nullptr;
+        std::vector<real> blmf;
         //! As blmf, but with all masses 1.
-        real           *blmf1 = nullptr;
+        std::vector<real> blmf1;
         //! The reference bond length.
-        real           *bllen = nullptr;
+        std::vector < real, AlignedAllocator < real>> bllen;
         //! The local atom count per constraint, can be NULL.
-        int            *nlocat = nullptr;
+        std::vector<int>  nlocat;
 
         /*! \brief The number of tasks used for LINCS work.
          *
@@ -188,28 +177,26 @@ class Lincs
          * index is used for constructing bit masks and organizing the
          * virial output buffer, so other things need to change,
          * first. */
-        int               ntask = 0;
+        int                        ntask = 0;
         /*! \brief LINCS thread division */
-        std::vector<Task> task;
+        std::vector<Task>          task;
         //! Atom flags for thread parallelization.
-        gmx_bitmask_t    *atf = nullptr;
-        //! Allocation size of atf
-        int               atf_nalloc = 0;
+        std::vector<gmx_bitmask_t> atf;
         //! Are the LINCS tasks interdependent?
-        bool              bTaskDep = false;
+        bool                       bTaskDep = false;
         //! Are there triangle constraints that cross task borders?
-        bool              bTaskDepTri = false;
+        bool                       bTaskDepTri = false;
         //! Arrays for temporary storage in the LINCS algorithm.
         /*! @{ */
-        rvec           *tmpv   = nullptr;
-        real           *tmpncc = nullptr;
-        real           *tmp1   = nullptr;
-        real           *tmp2   = nullptr;
-        real           *tmp3   = nullptr;
-        real           *tmp4   = nullptr;
+        PaddedVector<gmx::RVec>                   tmpv;
+        std::vector<real>                         tmpncc;
+        std::vector < real, AlignedAllocator < real>> tmp1;
+        std::vector < real, AlignedAllocator < real>> tmp2;
+        std::vector < real, AlignedAllocator < real>> tmp3;
+        std::vector < real, AlignedAllocator < real>> tmp4;
         /*! @} */
         //! The Lagrange multipliers times -1.
-        real               *mlambda = nullptr;
+        std::vector < real, AlignedAllocator < real>> mlambda;
         //! Storage for the constraint RMS relative deviation output.
         std::array<real, 2> rmsdData = {{0}};
 };
@@ -220,10 +207,6 @@ static const int simd_width = GMX_SIMD_REAL_WIDTH;
 #else
 static const int simd_width = 1;
 #endif
-
-/*! \brief Align to 128 bytes, consistent with the current implementation of
-   AlignedAllocator, which currently forces 128 byte alignment. */
-static const int align_bytes = 128;
 
 ArrayRef<real> lincs_rmsdData(Lincs *lincsd)
 {
@@ -252,23 +235,20 @@ static void lincs_matrix_expand(const Lincs *lincsd,
                                 const real *blcc,
                                 real *rhs1, real *rhs2, real *sol)
 {
-    int        b0, b1, nrec, rec;
-    const int *blnr  = lincsd->blnr;
-    const int *blbnb = lincsd->blbnb;
+    gmx::ArrayRef<const int> blnr  = lincsd->blnr;
+    gmx::ArrayRef<const int> blbnb = lincsd->blbnb;
 
-    b0   = li_task->b0;
-    b1   = li_task->b1;
-    nrec = lincsd->nOrder;
+    const int                b0   = li_task->b0;
+    const int                b1   = li_task->b1;
+    const int                nrec = lincsd->nOrder;
 
-    for (rec = 0; rec < nrec; rec++)
+    for (int rec = 0; rec < nrec; rec++)
     {
-        int b;
-
         if (lincsd->bTaskDep)
         {
 #pragma omp barrier
         }
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
             real mvb;
             int  n;
@@ -313,14 +293,12 @@ static void lincs_matrix_expand(const Lincs *lincsd,
          * LINCS task. This means no barriers are required during the extra
          * iterations for the triangle constraints.
          */
-        const int *triangle = li_task->triangle;
-        const int *tri_bits = li_task->tri_bits;
+        gmx::ArrayRef<const int> triangle = li_task->triangle;
+        gmx::ArrayRef<const int> tri_bits = li_task->tri_bits;
 
-        for (rec = 0; rec < nrec; rec++)
+        for (int rec = 0; rec < nrec; rec++)
         {
-            int tb;
-
-            for (tb = 0; tb < li_task->ntriangle; tb++)
+            for (int tb = 0; tb < li_task->ntriangle; tb++)
             {
                 int  b, bits, nr0, nr1, n;
                 real mvb;
@@ -360,7 +338,8 @@ static void lincs_matrix_expand(const Lincs *lincsd,
 }
 
 //! Update atomic coordinates when an index is not required.
-static void lincs_update_atoms_noind(int ncons, const int *bla,
+static void lincs_update_atoms_noind(int ncons,
+                                     gmx::ArrayRef<const int> bla,
                                      real prefac,
                                      const real *fac, rvec *r,
                                      const real *invmass,
@@ -410,20 +389,20 @@ static void lincs_update_atoms_noind(int ncons, const int *bla,
 }
 
 //! Update atomic coordinates when an index is required.
-static void lincs_update_atoms_ind(int ncons, const int *ind, const int *bla,
+static void lincs_update_atoms_ind(gmx::ArrayRef<const int> ind,
+                                   gmx::ArrayRef<const int> bla,
                                    real prefac,
                                    const real *fac, rvec *r,
                                    const real *invmass,
                                    rvec *x)
 {
-    int  bi, b, i, j;
+    int  i, j;
     real mvb, im1, im2, tmp0, tmp1, tmp2;
 
     if (invmass != nullptr)
     {
-        for (bi = 0; bi < ncons; bi++)
+        for (int b : ind)
         {
-            b        = ind[bi];
             i        = bla[2*b];
             j        = bla[2*b+1];
             mvb      = prefac*fac[b];
@@ -442,9 +421,8 @@ static void lincs_update_atoms_ind(int ncons, const int *ind, const int *bla,
     }
     else
     {
-        for (bi = 0; bi < ncons; bi++)
+        for (int b : ind)
         {
-            b        = ind[bi];
             i        = bla[2*b];
             j        = bla[2*b+1];
             mvb      = prefac*fac[b];
@@ -480,10 +458,10 @@ static void lincs_update_atoms(Lincs *li, int th,
          * constraints that only access our local atom range.
          * This can be done without a barrier.
          */
-        lincs_update_atoms_ind(li->task[th].nind, li->task[th].ind,
+        lincs_update_atoms_ind(li->task[th].ind,
                                li->bla, prefac, fac, r, invmass, x);
 
-        if (li->task[li->ntask].nind > 0)
+        if (!li->task[li->ntask].ind.empty())
         {
             /* Update the constraints that operate on atoms
              * in multiple thread atom blocks on the master thread.
@@ -491,8 +469,7 @@ static void lincs_update_atoms(Lincs *li, int th,
 #pragma omp barrier
 #pragma omp master
             {
-                lincs_update_atoms_ind(li->task[li->ntask].nind,
-                                       li->task[li->ntask].ind,
+                lincs_update_atoms_ind(li->task[li->ntask].ind,
                                        li->bla, prefac, fac, r, invmass, x);
             }
         }
@@ -606,26 +583,26 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     b0 = lincsd->task[th].b0;
     b1 = lincsd->task[th].b1;
 
-    bla    = lincsd->bla;
-    r      = lincsd->tmpv;
-    blnr   = lincsd->blnr;
-    blbnb  = lincsd->blbnb;
+    bla    = lincsd->bla.data();
+    r      = as_rvec_array(lincsd->tmpv.data());
+    blnr   = lincsd->blnr.data();
+    blbnb  = lincsd->blbnb.data();
     if (econq != ConstraintVariable::Force)
     {
         /* Use mass-weighted parameters */
-        blc  = lincsd->blc;
-        blmf = lincsd->blmf;
+        blc  = lincsd->blc.data();
+        blmf = lincsd->blmf.data();
     }
     else
     {
         /* Use non mass-weighted parameters */
-        blc  = lincsd->blc1;
-        blmf = lincsd->blmf1;
+        blc  = lincsd->blc1.data();
+        blmf = lincsd->blmf1.data();
     }
-    blcc   = lincsd->tmpncc;
-    rhs1   = lincsd->tmp1;
-    rhs2   = lincsd->tmp2;
-    sol    = lincsd->tmp3;
+    blcc   = lincsd->tmpncc.data();
+    rhs1   = lincsd->tmp1.data();
+    rhs2   = lincsd->tmp2.data();
+    sol    = lincsd->tmp3.data();
 
 #if GMX_SIMD_HAVE_REAL
     /* This SIMD code does the same as the plain-C code after the #else.
@@ -1001,20 +978,20 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     b0 = lincsd->task[th].b0;
     b1 = lincsd->task[th].b1;
 
-    bla     = lincsd->bla;
-    r       = lincsd->tmpv;
-    blnr    = lincsd->blnr;
-    blbnb   = lincsd->blbnb;
-    blc     = lincsd->blc;
-    blmf    = lincsd->blmf;
-    bllen   = lincsd->bllen;
-    blcc    = lincsd->tmpncc;
-    rhs1    = lincsd->tmp1;
-    rhs2    = lincsd->tmp2;
-    sol     = lincsd->tmp3;
-    blc_sol = lincsd->tmp4;
-    mlambda = lincsd->mlambda;
-    nlocat  = lincsd->nlocat;
+    bla     = lincsd->bla.data();
+    r       = as_rvec_array(lincsd->tmpv.data());
+    blnr    = lincsd->blnr.data();
+    blbnb   = lincsd->blbnb.data();
+    blc     = lincsd->blc.data();
+    blmf    = lincsd->blmf.data();
+    bllen   = lincsd->bllen.data();
+    blcc    = lincsd->tmpncc.data();
+    rhs1    = lincsd->tmp1.data();
+    rhs2    = lincsd->tmp2.data();
+    sol     = lincsd->tmp3.data();
+    blc_sol = lincsd->tmp4.data();
+    mlambda = lincsd->mlambda.data();
+    nlocat  = lincsd->nlocat.data();
 
 #if GMX_SIMD_HAVE_REAL
 
@@ -1623,22 +1600,14 @@ void done_lincs(Lincs *li)
 /*! \brief Sets up the work division over the threads. */
 static void lincs_thread_setup(Lincs *li, int natoms)
 {
-    Task           *li_m;
-    int             th;
-    gmx_bitmask_t  *atf;
-    int             a;
+    li->atf.resize(natoms);
 
-    if (natoms > li->atf_nalloc)
-    {
-        li->atf_nalloc = over_alloc_large(natoms);
-        srenew(li->atf, li->atf_nalloc);
-    }
+    gmx::ArrayRef<gmx_bitmask_t> atf = li->atf;
 
-    atf = li->atf;
     /* Clear the atom flags */
-    for (a = 0; a < natoms; a++)
+    for (gmx_bitmask_t &mask : atf)
     {
-        bitmask_clear(&atf[a]);
+        bitmask_clear(&mask);
     }
 
     if (li->ntask > BITMASK_SIZE)
@@ -1646,15 +1615,12 @@ static void lincs_thread_setup(Lincs *li, int natoms)
         gmx_fatal(FARGS, "More than %d threads is not supported for LINCS.", BITMASK_SIZE);
     }
 
-    for (th = 0; th < li->ntask; th++)
+    for (int th = 0; th < li->ntask; th++)
     {
-        Task         *li_task;
-        int           b;
-
-        li_task = &li->task[th];
+        const Task *li_task = &li->task[th];
 
         /* For each atom set a flag for constraints from each */
-        for (b = li_task->b0; b < li_task->b1; b++)
+        for (int b = li_task->b0; b < li_task->b1; b++)
         {
             bitmask_set_bit(&atf[li->bla[b*2    ]], th);
             bitmask_set_bit(&atf[li->bla[b*2 + 1]], th);
@@ -1662,7 +1628,7 @@ static void lincs_thread_setup(Lincs *li, int natoms)
     }
 
 #pragma omp parallel for num_threads(li->ntask) schedule(static)
-    for (th = 0; th < li->ntask; th++)
+    for (int th = 0; th < li->ntask; th++)
     {
         try
         {
@@ -1672,17 +1638,10 @@ static void lincs_thread_setup(Lincs *li, int natoms)
 
             li_task = &li->task[th];
 
-            if (li_task->b1 - li_task->b0 > li_task->ind_nalloc)
-            {
-                li_task->ind_nalloc = over_alloc_large(li_task->b1-li_task->b0);
-                srenew(li_task->ind, li_task->ind_nalloc);
-                srenew(li_task->ind_r, li_task->ind_nalloc);
-            }
-
             bitmask_init_low_bits(&mask, th);
 
-            li_task->nind   = 0;
-            li_task->nind_r = 0;
+            li_task->ind.clear();
+            li_task->ind_r.clear();
             for (b = li_task->b0; b < li_task->b1; b++)
             {
                 /* We let the constraint with the lowest thread index
@@ -1692,12 +1651,12 @@ static void lincs_thread_setup(Lincs *li, int natoms)
                     bitmask_is_disjoint(atf[li->bla[b*2+1]], mask))
                 {
                     /* Add the constraint to the local atom update index */
-                    li_task->ind[li_task->nind++] = b;
+                    li_task->ind.push_back(b);
                 }
                 else
                 {
                     /* Add the constraint to the rest block */
-                    li_task->ind_r[li_task->nind_r++] = b;
+                    li_task->ind_r.push_back(b);
                 }
             }
         }
@@ -1707,48 +1666,30 @@ static void lincs_thread_setup(Lincs *li, int natoms)
     /* We need to copy all constraints which have not be assigned
      * to a thread to a separate list which will be handled by one thread.
      */
-    li_m = &li->task[li->ntask];
+    Task *li_m = &li->task[li->ntask];
 
-    li_m->nind = 0;
-    for (th = 0; th < li->ntask; th++)
+    li_m->ind.clear();
+    for (int th = 0; th < li->ntask; th++)
     {
-        Task         *li_task;
-        int           b;
+        const Task &li_task = li->task[th];
 
-        li_task   = &li->task[th];
-
-        if (li_m->nind + li_task->nind_r > li_m->ind_nalloc)
+        for (int ind_r : li_task.ind_r)
         {
-            li_m->ind_nalloc = over_alloc_large(li_m->nind+li_task->nind_r);
-            srenew(li_m->ind, li_m->ind_nalloc);
-        }
-
-        for (b = 0; b < li_task->nind_r; b++)
-        {
-            li_m->ind[li_m->nind++] = li_task->ind_r[b];
+            li_m->ind.push_back(ind_r);
         }
 
         if (debug)
         {
-            fprintf(debug, "LINCS thread %d: %d constraints\n",
-                    th, li_task->nind);
+            fprintf(debug, "LINCS thread %d: %zu constraints\n",
+                    th, li_task.ind.size());
         }
     }
 
     if (debug)
     {
-        fprintf(debug, "LINCS thread r: %d constraints\n",
-                li_m->nind);
+        fprintf(debug, "LINCS thread r: %zu constraints\n",
+                li_m->ind.size());
     }
-}
-
-/*! \brief There is no realloc with alignment, so here we make one for reals.
- * Note that this function does not preserve the contents of the memory.
- */
-static void resize_real_aligned(real **ptr, int nelem)
-{
-    sfree_aligned(*ptr);
-    snew_aligned(*ptr, nelem, align_bytes);
 }
 
 //! Assign a constraint.
@@ -1990,7 +1931,6 @@ void set_lincs(const t_idef         &idef,
     int          natoms;
     t_blocka     at2con;
     t_iatom     *iatom;
-    int          i, ncc_alloc_old, ncon_tot;
 
     li->nc_real = 0;
     li->nc      = 0;
@@ -1998,15 +1938,15 @@ void set_lincs(const t_idef         &idef,
     /* Zero the thread index ranges.
      * Otherwise without local constraints we could return with old ranges.
      */
-    for (i = 0; i < li->ntask; i++)
+    for (int i = 0; i < li->ntask; i++)
     {
         li->task[i].b0   = 0;
         li->task[i].b1   = 0;
-        li->task[i].nind = 0;
+        li->task[i].ind.clear();
     }
     if (li->ntask > 1)
     {
-        li->task[li->ntask].nind = 0;
+        li->task[li->ntask].ind.clear();
     }
 
     /* This is the local topology, so there are only F_CONSTR constraints */
@@ -2044,41 +1984,31 @@ void set_lincs(const t_idef         &idef,
     at2con = make_at2con(natoms, idef.il, idef.iparams,
                          flexibleConstraintTreatment(bDynamics));
 
-    ncon_tot = idef.il[F_CONSTR].nr/3;
+    const int ncon_tot = idef.il[F_CONSTR].nr/3;
 
     /* Ensure we have enough padding for aligned loads for each thread */
-    if (ncon_tot + li->ntask*simd_width > li->nc_alloc || li->nc_alloc == 0)
+    const int numEntries = ncon_tot + li->ntask*simd_width;
+    li->con_index.resize(numEntries);
+    li->bllen0.resize(numEntries);
+    li->ddist.resize(numEntries);
+    li->bla.resize(numEntries*2);
+    li->blc.resize(numEntries);
+    li->blc1.resize(numEntries);
+    li->blnr.resize(numEntries);
+    li->bllen.resize(numEntries);
+    li->tmpv.resizeWithPadding(numEntries);
+    if (DOMAINDECOMP(cr))
     {
-        int old_alloc = li->nc_alloc;
-        li->nc_alloc = over_alloc_dd(ncon_tot + li->ntask*simd_width);
-        srenew(li->con_index, li->nc_alloc);
-        resize_real_aligned(&li->bllen0, li->nc_alloc);
-        resize_real_aligned(&li->ddist, li->nc_alloc);
-        srenew(li->bla, 2*li->nc_alloc);
-        resize_real_aligned(&li->blc, li->nc_alloc);
-        resize_real_aligned(&li->blc1, li->nc_alloc);
-        srenew(li->blnr, li->nc_alloc + 1);
-        resize_real_aligned(&li->bllen, li->nc_alloc);
-        srenew(li->tmpv, li->nc_alloc);
-        /* Need to clear the SIMD padding */
-        for (int i = old_alloc; i < li->nc_alloc; i++)
-        {
-            clear_rvec(li->tmpv[i]);
-        }
-        if (DOMAINDECOMP(cr))
-        {
-            srenew(li->nlocat, li->nc_alloc);
-        }
-        resize_real_aligned(&li->tmp1, li->nc_alloc);
-        resize_real_aligned(&li->tmp2, li->nc_alloc);
-        resize_real_aligned(&li->tmp3, li->nc_alloc);
-        resize_real_aligned(&li->tmp4, li->nc_alloc);
-        resize_real_aligned(&li->mlambda, li->nc_alloc);
+        li->nlocat.resize(numEntries);
     }
+    li->tmp1.resize(numEntries);
+    li->tmp2.resize(numEntries);
+    li->tmp3.resize(numEntries);
+    li->tmp4.resize(numEntries);
+    li->mlambda.resize(numEntries);
 
     iatom = idef.il[F_CONSTR].iatoms;
 
-    ncc_alloc_old = li->ncc_alloc;
     li->blnr[0]   = li->ncc;
 
     /* Assign the constraints for li->ntask LINCS tasks.
@@ -2221,11 +2151,7 @@ void set_lincs(const t_idef         &idef,
      */
     bSortMatrix = !DOMAINDECOMP(cr);
 
-    if (li->ncc > li->ncc_alloc)
-    {
-        li->ncc_alloc = over_alloc_small(li->ncc);
-        srenew(li->blbnb, li->ncc_alloc);
-    }
+    li->blbnb.resize(li->ncc);
 
 #pragma omp parallel for num_threads(li->ntask) schedule(static)
     for (th = 0; th < li->ntask; th++)
@@ -2236,13 +2162,11 @@ void set_lincs(const t_idef         &idef,
 
             li_task = &li->task[th];
 
-            if (li->ncg_triangle > 0 &&
-                li_task->b1 - li_task->b0 > li_task->tri_alloc)
+            if (li->ncg_triangle > 0)
             {
                 /* This is allocating too much, but it is difficult to improve */
-                li_task->tri_alloc = over_alloc_dd(li_task->b1 - li_task->b0);
-                srenew(li_task->triangle, li_task->tri_alloc);
-                srenew(li_task->tri_bits, li_task->tri_alloc);
+                li_task->triangle.resize(li_task->b1 - li_task->b0);
+                li_task->tri_bits.resize(li_task->b1 - li_task->b0);
             }
 
             set_matrix_indices(li, li_task, &at2con, bSortMatrix);
@@ -2255,16 +2179,12 @@ void set_lincs(const t_idef         &idef,
     if (cr->dd == nullptr)
     {
         /* Since the matrix is static, we should free some memory */
-        li->ncc_alloc = li->ncc;
-        srenew(li->blbnb, li->ncc_alloc);
+        li->blbnb.resize(li->ncc);
     }
 
-    if (li->ncc_alloc > ncc_alloc_old)
-    {
-        srenew(li->blmf, li->ncc_alloc);
-        srenew(li->blmf1, li->ncc_alloc);
-        srenew(li->tmpncc, li->ncc_alloc);
-    }
+    li->blmf.resize(li->ncc);
+    li->blmf1.resize(li->ncc);
+    li->tmpncc.resize(li->ncc);
 
     gmx::ArrayRef<const int> nlocat_dd = dd_constraints_nlocalatoms(cr->dd);
     if (!nlocat_dd.empty())
@@ -2277,7 +2197,7 @@ void set_lincs(const t_idef         &idef,
     }
     else
     {
-        li->nlocat = nullptr;
+        li->nlocat.clear();
     }
 
     if (debug)
@@ -2296,7 +2216,8 @@ void set_lincs(const t_idef         &idef,
 
 //! Issues a warning when LINCS constraints cannot be satisfied.
 static void lincs_warning(gmx_domdec_t *dd, const rvec *x, rvec *xprime, t_pbc *pbc,
-                          int ncons, const int *bla, real *bllen, real wangle,
+                          int ncons, gmx::ArrayRef<const int> bla,
+                          gmx::ArrayRef<const real> bllen, real wangle,
                           int maxwarn, int *warncount)
 {
     int  b, i, j;
@@ -2352,20 +2273,15 @@ static void cconerr(const Lincs *lincsd,
                     rvec *x, t_pbc *pbc,
                     real *ncons_loc, real *ssd, real *max, int *imax)
 {
-    const int  *bla, *nlocat;
-    const real *bllen;
-    real        ma, ssd2;
-    int         count, im, task;
+    gmx::ArrayRef<const int>  bla    = lincsd->bla;
+    gmx::ArrayRef<const real> bllen  = lincsd->bllen;
+    gmx::ArrayRef<const int>  nlocat = lincsd->nlocat;
 
-    bla    = lincsd->bla;
-    bllen  = lincsd->bllen;
-    nlocat = lincsd->nlocat;
-
-    ma    = 0;
-    ssd2  = 0;
-    im    = 0;
-    count = 0;
-    for (task = 0; task < lincsd->ntask; task++)
+    real ma    = 0;
+    real ssd2  = 0;
+    int  im    = 0;
+    int  count = 0;
+    for (int task = 0; task < lincsd->ntask; task++)
     {
         int b;
 
@@ -2385,12 +2301,12 @@ static void cconerr(const Lincs *lincsd,
             r2  = ::norm2(dx);
             len = r2*gmx::invsqrt(r2);
             d   = std::abs(len/bllen[b]-1);
-            if (d > ma && (nlocat == nullptr || nlocat[b]))
+            if (d > ma && (nlocat.empty() || nlocat[b]))
             {
                 ma = d;
                 im = b;
             }
-            if (nlocat == nullptr)
+            if (nlocat.empty())
             {
                 ssd2 += d*d;
                 count++;
@@ -2403,8 +2319,8 @@ static void cconerr(const Lincs *lincsd,
         }
     }
 
-    *ncons_loc = (nlocat ? 0.5 : 1)*count;
-    *ssd       = (nlocat ? 0.5 : 1)*ssd2;
+    *ncons_loc = (nlocat.empty() ? 1 : 0.5)*count;
+    *ssd       = (nlocat.empty() ? 1 : 0.5)*ssd2;
     *max       = ma;
     *imax      = im;
 }
