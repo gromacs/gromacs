@@ -36,6 +36,7 @@
  * \brief Defines utility functionality for dividing resources and
  * checking for consistency and usefulness.
  *
+ * \author Berk Hess <hess@kth.se>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_taskassignment
  */
@@ -124,24 +125,25 @@ constexpr int nthreads_omp_faster_AMD_Ryzen = 16;
 constexpr int nthreads_omp_faster_gpu_fac   =  2;
 
 /* This is the case with MPI (2 or more MPI PP ranks).
- * By default we will terminate with a fatal error when more than 8
+ * By default we will terminate with a fatal error when more than 12
  * OpenMP thread are (indirectly) requested, since using less threads
  * nearly always results in better performance.
  * With thread-mpi and multiple GPUs or one GPU and too many threads
- * we first try 6 OpenMP threads and then less until the number of MPI ranks
+ * we first try 8 OpenMP threads and then less until the number of MPI ranks
  * is divisible by the number of GPUs.
  */
-constexpr int nthreads_omp_mpi_ok_max              =  8;
+constexpr int nthreads_omp_mpi_ok_max              = 12;
 constexpr int nthreads_omp_mpi_ok_min_cpu          =  1;
 constexpr int nthreads_omp_mpi_ok_min_gpu          =  2;
-constexpr int nthreads_omp_mpi_target_max          =  6;
+constexpr int nthreads_omp_mpi_target_max          =  8;
 
 /**@}*/
 
 /*! \brief Returns the maximum OpenMP thread count for which using a single MPI rank
  * should be faster than using multiple ranks with the same total thread count.
  */
-static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo, gmx_bool bUseGPU)
+static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo,
+                               bool                bUseGPU)
 {
     int nth;
 
@@ -182,7 +184,9 @@ gmx_unused static int nthreads_omp_efficient_max(int gmx_unused       nrank,
 {
     if (GMX_OPENMP && GMX_MPI && (nrank > 1))
     {
-        return nthreads_omp_mpi_ok_max;
+        /* With MPI+OpenMP return max threads for this architecture */
+        return std::min(nthreads_omp_mpi_ok_max,
+                        nthreads_omp_faster(cpuInfo, false));
     }
     else
     {
@@ -553,11 +557,6 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     /* This function should be called after thread-MPI (when configured) and
      * OpenMP have been initialized. Check that here.
      */
-    if (GMX_THREAD_MPI)
-    {
-        GMX_RELEASE_ASSERT(nthreads_omp_faster_default >= nthreads_omp_mpi_ok_max,
-                           "Inconsistent OpenMP thread count default values");
-    }
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) >= 1, "Must have at least one OpenMP thread");
 
     nth_omp_min = gmx_omp_nthreads_get(emntDefault);
