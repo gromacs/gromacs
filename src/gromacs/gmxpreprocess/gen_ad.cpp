@@ -1538,7 +1538,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     const char *p;
     char       *ts;     /* For Thole parameters */
     int         res, minres, maxres;
-    int         i, j, j1, k, k1, l, l1, m, n, i1, i2;
+    int         i, j, j1, k, k1, l, l1, m, n, q, q1, i1, i2;
+    int         di, dj1, dk1;
     int         ninc, maxang, maxdih, maxpai, maxthole;
     int         nang, ndih, npai, nimproper, nbd;
     int         nthole, naniso, npol, nvsites;
@@ -1623,6 +1624,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
             /* 1-2 Thole interactions for bonded atoms */
             if (bDrude)
             {
+                di  = NOTSET;
+                dj1 = NOTSET;
+
                 /* Add Thole pair if we find two polarizable atoms */
                 if ((atoms->atom[i].alpha != 0) && (atoms->atom[j1].alpha != 0))
                 {
@@ -1631,17 +1635,34 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         maxthole += ninc;
                         srenew(thole, maxthole);
                     }
-                    thole[nthole].ai() = i;     /* atom */
-                    thole[nthole].aj() = i+1;   /* Drude */
-                    thole[nthole].ak() = j1;    /* atom */
-                    thole[nthole].al() = j1+1;  /* Drude */
-                    /* protect against weirdness: if a Drude is not at i+1 or j1+1
-                     * but we've somehow detected a polarizable atom, there's a problem */
-                    if (!is_d(atoms, i+1) || !is_d(atoms, j1+1))
+                    /* Find the Drudes associated with i and j1, these will be within the
+                     * first neighbors of both atoms */
+                    for (q = 0; (q < nnb->nrexcl[i][1]); q++)
                     {
-                        gmx_fatal(FARGS, "Non-Drude found in Thole: %s-%s-%s-%s\n",
-                                    *(atoms->atomname[i]), *(atoms->atomname[i+1]),
-                                    *(atoms->atomname[j1]), *(atoms->atomname[j1+1]));
+                        q1 = nnb->a[i][1][q];
+                        if (is_d(atoms, q1))
+                        {
+                            di = q1;
+                        }
+                    }
+                    for (q = 0; (q < nnb->nrexcl[j1][1]); q++)
+                    {
+                        q1 = nnb->a[j1][1][q];
+                        if (is_d(atoms, q1))
+                        {
+                            dj1 = q1;
+                        }
+                    }
+                    thole[nthole].ai() = i;     /* atom */
+                    thole[nthole].aj() = di;    /* Drude */
+                    thole[nthole].ak() = j1;    /* atom */
+                    thole[nthole].al() = dj1;   /* Drude */
+                    /* protect against weirdness: if we did not find a Drude but we 
+                     * somehow detected a polarizable atom, there's a problem */
+                    if ((di == NOTSET) || (dj1 == NOTSET))
+                    {
+                        gmx_fatal(FARGS, "Could not find Drude when adding 1-2 Thole: %s-%s\n",
+                                    *(atoms->atomname[i]), *(atoms->atomname[j1]));
                     }
                     thole[nthole].c0() = NOTSET;
                     thole[nthole].c1() = NOTSET;
@@ -1675,6 +1696,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         /* 1-3 Thole interactions for atoms in angle */
                         if (bDrude)
                         {
+                            di  = NOTSET;
+                            dk1 = NOTSET;
+
                             /* Add Thole pair if we find two polarizable atoms */
                             if ((atoms->atom[i].alpha != 0) && (atoms->atom[k1].alpha != 0))
                             {
@@ -1683,16 +1707,33 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                     maxthole += ninc;
                                     srenew(thole, maxthole);
                                 }
-                                thole[nthole].ai() = i;     /* atom */
-                                thole[nthole].aj() = i+1;   /* Drude */
-                                thole[nthole].ak() = k1;    /* atom */
-                                thole[nthole].al() = k1+1;  /* Drude */
-                                /* as above */
-                                if (!is_d(atoms, i+1) || !is_d(atoms, k1+1))
+                                /* Find the Drudes associated with i and k1, these will be within the
+                                 * first neighbors of both atoms */
+                                for (q = 0; (q < nnb->nrexcl[i][1]); q++)
                                 {
-                                    gmx_fatal(FARGS, "Non-Drude found in Thole: %s-%s-%s-%s\n",
-                                                *(atoms->atomname[i]), *(atoms->atomname[i+1]),
-                                                *(atoms->atomname[k1]), *(atoms->atomname[k1+1]));
+                                    q1 = nnb->a[i][1][q];
+                                    if (is_d(atoms, q1))
+                                    {
+                                        di = q1;
+                                    }
+                                }
+                                for (q = 0; (q < nnb->nrexcl[k1][1]); q++)
+                                {
+                                    q1 = nnb->a[k1][1][q];
+                                    if (is_d(atoms, q1))
+                                    {
+                                        dk1 = q1;
+                                    }
+                                }
+                                thole[nthole].ai() = i;     /* atom */
+                                thole[nthole].aj() = di;    /* Drude */
+                                thole[nthole].ak() = k1;    /* atom */
+                                thole[nthole].al() = dk1;   /* Drude */
+                                /* as above */
+                                if ((di == NOTSET) || (dk1 == NOTSET))
+                                {
+                                    gmx_fatal(FARGS, "Could not find Drude when adding 1-3 Thole: %s-%s\n",
+                                                *(atoms->atomname[i]), *(atoms->atomname[k1]));
                                 }
                                 thole[nthole].c0() = NOTSET;
                                 thole[nthole].c1() = NOTSET;
