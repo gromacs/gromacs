@@ -1390,7 +1390,7 @@ int Mdrunner::mdrunner()
                                     || observablesHistory.edsamHistory);
         auto constr              = makeConstraints(mtop, *inputrec, doEssentialDynamics,
                                                    fplog, *mdAtoms->mdatoms(),
-                                                   cr, *ms, nrnb, wcycle, fr->bMolPBC);
+                                                   cr, ms, nrnb, wcycle, fr->bMolPBC);
 
         if (DOMAINDECOMP(cr))
         {
