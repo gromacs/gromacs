@@ -2414,7 +2414,7 @@ bool constrain_lincs(bool computeRmsd,
                      int64_t step,
                      Lincs *lincsd, const t_mdatoms &md,
                      const t_commrec *cr,
-                     const gmx_multisim_t &ms,
+                     const gmx_multisim_t *ms,
                      const rvec *x, rvec *xprime, rvec *min_proj,
                      matrix box, t_pbc *pbc,
                      real lambda, real *dvdlambda,
@@ -2560,9 +2560,9 @@ bool constrain_lincs(bool computeRmsd,
             {
                 cconerr(lincsd, xprime, pbc,
                         &ncons_loc, &p_ssd, &p_max, &p_imax);
-                if (isMultiSim(&ms))
+                if (isMultiSim(ms))
                 {
-                    sprintf(buf3, " in simulation %d", ms.sim);
+                    sprintf(buf3, " in simulation %d", ms->sim);
                 }
                 else
                 {

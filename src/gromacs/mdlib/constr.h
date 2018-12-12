@@ -103,7 +103,7 @@ class Constraints
                     FILE                 *log,
                     const t_mdatoms      &md,
                     const t_commrec      *cr,
-                    const gmx_multisim_t &ms,
+                    const gmx_multisim_t *ms,
                     t_nrnb               *nrnb,
                     gmx_wallcycle        *wcycle,
                     bool                  pbcHandlingRequired,
