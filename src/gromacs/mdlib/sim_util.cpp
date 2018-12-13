@@ -1386,12 +1386,12 @@ static void do_force_cutsVERLET(FILE *fplog,
                                  flags, eatLocal, ppForceWorkload->haveGpuBondedWork);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
         if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
         {
+            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_BONDED);
             fr->gpuBonded->launchEnergyTransfer();
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
         }
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
