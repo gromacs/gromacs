@@ -273,11 +273,7 @@ static void lincs_matrix_expand(const Lincs               &lincsd,
             sol[b]  = sol[b] + mvb;
         }
 
-        gmx::ArrayRef<real> swap;
-
-        swap = rhs1;
-        rhs1 = rhs2;
-        rhs2 = swap;
+        std::swap(rhs1, rhs2);
     }   /* nrec*(ncons+2*nrtot) flops */
 
     if (lincsd.ntriangle > 0)
@@ -330,11 +326,7 @@ static void lincs_matrix_expand(const Lincs               &lincsd,
                 sol[b]  = sol[b] + mvb;
             }
 
-            gmx::ArrayRef<real> swap;
-
-            swap = rhs1;
-            rhs1 = rhs2;
-            rhs2 = swap;
+            std::swap(rhs1, rhs2);
         }   /* nrec*(ntriangle + ncc_triangle*2) flops */
 
         if (lincsd.bTaskDepTri)
