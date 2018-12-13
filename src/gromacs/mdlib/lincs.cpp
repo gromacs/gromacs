@@ -230,21 +230,23 @@ real lincs_rmsd(const Lincs *lincsd)
  * This function will return with up to date thread-local
  * constraint data, without an OpenMP barrier.
  */
-static void lincs_matrix_expand(const Lincs *lincsd,
-                                const Task *li_task,
-                                const real *blcc,
-                                real *rhs1, real *rhs2, real *sol)
+static void lincs_matrix_expand(const Lincs               &lincsd,
+                                const Task                &li_task,
+                                gmx::ArrayRef<const real>  blcc,
+                                gmx::ArrayRef<real>        rhs1,
+                                gmx::ArrayRef<real>        rhs2,
+                                gmx::ArrayRef<real>        sol)
 {
-    gmx::ArrayRef<const int> blnr  = lincsd->blnr;
-    gmx::ArrayRef<const int> blbnb = lincsd->blbnb;
+    gmx::ArrayRef<const int> blnr  = lincsd.blnr;
+    gmx::ArrayRef<const int> blbnb = lincsd.blbnb;
 
-    const int                b0   = li_task->b0;
-    const int                b1   = li_task->b1;
-    const int                nrec = lincsd->nOrder;
+    const int                b0   = li_task.b0;
+    const int                b1   = li_task.b1;
+    const int                nrec = lincsd.nOrder;
 
     for (int rec = 0; rec < nrec; rec++)
     {
-        if (lincsd->bTaskDep)
+        if (lincsd.bTaskDep)
         {
 #pragma omp barrier
         }
@@ -262,14 +264,14 @@ static void lincs_matrix_expand(const Lincs *lincsd,
             sol[b]  = sol[b] + mvb;
         }
 
-        real *swap;
+        gmx::ArrayRef<real> swap;
 
         swap = rhs1;
         rhs1 = rhs2;
         rhs2 = swap;
     }   /* nrec*(ncons+2*nrtot) flops */
 
-    if (lincsd->ntriangle > 0)
+    if (lincsd.ntriangle > 0)
     {
         /* Perform an extra nrec recursions for only the constraints
          * involved in rigid triangles.
@@ -279,7 +281,7 @@ static void lincs_matrix_expand(const Lincs *lincsd,
          * is around 0.4 (and 0.7*0.7=0.5).
          */
 
-        if (lincsd->bTaskDep)
+        if (lincsd.bTaskDep)
         {
             /* We need a barrier here, since other threads might still be
              * reading the contents of rhs1 and/o rhs2.
@@ -293,12 +295,12 @@ static void lincs_matrix_expand(const Lincs *lincsd,
          * LINCS task. This means no barriers are required during the extra
          * iterations for the triangle constraints.
          */
-        gmx::ArrayRef<const int> triangle = li_task->triangle;
-        gmx::ArrayRef<const int> tri_bits = li_task->tri_bits;
+        gmx::ArrayRef<const int> triangle = li_task.triangle;
+        gmx::ArrayRef<const int> tri_bits = li_task.tri_bits;
 
         for (int rec = 0; rec < nrec; rec++)
         {
-            for (int tb = 0; tb < li_task->ntriangle; tb++)
+            for (int tb = 0; tb < li_task.ntriangle; tb++)
             {
                 int  b, bits, nr0, nr1, n;
                 real mvb;
@@ -319,14 +321,14 @@ static void lincs_matrix_expand(const Lincs *lincsd,
                 sol[b]  = sol[b] + mvb;
             }
 
-            real *swap;
+            gmx::ArrayRef<real> swap;
 
             swap = rhs1;
             rhs1 = rhs2;
             rhs2 = swap;
         }   /* nrec*(ntriangle + ncc_triangle*2) flops */
 
-        if (lincsd->bTaskDepTri)
+        if (lincsd.bTaskDepTri)
         {
             /* The constraints triangles are decoupled from each other,
              * but constraints in one triangle cross thread task borders.
@@ -338,119 +340,120 @@ static void lincs_matrix_expand(const Lincs *lincsd,
 }
 
 //! Update atomic coordinates when an index is not required.
-static void lincs_update_atoms_noind(int ncons,
-                                     gmx::ArrayRef<const int> bla,
-                                     real prefac,
-                                     const real *fac, rvec *r,
-                                     const real *invmass,
-                                     rvec *x)
+static void
+lincs_update_atoms_noind(int                             ncons,
+                         gmx::ArrayRef<const int>        bla,
+                         real                            preFactor,
+                         gmx::ArrayRef<const real>       fac,
+                         gmx::ArrayRef<const gmx::RVec>  r,
+                         const real                     *invmass,
+                         rvec                           *x)
 {
-    int  b, i, j;
-    real mvb, im1, im2, tmp0, tmp1, tmp2;
-
     if (invmass != nullptr)
     {
-        for (b = 0; b < ncons; b++)
+        for (int b = 0; b < ncons; b++)
         {
-            i        = bla[2*b];
-            j        = bla[2*b+1];
-            mvb      = prefac*fac[b];
-            im1      = invmass[i];
-            im2      = invmass[j];
-            tmp0     = r[b][0]*mvb;
-            tmp1     = r[b][1]*mvb;
-            tmp2     = r[b][2]*mvb;
-            x[i][0] -= tmp0*im1;
-            x[i][1] -= tmp1*im1;
-            x[i][2] -= tmp2*im1;
-            x[j][0] += tmp0*im2;
-            x[j][1] += tmp1*im2;
-            x[j][2] += tmp2*im2;
+            int  i     = bla[2*b];
+            int  j     = bla[2*b+1];
+            real mvb   = preFactor*fac[b];
+            real im1   = invmass[i];
+            real im2   = invmass[j];
+            real tmp0  = r[b][0]*mvb;
+            real tmp1  = r[b][1]*mvb;
+            real tmp2  = r[b][2]*mvb;
+            x[i][0]   -= tmp0*im1;
+            x[i][1]   -= tmp1*im1;
+            x[i][2]   -= tmp2*im1;
+            x[j][0]   += tmp0*im2;
+            x[j][1]   += tmp1*im2;
+            x[j][2]   += tmp2*im2;
         }   /* 16 ncons flops */
     }
     else
     {
-        for (b = 0; b < ncons; b++)
+        for (int b = 0; b < ncons; b++)
         {
-            i        = bla[2*b];
-            j        = bla[2*b+1];
-            mvb      = prefac*fac[b];
-            tmp0     = r[b][0]*mvb;
-            tmp1     = r[b][1]*mvb;
-            tmp2     = r[b][2]*mvb;
-            x[i][0] -= tmp0;
-            x[i][1] -= tmp1;
-            x[i][2] -= tmp2;
-            x[j][0] += tmp0;
-            x[j][1] += tmp1;
-            x[j][2] += tmp2;
+            int  i     = bla[2*b];
+            int  j     = bla[2*b+1];
+            int  mvb   = preFactor*fac[b];
+            real tmp0  = r[b][0]*mvb;
+            real tmp1  = r[b][1]*mvb;
+            real tmp2  = r[b][2]*mvb;
+            x[i][0]   -= tmp0;
+            x[i][1]   -= tmp1;
+            x[i][2]   -= tmp2;
+            x[j][0]   += tmp0;
+            x[j][1]   += tmp1;
+            x[j][2]   += tmp2;
         }
     }
 }
 
 //! Update atomic coordinates when an index is required.
-static void lincs_update_atoms_ind(gmx::ArrayRef<const int> ind,
-                                   gmx::ArrayRef<const int> bla,
-                                   real prefac,
-                                   const real *fac, rvec *r,
-                                   const real *invmass,
-                                   rvec *x)
+static void
+lincs_update_atoms_ind(gmx::ArrayRef<const int>        ind,
+                       gmx::ArrayRef<const int>        bla,
+                       real                            preFactor,
+                       gmx::ArrayRef<const real>       fac,
+                       gmx::ArrayRef<const gmx::RVec>  r,
+                       const real                     *invmass,
+                       rvec                           *x)
 {
-    int  i, j;
-    real mvb, im1, im2, tmp0, tmp1, tmp2;
-
     if (invmass != nullptr)
     {
         for (int b : ind)
         {
-            i        = bla[2*b];
-            j        = bla[2*b+1];
-            mvb      = prefac*fac[b];
-            im1      = invmass[i];
-            im2      = invmass[j];
-            tmp0     = r[b][0]*mvb;
-            tmp1     = r[b][1]*mvb;
-            tmp2     = r[b][2]*mvb;
-            x[i][0] -= tmp0*im1;
-            x[i][1] -= tmp1*im1;
-            x[i][2] -= tmp2*im1;
-            x[j][0] += tmp0*im2;
-            x[j][1] += tmp1*im2;
-            x[j][2] += tmp2*im2;
+            int  i     = bla[2*b];
+            int  j     = bla[2*b+1];
+            real mvb   = preFactor*fac[b];
+            real im1   = invmass[i];
+            real im2   = invmass[j];
+            real tmp0  = r[b][0]*mvb;
+            real tmp1  = r[b][1]*mvb;
+            real tmp2  = r[b][2]*mvb;
+            x[i][0]   -= tmp0*im1;
+            x[i][1]   -= tmp1*im1;
+            x[i][2]   -= tmp2*im1;
+            x[j][0]   += tmp0*im2;
+            x[j][1]   += tmp1*im2;
+            x[j][2]   += tmp2*im2;
         }   /* 16 ncons flops */
     }
     else
     {
         for (int b : ind)
         {
-            i        = bla[2*b];
-            j        = bla[2*b+1];
-            mvb      = prefac*fac[b];
-            tmp0     = r[b][0]*mvb;
-            tmp1     = r[b][1]*mvb;
-            tmp2     = r[b][2]*mvb;
-            x[i][0] -= tmp0;
-            x[i][1] -= tmp1;
-            x[i][2] -= tmp2;
-            x[j][0] += tmp0;
-            x[j][1] += tmp1;
-            x[j][2] += tmp2;
+            int  i     = bla[2*b];
+            int  j     = bla[2*b+1];
+            real mvb   = preFactor*fac[b];
+            real tmp0  = r[b][0]*mvb;
+            real tmp1  = r[b][1]*mvb;
+            real tmp2  = r[b][2]*mvb;
+            x[i][0]   -= tmp0;
+            x[i][1]   -= tmp1;
+            x[i][2]   -= tmp2;
+            x[j][0]   += tmp0;
+            x[j][1]   += tmp1;
+            x[j][2]   += tmp2;
         }   /* 16 ncons flops */
     }
 }
 
 //! Update coordinates for atoms.
-static void lincs_update_atoms(Lincs *li, int th,
-                               real prefac,
-                               const real *fac, rvec *r,
-                               const real *invmass,
-                               rvec *x)
+static void
+lincs_update_atoms(Lincs                          *li,
+                   int                             th,
+                   real                            preFactor,
+                   gmx::ArrayRef<const real>       fac,
+                   gmx::ArrayRef<const gmx::RVec>  r,
+                   const real                     *invmass,
+                   rvec                           *x)
 {
     if (li->ntask == 1)
     {
         /* Single thread, we simply update for all constraints */
         lincs_update_atoms_noind(li->nc_real,
-                                 li->bla, prefac, fac, r, invmass, x);
+                                 li->bla, preFactor, fac, r, invmass, x);
     }
     else
     {
@@ -459,7 +462,7 @@ static void lincs_update_atoms(Lincs *li, int th,
          * This can be done without a barrier.
          */
         lincs_update_atoms_ind(li->task[th].ind,
-                               li->bla, prefac, fac, r, invmass, x);
+                               li->bla, preFactor, fac, r, invmass, x);
 
         if (!li->task[li->ntask].ind.empty())
         {
@@ -470,7 +473,7 @@ static void lincs_update_atoms(Lincs *li, int th,
 #pragma omp master
             {
                 lincs_update_atoms_ind(li->task[li->ntask].ind,
-                                       li->bla, prefac, fac, r, invmass, x);
+                                       li->bla, preFactor, fac, r, invmass, x);
             }
         }
     }
@@ -502,7 +505,7 @@ gatherLoadUTransposeTSANSafe(const real         *base,
 static void gmx_simdcall
 calc_dr_x_f_simd(int                       b0,
                  int                       b1,
-                 const int *               bla,
+                 gmx::ArrayRef<const int>  bla,
                  const rvec * gmx_restrict x,
                  const rvec * gmx_restrict f,
                  const real * gmx_restrict blc,
@@ -575,34 +578,32 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
                       ConstraintVariable econq, bool bCalcDHDL,
                       bool bCalcVir, tensor rmdf)
 {
-    int      b0, b1, b;
-    int     *bla, *blnr, *blbnb;
-    rvec    *r;
-    real    *blc, *blmf, *blcc, *rhs1, *rhs2, *sol;
+    const int                 b0 = lincsd->task[th].b0;
+    const int                 b1 = lincsd->task[th].b1;
 
-    b0 = lincsd->task[th].b0;
-    b1 = lincsd->task[th].b1;
+    gmx::ArrayRef<const int>  bla   = lincsd->bla;
+    gmx::ArrayRef<gmx::RVec>  r     = lincsd->tmpv;
+    gmx::ArrayRef<const int>  blnr  = lincsd->blnr;
+    gmx::ArrayRef<const int>  blbnb = lincsd->blbnb;
 
-    bla    = lincsd->bla.data();
-    r      = as_rvec_array(lincsd->tmpv.data());
-    blnr   = lincsd->blnr.data();
-    blbnb  = lincsd->blbnb.data();
+    gmx::ArrayRef<const real> blc;
+    gmx::ArrayRef<const real> blmf;
     if (econq != ConstraintVariable::Force)
     {
         /* Use mass-weighted parameters */
-        blc  = lincsd->blc.data();
-        blmf = lincsd->blmf.data();
+        blc  = lincsd->blc;
+        blmf = lincsd->blmf;
     }
     else
     {
         /* Use non mass-weighted parameters */
-        blc  = lincsd->blc1.data();
-        blmf = lincsd->blmf1.data();
+        blc  = lincsd->blc1;
+        blmf = lincsd->blmf1;
     }
-    blcc   = lincsd->tmpncc.data();
-    rhs1   = lincsd->tmp1.data();
-    rhs2   = lincsd->tmp2.data();
-    sol    = lincsd->tmp3.data();
+    gmx::ArrayRef<real> blcc = lincsd->tmpncc;
+    gmx::ArrayRef<real> rhs1 = lincsd->tmp1;
+    gmx::ArrayRef<real> rhs2 = lincsd->tmp2;
+    gmx::ArrayRef<real> sol  = lincsd->tmp3;
 
 #if GMX_SIMD_HAVE_REAL
     /* This SIMD code does the same as the plain-C code after the #else.
@@ -617,16 +618,16 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     /* Compute normalized x i-j vectors, store in r.
      * Compute the inner product of r and xp i-j and store in rhs1.
      */
-    calc_dr_x_f_simd(b0, b1, bla, x, f, blc,
+    calc_dr_x_f_simd(b0, b1, bla, x, f, blc.data(),
                      pbc_simd,
-                     r, rhs1, sol);
+                     as_rvec_array(r.data()), rhs1.data(), sol.data());
 
 #else   // GMX_SIMD_HAVE_REAL
 
     /* Compute normalized i-j vectors */
     if (pbc)
     {
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
             rvec dx;
 
@@ -636,7 +637,7 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     }
     else
     {
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
             rvec dx;
 
@@ -645,16 +646,13 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
         }   /* 16 ncons flops */
     }
 
-    for (b = b0; b < b1; b++)
+    for (int b = b0; b < b1; b++)
     {
-        int  i, j;
-        real mvb;
-
-        i       = bla[2*b];
-        j       = bla[2*b+1];
-        mvb     = blc[b]*(r[b][0]*(f[i][0] - f[j][0]) +
-                          r[b][1]*(f[i][1] - f[j][1]) +
-                          r[b][2]*(f[i][2] - f[j][2]));
+        int  i   = bla[2*b];
+        int  j   = bla[2*b+1];
+        real mvb = blc[b]*(r[b][0]*(f[i][0] - f[j][0]) +
+                           r[b][1]*(f[i][1] - f[j][1]) +
+                           r[b][2]*(f[i][2] - f[j][2]));
         rhs1[b] = mvb;
         sol[b]  = mvb;
         /* 7 flops */
@@ -671,18 +669,16 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     }
 
     /* Construct the (sparse) LINCS matrix */
-    for (b = b0; b < b1; b++)
+    for (int b = b0; b < b1; b++)
     {
-        int n;
-
-        for (n = blnr[b]; n < blnr[b+1]; n++)
+        for (int n = blnr[b]; n < blnr[b+1]; n++)
         {
             blcc[n] = blmf[n]*::iprod(r[b], r[blbnb[n]]);
         }   /* 6 nr flops */
     }
     /* Together: 23*ncons + 6*nrtot flops */
 
-    lincs_matrix_expand(lincsd, &lincsd->task[th], blcc, rhs1, rhs2, sol);
+    lincs_matrix_expand(*lincsd, lincsd->task[th], blcc, rhs1, rhs2, sol);
     /* nrec*(ncons+2*nrtot) flops */
 
     if (econq == ConstraintVariable::Deriv_FlexCon)
@@ -690,7 +686,7 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
         /* We only want to constraint the flexible constraints,
          * so we mask out the normal ones by setting sol to 0.
          */
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
             if (!(lincsd->bllen0[b] == 0 && lincsd->ddist[b] == 0))
             {
@@ -700,7 +696,7 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     }
 
     /* We multiply sol by blc, so we can use lincs_update_atoms for OpenMP */
-    for (b = b0; b < b1; b++)
+    for (int b = b0; b < b1; b++)
     {
         sol[b] *= blc[b];
     }
@@ -713,10 +709,8 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
 
     if (bCalcDHDL)
     {
-        real dhdlambda;
-
-        dhdlambda = 0;
-        for (b = b0; b < b1; b++)
+        real dhdlambda = 0;
+        for (int b = b0; b < b1; b++)
         {
             dhdlambda -= sol[b]*lincsd->ddist[b];
         }
@@ -731,16 +725,13 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
          * where delta f is the constraint correction
          * of the quantity that is being constrained.
          */
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
-            real mvb, tmp1;
-            int  i, j;
-
-            mvb = lincsd->bllen[b]*sol[b];
-            for (i = 0; i < DIM; i++)
+            const real mvb = lincsd->bllen[b]*sol[b];
+            for (int i = 0; i < DIM; i++)
             {
-                tmp1 = mvb*r[b][i];
-                for (j = 0; j < DIM; j++)
+                const real tmp1 = mvb*r[b][i];
+                for (int j = 0; j < DIM; j++)
                 {
                     rmdf[i][j] += tmp1*r[b][j];
                 }
@@ -757,7 +748,7 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
 static void gmx_simdcall
 calc_dr_x_xp_simd(int                       b0,
                   int                       b1,
-                  const int *               bla,
+                  gmx::ArrayRef<const int>  bla,
                   const rvec * gmx_restrict x,
                   const rvec * gmx_restrict xp,
                   const real * gmx_restrict bllen,
@@ -830,7 +821,7 @@ calc_dr_x_xp_simd(int                       b0,
 gmx_unused static void calc_dist_iter(
         int                       b0,
         int                       b1,
-        const int *               bla,
+        gmx::ArrayRef<const int>  bla,
         const rvec * gmx_restrict xp,
         const real * gmx_restrict bllen,
         const real * gmx_restrict blc,
@@ -881,7 +872,7 @@ gmx_unused static void calc_dist_iter(
 static void gmx_simdcall
 calc_dist_iter_simd(int                       b0,
                     int                       b1,
-                    const int *               bla,
+                    gmx::ArrayRef<const int>  bla,
                     const rvec * gmx_restrict x,
                     const real * gmx_restrict bllen,
                     const real * gmx_restrict blc,
@@ -969,29 +960,23 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                      real invdt, rvec * gmx_restrict v,
                      bool bCalcVir, tensor vir_r_m_dr)
 {
-    int      b0, b1, b, i, j, n, iter;
-    int     *bla, *blnr, *blbnb;
-    rvec    *r;
-    real    *blc, *blmf, *bllen, *blcc, *rhs1, *rhs2, *sol, *blc_sol, *mlambda;
-    int     *nlocat;
+    const int                 b0 = lincsd->task[th].b0;
+    const int                 b1 = lincsd->task[th].b1;
 
-    b0 = lincsd->task[th].b0;
-    b1 = lincsd->task[th].b1;
-
-    bla     = lincsd->bla.data();
-    r       = as_rvec_array(lincsd->tmpv.data());
-    blnr    = lincsd->blnr.data();
-    blbnb   = lincsd->blbnb.data();
-    blc     = lincsd->blc.data();
-    blmf    = lincsd->blmf.data();
-    bllen   = lincsd->bllen.data();
-    blcc    = lincsd->tmpncc.data();
-    rhs1    = lincsd->tmp1.data();
-    rhs2    = lincsd->tmp2.data();
-    sol     = lincsd->tmp3.data();
-    blc_sol = lincsd->tmp4.data();
-    mlambda = lincsd->mlambda.data();
-    nlocat  = lincsd->nlocat.data();
+    gmx::ArrayRef<const int>  bla     = lincsd->bla;
+    gmx::ArrayRef<gmx::RVec>  r       = lincsd->tmpv;
+    gmx::ArrayRef<const int>  blnr    = lincsd->blnr;
+    gmx::ArrayRef<const int>  blbnb   = lincsd->blbnb;
+    gmx::ArrayRef<const real> blc     = lincsd->blc;
+    gmx::ArrayRef<const real> blmf    = lincsd->blmf;
+    gmx::ArrayRef<const real> bllen   = lincsd->bllen;
+    gmx::ArrayRef<real>       blcc    = lincsd->tmpncc;
+    gmx::ArrayRef<real>       rhs1    = lincsd->tmp1;
+    gmx::ArrayRef<real>       rhs2    = lincsd->tmp2;
+    gmx::ArrayRef<real>       sol     = lincsd->tmp3;
+    gmx::ArrayRef<real>       blc_sol = lincsd->tmp4;
+    gmx::ArrayRef<real>       mlambda = lincsd->mlambda;
+    gmx::ArrayRef<const int>  nlocat  = lincsd->nlocat;
 
 #if GMX_SIMD_HAVE_REAL
 
@@ -1007,16 +992,16 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     /* Compute normalized x i-j vectors, store in r.
      * Compute the inner product of r and xp i-j and store in rhs1.
      */
-    calc_dr_x_xp_simd(b0, b1, bla, x, xp, bllen, blc,
+    calc_dr_x_xp_simd(b0, b1, bla, x, xp, bllen.data(), blc.data(),
                       pbc_simd,
-                      r, rhs1, sol);
+                      as_rvec_array(r.data()), rhs1.data(), sol.data());
 
 #else   // GMX_SIMD_HAVE_REAL
 
     if (pbc)
     {
         /* Compute normalized i-j vectors */
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
             rvec dx;
             real mvb;
@@ -1033,23 +1018,19 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     else
     {
         /* Compute normalized i-j vectors */
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
-            real tmp0, tmp1, tmp2, rlen, mvb;
-
-            i       = bla[2*b];
-            j       = bla[2*b+1];
-            tmp0    = x[i][0] - x[j][0];
-            tmp1    = x[i][1] - x[j][1];
-            tmp2    = x[i][2] - x[j][2];
-            rlen    = gmx::invsqrt(tmp0*tmp0 + tmp1*tmp1 + tmp2*tmp2);
-            r[b][0] = rlen*tmp0;
-            r[b][1] = rlen*tmp1;
-            r[b][2] = rlen*tmp2;
+            int  i    = bla[2*b];
+            int  j    = bla[2*b+1];
+            real tmp0 = x[i][0] - x[j][0];
+            real tmp1 = x[i][1] - x[j][1];
+            real tmp2 = x[i][2] - x[j][2];
+            real rlen = gmx::invsqrt(tmp0*tmp0 + tmp1*tmp1 + tmp2*tmp2);
+            r[b][0]   = rlen*tmp0;
+            r[b][1]   = rlen*tmp1;
+            r[b][2]   = rlen*tmp2;
             /* 16 ncons flops */
 
-            i       = bla[2*b];
-            j       = bla[2*b+1];
             mvb     = blc[b]*(r[b][0]*(xp[i][0] - xp[j][0]) +
                               r[b][1]*(xp[i][1] - xp[j][1]) +
                               r[b][2]*(xp[i][2] - xp[j][2]) - bllen[b]);
@@ -1071,27 +1052,27 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     }
 
     /* Construct the (sparse) LINCS matrix */
-    for (b = b0; b < b1; b++)
+    for (int b = b0; b < b1; b++)
     {
-        for (n = blnr[b]; n < blnr[b+1]; n++)
+        for (int n = blnr[b]; n < blnr[b+1]; n++)
         {
-            blcc[n] = blmf[n]*::iprod(r[b], r[blbnb[n]]);
+            blcc[n] = blmf[n]*gmx::dot(r[b], r[blbnb[n]]);
         }
     }
     /* Together: 26*ncons + 6*nrtot flops */
 
-    lincs_matrix_expand(lincsd, &lincsd->task[th], blcc, rhs1, rhs2, sol);
+    lincs_matrix_expand(*lincsd, lincsd->task[th], blcc, rhs1, rhs2, sol);
     /* nrec*(ncons+2*nrtot) flops */
 
 #if GMX_SIMD_HAVE_REAL
-    for (b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
+    for (int b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
     {
-        SimdReal t1 = load<SimdReal>(blc + b);
-        SimdReal t2 = load<SimdReal>(sol + b);
-        store(mlambda + b, t1 * t2);
+        SimdReal t1 = load<SimdReal>(blc.data() + b);
+        SimdReal t2 = load<SimdReal>(sol.data() + b);
+        store(mlambda.data() + b, t1 * t2);
     }
 #else
-    for (b = b0; b < b1; b++)
+    for (int b = b0; b < b1; b++)
     {
         mlambda[b] = blc[b]*sol[b];
     }
@@ -1109,7 +1090,7 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     wfac = std::cos(DEG2RAD*wangle);
     wfac = wfac*wfac;
 
-    for (iter = 0; iter < lincsd->nIter; iter++)
+    for (int iter = 0; iter < lincsd->nIter; iter++)
     {
         if ((lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints))
         {
@@ -1130,32 +1111,32 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
         }
 
 #if GMX_SIMD_HAVE_REAL
-        calc_dist_iter_simd(b0, b1, bla, xp, bllen, blc, pbc_simd, wfac,
-                            rhs1, sol, bWarn);
+        calc_dist_iter_simd(b0, b1, bla,
+                            xp, bllen.data(), blc.data(), pbc_simd, wfac,
+                            rhs1.data(), sol.data(), bWarn);
 #else
-        calc_dist_iter(b0, b1, bla, xp, bllen, blc, pbc, wfac,
-                       rhs1, sol, bWarn);
+        calc_dist_iter(b0, b1, bla, xp,
+                       bllen.data(), blc.data(), pbc, wfac,
+                       rhs1.data(), sol.data(), bWarn);
         /* 20*ncons flops */
 #endif      // GMX_SIMD_HAVE_REAL
 
-        lincs_matrix_expand(lincsd, &lincsd->task[th], blcc, rhs1, rhs2, sol);
+        lincs_matrix_expand(*lincsd, lincsd->task[th], blcc, rhs1, rhs2, sol);
         /* nrec*(ncons+2*nrtot) flops */
 
 #if GMX_SIMD_HAVE_REAL
-        for (b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
+        for (int b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
         {
-            SimdReal t1  = load<SimdReal>(blc + b);
-            SimdReal t2  = load<SimdReal>(sol + b);
+            SimdReal t1  = load<SimdReal>(blc.data() + b);
+            SimdReal t2  = load<SimdReal>(sol.data() + b);
             SimdReal mvb = t1 * t2;
-            store(blc_sol + b, mvb);
-            store(mlambda + b, load<SimdReal>(mlambda + b) + mvb);
+            store(blc_sol.data() + b, mvb);
+            store(mlambda.data() + b, load<SimdReal>(mlambda.data() + b) + mvb);
         }
 #else
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
-            real mvb;
-
-            mvb         = blc[b]*sol[b];
+            real mvb    = blc[b]*sol[b];
             blc_sol[b]  = mvb;
             mlambda[b] += mvb;
         }
@@ -1173,7 +1154,7 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
         /* 16 ncons flops */
     }
 
-    if (nlocat != nullptr && (bCalcDHDL || bCalcVir))
+    if (!nlocat.empty() && (bCalcDHDL || bCalcVir))
     {
         if (lincsd->bTaskDep)
         {
@@ -1182,7 +1163,7 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
         }
 
         /* Only account for local atoms */
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
             mlambda[b] *= 0.5*nlocat[b];
         }
@@ -1190,10 +1171,8 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 
     if (bCalcDHDL)
     {
-        real dhdl;
-
-        dhdl = 0;
-        for (b = b0; b < b1; b++)
+        real dhdl = 0;
+        for (int b = b0; b < b1; b++)
         {
             /* Note that this this is dhdl*dt^2, the dt^2 factor is corrected
              * later after the contributions are reduced over the threads.
@@ -1206,15 +1185,13 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     if (bCalcVir)
     {
         /* Constraint virial */
-        for (b = b0; b < b1; b++)
+        for (int b = b0; b < b1; b++)
         {
-            real tmp0, tmp1;
-
-            tmp0 = -bllen[b]*mlambda[b];
-            for (i = 0; i < DIM; i++)
+            real tmp0 = -bllen[b]*mlambda[b];
+            for (int i = 0; i < DIM; i++)
             {
-                tmp1 = tmp0*r[b][i];
-                for (j = 0; j < DIM; j++)
+                real tmp1 = tmp0*r[b][i];
+                for (int j = 0; j < DIM; j++)
                 {
                     vir_r_m_dr[i][j] -= tmp1*r[b][j];
                 }
@@ -2269,27 +2246,23 @@ static void lincs_warning(gmx_domdec_t *dd, const rvec *x, rvec *xprime, t_pbc *
 }
 
 //! Determine how well the constraints have been satisfied.
-static void cconerr(const Lincs *lincsd,
-                    rvec *x, t_pbc *pbc,
+static void cconerr(const Lincs &lincsd,
+                    const rvec *x, const t_pbc *pbc,
                     real *ncons_loc, real *ssd, real *max, int *imax)
 {
-    gmx::ArrayRef<const int>  bla    = lincsd->bla;
-    gmx::ArrayRef<const real> bllen  = lincsd->bllen;
-    gmx::ArrayRef<const int>  nlocat = lincsd->nlocat;
+    gmx::ArrayRef<const int>  bla    = lincsd.bla;
+    gmx::ArrayRef<const real> bllen  = lincsd.bllen;
+    gmx::ArrayRef<const int>  nlocat = lincsd.nlocat;
 
     real ma    = 0;
     real ssd2  = 0;
     int  im    = 0;
     int  count = 0;
-    for (int task = 0; task < lincsd->ntask; task++)
+    for (int task = 0; task < lincsd.ntask; task++)
     {
-        int b;
-
-        for (b = lincsd->task[task].b0; b < lincsd->task[task].b1; b++)
+        for (int b = lincsd.task[task].b0; b < lincsd.task[task].b1; b++)
         {
-            real len, d, r2;
             rvec dx;
-
             if (pbc)
             {
                 pbc_dx_aiuc(pbc, x[bla[2*b]], x[bla[2*b+1]], dx);
@@ -2298,9 +2271,9 @@ static void cconerr(const Lincs *lincsd,
             {
                 rvec_sub(x[bla[2*b]], x[bla[2*b+1]], dx);
             }
-            r2  = ::norm2(dx);
-            len = r2*gmx::invsqrt(r2);
-            d   = std::abs(len/bllen[b]-1);
+            real r2  = ::norm2(dx);
+            real len = r2*gmx::invsqrt(r2);
+            real d   = std::abs(len/bllen[b]-1);
             if (d > ma && (nlocat.empty() || nlocat[b]))
             {
                 ma = d;
@@ -2413,7 +2386,7 @@ bool constrain_lincs(bool computeRmsd,
 
         if (debug)
         {
-            cconerr(lincsd, xprime, pbc,
+            cconerr(*lincsd, xprime, pbc,
                     &ncons_loc, &p_ssd, &p_max, &p_imax);
         }
 
@@ -2452,7 +2425,7 @@ bool constrain_lincs(bool computeRmsd,
         }
         if (computeRmsd || debug)
         {
-            cconerr(lincsd, xprime, pbc,
+            cconerr(*lincsd, xprime, pbc,
                     &ncons_loc, &p_ssd, &p_max, &p_imax);
             lincsd->rmsdData[0] = ncons_loc;
             lincsd->rmsdData[1] = p_ssd;
@@ -2474,7 +2447,7 @@ bool constrain_lincs(bool computeRmsd,
         {
             if (maxwarn < INT_MAX)
             {
-                cconerr(lincsd, xprime, pbc,
+                cconerr(*lincsd, xprime, pbc,
                         &ncons_loc, &p_ssd, &p_max, &p_imax);
                 if (isMultiSim(&ms))
                 {
