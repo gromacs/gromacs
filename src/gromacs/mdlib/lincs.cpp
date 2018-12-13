@@ -1377,7 +1377,7 @@ static void set_lincs_matrix(Lincs *li, real *invmass, real lambda)
         {
             set_lincs_matrix_task(li, &li->task[th], invmass,
                                   &ncc_triangle, &nCrossTaskTriangles);
-            ntriangle = li->task[th].ntriangle;
+            ntriangle += li->task[th].ntriangle;
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
