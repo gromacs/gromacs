@@ -35,7 +35,6 @@
 # make an "object library" for code that we re-use for both kinds of tests
 add_library(mdrun_test_objlib OBJECT
     energyreader.cpp
-    mdruncomparisonfixture.cpp
     moduletest.cpp
     terminationhelper.cpp
     )
