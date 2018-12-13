@@ -49,8 +49,9 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/ewald/pme-gpu-program.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+
+struct gmx_hw_info_t;
 
 namespace gmx
 {
@@ -60,7 +61,7 @@ namespace test
 enum class CodePath
 {
     CPU,
-    CUDA
+    GPU
 };
 
 //! Return a string useful for human-readable messages describing a \c codePath.
@@ -118,6 +119,8 @@ class PmeTestEnvironment : public ::testing::Environment
         void TearDown() override;
         //! Get available hardware contexts.
         const TestHardwareContexts &getHardwareContexts() const {return hardwareContexts_; }
+        //! Get available hardware information.
+        const gmx_hw_info_t *hwinfo() const { return hardwareInfo_; }
 };
 
 //! Get the test environment

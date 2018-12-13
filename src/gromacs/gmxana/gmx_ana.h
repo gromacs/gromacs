@@ -39,9 +39,6 @@
 #define _gmx_ana_h
 
 int
-gmx_anadock(int argc, char *argv[]);
-
-int
 gmx_analyze(int argc, char *argv[]);
 
 int
@@ -102,9 +99,6 @@ int
 gmx_dyecoupl(int argc, char *argv[]);
 
 int
-gmx_dyndom(int argc, char *argv[]);
-
-int
 gmx_editconf(int argc, char *argv[]);
 
 int
@@ -160,9 +154,6 @@ gmx_mk_angndx(int argc, char *argv[]);
 
 int
 gmx_msd(int argc, char *argv[]);
-
-int
-gmx_morph(int argc, char *argv[]);
 
 int
 gmx_nmeig(int argc, char *argv[]);

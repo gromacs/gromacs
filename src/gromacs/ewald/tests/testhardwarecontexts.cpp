@@ -47,6 +47,7 @@
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
@@ -66,8 +67,8 @@ const char *codePathToString(CodePath codePath)
     {
         case CodePath::CPU:
             return "CPU";
-        case CodePath::CUDA:
-            return "CUDA";
+        case CodePath::GPU:
+            return "GPU";
         default:
             GMX_THROW(NotImplementedError("This CodePath should support codePathToString"));
     }
@@ -111,7 +112,7 @@ void PmeTestEnvironment::SetUp()
     hardwareContexts_.emplace_back(compat::make_unique<TestHardwareContext>(CodePath::CPU, "", nullptr));
 
     hardwareInfo_ = hardwareInit();
-    if (!pme_gpu_supports_build(nullptr))
+    if (!pme_gpu_supports_build(*hardwareInfo_, nullptr))
     {
         // PME can only run on the CPU, so don't make any more test contexts.
         return;
@@ -125,9 +126,8 @@ void PmeTestEnvironment::SetUp()
         char        stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
         std::string description = "(GPU " + std::string(stmp) + ") ";
-        // TODO should this be CodePath::GPU?
         hardwareContexts_.emplace_back(compat::make_unique<TestHardwareContext>
-                                           (CodePath::CUDA, description.c_str(),
+                                           (CodePath::GPU, description.c_str(),
                                            deviceInfo));
     }
 }

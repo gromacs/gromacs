@@ -114,9 +114,11 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
@@ -150,48 +152,48 @@ void gmx::Integrator::do_md()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec       *ir   = inputrec;
-    gmx_mdoutf       *outf = nullptr;
-    int64_t           step, step_rel;
-    double            t, t0, lam0[efptNR];
-    gmx_bool          bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool          bNS, bNStList, bSimAnn, bStopCM,
-                      bFirstStep, bInitStep, bLastStep = FALSE;
-    gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
-    gmx_bool          do_ene, do_log, do_verbose;
-    gmx_bool          bMasterState;
-    int               force_flags, cglo_flags;
-    tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
-    int               i, m;
-    rvec              mu_tot;
-    t_vcm            *vcm;
-    matrix            parrinellorahmanMu, M;
-    gmx_repl_ex_t     repl_ex = nullptr;
-    gmx_localtop_t   *top;
-    t_mdebin         *mdebin   = nullptr;
-    gmx_enerdata_t   *enerd;
-    PaddedRVecVector  f {};
-    gmx_global_stat_t gstat;
-    gmx_update_t     *upd   = nullptr;
-    t_graph          *graph = nullptr;
-    gmx_groups_t     *groups;
-    gmx_ekindata_t   *ekind;
-    gmx_shellfc_t    *shellfc;
-    gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool          bTemp, bPres, bTrotter;
-    real              dvdl_constr;
-    rvec             *cbuf        = nullptr;
-    int               cbuf_nalloc = 0;
-    matrix            lastbox;
-    int               lamnew  = 0;
+    t_inputrec             *ir   = inputrec;
+    gmx_mdoutf             *outf = nullptr;
+    int64_t                 step, step_rel;
+    double                  t, t0, lam0[efptNR];
+    gmx_bool                bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
+    gmx_bool                bNS, bNStList, bSimAnn, bStopCM,
+                            bFirstStep, bInitStep, bLastStep = FALSE;
+    gmx_bool                bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
+    gmx_bool                do_ene, do_log, do_verbose;
+    gmx_bool                bMasterState;
+    int                     force_flags, cglo_flags;
+    tensor                  force_vir, shake_vir, total_vir, tmp_vir, pres;
+    int                     i, m;
+    rvec                    mu_tot;
+    t_vcm                  *vcm;
+    matrix                  parrinellorahmanMu, M;
+    gmx_repl_ex_t           repl_ex = nullptr;
+    gmx_localtop_t         *top;
+    t_mdebin               *mdebin   = nullptr;
+    gmx_enerdata_t         *enerd;
+    PaddedVector<gmx::RVec> f {};
+    gmx_global_stat_t       gstat;
+    gmx_update_t           *upd   = nullptr;
+    t_graph                *graph = nullptr;
+    gmx_groups_t           *groups;
+    gmx_ekindata_t         *ekind;
+    gmx_shellfc_t          *shellfc;
+    gmx_bool                bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool                bTemp, bPres, bTrotter;
+    real                    dvdl_constr;
+    rvec                   *cbuf        = nullptr;
+    int                     cbuf_nalloc = 0;
+    matrix                  lastbox;
+    int                     lamnew  = 0;
     /* for FEP */
-    int               nstfep = 0;
-    double            cycles;
-    real              saved_conserved_quantity = 0;
-    real              last_ekin                = 0;
-    t_extmass         MassQ;
-    int             **trotter_seq;
-    char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
+    int                     nstfep = 0;
+    double                  cycles;
+    real                    saved_conserved_quantity = 0;
+    real                    last_ekin                = 0;
+    t_extmass               MassQ;
+    int                   **trotter_seq;
+    char                    sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
     /* PME load balancing data for GPU kernels */
     pme_load_balancing_t *pme_loadbal      = nullptr;
@@ -242,7 +244,8 @@ void gmx::Integrator::do_md()
     if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
     {
         /* Initialize essential dynamics sampling */
-        ed = init_edsam(opt2fn_null("-ei", nfile, fnm), opt2fn("-eo", nfile, fnm),
+        ed = init_edsam(mdlog,
+                        opt2fn_null("-ei", nfile, fnm), opt2fn("-eo", nfile, fnm),
                         top_global,
                         ir, cr, constr,
                         state_global, observablesHistory,
@@ -286,7 +289,7 @@ void gmx::Integrator::do_md()
 
     /* Set up interactive MD (IMD) */
     init_IMD(ir, cr, ms, top_global, fplog, ir->nstcalcenergy,
-             MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
+             MASTER(cr) ? state_global->x.rvec_array() : nullptr,
              nfile, fnm, oenv, mdrunOptions);
 
     // Local state only becomes valid now.
@@ -313,10 +316,7 @@ void gmx::Integrator::do_md()
     else
     {
         state_change_natoms(state_global, state_global->natoms);
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        f.resize(gmx::paddedRVecVectorSize(state_global->natoms));
+        f.resizeWithPadding(state_global->natoms);
         /* Copy the pointer to the global state */
         state = state_global;
 
@@ -341,6 +341,11 @@ void gmx::Integrator::do_md()
 
     if (ir->bExpanded)
     {
+        /* Check nstexpanded here, because the grompp check was broken */
+        if (ir->expandedvals->nstexpanded % ir->nstcalcenergy != 0)
+        {
+            gmx_fatal(FARGS, "With expanded ensemble, nstexpanded should be a multiple of nstcalcenergy");
+        }
         init_expanded_ensemble(startingFromCheckpoint, ir, state->dfhist);
     }
 
@@ -353,18 +358,45 @@ void gmx::Integrator::do_md()
             {
                 restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
             }
-            else if (observablesHistory->energyHistory != nullptr)
+            else
             {
-                /* We might have read an energy history from checkpoint.
-                 * As we are not appending, we want to restart the statistics.
-                 * Free the allocated memory and reset the counts.
+                if (observablesHistory->energyHistory != nullptr)
+                {
+                    /* We might have read an energy history from checkpoint.
+                     * As we are not appending, we want to restart the statistics.
+                     * Free the allocated memory and reset the counts.
+                     */
+                    observablesHistory->energyHistory = {};
+                }
+                /* We might have read a pull history from checkpoint.
+                 * We will still want to keep the statistics, so that the files
+                 * can be joined and still be meaningful.
+                 * This means that observablesHistory->pullHistory
+                 * should not be reset.
                  */
-                observablesHistory->energyHistory = {};
             }
+            if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
+            {
+                /* Copy the pull group COM of the previous step from the checkpoint state to the pull state */
+                setPrevStepPullComFromState(ir->pull_work, state);
+            }
+        }
+        else if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
+        {
+            allocStatePrevStepPullCom(state, ir->pull_work);
+            t_pbc pbc;
+            set_pbc(&pbc, ir->ePBC, state->box);
+            initPullComFromPrevStep(cr, ir->pull_work, mdatoms, &pbc, as_rvec_array(state->x.data()));
+            updatePrevStepCom(ir->pull_work);
+            setStatePrevStepPullCom(ir->pull_work, state);
         }
         if (observablesHistory->energyHistory == nullptr)
         {
             observablesHistory->energyHistory = compat::make_unique<energyhistory_t>();
+        }
+        if (observablesHistory->pullHistory == nullptr)
+        {
+            observablesHistory->pullHistory = compat::make_unique<PullHistory>();
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
@@ -396,13 +428,14 @@ void gmx::Integrator::do_md()
     {
         if (state->flags & (1 << estV))
         {
+            auto v = makeArrayRef(state->v);
             /* Set the velocities of vsites, shells and frozen atoms to zero */
             for (i = 0; i < mdatoms->homenr; i++)
             {
                 if (mdatoms->ptype[i] == eptVSite ||
                     mdatoms->ptype[i] == eptShell)
                 {
-                    clear_rvec(state->v[i]);
+                    clear_rvec(v[i]);
                 }
                 else if (mdatoms->cFREEZE)
                 {
@@ -410,7 +443,7 @@ void gmx::Integrator::do_md()
                     {
                         if (ir->opts.nFreeze[mdatoms->cFREEZE[i]][m])
                         {
-                            state->v[i][m] = 0;
+                            v[i][m] = 0;
                         }
                     }
                 }
@@ -425,7 +458,7 @@ void gmx::Integrator::do_md()
         if (vsite)
         {
             /* Construct the virtual sites for the initial configuration */
-            construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, nullptr,
+            construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, nullptr,
                              top->idef.iparams, top->idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
         }
@@ -782,13 +815,7 @@ void gmx::Integrator::do_md()
          */
         if (EI_VV(ir->eI) && (!bInitStep))
         {
-            /* for vv, the first half of the integration actually corresponds
-               to the previous step.  bCalcEner is only required to be evaluated on the 'next' step,
-               but the virial needs to be calculated on both the current step and the 'next' step. Future
-               reorganization may be able to get rid of one of the bCalcVir=TRUE steps. */
-
-            /* TODO: This is probably not what we want, we will write to energy file one step after nstcalcenergy steps. */
-            bCalcEnerStep = do_per_step(step - 1, ir->nstcalcenergy);
+            bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
             bCalcVir      = bCalcEnerStep ||
                 (ir->epc != epcNO && (do_per_step(step, ir->nstpcouple) || do_per_step(step-1, ir->nstpcouple)));
         }
@@ -828,7 +855,7 @@ void gmx::Integrator::do_md()
                                 enforcedRotation, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
-                                state, f, force_vir, mdatoms,
+                                state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, t, mu_tot,
                                 vsite,
@@ -856,8 +883,8 @@ void gmx::Integrator::do_md()
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation,
                      step, nrnb, wcycle, top, groups,
-                     state->box, state->x, &state->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
+                     state->box, state->x.arrayRefWithPadding(), &state->hist,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
@@ -879,7 +906,7 @@ void gmx::Integrator::do_md()
                  * so that the input is actually the initial step.
                  */
                 snew(vbuf, state->natoms);
-                copy_rvecn(as_rvec_array(state->v.data()), vbuf, 0, state->natoms); /* should make this better for parallelizing? */
+                copy_rvecn(state->v.rvec_array(), vbuf, 0, state->natoms); /* should make this better for parallelizing? */
             }
             else
             {
@@ -887,7 +914,7 @@ void gmx::Integrator::do_md()
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            update_coords(step, ir, mdatoms, state, f, fcd,
+            update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
                           ekind, M, upd, etrtVELOCITY1,
                           cr, constr);
 
@@ -923,7 +950,7 @@ void gmx::Integrator::do_md()
                                 constr, &nullSignaller, state->box,
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
-                                | CGLO_ENERGY
+                                | (bCalcEner ? CGLO_ENERGY : 0)
                                 | (bTemp ? CGLO_TEMPERATURE : 0)
                                 | (bPres ? CGLO_PRESSURE : 0)
                                 | (bPres ? CGLO_CONSTRAINT : 0)
@@ -984,7 +1011,7 @@ void gmx::Integrator::do_md()
             /* if it's the initial step, we performed this first step just to get the constraint virial */
             if (ir->eI == eiVV && bInitStep)
             {
-                copy_rvecn(vbuf, as_rvec_array(state->v.data()), 0, state->natoms);
+                copy_rvecn(vbuf, state->v.rvec_array(), 0, state->natoms);
                 sfree(vbuf);
             }
             wallcycle_stop(wcycle, ewcUPDATE);
@@ -1018,7 +1045,7 @@ void gmx::Integrator::do_md()
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
 
-            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, as_rvec_array(state->v.data()), mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, state->v.rvec_array(), mdatoms);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
             if (MASTER(cr))
             {
@@ -1039,7 +1066,7 @@ void gmx::Integrator::do_md()
                                  mdrunOptions.writeConfout,
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
-        bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, as_rvec_array(state->x.data()), ir, t, wcycle);
+        bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x.rvec_array(), ir, t, wcycle);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
         if (startingFromCheckpoint && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
@@ -1068,7 +1095,7 @@ void gmx::Integrator::do_md()
         if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
         {
             gmx_bool bIfRandomize;
-            bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state, upd, constr);
+            bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state->v, upd, constr);
             /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
             if (constr && bIfRandomize)
             {
@@ -1110,7 +1137,7 @@ void gmx::Integrator::do_md()
         if (EI_VV(ir->eI))
         {
             /* velocity half-step update */
-            update_coords(step, ir, mdatoms, state, f, fcd,
+            update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
                           ekind, M, upd, etrtVELOCITY2,
                           cr, constr);
         }
@@ -1131,7 +1158,7 @@ void gmx::Integrator::do_md()
             copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
         }
 
-        update_coords(step, ir, mdatoms, state, f, fcd,
+        update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
                       ekind, M, upd, etrtPOSITION, cr, constr);
         wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1144,6 +1171,12 @@ void gmx::Integrator::do_md()
         finish_update(ir, mdatoms,
                       state, graph,
                       nrnb, wcycle, upd, constr);
+
+        if (MASTER(cr) && ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
+        {
+            updatePrevStepCom(ir->pull_work);
+            setStatePrevStepPullCom(ir->pull_work, state);
+        }
 
         if (ir->eI == eiVVAK)
         {
@@ -1160,7 +1193,7 @@ void gmx::Integrator::do_md()
             /* now we know the scaling, we can compute the positions again again */
             copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
 
-            update_coords(step, ir, mdatoms, state, f, fcd,
+            update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1201,15 +1234,15 @@ void gmx::Integrator::do_md()
             wallcycle_start(wcycle, ewcVSITECONSTR);
             if (graph != nullptr)
             {
-                shift_self(graph, state->box, as_rvec_array(state->x.data()));
+                shift_self(graph, state->box, state->x.rvec_array());
             }
-            construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, as_rvec_array(state->v.data()),
+            construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, state->v.rvec_array(),
                              top->idef.iparams, top->idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
 
             if (graph != nullptr)
             {
-                unshift_self(graph, state->box, as_rvec_array(state->x.data()));
+                unshift_self(graph, state->box, state->x.rvec_array());
             }
             wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
@@ -1242,7 +1275,7 @@ void gmx::Integrator::do_md()
                                 lastbox,
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
-                                | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0)
+                                | (!EI_VV(ir->eI) && bCalcEner ? CGLO_ENERGY : 0)
                                 | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                                 | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
                                 | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0)

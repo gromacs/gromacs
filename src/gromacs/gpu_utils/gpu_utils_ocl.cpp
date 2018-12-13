@@ -117,7 +117,7 @@ static int is_gmx_supported_gpu_id(gmx_device_info_t *ocl_gpu_device)
         case OCL_VENDOR_AMD:
             return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
         case OCL_VENDOR_INTEL:
-            return GMX_OCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
+            return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
         default:
             return egpuIncompatible;
     }
@@ -286,6 +286,10 @@ void findGpus(gmx_gpu_info_t *gpu_info)
 
                     gpu_info->gpu_dev[device_index].vendor_e = get_vendor_id(gpu_info->gpu_dev[device_index].device_vendor);
 
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t), &gpu_info->gpu_dev[device_index].maxWorkItemSizes, nullptr);
+
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &gpu_info->gpu_dev[device_index].maxWorkGroupSize, nullptr);
+
                     gpu_info->gpu_dev[device_index].stat = is_gmx_supported_gpu_id(gpu_info->gpu_dev + device_index);
 
                     if (egpuCompatible == gpu_info->gpu_dev[device_index].stat)
@@ -378,6 +382,21 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int ind
                 dinfo->device_version,
                 gpu_detect_res_str[dinfo->stat]);
     }
+}
+
+bool areAllGpuDevicesFromAmd(const gmx_gpu_info_t &gpuInfo)
+{
+    bool result = true;
+    for (int i = 0; i < gpuInfo.n_dev; ++i)
+    {
+        if ((gpuInfo.gpu_dev[i].stat == egpuCompatible) &&
+            (gpuInfo.gpu_dev[i].vendor_e != OCL_VENDOR_AMD))
+        {
+            result = false;
+            break;
+        }
+    }
+    return result;
 }
 
 //! This function is documented in the header file

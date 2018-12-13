@@ -115,6 +115,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/mimic/MimicUtils.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -158,10 +159,9 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
                               const t_forcerec  &forceRec,
                               t_graph           *graph)
 {
-    for (int i = 0; i < globalState->natoms; i++)
-    {
-        copy_rvec(rerunFrame.x[i], globalState->x[i]);
-    }
+    auto x      = makeArrayRef(globalState->x);
+    auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec *>(rerunFrame.x), globalState->natoms);
+    std::copy(rerunX.begin(), rerunX.end(), x.begin());
     copy_mat(rerunFrame.box, globalState->box);
 
     if (constructVsites)
@@ -173,15 +173,15 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
             /* Following is necessary because the graph may get out of sync
              * with the coordinates if we only have every N'th coordinate set
              */
-            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, as_rvec_array(globalState->x.data()));
+            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, globalState->x.rvec_array());
             shift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
         }
-        construct_vsites(vsite, as_rvec_array(globalState->x.data()), timeStep, as_rvec_array(globalState->v.data()),
+        construct_vsites(vsite, globalState->x.rvec_array(), timeStep, globalState->v.rvec_array(),
                          idef.iparams, idef.il,
                          forceRec.ePBC, forceRec.bMolPBC, nullptr, globalState->box);
         if (graph)
         {
-            unshift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
+            unshift_self(graph, globalState->box, globalState->x.rvec_array());
         }
     }
 }
@@ -194,28 +194,28 @@ void gmx::Integrator::do_rerun()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec       *ir   = inputrec;
-    gmx_mdoutf       *outf = nullptr;
-    int64_t           step, step_rel;
-    double            t, lam0[efptNR];
-    bool              isLastStep               = false;
-    bool              doFreeEnergyPerturbation = false;
-    int               force_flags;
-    tensor            force_vir, shake_vir, total_vir, pres;
-    t_trxstatus      *status;
-    rvec              mu_tot;
-    t_trxframe        rerun_fr;
-    gmx_localtop_t   *top;
-    t_mdebin         *mdebin   = nullptr;
-    gmx_enerdata_t   *enerd;
-    PaddedRVecVector  f {};
-    gmx_global_stat_t gstat;
-    t_graph          *graph = nullptr;
-    gmx_groups_t     *groups;
-    gmx_ekindata_t   *ekind;
-    gmx_shellfc_t    *shellfc;
+    t_inputrec             *ir   = inputrec;
+    gmx_mdoutf             *outf = nullptr;
+    int64_t                 step, step_rel;
+    double                  t, lam0[efptNR];
+    bool                    isLastStep               = false;
+    bool                    doFreeEnergyPerturbation = false;
+    int                     force_flags;
+    tensor                  force_vir, shake_vir, total_vir, pres;
+    t_trxstatus            *status;
+    rvec                    mu_tot;
+    t_trxframe              rerun_fr;
+    gmx_localtop_t         *top;
+    t_mdebin               *mdebin   = nullptr;
+    gmx_enerdata_t         *enerd;
+    PaddedVector<gmx::RVec> f {};
+    gmx_global_stat_t       gstat;
+    t_graph                *graph = nullptr;
+    gmx_groups_t           *groups;
+    gmx_ekindata_t         *ekind;
+    gmx_shellfc_t          *shellfc;
 
-    double            cycles;
+    double                  cycles;
 
     /* Domain decomposition could incorrectly miss a bonded
        interaction, but checking for that requires a global
@@ -230,6 +230,11 @@ void gmx::Integrator::do_rerun()
     // Most global communnication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
+
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Note that it is planned that the command gmx mdrun -rerun will "
+                   "be available in a different form in a future version of GROMACS, "
+                   "e.g. gmx rerun -f.");
 
     if (ir->bExpanded)
     {
@@ -265,6 +270,18 @@ void gmx::Integrator::do_rerun()
         gmx_fatal(FARGS, "Simulated annealing not supported by rerun.");
     }
 
+    /* Rerun can't work if an output file name is the same as the input file name.
+     * If this is the case, the user will get an error telling them what the issue is.
+     */
+    if (strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-o", nfile, fnm)) == 0 ||
+        strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-x", nfile, fnm)) == 0)
+    {
+        gmx_fatal(FARGS, "When using mdrun -rerun, the name of the input trajectory file "
+                  "%s cannot be identical to the name of an output file (whether "
+                  "given explicitly with -o or -x, or by default)",
+                  opt2fn("-rerun", nfile, fnm));
+    }
+
     /* Settings for rerun */
     ir->nstlist       = 1;
     ir->nstcalcenergy = 1;
@@ -273,6 +290,10 @@ void gmx::Integrator::do_rerun()
 
     ir->nstxout_compressed = 0;
     groups                 = &top_global->groups;
+    if (ir->eI == eiMimic)
+    {
+        top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
+    }
 
     /* Initial values */
     init_rerun(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
@@ -333,7 +354,7 @@ void gmx::Integrator::do_rerun()
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        f.resize(gmx::paddedRVecVectorSize(state_global->natoms));
+        f.resizeWithPadding(state_global->natoms);
         /* Copy the pointer to the global state */
         state = state_global;
 
@@ -536,7 +557,7 @@ void gmx::Integrator::do_rerun()
                                 enforcedRotation, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
-                                state, f, force_vir, mdatoms,
+                                state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, t, mu_tot,
                                 vsite,
@@ -553,8 +574,8 @@ void gmx::Integrator::do_rerun()
             gmx_edsam *ed  = nullptr;
             do_force(fplog, cr, ms, ir, awh, enforcedRotation,
                      step, nrnb, wcycle, top, groups,
-                     state->box, state->x, &state->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
+                     state->box, state->x.arrayRefWithPadding(), &state->hist,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, ed,
                      GMX_FORCE_NS | force_flags,

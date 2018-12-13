@@ -161,7 +161,9 @@ std::unique_ptr<TestProgramContext> g_testContext;
 void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
                    bool usesHardwareDetection, int *argc, char ***argv)
 {
-#ifndef NDEBUG
+#if !defined NDEBUG &&                                                  \
+    !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
+    && defined __OPTIMIZE__)
     gmx_feenableexcept();
 #endif
     const CommandLineProgramContext &context = initForCommandLine(argc, argv);
@@ -201,6 +203,9 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         {
             TestFileManager::setGlobalOutputTempDirectory(tempPath);
         }
+        TestFileManager::setTestSimulationDatabaseDirectory(
+                GMX_TESTSIMULATIONDATABASE_DIR);
+
         bool        bHelp = false;
         std::string sourceRoot;
         Options     options;

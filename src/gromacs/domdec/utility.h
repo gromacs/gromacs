@@ -90,14 +90,44 @@ static inline int dd_load_count(const gmx_domdec_comm_t *comm)
 }
 
 /*! \brief Resize the state and f, if !=nullptr, to natoms */
-void dd_resize_state(t_state          *state,
-                     PaddedRVecVector *f,
-                     int               natoms);
+void dd_resize_state(t_state                 *state,
+                     PaddedVector<gmx::RVec> *f,
+                     int                      natoms);
 
 /*! \brief Enrsure fr, state and f, if != nullptr, can hold numChargeGroups atoms for the Verlet scheme and charge groups for the group scheme */
-void dd_check_alloc_ncg(t_forcerec       *fr,
-                        t_state          *state,
-                        PaddedRVecVector *f,
-                        int               numChargeGroups);
+void dd_check_alloc_ncg(t_forcerec              *fr,
+                        t_state                 *state,
+                        PaddedVector<gmx::RVec> *f,
+                        int                      numChargeGroups);
+
+/*! \brief Returns a domain-to-domain cutoff distance given an atom-to-atom cutoff */
+static inline real
+atomToAtomIntoDomainToDomainCutoff(const gmx_domdec_comm_t &comm,
+                                   real                     cutoff)
+{
+    if (comm.useUpdateGroups)
+    {
+        GMX_ASSERT(comm.updateGroupsCog, "updateGroupsCog should be initialized here");
+
+        cutoff += 2*comm.updateGroupsCog->maxUpdateGroupRadius();
+    }
+
+    return cutoff;
+}
+
+/*! \brief Returns an atom-to-domain cutoff distance given a domain-to-domain cutoff */
+static inline real
+domainToDomainIntoAtomToDomainCutoff(const gmx_domdec_comm_t &comm,
+                                     real                     cutoff)
+{
+    if (comm.useUpdateGroups)
+    {
+        GMX_ASSERT(comm.updateGroupsCog, "updateGroupsCog should be initialized here");
+
+        cutoff -= comm.updateGroupsCog->maxUpdateGroupRadius();
+    }
+
+    return cutoff;
+}
 
 #endif

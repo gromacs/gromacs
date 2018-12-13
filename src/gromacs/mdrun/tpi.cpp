@@ -50,6 +50,8 @@
 
 #include <algorithm>
 
+#include <cfenv>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
@@ -89,6 +91,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "integrator.h"
@@ -131,38 +134,43 @@ namespace gmx
 void
 Integrator::do_tpi()
 {
-    gmx_localtop_t  *top;
-    gmx_groups_t    *groups;
-    gmx_enerdata_t  *enerd;
-    PaddedRVecVector f {};
-    real             lambda, t, temp, beta, drmax, epot;
-    double           embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
-    t_trxstatus     *status;
-    t_trxframe       rerun_fr;
-    gmx_bool         bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
-    tensor           force_vir, shake_vir, vir, pres;
-    int              cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
-    rvec            *x_mol;
-    rvec             mu_tot, x_init, dx, x_tp;
-    int              nnodes, frame;
-    int64_t          frame_step_prev, frame_step;
-    int64_t          nsteps, stepblocksize = 0, step;
-    int64_t          seed;
-    int              i;
-    FILE            *fp_tpi = nullptr;
-    char            *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
-    double           dbl, dump_ener;
-    gmx_bool         bCavity;
-    int              nat_cavity  = 0, d;
-    real            *mass_cavity = nullptr, mass_tot;
-    int              nbin;
-    double           invbinw, *bin, refvolshift, logV, bUlogV;
-    real             prescorr, enercorr, dvdlcorr;
-    gmx_bool         bEnergyOutOfBounds;
-    const char      *tpid_leg[2] = {"direct", "reweighted"};
-    auto             mdatoms     = mdAtoms->mdatoms();
+    gmx_localtop_t         *top;
+    gmx_groups_t           *groups;
+    gmx_enerdata_t         *enerd;
+    PaddedVector<gmx::RVec> f {};
+    real                    lambda, t, temp, beta, drmax, epot;
+    double                  embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
+    t_trxstatus            *status;
+    t_trxframe              rerun_fr;
+    gmx_bool                bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
+    tensor                  force_vir, shake_vir, vir, pres;
+    int                     cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
+    rvec                   *x_mol;
+    rvec                    mu_tot, x_init, dx, x_tp;
+    int                     nnodes, frame;
+    int64_t                 frame_step_prev, frame_step;
+    int64_t                 nsteps, stepblocksize = 0, step;
+    int64_t                 seed;
+    int                     i;
+    FILE                   *fp_tpi = nullptr;
+    char                   *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
+    double                  dbl, dump_ener;
+    gmx_bool                bCavity;
+    int                     nat_cavity  = 0, d;
+    real                   *mass_cavity = nullptr, mass_tot;
+    int                     nbin;
+    double                  invbinw, *bin, refvolshift, logV, bUlogV;
+    real                    prescorr, enercorr, dvdlcorr;
+    gmx_bool                bEnergyOutOfBounds;
+    const char             *tpid_leg[2] = {"direct", "reweighted"};
+    auto                    mdatoms     = mdAtoms->mdatoms();
 
     GMX_UNUSED_VALUE(outputProvider);
+
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Note that it is planned to change the command gmx mdrun -tpi "
+                   "(and -tpic) to make the functionality available in a different "
+                   "form in a future version of GROMACS, e.g. gmx test-particle-insertion.");
 
     /* Since there is no upper limit to the insertion energies,
      * we need to set an upper limit for the distribution output.
@@ -258,10 +266,7 @@ Integrator::do_tpi()
 
     snew(enerd, 1);
     init_enerdata(groups->grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
-    /* We need to allocate one element extra, since we might use
-     * (unaligned) 4-wide SIMD loads to access rvec entries.
-     */
-    f.resize(gmx::paddedRVecVectorSize(top_global->natoms));
+    f.resizeWithPadding(top_global->natoms);
 
     /* Print to log file  */
     walltime_accounting_start_time(walltime_accounting);
@@ -283,17 +288,18 @@ Integrator::do_tpi()
 
     bDispCorr = (inputrec->eDispCorr != edispcNO);
     bCharge   = FALSE;
+    auto x = makeArrayRef(state_global->x);
     for (i = a_tp0; i < a_tp1; i++)
     {
         /* Copy the coordinates of the molecule to be insterted */
-        copy_rvec(state_global->x[i], x_mol[i-a_tp0]);
+        copy_rvec(x[i], x_mol[i-a_tp0]);
         /* Check if we need to print electrostatic energies */
         bCharge |= (mdatoms->chargeA[i] != 0 ||
                     ((mdatoms->chargeB != nullptr) && mdatoms->chargeB[i] != 0));
     }
     bRFExcl = (bCharge && EEL_RF(fr->ic->eeltype));
 
-    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), as_rvec_array(state_global->x.data()), fr->cg_cm);
+    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), state_global->x.rvec_array(), fr->cg_cm);
     if (bCavity)
     {
         if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog)
@@ -487,9 +493,10 @@ Integrator::do_tpi()
         }
 
         /* Copy the coordinates from the input trajectory */
+        auto x = makeArrayRef(state_global->x);
         for (i = 0; i < rerun_fr.natoms; i++)
         {
-            copy_rvec(rerun_fr.x[i], state_global->x[i]);
+            copy_rvec(rerun_fr.x[i], x[i]);
         }
         copy_mat(rerun_fr.box, state_global->box);
 
@@ -591,25 +598,25 @@ Integrator::do_tpi()
             if (a_tp1 - a_tp0 == 1)
             {
                 /* Insert a single atom, just copy the insertion location */
-                copy_rvec(x_tp, state_global->x[a_tp0]);
+                copy_rvec(x_tp, x[a_tp0]);
             }
             else
             {
                 /* Copy the coordinates from the top file */
                 for (i = a_tp0; i < a_tp1; i++)
                 {
-                    copy_rvec(x_mol[i-a_tp0], state_global->x[i]);
+                    copy_rvec(x_mol[i-a_tp0], x[i]);
                 }
                 /* Rotate the molecule randomly */
                 real angleX = 2*M_PI*dist(rng);
                 real angleY = 2*M_PI*dist(rng);
                 real angleZ = 2*M_PI*dist(rng);
-                rotate_conf(a_tp1-a_tp0, as_rvec_array(state_global->x.data())+a_tp0, nullptr,
+                rotate_conf(a_tp1-a_tp0, state_global->x.rvec_array()+a_tp0, nullptr,
                             angleX, angleY, angleZ);
                 /* Shift to the insertion location */
                 for (i = a_tp0; i < a_tp1; i++)
                 {
-                    rvec_inc(state_global->x[i], x_tp);
+                    rvec_inc(x[i], x_tp);
                 }
             }
 
@@ -630,10 +637,17 @@ Integrator::do_tpi()
              * out of the box. */
             /* Make do_force do a single node force calculation */
             cr->nnodes = 1;
+
+            // TPI might place a particle so close that the potential
+            // is infinite. Since this is intended to happen, we
+            // temporarily suppress any exceptions that the processor
+            // might raise, then restore the old behaviour.
+            std::fenv_t floatingPointEnvironment;
+            std::feholdexcept(&floatingPointEnvironment);
             do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
                      step, nrnb, wcycle, top, &top_global->groups,
-                     state_global->box, state_global->x, &state_global->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
+                     state_global->box, state_global->x.arrayRefWithPadding(), &state_global->hist,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state_global->lambda,
                      nullptr, fr, nullptr, mu_tot, t, nullptr,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
@@ -641,6 +655,9 @@ Integrator::do_tpi()
                      (bStateChanged ? GMX_FORCE_STATECHANGED : 0),
                      DdOpenBalanceRegionBeforeForceComputation::no,
                      DdCloseBalanceRegionAfterForceComputation::no);
+            std::feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+            std::feupdateenv(&floatingPointEnvironment);
+
             cr->nnodes    = nnodes;
             bStateChanged = FALSE;
             bNS           = FALSE;
@@ -757,7 +774,7 @@ Integrator::do_tpi()
             {
                 sprintf(str, "t%g_step%d.pdb", t, static_cast<int>(step));
                 sprintf(str2, "t: %f step %d ener: %f", t, static_cast<int>(step), epot);
-                write_sto_conf_mtop(str, str2, top_global, as_rvec_array(state_global->x.data()), as_rvec_array(state_global->v.data()),
+                write_sto_conf_mtop(str, str2, top_global, state_global->x.rvec_array(), state_global->v.rvec_array(),
                                     inputrec->ePBC, state_global->box);
             }
 

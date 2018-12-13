@@ -48,10 +48,11 @@ virtual site constructions.
 All modifications described in this section can be performed using the
 |Gromacs| topology building tool :ref:`pdb2gmx <gmx pdb2gmx>`. Separate options exist to
 increase hydrogen masses, virtualize all hydrogen atoms, or also
-virtualize all aromatic residues. **Note** that when all hydrogen atoms
+virtualize the aromatic rings in standard residues. **Note** that when all hydrogen atoms
 are virtualized, those inside the aromatic residues will be virtualized
 as well, *i.e.* hydrogens in the aromatic residues are treated
-differently depending on the treatment of the aromatic residues.
+differently depending on the treatment of the aromatic residues. Note
+further that the virtualization of aromatic rings is deprecated.
 
 Parameters for the virtual site constructions for the hydrogen atoms are
 inferred from the force-field parameters (*vis*. bond lengths and

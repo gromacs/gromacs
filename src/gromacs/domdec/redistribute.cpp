@@ -166,25 +166,32 @@ static void print_cg_move(FILE *fplog,
                           gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
-    gmx_domdec_comm_t *comm;
-    char               buf[22];
+    const gmx_domdec_comm_t *comm = dd->comm;
+    std::string              mesg;
 
-    comm = dd->comm;
+    fprintf(fplog, "\nStep %" PRId64 ":\n", step);
 
-    fprintf(fplog, "\nStep %s:\n", gmx_step_str(step, buf));
-    if (limitd > 0)
+    if (comm->bCGs)
     {
-        fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
-                dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGrouping().block(cg).begin()), limitd, dim2char(dim));
+        mesg += "The charge group starting at atom";
+    }
+    else if (comm->useUpdateGroups)
+    {
+        mesg += "The update group starting at atom";
     }
     else
     {
-        /* We don't have a limiting distance available: don't print it */
-        fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition in direction %c\n",
-                dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGrouping().block(cg).begin()), dim2char(dim));
+        mesg += "Atom";
     }
+    mesg += gmx::formatString(" %d moved more than the distance allowed by the domain decomposition",
+                              ddglatnr(dd, dd->atomGrouping().block(cg).begin()));
+    if (limitd > 0)
+    {
+        mesg += gmx::formatString(" (%f)", limitd);
+    }
+    mesg += gmx::formatString(" in direction %c\n", dim2char(dim));
+    fprintf(fplog, "%s", mesg.c_str());
+
     fprintf(fplog, "distance out of cell %f\n",
             dir == 1 ? pos_d - comm->cell_x1[dim] : pos_d - comm->cell_x0[dim]);
     if (bHaveCgcmOld)
@@ -217,28 +224,30 @@ static void cg_move_error(FILE *fplog,
     print_cg_move(stderr, dd, step, cg, dim, dir,
                   bHaveCgcmOld, limitd, cm_old, cm_new, pos_d);
     gmx_fatal(FARGS,
-              "%s moved too far between two domain decomposition steps\n"
-              "This usually means that your system is not well equilibrated",
-              dd->comm->bCGs ? "An atom group" : "An atom");
+              "One or more atoms moved too far between two domain decomposition steps.\n"
+              "This usually means that your system is not well equilibrated");
 }
 
 static void rotate_state_atom(t_state *state, int a)
 {
     if (state->flags & (1 << estX))
     {
+        auto x = makeArrayRef(state->x);
         /* Rotate the complete state; for a rectangular box only */
-        state->x[a][YY] = state->box[YY][YY] - state->x[a][YY];
-        state->x[a][ZZ] = state->box[ZZ][ZZ] - state->x[a][ZZ];
+        x[a][YY] = state->box[YY][YY] - x[a][YY];
+        x[a][ZZ] = state->box[ZZ][ZZ] - x[a][ZZ];
     }
     if (state->flags & (1 << estV))
     {
-        state->v[a][YY] = -state->v[a][YY];
-        state->v[a][ZZ] = -state->v[a][ZZ];
+        auto v = makeArrayRef(state->v);
+        v[a][YY] = -v[a][YY];
+        v[a][ZZ] = -v[a][ZZ];
     }
     if (state->flags & (1 << estCGP))
     {
-        state->cg_p[a][YY] = -state->cg_p[a][YY];
-        state->cg_p[a][ZZ] = -state->cg_p[a][ZZ];
+        auto cg_p = makeArrayRef(state->cg_p);
+        cg_p[a][YY] = -cg_p[a][YY];
+        cg_p[a][ZZ] = -cg_p[a][ZZ];
     }
 }
 
@@ -337,6 +346,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                          gmx::ArrayRef<int> move)
 {
     const int npbcdim = dd->npbcdim;
+    auto      x       = makeArrayRef(state->x);
 
     for (int g = cg_start; g < cg_end; g++)
     {
@@ -346,7 +356,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
         rvec       cm_new;
         if (numAtoms == 1)
         {
-            copy_rvec(state->x[atomGroup.begin()], cm_new);
+            copy_rvec(x[atomGroup.begin()], cm_new);
         }
         else
         {
@@ -354,7 +364,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
             clear_rvec(cm_new);
             for (int k : atomGroup)
             {
-                rvec_inc(cm_new, state->x[k]);
+                rvec_inc(cm_new, x[k]);
             }
             for (int d = 0; d < DIM; d++)
             {
@@ -384,7 +394,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                     if (pos_d >= moveLimits.upper[d])
                     {
                         cg_move_error(fplog, dd, step, g, d, 1,
-                                      cg_cm != as_rvec_array(state->x.data()), moveLimits.distance[d],
+                                      cg_cm != state->x.rvec_array(), moveLimits.distance[d],
                                       cg_cm[g], cm_new, pos_d);
                     }
                     dev[d] = 1;
@@ -398,7 +408,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                         }
                         for (int k : atomGroup)
                         {
-                            rvec_dec(state->x[k], state->box[d]);
+                            rvec_dec(x[k], state->box[d]);
                             if (bScrew)
                             {
                                 rotate_state_atom(state, k);
@@ -411,7 +421,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                     if (pos_d < moveLimits.lower[d])
                     {
                         cg_move_error(fplog, dd, step, g, d, -1,
-                                      cg_cm != as_rvec_array(state->x.data()), moveLimits.distance[d],
+                                      cg_cm != state->x.rvec_array(), moveLimits.distance[d],
                                       cg_cm[g], cm_new, pos_d);
                     }
                     dev[d] = -1;
@@ -425,7 +435,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                         }
                         for (int k : atomGroup)
                         {
-                            rvec_inc(state->x[k], state->box[d]);
+                            rvec_inc(x[k], state->box[d]);
                             if (bScrew)
                             {
                                 rotate_state_atom(state, k);
@@ -442,7 +452,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                     rvec_dec(cm_new, state->box[d]);
                     for (int k : atomGroup)
                     {
-                        rvec_dec(state->x[k], state->box[d]);
+                        rvec_dec(x[k], state->box[d]);
                     }
                 }
                 while (cm_new[d] < 0)
@@ -450,7 +460,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
                     rvec_inc(cm_new, state->box[d]);
                     for (int k : atomGroup)
                     {
-                        rvec_inc(state->x[k], state->box[d]);
+                        rvec_inc(x[k], state->box[d]);
                     }
                 }
             }
@@ -586,7 +596,8 @@ applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog      &updateGroupsCog,
 
 void dd_redistribute_cg(FILE *fplog, int64_t step,
                         gmx_domdec_t *dd, ivec tric_dir,
-                        t_state *state, PaddedRVecVector *f,
+                        t_state *state,
+                        PaddedVector<gmx::RVec> *f,
                         t_forcerec *fr,
                         t_nrnb *nrnb,
                         int *ncg_moved)
@@ -773,7 +784,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
              * many conditionals for both for with and without charge groups.
              */
             copyMovedAtomsToBufferPerChargeGroup(move, dd->atomGrouping(),
-                                                 nvec, as_rvec_array(state->x.data()), comm);
+                                                 nvec, state->x.rvec_array(), comm);
             break;
         default:
             gmx_incons("unimplemented");
@@ -782,20 +793,20 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     int vectorIndex = 0;
     copyMovedAtomsToBufferPerAtom(move, dd->atomGrouping(),
                                   nvec, vectorIndex++,
-                                  as_rvec_array(state->x.data()),
+                                  state->x.rvec_array(),
                                   comm);
     if (bV)
     {
         copyMovedAtomsToBufferPerAtom(move, dd->atomGrouping(),
                                       nvec, vectorIndex++,
-                                      as_rvec_array(state->v.data()),
+                                      state->v.rvec_array(),
                                       comm);
     }
     if (bCGP)
     {
         copyMovedAtomsToBufferPerAtom(move, dd->atomGrouping(),
                                       nvec, vectorIndex++,
-                                      as_rvec_array(state->cg_p.data()),
+                                      state->cg_p.rvec_array(),
                                       comm);
     }
 
@@ -935,23 +946,33 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                                 }
                             }
 
-                            GMX_ASSERT(dim2 >= 0 && dim2 < DIM, "Keep the static analyzer happy");
-
-                            /* Check of we are not at the box edge.
-                             * pbc is only handled in the first step above,
-                             * but this check could move over pbc while
-                             * the first step did not due to different rounding.
+                            /* Without update groups we can put atoms or
+                             * charge groups exactly in their domain
+                             * decomposition cell, although this is likely
+                             * not necessary and we can just completely
+                             * remove the code within the conditional below.
                              */
-                            if (pos_d >= cell_x1[dim2] &&
-                                dd->ci[dim2] != dd->nc[dim2]-1)
+                            if (!comm->useUpdateGroups)
                             {
-                                flag |= DD_FLAG_FW(d2);
+                                GMX_ASSERT(dim2 >= 0 && dim2 < DIM, "Keep the static analyzer happy");
+
+                                /* Check if we are at/across the box edge.
+                                 * pbc is only handled in the first step above,
+                                 * but this check can move over pbc while
+                                 * the first step did not due to different rounding.
+                                 */
+                                if (pos_d >= cell_x1[dim2] &&
+                                    dd->ci[dim2] != dd->nc[dim2]-1)
+                                {
+                                    flag |= DD_FLAG_FW(d2);
+                                }
+                                else if (pos_d < cell_x0[dim2] &&
+                                         dd->ci[dim2] != 0)
+                                {
+                                    flag |= DD_FLAG_BW(d2);
+                                }
                             }
-                            else if (pos_d < cell_x0[dim2] &&
-                                     dd->ci[dim2] != 0)
-                            {
-                                flag |= DD_FLAG_BW(d2);
-                            }
+
                             flagBuffer.buffer[cg*DD_CGIBS + 1] = flag;
                         }
                     }
@@ -997,18 +1018,21 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                     comm->bLocalCG[globalAtomGroupIndex] = TRUE;
                 }
 
+                auto  x       = makeArrayRef(state->x);
+                auto  v       = makeArrayRef(state->v);
+                auto  cg_p    = makeArrayRef(state->cg_p);
                 rvec *rvecPtr = as_rvec_array(rvecBuffer.buffer.data());
                 for (int i = 0; i < nrcg; i++)
                 {
                     copy_rvec(rvecPtr[buf_pos++],
-                              state->x[home_pos_at+i]);
+                              x[home_pos_at+i]);
                 }
                 if (bV)
                 {
                     for (int i = 0; i < nrcg; i++)
                     {
                         copy_rvec(rvecPtr[buf_pos++],
-                                  state->v[home_pos_at+i]);
+                                  v[home_pos_at+i]);
                     }
                 }
                 if (bCGP)
@@ -1016,7 +1040,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                     for (int i = 0; i < nrcg; i++)
                     {
                         copy_rvec(rvecPtr[buf_pos++],
-                                  state->cg_p[home_pos_at+i]);
+                                  cg_p[home_pos_at+i]);
                     }
                 }
                 home_pos_cg += 1;

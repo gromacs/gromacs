@@ -38,6 +38,7 @@
 #define GMX_MDLIB_FORCE_H
 
 #include "gromacs/domdec/dlbtiming.h"
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
@@ -103,9 +104,9 @@ void do_force(FILE                                     *log,
               gmx_localtop_t                           *top,
               const gmx_groups_t                       *groups,
               matrix                                    box,
-              gmx::PaddedArrayRef<gmx::RVec>            coordinates,
+              gmx::ArrayRefWithPadding<gmx::RVec>       coordinates,
               history_t                                *hist,
-              gmx::PaddedArrayRef<gmx::RVec>            force,
+              gmx::ArrayRefWithPadding<gmx::RVec>       force,
               tensor                                    vir_force,
               const t_mdatoms                          *mdatoms,
               gmx_enerdata_t                           *enerd,

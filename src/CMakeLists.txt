@@ -46,6 +46,7 @@ if(GMX_USE_CUDA)
     get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_COMPILER_FLAGS)
 endif()
 
+string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
 configure_file(config.h.cmakein config.h)
 configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
@@ -108,13 +109,25 @@ add_subdirectory(gromacs)
 add_subdirectory(programs)
 
 # Activate targets for new C++ API components and docs.
-if(GMX_NATIVE_WINDOWS)
+if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY OR NOT BUILD_SHARED_LIBS)
     # GMXAPI has not been tested in Microsoft environments.
+    # GMXAPI relies on libgromacs and is incompatible with an `mdrun`-only build.
+    # GMXAPI requires position-independent code
     set(_GMXAPI_DEFAULT OFF)
 else()
     set(_GMXAPI_DEFAULT ON)
 endif()
 option(GMXAPI "Experimental external interfaces" ${_GMXAPI_DEFAULT})
 if (GMXAPI)
+   if (GMX_BUILD_MDRUN_ONLY)
+       message(FATAL_ERROR "GMXAPI relies on libgromacs and is incompatible with GMX_BUILD_MDRUN_ONLY.")
+   endif()
+   if(NOT ${BUILD_SHARED_LIBS})
+       # Note: this conditional should check for the existence of a libgromacs target supporting PIC
+       # using the POSITION_INDEPENDENT_CODE property, but for now the only facility we have is the global
+       # variable, BUILD_SHARED_LIBS.
+       # TODO: gmxapi should gracefully build for dynamic linking or static linking for PIC or without.
+       message(FATAL_ERROR "GMXAPI requires position-independent code. Set -DGMXAPI=OFF or -DBUILD_SHARED_LIBS=ON.")
+   endif()
    add_subdirectory(api)
 endif()

@@ -90,7 +90,6 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
                                                    float                &fy,
                                                    float                &fz)
 {
-#if (GMX_PTX_ARCH >= 300)
     if (!(order & (order - 1))) // Only for orders of power of 2
     {
         const unsigned int activeMask = c_fullWarpMask;
@@ -136,7 +135,6 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
         }
     }
     else
-#endif
     {
         // We use blockSize shared memory elements to read fx, or fy, or fz, and then reduce them to fit into smemPerDim elements
         // which are stored separately (first 2 dimensions only)
@@ -235,11 +233,12 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
     float * __restrict__        gm_forces           = kernelParams.atoms.d_forces;
 
     /* Some sizes */
-    const int    atomsPerBlock  = (c_gatherMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM);
-    const int    atomDataSize   = PME_SPREADGATHER_THREADS_PER_ATOM; /* Number of data components and threads for a single atom */
-    const int    blockSize      = atomsPerBlock * atomDataSize;
-    const int    atomsPerWarp   = PME_SPREADGATHER_ATOMS_PER_WARP;
+    const int    atomsPerBlock  = (c_gatherMaxThreadsPerBlock / c_pmeSpreadGatherThreadsPerAtom);
+    const int    atomDataSize   = c_pmeSpreadGatherThreadsPerAtom; /* Number of data components and threads for a single atom */
+    const int    atomsPerWarp   = c_pmeSpreadGatherAtomsPerWarp;
 
+    const int    blockSize      = atomsPerBlock * atomDataSize;
+    assert(blockSize == blockDim.x * blockDim.y * blockDim.z);
     const int    blockIndex = blockIdx.y * gridDim.x + blockIdx.x;
 
     /* These are the atom indices - for the shared and global memory */
@@ -248,7 +247,7 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
     const int         atomIndexGlobal   = atomIndexOffset + atomIndexLocal;
 
     /* Early return for fully empty blocks at the end
-     * (should only happen on Fermi or billions of input atoms)
+     * (should only happen for billions of input atoms)
      */
     if (atomIndexOffset >= kernelParams.atoms.nAtoms)
     {

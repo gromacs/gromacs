@@ -43,13 +43,10 @@
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 
-typedef struct {
-    int       nr;   /* The number of entries in the list            */
-    int       nra2; /* The total number of entries in a			*/
-    int      *nra;  /* The number of entries in each a array (dim nr)   */
-    int     **a;    /* The atom numbers (dim nr) the length of each element	*/
-    /* i is nra[i]						*/
-} t_block2;
+namespace gmx
+{
+struct ExclusionBlocks;
+} // namespace gmx
 
 void generate_nbparams(int comb, int funct, t_params plist[],
                        gpp_atomtype_t atype,
@@ -105,17 +102,7 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline,
 void push_molt(struct t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
                warninp_t wi);
 
-void init_block2(t_block2 *b2, int natom);
-
-void done_block2(t_block2 *b2);
-
-void push_excl(char *line, t_block2 *b2, warninp_t wi);
-
-void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi);
-
-void b_to_b2(t_blocka *b, t_block2 *b2);
-
-void b2_to_b(t_block2 *b2, t_blocka *b);
+void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp_t wi);
 
 int add_atomtype_decoupled(struct t_symtab *symtab, gpp_atomtype_t at,
                            t_nbparam ***nbparam, t_nbparam ***pair);

@@ -192,33 +192,23 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
                                                              nb->nbparam->eeltype,
                                                              nb->nbparam->vdwtype);
 
-        /* Here we pass macros and static const int variables defined in include
-         * files outside the nbnxn_ocl as macros, to avoid including those files
-         * in the JIT compilation that happens at runtime.
-         */
-
+        /* Here we pass macros and static const int variables defined
+         * in include files outside the nbnxn_ocl as macros, to avoid
+         * including those files in the JIT compilation that happens
+         * at runtime. This is particularly a problem for headers that
+         * depend on config.h, such as nbnxn_pairlist.h. */
         extraDefines += gmx::formatString(
-                    " -DCENTRAL=%d "
-                    "-DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d "
-                    "-DGMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY=%d "
-                    "-DNBNXN_MIN_RSQ=%s %s",
-                    CENTRAL,                                                /* Defined in ishift.h */
-                    c_nbnxnGpuNumClusterPerSupercluster,                    /* Defined in nbnxn_pairlist.h */
+                    " -DNBNXN_GPU_CLUSTER_SIZE=%d "
+                    "%s",
                     c_nbnxnGpuClusterSize,                                  /* Defined in nbnxn_pairlist.h */
-                    c_nbnxnGpuJgroupSize,                                   /* Defined in nbnxn_pairlist.h */
-                    getOclPruneKernelJ4Concurrency(nb->dev_info->vendor_e), /* In nbnxn_ocl_types.h  */
-                    STRINGIFY_MACRO(NBNXN_MIN_RSQ)                          /* Defined in nbnxn_consts.h */
-                                                                            /* NBNXN_MIN_RSQ passed as string to avoid
-                                                                                floating point representation problems with sprintf */
-                    , (nb->bPrefetchLjParam) ? "-DIATYPE_SHMEM" : ""
+                    (nb->bPrefetchLjParam) ? "-DIATYPE_SHMEM" : ""
                     );
-
         try
         {
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
             program = gmx::ocl::compileProgram(stderr,
-                                               "src/gromacs/mdlib/nbnxn_ocl",
+                                               "gromacs/mdlib/nbnxn_ocl",
                                                "nbnxn_ocl_kernels.cl",
                                                extraDefines,
                                                nb->dev_rundata->context,

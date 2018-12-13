@@ -9,22 +9,19 @@ functionality supported, whereas patch releases contain only fixes for
 issues identified in the corresponding major releases.
 
 Two versions of |Gromacs| are under active maintenance, the NEXT
-series and the 2018 series. In the latter, only highly conservative
+series and the 2019 series. In the latter, only highly conservative
 fixes will be made, and only to address issues that affect scientific
 correctness. Naturally, some of those releases will be made after the
-year 2018 ends, but we keep 2018 in the name so users understand how
+year 2019 ends, but we keep 2018 in the name so users understand how
 up to date their version is. Such fixes will also be incorporated into
 the NEXT release series, as appropriate. Around the time the NEXT+1
-release is made, the 2018 series will no longer be maintained.
+release is made, the 2019 series will no longer be maintained.
 
 Where issue numbers are reported in these release notes, more details
 can be found at https://redmine.gromacs.org at that issue number.
 
 |Gromacs| NEXT series
 ---------------------
-
-Major release
-^^^^^^^^^^^^^
 
 .. toctree::
    :maxdepth: 1
@@ -34,9 +31,36 @@ Major release
    performance
    tools
    bugs-fixed
-   removed-features
+   deprecated-functionality
+   removed-functionality
    portability
    miscellaneous
+
+
+|Gromacs| 2019 series
+---------------------
+
+Patch releases
+^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+Major release
+^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2019/major/highlights
+   2019/major/features
+   2019/major/performance
+   2019/major/tools
+   2019/major/bugs-fixed
+   2019/major/deprecated-functionality
+   2019/major/removed-functionality
+   2019/major/portability
+   2019/major/miscellaneous
 
 
 |Gromacs| 2018 series
@@ -48,6 +72,7 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
+   2018/2018.5
    2018/2018.4
    2018/2018.3
    2018/2018.2

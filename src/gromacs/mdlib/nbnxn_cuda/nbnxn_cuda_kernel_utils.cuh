@@ -60,18 +60,18 @@
 
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
-static const int          c_clSizeLog2  = 3;
+static const int __device__          c_clSizeLog2  = 3;
 /*! \brief Square of cluster size. */
-static const int          c_clSizeSq    = c_clSize*c_clSize;
+static const int __device__          c_clSizeSq    = c_clSize*c_clSize;
 /*! \brief j-cluster size after split (4 in the current implementation). */
-static const int          c_splitClSize = c_clSize/c_nbnxnGpuClusterpairSplit;
+static const int __device__          c_splitClSize = c_clSize/c_nbnxnGpuClusterpairSplit;
 /*! \brief Stride in the force accumualation buffer */
-static const int          c_fbufStride  = c_clSizeSq;
+static const int __device__          c_fbufStride  = c_clSizeSq;
 /*! \brief i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
-static const unsigned     superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
+static const unsigned __device__     superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
-static const float        c_oneSixth    = 0.16666667f;
-static const float        c_oneTwelveth = 0.08333333f;
+static const float __device__        c_oneSixth    = 0.16666667f;
+static const float __device__        c_oneTwelveth = 0.08333333f;
 
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
@@ -318,7 +318,7 @@ float2 fetch_nbfp_comb_c6_c12(const cu_nbparam_t nbparam,
 }
 
 
-/*! Calculate LJ-PME grid force + energy contribution (if E_lj != NULL) with
+/*! Calculate LJ-PME grid force + energy contribution (if E_lj != nullptr) with
  *  Lorentz-Berthelot combination rule.
  *  We use a single F+E kernel with conditional because the performance impact
  *  of this is pretty small and LB on the CPU is anyway very slow.
@@ -357,7 +357,7 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
     /* Subtract the grid force from the total LJ force */
     *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
 
-    if (E_lj != NULL)
+    if (E_lj != nullptr)
     {
         float sh_mask;
 
@@ -507,9 +507,8 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
 }
 
 /*! Final j-force reduction; this implementation only with power of two
- *  array sizes and with sm >= 3.0
+ *  array sizes.
  */
-#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_force_j_warp_shfl(float3 f, float3 *fout,
                               int tidxi, int aidx,
@@ -539,7 +538,6 @@ void reduce_force_j_warp_shfl(float3 f, float3 *fout,
         atomicAdd((&fout[aidx].x) + tidxi, f.x);
     }
 }
-#endif
 
 /*! Final i-force reduction; this generic implementation works with
  *  arbitrary array sizes.
@@ -634,9 +632,8 @@ void reduce_force_i(float *f_buf, float3 *f,
 }
 
 /*! Final i-force reduction; this implementation works only with power of two
- *  array sizes and with sm >= 3.0
+ *  array sizes.
  */
-#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float *fshift_buf, bool bCalcFshift,
@@ -671,7 +668,6 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
         }
     }
 }
-#endif
 
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes.
@@ -711,9 +707,8 @@ void reduce_energy_pow2(volatile float *buf,
 }
 
 /*! Energy reduction; this implementation works only with power of two
- *  array sizes and with sm >= 3.0
+ *  array sizes.
  */
-#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_energy_warp_shfl(float E_lj, float E_el,
                              float *e_lj, float *e_el,
@@ -738,6 +733,5 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
         atomicAdd(e_el, E_el);
     }
 }
-#endif /* GMX_PTX_ARCH */
 
 #endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */

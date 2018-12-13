@@ -1585,3 +1585,8 @@ void nbnxn_set_atomorder(nbnxn_search_t nbs)
         }
     }
 }
+
+gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search *nbs)
+{
+    return nbs->cell;
+}

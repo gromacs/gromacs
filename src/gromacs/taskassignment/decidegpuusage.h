@@ -186,6 +186,32 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
                                   int                     numPmeRanksPerSimulation,
                                   bool                    gpusWereDetected);
 
+/*! \brief Decide whether the simulation will try to run bonded tasks on GPUs.
+ *
+ * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  useGpuForPme              Whether GPUs will be used for PME interactions.
+ * \param[in]  usingVerletScheme         Whether the nonbondeds are using the Verlet scheme.
+ * \param[in]  bondedTarget              The user's choice for mdrun -bonded for where to assign tasks.
+ * \param[in]  canUseGpuForBonded        Whether the bonded interactions can run on a GPU
+ * \param[in]  usingLJPme                Whether Vdw interactions use LJ-PME.
+ * \param[in]  usingElecPmeOrEwald       Whether a PME or Ewald type method is used for electrostatics.
+ * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation, can be -1 for auto.
+ * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
+ *
+ * \returns    Whether the simulation will run bondeded tasks on GPUs.
+ *
+ * \throws     std::bad_alloc          If out of memory
+ *             InconsistentInputError  If the user requirements are inconsistent. */
+bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
+                                     bool       useGpuForPme,
+                                     bool       usingVerletScheme,
+                                     TaskTarget bondedTarget,
+                                     bool       canUseGpuForBonded,
+                                     bool       usingLJPme,
+                                     bool       usingElecPmeOrEwald,
+                                     int        numPmeRanksPerSimulation,
+                                     bool       gpusWereDetected);
+
 }  // namespace gmx
 
 #endif

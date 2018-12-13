@@ -98,6 +98,8 @@ class SimulationRunner
         void useStringAsMdpFile(const std::string &mdpString);
         //! Use a string as -n input to grompp
         void useStringAsNdxFile(const char *ndxString);
+        //! Use a standard .top and .g96 file as input to grompp
+        void useTopG96AndNdxFromDatabase(const std::string &name);
         //! Use a standard .top and .gro file as input to grompp
         void useTopGroAndNdxFromDatabase(const std::string &name);
         //! Use a standard .gro file as input to grompp
@@ -110,6 +112,8 @@ class SimulationRunner
         int callGromppOnThisRank(const CommandLine &callerRef);
         //! Convenience wrapper for a default call to \c callGromppOnThisRank
         int callGromppOnThisRank();
+        //! Calls nmeig for testing
+        int callNmeig();
         //! Calls mdrun for testing with a customized command line
         int callMdrun(const CommandLine &callerRef);
         /*! \brief Convenience wrapper for calling mdrun for testing
@@ -137,6 +141,7 @@ class SimulationRunner
         std::string tprFileName_;
         std::string logFileName_;
         std::string edrFileName_;
+        std::string mtxFileName_;
         std::string cptFileName_;
         std::string swapFileName_;
         int         nsteps_;

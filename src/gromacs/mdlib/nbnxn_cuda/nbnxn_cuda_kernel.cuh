@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,10 +54,6 @@
  * code that is in double precision.
  */
 
-#if GMX_PTX_ARCH < 300 && GMX_PTX_ARCH != 0
-#error "nbnxn_cuda_kernel.cuh included with GMX_PTX_ARCH < 300 or host pass"
-#endif
-
 #if defined EL_EWALD_ANA || defined EL_EWALD_TAB
 /* Note: convenience macro, needs to be undef-ed at the end of the file. */
 #define EL_EWALD_ANY
@@ -97,7 +93,7 @@
  * NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
  * warp-pairs per block.
  *
- * - On CC 2.0-3.5, and >=5.0 NTHREAD_Z == 1, translating to 64 th/block with 16
+ * - On CC 3.0-3.5, and >=5.0 NTHREAD_Z == 1, translating to 64 th/block with 16
  * blocks/multiproc, is the fastest even though this setup gives low occupancy
  * (except on 6.0).
  * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
@@ -142,9 +138,6 @@
 #define THREADS_PER_BLOCK   (c_clSize*c_clSize*NTHREAD_Z)
 
 #if GMX_PTX_ARCH >= 350
-#if (GMX_PTX_ARCH <= 210) && (NTHREAD_Z > 1)
-    #error NTHREAD_Z > 1 will give incorrect results on CC 2.x
-#endif
 /**@}*/
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #else
@@ -532,7 +525,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef CALC_ENERGIES
                                                                int_bit, &F_invr, &E_lj_p
 #else
-                                                               0, &F_invr, NULL
+                                                               0, &F_invr, nullptr
 #endif /* CALC_ENERGIES */
                                                                );
 #endif /* LJ_EWALD_COMB_GEOM */

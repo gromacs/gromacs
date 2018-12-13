@@ -49,9 +49,12 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/idef.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -141,16 +144,16 @@ class BondedTest : public ::testing::Test
             t_pbc pbc;
             set_pbc(&pbc, epbc, box);
             int   ddgatindex = 0;
-            real  energy     = interaction_function[ftype].ifunc(iatoms.size(),
-                                                                 iatoms.data(),
-                                                                 iparams,
-                                                                 x, f, fshift,
-                                                                 &pbc,
-                                                                 /* const struct t_graph *g */ nullptr,
-                                                                 lambda, &dvdlambda,
-                                                                 /* const struct t_mdatoms *md */ nullptr,
-                                                                 /* struct t_fcdata *fcd */ nullptr,
-                                                                 &ddgatindex);
+            real  energy     = bondedFunction(ftype)(iatoms.size(),
+                                                     iatoms.data(),
+                                                     iparams,
+                                                     x, f, fshift,
+                                                     &pbc,
+                                                     /* const struct t_graph *g */ nullptr,
+                                                     lambda, &dvdlambda,
+                                                     /* const struct t_mdatoms *md */ nullptr,
+                                                     /* struct t_fcdata *fcd */ nullptr,
+                                                     &ddgatindex);
             checker_.checkReal(energy, interaction_function[ftype].longname);
         }
 

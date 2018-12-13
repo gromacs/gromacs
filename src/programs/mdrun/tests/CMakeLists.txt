@@ -32,14 +32,16 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# make an "object library" for code that we re-use for both kinds of tests
+# Make an "object library" for test infrastructure code that we re-use
+# in multiple test executables.
 add_library(mdrun_test_objlib OBJECT
     energyreader.cpp
+    energycomparison.cpp
     moduletest.cpp
     simulationdatabase.cpp
     terminationhelper.cpp
-    # PME tests
-    pmetest.cpp
+    trajectorycomparison.cpp
+    trajectoryreader.cpp
     )
 
 set(testname "MdrunTests")
@@ -49,29 +51,60 @@ gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     compressed_x_output.cpp
-    energycomparison.cpp
     grompp.cpp
     initialconstraints.cpp
     interactiveMD.cpp
-    rerun.cpp
+    pmetest.cpp
     swapcoords.cpp
     tabulated_bonded_interactions.cpp
     termination.cpp
-    tpitest.cpp
     trajectory_writing.cpp
-    trajectorycomparison.cpp
-    trajectoryreader.cpp
+    mimic.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
-if (GMX_GPU AND GMX_USE_OPENCL)
-    gmx_register_gtest_test(${testname} ${exename} OCL_INTEGRATION_TEST)
-else()
-    gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
-endif()
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
 
+# To avoid running into test timeouts, some end-to-end tests of mdrun
+# functionality are split off. This can be rearranged in future as we
+# see fit.
+set(testname "MdrunNonIntegratorTests")
+set(exename "mdrun-non-integrator-test")
+
+gmx_add_gtest_executable(
+    ${exename}
+    # files with code for tests
+    minimize.cpp
+    normalmodes.cpp
+    rerun.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    )
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
+
+# To permit other end-to-end tests to run with multiple OpenMP
+# threads, test cases that still use the group scheme are separated.
+set(testname "LegacyGroupSchemeMdrunTests")
+set(exename "legacy-mdrun-test")
+
+gmx_add_gtest_executable(
+    ${exename}
+    # When TPI supports the Verlet scheme, move this into
+    # MdrunNonIntegratorTest
+    tpitest.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    )
+gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
+
+# Tests that only make sense to run with multiple ranks and/or real
+# MPI are implemented here.
 set(testname "MdrunMpiTests")
 set(exename "mdrun-mpi-test")
 
@@ -79,12 +112,15 @@ gmx_add_gtest_executable(
     ${exename} MPI
     # files with code for tests
     domain_decomposition.cpp
+    minimize.cpp
+    mimic.cpp
     multisim.cpp
     multisimtest.cpp
+    pmetest.cpp
     replicaexchange.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
-gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 INTEGRATION_TEST)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)

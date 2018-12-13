@@ -22,6 +22,7 @@ First the forces :math:`\mathbf{F}` and potential energy
 are calculated. New positions are calculated by
 
   .. math:: \mathbf{r}_{n+1} =  \mathbf{r}_n + \frac{\mathbf{F}_n}{\max (|\mathbf{F}_n|)} h_n,
+            :label: eqnEMpos
 
 where :math:`h_n` is the maximum displacement and
 :math:`\mathbf{F}_n` is the force, or the negative
@@ -46,6 +47,7 @@ made too tight to avoid endless iterations. A reasonable value for
 :math:`T`. This value is
 
 .. math:: f = 2 \pi \nu \sqrt{ 2mkT},
+          :label: eqnEMharmosc
 
 where :math:`\nu` is the oscillator frequency, :math:`m` the (reduced)
 mass, and :math:`k` Boltzmann’s constant. For a weak oscillator with a

@@ -44,6 +44,11 @@ set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
 add_library(libgromacs_external OBJECT "")
+if(CMAKE_COMPILER_IS_GNUCXX)
+    # Keep quiet about e.g. linearalgebra module
+    target_compile_options(libgromacs_external PRIVATE ${CXXFLAGS_NO_STRINGOP_TRUNCATION})
+endif()
+
 add_library(libgromacs_generated OBJECT "")
 if (BUILD_SHARED_LIBS)
     set_target_properties(libgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
@@ -102,11 +107,13 @@ add_subdirectory(linearalgebra)
 add_subdirectory(math)
 add_subdirectory(mdrun)
 add_subdirectory(mdrunutility)
+add_subdirectory(mdspan)
 add_subdirectory(mdtypes)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
 add_subdirectory(pbcutil)
 add_subdirectory(random)
+add_subdirectory(restraint)
 add_subdirectory(tables)
 add_subdirectory(taskassignment)
 add_subdirectory(timing)
@@ -122,6 +129,7 @@ add_subdirectory(simd)
 add_subdirectory(imd)
 add_subdirectory(coulombintegrals)
 add_subdirectory(compat)
+add_subdirectory(mimic)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)
@@ -167,7 +175,10 @@ gmx_install_headers(
 set(GENERATED_VERSION_FILE utility/baseversion-gen.cpp)
 gmx_configure_version_file(
     utility/baseversion-gen.cpp.cmakein ${GENERATED_VERSION_FILE}
-    REMOTE_HASH)
+    REMOTE_HASH
+    EXTRA_VARS
+        GMX_SOURCE_DOI
+    )
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
      $<TARGET_OBJECTS:libgromacs_external>
      $<TARGET_OBJECTS:libgromacs_generated>)
@@ -244,14 +255,23 @@ check_cxx_compiler_flag("-Wno-unused -Wno-unused-parameter" HAS_NO_UNUSED)
 check_cxx_compiler_flag(-Wno-missing-declarations HAS_NO_MISSING_DECL)
 check_cxx_compiler_flag(-Wno-missing-prototypes HAS_NO_MISSING_PROTO)
 check_cxx_compiler_flag(/wd4101 HAS_NO_MSVC_UNUSED)
-check_cxx_compiler_flag(-wd1419 HAS_DECL_IN_SOURCE)
+if (NOT MSVC)
+    check_cxx_compiler_flag(-wd1419 HAS_DECL_IN_SOURCE)
+endif()
 if (HAS_NO_UNUSED)
     target_compile_options(libgromacs_generated PRIVATE "-Wno-unused;-Wno-unused-parameter")
 endif()
 if (HAS_NO_MISSING_DECL)
     target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-declarations")
 endif()
-if (HAS_NO_MISSING_PROTO)
+# TODO The group scheme kernels don't use proper function prototype
+# declarations, and clang warns about such use, which we suppress
+# rather than fix. We would prefer to use no suppressions. However
+# other compilers do not support such a warning suppression for C++
+# source files, and issue warnings about that. Remove the use of
+# -Wno-missing-prototypes here and above when the group scheme is
+# removed.
+if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
 endif()
 if (HAS_NO_MSVC_UNUSED)
@@ -308,6 +328,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
      /wd28199 #uninitialized memory
      # For compile time constant (e.g. templates) the following warnings have flase postives
      /wd6239  #(<non-zero> && <expr>)
+     /wd6240  #(<expr> && <non-zero>)
      /wd6294  #Ill-defined for-loop
      /wd6326  #comparison of constant with other constant
      /wd28020 #expression involving paramter is not true
@@ -364,8 +385,52 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
 endif()
 
 if(GMX_USE_OPENCL)
-    set(OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS})
+    # Install the utility headers
+    file(GLOB OPENCL_INSTALLED_FILES
+        gpu_utils/vectype_ops.clh
+        gpu_utils/device_utils.clh
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/gpu_utils
+        COMPONENT libraries)
+    file(GLOB OPENCL_INSTALLED_FILES
+        pbcutil/ishift.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/pbcutil
+        COMPONENT libraries)
 
-    install(FILES ${OPENCL_KERNELS} DESTINATION
-        ${GMX_INSTALL_OCLDIR} COMPONENT libraries)
+    # Install the NB source and headers
+    file(GLOB OPENCL_INSTALLED_FILES
+        mdlib/nbnxn_consts.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib
+        COMPONENT libraries)
+    file(GLOB OPENCL_INSTALLED_FILES
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.cl
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_pruneonly.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen_add_twincut.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_utils.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_consts.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib/nbnxn_ocl
+        COMPONENT libraries)
+
+    # Install the PME source and headers
+    file(GLOB OPENCL_INSTALLED_FILES
+        ewald/pme-spread.clh
+        ewald/pme-solve.clh
+        ewald/pme-gather.clh
+        ewald/pme-gpu-utils.clh
+        ewald/pme-program.cl
+        ewald/pme-gpu-types.h
+        )
+    install(FILES ${OPENCL_INSTALLED_FILES}
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/ewald
+        COMPONENT libraries)
 endif()

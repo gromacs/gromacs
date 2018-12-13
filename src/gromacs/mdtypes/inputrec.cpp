@@ -57,6 +57,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
 
@@ -641,6 +642,9 @@ static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
     PS("pull-print-components", EBOOL(pull->bPrintComp));
     PI("pull-nstxout", pull->nstxout);
     PI("pull-nstfout", pull->nstfout);
+    PS("pull-pbc-ref-prev-step-com", EBOOL(pull->bSetPbcRefToPrevStepCOM));
+    PS("pull-xout-average", EBOOL(pull->bXOutAverage));
+    PS("pull-fout-average", EBOOL(pull->bFOutAverage));
     PI("pull-ngroups", pull->ngroup);
     for (g = 0; g < pull->ngroup; g++)
     {
@@ -653,7 +657,7 @@ static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
     }
 }
 
-static void pr_awh_bias_dim(FILE *fp, int indent, gmx::AwhDimParams *awhDimParams, char *prefix)
+static void pr_awh_bias_dim(FILE *fp, int indent, gmx::AwhDimParams *awhDimParams, const char *prefix)
 {
     pr_indent(fp, indent);
     indent++;
@@ -670,7 +674,7 @@ static void pr_awh_bias_dim(FILE *fp, int indent, gmx::AwhDimParams *awhDimParam
     PR("cover-diameter", awhDimParams->coverDiameter);
 }
 
-static void pr_awh_bias(FILE *fp, int indent, gmx::AwhBiasParams *awhBiasParams, char *prefix)
+static void pr_awh_bias(FILE *fp, int indent, gmx::AwhBiasParams *awhBiasParams, const char *prefix)
 {
     char opt[STRLEN];
 
@@ -703,30 +707,18 @@ static void pr_awh_bias(FILE *fp, int indent, gmx::AwhBiasParams *awhBiasParams,
 
 static void pr_awh(FILE *fp, int indent, gmx::AwhParams *awhParams)
 {
-    int  k;
-    char opt[STRLEN], prefix[STRLEN];
+    PS("awh-potential", EAWHPOTENTIAL(awhParams->ePotential));
+    PI("awh-seed", awhParams->seed);
+    PI("awh-nstout", awhParams->nstOut);
+    PI("awh-nstsample", awhParams->nstSampleCoord);
+    PI("awh-nsamples-update", awhParams->numSamplesUpdateFreeEnergy);
+    PS("awh-share-bias-multisim", EBOOL(awhParams->shareBiasMultisim));
+    PI("awh-nbias", awhParams->numBias);
 
-    sprintf(prefix, "%s", "awh");
-
-    sprintf(opt, "%s-potential", prefix);
-    PS(opt, EAWHPOTENTIAL(awhParams->ePotential));
-    sprintf(opt, "%s-seed", prefix);
-    PI(opt, awhParams->seed);
-    sprintf(opt, "%s-nstout", prefix);
-    PI(opt, awhParams->nstOut);
-    sprintf(opt, "%s-nstsample", prefix);
-    PI(opt, awhParams->nstSampleCoord);
-    sprintf(opt, "%s-nsamples-update", prefix);
-    PI(opt, awhParams->numSamplesUpdateFreeEnergy);
-    sprintf(opt, "%s-share-bias-multisim", prefix);
-    PS(opt, EBOOL(awhParams->shareBiasMultisim));
-    sprintf(opt, "%s-nbias", prefix);
-    PI(opt, awhParams->numBias);
-
-    for (k = 0; k < awhParams->numBias; k++)
+    for (int k = 0; k < awhParams->numBias; k++)
     {
-        sprintf(prefix, "awh%d", k + 1);
-        pr_awh_bias(fp, indent, &awhParams->awhBiasParams[k], prefix);
+        auto prefix = gmx::formatString("awh%d", k + 1);
+        pr_awh_bias(fp, indent, &awhParams->awhBiasParams[k], prefix.c_str());
     }
 }
 

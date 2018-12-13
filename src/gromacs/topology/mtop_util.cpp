@@ -45,6 +45,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
@@ -740,6 +741,8 @@ static void blockacat(t_blocka *dest, const t_blocka *src, int copies,
         dest->nr += src->nr;
     }
     dest->index[dest->nr] = dest->nra;
+    dest->nalloc_index    = dest->nr;
+    dest->nalloc_a        = dest->nra;
 }
 
 static void ilistcat(int                    ftype,
@@ -1044,15 +1047,84 @@ static void copyExclsFromMtop(const gmx_mtop_t &mtop,
     }
 }
 
-static void gen_local_top(const gmx_mtop_t &mtop,
-                          bool              freeEnergyInteractionsAtEnd,
-                          bool              bMergeConstr,
-                          gmx_localtop_t   *top)
+/*! \brief Updates inter-molecular exclusion lists
+ *
+ * This function updates inter-molecular exclusions to exclude all
+ * non-bonded interactions between a given list of atoms
+ *
+ * \param[inout]    excls   existing exclusions in local topology
+ * \param[in]       ids     list of global IDs of atoms
+ */
+static void addMimicExclusions(t_blocka                      *excls,
+                               const gmx::ArrayRef<const int> ids)
+{
+    t_blocka inter_excl {};
+    init_blocka(&inter_excl);
+    size_t   n_q = ids.size();
+
+    inter_excl.nr  = excls->nr;
+    inter_excl.nra = n_q * n_q;
+
+    size_t total_nra = n_q * n_q;
+
+    snew(inter_excl.index, excls->nr + 1);
+    snew(inter_excl.a, total_nra);
+
+    for (int i = 0; i < excls->nr; ++i)
+    {
+        inter_excl.index[i] = 0;
+    }
+
+    /* Here we loop over the list of QM atom ids
+     *  and create exclusions between all of them resulting in
+     *  n_q * n_q sized exclusion list
+     */
+    int prev_index = 0;
+    for (int k = 0; k < inter_excl.nr; ++k)
+    {
+        inter_excl.index[k] = prev_index;
+        for (long i = 0; i < ids.size(); i++)
+        {
+            if (k != ids[i])
+            {
+                continue;
+            }
+            size_t index = n_q * i;
+            inter_excl.index[ids[i]]     = index;
+            prev_index                   = index + n_q;
+            for (size_t j = 0; j < n_q; ++j)
+            {
+                inter_excl.a[n_q * i + j] = ids[j];
+            }
+        }
+    }
+    inter_excl.index[ids[n_q - 1] + 1] = n_q * n_q;
+
+    inter_excl.index[inter_excl.nr] = n_q * n_q;
+
+    gmx::ExclusionBlocks qmexcl2 {};
+    initExclusionBlocks(&qmexcl2, excls->nr);
+    gmx::blockaToExclusionBlocks(&inter_excl, &qmexcl2);
+
+    // Merge the created exclusion list with the existing one
+    gmx::mergeExclusions(excls, &qmexcl2);
+    gmx::doneExclusionBlocks(&qmexcl2);
+}
+
+static void gen_local_top(const gmx_mtop_t  &mtop,
+                          bool               freeEnergyInteractionsAtEnd,
+                          bool               bMergeConstr,
+                          gmx_localtop_t    *top)
 {
     copyAtomtypesFromMtop(mtop, &top->atomtypes);
     copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
     copyCgsFromMtop(mtop, &top->cgs);
     copyExclsFromMtop(mtop, &top->excls);
+    if (!mtop.intermolecularExclusionGroup.empty())
+    {
+        addMimicExclusions(&top->excls,
+                           mtop.intermolecularExclusionGroup);
+    }
 }
 
 gmx_localtop_t *
@@ -1161,16 +1233,15 @@ std::vector<int> get_atom_index(const gmx_mtop_t *mtop)
 {
 
     std::vector<int>          atom_index;
-    gmx_mtop_atomloop_block_t aloopb = gmx_mtop_atomloop_block_init(mtop);
+    gmx_mtop_atomloop_all_t   aloop = gmx_mtop_atomloop_all_init(mtop);
     const t_atom             *atom;
-    int                       nmol, j = 0;
-    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    int                       at_global;
+    while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
     {
         if (atom->ptype == eptAtom)
         {
-            atom_index.push_back(j);
+            atom_index.push_back(at_global);
         }
-        j++;
     }
     return atom_index;
 }

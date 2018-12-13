@@ -15,5 +15,4 @@ mdlib -> pulling
 mdlib -> awh
 simd -> hardware
 gpu_utils -> hardware
-topology -> listed-forces
 listed-forces -> mdlib

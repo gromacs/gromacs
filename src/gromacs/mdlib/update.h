@@ -123,7 +123,7 @@ void update_coords(int64_t                              step,
                    const t_inputrec                    *inputrec, /* input record and box stuff	*/
                    const t_mdatoms                     *md,
                    t_state                             *state,
-                   gmx::PaddedArrayRef<gmx::RVec>       f, /* forces on home particles */
+                   gmx::ArrayRefWithPadding<gmx::RVec>  f, /* forces on home particles */
                    const t_fcdata                      *fcd,
                    const gmx_ekindata_t                *ekind,
                    const matrix                         M,
@@ -135,7 +135,9 @@ void update_coords(int64_t                              step,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
-                                            const t_mdatoms *md, t_state *state, const gmx_update_t *upd,
+                                            const t_mdatoms *md,
+                                            gmx::ArrayRef<gmx::RVec> v,
+                                            const gmx_update_t *upd,
                                             const gmx::Constraints *constr);
 
 void constrain_velocities(int64_t                        step,
@@ -216,7 +218,9 @@ void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt
                       std::vector<double> &therm_integral); //NOLINT(google-runtime-references)
 
 void andersen_tcoupl(const t_inputrec *ir, int64_t step,
-                     const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac);
+                     const t_commrec *cr, const t_mdatoms *md,
+                     gmx::ArrayRef<gmx::RVec> v,
+                     real rate, const gmx_bool *randomize, const real *boltzfac);
 
 void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real dt,
                        double xi[], double vxi[], const t_extmass *MassQ);

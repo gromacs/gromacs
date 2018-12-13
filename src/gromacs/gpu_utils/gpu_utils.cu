@@ -68,7 +68,7 @@
  */
 static int  cuda_max_device_count = 32;
 
-static bool cudaProfilerRun      = ((getenv("NVPROF_ID") != NULL));
+static bool cudaProfilerRun      = ((getenv("NVPROF_ID") != nullptr));
 
 /** Dummy kernel used for sanity checking. */
 static __global__ void k_dummy_test(void)
@@ -87,7 +87,8 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
         gmx_fatal(FARGS,
                   "The %s binary does not include support for the CUDA architecture "
                   "of the selected GPU (device ID #%d, compute capability %d.%d). "
-                  "By default, GROMACS supports all common architectures, so your GPU "
+                  "By default, GROMACS supports all architectures of compute "
+                  "capability >= 3.0, so your GPU "
                   "might be rare, or some architectures were disabled in the build. "
                   "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
                   "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture.",
@@ -96,16 +97,6 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
     }
 
     CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
-
-    if (devInfo->prop.major >= 3 && attributes.ptxVersion < 30)
-    {
-        gmx_fatal(FARGS,
-                  "The GPU device code was compiled at runtime from 2.0 source which is "
-                  "not compatible with the selected GPU (device ID #%d, compute capability %d.%d). "
-                  "Pass the appropriate target in GMX_CUDA_TARGET_SM or a >=30 value to GMX_CUDA_TARGET_COMPUTE.",
-                  devInfo->id,
-                  devInfo->prop.major, devInfo->prop.minor);
-    }
 }
 
 bool isHostMemoryPinned(const void *h_ptr)
@@ -229,7 +220,7 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     config.blockSize[0] = 512;
     const auto         dummyArguments = prepareGpuKernelArguments(k_dummy_test, config);
     launchGpuKernel(k_dummy_test, config, nullptr, "Dummy kernel", dummyArguments);
-    if (cudaThreadSynchronize() != cudaSuccess)
+    if (cudaDeviceSynchronize() != cudaSuccess)
     {
         return -1;
     }
@@ -311,7 +302,7 @@ gmx_device_info_t *getDeviceInfo(const gmx_gpu_info_t &gpu_info,
  */
 static bool is_gmx_supported_gpu(const cudaDeviceProp *dev_prop)
 {
-    return (dev_prop->major >= 2);
+    return (dev_prop->major >= 3);
 }
 
 /*! \brief Checks if a GPU with a given ID is supported by the native GROMACS acceleration.
@@ -421,19 +412,12 @@ bool canDetectGpus(std::string *errorMessage)
 
 void findGpus(gmx_gpu_info_t *gpu_info)
 {
-    int                i, ndev, checkres;
-    cudaError_t        stat;
-    cudaDeviceProp     prop;
-    gmx_device_info_t *devs;
-
     assert(gpu_info);
 
     gpu_info->n_dev_compatible = 0;
 
-    ndev    = 0;
-    devs    = NULL;
-
-    stat = cudaGetDeviceCount(&ndev);
+    int         ndev;
+    cudaError_t stat = cudaGetDeviceCount(&ndev);
     if (stat != cudaSuccess)
     {
         GMX_THROW(gmx::InternalError("Invalid call of findGpus() when CUDA API returned an error, perhaps "
@@ -443,10 +427,12 @@ void findGpus(gmx_gpu_info_t *gpu_info)
     // We expect to start device support/sanity checks with a clean runtime error state
     gmx::ensureNoPendingCudaError("");
 
+    gmx_device_info_t *devs;
     snew(devs, ndev);
-    for (i = 0; i < ndev; i++)
+    for (int i = 0; i < ndev; i++)
     {
-        checkres = is_gmx_supported_gpu_id(i, &prop);
+        cudaDeviceProp prop;
+        int            checkres = is_gmx_supported_gpu_id(i, &prop);
 
         devs[i].id   = i;
         devs[i].prop = prop;
@@ -540,8 +526,8 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
     }
     else
     {
-        *nb_alloc = NULL;
-        *nb_free  = NULL;
+        *nb_alloc = nullptr;
+        *nb_free  = nullptr;
     }
 }
 

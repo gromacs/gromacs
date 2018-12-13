@@ -16,6 +16,10 @@ For getting, building and installing |Gromacs|, see the
 For background on algorithms and implementations, see the
 :ref:`reference manual part <gmx-reference-manual-rst>` of the documentation.
 
+|GMX_MANUAL_DOI_STRING|
+
+|GMX_SOURCE_DOI_STRING|
+
 .. TODO This is going to require more organization now that
    we are getting more content available.
 
@@ -37,3 +41,5 @@ For background on algorithms and implementations, see the
    terminology
    environment-variables
    floating-point
+   security
+   deprecation-policy

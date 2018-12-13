@@ -182,7 +182,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_x2top, "x2top",
                    "Generate a primitive topology from coordinates");
 
-    registerModuleNoNice(manager, &gmx_mdrun, "mdrun",
+    registerModuleNoNice(manager, &gmx::gmx_mdrun, "mdrun",
                          "Perform a simulation, do a normal mode analysis or an energy minimization");
 
     gmx::ICommandLineOptionsModule::registerModuleFactory(
@@ -231,8 +231,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_xpm2ps, "xpm2ps",
                    "Convert XPM (XPixelMap) matrices to postscript or XPM");
 
-    registerModule(manager, &gmx_anadock, "anadock",
-                   "Cluster structures from Autodock runs");
     registerModule(manager, &gmx_anaeig, "anaeig",
                    "Analyze eigenvectors/normal modes");
     registerModule(manager, &gmx_analyze, "analyze",
@@ -278,8 +276,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Analyze density of states and properties based on that");
     registerModule(manager, &gmx_dyecoupl, "dyecoupl",
                    "Extract dye dynamics from trajectories");
-    registerModule(manager, &gmx_dyndom, "dyndom",
-                   "Interpolate and extrapolate structure rotations");
     registerModule(manager, &gmx_enemat, "enemat",
                    "Extract an energy matrix from an energy file");
     registerModule(manager, &gmx_energy, "energy",
@@ -304,8 +300,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate residue contact maps");
     registerModule(manager, &gmx_mindist, "mindist",
                    "Calculate the minimum distance between two groups");
-    registerModule(manager, &gmx_morph, "morph",
-                   "Interpolate linearly between conformations");
     registerModule(manager, &gmx_msd, "msd",
                    "Calculates mean square displacements");
     registerModule(manager, &gmx_nmeig, "nmeig",
@@ -418,10 +412,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Tools");
         group.addModule("analyze");
         group.addModule("awh");
-        group.addModule("dyndom");
         group.addModule("filter");
         group.addModule("lie");
-        group.addModule("morph");
         group.addModule("pme_error");
         group.addModule("sham");
         group.addModule("spatial");
@@ -434,7 +426,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("mk_angndx");
         group.addModule("trjorder");
         group.addModule("xpm2ps");
-        group.addModule("report");
+        group.addModule("report-methods");
     }
     {
         gmx::CommandLineModuleGroup group =
@@ -475,7 +467,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Structural properties");
-        group.addModule("anadock");
         group.addModule("bundle");
         group.addModule("clustsize");
         group.addModule("disre");

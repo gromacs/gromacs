@@ -35,11 +35,18 @@ In the most general case of a triclinic unit cell, the space in divided
 with a 1-, 2-, or 3-D grid in parallelepipeds that we call domain
 decomposition cells. Each cell is assigned to a particle-particle rank.
 The system is partitioned over the ranks at the beginning of each MD
-step in which neighbor searching is performed. Since the neighbor
-searching is based on charge groups, charge groups are also the units
-for the domain decomposition. Charge groups are assigned to the cell
-where their center of geometry resides. Before the forces can be
-calculated, the coordinates from some neighboring cells need to be
+step in which neighbor searching is performed. The minimum unit of
+partitioning can be an atom, or a charge group with the (deprecated)
+group cut-off scheme or an update group. An update group is a group
+of atoms that has dependencies during update, which occurs when using
+constraints and/or virtual sites. Thus different update groups can be
+updated independenly. Currently update groups can only be used with at most
+two sequential constraints, which is the case when only constraining
+bonds involving hydrogen atoms. The advantages of update groups are that
+no communication is required in the update and that this allows updating part
+of the system while computing forces for other parts. Atom groups are assigned
+to the cell where their center of geometry resides. Before the forces can
+be calculated, the coordinates from some neighboring cells need to be
 communicated, and after the forces are calculated, the forces need to be
 communicated in the other direction. The communication and force
 assignment is based on zones that can cover one or multiple cells. An
@@ -229,6 +236,7 @@ by the minimum cell size :math:`L_C`, which has the following lower
 limit:
 
 .. math:: L_C \geq \max(r_{\mathrm{mb}},r_{\mathrm{con}})
+          :label: eqnDDmincellsize
 
 Without dynamic load balancing the system is actually allowed to scale
 beyond this limit when pressure scaling is used. **Note** that for

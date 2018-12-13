@@ -180,6 +180,16 @@ Run control
       :mdp-value:`integrator=tpic` gives identical results to
       single-rank :mdp-value:`integrator=tpic`.
 
+   .. mdp-value:: mimic
+
+      Enable MiMiC QM/MM coupling to run hybrid molecular dynamics.
+      Keey in mind that its required to launch CPMD compiled with MiMiC as well.
+      In this mode all options regarding integration (T-coupling, P-coupling,
+      timestep and number of steps) are ignored as CPMD will do the integration
+      instead. Options related to forces computation (cutoffs, PME parameters,
+      etc.) are working as usual. Atom selection to define QM atoms is read
+      from :mdp:`QMMM-grps`
+
 .. mdp:: tinit
 
         (0) [ps]
@@ -1102,7 +1112,7 @@ Pressure coupling
    .. mdp-value:: Berendsen
 
       Exponential relaxation pressure coupling with time constant
-      :mdp:`tau-p`. The box is scaled every timestep. It has been
+      :mdp:`tau-p`. The box is scaled every :mdp:`nstpcouple` steps. It has been
       argued that this does not yield a correct thermodynamic
       ensemble, but it is the most efficient way to scale a box at the
       beginning of a run.
@@ -1612,6 +1622,44 @@ pull-coord2-vec, pull-coord2-k, and so on.
    frequency for writing out the force of all the pulled group
    (0 is never)
 
+.. mdp:: pull-pbc-ref-prev-step-com
+
+   .. mdp-value:: no
+
+      Use the reference atom (:mdp:`pull-group1-pbcatom`) for the
+      treatment of periodic boundary conditions.
+
+   .. mdp-value:: yes
+
+      Use the COM of the previous step as reference for the treatment
+      of periodic boundary conditions. The reference is initialized
+      using the reference atom (:mdp:`pull-group1-pbcatom`), which should
+      be located centrally in the group. Using the COM from the
+      previous step can be useful if one or more pull groups are large.
+
+.. mdp:: pull-xout-average
+
+   .. mdp-value:: no
+
+      Write the instantaneous coordinates for all the pulled groups.
+
+   .. mdp-value:: yes
+
+      Write the average coordinates (since last output) for all the
+      pulled groups. N.b., some analysis tools might expect instantaneous
+      pull output.
+
+.. mdp:: pull-fout-average
+
+   .. mdp-value:: no
+
+      Write the instantaneous force for all the pulled groups.
+
+   .. mdp-value:: yes
+
+      Write the average force (since last output) for all the
+      pulled groups. N.b., some analysis tools might expect instantaneous
+      pull output.
 
 .. mdp:: pull-ngroups
 
@@ -1649,7 +1697,10 @@ pull-coord2-vec, pull-coord2-k, and so on.
    vector. For determining the COM, all atoms in the group are put at
    their periodic image which is closest to
    :mdp:`pull-group1-pbcatom`. A value of 0 means that the middle
-   atom (number wise) is used. This parameter is not used with
+   atom (number wise) is used, which is only safe for small groups.
+   :ref:`gmx grompp` checks that the maximum distance from the reference
+   atom (specifically chosen, or not) to the other atoms in the group
+   is not too large. This parameter is not used with
    :mdp:`pull-coord1-geometry` cylinder. A value of -1 turns on cosine
    weighting, which is useful for a group of molecules in a periodic
    system, *e.g.* a water slab (see Engin et al. J. Chem. Phys. B
@@ -3030,7 +3081,7 @@ Mixed quantum/classical molecular dynamics
 
 .. mdp:: QMMM-grps
 
-   groups to be descibed at the QM level
+   groups to be descibed at the QM level (works also in case of MiMiC QM/MM)
 
 .. mdp:: QMMMscheme
 

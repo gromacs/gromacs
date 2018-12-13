@@ -65,6 +65,7 @@ if (GMX_USE_CUDA)
         )
     gmx_compile_cpp_as_cuda(
         pme-gpu-internal.cpp
+        pme-gpu-program.cpp
         pme-gpu-timings.cpp
         )
 elseif (GMX_USE_OPENCL)

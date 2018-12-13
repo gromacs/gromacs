@@ -33,8 +33,10 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(MathUnitTests math-test
+                  arrayrefwithpadding.cpp
                   dofit.cpp
                   functions.cpp
                   invertmatrix.cpp
+                  paddedvector.cpp
                   vectypes.cpp
                   )

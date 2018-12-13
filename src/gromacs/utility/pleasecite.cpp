@@ -41,6 +41,7 @@
 #include <cstring>
 
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -211,11 +212,6 @@ void please_cite(FILE *fp, const char *key)
           "Flexible constraints: an adiabatic treatment of quantum degrees of freedom, with application to the flexible and polarizable MCDHO model for water",
           "J. Chem. Phys.",
           116, 2002, "9602-9610" },
-        { "Hetenyi2002b",
-          "Csaba Hetenyi and David van der Spoel",
-          "Efficient docking of peptides to proteins without prior knowledge of the binding site.",
-          "Prot. Sci.",
-          11, 2002, "1729-1737" },
         { "Hess2003",
           "B. Hess and R.M. Scheek",
           "Orientation restraints in molecular dynamics simulations using time and ensemble averaging",
@@ -376,6 +372,11 @@ void please_cite(FILE *fp, const char *key)
           "Quantifying Artifacts in Ewald Simulations of Inhomogeneous Systems with a Net Charge",
           "J. Chem. Theory Comput.",
           10, 2014, "381-393" },
+        { "Spoel2018a",
+          "D. van der Spoel, M. M. Ghahremanpour, J. Lemkul",
+          "Small Molecule Thermochemistry: A Tool For Empirical Force Field Development",
+          "J. Phys. Chem. A",
+          122, 2018, "8982-8988" },
         { "Lindahl2014",
           "V. Lindahl, J. Lidmar, B. Hess",
           "Accelerated weight histogram method for exploring free energy landscapes",
@@ -416,6 +417,31 @@ void please_cite(FILE *fp, const char *key)
     {
         fprintf(fp, "Entry %s not found in citation database\n", key);
     }
+    fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
+    fflush(fp);
+}
+
+void
+writeSourceDoi(FILE *fp)
+{
+    /* Check if we are in release mode or not.
+     * TODO The check should properly target something else than
+     * the string being empty
+     */
+    if (strlen(gmxDOI()) == 0)
+    {
+        /* Not a release build, return without printing anything */
+        return;
+    }
+
+    const char *doiString = wrap_lines(gmxDOI(), LINE_WIDTH, 0, FALSE);
+
+    if (fp == nullptr)
+    {
+        return;
+    }
+    fprintf(fp, "\n++++ PLEASE CITE THE DOI FOR THIS VERSION OF GROMACS ++++\n");
+    fprintf(fp, "%s%s\n", "https://doi.org/", doiString);
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
     fflush(fp);
 }

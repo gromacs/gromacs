@@ -149,13 +149,14 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
         gmx_ddzone_t &zp  = (d == 1) ? comm->zone_d1[0] : comm->zone_d2[0][0];
 
         /* Copy the base sizes of the home zone */
-        zp.min0 = cell_ns_x0[dim];
-        zp.max1 = cell_ns_x1[dim];
-        zp.min1 = cell_ns_x1[dim];
-        zp.mch0 = cell_ns_x0[dim];
-        zp.mch1 = cell_ns_x1[dim];
-        zp.p1_0 = cell_ns_x0[dim];
-        zp.p1_1 = cell_ns_x1[dim];
+        zp.min0    = cell_ns_x0[dim];
+        zp.max1    = cell_ns_x1[dim];
+        zp.min1    = cell_ns_x1[dim];
+        zp.mch0    = cell_ns_x0[dim];
+        zp.mch1    = cell_ns_x1[dim];
+        zp.p1_0    = cell_ns_x0[dim];
+        zp.p1_1    = cell_ns_x1[dim];
+        zp.dataSet = 1;
     }
 
     gmx::ArrayRef<DDCellsizesWithDlb> cellsizes = comm->cellsizesWithDlb;
@@ -180,15 +181,18 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
          */
         for (int d1 = d; d1 < dd->ndim-1; d1++)
         {
+            gmx_ddzone_t &buf = buf_s[pos];
+
             /* We invert the order to be able to use the same loop for buf_e */
-            buf_s[pos].min0 = extr_s[d1][1];
-            buf_s[pos].max1 = extr_s[d1][0];
-            buf_s[pos].min1 = extr_s[d1][2];
-            buf_s[pos].mch0 = 0;
-            buf_s[pos].mch1 = 0;
+            buf.min0    = extr_s[d1][1];
+            buf.max1    = extr_s[d1][0];
+            buf.min1    = extr_s[d1][2];
+            buf.mch0    = 0;
+            buf.mch1    = 0;
             /* Store the cell corner of the dimension we communicate along */
-            buf_s[pos].p1_0 = comm->cell_x0[dim];
-            buf_s[pos].p1_1 = 0;
+            buf.p1_0    = comm->cell_x0[dim];
+            buf.p1_1    = 0;
+            buf.dataSet = 1;
             pos++;
         }
 
@@ -356,6 +360,20 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
                     pos++;
                 }
             }
+            else
+            {
+                if (d == 1 || (d == 0 && dd->ndim == 3))
+                {
+                    for (int i = d; i < 2; i++)
+                    {
+                        comm->zone_d2[1 - d][i].dataSet = 0;
+                    }
+                }
+                if (d == 0)
+                {
+                    comm->zone_d1[1].dataSet = 0;
+                }
+            }
         }
     }
 
@@ -364,12 +382,15 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
         int dim = dd->dim[1];
         for (int i = 0; i < 2; i++)
         {
-            if (debug)
+            if (comm->zone_d1[i].dataSet != 0)
             {
-                print_ddzone(debug, 1, i, 0, &comm->zone_d1[i]);
+                if (debug)
+                {
+                    print_ddzone(debug, 1, i, 0, &comm->zone_d1[i]);
+                }
+                cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d1[i].min0);
+                cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d1[i].max1);
             }
-            cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d1[i].min0);
-            cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d1[i].max1);
         }
     }
     if (dd->ndim >= 3)
@@ -379,12 +400,15 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
         {
             for (int j = 0; j < 2; j++)
             {
-                if (debug)
+                if (comm->zone_d2[i][j].dataSet != 0)
                 {
-                    print_ddzone(debug, 2, i, j, &comm->zone_d2[i][j]);
+                    if (debug)
+                    {
+                        print_ddzone(debug, 2, i, j, &comm->zone_d2[i][j]);
+                    }
+                    cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d2[i][j].min0);
+                    cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d2[i][j].max1);
                 }
-                cell_ns_x0[dim] = std::min(cell_ns_x0[dim], comm->zone_d2[i][j].min0);
-                cell_ns_x1[dim] = std::max(cell_ns_x1[dim], comm->zone_d2[i][j].max1);
             }
         }
     }
@@ -1881,7 +1905,8 @@ static void clearCommSetupData(dd_comm_setup_work_t *work)
 static void setup_dd_communication(gmx_domdec_t *dd,
                                    matrix box, gmx_ddbox_t *ddbox,
                                    t_forcerec *fr,
-                                   t_state *state, PaddedRVecVector *f)
+                                   t_state *state,
+                                   PaddedVector<gmx::RVec> *f)
 {
     int                    dim_ind, dim, dim0, dim1, dim2, dimd, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
@@ -1892,7 +1917,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     gmx_domdec_comm_dim_t *cd;
     cginfo_mb_t           *cginfo_mb;
     gmx_bool               bBondComm, bDist2B, bDistMB, bDistBonded;
-    real                   r_comm2, r_bcomm2;
     dd_corners_t           corners;
     rvec                  *cg_cm, *normal, *v_d, *v_0 = nullptr, *v_1 = nullptr;
     real                   skew_fac2_d, skew_fac_01;
@@ -1921,7 +1945,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             cg_cm = fr->cg_cm;
             break;
         case ecutsVERLET:
-            cg_cm = as_rvec_array(state->x.data());
+            cg_cm = state->x.rvec_array();
             break;
         default:
             gmx_incons("unimplemented");
@@ -1935,8 +1959,8 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     /* Do we need to determine extra distances for only two-body bondeds? */
     bDist2B = (bBondComm && !bDistMB);
 
-    r_comm2  = gmx::square(comm->cutoff);
-    r_bcomm2 = gmx::square(comm->cutoff_mbody);
+    const real r_comm2  = gmx::square(domainToDomainIntoAtomToDomainCutoff(*comm, comm->cutoff));
+    const real r_bcomm2 = gmx::square(domainToDomainIntoAtomToDomainCutoff(*comm, comm->cutoff_mbody));
 
     if (debug)
     {
@@ -2186,7 +2210,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             }
             else
             {
-                cg_cm = as_rvec_array(state->x.data());
+                cg_cm = state->x.rvec_array();
             }
             /* Communicate cg_cm */
             gmx::ArrayRef<gmx::RVec> rvecBufferRef;
@@ -2802,7 +2826,8 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     dd->ncg_home = sort->sorted.size();
     if (debug)
     {
-        fprintf(debug, "Set the new home charge group count to %d\n",
+        fprintf(debug, "Set the new home %s count to %d\n",
+                dd->comm->bCGs ? "charge group" : "atom",
                 dd->ncg_home);
     }
 
@@ -2959,25 +2984,25 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 }
 
 // TODO Remove fplog when group scheme and charge groups are gone
-void dd_partition_system(FILE                *fplog,
-                         const gmx::MDLogger &mdlog,
-                         int64_t              step,
-                         const t_commrec     *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdAtoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx::Constraints    *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose)
+void dd_partition_system(FILE                    *fplog,
+                         const gmx::MDLogger     &mdlog,
+                         int64_t                  step,
+                         const t_commrec         *cr,
+                         gmx_bool                 bMasterState,
+                         int                      nstglobalcomm,
+                         t_state                 *state_global,
+                         const gmx_mtop_t        *top_global,
+                         const t_inputrec        *ir,
+                         t_state                 *state_local,
+                         PaddedVector<gmx::RVec> *f,
+                         gmx::MDAtoms            *mdAtoms,
+                         gmx_localtop_t          *top_local,
+                         t_forcerec              *fr,
+                         gmx_vsite_t             *vsite,
+                         gmx::Constraints        *constr,
+                         t_nrnb                  *nrnb,
+                         gmx_wallcycle           *wcycle,
+                         gmx_bool                 bVerbose)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -3217,7 +3242,7 @@ void dd_partition_system(FILE                *fplog,
         if (fr->cutoff_scheme == ecutsGROUP)
         {
             calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
+                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
         }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
@@ -3248,7 +3273,7 @@ void dd_partition_system(FILE                *fplog,
         {
             /* Redetermine the cg COMs */
             calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
+                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
         }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
@@ -3303,7 +3328,7 @@ void dd_partition_system(FILE                *fplog,
 
     ncg_home_old = dd->ncg_home;
 
-    /* When repartitioning we mark charge groups that will move to neighboring
+    /* When repartitioning we mark atom groups that will move to neighboring
      * DD cells, but we do not move them right away for performance reasons.
      * Thus we need to keep track of how many charge groups will move for
      * obtaining correct local charge group / atom counts.
@@ -3463,7 +3488,7 @@ void dd_partition_system(FILE                *fplog,
 
     /*
        write_dd_pdb("dd_home",step,"dump",top_global,cr,
-                 -1,as_rvec_array(state_local->x.data()),state_local->box);
+                 -1,state_local->x.rvec_array(),state_local->box);
      */
 
     wallcycle_sub_start(wcycle, ewcsDD_MAKETOP);
@@ -3476,7 +3501,7 @@ void dd_partition_system(FILE                *fplog,
     dd_make_local_top(dd, &comm->zones, dd->npbcdim, state_local->box,
                       comm->cellsize_min, np,
                       fr,
-                      fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : as_rvec_array(state_local->x.data()),
+                      fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x.rvec_array(),
                       vsite, top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
@@ -3597,7 +3622,7 @@ void dd_partition_system(FILE                *fplog,
      * the last vsite construction, we need to communicate the constructing
      * atom coordinates again (for spreading the forces this MD step).
      */
-    dd_move_x_vsites(dd, state_local->box, as_rvec_array(state_local->x.data()));
+    dd_move_x_vsites(dd, state_local->box, state_local->x.rvec_array());
 
     wallcycle_sub_stop(wcycle, ewcsDD_TOPOTHER);
 
@@ -3605,7 +3630,7 @@ void dd_partition_system(FILE                *fplog,
     {
         dd_move_x(dd, state_local->box, state_local->x, nullWallcycle);
         write_dd_pdb("dd_dump", step, "dump", top_global, cr,
-                     -1, as_rvec_array(state_local->x.data()), state_local->box);
+                     -1, state_local->x.rvec_array(), state_local->box);
     }
 
     /* Store the partitioning step */

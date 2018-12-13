@@ -141,13 +141,13 @@ MDAtoms::~MDAtoms()
 
 void MDAtoms::resize(int newSize)
 {
-    chargeA_.resize(newSize);
+    chargeA_.resizeWithPadding(newSize);
     mdatoms_->chargeA = chargeA_.data();
 }
 
 void MDAtoms::reserve(int newCapacity)
 {
-    chargeA_.reserve(newCapacity);
+    chargeA_.reserveWithPadding(newCapacity);
     mdatoms_->chargeA = chargeA_.data();
 }
 
@@ -169,7 +169,7 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     md->bVCMgrps = FALSE;
     for (int i = 0; i < mtop.natoms; i++)
     {
-        if (getGroupType(&mtop.groups, egcVCM, i) > 0)
+        if (getGroupType(mtop.groups, egcVCM, i) > 0)
         {
             md->bVCMgrps = TRUE;
         }
@@ -247,16 +247,15 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 {
     gmx_bool              bLJPME;
     const t_grpopts      *opts;
-    const gmx_groups_t   *groups;
     int                   nthreads gmx_unused;
 
     bLJPME = EVDW_PME(ir->vdwtype);
 
     opts = &ir->opts;
 
-    groups = &mtop->groups;
+    const gmx_groups_t &groups = mtop->groups;
 
-    auto md = mdAtoms->mdatoms();
+    auto                md = mdAtoms->mdatoms();
     /* nindex>=0 indicates DD where we use an index */
     if (nindex >= 0)
     {
@@ -416,7 +415,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 else
                 {
                     /* The friction coefficient is mass/tau_t */
-                    fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
+                    fac = ir->delta_t/opts->tau_t[md->cTC ? groups.grpnr[egcTC][ag] : 0];
                     mA  = 0.5*atom.m*fac;
                     mB  = 0.5*atom.mB*fac;
                 }
@@ -516,16 +515,16 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             md->ptype[i]    = atom.ptype;
             if (md->cTC)
             {
-                md->cTC[i]    = groups->grpnr[egcTC][ag];
+                md->cTC[i]    = groups.grpnr[egcTC][ag];
             }
             md->cENER[i]    = getGroupType(groups, egcENER, ag);
             if (md->cACC)
             {
-                md->cACC[i]   = groups->grpnr[egcACC][ag];
+                md->cACC[i]   = groups.grpnr[egcACC][ag];
             }
             if (md->cVCM)
             {
-                md->cVCM[i]       = groups->grpnr[egcVCM][ag];
+                md->cVCM[i]       = groups.grpnr[egcVCM][ag];
             }
             if (md->cORF)
             {
@@ -534,17 +533,17 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
             if (md->cU1)
             {
-                md->cU1[i]        = groups->grpnr[egcUser1][ag];
+                md->cU1[i]        = groups.grpnr[egcUser1][ag];
             }
             if (md->cU2)
             {
-                md->cU2[i]        = groups->grpnr[egcUser2][ag];
+                md->cU2[i]        = groups.grpnr[egcUser2][ag];
             }
 
             if (ir->bQMMM)
             {
-                if (groups->grpnr[egcQMMM] == nullptr ||
-                    groups->grpnr[egcQMMM][ag] < groups->grps[egcQMMM].nr-1)
+                if (groups.grpnr[egcQMMM] == nullptr ||
+                    groups.grpnr[egcQMMM][ag] < groups.grps[egcQMMM].nr-1)
                 {
                     md->bQM[i]      = TRUE;
                 }

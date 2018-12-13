@@ -11,7 +11,7 @@
 
 # Test on ARM v7
 # Test ARM_NEON SIMD
-gcc-5 simd=ARM_NEON release-with-assert
+gcc-5 simd=ARM_NEON no-hwloc release-with-assert
 
 # Test on ARM v8
 # Test ARM_NEON_ASIMD SIMD
@@ -29,19 +29,20 @@ icc-17 simd=avx_256 npme=1 nranks=2 no-openmp  double fftpack release
 
 # Test CUDA build on a agent with no CUDA devices
 # Test without TNG support
-gcc-4.9 gpu cuda-7.0 openmp no-tng release-with-assert
+gcc-4.9 gpuhw=none cuda-10.0 openmp no-tng release-with-assert
 
 # Test non-default GMX_PREFER_STATIC_LIBS behavior
 # TODO enable this
 # msvc-2017 double no-threadmpi no-prefer-static-libs release-with-assert
 
 # Test with SSE2 + double
-icc-18 simd=sse2 double mkl release-with-assert
+# Test newest icc at time of release
+icc-19 simd=sse2 double mkl release-with-assert
 
 # Test SSE4.1 SIMD
 # Test single-rank GPU
 # Test clang + OpenMP + CUDA
-clang-4 simd=sse4.1 openmp nranks=1 gpu cuda-8.0 clang_cuda
+clang-4 simd=sse4.1 openmp nranks=1 gpuhw=nvidia cuda-8.0 clang_cuda
 
 # Test MPMD PME with library MPI
 # Test clang + OpenMP
@@ -51,15 +52,14 @@ clang-5 openmp simd=avx_128_fma npme=1 nranks=2 mpi
 # Test CMAKE_BUILD_TYPE=Release
 # Test OpenCL
 # Test bundled clFFT (developed by AMD) on NVIDIA OpenCL
-gcc-6 gpu npme=1 nranks=2 opencl cuda-7.5 simd=sse2 release
+gcc-6 npme=1 nranks=2 opencl-1.2 gpuhw=nvidia simd=sse2 release
 
 # Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
 # Test no hwloc build, tests internal CPU topology detection (mainly for x86)
-gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 no-hwloc release-with-assert
+gcc-5 gpuhw=nvidia nranks=4 gpu_id=1 cuda-8.0 no-hwloc release-with-assert
 
 # Test icc on Windows
-# Test newest icc at time of release
 # Test icc with SIMD in mixed precision in release mode
 icc-18 msvc-2017 fftpack simd=avx2_256 release
 
@@ -67,7 +67,7 @@ icc-18 msvc-2017 fftpack simd=avx2_256 release
 #gcc-7 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release
 
 # Test ARM HPC compier toolchain with armclang
-#armclang-18.2 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release-with-assert
+armclang-18.4 armhpc-18.4 openmp simd=ARM_NEON_ASIMD release-with-assert
 
 # TODO
 # Add SIMD + OpenMP + CUDA asan build

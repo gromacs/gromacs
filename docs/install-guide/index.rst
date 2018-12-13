@@ -83,6 +83,18 @@ appropriate value instead of ``xxx`` :
 * ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw3``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
 * ``-DCMAKE_BUILD_TYPE=Debug`` to build |Gromacs| in debug mode
 
+Building with MiMiC QM/MM support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MiMiC QM/MM interface integration will require linking against MiMiC
+communication library, that establishes the communication channel between
+|Gromacs| and CPMD. Check that the installation folder of the library
+is added to CMAKE_PREFIX_PATH if it is installed in non-standard location.
+Building QM/MM-capable version requires double-precision version of |Gromacs|
+compiled with MPI support:
+
+* ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
+
 Building older versions
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -117,7 +129,7 @@ compiler versions are
 * GNU (gcc) 4.8.1
 * Intel (icc) 17.0.1
 * LLVM (clang) 3.3
-* Microsoft (MSVC) 2017
+* Microsoft (MSVC) 2017 (C++14 is used)
 
 Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
@@ -191,8 +203,7 @@ least NVIDIA compute capability |REQUIRED_CUDA_COMPUTE_CAPABILITY| are
 required. You are strongly recommended to
 get the latest CUDA version and driver that supports your hardware, but
 beware of possible performance regressions in newer CUDA versions on
-older hardware. Note that compute capability 2.0 (Fermi)
-devices are no longer supported from CUDA 9.0 and later.
+older hardware.
 While some CUDA compilers (nvcc) might not
 officially support recent versions of gcc as the back-end compiler, we
 still recommend that you at least use a gcc version recent enough to
@@ -203,15 +214,15 @@ version for |Gromacs| code as used as the host compiler for nvcc.
 To make it possible to use other accelerators, |Gromacs| also includes
 OpenCL_ support. The minimum OpenCL version required is
 |REQUIRED_OPENCL_MIN_VERSION|. The current OpenCL implementation is recommended for
-use with GCN-based AMD GPUs, on Linux we recommend the ROCm runtime.
-For Intel GPUs it is required to compile with ``-DGMX_OCL_NB_CLUSTER_SIZE=4`` and
-the `Neo driver <https://github.com/intel/compute-runtime/releases>`_ is recommended.
-It is also supported with NVIDIA GPUs, but using
+use with GCN-based AMD GPUs, and on Linux we recommend the ROCm runtime.
+Intel integrated GPUs are supported with the Neo drivers.
+OpenCL is also supported with NVIDIA GPUs, but using
 the latest NVIDIA driver (which includes the NVIDIA OpenCL runtime) is
 recommended. Also note that there are performance limitations (inherent
 to the NVIDIA OpenCL runtime).
 It is not possible to configure both CUDA and OpenCL
-support in the same version of |Gromacs|.
+support in the same build of |Gromacs|, nor to support both
+Intel and other vendors' GPUs with OpenCL.
 
 .. _mpi-support:
 
@@ -668,9 +679,11 @@ could be considered in non performance-critical use-cases.
 OpenCL GPU acceleration
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The primary target of the |Gromacs| OpenCL support is accelerating simulations
-on AMD hardware, both discrete GPUs and APUs (integrated CPU+GPU chips).
-The |Gromacs| OpenCL on NVIDIA GPUs works, but performance
+The primary targets of the |Gromacs| OpenCL support is accelerating
+simulations on AMD and Intel hardware. For AMD, we target both
+discrete GPUs and APUs (integrated CPU+GPU chips), and for Intel we
+target the integrated GPUs found on modern workstation and mobile
+hardware. The |Gromacs| OpenCL on NVIDIA GPUs works, but performance
 and other limitations make it less practical (for details see the user guide).
 
 To build |Gromacs| with OpenCL_ support enabled, two components are
@@ -695,6 +708,12 @@ To trigger an OpenCL_ build the following CMake flags must be set
 ::
 
     cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
+
+To build with support for Intel integrated GPUs, it is required
+to add ``-DGMX_OPENCL_NB_CLUSTER_SIZE=4`` to the cmake command line,
+so that the GPU kernels match the characteristics of the hardware.
+The `Neo driver <https://github.com/intel/compute-runtime/releases>`_
+is recommended.
 
 On Mac OS, an AMD GPU can be used only with OS version 10.10.4 and
 higher; earlier OS versions are known to run incorrectly.
@@ -739,6 +758,21 @@ simulation using MPI libraries (e.g. Cray).
   default, but the above caveats apply. For compilers which don't
   default to static linking, the required flags have to be specified. On
   Linux, this is usually ``CFLAGS=-static CXXFLAGS=-static``.
+
+gmxapi external API
+~~~~~~~~~~~~~~~~~~~
+
+For dynamic linking builds and on non-Windows platforms, an extra library and
+headers are installed by setting ``-DGMXAPI=ON`` (default).
+Build targets ``gmxapi-cppdocs`` and ``gmxapi-cppdocs-dev`` produce documentation in
+``docs/api-user`` and ``docs/api-dev``, respectively.
+For more project information and use cases,
+refer to the tracked :issue:`2585`,
+associated GitHub `gmxapi <https://github.com/kassonlab/gmxapi>`_ projects,
+or DOI `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bty484>`_.
+
+gmxapi is not yet tested on Windows or with static linking, but these use cases
+are targeted for future versions.
 
 Portability aspects
 ~~~~~~~~~~~~~~~~~~~

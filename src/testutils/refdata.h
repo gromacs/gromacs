@@ -332,6 +332,8 @@ class TestReferenceChecker
          * Compound structures can be nested.
          */
         TestReferenceChecker checkCompound(const char *type, const char *id);
+        //! \copydoc checkCompound(const char *, const char *)
+        TestReferenceChecker checkCompound(const char *type, const std::string &id);
 
         //! Check a single boolean value.
         void checkBoolean(bool value, const char *id);

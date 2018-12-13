@@ -17,6 +17,7 @@
 Makefile
 lib*.pc
 .project
+.python-version
 .tox
 .cproject
 build

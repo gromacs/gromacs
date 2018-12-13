@@ -224,7 +224,7 @@ choose_ff_impl(const char *ffsel,
                 // TODO: Use a C++ API without such an intermediate/fixed-length buffer.
                 char  buf[STRLEN];
                 /* We don't use fflib_open, because we don't want printf's */
-                FILE *fp = gmx_ffopen(docFileName.c_str(), "r");
+                FILE *fp = gmx_ffopen(docFileName, "r");
                 get_a_line(fp, buf, STRLEN);
                 gmx_ffclose(fp);
                 desc.emplace_back(buf);
@@ -649,25 +649,13 @@ void print_top_mols(FILE *out,
                     const char *title, const char *ffdir, const char *water,
                     int nincl, char **incls, int nmol, t_mols *mols)
 {
-    int   i;
-    char *incl;
 
     if (nincl > 0)
     {
         fprintf(out, "; Include chain topologies\n");
-        for (i = 0; (i < nincl); i++)
+        for (int i = 0; i < nincl; i++)
         {
-            incl = strrchr(incls[i], DIR_SEPARATOR);
-            if (incl == nullptr)
-            {
-                incl = incls[i];
-            }
-            else
-            {
-                /* Remove the path from the include name */
-                incl = incl + 1;
-            }
-            fprintf(out, "#include \"%s\"\n", incl);
+            fprintf(out, "#include \"%s\"\n", gmx::Path::getFilename(incls[i]).c_str());
         }
         fprintf(out, "\n");
     }
@@ -682,7 +670,7 @@ void print_top_mols(FILE *out,
     {
         fprintf(out, "[ %s ]\n", dir2str(d_molecules));
         fprintf(out, "; %-15s %5s\n", "Compound", "#mols");
-        for (i = 0; (i < nmol); i++)
+        for (int i = 0; i < nmol; i++)
         {
             fprintf(out, "%-15s %5d\n", mols[i].name, mols[i].nr);
         }
@@ -1580,6 +1568,11 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     }
     if (bVsites)
     {
+        if (bVsiteAromatics)
+        {
+            fprintf(stdout, "The conversion of aromatic rings into virtual sites is deprecated "
+                    "and may be removed in a future version of GROMACS");
+        }
         /* determine which atoms will be vsites and add dummy masses
            also renumber atom numbers in plist[0..F_NRE]! */
         do_vsites(nrtp, rtp, atype, atoms, tab, x, plist,

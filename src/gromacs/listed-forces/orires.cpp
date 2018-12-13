@@ -202,7 +202,7 @@ void init_orires(FILE                 *fplog,
     od->nref = 0;
     for (int i = 0; i < mtop->natoms; i++)
     {
-        if (getGroupType(&mtop->groups, egcORFIT, i) == 0)
+        if (getGroupType(mtop->groups, egcORFIT, i) == 0)
         {
             od->nref++;
         }
@@ -217,6 +217,7 @@ void init_orires(FILE                 *fplog,
      * Copy it to the other nodes after checking multi compatibility,
      * so we are sure the subsystems match before copying.
      */
+    auto                     x     = makeArrayRef(globalState->x);
     rvec                     com   = { 0, 0, 0 };
     double                   mtot  = 0.0;
     int                      j     = 0;
@@ -233,10 +234,10 @@ void init_orires(FILE                 *fplog,
             // Note that only one rank per sim is supported.
             if (isMasterSim(ms))
             {
-                copy_rvec(globalState->x[i], od->xref[j]);
+                copy_rvec(x[i], od->xref[j]);
                 for (int d = 0; d < DIM; d++)
                 {
-                    com[d] += od->mref[j]*globalState->x[i][d];
+                    com[d] += od->mref[j]*x[i][d];
                 }
             }
             mtot += od->mref[j];

@@ -116,4 +116,29 @@ int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH
 GPU_FUNC_QUALIFIER
 gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH_RETURN(FALSE)
 
+/** Returns an opaque pointer to the GPU command stream
+ *  Note: CUDA only.
+ */
+CUDA_FUNC_QUALIFIER
+void *nbnxn_gpu_get_command_stream(gmx_nbnxn_gpu_t gmx_unused *nb,
+                                   int gmx_unused              iloc) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+/** Returns an opaque pointer to the GPU coordinate+charge array
+ *  Note: CUDA only.
+ */
+CUDA_FUNC_QUALIFIER
+void *nbnxn_gpu_get_xq(gmx_nbnxn_gpu_t gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+/** Returns an opaque pointer to the GPU force array
+ *  Note: CUDA only.
+ */
+CUDA_FUNC_QUALIFIER
+void *nbnxn_gpu_get_f(gmx_nbnxn_gpu_t gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+/** Returns an opaque pointer to the GPU shift force array
+ *  Note: CUDA only.
+ */
+CUDA_FUNC_QUALIFIER
+rvec *nbnxn_gpu_get_fshift(gmx_nbnxn_gpu_t gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
 #endif

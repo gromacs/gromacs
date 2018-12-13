@@ -61,7 +61,7 @@ namespace compat
 
 //! Contract-assurance macros that work like a simple version of the GSL ones
 //! \{
-#ifndef __INTEL_COMPILER
+#if !defined(__INTEL_COMPILER) || !(__INTEL_COMPILER == 1800 && __INTEL_COMPILER_UPDATE == 0)
 #define Expects(cond) GMX_ASSERT((cond), "Precondition violation")
 #define Ensures(cond) GMX_ASSERT((cond), "Postcondition violation")
 #else

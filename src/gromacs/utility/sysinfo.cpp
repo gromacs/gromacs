@@ -48,6 +48,8 @@
 #include <cstring>
 #include <ctime>
 
+#include <array>
+
 #include <sys/types.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -132,32 +134,32 @@ int gmx_getusername(char *buf, size_t len)
     return -1;
 }
 
-char *
-gmx_ctime_r(const time_t *clock, char *buf, size_t len)
+std::string
+gmx_ctime_r(const time_t *clock)
 {
 #ifdef _MSC_VER
-    /* Windows */
-    ctime_s(buf, len, clock);
+    std::array<char, 1024> buf;
+    ctime_s(buf.data(), buf.size(), clock);
+    return std::string(buf.begin(), buf.end());
 #elif GMX_NATIVE_WINDOWS
     char *tmpbuf = ctime(clock);
-    strncpy(buf, tmpbuf, len-1);
-    buf[len-1] = '\0';
+    return tmpbuf;
 #elif (defined(__sun))
     /*Solaris*/
-    ctime_r(clock, buf);
+    std::array<char, 1024> buf;
+    ctime_r(clock, buf.data());
+    return std::string(buf.begin(), buf.end());
 #else
-    char tmpbuf[30];
-    ctime_r(clock, tmpbuf);
-    strncpy(buf, tmpbuf, len-1);
-    buf[len-1] = '\0';
+    std::array<char, 1024> buf;
+    ctime_r(clock, buf.data());
+    return std::string(buf.begin(), buf.end());
 #endif
-    return buf;
 }
 
-void gmx_format_current_time(char *buf, size_t len)
+std::string gmx_format_current_time()
 {
     time_t clock = time(nullptr);
-    gmx_ctime_r(&clock, buf, len);
+    return gmx_ctime_r(&clock);
 }
 
 int gmx_set_nice(int level)

@@ -47,6 +47,7 @@
 
 #include <cstdio>
 
+#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/options/basicoptions.h"
@@ -83,7 +84,7 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
 #if GMX_OPENMP
-    options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads)
+    options->addOption(IntegerOption("ntomp").store(&g_numOpenMPThreads)
                            .description("Number of OpenMP threads for child mdrun calls"));
 #endif
 }
@@ -96,6 +97,7 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
     tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
     logFileName_(fileManager->getTemporaryFilePath(".log")),
     edrFileName_(fileManager->getTemporaryFilePath(".edr")),
+    mtxFileName_(fileManager->getTemporaryFilePath(".mtx")),
     nsteps_(-2),
     fileManager_(*fileManager)
 {
@@ -107,15 +109,15 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
 // TODO The combination of defaulting to Verlet cut-off scheme, NVE,
 // and verlet-buffer-tolerance = -1 gives a grompp error. If we keep
 // things that way, this function should be renamed. For now,
-// force the use of the group scheme.
+// we use the Verlet scheme and hard-code a tolerance.
 // TODO There is possible outstanding unexplained behaviour of mdp
 // input parsing e.g. Redmine 2074, so this particular set of mdp
 // contents is also tested with GetIrTest in gmxpreprocess-test.
 void
 SimulationRunner::useEmptyMdpFile()
 {
-    // TODO When removing the group scheme, update actual and potential users of useEmptyMdpFile
-    useStringAsMdpFile("cutoff-scheme = Group\n");
+    useStringAsMdpFile(R"(cutoff-scheme = Verlet
+                          verlet-buffer-tolerance = 0.005)");
 }
 
 void
@@ -134,6 +136,14 @@ void
 SimulationRunner::useStringAsNdxFile(const char *ndxString)
 {
     gmx::TextWriter::writeFileFromString(ndxFileName_, ndxString);
+}
+
+void
+SimulationRunner::useTopG96AndNdxFromDatabase(const std::string &name)
+{
+    topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top");
+    groFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".g96");
+    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx");
 }
 
 void
@@ -209,6 +219,28 @@ SimulationRunner::callGrompp()
 }
 
 int
+SimulationRunner::callNmeig()
+{
+    /* Conforming to style guide by not passing a non-const reference
+       to this function. Passing a non-const reference might make it
+       easier to write code that incorrectly re-uses callerRef after
+       the call to this function. */
+
+    CommandLine caller;
+    caller.append("nmeig");
+    caller.addOption("-s", tprFileName_);
+    caller.addOption("-f", mtxFileName_);
+    // Ignore the overall translation and rotation in the
+    // first six eigenvectors.
+    caller.addOption("-first", "7");
+    // No need to check more than a number of output values.
+    caller.addOption("-last", "50");
+    caller.addOption("-xvg", "none");
+
+    return gmx_nmeig(caller.argc(), caller.argv());
+}
+
+int
 SimulationRunner::callMdrun(const CommandLine &callerRef)
 {
     /* Conforming to style guide by not passing a non-const reference
@@ -223,6 +255,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
 
     caller.addOption("-g", logFileName_);
     caller.addOption("-e", edrFileName_);
+    caller.addOption("-mtx", mtxFileName_);
     caller.addOption("-o", fullPrecisionTrajectoryFileName_);
     caller.addOption("-x", reducedPrecisionTrajectoryFileName_);
 

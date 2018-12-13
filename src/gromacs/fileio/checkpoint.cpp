@@ -74,6 +74,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -109,6 +110,8 @@
 enum cptv {
     cptv_Unknown = 17,                                       /**< Version before numbering scheme */
     cptv_RemoveBuildMachineInformation,                      /**< remove functionality that makes mdrun builds non-reproducible */
+    cptv_ComPrevStepAsPullGroupReference,                    /**< Allow using COM of previous step as pull group PBC reference */
+    cptv_PullAverage,                                        /**< Added possibility to output average pull force and position */
     cptv_Count                                               /**< the total number of cptv versions */
 };
 
@@ -163,6 +166,21 @@ enum {
     eenhNR
 };
 
+enum {
+    epullhPULL_NUMCOORDINATES, epullhPULL_NUMGROUPS, epullhPULL_NUMVALUESINXSUM,
+    epullhPULL_NUMVALUESINFSUM,  epullhNR
+};
+
+enum {
+    epullcoordh_VALUE_REF_SUM, epullcoordh_VALUE_SUM, epullcoordh_DR01_SUM,
+    epullcoordh_DR23_SUM, epullcoordh_DR45_SUM, epullcoordh_FSCAL_SUM,
+    epullcoordh_DYNAX_SUM, epullcoordh_NR
+};
+
+enum {
+    epullgrouph_X_SUM, epullgrouph_NR
+};
+
 static const char *eenh_names[eenhNR] =
 {
     "energy_n", "energy_aver", "energy_sum", "energy_nsum",
@@ -172,6 +190,12 @@ static const char *eenh_names[eenhNR] =
     "energy_delta_h_list",
     "energy_delta_h_start_time",
     "energy_delta_h_start_lambda"
+};
+
+static const char *ePullhNames[epullhNR] =
+{
+    "pullhistory_numcoordinates", "pullhistory_numgroups", "pullhistory_numvaluesinxsum",
+    "pullhistory_numvaluesinfsum"
 };
 
 /* free energy history variables -- need to be preserved over checkpoint */
@@ -213,6 +237,17 @@ static const char *eawhh_names[eawhhNR] =
     "awh_forceCorrelationGrid"
 };
 
+enum {
+    epullsPREVSTEPCOM,
+    epullsNR
+};
+
+static const char *epull_prev_step_com_names[epullsNR] =
+{
+    "Pull groups prev step COM"
+};
+
+
 //! Higher level vector element type, only used for formatting checkpoint dumps
 enum class CptElementType
 {
@@ -229,7 +264,9 @@ enum class StatePart
     kineticEnergy,      //!< Kinetic energy, needed for T/P-coupling state
     energyHistory,      //!< Energy observable statistics
     freeEnergyHistory,  //!< Free-energy state and observable statistics
-    accWeightHistogram  //!< Accelerated weight histogram method state
+    accWeightHistogram, //!< Accelerated weight histogram method state
+    pullState,          //!< COM of previous step.
+    pullHistory         //!< Pull history statistics (sums since last written output)
 };
 
 //! \brief Return the name of a checkpoint entry based on part and part entry
@@ -242,6 +279,8 @@ static const char *entryName(StatePart part, int ecpt)
         case StatePart::energyHistory:      return eenh_names[ecpt];
         case StatePart::freeEnergyHistory:  return edfh_names[ecpt];
         case StatePart::accWeightHistogram: return eawhh_names[ecpt];
+        case StatePart::pullState:          return epull_prev_step_com_names[ecpt];
+        case StatePart::pullHistory:        return ePullhNames[ecpt];
     }
 
     return nullptr;
@@ -633,7 +672,7 @@ static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
         {
             /* This conditional ensures that we don't resize on write.
              * In particular in the state where this code was written
-             * PaddedRVecVector has a size of numElemInThefile and we
+             * vector has a size of numElemInThefile and we
              * don't want to lose that padding here.
              */
             if (vector->size() < static_cast<unsigned int>(numElemInTheFile))
@@ -680,12 +719,12 @@ static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
     return 0;
 }
 
-//! \brief Read/Write a std::vector.
+//! \brief Read/Write a std::vector, on read checks the number of elements matches \p numElements, if specified.
 template <typename T>
 static int doVector(XDR *xd, StatePart part, int ecpt, int sflags,
-                    std::vector<T> *vector, FILE *list)
+                    std::vector<T> *vector, FILE *list, int numElements = -1)
 {
-    return doVectorLow<T>(xd, part, ecpt, sflags, -1, nullptr, nullptr, vector, list, CptElementType::real);
+    return doVectorLow<T>(xd, part, ecpt, sflags, numElements, nullptr, nullptr, vector, list, CptElementType::real);
 }
 
 //! \brief Read/Write an ArrayRef<real>.
@@ -696,31 +735,32 @@ static int doRealArrayRef(XDR *xd, StatePart part, int ecpt, int sflags,
     return doVectorLow < real, std::allocator < real>>(xd, part, ecpt, sflags, vector.size(), nullptr, &v_real, nullptr, list, CptElementType::real);
 }
 
-//! \brief Read/Write a vector whose value_type is RVec and whose allocator is \c AllocatorType.
-template <typename AllocatorType>
+//! Convert from view of RVec to view of real.
+static gmx::ArrayRef<real>
+realArrayRefFromRVecArrayRef(gmx::ArrayRef<gmx::RVec> ofRVecs)
+{
+    return gmx::arrayRefFromArray<real>(reinterpret_cast<real *>(ofRVecs.data()), ofRVecs.size() * DIM);
+}
+
+//! \brief Read/Write a PaddedVector whose value_type is RVec.
+template <typename PaddedVectorOfRVecType>
 static int doRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
-                        std::vector<gmx::RVec, AllocatorType> *v, int numAtoms, FILE *list)
+                        PaddedVectorOfRVecType *v, int numAtoms, FILE *list)
 {
     const int numReals = numAtoms*DIM;
 
     if (list == nullptr)
     {
         GMX_RELEASE_ASSERT(sflags & (1 << ecpt), "When not listing, the flag for the entry should be set when requesting i/o");
-        GMX_RELEASE_ASSERT(v->size() >= static_cast<size_t>(numAtoms), "v should have sufficient size for numAtoms");
+        GMX_RELEASE_ASSERT(v->size() == numAtoms, "v should have sufficient size for numAtoms");
 
-        real *v_real = (*v)[0];
-
-        // PaddedRVecVector is padded beyond numAtoms, we should only write
-        // numAtoms RVecs
-        gmx::ArrayRef<real> ref(v_real, v_real + numReals);
-
-        return doRealArrayRef(xd, part, ecpt, sflags, ref, list);
+        return doRealArrayRef(xd, part, ecpt, sflags, realArrayRefFromRVecArrayRef(makeArrayRef(*v)), list);
     }
     else
     {
         // Use the rebind facility to change the value_type of the
         // allocator from RVec to real.
-        using realAllocator = typename std::allocator_traits<AllocatorType>::template rebind_alloc<real>;
+        using realAllocator = typename std::allocator_traits<typename PaddedVectorOfRVecType::allocator_type>::template rebind_alloc<real>;
         return doVectorLow<real, realAllocator>(xd, part, ecpt, sflags, numReals, nullptr, nullptr, nullptr, list, CptElementType::real);
     }
 }
@@ -941,6 +981,7 @@ struct CheckpointHeaderContents
     int         flags_state;
     int         flags_eks;
     int         flags_enh;
+    int         flagsPullHistory;
     int         flags_dfh;
     int         flags_awhh;
     int         nED;
@@ -1107,6 +1148,15 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, FILE *list,
     {
         contents->flags_awhh = 0;
     }
+
+    if (contents->file_version >= 18)
+    {
+        do_cpt_int_err(xd, "pull history flags", &contents->flagsPullHistory, list);
+    }
+    else
+    {
+        contents->flagsPullHistory = 0;
+    }
 }
 
 static int do_cpt_footer(XDR *xd, int file_version)
@@ -1177,13 +1227,13 @@ static int do_cpt_state(XDR *xd,
                 case estDISRE_RM3TAV: ret         = do_cpte_n_reals(xd, part, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
                 case estORIRE_INITF:  ret         = do_cpte_real (xd, part, i, sflags, &state->hist.orire_initf, list); break;
                 case estORIRE_DTAV:   ret         = do_cpte_n_reals(xd, part, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
+                case estPREVSTEPCOM:  ret         = doVector<double>(xd, part, i, sflags, &state->com_prev_step, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown state entry %d\n"
                               "You are reading a checkpoint file written by different code, which is not supported", i);
             }
         }
     }
-
     return ret;
 }
 
@@ -1457,6 +1507,140 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
     {
         /* Assume we have an old file format and copy nsum to nsteps */
         enerhist->nsteps_sim = enerhist->nsum_sim;
+    }
+
+    return ret;
+}
+
+static int doCptPullCoordHist(XDR *xd, PullCoordinateHistory *pullCoordHist,
+                              const StatePart part, FILE *list)
+{
+    int ret   = 0;
+    int flags = 0;
+
+    flags |= ((1<<epullcoordh_VALUE_REF_SUM) | (1<<epullcoordh_VALUE_SUM) | (1<<epullcoordh_DR01_SUM) |
+              (1<<epullcoordh_DR23_SUM) | (1<<epullcoordh_DR45_SUM) | (1<<epullcoordh_FSCAL_SUM));
+
+    for (int i = 0; i < epullcoordh_NR && ret == 0; i++)
+    {
+        switch (i)
+        {
+            case epullcoordh_VALUE_REF_SUM: ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->valueRef), list); break;
+            case epullcoordh_VALUE_SUM:     ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->value), list); break;
+            case epullcoordh_DR01_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->dr01[j]), list);
+                }
+                break;
+            case epullcoordh_DR23_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->dr23[j]), list);
+                }
+                break;
+            case epullcoordh_DR45_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->dr45[j]), list);
+                }
+                break;
+            case epullcoordh_FSCAL_SUM:     ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->scalarForce), list); break;
+            case epullcoordh_DYNAX_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->dynaX[j]), list);
+                }
+                break;
+        }
+    }
+
+    return ret;
+}
+
+static int doCptPullGroupHist(XDR *xd, PullGroupHistory *pullGroupHist,
+                              const StatePart part, FILE *list)
+{
+    int ret   = 0;
+    int flags = 0;
+
+    flags |= ((1<<epullgrouph_X_SUM));
+
+    for (int i = 0; i < epullgrouph_NR; i++)
+    {
+        switch (i)
+        {
+            case epullgrouph_X_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullGroupHist->x[j]), list);
+                }
+                break;
+        }
+    }
+
+    return ret;
+}
+
+
+static int doCptPullHist(XDR *xd, gmx_bool bRead,
+                         int fflags, PullHistory *pullHist,
+                         const StatePart part,
+                         FILE *list)
+{
+    int ret                       = 0;
+    int pullHistoryNumCoordinates = 0;
+    int pullHistoryNumGroups      = 0;
+
+    /* Retain the number of terms in the sum and the number of coordinates (used for writing
+     * average pull forces and coordinates) in the pull history, in temporary variables,
+     * in case they cannot be read from the checkpoint, in order to have backward compatibility */
+    if (bRead)
+    {
+        pullHist->numValuesInXSum = 0;
+        pullHist->numValuesInFSum = 0;
+    }
+    else if (pullHist != nullptr)
+    {
+        pullHistoryNumCoordinates = pullHist->pullCoordinateSums.size();
+        pullHistoryNumGroups      = pullHist->pullGroupSums.size();
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(fflags == 0, "Without pull history, all flags should be off");
+    }
+
+    for (int i = 0; (i < epullhNR && ret == 0); i++)
+    {
+        if (fflags & (1<<i))
+        {
+            switch (i)
+            {
+                case epullhPULL_NUMCOORDINATES:         ret = do_cpte_int(xd, part, i, fflags, &pullHistoryNumCoordinates, list); break;
+                case epullhPULL_NUMGROUPS:              do_cpt_int_err(xd, eenh_names[i], &pullHistoryNumGroups, list); break;
+                case epullhPULL_NUMVALUESINXSUM:        do_cpt_int_err(xd, eenh_names[i], &pullHist->numValuesInXSum, list); break;
+                case epullhPULL_NUMVALUESINFSUM:        do_cpt_int_err(xd, eenh_names[i], &pullHist->numValuesInFSum, list); break;
+                default:
+                    gmx_fatal(FARGS, "Unknown pull history entry %d\n"
+                              "You are probably reading a new checkpoint file with old code", i);
+            }
+        }
+    }
+    if (bRead)
+    {
+        pullHist->pullCoordinateSums.resize(pullHistoryNumCoordinates);
+        pullHist->pullGroupSums.resize(pullHistoryNumGroups);
+    }
+    if (pullHist->numValuesInXSum > 0 || pullHist->numValuesInFSum > 0)
+    {
+        for (size_t i = 0; i < pullHist->pullCoordinateSums.size() && ret == 0; i++)
+        {
+            ret = doCptPullCoordHist(xd, &(pullHist->pullCoordinateSums[i]), part, list);
+        }
+        for (size_t i = 0; i < pullHist->pullGroupSums.size() && ret == 0; i++)
+        {
+            ret = doCptPullGroupHist(xd, &(pullHist->pullGroupSums[i]), part, list);
+        }
     }
 
     return ret;
@@ -1798,19 +1982,19 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
         }
         if (file_version >= 8)
         {
-            if (do_cpt_int(xd, "file_checksum_size", &outputfile.chksum_size,
+            if (do_cpt_int(xd, "file_checksum_size", &outputfile.checksumSize,
                            list) != 0)
             {
                 return -1;
             }
-            if (do_cpt_u_chars(xd, "file_checksum", 16, outputfile.chksum, list) != 0)
+            if (do_cpt_u_chars(xd, "file_checksum", outputfile.checksum.size(), outputfile.checksum.data(), list) != 0)
             {
                 return -1;
             }
         }
         else
         {
-            outputfile.chksum_size = -1;
+            outputfile.checksumSize = -1;
         }
     }
     return 0;
@@ -1855,13 +2039,12 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     snew(fntemp, std::strlen(fn));
     std::strcpy(fntemp, fn);
 #endif
-    char timebuf[STRLEN];
-    gmx_format_current_time(timebuf, STRLEN);
+    std::string timebuf = gmx_format_current_time();
 
     if (fplog)
     {
         fprintf(fplog, "Writing checkpoint, step %s at %s\n\n",
-                gmx_step_str(step, buf), timebuf);
+                gmx_step_str(step, buf), timebuf.c_str());
     }
 
     /* Get offsets for open files */
@@ -1903,6 +2086,14 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                            (1<< eenhENERGY_DELTA_H_STARTTIME) |
                            (1<< eenhENERGY_DELTA_H_STARTLAMBDA) );
         }
+    }
+
+    PullHistory *pullHist         = observablesHistory->pullHistory.get();
+    int          flagsPullHistory = 0;
+    if (pullHist != nullptr && (pullHist->numValuesInXSum > 0 || pullHist->numValuesInFSum > 0))
+    {
+        flagsPullHistory |= (1<<epullhPULL_NUMCOORDINATES);
+        flagsPullHistory |= ((1<<epullhPULL_NUMGROUPS) | (1<<epullhPULL_NUMVALUESINXSUM) | (1<<epullhPULL_NUMVALUESINFSUM));
     }
 
     int flags_dfh;
@@ -1959,12 +2150,13 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         eIntegrator, simulation_part, step, t, nppnodes,
         {0}, npmenodes,
         state->natoms, state->ngtc, state->nnhpres,
-        state->nhchainlength, nlambda, state->flags, flags_eks, flags_enh, flags_dfh, flags_awhh,
+        state->nhchainlength, nlambda, state->flags, flags_eks, flags_enh,
+        flagsPullHistory, flags_dfh, flags_awhh,
         nED, eSwapCoords
     };
     std::strcpy(headerContents.version, gmx_version());
     std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());
-    std::strcpy(headerContents.ftime, timebuf);
+    std::strcpy(headerContents.ftime, timebuf.c_str());
     if (DOMAINDECOMP(cr))
     {
         copy_ivec(domdecCells, headerContents.dd_nc);
@@ -1975,6 +2167,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, nullptr) < 0)        ||
         (do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, nullptr) < 0) ||
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, enerhist, nullptr) < 0)  ||
+        (doCptPullHist(gmx_fio_getxdr(fp), FALSE, flagsPullHistory, pullHist, StatePart::pullHistory, nullptr) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, nullptr) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
         (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awhHistory.get(), nullptr) < 0) ||
@@ -2197,7 +2390,95 @@ static void check_match(FILE *fplog, const t_commrec *cr, const ivec dd_nc,
     }
 }
 
-static void read_checkpoint(const char *fn, FILE **pfplog,
+static void lockLogFile(FILE       *fplog,
+                        t_fileio   *chksum_file,
+                        const char *filename,
+                        bool        bForceAppend)
+{
+    /* Note that there are systems where the lock operation
+     * will succeed, but a second process can also lock the file.
+     * We should probably try to detect this.
+     */
+#if defined __native_client__
+    errno = ENOSYS;
+    if (true)
+#elif GMX_NATIVE_WINDOWS
+    if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
+#else
+    struct flock         fl; /* don't initialize here: the struct order is OS
+                                dependent! */
+    fl.l_type   = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+    fl.l_start  = 0;
+    fl.l_len    = 0;
+    fl.l_pid    = 0;
+
+    if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
+#endif
+    {
+        if (errno == ENOSYS)
+        {
+            if (!bForceAppend)
+            {
+                gmx_fatal(FARGS, "File locking is not supported on this system. Use -noappend or specify -append explicitly to append anyhow.");
+            }
+            else
+            {
+                if (fplog)
+                {
+                    fprintf(fplog, "\nNOTE: File locking not supported on this system, will not lock %s\n\n", filename);
+                }
+            }
+        }
+        else if (errno == EACCES || errno == EAGAIN)
+        {
+            gmx_fatal(FARGS, "Failed to lock: %s. Already running "
+                      "simulation?", filename);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Failed to lock: %s. %s.",
+                      filename, std::strerror(errno));
+        }
+    }
+}
+
+//! Check whether chksum_file output file has a checksum that matches \c outputfile from the checkpoint.
+static void checkOutputFile(t_fileio                  *chksum_file,
+                            const gmx_file_position_t &outputfile)
+{
+    /* compute md5 chksum */
+    std::array<unsigned char, 16> digest;
+    if (outputfile.checksumSize != -1)
+    {
+        if (gmx_fio_get_file_md5(chksum_file, outputfile.offset,
+                                 &digest) != outputfile.checksumSize) /*at the end of the call the file position is at the end of the file*/
+        {
+            gmx_fatal(FARGS, "Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
+                      outputfile.checksumSize,
+                      outputfile.filename);
+        }
+    }
+
+    /* compare md5 chksum */
+    if (outputfile.checksumSize != -1 &&
+        digest != outputfile.checksum)
+    {
+        if (debug)
+        {
+            fprintf(debug, "chksum for %s: ", outputfile.filename);
+            for (int j = 0; j < 16; j++)
+            {
+                fprintf(debug, "%02x", digest[j]);
+            }
+            fprintf(debug, "\n");
+        }
+        gmx_fatal(FARGS, "Checksum wrong for '%s'. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
+                  outputfile.filename);
+    }
+}
+
+static void read_checkpoint(const char *fn, t_fileio *logfio,
                             const t_commrec *cr,
                             const ivec dd_nc,
                             int eIntegrator,
@@ -2209,24 +2490,9 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                             gmx_bool reproducibilityRequested)
 {
     t_fileio            *fp;
-    int                  j, rc;
+    int                  rc;
     char                 buf[STEPSTRSIZE];
     int                  ret;
-    t_fileio            *chksum_file;
-    FILE               * fplog = *pfplog;
-    unsigned char        digest[16];
-#if !defined __native_client__ && !GMX_NATIVE_WINDOWS
-    struct flock         fl; /* don't initialize here: the struct order is OS
-                                dependent! */
-#endif
-
-#if !defined __native_client__ && !GMX_NATIVE_WINDOWS
-    fl.l_type   = F_WRLCK;
-    fl.l_whence = SEEK_SET;
-    fl.l_start  = 0;
-    fl.l_len    = 0;
-    fl.l_pid    = 0;
-#endif
 
     fp = gmx_fio_open(fn, "r");
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, headerContents);
@@ -2237,7 +2503,11 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         gmx_fatal(FARGS, "Output file appending requested, but the code and checkpoint file precision (single/double) don't match");
     }
 
-    /* This will not be written if we do appending, since fplog is still NULL then */
+    // If we are appending, then we don't write to the open log file
+    // because we still need to compute a checksum for it. Otherwise
+    // we report to the new log file about the checkpoint file that we
+    // are reading from.
+    FILE *fplog = bAppendOutputFiles ? nullptr : gmx_fio_getfp(logfio);
     if (fplog)
     {
         fprintf(fplog, "\n");
@@ -2317,6 +2587,20 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     if (ret)
     {
         cp_error();
+    }
+
+    if (headerContents->flagsPullHistory)
+    {
+        if (observablesHistory->pullHistory == nullptr)
+        {
+            observablesHistory->pullHistory = gmx::compat::make_unique<PullHistory>();
+        }
+        ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE,
+                            headerContents->flagsPullHistory, observablesHistory->pullHistory.get(), StatePart::pullHistory, nullptr);
+        if (ret)
+        {
+            cp_error();
+        }
     }
 
     if (headerContents->file_version < 6)
@@ -2399,7 +2683,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             gmx_fatal(FARGS, "The first output file should always be the log "
                       "file but instead is: %s. Cannot do appending because of this condition.", outputfiles[0].filename);
         }
-        bool firstFile = true;
         for (const auto &outputfile : outputfiles)
         {
             if (outputfile.offset < 0)
@@ -2409,131 +2692,50 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                           " offsets. Can not append. Run mdrun with -noappend",
                           outputfile.filename);
             }
-            if (GMX_FAHCORE)
+        }
+
+        // Handle the log file separately - it comes first in the
+        // list, so we make sure that we retain a lock on the open
+        // file that is never lifted after the checksum is calculated.
+        {
+            const gmx_file_position_t &logOutputFile   = outputfiles[0];
+            if (!GMX_FAHCORE)
             {
-                chksum_file = gmx_fio_open(outputfile.filename, "a");
-            }
-            else
-            {
-                chksum_file = gmx_fio_open(outputfile.filename, "r+");
+                lockLogFile(fplog, logfio, logOutputFile.filename, bForceAppend);
+                checkOutputFile(logfio, logOutputFile);
 
-                /* lock log file */
-                if (firstFile)
+                if (gmx_fio_seek(logfio, logOutputFile.offset))
                 {
-                    /* Note that there are systems where the lock operation
-                     * will succeed, but a second process can also lock the file.
-                     * We should probably try to detect this.
-                     */
-#if defined __native_client__
-                    errno = ENOSYS;
-                    if (1)
-
-#elif GMX_NATIVE_WINDOWS
-                    if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
-#else
-                    if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
-#endif
-                    {
-                        if (errno == ENOSYS)
-                        {
-                            if (!bForceAppend)
-                            {
-                                gmx_fatal(FARGS, "File locking is not supported on this system. Use -noappend or specify -append explicitly to append anyhow.");
-                            }
-                            else
-                            {
-                                if (fplog)
-                                {
-                                    fprintf(fplog, "\nNOTE: File locking not supported on this system, will not lock %s\n\n", outputfile.filename);
-                                }
-                            }
-                        }
-                        else if (errno == EACCES || errno == EAGAIN)
-                        {
-                            gmx_fatal(FARGS, "Failed to lock: %s. Already running "
-                                      "simulation?", outputfile.filename);
-                        }
-                        else
-                        {
-                            gmx_fatal(FARGS, "Failed to lock: %s. %s.",
-                                      outputfile.filename, std::strerror(errno));
-                        }
-                    }
-                }
-
-                /* compute md5 chksum */
-                if (outputfile.chksum_size != -1)
-                {
-                    if (gmx_fio_get_file_md5(chksum_file, outputfile.offset,
-                                             digest) != outputfile.chksum_size) /*at the end of the call the file position is at the end of the file*/
-                    {
-                        gmx_fatal(FARGS, "Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
-                                  outputfile.chksum_size,
-                                  outputfile.filename);
-                    }
-                }
-                /* log file needs to be seeked in case we need to truncate
-                 * (other files are truncated below)*/
-                if (firstFile)
-                {
-                    if (gmx_fio_seek(chksum_file, outputfile.offset))
-                    {
-                        gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", std::strerror(errno));
-                    }
+                    gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", std::strerror(errno));
                 }
             }
-
-            /* open log file here - so that lock is never lifted
-             * after chksum is calculated */
-            if (firstFile)
+        }
+        if (!GMX_FAHCORE)
+        {
+            // Now handle the remaining outputfiles
+            gmx::ArrayRef<gmx_file_position_t> outputfilesView(outputfiles);
+            for (const auto &outputfile : outputfilesView.subArray(1, outputfiles.size()-1))
             {
-                *pfplog = gmx_fio_getfp(chksum_file);
-            }
-            else
-            {
+                t_fileio *chksum_file = gmx_fio_open(outputfile.filename, "r+");
+                checkOutputFile(chksum_file, outputfile);
                 gmx_fio_close(chksum_file);
-            }
-            /* compare md5 chksum */
-            if (!GMX_FAHCORE &&
-                outputfile.chksum_size != -1 &&
-                memcmp(digest, outputfile.chksum, 16) != 0)
-            {
-                if (debug)
-                {
-                    fprintf(debug, "chksum for %s: ", outputfile.filename);
-                    for (j = 0; j < 16; j++)
-                    {
-                        fprintf(debug, "%02x", digest[j]);
-                    }
-                    fprintf(debug, "\n");
-                }
-                gmx_fatal(FARGS, "Checksum wrong for '%s'. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
-                          outputfile.filename);
-            }
 
-            // We could preprocess less, but then checkers complain
-            // about possible bugs when using logic on constant
-            // expressions.
-#if !GMX_NATIVE_WINDOWS || !GMX_FAHCORE
-            // The log file is already seeked to correct position, but
-            // others must be truncated.
-            if (!firstFile)
-            {
-                /* For FAHCORE, we do this elsewhere*/
-                rc = gmx_truncate(outputfile.filename, outputfile.offset);
-                if (rc != 0)
+                if (!GMX_NATIVE_WINDOWS)
                 {
-                    gmx_fatal(FARGS, "Truncation of file %s failed. Cannot do appending because of this failure.", outputfile.filename);
+                    /* For FAHCORE, we do this elsewhere*/
+                    rc = gmx_truncate(outputfile.filename, outputfile.offset);
+                    if (rc != 0)
+                    {
+                        gmx_fatal(FARGS, "Truncation of file %s failed. Cannot do appending because of this failure.", outputfile.filename);
+                    }
                 }
             }
-#endif
-            firstFile = false;
         }
     }
 }
 
 
-void load_checkpoint(const char *fn, FILE **fplog,
+void load_checkpoint(const char *fn, t_fileio *logfio,
                      const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
@@ -2545,7 +2747,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
     if (SIMMASTER(cr))
     {
         /* Read the state from the checkpoint file */
-        read_checkpoint(fn, fplog,
+        read_checkpoint(fn, logfio,
                         cr, dd_nc,
                         ir->eI, &(ir->fepvals->init_fep_state),
                         &headerContents,
@@ -2559,6 +2761,23 @@ void load_checkpoint(const char *fn, FILE **fplog,
         gmx_bcast(sizeof(*bReadEkin), bReadEkin, cr);
     }
     ir->bContinuation    = TRUE;
+    // TODO Should the following condition be <=? Currently if you
+    // pass a checkpoint written by an normal completion to a restart,
+    // mdrun will read all input, does some work but no steps, and
+    // write successful output. But perhaps that is not desirable.
+    if ((ir->nsteps >= 0) && (ir->nsteps < headerContents.step))
+    {
+        // Note that we do not intend to support the use of mdrun
+        // -nsteps to circumvent this condition.
+        char nstepsString[STEPSTRSIZE], stepString[STEPSTRSIZE];
+        gmx_step_str(ir->nsteps, nstepsString);
+        gmx_step_str(headerContents.step, stepString);
+        gmx_fatal(FARGS, "The input requested %s steps, however the checkpoint "
+                  "file has already reached step %s. The simulation will not "
+                  "proceed, because either your simulation is already complete, "
+                  "or your combination of input files don't match.",
+                  nstepsString, stepString);
+    }
     if (ir->nsteps >= 0)
     {
         ir->nsteps          += ir->init_step - headerContents.step;
@@ -2575,7 +2794,7 @@ void read_checkpoint_part_and_step(const char  *filename,
 
     if (filename == nullptr ||
         !gmx_fexist(filename) ||
-        (!(fp = gmx_fio_open(filename, "r"))))
+        ((fp = gmx_fio_open(filename, "r")) == nullptr))
     {
         *simulation_part = 0;
         *step            = 0;
@@ -2624,6 +2843,14 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     {
         cp_error();
     }
+    PullHistory pullHist = {};
+    ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE,
+                        headerContents.flagsPullHistory, &pullHist, StatePart::pullHistory, nullptr);
+    if (ret)
+    {
+        cp_error();
+    }
+
     ret = do_cpt_df_hist(gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr);
     if (ret)
     {
@@ -2734,6 +2961,13 @@ void list_checkpoint(const char *fn, FILE *out)
     energyhistory_t enerhist;
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           headerContents.flags_enh, &enerhist, out);
+
+    if (ret == 0)
+    {
+        PullHistory pullHist = {};
+        ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE,
+                            headerContents.flagsPullHistory, &pullHist, StatePart::pullHistory, out);
+    }
 
     if (ret == 0)
     {

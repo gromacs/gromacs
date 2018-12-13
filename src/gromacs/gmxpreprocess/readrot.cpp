@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include <string>
+
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/warninp.h"
@@ -48,7 +50,9 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 static const char *RotStr = "Enforced rotation:";
 
@@ -202,7 +206,7 @@ extern char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot,
 
 
 /* Check whether the box is unchanged */
-static void check_box_unchanged(matrix f_box, matrix box, char fn[], warninp_t wi)
+static void check_box_unchanged(matrix f_box, matrix box, const char fn[], warninp_t wi)
 {
     int      i, ii;
     bool     bSame = TRUE;
@@ -237,19 +241,8 @@ extern void set_reference_positions(
 {
     int              g, i, ii;
     t_rotgrp        *rotg;
-    gmx_trr_header_t header;    /* Header information of reference file */
-    char             base[STRLEN], extension[STRLEN], reffile[STRLEN];
-    char            *extpos;
+    gmx_trr_header_t header;   /* Header information of reference file */
     rvec             f_box[3]; /* Box from reference file */
-
-
-    /* Base name and extension of the reference file: */
-    strncpy(base, fn, STRLEN - 1);
-    base[STRLEN-1] = '\0';
-    extpos         = strrchr(base, '.');
-    strcpy(extension, extpos+1);
-    *extpos = '\0';
-
 
     for (g = 0; g < rot->ngrp; g++)
     {
@@ -258,7 +251,8 @@ extern void set_reference_positions(
         snew(rotg->x_ref, rotg->nat);
 
         /* Construct the name for the file containing the reference positions for this group: */
-        sprintf(reffile, "%s.%d.%s", base, g, extension);
+        std::string reffileString = gmx::Path::concatenateBeforeExtension(fn, gmx::formatString(".%d", g));
+        const char *reffile       = reffileString.c_str();
 
         /* If the base filename for the reference position files was explicitly set by
          * the user, we issue a fatal error if the group file can not be found */

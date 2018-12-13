@@ -40,13 +40,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_
 
 project(Gromacs)
 
-# Use ccache if available to wrap CMAKE_C_COMPILER and CMAKE_CXX_COMPILER.
-# Reference https://ccache.samba.org
-option(ENABLE_CCACHE "Allow CMake to use ccache compiler wrappers if available." ON)
-# CMAKE_C_COMPILER and CMAKE_CXX_COMPILER do not change after this line.
-if(ENABLE_CCACHE)
-    include(gmxCcache)
-endif()
+include(gmxManageCcache)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -200,6 +194,9 @@ gmx_dependent_option(
     ON
     GMX_MPI)
 mark_as_advanced(GMX_MPI_IN_PLACE)
+
+option(GMX_MIMIC "Enable MiMiC QM/MM interface (CPMD is required)" OFF)
+
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
@@ -217,7 +214,7 @@ if(MSVC)
 else()
     set(REQUIRED_CUDA_VERSION 7.0)
 endif()
-set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
+set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.0)
 
 # OpenCL required version: 1.2 or newer
 set(REQUIRED_OPENCL_MIN_VERSION 1.2)
@@ -460,6 +457,10 @@ endif()
 ########################################################################
 include(gmxManageMPI)
 
+########################################################################
+#Process MiMiC settings
+########################################################################
+include(gmxManageMimic)
 
 ########################################################################
 #Process shared/static library settings
@@ -737,7 +738,15 @@ check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
-if(NOT GMX_SYSTEM_XDR)
+# Darwin has system XDR, but it uses a three-argument flavour of
+# xdrproc_t that it guarantees will still work if you pass the normal
+# two-argument xdr filters, but gcc 8 warns about the cast necessary
+# to do that, so it's simpler to just use our own XDR library.
+#
+# TODO It would be better to craft a cmake test which fails if such
+# XDR operations cause warnings, and succeeds otherwise, because it is
+# generally preferable to use system libraries where possible.
+if(NOT GMX_SYSTEM_XDR OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(GMX_INTERNAL_XDR 1)
 endif()
 
@@ -935,6 +944,9 @@ if (BUILD_TESTING)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
+    find_package(ImageMagick QUIET COMPONENTS convert)
+    include(gmxTestImageMagick)
+    GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
     add_subdirectory(docs)
     add_subdirectory(share)
     add_subdirectory(scripts)

@@ -701,7 +701,8 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
                               const struct nbnxn_atomdata_t *nbatom,
                               int                            flags,
-                              int                            aloc)
+                              int                            aloc,
+                              bool                           haveOtherWork)
 {
     cl_int gmx_unused cl_error;
     int               adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -719,7 +720,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
 
 
     /* don't launch non-local copy-back if there was no non-local work to do */
-    if (canSkipWork(nb, iloc))
+    if (!haveOtherWork && canSkipWork(nb, iloc))
     {
         /* TODO An alternative way to signal that non-local work is
            complete is to use a clEnqueueMarker+clEnqueueBarrier
@@ -818,17 +819,16 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
      * TODO: decide if dev_info parameter should be added to recognize NVIDIA CC>=3.0 devices.
      *
      */
-    //if ((dev_info->prop.major >= 3 || bForceAnalyticalEwald) && !bForceTabulatedEwald)
-    if (!bForceTabulatedEwald)
+    /* By default use analytical Ewald. */
+    bUseAnalyticalEwald = true;
+    if (bForceAnalyticalEwald)
     {
-        bUseAnalyticalEwald = true;
-
         if (debug)
         {
             fprintf(debug, "Using analytical Ewald OpenCL kernels\n");
         }
     }
-    else
+    else if (bForceTabulatedEwald)
     {
         bUseAnalyticalEwald = false;
 

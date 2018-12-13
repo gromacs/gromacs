@@ -73,6 +73,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
@@ -2421,7 +2422,7 @@ static void init_edsamstate(const gmx_edsam &ed, edsamhistory_t *EDstate)
 
 
 /* Adds 'buf' to 'str' */
-static void add_to_string(char **str, char *buf)
+static void add_to_string(char **str, const char *buf)
 {
     int len;
 
@@ -2432,7 +2433,7 @@ static void add_to_string(char **str, char *buf)
 }
 
 
-static void add_to_string_aligned(char **str, char *buf)
+static void add_to_string_aligned(char **str, const char *buf)
 {
     char buf_aligned[STRLEN];
 
@@ -2443,13 +2444,10 @@ static void add_to_string_aligned(char **str, char *buf)
 
 static void nice_legend(const char ***setname, int *nsets, char **LegendStr, const char *value, const char *unit, char EDgroupchar)
 {
-    char tmp[STRLEN], tmp2[STRLEN];
-
-
-    sprintf(tmp, "%c %s", EDgroupchar, value);
-    add_to_string_aligned(LegendStr, tmp);
-    sprintf(tmp2, "%s (%s)", tmp, unit);
-    (*setname)[*nsets] = gmx_strdup(tmp2);
+    auto tmp = gmx::formatString("%c %s", EDgroupchar, value);
+    add_to_string_aligned(LegendStr, tmp.c_str());
+    tmp               += gmx::formatString(" (%s)", unit);
+    (*setname)[*nsets] = gmx_strdup(tmp.c_str());
     (*nsets)++;
 }
 
@@ -2646,6 +2644,7 @@ static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oe
 /* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle
  * contained in the input file, creates a NULL terminated list of t_edpar structures */
 std::unique_ptr<gmx::EssentialDynamics> init_edsam(
+        const gmx::MDLogger    &mdlog,
         const char             *ediFileName,
         const char             *edoFileName,
         const gmx_mtop_t       *mtop,
@@ -2674,7 +2673,12 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
             gmx_fatal(FARGS, "The checkpoint file you provided is from an essential dynamics or flooding\n"
                       "simulation. Please also set the .edi file on the command line with -ei.\n");
         }
+
     }
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Activating essential dynamics via files passed to "
+                   "gmx mdrun -edi will change in future to be files passed to "
+                   "gmx grompp and the related .mdp options may change also.");
 
     /* Open input and output files, allocate space for ED data structure */
     auto edHandle = ed_open(mtop->natoms, oh, ediFileName, edoFileName, bAppend, oenv, cr);
@@ -2711,7 +2715,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         {
             /* Remove PBC, make molecule(s) subject to ED whole. */
             snew(x_pbc, mtop->natoms);
-            copy_rvecn(as_rvec_array(globalState->x.data()), x_pbc, 0, mtop->natoms);
+            copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop->natoms);
             do_pbc_first_mtop(nullptr, ir->ePBC, globalState->box, mtop, x_pbc);
         }
         /* Reset pointer to first ED data set which contains the actual ED data */

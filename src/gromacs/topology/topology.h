@@ -44,6 +44,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -117,7 +118,7 @@ typedef struct gmx_groups_t
  * \param[in] type  Type of group to check.
  * \param[in] atom  Atom to check if it has an entry.
  */
-int getGroupType (const gmx_groups_t *group, int type, int atom);
+int getGroupType (const gmx_groups_t &group, int type, int atom);
 
 /* The global, complete system topology struct, based on molecule types.
  * This structure should contain no data that is O(natoms) in memory.
@@ -160,6 +161,10 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     t_symtab                          symtab;
     //! Tells whether we have valid molecule indices
     bool                              haveMoleculeIndices = false;
+    /*! \brief List of global atom indices of atoms between which
+     * non-bonded interactions must be excluded.
+     */
+    std::vector<int>                  intermolecularExclusionGroup;
 
     /* Derived data  below */
     //! Indices for each molblock entry for fast lookup of atom properties
@@ -221,10 +226,21 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
             gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
 void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
-void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
-                int natoms0, int natoms1);
+
+/*! \brief Compare groups.
+ *
+ * \param[in] fp File pointer to write to.
+ * \param[in] g0 First group for comparison.
+ * \param[in] g1 Second group for comparison.
+ * \param[in] natoms0 Number of atoms for first group.
+ * \param[in] natoms1 Number of atoms for second group.
+ */
+void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
+                       int natoms0, int natoms1);
 
 //! Deleter for gmx_localtop_t, needed until it has a proper destructor.
 using ExpandedTopologyPtr = gmx::unique_cptr<gmx_localtop_t, done_and_sfree_localtop>;
+
+void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst);
 
 #endif

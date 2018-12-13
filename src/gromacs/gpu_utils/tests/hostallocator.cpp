@@ -54,13 +54,15 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+#include "gromacs/math/tests/testarrayrefs.h"
+
 #include "devicetransfers.h"
 #include "gputest.h"
 
 namespace gmx
 {
 
-namespace
+namespace test
 {
 
 /*! \internal \brief Typed test fixture for infrastructure for
@@ -71,64 +73,7 @@ class HostMemoryTest : public test::GpuTest
     public:
         //! Convenience type
         using ValueType = T;
-        //! Convenience type
-        using ViewType = ArrayRef<ValueType>;
-        //! Convenience type
-        using ConstViewType = ArrayRef<const ValueType>;
-        //! Prepare contents of a VectorType.
-        template <typename VectorType>
-        void fillInput(VectorType *input) const;
-        //! Compares input and output vectors.
-        void compareVectors(ConstViewType input,
-                            ConstViewType output) const;
-        //! Do some transfers and test the results.
-        void runTest(ConstViewType input, ViewType output) const;
 };
-
-// Already documented
-template <typename T> template <typename VectorType>
-void HostMemoryTest<T>::fillInput(VectorType *input) const
-{
-    input->resize(3);
-    (*input)[0] = 1;
-    (*input)[1] = 2;
-    (*input)[2] = 3;
-}
-
-//! Initialization specialization for RVec
-template <> template <typename VectorType>
-void HostMemoryTest<RVec>::fillInput(VectorType *input) const
-{
-    input->reserve(3);
-    input->resize(3);
-    (*input)[0] = {1, 2, 3};
-    (*input)[1] = {4, 5, 6};
-    (*input)[2] = {7, 8, 9};
-}
-
-// Already documented
-template <typename T>
-void HostMemoryTest<T>::compareVectors(ConstViewType input,
-                                       ConstViewType output) const
-{
-    for (index i = 0; i != input.size(); ++i)
-    {
-        EXPECT_EQ(input[i], output[i]) << "for index " << i;
-    }
-}
-
-//! Comparison specialization for RVec
-template <>
-void HostMemoryTest<RVec>::compareVectors(ConstViewType input,
-                                          ConstViewType output) const
-{
-    for (index i = 0; i != input.size(); ++i)
-    {
-        EXPECT_EQ(input[i][XX], output[i][XX]) << "for index " << i;
-        EXPECT_EQ(input[i][YY], output[i][YY]) << "for index " << i;
-        EXPECT_EQ(input[i][ZZ], output[i][ZZ]) << "for index " << i;
-    }
-}
 
 /*! \brief Convenience function to transform a view into one with base
  * type of (non-const) char.
@@ -149,16 +94,20 @@ ArrayRef<char> charArrayRefFromArray(T *data, size_t size)
     return arrayRefFromArray<char>(reinterpret_cast<char *>(const_cast<NonConstT *>(data)), size * sizeof(T));
 }
 
+//! Does a device transfer of \c input to the device in \c gpuInfo, and back to \c output.
 template <typename T>
-void HostMemoryTest<T>::runTest(ConstViewType input, ViewType output) const
+void runTest(const gmx_gpu_info_t &gpuInfo,
+             ArrayRef<T>           input,
+             ArrayRef<T>           output)
 {
     // Convert the views of input and output to flat non-const chars,
     // so that there's no templating when we call doDeviceTransfers.
     auto inputRef  = charArrayRefFromArray(input.data(), input.size());
     auto outputRef = charArrayRefFromArray(output.data(), output.size());
 
-    doDeviceTransfers(*this->gpuInfo_, inputRef, outputRef);
-    this->compareVectors(input, output);
+    ASSERT_EQ(inputRef.size(), outputRef.size());
+    doDeviceTransfers(gpuInfo, inputRef, outputRef);
+    compareViews(input, output);
 }
 
 struct MoveOnly {
@@ -168,11 +117,29 @@ struct MoveOnly {
     MoveOnly &operator=(const MoveOnly &) = delete;
     MoveOnly &operator=(MoveOnly &&)      = default;
     bool operator==(const MoveOnly &o) const { return x == o.x; }
+    real operator*=(int scaleFactor) { return x *= scaleFactor; }
     real x;
 };
 
-//! The types used in testing.
-typedef ::testing::Types<int, real, RVec, MoveOnly> TestTypes;
+}   // namespace test
+
+namespace detail
+{
+
+template<>
+struct PaddingTraits<test::MoveOnly>
+{
+    using SimdBaseType = real;
+    static constexpr int maxSimdWidthOfBaseType = GMX_REAL_MAX_SIMD_WIDTH;
+};
+
+}   // namespace detail
+
+namespace test
+{
+
+//! The types used in testing of all operations.
+typedef ::testing::Types<int32_t, real, RVec, test::MoveOnly> TestTypes;
 
 //! Typed test fixture
 template <typename T>
@@ -194,8 +161,14 @@ TYPED_TEST_CASE(HostAllocatorTestNoMem, TestTypes);
 template <typename T>
 struct HostAllocatorTestNoMemCopyable : HostAllocatorTestNoMem<T> {};
 //! The types used in testing minus move only types
-using TestTypesCopyable = ::testing::Types<int, real, RVec>;
+using TestTypesCopyable = ::testing::Types<int32_t, real, RVec>;
+
 TYPED_TEST_CASE(HostAllocatorTestNoMemCopyable, TestTypesCopyable);
+
+//! Typed test fixture for tests requiring a copyable type
+template <typename T>
+using HostAllocatorTestCopyable = HostAllocatorTest<T>;
+TYPED_TEST_CASE(HostAllocatorTestCopyable, TestTypesCopyable);
 
 // Note that in GoogleTest typed tests, the use of TestFixture:: and
 // this-> is sometimes required to get access to things in the fixture
@@ -209,10 +182,10 @@ TYPED_TEST(HostAllocatorTest, EmptyMemoryAlwaysWorks)
     typename TestFixture::VectorType v;
 }
 
-TYPED_TEST(HostAllocatorTest, VectorsWithDefaultHostAllocatorAlwaysWorks)
+TYPED_TEST(HostAllocatorTestCopyable, VectorsWithDefaultHostAllocatorAlwaysWorks)
 {
     typename TestFixture::VectorType input(3), output;
-    output.resize(input.size());
+    output.resizeWithPadding(input.size());
 }
 
 // Several tests actually do CUDA transfers. This is not necessary
@@ -221,21 +194,21 @@ TYPED_TEST(HostAllocatorTest, VectorsWithDefaultHostAllocatorAlwaysWorks)
 // during cudaHostRegister and cudaHostUnregister. Such tests are of
 // value only when this behaviour changes, if ever.
 
-TYPED_TEST(HostAllocatorTest, TransfersWithoutPinningWork)
+TYPED_TEST(HostAllocatorTestCopyable, TransfersWithoutPinningWork)
 {
     typename TestFixture::VectorType input;
-    this->fillInput(&input);
+    fillInput(&input, 1);
     typename TestFixture::VectorType output;
-    output.resize(input.size());
+    output.resizeWithPadding(input.size());
 
-    this->runTest(input, output);
+    runTest(*this->gpuInfo_, makeArrayRef(input), makeArrayRef(output));
 }
 
-TYPED_TEST(HostAllocatorTest, FillInputAlsoWorksAfterCallingReserve)
+TYPED_TEST(HostAllocatorTestCopyable, FillInputAlsoWorksAfterCallingReserve)
 {
     typename TestFixture::VectorType input;
-    input.reserve(3);
-    this->fillInput(&input);
+    input.reserveWithPadding(3);
+    fillInput(&input, 1);
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, CreateVector)
@@ -295,10 +268,10 @@ TYPED_TEST(HostAllocatorTestNoMem, Swap)
 {
     typename TestFixture::VectorType input1;
     typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
-    swap(input1, input2);
+    std::swap(input1, input2);
     EXPECT_TRUE (input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    swap(input2, input1);
+    std::swap(input2, input1);
     EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
@@ -315,7 +288,7 @@ TYPED_TEST(HostAllocatorTestNoMem, Comparison)
 
 // Policy suitable for pinning is only supported for a CUDA build
 
-TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
+TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithCuda)
 {
     if (!this->haveValidGpus())
     {
@@ -324,12 +297,12 @@ TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
 
     typename TestFixture::VectorType input;
     changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
-    this->fillInput(&input);
+    fillInput(&input, 1);
     typename TestFixture::VectorType output;
     changePinningPolicy(&output, PinningPolicy::PinnedIfSupported);
-    output.resize(input.size());
+    output.resizeWithPadding(input.size());
 
-    this->runTest(input, output);
+    runTest(*this->gpuInfo_, makeArrayRef(input), makeArrayRef(output));
 }
 
 //! Helper function for wrapping a call to isHostMemoryPinned.
@@ -340,7 +313,7 @@ bool isPinned(const VectorType &v)
     return isHostMemoryPinned(data);
 }
 
-TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
+TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWorkWithCuda)
 {
     if (!this->haveValidGpus())
     {
@@ -350,10 +323,13 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     typename TestFixture::VectorType input;
     changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_EQ(0, input.size());
+    EXPECT_EQ(0, input.paddedSize());
+    EXPECT_TRUE(input.empty());
     EXPECT_FALSE(isPinned(input));
 
     // Fill some contents, which will be pinned because of the policy.
-    this->fillInput(&input);
+    fillInput(&input, 1);
     EXPECT_TRUE(isPinned(input));
 
     // Switching policy to CannotBePinned must unpin the buffer (via
@@ -382,7 +358,7 @@ TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
     // The HostAllocator has state, so a container using it will be
     // larger than a normal vector, whose default allocator is
     // stateless.
-    EXPECT_LT(sizeof(std::vector<typename TestFixture::ValueType>),
+    EXPECT_LT(sizeof(std::vector<typename TestFixture::VectorType::value_type>),
               sizeof(typename TestFixture::VectorType));
 }
 
@@ -394,14 +370,14 @@ TEST(HostAllocatorUntypedTest, Comparison)
 
 //! Declare allocator types to test.
 using AllocatorTypesToTest = ::testing::Types<HostAllocator<real>,
-                                              HostAllocator<int>,
+                                              HostAllocator<int32_t>,
                                               HostAllocator<RVec>,
                                               HostAllocator<MoveOnly>
                                               >;
 
 TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
 
-} // namespace
+} // namespace test
 } // namespace gmx
 
 // Includes tests common to all allocation policies.

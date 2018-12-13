@@ -599,30 +599,28 @@ void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, re
     }
 }
 
-void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
-                int natoms0, int natoms1)
+void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
+                       int natoms0, int natoms1)
 {
-    char buf[32];
-
     fprintf(fp, "comparing groups\n");
 
     for (int i = 0; i < egcNR; i++)
     {
-        sprintf(buf, "grps[%d].nr", i);
-        cmp_int(fp, buf, -1, g0->grps[i].nr, g1->grps[i].nr);
-        if (g0->grps[i].nr == g1->grps[i].nr)
+        std::string buf = gmx::formatString("grps[%d].nr", i);
+        cmp_int(fp, buf.c_str(), -1, g0.grps[i].nr, g1.grps[i].nr);
+        if (g0.grps[i].nr == g1.grps[i].nr)
         {
-            for (int j = 0; j < g0->grps[i].nr; j++)
+            for (int j = 0; j < g0.grps[i].nr; j++)
             {
-                sprintf(buf, "grps[%d].name[%d]", i, j);
-                cmp_str(fp, buf, -1,
-                        *g0->grpname[g0->grps[i].nm_ind[j]],
-                        *g1->grpname[g1->grps[i].nm_ind[j]]);
+                buf = gmx::formatString("grps[%d].name[%d]", i, j);
+                cmp_str(fp, buf.c_str(), -1,
+                        *g0.grpname[g0.grps[i].nm_ind[j]],
+                        *g1.grpname[g1.grps[i].nm_ind[j]]);
             }
         }
-        cmp_int(fp, "ngrpnr", i, g0->ngrpnr[i], g1->ngrpnr[i]);
-        if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1 &&
-            (g0->grpnr[i] != nullptr || g1->grpnr[i] != nullptr))
+        cmp_int(fp, "ngrpnr", i, g0.ngrpnr[i], g1.ngrpnr[i]);
+        if (g0.ngrpnr[i] == g1.ngrpnr[i] && natoms0 == natoms1 &&
+            (g0.grpnr[i] != nullptr || g1.grpnr[i] != nullptr))
         {
             for (int j = 0; j < natoms0; j++)
             {
@@ -635,7 +633,22 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
      */
 }
 
-int getGroupType(const gmx_groups_t *group, int type, int atom)
+int getGroupType(const gmx_groups_t &group, int type, int atom)
 {
-    return (group->grpnr[type] ? group->grpnr[type][atom] : 0);
+    return (group.grpnr[type] ? group.grpnr[type][atom] : 0);
+}
+
+void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)
+{
+    dst->name = src->name;
+    copy_blocka(&src->excls, &dst->excls);
+    copy_block(&src->cgs, &dst->cgs);
+    t_atoms *atomsCopy = copy_t_atoms(&src->atoms);
+    dst->atoms = *atomsCopy;
+    sfree(atomsCopy);
+
+    for (int i = 0; i < F_NRE; ++i)
+    {
+        dst->ilist[i] = src->ilist[i];
+    }
 }

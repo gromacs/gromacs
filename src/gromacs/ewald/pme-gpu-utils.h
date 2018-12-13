@@ -36,7 +36,10 @@
 #define GMX_EWALD_PME_GPU_UTILS_H
 
 /*! \internal \file
- * \brief This file defines the small PME GPU inline host/device functions.
+ * \brief This file defines small PME GPU inline host/device functions.
+ * Note that OpenCL device-side functions can't use C++ features, so they are
+ * located in a similar file pme-gpu-utils.clh.
+ * Be sure to keep the logic in sync in both files when changing it!
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_ewald
@@ -61,7 +64,7 @@
  * Feed the result into getSplineParamIndex() to get a full index.
  * TODO: it's likely that both parameters can be just replaced with a single atom index, as they are derived from it.
  * Do that, verifying that the generated code is not bloated, and/or revise the spline indexing scheme.
- * Removing warp dependency would also be nice (and would probably coincide with removing PME_SPREADGATHER_ATOMS_PER_WARP).
+ * Removing warp dependency would also be nice (and would probably coincide with removing c_pmeSpreadGatherAtomsPerWarp).
  *
  * \tparam order               PME order
  * \tparam atomsPerWarp        Number of atoms processed by a warp
@@ -101,5 +104,39 @@ int INLINE_EVERYWHERE getSplineParamIndex(int paramIndexBase, int dimIndex, int 
     assert((splineIndex >= 0) && (splineIndex < order));
     return (paramIndexBase + (splineIndex * DIM + dimIndex) * atomsPerWarp);
 }
+
+#if GMX_GPU == GMX_GPU_CUDA
+// CUDA device code helpers below
+
+/*! \internal \brief
+ * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
+ *
+ * \param[in] atomDataIndex        The atom data index.
+ * \param[in] nAtomData            The atom data array element count.
+ * \returns                        Non-0 if index is within bounds (or PME data padding is enabled), 0 otherwise.
+ *
+ * This is called from the spline_and_spread and gather PME kernels.
+ * The goal is to isolate the global range checks, and allow avoiding them with c_usePadding enabled.
+ */
+int __device__ __forceinline__ pme_gpu_check_atom_data_index(const int atomDataIndex, const int nAtomData)
+{
+    return c_usePadding ? 1 : (atomDataIndex < nAtomData);
+}
+
+/*! \internal \brief
+ * An inline CUDA function for skipping the zero-charge atoms.
+ *
+ * \returns                        Non-0 if atom should be processed, 0 otherwise.
+ * \param[in] coefficient          The atom charge.
+ *
+ * This is called from the spline_and_spread and gather PME kernels.
+ */
+int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient)
+{
+    assert(isfinite(coefficient));
+    return c_skipNeutralAtoms ? (coefficient != 0.0f) : 1;
+}
+
+#endif
 
 #endif

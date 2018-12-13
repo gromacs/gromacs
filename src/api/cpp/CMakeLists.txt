@@ -50,9 +50,17 @@ add_subdirectory(include)
 configure_file(include/version.h.in include/gmxapi/version.h)
 
 add_library(gmxapi SHARED
+            context.cpp
+            exceptions.cpp
+            gmxapi.cpp
             md.cpp
             mdmodule.cpp
-            version.cpp)
+            mdsignals.cpp
+            session.cpp
+            status.cpp
+            system.cpp
+            version.cpp
+            workflow.cpp)
 
 # Define public interface. Make sure targets linking against `gmxapi` in the build
 # system don't accidentally have the implementation headers (this directory))
@@ -127,7 +135,6 @@ configure_package_config_file(
     cmake/gmxapi-config.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config.cmake"
     INSTALL_DESTINATION share/cmake/gmxapi/
-    PATH_VARS CMAKE_INSTALL_LIBDIR
 )
 write_basic_package_version_file(
     ${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config-version.cmake
@@ -142,6 +149,13 @@ install(
     DESTINATION share/cmake/gmxapi/
 )
 
+# We need a CMake target to provide the internal interface(s) of the gmxapi
+# library implementation.
+add_library(gmxapi-detail INTERFACE)
+target_include_directories(gmxapi-detail
+                           INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
 if(BUILD_TESTING)
     add_subdirectory(tests)
+    add_subdirectory(workflow/tests)
 endif()

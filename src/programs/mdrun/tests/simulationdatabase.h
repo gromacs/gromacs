@@ -49,6 +49,20 @@ namespace gmx
 namespace test
 {
 
+/*! \brief Return whether the number of ranks is supported by
+ * the simulation \c simulationName in the database.
+ *
+ * This method lets test runners understand when end-to-end tests
+ * should be expected to work. */
+bool
+isNumberOfPpRanksSupported(const std::string &simulationName,
+                           int                possibleNumberOfPpRanks);
+
+/*! \brief Return a string describing the numbers of ranks supported
+ * for the simulation \c simulationName in the database. */
+std::string
+reportNumbersOfPpRanksSupported(const std::string &simulationName);
+
 //! Helper typedef
 using MdpFieldValues = std::map<std::string, std::string>;
 
@@ -63,7 +77,9 @@ using MdpFieldValues = std::map<std::string, std::string>;
  *     - spc216
  *     - alanine_vsite_vacuo
  *     - alanine_vsite_solvated
- *     - nonanol
+ *     - glycine_vacuo
+ *     - glycine_no_constraints_vacuo
+ *     - nonanol_vacuo
  *
  * Some of these systems are pretty minimal, because having
  * few atoms means few interactions, highly reproducible

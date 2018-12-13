@@ -102,15 +102,13 @@ static PmeGpuKernelParamsBase *pme_gpu_get_kernel_params_base_ptr(const PmeGpu *
 
 int pme_gpu_get_atom_data_alignment(const PmeGpu * /*unused*/)
 {
-    //TODO: this can be simplified, as PME_ATOM_DATA_ALIGNMENT is now constant
-    return PME_ATOM_DATA_ALIGNMENT;
+    //TODO: this can be simplified, as c_pmeAtomDataAlignment is now constant
+    return c_pmeAtomDataAlignment;
 }
 
 int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGpu)
 {
-    const int order = pmeGpu->common->pme_order;
-    GMX_ASSERT(order > 0, "Invalid PME order");
-    return pmeGpu->programHandle_->impl_->warpSize / PME_SPREADGATHER_THREADS_PER_ATOM;
+    return pmeGpu->programHandle_->impl_->warpSize / c_pmeSpreadGatherThreadsPerAtom;
 }
 
 void pme_gpu_synchronize(const PmeGpu *pmeGpu)
@@ -181,8 +179,8 @@ void pme_gpu_realloc_forces(PmeGpu *pmeGpu)
     GMX_ASSERT(newForcesSize > 0, "Bad number of atoms in PME GPU");
     reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces, newForcesSize,
                            &pmeGpu->archSpecific->forcesSize, &pmeGpu->archSpecific->forcesSizeAlloc, pmeGpu->archSpecific->context);
-    pmeGpu->staging.h_forces.reserve(pmeGpu->nAtomsAlloc);
-    pmeGpu->staging.h_forces.resize(pmeGpu->kernelParams->atoms.nAtoms);
+    pmeGpu->staging.h_forces.reserveWithPadding(pmeGpu->nAtomsAlloc);
+    pmeGpu->staging.h_forces.resizeWithPadding(pmeGpu->kernelParams->atoms.nAtoms);
 }
 
 void pme_gpu_free_forces(const PmeGpu *pmeGpu)
@@ -387,14 +385,12 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu *pmeGpu)
     initParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
                          kernelParamsPtr->fractShiftsTableTexture,
                          pmeGpu->common->fsh.data(),
-                         newFractShiftsSize,
-                         pmeGpu->deviceInfo);
+                         newFractShiftsSize);
 
     initParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
                          kernelParamsPtr->gridlineIndicesTableTexture,
                          pmeGpu->common->nn.data(),
-                         newFractShiftsSize,
-                         pmeGpu->deviceInfo);
+                         newFractShiftsSize);
 #elif GMX_GPU == GMX_GPU_OPENCL
     // No dedicated texture routines....
     allocateDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable, newFractShiftsSize, pmeGpu->archSpecific->context);
@@ -413,11 +409,9 @@ void pme_gpu_free_fract_shifts(const PmeGpu *pmeGpu)
     auto *kernelParamsPtr = pmeGpu->kernelParams.get();
 #if GMX_GPU == GMX_GPU_CUDA
     destroyParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
-                            kernelParamsPtr->fractShiftsTableTexture,
-                            pmeGpu->deviceInfo);
+                            kernelParamsPtr->fractShiftsTableTexture);
     destroyParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
-                            kernelParamsPtr->gridlineIndicesTableTexture,
-                            pmeGpu->deviceInfo);
+                            kernelParamsPtr->gridlineIndicesTableTexture);
 #elif GMX_GPU == GMX_GPU_OPENCL
     freeDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable);
     freeDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable);
@@ -495,6 +489,12 @@ void pme_gpu_sync_spread_grid(const PmeGpu *pmeGpu)
 
 void pme_gpu_init_internal(PmeGpu *pmeGpu)
 {
+#if GMX_GPU == GMX_GPU_CUDA
+    // Prepare to use the device that this PME task was assigned earlier.
+    // Other entities, such as CUDA timing events, are known to implicitly use the device context.
+    CU_RET_ERR(cudaSetDevice(pmeGpu->deviceInfo->id), "Switching to PME CUDA device");
+#endif
+
     /* Allocate the target-specific structures */
     pmeGpu->archSpecific.reset(new PmeGpuSpecific());
     pmeGpu->kernelParams.reset(new PmeGpuKernelParams());
@@ -504,6 +504,9 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu)
      * The performance seems to be the same though.
      * TODO: PME could also try to pick up nice grid sizes (with factors of 2, 3, 5, 7).
      */
+
+    // TODO: this is just a convenient reuse because programHandle_ currently is in charge of creating context
+    pmeGpu->archSpecific->context = pmeGpu->programHandle_->impl_->context;
 
     // timing enabling - TODO put this in gpu_utils (even though generally this is just option handling?) and reuse in NB
     if (GMX_GPU == GMX_GPU_CUDA)
@@ -519,18 +522,11 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu)
         pmeGpu->archSpecific->useTiming = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
     }
 
-    // TODO: this is just a convenient reuse because programHandle_ currently is in charge of creating context
-    pmeGpu->archSpecific->context = pmeGpu->programHandle_->impl_->context;
-
-#if GMX_GPU == GMX_GPU_CUDA
-    // Prepare to use the device that this PME task was assigned earlier.
-    CU_RET_ERR(cudaSetDevice(pmeGpu->deviceInfo->id), "Switching to PME CUDA device");
-#endif
-
 #if GMX_GPU == GMX_GPU_CUDA
     pmeGpu->maxGridWidthX = pmeGpu->deviceInfo->prop.maxGridSize[0];
 #elif GMX_GPU == GMX_GPU_OPENCL
-    //TODO we'll need work size checks for OpenCL too
+    pmeGpu->maxGridWidthX = INT32_MAX / 2;
+    // TODO: is there no really global work size limit in OpenCL?
 #endif
 
     /* Creating a PME GPU stream:
@@ -593,11 +589,11 @@ void pme_gpu_destroy_3dfft(const PmeGpu *pmeGpu)
 
 int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int atomIndex, int atomsPerWarp)
 {
-    if (order != 4)
+    if (order != c_pmeGpuOrder)
     {
         throw order;
     }
-    constexpr int fixedOrder = 4;
+    constexpr int fixedOrder = c_pmeGpuOrder;
     GMX_UNUSED_VALUE(fixedOrder);
 
     const int atomWarpIndex = atomIndex % atomsPerWarp;
@@ -605,9 +601,24 @@ int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int atomIn
     int       indexBase, result;
     switch (atomsPerWarp)
     {
+        case 1:
+            indexBase = getSplineParamIndexBase<fixedOrder, 1>(warpIndex, atomWarpIndex);
+            result    = getSplineParamIndex<fixedOrder, 1>(indexBase, dimIndex, splineIndex);
+            break;
+
         case 2:
             indexBase = getSplineParamIndexBase<fixedOrder, 2>(warpIndex, atomWarpIndex);
             result    = getSplineParamIndex<fixedOrder, 2>(indexBase, dimIndex, splineIndex);
+            break;
+
+        case 4:
+            indexBase = getSplineParamIndexBase<fixedOrder, 4>(warpIndex, atomWarpIndex);
+            result    = getSplineParamIndex<fixedOrder, 4>(indexBase, dimIndex, splineIndex);
+            break;
+
+        case 8:
+            indexBase = getSplineParamIndexBase<fixedOrder, 8>(warpIndex, atomWarpIndex);
+            result    = getSplineParamIndex<fixedOrder, 8>(indexBase, dimIndex, splineIndex);
             break;
 
         default:
@@ -730,6 +741,10 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
     pmeGpu->common->nk[YY]        = pme->nky;
     pmeGpu->common->nk[ZZ]        = pme->nkz;
     pmeGpu->common->pme_order     = pme->pme_order;
+    if (pmeGpu->common->pme_order != c_pmeGpuOrder)
+    {
+        GMX_THROW(gmx::NotImplementedError("pme_order != 4 is not implemented!"));
+    }
     for (int i = 0; i < DIM; i++)
     {
         pmeGpu->common->bsp_mod[i].assign(pme->bsp_mod[i], pme->bsp_mod[i] + pmeGpu->common->nk[i]);
@@ -800,6 +815,7 @@ void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGpu, const pme_atomcomm
     const auto      atomCount    = pme_gpu_get_kernel_params_base_ptr(pmeGpu)->atoms.nAtoms;
     const auto      atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGpu);
     const auto      pmeOrder     = pmeGpu->common->pme_order;
+    GMX_ASSERT(pmeOrder == c_pmeGpuOrder, "Only PME order 4 is implemented");
 
     real           *cpuSplineBuffer;
     float          *h_splineBuffer;
@@ -944,9 +960,8 @@ void pme_gpu_3dfft(const PmeGpu *pmeGpu, gmx_fft_direction dir, int grid_index)
 {
     int   timerId = (dir == GMX_FFT_REAL_TO_COMPLEX) ? gtPME_FFT_R2C : gtPME_FFT_C2R;
 
-    auto *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timerId);
     pme_gpu_start_timing(pmeGpu, timerId);
-    pmeGpu->archSpecific->fftSetup[grid_index]->perform3dFft(dir, timingEvent);
+    pmeGpu->archSpecific->fftSetup[grid_index]->perform3dFft(dir, pme_gpu_fetch_timing_event(pmeGpu, timerId));
     pme_gpu_stop_timing(pmeGpu, timerId);
 }
 
@@ -975,17 +990,18 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
     const auto   *kernelParamsPtr = pmeGpu->kernelParams.get();
     GMX_ASSERT(kernelParamsPtr->atoms.nAtoms > 0, "No atom data in PME GPU spread");
 
-    const int maxThreadsPerBlock = c_spreadMaxWarpsPerBlock * pmeGpu->programHandle_->impl_->warpSize;
-    // TODO take device limitations (CL_DEVICE_MAX_WORK_GROUP_SIZE) into account for all 3 kernels
-    const int order         = pmeGpu->common->pme_order;
-    const int atomsPerBlock = maxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM;
+    const size_t blockSize  = pmeGpu->programHandle_->impl_->spreadWorkGroupSize;
+
+    const int    order         = pmeGpu->common->pme_order;
+    GMX_ASSERT(order == c_pmeGpuOrder, "Only PME order 4 is implemented");
+    const int    atomsPerBlock = blockSize / c_pmeSpreadGatherThreadsPerAtom;
     // TODO: pick smaller block size in runtime if needed
     // (e.g. on 660 Ti where 50% occupancy is ~25% faster than 100% occupancy with RNAse (~17.8k atoms))
     // If doing so, change atomsPerBlock in the kernels as well.
     // TODO: test varying block sizes on modern arch-s as well
     // TODO: also consider using cudaFuncSetCacheConfig() for preferring shared memory on older architectures
     //(for spline data mostly, together with varying PME_GPU_PARALLEL_SPLINE define)
-    GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. spreading block size");
+    GMX_ASSERT(!c_usePadding || !(c_pmeAtomDataAlignment % atomsPerBlock), "inconsistent atom data padding vs. spreading block size");
 
     const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
     auto               dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
@@ -996,11 +1012,6 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
     config.gridSize[0]  = dimGrid.first;
     config.gridSize[1]  = dimGrid.second;
     config.stream       = pmeGpu->archSpecific->pmeStream;
-
-    if (order != 4)
-    {
-        GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 was not implemented!"));
-    }
 
     int  timingId;
     PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
@@ -1025,7 +1036,21 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
 
     pme_gpu_start_timing(pmeGpu, timingId);
     auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#if c_canEmbedBuffers
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#else
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr,
+                                                      &kernelParamsPtr->atoms.d_theta,
+                                                      &kernelParamsPtr->atoms.d_dtheta,
+                                                      &kernelParamsPtr->atoms.d_gridlineIndices,
+                                                      &kernelParamsPtr->grid.d_realGrid,
+                                                      &kernelParamsPtr->grid.d_fractShiftsTable,
+                                                      &kernelParamsPtr->grid.d_gridlineIndicesTable,
+                                                      &kernelParamsPtr->atoms.d_coefficients,
+                                                      &kernelParamsPtr->atoms.d_coordinates
+                                                      );
+#endif
+
     launchGpuKernel(kernelPtr, config, timingEvent, "PME spline/spread", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
@@ -1075,10 +1100,10 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
             GMX_ASSERT(false, "Implement grid ordering here and below for the kernel launch");
     }
 
-    const int    maxThreadsPerBlock = c_solveMaxWarpsPerBlock * pmeGpu->programHandle_->impl_->warpSize;
-    const int    maxBlockSize       = maxThreadsPerBlock;
+    const size_t maxBlockSize      = pmeGpu->programHandle_->impl_->solveMaxWorkGroupSize;
+
     const int    gridLineSize       = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
-    const int    gridLinesPerBlock  = std::max(maxBlockSize / gridLineSize, 1);
+    const int    gridLinesPerBlock  = std::max(maxBlockSize / gridLineSize, 1UL);
     const int    blocksPerGridLine  = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
     const int    cellsPerBlock      = gridLineSize * gridLinesPerBlock;
     const size_t warpSize           = pmeGpu->programHandle_->impl_->warpSize;
@@ -1110,7 +1135,14 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
 
     pme_gpu_start_timing(pmeGpu, timingId);
     auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#if c_canEmbedBuffers
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#else
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr,
+                                                      &kernelParamsPtr->grid.d_splineModuli,
+                                                      &kernelParamsPtr->constants.d_virialAndEnergy,
+                                                      &kernelParamsPtr->grid.d_fourierGrid);
+#endif
     launchGpuKernel(kernelPtr, config, timingEvent, "PME solve", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
@@ -1140,9 +1172,6 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
         pme_gpu_copy_input_forces(pmeGpu);
     }
 
-    const int    order           = pmeGpu->common->pme_order;
-    const auto  *kernelParamsPtr = pmeGpu->kernelParams.get();
-
     if (!pme_gpu_performs_FFT(pmeGpu) || pme_gpu_is_testing(pmeGpu))
     {
         pme_gpu_copy_input_gather_grid(pmeGpu, const_cast<float *>(h_grid));
@@ -1153,12 +1182,16 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
         pme_gpu_copy_input_gather_atom_data(pmeGpu);
     }
 
-    const int maxThreadsPerBlock = c_gatherMaxWarpsPerBlock * pmeGpu->programHandle_->impl_->warpSize;
-    const int atomsPerBlock      =  maxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM;
-    GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. gathering block size");
+    const size_t blockSize     = pmeGpu->programHandle_->impl_->gatherWorkGroupSize;
+    const int    atomsPerBlock = blockSize / c_pmeSpreadGatherThreadsPerAtom;
+    GMX_ASSERT(!c_usePadding || !(c_pmeAtomDataAlignment % atomsPerBlock), "inconsistent atom data padding vs. gathering block size");
 
     const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
     auto               dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
+
+
+    const int order = pmeGpu->common->pme_order;
+    GMX_ASSERT(order == c_pmeGpuOrder, "Only PME order 4 is implemented");
 
     KernelLaunchConfig config;
     config.blockSize[0] = config.blockSize[1] = order;
@@ -1166,11 +1199,6 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
     config.gridSize[0]  = dimGrid.first;
     config.gridSize[1]  = dimGrid.second;
     config.stream       = pmeGpu->archSpecific->pmeStream;
-
-    if (order != 4)
-    {
-        GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 was not implemented!"));
-    }
 
     // TODO test different cache configs
 
@@ -1181,8 +1209,19 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
         pmeGpu->programHandle_->impl_->gatherReduceWithInputKernel;
 
     pme_gpu_start_timing(pmeGpu, timingId);
-    auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+    auto       *timingEvent     = pme_gpu_fetch_timing_event(pmeGpu, timingId);
+    const auto *kernelParamsPtr = pmeGpu->kernelParams.get();
+#if c_canEmbedBuffers
+    const auto  kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#else
+    const auto  kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr,
+                                                       &kernelParamsPtr->atoms.d_coefficients,
+                                                       &kernelParamsPtr->grid.d_realGrid,
+                                                       &kernelParamsPtr->atoms.d_theta,
+                                                       &kernelParamsPtr->atoms.d_dtheta,
+                                                       &kernelParamsPtr->atoms.d_gridlineIndices,
+                                                       &kernelParamsPtr->atoms.d_forces);
+#endif
     launchGpuKernel(kernelPtr, config, timingEvent, "PME gather", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 

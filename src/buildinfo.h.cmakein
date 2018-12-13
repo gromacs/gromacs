@@ -57,6 +57,9 @@
 /** Source directory for the build */
 #define CMAKE_SOURCE_DIR        "@CMAKE_SOURCE_DIR@"
 
+/** Directory for test input files */
+#define GMX_TESTSIMULATIONDATABASE_DIR  "@CMAKE_SOURCE_DIR@/src/testutils/simulationdatabase"
+
 /** Binary directory for the build */
 #define CMAKE_BINARY_DIR        "@CMAKE_BINARY_DIR@"
 

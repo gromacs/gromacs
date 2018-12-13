@@ -112,7 +112,7 @@ struct PmeGpuSettings
 struct PmeGpuStaging
 {
     //! Host-side force buffer
-    std::vector < gmx::RVec, gmx::HostAllocator < gmx::RVec>> h_forces;
+    gmx::HostVector<gmx::RVec> h_forces;
 
     /*! \brief Virial and energy intermediate host-side buffer. Size is PME_GPU_VIRIAL_AND_ENERGY_COUNT. */
     float  *h_virialAndEnergy;
@@ -184,14 +184,14 @@ struct PmeGpu
      */
     PmeGpuStaging staging;
 
-    /*! \brief Number of local atoms, padded to be divisible by PME_ATOM_DATA_ALIGNMENT.
+    /*! \brief Number of local atoms, padded to be divisible by c_pmeAtomDataAlignment.
      * Used for kernel scheduling.
      * kernelParams.atoms.nAtoms is the actual atom count to be used for data copying.
      * TODO: this and the next member represent a memory allocation/padding properties -
      * what a container type should do ideally.
      */
     int nAtomsPadded;
-    /*! \brief Number of local atoms, padded to be divisible by PME_ATOM_DATA_ALIGNMENT
+    /*! \brief Number of local atoms, padded to be divisible by c_pmeAtomDataAlignment
      * if c_usePadding is true.
      * Used only as a basic size for almost all the atom data allocations
      * (spline parameter data is also aligned by PME_SPREADGATHER_PARTICLES_PER_WARP).
@@ -205,6 +205,8 @@ struct PmeGpu
 
     /*! \brief Kernel scheduling grid width limit in X - derived from deviceinfo compute capability in CUDA.
      * Declared as very large int to make it useful in computations with type promotion, to avoid overflows.
+     * OpenCL seems to not have readily available global work size limit, so we just assign a large arbitrary constant to this instead.
+     * TODO: this should be in PmeGpuProgram(Impl)
      */
     std::intmax_t maxGridWidthX;
 

@@ -190,7 +190,9 @@ runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
                   const t_commrec                *cr,
                   const gmx_multisim_t           *ms,
                   const PhysicalNodeCommunicator &physicalNodeComm,
-                  const std::vector<GpuTask>     &gpuTasksOnThisRank)
+                  const std::vector<GpuTask>     &gpuTasksOnThisRank,
+                  bool                            useGpuForBonded,
+                  PmeRunMode                      pmeRunMode)
 {
     /* Communicate among ranks on this node to find each task that can
      * be executed on a GPU, on each rank. */
@@ -307,7 +309,8 @@ runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
     }
 
     reportGpuUsage(mdlog, !userGpuTaskAssignment.empty(), taskAssignmentOnRanksOfThisNode,
-                   numGpuTasksOnThisNode, physicalNodeComm.size_, cr->nnodes > 1);
+                   numGpuTasksOnThisNode, physicalNodeComm.size_, cr->nnodes > 1,
+                   useGpuForBonded, pmeRunMode);
 
     // If the user chose a task assignment, give them some hints where appropriate.
     if (!userGpuTaskAssignment.empty())

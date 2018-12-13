@@ -108,7 +108,7 @@
 
 static const char *edlbs_names[int(DlbState::nr)] = { "off", "auto", "locked", "on", "on" };
 
-/* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
+/* The size per atom group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
 
 /* The flags for the cggl_flag buffer in gmx_domdec_comm_t */
@@ -1767,7 +1767,8 @@ static void make_dd_communicators(const gmx::MDLogger &mdlog,
         dd->pme_nodeid = -1;
     }
 
-    if (DDMASTER(dd))
+    /* We can not use DDMASTER(dd), because dd->masterrank is set later */
+    if (MASTER(cr))
     {
         dd->ma = gmx::compat::make_unique<AtomDistribution>(dd->nc,
                                                             comm->cgs_gl.nr,
@@ -2073,6 +2074,7 @@ static bool systemHasConstraintsOrVsites(const gmx_mtop_t &mtop)
 static void setupUpdateGroups(const gmx::MDLogger &mdlog,
                               const gmx_mtop_t    &mtop,
                               const t_inputrec    &inputrec,
+                              real                 cutoffMargin,
                               int                  numMpiRanksTotal,
                               gmx_domdec_comm_t   *comm)
 {
@@ -2086,7 +2088,9 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
     }
 
     comm->updateGroupingPerMoleculetype = gmx::makeUpdateGroups(mtop);
-    comm->useUpdateGroups               = !comm->updateGroupingPerMoleculetype.empty();
+    comm->useUpdateGroups               =
+        (!comm->updateGroupingPerMoleculetype.empty() &&
+         getenv("GMX_NO_UPDATEGROUPS") == nullptr);
 
     if (comm->useUpdateGroups)
     {
@@ -2110,8 +2114,7 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
         /* To use update groups, the large domain-to-domain cutoff distance
          * should be compatible with the box size.
          */
-        /* TODO: add this cutoff check */
-        comm->useUpdateGroups = false;
+        comm->useUpdateGroups = (atomToAtomIntoDomainToDomainCutoff(*comm, 0) < cutoffMargin);
 
         if (comm->useUpdateGroups)
         {
@@ -2123,9 +2126,7 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
         }
         else
         {
-            /* TODO: Remove this comment when enabling update groups
-             * GMX_LOG(mdlog.info).appendTextFormatted("The combination of rlist and box size prohibits the use of update groups\n");
-             */
+            GMX_LOG(mdlog.info).appendTextFormatted("The combination of rlist and box size prohibits the use of update groups\n");
             comm->updateGroupingPerMoleculetype.clear();
             comm->updateGroupsCog.reset(nullptr);
         }
@@ -2180,7 +2181,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     comm->useUpdateGroups = false;
     if (ir->cutoff_scheme == ecutsVERLET)
     {
-        setupUpdateGroups(mdlog, *mtop, *ir, cr->nnodes, comm);
+        real cutoffMargin = std::sqrt(max_cutoff2(ir->ePBC, box)) - ir->rlist;
+        setupUpdateGroups(mdlog, *mtop, *ir, cutoffMargin, cr->nnodes, comm);
     }
 
     comm->bInterCGBondeds = ((ncg_mtop(mtop) > gmx_mtop_num_molecules(*mtop)) ||
@@ -2194,8 +2196,16 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         comm->bInterCGMultiBody = FALSE;
     }
 
-    dd->splitConstraints = gmx::inter_charge_group_constraints(*mtop);
-    dd->splitSettles     = gmx::inter_charge_group_settles(*mtop);
+    if (comm->useUpdateGroups)
+    {
+        dd->splitConstraints = false;
+        dd->splitSettles     = false;
+    }
+    else
+    {
+        dd->splitConstraints = gmx::inter_charge_group_constraints(*mtop);
+        dd->splitSettles     = gmx::inter_charge_group_settles(*mtop);
+    }
 
     if (ir->rlist == 0)
     {
@@ -2207,7 +2217,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     }
     else
     {
-        comm->cutoff   = ir->rlist;
+        comm->cutoff   = atomToAtomIntoDomainToDomainCutoff(*comm, ir->rlist);
     }
     comm->cutoff_mbody = 0;
 
@@ -2224,7 +2234,9 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
      */
     constexpr real c_chanceThatAtomMovesBeyondDomain = 1e-12;
     const real     limitForAtomDisplacement          =
-        minCellSizeForAtomDisplacement(*mtop, *ir, c_chanceThatAtomMovesBeyondDomain);
+        minCellSizeForAtomDisplacement(*mtop, *ir,
+                                       comm->updateGroupingPerMoleculetype,
+                                       c_chanceThatAtomMovesBeyondDomain);
     GMX_LOG(mdlog.info).appendTextFormatted(
             "Minimum cell size due to atom displacement: %.3f nm",
             limitForAtomDisplacement);
@@ -2245,7 +2257,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     {
         if (options.minimumCommunicationRange > 0)
         {
-            comm->cutoff_mbody = options.minimumCommunicationRange;
+            comm->cutoff_mbody = atomToAtomIntoDomainToDomainCutoff(*comm, options.minimumCommunicationRange);
             if (options.useBondedCommunication)
             {
                 comm->bBondComm = (comm->cutoff_mbody > comm->cutoff);
@@ -2648,7 +2660,21 @@ static void writeSettings(gmx::TextWriter       *log,
         bInterCGVsites ||
         dd->splitConstraints || dd->splitSettles)
     {
-        log->writeLine("The maximum allowed distance for charge groups involved in interactions is:");
+        std::string decompUnits;
+        if (comm->bCGs)
+        {
+            decompUnits = "charge groups";
+        }
+        else if (comm->useUpdateGroups)
+        {
+            decompUnits = "atom groups";
+        }
+        else
+        {
+            decompUnits = "atoms";
+        }
+
+        log->writeLineFormatted("The maximum allowed distance for %s involved in interactions is:", decompUnits.c_str());
         log->writeLineFormatted("%40s  %-7s %6.3f nm", "non-bonded interactions", "", comm->cutoff);
 
         if (bDynLoadBal)

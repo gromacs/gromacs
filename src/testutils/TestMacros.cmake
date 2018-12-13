@@ -94,28 +94,34 @@ function (gmx_add_gtest_executable EXENAME)
 endfunction()
 
 # This function can be called with extra options and arguments:
-#   MPI_RANKS <N>     declares the requirement to run the test binary with N ranks
-#   INTEGRATION_TEST  requires the use of the IntegrationTest label in CTest
-#   OCL_INTEGRATION_TEST requires the use of the IntegrationTest label in CTest,
-#                        only difference is 2x longer timeout as OpenCL JIT can be slow
-#   SLOW_TEST         requires the use of the SlowTest label in CTest, and
-#                     increase the length of the ctest timeout.
+#   OPENMP_THREADS <N>    declares the requirement to run the test binary with N OpenMP
+#                           threads (when supported by the build configuration)
+#   MPI_RANKS <N>         declares the requirement to run the test binary with N ranks
+#   INTEGRATION_TEST      requires the use of the IntegrationTest label in CTest
+#   SLOW_TEST             requires the use of the SlowTest label in CTest, and
+#                         increase the length of the ctest timeout.
 #
 # TODO When a test case needs it, generalize the MPI_RANKS mechanism so
 # that ctest can run the test binary over a range of numbers of MPI
 # ranks.
 function (gmx_register_gtest_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options INTEGRATION_TEST OCL_INTEGRATION_TEST SLOW_TEST)
-        set(_one_value_args MPI_RANKS)
+        set(_options INTEGRATION_TEST SLOW_TEST)
+        set(_one_value_args MPI_RANKS OPENMP_THREADS)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set(_labels GTest)
         set(_timeout 30)
-        if (ARG_INTEGRATION_TEST OR ARG_OCL_INTEGRATION_TEST)
+        if (ARG_INTEGRATION_TEST)
             list(APPEND _labels IntegrationTest)
-            if (ARG_OCL_INTEGRATION_TEST)
+            # Slow build configurations should have longer timeouts.
+            # Both OpenCL (from JIT) and ThreadSanitizer (from how it
+            # checks) can take signficantly more time than other
+            # configurations.
+            if (GMX_USE_OPENCL)
                 set(_timeout 240)
+            elseif (${CMAKE_BUILD_TYPE} STREQUAL TSAN)
+                set(_timeout 300)
             else()
                 set(_timeout 120)
             endif()
@@ -129,6 +135,11 @@ function (gmx_register_gtest_test NAME EXENAME)
             gmx_get_test_prefix_cmd(_prefix_cmd)
         endif()
         set(_cmd ${_prefix_cmd} $<TARGET_FILE:${EXENAME}>)
+        if (ARG_OPENMP_THREADS)
+            if (GMX_OPENMP)
+                list(APPEND _cmd -ntomp ${ARG_OPENMP_THREADS})
+            endif()
+        endif()
         if (ARG_MPI_RANKS)
             if (NOT GMX_CAN_RUN_MPI_TESTS)
                 return()

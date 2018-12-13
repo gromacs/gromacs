@@ -86,6 +86,16 @@ default, the middle (determined by the order in the topology) atom is
 used as a reference atom, but the user can also select any other atom if
 it would be closer to center of the group.
 
+When there are large pull groups, such as a
+lipid bilayer, ``pull-pbc-ref-prev-step-com`` can be used to avoid potential
+large movements of the center of mass in case that atoms in the pull group
+move so much that the reference atom is too far from the intended center of mass.
+With this option enabled the center of mass from the previous step is used,
+instead of the position of the reference atom, to determine the reference position.
+The position of the reference atom is still used for the first step. For large pull
+groups it is important to select a reference atom that is close to the intended
+center of mass, i.e. do not use ``pull-group?-pbcatom = 0``.
+
 For a layered system, for instance a lipid bilayer, it may be of
 interest to calculate the PMF of a lipid as function of its distance
 from the whole bilayer. The whole bilayer can be taken as reference
@@ -100,12 +110,11 @@ axis along this one dimension. To avoid jumps in the pull force,
 contributions of atoms are weighted as a function of distance (in
 addition to the mass weighting):
 
-.. math::
-
-   \begin{aligned}
-   w(r < r_\mathrm{cyl}) & = &
-   1-2 \left(\frac{r}{r_\mathrm{cyl}}\right)^2 + \left(\frac{r}{r_\mathrm{cyl}}\right)^4 \\
-   w(r \geq r_\mathrm{cyl}) & = & 0\end{aligned}
+.. math:: \begin{aligned}
+          w(r < r_\mathrm{cyl}) & = &
+          1-2 \left(\frac{r}{r_\mathrm{cyl}}\right)^2 + \left(\frac{r}{r_\mathrm{cyl}}\right)^4 \\
+          w(r \geq r_\mathrm{cyl}) & = & 0\end{aligned}
+          :label: eqnpulldistmassweight
 
 Note that the radial dependence on the weight causes a radial force on
 both cylinder group and the other pull group. This is an undesirable,
@@ -146,19 +155,20 @@ either by supplying weights in the input or due to cylinder geometry or
 due to cosine weighting, the weights need to be scaled to conserve
 momentum:
 
-.. math::
-
-   w'_i = w_i
-   \left. \sum_{j=1}^N w_j \, m_j \right/ \sum_{j=1}^N w_j^2 \, m_j
+.. math:: w'_i = w_i
+          \left. \sum_{j=1}^N w_j \, m_j \right/ \sum_{j=1}^N w_j^2 \, m_j
+          :label: eqnpullmassscale
 
 where :math:`m_j` is the mass of atom :math:`j` of the group. The mass
 of the group, required for calculating the constraint force, is:
 
 .. math:: M = \sum_{i=1}^N w'_i \, m_i
+          :label: eqnpullconstraint
 
 The definition of the weighted center of mass is:
 
 .. math:: \mathbf{r}_{com} = \left. \sum_{i=1}^N w'_i \, m_i \, \mathbf{r}_i \right/ M
+          :label: eqnpullcom
 
 From the centers of mass the AFM, constraint, or umbrella force
 :math:`\mathbf{F}_{\!com}` on each group can be
@@ -166,6 +176,7 @@ calculated. The force on the center of mass of a group is redistributed
 to the atoms as follows:
 
 .. math:: \mathbf{F}_{\!i} = \frac{w'_i \, m_i}{M} \, \mathbf{F}_{\!com}
+          :label: eqnpullcomforce
 
 Definition of the pull direction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

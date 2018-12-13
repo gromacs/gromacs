@@ -254,7 +254,7 @@ Performance and Run Control
         target minimum number pair-lists in order to improve multi-processor load-balance for better
         performance with small simulation systems. Must be set to a non-negative integer,
         the 0 value disables list splitting.
-        The default value is optimized for supported GPUs (NVIDIA Fermi to Maxwell),
+        The default value is optimized for supported GPUs
         therefore changing it is not necessary for normal usage, but it can be useful on future architectures.
 
 ``GMX_NBLISTCG``
@@ -315,6 +315,10 @@ Performance and Run Control
 ``GMX_NO_SOLV_OPT``
         turns off solvent optimizations; automatic if ``GMX_NB_GENERIC``
         is enabled.
+
+``GMX_NO_UPDATEGROUPS``
+        turns off update groups. May allow for a decomposition of more
+        domains for small systems at the cost of communication during update.
 
 ``GMX_NSCELL_NCG``
         the ideal number of charge groups per neighbor searching grid cell is hard-coded

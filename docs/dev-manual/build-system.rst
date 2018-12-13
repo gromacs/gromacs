@@ -208,6 +208,18 @@ Variables affecting compilation/linking
    subcounters which are available.
    Defaults to ``OFF``.
 
+.. cmake:: GMX_ENABLE_CCACHE
+
+    If set to ``ON``, attempts to set up the `ccache <https://ccache.samba.org>`_
+    caching compiler wrapper to speed up repeated builds.
+    The ``ccache`` executable is searched for with ``find_package()`` if CMake
+    is being run with a compatible build type.
+    If the executable is found and a compatible compiler is configured,
+    CMake launch wrapper scripts are set.
+    If enabled, the ``ccache`` executable location discovered by CMake must be
+    accessible during build, as well.
+    Defaults to ``OFF`` to minimize build system complexity.
+
 .. cmake:: GMX_INSTALL_DATASUBDIR
 
    Sets the subdirectory under CMAKE_INSTALL_DATADIR where GROMACS-specific
@@ -337,6 +349,15 @@ Variables affecting the ``all`` target
 Variables affecting special targets
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. cmake:: GMXAPI
+
+    If set ``ON``, the additional ``gmxapi`` C++ library is configured and the
+    ``gmxapi`` headers will be installed. Provides the additional build tree
+    targets ``gmxapi-cppdocs`` and ``gmxapi-cppdocs-dev`` when Doxygen is
+    available. Also exports CMake configuration files for ``gmxapi`` that allow
+    ``find_package(gmxapi)`` to import the ``Gromacs::gmxapi`` CMake target in
+    client projects that search the GROMACS installation root.
+
 .. cmake:: GMX_BUILD_MANUAL
 
    If set ``ON``, CMake detection for LaTeX and other prerequisites for the
@@ -441,6 +462,12 @@ doxygen-*
    turn runs as part of the Jenkins documentation job.
    All CMake code is in :file:`docs/doxygen/`.
    See :doc:`doxygen`.
+gmxapi-cppdocs
+    Builds API documentation for gmxapi. Useful to authors of client software.
+    Documentation is generated in :file:`docs/api-user` in the build directory.
+gmxapi-cppdocs-dev
+    Extract documentation for gmxapi and GROMACS developers to
+    :file:`docs/api-dev`.
 install-guide
    Runs Sphinx to generate a plain-text INSTALL file for the source package.
    The files is generated at :file:`docs/install-guide/text/`, from where it

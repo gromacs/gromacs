@@ -66,7 +66,7 @@
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_types.h"
 
-/* This is a heuristically determined parameter for the Fermi, Kepler
+/* This is a heuristically determined parameter for the Kepler
  * and Maxwell architectures for the minimum size of ci lists by multiplying
  * this constant with the # of multiprocessors on the current device.
  * Since the maximum number of blocks per multiprocessor is 16, the ideal
@@ -80,8 +80,7 @@ static unsigned int gpu_min_ci_balanced_factor = 44;
 static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb);
 
 /* Fw. decl, */
-static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
-                                          const gmx_device_info_t *dev_info);
+static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam);
 
 /*! \brief Return whether combination rules are used.
  *
@@ -101,17 +100,16 @@ static inline bool useLjCombRule(const cu_nbparam_t  *nbparam)
     it just re-uploads the table.
  */
 static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
-                                           cu_nbparam_t              *nbp,
-                                           const gmx_device_info_t   *dev_info)
+                                           cu_nbparam_t              *nbp)
 {
-    if (nbp->coulomb_tab != NULL)
+    if (nbp->coulomb_tab != nullptr)
     {
-        nbnxn_cuda_free_nbparam_table(nbp, dev_info);
+        nbnxn_cuda_free_nbparam_table(nbp);
     }
 
     nbp->coulomb_tab_scale = ic->tabq_scale;
     initParamLookupTable(nbp->coulomb_tab, nbp->coulomb_tab_texobj,
-                         ic->tabq_coul_F, ic->tabq_size, dev_info);
+                         ic->tabq_coul_F, ic->tabq_size);
 }
 
 
@@ -134,10 +132,10 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     stat = cudaMalloc((void**)&ad->e_el, sizeof(*ad->e_el));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->e_el");
 
-    /* initialize to NULL poiters to data that is not allocated here and will
+    /* initialize to nullptr poiters to data that is not allocated here and will
        need reallocation in nbnxn_cuda_init_atomdata */
-    ad->xq = NULL;
-    ad->f  = NULL;
+    ad->xq = nullptr;
+    ad->f  = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
     ad->natoms = -1;
@@ -146,16 +144,15 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
 
 /*! Selects the Ewald kernel type, analytical on SM 3.0 and later, tabulated on
     earlier GPUs, single or twin cut-off. */
-static int pick_ewald_kernel_type(bool                     bTwinCut,
-                                  const gmx_device_info_t *dev_info)
+static int pick_ewald_kernel_type(bool                     bTwinCut)
 {
     bool bUseAnalyticalEwald, bForceAnalyticalEwald, bForceTabulatedEwald;
     int  kernel_type;
 
     /* Benchmarking/development environment variables to force the use of
        analytical or tabulated Ewald kernel. */
-    bForceAnalyticalEwald = (getenv("GMX_CUDA_NB_ANA_EWALD") != NULL);
-    bForceTabulatedEwald  = (getenv("GMX_CUDA_NB_TAB_EWALD") != NULL);
+    bForceAnalyticalEwald = (getenv("GMX_CUDA_NB_ANA_EWALD") != nullptr);
+    bForceTabulatedEwald  = (getenv("GMX_CUDA_NB_TAB_EWALD") != nullptr);
 
     if (bForceAnalyticalEwald && bForceTabulatedEwald)
     {
@@ -163,17 +160,16 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
                    "requested through environment variables.");
     }
 
-    /* By default, on SM 3.0 and later use analytical Ewald, on earlier tabulated. */
-    if ((dev_info->prop.major >= 3 || bForceAnalyticalEwald) && !bForceTabulatedEwald)
+    /* By default use analytical Ewald. */
+    bUseAnalyticalEwald = true;
+    if (bForceAnalyticalEwald)
     {
-        bUseAnalyticalEwald = true;
-
         if (debug)
         {
             fprintf(debug, "Using analytical Ewald CUDA kernels\n");
         }
     }
-    else
+    else if (bForceTabulatedEwald)
     {
         bUseAnalyticalEwald = false;
 
@@ -185,7 +181,7 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
 
     /* Use twin cut-off kernels if requested by bTwinCut or the env. var.
        forces it (use it for debugging/benchmarking only). */
-    if (!bTwinCut && (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == NULL))
+    if (!bTwinCut && (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == nullptr))
     {
         kernel_type = bUseAnalyticalEwald ? eelCuEWALD_ANA : eelCuEWALD_TAB;
     }
@@ -226,8 +222,7 @@ static void set_cutoff_parameters(cu_nbparam_t              *nbp,
 static void init_nbparam(cu_nbparam_t              *nbp,
                          const interaction_const_t *ic,
                          const NbnxnListParameters *listParams,
-                         const nbnxn_atomdata_t    *nbat,
-                         const gmx_device_info_t   *dev_info)
+                         const nbnxn_atomdata_t    *nbat)
 {
     int         ntypes;
 
@@ -263,7 +258,6 @@ static void init_nbparam(cu_nbparam_t              *nbp,
                         break;
                     default:
                         gmx_incons("The requested LJ combination rule is not implemented in the CUDA GPU accelerated kernels!");
-                        break;
                 }
                 break;
             case eintmodFORCESWITCH:
@@ -274,7 +268,6 @@ static void init_nbparam(cu_nbparam_t              *nbp,
                 break;
             default:
                 gmx_incons("The requested VdW interaction modifier is not implemented in the CUDA GPU accelerated kernels!");
-                break;
         }
     }
     else if (ic->vdwtype == evdwPME)
@@ -306,7 +299,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
     {
         /* Initially rcoulomb == rvdw, so it's surely not twin cut-off. */
-        nbp->eeltype = pick_ewald_kernel_type(false, dev_info);
+        nbp->eeltype = pick_ewald_kernel_type(false);
     }
     else
     {
@@ -315,24 +308,24 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     }
 
     /* generate table for PME */
-    nbp->coulomb_tab = NULL;
+    nbp->coulomb_tab = nullptr;
     if (nbp->eeltype == eelCuEWALD_TAB || nbp->eeltype == eelCuEWALD_TAB_TWIN)
     {
-        init_ewald_coulomb_force_table(ic, nbp, dev_info);
+        init_ewald_coulomb_force_table(ic, nbp);
     }
 
     /* set up LJ parameter lookup table */
     if (!useLjCombRule(nbp))
     {
         initParamLookupTable(nbp->nbfp, nbp->nbfp_texobj,
-                             nbat->nbfp, 2*ntypes*ntypes, dev_info);
+                             nbat->nbfp, 2*ntypes*ntypes);
     }
 
     /* set up LJ-PME parameter lookup table */
     if (ic->vdwtype == evdwPME)
     {
         initParamLookupTable(nbp->nbfp_comb, nbp->nbfp_comb_texobj,
-                             nbat->nbfp_comb, 2*ntypes, dev_info);
+                             nbat->nbfp_comb, 2*ntypes);
     }
 }
 
@@ -351,21 +344,20 @@ void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
 
     set_cutoff_parameters(nbp, ic, listParams);
 
-    nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
-                                                 nb->dev_info);
+    nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
 
-    init_ewald_coulomb_force_table(ic, nb->nbparam, nb->dev_info);
+    init_ewald_coulomb_force_table(ic, nb->nbparam);
 }
 
 /*! Initializes the pair list data structure. */
 static void init_plist(cu_plist_t *pl)
 {
-    /* initialize to NULL pointers to data that is not allocated here and will
+    /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_pairlist */
-    pl->sci      = NULL;
-    pl->cj4      = NULL;
-    pl->imask    = NULL;
-    pl->excl     = NULL;
+    pl->sci      = nullptr;
+    pl->cj4      = nullptr;
+    pl->imask    = nullptr;
+    pl->excl     = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
     pl->na_c           = -1;
@@ -423,7 +415,7 @@ static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
                                   const nbnxn_atomdata_t         *nbat)
 {
     init_atomdata_first(nb->atdat, nbat->ntype);
-    init_nbparam(nb->nbparam, ic, listParams, nbat, nb->dev_info);
+    init_nbparam(nb->nbparam, ic, listParams, nbat);
 
     /* clear energy and shift force outputs */
     nbnxn_cuda_clear_e_fshift(nb);
@@ -440,7 +432,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
 
-    if (p_nb == NULL)
+    if (p_nb == nullptr)
     {
         return;
     }
@@ -481,7 +473,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
          * case will be a single value.
          */
         int highest_priority;
-        stat = cudaDeviceGetStreamPriorityRange(NULL, &highest_priority);
+        stat = cudaDeviceGetStreamPriorityRange(nullptr, &highest_priority);
         CU_RET_ERR(stat, "cudaDeviceGetStreamPriorityRange failed");
 
         stat = cudaStreamCreateWithPriority(&nb->stream[eintNonlocal],
@@ -500,7 +492,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
      *          This is the main reason why they are disabled by default.
      */
     // TODO: Consider turning on by default when we can detect nr of streams.
-    nb->bDoTime = (getenv("GMX_ENABLE_GPU_TIMING") != NULL);
+    nb->bDoTime = (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
 
     if (nb->bDoTime)
     {
@@ -510,7 +502,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 
     /* set the kernel type for the current GPU */
     /* pick L1 cache configuration */
-    nbnxn_cuda_set_cacheconfig(nb->dev_info);
+    nbnxn_cuda_set_cacheconfig();
 
     nbnxn_cuda_init_const(nb, ic, listParams, nbat);
 
@@ -715,13 +707,11 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     }
 }
 
-static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
-                                          const gmx_device_info_t *dev_info)
+static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam)
 {
     if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
-        destroyParamLookupTable(nbparam->coulomb_tab, nbparam->coulomb_tab_texobj,
-                                dev_info);
+        destroyParamLookupTable(nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
     }
 }
 
@@ -731,7 +721,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     cu_atomdata_t   *atdat;
     cu_nbparam_t    *nbparam;
 
-    if (nb == NULL)
+    if (nb == nullptr)
     {
         return;
     }
@@ -739,7 +729,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     atdat       = nb->atdat;
     nbparam     = nb->nbparam;
 
-    nbnxn_cuda_free_nbparam_table(nbparam, nb->dev_info);
+    nbnxn_cuda_free_nbparam_table(nbparam);
 
     stat = cudaEventDestroy(nb->nonlocal_done);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->nonlocal_done");
@@ -759,15 +749,13 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     if (!useLjCombRule(nb->nbparam))
     {
-        destroyParamLookupTable(nbparam->nbfp, nbparam->nbfp_texobj,
-                                nb->dev_info);
+        destroyParamLookupTable(nbparam->nbfp, nbparam->nbfp_texobj);
 
     }
 
     if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
     {
-        destroyParamLookupTable(nbparam->nbfp_comb, nbparam->nbfp_comb_texobj,
-                                nb->dev_info);
+        destroyParamLookupTable(nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
     }
 
     stat = cudaFree(atdat->shift_vec);
@@ -804,13 +792,13 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     /* Free nbst */
     pfree(nb->nbst.e_lj);
-    nb->nbst.e_lj = NULL;
+    nb->nbst.e_lj = nullptr;
 
     pfree(nb->nbst.e_el);
-    nb->nbst.e_el = NULL;
+    nb->nbst.e_el = nullptr;
 
     pfree(nb->nbst.fshift);
-    nb->nbst.fshift = NULL;
+    nb->nbst.fshift = nullptr;
 
     sfree(atdat);
     sfree(nbparam);
@@ -839,7 +827,7 @@ void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
 
 int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_cuda_t *nb)
 {
-    return nb != NULL ?
+    return nb != nullptr ?
            gpu_min_ci_balanced_factor*nb->dev_info->prop.multiProcessorCount : 0;
 
 }
@@ -848,4 +836,33 @@ gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_cuda_t *nb)
 {
     return ((nb->nbparam->eeltype == eelCuEWALD_ANA) ||
             (nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
+}
+
+void *nbnxn_gpu_get_command_stream(gmx_nbnxn_gpu_t *nb,
+                                   int              iloc)
+{
+    assert(nb);
+
+    return static_cast<void *>(&nb->stream[iloc]);
+}
+
+void *nbnxn_gpu_get_xq(gmx_nbnxn_gpu_t *nb)
+{
+    assert(nb);
+
+    return static_cast<void *>(nb->atdat->xq);
+}
+
+void *nbnxn_gpu_get_f(gmx_nbnxn_gpu_t *nb)
+{
+    assert(nb);
+
+    return static_cast<void *>(nb->atdat->f);
+}
+
+rvec *nbnxn_gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
+{
+    assert(nb);
+
+    return reinterpret_cast<rvec *>(nb->atdat->fshift);
 }

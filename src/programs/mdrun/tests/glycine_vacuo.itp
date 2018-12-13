@@ -1,0 +1,87 @@
+[ moleculetype ]
+; Name            nrexcl
+Glycine             3
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
+; residue   7 GLY rtp GLY  q  0.0
+     1        NH3      7    GLY      N      1       -0.3     14.007   ; qtot -0.3
+     2         HC      7    GLY     H1      2       0.33      1.008   ; qtot 0.03
+     3         HC      7    GLY     H2      3       0.33      1.008   ; qtot 0.36
+     4         HC      7    GLY     H3      4       0.33      1.008   ; qtot 0.69
+     5        CT2      7    GLY     CA      5       0.13     12.011   ; qtot 0.82
+     6         HB      7    GLY    HA1      6       0.09      1.008   ; qtot 0.91
+     7         HB      7    GLY    HA2      7       0.09      1.008   ; qtot 1
+     8         CC      7    GLY      C      8       0.34     12.011   ; qtot 1.34
+     9         OC      7    GLY    OT1      9      -0.67    15.9994   ; qtot 0.67
+    10         OC      7    GLY    OT2     10      -0.67    15.9994   ; qtot 0
+
+[ bonds ]
+;  ai    aj funct            c0            c1            c2            c3
+    1     2     1
+    1     3     1
+    1     4     1
+    1     5     1
+    5     6     1
+    5     7     1
+    5     8     1
+    8     9     1
+    8    10     1
+
+[ pairs ]
+;  ai    aj funct            c0            c1            c2            c3
+    1     9     1
+    1    10     1
+    2     6     1
+    2     7     1
+    2     8     1
+    3     6     1
+    3     7     1
+    3     8     1
+    4     6     1
+    4     7     1
+    4     8     1
+    6     9     1
+    6    10     1
+    7     9     1
+    7    10     1
+
+[ angles ]
+;  ai    aj    ak funct            c0            c1            c2            c3
+    2     1     3     5
+    2     1     4     5
+    2     1     5     5
+    3     1     4     5
+    3     1     5     5
+    4     1     5     5
+    1     5     6     5
+    1     5     7     5
+    1     5     8     5
+    6     5     7     5
+    6     5     8     5
+    7     5     8     5
+    5     8     9     5
+    5     8    10     5
+    9     8    10     5
+
+[ dihedrals ]
+;  ai    aj    ak    al funct            c0            c1            c2            c3            c4            c5
+    2     1     5     6     9
+    2     1     5     7     9
+    2     1     5     8     9
+    3     1     5     6     9
+    3     1     5     7     9
+    3     1     5     8     9
+    4     1     5     6     9
+    4     1     5     7     9
+    4     1     5     8     9
+    1     5     8     9     9
+    1     5     8    10     9
+    6     5     8     9     9
+    6     5     8    10     9
+    7     5     8     9     9
+    7     5     8    10     9
+
+[ dihedrals ]
+;  ai    aj    ak    al funct            c0            c1            c2            c3
+    8     5    10     9     2

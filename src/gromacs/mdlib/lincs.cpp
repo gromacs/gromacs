@@ -500,6 +500,23 @@ static void lincs_update_atoms(Lincs *li, int th,
 }
 
 #if GMX_SIMD_HAVE_REAL
+//! Helper function so that we can run TSAN with SIMD support (where implemented).
+template <int align>
+static inline void gmx_simdcall
+gatherLoadUTransposeTSANSafe(const real         *base,
+                             const std::int32_t *offset,
+                             SimdReal           *v0,
+                             SimdReal           *v1,
+                             SimdReal           *v2)
+{
+#if (CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_TSAN) && GMX_SIMD_X86_AVX2_256
+    // This function is only implemented in this case
+    gatherLoadUTransposeSafe<align>(base, offset, v0, v1, v2);
+#else
+    gatherLoadUTranspose<align>(base, offset, v0, v1, v2);
+#endif
+}
+
 /*! \brief Calculate the constraint distance vectors r to project on from x.
  *
  * Determine the right-hand side of the matrix equation using quantity f.
@@ -541,8 +558,8 @@ calc_dr_x_f_simd(int                       b0,
             offset1[i] = bla[bs*2 + i*2 + 1];
         }
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
         rx_S = x0_S - x1_S;
         ry_S = y0_S - y1_S;
         rz_S = z0_S - z1_S;
@@ -558,8 +575,8 @@ calc_dr_x_f_simd(int                       b0,
 
         transposeScatterStoreU<3>(reinterpret_cast<real *>(r + bs), offset2, rx_S, ry_S, rz_S);
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(f), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(f), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(f), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(f), offset1, &x1_S, &y1_S, &z1_S);
         fx_S = x0_S - x1_S;
         fy_S = y0_S - y1_S;
         fz_S = z0_S - z1_S;
@@ -756,6 +773,7 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
 }
 
 #if GMX_SIMD_HAVE_REAL
+
 /*! \brief Calculate the constraint distance vectors r to project on from x.
  *
  * Determine the right-hand side of the matrix equation using coordinates xp. */
@@ -795,8 +813,8 @@ calc_dr_x_xp_simd(int                       b0,
             offset1[i] = bla[bs*2 + i*2 + 1];
         }
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
         rx_S = x0_S - x1_S;
         ry_S = y0_S - y1_S;
         rz_S = z0_S - z1_S;
@@ -812,8 +830,9 @@ calc_dr_x_xp_simd(int                       b0,
 
         transposeScatterStoreU<3>(reinterpret_cast<real *>(r + bs), offset2, rx_S, ry_S, rz_S);
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(xp), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(xp), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(xp), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(xp), offset1, &x1_S, &y1_S, &z1_S);
+
         rxp_S = x0_S - x1_S;
         ryp_S = y0_S - y1_S;
         rzp_S = z0_S - z1_S;
@@ -922,8 +941,9 @@ calc_dist_iter_simd(int                       b0,
             offset1[i] = bla[bs*2 + i*2 + 1];
         }
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+
         rx_S = x0_S - x1_S;
         ry_S = y0_S - y1_S;
         rz_S = z0_S - z1_S;
@@ -1579,7 +1599,7 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
         fprintf(fplog, "The number of constraints is %d\n", li->ncg);
         if (bPLINCS)
         {
-            fprintf(fplog, "There are inter charge-group constraints,\n"
+            fprintf(fplog, "There are constraints between atoms in different decomposition domains,\n"
                     "will communicate selected coordinates each lincs iteration\n");
         }
         if (li->ncg_triangle > 0)
@@ -2029,6 +2049,7 @@ void set_lincs(const t_idef         &idef,
     /* Ensure we have enough padding for aligned loads for each thread */
     if (ncon_tot + li->ntask*simd_width > li->nc_alloc || li->nc_alloc == 0)
     {
+        int old_alloc = li->nc_alloc;
         li->nc_alloc = over_alloc_dd(ncon_tot + li->ntask*simd_width);
         srenew(li->con_index, li->nc_alloc);
         resize_real_aligned(&li->bllen0, li->nc_alloc);
@@ -2039,6 +2060,11 @@ void set_lincs(const t_idef         &idef,
         srenew(li->blnr, li->nc_alloc + 1);
         resize_real_aligned(&li->bllen, li->nc_alloc);
         srenew(li->tmpv, li->nc_alloc);
+        /* Need to clear the SIMD padding */
+        for (int i = old_alloc; i < li->nc_alloc; i++)
+        {
+            clear_rvec(li->tmpv[i]);
+        }
         if (DOMAINDECOMP(cr))
         {
             srenew(li->nlocat, li->nc_alloc);

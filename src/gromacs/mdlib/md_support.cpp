@@ -63,6 +63,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -208,7 +209,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     if (bStopCM)
     {
         calc_vcm_grp(0, mdatoms->homenr, mdatoms,
-                     as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), vcm);
+                     state->x.rvec_array(), state->v.rvec_array(), vcm);
     }
 
     if (bTemp || bStopCM || bPres || bEner || bConstrain || bCheckNumberOfBondedInteractions)
@@ -249,10 +250,10 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
         rvec *xPtr = nullptr;
         if (vcm->mode == ecmANGULAR || (vcm->mode == ecmLINEAR_ACCELERATION_CORRECTION && !(flags & CGLO_INITIALIZATION)))
         {
-            xPtr = as_rvec_array(state->x.data());
+            xPtr = state->x.rvec_array();
         }
         do_stopcm_grp(*mdatoms,
-                      xPtr, as_rvec_array(state->v.data()), *vcm);
+                      xPtr, state->v.rvec_array(), *vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
     }
 
@@ -564,7 +565,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         state->flags |= (1<<estFEPSTATE);
     }
     state->flags |= (1<<estX);
-    GMX_RELEASE_ASSERT(state->x.size() >= static_cast<unsigned int>(state->natoms), "We should start a run with an initialized state->x");
+    GMX_RELEASE_ASSERT(state->x.size() == state->natoms, "We should start a run with an initialized state->x");
     if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= (1<<estV);
@@ -617,5 +618,10 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     {
         snew(state->dfhist, 1);
         init_df_history(state->dfhist, ir->fepvals->n_lambda);
+    }
+
+    if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
+    {
+        state->flags |= (1<<estPREVSTEPCOM);
     }
 }

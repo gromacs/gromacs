@@ -80,7 +80,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * support file locking.
  * With reproducibilityRequested warns about version, build, #ranks differences.
  */
-void load_checkpoint(const char *fn, FILE **fplog,
+void load_checkpoint(const char *fn, t_fileio *logfio,
                      const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,

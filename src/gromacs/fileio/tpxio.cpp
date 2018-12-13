@@ -120,6 +120,9 @@ enum tpxv {
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
+    tpxv_PullPrevStepCOMAsReference,                         /**< Enabled using the COM of the pull group of the last frame as reference for PBC */
+    tpxv_MimicQMMM,                                          /**< Inroduced support for MiMiC QM/MM interface */
+    tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -746,6 +749,14 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
     }
     gmx_fio_do_int(fio, pull->nstxout);
     gmx_fio_do_int(fio, pull->nstfout);
+    if (file_version >= tpxv_PullPrevStepCOMAsReference)
+    {
+        gmx_fio_do_gmx_bool(fio, pull->bSetPbcRefToPrevStepCOM);
+    }
+    else
+    {
+        pull->bSetPbcRefToPrevStepCOM = FALSE;
+    }
     if (bRead)
     {
         snew(pull->group, pull->ngroup);
@@ -788,6 +799,17 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
             do_pull_coord(fio, &pull->coord[g],
                           bRead, file_version, ePullOld, eGeomOld, dimOld);
         }
+    }
+    if (file_version >= tpxv_PullAverage)
+    {
+        gmx_bool v;
+
+        v                  = pull->bXOutAverage;
+        gmx_fio_do_gmx_bool(fio, v);
+        pull->bXOutAverage = v;
+        v                  = pull->bFOutAverage;
+        gmx_fio_do_gmx_bool(fio, v);
+        pull->bFOutAverage = v;
     }
 }
 
@@ -1608,7 +1630,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             snew(ir->opts.SAoff,       ir->opts.ngQM);
             snew(ir->opts.SAsteps,     ir->opts.ngQM);
         }
-        if (ir->opts.ngQM > 0)
+        if (ir->opts.ngQM > 0 && ir->bQMMM)
         {
             gmx_fio_ndo_int(fio, ir->opts.QMmethod, ir->opts.ngQM);
             gmx_fio_ndo_int(fio, ir->opts.QMbasis, ir->opts.ngQM);
@@ -2760,8 +2782,8 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
     if (x == nullptr)
     {
-        x = as_rvec_array(state->x.data());
-        v = as_rvec_array(state->v.data());
+        x = state->x.rvec_array();
+        v = state->v.rvec_array();
     }
 
 #define do_test(fio, b, p) if (bRead && ((p) != NULL) && !(b)) gmx_fatal(FARGS, "No %s in %s",#p, gmx_fio_getname(fio))
@@ -2981,7 +3003,10 @@ int read_tpx(const char *fn,
     fio     = open_tpx(fn, "r");
     ePBC    = do_tpx(fio, TRUE, ir, &state, x, v, mtop);
     close_tpx(fio);
-    *natoms = mtop->natoms;
+    if (mtop != nullptr && natoms != nullptr)
+    {
+        *natoms = mtop->natoms;
+    }
     if (box)
     {
         copy_mat(state.box, box);

@@ -180,10 +180,10 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
             {
                 /* Get the energy group of the first atom in this charge group */
                 firstj  = astart + molt->cgs.index[cg];
-                firsteg = getGroupType(&mtop->groups, egcENER, firstj);
+                firsteg = getGroupType(mtop->groups, egcENER, firstj);
                 for (j = molt->cgs.index[cg]+1; j < molt->cgs.index[cg+1]; j++)
                 {
-                    eg = getGroupType(&mtop->groups, egcENER, astart+j);
+                    eg = getGroupType(mtop->groups, egcENER, astart+j);
                     if (eg != firsteg)
                     {
                         gmx_fatal(FARGS, "atoms %d and %d in charge group %d of molecule type '%s' are in different energy groups",
@@ -509,6 +509,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     t_molinfo                  *molinfo = nullptr;
     std::vector<gmx_molblock_t> molblock;
     int                         i, nrmols, nmismatch;
+    bool                        ffParametrizedWithHBondConstraints;
     char                        buf[STRLEN];
     char                        warn_buf[STRLEN];
 
@@ -518,6 +519,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
                        atype, &nrmols, &molinfo, intermolecular_interactions,
                        ir,
                        &molblock,
+                       &ffParametrizedWithHBondConstraints,
                        wi);
 
     sys->molblock.clear();
@@ -576,6 +578,21 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
 
     gmx_mtop_finalize(sys);
 
+    /* Discourage using the, previously common, setup of applying constraints
+     * to all bonds with force fields that have been parametrized with H-bond
+     * constraints only. Do not print note with large timesteps or vsites.
+     */
+    if (opts->nshake == eshALLBONDS &&
+        ffParametrizedWithHBondConstraints &&
+        ir->delta_t < 0.0026 &&
+        gmx_mtop_ftype_count(sys, F_VSITE3FD) == 0)
+    {
+        set_warning_line(wi, "unknown", -1);
+        warning_note(wi, "You are using constraints on all bonds, whereas the forcefield "
+                     "has been parametrized only with constraints involving hydrogen atoms. "
+                     "We suggest using constraints = h-bonds instead, this will also improve performance.");
+    }
+
     /* COORDINATE file processing */
     if (bVerbose)
     {
@@ -603,17 +620,11 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         state->flags |= (1 << estV);
     }
     state_change_natoms(state, state->natoms);
-    for (int i = 0; i < state->natoms; i++)
-    {
-        copy_rvec(x[i], state->x[i]);
-    }
+    std::copy(x, x+state->natoms, state->x.data());
     sfree(x);
     if (v != nullptr)
     {
-        for (int i = 0; i < state->natoms; i++)
-        {
-            copy_rvec(v[i], state->v[i]);
-        }
+        std::copy(v, v+state->natoms, state->v.data());
         sfree(v);
     }
     /* This call fixes the box shape for runs with pressure scaling */
@@ -638,7 +649,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     if (ir->cutoff_scheme == ecutsGROUP && ir->ePBC != epbcNONE)
     {
         // Need temporary rvec for coordinates
-        do_pbc_first_mtop(nullptr, ir->ePBC, state->box, sys, as_rvec_array(state->x.data()));
+        do_pbc_first_mtop(nullptr, ir->ePBC, state->box, sys, state->x.rvec_array());
     }
 
     /* Do more checks, mostly related to constraints */
@@ -675,9 +686,9 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             fprintf(stderr, "Setting gen_seed to %d\n", opts->seed);
         }
         state->flags |= (1 << estV);
-        maxwell_speed(opts->tempi, opts->seed, sys, as_rvec_array(state->v.data()));
+        maxwell_speed(opts->tempi, opts->seed, sys, state->v.rvec_array());
 
-        stop_cm(stdout, state->natoms, mass, as_rvec_array(state->x.data()), as_rvec_array(state->v.data()));
+        stop_cm(stdout, state->natoms, mass, state->x.rvec_array(), state->v.rvec_array());
         sfree(mass);
     }
 
@@ -689,8 +700,6 @@ static void copy_state(const char *slog, t_trxframe *fr,
                        bool bReadVel, t_state *state,
                        double *use_time)
 {
-    int i;
-
     if (fr->not_ok & FRAME_NOT_OK)
     {
         gmx_fatal(FARGS, "Can not start from an incomplete frame");
@@ -701,20 +710,14 @@ static void copy_state(const char *slog, t_trxframe *fr,
                   slog);
     }
 
-    for (i = 0; i < state->natoms; i++)
-    {
-        copy_rvec(fr->x[i], state->x[i]);
-    }
+    std::copy(fr->x, fr->x+state->natoms, state->x.data());
     if (bReadVel)
     {
         if (!fr->bV)
         {
             gmx_incons("Trajecory frame unexpectedly does not contain velocities");
         }
-        for (i = 0; i < state->natoms; i++)
-        {
-            copy_rvec(fr->v[i], state->v[i]);
-        }
+        std::copy(fr->v, fr->v+state->natoms, state->v.data());
     }
     if (fr->bBox)
     {
@@ -734,7 +737,6 @@ static void cont_status(const char *slog, const char *ener,
     bool         bReadVel;
     t_trxframe   fr;
     t_trxstatus *fp;
-    int          i;
     double       use_time;
 
     bReadVel = (bNeedVel && !bGenVel);
@@ -769,9 +771,9 @@ static void cont_status(const char *slog, const char *ener,
                     "\n"
                     "WARNING: Did not find a frame with velocities in file %s,\n"
                     "         all velocities will be set to zero!\n\n", slog);
-            for (i = 0; i < sys->natoms; i++)
+            for (auto &vi : makeArrayRef(state->v))
             {
-                clear_rvec(state->v[i]);
+                vi = {0, 0, 0};
             }
             close_trx(fp);
             /* Search for a frame without velocities */
@@ -1506,26 +1508,33 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t *mtop,
 
     if (haveDecoupledMode)
     {
-        char modeMessage[STRLEN];
-        sprintf(modeMessage, "There are atoms at both ends of an angle, connected by constraints and with masses that differ by more than a factor of %g. This means that there are likely dynamic modes that are only very weakly coupled.",
-                massFactorThreshold);
-        char buf[STRLEN];
+        std::string message = gmx::formatString(
+                    "There are atoms at both ends of an angle, connected by constraints "
+                    "and with masses that differ by more than a factor of %g. This means "
+                    "that there are likely dynamic modes that are only very weakly coupled.",
+                    massFactorThreshold);
         if (ir->cutoff_scheme == ecutsVERLET)
         {
-            sprintf(buf, "%s To ensure good equipartitioning, you need to either not use constraints on all bonds (but, if possible, only on bonds involving hydrogens) or use integrator = %s or decrease one or more tolerances: verlet-buffer-tolerance <= %g, LINCS iterations >= %d, LINCS order >= %d or SHAKE tolerance <= %g",
-                    modeMessage,
-                    ei_names[eiSD1],
-                    bufferToleranceThreshold,
-                    lincsIterationThreshold, lincsOrderThreshold,
-                    shakeToleranceThreshold);
+            message += gmx::formatString(
+                        " To ensure good equipartitioning, you need to either not use "
+                        "constraints on all bonds (but, if possible, only on bonds involving "
+                        "hydrogens) or use integrator = %s or decrease one or more tolerances: "
+                        "verlet-buffer-tolerance <= %g, LINCS iterations >= %d, LINCS order "
+                        ">= %d or SHAKE tolerance <= %g",
+                        ei_names[eiSD1],
+                        bufferToleranceThreshold,
+                        lincsIterationThreshold, lincsOrderThreshold,
+                        shakeToleranceThreshold);
         }
         else
         {
-            sprintf(buf, "%s To ensure good equipartitioning, we suggest to switch to the %s cutoff-scheme, since that allows for better control over the Verlet buffer size and thus over the energy drift.",
-                    modeMessage,
-                    ecutscheme_names[ecutsVERLET]);
+            message += gmx::formatString(
+                        " To ensure good equipartitioning, we suggest to switch to the %s "
+                        "cutoff-scheme, since that allows for better control over the Verlet "
+                        "buffer size and thus over the energy drift.",
+                        ecutscheme_names[ecutsVERLET]);
         }
-        warning(wi, buf);
+        warning(wi, message);
     }
 }
 
@@ -1995,7 +2004,7 @@ int gmx_grompp(int argc, char *argv[])
     /* Check velocity for virtual sites and shells */
     if (bGenVel)
     {
-        check_vel(&sys, as_rvec_array(state.v.data()));
+        check_vel(&sys, state.v.rvec_array());
     }
 
     /* check for shells and inpurecs */
@@ -2047,7 +2056,7 @@ int gmx_grompp(int argc, char *argv[])
                 }
                 else
                 {
-                    buffer_temp = calc_temp(&sys, ir, as_rvec_array(state.v.data()));
+                    buffer_temp = calc_temp(&sys, ir, state.v.rvec_array());
                 }
                 if (buffer_temp > 0)
                 {
@@ -2137,8 +2146,13 @@ int gmx_grompp(int argc, char *argv[])
         }
         else
         {
-            generate_qmexcl(&sys, ir, wi);
+            generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_ORIGINAL);
         }
+    }
+
+    if (ir->eI == eiMimic)
+    {
+        generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_MIMIC);
     }
 
     if (ftp2bSet(efTRN, NFILE, fnm))
@@ -2159,7 +2173,7 @@ int gmx_grompp(int argc, char *argv[])
     if (ir->cutoff_scheme != ecutsVERLET && ir->rlist > 0)
     {
         set_warning_line(wi, mdparin, -1);
-        check_chargegroup_radii(&sys, ir, as_rvec_array(state.x.data()), wi);
+        check_chargegroup_radii(&sys, ir, state.x.rvec_array(), wi);
     }
 
     if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
@@ -2221,7 +2235,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->bPull)
     {
-        pull = set_pull_init(ir, &sys, as_rvec_array(state.x.data()), state.box, state.lambda[efptMASS], wi);
+        pull = set_pull_init(ir, &sys, state.x.rvec_array(), state.box, state.lambda[efptMASS], wi);
     }
 
     /* Modules that supply external potential for pull coordinates
@@ -2242,7 +2256,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->bRot)
     {
-        set_reference_positions(ir->rot, as_rvec_array(state.x.data()), state.box,
+        set_reference_positions(ir->rot, state.x.rvec_array(), state.box,
                                 opt2fn("-ref", NFILE, fnm), opt2bSet("-ref", NFILE, fnm),
                                 wi);
     }

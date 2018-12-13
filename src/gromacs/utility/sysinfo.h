@@ -48,6 +48,8 @@
 #include <stddef.h>
 #include <time.h>
 
+#include <string>
+
 /*! \addtogroup module_utility
  * \{
  */
@@ -92,18 +94,16 @@ int gmx_getusername(char *buf, size_t len);
 /*! \brief
  * Portable version of ctime_r.
  *
- * Does not throw.
+ * \throws std::bad_alloc when out of memory.
  */
-char *gmx_ctime_r(const time_t *clock, char *buf, size_t len);
+std::string
+gmx_ctime_r(const time_t *clock);
 /*! \brief
  * Gets the current time as a string.
  *
- * \param[out] buf  Buffer to receive the string.
- * \param[in]  len  Length of buffer \p buf (26 characters should be sufficient).
- *
- * Does not throw.
+ * \throws std::bad_alloc when out of memory.
  */
-void gmx_format_current_time(char *buf, size_t len);
+std::string gmx_format_current_time();
 
 /*! \brief
  * Wrapper for nice().

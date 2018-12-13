@@ -124,9 +124,10 @@ static void init_ewald_coulomb_force_table(const interaction_const_t       *ic,
        &array_format, tabsize, 1, 0, ftmp, &cl_error);
      */
 
-    coul_tab = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, ic->tabq_size*sizeof(cl_float), ic->tabq_coul_F, &cl_error);
-    assert(cl_error == CL_SUCCESS);
-    // TODO: handle errors, check clCreateBuffer flags
+    coul_tab = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
+                              ic->tabq_size*sizeof(cl_float), ic->tabq_coul_F, &cl_error);
+    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
     nbp->coulomb_tab_climg2d  = coul_tab;
     nbp->coulomb_tab_scale    = ic->tabq_scale;
@@ -146,26 +147,30 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
        of the host side shift_vec buffer. */
     ad->shift_vec_elem_size = sizeof(*nbnxn_atomdata_t::shift_vec);
 
-    // TODO: handle errors, check clCreateBuffer flags
-    ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->shift_vec_elem_size, nullptr, &cl_error);
-    assert(cl_error == CL_SUCCESS);
+    ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
+                                   SHIFTS * ad->shift_vec_elem_size, nullptr, &cl_error);
+    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
     ad->bShiftVecUploaded = CL_FALSE;
 
     /* An element of the fshift device buffer has the same size as one element
        of the host side fshift buffer. */
     ad->fshift_elem_size = sizeof(*cl_nb_staging_t::fshift);
 
-    ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->fshift_elem_size, nullptr, &cl_error);
-    assert(cl_error == CL_SUCCESS);
-    // TODO: handle errors, check clCreateBuffer flags
+    ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
+                                SHIFTS * ad->fshift_elem_size, nullptr, &cl_error);
+    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
-    ad->e_lj = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, sizeof(float), nullptr, &cl_error);
-    assert(cl_error == CL_SUCCESS);
-    // TODO: handle errors, check clCreateBuffer flags
+    ad->e_lj = clCreateBuffer(runData->context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
+                              sizeof(float), nullptr, &cl_error);
+    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
-    ad->e_el = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, sizeof(float), nullptr, &cl_error);
-    assert(cl_error == CL_SUCCESS);
-    // TODO: handle errors, check clCreateBuffer flags
+    ad->e_el = clCreateBuffer(runData->context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
+                              sizeof(float), nullptr, &cl_error);
+    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
     /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_atomdata */
@@ -289,11 +294,7 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
                          const nbnxn_atomdata_t          *nbat,
                          const gmx_device_runtime_data_t *runData)
 {
-    int         ntypes, nnbfp, nnbfp_comb;
-    cl_int      cl_error;
-
-
-    ntypes = nbat->ntype;
+    cl_int cl_error;
 
     set_cutoff_parameters(nbp, ic, listParams);
 
@@ -306,11 +307,11 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
     {
         if (ic->ljpme_comb_rule == ljcrGEOM)
         {
-            assert(nbat->comb_rule == ljcrGEOM);
+            GMX_ASSERT(nbat->comb_rule == ljcrGEOM, "Combination rule mismatch!");
         }
         else
         {
-            assert(nbat->comb_rule == ljcrLB);
+            GMX_ASSERT(nbat->comb_rule == ljcrLB, "Combination rule mismatch!");
         }
     }
     /* generate table for PME */
@@ -337,11 +338,12 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
          */
 
         nbp->coulomb_tab_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY, sizeof(cl_float), nullptr, &cl_error);
-        // TODO: handle errors
+        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                           ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
     }
 
-    nnbfp      = 2*ntypes*ntypes;
-    nnbfp_comb = 2*ntypes;
+    int nnbfp      = 2*nbat->ntype*nbat->ntype;
+    int nnbfp_comb = 2*nbat->ntype;
 
     {
         /* Switched from using textures to using buffers */
@@ -356,9 +358,10 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
             &array_format, nnbfp, 1, 0, nbat->nbfp, &cl_error);
          */
 
-        nbp->nbfp_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, nnbfp*sizeof(cl_float), nbat->nbfp, &cl_error);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
+        nbp->nbfp_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
+                                           nnbfp*sizeof(cl_float), nbat->nbfp, &cl_error);
+        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                           ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
         if (ic->vdwtype == evdwPME)
         {
@@ -366,11 +369,10 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
             // TODO: decide which alternative is most efficient - textures or buffers.
             /*  nbp->nbfp_comb_climg2d = clCreateImage2D(runData->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                 &array_format, nnbfp_comb, 1, 0, nbat->nbfp_comb, &cl_error);*/
-            nbp->nbfp_comb_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, nnbfp_comb*sizeof(cl_float), nbat->nbfp_comb, &cl_error);
-
-
-            assert(cl_error == CL_SUCCESS);
-            // TODO: handle errors
+            nbp->nbfp_comb_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
+                                                    nnbfp_comb*sizeof(cl_float), nbat->nbfp_comb, &cl_error);
+            GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                               ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
         }
         else
         {
@@ -382,10 +384,8 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
             /* nbp->nbfp_comb_climg2d = clCreateImage2D(runData->context, CL_MEM_READ_WRITE,
                 &array_format, 1, 1, 0, nullptr, &cl_error);*/
             nbp->nbfp_comb_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY, sizeof(cl_float), nullptr, &cl_error);
-
-
-            assert(cl_error == CL_SUCCESS);
-            // TODO: handle errors
+            GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                               ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
         }
     }
 }
@@ -587,9 +587,6 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxn_ocl_t *nb)
     nb->kernel_pruneonly[epruneRolling] = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_rolling_opencl");
 
     /* Init auxiliary kernels */
-    nb->kernel_memset_f      = nbnxn_gpu_create_kernel(nb, "memset_f");
-    nb->kernel_memset_f2     = nbnxn_gpu_create_kernel(nb, "memset_f2");
-    nb->kernel_memset_f3     = nbnxn_gpu_create_kernel(nb, "memset_f3");
     nb->kernel_zero_e_fshift = nbnxn_gpu_create_kernel(nb, "zero_e_fshift");
 }
 
@@ -735,33 +732,16 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
         return;
     }
 
-    cl_atomdata_t *      adat     = nb->atdat;
-    cl_command_queue     ls       = nb->stream[eintLocal];
-    cl_float             value    = 0.0f;
-
-    size_t               local_work_size[3]  = {1, 1, 1};
-    size_t               global_work_size[3] = {1, 1, 1};
-
-    cl_int               arg_no;
-
-    cl_kernel            memset_f = nb->kernel_memset_f;
-
-    cl_uint              natoms_flat = natoms_clear * (sizeof(rvec)/sizeof(real));
-
-    local_work_size[0]  = 64;
-    // Round the total number of threads up from the array size
-    global_work_size[0] = ((natoms_flat + local_work_size[0] - 1)/local_work_size[0])*local_work_size[0];
-
-
     cl_int gmx_used_in_debug cl_error;
-    arg_no    = 0;
-    cl_error  = clSetKernelArg(memset_f, arg_no++, sizeof(cl_mem), &(adat->f));
-    cl_error |= clSetKernelArg(memset_f, arg_no++, sizeof(cl_float), &value);
-    cl_error |= clSetKernelArg(memset_f, arg_no++, sizeof(cl_uint), &natoms_flat);
-    assert(cl_error == CL_SUCCESS);
 
-    cl_error = clEnqueueNDRangeKernel(ls, memset_f, 3, nullptr, global_work_size, local_work_size, 0, nullptr, nullptr);
-    assert(cl_error == CL_SUCCESS);
+    cl_atomdata_t           *atomData = nb->atdat;
+    cl_command_queue         ls       = nb->stream[eintLocal];
+    cl_float                 value    = 0.0f;
+
+    cl_error = clEnqueueFillBuffer(ls, atomData->f, &value, sizeof(cl_float),
+                                   0, natoms_clear*sizeof(rvec), 0, nullptr, nullptr);
+    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS, ("clEnqueueFillBuffer failed: " +
+                                                ocl_get_error_string(cl_error)).c_str());
 }
 
 //! This function is documented in the header file
@@ -903,28 +883,29 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
 
         d_atdat->f_elem_size = sizeof(rvec);
 
-        // TODO: handle errors, check clCreateBuffer flags
-        d_atdat->f = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * d_atdat->f_elem_size, nullptr, &cl_error);
-        assert(CL_SUCCESS == cl_error);
+        d_atdat->f = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
+                                    nalloc * d_atdat->f_elem_size, nullptr, &cl_error);
+        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                           ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
-        // TODO: change the flag to read-only
-        d_atdat->xq = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * sizeof(cl_float4), nullptr, &cl_error);
-        assert(CL_SUCCESS == cl_error);
-        // TODO: handle errors, check clCreateBuffer flags
+        d_atdat->xq = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
+                                     nalloc * sizeof(cl_float4), nullptr, &cl_error);
+        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                           ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
         if (useLjCombRule(nb->nbparam->vdwtype))
         {
-            // TODO: change the flag to read-only
-            d_atdat->lj_comb = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * sizeof(cl_float2), nullptr, &cl_error);
-            assert(CL_SUCCESS == cl_error);
-            // TODO: handle errors, check clCreateBuffer flags
+            d_atdat->lj_comb = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
+                                              nalloc * sizeof(cl_float2), nullptr, &cl_error);
+            GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                               ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
         }
         else
         {
-            // TODO: change the flag to read-only
-            d_atdat->atom_types = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * sizeof(int), nullptr, &cl_error);
-            assert(CL_SUCCESS == cl_error);
-            // TODO: handle errors, check clCreateBuffer flags
+            d_atdat->atom_types = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
+                                                 nalloc * sizeof(int), nullptr, &cl_error);
+            GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                               ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
         }
 
         d_atdat->nalloc = nalloc;
@@ -959,7 +940,8 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
 
     /* kick off the tasks enqueued above to ensure concurrency with the search */
     cl_error = clFlush(ls);
-    assert(CL_SUCCESS == cl_error);
+    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
+                       ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
 }
 
 /*! \brief Releases an OpenCL kernel pointer */
@@ -972,7 +954,7 @@ static void free_kernel(cl_kernel *kernel_ptr)
     if (*kernel_ptr)
     {
         cl_error = clReleaseKernel(*kernel_ptr);
-        assert(cl_error == CL_SUCCESS);
+        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS, ("clReleaseKernel failed: " + ocl_get_error_string(cl_error)).c_str());
 
         *kernel_ptr = nullptr;
     }
@@ -1008,15 +990,15 @@ static void free_gpu_device_runtime_data(gmx_device_runtime_data_t *runData)
     if (runData->context)
     {
         cl_error         = clReleaseContext(runData->context);
+        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS, ("clReleaseContext failed: " + ocl_get_error_string(cl_error)).c_str());
         runData->context = nullptr;
-        assert(CL_SUCCESS == cl_error);
     }
 
     if (runData->program)
     {
         cl_error         = clReleaseProgram(runData->program);
+        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS, ("clReleaseProgram failed: " + ocl_get_error_string(cl_error)).c_str());
         runData->program = nullptr;
-        assert(CL_SUCCESS == cl_error);
     }
 
 }
@@ -1042,9 +1024,6 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     kernel_count = sizeof(nb->kernel_noener_prune_ptr) / sizeof(nb->kernel_noener_prune_ptr[0][0]);
     free_kernels(nb->kernel_noener_prune_ptr[0], kernel_count);
 
-    free_kernel(&(nb->kernel_memset_f));
-    free_kernel(&(nb->kernel_memset_f2));
-    free_kernel(&(nb->kernel_memset_f3));
     free_kernel(&(nb->kernel_zero_e_fshift));
 
     /* Free atdat */

@@ -332,14 +332,16 @@ if(GMX_ENABLE_AVX512_TESTS AND
     # Since we might be overriding AVX2 architecture flags with the AVX512 flags for the
     # files where it is used, we also check for a flag not to warn about the first (unused) arch.
     # To avoid spamming the user with lots of gromacs tests we just call the CMake flag test directly.
-    foreach(_testflag "-Wno-unused-command-line-argument" "-wd10121")
-        string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" FLAG_ACCEPTED_VARIABLE "${_testflag}_FLAG_ACCEPTED")
-        check_cxx_compiler_flag("${_testflag}" ${FLAG_ACCEPTED_VARIABLE})
-        if(${FLAG_ACCEPTED_VARIABLE})
-            set(CXX_NO_UNUSED_OPTION_WARNING_FLAGS "${_testflag}")
-            break()
-        endif()
-    endforeach(_testflag)
+    if (NOT MSVC)
+        foreach(_testflag "-Wno-unused-command-line-argument" "-wd10121")
+            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" FLAG_ACCEPTED_VARIABLE "${_testflag}_FLAG_ACCEPTED")
+            check_cxx_compiler_flag("${_testflag}" ${FLAG_ACCEPTED_VARIABLE})
+            if(${FLAG_ACCEPTED_VARIABLE})
+                set(CXX_NO_UNUSED_OPTION_WARNING_FLAGS "${_testflag}")
+                break()
+            endif()
+        endforeach(_testflag)
+    endif()
 endif()
 
 # By default, 32-bit windows cannot pass SIMD (SSE/AVX) arguments in registers,
@@ -402,6 +404,11 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
             AND (GMX_SIMD_ACTIVE MATCHES "AVX") AND NOT (GMX_SIMD_ACTIVE STREQUAL "AVX_128_FMA"))
         message(WARNING "GCC on Windows (GCC older than 4.9 in 32-bit mode, or any version in 64-bit mode) with 256-bit AVX will probably crash. You might want to choose a different GMX_SIMD or a different compiler.")
     endif()
+endif()
+
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
+if (_cmake_build_type STREQUAL "TSAN" AND NOT (GMX_SIMD_ACTIVE STREQUAL "NONE" OR GMX_SIMD_ACTIVE STREQUAL "REFERENCE" OR GMX_SIMD_ACTIVE MATCHES "AVX_512" OR GMX_SIMD_ACTIVE STREQUAL AVX2_256))
+   message(WARNING "TSAN is only tested with SIMD None, Reference, AVX2_256, and AVX_512. It is known to detect (harmless) memory races with SSE and AVX.")
 endif()
 
 endmacro()

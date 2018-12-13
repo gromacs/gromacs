@@ -112,7 +112,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
             for (const auto &context : getPmeTestEnv()->getHardwareContexts())
             {
                 CodePath   codePath       = context->getCodePath();
-                const bool supportedInput = pmeSupportsInputForMode(&inputRec, codePath);
+                const bool supportedInput = pmeSupportsInputForMode(*getPmeTestEnv()->hwinfo(), &inputRec, codePath);
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
@@ -121,7 +121,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                 }
 
                 std::map<GridOrdering, std::string> gridOrderingsToTest = {{GridOrdering::YZX, "YZX"}};
-                if (codePath == CodePath::CUDA)
+                if (codePath == CodePath::GPU)
                 {
                     gridOrderingsToTest[GridOrdering::XYZ] = "XYZ";
                 }

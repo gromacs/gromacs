@@ -65,7 +65,13 @@ if (DEFINED PYTHON_EXECUTABLE)
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
 find_package(PythonInterp 2.7)
-find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
+
+
+if (NOT ${PYTHON_VERSION_MAJOR} EQUAL 3)
+    find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
+else()
+    MESSAGE(STATUS "Can not build documentation with Python 3")
+endif()
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -87,6 +93,45 @@ if (SOURCE_IS_SOURCE_DISTRIBUTION)
 endif()
 
 add_subdirectory(doxygen)
+
+# TODO: Consider whether this could just be replaced by using
+# GMX_DEVELOPER_BUILD to control this as well.
+option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
+mark_as_advanced(GMX_BUILD_MANUAL)
+
+set(MANUAL_BUILD_IS_POSSIBLE ON)
+set(MANUAL_BUILD_NOT_POSSIBLE_REASON)
+set(NO_IMAGE_CONVERT_REASON)
+if (NOT GMX_BUILD_MANUAL)
+    # Make sure we only do detection of manual-building dependencies
+    # when the user opted in for that.
+    set(MANUAL_BUILD_IS_POSSIBLE OFF)
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "GMX_BUILD_MANUAL is not ON")
+elseif (BUILD_IS_INSOURCE)
+    # UseLATEX.cmake does not work with an in-source build
+    set(MANUAL_BUILD_IS_POSSIBLE OFF)
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "the build is in-source")
+else()
+    include(manual/UseLATEX.cmake)
+    if(${PYTHON_VERSION_MAJOR} EQUAL 3)
+        set(MANUAL_BUILD_IS_POSSIBLE OFF)
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "We can not build the documentation when using python3")
+    elseif(NOT SPHINX_FOUND)
+        set(MANUAL_BUILD_IS_POSSIBLE OFF)
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx has not been found and is needed to create the LaTex input files")
+    elseif(NOT PDFLATEX_COMPILER OR NOT IMAGE_CONVERT_POSSIBLE)
+        set(MANUAL_BUILD_IS_POSSIBLE OFF)
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex or some other dependency (ImageMagick convert) is not available")
+        if (NOT IMAGE_CONVERT_POSSIBLE)
+            set(NO_IMAGE_CONVERT_REASON "Can not convert files for online or pdf manual")
+        endif()
+        # TODO Later, identify other dependencies like bibtex,
+        # make_index, date, some graphics conversion program,
+        # etc. Perhaps patch UseLATEX.cmake and contribute upstream.
+    endif()
+
+endif()
+
 if (SPHINX_FOUND)
     # We need to have all the Sphinx input files in a single directory, and
     # since some of them are generated, we copy everything into the build tree,
@@ -107,13 +152,40 @@ if (SPHINX_FOUND)
     endif()
     # The reference manual still contains the individual sections from the
     # LaTeX document, with the files below grouped and annotated by chapter.
-    set(REFERENCEMANUAL_SPHINX_FILES
+    set(REFERENCEMANUAL_SPHINX_FILES_GENERAL
         # Main index file, preface and introduction.
         reference-manual/index.rst
         reference-manual/preface.rst
         reference-manual/introduction.rst
         # Definitions and Units chapter
         reference-manual/definitions.rst
+        # Topologies chapter
+        reference-manual/topologies.rst
+        reference-manual/topologies/particle-type.rst
+        reference-manual/topologies/parameter-files.rst
+        reference-manual/topologies/molecule-definition.rst
+        reference-manual/topologies/constraint-algorithm-section.rst
+        reference-manual/topologies/pdb2gmx-input-files.rst
+        reference-manual/topologies/topology-file-formats.rst
+        reference-manual/topologies/force-field-organization.rst
+        # File formats chapter
+        reference-manual/file-formats.rst
+        # Run parameters and programs chapter
+        reference-manual/run-parameters.rst
+        # Implementation details chapter
+        reference-manual/details.rst
+        # Averages and fluctations chapter
+        reference-manual/averages.rst
+        # References
+        reference-manual/references.rst
+        # PNG formated plot files that don't need to be converted into PNG
+        # for the web page.
+        reference-manual/plots/peregrine.png
+        reference-manual/plots/adress.png
+        reference-manual/plots/plotje.png
+        reference-manual/plots/xvgr.png
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_WITH_IMAGES
         # Algorithms chapter
         reference-manual/algorithms.rst
         reference-manual/algorithms/periodic-boundary-conditions.rst
@@ -142,17 +214,6 @@ if (SPHINX_FOUND)
         reference-manual/functions/nonbonded-interactions.rst
         reference-manual/functions/polarization.rst
         reference-manual/functions/restraints.rst
-        # Topologies chapter
-        reference-manual/topologies.rst
-        reference-manual/topologies/particle-type.rst
-        reference-manual/topologies/parameter-files.rst
-        reference-manual/topologies/molecule-definition.rst
-        reference-manual/topologies/constraint-algorithm-section.rst
-        reference-manual/topologies/pdb2gmx-input-files.rst
-        reference-manual/topologies/topology-file-formats.rst
-        reference-manual/topologies/force-field-organization.rst
-        # File formats chapter
-        reference-manual/file-formats.rst
         # Special topics chapter
         reference-manual/special.rst
         reference-manual/special/free-energy-implementation.rst
@@ -168,8 +229,6 @@ if (SPHINX_FOUND)
         reference-manual/special/qmmm.rst
         reference-manual/special/vmd-imd.rst
         reference-manual/special/membrane-embedding.rst
-        # Run parameters and programs chapter
-        reference-manual/run-parameters.rst
         # Analysis chapter
         reference-manual/analysis.rst
         reference-manual/analysis/using-groups.rst
@@ -185,20 +244,7 @@ if (SPHINX_FOUND)
         reference-manual/analysis/covariance-analysis.rst
         reference-manual/analysis/dihedral-pca.rst
         reference-manual/analysis/protein-related.rst
-        reference-manual/analysis/interface-related.rst
-        # Implementation details chapter
-        reference-manual/details.rst
-        # Averages and fluctations chapter
-        reference-manual/averages.rst
-        # References
-        reference-manual/references.rst
-        # PNG formated plot files that don't need to be converted into PNG
-        # for the web page.
-        reference-manual/plots/peregrine.png
-        reference-manual/plots/adress.png
-        reference-manual/plots/plotje.png
-        reference-manual/plots/xvgr.png
-        )
+        reference-manual/analysis/interface-related.rst)
     # The image files have also been ordered by the respective
     # chapter they are included in in the reference manual
     set(REFERENCEMANUAL_IMAGE_FILES
@@ -323,9 +369,20 @@ if (SPHINX_FOUND)
         release-notes/performance.rst
         release-notes/tools.rst
         release-notes/bugs-fixed.rst
-        release-notes/removed-features.rst
+        release-notes/removed-functionality.rst
+        release-notes/deprecated-functionality.rst
         release-notes/portability.rst
         release-notes/miscellaneous.rst
+        release-notes/2019/major/highlights.rst
+        release-notes/2019/major/features.rst
+        release-notes/2019/major/performance.rst
+        release-notes/2019/major/tools.rst
+        release-notes/2019/major/bugs-fixed.rst
+        release-notes/2019/major/removed-functionality.rst
+        release-notes/2019/major/deprecated-functionality.rst
+        release-notes/2019/major/portability.rst
+        release-notes/2019/major/miscellaneous.rst
+        release-notes/2018/2018.5.rst
         release-notes/2018/2018.4.rst
         release-notes/2018/2018.3.rst
         release-notes/2018/2018.2.rst
@@ -357,17 +414,20 @@ if (SPHINX_FOUND)
         # manual or without.
         user-guide/cmdline.rst
         user-guide/cutoff-schemes.rst
+        user-guide/deprecation-policy.rst
         user-guide/environment-variables.rst
         user-guide/faq.rst
         user-guide/floating-point.rst
-        user-guide/system-preparation.rst
+        user-guide/flow.rst
         user-guide/force-fields.rst
         user-guide/getting-started.rst
+        user-guide/index.rst
         user-guide/managing-simulations.rst
         user-guide/mdp-options.rst
         user-guide/mdrun-features.rst
         user-guide/mdrun-performance.rst
         user-guide/run-time-errors.rst
+        user-guide/security.rst
         user-guide/system-preparation.rst
         user-guide/terminology.rst
         )
@@ -375,10 +435,42 @@ if (SPHINX_FOUND)
     include(SphinxMacros.cmake)
     gmx_init_sphinx_setup(${SPHINX_INPUT_DIR})
 
+    # set temporary variables for doi inclusion
+    # into the manual, plain string + some wrapping
+    # for release builds, and dummy string for non-release
+    # builds
+    if("${GMX_MANUAL_DOI}" STREQUAL "")
+      # empty string means no doi, set dummy text
+      set(GMX_MANUAL_DOI_STRING "This is not a release build of GROMACS, so please reference")
+      set(GMX_MANUAL_DOI_STRING "${GMX_MANUAL_DOI_STRING} one of the GROMACS papers and the base release of the manual.")
+    else()
+      # release version, set plain old boring string
+      set(GMX_MANUAL_DOI_STRING "Please reference this documentation as https://doi.org/${GMX_MANUAL_DOI}.")
+    endif()
+    # same for source doi, but modify the text
+    if("${GMX_SOURCE_DOI}" STREQUAL "")
+      # empty string means no release build
+      set(GMX_SOURCE_DOI_STRING "This is not a release build of GROMACS. Please reference one of the")
+      set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} GROMACS papers, as well as the base release that this version is built from.")
+      set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} Also, please state what modifcations have been performed or where the version")
+      set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} was sourced from.")
+    else()
+      # release version, give them a doi url string
+      set(GMX_SOURCE_DOI_STRING "To cite the source code for this release, please cite")
+      set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} https://doi.org/${GMX_SOURCE_DOI}.")
+    endif()
+
+    if(IMAGE_CONVERT_POSSIBLE)
+        set(IMAGE_CONVERT_STRING "possible")
+    else()
+        set(IMAGE_CONVERT_STRING "impossible")
+    endif()
+
     set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
     gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
         EXTRA_VARS
             SPHINX_EXTENSION_PATH RELENG_PATH
+            IMAGE_CONVERT_STRING
             EXPECTED_DOXYGEN_VERSION
             EXPECTED_SPHINX_VERSION
             CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
@@ -387,6 +479,8 @@ if (SPHINX_FOUND)
             SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
             GMX_TNG_MINIMUM_REQUIRED_VERSION
             GMX_LMFIT_REQUIRED_VERSION
+            GMX_MANUAL_DOI_STRING
+            GMX_SOURCE_DOI_STRING
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})
@@ -402,34 +496,17 @@ if (SPHINX_FOUND)
             dev-manual/releng/jenkins-ui.rst
             )
     endif()
+    gmx_add_sphinx_source_files(
+        FILES
+        ${REFERENCEMANUAL_SPHINX_FILES_GENERAL})
     if (IMAGE_CONVERT_POSSIBLE)
         gmx_add_sphinx_source_files(
             FILES
-            ${REFERENCEMANUAL_SPHINX_FILES}
-            user-guide/index.rst
-            user-guide/flow.rst)
-        gmx_add_sphinx_source_files(
-            FILES
+            ${REFERENCEMANUAL_SPHINX_FILES_WITH_IMAGES}
             ${REFERENCEMANUAL_IMAGE_FILES})
         gmx_add_sphinx_image_conversion_files(
             FILES
             ${REFERENCEMANUAL_IMAGE_FILES})
-    else()
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual TO user-guide
-            FILES
-            file-formats.rst
-            plots/plotje.png
-            plots/xvgr.png)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual-minimal TO reference-manual
-            FILES
-            index.rst)
-        gmx_add_sphinx_source_files(
-            FROM ${CMAKE_CURRENT_SOURCE_DIR}/user-guide-old TO user-guide
-            FILES
-            index.rst
-            flow.rst)
     endif()
     gmx_add_sphinx_input_target(sphinx-input-rst)
     gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)

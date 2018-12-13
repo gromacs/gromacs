@@ -118,8 +118,8 @@ static void comp_tpx(const char *fn1, const char *fn2,
         top[0] = gmx_mtop_t_to_t_topology(&mtop[0], false);
         top[1] = gmx_mtop_t_to_t_topology(&mtop[1], false);
         cmp_top(stdout, &top[0], &top[1], ftol, abstol);
-        cmp_groups(stdout, &mtop[0].groups, &mtop[1].groups,
-                   mtop[0].natoms, mtop[1].natoms);
+        compareAtomGroups(stdout, mtop[0].groups, mtop[1].groups,
+                          mtop[0].natoms, mtop[1].natoms);
         comp_state(&state[0], &state[1], bRMSD, ftol, abstol);
     }
     else

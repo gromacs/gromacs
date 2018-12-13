@@ -408,7 +408,7 @@ void dd_print_missing_interactions(const gmx::MDLogger  &mdlog,
 
     print_missing_interactions_atoms(mdlog, cr, top_global, &top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr,
-                 -1, as_rvec_array(state_local->x.data()), state_local->box);
+                 -1, state_local->x.rvec_array(), state_local->box);
 
     std::string errorMessage;
 
@@ -1278,33 +1278,12 @@ check_assign_interactions_atom(int i, int i_gl,
     j = ind_start;
     while (j < ind_end)
     {
-        int            ftype;
-        int            nral;
-        t_iatom        tiatoms[1 + MAXATOMLIST];
+        t_iatom   tiatoms[1 + MAXATOMLIST];
 
-        ftype  = rtil[j++];
-        gmx::ArrayRef<const t_iatom> iatoms = gmx::constArrayRefFromArray(rtil.data() + j, rtil.size() - j);
-        nral   = NRAL(ftype);
-        if (ftype == F_SETTLE)
-        {
-            /* Settles are only in the reverse top when they
-             * operate within a charge group. So we can assign
-             * them without checks. We do this only for performance
-             * reasons; it could be handled by the code below.
-             */
-            if (iz == 0)
-            {
-                /* Home zone: add this settle to the local topology */
-                tiatoms[0] = iatoms[0];
-                tiatoms[1] = i;
-                tiatoms[2] = i + iatoms[2] - iatoms[1];
-                tiatoms[3] = i + iatoms[3] - iatoms[1];
-                add_ifunc(nral, tiatoms, &idef->il[ftype]);
-                (*nbonded_local)++;
-            }
-            j += 1 + nral;
-        }
-        else if (interaction_function[ftype].flags & IF_VSITE)
+        const int ftype  = rtil[j++];
+        auto      iatoms = gmx::constArrayRefFromArray(rtil.data() + j, rtil.size() - j);
+        const int nral   = NRAL(ftype);
+        if (interaction_function[ftype].flags & IF_VSITE)
         {
             assert(!bInterMolInteractions);
             /* The vsite construction goes where the vsite itself is */
@@ -1381,6 +1360,9 @@ check_assign_interactions_atom(int i, int i_gl,
                              iz <  zones->izone[kz].j1));
                     if (bUse)
                     {
+                        GMX_ASSERT(ftype != F_CONSTR || (iz == 0 && kz == 0),
+                                   "Constraint assigned here should only involve home atoms");
+
                         tiatoms[1] = i;
                         tiatoms[2] = entry->la;
                         /* If necessary check the cgcm distance */
@@ -1729,13 +1711,11 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 }
 
 /*! \brief Set the exclusion data for i-zone \p iz */
-static void make_exclusions_zone(gmx_domdec_t *dd,
-                                 gmx_domdec_zones_t *zones,
+static void make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                  const std::vector<gmx_moltype_t> &moltype,
-                                 const int *cginfo,
-                                 t_blocka *lexcls,
-                                 int iz,
-                                 int at_start, int at_end)
+                                 const int *cginfo, t_blocka *lexcls, int iz,
+                                 int at_start, int at_end,
+                                 const gmx::ArrayRef<const int> intermolecularExclusionGroup)
 {
     int                n_excl_at_max, n, at;
 
@@ -1758,6 +1738,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
             lexcls->nalloc_a = over_alloc_large(n + 1000);
             srenew(lexcls->a, lexcls->nalloc_a);
         }
+
         if (GET_CGINFO_EXCL_INTER(cginfo[at]))
         {
             int             a_gl, mb, mt, mol, a_mol, j;
@@ -1796,6 +1777,29 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
         {
             /* We don't need exclusions for this atom */
             lexcls->index[at] = n;
+        }
+
+        bool isExcludedAtom = !intermolecularExclusionGroup.empty() &&
+            std::find(intermolecularExclusionGroup.begin(),
+                      intermolecularExclusionGroup.end(),
+                      dd->globalAtomIndices[at]) !=
+            intermolecularExclusionGroup.end();
+
+        if (isExcludedAtom)
+        {
+            if (n + intermolecularExclusionGroup.size() > lexcls->nalloc_a)
+            {
+                lexcls->nalloc_a =
+                    over_alloc_large(n + intermolecularExclusionGroup.size());
+                srenew(lexcls->a, lexcls->nalloc_a);
+            }
+            for (int qmAtomGlobalIndex : intermolecularExclusionGroup)
+            {
+                if (const auto *entry = dd->ga2la->find(qmAtomGlobalIndex))
+                {
+                    lexcls->a[n++] = entry->la;
+                }
+            }
         }
     }
 
@@ -1991,11 +1995,10 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                         !rt->bExclRequired)
                     {
                         /* No charge groups and no distance check required */
-                        make_exclusions_zone(dd, zones,
-                                             mtop->moltype, cginfo,
-                                             excl_t,
-                                             izone,
-                                             cg0t, cg1t);
+                        make_exclusions_zone(dd, zones, mtop->moltype, cginfo,
+                                             excl_t, izone, cg0t,
+                                             cg1t,
+                                             mtop->intermolecularExclusionGroup);
                     }
                     else
                     {
@@ -2715,7 +2718,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
 
     if (*r_2b > 0 || *r_mb > 0)
     {
-        GMX_LOG(mdlog.info).appendText("Initial maximum inter charge-group distances:");
+        GMX_LOG(mdlog.info).appendText("Initial maximum distances in bonded interactions:");
         if (*r_2b > 0)
         {
             GMX_LOG(mdlog.info).appendTextFormatted(

@@ -50,8 +50,22 @@
 
 gmx_add_gtest_executable(
     gmxapi-test
+    restraint.cpp
+    status.cpp
+    system.cpp
     version.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
     )
+if(NOT GMX_USE_OPENCL)
+    # GPU resources may not be properly reinitialized between simulations in
+    # the same process.
+    # TODO: include this with the other test sources once the issue is resolved
+    # Ref https://redmine.gromacs.org/issues/2689
+    target_sources(gmxapi-test PRIVATE runner.cpp stopsignaler.cpp)
+endif()
 
 target_include_directories(gmxapi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
@@ -70,16 +84,25 @@ set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
 
 gmx_add_gtest_executable(
     gmxapi-mpi-test MPI
+    restraint.cpp
+    status.cpp
+    system.cpp
     version.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
     )
+if(NOT GMX_USE_OPENCL)
+    # GPU resources may not be properly reinitialized between simulations in
+    # the same process.
+    # TODO: include this with the other test sources once the issue is resolved
+    # Ref https://redmine.gromacs.org/issues/2689
+    target_sources(gmxapi-mpi-test PRIVATE runner.cpp stopsignaler.cpp)
+endif()
 
 target_include_directories(gmxapi-mpi-test PRIVATE
-                           ${CMAKE_CURRENT_BINARY_DIR})
+                           ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi)
 
-# Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
-# when GMX_THREAD_MPI is true, but the test executables in this directory do not
-# yet understand that command-line option.
-if(NOT GMX_THREAD_MPI)
-    gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
-endif()
+gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 INTEGRATION_TEST)

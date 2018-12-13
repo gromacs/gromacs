@@ -65,22 +65,21 @@ column. The interpretation of the parameters V and W depends on the
 combination rule that was chosen in the ``[ defaults ]`` section of the topology file
 (see :ref:`topfile`):
 
-.. math::
-
-   \begin{aligned}
-   \mbox{for combination rule 1}: & &
-   \begin{array}{llllll}
-     \mbox{V}_{ii} & = & C^{(6)}_{i}  & = & 4\,\epsilon_i\sigma_i^{6} &
-     \mbox{[ kJ mol$^{-1}$ nm$^{6}$ ]}\\
-     \mbox{W}_{ii} & = & C^{(12)}_{i} & = & 4\,\epsilon_i\sigma_i^{12} &
-     \mbox{[ kJ mol$^{-1}$ nm$^{12}$ ]}\\
-   \end{array}
-   \\
-   \mbox{for combination rules 2 and 3}: & &
-   \begin{array}{llll}
-     \mbox{V}_{ii} & = & \sigma_i   & \mbox{[ nm ]} \\
-     \mbox{W}_{ii} & = & \epsilon_i & \mbox{[ kJ mol$^{-1}$ ]}
-   \end{array}\end{aligned}
+.. math:: \begin{aligned}
+          \mbox{for combination rule 1}: & &
+          \begin{array}{llllll}
+            \mbox{V}_{ii} & = & C^{(6)}_{i}  & = & 4\,\epsilon_i\sigma_i^{6} &
+            \mbox{[ kJ mol$^{-1}$ nm$^{6}$ ]}\\
+            \mbox{W}_{ii} & = & C^{(12)}_{i} & = & 4\,\epsilon_i\sigma_i^{12} &
+            \mbox{[ kJ mol$^{-1}$ nm$^{12}$ ]}\\
+          \end{array}
+          \\
+          \mbox{for combination rules 2 and 3}: & &
+          \begin{array}{llll}
+            \mbox{V}_{ii} & = & \sigma_i   & \mbox{[ nm ]} \\
+            \mbox{W}_{ii} & = & \epsilon_i & \mbox{[ kJ mol$^{-1}$ ]}
+          \end{array}\end{aligned}
+          :label: eqndefcombrule
 
 Some or all combinations for different atom types can be given in the
 ``[ nonbond_params ]`` section, again with parameters V and
@@ -88,20 +87,19 @@ W as defined above. Any combination that is not given will be computed
 from the parameters for the corresponding atom types, according to the
 combination rule:
 
-.. math::
-
-   \begin{aligned}
-   \mbox{for combination rules 1 and 3}: & &
-   \begin{array}{lll}
-     C^{(6)}_{ij}  & = & \left(C^{(6)}_i\,C^{(6)}_j\right)^{\frac{1}{2}} \\
-     C^{(12)}_{ij} & = & \left(C^{(12)}_i\,C^{(12)}_j\right)^{\frac{1}{2}}
-   \end{array}
-   \\
-   \mbox{for combination rule 2}: & &
-   \begin{array}{lll}
-     \sigma_{ij}   & = & \frac{1}{2}(\sigma_i+\sigma_j) \\
-     \epsilon_{ij} & = & \sqrt{\epsilon_i\,\epsilon_j}
-   \end{array}\end{aligned}
+.. math:: \begin{aligned}
+          \mbox{for combination rules 1 and 3}: & &
+          \begin{array}{lll}
+            C^{(6)}_{ij}  & = & \left(C^{(6)}_i\,C^{(6)}_j\right)^{\frac{1}{2}} \\
+            C^{(12)}_{ij} & = & \left(C^{(12)}_i\,C^{(12)}_j\right)^{\frac{1}{2}}
+          \end{array}
+          \\
+          \mbox{for combination rule 2}: & &
+          \begin{array}{lll}
+            \sigma_{ij}   & = & \frac{1}{2}(\sigma_i+\sigma_j) \\
+            \epsilon_{ij} & = & \sqrt{\epsilon_i\,\epsilon_j}
+          \end{array}\end{aligned}
+          :label: eqngivencombrule
 
 When :math:`\sigma` and :math:`\epsilon` need to be supplied (rules 2
 and 3), it would seem it is impossible to have a non-zero :math:`C^{12}`
@@ -113,13 +111,12 @@ nothing more.
 
 There is only one set of combination rules for Buckingham potentials:
 
-.. math::
-
-   \begin{array}{rcl}
-   A_{ij}   &=& \left(A_{ii} \, A_{jj}\right)^{1/2}    \\
-   B_{ij}   &=& 2 / \left(\frac{1}{B_{ii}} + \frac{1}{B_{jj}}\right)        \\
-   C_{ij}   &=& \left(C_{ii} \, C_{jj}\right)^{1/2}
-   \end{array}
+.. math:: \begin{array}{rcl}
+          A_{ij}   &=& \left(A_{ii} \, A_{jj}\right)^{1/2}    \\
+          B_{ij}   &=& 2 / \left(\frac{1}{B_{ii}} + \frac{1}{B_{jj}}\right)        \\
+          C_{ij}   &=& \left(C_{ii} \, C_{jj}\right)^{1/2}
+          \end{array}
+          :label: eqnbuckinghamcombrule
 
 Bonded parameters
 ~~~~~~~~~~~~~~~~~

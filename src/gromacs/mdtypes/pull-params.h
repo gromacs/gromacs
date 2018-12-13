@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,11 +57,12 @@
 
 /*! \brief Struct that defines a pull group */
 typedef struct {
-    int   nat;     /**< Number of atoms in the pull group */
-    int  *ind;     /**< The global atoms numbers */
-    int   nweight; /**< The number of weights (0 or nat) */
-    real *weight;  /**< Weights (use all 1 when weight==NULL) */
-    int   pbcatom; /**< The reference atom for pbc (global number) */
+    int      nat;                    /**< Number of atoms in the pull group */
+    int     *ind;                    /**< The global atoms numbers */
+    int      nweight;                /**< The number of weights (0 or nat) */
+    real    *weight;                 /**< Weights (use all 1 when weight==NULL) */
+    int      pbcatom;                /**< The reference atom for pbc (global number) */
+    int      pbcatom_input;          /**< The reference atom for pbc (global number) as specified in the input parameters */
 } t_pull_group;
 
 /*! Maximum number of pull groups that can be used in a pull coordinate */
@@ -86,18 +87,21 @@ typedef struct {
 
 /*! \brief Struct containing all pull parameters */
 typedef struct pull_params_t {
-    int            ngroup;         /**< Number of pull groups */
-    int            ncoord;         /**< Number of pull coordinates */
-    real           cylinder_r;     /**< Radius of cylinder for dynamic COM (nm) */
-    real           constr_tol;     /**< Absolute tolerance for constraints in (nm) */
-    gmx_bool       bPrintCOM;      /**< Print coordinates of COM for each coord */
-    gmx_bool       bPrintRefValue; /**< Print the reference value for each coord */
-    gmx_bool       bPrintComp;     /**< Print cartesian components for each coord with geometry=distance */
-    int            nstxout;        /**< Output interval for pull x */
-    int            nstfout;        /**< Output interval for pull f */
+    int            ngroup;                  /**< Number of pull groups */
+    int            ncoord;                  /**< Number of pull coordinates */
+    real           cylinder_r;              /**< Radius of cylinder for dynamic COM (nm) */
+    real           constr_tol;              /**< Absolute tolerance for constraints in (nm) */
+    gmx_bool       bPrintCOM;               /**< Print coordinates of COM for each coord */
+    gmx_bool       bPrintRefValue;          /**< Print the reference value for each coord */
+    gmx_bool       bPrintComp;              /**< Print cartesian components for each coord with geometry=distance */
+    gmx_bool       bSetPbcRefToPrevStepCOM; /**< Use the COM of each group from the previous step as reference */
+    int            nstxout;                 /**< Output interval for pull x */
+    int            nstfout;                 /**< Output interval for pull f */
+    bool           bXOutAverage;            /**< Write the average coordinate during the output interval */
+    bool           bFOutAverage;            /**< Write the average force during the output interval */
 
-    t_pull_group  *group;          /**< groups to pull/restrain/etc/ */
-    t_pull_coord  *coord;          /**< the pull coordinates */
+    t_pull_group  *group;                   /**< groups to pull/restrain/etc/ */
+    t_pull_coord  *coord;                   /**< the pull coordinates */
 } pull_params_t;
 
 /*! \endcond */

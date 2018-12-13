@@ -528,6 +528,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 /* nstdhdl should be a multiple of nstcalcenergy */
                 check_nst("nstcalcenergy", ir->nstcalcenergy,
                           "nstdhdl", &ir->fepvals->nstdhdl, wi);
+            }
+            if (ir->bExpanded)
+            {
                 /* nstexpanded should be a multiple of nstcalcenergy */
                 check_nst("nstcalcenergy", ir->nstcalcenergy,
                           "nstexpanded", &ir->expandedvals->nstexpanded, wi);
@@ -2757,7 +2760,6 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
 static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 {
     t_grpopts              *opts;
-    const gmx_groups_t     *groups;
     pull_params_t          *pull;
     int                     natoms, ai, aj, i, j, d, g, imin, jmin;
     int                    *nrdf2, *na_vcm, na_tot;
@@ -2775,24 +2777,24 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 
     opts = &ir->opts;
 
-    groups = &mtop->groups;
+    const gmx_groups_t &groups = mtop->groups;
     natoms = mtop->natoms;
 
     /* Allocate one more for a possible rest group */
     /* We need to sum degrees of freedom into doubles,
      * since floats give too low nrdf's above 3 million atoms.
      */
-    snew(nrdf_tc, groups->grps[egcTC].nr+1);
-    snew(nrdf_vcm, groups->grps[egcVCM].nr+1);
-    snew(dof_vcm, groups->grps[egcVCM].nr+1);
-    snew(na_vcm, groups->grps[egcVCM].nr+1);
-    snew(nrdf_vcm_sub, groups->grps[egcVCM].nr+1);
+    snew(nrdf_tc, groups.grps[egcTC].nr+1);
+    snew(nrdf_vcm, groups.grps[egcVCM].nr+1);
+    snew(dof_vcm, groups.grps[egcVCM].nr+1);
+    snew(na_vcm, groups.grps[egcVCM].nr+1);
+    snew(nrdf_vcm_sub, groups.grps[egcVCM].nr+1);
 
-    for (i = 0; i < groups->grps[egcTC].nr; i++)
+    for (i = 0; i < groups.grps[egcTC].nr; i++)
     {
         nrdf_tc[i] = 0;
     }
-    for (i = 0; i < groups->grps[egcVCM].nr+1; i++)
+    for (i = 0; i < groups.grps[egcVCM].nr+1; i++)
     {
         nrdf_vcm[i]     = 0;
         clear_ivec(dof_vcm[i]);
@@ -2929,7 +2931,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                     nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
                     if (nrdf_tc[getGroupType(groups, egcTC, ai)] < 0)
                     {
-                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]);
+                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups.grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]);
                     }
                 }
                 else
@@ -2952,7 +2954,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
          * the number of degrees of freedom in each vcm group when COM
          * translation is removed and 6 when rotation is removed as well.
          */
-        for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
+        for (j = 0; j < groups.grps[egcVCM].nr+1; j++)
         {
             switch (ir->comm_mode)
             {
@@ -2975,10 +2977,10 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             }
         }
 
-        for (i = 0; i < groups->grps[egcTC].nr; i++)
+        for (i = 0; i < groups.grps[egcTC].nr; i++)
         {
             /* Count the number of atoms of TC group i for every VCM group */
-            for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
+            for (j = 0; j < groups.grps[egcVCM].nr+1; j++)
             {
                 na_vcm[j] = 0;
             }
@@ -2996,7 +2998,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
              */
             nrdf_uc    = nrdf_tc[i];
             nrdf_tc[i] = 0;
-            for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
+            for (j = 0; j < groups.grps[egcVCM].nr+1; j++)
             {
                 if (nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {
@@ -3006,7 +3008,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             }
         }
     }
-    for (i = 0; (i < groups->grps[egcTC].nr); i++)
+    for (i = 0; (i < groups.grps[egcTC].nr); i++)
     {
         opts->nrdf[i] = nrdf_tc[i];
         if (opts->nrdf[i] < 0)
@@ -3015,7 +3017,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
         }
         fprintf(stderr,
                 "Number of degrees of freedom in T-Coupling group %s is %.2f\n",
-                gnames[groups->grps[egcTC].nm_ind[i]], opts->nrdf[i]);
+                gnames[groups.grps[egcTC].nm_ind[i]], opts->nrdf[i]);
     }
 
     sfree(nrdf2);
@@ -3576,57 +3578,75 @@ void do_index(const char* mdparin, const char *ndx,
     auto qmGroupNames = gmx::splitString(is->QMMM);
     auto qmMethods    = gmx::splitString(is->QMmethod);
     auto qmBasisSets  = gmx::splitString(is->QMbasis);
-    if (qmMethods.size() != qmGroupNames.size() ||
-        qmBasisSets.size() != qmGroupNames.size())
+    if (ir->eI != eiMimic)
     {
-        gmx_fatal(FARGS, "Invalid QMMM input: %zu groups %zu basissets"
-                  " and %zu methods\n", qmGroupNames.size(),
-                  qmBasisSets.size(), qmMethods.size());
+        if (qmMethods.size() != qmGroupNames.size() ||
+            qmBasisSets.size() != qmGroupNames.size())
+        {
+            gmx_fatal(FARGS, "Invalid QMMM input: %zu groups %zu basissets"
+                      " and %zu methods\n", qmGroupNames.size(),
+                      qmBasisSets.size(), qmMethods.size());
+        }
+        /* group rest, if any, is always MM! */
+        do_numbering(natoms, groups, qmGroupNames, grps, gnames, egcQMMM,
+                     restnm, egrptpALL_GENREST, bVerbose, wi);
+        nr            = qmGroupNames.size(); /*atoms->grps[egcQMMM].nr;*/
+        ir->opts.ngQM = qmGroupNames.size();
+        snew(ir->opts.QMmethod, nr);
+        snew(ir->opts.QMbasis, nr);
+        for (i = 0; i < nr; i++)
+        {
+            /* input consists of strings: RHF CASSCF PM3 .. These need to be
+             * converted to the corresponding enum in names.c
+             */
+            ir->opts.QMmethod[i] = search_QMstring(qmMethods[i].c_str(),
+                                                   eQMmethodNR,
+                                                   eQMmethod_names);
+            ir->opts.QMbasis[i] = search_QMstring(qmBasisSets[i].c_str(),
+                                                  eQMbasisNR,
+                                                  eQMbasis_names);
+
+        }
+        auto qmMultiplicities = gmx::splitString(is->QMmult);
+        auto qmCharges        = gmx::splitString(is->QMcharge);
+        auto qmbSH            = gmx::splitString(is->bSH);
+        snew(ir->opts.QMmult, nr);
+        snew(ir->opts.QMcharge, nr);
+        snew(ir->opts.bSH, nr);
+        convertInts(wi, qmMultiplicities, "QMmult", ir->opts.QMmult);
+        convertInts(wi, qmCharges, "QMcharge", ir->opts.QMcharge);
+        convertYesNos(wi, qmbSH, "bSH", ir->opts.bSH);
+
+        auto CASelectrons = gmx::splitString(is->CASelectrons);
+        auto CASorbitals  = gmx::splitString(is->CASorbitals);
+        snew(ir->opts.CASelectrons, nr);
+        snew(ir->opts.CASorbitals, nr);
+        convertInts(wi, CASelectrons, "CASelectrons", ir->opts.CASelectrons);
+        convertInts(wi, CASorbitals, "CASOrbitals", ir->opts.CASorbitals);
+
+        auto SAon    = gmx::splitString(is->SAon);
+        auto SAoff   = gmx::splitString(is->SAoff);
+        auto SAsteps = gmx::splitString(is->SAsteps);
+        snew(ir->opts.SAon, nr);
+        snew(ir->opts.SAoff, nr);
+        snew(ir->opts.SAsteps, nr);
+        convertInts(wi, SAon, "SAon", ir->opts.SAon);
+        convertInts(wi, SAoff, "SAoff", ir->opts.SAoff);
+        convertInts(wi, SAsteps, "SAsteps", ir->opts.SAsteps);
     }
-    /* group rest, if any, is always MM! */
-    do_numbering(natoms, groups, qmGroupNames, grps, gnames, egcQMMM,
-                 restnm, egrptpALL_GENREST, bVerbose, wi);
-    nr            = qmGroupNames.size(); /*atoms->grps[egcQMMM].nr;*/
-    ir->opts.ngQM = qmGroupNames.size();
-    snew(ir->opts.QMmethod, nr);
-    snew(ir->opts.QMbasis, nr);
-    for (i = 0; i < nr; i++)
+    else
     {
-        /* input consists of strings: RHF CASSCF PM3 .. These need to be
-         * converted to the corresponding enum in names.c
-         */
-        ir->opts.QMmethod[i] = search_QMstring(qmMethods[i].c_str(), eQMmethodNR,
-                                               eQMmethod_names);
-        ir->opts.QMbasis[i]  = search_QMstring(qmBasisSets[i].c_str(), eQMbasisNR,
-                                               eQMbasis_names);
+        /* MiMiC */
+        if (qmGroupNames.size() > 1)
+        {
+            gmx_fatal(FARGS, "Currently, having more than one QM group in MiMiC is not supported");
+        }
+        /* group rest, if any, is always MM! */
+        do_numbering(natoms, groups, qmGroupNames, grps, gnames, egcQMMM,
+                     restnm, egrptpALL_GENREST, bVerbose, wi);
 
+        ir->opts.ngQM = qmGroupNames.size();
     }
-    auto qmMultiplicities = gmx::splitString(is->QMmult);
-    auto qmCharges        = gmx::splitString(is->QMcharge);
-    auto qmbSH            = gmx::splitString(is->bSH);
-    snew(ir->opts.QMmult, nr);
-    snew(ir->opts.QMcharge, nr);
-    snew(ir->opts.bSH, nr);
-    convertInts(wi, qmMultiplicities, "QMmult", ir->opts.QMmult);
-    convertInts(wi, qmCharges, "QMcharge", ir->opts.QMcharge);
-    convertYesNos(wi, qmbSH, "bSH", ir->opts.bSH);
-
-    auto CASelectrons = gmx::splitString(is->CASelectrons);
-    auto CASorbitals  = gmx::splitString(is->CASorbitals);
-    snew(ir->opts.CASelectrons, nr);
-    snew(ir->opts.CASorbitals, nr);
-    convertInts(wi, CASelectrons, "CASelectrons", ir->opts.CASelectrons);
-    convertInts(wi, CASorbitals, "CASOrbitals", ir->opts.CASorbitals);
-
-    auto SAon    = gmx::splitString(is->SAon);
-    auto SAoff   = gmx::splitString(is->SAoff);
-    auto SAsteps = gmx::splitString(is->SAsteps);
-    snew(ir->opts.SAon, nr);
-    snew(ir->opts.SAoff, nr);
-    snew(ir->opts.SAsteps, nr);
-    convertInts(wi, SAon, "SAon", ir->opts.SAon);
-    convertInts(wi, SAoff, "SAoff", ir->opts.SAoff);
-    convertInts(wi, SAsteps, "SAsteps", ir->opts.SAsteps);
 
     /* end of QMMM input */
 
@@ -4015,6 +4035,27 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         warning(wi, "You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
     }
 
+    if (ir->epc == epcPARRINELLORAHMAN &&
+        ir->etc == etcNOSEHOOVER)
+    {
+        real tau_t_max = 0;
+        for (int g = 0; g < ir->opts.ngtc; g++)
+        {
+            tau_t_max = std::max(tau_t_max, ir->opts.tau_t[g]);
+        }
+        if (ir->tau_p < 1.9*tau_t_max)
+        {
+            std::string message =
+                gmx::formatString("With %s T-coupling and %s p-coupling, "
+                                  "%s (%g) should be at least twice as large as %s (%g) to avoid resonances",
+                                  etcoupl_names[ir->etc],
+                                  epcoupl_names[ir->epc],
+                                  "tau-p", ir->tau_p,
+                                  "tau-t", tau_t_max);
+            warning(wi, message.c_str());
+        }
+    }
+
     /* Check for pressure coupling with absolute position restraints */
     if (ir->epc != epcNO && ir->refcoord_scaling == erscNO)
     {
@@ -4105,7 +4146,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         const t_atom *atom;
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
-            mgrp[getGroupType(&sys->groups, egcACC, i)] += atom->m;
+            mgrp[getGroupType(sys->groups, egcACC, i)] += atom->m;
         }
         mt = 0.0;
         for (i = 0; (i < sys->groups.grps[egcACC].nr); i++)

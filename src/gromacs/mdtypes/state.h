@@ -94,7 +94,7 @@ enum {
     estORIRE_INITF, estORIRE_DTAV,
     estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
     estFEPSTATE, estMC_RNG_NOTSUPPORTED, estMC_RNGI_NOTSUPPORTED,
-    estBAROS_INT,
+    estBAROS_INT, estPREVSTEPCOM,
     estNR
 };
 
@@ -211,8 +211,8 @@ class t_state
         real                       veta;           //!< Trotter based isotropic P-coupling
         real                       vol0;           //!< Initial volume,required for computing MTTK conserved quantity
         gmx::HostVector<gmx::RVec> x;              //!< The coordinates (natoms)
-        PaddedRVecVector           v;              //!< The velocities (natoms)
-        PaddedRVecVector           cg_p;           //!< p vector for conjugate gradient minimization
+        PaddedVector<gmx::RVec>    v;              //!< The velocities (natoms)
+        PaddedVector<gmx::RVec>    cg_p;           //!< p vector for conjugate gradient minimization
 
         ekinstate_t                ekinstate;      //!< The state of the kinetic energy
 
@@ -224,6 +224,8 @@ class t_state
         int                               ddp_count;       //!< The DD partitioning count for this state
         int                               ddp_count_cg_gl; //!< The DD partitioning count for index_gl
         std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
+
+        std::vector<double>               com_prev_step;   //!< The COM of the previous step of each pull group
 };
 
 #ifndef DOXYGEN
@@ -301,7 +303,7 @@ positionsFromStatePointer(const t_state *state)
 {
     if (state)
     {
-        return gmx::constArrayRefFromArray(state->x.data(), state->natoms);
+        return gmx::makeConstArrayRef(state->x).subArray(0, state->natoms);
     }
     else
     {
