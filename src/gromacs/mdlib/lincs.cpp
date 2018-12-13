@@ -278,11 +278,7 @@ static void lincs_matrix_expand(const Lincs               &lincsd,
             sol[b]  = sol[b] + mvb;
         }
 
-        gmx::ArrayRef<real> swap;
-
-        swap = rhs1;
-        rhs1 = rhs2;
-        rhs2 = swap;
+        std::swap(rhs1, rhs2);
     }   /* nrec*(ncons+2*nrtot) flops */
 
     if (lincsd.ntriangle > 0)
@@ -335,11 +331,7 @@ static void lincs_matrix_expand(const Lincs               &lincsd,
                 sol[b]  = sol[b] + mvb;
             }
 
-            gmx::ArrayRef<real> swap;
-
-            swap = rhs1;
-            rhs1 = rhs2;
-            rhs2 = swap;
+            std::swap(rhs1, rhs2);
         }   /* nrec*(ntriangle + ncc_triangle*2) flops */
 
         if (lincsd.bTaskDepTri)
@@ -2434,9 +2426,9 @@ bool constrain_lincs(bool computeRmsd,
                 cconerr(*lincsd, xprime, pbc,
                         &ncons_loc, &p_ssd, &p_max, &p_imax);
                 std::string simMesg;
-                if (isMultiSim(&ms))
+                if (isMultiSim(ms))
                 {
-                    simMesg += gmx::formatString(" in simulation %d", ms.sim);
+                    simMesg += gmx::formatString(" in simulation %d", ms->sim);
                 }
                 fprintf(stderr,
                         "\nStep %" PRId64 ", time %g (ps)  LINCS WARNING%s\n"
