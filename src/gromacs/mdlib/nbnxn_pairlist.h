@@ -45,9 +45,15 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
+#include "gromacs/utility/defaultinitallocator.h"
 #include "gromacs/utility/real.h"
 
+struct nbnxn_list_work_t;
 struct tMPI_Atomic;
+
+/* Convenience type for vector that avoids initialization at resize() */
+template<typename T>
+using FastVector = std::vector < T, gmx::DefaultInitAllocator < T>>;
 
 /*! \cond INTERNAL */
 
@@ -123,10 +129,11 @@ typedef void nbnxn_free_t (void *ptr);
  * This means that once a full mask (=NBNXN_INTERACTION_MASK_ALL)
  * is found, all subsequent j-entries in the i-entry also have full masks.
  */
-typedef struct {
+struct nbnxn_cj_t
+{
     int          cj;    /* The j-cluster                    */
     unsigned int excl;  /* The exclusion (interaction) bits */
-} nbnxn_cj_t;
+};
 
 /* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
  * The upper bits contain information for non-bonded kernel optimization.
@@ -142,12 +149,13 @@ typedef struct {
 #define NBNXN_CI_DO_COUL(subc)  (1<<(9+3*(subc)))
 
 /* Simple pair-list i-unit */
-typedef struct {
+struct nbnxn_ci_t
+{
     int ci;             /* i-cluster             */
     int shift;          /* Shift vector index plus possible flags, see above */
     int cj_ind_start;   /* Start index into cj   */
     int cj_ind_end;     /* End index into cj     */
-} nbnxn_ci_t;
+};
 
 /* Grouped pair-list i-unit */
 typedef struct {
@@ -181,21 +189,16 @@ struct NbnxnPairlistCpu
     int                     na_cj;       /* The number of atoms per j-cluster        */
     int                     na_sc;       /* The number of atoms per super cluster    */
     real                    rlist;       /* The radius for constructing the list     */
-    int                     nci;         /* The number of i-clusters in the list     */
-    int                     nciOuter;    /* The number of i-clusters in the outer, unpruned list, -1 when invalid */
-    nbnxn_ci_t             *ci;          /* The i-cluster list, size nci             */
-    nbnxn_ci_t             *ciOuter;     /* The outer, unpruned i-cluster list, size nciOuter(=-1 when invalid) */
-    int                     ci_nalloc;   /* The allocation size of ci/ciOuter        */
+    FastVector<nbnxn_ci_t>  ci;          /* The i-cluster list                       */
+    FastVector<nbnxn_ci_t>  ciOuter;     /* The outer, unpruned i-cluster list       */
 
-    int                     ncj;         /* The number of j-clusters in the list     */
-    nbnxn_cj_t             *cj;          /* The j-cluster list, size ncj             */
-    nbnxn_cj_t             *cjOuter;     /* The outer, unpruned j-cluster list, size ncj    */
-    int                     cj_nalloc;   /* The allocation size of cj/cj0            */
-    int                     ncjInUse;    /* The number of j-clusters that are used by ci entries in this list, will be <= ncj */
+    FastVector<nbnxn_cj_t>  cj;          /* The j-cluster list, size ncj             */
+    FastVector<nbnxn_cj_t>  cjOuter;     /* The outer, unpruned j-cluster list       */
+    int                     ncjInUse;    /* The number of j-clusters that are used by ci entries in this list, will be <= cj.size() */
 
     int                     nci_tot;     /* The total number of i clusters           */
 
-    struct nbnxn_list_work *work;
+    nbnxn_list_work_t      *work;
 
     gmx_cache_protect_t     cp1;
 };
@@ -223,7 +226,7 @@ struct NbnxnPairlistGpu
     int                     excl_nalloc; /* The allocation size for excl             */
     int                     nci_tot;     /* The total number of i clusters           */
 
-    struct nbnxn_list_work *work;
+    nbnxn_list_work_t      *work;
 
     gmx_cache_protect_t     cp1;
 };

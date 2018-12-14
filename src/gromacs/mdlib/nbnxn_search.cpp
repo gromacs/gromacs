@@ -774,18 +774,9 @@ static void check_excl_space(NbnxnPairlistGpu *nbl, int extra)
 }
 
 /* Ensures there is enough space for ncell extra j-cells in the list */
-static void check_cell_list_space(NbnxnPairlistCpu *nbl,
-                                  int               ncell)
+static void check_cell_list_space(NbnxnPairlistCpu gmx_unused *nbl,
+                                  int gmx_unused               ncell)
 {
-    /* We have a maximum of 2 j-clusters per i-cluster sized cell */
-    const int cj_max = nbl->ncj + ncell*2;
-
-    if (cj_max > nbl->cj_nalloc)
-    {
-        nbl->cj_nalloc = over_alloc_small(cj_max);
-        srenew(nbl->cj, nbl->cj_nalloc);
-        srenew(nbl->cjOuter, nbl->cj_nalloc);
-    }
 }
 
 /* Ensures there is enough space for ncell extra j-cells in the list */
@@ -841,16 +832,14 @@ static void nbnxn_init_pairlist(NbnxnPairlistCpu *nbl)
     nbl->na_sc       = 0;
     nbl->na_ci       = 0;
     nbl->na_cj       = 0;
-    nbl->nci         = 0;
-    nbl->ci          = nullptr;
-    nbl->ci_nalloc   = 0;
-    nbl->ncj         = 0;
+    nbl->ci.clear();
+    nbl->ciOuter.clear();
     nbl->ncjInUse    = 0;
-    nbl->cj          = nullptr;
-    nbl->cj_nalloc   = 0;
+    nbl->cj.clear();
+    nbl->cjOuter.clear();
     nbl->nci_tot     = 0;
 
-    snew(nbl->work, 1);
+    nbl->work        = new nbnxn_list_work_t();
     snew_aligned(nbl->work->bb_ci, 1, NBNXN_SEARCH_BB_MEM_ALIGN);
     snew(nbl->work->x_ci, NBNXN_CPU_CLUSTER_I_SIZE*DIM);
 #if GMX_SIMD
@@ -911,7 +900,7 @@ static void nbnxn_init_pairlist(NbnxnPairlistGpu *nbl,
     nbl->nexcl       = 1;
     set_no_excls(&nbl->excl[0]);
 
-    snew(nbl->work, 1);
+    nbl->work        = new nbnxn_list_work_t();
 #if NBNXN_BBXXXX
     snew_aligned(nbl->work->pbb_ci, c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX, NBNXN_SEARCH_BB_MEM_ALIGN);
 #else
@@ -973,12 +962,12 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
              */
             if (bSimple)
             {
-                snew(nbl_list->nbl[i], 1);
+                nbl_list->nbl[i] = new NbnxnPairlistCpu();
 
                 nbnxn_init_pairlist(nbl_list->nbl[i]);
                 if (nbl_list->nnbl > 1)
                 {
-                    snew(nbl_list->nbl_work[i], 1);
+                    nbl_list->nbl_work[i] = new NbnxnPairlistCpu();
                     nbnxn_init_pairlist(nbl_list->nbl_work[i]);
                 }
             }
@@ -1014,36 +1003,36 @@ static void print_nblist_statistics(FILE *fp, const NbnxnPairlistCpu *nbl,
 
     grid = &nbs->grid[0];
 
-    fprintf(fp, "nbl nci %d ncj %d\n",
-            nbl->nci, nbl->ncjInUse);
+    fprintf(fp, "nbl nci %zu ncj %d\n",
+            nbl->ci.size(), nbl->ncjInUse);
     fprintf(fp, "nbl na_sc %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
             nbl->na_sc, rl, nbl->ncjInUse, nbl->ncjInUse/static_cast<double>(grid->nc),
             nbl->ncjInUse/static_cast<double>(grid->nc)*grid->na_sc,
             nbl->ncjInUse/static_cast<double>(grid->nc)*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j cell list length %.1f\n",
-            0.25*nbl->ncjInUse/static_cast<double>(std::max(nbl->nci, 1)));
+            0.25*nbl->ncjInUse/std::max(static_cast<double>(nbl->ci.size()), 1.0));
 
     for (int s = 0; s < SHIFTS; s++)
     {
         cs[s] = 0;
     }
     npexcl = 0;
-    for (int i = 0; i < nbl->nci; i++)
+    for (const nbnxn_ci_t &ciEntry : nbl->ci)
     {
-        cs[nbl->ci[i].shift & NBNXN_CI_SHIFT] +=
-            nbl->ci[i].cj_ind_end - nbl->ci[i].cj_ind_start;
+        cs[ciEntry.shift & NBNXN_CI_SHIFT] +=
+            ciEntry.cj_ind_end - ciEntry.cj_ind_start;
 
-        int j = nbl->ci[i].cj_ind_start;
-        while (j < nbl->ci[i].cj_ind_end &&
+        int j = ciEntry.cj_ind_start;
+        while (j < ciEntry.cj_ind_end &&
                nbl->cj[j].excl != NBNXN_INTERACTION_MASK_ALL)
         {
             npexcl++;
             j++;
         }
     }
-    fprintf(fp, "nbl cell pairs, total: %d excl: %d %.1f%%\n",
-            nbl->ncj, npexcl, 100*npexcl/static_cast<double>(std::max(nbl->ncj, 1)));
+    fprintf(fp, "nbl cell pairs, total: %zu excl: %d %.1f%%\n",
+            nbl->cj.size(), npexcl, 100*npexcl/std::max(static_cast<double>(nbl->cj.size()), 1.0));
     for (int s = 0; s < SHIFTS; s++)
     {
         if (cs[s] > 0)
@@ -1351,12 +1340,13 @@ makeClusterListSimple(const nbnxn_grid_t *      gridj,
         for (int jcluster = jclusterFirst; jcluster <= jclusterLast; jcluster++)
         {
             /* Store cj and the interaction mask */
-            nbl->cj[nbl->ncj].cj   = gridj->cell0 + jcluster;
-            nbl->cj[nbl->ncj].excl = get_imask(excludeSubDiagonal, icluster, jcluster);
-            nbl->ncj++;
+            nbnxn_cj_t cjEntry;
+            cjEntry.cj   = gridj->cell0 + jcluster;
+            cjEntry.excl = get_imask(excludeSubDiagonal, icluster, jcluster);
+            nbl->cj.push_back(cjEntry);
         }
-        /* Increase the closing index in i super-cell list */
-        nbl->ci[nbl->nci].cj_ind_end = nbl->ncj;
+        /* Increase the closing index in the i list */
+        nbl->ci.back().cj_ind_end = nbl->cj.size();
     }
 }
 
@@ -1516,7 +1506,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
             nbl->nci_tot += npair;
 
             /* Increase the closing index in i super-cell list */
-            nbl->sci[nbl->nsci].cj4_ind_end =
+            nbl->sci[nbl->nsci - 1].cj4_ind_end =
                 (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize;
         }
     }
@@ -1526,7 +1516,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 template <typename CjListType>
 static int numContiguousJClusters(const int         cjIndexStart,
                                   const int         cjIndexEnd,
-                                  const CjListType &cjList)
+                                  const CjListType *cjList)
 {
     const int firstJCluster = nblCj(cjList, cjIndexStart);
 
@@ -1629,13 +1619,13 @@ static inline int findJClusterInJList(int                jCluster,
 /* Return the i-entry in the list we are currently operating on */
 static nbnxn_ci_t *getOpenIEntry(NbnxnPairlistCpu *nbl)
 {
-    return &nbl->ci[nbl->nci];
+    return &nbl->ci.back();
 }
 
 /* Return the i-entry in the list we are currently operating on */
 static nbnxn_sci_t *getOpenIEntry(NbnxnPairlistGpu *nbl)
 {
-    return &nbl->sci[nbl->nsci];
+    return &nbl->sci[nbl->nsci - 1];
 }
 
 /* Set all atom-pair exclusions for a simple type list i-entry
@@ -1657,7 +1647,7 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
         return;
     }
 
-    const JListRanges        ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, nbl->cj);
+    const JListRanges        ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, nbl->cj.data());
 
     const int                iCluster = iEntry.ci;
 
@@ -1698,7 +1688,7 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
                 if (jCluster >= ranges.cjFirst && jCluster <= ranges.cjLast)
                 {
                     const int index =
-                        findJClusterInJList(jCluster, ranges, nbl->cj);
+                        findJClusterInJList(jCluster, ranges, nbl->cj.data());
 
                     if (index >= 0)
                     {
@@ -2230,14 +2220,6 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
     }
 }
 
-/* Reallocate the simple ci list for at least n entries */
-static void nb_realloc_ci(NbnxnPairlistCpu *nbl, int n)
-{
-    nbl->ci_nalloc = over_alloc_small(n);
-    srenew(nbl->ci, nbl->ci_nalloc);
-    srenew(nbl->ciOuter, nbl->ci_nalloc);
-}
-
 /* Reallocate the super-cell sci list for at least n entries */
 static void nb_realloc_sci(NbnxnPairlistGpu *nbl, int n)
 {
@@ -2248,19 +2230,17 @@ static void nb_realloc_sci(NbnxnPairlistGpu *nbl, int n)
                        nbl->alloc, nbl->free);
 }
 
-/* Make a new ci entry at index nbl->nci */
+/* Make a new ci entry at the back of nbl->ci */
 static void addNewIEntry(NbnxnPairlistCpu *nbl, int ci, int shift, int flags)
 {
-    if (nbl->nci + 1 > nbl->ci_nalloc)
-    {
-        nb_realloc_ci(nbl, nbl->nci+1);
-    }
-    nbl->ci[nbl->nci].ci            = ci;
-    nbl->ci[nbl->nci].shift         = shift;
+    nbnxn_ci_t ciEntry;
+    ciEntry.ci            = ci;
+    ciEntry.shift         = shift;
     /* Store the interaction flags along with the shift */
-    nbl->ci[nbl->nci].shift        |= flags;
-    nbl->ci[nbl->nci].cj_ind_start  = nbl->ncj;
-    nbl->ci[nbl->nci].cj_ind_end    = nbl->ncj;
+    ciEntry.shift        |= flags;
+    ciEntry.cj_ind_start  = nbl->cj.size();
+    ciEntry.cj_ind_end    = nbl->cj.size();
+    nbl->ci.push_back(ciEntry);
 }
 
 /* Make a new sci entry at index nbl->nsci */
@@ -2268,12 +2248,15 @@ static void addNewIEntry(NbnxnPairlistGpu *nbl, int sci, int shift, int gmx_unus
 {
     if (nbl->nsci + 1 > nbl->sci_nalloc)
     {
-        nb_realloc_sci(nbl, nbl->nsci+1);
+        nb_realloc_sci(nbl, nbl->nsci + 1);
     }
-    nbl->sci[nbl->nsci].sci           = sci;
-    nbl->sci[nbl->nsci].shift         = shift;
-    nbl->sci[nbl->nsci].cj4_ind_start = nbl->ncj4;
-    nbl->sci[nbl->nsci].cj4_ind_end   = nbl->ncj4;
+    nbl->nsci++;
+    nbnxn_sci_t &sciEntry = nbl->sci[nbl->nsci - 1];
+
+    sciEntry.sci           = sci;
+    sciEntry.shift         = shift;
+    sciEntry.cj4_ind_start = nbl->ncj4;
+    sciEntry.cj4_ind_end   = nbl->ncj4;
 }
 
 /* Sort the simple j-list cj on exclusions.
@@ -2284,11 +2267,7 @@ static void sort_cj_excl(nbnxn_cj_t *cj, int ncj,
 {
     int jnew;
 
-    if (ncj > work->cj_nalloc)
-    {
-        work->cj_nalloc = over_alloc_large(ncj);
-        srenew(work->cj, work->cj_nalloc);
-    }
+    work->cj.resize(ncj);
 
     /* Make a list of the j-cells involving exclusions */
     jnew = 0;
@@ -2325,30 +2304,33 @@ static void closeIEntry(NbnxnPairlistCpu    *nbl,
                         int gmx_unused       thread,
                         int gmx_unused       nthread)
 {
-    int jlen;
+    nbnxn_ci_t &ciEntry = nbl->ci.back();
 
     /* All content of the new ci entry have already been filled correctly,
-     * we only need to increase the count here (for non empty lists).
+     * we only need to sort and increase counts or remove the entry when empty.
      */
-    jlen = nbl->ci[nbl->nci].cj_ind_end - nbl->ci[nbl->nci].cj_ind_start;
+    const int jlen = ciEntry.cj_ind_end - ciEntry.cj_ind_start;
     if (jlen > 0)
     {
-        sort_cj_excl(nbl->cj+nbl->ci[nbl->nci].cj_ind_start, jlen, nbl->work);
+        sort_cj_excl(nbl->cj.data() + ciEntry.cj_ind_start, jlen, nbl->work);
 
         /* The counts below are used for non-bonded pair/flop counts
          * and should therefore match the available kernel setups.
          */
-        if (!(nbl->ci[nbl->nci].shift & NBNXN_CI_DO_COUL(0)))
+        if (!(ciEntry.shift & NBNXN_CI_DO_COUL(0)))
         {
             nbl->work->ncj_noq += jlen;
         }
-        else if ((nbl->ci[nbl->nci].shift & NBNXN_CI_HALF_LJ(0)) ||
-                 !(nbl->ci[nbl->nci].shift & NBNXN_CI_DO_LJ(0)))
+        else if ((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) ||
+                 !(ciEntry.shift & NBNXN_CI_DO_LJ(0)))
         {
             nbl->work->ncj_hlj += jlen;
         }
-
-        nbl->nci++;
+    }
+    else
+    {
+        /* Entry is empty: remove it  */
+        nbl->ci.pop_back();
     }
 }
 
@@ -2462,10 +2444,12 @@ static void closeIEntry(NbnxnPairlistGpu *nbl,
                         gmx_bool progBal, float nsp_tot_est,
                         int thread, int nthread)
 {
+    nbnxn_sci_t &sciEntry = nbl->sci[nbl->nsci - 1];
+
     /* All content of the new ci entry have already been filled correctly,
-     * we only need to increase the count here (for non empty lists).
+     * we only need to, potentially, split or remove the entry when empty.
      */
-    int j4len = nbl->sci[nbl->nsci].cj4_ind_end - nbl->sci[nbl->nsci].cj4_ind_start;
+    int j4len = sciEntry.cj4_ind_end - sciEntry.cj4_ind_start;
     if (j4len > 0)
     {
         /* We can only have complete blocks of 4 j-entries in a list,
@@ -2474,14 +2458,17 @@ static void closeIEntry(NbnxnPairlistGpu *nbl,
         nbl->ncj4         = (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize;
         nbl->work->cj_ind = nbl->ncj4*c_nbnxnGpuJgroupSize;
 
-        nbl->nsci++;
-
         if (nsp_max_av > 0)
         {
             /* Measure the size of the new entry and potentially split it */
             split_sci_entry(nbl, nsp_max_av, progBal, nsp_tot_est,
                             thread, nthread);
         }
+    }
+    else
+    {
+        /* Entry is empty: remove it  */
+        nbl->nsci--;
     }
 }
 
@@ -2500,11 +2487,12 @@ static void sync_work(NbnxnPairlistGpu *nbl)
 /* Clears an NbnxnPairlistCpu data structure */
 static void clear_pairlist(NbnxnPairlistCpu *nbl)
 {
-    nbl->nci           = 0;
-    nbl->ncj           = 0;
+    nbl->ci.clear();
+    nbl->cj.clear();
     nbl->ncjInUse      = 0;
     nbl->nci_tot       = 0;
-    nbl->nciOuter      = -1;
+    nbl->ciOuter.clear();
+    nbl->cjOuter.clear();
 
     nbl->work->ncj_noq = 0;
     nbl->work->ncj_hlj = 0;
@@ -2862,13 +2850,13 @@ static void get_nsubpair_target(const nbnxn_search   *nbs,
 /* Debug list print function */
 static void print_nblist_ci_cj(FILE *fp, const NbnxnPairlistCpu *nbl)
 {
-    for (int i = 0; i < nbl->nci; i++)
+    for (const nbnxn_ci_t &ciEntry : nbl->ci)
     {
         fprintf(fp, "ci %4d  shift %2d  ncj %3d\n",
-                nbl->ci[i].ci, nbl->ci[i].shift,
-                nbl->ci[i].cj_ind_end - nbl->ci[i].cj_ind_start);
+                ciEntry.ci, ciEntry.shift,
+                ciEntry.cj_ind_end - ciEntry.cj_ind_start);
 
-        for (int j = nbl->ci[i].cj_ind_start; j < nbl->ci[i].cj_ind_end; j++)
+        for (int j = ciEntry.cj_ind_start; j < ciEntry.cj_ind_end; j++)
         {
             fprintf(fp, "  cj %5d  imask %x\n",
                     nbl->cj[j].cj,
@@ -3346,7 +3334,7 @@ static void makeClusterListWrapper(NbnxnPairlistGpu       *nbl,
 
 static int getNumSimpleJClustersInList(const NbnxnPairlistCpu &nbl)
 {
-    return nbl.ncj;
+    return nbl.cj.size();
 }
 
 static int getNumSimpleJClustersInList(const gmx_unused NbnxnPairlistGpu &nbl)
@@ -3357,7 +3345,7 @@ static int getNumSimpleJClustersInList(const gmx_unused NbnxnPairlistGpu &nbl)
 static void incrementNumSimpleJClustersInList(NbnxnPairlistCpu *nbl,
                                               int               ncj_old_j)
 {
-    nbl->ncjInUse += nbl->ncj - ncj_old_j;
+    nbl->ncjInUse += nbl->cj.size() - ncj_old_j;
 }
 
 static void incrementNumSimpleJClustersInList(NbnxnPairlistGpu gmx_unused *nbl,
@@ -3368,7 +3356,7 @@ static void incrementNumSimpleJClustersInList(NbnxnPairlistGpu gmx_unused *nbl,
 static void checkListSizeConsistency(const NbnxnPairlistCpu &nbl,
                                      const bool              haveFreeEnergy)
 {
-    GMX_RELEASE_ASSERT(nbl.ncjInUse == nbl.ncj || haveFreeEnergy,
+    GMX_RELEASE_ASSERT(static_cast<size_t>(nbl.ncjInUse) == nbl.cj.size() || haveFreeEnergy,
                        "Without free-energy all cj pair-list entries should be in use. "
                        "Note that subsequent code does not make use of the equality, "
                        "this check is only here to catch bugs");
@@ -3387,10 +3375,10 @@ static void setBufferFlags(const NbnxnPairlistCpu &nbl,
                            gmx_bitmask_t          *gridj_flag,
                            const int               th)
 {
-    if (nbl.ncj > ncj_old_j)
+    if (static_cast<gmx::index>(nbl.cj.size()) > ncj_old_j)
     {
         int cbFirst = nbl.cj[ncj_old_j].cj >> gridj_flag_shift;
-        int cbLast  = nbl.cj[nbl.ncj - 1].cj >> gridj_flag_shift;
+        int cbLast  = nbl.cj.back().cj >> gridj_flag_shift;
         for (int cb = cbFirst; cb <= cbLast; cb++)
         {
             bitmask_init_bit(&gridj_flag[cb], th);
@@ -4010,18 +3998,11 @@ static void copySelectedListRange(const nbnxn_ci_t * gmx_restrict srcCi,
                                   gmx_bitmask_t *flag,
                                   int iFlagShift, int jFlagShift, int t)
 {
-    int ncj = srcCi->cj_ind_end - srcCi->cj_ind_start;
+    const int ncj = srcCi->cj_ind_end - srcCi->cj_ind_start;
 
-    if (dest->nci + 1 >= dest->ci_nalloc)
-    {
-        nb_realloc_ci(dest, dest->nci + 1);
-    }
-    /* Note, the second argument is the extra cell count, but ncj cells is sufficient */
-    check_cell_list_space(dest, ncj);
-
-    dest->ci[dest->nci]              = *srcCi;
-    dest->ci[dest->nci].cj_ind_start = dest->ncj;
-    dest->ci[dest->nci].cj_ind_end   = dest->ncj + ncj;
+    dest->ci.push_back(*srcCi);
+    dest->ci.back().cj_ind_start = dest->cj.size();
+    dest->ci.back().cj_ind_end   = dest->cj.size() + ncj;
 
     if (setFlags)
     {
@@ -4030,7 +4011,7 @@ static void copySelectedListRange(const nbnxn_ci_t * gmx_restrict srcCi,
 
     for (int j = srcCi->cj_ind_start; j < srcCi->cj_ind_end; j++)
     {
-        dest->cj[dest->ncj++] = src->cj[j];
+        dest->cj.push_back(src->cj[j]);
 
         if (setFlags)
         {
@@ -4042,8 +4023,6 @@ static void copySelectedListRange(const nbnxn_ci_t * gmx_restrict srcCi,
             bitmask_init_bit(&flag[src->cj[j].cj >> jFlagShift], t);
         }
     }
-
-    dest->nci++;
 }
 
 /* This routine re-balances the pairlists such that all are nearly equally
@@ -4095,7 +4074,7 @@ static void rebalanceSimpleLists(int                                  numLists,
 
             if (cjGlobal + src->ncjInUse > cjStart)
             {
-                for (int i = 0; i < src->nci && cjGlobal < cjEnd; i++)
+                for (gmx::index i = 0; i < static_cast<gmx::index>(src->ci.size()) && cjGlobal < cjEnd; i++)
                 {
                     const nbnxn_ci_t *srcCi = &src->ci[i];
                     int               ncj   = srcCi->cj_ind_end - srcCi->cj_ind_start;
@@ -4128,7 +4107,7 @@ static void rebalanceSimpleLists(int                                  numLists,
             }
         }
 
-        dest->ncjInUse = dest->ncj;
+        dest->ncjInUse = dest->cj.size();
     }
 
 #ifndef NDEBUG
@@ -4442,7 +4421,7 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
                 if (nbl_list->bSimple)
                 {
                     NbnxnPairlistCpu *nbl = nbl_list->nbl[th];
-                    np_tot += nbl->ncj;
+                    np_tot += nbl->cj.size();
                     np_noq += nbl->work->ncj_noq;
                     np_hlj += nbl->work->ncj_hlj;
                 }
@@ -4525,10 +4504,10 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
 
     if (nbl_list->bSimple)
     {
-        /* This is a fresh list, so not pruned, stored using ci and nci.
-         * ciOuter and nciOuter are invalid at this point.
+        /* This is a fresh list, so not pruned, stored using ci.
+         * ciOuter is invalid at this point.
          */
-        GMX_ASSERT(nbl_list->nbl[0]->nciOuter == -1, "nciOuter should have been set to -1 to signal that it is invalid");
+        GMX_ASSERT(nbl_list->nbl[0]->ciOuter.empty(), "ciOuter is invalid so it should be empty");
     }
 
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
@@ -4596,22 +4575,16 @@ void nbnxnPrepareListForDynamicPruning(nbnxn_pairlist_set_t *listSet)
 
     for (int i = 0; i < listSet->nnbl; i++)
     {
+        NbnxnPairlistCpu &list = *listSet->nbl[i];
+
         /* The search produced a list in ci/cj.
          * Swap the list pointers so we get the outer list is ciOuter,cjOuter
          * and we can prune that to get an inner list in ci/cj.
          */
-        NbnxnPairlistCpu *list = listSet->nbl[i];
-        list->nciOuter         = list->nci;
+        GMX_RELEASE_ASSERT(list.ciOuter.empty() && list.cjOuter.empty(),
+                           "The outer lists should be empty before preparation");
 
-        nbnxn_ci_t *ciTmp      = list->ciOuter;
-        list->ciOuter          = list->ci;
-        list->ci               = ciTmp;
-
-        nbnxn_cj_t *cjTmp      = list->cjOuter;
-        list->cjOuter          = list->cj;
-        list->cj               = cjTmp;
-
-        /* Signal that this inner list is currently invalid */
-        list->nci              = -1;
+        std::swap(list.ci, list.ciOuter);
+        std::swap(list.cj, list.cjOuter);
     }
 }
