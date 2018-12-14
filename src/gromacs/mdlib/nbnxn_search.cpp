@@ -605,7 +605,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
      * All coordinates are stored as xyzxyz...
      */
 
-    const real *x_i = work->x_ci;
+    const real *x_i = work->x_ci.data();
 
     for (int i = 0; i < c_nbnxnGpuClusterSize; i++)
     {
@@ -636,7 +636,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
 
     Simd4Real   rc2_S      = Simd4Real(rlist2);
 
-    const real *x_i        = work->x_ci_simd;
+    const real *x_i        = work->x_ci_simd.data();
 
     int         dim_stride = c_nbnxnGpuClusterSize*DIM;
     Simd4Real   ix_S0      = load4(x_i + si*dim_stride + 0*GMX_SIMD4_WIDTH);
@@ -826,6 +826,36 @@ static void set_no_excls(nbnxn_excl_t *excl)
     }
 }
 
+nbnxn_list_work_t::nbnxn_list_work_t(NbnxnPairlistType pairlistType) :
+    sort(nullptr),
+    sort_nalloc(0),
+    sci_sort(nullptr),
+    sci_sort_nalloc(0)
+{
+    if (pairlistType == NbnxnPairlistType::Cpu)
+    {
+        bb_ci.resize(1);
+#if GMX_SIMD
+        x_ci_simd.resize(NBNXN_CPU_CLUSTER_I_SIZE*DIM*GMX_SIMD_REAL_WIDTH);
+#endif
+    }
+    else
+    {
+#if NBNXN_BBXXXX
+        pbb_ci.resize(c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX);
+#else
+        bb_ci.resize(c_gpuNumClusterPerCell);
+#endif
+        const int gpu_clusterpair_nc =
+            c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize*DIM;
+        x_ci.resize(gpu_clusterpair_nc);
+#if GMX_SIMD
+        x_ci_simd.resize(gpu_clusterpair_nc);
+#endif
+        d2.resize(c_gpuNumClusterPerCell);
+    }
+}
+
 /* Initializes a single NbnxnPairlistCpu data structure */
 static void nbnxn_init_pairlist(NbnxnPairlistCpu *nbl)
 {
@@ -839,18 +869,7 @@ static void nbnxn_init_pairlist(NbnxnPairlistCpu *nbl)
     nbl->cjOuter.clear();
     nbl->nci_tot     = 0;
 
-    nbl->work        = new nbnxn_list_work_t();
-    snew_aligned(nbl->work->bb_ci, 1, NBNXN_SEARCH_BB_MEM_ALIGN);
-#if GMX_SIMD
-    snew_aligned(nbl->work->x_ci_simd,
-                 NBNXN_CPU_CLUSTER_I_SIZE*DIM*GMX_SIMD_REAL_WIDTH,
-                 GMX_SIMD_REAL_WIDTH);
-#endif
-
-    nbl->work->sort            = nullptr;
-    nbl->work->sort_nalloc     = 0;
-    nbl->work->sci_sort        = nullptr;
-    nbl->work->sci_sort_nalloc = 0;
+    nbl->work        = new nbnxn_list_work_t(NbnxnPairlistType::Cpu);
 }
 
 /* Initializes a single NbnxnPairlistGpu data structure */
@@ -899,23 +918,7 @@ static void nbnxn_init_pairlist(NbnxnPairlistGpu *nbl,
     nbl->nexcl       = 1;
     set_no_excls(&nbl->excl[0]);
 
-    nbl->work        = new nbnxn_list_work_t();
-#if NBNXN_BBXXXX
-    snew_aligned(nbl->work->pbb_ci, c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX, NBNXN_SEARCH_BB_MEM_ALIGN);
-#else
-    snew_aligned(nbl->work->bb_ci, c_gpuNumClusterPerCell, NBNXN_SEARCH_BB_MEM_ALIGN);
-#endif
-    int gpu_clusterpair_nc = c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize*DIM;
-    snew(nbl->work->x_ci, gpu_clusterpair_nc);
-#if GMX_SIMD
-    snew_aligned(nbl->work->x_ci_simd, gpu_clusterpair_nc, GMX_SIMD_REAL_WIDTH);
-#endif
-    snew_aligned(nbl->work->d2, c_gpuNumClusterPerCell, NBNXN_SEARCH_BB_MEM_ALIGN);
-
-    nbl->work->sort            = nullptr;
-    nbl->work->sort_nalloc     = 0;
-    nbl->work->sci_sort        = nullptr;
-    nbl->work->sci_sort_nalloc = 0;
+    nbl->work        = new nbnxn_list_work_t(NbnxnPairlistType::Gpu);
 }
 
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
@@ -1253,8 +1256,8 @@ makeClusterListSimple(const nbnxn_grid_t *      gridj,
                       float                     rbb2,
                       int * gmx_restrict        numDistanceChecks)
 {
-    const nbnxn_bb_t * gmx_restrict bb_ci = nbl->work->bb_ci;
-    const real * gmx_restrict       x_ci  = nbl->work->x_ci;
+    const nbnxn_bb_t * gmx_restrict bb_ci = nbl->work->bb_ci.data();
+    const real * gmx_restrict       x_ci  = nbl->work->x_ci.data();
 
     gmx_bool                        InRange;
 
@@ -1371,9 +1374,9 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
     nbnxn_list_work_t *work   = nbl->work;
 
 #if NBNXN_BBXXXX
-    const float       *pbb_ci = work->pbb_ci;
+    const float       *pbb_ci = work->pbb_ci.data();
 #else
-    const nbnxn_bb_t  *bb_ci  = work->bb_ci;
+    const nbnxn_bb_t  *bb_ci  = work->bb_ci.data();
 #endif
 
     assert(c_nbnxnGpuClusterSize == gridi->na_c);
@@ -1391,7 +1394,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
     int  ci_last = -1;
 #endif
 
-    float *d2l = work->d2;
+    float *d2l = work->d2.data();
 
     for (int subc = 0; subc < gridj->nsubc[scj]; subc++)
     {
@@ -2596,7 +2599,7 @@ static void icell_set_x_supersub(int ci,
 {
 #if !GMX_SIMD4_HAVE_REAL
 
-    real * x_ci = work->x_ci;
+    real * x_ci = work->x_ci.data();
 
     int    ia = ci*c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize;
     for (int i = 0; i < c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize; i++)
@@ -2608,7 +2611,7 @@ static void icell_set_x_supersub(int ci,
 
 #else /* !GMX_SIMD4_HAVE_REAL */
 
-    real * x_ci = work->x_ci_simd;
+    real * x_ci = work->x_ci_simd.data();
 
     for (int si = 0; si < c_gpuNumClusterPerCell; si++)
     {
@@ -3695,16 +3698,16 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                     if (bSimple)
                     {
                         set_icell_bb_simple(bb_i, ci, shx, shy, shz,
-                                            nbl->work->bb_ci);
+                                            &nbl->work->bb_ci[0]);
                     }
                     else
                     {
 #if NBNXN_BBXXXX
                         set_icell_bbxxxx_supersub(pbb_i, ci, shx, shy, shz,
-                                                  nbl->work->pbb_ci);
+                                                  &nbl->work->pbb_ci[0]);
 #else
                         set_icell_bb_supersub(bb_i, ci, shx, shy, shz,
-                                              nbl->work->bb_ci);
+                                              &nbl->work->bb_ci[0]);
 #endif
                     }
 

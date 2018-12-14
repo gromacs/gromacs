@@ -47,7 +47,7 @@ icell_set_x_simd_4xn(int ci,
                      nbnxn_list_work_t *work)
 {
     int    ia;
-    real  *x_ci_simd = work->x_ci_simd;
+    real  *x_ci_simd = work->x_ci_simd.data();
 
     ia = xIndexFromCi<NbnxnLayout::Simd4xN>(ci);
 
@@ -94,8 +94,8 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
                        int * gmx_restrict        numDistanceChecks)
 {
     using namespace gmx;
-    const real * gmx_restrict          x_ci_simd = nbl->work->x_ci_simd;
-    const nbnxn_bb_t * gmx_restrict    bb_ci     = nbl->work->bb_ci;
+    const real * gmx_restrict          x_ci_simd = nbl->work->x_ci_simd.data();
+    const nbnxn_bb_t * gmx_restrict    bb_ci     = nbl->work->bb_ci.data();
 
     SimdReal                           jx_S, jy_S, jz_S;
 

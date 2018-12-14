@@ -201,32 +201,44 @@ struct nbnxn_grid_t
     int                       nsubc_tot; /* Total number of subcell, used for printing  */
 };
 
+/* Enum to tell whether a pairlist if is of CPU or GPU type */
+enum class NbnxnPairlistType
+{
+    Cpu,
+    Gpu
+};
+
+template <class T>
+using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
+
 /* Working data for the actual i-supercell during pair search */
 struct nbnxn_list_work_t
 {
-    gmx_cache_protect_t     cp0;             /* Protect cache between threads               */
+    nbnxn_list_work_t(NbnxnPairlistType pairlistType);
 
-    nbnxn_bb_t             *bb_ci;           /* The bounding boxes, pbc shifted, for each cluster */
-    float                  *pbb_ci;          /* As bb_ci, but in xxxx packed format               */
-    real                   *x_ci;            /* The coordinates, pbc shifted, for each atom       */
-    real                   *x_ci_simd;       /* aligned pointer to 4*DIM*GMX_SIMD_REAL_WIDTH floats */
-    int                     cj_ind;          /* The current cj_ind index for the current list     */
-    int                     cj4_init;        /* The first unitialized cj4 block                   */
+    gmx_cache_protect_t       cp0;             /* Protect cache between threads               */
 
-    float                  *d2;              /* Bounding box distance work array                  */
+    AlignedVector<nbnxn_bb_t> bb_ci;           /* The bounding boxes, pbc shifted, for each cluster */
+    AlignedVector<float>      pbb_ci;          /* As bb_ci, but in xxxx packed format               */
+    std::vector<real>         x_ci;            /* The coordinates, pbc shifted, for each atom       */
+    AlignedVector<real>       x_ci_simd;       /* aligned pointer to 4*DIM*GMX_SIMD_REAL_WIDTH floats */
+    int                       cj_ind;          /* The current cj_ind index for the current list     */
+    int                       cj4_init;        /* The first unitialized cj4 block                   */
 
-    std::vector<nbnxn_cj_t> cj;              /* The j-cell list                                   */
+    AlignedVector<float>      d2;              /* Bounding box distance work array                  */
 
-    int                     ncj_noq;         /* Nr. of cluster pairs without Coul for flop count  */
-    int                     ncj_hlj;         /* Nr. of cluster pairs with 1/2 LJ for flop count   */
+    std::vector<nbnxn_cj_t>   cj;              /* The j-cell list                                   */
 
-    int                    *sort;            /* Sort index                    */
-    int                     sort_nalloc;     /* Allocation size of sort       */
+    int                       ncj_noq;         /* Nr. of cluster pairs without Coul for flop count  */
+    int                       ncj_hlj;         /* Nr. of cluster pairs with 1/2 LJ for flop count   */
 
-    nbnxn_sci_t            *sci_sort;        /* Second sci array, for sorting */
-    int                     sci_sort_nalloc; /* Allocation size of sci_sort   */
+    int                      *sort;            /* Sort index                    */
+    int                       sort_nalloc;     /* Allocation size of sort       */
 
-    gmx_cache_protect_t     cp1;             /* Protect cache between threads               */
+    nbnxn_sci_t              *sci_sort;        /* Second sci array, for sorting */
+    int                       sci_sort_nalloc; /* Allocation size of sci_sort   */
+
+    gmx_cache_protect_t       cp1;             /* Protect cache between threads               */
 };
 
 /* Function type for setting the i-atom coordinate working data */
