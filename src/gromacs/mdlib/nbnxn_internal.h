@@ -202,7 +202,8 @@ struct nbnxn_grid_t
 };
 
 /* Working data for the actual i-supercell during pair search */
-typedef struct nbnxn_list_work {
+struct nbnxn_list_work_t
+{
     gmx_cache_protect_t     cp0;             /* Protect cache between threads               */
 
     nbnxn_bb_t             *bb_ci;           /* The bounding boxes, pbc shifted, for each cluster */
@@ -214,8 +215,7 @@ typedef struct nbnxn_list_work {
 
     float                  *d2;              /* Bounding box distance work array                  */
 
-    nbnxn_cj_t             *cj;              /* The j-cell list                                   */
-    int                     cj_nalloc;       /* Allocation size of cj                             */
+    std::vector<nbnxn_cj_t> cj;              /* The j-cell list                                   */
 
     int                     ncj_noq;         /* Nr. of cluster pairs without Coul for flop count  */
     int                     ncj_hlj;         /* Nr. of cluster pairs with 1/2 LJ for flop count   */
@@ -227,7 +227,7 @@ typedef struct nbnxn_list_work {
     int                     sci_sort_nalloc; /* Allocation size of sci_sort   */
 
     gmx_cache_protect_t     cp1;             /* Protect cache between threads               */
-} nbnxn_list_work_t;
+};
 
 /* Function type for setting the i-atom coordinate working data */
 typedef void
