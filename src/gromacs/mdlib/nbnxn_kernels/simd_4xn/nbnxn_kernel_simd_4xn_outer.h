@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,13 +36,12 @@
 
 {
     using namespace gmx;
-    const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
     const real *        q;
     const real         *shiftvec;
     const real         *x;
     real                facel;
-    int                 n, ci, ci_sh;
+    int                 ci, ci_sh;
     int                 ish, ish3;
     gmx_bool            do_LJ, half_LJ, do_coul;
     int                 cjind0, cjind1, cjind;
@@ -371,19 +370,17 @@
     Vstride_i    = nbat->nenergrp*(1<<nbat->neg_2log)*egps_jstride;
 #endif
 
-    l_cj = nbl->cj;
+    l_cj = nbl->cj.data();
 
     ninner = 0;
 
-    for (n = 0; n < nbl->nci; n++)
+    for (const nbnxn_ci_t &ciEntry : nbl->ci)
     {
-        nbln = &nbl->ci[n];
-
-        ish              = (nbln->shift & NBNXN_CI_SHIFT);
+        ish              = (ciEntry.shift & NBNXN_CI_SHIFT);
         ish3             = ish*3;
-        cjind0           = nbln->cj_ind_start;
-        cjind1           = nbln->cj_ind_end;
-        ci               = nbln->ci;
+        cjind0           = ciEntry.cj_ind_start;
+        cjind1           = ciEntry.cj_ind_end;
+        ci               = ciEntry.ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
 
         shX_S = SimdReal(shiftvec[ish3]);
@@ -411,9 +408,9 @@
          * inner LJ + C      for full-LJ + C
          * inner LJ          for full-LJ + no-C / half-LJ + no-C
          */
-        do_LJ   = ((nbln->shift & NBNXN_CI_DO_LJ(0)) != 0);
-        do_coul = ((nbln->shift & NBNXN_CI_DO_COUL(0)) != 0);
-        half_LJ = (((nbln->shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
+        do_LJ   = ((ciEntry.shift & NBNXN_CI_DO_LJ(0)) != 0);
+        do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
+        half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 
 #ifdef ENERGY_GROUPS
         egps_i = nbat->energrp[ci];
@@ -436,13 +433,13 @@
         gmx_bool do_self = do_coul;
 #endif
 #if UNROLLJ == 4
-        if (do_self && l_cj[nbln->cj_ind_start].cj == ci_sh)
+        if (do_self && l_cj[ciEntry.cj_ind_start].cj == ci_sh)
 #endif
 #if UNROLLJ == 2
-        if (do_self && l_cj[nbln->cj_ind_start].cj == (ci_sh<<1))
+        if (do_self && l_cj[ciEntry.cj_ind_start].cj == (ci_sh<<1))
 #endif
 #if UNROLLJ == 8
-        if (do_self && l_cj[nbln->cj_ind_start].cj == (ci_sh>>1))
+        if (do_self && l_cj[ciEntry.cj_ind_start].cj == (ci_sh>>1))
 #endif
         {
             if (do_coul)
