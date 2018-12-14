@@ -385,6 +385,8 @@ immStatus updatePlist(const Poldata             &pd,
                         }
                         else if (!bBASTAT)
                         {
+                            printf("Could not find angle information for %s - %s - %s\n",
+                                   aai.c_str(), aaj.c_str(), aak.c_str());
                             if (debug)
                             {
                                 fprintf(debug, "Could not find angle information for %s - %s - %s\n",

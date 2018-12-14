@@ -314,7 +314,7 @@ void print_electric_props(FILE                           *fp,
             mol.GenerateCharges(pd, fplog, ap, qdist, qgen,
                                 watoms, hfac, lot, false, nullptr,
                                 cr, tabfn, hwinfo, qcycle,
-                                maxESP, qtol, nullptr, false);
+                                maxESP, qtol, nullptr, nullptr);
             
             // Electrostatic potentials
             if (qgen != eqgESP)

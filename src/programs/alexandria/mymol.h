@@ -429,7 +429,7 @@ class MyMol
                                   int                        maxESP,
                                   real                       qtol,
                                   const gmx_output_env_t    *oenv,
-                                  gmx_bool                   bPlotESP);
+                                  const char                *ESPcorr);
         /*! \brief
          * Init the Qgresp class
          *

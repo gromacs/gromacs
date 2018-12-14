@@ -112,7 +112,8 @@ int alex_gentop(int argc, char *argv[])
         { efXVG, "-diffhist", "diffpot",   ffOPTWR },
         { efXVG, "-his",      "pot-histo", ffOPTWR },
         { efXVG, "-pc",       "pot-comp",  ffOPTWR },
-        { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR }
+        { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR },
+        { efXVG, "-plotESP",  "ESPcorr",   ffWRITE}
     };
 
     const  int                       NFILE          = asize(fnm);
@@ -141,7 +142,6 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bUsePDBcharge  = false;
     static gmx_bool                  bGenVSites     = false;
     static gmx_bool                  bDihedral      = false;
-    static gmx_bool                  bPlotESP       = false;
     static gmx_bool                  bLOG           = false;
     static gmx_bool                  bCUBE          = false;
     static gmx_bool                  bH14           = true;
@@ -205,9 +205,7 @@ int alex_gentop(int argc, char *argv[])
         { "-hfac",    FALSE, etREAL, {&hfac},
           "HIDDENFudge factor for AXx algorithms that modulates J00 for hydrogen atoms by multiplying it by (1 + hfac*qH). This hack is originally due to Rappe & Goddard." },
         { "-qsymm",  FALSE, etBOOL, {&bQsym},
-          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },                    
-        { "-plotESP",  FALSE, etBOOL, {&bPlotESP},
-          "Plot Alexandria ESP vs QM ESP read from the log file." },          
+          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },                             
         { "-symm",   FALSE, etSTR, {&symm_string},
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
         { "-cgsort", FALSE, etSTR, {cgopt},
@@ -378,7 +376,7 @@ int alex_gentop(int argc, char *argv[])
                                        maxpot,
                                        qtol,
                                        oenv,
-                                       bPlotESP);
+                                       opt2fn_null("-plotESP", NFILE, fnm));
     }
     if (bCUBE && immOK == imm)
     {

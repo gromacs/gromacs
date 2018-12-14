@@ -35,7 +35,6 @@
 #define GMX_QGEN_RESP_H
 
 #include <cstdio>
-
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -168,7 +167,8 @@ class QgenResp
 
         real getRms(real *wtot, real *rrms);
 
-        void plotLsq(const gmx_output_env_t *oenv);
+        void plotLsq(const gmx_output_env_t *oenv,
+                     const char             *ESPcorr);
 
         void calcRho();
 
