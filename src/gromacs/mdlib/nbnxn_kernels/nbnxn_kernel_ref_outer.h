@@ -106,7 +106,6 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 )
 {
-    const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
     const int          *type;
     const real         *q;
@@ -119,7 +118,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
     int                 ntype2;
     real                facel;
-    int                 n, ci, ci_sh;
+    int                 ci, ci_sh;
     int                 ish, ishf;
     gmx_bool            do_LJ, half_LJ, do_coul;
     int                 cjind0, cjind1, cjind;
@@ -228,21 +227,19 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
 
-    l_cj = nbl->cj;
+    l_cj = nbl->cj.data();
 
-    for (n = 0; n < nbl->nci; n++)
+    for (const nbnxn_ci_t &ciEntry : nbl->ci)
     {
         int i, d;
 
-        nbln = &nbl->ci[n];
-
-        ish              = (nbln->shift & NBNXN_CI_SHIFT);
+        ish              = (ciEntry.shift & NBNXN_CI_SHIFT);
         /* x, f and fshift are assumed to be stored with stride 3 */
         ishf             = ish*DIM;
-        cjind0           = nbln->cj_ind_start;
-        cjind1           = nbln->cj_ind_end;
+        cjind0           = ciEntry.cj_ind_start;
+        cjind1           = ciEntry.cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
-        ci               = nbln->ci;
+        ci               = ciEntry.ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
 
         /* We have 5 LJ/C combinations, but use only three inner loops,
@@ -251,9 +248,9 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
          * inner LJ + C      for full-LJ + C
          * inner LJ          for full-LJ + no-C / half-LJ + no-C
          */
-        do_LJ   = ((nbln->shift & NBNXN_CI_DO_LJ(0)) != 0);
-        do_coul = ((nbln->shift & NBNXN_CI_DO_COUL(0)) != 0);
-        half_LJ = (((nbln->shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
+        do_LJ   = ((ciEntry.shift & NBNXN_CI_DO_LJ(0)) != 0);
+        do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
+        half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 #ifdef CALC_ENERGIES
 
 #ifdef LJ_EWALD
@@ -300,7 +297,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 #endif
 
-            if (l_cj[nbln->cj_ind_start].cj == ci_sh)
+            if (l_cj[ciEntry.cj_ind_start].cj == ci_sh)
             {
                 for (i = 0; i < UNROLLI; i++)
                 {

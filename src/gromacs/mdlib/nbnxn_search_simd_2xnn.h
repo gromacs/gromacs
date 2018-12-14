@@ -226,11 +226,12 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
         for (int jcluster = jclusterFirst; jcluster <= jclusterLast; jcluster++)
         {
             /* Store cj and the interaction mask */
-            nbl->cj[nbl->ncj].cj   = cjFromCi<NbnxnLayout::Simd2xNN, 0>(gridj->cell0) + jcluster;
-            nbl->cj[nbl->ncj].excl = get_imask_simd_2xnn(excludeSubDiagonal, icluster, jcluster);
-            nbl->ncj++;
+            nbnxn_cj_t cjEntry;
+            cjEntry.cj   = cjFromCi<NbnxnLayout::Simd2xNN, 0>(gridj->cell0) + jcluster;
+            cjEntry.excl = get_imask_simd_2xnn(excludeSubDiagonal, icluster, jcluster);
+            nbl->cj.push_back(cjEntry);
         }
-        /* Increase the closing index in i super-cell list */
-        nbl->ci[nbl->nci].cj_ind_end = nbl->ncj;
+        /* Increase the closing index in the i list */
+        nbl->ci.back().cj_ind_end = nbl->cj.size();
     }
 }
