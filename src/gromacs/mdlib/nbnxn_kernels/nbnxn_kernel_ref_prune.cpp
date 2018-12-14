@@ -49,11 +49,15 @@ nbnxn_kernel_prune_ref(NbnxnPairlistCpu *         nbl,
                        const rvec * gmx_restrict  shift_vec,
                        real                       rlistInner)
 {
-    const nbnxn_ci_t * gmx_restrict ciOuter  = nbl->ciOuter;
-    nbnxn_ci_t       * gmx_restrict ciInner  = nbl->ci;
+    /* We avoid push_back() for efficiency reasons and resize after filling */
+    nbl->ci.resize(nbl->ciOuter.size());
+    nbl->cj.resize(nbl->cjOuter.size());
 
-    const nbnxn_cj_t * gmx_restrict cjOuter   = nbl->cjOuter;
-    nbnxn_cj_t       * gmx_restrict cjInner   = nbl->cj;
+    const nbnxn_ci_t * gmx_restrict ciOuter  = nbl->ciOuter.data();
+    nbnxn_ci_t       * gmx_restrict ciInner  = nbl->ci.data();
+
+    const nbnxn_cj_t * gmx_restrict cjOuter   = nbl->cjOuter.data();
+    nbnxn_cj_t       * gmx_restrict cjInner   = nbl->cj.data();
 
     const real       * gmx_restrict shiftvec = shift_vec[0];
     const real       * gmx_restrict x        = nbat->x;
@@ -69,9 +73,10 @@ nbnxn_kernel_prune_ref(NbnxnPairlistCpu *         nbl,
     constexpr int c_jUnroll  = c_nbnxnCpuIClusterSize;
 
     /* Initialize the new list as empty and add pairs that are in range */
-    int nciInner = 0;
-    int ncjInner = 0;
-    for (int ciIndex = 0; ciIndex < nbl->nciOuter; ciIndex++)
+    int       nciInner = 0;
+    int       ncjInner = 0;
+    const int nciOuter = nbl->ciOuter.size();
+    for (int ciIndex = 0; ciIndex < nciOuter; ciIndex++)
     {
         const nbnxn_ci_t * gmx_restrict ciEntry = &ciOuter[ciIndex];
 
@@ -134,5 +139,6 @@ nbnxn_kernel_prune_ref(NbnxnPairlistCpu *         nbl,
         }
     }
 
-    nbl->nci = nciInner;
+    nbl->ci.resize(nciInner);
+    nbl->cj.resize(ncjInner);
 }
