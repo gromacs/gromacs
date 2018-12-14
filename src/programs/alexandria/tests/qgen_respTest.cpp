@@ -133,7 +133,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
                                 hfac, lot, false, symm_string, cr, 
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
-                                hwinfo, qcycle, maxpot, qtol, nullptr, false);
+                                hwinfo, qcycle, maxpot, qtol, nullptr, nullptr);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)
