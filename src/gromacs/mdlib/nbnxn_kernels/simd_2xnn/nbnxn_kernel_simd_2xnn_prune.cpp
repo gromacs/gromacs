@@ -55,21 +55,27 @@ nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu *         nbl,
 {
 #ifdef GMX_NBNXN_SIMD_2XNN
     using namespace gmx;
-    const nbnxn_ci_t * gmx_restrict ciOuter  = nbl->ciOuter;
-    nbnxn_ci_t       * gmx_restrict ciInner  = nbl->ci;
+    
+    /* We avoid push_back() for efficiency reasons and resize after filling */
+    nbl->ci.resize(nbl->ciOuter.size());
+    nbl->cj.resize(nbl->cjOuter.size());
 
-    const nbnxn_cj_t * gmx_restrict cjOuter  = nbl->cjOuter;
-    nbnxn_cj_t       * gmx_restrict cjInner  = nbl->cj;
+    const nbnxn_ci_t * gmx_restrict ciOuter  = nbl->ciOuter.data();
+    nbnxn_ci_t       * gmx_restrict ciInner  = nbl->ci.data();
+
+    const nbnxn_cj_t * gmx_restrict cjOuter  = nbl->cjOuter.data();
+    nbnxn_cj_t       * gmx_restrict cjInner  = nbl->cj.data();
 
     const real       * gmx_restrict shiftvec = shift_vec[0];
     const real       * gmx_restrict x        = nbat->x;
 
     const SimdReal                  rlist2_S(rlistInner*rlistInner);
 
-    /* Initialize the new list as empty and add pairs that are in range */
-    int nciInner = 0;
-    int ncjInner = 0;
-    for (int i = 0; i < nbl->nciOuter; i++)
+    /* Initialize the new list count as empty and add pairs that are in range */
+    int       nciInner = 0;
+    int       ncjInner = 0;
+    const int nciOuter = nbl->ciOuter.size();
+    for (int i = 0; i < nciOuter; i++)
     {
         const nbnxn_ci_t * gmx_restrict ciEntry = &ciOuter[i];
 
@@ -156,7 +162,8 @@ nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu *         nbl,
         }
     }
 
-    nbl->nci = nciInner;
+    nbl->ci.resize(nciInner);
+    nbl->cj.resize(ncjInner);
 
 #else  /* GMX_NBNXN_SIMD_2XNN */
 
