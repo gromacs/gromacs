@@ -34,10 +34,12 @@
 #ifndef MYMOL_H
 #define MYMOL_H
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
@@ -82,6 +84,7 @@ enum eSupport {
 };
 
 struct gmx_vsite_t;
+struct t_nrnb;
 
 namespace alexandria
 {
@@ -274,8 +277,8 @@ class MyMol
         tensor                         alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         tensor                         alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         eSupport                       eSupp_;
-        PaddedRVecVector               f_;
-        PaddedRVecVector               optf_;
+        PaddedVector<gmx::RVec>        f_;
+        PaddedVector<gmx::RVec>        optf_;
         std::vector<int>               symmetric_charges_;
         QgenResp                       Qgresp_;
         QgenAcm                        Qgacm_;

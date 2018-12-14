@@ -887,7 +887,7 @@ void MyMol::addShells(const Poldata          &pd,
     char              **newname;
     t_atoms            *newatoms;
     t_excls            *newexcls;
-    PaddedRVecVector    newx;
+    std::vector<gmx::RVec> newx;
     t_param             p;
 
     auto                polarUnit = string2unit(pd.getPolarUnit().c_str());
@@ -1149,16 +1149,16 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
 
     gmx::ArrayRef<const std::string>  tabbfnm;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
-                  state_->box, tabfn, tabfn, tabbfnm, *hwinfo, nullptr, true, -1);
+                  state_->box, tabfn, tabfn, tabbfnm, *hwinfo, nullptr, false, true, -1);
     init_bonded_threading(nullptr, 1, &fr_->bondedThreading);
-    setup_bonded_threading(fr_->bondedThreading, topology_->atoms.nr, &ltop_->idef);
+    setup_bonded_threading(fr_->bondedThreading, topology_->atoms.nr, false, ltop_->idef);
     wcycle_    = wallcycle_init(debug, 0, cr);
 
     MDatoms_  = new std::unique_ptr<gmx::MDAtoms>(new gmx::MDAtoms());
     *MDatoms_ = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_, false);
     atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, MDatoms_->get());
     auto mdatoms = MDatoms_->get()->mdatoms();
-    f_.resize(gmx::paddedRVecVectorSize(state_->natoms));
+    f_.resizeWithPadding(state_->natoms);
 
     if (nullptr != shellfc_)
     {
@@ -1203,7 +1203,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
                             nullptr, 0, inputrec_,
                             true, force_flags, ltop_, nullptr,
                             enerd_, fcd_, state_,
-                            f_, force_vir, mdatoms,
+                            f_.arrayRefWithPadding(), force_vir, mdatoms,
                             &nrnb_, wcycle_, nullptr,
                             &(mtop_->groups), shellfc_,
                             fr_, t, mu_tot, vsite_->get(),
@@ -1216,8 +1216,8 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
         do_force(fplog, cr, nullptr, inputrec_, nullptr, nullptr, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
-                 state_->box, state_->x, nullptr,
-                 f_, force_vir, mdatoms,
+                 state_->box, state_->x.arrayRefWithPadding(), nullptr,
+                 f_.arrayRefWithPadding(), force_vir, mdatoms,
                  enerd_, fcd_,
                  state_->lambda, nullptr,
                  fr_, vsite_->get(), mu_tot, t,

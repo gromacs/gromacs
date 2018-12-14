@@ -42,6 +42,7 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
+struct gmx_ffparams_t;
 
 void convert_params(int atnr, t_params nbtypes[],
                     t_molinfo *mi,

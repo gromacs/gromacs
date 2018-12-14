@@ -580,7 +580,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
     char                   **newname;
     t_atoms                 *newatoms;
     t_excls                 *newexcls;
-    PaddedRVecVector         newx;    
+    std::vector<gmx::RVec>   newx;    
     t_param                  vs;
     
     memset(&vs, 0, sizeof(vs));    

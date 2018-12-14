@@ -39,6 +39,7 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
@@ -76,7 +77,7 @@ void calc_angles_dihs(t_params *ang,
         if (debug)
         {
             fprintf(debug, "GENTOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
-                    ai, aj, ak, norm(r_ij), norm(r_kj), th);
+                    ai, aj, ak, gmx::norm(r_ij), gmx::norm(r_kj), th);
         }
         ang->param[i].c[0] = th;
     }
@@ -91,7 +92,7 @@ void calc_angles_dihs(t_params *ang,
         if (debug)
         {
             fprintf(debug, "GENTOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
-                    ai, aj, ak, al, norm(r_ij), norm(r_kj), norm(r_kl), ph);
+                    ai, aj, ak, al, gmx::norm(r_ij), gmx::norm(r_kj), gmx::norm(r_kl), ph);
         }
         dih->param[i].c[0] = ph;
     }
@@ -276,7 +277,7 @@ real calc_dip(t_atoms *atoms, rvec x[])
         svmul(qq, x[i], mm);
         rvec_inc(mu, mm);
     }
-    return norm(mu)*ENM2DEBYE;
+    return gmx::norm(mu)*ENM2DEBYE;
 }
 
 void reset_q(t_atoms *atoms)

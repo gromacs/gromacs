@@ -1621,9 +1621,9 @@ void Optimization::calcDeviation()
                         Emol    = mymol.Emol_ + deltaEn;
 
                         mymol.f_.clear();
-                        mymol.f_.resize(2*natoms);
+                        mymol.f_.resizeWithPadding(2*natoms);
                         mymol.optf_.clear();
-                        mymol.optf_.resize(2*natoms);
+                        mymol.optf_.resizeWithPadding(2*natoms);
 
                         dbcopy = debug;
                         debug  = nullptr;
@@ -1897,7 +1897,7 @@ void Optimization::printResults(FILE                   *fp,
                     ei->getHF(&spHF);
                     deltaEn = spHF - optHF;
                     mi->f_.clear();
-                    mi->f_.resize(2*mi->topology_->atoms.nr);
+                    mi->f_.resizeWithPadding(2*mi->topology_->atoms.nr);
                     mi->changeCoordinate(ei, bpolar);
                     mi->computeForces(nullptr, commrec());
                     fprintf(hfp, "%10g  %10g\n", mi->Emol_ + deltaEn, mi->enerd_->term[F_EPOT]);

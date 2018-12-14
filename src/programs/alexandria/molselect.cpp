@@ -109,7 +109,7 @@ static void sample_molecules(FILE                                 *fp,
                     {
                         if (std::find(sample.begin(), sample.end(), mol) == sample.end())
                         {
-                            sample.push_back(mol);
+                            sample.push_back(std::move(mol));
                             found = true;
                             nmol++;
                         }
