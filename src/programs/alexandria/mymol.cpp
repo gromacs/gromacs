@@ -1292,7 +1292,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  int                        maxESP,
                                  real                       tolerance,
                                  const gmx_output_env_t    *oenv,
-                                 gmx_bool                   bPlotESP)
+                                 const char                *ESPcorr)
 {
     std::vector<double> qq;
     immStatus           imm         = immOK;
@@ -1377,9 +1377,9 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 topology_->atoms.atom[i].q      =
                     topology_->atoms.atom[i].qB = Qgresp_.getAtomCharge(i);
             }
-            if (bPlotESP && nullptr != oenv)
+            if (nullptr != ESPcorr && nullptr != oenv)
             {
-                Qgresp_.plotLsq(oenv);
+                Qgresp_.plotLsq(oenv, ESPcorr);
             }
         }
         break;

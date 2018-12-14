@@ -736,7 +736,8 @@ real QgenResp::myWeight(int iatom) const
     }
 }
 
-void QgenResp::plotLsq(const gmx_output_env_t *oenv)
+void QgenResp::plotLsq(const gmx_output_env_t *oenv,
+                       const char             *ESPcorr)
 {
     real        x, y;
     const char *leg = "Alexandria";
@@ -748,7 +749,7 @@ void QgenResp::plotLsq(const gmx_output_env_t *oenv)
                             gmx2convert(ep_[i].vCalc(), eg2cHartree_e),
                             0, 0);
     }
-    FILE *fp = xvgropen("EspFit.xvg", "Electrostatic Potential (Hartree/e)", "QM", "Calc", oenv);
+    FILE *fp = xvgropen(ESPcorr, "Electrostatic Potential (Hartree/e)", "QM", "Calc", oenv);
     xvgr_legend(fp, 1, &leg, oenv);
     xvgr_line_props(fp, 0, elNone, ecBlack, oenv);
     fprintf(fp, "@ s%d symbol %d\n", 0, 1);

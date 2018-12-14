@@ -62,8 +62,8 @@ static void multi_regression2(int nrow, double y[], int ncol,
 {
     /* Query and allocate the optimal workspace */
     int                 lwork = -1;
-    int                 lda   = nrow;
-    int                 ldb   = nrow;
+    int                 lda   = std::max(1, nrow);
+    int                 ldb   = std::max(1, std::max(nrow, ncol));
     int                 nrhs  = 1;
     int                 rank;
     double              rcond = -1.0;

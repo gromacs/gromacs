@@ -596,7 +596,7 @@ void MolGen::Read(FILE            *fp,
                                                 maxESP_,
                                                 qtol_,
                                                 nullptr,
-                                                false);
+                                                nullptr);
                     (void) mymol.espRms();
                 }
                 if (immOK == imm)
@@ -725,7 +725,7 @@ void MolGen::Read(FILE            *fp,
                                             maxESP_,
                                             qtol_,
                                             nullptr,
-                                            false);
+                                            nullptr);
                 (void) mymol.espRms();
             }
             if (immOK == imm)
