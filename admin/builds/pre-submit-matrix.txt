@@ -83,7 +83,7 @@ gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 mpi simd=avx2_256
 # Test external clFFT (for build speed)
 # Test AVX_128_FMA SIMD
 # Test newest gcc at time of release
-gcc-8 openmp simd=avx2_256 gpuhw=amd opencl-1.2 clFFT-2.14
+gcc-8 openmp simd=avx2_256 gpuhw=amd opencl-1.2 clFFT-2.14 buildfftw
 
 # TODO
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
