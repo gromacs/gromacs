@@ -47,6 +47,7 @@ extra_options = {
     'tng' : Option.bool,
     'mkl': Option.simple,
     'fftpack': Option.simple,
+    'gmxfft': Option.simple,
     'double': Option.simple,
     'thread-mpi': Option.bool,
     'clang_cuda': Option.bool,
@@ -122,6 +123,8 @@ def do_build(context):
         cmake_opts['GMX_FFT_LIBRARY'] = 'mkl'
     elif context.opts.fftpack:
         cmake_opts['GMX_FFT_LIBRARY'] = 'fftpack'
+    elif context.opts.gmxfft:
+        cmake_opts['GMX_BUILD_OWN_FFTW'] = 'ON'
     if context.opts.mkl or context.opts.atlas or context.opts.armpl:
         cmake_opts['GMX_EXTERNAL_BLAS'] = 'ON'
         cmake_opts['GMX_EXTERNAL_LAPACK'] = 'ON'
