@@ -2194,6 +2194,10 @@ void init_ns(FILE *fplog, const t_commrec *cr,
 
 void done_ns(gmx_ns_t *ns, int numEnergyGroups)
 {
+    if (ns->bexcl != nullptr)
+    {
+        sfree(ns->bexcl);
+    }
     sfree(ns->bExcludeAlleg);
     if (ns->ns_buf)
     {
@@ -2203,8 +2207,14 @@ void done_ns(gmx_ns_t *ns, int numEnergyGroups)
         }
         sfree(ns->ns_buf);
     }
+    for (int i = 0; i < numEnergyGroups; i++)
+    {
+        sfree(ns->nl_sr[i]);
+    }
     sfree(ns->simple_aaj);
     sfree(ns->bHaveVdW);
+    sfree(ns->nsr);
+    sfree(ns->nl_sr);
     done_grid(ns->grid);
     sfree(ns);
 }
