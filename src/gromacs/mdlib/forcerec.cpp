@@ -2298,6 +2298,24 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
     *nb_verlet = nbv;
 }
 
+static void free_nb_verlet(nonbonded_verlet_t *nbv)
+{
+    if (nbv != nullptr)
+    {
+        if (nbv->nbat != nullptr)
+        {
+            sfree(nbv->nbat);
+        }
+        if (nbv->gpu_nbv != nullptr)
+        {
+            sfree(nbv->gpu_nbv);
+        }
+        free_nbnxn_pairlist_set(&nbv->grp[0].nbl_lists);
+        free_nbnxn_pairlist_set(&nbv->grp[1].nbl_lists);
+        delete nbv;
+    }
+}
+
 gmx_bool usingGpu(nonbonded_verlet_t *nbv)
 {
     return nbv != nullptr && nbv->bUseGPU;
@@ -3175,6 +3193,7 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
     done_ns(fr->ns, numEnergyGroups);
     sfree(fr->ewc_t);
     tear_down_bonded_threading(fr->bondedThreading);
+    free_nb_verlet(fr->nbv);
     GMX_RELEASE_ASSERT(fr->gpuBondedLists == nullptr, "Should have been deleted earlier, when used");
     fr->bondedThreading = nullptr;
     sfree(fr);

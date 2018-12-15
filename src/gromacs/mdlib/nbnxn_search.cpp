@@ -986,6 +986,28 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     }
 }
 
+void free_nbnxn_pairlist_set(nbnxn_pairlist_set_t *nbl_list)
+{
+    if (nbl_list != nullptr)
+    {
+        for (int i = 0; i < nbl_list->nnbl; i++)
+        {
+            sfree(nbl_list->nbl[i]);
+            free_nblist(nbl_list->nbl_fep[i]);
+        }
+        if (nbl_list->nbl_work != nullptr)
+        {
+            for (int i = 0; i < nbl_list->nnbl; i++)
+            {
+                sfree(nbl_list->nbl_work[i]);
+            }
+            sfree(nbl_list->nbl_work);
+        }
+        sfree(nbl_list->nbl);
+        sfree(nbl_list->nbl_fep);
+    }
+}
+
 /* Print statistics of a pair list, used for debug output */
 static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl,
                                            const nbnxn_search *nbs, real rl)
