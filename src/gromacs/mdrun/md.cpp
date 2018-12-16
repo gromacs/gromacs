@@ -1536,6 +1536,13 @@ void gmx::Integrator::do_md()
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 
     destroy_enerdata(enerd);
+
     sfree(enerd);
+
+    /* Clean up topology. top->atomtypes has an allocated pointer if no domain decomposition*/
+    if (!DOMAINDECOMP(cr))
+    {
+        done_atomtypes(&top->atomtypes);
+    }
     sfree(top);
 }
