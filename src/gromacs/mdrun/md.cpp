@@ -1537,5 +1537,5 @@ void gmx::Integrator::do_md()
 
     destroy_enerdata(enerd);
     sfree(enerd);
-    sfree(top);
+    done_and_sfree_localtop(top);
 }
