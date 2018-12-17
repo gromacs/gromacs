@@ -1665,7 +1665,7 @@ static void do_wall_params(t_inputrec *ir,
     }
 }
 
-static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
+static void add_wall_energrps(gmx_groups_t *groups, int nwall, SymbolTable *symtab)
 {
     int     i;
     t_grps *grps;
@@ -1673,7 +1673,7 @@ static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
 
     if (nwall > 0)
     {
-        srenew(groups->grpname, groups->ngrpname+nwall);
+        groups->grpname.resize(groups->ngrpname+nwall);
         grps = &(groups->grps[egcENER]);
         srenew(grps->nm_ind, grps->nr+nwall);
         for (i = 0; i < nwall; i++)
@@ -2599,13 +2599,13 @@ static int search_QMstring(const char *s, int ng, const char *gn[])
 /* TODO this is utility functionality (search for the index of a
    string in a collection), so should be refactored and located more
    centrally. */
-int search_string(const char *s, int ng, char *gn[])
+int searchGroupString(const char *s, int ng, gmx::ArrayRef<SymbolPtr> gn)
 {
     int i;
 
     for (i = 0; (i < ng); i++)
     {
-        if (gmx_strcasecmp(s, gn[i]) == 0)
+        if (gmx_strcasecmp(s, gn[i]->c_str()) == 0)
         {
             return i;
         }
@@ -2621,7 +2621,7 @@ int search_string(const char *s, int ng, char *gn[])
 
 static bool do_numbering(int natoms, gmx_groups_t *groups,
                          gmx::ArrayRef<std::string> groupsFromMdpFile,
-                         t_blocka *block, char *gnames[],
+                         t_blocka *block, gmx::ArrayRef<SymbolPtr> gnames,
                          int gtype, int restnm,
                          int grptp, bool bVerbose,
                          warninp_t wi)
@@ -2646,7 +2646,7 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
     for (int i = 0; i != groupsFromMdpFile.size(); ++i)
     {
         /* Lookup the group name in the block structure */
-        gid = search_string(groupsFromMdpFile[i].c_str(), block->nr, gnames);
+        gid = searchGroupString(groupsFromMdpFile[i].c_str(), block->nr, gnames);
         if ((grptp != egrptpONE) || (i == 0))
         {
             grps->nm_ind[grps->nr++] = gid;
@@ -2754,7 +2754,7 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
     return (bRest && grptp == egrptpPART);
 }
 
-static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
+static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, gmx::ArrayRef<SymbolPtr> gnames)
 {
     t_grpopts              *opts;
     const gmx_groups_t     *groups;
@@ -2828,7 +2828,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         const gmx_moltype_t &molt = mtop->moltype[molb.type];
-        atom = molt.atoms.atom;
+        atom = molt.atoms.atom.data();
         for (mol = 0; mol < molb.nmol; mol++)
         {
             for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
@@ -2892,7 +2892,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                 }
                 i  += 4;
             }
-            as += molt.atoms.nr;
+            as += molt.atoms.getNatoms();
         }
     }
 
@@ -2929,7 +2929,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                     nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
                     if (nrdf_tc[getGroupType(groups, egcTC, ai)] < 0)
                     {
-                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]);
+                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]->c_str());
                     }
                 }
                 else
@@ -3015,7 +3015,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
         }
         fprintf(stderr,
                 "Number of degrees of freedom in T-Coupling group %s is %.2f\n",
-                gnames[groups->grps[egcTC].nm_ind[i]], opts->nrdf[i]);
+                gnames[groups->grps[egcTC].nm_ind[i]]->c_str(), opts->nrdf[i]);
     }
 
     sfree(nrdf2);
@@ -3034,13 +3034,12 @@ static bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
      * The real maximum is the number of names that fit in a string: STRLEN/2.
      */
 #define EGP_MAX (STRLEN/2)
-    int      j, k, nr;
-    char  ***gnames;
-    bool     bSet;
+    int                      j, k, nr;
+    bool                     bSet;
 
-    gnames = groups->grpname;
+    gmx::ArrayRef<SymbolPtr> gnames = groups->grpname;
 
-    auto names = gmx::splitString(val);
+    auto                     names = gmx::splitString(val);
     if (names.size() % 2 != 0)
     {
         gmx_fatal(FARGS, "The number of groups for %s is odd", option);
@@ -3051,7 +3050,7 @@ static bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
     {
         j = 0;
         while ((j < nr) &&
-               gmx_strcasecmp(names[2*i].c_str(), *(gnames[groups->grps[egcENER].nm_ind[j]])))
+               gmx_strcasecmp(names[2*i].c_str(), gnames[groups->grps[egcENER].nm_ind[j]]->c_str()))
         {
             j++;
         }
@@ -3062,7 +3061,7 @@ static bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
         }
         k = 0;
         while ((k < nr) &&
-               gmx_strcasecmp(names[2*i+1].c_str(), *(gnames[groups->grps[egcENER].nm_ind[k]])))
+               gmx_strcasecmp(names[2*i+1].c_str(), gnames[groups->grps[egcENER].nm_ind[k]]->c_str()))
         {
             k++;
         }
@@ -3084,9 +3083,9 @@ static bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
 
 
 static void make_swap_groups(
-        t_swapcoords  *swap,
-        t_blocka      *grps,
-        char         **gnames)
+        t_swapcoords            *swap,
+        t_blocka                *grps,
+        gmx::ArrayRef<SymbolPtr> gnames)
 {
     int          ig = -1, i = 0, gind;
     t_swapGroup *swapg;
@@ -3102,7 +3101,7 @@ static void make_swap_groups(
     for (ig = 0; ig < swap->ngrp; ig++)
     {
         swapg      = &swap->grp[ig];
-        gind       = search_string(swap->grp[ig].molname, grps->nr, gnames);
+        gind       = searchGroupString(swap->grp[ig].molname, grps->nr, gnames);
         swapg->nat = grps->index[gind+1] - grps->index[gind];
 
         if (swapg->nat > 0)
@@ -3124,12 +3123,15 @@ static void make_swap_groups(
 }
 
 
-static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
+static void make_IMD_group(t_IMD                   *IMDgroup,
+                           char                    *IMDgname,
+                           t_blocka                *grps,
+                           gmx::ArrayRef<SymbolPtr> gnames)
 {
     int      ig, i;
 
 
-    ig            = search_string(IMDgname, grps->nr, gnames);
+    ig            = searchGroupString(IMDgname, grps->nr, gnames);
     IMDgroup->nat = grps->index[ig+1] - grps->index[ig];
 
     if (IMDgroup->nat > 0)
@@ -3150,51 +3152,53 @@ void do_index(const char* mdparin, const char *ndx,
               t_inputrec *ir,
               warninp_t wi)
 {
-    t_blocka     *grps;
-    gmx_groups_t *groups;
-    int           natoms;
-    t_symtab     *symtab;
-    t_atoms       atoms_all;
-    char          warnbuf[STRLEN], **gnames;
-    int           nr;
-    real          tau_min;
-    int           nstcmin;
-    int           i, j, k, restnm;
-    bool          bExcl, bTable, bAnneal, bRest;
-    char          warn_buf[STRLEN];
+    t_blocka              *grps;
+    gmx_groups_t          *groups;
+    int                    natoms;
+    SymbolTable           *symtab;
+    t_atoms                atoms_all;
+    char                   warnbuf[STRLEN];
+    std::vector<SymbolPtr> gnames;
+    int                    nr;
+    real                   tau_min;
+    int                    nstcmin;
+    int                    i, j, k, restnm;
+    bool                   bExcl, bTable, bAnneal, bRest;
+    char                   warn_buf[STRLEN];
 
     if (bVerbose)
     {
         fprintf(stderr, "processing index file...\n");
     }
+
+    symtab = &mtop->symtab;
+
     if (ndx == nullptr)
     {
         snew(grps, 1);
         snew(grps->index, 1);
-        snew(gnames, 1);
         atoms_all = gmx_mtop_global_atoms(mtop);
-        analyse(&atoms_all, grps, &gnames, FALSE, TRUE);
+        analyse(atoms_all, grps, &gnames, symtab, FALSE, TRUE);
         done_atom(&atoms_all);
     }
     else
     {
-        grps = init_index(ndx, &gnames);
+        grps = init_index(ndx, symtab, &gnames);
     }
 
     groups = &mtop->groups;
     natoms = mtop->natoms;
-    symtab = &mtop->symtab;
 
-    snew(groups->grpname, grps->nr+1);
+    groups->grpname.resize(grps->nr+1);
 
     for (i = 0; (i < grps->nr); i++)
     {
-        groups->grpname[i] = put_symtab(symtab, gnames[i]);
+        groups->grpname[i] = gnames[i];
     }
     groups->grpname[i] = put_symtab(symtab, "rest");
     restnm             = i;
-    srenew(gnames, grps->nr+1);
-    gnames[restnm]   = *(groups->grpname[i]);
+    gnames.resize(grps->nr+1);
+    gnames[restnm]   = groups->grpname[i];
     groups->ngrpname = grps->nr+1;
 
     set_warning_line(wi, mdparin, -1);
@@ -3437,7 +3441,7 @@ void do_index(const char* mdparin, const char *ndx,
                     {
                         j = groups->grps[egcTC].nm_ind[i];
                         fprintf(stderr, "Simulated annealing for group %s: %s, %d timepoints\n",
-                                *(groups->grpname[j]), eann_names[ir->opts.annealing[i]],
+                                groups->grpname[j]->c_str(), eann_names[ir->opts.annealing[i]],
                                 ir->opts.anneal_npoints[i]);
                         fprintf(stderr, "Time (ps)   Temperature (K)\n");
                         /* All terms except the last one */
@@ -3637,7 +3641,7 @@ void do_index(const char* mdparin, const char *ndx,
             fprintf(stderr, "%-16s has %d element(s):", gtypes[i], groups->grps[i].nr);
             for (j = 0; (j < groups->grps[i].nr); j++)
             {
-                fprintf(stderr, " %s", *(groups->grpname[groups->grps[i].nm_ind[j]]));
+                fprintf(stderr, " %s", groups->grpname[groups->grps[i].nm_ind[j]]->c_str());
             }
             fprintf(stderr, "\n");
         }
@@ -3664,14 +3668,8 @@ void do_index(const char* mdparin, const char *ndx,
         gmx_fatal(FARGS, "Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
     }
 
-    for (i = 0; (i < grps->nr); i++)
-    {
-        sfree(gnames[i]);
-    }
-    sfree(gnames);
     done_blocka(grps);
     sfree(grps);
-
 }
 
 

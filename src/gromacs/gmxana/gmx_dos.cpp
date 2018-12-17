@@ -282,7 +282,6 @@ int gmx_dos(int argc, char *argv[])
     double              wCdiff, wSdiff, wAdiff, wEdiff;
     int                 grpNatoms;
     int                *index;
-    char               *grpname;
     double              invNormalize;
     gmx_bool            normalizeAutocorrelation;
 
@@ -342,7 +341,8 @@ int gmx_dos(int argc, char *argv[])
     read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
 
     /* Handle index groups */
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, grpname, &top.symtab);
 
     V     = det(box);
     tmass = 0;
@@ -352,7 +352,7 @@ int gmx_dos(int argc, char *argv[])
     }
 
     Natom = grpNatoms;
-    Nmol  = calcMoleculesInIndexGroup(&top.mols, top.atoms.nr, index, grpNatoms);
+    Nmol  = calcMoleculesInIndexGroup(&top.mols, top.atoms.getNatoms(), index, grpNatoms);
     gnx   = Natom*DIM;
 
     /* Correlation stuff */
@@ -529,7 +529,7 @@ int gmx_dos(int argc, char *argv[])
     rho   = (tmass*AMU)/(V*NANO*NANO*NANO);
     sigHS = std::cbrt(6*y*V/(M_PI*Natom));
 
-    fprintf(fplog, "System = \"%s\"\n", *top.name);
+    fprintf(fplog, "System = \"%s\"\n", top.name->c_str());
     fprintf(fplog, "Nmol = %d\n", Nmol);
     fprintf(fplog, "Natom = %d\n", Natom);
     fprintf(fplog, "dt = %g ps\n", dt);

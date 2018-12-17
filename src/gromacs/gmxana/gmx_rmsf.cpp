@@ -61,35 +61,37 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static real find_pdb_bfac(const t_atoms *atoms, t_resinfo *ri, char *atomnm)
+static real find_pdb_bfac(const t_atoms   &atoms,
+                          const t_resinfo &ri,
+                          const char      *atomnm)
 {
     char rresnm[8];
     int  i;
 
-    std::strcpy(rresnm, *ri->name);
+    std::strcpy(rresnm, ri.name->c_str());
     rresnm[3] = '\0';
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms.getNatoms()); i++)
     {
-        if ((ri->nr == atoms->resinfo[atoms->atom[i].resind].nr) &&
-            (ri->ic == atoms->resinfo[atoms->atom[i].resind].ic) &&
-            (std::strcmp(*atoms->resinfo[atoms->atom[i].resind].name, rresnm) == 0) &&
-            (std::strstr(*atoms->atomname[i], atomnm) != nullptr))
+        if ((ri.nr == atoms.resinfo[atoms.atom[i].resind].nr) &&
+            (ri.ic == atoms.resinfo[atoms.atom[i].resind].ic) &&
+            (std::strcmp(atoms.resinfo[atoms.atom[i].resind].name->c_str(), rresnm) == 0) &&
+            (std::strstr(atoms.atomname[i]->c_str(), atomnm) != nullptr))
         {
             break;
         }
     }
-    if (i == atoms->nr)
+    if (i == atoms.getNatoms())
     {
         fprintf(stderr, "\rCan not find %s%d-%s in pdbfile\n",
-                rresnm, ri->nr, atomnm);
+                rresnm, ri.nr, atomnm);
         fflush(stderr);
         return 0.0;
     }
 
-    return atoms->pdbinfo[i].bfac;
+    return atoms.pdbinfo[i].bfac;
 }
 
-static void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
+static void correlate_aniso(const char *fn, const t_atoms &ref, const t_atoms &calc,
                             const gmx_output_env_t *oenv)
 {
     FILE *fp;
@@ -97,13 +99,13 @@ static void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
 
     fp = xvgropen(fn, "Correlation between X-Ray and Computed Uij", "X-Ray",
                   "Computed", oenv);
-    for (i = 0; (i < ref->nr); i++)
+    for (i = 0; (i < ref.getNatoms()); i++)
     {
-        if (ref->pdbinfo[i].bAnisotropic)
+        if (ref.pdbinfo[i].bAnisotropic)
         {
             for (j = U11; (j <= U23); j++)
             {
-                fprintf(fp, "%10d  %10d\n", ref->pdbinfo[i].uij[j], calc->pdbinfo[i].uij[j]);
+                fprintf(fp, "%10d  %10d\n", ref.pdbinfo[i].uij[j], calc.pdbinfo[i].uij[j]);
             }
         }
     }
@@ -112,7 +114,7 @@ static void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
 
 static void average_residues(double f[], double **U, int uind,
                              int isize, const int index[], const real w_rls[],
-                             const t_atoms *atoms)
+                             const t_atoms &atoms)
 {
     int    i, j, start;
     double av, m;
@@ -129,7 +131,7 @@ static void average_residues(double f[], double **U, int uind,
         av += w_rls[index[i]]*(f != nullptr ? f[i] : U[i][uind]);
         m  += w_rls[index[i]];
         if (i+1 == isize ||
-            atoms->atom[index[i]].resind != atoms->atom[index[i+1]].resind)
+            atoms.atom[index[i]].resind != atoms.atom[index[i+1]].resind)
         {
             av /= m;
             if (f != nullptr)
@@ -253,7 +255,6 @@ int gmx_rmsf(int argc, char *argv[])
     gmx_bool          bReadPDB;
     int              *index;
     int               isize;
-    char             *grpnames;
 
     real              bfac, pdb_bfac, *Uaver;
     double          **U, *xav;
@@ -295,11 +296,12 @@ int gmx_rmsf(int argc, char *argv[])
     dirfn    = opt2fn_null("-dir", NFILE, fnm);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, nullptr, box, TRUE);
-    const char *title = *top.name;
-    snew(w_rls, top.atoms.nr);
+    const char *title = top.name->c_str();
+    snew(w_rls, top.atoms.getNatoms());
 
     fprintf(stderr, "Select group(s) for root mean square calculation\n");
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
+    std::vector<SymbolPtr> grpnames(1);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpnames, &top.symtab);
 
     /* Set the weight */
     for (i = 0; i < isize; i++)
@@ -322,26 +324,24 @@ int gmx_rmsf(int argc, char *argv[])
 
     if (bReadPDB)
     {
-        t_topology *top_pdb;
-        snew(top_pdb, 1);
+        t_topology top_pdb;
         /* Read coordinates twice */
-        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, nullptr, nullptr, pdbbox, FALSE);
-        snew(pdbatoms, 1);
-        *pdbatoms = top_pdb->atoms;
-        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, &pdbx, nullptr, pdbbox, FALSE);
-        /* TODO Should this assert that top_pdb->atoms.nr == top.atoms.nr?
+        read_tps_conf(opt2fn("-q", NFILE, fnm), &top_pdb, nullptr, nullptr, nullptr, pdbbox, FALSE);
+        pdbatoms  = new t_atoms;
+        *pdbatoms = top_pdb.atoms;
+        read_tps_conf(opt2fn("-q", NFILE, fnm), &top_pdb, nullptr, &pdbx, nullptr, pdbbox, FALSE);
+        /* TODO Should this assert that top_pdb->atoms.getNatoms() == top.atoms.getNatoms()?
          * See discussion at https://gerrit.gromacs.org/#/c/6430/1 */
-        title = *top_pdb->name;
-        snew(refatoms, 1);
-        *refatoms = top_pdb->atoms;
-        sfree(top_pdb);
+        title     = top_pdb.name->c_str();
+        refatoms  = new t_atoms;
+        *refatoms = top_pdb.atoms;
     }
     else
     {
         pdbatoms  = &top.atoms;
         refatoms  = &top.atoms;
         pdbx      = xref;
-        snew(pdbatoms->pdbinfo, pdbatoms->nr);
+        pdbatoms->pdbinfo.resize(pdbatoms->getNatoms());
         pdbatoms->havePdbInfo = TRUE;
         copy_mat(box, pdbbox);
     }
@@ -441,7 +441,7 @@ int gmx_rmsf(int argc, char *argv[])
     {
         for (d = 0; d < DIM*DIM; d++)
         {
-            average_residues(nullptr, U, d, isize, index, w_rls, &top.atoms);
+            average_residues(nullptr, U, d, isize, index, w_rls, top.atoms);
         }
     }
 
@@ -501,8 +501,8 @@ int gmx_rmsf(int argc, char *argv[])
                 top.atoms.atom[index[i]].resind != top.atoms.atom[index[i+1]].resind)
             {
                 resind    = top.atoms.atom[index[i]].resind;
-                pdb_bfac  = find_pdb_bfac(pdbatoms, &top.atoms.resinfo[resind],
-                                          *(top.atoms.atomname[index[i]]));
+                pdb_bfac  = find_pdb_bfac(*pdbatoms, top.atoms.resinfo[resind],
+                                          top.atoms.atomname[index[i]]->c_str());
 
                 fprintf(fp, "%5d  %10.5f  %10.5f\n",
                         bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, rmsf[i]*bfac,
@@ -539,7 +539,7 @@ int gmx_rmsf(int argc, char *argv[])
         }
         if (bRes)
         {
-            average_residues(rmsf, nullptr, 0, isize, index, w_rls, &top.atoms);
+            average_residues(rmsf, nullptr, 0, isize, index, w_rls, top.atoms);
         }
         /* Write RMSD output */
         fp = xvgropen(devfn, "RMS Deviation", label, "(nm)", oenv);
@@ -568,7 +568,7 @@ int gmx_rmsf(int argc, char *argv[])
     if (opt2bSet("-ox", NFILE, fnm))
     {
         rvec *bFactorX;
-        snew(bFactorX, top.atoms.nr);
+        snew(bFactorX, top.atoms.getNatoms());
         for (i = 0; i < isize; i++)
         {
             for (d = 0; d < DIM; d++)
@@ -583,7 +583,7 @@ int gmx_rmsf(int argc, char *argv[])
     }
     if (bAniso)
     {
-        correlate_aniso(opt2fn("-oc", NFILE, fnm), refatoms, pdbatoms, oenv);
+        correlate_aniso(opt2fn("-oc", NFILE, fnm), *refatoms, *pdbatoms, oenv);
         do_view(oenv, opt2fn("-oc", NFILE, fnm), "-nxy");
     }
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");

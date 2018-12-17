@@ -225,7 +225,7 @@ void rm_gropbc(const t_atoms *atoms, rvec x[], const matrix box)
     int  n, m, d;
 
     /* check periodic boundary */
-    for (n = 1; (n < atoms->nr); n++)
+    for (n = 1; (n < atoms->getNatoms()); n++)
     {
         for (m = DIM-1; m >= 0; m--)
         {

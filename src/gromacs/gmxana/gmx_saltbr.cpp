@@ -83,7 +83,7 @@ static t_charge *mk_charge(const t_atoms *atoms, const t_block *cgs, int *nncg)
             anr        = cgs->index[i];
             resnr      = atoms->atom[anr].resind;
             sprintf(buf, "%s%d-%d",
-                    *(atoms->resinfo[resnr].name),
+                    atoms->resinfo[resnr].name->c_str(),
                     atoms->resinfo[resnr].nr,
                     anr+1);
             cg[ncg].label = gmx_strdup(buf);

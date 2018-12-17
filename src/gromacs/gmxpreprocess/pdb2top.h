@@ -75,6 +75,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         int nterpairs,
                         t_hackblock **ntdb, t_hackblock **ctdb,
                         const int *rn, const int *rc,
+                        SymbolTable *symtab,
                         bool bAllowMissing);
 /* Get the database entries for the nres residues in resinfo
  * and store them in restp and hb.
@@ -82,7 +83,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
 void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
                               t_atoms *pdba, rvec *x,
-                              bool bVerbose);
+                              SymbolTable *symtab, bool bVerbose);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
  * If renaming involves atoms added wrt to the rtp database,
  * add these atoms to restp.
@@ -106,7 +107,7 @@ void write_top(FILE *out, const char *pr, const char *molname,
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms, rvec **x,
-             gpp_atomtype_t atype, struct t_symtab *tab,
+             gpp_atomtype_t atype, SymbolTable *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
              bool bAllowMissing,

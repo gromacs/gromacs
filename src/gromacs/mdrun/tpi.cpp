@@ -390,7 +390,7 @@ Integrator::do_tpi()
         for (i = 0; i < ngid; i++)
         {
             sprintf(str, "f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
-                    *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
+                    groups->grpname[groups->grps[egcENER].nm_ind[i]]->c_str());
             leg[e++] = gmx_strdup(str);
         }
         if (bDispCorr)
@@ -403,7 +403,7 @@ Integrator::do_tpi()
             for (i = 0; i < ngid; i++)
             {
                 sprintf(str, "f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
-                        *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
+                        groups->grpname[groups->grps[egcENER].nm_ind[i]]->c_str());
                 leg[e++] = gmx_strdup(str);
             }
             if (bRFExcl)

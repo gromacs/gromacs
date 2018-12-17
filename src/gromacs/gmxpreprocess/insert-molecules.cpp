@@ -165,7 +165,7 @@ static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
 
 static void insert_mols(int nmol_insrt, int ntry, int seed,
                         real defaultDistance, real scaleFactor,
-                        t_atoms *atoms, t_symtab *symtab, std::vector<RVec> *x,
+                        t_atoms *atoms, SymbolTable *symtab, std::vector<RVec> *x,
                         const std::set<int> &removableAtoms,
                         const t_atoms &atoms_insrt, gmx::ArrayRef<RVec> x_insrt,
                         int ePBC, matrix box,
@@ -227,8 +227,8 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     gmx::AtomsBuilder builder(atoms, symtab);
     gmx::AtomsRemover remover(*atoms);
     {
-        const int finalAtomCount    = atoms->nr + nmol_insrt * atoms_insrt.nr;
-        const int finalResidueCount = atoms->nres + nmol_insrt * atoms_insrt.nres;
+        const int finalAtomCount    = atoms->getNatoms() + nmol_insrt * atoms_insrt.getNatoms();
+        const int finalResidueCount = atoms->getNresidues() + nmol_insrt * atoms_insrt.getNresidues();
         builder.reserve(finalAtomCount, finalResidueCount);
         x->reserve(finalAtomCount);
         exclusionDistances.reserve(finalAtomCount);
@@ -294,16 +294,16 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     fprintf(stderr, "Added %d molecules (out of %d requested)\n",
             mol - failed, nmol_insrt);
 
-    const int originalAtomCount    = atoms->nr;
-    const int originalResidueCount = atoms->nres;
+    const int originalAtomCount    = atoms->getNatoms();
+    const int originalResidueCount = atoms->getNresidues();
     remover.refreshAtomCount(*atoms);
     remover.removeMarkedElements(x);
     remover.removeMarkedAtoms(atoms);
-    if (atoms->nr < originalAtomCount)
+    if (atoms->getNatoms() < originalAtomCount)
     {
         fprintf(stderr, "Replaced %d residues (%d atoms)\n",
-                originalResidueCount - atoms->nres,
-                originalAtomCount - atoms->nr);
+                originalResidueCount - atoms->getNresidues(),
+                originalAtomCount - atoms->getNatoms());
     }
 
     if (rpos != nullptr)
@@ -572,12 +572,11 @@ int InsertMolecules::run()
         center_molecule(xInserted);
     }
 
-    auto              symtabInserted = duplicateSymtab(&topInfo_.mtop()->symtab);
-    const sfree_guard symtabInsertedGuard(symtabInserted);
+    auto              symtabInserted = topInfo_.mtop()->symtab;
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
-                atomsSolute.get(), symtabInserted, &xOutput, removableAtoms, *atomsInserted, xInserted,
+                atomsSolute.get(), &symtabInserted, &xOutput, removableAtoms, *atomsInserted, xInserted,
                 ePBCForOutput, box, positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
@@ -588,8 +587,8 @@ int InsertMolecules::run()
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
-            atomsSolute->nr, atomsSolute->nres);
-    done_symtab(symtabInserted);
+            atomsSolute->getNatoms(), atomsSolute->getNresidues());
+    topInfo_.mtop()->symtab = symtabInserted;
     return 0;
 }
 

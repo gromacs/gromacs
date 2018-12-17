@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,6 @@ int gmx_filter(int argc, char *argv[])
     int               ePBC = -1;
     rvec             *xtop;
     matrix            topbox, *box, boxf;
-    char             *grpname;
     int               isize;
     int              *index;
     real             *w_rls = nullptr;
@@ -143,24 +142,25 @@ int gmx_filter(int argc, char *argv[])
                              &xtop, nullptr, topbox, TRUE);
         if (bTop)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
-            gmx_rmpbc(gpbc, top.atoms.nr, topbox, xtop);
+            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.getNatoms());
+            gmx_rmpbc(gpbc, top.atoms.getNatoms(), topbox, xtop);
         }
     }
 
     clear_rvec(xcmtop);
     if (bFit)
     {
+        std::vector<SymbolPtr> grpname(1);
         fprintf(stderr, "Select group for least squares fit\n");
-        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname, &top.symtab);
         /* Set the weight */
-        snew(w_rls, top.atoms.nr);
+        snew(w_rls, top.atoms.getNatoms());
         for (i = 0; i < isize; i++)
         {
             w_rls[index[i]] = top.atoms.atom[index[i]].m;
         }
         calc_xcm(xtop, isize, index, top.atoms.atom, xcmtop, FALSE);
-        for (j = 0; j < top.atoms.nr; j++)
+        for (j = 0; j < top.atoms.getNatoms(); j++)
         {
             rvec_dec(xtop[j], xcmtop);
         }

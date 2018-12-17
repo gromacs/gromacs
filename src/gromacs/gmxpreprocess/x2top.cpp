@@ -68,7 +68,7 @@
 
 #define MARGIN_FAC 1.1
 
-static bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
+static bool is_bond(int nnm, t_nm2type nmt[], const char *ai, const char *aj, real blen)
 {
     int i, j;
 
@@ -112,14 +112,14 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
     {
         set_pbc(&pbc, -1, box);
     }
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         if ((i % 10) == 0)
         {
             fprintf(stderr, "\ratom %d", i);
             fflush(stderr);
         }
-        for (j = i+1; (j < atoms->nr); j++)
+        for (j = i+1; (j < atoms->getNatoms()); j++)
         {
             if (bPBC)
             {
@@ -131,7 +131,7 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
             }
 
             dx2 = iprod(dx, dx);
-            if (is_bond(nnm, nmt, *atoms->atomname[i], *atoms->atomname[j],
+            if (is_bond(nnm, nmt, atoms->atomname[i]->c_str(), atoms->atomname[j]->c_str(),
                         std::sqrt(dx2)))
             {
                 b.ai() = i;
@@ -154,10 +154,10 @@ static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
     double  qt = 0;
 
     *qtot = *mtot = 0;
-    snew(cgnr, atoms->nr);
-    for (i = 0; (i < atoms->nr); i++)
+    snew(cgnr, atoms->getNatoms());
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
-        if (atoms->pdbinfo && bUsePDBcharge)
+        if (!atoms->pdbinfo.empty() && bUsePDBcharge)
         {
             atoms->atom[i].q = atoms->pdbinfo[i].bfac;
         }
@@ -174,19 +174,19 @@ static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
     return cgnr;
 }
 
-static gpp_atomtype_t set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
+static gpp_atomtype_t set_atom_type(SymbolTable *tab, t_atoms *atoms, t_params *bonds,
                                     int *nbonds, int nnm, t_nm2type nm2t[])
 {
     gpp_atomtype_t atype;
     int            nresolved;
 
     atype = init_atomtype();
-    snew(atoms->atomtype, atoms->nr);
+    atoms->atomtype.resize(atoms->getNatoms());
     nresolved = nm2type(nnm, nm2t, tab, atoms, atype, nbonds, bonds);
-    if (nresolved != atoms->nr)
+    if (nresolved != atoms->getNatoms())
     {
         gmx_fatal(FARGS, "Could only find a forcefield type for %d out of %d atoms",
-                  nresolved, atoms->nr);
+                  nresolved, atoms->getNatoms());
     }
 
     fprintf(stderr, "There are %d different atom types in your sample\n",
@@ -297,14 +297,14 @@ static void dump_hybridization(FILE *fp, t_atoms *atoms, int nbonds[])
 {
     int i;
 
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
-        fprintf(fp, "Atom %5s has %1d bonds\n", *atoms->atomname[i], nbonds[i]);
+        fprintf(fp, "Atom %5s has %1d bonds\n", atoms->atomname[i]->c_str(), nbonds[i]);
     }
 }
 
 static void print_pl(FILE *fp, t_params plist[], int ftp, const char *name,
-                     char ***atomname)
+                     gmx::ArrayRef<SymbolPtr> atomname)
 {
     int i, j, nral, nrfp;
 
@@ -318,7 +318,7 @@ static void print_pl(FILE *fp, t_params plist[], int ftp, const char *name,
         {
             for (j = 0; (j < nral); j++)
             {
-                fprintf(fp, "  %5s", *atomname[plist[ftp].param[i].a[j]]);
+                fprintf(fp, "  %5s", atomname[plist[ftp].param[i].a[j]]->c_str());
             }
             for (j = 0; (j < nrfp); j++)
             {
@@ -335,17 +335,17 @@ static void print_pl(FILE *fp, t_params plist[], int ftp, const char *name,
 static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
                       t_params plist[], gpp_atomtype_t atype, int cgnr[])
 {
-    FILE *fp;
-    int   i, tp;
-    char *tpnm;
+    FILE       *fp;
+    int         i, tp;
+    const char *tpnm;
 
     fp = gmx_fio_fopen(filenm, "w");
     fprintf(fp, "; %s\n", title);
     fprintf(fp, "\n");
-    fprintf(fp, "[ %s ]\n", *atoms->resinfo[0].name);
+    fprintf(fp, "[ %s ]\n", atoms->resinfo[0].name->c_str());
     fprintf(fp, "\n");
     fprintf(fp, "[ atoms ]\n");
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         tp = atoms->atom[i].type;
         if ((tpnm = get_atomtype_name(tp, atype)) == nullptr)
@@ -353,7 +353,7 @@ static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
             gmx_fatal(FARGS, "tp = %d, i = %d in print_rtp", tp, i);
         }
         fprintf(fp, "%-8s  %12s  %8.4f  %5d\n",
-                *atoms->atomname[i], tpnm,
+                atoms->atomname[i]->c_str(), tpnm,
                 atoms->atom[i].q, cgnr[i]);
     }
     print_pl(fp, plist, F_BONDS, "bonds", atoms->atomname);
@@ -366,7 +366,7 @@ static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
 
 int gmx_x2top(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char           *desc[] = {
         "[THISMODULE] generates a primitive topology from a coordinate file.",
         "The program assumes all hydrogens are present when defining",
         "the hybridization from the atom name and the number of bonds.",
@@ -387,51 +387,51 @@ int gmx_x2top(int argc, char *argv[])
         "one of the short names above on the command line instead. In that",
         "case [THISMODULE] just looks for the corresponding file.[PAR]",
     };
-    const char        *bugs[] = {
+    const char           *bugs[] = {
         "The atom type selection is primitive. Virtually no chemical knowledge is used",
         "Periodic boundary conditions screw up the bonding",
         "No improper dihedrals are generated",
         "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in the data directory). Please extend it and send the results back to the GROMACS crew."
     };
-    FILE              *fp;
-    t_params           plist[F_NRE];
-    t_excls           *excls;
-    gpp_atomtype_t     atype;
-    t_nextnb           nnb;
-    t_nm2type         *nm2t;
-    t_mols             mymol;
-    int                nnm;
-    char               forcefield[32], ffdir[STRLEN];
-    rvec              *x; /* coordinates? */
-    int               *nbonds, *cgnr;
-    int                bts[] = { 1, 1, 1, 2 };
-    matrix             box;    /* box length matrix */
-    int                natoms; /* number of atoms in one molecule  */
-    int                epbc;
-    bool               bRTP, bTOP, bOPLS;
-    t_symtab           symtab;
-    real               qtot, mtot;
-    char               n2t[STRLEN];
-    gmx_output_env_t  *oenv;
+    FILE                 *fp;
+    t_params              plist[F_NRE];
+    t_excls              *excls;
+    gpp_atomtype_t        atype;
+    t_nextnb              nnb;
+    t_nm2type            *nm2t;
+    t_mols                mymol;
+    int                   nnm;
+    char                  forcefield[32], ffdir[STRLEN];
+    rvec                 *x; /* coordinates? */
+    int                  *nbonds, *cgnr;
+    int                   bts[] = { 1, 1, 1, 2 };
+    matrix                box;    /* box length matrix */
+    int                   natoms; /* number of atoms in one molecule  */
+    int                   epbc;
+    bool                  bRTP, bTOP, bOPLS;
+    SymbolTable           symtab;
+    real                  qtot, mtot;
+    char                  n2t[STRLEN];
+    gmx_output_env_t     *oenv;
 
-    t_filenm           fnm[] = {
+    t_filenm              fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
         { efTOP, "-o", "out",  ffOPTWR },
         { efRTP, "-r", "out",  ffOPTWR }
     };
 #define NFILE asize(fnm)
-    real               kb                            = 4e5, kt = 400, kp = 5;
-    t_restp            rtp_header_settings           = { nullptr };
-    bool               bRemoveDihedralIfWithImproper = FALSE;
-    bool               bGenerateHH14Interactions     = TRUE;
-    bool               bKeepAllGeneratedDihedrals    = FALSE;
-    int                nrexcl                        = 3;
-    bool               bParam                        = TRUE, bRound = TRUE;
-    bool               bPairs                        = TRUE, bPBC = TRUE;
-    bool               bUsePDBcharge                 = FALSE, bVerbose = FALSE;
-    const char        *molnm                         = "ICE";
-    const char        *ff                            = "oplsaa";
-    t_pargs            pa[]                          = {
+    real                  kb                            = 4e5, kt = 400, kp = 5;
+    t_restp               rtp_header_settings;
+    bool                  bRemoveDihedralIfWithImproper = FALSE;
+    bool                  bGenerateHH14Interactions     = TRUE;
+    bool                  bKeepAllGeneratedDihedrals    = FALSE;
+    int                   nrexcl                        = 3;
+    bool                  bParam                        = TRUE, bRound = TRUE;
+    bool                  bPairs                        = TRUE, bPBC = TRUE;
+    bool                  bUsePDBcharge                 = FALSE, bVerbose = FALSE;
+    const char           *molnm                         = "ICE";
+    const char           *ff                            = "oplsaa";
+    t_pargs               pa[]                          = {
         { "-ff",     FALSE, etSTR, {&ff},
           "Force field for your simulation. Type \"select\" for interactive selection." },
         { "-v",      FALSE, etBOOL, {&bVerbose},
@@ -498,14 +498,13 @@ int gmx_x2top(int argc, char *argv[])
     init_plist(plist);
 
     /* Read coordinates */
-    t_topology *top;
-    snew(top, 1);
-    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
-    t_atoms  *atoms = &top->atoms;
-    natoms = atoms->nr;
-    if (atoms->pdbinfo == nullptr)
+    t_topology top;
+    read_tps_conf(opt2fn("-f", NFILE, fnm), &top, &epbc, &x, nullptr, box, FALSE);
+    t_atoms   *atoms = &top.atoms;
+    natoms = atoms->getNatoms();
+    if (atoms->pdbinfo.empty())
     {
-        snew(atoms->pdbinfo, natoms);
+        atoms->pdbinfo.resize(natoms);
     }
 
     sprintf(n2t, "%s", ffdir);
@@ -524,16 +523,16 @@ int gmx_x2top(int argc, char *argv[])
         dump_nm2type(debug, nnm, nm2t);
     }
     printf("Generating bonds from distances...\n");
-    snew(nbonds, atoms->nr);
+    snew(nbonds, atoms->getNatoms());
     mk_bonds(nnm, nm2t, atoms, x, &(plist[F_BONDS]), nbonds, bPBC, box);
 
     open_symtab(&symtab);
     atype = set_atom_type(&symtab, atoms, &(plist[F_BONDS]), nbonds, nnm, nm2t);
 
     /* Make Angles and Dihedrals */
-    snew(excls, atoms->nr);
+    snew(excls, atoms->getNatoms());
     printf("Generating angles and dihedrals from bonds...\n");
-    init_nnb(&nnb, atoms->nr, 4);
+    init_nnb(&nnb, atoms->getNatoms(), 4);
     gen_nnb(&nnb, plist);
     print_nnb(&nnb, "NNB");
     gen_pad(&nnb, atoms, &rtp_header_settings, plist, excls, nullptr, TRUE);
@@ -549,7 +548,7 @@ int gmx_x2top(int argc, char *argv[])
             plist[F_PDIHS].nr,
             bOPLS ? "Ryckaert-Bellemans" : "proper",
             plist[F_IDIHS].nr, plist[F_ANGLES].nr,
-            plist[F_LJ14].nr, plist[F_BONDS].nr, atoms->nr);
+            plist[F_LJ14].nr, plist[F_BONDS].nr, atoms->getNatoms());
 
     calc_angles_dihs(&plist[F_ANGLES], &plist[F_PDIHS], x, bPBC, box);
 

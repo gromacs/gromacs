@@ -46,6 +46,7 @@
 #include "gromacs/selection/position.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -699,7 +700,7 @@ evaluate_atomtype(const gmx::SelMethodEvalContext &context,
         mtopGetMolblockIndex(context.top, g->index[i], &molb,
                              nullptr, &atomIndexInMolecule);
         const gmx_moltype_t &moltype = context.top->moltype[context.top->molblock[molb].type];
-        out->u.s[i] = *moltype.atoms.atomtype[atomIndexInMolecule];
+        out->u.s[i] = gmx_strdup(moltype.atoms.atomtype[atomIndexInMolecule]->c_str());
     }
 }
 
@@ -717,7 +718,7 @@ evaluate_resname(const gmx::SelMethodEvalContext &context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i] = *mtopGetResidueInfo(context.top, g->index[i], &molb).name;
+        out->u.s[i] = gmx_strdup(mtopGetResidueInfo(context.top, g->index[i], &molb).name->c_str());
     }
 }
 

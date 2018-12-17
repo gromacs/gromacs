@@ -216,7 +216,7 @@ static void copy_B_from_A(int ftype, double *c)
     }
 }
 
-void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
+void push_at (SymbolTable *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
               char *line, int nb_funct,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp_t wi)
@@ -1204,7 +1204,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 }
 
 
-static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
+static void push_atom_now(SymbolTable *symtab, t_atoms *at, int atomnr,
                           int atomicnumber,
                           int type, char *ctype, int ptype,
                           char *resnumberic,
@@ -1214,12 +1214,12 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
 {
     int           j, resind = 0, resnr;
     unsigned char ric;
-    int           nr = at->nr;
+    int           nr = at->getNatoms();
     char          errbuf[STRLEN];
 
-    if (((nr == 0) && (atomnr != 1)) || (nr && (atomnr != at->nr+1)))
+    if (((nr == 0) && (atomnr != 1)) || (nr && (atomnr != at->getNatoms()+1)))
     {
-        sprintf(errbuf, "Atoms in the .top are not numbered consecutively from 1 (rather, atomnr = %d, while at->nr = %d)", atomnr, at->nr);
+        sprintf(errbuf, "Atoms in the .top are not numbered consecutively from 1 (rather, atomnr = %d, while at->getNatoms() = %d)", atomnr, at->getNatoms());
         warning_error_and_exit(wi, errbuf, FARGS);
     }
 
@@ -1244,7 +1244,7 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
     {
         resind = at->atom[nr-1].resind;
     }
-    if (nr == 0 || strcmp(resname, *at->resinfo[resind].name) != 0 ||
+    if (nr == 0 || strcmp(resname, at->resinfo[resind].name->c_str()) != 0 ||
         resnr != at->resinfo[resind].nr ||
         ric   != at->resinfo[resind].ic)
     {
@@ -1256,24 +1256,23 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
         {
             resind++;
         }
-        at->nres = resind + 1;
-        srenew(at->resinfo, at->nres);
+        at->resinfo.resize(resind + 1);
         at->resinfo[resind].name = put_symtab(symtab, resname);
         at->resinfo[resind].nr   = resnr;
         at->resinfo[resind].ic   = ric;
     }
     else
     {
-        resind = at->atom[at->nr-1].resind;
+        resind = at->atom[at->getNatoms()-1].resind;
     }
 
     /* New atom instance
      * get new space for arrays
      */
-    srenew(at->atom, nr+1);
-    srenew(at->atomname, nr+1);
-    srenew(at->atomtype, nr+1);
-    srenew(at->atomtypeB, nr+1);
+    at->atom.resize(nr+1);
+    at->atomname.resize(nr+1);
+    at->atomtype.resize(nr+1);
+    at->atomtypeB.resize(nr+1);
 
     /* fill the list */
     at->atom[nr].type  = type;
@@ -1289,7 +1288,6 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
     at->atomname[nr]        = put_symtab(symtab, name);
     at->atomtype[nr]        = put_symtab(symtab, ctype);
     at->atomtypeB[nr]       = put_symtab(symtab, ctypeB);
-    at->nr++;
 }
 
 static void push_cg(t_block *block, int *lastindex, int index, int a)
@@ -1304,7 +1302,7 @@ static void push_cg(t_block *block, int *lastindex, int index, int a)
     *lastindex              = index;
 }
 
-void push_atom(t_symtab *symtab, t_block *cgs,
+void push_atom(SymbolTable *symtab, t_block *cgs,
                t_atoms *at, gpp_atomtype_t atype, char *line, int *lastcg,
                warninp_t wi)
 {
@@ -1317,7 +1315,7 @@ void push_atom(t_symtab *symtab, t_block *cgs,
     char          errbuf[STRLEN];
 
     /* Make a shortcut for writing in this molecule  */
-    nr = at->nr;
+    nr = at->getNatoms();
 
     /* Fixed parameters */
     if (sscanf(line, "%s%s%s%s%s%d",
@@ -1385,12 +1383,12 @@ void push_atom(t_symtab *symtab, t_block *cgs,
                   typeB == type ? ctype : ctypeB, mB, qB, wi);
 }
 
-void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
+void push_molt(SymbolTable *symtab, int *nmol, std::vector<t_molinfo> *mol, char *line,
                warninp_t wi)
 {
     char       type[STRLEN];
     int        nrexcl, i;
-    t_molinfo *newmol;
+    t_molinfo  newmol;
     char       errbuf[STRLEN];
 
     if ((sscanf(line, "%s%d", type, &nrexcl)) != 2)
@@ -1402,7 +1400,7 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
     i    = 0;
     while (i < *nmol)
     {
-        if (strcmp(*((*mol)[i].name), type) == 0)
+        if (strcmp(mol->at(i).name->c_str(), type) == 0)
         {
             sprintf(errbuf, "moleculetype %s is redefined", type);
             warning_error_and_exit(wi, errbuf, FARGS);
@@ -1411,14 +1409,14 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
     }
 
     (*nmol)++;
-    srenew(*mol, *nmol);
-    newmol = &((*mol)[*nmol-1]);
-    init_molinfo(newmol);
+    init_molinfo(&newmol);
 
     /* Fill in the values */
-    newmol->name     = put_symtab(symtab, type);
-    newmol->nrexcl   = nrexcl;
-    newmol->excl_set = FALSE;
+    newmol.name     = put_symtab(symtab, type);
+    newmol.nrexcl   = nrexcl;
+    newmol.excl_set = FALSE;
+
+    mol->emplace_back(newmol);
 }
 
 static bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
@@ -1573,7 +1571,7 @@ static bool default_cmap_params(t_params bondtype[],
  */
 static int natom_match(t_param *pi,
                        int type_i, int type_j, int type_k, int type_l,
-                       const gpp_atomtype* atype)
+                       const gpp_atomtype_t atype)
 {
     if ((pi->ai() == -1 || get_atomtype_batype(type_i, atype) == pi->ai()) &&
         (pi->aj() == -1 || get_atomtype_batype(type_j, atype) == pi->aj()) &&
@@ -1810,13 +1808,13 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     /* Check for double atoms and atoms out of bounds */
     for (i = 0; (i < nral); i++)
     {
-        if (aa[i] < 1 || aa[i] > at->nr)
+        if (aa[i] < 1 || aa[i] > at->getNatoms())
         {
             sprintf(errbuf, "Atom index (%d) in %s out of bounds (1-%d).\n"
                     "This probably means that you have inserted topology section \"%s\"\n"
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
-                    aa[i], dir2str(d), at->nr, dir2str(d), dir2str(d));
+                    aa[i], dir2str(d), at->getNatoms(), dir2str(d), dir2str(d));
             warning_error_and_exit(wi, errbuf, FARGS);
         }
         for (j = i+1; (j < nral); j++)
@@ -2158,13 +2156,13 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
     /* Check for double atoms and atoms out of bounds */
     for (i = 0; i < nral; i++)
     {
-        if (aa[i] < 1 || aa[i] > at->nr)
+        if (aa[i] < 1 || aa[i] > at->getNatoms())
         {
             sprintf(errbuf, "Atom index (%d) in %s out of bounds (1-%d).\n"
                     "This probably means that you have inserted topology section \"%s\"\n"
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
-                    aa[i], dir2str(d), at->nr, dir2str(d), dir2str(d));
+                    aa[i], dir2str(d), at->getNatoms(), dir2str(d), dir2str(d));
             warning_error_and_exit(wi, errbuf, FARGS);
         }
 
@@ -2342,12 +2340,12 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
     int matchcs = -1;
     for (int i = 0; i < nrmols; i++)
     {
-        if (strcmp(type, *(mols[i].name)) == 0)
+        if (strcmp(type, mols[i].name->c_str()) == 0)
         {
             nrcs++;
             matchcs = i;
         }
-        if (gmx_strcasecmp(type, *(mols[i].name)) == 0)
+        if (gmx_strcasecmp(type, mols[i].name->c_str()) == 0)
         {
             nrci++;
             matchci = i;
@@ -2540,7 +2538,7 @@ void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
     b2_to_b(b2, excl);
 }
 
-int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype_t at,
+int add_atomtype_decoupled(SymbolTable *symtab, gpp_atomtype_t at,
                            t_nbparam ***nbparam, t_nbparam ***pair)
 {
     t_atom  atom;
@@ -2641,8 +2639,8 @@ static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, war
     t_param   param;
     char      errbuf[STRLEN];
 
-    n    = mol->atoms.nr;
-    atom = mol->atoms.atom;
+    n    = mol->atoms.getNatoms();
+    atom = mol->atoms.atom.data();
 
     ntype = static_cast<int>(std::sqrt(static_cast<double>(nbp->nr)));
     GMX_ASSERT(ntype * ntype == nbp->nr, "Number of pairs of generated non-bonded parameters should be a perfect square");
@@ -2716,7 +2714,7 @@ static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
     int  i;
     char errbuf[STRLEN];
 
-    for (i = 0; i < atoms->nr; i++)
+    for (i = 0; i < atoms->getNatoms(); i++)
     {
         t_atom *atom;
 
@@ -2760,5 +2758,5 @@ void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple, real fudgeQQ,
         set_excl_all(&mol->excls);
     }
     decouple_atoms(&mol->atoms, atomtype_decouple, couple_lam0, couple_lam1,
-                   *mol->name, wi);
+                   mol->name->c_str(), wi);
 }

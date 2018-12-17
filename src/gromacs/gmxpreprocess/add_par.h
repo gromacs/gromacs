@@ -66,6 +66,6 @@ void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
 void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al,
                       int am);
 
-int search_jtype(t_restp *rp, char *name, bool bFirstRes);
+int search_jtype(t_restp *rp, const char *name, bool bFirstRes);
 
 #endif

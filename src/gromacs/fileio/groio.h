@@ -41,15 +41,15 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/topology/symtab.h"
 
 struct gmx_mtop_t;
 struct t_atoms;
-struct t_symtab;
 struct t_trxframe;
 
 void get_coordnum(const char *infile, int *natoms);
 void gmx_gro_read_conf(const char *infile,
-                       t_symtab *symtab, char **name, t_atoms *atoms,
+                       SymbolTable *symtab, char **name, t_atoms *atoms,
                        rvec x[], rvec *v, matrix box);
 /* If name is not nullptr, gmx_strdup the title string into it. */
 

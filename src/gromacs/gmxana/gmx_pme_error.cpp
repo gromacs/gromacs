@@ -131,7 +131,7 @@ static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
         q2_mol   = 0.0;                                   /* q squared value of this molecule */
         nrq_mol  = 0;                                     /* number of charges this molecule carries */
         const gmx_moltype_t &molecule = mtop->moltype[molblock.type];
-        for (int i = 0; i < molecule.atoms.nr; i++)
+        for (int i = 0; i < molecule.atoms.getNatoms(); i++)
         {
             qi = molecule.atoms.atom[i].q;
             /* Is this charge worth to be considered? */
@@ -146,7 +146,7 @@ static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
         nrq_all += nrq_mol*molblock.nmol;
 #ifdef DEBUG
         fprintf(stderr, "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n",
-                imol, molecule.atoms.nr, q2_mol, nrq_mol, molblock.nmol, q2_all, nrq_all);
+                imol, molecule.atoms.getNatoms(), q2_mol, nrq_mol, molblock.nmol, q2_all, nrq_all);
 #endif
     }
 

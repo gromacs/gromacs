@@ -150,24 +150,23 @@ static void spol_atom2molindex(int *n, int *index, const t_block *mols)
 
 int gmx_spol(int argc, char *argv[])
 {
-    t_topology  *top;
-    t_atom      *atom;
-    t_trxstatus *status;
-    int          nrefat, natoms, nf, ntot;
-    real         t;
-    rvec        *x, xref, trial, dx = {0}, dip, dir;
-    matrix       box;
+    t_topology        *top;
+    const t_atom      *atom;
+    t_trxstatus       *status;
+    int                nrefat, natoms, nf, ntot;
+    real               t;
+    rvec              *x, xref, trial, dx = {0}, dip, dir;
+    matrix             box;
 
-    FILE        *fp;
-    int         *isize, nrefgrp;
-    int        **index, *molindex;
-    char       **grpname;
-    real         rmin2, rmax2, rcut, rcut2, rdx2 = 0, rtry2, qav, q, dip2, invbw;
-    int          nbin, i, m, mol, a0, a1, a, d;
-    double       sdip, sdip2, sinp, sdinp, nmol;
-    int         *hist;
-    t_pbc        pbc;
-    gmx_rmpbc_t  gpbc = nullptr;
+    FILE              *fp;
+    int               *isize, nrefgrp;
+    int              **index, *molindex;
+    real               rmin2, rmax2, rcut, rcut2, rdx2 = 0, rtry2, qav, q, dip2, invbw;
+    int                nbin, i, m, mol, a0, a1, a, d;
+    double             sdip, sdip2, sinp, sdinp, nmol;
+    int               *hist;
+    t_pbc              pbc;
+    gmx_rmpbc_t        gpbc = nullptr;
 
 
     const char       *desc[] = {
@@ -220,7 +219,7 @@ int gmx_spol(int argc, char *argv[])
         return 0;
     }
 
-    snew(top, 1);
+    top = new t_topology;
     // TODO: Only ePBC is used, not the full inputrec.
     t_inputrec  irInstance;
     t_inputrec *ir = &irInstance;
@@ -229,10 +228,10 @@ int gmx_spol(int argc, char *argv[])
 
     /* get index groups */
     printf("Select a group of reference particles and a solvent group:\n");
-    snew(grpname, 2);
+    std::vector<SymbolPtr> grpname(2);
     snew(index, 2);
     snew(isize, 2);
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpname);
+    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpname, &top->symtab);
 
     if (bCom)
     {
@@ -272,7 +271,7 @@ int gmx_spol(int argc, char *argv[])
     sdinp = 0;
 
     molindex = top->mols.index;
-    atom     = top->atoms.atom;
+    atom     = top->atoms.atom.data();
 
     gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms);
 

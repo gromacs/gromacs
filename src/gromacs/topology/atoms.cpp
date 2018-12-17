@@ -56,19 +56,12 @@ const char *ptype_str[eptNR+1] = {
 
 void init_atom(t_atoms *at)
 {
-    at->nr          = 0;
-    at->nres        = 0;
-    at->atom        = nullptr;
-    at->resinfo     = nullptr;
-    at->atomname    = nullptr;
-    at->atomtype    = nullptr;
-    at->atomtypeB   = nullptr;
-    at->pdbinfo     = nullptr;
-    at->haveMass    = FALSE;
-    at->haveCharge  = FALSE;
-    at->haveType    = FALSE;
-    at->haveBState  = FALSE;
-    at->havePdbInfo = FALSE;
+    at->atom.clear();
+    at->resinfo.clear();
+    at->atomname.clear();
+    at->atomtype.clear();
+    at->atomtypeB.clear();
+    at->pdbinfo.clear();
 }
 
 void init_atomtypes(t_atomtypes *at)
@@ -79,12 +72,6 @@ void init_atomtypes(t_atomtypes *at)
 
 void done_atom(t_atoms *at)
 {
-    sfree(at->atom);
-    sfree(at->resinfo);
-    sfree(at->atomname);
-    sfree(at->atomtype);
-    sfree(at->atomtypeB);
-    sfree(at->pdbinfo);
     init_atom(at);
 }
 
@@ -102,75 +89,40 @@ void done_atomtypes(t_atomtypes *atype)
 
 void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra)
 {
-    int i;
-
     if (natom_extra > 0)
     {
-        srenew(atoms->atomname, atoms->nr+natom_extra);
-        srenew(atoms->atom, atoms->nr+natom_extra);
-        if (nullptr != atoms->pdbinfo)
+        int finalSize = atoms->getNatoms()+natom_extra;
+        atoms->atomname.resize(finalSize);
+        atoms->atom.resize(finalSize);
+        if (!atoms->pdbinfo.empty())
         {
-            srenew(atoms->pdbinfo, atoms->nr+natom_extra);
+            atoms->pdbinfo.resize(finalSize);
         }
-        if (nullptr != atoms->atomtype)
+        if (!atoms->atomtype.empty())
         {
-            srenew(atoms->atomtype, atoms->nr+natom_extra);
+            atoms->atomtype.resize(finalSize);
         }
-        if (nullptr != atoms->atomtypeB)
+        if (!atoms->atomtypeB.empty())
         {
-            srenew(atoms->atomtypeB, atoms->nr+natom_extra);
+            atoms->atomtypeB.resize(finalSize);
         }
-        for (i = atoms->nr; (i < atoms->nr+natom_extra); i++)
-        {
-            atoms->atomname[i] = nullptr;
-            memset(&atoms->atom[i], 0, sizeof(atoms->atom[i]));
-            if (nullptr != atoms->pdbinfo)
-            {
-                std::memset(&atoms->pdbinfo[i], 0, sizeof(atoms->pdbinfo[i]));
-            }
-            if (nullptr != atoms->atomtype)
-            {
-                atoms->atomtype[i] = nullptr;
-            }
-            if (nullptr != atoms->atomtypeB)
-            {
-                atoms->atomtypeB[i] = nullptr;
-            }
-        }
-        atoms->nr += natom_extra;
     }
     if (nres_extra > 0)
     {
-        srenew(atoms->resinfo, atoms->nres+nres_extra);
-        for (i = atoms->nres; (i < atoms->nres+nres_extra); i++)
-        {
-            std::memset(&atoms->resinfo[i], 0, sizeof(atoms->resinfo[i]));
-        }
-        atoms->nres += nres_extra;
+        int finalSize = atoms->getNresidues()+nres_extra;
+        atoms->resinfo.resize(finalSize);
     }
 }
 
 void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo)
 {
-    atoms->nr   = natoms;
-    atoms->nres = 0;
-    snew(atoms->atomname, natoms);
-    atoms->atomtype  = nullptr;
-    atoms->atomtypeB = nullptr;
-    snew(atoms->resinfo, natoms);
-    snew(atoms->atom, natoms);
-    atoms->haveMass    = FALSE;
-    atoms->haveCharge  = FALSE;
-    atoms->haveType    = FALSE;
-    atoms->haveBState  = FALSE;
+    atoms->atomname.resize(natoms);
+    atoms->resinfo.resize(natoms);
+    atoms->atom.resize(natoms);
     atoms->havePdbInfo = bPdbinfo;
     if (atoms->havePdbInfo)
     {
-        snew(atoms->pdbinfo, natoms);
-    }
-    else
-    {
-        atoms->pdbinfo = nullptr;
+        atoms->pdbinfo.resize(natoms);
     }
 }
 
@@ -186,55 +138,34 @@ void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo)
     std::fill(pdbinfo->uij, pdbinfo->uij+6, 0.0);
 }
 
+// TODO should return unique_ptr
 t_atoms *copy_t_atoms(const t_atoms *src)
 {
-    t_atoms *dst;
-    int      i;
+    t_atoms *dst = new t_atoms;
 
-    snew(dst, 1);
-    init_t_atoms(dst, src->nr, (nullptr != src->pdbinfo));
-    dst->nr = src->nr;
-    if (nullptr != src->atomname)
+    init_t_atoms(dst, 0, !src->pdbinfo.empty());
+    dst->atom.insert(dst->atom.end(), src->atom.begin(), src->atom.end());
+    if (!src->pdbinfo.empty())
     {
-        snew(dst->atomname, src->nr);
+        dst->pdbinfo.insert(dst->pdbinfo.end(), src->pdbinfo.begin(), src->pdbinfo.end());
     }
-    if (nullptr != src->atomtype)
+    if (!src->atomname.empty())
     {
-        snew(dst->atomtype, src->nr);
+        dst->atomname.insert(dst->atomname.end(), src->atomname.begin(), src->atomname.end());
     }
-    if (nullptr != src->atomtypeB)
+    if (!src->atomtype.empty())
     {
-        snew(dst->atomtypeB, src->nr);
+        dst->atomtype.insert(dst->atomtype.end(), src->atomtype.begin(), src->atomtype.end());
     }
-    for (i = 0; (i < src->nr); i++)
+    if (!src->atomtypeB.empty())
     {
-        dst->atom[i] = src->atom[i];
-        if (nullptr != src->pdbinfo)
-        {
-            dst->pdbinfo[i] = src->pdbinfo[i];
-        }
-        if (nullptr != src->atomname)
-        {
-            dst->atomname[i]  = src->atomname[i];
-        }
-        if (nullptr != src->atomtype)
-        {
-            dst->atomtype[i] = src->atomtype[i];
-        }
-        if (nullptr != src->atomtypeB)
-        {
-            dst->atomtypeB[i] = src->atomtypeB[i];
-        }
+        dst->atomtypeB.insert(dst->atomtypeB.end(), src->atomtypeB.begin(), src->atomtypeB.end());
     }
-    dst->nres = src->nres;
-    for (i = 0; (i < src->nres); i++)
-    {
-        dst->resinfo[i] = src->resinfo[i];
-    }
+    dst->resinfo.insert(dst->resinfo.end(), src->resinfo.begin(), src->resinfo.end());
     return dst;
 }
 
-void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,
+void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, SymbolTable *symtab,
                          const char *resname, int resnr, unsigned char ic,
                          int chainnum, char chainid)
 {
@@ -242,7 +173,6 @@ void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,
 
     ri           = &atoms->resinfo[atoms->atom[atom_ind].resind];
     ri->name     = put_symtab(symtab, resname);
-    ri->rtp      = nullptr;
     ri->nr       = resnr;
     ri->ic       = ic;
     ri->chainnum = chainnum;
@@ -269,7 +199,7 @@ static void pr_atom(FILE *fp, int indent, const char *title, const t_atom *atom,
 }
 
 static void pr_strings2(FILE *fp, int indent, const char *title,
-                        char ***nm, char ***nmB, int n, gmx_bool bShowNumbers)
+                        const SymbolPtr *nm, const SymbolPtr *nmB, int n, gmx_bool bShowNumbers)
 {
     int i;
 
@@ -280,11 +210,25 @@ static void pr_strings2(FILE *fp, int indent, const char *title,
         {
             pr_indent(fp, indent);
             fprintf(fp, "%s[%d]={name=\"%s\",nameB=\"%s\"}\n",
-                    title, bShowNumbers ? i : -1, *(nm[i]), *(nmB[i]));
+                    title, bShowNumbers ? i : -1, nm[i]->c_str(), nmB[i]->c_str());
         }
     }
 }
 
+void pr_stringsSymtab(FILE *fp, int indent, const char *title,
+                      const SymbolPtr *nm, int n, bool bShowNumbers)
+{
+    if (available(fp, nm, indent, title))
+    {
+        indent = pr_title_n(fp, indent, title, n);
+        for (int i = 0; i < n; i++)
+        {
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%d]={name=\"%s\"}\n",
+                    title, bShowNumbers ? i : -1, nm[i]->c_str());
+        }
+    }
+}
 static void pr_resinfo(FILE *fp, int indent, const char *title, const t_resinfo *resinfo, int n,
                        gmx_bool bShowNumbers)
 {
@@ -298,7 +242,7 @@ static void pr_resinfo(FILE *fp, int indent, const char *title, const t_resinfo 
             pr_indent(fp, indent);
             fprintf(fp, "%s[%d]={name=\"%s\", nr=%d, ic='%c'}\n",
                     title, bShowNumbers ? i : -1,
-                    *(resinfo[i].name), resinfo[i].nr,
+                    resinfo[i].name->c_str(), resinfo[i].nr,
                     (resinfo[i].ic == '\0') ? ' ' : resinfo[i].ic);
         }
     }
@@ -310,10 +254,10 @@ void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
     if (available(fp, atoms, indent, title))
     {
         indent = pr_title(fp, indent, title);
-        pr_atom(fp, indent, "atom", atoms->atom, atoms->nr);
-        pr_strings(fp, indent, "atom", atoms->atomname, atoms->nr, bShownumbers);
-        pr_strings2(fp, indent, "type", atoms->atomtype, atoms->atomtypeB, atoms->nr, bShownumbers);
-        pr_resinfo(fp, indent, "residue", atoms->resinfo, atoms->nres, bShownumbers);
+        pr_atom(fp, indent, "atom", atoms->atom.data(), atoms->getNatoms());
+        pr_stringsSymtab(fp, indent, "atom", atoms->atomname.data(), atoms->getNatoms(), bShownumbers);
+        pr_strings2(fp, indent, "type", atoms->atomtype.data(), atoms->atomtypeB.data(), atoms->getNatoms(), bShownumbers);
+        pr_resinfo(fp, indent, "residue", atoms->resinfo.data(), atoms->getNresidues(), bShownumbers);
     }
 }
 
@@ -365,15 +309,15 @@ void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real a
 
     if (a2)
     {
-        cmp_int(fp, "atoms->nr", -1, a1->nr, a2->nr);
-        for (i = 0; i < std::min(a1->nr, a2->nr); i++)
+        cmp_int(fp, "atoms->nr", -1, a1->getNatoms(), a2->getNatoms());
+        for (i = 0; i < std::min(a1->getNatoms(), a2->getNatoms()); i++)
         {
             cmp_atom(fp, i, &(a1->atom[i]), &(a2->atom[i]), ftol, abstol);
         }
     }
     else
     {
-        for (i = 0; (i < a1->nr); i++)
+        for (i = 0; (i < a1->getNatoms()); i++)
         {
             cmp_atom(fp, i, &(a1->atom[i]), nullptr, ftol, abstol);
         }
@@ -396,11 +340,11 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
     gmx_atomprop_t aps      = gmx_atomprop_init();
 
     gmx_bool       haveMass = TRUE;
-    for (int i = 0; i < atoms->nr; i++)
+    for (int i = 0; i < atoms->getNatoms(); i++)
     {
         if (!gmx_atomprop_query(aps, epropMass,
-                                *atoms->resinfo[atoms->atom[i].resind].name,
-                                *atoms->atomname[i],
+                                atoms->resinfo[atoms->atom[i].resind].name->c_str(),
+                                atoms->atomname[i]->c_str(),
                                 &atoms->atom[i].m))
         {
             haveMass = FALSE;
@@ -408,9 +352,9 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
             if (numWarn < maxWarn)
             {
                 fprintf(stderr, "Can not find mass in database for atom %s in residue %d %s\n",
-                        *atoms->atomname[i],
+                        atoms->atomname[i]->c_str(),
                         atoms->resinfo[atoms->atom[i].resind].nr,
-                        *atoms->resinfo[atoms->atom[i].resind].name);
+                        atoms->resinfo[atoms->atom[i].resind].name->c_str());
                 numWarn++;
             }
             else

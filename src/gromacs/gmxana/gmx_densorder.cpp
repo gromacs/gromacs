@@ -77,7 +77,7 @@ static void center_coords(const t_atoms *atoms, matrix box, rvec x0[], int axis)
 
     tmass = 0;
     clear_rvec(com);
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         mm     = atoms->atom[i].m;
         tmass += mm;
@@ -94,7 +94,7 @@ static void center_coords(const t_atoms *atoms, matrix box, rvec x0[], int axis)
     rvec_sub(box_center, com, shift);
     shift[axis] -= box_center[axis];
 
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         rvec_dec(x0[i], shift);
     }
@@ -171,7 +171,7 @@ static void density_in_time (const char *fn, int **index, const int gnx[], real 
     /****Start trajectory processing***/
 
     /*Initialize Densdevel and PBC-remove*/
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.getNatoms());
 
     *Densdevel = nullptr;
 
@@ -180,7 +180,7 @@ static void density_in_time (const char *fn, int **index, const int gnx[], real 
         bbww[XX] = box[ax1][ax1]/ *xslices;
         bbww[YY] = box[ax2][ax2]/ *yslices;
         bbww[ZZ] = box[axis][axis]/ *zslices;
-        gmx_rmpbc(gpbc, top->atoms.nr, box, x0);
+        gmx_rmpbc(gpbc, top->atoms.getNatoms(), box, x0);
         /*Reset Densslice every nsttblock steps*/
         /* The first conditional is for clang to understand that this branch is
          * always taken the first time. */
@@ -667,7 +667,6 @@ int gmx_densorder(int argc, char *argv[])
 
     gmx_output_env_t  *oenv;
     t_topology        *top;
-    char             **grpname;
     int                ePBC, *ngx;
     static real        binw      = 0.2;
     static real        binwz     = 0.05;
@@ -745,14 +744,14 @@ int gmx_densorder(int argc, char *argv[])
     bGraph   = opt2bSet("-og", NFILE, fnm);
     bOut     = opt2bSet("-o", NFILE, fnm);
     top      = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
-    snew(grpname, 1);
+    std::vector<SymbolPtr> grpname(1);
     snew(index, 1);
     snew(ngx, 1);
 
 /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname);
+    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname, &top->symtab);
 
     density_in_time(ftp2fn(efTRX, NFILE, fnm), index, ngx, binw, binwz, nsttblock, &Densmap, &xslices, &yslices, &zslices, &tblock, top, ePBC, axis, bCenter, b1d, oenv);
 

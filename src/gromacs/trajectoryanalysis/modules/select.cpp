@@ -682,10 +682,10 @@ Select::writeOutput()
         auto atoms = top_->copyAtoms();
         if (!atoms->havePdbInfo)
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            atoms->pdbinfo.resize(atoms->getNatoms());
             atoms->havePdbInfo = TRUE;
         }
-        for (int i = 0; i < atoms->nr; ++i)
+        for (int i = 0; i < atoms->getNatoms(); ++i)
         {
             atoms->pdbinfo[i].occup = 0.0;
         }
@@ -741,7 +741,7 @@ Select::writeOutput()
             case PdbAtomsSelection_Selected:
             {
                 std::vector<int> indices;
-                for (int i = 0; i < atoms->nr; ++i)
+                for (int i = 0; i < atoms->getNatoms(); ++i)
                 {
                     if (atoms->pdbinfo[i].occup > 0.0)
                     {

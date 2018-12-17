@@ -1503,7 +1503,7 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
     li->max_connect = 0;
     for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
     {
-        for (int a = 0; a < mtop.moltype[mt].atoms.nr; a++)
+        for (int a = 0; a < mtop.moltype[mt].atoms.getNatoms(); a++)
         {
             li->max_connect = std::max(li->max_connect,
                                        at2con[mt].index[a + 1] - at2con[mt].index[a]);

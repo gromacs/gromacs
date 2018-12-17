@@ -444,11 +444,11 @@ static void overlap(const char *outfile, int natoms,
     xvgrclose(out);
 }
 
-static void project(const char *trajfile, const t_topology *top, int ePBC, matrix topbox,
+static void project(const char *trajfile, t_topology *top, int ePBC, matrix topbox,
                     const char *projfile, const char *twodplotfile,
                     const char *threedplotfile, const char *filterfile, int skip,
                     const char *extremefile, gmx_bool bExtrAll, real extreme,
-                    int nextr, const t_atoms *atoms, int natoms, int *index,
+                    int nextr, t_atoms *atoms, int natoms, int *index,
                     gmx_bool bFit, rvec *xref, int nfit, int *ifit, real *w_rls,
                     const real *sqrtm, rvec *xav,
                     int *eignr, rvec **eigvec,
@@ -501,9 +501,9 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         nfr       = 0;
         nframes   = 0;
         nat       = read_first_x(oenv, &status, trajfile, &t, &xread, box);
-        if (nat > atoms->nr)
+        if (nat > atoms->getNatoms())
         {
-            gmx_fatal(FARGS, "the number of atoms in your trajectory (%d) is larger than the number of atoms in your structure file (%d)", nat, atoms->nr);
+            gmx_fatal(FARGS, "the number of atoms in your trajectory (%d) is larger than the number of atoms in your structure file (%d)", nat, atoms->getNatoms());
         }
         snew(all_at, nat);
 
@@ -588,7 +588,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
     }
     else
     {
-        snew(xread, atoms->nr);
+        snew(xread, atoms->getNatoms());
     }
 
     if (top)
@@ -634,7 +634,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
 
     if (threedplotfile)
     {
-        t_atoms     atoms;
+        t_atoms     localAtoms;
         rvec       *x;
         real       *b = nullptr;
         matrix      box;
@@ -667,7 +667,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
             sprintf(str, "3D proj. of traj. on eigenv. %d, %d and %d",
                     eignr[outvec[0]]+1, eignr[outvec[1]]+1, eignr[outvec[2]]+1);
         }
-        init_t_atoms(&atoms, nframes, FALSE);
+        init_t_atoms(&localAtoms, nframes, FALSE);
         snew(x, nframes);
         snew(b, nframes);
         atnm  = gmx_strdup("C");
@@ -684,14 +684,14 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
 
         for (i = 0; i < nframes; i++)
         {
-            atoms.atomname[i]     = &atnm;
-            atoms.atom[i].resind  = i;
-            atoms.resinfo[i].name = &resnm;
-            atoms.resinfo[i].nr   = static_cast<int>(std::ceil(i*fact));
-            atoms.resinfo[i].ic   = ' ';
-            x[i][XX]              = inprod[0][i];
-            x[i][YY]              = inprod[1][i];
-            x[i][ZZ]              = inprod[2][i];
+            localAtoms.atomname[i]     = put_symtab(&top->symtab, atnm);
+            localAtoms.atom[i].resind  = i;
+            localAtoms.resinfo[i].name = put_symtab(&top->symtab, resnm);
+            localAtoms.resinfo[i].nr   = static_cast<int>(std::ceil(i*fact));
+            localAtoms.resinfo[i].ic   = ' ';
+            x[i][XX]                   = inprod[0][i];
+            x[i][YY]                   = inprod[1][i];
+            x[i][ZZ]                   = inprod[2][i];
             if (b4D)
             {
                 b[i]  = inprod[3][i];
@@ -708,7 +708,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                 fprintf(out, "REMARK    %s\n", "fourth dimension plotted as B-factor");
             }
             j = 0;
-            for (i = 0; i < atoms.nr; i++)
+            for (i = 0; i < localAtoms.getNatoms(); i++)
             {
                 if (j > 0 && bSplit && std::abs(inprod[noutvec][i]) < 1e-5)
                 {
@@ -728,9 +728,9 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         }
         else
         {
-            write_sto_conf(threedplotfile, str, &atoms, x, nullptr, ePBC, box);
+            write_sto_conf(threedplotfile, str, &localAtoms, x, nullptr, ePBC, box);
         }
-        done_atom(&atoms);
+        done_atom(&localAtoms);
     }
 
     if (extremefile)
@@ -795,6 +795,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                 {
                     for (i = 0; i < natoms; i++)
                     {
+                        // Const classifier violated here, code didn't respect anything before.
                         atoms->resinfo[atoms->atom[index[i]].resind].chainid = 'A' + frame;
                     }
                 }
@@ -1020,7 +1021,7 @@ int gmx_anaeig(int argc, char *argv[])
 
     t_topology        top;
     int               ePBC  = -1;
-    const t_atoms    *atoms = nullptr;
+    t_atoms          *atoms = nullptr;
     rvec             *xtop, *xref1, *xref2, *xrefp = nullptr;
     gmx_bool          bDMR1, bDMA1, bDMR2, bDMA2;
     int               nvec1, nvec2, *eignr1 = nullptr, *eignr2 = nullptr;
@@ -1028,7 +1029,6 @@ int gmx_anaeig(int argc, char *argv[])
     matrix            topbox;
     real              totmass, *sqrtm, *w_rls, t;
     int               natoms;
-    char             *grpname;
     const char       *indexfile;
     int               i, j, d;
     int               nout, *iout, noutvec, *outvec, nfit;
@@ -1203,6 +1203,7 @@ int gmx_anaeig(int argc, char *argv[])
     ifit  = nullptr;
     w_rls = nullptr;
 
+    std::vector<SymbolPtr> grpname(1);
     if (!bTPS)
     {
         bTop = FALSE;
@@ -1212,8 +1213,8 @@ int gmx_anaeig(int argc, char *argv[])
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
                              &top, &ePBC, &xtop, nullptr, topbox, bM);
         atoms = &top.atoms;
-        gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
-        gmx_rmpbc(gpbc, atoms->nr, topbox, xtop);
+        gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->getNatoms());
+        gmx_rmpbc(gpbc, atoms->getNatoms(), topbox, xtop);
         /* Fitting is only required for the projection */
         if (bProj && bFit1)
         {
@@ -1223,9 +1224,9 @@ int gmx_anaeig(int argc, char *argv[])
                        "      as the one used for the fit in g_covar\n", topfile);
             }
             printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
-            get_index(atoms, indexfile, 1, &nfit, &ifit, &grpname);
+            get_index(atoms, indexfile, 1, &nfit, &ifit, grpname, &top.symtab);
 
-            snew(w_rls, atoms->nr);
+            snew(w_rls, atoms->getNatoms());
             for (i = 0; (i < nfit); i++)
             {
                 if (bDMR1)
@@ -1238,7 +1239,7 @@ int gmx_anaeig(int argc, char *argv[])
                 }
             }
 
-            snew(xrefp, atoms->nr);
+            snew(xrefp, atoms->getNatoms());
             if (xref1 != nullptr)
             {
                 /* Safety check between selected fit-group and reference structure read from the eigenvector file */
@@ -1258,7 +1259,7 @@ int gmx_anaeig(int argc, char *argv[])
                 {
                     copy_rvec(xtop[ifit[i]], xrefp[ifit[i]]);
                 }
-                reset_x(nfit, ifit, atoms->nr, nullptr, xrefp, w_rls);
+                reset_x(nfit, ifit, atoms->getNatoms(), nullptr, xrefp, w_rls);
             }
         }
         gmx_rmpbc_done(gpbc);
@@ -1267,7 +1268,7 @@ int gmx_anaeig(int argc, char *argv[])
     if (bIndex)
     {
         printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n", natoms);
-        get_index(atoms, indexfile, 1, &i, &index, &grpname);
+        get_index(atoms, indexfile, 1, &i, &index, grpname, &top.symtab);
         if (i != natoms)
         {
             gmx_fatal(FARGS, "you selected a group with %d elements instead of %d", i, natoms);

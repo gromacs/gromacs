@@ -102,7 +102,6 @@ int gmx_dyecoupl(int argc, char *argv[])
     gmx_bool     bHaveFirstFrame, bHaveNextFrame, indexOK = TRUE;
     int          ndon, nacc;
     int         *donindex, *accindex;
-    char        *grpnm;
     t_trxstatus *status;
     t_trxframe   fr;
 
@@ -165,11 +164,13 @@ int gmx_dyecoupl(int argc, char *argv[])
         gmx_fatal(FARGS, "You have to specify R0 and R0 has to be larger than 0 nm.\n\n");
     }
 
+    SymbolTable            symtab;
+    std::vector<SymbolPtr> grpnm(1);
     printf("Select group with donor atom pairs defining the transition moment\n");
-    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
+    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, grpnm, &symtab);
 
     printf("Select group with acceptor atom pairs defining the transition moment\n");
-    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
+    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, grpnm, &symtab);
 
     /*check if groups are identical*/
     grident = TRUE;

@@ -60,6 +60,7 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/cstringutil.h"
 
 static void bc_cstring(const t_commrec *cr, char **s)
 {
@@ -86,93 +87,81 @@ static void bc_cstring(const t_commrec *cr, char **s)
     }
 }
 
-static void bc_string(const t_commrec *cr, t_symtab *symtab, char ***s)
+static void bc_string(const t_commrec *cr, SymbolTable *symtab, SymbolPtr s)
 {
-    int handle;
+    SymbolPtr handle;
+    char     *entry;
 
     if (MASTER(cr))
     {
-        handle = lookup_symtab(symtab, *s);
+        handle = lookup_symtab(*symtab, s->c_str());
+        entry  = gmx_strdup(handle->c_str());
     }
-    block_bc(cr, handle);
+    bc_cstring(cr, &entry);
     if (!MASTER(cr))
     {
-        *s = get_symtab_handle(symtab, handle);
+        s = put_symtab(symtab, entry);
     }
+    sfree(entry);
 }
 
-static void bc_strings(const t_commrec *cr, t_symtab *symtab, int nr, char ****nm)
+static void bc_strings(const t_commrec *cr, SymbolTable *symtab, int nr, std::vector<SymbolPtr> *nm)
 {
-    int     i;
-    int    *handle;
+    int                    i;
 
-    snew(handle, nr);
+    std::vector<SymbolPtr> handle(nr);
+    char                 **entry;
+    snew(entry, nr);
     if (MASTER(cr))
     {
         for (i = 0; (i < nr); i++)
         {
-            handle[i] = lookup_symtab(symtab, (*nm)[i]);
+            handle[i] = lookup_symtab(*symtab, nm->at(i)->c_str());
+            entry[i]  = gmx_strdup(handle[i]->c_str());
+            bc_cstring(cr, &entry[i]);
         }
     }
-    nblock_bc(cr, nr, handle);
 
     if (!MASTER(cr))
     {
-        snew_bc(cr, *nm, nr);
+        nblock_abc(cr, nr, nm);
         for (i = 0; (i < nr); i++)
         {
-            (*nm)[i] = get_symtab_handle(symtab, handle[i]);
+            nm->at(i) = put_symtab(symtab, entry[i]);
+            sfree(entry[i]);
         }
     }
-    sfree(handle);
 }
 
-static void bc_strings_resinfo(const t_commrec *cr, t_symtab *symtab,
+static void bc_strings_resinfo(const t_commrec *cr, SymbolTable *symtab,
                                int nr, t_resinfo *resinfo)
 {
-    int   i;
-    int  *handle;
+    int                    i;
 
-    snew(handle, nr);
+    std::vector<SymbolPtr> handle(nr);
     if (MASTER(cr))
     {
         for (i = 0; (i < nr); i++)
         {
-            handle[i] = lookup_symtab(symtab, resinfo[i].name);
+            handle[i] = lookup_symtab(*symtab, resinfo[i].name->c_str());
         }
     }
-    nblock_bc(cr, nr, handle);
+    nblock_bc(cr, nr, handle.data());
 
     if (!MASTER(cr))
     {
         for (i = 0; (i < nr); i++)
         {
-            resinfo[i].name = get_symtab_handle(symtab, handle[i]);
+            resinfo[i].name = get_symtab_handle(symtab, handle[i].number());
         }
     }
-    sfree(handle);
 }
 
-static void bc_symtab(const t_commrec *cr, t_symtab *symtab)
+static void bc_symtab(const t_commrec *cr, SymbolTable *symtab)
 {
-    int       i, nr, len;
-    t_symbuf *symbuf;
-
-    block_bc(cr, symtab->nr);
-    nr = symtab->nr;
-    snew_bc(cr, symtab->symbuf, 1);
-    symbuf          = symtab->symbuf;
-    symbuf->bufsize = nr;
-    snew_bc(cr, symbuf->buf, nr);
-    for (i = 0; i < nr; i++)
+    if (!MASTER(cr))
     {
-        if (MASTER(cr))
-        {
-            len = strlen(symbuf->buf[i]) + 1;
-        }
-        block_bc(cr, len);
-        snew_bc(cr, symbuf->buf[i], len);
-        nblock_bc(cr, len, symbuf->buf[i]);
+        open_symtab(symtab);
     }
 }
 
@@ -208,22 +197,30 @@ static void bc_grps(const t_commrec *cr, t_grps grps[])
     }
 }
 
-static void bc_atoms(const t_commrec *cr, t_symtab *symtab, t_atoms *atoms)
+static void bc_atoms(const t_commrec *cr, SymbolTable *symtab, t_atoms *atoms)
 {
-    block_bc(cr, atoms->nr);
-    snew_bc(cr, atoms->atom, atoms->nr);
-    nblock_bc(cr, atoms->nr, atoms->atom);
-    bc_strings(cr, symtab, atoms->nr, &atoms->atomname);
-    block_bc(cr, atoms->nres);
-    snew_bc(cr, atoms->resinfo, atoms->nres);
-    nblock_bc(cr, atoms->nres, atoms->resinfo);
-    bc_strings_resinfo(cr, symtab, atoms->nres, atoms->resinfo);
+    int natoms = 0;
+    if (MASTER(cr))
+    {
+        natoms = atoms->getNatoms();
+    }
+    nblock_abc(cr, natoms, &atoms->atom);
+
+    bc_strings(cr, symtab, atoms->getNatoms(), &atoms->atomname);
+    int nresidues = 0;
+    if (MASTER(cr))
+    {
+        nresidues = atoms->getNresidues();
+    }
+    nblock_abc(cr, nresidues, &atoms->resinfo);
+
+    bc_strings_resinfo(cr, symtab, atoms->getNresidues(), atoms->resinfo.data());
     /* QMMM requires atomtypes to be known on all nodes as well */
-    bc_strings(cr, symtab, atoms->nr, &atoms->atomtype);
-    bc_strings(cr, symtab, atoms->nr, &atoms->atomtypeB);
+    bc_strings(cr, symtab, atoms->getNatoms(), &atoms->atomtype);
+    bc_strings(cr, symtab, atoms->getNatoms(), &atoms->atomtypeB);
 }
 
-static void bc_groups(const t_commrec *cr, t_symtab *symtab,
+static void bc_groups(const t_commrec *cr, SymbolTable *symtab,
                       int natoms, gmx_groups_t *groups)
 {
     int g, n;
@@ -735,10 +732,10 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     }
 }
 
-static void bc_moltype(const t_commrec *cr, t_symtab *symtab,
+static void bc_moltype(const t_commrec *cr, SymbolTable *symtab,
                        gmx_moltype_t *moltype)
 {
-    bc_string(cr, symtab, &moltype->name);
+    bc_string(cr, symtab, moltype->name);
     bc_atoms(cr, symtab, &moltype->atoms);
     if (debug)
     {
@@ -800,7 +797,7 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
     {
         fprintf(debug, "after bc_symtab\n");
     }
-    bc_string(cr, &mtop->symtab, &mtop->name);
+    bc_string(cr, &mtop->symtab, mtop->name);
     if (debug)
     {
         fprintf(debug, "after bc_name\n");

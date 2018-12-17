@@ -253,7 +253,7 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
         if (bExcl)
         {
-            ndtot_c += molb.nmol*(molt->excls.nra - molt->atoms.nr)/2.;
+            ndtot_c += molb.nmol*(molt->excls.nra - molt->atoms.getNatoms())/2.;
         }
     }
 
@@ -313,7 +313,7 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         const gmx_moltype_t *molt = &mtop->moltype[molb.type];
-        const t_atom        *atom = molt->atoms.atom;
+        const t_atom        *atom = molt->atoms.atom.data();
         int                  a    = 0;
         for (cg = 0; cg < molt->cgs.nr; cg++)
         {
@@ -429,8 +429,8 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         const gmx_moltype_t *molt = &mtop->moltype[molb.type];
-        const t_atom        *atom = molt->atoms.atom;
-        for (a = 0; a < molt->atoms.nr; a++)
+        const t_atom        *atom = molt->atoms.atom.data();
+        for (a = 0; a < molt->atoms.getNatoms(); a++)
         {
             if (atom[a].q != 0 || atom[a].qB != 0)
             {

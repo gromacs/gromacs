@@ -134,7 +134,6 @@ int gmx_trjorder(int argc, char *argv[])
     gmx_rmpbc_t       gpbc;
     real              t, totmass, mass, rcut2 = 0, n2;
     int               natoms, nwat, ncut;
-    char            **grpname;
     int               i, j, d, *isize, isize_ref = 0, isize_sol;
     int               sa, sr, *swi, **index, *ind_ref = nullptr, *ind_sol;
     gmx_output_env_t *oenv;
@@ -159,11 +158,11 @@ int gmx_trjorder(int argc, char *argv[])
     /* get index groups */
     printf("Select %sa group of molecules to be ordered:\n",
            bZ ? "" : "a group of reference atoms and ");
-    snew(grpname, 2);
+    std::vector<SymbolPtr> grpname(2);
     snew(index, 2);
     snew(isize, 2);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), bZ ? 1 : 2,
-              isize, index, grpname);
+              isize, index, grpname, &top.symtab);
 
     if (!bZ)
     {
@@ -179,7 +178,7 @@ int gmx_trjorder(int argc, char *argv[])
     }
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > top.atoms.getNatoms())
     {
         gmx_fatal(FARGS, "Number of atoms in the run input file is larger than in the trjactory");
     }
@@ -189,7 +188,7 @@ int gmx_trjorder(int argc, char *argv[])
         {
             if (index[i][j] > natoms)
             {
-                gmx_fatal(FARGS, "An atom number in group %s is larger than the number of atoms in the trajectory", grpname[i]);
+                gmx_fatal(FARGS, "An atom number in group %s is larger than the number of atoms in the trajectory", grpname[i]->c_str());
             }
         }
     }
@@ -230,10 +229,10 @@ int gmx_trjorder(int argc, char *argv[])
     if (!bNShell || opt2bSet("-o", NFILE, fnm))
     {
         bPDBout = (fn2ftp(opt2fn("-o", NFILE, fnm)) == efPDB);
-        if (bPDBout && !top.atoms.pdbinfo)
+        if (bPDBout && top.atoms.pdbinfo.empty())
         {
             fprintf(stderr, "Creating pdbfino records\n");
-            snew(top.atoms.pdbinfo, top.atoms.nr);
+            top.atoms.pdbinfo.resize(top.atoms.getNatoms());
         }
         out = open_trx(opt2fn("-o", NFILE, fnm), "w");
     }

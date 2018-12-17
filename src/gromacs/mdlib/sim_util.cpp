@@ -2633,11 +2633,11 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         const gmx_moltype_t &moltype = mtop->moltype[molb.type];
-        if (moltype.atoms.nr == 1 ||
+        if (moltype.atoms.getNatoms() == 1 ||
             (!bFirst && moltype.cgs.nr == 1))
         {
             /* Just one atom or charge group in the molecule, no PBC required */
-            as += molb.nmol*moltype.atoms.nr;
+            as += molb.nmol*moltype.atoms.getNatoms();
         }
         else
         {
@@ -2653,7 +2653,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
                  * since we no longer need this graph.
                  */
 
-                as += moltype.atoms.nr;
+                as += moltype.atoms.getNatoms();
             }
             done_graph(graph);
         }

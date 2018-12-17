@@ -190,20 +190,20 @@ static int match_str(const char *atom, const char *template_string)
     }
 }
 
-int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
+int nm2type(int nnm, t_nm2type nm2t[], SymbolTable *tab, t_atoms *atoms,
             gpp_atomtype_t atype, int *nbonds, t_params *bonds)
 {
-    int      cur = 0;
+    int            cur = 0;
 #define prev (1-cur)
-    int      i, j, k, m, n, nresolved, nb, maxbond, ai, aj, best, im, nqual[2][ematchNR];
-    int     *bbb, *n_mask, *m_mask, **match;
-    char    *aname_i, *aname_m, *aname_n, *type;
-    double   qq, mm;
-    t_param *param;
+    int            i, j, k, m, n, nresolved, nb, maxbond, ai, aj, best, im, nqual[2][ematchNR];
+    int           *bbb, *n_mask, *m_mask, **match;
+    const char    *aname_i, *aname_m, *aname_n, *type;
+    double         qq, mm;
+    t_param       *param;
 
     snew(param, 1);
     maxbond = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         maxbond = std::max(maxbond, nbonds[i]);
     }
@@ -221,9 +221,9 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
     }
 
     nresolved = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
-        aname_i = *atoms->atomname[i];
+        aname_i = atoms->atomname[i]->c_str();
         nb      = 0;
         for (j = 0; (j < bonds->nr); j++)
         {
@@ -248,7 +248,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
             fprintf(debug, "%4s has bonds to", aname_i);
             for (j = 0; (j < nb); j++)
             {
-                fprintf(debug, " %4s", *atoms->atomname[bbb[j]]);
+                fprintf(debug, " %4s", atoms->atomname[bbb[j]]->c_str());
             }
             fprintf(debug, "\n");
         }
@@ -263,7 +263,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
         {
             if (nm2t[k].nbonds == nb)
             {
-                im = match_str(*atoms->atomname[i], nm2t[k].elem);
+                im = match_str(atoms->atomname[i]->c_str(), nm2t[k].elem);
                 if (im > ematchWild)
                 {
                     for (j = 0; (j < ematchNR); j++)
@@ -274,7 +274,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
                     /* Fill a matrix with matching quality */
                     for (m = 0; (m < nb); m++)
                     {
-                        aname_m = *atoms->atomname[bbb[m]];
+                        aname_m = atoms->atomname[bbb[m]]->c_str();
                         for (n = 0; (n < nb); n++)
                         {
                             aname_n     = nm2t[k].bond[n];
@@ -351,7 +351,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
         else
         {
             fprintf(stderr, "Can not find forcefield for atom %s-%d with %d bonds\n",
-                    *atoms->atomname[i], i+1, nb);
+                    atoms->atomname[i]->c_str(), i+1, nb);
         }
     }
     sfree(bbb);

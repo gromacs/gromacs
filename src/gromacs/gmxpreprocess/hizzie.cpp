@@ -55,7 +55,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static int in_strings(char *key, int nstr, const char **str)
+static int in_strings(const char *key, int nstr, const char **str)
 {
     int j;
 
@@ -85,7 +85,7 @@ static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
 {
     int i, j, k, ii, natom;
 
-    natom = pdba->nr;
+    natom = pdba->getNatoms();
     snew(hb->index, natom+1);
     snew(hb->a, 6*natom);
     hb->nr  = natom;
@@ -129,7 +129,7 @@ static bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
     real     d2, dist2, a;
     rvec     nh, oh;
 
-    natom = pdba->nr;
+    natom = pdba->getNatoms();
     bHB   = FALSE;
     ri    = pdba->atom[i].resind;
     dist2 = gmx::square(dist);
@@ -140,8 +140,8 @@ static bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
         {
             /* Check whether the other atom is on the same ring as well */
             if ((pdba->atom[j].resind != ri) ||
-                ((strcmp(*pdba->atomname[j], "ND1") != 0) &&
-                 (strcmp(*pdba->atomname[j], "NE2") != 0)))
+                ((strcmp(pdba->atomname[j]->c_str(), "ND1") != 0) &&
+                 (strcmp(pdba->atomname[j]->c_str(), "NE2") != 0)))
             {
                 aj  = j;
                 d2  = distance2(x[i], x[j]);
@@ -173,7 +173,7 @@ static void calc_ringh(rvec xattach, rvec xb, rvec xc, rvec xh)
     rvec_inc(xh, xattach);
 }
 
-void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
+void set_histp(t_atoms *pdba, rvec *x, real angle, real dist, SymbolTable *symtab)
 {
     static const char *prot_acc[] = {
         "O", "OD1", "OD2", "OE1", "OE2", "OG", "OG1", "OH", "OW"
@@ -192,13 +192,12 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
     int       i, j, nd, na, hisind, type = -1;
     int       nd1, ne2, cg, cd2, ce1;
     t_blocka *hb;
-    char     *atomnm;
 
-    natom = pdba->nr;
+    natom = pdba->getNatoms();
 
     i = 0;
     while (i < natom &&
-           gmx_strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name, "HIS") != 0)
+           gmx_strcasecmp(pdba->resinfo[pdba->atom[i].resind].name->c_str(), "HIS") != 0)
     {
         i++;
     }
@@ -221,12 +220,12 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
     nd = na = 0;
     for (j = 0; (j < natom); j++)
     {
-        if (in_strings(*pdba->atomname[j], NPA, prot_acc) != -1)
+        if (in_strings(pdba->atomname[j]->c_str(), NPA, prot_acc) != -1)
         {
             acceptor[j] = TRUE;
             na++;
         }
-        if (in_strings(*pdba->atomname[j], NPD, prot_don) != -1)
+        if (in_strings(pdba->atomname[j]->c_str(), NPD, prot_don) != -1)
         {
             donor[j] = TRUE;
             nd++;
@@ -240,7 +239,7 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
     hisind = -1;
     while (i < natom)
     {
-        if (gmx_strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name, "HIS") != 0)
+        if (gmx_strcasecmp(pdba->resinfo[pdba->atom[i].resind].name->c_str(), "HIS") != 0)
         {
             i++;
         }
@@ -254,7 +253,7 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
                 nd1 = ne2 = cg = cd2 = ce1 = -1;
                 while (i < natom && pdba->atom[i].resind == hisind)
                 {
-                    atomnm = *pdba->atomname[i];
+                    const char *atomnm = pdba->atomname[i]->c_str();
                     if (strcmp(atomnm, "CD2") == 0)
                     {
                         cd2 = i;
@@ -314,8 +313,7 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
                               pdba->resinfo[hisind].nr);
                 }
 
-                snew(pdba->resinfo[hisind].rtp, 1);
-                *pdba->resinfo[hisind].rtp = gmx_strdup(hh[type]);
+                pdba->resinfo[hisind].rtp = put_symtab(symtab, hh[type]);
             }
         }
     }

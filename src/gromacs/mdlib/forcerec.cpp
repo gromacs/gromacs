@@ -262,7 +262,6 @@ check_solvent_cg(const gmx_moltype_t    *molt,
                  int                     cginfo,
                  int                    *cg_sp)
 {
-    t_atom               *atom;
     int                   j, k;
     int                   j0, j1, nj;
     gmx_bool              perturbed;
@@ -312,7 +311,7 @@ check_solvent_cg(const gmx_moltype_t    *molt,
     {
         fprintf(debug,
                 "Moltype '%s': there are %d atoms in this charge group\n",
-                *molt->name, nj);
+                molt->name->c_str(), nj);
     }
 
     /* Check if it could be an SPC (3 atoms) or TIP4p (4) water,
@@ -338,7 +337,7 @@ check_solvent_cg(const gmx_moltype_t    *molt,
         return;
     }
 
-    atom = molt->atoms.atom;
+    const t_atom *atom = molt->atoms.atom.data();
 
     /* Still looks like a solvent, time to check parameters */
 
@@ -699,7 +698,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
         cginfo = cginfo_mb[mb].cginfo;
 
         /* Set constraints flags for constrained atoms */
-        snew(a_con, molt->atoms.nr);
+        snew(a_con, molt->atoms.getNatoms());
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             if (interaction_function[ftype].flags & IF_CONSTRAINT)
@@ -923,7 +922,7 @@ static bool set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
     {
         int            nmol  = molb.nmol;
         const t_atoms *atoms = &mtop->moltype[molb.type].atoms;
-        for (int i = 0; i < atoms->nr; i++)
+        for (int i = 0; i < atoms->getNatoms(); i++)
         {
             q       = atoms->atom[i].q;
             qsum   += nmol*q;
@@ -945,7 +944,7 @@ static bool set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
         {
             int            nmol  = molb.nmol;
             const t_atoms *atoms = &mtop->moltype[molb.type].atoms;
-            for (int i = 0; i < atoms->nr; i++)
+            for (int i = 0; i < atoms->getNatoms(); i++)
             {
                 q       = atoms->atom[i].qB;
                 qsum   += nmol*q;
@@ -1079,7 +1078,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                 int nmol = molb.nmol;
                 atoms    = &mtop->moltype[molb.type].atoms;
                 excl     = &mtop->moltype[molb.type].excls;
-                for (int i = 0; (i < atoms->nr); i++)
+                for (int i = 0; (i < atoms->getNatoms()); i++)
                 {
                     if (q == 0)
                     {
@@ -1134,7 +1133,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
             {
                 const gmx_molblock_t &molb = mtop->molblock[mb];
                 atoms                      = &mtop->moltype[molb.type].atoms;
-                for (j = 0; j < atoms->nr; j++)
+                for (j = 0; j < atoms->getNatoms(); j++)
                 {
                     nmolc = molb.nmol;
                     /* Remove the interaction of the test charge group
@@ -1242,7 +1241,7 @@ static real calcBuckinghamBMax(FILE *fplog, const gmx_mtop_t *mtop)
     for (size_t mt1 = 0; mt1 < mtop->moltype.size(); mt1++)
     {
         at1 = &mtop->moltype[mt1].atoms;
-        for (i = 0; (i < at1->nr); i++)
+        for (i = 0; (i < at1->getNatoms()); i++)
         {
             tpi = at1->atom[i].type;
             if (tpi >= ntypes)
@@ -1253,7 +1252,7 @@ static real calcBuckinghamBMax(FILE *fplog, const gmx_mtop_t *mtop)
             for (size_t mt2 = mt1; mt2 < mtop->moltype.size(); mt2++)
             {
                 at2 = &mtop->moltype[mt2].atoms;
-                for (j = 0; (j < at2->nr); j++)
+                for (j = 0; (j < at2->getNatoms()); j++)
                 {
                     tpj = at2->atom[j].type;
                     if (tpj >= ntypes)
@@ -1284,7 +1283,7 @@ static real calcBuckinghamBMax(FILE *fplog, const gmx_mtop_t *mtop)
 
 static void make_nbf_tables(FILE *fp,
                             const interaction_const_t *ic, real rtab,
-                            const char *tabfn, char *eg1, char *eg2,
+                            const char *tabfn, const char *eg1, const char *eg2,
                             t_nblists *nbl)
 {
     char buf[STRLEN];
@@ -2935,8 +2934,8 @@ void init_forcerec(FILE                             *fp,
                         }
                         /* Read the table file with the two energy groups names appended */
                         make_nbf_tables(fp, ic, rtab, tabfn,
-                                        *mtop->groups.grpname[nm_ind[egi]],
-                                        *mtop->groups.grpname[nm_ind[egj]],
+                                        mtop->groups.grpname[nm_ind[egi]]->c_str(),
+                                        mtop->groups.grpname[nm_ind[egj]]->c_str(),
                                         &fr->nblists[m]);
                         m++;
                     }

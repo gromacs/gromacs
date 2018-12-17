@@ -148,12 +148,11 @@ static void fill_ang(int nft, const int *ft, int fac,
     int           f, ftype, i, j, indg, nr_fac;
     gmx_bool      bUse;
     const t_idef *idef;
-    t_atom       *atom;
     t_iatom      *ia;
 
 
     idef = &top->idef;
-    atom = top->atoms.atom;
+    const t_atom *atom = top->atoms.atom.data();
 
     for (f = 0; f < nft; f++)
     {

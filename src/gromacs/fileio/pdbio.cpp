@@ -359,7 +359,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         resind        = atoms->atom[i].resind;
         chainnum      = atoms->resinfo[resind].chainnum;
         p_lastrestype = p_restype;
-        gmx_residuetype_get_type(rt, *atoms->resinfo[resind].name, &p_restype);
+        gmx_residuetype_get_type(rt, atoms->resinfo[resind].name->c_str(), &p_restype);
 
         /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
         if (bTerSepChains && ii > 0 && chainnum != lastchainnum)
@@ -372,9 +372,9 @@ void write_pdbfile_indexed(FILE *out, const char *title,
             lastchainnum    = chainnum;
         }
 
-        strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm)-1);
+        strncpy(resnm, atoms->resinfo[resind].name->c_str(), sizeof(resnm)-1);
         resnm[sizeof(resnm)-1] = 0;
-        strncpy(nm, *atoms->atomname[i], sizeof(nm)-1);
+        strncpy(nm, atoms->atomname[i]->c_str(), sizeof(nm)-1);
         nm[sizeof(nm)-1] = 0;
 
         /* rename HG12 to 2HG1, etc. */
@@ -399,7 +399,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
             resnr = resnr % 10000;
         }
         t_pdbinfo pdbinfo;
-        if (atoms->pdbinfo != nullptr)
+        if (!atoms->pdbinfo.empty())
         {
             pdbinfo = atoms->pdbinfo[i];
         }
@@ -431,7 +431,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                                      bfac,
                                      atoms->atom[i].elem);
 
-            if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
+            if (!atoms->pdbinfo.empty() && atoms->pdbinfo[i].bAnisotropic)
             {
                 fprintf(out, "ANISOU%5d  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
                         (i+1)%100000, nm, resnm, ch, resnr,
@@ -476,13 +476,13 @@ void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rve
 {
     int i, *index;
 
-    snew(index, atoms->nr);
-    for (i = 0; i < atoms->nr; i++)
+    snew(index, atoms->getNatoms());
+    for (i = 0; i < atoms->getNatoms(); i++)
     {
         index[i] = i;
     }
     write_pdbfile_indexed(out, title, atoms, x, ePBC, box, chainid, model_nr,
-                          atoms->nr, index, conect, bTerSepChains, false);
+                          atoms->getNatoms(), index, conect, bTerSepChains, false);
     sfree(index);
 }
 
@@ -536,7 +536,7 @@ static void read_anisou(char line[], int natom, t_atoms *atoms)
     atomnr = std::strtol(anr, nullptr, 10);
     for (i = natom-1; (i >= 0); i--)
     {
-        if ((std::strcmp(anm, *(atoms->atomname[i])) == 0) &&
+        if ((std::strcmp(anm, atoms->atomname[i]->c_str()) == 0) &&
             (atomnr == atoms->pdbinfo[i].atomnr))
         {
             break;
@@ -565,7 +565,7 @@ static void read_anisou(char line[], int natom, t_atoms *atoms)
     }
 }
 
-void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
+void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
 {
     int    i, atomnumber, len;
     size_t k;
@@ -573,11 +573,11 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
     char   nc = '\0';
     real   eval;
 
-    if (!atoms->pdbinfo)
+    if (atoms->pdbinfo.empty())
     {
         gmx_incons("Trying to deduce atomnumbers when no pdb information is present");
     }
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         std::strcpy(anm, atoms->pdbinfo[i].atomnm);
         std::strcpy(anm_copy, atoms->pdbinfo[i].atomnm);
@@ -618,6 +618,8 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
         }
         if (atomNumberSet)
         {
+            // t_atoms can not be const because of this here
+            // How did this even work before???
             atoms->atom[i].atomnumber = atomnumber;
             ptr = gmx_atomprop_element(aps, atomnumber);
             if (debug)
@@ -634,7 +636,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
     }
 }
 
-static int read_atom(t_symtab *symtab,
+static int read_atom(SymbolTable *symtab,
                      const char line[], int type, int natom,
                      t_atoms *atoms, rvec x[], int chainnum, gmx_bool bChange)
 {
@@ -647,10 +649,10 @@ static int read_atom(t_symtab *symtab,
     char          chainid;
     int           resnr, atomnumber;
 
-    if (natom >= atoms->nr)
+    if (natom >= atoms->getNatoms())
     {
         gmx_fatal(FARGS, "\nFound more atoms (%d) in pdb file than expected (%d)",
-                  natom+1, atoms->nr);
+                  natom+1, atoms->getNatoms());
     }
 
     /* Skip over type */
@@ -735,13 +737,13 @@ static int read_atom(t_symtab *symtab,
     elem[k] = nc;
     trim(elem);
 
-    if (atoms->atom)
+    if (!atoms->atom.empty())
     {
         atomn = &(atoms->atom[natom]);
         if ((natom == 0) ||
             atoms->resinfo[atoms->atom[natom-1].resind].nr != resnr ||
             atoms->resinfo[atoms->atom[natom-1].resind].ic != resic ||
-            (strcmp(*atoms->resinfo[atoms->atom[natom-1].resind].name, resnm) != 0))
+            (strcmp(atoms->resinfo[atoms->atom[natom-1].resind].name->c_str(), resnm) != 0))
         {
             if (natom == 0)
             {
@@ -751,7 +753,6 @@ static int read_atom(t_symtab *symtab,
             {
                 atomn->resind = atoms->atom[natom-1].resind + 1;
             }
-            atoms->nres = atomn->resind + 1;
             t_atoms_set_resinfo(atoms, natom, symtab, resnm, resnr, resic, chainnum, chainid);
         }
         else
@@ -771,7 +772,7 @@ static int read_atom(t_symtab *symtab,
     x[natom][XX] = strtod(xc, nullptr)*0.1;
     x[natom][YY] = strtod(yc, nullptr)*0.1;
     x[natom][ZZ] = strtod(zc, nullptr)*0.1;
-    if (atoms->pdbinfo)
+    if (!atoms->pdbinfo.empty())
     {
         atoms->pdbinfo[natom].type   = type;
         atoms->pdbinfo[natom].atomnr = strtol(anr, nullptr, 10);
@@ -903,7 +904,7 @@ void gmx_conect_add(gmx_conect conect, int ai, int aj)
 }
 
 int read_pdbfile(FILE *in, char *title, int *model_nr,
-                 t_atoms *atoms, t_symtab *symtab, rvec x[], int *ePBC,
+                 t_atoms *atoms, SymbolTable *symtab, rvec x[], int *ePBC,
                  matrix box, gmx_bool bChange, gmx_conect conect)
 {
     gmx_conect_t *gc = conect;
@@ -929,7 +930,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
     atoms->haveCharge  = FALSE;
     atoms->haveType    = FALSE;
     atoms->haveBState  = FALSE;
-    atoms->havePdbInfo = (atoms->pdbinfo != nullptr);
+    atoms->havePdbInfo = (!atoms->pdbinfo.empty());
 
     bCOMPND  = FALSE;
     title[0] = '\0';
@@ -1079,7 +1080,7 @@ void get_pdb_coordnum(FILE *in, int *natoms)
 }
 
 void gmx_pdb_read_conf(const char *infile,
-                       t_symtab *symtab, char **name, t_atoms *atoms,
+                       SymbolTable *symtab, char **name, t_atoms *atoms,
                        rvec x[], int *ePBC, matrix box)
 {
     FILE *in = gmx_fio_fopen(infile, "r");

@@ -75,23 +75,23 @@ typedef struct {
 } t_rbondeds;
 
 /* RESIDUES (rtp) */
-typedef struct {
-    char         *resname;
+struct t_restp {
+    std::string            resname;
     /* The base file name this rtp entry was read from */
-    char         *filebase;
+    std::string            filebase;
     /* atom data */
-    int           natom;
-    t_atom       *atom;
-    char       ***atomname;
-    int          *cgnr;
+    int                    natom = 0;
+    std::vector<t_atom>    atom;
+    std::vector<SymbolPtr> atomname;
+    std::vector<int>       cgnr;
     /* Bonded interaction setup */
-    bool          bKeepAllGeneratedDihedrals;
-    int           nrexcl;
-    bool          bGenerateHH14Interactions;
-    bool          bRemoveDihedralIfWithImproper;
+    bool                   bKeepAllGeneratedDihedrals    = false;
+    int                    nrexcl                        = 0;
+    bool                   bGenerateHH14Interactions     = false;
+    bool                   bRemoveDihedralIfWithImproper = false;
     /* list of bonded interactions to add */
-    t_rbondeds    rb[ebtsNR];
-} t_restp;
+    t_rbondeds             rb[ebtsNR];
+};
 
 /* Block to hack residues */
 typedef struct {

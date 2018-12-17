@@ -53,7 +53,7 @@
 
 #define CHAR_SHIFT 24
 
-static int read_g96_pos(char line[], t_symtab *symtab,
+static int read_g96_pos(char line[], SymbolTable *symtab,
                         FILE *fp, const char *infile,
                         t_trxframe *fr)
 {
@@ -133,16 +133,12 @@ static int read_g96_pos(char line[], t_symtab *symtab,
                     {
                         oldres = resnr;
                         newres++;
-                        if (newres >= atoms->nr)
+                        if (newres >= atoms->getNatoms())
                         {
                             gmx_fatal(FARGS, "More residues than atoms in %s (natoms = %d)",
-                                      infile, atoms->nr);
+                                      infile, atoms->getNatoms());
                         }
                         atoms->atom[natoms].resind = newres;
-                        if (newres+1 > atoms->nres)
-                        {
-                            atoms->nres = newres+1;
-                        }
                         t_atoms_set_resinfo(atoms, natoms, symtab, resnm, resnr, ' ', 0, ' ');
                     }
                     else
@@ -229,7 +225,7 @@ static int read_g96_vel(char line[], FILE *fp, const char *infile,
 }
 
 int read_g96_conf(FILE *fp, const char *infile, char **name, t_trxframe *fr,
-                  t_symtab *symtab, char *line)
+                  SymbolTable *symtab, char *line)
 {
     gmx_bool   bAtStart, bTime, bAtoms, bPos, bVel, bBox, bEnd, bFinished;
     int        natoms, nbp;
@@ -390,8 +386,8 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
                 }
                 fprintf(out, "%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
                         (atoms->resinfo[atoms->atom[a].resind].nr) % 100000,
-                        *atoms->resinfo[atoms->atom[a].resind].name,
-                        *atoms->atomname[a], (i+1) % 10000000,
+                        atoms->resinfo[atoms->atom[a].resind].name->c_str(),
+                        atoms->atomname[a]->c_str(), (i+1) % 10000000,
                         fr->x[a][XX], fr->x[a][YY], fr->x[a][ZZ]);
             }
         }
@@ -431,8 +427,8 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
                 }
                 fprintf(out, "%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
                         (atoms->resinfo[atoms->atom[a].resind].nr) % 100000,
-                        *atoms->resinfo[atoms->atom[a].resind].name,
-                        *atoms->atomname[a], (i+1) % 10000000,
+                        atoms->resinfo[atoms->atom[a].resind].name->c_str(),
+                        atoms->atomname[a]->c_str(), (i+1) % 10000000,
                         fr->v[a][XX], fr->v[a][YY], fr->v[a][ZZ]);
             }
         }

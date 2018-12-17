@@ -164,7 +164,7 @@ static const char *const esp_prop[espNR] = {
 };
 
 void gmx_espresso_read_conf(const char *infile,
-                            t_symtab *symtab, char **name, t_atoms *atoms,
+                            SymbolTable *symtab, char **name, t_atoms *atoms,
                             rvec x[], rvec *v, matrix box)
 {
     FILE     *fp;
@@ -343,11 +343,9 @@ void gmx_espresso_read_conf(const char *infile,
                     i++;
                 }
             }
-            atoms->nres = atoms->nr;
-
-            if (i != atoms->nr)
+            if (i != atoms->getNatoms())
             {
-                gmx_fatal(FARGS, "Internal inconsistency in Espresso routines, read %d atoms, expected %d atoms", i, atoms->nr);
+                gmx_fatal(FARGS, "Internal inconsistency in Espresso routines, read %d atoms, expected %d atoms", i, atoms->getNatoms());
             }
         }
         else if (level == 1 && std::strcmp(word, "variable") == 0 && !bFoundVariable)

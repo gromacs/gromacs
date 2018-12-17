@@ -90,7 +90,7 @@ struct gmx_ana_indexgrps_t
     /** Array of index groups. */
     gmx_ana_index_t          *g;
     /** Group names. */
-    std::vector<std::string>  names;
+    std::vector<SymbolPtr>    names;
 };
 
 /*!
@@ -110,19 +110,19 @@ void
 gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
                        const char *fnm)
 {
-    t_blocka *block = nullptr;
-    char    **names = nullptr;
+    t_blocka              *block = nullptr;
+    std::vector<SymbolPtr> names;
 
     if (fnm)
     {
-        block = init_index(fnm, &names);
+        block = init_index(fnm, &top->symtab, &names);
     }
     else if (top)
     {
         block = new_blocka();
         // TODO: Propagate mtop further.
         t_atoms atoms = gmx_mtop_global_atoms(top);
-        analyse(&atoms, block, &names, FALSE, FALSE);
+        analyse(atoms, block, &names, &top->symtab, FALSE, FALSE);
         done_atom(&atoms);
     }
     else
@@ -150,20 +150,10 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
     }
     catch (...)
     {
-        for (int i = 0; i < block->nr; ++i)
-        {
-            sfree(names[i]);
-        }
-        sfree(names);
         done_blocka(block);
         sfree(block);
         throw;
     }
-    for (int i = 0; i < block->nr; ++i)
-    {
-        sfree(names[i]);
-    }
-    sfree(names);
     done_blocka(block);
     sfree(block);
 }
@@ -226,7 +216,7 @@ gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
 
     if (destName != nullptr)
     {
-        *destName = src->names[n];
+        *destName = src->names[n]->c_str();
     }
     gmx_ana_index_copy(dest, &src->g[n], true);
     return true;
@@ -247,17 +237,15 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
                        gmx_ana_indexgrps_t *src,
                        const char *name)
 {
-    const char **names;
+    std::vector<SymbolPtr> names(src->nr);
 
     destName->clear();
-    snew(names, src->nr);
     for (int i = 0; i < src->nr; ++i)
     {
-        names[i] = src->names[i].c_str();
+        names[i] = src->names[i];
     }
-    int n = find_group(const_cast<char *>(name), src->nr,
-                       const_cast<char **>(names));
-    sfree(names);
+    int n = find_group(name, src->nr,
+                       names);
     if (n < 0)
     {
         dest->isize = 0;
@@ -279,7 +267,7 @@ gmx_ana_indexgrps_print(gmx::TextWriter *writer, gmx_ana_indexgrps_t *g, int max
     for (int i = 0; i < g->nr; ++i)
     {
         writer->writeString(gmx::formatString(" Group %2d \"%s\" ",
-                                              i, g->names[i].c_str()));
+                                              i, g->names[i]->c_str()));
         gmx_ana_index_dump(writer, &g->g[i], maxn);
     }
 }
@@ -915,7 +903,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                         mtopGetMolblockIndex(top, ai, &molb, &molnr, &atnr_mol);
                         const t_atoms &mol_atoms = top->moltype[top->molblock[molb].type].atoms;
                         int            last_atom = atnr_mol + 1;
-                        while (last_atom < mol_atoms.nr
+                        while (last_atom < mol_atoms.getNatoms()
                                && mol_atoms.atom[last_atom].resind == id)
                         {
                             ++last_atom;

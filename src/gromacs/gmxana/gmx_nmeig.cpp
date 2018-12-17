@@ -348,8 +348,8 @@ static void analyzeThermochemistry(FILE                      *fp,
                                             index.data(), top.atoms.atom, xcm, FALSE);
     double                 Strans = calcTranslationalEntropy(tmass, T, P);
     std::vector<gmx::RVec> x_com;
-    x_com.resize(top.atoms.nr);
-    for (int i = 0; i < top.atoms.nr; i++)
+    x_com.resize(top.atoms.getNatoms());
+    for (int i = 0; i < top.atoms.getNatoms(); i++)
     {
         copy_rvec(top_x[i], x_com[i]);
     }
@@ -392,7 +392,7 @@ static void analyzeThermochemistry(FILE                      *fp,
     auto   eFreq  = gmx::arrayRefFromArray(eigfreq, nFreq);
     double Svib   = calcQuasiHarmonicEntropy(eFreq, T, linear, scale_factor);
 
-    double Srot   = calcRotationalEntropy(T, top.atoms.nr,
+    double Srot   = calcRotationalEntropy(T, top.atoms.getNatoms(),
                                           linear, theta, sigma_r);
     fprintf(fp, "Translational entropy %g J/mol K\n", Strans);
     fprintf(fp, "Rotational entropy    %g J/mol K\n", Srot);

@@ -103,13 +103,13 @@ gmx_bool new_data(t_xrama *xr)
     return TRUE;
 }
 
-static int find_atom(const char *find, char ***names, int start, int nr)
+static int find_atom(const char *find, gmx::ArrayRef<const SymbolPtr> names, int start, int nr)
 {
     int i;
 
     for (i = start; (i < nr); i++)
     {
-        if (std::strcmp(find, *names[i]) == 0)
+        if (std::strcmp(find, names[i]->c_str()) == 0)
         {
             return i;
         }
@@ -137,7 +137,7 @@ static void add_xr(t_xrama *xr, const int ff[5], const t_atoms *atoms)
     xr->pp[xr->npp].iphi  = xr->ndih-2;
     xr->pp[xr->npp].ipsi  = xr->ndih-1;
     xr->pp[xr->npp].bShow = FALSE;
-    sprintf(buf, "%s-%d", *atoms->resinfo[atoms->atom[ff[1]].resind].name,
+    sprintf(buf, "%s-%d", atoms->resinfo[atoms->atom[ff[1]].resind].name->c_str(),
             atoms->resinfo[atoms->atom[ff[1]].resind].nr);
     xr->pp[xr->npp].label = gmx_strdup(buf);
     xr->npp++;
@@ -149,12 +149,12 @@ static void get_dih(t_xrama *xr, const t_atoms *atoms)
     int    i;
     size_t j;
 
-    for (i = 0; (i < atoms->nr); )
+    for (i = 0; (i < atoms->getNatoms()); )
     {
         found = i;
         for (j = 0; (j < NPP); j++)
         {
-            if ((ff[j] = find_atom(pp_pat[j], atoms->atomname, found, atoms->nr)) == -1)
+            if ((ff[j] = find_atom(pp_pat[j], atoms->atomname, found, atoms->getNatoms())) == -1)
             {
                 break;
             }

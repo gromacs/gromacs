@@ -325,7 +325,7 @@ static char *search_resrename(int nrr, rtprename_t *rr,
 }
 
 static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, const int *r_end,
-                          int nrr, rtprename_t *rr, t_symtab *symtab,
+                          int nrr, rtprename_t *rr, SymbolTable *symtab,
                           bool bVerbose)
 {
     int      r, j;
@@ -335,7 +335,7 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, cons
 
     bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == nullptr);
 
-    for (r = 0; r < pdba->nres; r++)
+    for (r = 0; r < pdba->getNresidues(); r++)
     {
         bStart = false;
         bEnd   = false;
@@ -354,7 +354,7 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, cons
             }
         }
 
-        nn = search_resrename(nrr, rr, *pdba->resinfo[r].rtp, bStart, bEnd, false);
+        nn = search_resrename(nrr, rr, pdba->resinfo[r].rtp->c_str(), bStart, bEnd, false);
 
         if (bFFRTPTERRNM && nn == nullptr && (bStart || bEnd))
         {
@@ -364,15 +364,15 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, cons
              * Check if we need to rename it because it is terminal.
              */
             nn = search_resrename(nrr, rr,
-                                  *pdba->resinfo[r].rtp, bStart, bEnd, true);
+                                  pdba->resinfo[r].rtp->c_str(), bStart, bEnd, true);
         }
 
-        if (nn != nullptr && strcmp(*pdba->resinfo[r].rtp, nn) != 0)
+        if (nn != nullptr && strcmp(pdba->resinfo[r].rtp->c_str(), nn) != 0)
         {
             if (bVerbose)
             {
                 printf("Changing rtp entry of residue %d %s to '%s'\n",
-                       pdba->resinfo[r].nr, *pdba->resinfo[r].name, nn);
+                       pdba->resinfo[r].nr, pdba->resinfo[r].name->c_str(), nn);
             }
             pdba->resinfo[r].rtp = put_symtab(symtab, nn);
         }
@@ -383,9 +383,9 @@ static void pdbres_to_gmxrtp(t_atoms *pdba)
 {
     int i;
 
-    for (i = 0; (i < pdba->nres); i++)
+    for (i = 0; (i < pdba->getNresidues()); i++)
     {
-        if (pdba->resinfo[i].rtp == nullptr)
+        if ((*pdba->resinfo[i].rtp).empty())
         {
             pdba->resinfo[i].rtp = pdba->resinfo[i].name;
         }
@@ -393,14 +393,11 @@ static void pdbres_to_gmxrtp(t_atoms *pdba)
 }
 
 static void rename_pdbres(t_atoms *pdba, const char *oldnm, const char *newnm,
-                          bool bFullCompare, t_symtab *symtab)
+                          bool bFullCompare, SymbolTable *symtab)
 {
-    char *resnm;
-    int   i;
-
-    for (i = 0; (i < pdba->nres); i++)
+    for (int i = 0; (i < pdba->getNresidues()); i++)
     {
-        resnm = *pdba->resinfo[i].name;
+        const char *resnm = pdba->resinfo[i].name->c_str();
         if ((bFullCompare && (gmx_strcasecmp(resnm, oldnm) == 0)) ||
             (!bFullCompare && strstr(resnm, oldnm) != nullptr))
         {
@@ -411,15 +408,12 @@ static void rename_pdbres(t_atoms *pdba, const char *oldnm, const char *newnm,
 }
 
 static void rename_bb(t_atoms *pdba, const char *oldnm, const char *newnm,
-                      bool bFullCompare, t_symtab *symtab)
+                      bool bFullCompare, SymbolTable *symtab)
 {
-    char *bbnm;
-    int   i;
-
-    for (i = 0; (i < pdba->nres); i++)
+    for (int i = 0; (i < pdba->getNresidues()); i++)
     {
         /* We have not set the rtp name yes, use the residue name */
-        bbnm = *pdba->resinfo[i].name;
+        const char *bbnm = pdba->resinfo[i].name->c_str();
         if ((bFullCompare && (gmx_strcasecmp(bbnm, oldnm) == 0)) ||
             (!bFullCompare && strstr(bbnm, oldnm) != nullptr))
         {
@@ -432,21 +426,17 @@ static void rename_bb(t_atoms *pdba, const char *oldnm, const char *newnm,
 static void rename_bbint(t_atoms *pdba, const char *oldnm,
                          const char *gettp(int, int, const rtprename_t *),
                          bool bFullCompare,
-                         t_symtab *symtab,
+                         SymbolTable *symtab,
                          int nrr, const rtprename_t *rr)
 {
-    int         i;
-    const char *ptr;
-    char       *bbnm;
-
-    for (i = 0; i < pdba->nres; i++)
+    for (int i = 0; i < pdba->getNresidues(); i++)
     {
         /* We have not set the rtp name yet, use the residue name */
-        bbnm = *pdba->resinfo[i].name;
+        const char *bbnm = pdba->resinfo[i].name->c_str();
         if ((bFullCompare && (strcmp(bbnm, oldnm) == 0)) ||
             (!bFullCompare && strstr(bbnm, oldnm) != nullptr))
         {
-            ptr                  = gettp(i, nrr, rr);
+            const char *ptr                  = gettp(i, nrr, rr);
             pdba->resinfo[i].rtp = put_symtab(symtab, ptr);
         }
     }
@@ -454,27 +444,26 @@ static void rename_bbint(t_atoms *pdba, const char *oldnm,
 
 static void check_occupancy(t_atoms *atoms, const char *filename, bool bVerbose)
 {
-    int i, ftp;
     int nzero   = 0;
     int nnotone = 0;
 
-    ftp = fn2ftp(filename);
-    if (!atoms->pdbinfo || ((ftp != efPDB) && (ftp != efBRK) && (ftp != efENT)))
+    int ftp = fn2ftp(filename);
+    if (atoms->pdbinfo.empty() || ((ftp != efPDB) && (ftp != efBRK) && (ftp != efENT)))
     {
         fprintf(stderr, "No occupancies in %s\n", filename);
     }
     else
     {
-        for (i = 0; (i < atoms->nr); i++)
+        for (int i = 0; (i < atoms->getNatoms()); i++)
         {
             if (atoms->pdbinfo[i].occup != 1)
             {
                 if (bVerbose)
                 {
                     fprintf(stderr, "Occupancy for atom %s%d-%s is %f rather than 1\n",
-                            *atoms->resinfo[atoms->atom[i].resind].name,
+                            atoms->resinfo[atoms->atom[i].resind].name->c_str(),
                             atoms->resinfo[ atoms->atom[i].resind].nr,
-                            *atoms->atomname[i],
+                            atoms->atomname[i]->c_str(),
                             atoms->pdbinfo[i].occup);
                 }
                 if (atoms->pdbinfo[i].occup == 0)
@@ -487,7 +476,7 @@ static void check_occupancy(t_atoms *atoms, const char *filename, bool bVerbose)
                 }
             }
         }
-        if (nzero == atoms->nr)
+        if (nzero == atoms->getNatoms())
         {
             fprintf(stderr, "All occupancy fields zero. This is probably not an X-Ray structure\n");
         }
@@ -498,7 +487,7 @@ static void check_occupancy(t_atoms *atoms, const char *filename, bool bVerbose)
                     "WARNING: there were %d atoms with zero occupancy and %d atoms with\n"
                     "         occupancy unequal to one (out of %d atoms). Check your pdb file.\n"
                     "\n",
-                    nzero, nnotone, atoms->nr);
+                    nzero, nnotone, atoms->getNatoms());
         }
         else
         {
@@ -509,10 +498,7 @@ static void check_occupancy(t_atoms *atoms, const char *filename, bool bVerbose)
 
 static void write_posres(const char *fn, t_atoms *pdba, real fc)
 {
-    FILE *fp;
-    int   i;
-
-    fp = gmx_fio_fopen(fn, "w");
+    FILE *fp = gmx_fio_fopen(fn, "w");
     fprintf(fp,
             "; In this topology include file, you will find position restraint\n"
             "; entries for all the heavy atoms in your original pdb file.\n"
@@ -522,9 +508,9 @@ static void write_posres(const char *fn, t_atoms *pdba, real fc)
             "[ position_restraints ]\n"
             "; %4s%6s%8s%8s%8s\n", "atom", "type", "fx", "fy", "fz"
             );
-    for (i = 0; (i < pdba->nr); i++)
+    for (int i = 0; (i < pdba->getNatoms()); i++)
     {
-        if (!is_hydrogen(*pdba->atomname[i]) && !is_dummymass(*pdba->atomname[i]))
+        if (!is_hydrogen(pdba->atomname[i]->c_str()) && !is_dummymass(pdba->atomname[i]->c_str()))
         {
             fprintf(fp, "%6d%6d  %g  %g  %g\n", i+1, 1, fc, fc, fc);
         }
@@ -535,7 +521,7 @@ static void write_posres(const char *fn, t_atoms *pdba, real fc)
 static int read_pdball(const char *inf, bool bOutput, const char *outf, char **title,
                        t_atoms *atoms, rvec **x,
                        int *ePBC, matrix box, bool bRemoveH,
-                       t_symtab *symtab, gmx_residuetype_t *rt, const char *watres,
+                       SymbolTable *symtab, gmx_residuetype_t *rt, const char *watres,
                        gmx_atomprop_t aps, bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
@@ -544,10 +530,10 @@ static int read_pdball(const char *inf, bool bOutput, const char *outf, char **t
     /* READ IT */
     printf("Reading %s...\n", inf);
     readConfAndAtoms(inf, symtab, title, atoms, ePBC, x, nullptr, box);
-    natom           = atoms->nr;
-    if (atoms->pdbinfo == nullptr)
+    natom           = atoms->getNatoms();
+    if (atoms->pdbinfo.empty())
     {
-        snew(atoms->pdbinfo, atoms->nr);
+        atoms->pdbinfo.resize(atoms->getNatoms());
     }
     if (fn2ftp(inf) == efPDB)
     {
@@ -556,9 +542,9 @@ static int read_pdball(const char *inf, bool bOutput, const char *outf, char **t
     if (bRemoveH)
     {
         new_natom = 0;
-        for (i = 0; i < atoms->nr; i++)
+        for (i = 0; i < atoms->getNatoms(); i++)
         {
-            if (!is_hydrogen(*atoms->atomname[i]))
+            if (!is_hydrogen(atoms->atomname[i]->c_str()))
             {
                 atoms->atom[new_natom]     = atoms->atom[i];
                 atoms->atomname[new_natom] = atoms->atomname[i];
@@ -567,7 +553,9 @@ static int read_pdball(const char *inf, bool bOutput, const char *outf, char **t
                 new_natom++;
             }
         }
-        atoms->nr = new_natom;
+        atoms->atom.resize(new_natom);
+        atoms->atomname.resize(new_natom);
+        atoms->pdbinfo.resize(new_natom);
         natom     = new_natom;
     }
 
@@ -602,7 +590,7 @@ static void process_chain(t_atoms *pdba, rvec *x,
                           bool bTrpU, bool bPheU, bool bTyrU,
                           bool bLysMan, bool bAspMan, bool bGluMan,
                           bool bHisMan, bool bArgMan, bool bGlnMan,
-                          real angle, real distance, t_symtab *symtab,
+                          real angle, real distance, SymbolTable *symtab,
                           int nrr, const rtprename_t *rr)
 {
     /* Rename aromatics, lys, asp and histidine */
@@ -649,7 +637,7 @@ static void process_chain(t_atoms *pdba, rvec *x,
 
     if (!bHisMan)
     {
-        set_histp(pdba, x, angle, distance);
+        set_histp(pdba, x, angle, distance, symtab);
     }
     else
     {
@@ -696,30 +684,27 @@ static bool pdbicomp(const t_pdbindex &a, const t_pdbindex &b)
 }
 
 static void sort_pdbatoms(t_restp restp[],
-                          int natoms, t_atoms **pdbaptr, rvec **x,
-                          t_blocka *block, char ***gnames)
+                          int natoms, t_atoms *pdbaptr, rvec **x,
+                          t_blocka *block, std::vector<SymbolPtr> *gnames,
+                          SymbolTable *symtab)
 {
-    t_atoms     *pdba, *pdbnew;
     rvec       **xnew;
     int          i, j;
     t_restp     *rptr;
     t_pdbindex  *pdbi;
     int         *a;
-    char        *atomnm;
 
-    pdba   = *pdbaptr;
-    natoms = pdba->nr;
-    pdbnew = nullptr;
+    natoms = pdbaptr->getNatoms();
     snew(xnew, 1);
     snew(pdbi, natoms);
 
     for (i = 0; i < natoms; i++)
     {
-        atomnm = *pdba->atomname[i];
-        rptr   = &restp[pdba->atom[i].resind];
+        const char *atomnm = pdbaptr->atomname[i]->c_str();
+        rptr   = &restp[pdbaptr->atom[i].resind];
         for (j = 0; (j < rptr->natom); j++)
         {
-            if (gmx_strcasecmp(atomnm, *(rptr->atomname[j])) == 0)
+            if (gmx_strcasecmp(atomnm, rptr->atomname[j]->c_str()) == 0)
             {
                 break;
             }
@@ -731,9 +716,9 @@ static void sort_pdbatoms(t_restp restp[],
             sprintf(buf,
                     "Atom %s in residue %s %d was not found in rtp entry %s with %d atoms\n"
                     "while sorting atoms.\n%s", atomnm,
-                    *pdba->resinfo[pdba->atom[i].resind].name,
-                    pdba->resinfo[pdba->atom[i].resind].nr,
-                    rptr->resname,
+                    pdbaptr->resinfo[pdbaptr->atom[i].resind].name->c_str(),
+                    pdbaptr->resinfo[pdbaptr->atom[i].resind].nr,
+                    rptr->resname.c_str(),
                     rptr->natom,
                     is_hydrogen(atomnm) ?
                     "\nFor a hydrogen, this can be a different protonation state, or it\n"
@@ -745,42 +730,35 @@ static void sort_pdbatoms(t_restp restp[],
             gmx_fatal(FARGS, "%s", buf);
         }
         /* make shadow array to be sorted into indexgroup */
-        pdbi[i].resnr  = pdba->atom[i].resind;
+        pdbi[i].resnr  = pdbaptr->atom[i].resind;
         pdbi[i].j      = j;
         pdbi[i].index  = i;
         pdbi[i].anm1   = atomnm[1];
-        pdbi[i].altloc = pdba->pdbinfo[i].altloc;
+        pdbi[i].altloc = pdbaptr->pdbinfo[i].altloc;
     }
     std::sort(pdbi, pdbi+natoms, pdbicomp);
 
     /* pdba is sorted in pdbnew using the pdbi index */
     snew(a, natoms);
-    snew(pdbnew, 1);
-    init_t_atoms(pdbnew, natoms, true);
+    t_atoms pdbnew;
+    init_t_atoms(&pdbnew, pdbaptr->getNatoms(), true);
     snew(*xnew, natoms);
-    pdbnew->nr   = pdba->nr;
-    pdbnew->nres = pdba->nres;
-    sfree(pdbnew->resinfo);
-    pdbnew->resinfo = pdba->resinfo;
+    pdbnew.resinfo = std::move(pdbaptr->resinfo);
     for (i = 0; i < natoms; i++)
     {
-        pdbnew->atom[i]     = pdba->atom[pdbi[i].index];
-        pdbnew->atomname[i] = pdba->atomname[pdbi[i].index];
-        pdbnew->pdbinfo[i]  = pdba->pdbinfo[pdbi[i].index];
+        pdbnew.atom[i]     = pdbaptr->atom[pdbi[i].index];
+        pdbnew.atomname[i] = pdbaptr->atomname[pdbi[i].index];
+        pdbnew.pdbinfo[i]  = pdbaptr->pdbinfo[pdbi[i].index];
         copy_rvec((*x)[pdbi[i].index], (*xnew)[i]);
         /* make indexgroup in block */
         a[i] = pdbi[i].index;
     }
     /* clean up */
-    sfree(pdba->atomname);
-    sfree(pdba->atom);
-    sfree(pdba->pdbinfo);
-    sfree(pdba);
     sfree(*x);
     /* copy the sorted pdbnew back to pdba */
     *pdbaptr = pdbnew;
     *x       = *xnew;
-    add_grp(block, gnames, natoms, a, "prot_sort");
+    add_grp(block, gnames, symtab, natoms, a, "prot_sort");
     sfree(xnew);
     sfree(a);
     sfree(pdbi);
@@ -792,28 +770,28 @@ static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], bool bVerbose)
     t_resinfo *ri;
 
     printf("Checking for duplicate atoms....\n");
-    oldnatoms    = pdba->nr;
+    oldnatoms    = pdba->getNatoms();
     ndel         = 0;
-    /* NOTE: pdba->nr is modified inside the loop */
-    for (i = 1; (i < pdba->nr); i++)
+    /* NOTE: pdba->getNatoms() is modified inside the loop */
+    for (i = 1; (i < pdba->getNatoms()); i++)
     {
         /* compare 'i' and 'i-1', throw away 'i' if they are identical
            this is a 'while' because multiple alternate locations can be present */
-        while ( (i < pdba->nr) &&
+        while ( (i < pdba->getNatoms()) &&
                 (pdba->atom[i-1].resind == pdba->atom[i].resind) &&
-                (strcmp(*pdba->atomname[i-1], *pdba->atomname[i]) == 0) )
+                (strcmp(pdba->atomname[i-1]->c_str(), pdba->atomname[i]->c_str()) == 0) )
         {
             ndel++;
             if (bVerbose)
             {
                 ri = &pdba->resinfo[pdba->atom[i].resind];
                 printf("deleting duplicate atom %4s  %s%4d%c",
-                       *pdba->atomname[i], *ri->name, ri->nr, ri->ic);
+                       pdba->atomname[i]->c_str(), ri->name->c_str(), ri->nr, ri->ic);
                 if (ri->chainid && (ri->chainid != ' '))
                 {
                     printf(" ch %c", ri->chainid);
                 }
-                if (pdba->pdbinfo)
+                if (!pdba->pdbinfo.empty())
                 {
                     if (pdba->pdbinfo[i].atomnr)
                     {
@@ -826,30 +804,29 @@ static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], bool bVerbose)
                 }
                 printf("\n");
             }
-            pdba->nr--;
+            int newNumber = pdba->getNatoms() -1;
             /* We can not free, since it might be in the symtab */
-            /* sfree(pdba->atomname[i]); */
-            for (j = i; j < pdba->nr; j++)
+            for (j = i; j < newNumber; j++)
             {
                 pdba->atom[j]     = pdba->atom[j+1];
                 pdba->atomname[j] = pdba->atomname[j+1];
-                if (pdba->pdbinfo)
+                if (!pdba->pdbinfo.empty())
                 {
                     pdba->pdbinfo[j]  = pdba->pdbinfo[j+1];
                 }
                 copy_rvec(x[j+1], x[j]);
             }
-            srenew(pdba->atom,     pdba->nr);
-            /* srenew(pdba->atomname, pdba->nr); */
-            srenew(pdba->pdbinfo,  pdba->nr);
+            pdba->atom.resize(newNumber);
+            pdba->atomname.resize(newNumber);
+            pdba->pdbinfo.resize(newNumber);
         }
     }
-    if (pdba->nr != oldnatoms)
+    if (pdba->getNatoms() != oldnatoms)
     {
-        printf("Now there are %d atoms. Deleted %d duplicates.\n", pdba->nr, ndel);
+        printf("Now there are %d atoms. Deleted %d duplicates.\n", pdba->getNatoms(), ndel);
     }
 
-    return pdba->nr;
+    return pdba->getNatoms();
 }
 
 static void
@@ -858,8 +835,8 @@ checkResidueTypeSanity(t_atoms *            pdba,
                        int                  r1,
                        gmx_residuetype_t *  rt)
 {
-    std::string startResidueString = gmx::formatString("%s%d", *pdba->resinfo[r0].name, pdba->resinfo[r0].nr);
-    std::string endResidueString   = gmx::formatString("%s%d", *pdba->resinfo[r1-1].name, pdba->resinfo[r1-1].nr);
+    std::string startResidueString = gmx::formatString("%s%d", pdba->resinfo[r0].name->c_str(), pdba->resinfo[r0].nr);
+    std::string endResidueString   = gmx::formatString("%s%d", pdba->resinfo[r1-1].name->c_str(), pdba->resinfo[r1-1].nr);
 
     // Check whether all residues in chain have the same chain ID.
     bool         allResiduesHaveSameChainID = true;
@@ -873,7 +850,7 @@ checkResidueTypeSanity(t_atoms *            pdba,
         if (chainID != chainID0)
         {
             allResiduesHaveSameChainID  = false;
-            residueString               = gmx::formatString("%s%d", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+            residueString               = gmx::formatString("%s%d", pdba->resinfo[i].name->c_str(), pdba->resinfo[i].nr);
             break;
         }
     }
@@ -894,15 +871,15 @@ checkResidueTypeSanity(t_atoms *            pdba,
         bool        allResiduesHaveSameType = true;
         const char *restype0;
         const char *restype;
-        gmx_residuetype_get_type(rt, *pdba->resinfo[r0].name, &restype0);
+        gmx_residuetype_get_type(rt, pdba->resinfo[r0].name->c_str(), &restype0);
 
         for (int i = r0 + 1; i < r1; i++)
         {
-            gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &restype);
+            gmx_residuetype_get_type(rt, pdba->resinfo[i].name->c_str(), &restype);
             if (gmx_strcasecmp(restype, restype0))
             {
                 allResiduesHaveSameType = false;
-                residueString           = gmx::formatString("%s%d", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+                residueString           = gmx::formatString("%s%d", pdba->resinfo[i].name->c_str(), pdba->resinfo[i].nr);
                 break;
             }
         }
@@ -954,17 +931,17 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
     /* Find the starting terminus (typially N or 5') */
     for (i = r0; i < r1 && *r_start == -1; i++)
     {
-        gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &p_startrestype);
+        gmx_residuetype_get_type(rt, pdba->resinfo[i].name->c_str(), &p_startrestype);
         if (!gmx_strcasecmp(p_startrestype, "Protein") || !gmx_strcasecmp(p_startrestype, "DNA") || !gmx_strcasecmp(p_startrestype, "RNA") )
         {
-            printf("Identified residue %s%d as a starting terminus.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+            printf("Identified residue %s%d as a starting terminus.\n", pdba->resinfo[i].name->c_str(), pdba->resinfo[i].nr);
             *r_start = i;
         }
         else if (!gmx_strcasecmp(p_startrestype, "Ion"))
         {
             if (ionNotes < 5)
             {
-                printf("Residue %s%d has type 'Ion', assuming it is not linked into a chain.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+                printf("Residue %s%d has type 'Ion', assuming it is not linked into a chain.\n", pdba->resinfo[i].name->c_str(), pdba->resinfo[i].nr);
             }
             if (ionNotes == 4)
             {
@@ -984,7 +961,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
                            "should not be part of the chain and instead introduce a break, but that will\n"
                            "be catastrophic if they should in fact be linked. Please check your structure,\n"
                            "and add %s to residuetypes.dat if this was not correct.\n\n",
-                           *pdba->resinfo[i].name, pdba->resinfo[i].nr, *pdba->resinfo[i].name);
+                           pdba->resinfo[i].name->c_str(), pdba->resinfo[i].nr, pdba->resinfo[i].name->c_str());
                 }
                 else
                 {
@@ -992,7 +969,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
                            "This makes it impossible to link them into a molecule, which could either be\n"
                            "correct or a catastrophic error. Please check your structure, and add all\n"
                            "necessary residue names to residuetypes.dat if this was not correct.\n\n",
-                           *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+                           pdba->resinfo[i].name->c_str(), pdba->resinfo[i].nr);
                 }
             }
             if (startWarnings == 4)
@@ -1008,7 +985,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
         /* Go through the rest of the residues, check that they are the same class, and identify the ending terminus. */
         for (i = *r_start; i < r1; i++)
         {
-            gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &p_restype);
+            gmx_residuetype_get_type(rt, pdba->resinfo[i].name->c_str(), &p_restype);
             if (!gmx_strcasecmp(p_restype, p_startrestype) && endWarnings == 0)
             {
                 *r_end = i;
@@ -1017,7 +994,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
             {
                 if (ionNotes < 5)
                 {
-                    printf("Residue %s%d has type 'Ion', assuming it is not linked into a chain.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+                    printf("Residue %s%d has type 'Ion', assuming it is not linked into a chain.\n", pdba->resinfo[i].name->c_str(), pdba->resinfo[i].nr);
                 }
                 if (ionNotes == 4)
                 {
@@ -1038,8 +1015,8 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
                            "introduce a break, but that will be catastrophic if they should in fact be\n"
                            "linked. Please check your structure, and add %s to residuetypes.dat\n"
                            "if this was not correct.\n\n",
-                           *pdba->resinfo[i].name, pdba->resinfo[i].nr, p_restype,
-                           *pdba->resinfo[*r_start].name, pdba->resinfo[*r_start].nr, p_startrestype, *pdba->resinfo[i].name);
+                           pdba->resinfo[i].name->c_str(), pdba->resinfo[i].nr, p_restype,
+                           pdba->resinfo[*r_start].name->c_str(), pdba->resinfo[*r_start].nr, p_startrestype, pdba->resinfo[i].name->c_str());
                 }
                 if (endWarnings == 4)
                 {
@@ -1052,7 +1029,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
 
     if (*r_end >= 0)
     {
-        printf("Identified residue %s%d as a ending terminus.\n", *pdba->resinfo[*r_end].name, pdba->resinfo[*r_end].nr);
+        printf("Identified residue %s%d as a ending terminus.\n", pdba->resinfo[*r_end].name->c_str(), pdba->resinfo[*r_end].nr);
     }
 }
 
@@ -1107,7 +1084,7 @@ modify_chain_numbers(t_atoms *       pdba,
     this_resnum         = -1;
     this_chainid        = '?';
 
-    for (i = 0; i < pdba->nres; i++)
+    for (i = 0; i < pdba->getNresidues(); i++)
     {
         ri                 = &pdba->resinfo[i];
         old_this_chainid   = ri->chainid;
@@ -1119,9 +1096,9 @@ modify_chain_numbers(t_atoms *       pdba,
         prev_resnum        = this_resnum;
         prev_chainid       = this_chainid;
 
-        this_atomname      = *(pdba->atomname[i]);
-        this_atomnum       = (pdba->pdbinfo != nullptr) ? pdba->pdbinfo[i].atomnr : i+1;
-        this_resname       = *ri->name;
+        this_atomname      = pdba->atomname[i]->c_str();
+        this_atomnum       = (!pdba->pdbinfo.empty()) ? pdba->pdbinfo[i].atomnr : i+1;
+        this_resname       = ri->name->c_str();
         this_resnum        = ri->nr;
         this_chainid       = ri->chainid;
 
@@ -1666,7 +1643,7 @@ int pdb2gmx::run()
     }       /* end switch */
 
     /* Open the symbol table */
-    t_symtab symtab;
+    SymbolTable symtab;
     open_symtab(&symtab);
 
     /* Residue type database */
@@ -1777,14 +1754,14 @@ int pdb2gmx::run()
             prev_chainstart    = this_chainstart;
         }
 
-        this_atomname      = *pdba_all.atomname[i];
-        this_atomnum       = (pdba_all.pdbinfo != nullptr) ? pdba_all.pdbinfo[i].atomnr : i+1;
-        this_resname       = *ri->name;
+        this_atomname      = pdba_all.atomname[i]->c_str();
+        this_atomnum       = (!pdba_all.pdbinfo.empty()) ? pdba_all.pdbinfo[i].atomnr : i+1;
+        this_resname       = ri->name->c_str();
         this_resnum        = ri->nr;
         this_chainid       = ri->chainid;
         this_chainnumber   = ri->chainnum;
 
-        bWat_ = gmx_strcasecmp(*ri->name, watres) == 0;
+        bWat_ = gmx_strcasecmp(ri->name->c_str(), watres) == 0;
 
         if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat_ != bPrevWat_))
         {
@@ -1911,32 +1888,28 @@ int pdb2gmx::run()
         snew(chains[i].r_start, pdb_ch[si].nterpairs);
         snew(chains[i].r_end, pdb_ch[si].nterpairs);
 
-        snew(chains[i].pdba, 1);
+        chains[i].pdba = new t_atoms;
         init_t_atoms(chains[i].pdba, pdb_ch[si].natom, true);
-        snew(chains[i].x, chains[i].pdba->nr);
-        for (j = 0; j < chains[i].pdba->nr; j++)
+        snew(chains[i].x, chains[i].pdba->getNatoms());
+        for (j = 0; j < chains[i].pdba->getNatoms(); j++)
         {
-            chains[i].pdba->atom[j] = pdba_all.atom[pdb_ch[si].start+j];
-            snew(chains[i].pdba->atomname[j], 1);
-            *chains[i].pdba->atomname[j] =
-                gmx_strdup(*pdba_all.atomname[pdb_ch[si].start+j]);
-            chains[i].pdba->pdbinfo[j] = pdba_all.pdbinfo[pdb_ch[si].start+j];
+            chains[i].pdba->atom[j]     = pdba_all.atom[pdb_ch[si].start+j];
+            chains[i].pdba->atomname[j] = pdba_all.atomname[pdb_ch[si].start+j];
+            chains[i].pdba->pdbinfo[j]  = pdba_all.pdbinfo[pdb_ch[si].start+j];
             copy_rvec(pdbx[pdb_ch[si].start+j], chains[i].x[j]);
         }
         /* Re-index the residues assuming that the indices are continuous */
         int k                = chains[i].pdba->atom[0].resind;
-        int nres             = chains[i].pdba->atom[chains[i].pdba->nr-1].resind - k + 1;
-        chains[i].pdba->nres = nres;
-        for (int j = 0; j < chains[i].pdba->nr; j++)
+        int nres             = chains[i].pdba->atom[chains[i].pdba->getNatoms()-1].resind - k + 1;
+        for (int j = 0; j < nres; j++)
         {
             chains[i].pdba->atom[j].resind -= k;
         }
-        srenew(chains[i].pdba->resinfo, nres);
+        chains[i].pdba->resinfo.resize(nres);
         for (int j = 0; j < nres; j++)
         {
-            chains[i].pdba->resinfo[j] = pdba_all.resinfo[k+j];
-            snew(chains[i].pdba->resinfo[j].name, 1);
-            *chains[i].pdba->resinfo[j].name = gmx_strdup(*pdba_all.resinfo[k+j].name);
+            chains[i].pdba->resinfo[j]      = pdba_all.resinfo[k+j];
+            chains[i].pdba->resinfo[j].name = pdba_all.resinfo[k+j].name;
             /* make all chain identifiers equal to that of the chain */
             chains[i].pdba->resinfo[j].chainid = pdb_ch[si].chainid;
         }
@@ -1951,14 +1924,14 @@ int pdb2gmx::run()
     printf("There are %d chains and %d blocks of water and "
            "%d residues with %d atoms\n",
            numChains-nwaterchain, nwaterchain,
-           pdba_all.nres, natom);
+           pdba_all.getNresidues(), natom);
 
     printf("\n  %5s  %4s %6s\n", "chain", "#res", "#atoms");
     for (int i = 0; (i < numChains); i++)
     {
         printf("  %d '%c' %5d %6d  %s\n",
                i+1, chains[i].chainid ? chains[i].chainid : '-',
-               chains[i].pdba->nres, chains[i].pdba->nr,
+               chains[i].pdba->getNresidues(), chains[i].pdba->getNatoms(),
                chains[i].bAllWat ? "(only water)" : "");
     }
     printf("\n");
@@ -1972,7 +1945,7 @@ int pdb2gmx::run()
     printf("Reading residue database... (%s)\n", forcefield_);
     std::vector<std::string> rtpf  = fflib_search_file_end(ffdir_, ".rtp", true);
     int                      nrtp  = 0;
-    t_restp                 *restp = nullptr;
+    std::vector<t_restp>     restp;
     for (const auto &filename : rtpf)
     {
         read_resall(filename.c_str(), &nrtp, &restp, atype, &symtab, false);
@@ -1981,7 +1954,7 @@ int pdb2gmx::run()
     {
         /* Not correct with multiple rtp input files with different bonded types */
         FILE *fp = gmx_fio_fopen("new.rtp", "w");
-        print_resall(fp, nrtp, restp, atype);
+        print_resall(fp, nrtp, restp.data(), atype);
         gmx_fio_fclose(fp);
     }
 
@@ -2010,8 +1983,8 @@ int pdb2gmx::run()
         /* set pdba, natom and nres to the current chain */
         pdba     = cc->pdba;
         x        = cc->x;
-        natom    = cc->pdba->nr;
-        int nres = cc->pdba->nres;
+        natom    = cc->pdba->getNatoms();
+        int nres = cc->pdba->getNresidues();
 
         if (cc->chainid && ( cc->chainid != ' ' ) )
         {
@@ -2028,7 +2001,7 @@ int pdb2gmx::run()
                       bHisMan_, bArgMan_, bGlnMan_, angle_, distance_, &symtab,
                       nrtprename, rtprename);
 
-        cc->chainstart[cc->nterpairs] = pdba->nres;
+        cc->chainstart[cc->nterpairs] = pdba->getNresidues();
         j = 0;
         for (int i = 0; i < cc->nterpairs; i++)
         {
@@ -2049,7 +2022,7 @@ int pdb2gmx::run()
         }
 
         /* Check for disulfides and other special bonds */
-        nssbonds = mk_specbonds(pdba, x, bCysMan_, &ssbonds, bVerbose_);
+        nssbonds = mk_specbonds(pdba, x, bCysMan_, &ssbonds, &symtab, bVerbose_);
 
         if (nrtprename > 0)
         {
@@ -2069,7 +2042,7 @@ int pdb2gmx::run()
             if (nNtdb > 0)
             {
                 tdblist = filter_ter(nNtdb, ntdb,
-                                     *pdba->resinfo[cc->r_start[i]].name,
+                                     pdba->resinfo[cc->r_start[i]].name->c_str(),
                                      &ntdblist);
                 if (ntdblist == 0)
                 {
@@ -2082,7 +2055,7 @@ int pdb2gmx::run()
                     if (bTerMan_ && ntdblist > 1)
                     {
                         sprintf(select, "Select start terminus type for %s-%d",
-                                *pdba->resinfo[cc->r_start[i]].name,
+                                pdba->resinfo[cc->r_start[i]].name->c_str(),
                                 pdba->resinfo[cc->r_start[i]].nr);
                         cc->ntdb[i] = choose_ter(ntdblist, tdblist, select);
                     }
@@ -2092,7 +2065,7 @@ int pdb2gmx::run()
                     }
 
                     printf("Start terminus %s-%d: %s\n",
-                           *pdba->resinfo[cc->r_start[i]].name,
+                           pdba->resinfo[cc->r_start[i]].name->c_str(),
                            pdba->resinfo[cc->r_start[i]].nr,
                            (cc->ntdb[i])->name);
                     sfree(tdblist);
@@ -2107,7 +2080,7 @@ int pdb2gmx::run()
             if (nCtdb > 0)
             {
                 tdblist = filter_ter(nCtdb, ctdb,
-                                     *pdba->resinfo[cc->r_end[i]].name,
+                                     pdba->resinfo[cc->r_end[i]].name->c_str(),
                                      &ntdblist);
                 if (ntdblist == 0)
                 {
@@ -2120,7 +2093,7 @@ int pdb2gmx::run()
                     if (bTerMan_ && ntdblist > 1)
                     {
                         sprintf(select, "Select end terminus type for %s-%d",
-                                *pdba->resinfo[cc->r_end[i]].name,
+                                pdba->resinfo[cc->r_end[i]].name->c_str(),
                                 pdba->resinfo[cc->r_end[i]].nr);
                         cc->ctdb[i] = choose_ter(ntdblist, tdblist, select);
                     }
@@ -2129,7 +2102,7 @@ int pdb2gmx::run()
                         cc->ctdb[i] = tdblist[0];
                     }
                     printf("End terminus %s-%d: %s\n",
-                           *pdba->resinfo[cc->r_end[i]].name,
+                           pdba->resinfo[cc->r_end[i]].name->c_str(),
                            pdba->resinfo[cc->r_end[i]].nr,
                            (cc->ctdb[i])->name);
                     sfree(tdblist);
@@ -2143,9 +2116,9 @@ int pdb2gmx::run()
 
         /* lookup hackblocks and rtp for all residues */
         get_hackblocks_rtp(&hb_chain, &restp_chain,
-                           nrtp, restp, pdba->nres, pdba->resinfo,
+                           nrtp, restp.data(), pdba->getNresidues(), pdba->resinfo.data(),
                            cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end,
-                           bAllowMissing_);
+                           &symtab, bAllowMissing_);
         /* ideally, now we would not need the rtp itself anymore, but do
            everything using the hb and restp arrays. Unfortunately, that
            requires some re-thinking of code in gen_vsite.c, which I won't
@@ -2154,15 +2127,14 @@ int pdb2gmx::run()
         rename_atoms(nullptr, ffdir_,
                      pdba, &symtab, restp_chain, false, rt, false, bVerbose_);
 
-        match_atomnames_with_rtp(restp_chain, hb_chain, pdba, x, bVerbose_);
+        match_atomnames_with_rtp(restp_chain, hb_chain, pdba, x, &symtab, bVerbose_);
 
         if (bSort_)
         {
-            t_blocka  *block;
-            char     **gnames;
+            t_blocka              *block;
+            std::vector<SymbolPtr> gnames(1);
             block = new_blocka();
-            snew(gnames, 1);
-            sort_pdbatoms(restp_chain, natom, &pdba, &x, block, &gnames);
+            sort_pdbatoms(restp_chain, natom, pdba, &x, block, &gnames, &symtab);
             remove_duplicate_atoms(pdba, x, bVerbose_);
             if (bIndexSet_)
             {
@@ -2175,11 +2147,6 @@ int pdb2gmx::run()
                 }
                 write_index(indexOutputFile_.c_str(), block, gnames, false, 0);
             }
-            for (int i = 0; i < block->nr; i++)
-            {
-                sfree(gnames[i]);
-            }
-            sfree(gnames);
             done_blocka(block);
         }
         else
@@ -2190,17 +2157,17 @@ int pdb2gmx::run()
 
         /* Generate Hydrogen atoms (and termini) in the sequence */
         printf("Generating any missing hydrogen atoms and/or adding termini.\n");
-        add_h(&pdba, &x, nah, ah,
+        add_h(pdba, &symtab, &x, nah, ah,
               cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing_,
               nullptr, nullptr, true, false);
         printf("Now there are %d residues with %d atoms\n",
-               pdba->nres, pdba->nr);
+               pdba->getNresidues(), pdba->getNatoms());
 
         /* make up molecule name(s) */
 
         int k = (cc->nterpairs > 0 && cc->r_start[0] >= 0) ? cc->r_start[0] : 0;
 
-        gmx_residuetype_get_type(rt, *pdba->resinfo[k].name, &p_restype);
+        gmx_residuetype_get_type(rt, pdba->resinfo[k].name->c_str(), &p_restype);
 
         std::string molname;
         std::string suffix;
@@ -2277,7 +2244,7 @@ int pdb2gmx::run()
         if (cc->bAllWat)
         {
             mols_[nmol_].name = gmx_strdup("SOL");
-            mols_[nmol_].nr   = pdba->nres;
+            mols_[nmol_].nr   = pdba->getNresidues();
         }
         else
         {
@@ -2306,7 +2273,7 @@ int pdb2gmx::run()
         }
 
         pdb2top(top_file2, posre_fn.c_str(), molname.c_str(), pdba, &x, atype, &symtab,
-                nrtp, restp,
+                nrtp, restp.data(),
                 restp_chain, hb_chain,
                 bAllowMissing_,
                 bVsites_, bVsiteAromatics_, ffdir_,
@@ -2366,19 +2333,13 @@ int pdb2gmx::run()
     int nres  = 0;
     for (int i = 0; (i < numChains); i++)
     {
-        natom += chains[i].pdba->nr;
-        nres  += chains[i].pdba->nres;
+        natom += chains[i].pdba->getNatoms();
+        nres  += chains[i].pdba->getNresidues();
     }
-    t_atoms *atoms;
-    snew(atoms, 1);
-    init_t_atoms(atoms, natom, false);
-    for (int i = 0; i < atoms->nres; i++)
-    {
-        sfree(atoms->resinfo[i].name);
-    }
-    sfree(atoms->resinfo);
-    atoms->nres = nres;
-    snew(atoms->resinfo, nres);
+    t_atoms atoms;
+    init_t_atoms(&atoms, natom, false);
+    atoms.resinfo.clear();
+    atoms.resinfo.resize(nres);
     snew(x, natom);
     int k = 0;
     int l = 0;
@@ -2387,23 +2348,23 @@ int pdb2gmx::run()
         if (numChains > 1)
         {
             printf("Including chain %d in system: %d atoms %d residues\n",
-                   i+1, chains[i].pdba->nr, chains[i].pdba->nres);
+                   i+1, chains[i].pdba->getNatoms(), chains[i].pdba->getNresidues());
         }
-        for (int j = 0; (j < chains[i].pdba->nr); j++)
+        for (int j = 0; (j < chains[i].pdba->getNatoms()); j++)
         {
-            atoms->atom[k]         = chains[i].pdba->atom[j];
-            atoms->atom[k].resind += l; /* l is processed nr of residues */
-            atoms->atomname[k]     = chains[i].pdba->atomname[j];
-            atoms->resinfo[atoms->atom[k].resind].chainid = chains[i].chainid;
+            atoms.atom[k]         = chains[i].pdba->atom[j];
+            atoms.atom[k].resind += l; /* l is processed nr of residues */
+            atoms.atomname[k]     = chains[i].pdba->atomname[j];
+            atoms.resinfo[atoms.atom[k].resind].chainid = chains[i].chainid;
             copy_rvec(chains[i].x[j], x[k]);
             k++;
         }
-        for (int j = 0; (j < chains[i].pdba->nres); j++)
+        for (int j = 0; (j < chains[i].pdba->getNresidues()); j++)
         {
-            atoms->resinfo[l] = chains[i].pdba->resinfo[j];
+            atoms.resinfo[l] = chains[i].pdba->resinfo[j];
             if (bRTPresname_)
             {
-                atoms->resinfo[l].name = atoms->resinfo[l].rtp;
+                atoms.resinfo[l].name = atoms.resinfo[l].rtp;
             }
             l++;
         }
@@ -2412,7 +2373,7 @@ int pdb2gmx::run()
     if (numChains > 1)
     {
         fprintf(stderr, "Now there are %d atoms and %d residues\n", k, l);
-        print_sums(atoms, true);
+        print_sums(&atoms, true);
     }
 
     rvec box_space;
@@ -2420,9 +2381,9 @@ int pdb2gmx::run()
     clear_rvec(box_space);
     if (box[0][0] == 0)
     {
-        make_new_box(atoms->nr, x, box, box_space, false);
+        make_new_box(atoms.getNatoms(), x, box, box_space, false);
     }
-    write_sto_conf(outputConfFile_.c_str(), title, atoms, x, nullptr, ePBC, box);
+    write_sto_conf(outputConfFile_.c_str(), title, &atoms, x, nullptr, ePBC, box);
 
     printf("\t\t--------- PLEASE NOTE ------------\n");
     printf("You have successfully generated a topology from: %s.\n",

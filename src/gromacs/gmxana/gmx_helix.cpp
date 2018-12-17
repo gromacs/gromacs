@@ -175,14 +175,14 @@ int gmx_helix(int argc, char *argv[])
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
 
-    if (natoms != top->atoms.nr)
+    if (natoms != top->atoms.getNatoms())
     {
         gmx_fatal(FARGS, "Sorry can only run when the number of atoms in the run input file (%d) is equal to the number in the trajectory (%d)",
-                  top->atoms.nr, natoms);
+                  top->atoms.getNatoms(), natoms);
     }
 
     bb = mkbbind(ftp2fn(efNDX, NFILE, fnm), &nres, &nbb, r0, &nall, &allindex,
-                 top->atoms.atomname, top->atoms.atom, top->atoms.resinfo);
+                 top->atoms.atomname, top->atoms.atom, top->atoms.resinfo, &top->symtab);
     snew(bbindex, natoms);
     snew(caindex, nres);
 
@@ -205,7 +205,7 @@ int gmx_helix(int argc, char *argv[])
     }
 
     /* Read reference frame from tpx file to compute helix length */
-    snew(xref, top->atoms.nr);
+    snew(xref, top->atoms.getNatoms());
     read_tpx(ftp2fn(efTPR, NFILE, fnm),
              nullptr, nullptr, &natoms, xref, nullptr, nullptr);
     calc_hxprops(nres, bb, xref);

@@ -59,7 +59,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
+static real calc_gyro(rvec x[], int gnx, int index[], gmx::ArrayRef<const t_atom> atom, real tm,
                       rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)
 {
     int    i, ii, m;
@@ -213,7 +213,6 @@ int gmx_gyrate(int argc, char *argv[])
     rvec              d, d1; /* eigenvalues of inertia tensor */
     real              t, t0, tm, gyro;
     int               natoms;
-    char             *grpname;
     int               j, m, gnx, nam, mol;
     int              *index;
     gmx_output_env_t *oenv;
@@ -267,7 +266,8 @@ int gmx_gyrate(int argc, char *argv[])
     }
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, TRUE);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, grpname, &top.symtab);
 
     if (nmol > gnx || gnx % nmol != 0)
     {
@@ -335,7 +335,7 @@ int gmx_gyrate(int argc, char *argv[])
             }
             else
             {
-                calc_gyro_z(x, box, nam, index+mol*nam, top.atoms.atom, nz, t, out);
+                calc_gyro_z(x, box, nam, index+mol*nam, top.atoms.atom.data(), nz, t, out);
             }
             rvec_inc(gvec, gvec1);
             rvec_inc(d, d1);

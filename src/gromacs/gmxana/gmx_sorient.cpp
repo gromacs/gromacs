@@ -129,7 +129,6 @@ int gmx_sorient(int argc, char *argv[])
     double            sum1, sum2;
     int              *isize, nrefgrp, nrefat;
     int             **index;
-    char            **grpname;
     real              inp, outp, nav, normfac, rmin2, rmax2, rcut, rcut2, r2, r;
     real              c1, c2;
     char              str[STRLEN];
@@ -213,16 +212,16 @@ int gmx_sorient(int argc, char *argv[])
 
     /* get index groups */
     printf("Select a group of reference particles and a solvent group:\n");
-    snew(grpname, 2);
+    std::vector<SymbolPtr> grpname(2);
     snew(index, 2);
     snew(isize, 2);
     if (bTPS)
     {
-        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpname);
+        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpname, &top.symtab);
     }
     else
     {
-        get_index(nullptr, ftp2fn(efNDX, NFILE, fnm), 2, isize, index, grpname);
+        get_index(nullptr, ftp2fn(efNDX, NFILE, fnm), 2, isize, index, grpname, &top.symtab);
     }
 
     if (bCom)

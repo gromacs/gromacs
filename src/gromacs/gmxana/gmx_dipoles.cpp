@@ -850,7 +850,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
     }
     else
     {
-        atom = top->atoms.atom;
+        atom = top->atoms.atom.data();
         mols = &(top->mols);
     }
     if ((iVol == -1) && bMU)
@@ -1588,7 +1588,6 @@ int gmx_dipoles(int argc, char *argv[])
     int              *gnx;
     int               nFF[2];
     int             **grpindex;
-    char            **grpname = nullptr;
     gmx_bool          bGkr, bMU, bSlab;
     t_filenm          fnm[] = {
         { efEDR, "-en", nullptr,         ffOPTRD },
@@ -1667,19 +1666,19 @@ int gmx_dipoles(int argc, char *argv[])
         }
     }
 
-    snew(top, 1);
+    top  = new t_topology;
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box,
                         &natoms, nullptr, nullptr, top);
 
     snew(gnx, ncos);
-    snew(grpname, ncos);
+    std::vector<SymbolPtr> grpname(ncos);
     snew(grpindex, ncos);
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm),
-              ncos, gnx, grpindex, grpname);
+              ncos, gnx, grpindex, grpname, &top->symtab);
     for (k = 0; (k < ncos); k++)
     {
         dipole_atom2molindex(&gnx[k], grpindex[k], &(top->mols));
-        neutralize_mols(gnx[k], grpindex[k], &(top->mols), top->atoms.atom);
+        neutralize_mols(gnx[k], grpindex[k], &(top->mols), top->atoms.atom.data());
     }
     nFF[0] = nFA;
     nFF[1] = nFB;

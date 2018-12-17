@@ -199,11 +199,11 @@ static gmx_bool *bPhobics(t_atoms *atoms)
 
 
     nb = get_lines("phbres.dat", &cb);
-    snew(bb, atoms->nres);
+    snew(bb, atoms->getNresidues());
 
-    for (i = 0; (i < atoms->nres); i++)
+    for (i = 0; (i < atoms->getNresidues()); i++)
     {
-        if (-1 != search_str(nb, cb, *atoms->resinfo[i].name) )
+        if (-1 != search_str(nb, cb, atoms->resinfo[i].name->c_str()) )
         {
             bb[i] = TRUE;
         }
@@ -211,7 +211,7 @@ static gmx_bool *bPhobics(t_atoms *atoms)
     return bb;
 }
 
-static void check_oo(t_atoms *atoms)
+static void check_oo(t_atoms *atoms, SymbolTable *symtab)
 {
     char *OOO;
 
@@ -219,19 +219,19 @@ static void check_oo(t_atoms *atoms)
 
     OOO = gmx_strdup("O");
 
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
-        if (std::strcmp(*(atoms->atomname[i]), "OXT") == 0)
+        if (std::strcmp(atoms->atomname[i]->c_str(), "OXT") == 0)
         {
-            *atoms->atomname[i] = OOO;
+            atoms->atomname[i] = put_symtab(symtab, OOO);
         }
-        else if (std::strcmp(*(atoms->atomname[i]), "O1") == 0)
+        else if (std::strcmp(atoms->atomname[i]->c_str(), "O1") == 0)
         {
-            *atoms->atomname[i] = OOO;
+            atoms->atomname[i] = put_symtab(symtab, OOO);
         }
-        else if (std::strcmp(*(atoms->atomname[i]), "OC1") == 0)
+        else if (std::strcmp(atoms->atomname[i]->c_str(), "OC1") == 0)
         {
-            *atoms->atomname[i] = OOO;
+            atoms->atomname[i] = put_symtab(symtab, OOO);
         }
     }
 }
@@ -256,7 +256,7 @@ static void norm_acc(t_atoms *atoms, int nres,
 
     for (i = 0; (i < nres); i++)
     {
-        n = search_str(n_surf, surf_res, *atoms->resinfo[i].name);
+        n = search_str(n_surf, surf_res, atoms->resinfo[i].name->c_str());
         if (n != -1)
         {
             norm_av_area[i] = av_area[i] / surf[n];
@@ -264,7 +264,7 @@ static void norm_acc(t_atoms *atoms, int nres,
         else
         {
             fprintf(stderr, "Residue %s not found in surface database (%s)\n",
-                    *atoms->resinfo[i].name, surffn);
+                    atoms->resinfo[i].name->c_str(), surffn);
         }
     }
 }
@@ -501,7 +501,7 @@ int gmx_do_dssp(int argc, char *argv[])
     int                i, j, natoms, nframe = 0;
     matrix             box = {{0}};
     int                gnx;
-    char              *grpnm, *ss_str;
+    char              *ss_str;
     int               *index;
     rvec              *xp, *x;
     int               *average_area;
@@ -540,10 +540,11 @@ int gmx_do_dssp(int argc, char *argv[])
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, FALSE);
     atoms = &(top.atoms);
-    check_oo(atoms);
+    check_oo(atoms, &top.symtab);
     bPhbres = bPhobics(atoms);
 
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpnm);
+    std::vector<SymbolPtr> grpnm(1);
+    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, grpnm, &top.symtab);
     nres = 0;
     nr0  = -1;
     for (i = 0; (i < gnx); i++)
@@ -630,7 +631,7 @@ int gmx_do_dssp(int argc, char *argv[])
     mat.nmap = readcmap(opt2fn("-map", NFILE, fnm), &(mat.map));
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
-    if (natoms > atoms->nr)
+    if (natoms > atoms->getNatoms())
     {
         gmx_fatal(FARGS, "\nTrajectory does not match topology!");
     }
@@ -639,9 +640,9 @@ int gmx_do_dssp(int argc, char *argv[])
         gmx_fatal(FARGS, "\nTrajectory does not match selected group!");
     }
 
-    snew(average_area, atoms->nres);
-    snew(av_area, atoms->nres);
-    snew(norm_av_area, atoms->nres);
+    snew(average_area, atoms->getNresidues());
+    snew(av_area, atoms->getNresidues());
+    snew(norm_av_area, atoms->getNresidues());
     accr  = nullptr;
     naccr = 0;
 
@@ -655,7 +656,7 @@ int gmx_do_dssp(int argc, char *argv[])
             srenew(accr, naccr);
             for (i = naccr-10; i < naccr; i++)
             {
-                snew(accr[i], 2*atoms->nres-1);
+                snew(accr[i], 2*atoms->getNresidues()-1);
             }
         }
         gmx_rmpbc(gpbc, natoms, box, x);
@@ -722,7 +723,7 @@ int gmx_do_dssp(int argc, char *argv[])
     {
         write_sas_mat(fnArea, accr, nframe, nres_plus_separators, &mat);
 
-        for (i = 0; i < atoms->nres; i++)
+        for (i = 0; i < atoms->getNresidues(); i++)
         {
             av_area[i] = (average_area[i] / static_cast<real>(nframe));
         }

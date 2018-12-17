@@ -214,7 +214,7 @@ int read_h_db(const char *ffdir, t_hackblock **ah)
     return nah;
 }
 
-t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
+t_hackblock *search_h_db(int nh, t_hackblock ah[], const char *key)
 {
     t_hackblock ahkey, *result;
 
@@ -223,7 +223,7 @@ t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
         return nullptr;
     }
 
-    ahkey.name = key;
+    ahkey.name = gmx_strdup(key);
 
     result = static_cast<t_hackblock *>(bsearch(&ahkey, ah, nh, static_cast<size_t>(sizeof(ah[0])), compaddh));
 

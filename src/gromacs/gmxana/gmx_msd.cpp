@@ -161,8 +161,8 @@ static t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
         if (bMass)
         {
             const t_atoms *atoms = &top->atoms;
-            snew(curr->mass, atoms->nr);
-            for (i = 0; (i < atoms->nr); i++)
+            snew(curr->mass, atoms->getNatoms());
+            for (i = 0; (i < atoms->getNatoms()); i++)
             {
                 curr->mass[i] = atoms->atom[i].m;
             }
@@ -175,7 +175,7 @@ static t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
 static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *title,
                        const char *yaxis,
                        real msdtime, real beginfit, real endfit,
-                       real *DD, real *SigmaD, char *grpname[],
+                       real *DD, real *SigmaD, gmx::ArrayRef<SymbolPtr> grpname,
                        const gmx_output_env_t *oenv)
 {
     FILE *out;
@@ -191,7 +191,7 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
         for (i = 0; i < curr->ngrp; i++)
         {
             fprintf(out, "# D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)\n",
-                    grpname[i], DD[i], SigmaD[i]);
+                    grpname[i]->c_str(), DD[i], SigmaD[i]);
         }
     }
     for (i = 0; i < curr->nframes; i++)
@@ -549,12 +549,12 @@ static void printmol(t_corr *curr, const char *fn,
                      rvec *x, int ePBC, matrix box, const gmx_output_env_t *oenv)
 {
 #define NDIST 100
-    FILE       *out;
-    gmx_stats_t lsq1;
-    int         i, j;
-    real        a, b, D, Dav, D2av, VarD, sqrtD, sqrtD_max, scale;
-    t_pdbinfo  *pdbinfo = nullptr;
-    const int  *mol2a   = nullptr;
+    FILE                  *out;
+    gmx_stats_t            lsq1;
+    int                    i, j;
+    real                   a, b, D, Dav, D2av, VarD, sqrtD, sqrtD_max, scale;
+    std::vector<t_pdbinfo> pdbinfo;
+    const int             *mol2a   = nullptr;
 
     out = xvgropen(fn, "Diffusion Coefficients / Molecule", "Molecule", "D", oenv);
 
@@ -588,7 +588,7 @@ static void printmol(t_corr *curr, const char *fn,
         Dav  += D;
         D2av += gmx::square(D);
         fprintf(out, "%10d  %10g\n", i, D);
-        if (pdbinfo)
+        if (!pdbinfo.empty())
         {
             sqrtD = std::sqrt(D);
             if (sqrtD > sqrtD_max)
@@ -622,8 +622,8 @@ static void printmol(t_corr *curr, const char *fn,
         {
             scale *= 10;
         }
-        GMX_RELEASE_ASSERT(pdbinfo != nullptr, "Internal error - pdbinfo not set for PDB input");
-        for (i = 0; i < top->atoms.nr; i++)
+        GMX_RELEASE_ASSERT(!pdbinfo.empty(), "Internal error - pdbinfo not set for PDB input");
+        for (i = 0; i < top->atoms.getNatoms(); i++)
         {
             pdbinfo[i].bfac *= scale;
         }
@@ -656,9 +656,9 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
 #ifdef DEBUG
     fprintf(stderr, "Read %d atoms for first frame\n", natoms);
 #endif
-    if ((gnx_com != nullptr) && natoms < top->atoms.nr)
+    if ((gnx_com != nullptr) && natoms < top->atoms.getNatoms())
     {
-        fprintf(stderr, "WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n", natoms, top->atoms.nr);
+        fprintf(stderr, "WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n", natoms, top->atoms.getNatoms());
     }
 
     snew(x[prev], natoms);
@@ -881,30 +881,28 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
     t_corr        *msd;
     int           *gnx;   /* the selected groups' sizes */
     int          **index; /* selected groups' indices */
-    char         **grpname;
     int            i, i0, i1, j, N, nat_trx;
     real          *DD, *SigmaD, a, a2, b, r, chi2;
     rvec          *x;
     matrix         box;
     int           *gnx_com     = nullptr; /* the COM removal group size  */
     int          **index_com   = nullptr; /* the COM removal group atom indices */
-    char         **grpname_com = nullptr; /* the COM removal group name */
 
     snew(gnx, nrgrp);
     snew(index, nrgrp);
-    snew(grpname, nrgrp);
+    std::vector<SymbolPtr> grpname(nrgrp);
 
     fprintf(stderr, "\nSelect a group to calculate mean squared displacement for:\n");
-    get_index(&top->atoms, ndx_file, nrgrp, gnx, index, grpname);
+    get_index(&top->atoms, ndx_file, nrgrp, gnx, index, grpname, &top->symtab);
 
     if (bRmCOMM)
     {
         snew(gnx_com, 1);
         snew(index_com, 1);
-        snew(grpname_com, 1);
+        std::vector<SymbolPtr> grpname_com(1);
 
         fprintf(stderr, "\nNow select a group for center of mass removal:\n");
-        get_index(&top->atoms, ndx_file, 1, gnx_com, index_com, grpname_com);
+        get_index(&top->atoms, ndx_file, 1, gnx_com, index_com, grpname_com, &top->symtab);
     }
 
     if (mol_file)
@@ -942,14 +940,12 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
             fprintf(stderr, "\nNo frame found need time tpdb = %g ps\n"
                     "Can not write %s\n\n", t_pdb, pdb_file);
         }
-        i             = top->atoms.nr;
-        top->atoms.nr = nat_trx;
-        if (pdb_file && top->atoms.pdbinfo == nullptr)
+        i             = top->atoms.getNatoms();
+        if (pdb_file && top->atoms.pdbinfo.empty())
         {
-            snew(top->atoms.pdbinfo, top->atoms.nr);
+            top->atoms.pdbinfo.resize(top->atoms.getNatoms());
         }
         printmol(msd, mol_file, pdb_file, index[0], top, x, ePBC, box, oenv);
-        top->atoms.nr = i;
     }
 
     DD     = nullptr;
@@ -1011,12 +1007,12 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
             if (DD[j] > 0.01 && DD[j] < 1e4)
             {
                 fprintf(stdout, "D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",
-                        grpname[j], DD[j], SigmaD[j]);
+                        grpname[j]->c_str(), DD[j], SigmaD[j]);
             }
             else
             {
                 fprintf(stdout, "D[%10s] %.4g (+/- %.4g) 1e-5 cm^2/s\n",
-                        grpname[j], DD[j], SigmaD[j]);
+                        grpname[j]->c_str(), DD[j], SigmaD[j]);
             }
         }
     }

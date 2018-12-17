@@ -268,7 +268,6 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     matrix       box;
     real         sg, sk;
     int        **index;
-    char       **grpname;
     int          i, *isize, ng, nframes;
     real        *sg_slice, *sg_slice_tot, *sk_slice, *sk_slice_tot;
     gmx_rmpbc_t  gpbc = nullptr;
@@ -283,17 +282,17 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     ng = 1;
     /* get index groups */
     printf("Select the group that contains the atoms you want to use for the tetrahedrality order parameter calculation:\n");
-    snew(grpname, ng);
+    std::vector<SymbolPtr> grpname(ng);
     snew(index, ng);
     snew(isize, ng);
-    get_index(&top.atoms, fnNDX, ng, isize, index, grpname);
+    get_index(&top.atoms, fnNDX, ng, isize, index, grpname, &top.symtab);
 
     /* Analyze trajectory */
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > top.atoms.getNatoms())
     {
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
-                  top.atoms.nr, natoms);
+                  top.atoms.getNatoms(), natoms);
     }
     check_index(nullptr, ng, index[0], nullptr, natoms);
 
@@ -322,7 +321,6 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     close_trx(status);
     gmx_rmpbc_done(gpbc);
 
-    sfree(grpname);
     sfree(index);
     sfree(isize);
 
@@ -349,7 +347,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
 
 /* Print name of first atom in all groups in index file */
 static void print_types(const int index[], int a[], int ngrps,
-                        char *groups[], const t_topology *top)
+                        gmx::ArrayRef<SymbolPtr> groups, const t_topology *top)
 {
     int i;
 
@@ -357,7 +355,7 @@ static void print_types(const int index[], int a[], int ngrps,
     for (i = 0; i < ngrps; i++)
     {
         fprintf(stderr, "Groupname: %s First atomname: %s First atomnr %d\n",
-                groups[i], *(top->atoms.atomname[a[index[i]]]), a[index[i]]);
+                groups[i]->c_str(), top->atoms.atomname[a[index[i]]]->c_str(), a[index[i]]);
     }
     fprintf(stderr, "\n");
 }
@@ -374,7 +372,7 @@ static void check_length(real length, int a, int b)
 
 static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                        real ***slOrder, real *slWidth, int nslices, gmx_bool bSliced,
-                       gmx_bool bUnsat, const t_topology *top, int ePBC, int ngrps, int axis,
+                       gmx_bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis,
                        gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
                        real ***distvals,
                        const gmx_output_env_t *oenv)
@@ -406,7 +404,6 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
     rvec         direction, com, dref, dvec;
     int          comsize, distsize;
     int         *comidx  = nullptr, *distidx = nullptr;
-    char        *grpname = nullptr;
     t_pbc        pbc;
     real         arcdist, tmpdist;
     gmx_rmpbc_t  gpbc = nullptr;
@@ -432,20 +429,17 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                 nslices);
     }
 
+    std::vector<SymbolPtr> grpname(1);
     if (radial)
     {
         use_unitvector = TRUE;
         fprintf(stderr, "Select an index group to calculate the radial membrane normal\n");
-        get_index(&top->atoms, radfn, 1, &comsize, &comidx, &grpname);
+        get_index(&top->atoms, radfn, 1, &comsize, &comidx, grpname, &top->symtab);
     }
     if (distcalc)
     {
-        if (grpname != nullptr)
-        {
-            sfree(grpname);
-        }
         fprintf(stderr, "Select an index group to use as distance reference\n");
-        get_index(&top->atoms, radfn, 1, &distsize, &distidx, &grpname);
+        get_index(&top->atoms, radfn, 1, &distsize, &distidx, grpname, &top->symtab);
         bSliced = FALSE; /*force slices off*/
     }
 
@@ -744,10 +738,6 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
     {
         sfree(distidx);
     }
-    if (grpname != nullptr)
-    {
-        sfree(grpname);
-    }
 }
 
 
@@ -855,10 +845,9 @@ static void write_bfactors(t_filenm  *fnm, int nfile, const int *index, const in
     snew(frout.x, nout);
 
     init_t_atoms(&useatoms, nout, TRUE);
-    useatoms.nr = nout;
 
     /*initialize PDBinfo*/
-    for (i = 0; i < useatoms.nr; ++i)
+    for (i = 0; i < useatoms.getNatoms(); ++i)
     {
         useatoms.pdbinfo[i].type         = 0;
         useatoms.pdbinfo[i].occup        = 0.0;
@@ -879,7 +868,6 @@ static void write_bfactors(t_filenm  *fnm, int nfile, const int *index, const in
             copy_rvec(fr.x[a[index[i+1]+j]], frout.x[ctr]);
             useatoms.atomname[ctr] = top->atoms.atomname[a[index[i+1]+j]];
             useatoms.atom[ctr]     = top->atoms.atom[a[index[i+1]+j]];
-            useatoms.nres          = std::max(useatoms.nres, useatoms.atom[ctr].resind+1);
             useatoms.resinfo[useatoms.atom[ctr].resind] = top->atoms.resinfo[useatoms.atom[ctr].resind]; /*copy resinfo*/
         }
     }
@@ -942,7 +930,6 @@ int gmx_order(int argc, char *argv[])
     rvec              *order;                         /* order par. for each atom   */
     real             **slOrder;                       /* same, per slice            */
     real               slWidth = 0.0;                 /* width of a slice           */
-    char             **grpname;                       /* groupnames                 */
     int                ngrps,                         /* nr. of groups              */
                        i,
                        axis = 0;                      /* normal axis                */
@@ -1056,8 +1043,8 @@ int gmx_order(int argc, char *argv[])
         }
 
         top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
-
-        block = init_index(ftp2fn(efNDX, NFILE, fnm), &grpname);
+        std::vector<SymbolPtr> grpname;
+        block = init_index(ftp2fn(efNDX, NFILE, fnm), &top->symtab, &grpname);
         index = block->index;                   /* get indices from t_block block */
         a     = block->a;                       /* see block.h                    */
         ngrps = block->nr;

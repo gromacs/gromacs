@@ -202,7 +202,7 @@ do_md_trajectory_writing(FILE                    *fplog,
                 do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, x_for_confout);
             }
             write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
-                                *top_global->name, top_global,
+                                top_global->name->c_str(), top_global,
                                 x_for_confout, as_rvec_array(state_global->v.data()),
                                 ir->ePBC, state->box);
             if (fr->bMolPBC && state == state_global)

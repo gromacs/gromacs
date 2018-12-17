@@ -251,7 +251,6 @@ int gmx_rms(int argc, char *argv[])
         0;
     int              *ind_fit, **ind_rms, *ind_m = nullptr, *rev_ind_m = nullptr, *ind_rms_m =
         nullptr;
-    char             *gn_fit, **gn_rms;
     t_rgb             rlo, rhi;
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = nullptr;
@@ -360,8 +359,8 @@ int gmx_rms(int argc, char *argv[])
 
     bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp,
                          nullptr, box, TRUE);
-    snew(w_rls, top.atoms.nr);
-    snew(w_rms, top.atoms.nr);
+    snew(w_rls, top.atoms.getNatoms());
+    snew(w_rms, top.atoms.getNatoms());
 
     if (!bTop && bBond)
     {
@@ -371,12 +370,13 @@ int gmx_rms(int argc, char *argv[])
         bBond = FALSE;
     }
 
+    std::vector<SymbolPtr> gn_fit(1);
     if (bReset)
     {
         fprintf(stderr, "Select group for %s fit\n", bFit ? "least squares"
                 : "translational");
         get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &ifit,
-                  &ind_fit, &gn_fit);
+                  &ind_fit, gn_fit, &top.symtab);
     }
     else
     {
@@ -418,14 +418,14 @@ int gmx_rms(int argc, char *argv[])
         nrms = 1;
     }
 
-    snew(gn_rms, nrms);
+    std::vector<SymbolPtr> gn_rms(nrms);
     snew(ind_rms, nrms);
     snew(irms, nrms);
 
     fprintf(stderr, "Select group%s for %s calculation\n",
             (nrms > 1) ? "s" : "", whatname[ewhat]);
     get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
-              nrms, irms, ind_rms, gn_rms);
+              nrms, irms, ind_rms, gn_rms, &top.symtab);
 
     if (bNorm)
     {
@@ -472,18 +472,18 @@ int gmx_rms(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
-        gmx_rmpbc(gpbc, top.atoms.nr, box, xp);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.getNatoms());
+        gmx_rmpbc(gpbc, top.atoms.getNatoms(), box, xp);
     }
     if (bReset)
     {
-        reset_x(ifit, ind_fit, top.atoms.nr, nullptr, xp, w_rls);
+        reset_x(ifit, ind_fit, top.atoms.getNatoms(), nullptr, xp, w_rls);
     }
     if (bMirror)
     {
         /* generate reference structure mirror image: */
-        snew(xm, top.atoms.nr);
-        for (i = 0; i < top.atoms.nr; i++)
+        snew(xm, top.atoms.getNatoms());
+        for (i = 0; i < top.atoms.getNatoms(); i++)
         {
             copy_rvec(xp[i], xm[i]);
             xm[i][XX] = -xm[i][XX];
@@ -491,18 +491,18 @@ int gmx_rms(int argc, char *argv[])
     }
     if (ewhat == ewRhoSc)
     {
-        norm_princ(&top.atoms, ifit, ind_fit, top.atoms.nr, xp);
+        norm_princ(&top.atoms, ifit, ind_fit, top.atoms.getNatoms(), xp);
     }
 
     /* read first frame */
     natoms_trx = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
-    if (natoms_trx != top.atoms.nr)
+    if (natoms_trx != top.atoms.getNatoms())
     {
         fprintf(stderr,
                 "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
-                top.atoms.nr, natoms_trx);
+                top.atoms.getNatoms(), natoms_trx);
     }
-    natoms = std::min(top.atoms.nr, natoms_trx);
+    natoms = std::min(top.atoms.getNatoms(), natoms_trx);
     if (bMat || bBond || bPrev)
     {
         snew(mat_x, NFRAME);
@@ -1013,7 +1013,7 @@ int gmx_rms(int argc, char *argv[])
                 fprintf(stderr, "Min and Max value set to resp. %f and %f\n",
                         rmsd_min, rmsd_max);
             }
-            sprintf(buf, "%s %s matrix", gn_rms[0], whatname[ewhat]);
+            sprintf(buf, "%s %s matrix", gn_rms[0]->c_str(), whatname[ewhat]);
             write_xpm(opt2FILE("-m", NFILE, fnm, "w"), 0, buf, whatlabel[ewhat],
                       output_env_get_time_label(oenv), output_env_get_time_label(oenv), tel_mat, tel_mat2,
                       axis, axis2, rmsd_mat, rmsd_min, rmsd_max, rlo, rhi, &nlevels);
@@ -1073,7 +1073,7 @@ int gmx_rms(int argc, char *argv[])
                 {
                     del_yaxis[i] = delta_maxy*i/del_lev;
                 }
-                sprintf(buf, "%s %s vs. delta t", gn_rms[0], whatname[ewhat]);
+                sprintf(buf, "%s %s vs. delta t", gn_rms[0]->c_str(), whatname[ewhat]);
                 fp = gmx_ffopen("delta.xpm", "w");
                 write_xpm(fp, 0, buf, "density", output_env_get_time_label(oenv), whatlabel[ewhat],
                           delta_xsize, del_lev+1, del_xaxis, del_yaxis,
@@ -1112,7 +1112,7 @@ int gmx_rms(int argc, char *argv[])
             }
             rlo.r = 1; rlo.g = 1; rlo.b = 1;
             rhi.r = 0; rhi.g = 0; rhi.b = 0;
-            sprintf(buf, "%s av. bond angle deviation", gn_rms[0]);
+            sprintf(buf, "%s av. bond angle deviation", gn_rms[0]->c_str());
             write_xpm(opt2FILE("-bm", NFILE, fnm, "w"), 0, buf, "degrees",
                       output_env_get_time_label(oenv), output_env_get_time_label(oenv), tel_mat, tel_mat2,
                       axis, axis2, bond_mat, bond_min, bond_max, rlo, rhi, &nlevels);
@@ -1136,12 +1136,12 @@ int gmx_rms(int argc, char *argv[])
     if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(fp, "@ subtitle \"%s%s after %s%s%s\"\n",
-                (nrms == 1) ? "" : "of ", gn_rms[0], fitgraphlabel[efit],
-                bFit     ? " to " : "", bFit ? gn_fit : "");
+                (nrms == 1) ? "" : "of ", gn_rms[0]->c_str(), fitgraphlabel[efit],
+                bFit     ? " to " : "", bFit ? gn_fit[0]->c_str() : "");
     }
     if (nrms != 1)
     {
-        xvgr_legend(fp, nrms, gn_rms, oenv);
+        xvgrLegendSymbol(fp, gn_rms, oenv);
     }
     for (i = 0; (i < teller); i++)
     {
@@ -1175,16 +1175,16 @@ int gmx_rms(int argc, char *argv[])
             if (output_env_get_print_xvgr_codes(oenv))
             {
                 fprintf(fp, "@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
-                        gn_rms[0], bFit ? gn_fit : "");
+                        gn_rms[0]->c_str(), bFit ? gn_fit[0]->c_str() : "");
             }
         }
         else
         {
             if (output_env_get_print_xvgr_codes(oenv))
             {
-                fprintf(fp, "@ subtitle \"after lsq fit to mirror %s\"\n", bFit ? gn_fit : "");
+                fprintf(fp, "@ subtitle \"after lsq fit to mirror %s\"\n", bFit ? gn_fit[0]->c_str() : "");
             }
-            xvgr_legend(fp, nrms, gn_rms, oenv);
+            xvgrLegendSymbol(fp, gn_rms, oenv);
         }
         for (i = 0; (i < teller); i++)
         {
@@ -1216,7 +1216,7 @@ int gmx_rms(int argc, char *argv[])
 
     if (bNorm)
     {
-        fp = xvgropen("aver.xvg", gn_rms[0], "Residue", whatxvglabel[ewhat], oenv);
+        fp = xvgropen("aver.xvg", gn_rms[0]->c_str(), "Residue", whatxvglabel[ewhat], oenv);
         for (j = 0; (j < irms[0]); j++)
         {
             fprintf(fp, "%10d  %10g\n", j, rlsnorm[j]/teller);

@@ -160,10 +160,10 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
     static rvec *xout = nullptr;
     int          i;
 
-    GMX_ASSERT(outat->nr >= bun->n, "");
+    GMX_ASSERT(outat->getNatoms() >= bun->n, "");
     if (xout == nullptr)
     {
-        snew(xout, outat->nr);
+        snew(xout, outat->getNatoms());
     }
 
     for (i = 0; i < bun->n; i++)
@@ -184,7 +184,7 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
     frout.bF     = FALSE;
     frout.bBox   = FALSE;
     frout.bAtoms = TRUE;
-    frout.natoms = outat->nr;
+    frout.natoms = outat->getNatoms();
     frout.atoms  = outat;
     frout.x      = xout;
     write_trxframe(status, &frout, nullptr);
@@ -234,7 +234,6 @@ int gmx_bundle(int argc, char *argv[])
     t_trxframe        fr;
     t_atoms           outatoms;
     real              t, comp;
-    char             *grpname[MAX_ENDS];
     /* FIXME: The constness should not be cast away */
     char             *anm = const_cast<char*>("CA"), *rnm = const_cast<char*>("GLY");
     int               i, gnx[MAX_ENDS];
@@ -287,9 +286,10 @@ int gmx_bundle(int argc, char *argv[])
     {
         fprintf(stderr, "and a group of kink ");
     }
+    std::vector<SymbolPtr> grpname(MAX_ENDS);
     fprintf(stderr, "atoms\n");
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), bun.nend,
-              gnx, index, grpname);
+              gnx, index, grpname, &top.symtab);
 
     if (n <= 0 || gnx[0] % n || gnx[1] % n || (bKink && gnx[2] % n))
     {
@@ -337,12 +337,11 @@ int gmx_bundle(int argc, char *argv[])
     if (opt2bSet("-oa", NFILE, fnm))
     {
         init_t_atoms(&outatoms, 3*n, FALSE);
-        outatoms.nr = 3*n;
         for (i = 0; i < 3*n; i++)
         {
-            outatoms.atomname[i]       = &anm;
+            outatoms.atomname[i]       = put_symtab(&top.symtab, anm);
             outatoms.atom[i].resind    = i/3;
-            outatoms.resinfo[i/3].name = &rnm;
+            outatoms.resinfo[i/3].name = put_symtab(&top.symtab, rnm);
             outatoms.resinfo[i/3].nr   = i/3 + 1;
             outatoms.resinfo[i/3].ic   = ' ';
         }
@@ -359,7 +358,7 @@ int gmx_bundle(int argc, char *argv[])
     do
     {
         gmx_rmpbc_trxfr(gpbc, &fr);
-        calc_axes(fr.x, top.atoms.atom, gnx, index, !bZ, &bun);
+        calc_axes(fr.x, top.atoms.atom.data(), gnx, index, !bZ, &bun);
         t = output_env_conv_time(oenv, fr.time);
         fprintf(flen, " %10g", t);
         fprintf(fdist, " %10g", t);

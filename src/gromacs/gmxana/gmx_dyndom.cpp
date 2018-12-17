@@ -77,7 +77,7 @@ static void rot_conf(t_atoms *atoms, const rvec x[], const rvec v[], real trans,
     }
 
     /* Copy all aoms to output */
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         copy_rvec(x[i], xout[i]);
         copy_rvec(v[i], vout[i]);
@@ -191,7 +191,6 @@ int gmx_dyndom(int argc, char *argv[])
     int               i, j, natoms, isize;
     t_trxstatus      *status;
     int              *index = nullptr, *index_all;
-    char             *grpname;
     real              angle, trans;
     rvec             *x, *v, *xout, *vout;
     matrix            box;
@@ -215,25 +214,25 @@ int gmx_dyndom(int argc, char *argv[])
         gmx_fatal(FARGS, "maxangle not given");
     }
 
-    t_topology *top;
-    snew(top, 1);
+    t_topology *top = new t_topology;
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, nullptr, &x, &v, box, FALSE);
-    t_atoms  &atoms = top->atoms;
-    if (atoms.pdbinfo == nullptr)
+    t_atoms    &atoms = top->atoms;
+    if (atoms.pdbinfo.empty())
     {
-        snew(atoms.pdbinfo, atoms.nr);
+        atoms.pdbinfo.resize(atoms.getNatoms());
     }
     atoms.havePdbInfo = TRUE;
-    natoms            = atoms.nr;
+    natoms            = atoms.getNatoms();
     snew(xout, natoms);
     snew(vout, natoms);
 
     printf("Select group to rotate:\n");
-    rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
-    printf("Going to rotate %s containing %d atoms\n", grpname, isize);
+    std::vector<SymbolPtr> grpname(1);
+    rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, grpname, &top->symtab);
+    printf("Going to rotate %s containing %d atoms\n", grpname[0]->c_str(), isize);
 
-    snew(index_all, atoms.nr);
-    for (i = 0; (i < atoms.nr); i++)
+    snew(index_all, atoms.getNatoms());
+    for (i = 0; (i < atoms.getNatoms()); i++)
     {
         index_all[i] = i;
     }
@@ -253,12 +252,12 @@ int gmx_dyndom(int argc, char *argv[])
         {
             label -= 26;
         }
-        for (j = 0; (j < atoms.nr); j++)
+        for (j = 0; (j < atoms.getNatoms()); j++)
         {
             atoms.resinfo[atoms.atom[j].resind].chainid = label;
         }
 
-        write_trx(status, atoms.nr, index_all, &atoms, i, angle, box, xout, vout, nullptr);
+        write_trx(status, atoms.getNatoms(), index_all, &atoms, i, angle, box, xout, vout, nullptr);
     }
     close_trx(status);
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -119,7 +119,6 @@ int gmx_morph(int argc, char *argv[])
     rvec             *x1, *x2, *xx;
     matrix            box;
     real              rms1, rms2, fac, *mass;
-    char             *grpname;
     gmx_bool          bRMS;
     gmx_output_env_t *oenv;
 
@@ -130,19 +129,18 @@ int gmx_morph(int argc, char *argv[])
         return 0;
     }
 
-    t_topology *top;
-    snew(top, 1);
-    read_tps_conf(opt2fn("-f1", NFILE, fnm), top, nullptr, &x1, nullptr, box, FALSE);
-    nat1 = top->atoms.nr;
-    read_tps_conf(opt2fn("-f2", NFILE, fnm), top, nullptr, &x2, nullptr, box, FALSE);
-    nat2 = top->atoms.nr;
+    t_topology top;
+    read_tps_conf(opt2fn("-f1", NFILE, fnm), &top, nullptr, &x1, nullptr, box, FALSE);
+    nat1 = top.atoms.getNatoms();
+    read_tps_conf(opt2fn("-f2", NFILE, fnm), &top, nullptr, &x2, nullptr, box, FALSE);
+    nat2 = top.atoms.getNatoms();
     if (nat1 != nat2)
     {
         gmx_fatal(FARGS, "Number of atoms in first structure is %d, in second %d",
                   nat1, nat2);
     }
     snew(xx, nat1);
-    t_atoms  &atoms = top->atoms;
+    t_atoms  &atoms = top.atoms;
 
     snew(mass, nat1);
     snew(index_all, nat1);
@@ -151,11 +149,12 @@ int gmx_morph(int argc, char *argv[])
         mass[i]      = 1;
         index_all[i] = i;
     }
+    std::vector<SymbolPtr> grpname(1);
     if (bFit)
     {
         printf("Select group for LSQ superposition:\n");
         get_index(&atoms, opt2fn_null("-n", NFILE, fnm), 1, &is_lsq, &index_lsq,
-                  &grpname);
+                  grpname, &top.symtab);
         reset_x(is_lsq, index_lsq, nat1, index_all, x1, mass);
         reset_x(is_lsq, index_lsq, nat1, index_all, x2, mass);
         do_fit(nat1, mass, x1, x2);
@@ -167,8 +166,8 @@ int gmx_morph(int argc, char *argv[])
         fp = xvgropen(opt2fn("-or", NFILE, fnm), "RMSD", "Conf", "(nm)", oenv);
         xvgr_legend(fp, asize(leg), leg, oenv);
         printf("Select group for RMSD calculation:\n");
-        get_index(&atoms, opt2fn_null("-n", NFILE, fnm), 1, &isize, &index, &grpname);
-        printf("You selected group %s, containing %d atoms\n", grpname, isize);
+        get_index(&atoms, opt2fn_null("-n", NFILE, fnm), 1, &isize, &index, grpname, &top.symtab);
+        printf("You selected group %s, containing %d atoms\n", grpname[0]->c_str(), isize);
         rms1 = rmsdev_ind(isize, index, mass, x1, x2);
         fprintf(stderr, "RMSD between input conformations is %g nm\n", rms1);
     }

@@ -137,13 +137,14 @@ static void done_xlatom(int nxlate, t_xlate_atom *xlatom)
 }
 
 void rename_atoms(const char* xlfile, const char *ffdir,
-                  t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
+                  t_atoms *atoms, SymbolTable *symtab, const t_restp *restp,
                   bool bResname, gmx_residuetype_t *rt, bool bReorderNum,
                   bool bVerbose)
 {
     int           nxlate, a, i, resind;
     t_xlate_atom *xlatom;
-    char          c, *rnm, atombuf[32], *ptr0, *ptr1;
+    char          c, atombuf[32];
+    const char   *rnm, *ptr0, *ptr1;
     bool          bReorderedNum, bRenamed, bMatch;
     bool          bStartTerm, bEndTerm;
 
@@ -165,23 +166,23 @@ void rename_atoms(const char* xlfile, const char *ffdir,
         }
     }
 
-    for (a = 0; (a < atoms->nr); a++)
+    for (a = 0; (a < atoms->getNatoms()); a++)
     {
         resind = atoms->atom[a].resind;
 
         bStartTerm = (resind == 0) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind-1].chainnum;
-        bEndTerm   = (resind >= atoms->nres-1) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind+1].chainnum;
+        bEndTerm   = (resind >= atoms->getNresidues()-1) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind+1].chainnum;
 
         if (bResname)
         {
-            rnm = *(atoms->resinfo[resind].name);
+            rnm = atoms->resinfo[resind].name->c_str();
         }
         else
         {
-            rnm = *(atoms->resinfo[resind].rtp);
+            rnm = atoms->resinfo[resind].rtp->c_str();
         }
 
-        strcpy(atombuf, *(atoms->atomname[a]));
+        strcpy(atombuf, atoms->atomname[a]->c_str());
         bReorderedNum = FALSE;
         if (bReorderNum)
         {
@@ -201,7 +202,7 @@ void rename_atoms(const char* xlfile, const char *ffdir,
         {
             /* Check if the base file name of the rtp and arn entry match */
             if (restp == nullptr ||
-                gmx_strcasecmp(restp[resind].filebase, xlatom[i].filebase) == 0)
+                gmx_strcasecmp(restp[resind].filebase.c_str(), xlatom[i].filebase) == 0)
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == nullptr ||
@@ -237,9 +238,9 @@ void rename_atoms(const char* xlfile, const char *ffdir,
                     if (bVerbose)
                     {
                         printf("Renaming atom '%s' in residue %d %s to '%s'\n",
-                               *atoms->atomname[a],
+                               atoms->atomname[a]->c_str(),
                                atoms->resinfo[resind].nr,
-                               *atoms->resinfo[resind].name,
+                               atoms->resinfo[resind].name->c_str(),
                                ptr0);
                     }
                     atoms->atomname[a] = put_symtab(symtab, ptr0);

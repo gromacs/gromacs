@@ -49,13 +49,13 @@ makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
 
     if (a != nullptr)
     {
-        exclusionDistances.reserve(a->nr);
-        for (int i = 0; i < a->nr; ++i)
+        exclusionDistances.reserve(a->getNatoms());
+        for (int i = 0; i < a->getNatoms(); ++i)
         {
             real value;
             if (!gmx_atomprop_query(aps, epropVDW,
-                                    *(a->resinfo[a->atom[i].resind].name),
-                                    *(a->atomname[i]), &value))
+                                    a->resinfo[a->atom[i].resind].name->c_str(),
+                                    a->atomname[i]->c_str(), &value))
             {
                 value = defaultDistance;
             }

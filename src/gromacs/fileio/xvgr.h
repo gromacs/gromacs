@@ -42,6 +42,8 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -132,14 +134,19 @@ void xvgr_world(FILE *out, real xmin, real ymin, real xmax, real ymax,
                 const struct gmx_output_env_t *oenv);
 /* Set the world in xvgr */
 
-void xvgrLegend(FILE                           *out,
-                const std::vector<std::string> &setNames,
-                const struct gmx_output_env_t  *oenv);
+void xvgrLegend(FILE                            *out,
+                gmx::ArrayRef<const std::string> setNames,
+                const struct gmx_output_env_t   *oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
 void xvgr_legend(FILE *out, int nsets, const char*const* setnames,
                  const struct gmx_output_env_t *oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
+
+//! Make a legend from symbol table entries.
+void xvgrLegendSymbol(FILE                           *out,
+                      gmx::ArrayRef<const SymbolPtr>  setnames,
+                      const struct gmx_output_env_t  *oenv);
 
 void xvgr_new_dataset(FILE *out,
                       int nr_first, int nsets, const char **setnames,

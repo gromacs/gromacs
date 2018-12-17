@@ -141,10 +141,10 @@ static void center_coords(t_atoms *atoms, const int *index_center, int ncenter,
     for (k = 0; (k < ncenter); k++)
     {
         i = index_center[k];
-        if (i >= atoms->nr)
+        if (i >= atoms->getNatoms())
         {
             gmx_fatal(FARGS, "Index %d refers to atom %d, which is larger than natoms (%d).",
-                      k+1, i+1, atoms->nr);
+                      k+1, i+1, atoms->getNatoms());
         }
         mm     = atoms->atom[i].m;
         tmass += mm;
@@ -161,7 +161,7 @@ static void center_coords(t_atoms *atoms, const int *index_center, int ncenter,
     rvec_sub(com, box_center, shift);
 
     /* Important - while the center was calculated based on a group, we should move all atoms */
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         rvec_dec(x0[i], shift);
     }
@@ -215,7 +215,7 @@ static void calc_electron_density(const char *fn, int **index, const int gnx[],
         snew((*slDensity)[i], *nslices);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.getNatoms());
     /*********** Start processing trajectory ***********/
     do
     {
@@ -273,7 +273,7 @@ static void calc_electron_density(const char *fn, int **index, const int gnx[],
                     slice = static_cast<int>(z / (*slWidth));
                 }
                 sought.nr_el    = 0;
-                sought.atomname = gmx_strdup(*(top->atoms.atomname[index[n][i]]));
+                sought.atomname = gmx_strdup(top->atoms.atomname[index[n][i]]->c_str());
 
                 /* now find the number of electrons. This is not efficient. */
                 found = static_cast<t_electron *>(bsearch(&sought,
@@ -283,7 +283,7 @@ static void calc_electron_density(const char *fn, int **index, const int gnx[],
                 if (found == nullptr)
                 {
                     fprintf(stderr, "Couldn't find %s. Add it to the .dat file\n",
-                            *(top->atoms.atomname[index[n][i]]));
+                            top->atoms.atomname[index[n][i]]->c_str());
                 }
                 else
                 {
@@ -369,27 +369,27 @@ static void calc_density(const char *fn, int **index, const int gnx[],
         snew((*slDensity)[i], *nslices);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.getNatoms());
     /*********** Start processing trajectory ***********/
 
-    snew(den_val, top->atoms.nr);
+    snew(den_val, top->atoms.getNatoms());
     if (dens_opt[0][0] == 'n')
     {
-        for (i = 0; (i < top->atoms.nr); i++)
+        for (i = 0; (i < top->atoms.getNatoms()); i++)
         {
             den_val[i] = 1;
         }
     }
     else if (dens_opt[0][0] == 'c')
     {
-        for (i = 0; (i < top->atoms.nr); i++)
+        for (i = 0; (i < top->atoms.getNatoms()); i++)
         {
             den_val[i] = top->atoms.atom[i].q;
         }
     }
     else
     {
-        for (i = 0; (i < top->atoms.nr); i++)
+        for (i = 0; (i < top->atoms.getNatoms()); i++)
         {
             den_val[i] = top->atoms.atom[i].m;
         }
@@ -501,7 +501,7 @@ static void calc_density(const char *fn, int **index, const int gnx[],
 }
 
 static void plot_density(double *slDensity[], const char *afile, int nslices,
-                         int nr_grps, char *grpname[], real slWidth,
+                         int nr_grps, gmx::ArrayRef<SymbolPtr> grpname, real slWidth,
                          const char **dens_opt,
                          gmx_bool bCenter, gmx_bool bRelative, gmx_bool bSymmetrize,
                          const gmx_output_env_t *oenv)
@@ -538,7 +538,7 @@ static void plot_density(double *slDensity[], const char *afile, int nslices,
     den = xvgropen(afile,
                    title, xlabel, ylabel, oenv);
 
-    xvgr_legend(den, nr_grps, grpname, oenv);
+    xvgrLegendSymbol(den, grpname, oenv);
 
     for (slice = 0; (slice < nslices); slice++)
     {
@@ -678,8 +678,6 @@ int gmx_density(int argc, char *argv[])
 
     double           **density;        /* density per slice          */
     real               slWidth;        /* width of one slice         */
-    char              *grpname_center; /* centering group name     */
-    char             **grpname;        /* groupnames                 */
     int                nr_electrons;   /* nr. electrons              */
     int                ncenter;        /* size of centering group    */
     int               *ngx;            /* sizes of groups            */
@@ -718,7 +716,9 @@ int gmx_density(int argc, char *argv[])
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
-    snew(grpname, ngrps);
+    std::vector<SymbolPtr> grpname_center(1);
+    std::vector<SymbolPtr> grpname(ngrps);
+
     snew(index, ngrps);
     snew(ngx, ngrps);
 
@@ -730,7 +730,7 @@ int gmx_density(int argc, char *argv[])
                 "trjconv to make sure atoms in this group are placed in the right periodicity.\n\n"
                 "Select the group to center density profiles around:\n");
         get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ncenter,
-                  &index_center, &grpname_center);
+                  &index_center, grpname_center, &top->symtab);
     }
     else
     {
@@ -739,7 +739,7 @@ int gmx_density(int argc, char *argv[])
     }
 
     fprintf(stderr, "\nSelect %d group%s to calculate density for:\n", ngrps, (ngrps > 1) ? "s" : "");
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, ngx, index, grpname);
+    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, ngx, index, grpname, &top->symtab);
 
     if (dens_opt[0][0] == 'e')
     {

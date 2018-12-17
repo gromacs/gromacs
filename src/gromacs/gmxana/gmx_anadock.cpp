@@ -56,22 +56,21 @@
 
 static const char *etitles[] = { "E-docked", "Free Energy" };
 
-typedef struct {
+struct t_pdbfile {
     real     edocked, efree;
     int      index, cluster_id;
     t_atoms  atoms;
     rvec    *x;
     int      ePBC;
     matrix   box;
-} t_pdbfile;
+};
 
 static t_pdbfile *read_pdbf(const char *fn)
 {
-    t_pdbfile *pdbf;
+    t_pdbfile *pdbf = new t_pdbfile;
     double     e;
     FILE      *fp;
 
-    snew(pdbf, 1);
     t_topology top;
     read_tps_conf(fn, &top, &pdbf->ePBC, &pdbf->x, nullptr, pdbf->box, FALSE);
     pdbf->atoms = top.atoms;
@@ -226,18 +225,18 @@ static real rmsd_dist(t_pdbfile *pa, t_pdbfile *pb, gmx_bool bRMSD)
     if (bRMSD)
     {
         rmsd = 0;
-        for (i = 0; (i < pa->atoms.nr); i++)
+        for (i = 0; (i < pa->atoms.getNatoms()); i++)
         {
             rvec_sub(pa->x[i], pb->x[i], dx);
             rmsd += iprod(dx, dx);
         }
-        rmsd = std::sqrt(rmsd/pa->atoms.nr);
+        rmsd = std::sqrt(rmsd/pa->atoms.getNatoms());
     }
     else
     {
         clear_rvec(acm);
         clear_rvec(bcm);
-        for (i = 0; (i < pa->atoms.nr); i++)
+        for (i = 0; (i < pa->atoms.getNatoms()); i++)
         {
             rvec_inc(acm, pa->x[i]);
             rvec_inc(bcm, pb->x[i]);
@@ -245,7 +244,7 @@ static real rmsd_dist(t_pdbfile *pa, t_pdbfile *pb, gmx_bool bRMSD)
         rvec_sub(acm, bcm, dx);
         for (i = 0; (i < DIM); i++)
         {
-            dx[i] /= pa->atoms.nr;
+            dx[i] /= pa->atoms.getNatoms();
         }
         rmsd = norm(dx);
     }

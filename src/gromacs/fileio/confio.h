@@ -38,6 +38,7 @@
 #define GMX_FILEIO_CONFIO_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/basedefinitions.h"
 
 /* For reading coordinate files it is assumed that enough memory
@@ -45,7 +46,6 @@
  */
 struct gmx_mtop_t;
 struct t_atoms;
-struct t_symtab;
 struct t_topology;
 
 void write_sto_conf_indexed(const char *outfile, const char *title,
@@ -97,7 +97,7 @@ void readConfAndTopology(const char *infile,
  * \param[out]    box           Box dimensions
  */
 void readConfAndAtoms(const char *infile,
-                      t_symtab *symtab, char **name, t_atoms *atoms,
+                      SymbolTable *symtab, char **name, t_atoms *atoms,
                       int *ePBC,
                       rvec **x, rvec **v, matrix box);
 

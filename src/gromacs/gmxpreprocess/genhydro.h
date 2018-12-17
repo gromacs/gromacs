@@ -41,7 +41,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 
-int add_h(t_atoms **pdbaptr, rvec *xptr[],
+int add_h(t_atoms *pdbaptr, SymbolTable *symtab, rvec *xptr[],
           int nah, t_hackblock ah[],
           int nterpairs,
           t_hackblock **ntdb, t_hackblock **ctdb,

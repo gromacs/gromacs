@@ -940,7 +940,7 @@ TEST_F(SelectionCollectionDataTest, HandlesMass)
     EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
     ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
     t_atoms &atoms = topManager_.atoms();
-    for (int i = 0; i < atoms.nr; ++i)
+    for (int i = 0; i < atoms.getNatoms(); ++i)
     {
         atoms.atom[i].m = 1.0 + i;
     }
@@ -957,7 +957,7 @@ TEST_F(SelectionCollectionDataTest, HandlesCharge)
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
     t_atoms &atoms = topManager_.atoms();
-    for (int i = 0; i < atoms.nr; ++i)
+    for (int i = 0; i < atoms.getNatoms(); ++i)
     {
         atoms.atom[i].q = i / 10.0;
     }
@@ -1156,7 +1156,7 @@ TEST_F(SelectionCollectionDataTest, ComputesMassesAndCharges)
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
     t_atoms &atoms = topManager_.atoms();
-    for (int i = 0; i < atoms.nr; ++i)
+    for (int i = 0; i < atoms.getNatoms(); ++i)
     {
         atoms.atom[i].m =   1.0 + i / 100.0;
         atoms.atom[i].q = -(1.0 + i / 100.0);
@@ -1334,7 +1334,7 @@ TEST_F(SelectionCollectionDataTest, HandlesOverlappingRealRanges)
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
     t_atoms &atoms = topManager_.atoms();
-    for (int i = 0; i < atoms.nr; ++i)
+    for (int i = 0; i < atoms.getNatoms(); ++i)
     {
         atoms.atom[i].q = i / 10.0 - 0.5;
     }

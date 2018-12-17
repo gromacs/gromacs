@@ -324,13 +324,13 @@ static void print_missing_interactions_atoms(const gmx::MDLogger &mdlog,
     {
         const gmx_moltype_t &moltype  = mtop->moltype[molb.type];
         int                  a_start  = a_end;
-        a_end                        = a_start + molb.nmol*moltype.atoms.nr;
+        a_end                        = a_start + molb.nmol*moltype.atoms.getNatoms();
 
         GMX_LOG(mdlog.warning).appendText(
                 print_missing_interactions_mb(cr, rt,
-                                              *(moltype.name),
+                                              moltype.name->c_str(),
                                               &rt->ril_mt[molb.type],
-                                              a_start, a_end, moltype.atoms.nr,
+                                              a_start, a_end, moltype.atoms.getNatoms(),
                                               molb.nmol,
                                               idef));
     }
@@ -608,9 +608,9 @@ static int make_reverse_ilist(const InteractionLists &ilist,
     int nat_mt, *count, i, nint_mt;
 
     /* Count the interactions */
-    nat_mt = atoms->nr;
+    nat_mt = atoms->getNatoms();
     snew(count, nat_mt);
-    low_make_reverse_ilist(ilist, atoms->atom, vsitePbc,
+    low_make_reverse_ilist(ilist, atoms->atom.data(), vsitePbc,
                            count,
                            bConstr, bSettle, bBCheck,
                            gmx::EmptyArrayRef(), gmx::EmptyArrayRef(),
@@ -626,7 +626,7 @@ static int make_reverse_ilist(const InteractionLists &ilist,
 
     /* Store the interactions */
     nint_mt =
-        low_make_reverse_ilist(ilist, atoms->atom, vsitePbc,
+        low_make_reverse_ilist(ilist, atoms->atom.data(), vsitePbc,
                                count,
                                bConstr, bSettle, bBCheck,
                                ril_mt->index, ril_mt->il,
@@ -634,7 +634,7 @@ static int make_reverse_ilist(const InteractionLists &ilist,
 
     sfree(count);
 
-    ril_mt->numAtomsInMolecule = atoms->nr;
+    ril_mt->numAtomsInMolecule = atoms->getNatoms();
 
     return nint_mt;
 }
@@ -676,7 +676,7 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
                                &rt.ril_mt[mt]);
         nint_mt.push_back(numberOfInteractions);
 
-        rt.ril_mt_tot_size += rt.ril_mt[mt].index[molt.atoms.nr];
+        rt.ril_mt_tot_size += rt.ril_mt[mt].index[molt.atoms.getNatoms()];
     }
     if (debug)
     {
@@ -694,9 +694,6 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     if (rt.bIntermolecularInteractions)
     {
         t_atoms atoms_global;
-
-        atoms_global.nr   = mtop->natoms;
-        atoms_global.atom = nullptr; /* Only used with virtual sites */
 
         GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
 
@@ -722,7 +719,7 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
         const gmx_molblock_t &molb           = mtop->molblock[mb];
-        const int             numAtomsPerMol = mtop->moltype[molb.type].atoms.nr;
+        const int             numAtomsPerMol = mtop->moltype[molb.type].atoms.getNatoms();
         MolblockIndices       mbi;
         mbi.a_start                          = i;
         i                                   += molb.nmol*numAtomsPerMol;
@@ -2274,9 +2271,6 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
         t_atoms atoms;
 
-        atoms.nr   = mtop->natoms;
-        atoms.atom = nullptr;
-
         GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
 
         make_reverse_ilist(*mtop->intermolecular_ilist,
@@ -2387,7 +2381,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
         if (debug)
         {
-            fprintf(debug, "molecule type '%s' %d cgs has %d cg links through bonded interac.\n", *molt.name, cgs.nr, nlink_mol);
+            fprintf(debug, "molecule type '%s' %d cgs has %d cg links through bonded interac.\n", molt.name->c_str(), cgs.nr, nlink_mol);
         }
 
         if (molb.nmol > mol)
@@ -2647,7 +2641,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
         const gmx_moltype_t &molt = mtop->moltype[molb.type];
         if (molt.cgs.nr == 1 || molb.nmol == 0)
         {
-            at_offset += molb.nmol*molt.atoms.nr;
+            at_offset += molb.nmol*molt.atoms.getNatoms();
         }
         else
         {
@@ -2657,7 +2651,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
             }
 
             std::vector<int> at2cg = make_at2cg(molt.cgs);
-            snew(xs, molt.atoms.nr);
+            snew(xs, molt.atoms.getNatoms());
             snew(cg_cm, molt.cgs.nr);
             for (int mol = 0; mol < molb.nmol; mol++)
             {
@@ -2680,7 +2674,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
                                            at_offset + bd_mol_mb.a2,
                                            &bd_mb);
 
-                at_offset += molt.atoms.nr;
+                at_offset += molt.atoms.getNatoms();
             }
             sfree(cg_cm);
             sfree(xs);

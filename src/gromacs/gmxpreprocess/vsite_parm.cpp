@@ -390,11 +390,9 @@ static real get_angle(int nrang, t_mybonded angles[],
     return angle;
 }
 
-static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype_t atype)
+static const char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype_t atype)
 {
-    char *name;
-
-    name = get_atomtype_name(atom->type, atype);
+    const char *name = get_atomtype_name(atom->type, atype);
 
     /* When using the decoupling option, atom types are changed
      * to decoupled for the non-bonded interactions, but the virtual
@@ -779,7 +777,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
     nvsite = 0;
 
     /* Make a reverse list to avoid ninteractions^2 operations */
-    at2vb = make_at2vsitebond(atoms->nr, plist);
+    at2vb = make_at2vsitebond(atoms->getNatoms(), plist);
 
     for (ftype = 0; (ftype < F_NRE); ftype++)
     {
@@ -886,7 +884,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
         }         /* if IF_VSITE */
 
     }
-    done_at2vsitebond(atoms->nr, at2vb);
+    done_at2vsitebond(atoms->getNatoms(), at2vb);
 
     return nvsite;
 }

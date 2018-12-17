@@ -140,7 +140,6 @@ int gmx_vanhove(int argc, char *argv[])
     int               isize, nalloc, nallocn;
     t_trxstatus      *status;
     int              *index;
-    char             *grpname;
     int               nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
     real             *time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
     real              invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
@@ -183,7 +182,8 @@ int gmx_vanhove(int argc, char *argv[])
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, boxtop,
                   FALSE);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname, &top.symtab);
 
     nalloc = 0;
     time   = nullptr;
@@ -445,7 +445,7 @@ int gmx_vanhove(int argc, char *argv[])
         fp = xvgropen(orfile, "Van Hove function", "r (nm)", "G (nm\\S-1\\N)", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
-            fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+            fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname[0]->c_str());
         }
         snew(legend, nr);
         for (fbin = 0; fbin < nr; fbin++)
@@ -472,7 +472,7 @@ int gmx_vanhove(int argc, char *argv[])
         fp = xvgropen(otfile, buf, "t (ps)", "", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
-            fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
+            fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname[0]->c_str());
         }
         for (f = 0; f <= ftmax; f++)
         {

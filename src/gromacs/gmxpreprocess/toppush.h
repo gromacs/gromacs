@@ -38,6 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_TOPPUSH_H
 #define GMX_GMXPREPROCESS_TOPPUSH_H
 
+#include "gromacs/topology/symtab.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
@@ -55,7 +56,7 @@ void generate_nbparams(int comb, int funct, t_params plist[],
                        gpp_atomtype_t atype,
                        warninp_t wi);
 
-void push_at (struct t_symtab *symtab, gpp_atomtype_t at,
+void push_at (SymbolTable *symtab, gpp_atomtype_t at,
               t_bond_atomtype bat, char *line, int nb_funct,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp_t wi);
@@ -76,7 +77,7 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
               char *plines, int nb_funct,
               warninp_t wi);
 
-void push_atom(struct t_symtab *symtab,
+void push_atom(SymbolTable     *symtab,
                t_block         *cgs,
                t_atoms         *at,
                gpp_atomtype_t   atype,
@@ -102,7 +103,7 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline,
               int *whichmol, int *nrcopies,
               warninp_t wi);
 
-void push_molt(struct t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
+void push_molt(SymbolTable *symtab, int *nmol, std::vector<t_molinfo> *mol, char *line,
                warninp_t wi);
 
 void init_block2(t_block2 *b2, int natom);
@@ -117,7 +118,7 @@ void b_to_b2(t_blocka *b, t_block2 *b2);
 
 void b2_to_b(t_block2 *b2, t_blocka *b);
 
-int add_atomtype_decoupled(struct t_symtab *symtab, gpp_atomtype_t at,
+int add_atomtype_decoupled(SymbolTable *symtab, gpp_atomtype_t at,
                            t_nbparam ***nbparam, t_nbparam ***pair);
 /* Add an atom type with all parameters set to zero (no interactions).
  * Returns the atom type number.

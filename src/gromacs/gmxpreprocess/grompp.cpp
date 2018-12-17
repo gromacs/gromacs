@@ -102,7 +102,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
-static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
+static int rm_interactions(int ifunc, int nrmols, gmx::ArrayRef<t_molinfo> mols)
 {
     int  i, n;
 
@@ -123,7 +123,7 @@ static int check_atom_names(const char *fn1, const char *fn2,
     t_atoms *tat;
 #define MAXMISMATCH 20
 
-    if (mtop->natoms != at->nr)
+    if (mtop->natoms != at->getNatoms())
     {
         gmx_incons("comparing atom names");
     }
@@ -135,15 +135,15 @@ static int check_atom_names(const char *fn1, const char *fn2,
         tat = &mtop->moltype[molb.type].atoms;
         for (m = 0; m < molb.nmol; m++)
         {
-            for (j = 0; j < tat->nr; j++)
+            for (j = 0; j < tat->getNatoms(); j++)
             {
-                if (strcmp( *(tat->atomname[j]), *(at->atomname[i]) ) != 0)
+                if (strcmp( tat->atomname[j]->c_str(), at->atomname[i]->c_str() ) != 0)
                 {
                     if (nmismatch < MAXMISMATCH)
                     {
                         fprintf(stderr,
                                 "Warning: atom name %d in %s and %s does not match (%s - %s)\n",
-                                i+1, fn1, fn2, *(tat->atomname[j]), *(at->atomname[i]));
+                                i+1, fn1, fn2, tat->atomname[j]->c_str(), at->atomname[i]->c_str());
                     }
                     else if (nmismatch == MAXMISMATCH)
                     {
@@ -186,11 +186,11 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
                     if (eg != firsteg)
                     {
                         gmx_fatal(FARGS, "atoms %d and %d in charge group %d of molecule type '%s' are in different energy groups",
-                                  firstj+1, astart+j+1, cg+1, *molt->name);
+                                  firstj+1, astart+j+1, cg+1, molt->name->c_str());
                     }
                 }
             }
-            astart += molt->atoms.nr;
+            astart += molt->atoms.getNatoms();
         }
     }
 }
@@ -264,10 +264,10 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
     const gmx_moltype_t *w_moltype = nullptr;
     for (const gmx_moltype_t &moltype : mtop->moltype)
     {
-        const t_atom           *atom  = moltype.atoms.atom;
-        const InteractionLists &ilist = moltype.ilist;
-        const InteractionList  &ilc   = ilist[F_CONSTR];
-        const InteractionList  &ils   = ilist[F_SETTLE];
+        gmx::ArrayRef<const t_atom> atom  = moltype.atoms.atom;
+        const InteractionLists     &ilist = moltype.ilist;
+        const InteractionList      &ilc   = ilist[F_CONSTR];
+        const InteractionList      &ils   = ilist[F_SETTLE];
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             if (!(ftype == F_BONDS || ftype == F_G96BONDS || ftype == F_HARMONIC))
@@ -338,13 +338,13 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
     {
         bWarn = (w_period2 < gmx::square(min_steps_warn*dt));
         /* A check that would recognize most water models */
-        bWater = ((*w_moltype->atoms.atomname[0])[0] == 'O' &&
-                  w_moltype->atoms.nr <= 5);
+        bWater = (w_moltype->atoms.atomname[0]->c_str()[0] == 'O' &&
+                  w_moltype->atoms.getNatoms() <= 5);
         sprintf(warn_buf, "The bond in molecule-type %s between atoms %d %s and %d %s has an estimated oscillational period of %.1e ps, which is less than %d times the time step of %.1e ps.\n"
                 "%s",
-                *w_moltype->name,
-                w_a1+1, *w_moltype->atoms.atomname[w_a1],
-                w_a2+1, *w_moltype->atoms.atomname[w_a2],
+                w_moltype->name->c_str(),
+                w_a1+1, w_moltype->atoms.atomname[w_a1]->c_str(),
+                w_a2+1, w_moltype->atoms.atomname[w_a2]->c_str(),
                 std::sqrt(w_period2), bWarn ? min_steps_warn : min_steps_note, dt,
                 bWater ?
                 "Maybe you asked for fexible water." :
@@ -409,10 +409,10 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
 
 /* TODO Decide whether this function can be consolidated with
  * gmx_mtop_ftype_count */
-static int nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
+static int nint_ftype(const gmx_mtop_t &mtop, gmx::ArrayRef<const t_molinfo> mi, int ftype)
 {
     int nint = 0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
+    for (const gmx_molblock_t &molb : mtop.molblock)
     {
         nint += molb.nmol*mi[molb.type].plist[ftype].nr;
     }
@@ -425,10 +425,9 @@ static int nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
  * unused molecule types are deleted.
  */
 static void renumber_moltypes(gmx_mtop_t *sys,
-                              int *nmolinfo, t_molinfo **molinfo)
+                              int *nmolinfo, std::vector<t_molinfo> *molinfo)
 {
     int       *order, norder;
-    t_molinfo *minew;
 
     snew(order, *nmolinfo);
     norder = 0;
@@ -453,7 +452,7 @@ static void renumber_moltypes(gmx_mtop_t *sys,
     }
 
     /* We still need to reorder the molinfo structs */
-    snew(minew, norder);
+    std::vector<t_molinfo> minew(norder);
     for (int mi = 0; mi < *nmolinfo; mi++)
     {
         int i;
@@ -474,13 +473,13 @@ static void renumber_moltypes(gmx_mtop_t *sys,
         }
     }
     sfree(order);
-    sfree(*molinfo);
+    molinfo->clear();
 
     *nmolinfo = norder;
     *molinfo  = minew;
 }
 
-static void molinfo2mtop(int nmi, t_molinfo *mi, gmx_mtop_t *mtop)
+static void molinfo2mtop(int nmi, gmx::ArrayRef<t_molinfo> mi, gmx_mtop_t *mtop)
 {
     mtop->moltype.resize(nmi);
     for (int m = 0; m < nmi; m++)
@@ -499,13 +498,13 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
            bool bGenVel, bool bVerbose, t_state *state,
            gpp_atomtype_t atype, gmx_mtop_t *sys,
-           int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
+           int *nmi, std::vector<t_molinfo> *mi, std::vector<t_molinfo> *intermolecular_interactions,
            t_params plist[],
            int *comb, double *reppow, real *fudgeQQ,
            gmx_bool bMorse,
            warninp_t wi)
 {
-    t_molinfo                  *molinfo = nullptr;
+    std::vector<t_molinfo>      molinfo;
     std::vector<gmx_molblock_t> molblock;
     int                         i, nrmols, nmismatch;
     char                        buf[STRLEN];
@@ -537,7 +536,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             /* Add a new molblock to the topology */
             sys->molblock.push_back(molb);
         }
-        sys->natoms += molb.nmol*molinfo[sys->molblock.back().type].atoms.nr;
+        sys->natoms += molb.nmol*molinfo[sys->molblock.back().type].atoms.getNatoms();
     }
     if (sys->molblock.empty())
     {
@@ -583,12 +582,11 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "processing coordinates...\n");
     }
 
-    t_topology *conftop;
+    t_topology  conftop;
     rvec       *x = nullptr;
     rvec       *v = nullptr;
-    snew(conftop, 1);
-    read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
-    state->natoms = conftop->atoms.nr;
+    read_tps_conf(confin, &conftop, nullptr, &x, &v, state->box, FALSE);
+    state->natoms = conftop.atoms.getNatoms();
     if (state->natoms != sys->natoms)
     {
         gmx_fatal(FARGS, "number of coordinates in coordinate file (%s, %d)\n"
@@ -620,9 +618,8 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     /* This call fixes the box shape for runs with pressure scaling */
     set_box_rel(ir, state);
 
-    nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
-    done_top(conftop);
-    sfree(conftop);
+    nmismatch = check_atom_names(topfile, confin, sys, &conftop.atoms);
+    done_top(&conftop);
 
     if (nmismatch)
     {
@@ -648,9 +645,9 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "double-checking input for internal consistency...\n");
     }
     {
-        bool bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
-                                          nint_ftype(sys, molinfo, F_CONSTRNC));
-        bool bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
+        bool bHasNormalConstraints = 0 < (nint_ftype(*sys, molinfo, F_CONSTR) +
+                                          nint_ftype(*sys, molinfo, F_CONSTRNC));
+        bool bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(*sys, molinfo, F_SETTLE);
         double_check(ir, state->box,
                      bHasNormalConstraints,
                      bHasAnyConstraints,
@@ -821,23 +818,21 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                         rvec com,
                         warninp_t wi)
 {
-    gmx_bool           *hadAtom;
-    rvec               *x, *v;
-    dvec                sum;
-    double              totmass;
-    t_topology         *top;
-    matrix              box, invbox;
-    int                 natoms, npbcdim = 0;
-    char                warn_buf[STRLEN];
-    int                 a, i, ai, j, k, nat_molb;
-    t_params           *pr, *prfb;
-    t_atom             *atom;
+    gmx_bool             *hadAtom;
+    rvec                 *x, *v;
+    dvec                  sum;
+    double                totmass;
+    t_topology            top;
+    matrix                box, invbox;
+    int                   natoms, npbcdim = 0;
+    char                  warn_buf[STRLEN];
+    int                   a, i, ai, j, k, nat_molb;
+    t_params             *pr, *prfb;
+    gmx::ArrayRef<t_atom> atom;
 
-    snew(top, 1);
-    read_tps_conf(fn, top, nullptr, &x, &v, box, FALSE);
-    natoms = top->atoms.nr;
-    done_top(top);
-    sfree(top);
+    read_tps_conf(fn, &top, nullptr, &x, &v, box, FALSE);
+    natoms = top.atoms.getNatoms();
+    done_top(&top);
     if (natoms != mtop->natoms)
     {
         sprintf(warn_buf, "The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.", fn, natoms, mtop->natoms, std::min(mtop->natoms, natoms), fn);
@@ -864,7 +859,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     snew(hadAtom, natoms);
     for (gmx_molblock_t &molb : mtop->molblock)
     {
-        nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.nr;
+        nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.getNatoms();
         pr       = &(molinfo[molb.type].plist[F_POSRES]);
         prfb     = &(molinfo[molb.type].plist[F_FBPOSRES]);
         if (pr->nr > 0 || prfb->nr > 0)
@@ -876,7 +871,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
-                              ai+1, *molinfo[molb.type].name, fn, natoms);
+                              ai+1, molinfo[molb.type].name->c_str(), fn, natoms);
                 }
                 hadAtom[ai] = TRUE;
                 if (rc_scaling == erscCOM)
@@ -896,7 +891,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
-                              ai+1, *molinfo[molb.type].name, fn, natoms);
+                              ai+1, molinfo[molb.type].name->c_str(), fn, natoms);
                 }
                 if (rc_scaling == erscCOM && !hadAtom[ai])
                 {
@@ -946,7 +941,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
 
         for (gmx_molblock_t &molb : mtop->molblock)
         {
-            nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.nr;
+            nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.getNatoms();
             if (!molb.posres_xA.empty() || !molb.posres_xB.empty())
             {
                 std::vector<gmx::RVec> &xp = (!bTopB ? molb.posres_xA : molb.posres_xB);
@@ -1031,7 +1026,7 @@ static int nrdf_internal(t_atoms *atoms)
     int i, nmass, nrdf;
 
     nmass = 0;
-    for (i = 0; i < atoms->nr; i++)
+    for (i = 0; i < atoms->getNatoms(); i++)
     {
         /* Vsite ptype might not be set here yet, so also check the mass */
         if ((atoms->atom[i].ptype == eptAtom ||
@@ -1228,7 +1223,7 @@ static int count_constraints(const gmx_mtop_t *mtop, t_molinfo *mi, warninp_t wi
             sprintf(buf,
                     "Molecule type '%s' has %d constraints.\n"
                     "For stability and efficiency there should not be more constraints than internal number of degrees of freedom: %d.\n",
-                    *mi[molb.type].name, count_mol,
+                    mi[molb.type].name->c_str(), count_mol,
                     nrdf_internal(&mi[molb.type].atoms));
             warning(wi, buf);
         }
@@ -1304,13 +1299,13 @@ static void checkForUnboundAtoms(const gmx_moltype_t     *molt,
 {
     const t_atoms *atoms = &molt->atoms;
 
-    if (atoms->nr == 1)
+    if (atoms->getNatoms() == 1)
     {
         /* Only one atom, there can't be unbound atoms */
         return;
     }
 
-    std::vector<int> count(atoms->nr, 0);
+    std::vector<int> count(atoms->getNatoms(), 0);
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -1332,7 +1327,7 @@ static void checkForUnboundAtoms(const gmx_moltype_t     *molt,
     }
 
     int numDanglingAtoms = 0;
-    for (int a = 0; a < atoms->nr; a++)
+    for (int a = 0; a < atoms->getNatoms(); a++)
     {
         if (atoms->atom[a].ptype != eptVSite &&
             count[a] == 0)
@@ -1340,7 +1335,7 @@ static void checkForUnboundAtoms(const gmx_moltype_t     *molt,
             if (bVerbose)
             {
                 fprintf(stderr, "\nAtom %d '%s' in moleculetype '%s' is not bound by a potential or constraint to any other atom in the same moleculetype.\n",
-                        a + 1, *atoms->atomname[a], *molt->name);
+                        a + 1, atoms->atomname[a]->c_str(), molt->name->c_str());
             }
             numDanglingAtoms++;
         }
@@ -1350,7 +1345,7 @@ static void checkForUnboundAtoms(const gmx_moltype_t     *molt,
     {
         char buf[STRLEN];
         sprintf(buf, "In moleculetype '%s' %d atoms are not bound by a potential or constraint to any other atom in the same moleculetype. Although technically this might not cause issues in a simulation, this often means that the user forgot to add a bond/potential/constraint or put multiple molecules in the same moleculetype definition by mistake. Run with -v to get information for each atom.",
-                *molt->name, numDanglingAtoms);
+                molt->name->c_str(), numDanglingAtoms);
         warning_note(wi, buf);
     }
 }
@@ -1383,9 +1378,9 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t *molt,
         return false;
     }
 
-    const t_atom * atom = molt->atoms.atom;
+    gmx::ArrayRef<const t_atom> atom = molt->atoms.atom;
 
-    t_blocka       atomToConstraints =
+    t_blocka                    atomToConstraints =
         gmx::make_at2con(*molt, iparams,
                          gmx::FlexibleConstraintTreatment::Exclude);
 
@@ -1683,7 +1678,7 @@ int gmx_grompp(int argc, char *argv[])
     };
     t_gromppopts          *opts;
     int                    nmi;
-    t_molinfo             *mi, *intermolecular_interactions;
+    std::vector<t_molinfo> mi, intermolecular_interactions;
     gpp_atomtype_t         atype;
     int                    nvsite, comb;
     t_params              *plist;
@@ -1797,7 +1792,7 @@ int gmx_grompp(int argc, char *argv[])
     atype = init_atomtype();
     if (debug)
     {
-        pr_symtab(debug, 0, "Just opened", &sys.symtab);
+        pr_symtab(debug, 0, "Just opened", sys.symtab);
     }
 
     const char *fn = ftp2fn(efTOP, NFILE, fnm);
@@ -1816,7 +1811,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (debug)
     {
-        pr_symtab(debug, 0, "After new_status", &sys.symtab);
+        pr_symtab(debug, 0, "After new_status", sys.symtab);
     }
 
     nvsite = 0;
@@ -1832,7 +1827,7 @@ int gmx_grompp(int argc, char *argv[])
     {
         for (size_t mt = 0; mt < sys.moltype.size(); mt++)
         {
-            clean_vsite_bondeds(mi[mt].plist, sys.moltype[mt].atoms.nr, bRmVSBds);
+            clean_vsite_bondeds(mi[mt].plist, sys.moltype[mt].atoms.getNatoms(), bRmVSBds);
         }
     }
 
@@ -1845,7 +1840,7 @@ int gmx_grompp(int argc, char *argv[])
         gmx_mtop_remove_chargegroups(&sys);
     }
 
-    if (count_constraints(&sys, mi, wi) && (ir->eConstrAlg == econtSHAKE))
+    if (count_constraints(&sys, mi.data(), wi) && (ir->eConstrAlg == econtSHAKE))
     {
         if (ir->eI == eiCG || ir->eI == eiLBFGS)
         {
@@ -1889,8 +1884,8 @@ int gmx_grompp(int argc, char *argv[])
      */
     check_warning_error(wi, FARGS);
 
-    if (nint_ftype(&sys, mi, F_POSRES) > 0 ||
-        nint_ftype(&sys, mi, F_FBPOSRES) > 0)
+    if (nint_ftype(sys, mi, F_POSRES) > 0 ||
+        nint_ftype(sys, mi, F_FBPOSRES) > 0)
     {
         if (ir->epc == epcPARRINELLORAHMAN || ir->epc == epcMTTK)
         {
@@ -1940,7 +1935,7 @@ int gmx_grompp(int argc, char *argv[])
                 fprintf(stderr, " and %s\n", fnB);
             }
         }
-        gen_posres(&sys, mi, fn, fnB,
+        gen_posres(&sys, mi.data(), fn, fnB,
                    ir->refcoord_scaling, ir->ePBC,
                    ir->posres_com, ir->posres_comB,
                    wi);
@@ -1970,7 +1965,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (debug)
     {
-        pr_symtab(debug, 0, "After renum_atype", &sys.symtab);
+        pr_symtab(debug, 0, "After renum_atype", sys.symtab);
     }
 
     if (bVerbose)
@@ -1984,7 +1979,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (debug)
     {
-        pr_symtab(debug, 0, "After convert_params", &sys.symtab);
+        pr_symtab(debug, 0, "After convert_params", sys.symtab);
     }
 
     /* set ptype to VSite for virtual sites */
@@ -1994,7 +1989,7 @@ int gmx_grompp(int argc, char *argv[])
     }
     if (debug)
     {
-        pr_symtab(debug, 0, "After virtual sites", &sys.symtab);
+        pr_symtab(debug, 0, "After virtual sites", sys.symtab);
     }
     /* Check velocity for virtual sites and shells */
     if (bGenVel)
@@ -2122,14 +2117,14 @@ int gmx_grompp(int argc, char *argv[])
 
     if (debug)
     {
-        pr_symtab(debug, 0, "After index", &sys.symtab);
+        pr_symtab(debug, 0, "After index", sys.symtab);
     }
 
     triple_check(mdparin, ir, &sys, wi);
     close_symtab(&sys.symtab);
     if (debug)
     {
-        pr_symtab(debug, 0, "After close", &sys.symtab);
+        pr_symtab(debug, 0, "After close", sys.symtab);
     }
 
     /* make exclusions between QM atoms */
@@ -2314,7 +2309,6 @@ int gmx_grompp(int argc, char *argv[])
         done_block(&mi[i].mols);
         done_plist(mi[i].plist);
     }
-    sfree(mi);
     done_atomtype(atype);
     done_inputrec_strings();
     output_env_done(oenv);

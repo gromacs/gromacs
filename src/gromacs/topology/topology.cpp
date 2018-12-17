@@ -52,6 +52,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/arrayref.h"
 
 const char *gtypes[egcNR+1] = {
     "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
@@ -61,7 +62,7 @@ const char *gtypes[egcNR+1] = {
 static void init_groups(gmx_groups_t *groups)
 {
     groups->ngrpname = 0;
-    groups->grpname  = nullptr;
+    groups->grpname.clear();
     for (int g = 0; g < egcNR; g++)
     {
         groups->grps[g].nr     = 0;
@@ -74,8 +75,6 @@ static void init_groups(gmx_groups_t *groups)
 
 void init_mtop(gmx_mtop_t *mtop)
 {
-    mtop->name = nullptr;
-
     // TODO: Move to ffparams when that is converted to C++
     mtop->ffparams.functype               = nullptr;
     mtop->ffparams.iparams                = nullptr;
@@ -99,7 +98,6 @@ void init_mtop(gmx_mtop_t *mtop)
 
 void init_top(t_topology *top)
 {
-    top->name = nullptr;
     init_idef(&top->idef);
     init_atom(&(top->atoms));
     init_atomtypes(&(top->atomtypes));
@@ -111,7 +109,7 @@ void init_top(t_topology *top)
 
 
 gmx_moltype_t::gmx_moltype_t() :
-    name(nullptr),
+    name(),
     cgs(),
     excls()
 {
@@ -142,8 +140,6 @@ void done_gmx_groups_t(gmx_groups_t *g)
             g->grpnr[i] = nullptr;
         }
     }
-    /* The contents of this array is in symtab, don't free it here */
-    sfree(g->grpname);
 }
 
 gmx_mtop_t::gmx_mtop_t()
@@ -252,7 +248,7 @@ bool gmx_mtop_has_perturbed_charges(const gmx_mtop_t &mtop)
         const t_atoms &atoms = moltype.atoms;
         if (atoms.haveBState)
         {
-            for (int a = 0; a < atoms.nr; a++)
+            for (int a = 0; a < atoms.getNatoms(); a++)
             {
                 if (atoms.atom[a].q != atoms.atom[a].qB)
                 {
@@ -282,16 +278,14 @@ bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
     return mtop->moltype.empty() || mtop->moltype[0].atoms.havePdbInfo;
 }
 
-static void pr_grps(FILE *fp, const char *title, const t_grps grps[], char **grpname[])
+static void pr_grps(FILE *fp, const char *title, const t_grps grps[], gmx::ArrayRef<const SymbolPtr> grpname)
 {
-    int i, j;
-
-    for (i = 0; (i < egcNR); i++)
+    for (int i = 0; (i < egcNR); i++)
     {
         fprintf(fp, "%s[%-12s] nr=%d, name=[", title, gtypes[i], grps[i].nr);
-        for (j = 0; (j < grps[i].nr); j++)
+        for (int j = 0; (j < grps[i].nr); j++)
         {
-            fprintf(fp, " %s", *(grpname[grps[i].nm_ind[j]]));
+            fprintf(fp, " %s", grpname[grps[i].nm_ind[j]]->c_str());
         }
         fprintf(fp, "]\n");
     }
@@ -304,7 +298,7 @@ static void pr_groups(FILE *fp, int indent,
     int nat_max, i, g;
 
     pr_grps(fp, "grp", groups->grps, groups->grpname);
-    pr_strings(fp, indent, "grpname", groups->grpname, groups->ngrpname, bShowNumbers);
+    pr_stringsSymtab(fp, indent, "grpname", groups->grpname.data(), groups->ngrpname, bShowNumbers);
 
     pr_indent(fp, indent);
     fprintf(fp, "groups          ");
@@ -359,7 +353,7 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
 
     indent = pr_title_n(fp, indent, title, n);
     pr_indent(fp, indent);
-    fprintf(fp, "name=\"%s\"\n", *(molt->name));
+    fprintf(fp, "name=\"%s\"\n", molt->name->c_str());
     pr_atoms(fp, indent, "atoms", &(molt->atoms), bShowNumbers);
     pr_block(fp, indent, "cgs", &molt->cgs, bShowNumbers);
     pr_blocka(fp, indent, "excls", &molt->excls, bShowNumbers);
@@ -378,7 +372,7 @@ static void pr_molblock(FILE *fp, int indent, const char *title,
     indent = pr_title_n(fp, indent, title, n);
     pr_indent(fp, indent);
     fprintf(fp, "%-20s = %d \"%s\"\n",
-            "moltype", molb->type, *(molt[molb->type].name));
+            "moltype", molb->type, molt[molb->type].name->c_str());
     pr_int(fp, indent, "#molecules", molb->nmol);
     pr_int(fp, indent, "#posres_xA", molb->posres_xA.size());
     if (!molb->posres_xA.empty())
@@ -399,7 +393,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
     {
         indent = pr_title(fp, indent, title);
         pr_indent(fp, indent);
-        fprintf(fp, "name=\"%s\"\n", *(mtop->name));
+        fprintf(fp, "name=\"%s\"\n", mtop->name->c_str());
         pr_int(fp, indent, "#atoms", mtop->natoms);
         pr_int(fp, indent, "#molblock", mtop->molblock.size());
         for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
@@ -436,7 +430,7 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
     {
         indent = pr_title(fp, indent, title);
         pr_indent(fp, indent);
-        fprintf(fp, "name=\"%s\"\n", *(top->name));
+        fprintf(fp, "name=\"%s\"\n", top->name->c_str());
         pr_atoms(fp, indent, "atoms", &(top->atoms), bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(top->atomtypes), bShowNumbers);
         pr_block(fp, indent, "cgs", &top->cgs, bShowNumbers);
@@ -638,8 +632,8 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
             {
                 sprintf(buf, "grps[%d].name[%d]", i, j);
                 cmp_str(fp, buf, -1,
-                        *g0->grpname[g0->grps[i].nm_ind[j]],
-                        *g1->grpname[g1->grps[i].nm_ind[j]]);
+                        g0->grpname[g0->grps[i].nm_ind[j]]->c_str(),
+                        g1->grpname[g1->grps[i].nm_ind[j]]->c_str());
             }
         }
         cmp_int(fp, "ngrpnr", i, g0->ngrpnr[i], g1->ngrpnr[i]);

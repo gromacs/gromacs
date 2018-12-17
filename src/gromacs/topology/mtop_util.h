@@ -41,6 +41,8 @@
 
 #include <vector>
 
+#include "symtab.h"
+
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -49,7 +51,6 @@ struct gmx_localtop_t;
 struct t_atom;
 struct t_atoms;
 struct t_block;
-struct t_symtab;
 
 // TODO All of the functions taking a const gmx_mtop * are deprecated
 // and should be replaced by versions taking const gmx_mtop & when
@@ -119,7 +120,7 @@ gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
  */
 void
 gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
-                            char **atomname, int *resnr, char **resname);
+                            const char **atomname, int *resnr, const char **resname);
 
 /* Return the a pointer to the moltype struct of the current atom
  * in the loop and the atom number in the molecule.
@@ -266,9 +267,9 @@ std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop);
  * \param[out] mtop    The molecular topology output containing atoms.
  */
 void
-convertAtomsToMtop(t_symtab    *symtab,
-                   char       **name,
-                   t_atoms     *atoms,
-                   gmx_mtop_t  *mtop);
+convertAtomsToMtop(const SymbolTable    &symtab,
+                   SymbolPtr             name,
+                   t_atoms              *atoms,
+                   gmx_mtop_t           *mtop);
 
 #endif

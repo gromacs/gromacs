@@ -39,12 +39,12 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/symtab.h"
 
 struct t_atoms;
-struct t_symtab;
 
 void gmx_espresso_read_conf(const char *infile,
-                            t_symtab *symtab, char **name, t_atoms *atoms,
+                            SymbolTable *symtab, char **name, t_atoms *atoms,
                             rvec x[], rvec *v, matrix box);
 /* If name is not nullptr, gmx_strdup the title string into
  * it. Reading a title from espresso format is not , so this will

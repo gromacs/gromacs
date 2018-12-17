@@ -42,6 +42,8 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -91,7 +93,7 @@ extern real pprms(FILE *fp, int nbb, t_bb bb[]);
 extern real ca_phi(int gnx, const int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
-extern real dip(int nbb, const int bbind[], const rvec x[], const t_atom atom[]);
+extern real dip(int nbb, const int bbind[], const rvec x[], gmx::ArrayRef<const t_atom> atom);
 
 extern real rise(int gnx, const int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
@@ -106,8 +108,9 @@ extern void av_phipsi(FILE *fphi, FILE *fpsi, FILE *fphi2, FILE *fpsi2,
 
 extern t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
                      int *nall, int **index,
-                     char ***atomname, t_atom atom[],
-                     t_resinfo *resinfo);
+                     gmx::ArrayRef<const SymbolPtr> atomname, gmx::ArrayRef<const t_atom> atom,
+                     gmx::ArrayRef<const t_resinfo> resinfo,
+                     SymbolTable *symtab);
 
 extern void do_start_end(int nres, t_bb bb[], int *nbb,
                          int bbindex[], int *nca, int caindex[],

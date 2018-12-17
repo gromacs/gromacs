@@ -155,7 +155,6 @@ int gmx_g_angle(int argc, char *argv[])
     real               dt;
     int                isize;
     int               *index;
-    char              *grpname;
     real               maxang, S2, norm_fac, maxstat;
     unsigned long      mode;
     int                nframes, maxangstat, mult, *angstat;
@@ -232,7 +231,9 @@ int gmx_g_angle(int argc, char *argv[])
     maxangstat = gmx::roundToInt(maxang/binwidth);
     binwidth   = maxang/maxangstat;
 
-    rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    SymbolTable            symtab;
+    std::vector<SymbolPtr> grpname(1);
+    rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, grpname, &symtab);
     nangles = isize/mult;
     if ((isize % mult) != 0)
     {
@@ -293,7 +294,7 @@ int gmx_g_angle(int argc, char *argv[])
 
     if (bAver)
     {
-        sprintf(title, "Average Angle: %s", grpname);
+        sprintf(title, "Average Angle: %s", grpname[0]->c_str());
         out = xvgropen(opt2fn("-ov", NFILE, fnm),
                        title, "Time (ps)", "Angle (degrees)", oenv);
         for (i = 0; (i < nframes); i++)
@@ -325,7 +326,7 @@ int gmx_g_angle(int argc, char *argv[])
 
     if (bFrac)
     {
-        sprintf(title, "Trans fraction: %s", grpname);
+        sprintf(title, "Trans fraction: %s", grpname[0]->c_str());
         out = xvgropen(opt2fn("-of", NFILE, fnm),
                        title, "Time (ps)", "Fraction", oenv);
         tfrac = 0.0;
@@ -344,7 +345,7 @@ int gmx_g_angle(int argc, char *argv[])
     if (bTrans)
     {
         ana_dih_trans(opt2fn("-ot", NFILE, fnm), opt2fn("-oh", NFILE, fnm),
-                      dih, nframes, nangles, grpname, time, bRb, oenv);
+                      dih, nframes, nangles, grpname[0]->c_str(), time, bRb, oenv);
     }
 
     if (bCorr)
@@ -428,11 +429,11 @@ int gmx_g_angle(int argc, char *argv[])
 
     if (mult == 3)
     {
-        sprintf(title, "Angle Distribution: %s", grpname);
+        sprintf(title, "Angle Distribution: %s", grpname[0]->c_str());
     }
     else
     {
-        sprintf(title, "Dihedral Distribution: %s", grpname);
+        sprintf(title, "Dihedral Distribution: %s", grpname[0]->c_str());
 
         calc_distribution_props(maxangstat, angstat, -180.0, 0, nullptr, &S2);
         fprintf(stderr, "Order parameter S^2 = %g\n", S2);

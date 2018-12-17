@@ -361,7 +361,7 @@ static void calc_potential(const char *fn, int **index, int gnx[],
 
 static void plot_potential(double *potential[], double *charge[], double *field[],
                            const char *afile, const char *bfile, const char *cfile,
-                           int nslices, int nr_grps, const char *const grpname[], double slWidth,
+                           int nslices, int nr_grps, gmx::ArrayRef<SymbolPtr> grpname, double slWidth,
                            const gmx_output_env_t *oenv)
 {
     FILE       *pot,     /* xvgr file with potential */
@@ -372,15 +372,15 @@ static void plot_potential(double *potential[], double *charge[], double *field[
 
     sprintf(buf, "Electrostatic Potential");
     pot = xvgropen(afile, buf, "Box (nm)", "Potential (V)", oenv);
-    xvgr_legend(pot, nr_grps, grpname, oenv);
+    xvgrLegendSymbol(pot, grpname, oenv);
 
     sprintf(buf, "Charge Distribution");
     cha = xvgropen(bfile, buf, "Box (nm)", "Charge density (q/nm\\S3\\N)", oenv);
-    xvgr_legend(cha, nr_grps, grpname, oenv);
+    xvgrLegendSymbol(cha, grpname, oenv);
 
     sprintf(buf, "Electric Field");
     fie = xvgropen(cfile, buf, "Box (nm)", "Field (V/nm)", oenv);
-    xvgr_legend(fie, nr_grps, grpname, oenv);
+    xvgrLegendSymbol(fie, grpname, oenv);
 
     for (slice = cb; slice < (nslices - ce); slice++)
     {
@@ -450,7 +450,6 @@ int gmx_potential(int argc, char *argv[])
     **charge,                                  /* total charge per slice     */
     **field,                                   /* field per slice            */
                        slWidth;                /* width of one slice         */
-    char      **grpname;                       /* groupnames                 */
     int        *ngx;                           /* sizes of groups            */
     t_topology *top;                           /* topology        */
     int         ePBC;
@@ -478,11 +477,11 @@ int gmx_potential(int argc, char *argv[])
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
-    snew(grpname, ngrps);
+    std::vector<SymbolPtr> grpname(ngrps);
     snew(index, ngrps);
     snew(ngx, ngrps);
 
-    rd_index(ftp2fn(efNDX, NFILE, fnm), ngrps, ngx, index, grpname);
+    rd_index(ftp2fn(efNDX, NFILE, fnm), ngrps, ngx, index, grpname, &top->symtab);
 
 
     calc_potential(ftp2fn(efTRX, NFILE, fnm), index, ngx,

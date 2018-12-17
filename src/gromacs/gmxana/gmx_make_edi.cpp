@@ -403,8 +403,8 @@ static int read_conffile(const char *confin, rvec **x)
     matrix      box;
     printf("read coordnumber from file %s\n", confin);
     read_tps_conf(confin, &top, nullptr, x, nullptr, box, FALSE);
-    printf("number of coordinates in file %d\n", top.atoms.nr);
-    return top.atoms.nr;
+    printf("number of coordinates in file %d\n", top.atoms.getNatoms());
+    return top.atoms.getNatoms();
 }
 
 
@@ -536,19 +536,19 @@ static void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
 
 static void get_structure(const t_atoms *atoms, const char *IndexFile,
                           const char *StructureFile, struct edix *edx, int nfit,
-                          int ifit[], int nav, int index[])
+                          int ifit[], int nav, int index[], SymbolTable *symtab)
 {
     int     *igro; /*index corresponding to target or origin structure*/
     int      ngro;
     int      ntar;
     rvec    *xtar;
-    char   * grpname;
 
 
     ntar = read_conffile(StructureFile, &xtar);
     printf("Select an index group of %d elements that corresponds to the atoms in the structure file %s\n",
            ntar, StructureFile);
-    get_index(atoms, IndexFile, 1, &ngro, &igro, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(atoms, IndexFile, 1, &ngro, &igro, grpname, symtab);
     if (ngro != ntar)
     {
         gmx_fatal(FARGS, "You selected an index group with %d elements instead of %d", ngro, ntar);
@@ -744,7 +744,6 @@ int gmx_make_edi(int argc, char *argv[])
     rvec             *xav1, **eigvec1 = nullptr;
     t_atoms          *atoms = nullptr;
     int               nav; /* Number of atoms in the average structure */
-    char             *grpname;
     const char       *indexfile;
     int               i;
     int              *index, *ifit;
@@ -868,7 +867,8 @@ int gmx_make_edi(int argc, char *argv[])
 
 
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n", nav);
-    get_index(atoms, indexfile, 1, &i, &index, &grpname); /*if indexfile != NULL parameter 'atoms' is ignored */
+    std::vector<SymbolPtr> grpname(1);
+    get_index(atoms, indexfile, 1, &i, &index, grpname, &top.symtab); /*if indexfile != NULL parameter 'atoms' is ignored */
     if (i != nav)
     {
         gmx_fatal(FARGS, "you selected a group with %d elements instead of %d",
@@ -891,7 +891,7 @@ int gmx_make_edi(int argc, char *argv[])
             printf("\nNote: Apparently no fitting was done in g_covar.\n"
                    "      However, you need to select a reference group for fitting in mdrun\n");
         }
-        get_index(atoms, indexfile, 1, &nfit, &ifit, &grpname);
+        get_index(atoms, indexfile, 1, &nfit, &ifit, grpname, &top.symtab);
         snew(xref1, nfit);
         for (i = 0; i < nfit; i++)
         {
@@ -941,7 +941,7 @@ int gmx_make_edi(int argc, char *argv[])
     edi_params.ned = nav;
 
     /*number of system atoms  */
-    edi_params.nini = atoms->nr;
+    edi_params.nini = atoms->getNatoms();
 
 
     /*store reference and average structure in edi_params*/
@@ -957,7 +957,7 @@ int gmx_make_edi(int argc, char *argv[])
             fprintf(stderr, "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
                     "      You may want to use -ori to define the flooding potential center.\n\n");
         }
-        get_structure(atoms, indexfile, TargetFile, &edi_params.star, nfit, ifit, nav, index);
+        get_structure(atoms, indexfile, TargetFile, &edi_params.star, nfit, ifit, nav, index, &top.symtab);
     }
     else
     {
@@ -967,7 +967,7 @@ int gmx_make_edi(int argc, char *argv[])
     /* Store origin positions */
     if (opt2bSet("-ori", NFILE, fnm))
     {
-        get_structure(atoms, indexfile, OriginFile, &edi_params.sori, nfit, ifit, nav, index);
+        get_structure(atoms, indexfile, OriginFile, &edi_params.sori, nfit, ifit, nav, index, &top.symtab);
     }
     else
     {

@@ -693,7 +693,7 @@ void gmx::Integrator::do_md()
         {
             fprintf(stderr, "starting md rerun '%s', reading coordinates from"
                     " input trajectory '%s'\n\n",
-                    *(top_global->name), opt2fn("-rerun", nfile, fnm));
+                    top_global->name->c_str(), opt2fn("-rerun", nfile, fnm));
             if (mdrunOptions.verbose)
             {
                 fprintf(stderr, "Calculated time to finish depends on nsteps from "
@@ -705,7 +705,7 @@ void gmx::Integrator::do_md()
         {
             char tbuf[20];
             fprintf(stderr, "starting mdrun '%s'\n",
-                    *(top_global->name));
+                    top_global->name->c_str());
             if (ir->nsteps >= 0)
             {
                 sprintf(tbuf, "%8.1f", (ir->init_step+ir->nsteps)*ir->delta_t);

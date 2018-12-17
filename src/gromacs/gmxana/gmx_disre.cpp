@@ -408,7 +408,7 @@ static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
 
 static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
                              t_iparams ip[], t_blocka *clust, t_dr_result dr[],
-                             char *clust_name[], int isize, int index[])
+                             gmx::ArrayRef<SymbolPtr> clust_name, int isize, int index[])
 {
     int         i, j, k, nra, mmm = 0;
     double      sumV, maxV, sumVT3, sumVT6, maxVT3, maxVT6;
@@ -430,10 +430,10 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
         {
             gmx_fatal(FARGS, "Inconsistency in cluster %s.\n"
                       "Found %d frames in trajectory rather than the expected %d\n",
-                      clust_name[k], dr[k].nframes,
+                      clust_name[k]->c_str(), dr[k].nframes,
                       clust->index[k+1]-clust->index[k]);
         }
-        if (!clust_name[k])
+        if (clust_name[k]->empty())
         {
             gmx_fatal(FARGS, "Inconsistency with cluster %d. Invalid name", k);
         }
@@ -470,12 +470,12 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
             maxVT3        = std::max(maxVT3, static_cast<double>(drs[i].violT3));
             maxVT6        = std::max(maxVT6, static_cast<double>(drs[i].violT6));
         }
-        if (std::strcmp(clust_name[k], "1000") == 0)
+        if (std::strcmp(clust_name[k]->c_str(), "1000") == 0)
         {
             mmm++;
         }
         fprintf(fp, "%-10s%6d%8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n",
-                clust_name[k],
+                clust_name[k]->c_str(),
                 dr[k].nframes, sumV, maxV, sumVT3, maxVT3, sumVT6, maxVT6);
 
     }
@@ -521,12 +521,12 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
         const t_atoms &atoms = mtop->moltype[molb.type].atoms;
         for (mol = 0; mol < molb.nmol; mol++)
         {
-            for (a = 0; a < atoms.nr; a++)
+            for (a = 0; a < atoms.getNatoms(); a++)
             {
                 resnr[a_offset + a] = n_res + atoms.atom[a].resind;
             }
-            n_res    += atoms.nres;
-            a_offset += atoms.nr;
+            n_res    += atoms.getNresidues();
+            a_offset += atoms.getNatoms();
         }
     }
 
@@ -662,7 +662,7 @@ int gmx_disre(int argc, char *argv[])
     gmx_mtop_t                      mtop;
     rvec                           *xtop;
     std::unique_ptr<gmx_localtop_t> top   = nullptr;
-    t_atoms                        *atoms = nullptr;
+    t_atoms                         atoms;
     t_fcdata                        fcd;
     t_nrnb                          nrnb;
     t_graph                        *g;
@@ -675,7 +675,6 @@ int gmx_disre(int argc, char *argv[])
     gmx_bool                        bPDB;
     int                             isize;
     int                            *index = nullptr, *ind_fit = nullptr;
-    char                           *grpname;
     t_cluster_ndx                  *clust = nullptr;
     t_dr_result                     dr, *dr_clust = nullptr;
     char                          **leg;
@@ -733,14 +732,13 @@ int gmx_disre(int argc, char *argv[])
             ind_fit[kkk] = kkk;
         }
 
-        snew(atoms, 1);
-        *atoms = gmx_mtop_global_atoms(&mtop);
+        atoms = gmx_mtop_global_atoms(&mtop);
 
-        if (atoms->pdbinfo == nullptr)
+        if (atoms.pdbinfo.empty())
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            atoms.pdbinfo.resize(atoms.getNatoms());
         }
-        atoms->havePdbInfo = TRUE;
+        atoms.havePdbInfo = TRUE;
     }
 
     top = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
@@ -758,12 +756,12 @@ int gmx_disre(int argc, char *argv[])
             g = mk_graph(fplog, &top->idef, 0, mtop.natoms, FALSE, FALSE);
         }
     }
-
+    std::vector<SymbolPtr> grpname(1);
     if (ftp2bSet(efNDX, NFILE, fnm))
     {
         /* TODO: Nothing is written to this file if -c is provided, but it is
          * still opened... */
-        rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+        rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, grpname, &mtop.symtab);
         xvg = xvgropen(opt2fn("-dr", NFILE, fnm), "Individual Restraints", "Time (ps)",
                        "nm", oenv);
         snew(vvindex, isize);
@@ -790,7 +788,7 @@ int gmx_disre(int argc, char *argv[])
     init_dr_res(&dr, fcd.disres.nres);
     if (opt2bSet("-c", NFILE, fnm))
     {
-        clust = cluster_index(fplog, opt2fn("-c", NFILE, fnm));
+        clust = cluster_index(fplog, opt2fn("-c", NFILE, fnm), &mtop.symtab);
         snew(dr_clust, clust->clust->nr+1);
         for (i = 0; (i <= clust->clust->nr); i++)
         {
@@ -853,14 +851,14 @@ int gmx_disre(int argc, char *argv[])
         }
         if (bPDB)
         {
-            reset_x(atoms->nr, ind_fit, atoms->nr, nullptr, x, w_rls);
-            do_fit(atoms->nr, w_rls, x, x);
+            reset_x(atoms.getNatoms(), ind_fit, atoms.getNatoms(), nullptr, x, w_rls);
+            do_fit(atoms.getNatoms(), w_rls, x, x);
             if (j == 0)
             {
                 /* Store the first frame of the trajectory as 'characteristic'
                  * for colouring with violations.
                  */
-                for (kkk = 0; (kkk < atoms->nr); kkk++)
+                for (kkk = 0; (kkk < atoms.getNatoms()); kkk++)
                 {
                     copy_rvec(x[kkk], xav[kkk]);
                 }
@@ -901,12 +899,12 @@ int gmx_disre(int argc, char *argv[])
     {
         dump_stats(fplog, j, fcd.disres.nres, &(top->idef.il[F_DISRES]),
                    top->idef.iparams, &dr, isize, index,
-                   bPDB ? atoms : nullptr);
+                   bPDB ? &atoms : nullptr);
         if (bPDB)
         {
             write_sto_conf(opt2fn("-q", NFILE, fnm),
                            "Coloured by average violation in Angstrom",
-                           atoms, xav, nullptr, ir->ePBC, box);
+                           &atoms, xav, nullptr, ir->ePBC, box);
         }
         dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres,
                           j, &top->idef, &mtop, max_dr, nlevels, bThird);

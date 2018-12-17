@@ -127,7 +127,7 @@ int gmx_covar(int argc, char *argv[])
     const char       *fitfile, *trxfile, *ndxfile;
     const char       *eigvalfile, *eigvecfile, *averfile, *logfile;
     const char       *asciifile, *xpmfile, *xpmafile;
-    char              str[STRLEN], *fitname, *ananame;
+    char              str[STRLEN];
     int               d, dj, nfit;
     int              *index, *ifit;
     gmx_bool          bDiffMass1, bDiffMass2;
@@ -172,11 +172,12 @@ int gmx_covar(int argc, char *argv[])
 
     read_tps_conf(fitfile, &top, &ePBC, &xref, nullptr, box, TRUE);
     atoms = &top.atoms;
-
+    std::vector<SymbolPtr> fitname(1);
+    std::vector<SymbolPtr> ananame(1);
     if (bFit)
     {
         printf("\nChoose a group for the least squares fit\n");
-        get_index(atoms, ndxfile, 1, &nfit, &ifit, &fitname);
+        get_index(atoms, ndxfile, 1, &nfit, &ifit, fitname, &top.symtab);
         if (nfit < 3)
         {
             gmx_fatal(FARGS, "Need >= 3 points to fit!\n");
@@ -187,12 +188,12 @@ int gmx_covar(int argc, char *argv[])
         nfit = 0;
     }
     printf("\nChoose a group for the covariance analysis\n");
-    get_index(atoms, ndxfile, 1, &natoms, &index, &ananame);
+    get_index(atoms, ndxfile, 1, &natoms, &index, ananame, &top.symtab);
 
     bDiffMass1 = FALSE;
     if (bFit)
     {
-        snew(w_rls, atoms->nr);
+        snew(w_rls, atoms->getNatoms());
         for (i = 0; (i < nfit); i++)
         {
             w_rls[ifit[i]] = atoms->atom[ifit[i]].m;
@@ -243,12 +244,12 @@ int gmx_covar(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
-        gmx_rmpbc(gpbc, atoms->nr, box, xref);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, atoms->getNatoms());
+        gmx_rmpbc(gpbc, atoms->getNatoms(), box, xref);
     }
     if (bFit)
     {
-        reset_x(nfit, ifit, atoms->nr, nullptr, xref, w_rls);
+        reset_x(nfit, ifit, atoms->getNatoms(), nullptr, xref, w_rls);
     }
 
     snew(x, natoms);
@@ -263,7 +264,7 @@ int gmx_covar(int argc, char *argv[])
     fprintf(stderr, "Calculating the average structure ...\n");
     nframes0 = 0;
     nat      = read_first_x(oenv, &status, trxfile, &t, &xread, box);
-    if (nat != atoms->nr)
+    if (nat != atoms->getNatoms())
     {
         fprintf(stderr, "\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n", natoms, nat);
     }
@@ -610,10 +611,10 @@ int gmx_covar(int argc, char *argv[])
     }
     fprintf(out, "\n");
 
-    fprintf(out, "Analysis group is '%s' (%d atoms)\n", ananame, natoms);
+    fprintf(out, "Analysis group is '%s' (%d atoms)\n", ananame[0]->c_str(), natoms);
     if (bFit)
     {
-        fprintf(out, "Fit group is '%s' (%d atoms)\n", fitname, nfit);
+        fprintf(out, "Fit group is '%s' (%d atoms)\n", fitname[0]->c_str(), nfit);
     }
     else
     {

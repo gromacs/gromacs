@@ -153,9 +153,8 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     else
     {
-        char *gname;
-        rd_index(ndx, 1, &nindex, &index, &gname);
-        sfree(gname);
+        std::vector<SymbolPtr> gname(1);
+        rd_index(ndx, 1, &nindex, &index, gname, &mtop->symtab);
     }
 
     snew(clust_index, nindex);

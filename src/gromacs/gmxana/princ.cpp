@@ -96,7 +96,7 @@ void t_trans(matrix trans, real d[], real **ev)
 }
 #endif
 
-void principal_comp(int n, const int index[], t_atom atom[], rvec x[],
+void principal_comp(int n, const int index[], gmx::ArrayRef<const t_atom> atom, rvec x[],
                     matrix trans, rvec d)
 {
     int      i, j, ai, m, nrot;
@@ -214,7 +214,7 @@ void rotate_atoms(int gnx, const int *index, rvec x[], matrix trans)
     }
 }
 
-real calc_xcm(const rvec x[], int gnx, const int *index, const t_atom *atom, rvec xcm,
+real calc_xcm(const rvec x[], int gnx, const int *index, gmx::ArrayRef<const t_atom> atom, rvec xcm,
               gmx_bool bQ)
 {
     int  i, ii, m;
@@ -225,7 +225,7 @@ real calc_xcm(const rvec x[], int gnx, const int *index, const t_atom *atom, rve
     for (i = 0; (i < gnx); i++)
     {
         ii = index ? index[i] : i;
-        if (atom)
+        if (!atom.empty())
         {
             if (bQ)
             {
@@ -254,7 +254,7 @@ real calc_xcm(const rvec x[], int gnx, const int *index, const t_atom *atom, rve
     return tm;
 }
 
-real sub_xcm(rvec x[], int gnx, const int *index, const t_atom atom[], rvec xcm,
+real sub_xcm(rvec x[], int gnx, const int *index, gmx::ArrayRef<const t_atom> atom, rvec xcm,
              gmx_bool bQ)
 {
     int  i, ii;

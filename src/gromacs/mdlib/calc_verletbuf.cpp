@@ -267,7 +267,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                         if (cam[j] == 0)
                         {
                             gmx_fatal(FARGS, "In molecule type '%s' %s construction involves atom %d, which is a virtual site of equal or high complexity. This is not supported.",
-                                      *moltype->name,
+                                      moltype->name->c_str(),
                                       interaction_function[ft].longname,
                                       aj + 1);
                         }
@@ -378,8 +378,8 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
          * For virtual sites we need the masses and geometry of
          * the constructing atoms to determine their velocity distribution.
          */
-        snew(prop, atoms->nr);
-        snew(vsite_m, atoms->nr);
+        snew(prop, atoms->getNatoms());
+        snew(vsite_m, atoms->getNatoms());
 
         for (ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
         {
@@ -437,7 +437,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             *n_nonlin_vsite += nmol*n_nonlin_vsite_mol;
         }
 
-        for (a = 0; a < atoms->nr; a++)
+        for (a = 0; a < atoms->getNatoms(); a++)
         {
             if (atoms->atom[a].ptype == eptVSite)
             {

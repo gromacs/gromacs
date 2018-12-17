@@ -165,7 +165,7 @@ static real constr_r_max_moltype(const gmx_moltype_t *molt,
         return 0;
     }
 
-    natoms = molt->atoms.nr;
+    natoms = molt->atoms.getNatoms();
 
     at2con = make_at2con(*molt, iparams,
                          flexibleConstraintTreatment(EI_DYNAMICS(ir->eI)));

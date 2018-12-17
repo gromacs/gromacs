@@ -175,9 +175,9 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
     /* Check perturbed charges for 1-4 interactions */
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        const t_atom             *atom = mtop->moltype[molb.type].atoms.atom;
-        const InteractionList    &il   = mtop->moltype[molb.type].ilist[F_LJ14];
-        gmx::ArrayRef<const int>  ia   = il.iatoms;
+        gmx::ArrayRef<const t_atom> atom = mtop->moltype[molb.type].atoms.atom;
+        const InteractionList      &il   = mtop->moltype[molb.type].ilist[F_LJ14];
+        gmx::ArrayRef<const int>    ia   = il.iatoms;
         for (int i = 0; i < il.size(); i += 3)
         {
             if (atom[ia[i+1]].q != atom[ia[i+1]].qB ||

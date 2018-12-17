@@ -180,12 +180,11 @@ int gmx_genconf(int argc, char *argv[])
 
     vol = nx*ny*nz; /* calculate volume in grid points (= nr. molecules) */
 
-    t_topology *top;
-    snew(top, 1);
+    t_topology *top = new t_topology;
     atoms = &top->atoms;
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, &ePBC, &x, &v, box, FALSE);
-    natoms = atoms->nr;
-    nres   = atoms->nres;          /* nr of residues in one element? */
+    natoms = atoms->getNatoms();
+    nres   = atoms->getNresidues();          /* nr of residues in one element? */
     /* make space for all the atoms */
     add_t_atoms(atoms, natoms*(vol-1), nres*(vol-1));
     srenew(x, natoms*vol);         /* get space for coordinates of all atoms */
@@ -304,13 +303,13 @@ int gmx_genconf(int argc, char *argv[])
     /*depending on how you look at it, this is either a nasty hack or the way it should work*/
     if (bRenum)
     {
-        for (i = 0; i < atoms->nres; i++)
+        for (i = 0; i < atoms->getNresidues(); i++)
         {
             atoms->resinfo[i].nr = i+1;
         }
     }
 
-    write_sto_conf(opt2fn("-o", NFILE, fnm), *top->name, atoms, x, v, ePBC, box);
+    write_sto_conf(opt2fn("-o", NFILE, fnm), top->name->c_str(), atoms, x, v, ePBC, box);
 
     sfree(x);
     sfree(v);
@@ -318,7 +317,7 @@ int gmx_genconf(int argc, char *argv[])
     sfree(vrot);
     sfree(xx);
     done_top(top);
-    sfree(top);
+    delete top;
     output_env_done(oenv);
 
     return 0;

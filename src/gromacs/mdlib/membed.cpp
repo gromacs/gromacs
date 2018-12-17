@@ -59,6 +59,7 @@
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/gmxpreprocess/readir.h"
 
 /* information about scaling center */
 typedef struct {
@@ -84,7 +85,7 @@ struct gmx_membed_t {
 
 /* membrane related variables */
 typedef struct {
-    char      *name;     /* name of index group to embed molecule into (usually membrane) */
+    SymbolPtr  name;     /* name of index group to embed molecule into (usually membrane) */
     t_block    mem_at;   /* list all atoms in membrane */
     int        nmol;     /* number of membrane molecules overlapping with the molecule to embed */
     int       *mol_id;   /* list of molecules in membrane that overlap with the molecule to embed */
@@ -197,8 +198,8 @@ static void check_types(t_block *ins_at, t_block *rest_at, gmx_mtop_t *mtop)
                           "we need to exclude all interactions between the atoms in the group to\n"
                           "insert, the same moleculetype can not be used in both groups. Change the\n"
                           "moleculetype of the molecules %s in the inserted group. Do not forget to provide\n"
-                          "an appropriate *.itp file", *(mtop->moltype[rest_mtype->index[j]].name),
-                          *(mtop->moltype[rest_mtype->index[j]].name), *(mtop->moltype[rest_mtype->index[j]].name));
+                          "an appropriate *.itp file", mtop->moltype[rest_mtype->index[j]].name->c_str(),
+                          mtop->moltype[rest_mtype->index[j]].name->c_str(), mtop->moltype[rest_mtype->index[j]].name->c_str());
             }
         }
     }
@@ -446,7 +447,7 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     mem_p->zmed = (zmax-zmin)/2+zmin;
 
     /*number of membrane molecules in protein box*/
-    nmolbox = count/mtop->moltype[mtop->molblock[block].type].atoms.nr;
+    nmolbox = count/mtop->moltype[mtop->molblock[block].type].atoms.getNatoms();
     /*membrane area within the box defined by the min and max coordinates of the embedded molecule*/
     mem_area = (pos_ins->xmax[XX]-pos_ins->xmin[XX])*(pos_ins->xmax[YY]-pos_ins->xmin[YY]);
     /*rough estimate of area per lipid, assuming there is only one type of lipid in the membrane*/
@@ -712,7 +713,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
         at     = molecules.block(mol_id).size();
         block  = rm_p->block[i];
         mtop->molblock[block].nmol--;
-        for (j = 0; j < mtop->moltype[mtop->molblock[block].type].atoms.nr; j++)
+        for (j = 0; j < mtop->moltype[mtop->molblock[block].type].atoms.getNatoms(); j++)
         {
             list[n] = at+j;
             n++;
@@ -835,7 +836,7 @@ static int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
     {
         /*loop over molecule blocks*/
         type         = mtop->molblock[i].type;
-        natom        = mtop->moltype[type].atoms.nr;
+        natom        = mtop->moltype[type].atoms.getNatoms();
         nmol         = mtop->molblock[i].nmol;
 
         for (j = 0; j < natom*nmol && bRM[type]; j++)
@@ -938,7 +939,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
                 for (size_t i = 0; i < mtop->molblock.size(); i++)
                 {
                     nmol = mtop->molblock[i].nmol;
-                    sprintf(buf, "%-15s %5d\n", *(mtop->moltype[mtop->molblock[i].type].name), nmol);
+                    sprintf(buf, "%-15s %5d\n", mtop->moltype[mtop->molblock[i].type].name->c_str(), nmol);
                     fprintf(fpout, "%s", buf);
                 }
                 bMolecules = 2;
@@ -980,34 +981,9 @@ void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x)
     resize(membed->r_ins, x, membed->pos_ins, membed->fac);
 }
 
-/* We would like gn to be const as well, but C doesn't allow this */
-/* TODO this is utility functionality (search for the index of a
-   string in a collection), so should be refactored and located more
-   centrally. Also, it nearly duplicates the same string in readir.c */
-static int search_string(const char *s, int ng, char *gn[])
-{
-    int i;
-
-    for (i = 0; (i < ng); i++)
-    {
-        if (gmx_strcasecmp(s, gn[i]) == 0)
-        {
-            return i;
-        }
-    }
-
-    gmx_fatal(FARGS,
-              "Group %s selected for embedding was not found in the index file.\n"
-              "Group names must match either [moleculetype] names or custom index group\n"
-              "names, in which case you must supply an index file to the '-n' option\n"
-              "of grompp.",
-              s);
-}
-
 gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
                           t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt)
 {
-    char                     *ins, **gnames;
     int                       i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
     int                       ng, j, max_lip_rm, ins_grp_id, ntype, lip_rm;
     real                      prot_area;
@@ -1020,7 +996,6 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
     gmx_bool                  bExcl = FALSE;
     t_atoms                   atoms;
     t_pbc                    *pbc;
-    char                    **piecename = nullptr;
     gmx_membed_t             *membed    = nullptr;
 
     /* input variables */
@@ -1076,28 +1051,31 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
             *cpt = -1;
         }
         groups = &(mtop->groups);
-        snew(gnames, groups->ngrpname);
+        std::vector<SymbolPtr> gnames(groups->ngrpname);
+        std::vector<SymbolPtr> ins(1);
         for (i = 0; i < groups->ngrpname; i++)
         {
-            gnames[i] = *(groups->grpname[i]);
+            gnames[i] = groups->grpname[i];
         }
 
         atoms = gmx_mtop_global_atoms(mtop);
-        snew(mem_p, 1);
+        mem_p = new mem_t;
+        std::vector<SymbolPtr> mempName(1);
+        mempName[0] = mem_p->name;
         fprintf(stderr, "\nSelect a group to embed in the membrane:\n");
-        get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(ins_at->nr), &(ins_at->index), &ins);
-        ins_grp_id = search_string(ins, groups->ngrpname, gnames);
-        fprintf(stderr, "\nSelect a group to embed %s into (e.g. the membrane):\n", ins);
-        get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(mem_p->mem_at.nr), &(mem_p->mem_at.index), &(mem_p->name));
+        get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(ins_at->nr), &(ins_at->index), ins, &mtop->symtab);
+        ins_grp_id = searchGroupString(ins[0]->c_str(), groups->ngrpname, gnames);
+        fprintf(stderr, "\nSelect a group to embed %s into (e.g. the membrane):\n", ins[0]->c_str());
+        get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(mem_p->mem_at.nr), &(mem_p->mem_at.index), mempName, &mtop->symtab);
 
         pos_ins->pieces = pieces;
         snew(pos_ins->nidx, pieces);
         snew(pos_ins->subindex, pieces);
-        snew(piecename, pieces);
+        std::vector<SymbolPtr> piecename(pieces);
         if (pieces > 1)
         {
             fprintf(stderr, "\nSelect pieces to embed:\n");
-            get_index(&atoms, opt2fn_null("-mn", nfile, fnm), pieces, pos_ins->nidx, pos_ins->subindex, piecename);
+            get_index(&atoms, opt2fn_null("-mn", nfile, fnm), pieces, pos_ins->nidx, pos_ins->subindex, piecename, &mtop->symtab);
         }
         else
         {
@@ -1119,21 +1097,21 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         if (xy_fac < min_xy_init)
         {
             warn++;
-            fprintf(stderr, "\nWarning %d:\nThe initial size of %s is probably too small.\n\n", warn, ins);
+            fprintf(stderr, "\nWarning %d:\nThe initial size of %s is probably too small.\n\n", warn, ins[0]->c_str());
         }
 
         if (it_xy < min_it_xy)
         {
             warn++;
             fprintf(stderr, "\nWarning %d;\nThe number of steps used to grow the xy-coordinates of %s (%d)"
-                    " is probably too small.\nIncrease -nxy or.\n\n", warn, ins, it_xy);
+                    " is probably too small.\nIncrease -nxy or.\n\n", warn, ins[0]->c_str(), it_xy);
         }
 
         if ( (it_z < min_it_z) && ( z_fac < 0.99999999 || z_fac > 1.0000001) )
         {
             warn++;
             fprintf(stderr, "\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d)"
-                    " is probably too small.\nIncrease -nz or the maxwarn setting in the membed input file.\n\n", warn, ins, it_z);
+                    " is probably too small.\nIncrease -nz or the maxwarn setting in the membed input file.\n\n", warn, ins[0]->c_str(), it_z);
         }
 
         if (it_xy+it_z > inputrec->nsteps)
@@ -1147,7 +1125,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         fr_id = -1;
         if (inputrec->opts.ngfrz == 1)
         {
-            gmx_fatal(FARGS, "You did not specify \"%s\" as a freezegroup.", ins);
+            gmx_fatal(FARGS, "You did not specify \"%s\" as a freezegroup.", ins[0]->c_str());
         }
 
         for (i = 0; i < inputrec->opts.ngfrz; i++)
@@ -1162,14 +1140,14 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
         if (fr_id == -1)
         {
-            gmx_fatal(FARGS, "\"%s\" not as freezegroup defined in the mdp-file.", ins);
+            gmx_fatal(FARGS, "\"%s\" not as freezegroup defined in the mdp-file.", ins[0]->c_str());
         }
 
         for (i = 0; i < DIM; i++)
         {
             if (inputrec->opts.nFreeze[fr_i][i] != 1)
             {
-                gmx_fatal(FARGS, "freeze dimensions for %s are not Y Y Y\n", ins);
+                gmx_fatal(FARGS, "freeze dimensions for %s are not Y Y Y\n", ins[0]->c_str());
             }
         }
 
@@ -1190,8 +1168,8 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
                          (groups->grps[egcENER].nm_ind[j] != ins_grp_id) )
                     {
                         gmx_fatal(FARGS, "Energy exclusions \"%s\" and  \"%s\" do not match the group "
-                                  "to embed \"%s\"", *groups->grpname[groups->grps[egcENER].nm_ind[i]],
-                                  *groups->grpname[groups->grps[egcENER].nm_ind[j]], ins);
+                                  "to embed \"%s\"", groups->grpname[groups->grps[egcENER].nm_ind[i]]->c_str(),
+                                  groups->grpname[groups->grps[egcENER].nm_ind[j]]->c_str(), ins[0]->c_str());
                     }
                 }
             }
@@ -1278,7 +1256,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
                     ntype++;
                 }
             }
-            printf("Will remove %d %s molecules\n", ntype, *(mtop->moltype[mtop->molblock[i].type].name));
+            printf("Will remove %d %s molecules\n", ntype, mtop->moltype[mtop->molblock[i].type].name->c_str());
         }
 
         if (lip_rm > max_lip_rm)
@@ -1317,11 +1295,6 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
         sfree(pbc);
         sfree(rest_at);
-        if (pieces > 1)
-        {
-            sfree(piecename);
-        }
-
         membed->it_xy   = it_xy;
         membed->it_z    = it_z;
         membed->pos_ins = pos_ins;

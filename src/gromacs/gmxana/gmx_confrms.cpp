@@ -81,13 +81,13 @@ static void calc_rm_cm(int isize, const int index[], const t_atoms *atoms, rvec 
         tm += m;
     }
     svmul(1/tm, xcm, xcm);
-    for (i = 0; i < atoms->nr; i++)
+    for (i = 0; i < atoms->getNatoms(); i++)
     {
         rvec_dec(x[i], xcm);
     }
 }
 
-static int build_res_index(int isize, const int index[], t_atom atom[], int rindex[])
+static int build_res_index(int isize, const int index[], gmx::ArrayRef<const t_atom> atom, int rindex[])
 {
     int i, r;
 
@@ -118,7 +118,7 @@ static int find_res_end(int i, int isize, const int index[], const t_atoms *atom
     return i;
 }
 
-static int debug_strcmp(char s1[], char s2[])
+static int debug_strcmp(const char *s1, const char *s2)
 {
     if (debug)
     {
@@ -128,9 +128,9 @@ static int debug_strcmp(char s1[], char s2[])
 }
 
 static int find_next_match_atoms_in_res(int *i1, const int index1[],
-                                        int m1, char **atnms1[],
+                                        int m1, gmx::ArrayRef<const SymbolPtr> atnms1,
                                         int *i2, const int index2[],
-                                        int m2, char **atnms2[])
+                                        int m2, gmx::ArrayRef<const SymbolPtr> atnms2)
 {
     int      dx, dy, dmax, cmp;
     gmx_bool bFW = FALSE;
@@ -151,7 +151,8 @@ static int find_next_match_atoms_in_res(int *i1, const int index1[],
                 if (*i1+dx < m1 && *i2+dy < m2)
                 {
                     bFW = TRUE;
-                    cmp = debug_strcmp(*atnms1[index1[*i1+dx]], *atnms2[index2[*i2+dy]]);
+                    cmp = debug_strcmp(atnms1[index1[*i1+dx]]->c_str(),
+                                       atnms2[index2[*i2+dy]]->c_str());
                     if (debug)
                     {
                         fprintf(debug, "(%d %d)", *i1+dx, *i2+dy);
@@ -160,7 +161,8 @@ static int find_next_match_atoms_in_res(int *i1, const int index1[],
                 if (cmp != 0 && *i1+dy < m1 && *i2+dx < m2)
                 {
                     bFW = FALSE;
-                    cmp = debug_strcmp(*atnms1[index1[*i1+dy]], *atnms2[index2[*i2+dx]]);
+                    cmp = debug_strcmp(atnms1[index1[*i1+dy]]->c_str(),
+                                       atnms2[index2[*i2+dx]]->c_str());
                     if (debug)
                     {
                         fprintf(debug, "(%d %d)", *i1+dy, *i2+dx);
@@ -195,9 +197,9 @@ static int find_next_match_atoms_in_res(int *i1, const int index1[],
 }
 
 static int find_next_match_res(int *rnr1, int isize1,
-                               const int index1[], t_resinfo *resinfo1,
+                               const int index1[], gmx::ArrayRef<const t_resinfo> resinfo1,
                                int *rnr2, int isize2,
-                               const int index2[], t_resinfo *resinfo2)
+                               const int index2[], gmx::ArrayRef<const t_resinfo> resinfo2)
 {
     int      dmax, cmp, rr1, rr2;
     gmx_bool bFW = FALSE, bFF = FALSE;
@@ -231,8 +233,8 @@ static int find_next_match_res(int *rnr1, int isize1,
                 if (rr1+dx < isize1 && rr2+dy < isize2)
                 {
                     bFW = TRUE;
-                    cmp = debug_strcmp(*resinfo1[index1[rr1+dx]].name,
-                                       *resinfo2[index2[rr2+dy]].name);
+                    cmp = debug_strcmp(resinfo1[index1[rr1+dx]].name->c_str(),
+                                       resinfo2[index2[rr2+dy]].name->c_str());
                     if (debug)
                     {
                         fprintf(debug, "(%d %d)", rr1+dx, rr2+dy);
@@ -241,8 +243,8 @@ static int find_next_match_res(int *rnr1, int isize1,
                 if (cmp != 0 && rr1+dy < isize1 && rr2+dx < isize2)
                 {
                     bFW = FALSE;
-                    cmp = debug_strcmp(*resinfo1[index1[rr1+dy]].name,
-                                       *resinfo2[index2[rr2+dx]].name);
+                    cmp = debug_strcmp(resinfo1[index1[rr1+dy]].name->c_str(),
+                                       resinfo2[index2[rr2+dx]].name->c_str());
                     if (debug)
                     {
                         fprintf(debug, "(%d %d)", rr1+dy, rr2+dx);
@@ -251,8 +253,8 @@ static int find_next_match_res(int *rnr1, int isize1,
                 if (dx != 0 && cmp != 0 && rr1+dx < isize1 && rr2+dx < isize2)
                 {
                     bFF = TRUE;
-                    cmp = debug_strcmp(*resinfo1[index1[rr1+dx]].name,
-                                       *resinfo2[index2[rr2+dx]].name);
+                    cmp = debug_strcmp(resinfo1[index1[rr1+dx]].name->c_str(),
+                                       resinfo2[index2[rr2+dx]].name->c_str());
                     if (debug)
                     {
                         fprintf(debug, "(%d %d)", rr1+dx, rr2+dx);
@@ -276,8 +278,8 @@ static int find_next_match_res(int *rnr1, int isize1,
         if (debug)
         {
             fprintf(debug, "%d.%d.%dX%sX%s", dx, rr1, rr2,
-                    *resinfo1[index1[rr1+1]].name,
-                    *resinfo2[index2[rr2+1]].name);
+                    resinfo1[index1[rr1+1]].name->c_str(),
+                    resinfo2[index2[rr2+1]].name->c_str());
         }
         dx = 1;
     }
@@ -309,7 +311,7 @@ static int find_next_match_res(int *rnr1, int isize1,
     return cmp;
 }
 
-static int find_first_atom_in_res(int rnr, int isize, const int index[], t_atom atom[])
+static int find_first_atom_in_res(int rnr, int isize, const int index[], gmx::ArrayRef<const t_atom> atom)
 {
     int i;
 
@@ -337,19 +339,13 @@ static void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1
     int        rnr1, rnr2, prnr1, prnr2;
     int        rsize1, rsize2;
     int       *rindex1, *rindex2;
-    char    ***atnms1, ***atnms2;
-    t_resinfo *resinfo1, *resinfo2;
 
     /* set some handy shortcuts */
-    resinfo1 = atoms1->resinfo;
-    atnms1   = atoms1->atomname;
-    resinfo2 = atoms2->resinfo;
-    atnms2   = atoms2->atomname;
 
     /* build indexes of selected residues */
-    snew(rindex1, atoms1->nres);
+    snew(rindex1, atoms1->getNresidues());
     rsize1 = build_res_index(*isize1, index1, atoms1->atom, rindex1);
-    snew(rindex2, atoms2->nres);
+    snew(rindex2, atoms2->getNresidues());
     rsize2 = build_res_index(*isize2, index2, atoms2->atom, rindex2);
 
     i1    = i2 = 0;
@@ -370,15 +366,18 @@ static void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1
             if (debug)
             {
                 fprintf(debug, "R: %s%d %s%d\n",
-                        *resinfo1[rnr1].name, rnr1, *resinfo2[rnr2].name, rnr2);
+                        atoms1->resinfo[rnr1].name->c_str(),
+                        rnr1, atoms2->resinfo[rnr2].name->c_str(), rnr2);
             }
-            rescmp = std::strcmp(*resinfo1[rnr1].name, *resinfo2[rnr2].name);
+            rescmp = std::strcmp(atoms1->resinfo[rnr1].name->c_str(),
+                                 atoms2->resinfo[rnr2].name->c_str());
         }
         if (debug)
         {
             fprintf(debug, "comparing %d %d", i1, i2);
         }
-        atcmp = debug_strcmp(*atnms1[index1[i1]], *atnms2[index2[i2]]);
+        atcmp = debug_strcmp(atoms1->atomname[index1[i1]]->c_str(),
+                             atoms2->atomname[index2[i2]]->c_str());
 
         /* the works */
         if (atcmp != 0) /* no match -> find match within residues */
@@ -389,12 +388,13 @@ static void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1
             {
                 fprintf(debug, " [%d<%d %d<%d]", i1, m1, i2, m2);
             }
-            atcmp = find_next_match_atoms_in_res(&i1, index1, m1, atnms1,
-                                                 &i2, index2, m2, atnms2);
+            atcmp = find_next_match_atoms_in_res(&i1, index1, m1, atoms1->atomname,
+                                                 &i2, index2, m2, atoms2->atomname);
             if (debug)
             {
                 fprintf(debug, " -> %d %d %s-%s", i1, i2,
-                        *atnms1[index1[i1]], *atnms2[index2[i2]]);
+                        atoms1->atomname[index1[i1]]->c_str(),
+                        atoms2->atomname[index2[i2]]->c_str());
             }
 
         }
@@ -402,8 +402,8 @@ static void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1
         {
             prnr1  = rnr1;
             prnr2  = rnr2;
-            rescmp = find_next_match_res(&rnr1, rsize1, rindex1, resinfo1,
-                                         &rnr2, rsize2, rindex2, resinfo2);
+            rescmp = find_next_match_res(&rnr1, rsize1, rindex1, atoms1->resinfo,
+                                         &rnr2, rsize2, rindex2, atoms2->resinfo);
             if (rnr1 != prnr1)
             {
                 i1 = find_first_atom_in_res(rnr1, *isize1, index1, atoms1->atom);
@@ -415,10 +415,10 @@ static void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1
             if (debug)
             {
                 fprintf(debug, " -> %s%d-%s%d %s%d-%s%d",
-                        *resinfo1[rnr1].name, rnr1,
-                        *atnms1[index1[i1]], index1[i1],
-                        *resinfo2[rnr2].name, rnr2,
-                        *atnms2[index2[i2]], index2[i2]);
+                        atoms1->resinfo[rnr1].name->c_str(), rnr1,
+                        atoms1->atomname[index1[i1]]->c_str(), index1[i1],
+                        atoms2->resinfo[rnr2].name->c_str(), rnr2,
+                        atoms2->atomname[index2[i2]]->c_str(), index2[i2]);
             }
             m1 = find_res_end(i1, *isize1, index1, atoms1);
             m2 = find_res_end(i2, *isize2, index2, atoms2);
@@ -426,12 +426,13 @@ static void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1
             {
                 fprintf(debug, " [%d<%d %d<%d]", i1, m1, i2, m2);
             }
-            atcmp = find_next_match_atoms_in_res(&i1, index1, m1, atnms1,
-                                                 &i2, index2, m2, atnms2);
+            atcmp = find_next_match_atoms_in_res(&i1, index1, m1, atoms1->atomname,
+                                                 &i2, index2, m2, atoms2->atomname);
             if (debug)
             {
                 fprintf(debug, " -> %d %d %s-%s", i1, i2,
-                        *atnms1[index1[i1]], *atnms2[index2[i2]]);
+                        atoms1->atomname[index1[i1]]->c_str(),
+                        atoms2->atomname[index2[i2]]->c_str());
             }
         }
         if (debug)
@@ -525,19 +526,19 @@ int gmx_confrms(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* the two structure files */
-    const char       *conf1file, *conf2file, *matchndxfile, *outfile;
-    FILE             *fp;
-    char             *name1, *name2;
-    t_topology       *top1, *top2;
-    int               ePBC1, ePBC2;
-    t_atoms          *atoms1, *atoms2;
-    int               warn = 0;
-    int               at;
-    real             *w_rls, mass, totmass;
-    rvec             *x1, *v1, *x2, *v2, *fit_x;
-    matrix            box1, box2;
+    const char             *conf1file, *conf2file, *matchndxfile, *outfile;
+    FILE                   *fp;
+    const char             *name1, *name2;
+    t_topology             *top1, *top2;
+    int                     ePBC1, ePBC2;
+    t_atoms                *atoms1, *atoms2;
+    int                     warn = 0;
+    int                     at;
+    real                   *w_rls, mass, totmass;
+    rvec                   *x1, *v1, *x2, *v2, *fit_x;
+    matrix                  box1, box2;
 
-    gmx_output_env_t *oenv;
+    gmx_output_env_t       *oenv;
 
     /* counters */
     int     i, m;
@@ -546,7 +547,6 @@ int gmx_confrms(int argc, char *argv[])
     rvec    xcm1, xcm2;
 
     /* variables for fit */
-    char    *groupnames1, *groupnames2;
     int      isize1, isize2;
     int     *index1, *index2;
     real     rms, msd, minmsd, maxmsd;
@@ -564,11 +564,11 @@ int gmx_confrms(int argc, char *argv[])
 
     /* reading reference structure from first structure file */
     fprintf(stderr, "\nReading first structure file\n");
-    snew(top1, 1);
+    top1 = new t_topology;
     read_tps_conf(conf1file, top1, &ePBC1, &x1, &v1, box1, TRUE);
     atoms1 = &(top1->atoms);
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
-            *top1->name, atoms1->nr, atoms1->nres);
+            top1->name->c_str(), atoms1->getNatoms(), atoms1->getNresidues());
 
     if (bRmpbc)
     {
@@ -576,8 +576,10 @@ int gmx_confrms(int argc, char *argv[])
     }
 
     fprintf(stderr, "Select group from first structure\n");
+    std::vector<SymbolPtr> groupnames1(1);
+    std::vector<SymbolPtr> groupnames2(1);
     get_index(atoms1, opt2fn_null("-n1", NFILE, fnm),
-              1, &isize1, &index1, &groupnames1);
+              1, &isize1, &index1, groupnames1, &top1->symtab);
     printf("\n");
 
     if (bFit && (isize1 < 3))
@@ -587,11 +589,11 @@ int gmx_confrms(int argc, char *argv[])
 
     /* reading second structure file */
     fprintf(stderr, "\nReading second structure file\n");
-    snew(top2, 1);
+    top2 = new t_topology;
     read_tps_conf(conf2file, top2, &ePBC2, &x2, &v2, box2, TRUE);
     atoms2 = &(top2->atoms);
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
-            *top2->name, atoms2->nr, atoms2->nres);
+            top2->name->c_str(), atoms2->getNatoms(), atoms2->getNresidues());
 
     if (bRmpbc)
     {
@@ -600,7 +602,7 @@ int gmx_confrms(int argc, char *argv[])
 
     fprintf(stderr, "Select group from second structure\n");
     get_index(atoms2, opt2fn_null("-n2", NFILE, fnm),
-              1, &isize2, &index2, &groupnames2);
+              1, &isize2, &index2, groupnames2, &top2->symtab);
 
     if (bName)
     {
@@ -609,13 +611,13 @@ int gmx_confrms(int argc, char *argv[])
         {
             fp = gmx_ffopen(matchndxfile, "w");
             fprintf(fp, "; Matching atoms between %s from %s and %s from %s\n",
-                    groupnames1, conf1file, groupnames2, conf2file);
-            fprintf(fp, "[ Match_%s_%s ]\n", conf1file, groupnames1);
+                    groupnames1[0]->c_str(), conf1file, groupnames2[0]->c_str(), conf2file);
+            fprintf(fp, "[ Match_%s_%s ]\n", conf1file, groupnames1[0]->c_str());
             for (i = 0; i < isize1; i++)
             {
                 fprintf(fp, "%4d%s", index1[i]+1, (i%15 == 14 || i == isize1-1) ? "\n" : " ");
             }
-            fprintf(fp, "[ Match_%s_%s ]\n", conf2file, groupnames2);
+            fprintf(fp, "[ Match_%s_%s ]\n", conf2file, groupnames2[0]->c_str());
             for (i = 0; i < isize2; i++)
             {
                 fprintf(fp, "%4d%s", index2[i]+1, (i%15 == 14 || i == isize2-1) ? "\n" : " ");
@@ -631,8 +633,8 @@ int gmx_confrms(int argc, char *argv[])
 
     for (i = 0; i < isize1; i++)
     {
-        name1 = *atoms1->atomname[index1[i]];
-        name2 = *atoms2->atomname[index2[i]];
+        name1 = atoms1->atomname[index1[i]]->c_str();
+        name2 = atoms2->atomname[index2[i]]->c_str();
         if (std::strcmp(name1, name2) != 0)
         {
             if (warn < 20)
@@ -660,8 +662,8 @@ int gmx_confrms(int argc, char *argv[])
         calc_rm_cm(isize1, index1, atoms1, x1, xcm1);
         calc_rm_cm(isize2, index2, atoms2, x2, xcm2);
 
-        snew(w_rls, atoms2->nr);
-        snew(fit_x, atoms2->nr);
+        snew(w_rls, atoms2->getNatoms());
+        snew(fit_x, atoms2->getNatoms());
         for (at = 0; (at < isize1); at++)
         {
             w_rls[index2[at]] = atoms1->atom[index1[at]].m;
@@ -669,7 +671,7 @@ int gmx_confrms(int argc, char *argv[])
         }
 
         /* do the least squares fit to the reference structure */
-        do_fit(atoms2->nr, w_rls, fit_x, x2);
+        do_fit(atoms2->getNatoms(), w_rls, fit_x, x2);
 
         sfree(fit_x);
         sfree(w_rls);
@@ -712,14 +714,14 @@ int gmx_confrms(int argc, char *argv[])
     if (bFit)
     {
         /* reset coordinates of reference and fitted structure */
-        for (i = 0; i < atoms1->nr; i++)
+        for (i = 0; i < atoms1->getNatoms(); i++)
         {
             for (m = 0; m < DIM; m++)
             {
                 x1[i][m] += xcm1[m];
             }
         }
-        for (i = 0; i < atoms2->nr; i++)
+        for (i = 0; i < atoms2->getNatoms(); i++)
         {
             for (m = 0; m < DIM; m++)
             {
@@ -736,13 +738,13 @@ int gmx_confrms(int argc, char *argv[])
         case efENT:
             if (bBfac || bLabel)
             {
-                srenew(atoms1->pdbinfo, atoms1->nr);
-                srenew(atoms1->atom, atoms1->nr); /* Why renew atom? */
+                atoms1->pdbinfo.resize(atoms1->getNatoms());
+                atoms1->atom.resize(atoms1->getNatoms()); /* Why renew atom? */
 
                 atoms1->havePdbInfo = TRUE;
 
                 /* Avoid segfaults when writing the pdb-file */
-                for (i = 0; i < atoms1->nr; i++)
+                for (i = 0; i < atoms1->getNatoms(); i++)
                 {
                     atoms1->pdbinfo[i].type         = eptAtom;
                     atoms1->pdbinfo[i].occup        = 1.00;
@@ -759,19 +761,15 @@ int gmx_confrms(int argc, char *argv[])
 
                 for (i = 0; i < isize1; i++)
                 {
-                    /* atoms1->pdbinfo[index1[i]].type = eptAtom; */
-/*  atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE; */
                     if (bBfac)
                     {
                         atoms1->pdbinfo[index1[i]].bfac = (800*M_PI*M_PI/3.0)*msds[i];
                     }
-/*  if (bLabel) */
-/*    atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A'; */
                 }
-                srenew(atoms2->pdbinfo, atoms2->nr);
-                srenew(atoms2->atom, atoms2->nr); /* Why renew atom? */
+                atoms2->pdbinfo.resize(atoms2->getNatoms());
+                atoms2->atom.resize(atoms2->getNatoms()); /* Why renew atom? */
 
-                for (i = 0; i < atoms2->nr; i++)
+                for (i = 0; i < atoms2->getNatoms(); i++)
                 {
                     atoms2->pdbinfo[i].type         = eptAtom;
                     atoms2->pdbinfo[i].occup        = 1.00;
@@ -788,22 +786,18 @@ int gmx_confrms(int argc, char *argv[])
 
                 for (i = 0; i < isize2; i++)
                 {
-                    /* atoms2->pdbinfo[index2[i]].type = eptAtom; */
-/*  atoms2->pdbinfo[index2[i]].bAnisotropic = FALSE; */
                     if (bBfac)
                     {
                         atoms2->pdbinfo[index2[i]].bfac = (800*M_PI*M_PI/3.0)*msds[i];
                     }
-/*  if (bLabel) */
-/*    atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B'; */
                 }
             }
             fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
-                write_pdbfile(fp, *top1->name, atoms1, x1, ePBC1, box1, ' ', 1, nullptr, TRUE);
+                write_pdbfile(fp, top1->name->c_str(), atoms1, x1, ePBC1, box1, ' ', 1, nullptr, TRUE);
             }
-            write_pdbfile(fp, *top2->name, atoms2, x2, ePBC2, box2, ' ', bOne ? -1 : 2, nullptr, TRUE);
+            write_pdbfile(fp, top2->name->c_str(), atoms2, x2, ePBC2, box2, ' ', bOne ? -1 : 2, nullptr, TRUE);
             gmx_ffclose(fp);
             break;
         case efGRO:
@@ -814,9 +808,9 @@ int gmx_confrms(int argc, char *argv[])
             fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
-                write_hconf_p(fp, *top1->name, atoms1, x1, v1, box1);
+                write_hconf_p(fp, top1->name->c_str(), atoms1, x1, v1, box1);
             }
-            write_hconf_p(fp, *top2->name, atoms2, x2, v2, box2);
+            write_hconf_p(fp, top2->name->c_str(), atoms2, x2, v2, box2);
             gmx_ffclose(fp);
             break;
         default:
@@ -831,7 +825,7 @@ int gmx_confrms(int argc, char *argv[])
                         "WARNING: cannot write the reference structure to %s file\n",
                         ftp2ext(fn2ftp(outfile)));
             }
-            write_sto_conf(outfile, *top2->name, atoms2, x2, v2, ePBC2, box2);
+            write_sto_conf(outfile, top2->name->c_str(), atoms2, x2, v2, ePBC2, box2);
             break;
     }
 
