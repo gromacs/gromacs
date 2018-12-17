@@ -122,13 +122,8 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
     int                                xind_f, xind_l;
 
     /* Convert the j-range from i-cluster size indexing to j-cluster indexing */
-    int jclusterFirst = cjFromCi<NbnxnLayout::Simd4xN>(firstCell);
-#if GMX_SIMD_REAL_WIDTH >= NBNXN_CPU_CLUSTER_I_SIZE
-    int jclusterLast  = cjFromCi<NbnxnLayout::Simd4xN>(lastCell);
-#else
-    /* Set the correct last j-cluster with a j-cluster size of 2 */
-    int jclusterLast  = cjFromCi<NbnxnLayout::Simd4xN>(lastCell + 1) - 1;
-#endif
+    int jclusterFirst = cjFromCi<NbnxnLayout::Simd4xN, 0>(firstCell);
+    int jclusterLast  = cjFromCi<NbnxnLayout::Simd4xN, 1>(lastCell);
     GMX_ASSERT(jclusterLast >= jclusterFirst, "We should have a non-empty j-cluster range, since the calling code should have ensured a non-empty cell range");
 
     rc2_S   = SimdReal(rlist2);
@@ -154,7 +149,7 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
         }
         else if (d2 < rlist2)
         {
-            xind_f  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN>(gridj->cell0) + jclusterFirst);
+            xind_f  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN, 0>(gridj->cell0) + jclusterFirst);
 
             jx_S  = load<SimdReal>(x_j + xind_f + 0*STRIDE_S);
             jy_S  = load<SimdReal>(x_j + xind_f + 1*STRIDE_S);
@@ -225,7 +220,7 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
         }
         else if (d2 < rlist2)
         {
-            xind_l  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN>(gridj->cell0) + jclusterLast);
+            xind_l  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN, 0>(gridj->cell0) + jclusterLast);
 
             jx_S  = load<SimdReal>(x_j +xind_l + 0*STRIDE_S);
             jy_S  = load<SimdReal>(x_j +xind_l + 1*STRIDE_S);
@@ -275,7 +270,7 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
         for (int jcluster = jclusterFirst; jcluster <= jclusterLast; jcluster++)
         {
             /* Store cj and the interaction mask */
-            nbl->cj[nbl->ncj].cj   = cjFromCi<NbnxnLayout::Simd4xN>(gridj->cell0) + jcluster;
+            nbl->cj[nbl->ncj].cj   = cjFromCi<NbnxnLayout::Simd4xN, 0>(gridj->cell0) + jcluster;
             nbl->cj[nbl->ncj].excl = get_imask_simd_4xn(excludeSubDiagonal, icluster, jcluster);
             nbl->ncj++;
         }

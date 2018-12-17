@@ -140,15 +140,30 @@ static constexpr int jClusterSize()
     return layout == NbnxnLayout::Simd4xN ? GMX_SIMD_REAL_WIDTH : (layout == NbnxnLayout::Simd2xNN ? GMX_SIMD_REAL_WIDTH/2 : NBNXN_CPU_CLUSTER_I_SIZE);
 }
 
-/* Returns the j-cluster index given the i-cluster index */
-template <int jClusterSize>
+/*! \brief Returns the j-cluster index given the i-cluster index.
+ *
+ * \tparam    jClusterSize      The number of atoms in a j-cluster
+ * \tparam    jSubClusterIndex  The j-sub-cluster index (0/1), used when size(j-cluster) < size(i-cluster)
+ * \param[in] ci                The i-cluster index
+ */
+template <int jClusterSize, int jSubClusterIndex>
 static inline int cjFromCi(int ci)
 {
     static_assert(jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE/2 || jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE || jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE*2, "Only j-cluster sizes 2, 4 and 8 are currently implemented");
 
+    static_assert(jSubClusterIndex == 0 || jSubClusterIndex == 1,
+                  "Only sub-cluster indices 0 and 1 are supported");
+
     if (jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE/2)
     {
-        return ci << 1;
+        if (jSubClusterIndex == 0)
+        {
+            return ci << 1;
+        }
+        else
+        {
+            return ((ci + 1) << 1) - 1;
+        }
     }
     else if (jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE)
     {
@@ -160,13 +175,18 @@ static inline int cjFromCi(int ci)
     }
 }
 
-/* Returns the j-cluster index given the i-cluster index */
-template <NbnxnLayout layout>
+/*! \brief Returns the j-cluster index given the i-cluster index.
+ *
+ * \tparam    layout            The pair-list layout
+ * \tparam    jSubClusterIndex  The j-sub-cluster index (0/1), used when size(j-cluster) < size(i-cluster)
+ * \param[in] ci                The i-cluster index
+ */
+template <NbnxnLayout layout, int jSubClusterIndex>
 static inline int cjFromCi(int ci)
 {
     constexpr int clusterSize = jClusterSize<layout>();
 
-    return cjFromCi<clusterSize>(ci);
+    return cjFromCi<clusterSize, jSubClusterIndex>(ci);
 }
 
 /* Returns the nbnxn coordinate data index given the i-cluster index */
