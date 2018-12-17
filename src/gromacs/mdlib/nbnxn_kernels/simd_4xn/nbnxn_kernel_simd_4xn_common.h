@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,10 @@
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
 #endif
 
-#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLI    4
 #define UNROLLJ    (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
+
+static_assert(UNROLLI == c_nbnxnCpuIClusterSize, "UNROLLI should match the i-cluster size");
 
 /* The stride of all the atom data arrays is max(UNROLLI,unrollj) */
 #if GMX_SIMD_REAL_WIDTH >= UNROLLI

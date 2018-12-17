@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,7 @@ static inline int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type)
         case nbnxnk4x4_PlainC:
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
-            return NBNXN_CPU_CLUSTER_I_SIZE;
+            return c_nbnxnCpuIClusterSize;
         case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             /* The cluster size for super/sub lists is only set here.
@@ -101,7 +101,7 @@ static inline int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
     switch (nb_kernel_type)
     {
         case nbnxnk4x4_PlainC:
-            cj_size = NBNXN_CPU_CLUSTER_I_SIZE;
+            cj_size = c_nbnxnCpuIClusterSize;
             break;
         case nbnxnk4xN_SIMD_4xN:
             cj_size = nbnxn_simd_width;

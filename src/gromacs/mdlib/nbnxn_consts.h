@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,13 +35,6 @@
 
 #ifndef _nbnxn_consts_h
 #define _nbnxn_consts_h
-
-/* With CPU kernels the i-cluster size is always 4 atoms.
- * With x86 SIMD the j-cluster size can be 2, 4 or 8, otherwise 4.
- */
-#define NBNXN_CPU_CLUSTER_I_SIZE       4
-
-#define NBNXN_CPU_CLUSTER_I_SIZE_2LOG  2
 
 // Lower limit for square interaction distances in nonbonded kernels.
 // For smaller values we will overflow when calculating r^-1 or r^-12, but
