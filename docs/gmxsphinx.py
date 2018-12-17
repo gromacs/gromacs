@@ -32,6 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+from builtins import object
 from sphinx import addnodes
 
 class MdpNodeParser(object):

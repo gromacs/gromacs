@@ -46,6 +46,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from past.builtins import execfile
+from builtins import str
 import datetime
 import os
 import sys

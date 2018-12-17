@@ -50,6 +50,9 @@ with angle brackets instead of quotes).  Generally, these conventions are
 checked by the check-source.py script.
 """
 
+from past.builtins import cmp
+from builtins import map
+from builtins import object
 import os.path
 import re
 import sys
@@ -277,7 +280,7 @@ class IncludeSorter(object):
         Returns a new list of lines for the block.
         If anything is changed, self._changed is set to True, and the caller
         can check that."""
-        includes = map(self._sortmethod.get_sortable_object, block.get_includes())
+        includes = list(map(self._sortmethod.get_sortable_object, block.get_includes()))
         includes.sort()
         result = []
         prev = None

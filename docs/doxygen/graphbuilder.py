@@ -56,6 +56,8 @@ out.
 The produced graphs are documented in doxygen.md.
 """
 
+from past.builtins import cmp
+from builtins import object
 import os.path
 import re
 
@@ -276,8 +278,8 @@ class Graph(object):
                     edgesto[edge._fromnode].merge_edge(edge)
             else:
                 newedges.append(edge)
-        newedges.extend(edgesfrom.values())
-        newedges.extend(edgesto.values())
+        newedges.extend(list(edgesfrom.values()))
+        newedges.extend(list(edgesto.values()))
         self._edges = newedges
 
     def collapse_node(self, node):
@@ -402,7 +404,7 @@ class GraphBuilder(object):
         are in the list of nodes.
         """
         edges = []
-        for fileobj in filenodes.iterkeys():
+        for fileobj in filenodes.keys():
             for includedfile in fileobj.get_includes():
                 otherfile = includedfile.get_file()
                 if otherfile and otherfile in filenodes:
@@ -453,7 +455,7 @@ class GraphBuilder(object):
         dependency are in the list of nodes.
         """
         edges = []
-        for moduleobj in modulenodes.iterkeys():
+        for moduleobj in modulenodes.keys():
             for dep in moduleobj.get_dependencies():
                 othermodule = dep.get_other_module()
                 if othermodule and othermodule in modulenodes:

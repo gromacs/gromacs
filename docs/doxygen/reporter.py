@@ -33,6 +33,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+from past.builtins import cmp
+from builtins import str
+from builtins import object
 import sys
 
 from fnmatch import fnmatch
@@ -61,7 +64,7 @@ class Location(object):
         self.filename = filename
         self.line = line
 
-    def __nonzero__(self):
+    def __bool__(self):
         """Make empty locations False in boolean context."""
         return self.filename is not None
 

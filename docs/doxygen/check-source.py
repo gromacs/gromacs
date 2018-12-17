@@ -55,6 +55,8 @@ This target takes care of generating all the necessary input files and passing
 them to the script.
 """
 
+from builtins import range
+from builtins import object
 import sys
 from optparse import OptionParser
 
@@ -316,7 +318,7 @@ def check_cycles(graph, reporter):
                     # Only report cycles to nodes that haven't been processed
                     # yet to avoid duplicates.
                     elif linkorder[nextnode] == preorder[nextnode]:
-                        for index in xrange(len(currlist)):
+                        for index in range(len(currlist)):
                             if currlist[index][0] == nextnode:
                                 cycle = [(nextnode, edge)]
                                 cycle.extend(currlist[index+1:])
