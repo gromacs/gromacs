@@ -125,6 +125,8 @@ def do_build(context):
         cmake_opts['GMX_FFT_LIBRARY'] = 'fftpack'
     elif context.opts.buildfftw:
         cmake_opts['GMX_BUILD_OWN_FFTW'] = 'ON'
+        cmake_opts['GMX_BUILD_OWN_FFTW_URL'] = 'ftp://ftp.gromacs.org/misc/fftw-3.3.7.tar.gz'
+        cmake_opts['GMX_BUILD_OWN_FFTW_MD5'] = '0d5915d7d39b3253c1cc05030d79ac47'
     if context.opts.mkl or context.opts.atlas or context.opts.armpl:
         cmake_opts['GMX_EXTERNAL_BLAS'] = 'ON'
         cmake_opts['GMX_EXTERNAL_LAPACK'] = 'ON'
