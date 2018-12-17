@@ -137,7 +137,7 @@ static constexpr int jClusterSize()
 {
     static_assert(layout == NbnxnLayout::NoSimd4x4 || layout == NbnxnLayout::Simd4xN || layout == NbnxnLayout::Simd2xNN, "Currently jClusterSize only supports CPU layouts");
 
-    return layout == NbnxnLayout::Simd4xN ? GMX_SIMD_REAL_WIDTH : (layout == NbnxnLayout::Simd2xNN ? GMX_SIMD_REAL_WIDTH/2 : NBNXN_CPU_CLUSTER_I_SIZE);
+    return layout == NbnxnLayout::Simd4xN ? GMX_SIMD_REAL_WIDTH : (layout == NbnxnLayout::Simd2xNN ? GMX_SIMD_REAL_WIDTH/2 : c_nbnxnCpuIClusterSize);
 }
 
 /*! \brief Returns the j-cluster index given the i-cluster index.
@@ -149,12 +149,12 @@ static constexpr int jClusterSize()
 template <int jClusterSize, int subClusterIndex>
 static inline int cjFromCi(int ci)
 {
-    static_assert(jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE/2 || jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE || jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE*2, "Only j-cluster sizes 2, 4 and 8 are currently implemented");
+    static_assert(jClusterSize == c_nbnxnCpuIClusterSize/2 || jClusterSize == c_nbnxnCpuIClusterSize || jClusterSize == c_nbnxnCpuIClusterSize*2, "Only j-cluster sizes 2, 4 and 8 are currently implemented");
 
     static_assert(subClusterIndex == 0 || subClusterIndex == 1, "Only sub-cluster indices 0 and 1 are supported");
 
 
-    if (jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE/2)
+    if (jClusterSize == c_nbnxnCpuIClusterSize/2)
     {
         if (subClusterIndex == 0)
         {
@@ -165,7 +165,7 @@ static inline int cjFromCi(int ci)
             return ((ci + 1) << 1) - 1;
         }
     }
-    else if (jClusterSize == NBNXN_CPU_CLUSTER_I_SIZE)
+    else if (jClusterSize == c_nbnxnCpuIClusterSize)
     {
         return ci;
     }
@@ -195,9 +195,9 @@ static inline int xIndexFromCi(int ci)
 {
     constexpr int clusterSize = jClusterSize<layout>();
 
-    static_assert(clusterSize == NBNXN_CPU_CLUSTER_I_SIZE/2 || clusterSize == NBNXN_CPU_CLUSTER_I_SIZE || clusterSize == NBNXN_CPU_CLUSTER_I_SIZE*2, "Only j-cluster sizes 2, 4 and 8 are currently implemented");
+    static_assert(clusterSize == c_nbnxnCpuIClusterSize/2 || clusterSize == c_nbnxnCpuIClusterSize || clusterSize == c_nbnxnCpuIClusterSize*2, "Only j-cluster sizes 2, 4 and 8 are currently implemented");
 
-    if (clusterSize <= NBNXN_CPU_CLUSTER_I_SIZE)
+    if (clusterSize <= c_nbnxnCpuIClusterSize)
     {
         /* Coordinates are stored packed in groups of 4 */
         return ci*STRIDE_P4;
@@ -215,14 +215,14 @@ static inline int xIndexFromCj(int cj)
 {
     constexpr int clusterSize = jClusterSize<layout>();
 
-    static_assert(clusterSize == NBNXN_CPU_CLUSTER_I_SIZE/2 || clusterSize == NBNXN_CPU_CLUSTER_I_SIZE || clusterSize == NBNXN_CPU_CLUSTER_I_SIZE*2, "Only j-cluster sizes 2, 4 and 8 are currently implemented");
+    static_assert(clusterSize == c_nbnxnCpuIClusterSize/2 || clusterSize == c_nbnxnCpuIClusterSize || clusterSize == c_nbnxnCpuIClusterSize*2, "Only j-cluster sizes 2, 4 and 8 are currently implemented");
 
-    if (clusterSize == NBNXN_CPU_CLUSTER_I_SIZE/2)
+    if (clusterSize == c_nbnxnCpuIClusterSize/2)
     {
         /* Coordinates are stored packed in groups of 4 */
         return (cj >> 1)*STRIDE_P4 + (cj & 1)*(c_packX4 >> 1);
     }
-    else if (clusterSize == NBNXN_CPU_CLUSTER_I_SIZE)
+    else if (clusterSize == c_nbnxnCpuIClusterSize)
     {
         /* Coordinates are stored packed in groups of 4 */
         return cj*STRIDE_P4;
@@ -938,7 +938,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     snew(nbl->work->x_ci, gpu_clusterpair_nc);
 #if GMX_SIMD
     snew_aligned(nbl->work->x_ci_simd,
-                 std::max(NBNXN_CPU_CLUSTER_I_SIZE*DIM*GMX_SIMD_REAL_WIDTH,
+                 std::max(c_nbnxnCpuIClusterSize*DIM*GMX_SIMD_REAL_WIDTH,
                           gpu_clusterpair_nc),
                  GMX_SIMD_REAL_WIDTH);
 #endif
@@ -1290,17 +1290,17 @@ makeClusterListSimple(const nbnxn_grid_t *      gridj,
         else if (d2 < rlist2)
         {
             int cjf_gl = gridj->cell0 + jclusterFirst;
-            for (int i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
+            for (int i = 0; i < c_nbnxnCpuIClusterSize && !InRange; i++)
             {
-                for (int j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (int j = 0; j < c_nbnxnCpuIClusterSize; j++)
                 {
                     InRange = InRange ||
-                        (gmx::square(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         gmx::square(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         gmx::square(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rlist2);
+                        (gmx::square(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*c_nbnxnCpuIClusterSize+j)*STRIDE_XYZ+XX]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*c_nbnxnCpuIClusterSize+j)*STRIDE_XYZ+YY]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*c_nbnxnCpuIClusterSize+j)*STRIDE_XYZ+ZZ]) < rlist2);
                 }
             }
-            *numDistanceChecks += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
+            *numDistanceChecks += c_nbnxnCpuIClusterSize*c_nbnxnCpuIClusterSize;
         }
         if (!InRange)
         {
@@ -1330,17 +1330,17 @@ makeClusterListSimple(const nbnxn_grid_t *      gridj,
         else if (d2 < rlist2)
         {
             int cjl_gl = gridj->cell0 + jclusterLast;
-            for (int i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
+            for (int i = 0; i < c_nbnxnCpuIClusterSize && !InRange; i++)
             {
-                for (int j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (int j = 0; j < c_nbnxnCpuIClusterSize; j++)
                 {
                     InRange = InRange ||
-                        (gmx::square(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         gmx::square(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         gmx::square(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rlist2);
+                        (gmx::square(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*c_nbnxnCpuIClusterSize+j)*STRIDE_XYZ+XX]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*c_nbnxnCpuIClusterSize+j)*STRIDE_XYZ+YY]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*c_nbnxnCpuIClusterSize+j)*STRIDE_XYZ+ZZ]) < rlist2);
                 }
             }
-            *numDistanceChecks += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
+            *numDistanceChecks += c_nbnxnCpuIClusterSize*c_nbnxnCpuIClusterSize;
         }
         if (!InRange)
         {
@@ -1361,6 +1361,11 @@ makeClusterListSimple(const nbnxn_grid_t *      gridj,
         nbl->ci[nbl->nci].cj_ind_end = nbl->ncj;
     }
 }
+
+#if GMX_SIMD
+/* The stride of the packed coordinate array, used in the SIMD search kernels */
+static constexpr int STRIDE_S = (GMX_SIMD_REAL_WIDTH > c_nbnxnCpuIClusterSize ? GMX_SIMD_REAL_WIDTH : c_nbnxnCpuIClusterSize);
+#endif
 
 #ifdef GMX_NBNXN_SIMD_4XN
 #include "gromacs/mdlib/nbnxn_search_simd_4xn.h"
@@ -2565,9 +2570,9 @@ static void icell_set_x_simple(int ci,
                                int stride, const real *x,
                                nbnxn_list_work_t *work)
 {
-    int ia = ci*NBNXN_CPU_CLUSTER_I_SIZE;
+    int ia = ci*c_nbnxnCpuIClusterSize;
 
-    for (int i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE; i++)
+    for (int i = 0; i < c_nbnxnCpuIClusterSize; i++)
     {
         work->x_ci[i*STRIDE_XYZ+XX] = x[(ia+i)*stride+XX] + shx;
         work->x_ci[i*STRIDE_XYZ+YY] = x[(ia+i)*stride+YY] + shy;
@@ -2668,7 +2673,7 @@ real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
     /* We should get this from the setup, but currently it's the same for
      * all setups, including GPUs.
      */
-    cluster_size_i = NBNXN_CPU_CLUSTER_I_SIZE;
+    cluster_size_i = c_nbnxnCpuIClusterSize;
 
     vol_inc_i = (cluster_size_i - 1)/atom_density;
     vol_inc_j = (cluster_size_j - 1)/atom_density;

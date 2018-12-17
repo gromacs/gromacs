@@ -411,7 +411,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
      */
     int        simd_4xn_diag_size;
 
-    simd_4xn_diag_size = std::max(NBNXN_CPU_CLUSTER_I_SIZE, simd_width);
+    simd_4xn_diag_size = std::max(c_nbnxnCpuIClusterSize, simd_width);
     snew_aligned(nbat->simd_4xn_diagonal_j_minus_i, simd_4xn_diag_size, NBNXN_MEM_ALIGN);
     for (int j = 0; j < simd_4xn_diag_size; j++)
     {
@@ -434,7 +434,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
      * In single precision this means the real and integer SIMD registers
      * are of equal size.
      */
-    simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE*simd_width;
+    simd_excl_size = c_nbnxnCpuIClusterSize*simd_width;
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     snew_aligned(nbat->simd_exclusion_filter64, simd_excl_size,   NBNXN_MEM_ALIGN);
 #else
@@ -465,7 +465,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
     // Matching code exists in set_ci_top_excls() to generate indices into this array.
     // Those indices are used in the kernels.
 
-    simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
+    simd_excl_size = c_nbnxnCpuIClusterSize*c_nbnxnCpuIClusterSize;
     const real simdFalse =  0.0;
     const real simdTrue  =  1.0;
     real      *simd_interaction_array;
@@ -675,7 +675,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
 
         if (bSIMD)
         {
-            pack_x = std::max(NBNXN_CPU_CLUSTER_I_SIZE,
+            pack_x = std::max(c_nbnxnCpuIClusterSize,
                               nbnxn_kernel_to_cluster_j_size(nb_kernel_type));
             switch (pack_x)
             {
