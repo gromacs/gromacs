@@ -51,8 +51,10 @@
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 2xnn kernel common header file"
 #endif
 
-#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLI    4
 #define UNROLLJ    (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
+
+static_assert(UNROLLI == c_nbnxnCpuIClusterSize, "UNROLLI should match the i-cluster size");
 
 /* The stride of all the atom data arrays is equal to half the SIMD width */
 #define STRIDE     UNROLLJ
