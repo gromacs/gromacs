@@ -338,7 +338,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
             switch (nbvg->kernel_type)
             {
                 case nbnxnk4x4_PlainC:
-                    unrollj = NBNXN_CPU_CLUSTER_I_SIZE;
+                    unrollj = c_nbnxnCpuIClusterSize;
                     nbnxn_kernel_energrp_ref[coulkt][vdwkt](nbl[nb], nbat,
                                                             ic,
                                                             shiftVectors,

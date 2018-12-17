@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,8 +65,8 @@ nbnxn_kernel_prune_ref(nbnxn_pairlist_t *         nbl,
     GMX_ASSERT(c_xStride == nbat->xstride, "xStride should match nbat->xstride");
     constexpr int c_xiStride = 3;
 
-    constexpr int c_iUnroll  = NBNXN_CPU_CLUSTER_I_SIZE;
-    constexpr int c_jUnroll  = NBNXN_CPU_CLUSTER_I_SIZE;
+    constexpr int c_iUnroll  = c_nbnxnCpuIClusterSize;
+    constexpr int c_jUnroll  = c_nbnxnCpuIClusterSize;
 
     /* Initialize the new list as empty and add pairs that are in range */
     int nciInner = 0;

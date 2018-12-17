@@ -33,8 +33,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLI    4
+#define UNROLLJ    4
+
+static_assert(UNROLLI == c_nbnxnCpuIClusterSize, "UNROLLI should match the i-cluster size");
 
 /* We could use nbat->xstride and nbat->fstride, but macros might be faster */
 #define X_STRIDE   3

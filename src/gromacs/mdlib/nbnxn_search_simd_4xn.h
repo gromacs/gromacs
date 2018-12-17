@@ -33,11 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if GMX_SIMD_REAL_WIDTH >= NBNXN_CPU_CLUSTER_I_SIZE
-#define STRIDE_S  (GMX_SIMD_REAL_WIDTH)
-#else
-#define STRIDE_S  NBNXN_CPU_CLUSTER_I_SIZE
-#endif
+/* Stride of the packed x coordinate array */
+static constexpr int c_xStride4xN = (GMX_SIMD_REAL_WIDTH > c_nbnxnCpuIClusterSize ? GMX_SIMD_REAL_WIDTH : c_nbnxnCpuIClusterSize);
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
 static inline void
@@ -51,18 +48,18 @@ icell_set_x_simd_4xn(int ci,
 
     ia = xIndexFromCi<NbnxnLayout::Simd4xN>(ci);
 
-    store(x_ci_simd +  0*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*STRIDE_S    ] + shx) );
-    store(x_ci_simd +  1*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*STRIDE_S    ] + shy) );
-    store(x_ci_simd +  2*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2*STRIDE_S    ] + shz) );
-    store(x_ci_simd +  3*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*STRIDE_S + 1] + shx) );
-    store(x_ci_simd +  4*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*STRIDE_S + 1] + shy) );
-    store(x_ci_simd +  5*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2*STRIDE_S + 1] + shz) );
-    store(x_ci_simd +  6*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*STRIDE_S + 2] + shx) );
-    store(x_ci_simd +  7*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*STRIDE_S + 2] + shy) );
-    store(x_ci_simd +  8*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2*STRIDE_S + 2] + shz) );
-    store(x_ci_simd +  9*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*STRIDE_S + 3] + shx) );
-    store(x_ci_simd + 10*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*STRIDE_S + 3] + shy) );
-    store(x_ci_simd + 11*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2*STRIDE_S + 3] + shz) );
+    store(x_ci_simd +  0*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*c_xStride4xN    ] + shx) );
+    store(x_ci_simd +  1*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*c_xStride4xN    ] + shy) );
+    store(x_ci_simd +  2*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2*c_xStride4xN    ] + shz) );
+    store(x_ci_simd +  3*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*c_xStride4xN + 1] + shx) );
+    store(x_ci_simd +  4*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*c_xStride4xN + 1] + shy) );
+    store(x_ci_simd +  5*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2*c_xStride4xN + 1] + shz) );
+    store(x_ci_simd +  6*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*c_xStride4xN + 2] + shx) );
+    store(x_ci_simd +  7*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*c_xStride4xN + 2] + shy) );
+    store(x_ci_simd +  8*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2*c_xStride4xN + 2] + shz) );
+    store(x_ci_simd +  9*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*c_xStride4xN + 3] + shx) );
+    store(x_ci_simd + 10*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*c_xStride4xN + 3] + shy) );
+    store(x_ci_simd + 11*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2*c_xStride4xN + 3] + shz) );
 }
 
 /* SIMD code for checking and adding cluster-pairs to the list using coordinates in packed format.
@@ -151,9 +148,9 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
         {
             xind_f  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN, 0>(gridj->cell0) + jclusterFirst);
 
-            jx_S  = load<SimdReal>(x_j + xind_f + 0*STRIDE_S);
-            jy_S  = load<SimdReal>(x_j + xind_f + 1*STRIDE_S);
-            jz_S  = load<SimdReal>(x_j + xind_f + 2*STRIDE_S);
+            jx_S  = load<SimdReal>(x_j + xind_f + 0*c_xStride4xN);
+            jy_S  = load<SimdReal>(x_j + xind_f + 1*c_xStride4xN);
+            jz_S  = load<SimdReal>(x_j + xind_f + 2*c_xStride4xN);
 
 
             /* Calculate distance */
@@ -222,9 +219,9 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
         {
             xind_l  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN, 0>(gridj->cell0) + jclusterLast);
 
-            jx_S  = load<SimdReal>(x_j +xind_l + 0*STRIDE_S);
-            jy_S  = load<SimdReal>(x_j +xind_l + 1*STRIDE_S);
-            jz_S  = load<SimdReal>(x_j +xind_l + 2*STRIDE_S);
+            jx_S  = load<SimdReal>(x_j +xind_l + 0*c_xStride4xN);
+            jy_S  = load<SimdReal>(x_j +xind_l + 1*c_xStride4xN);
+            jz_S  = load<SimdReal>(x_j +xind_l + 2*c_xStride4xN);
 
             /* Calculate distance */
             dx_S0            = load<SimdReal>(x_ci_simd +  0*GMX_SIMD_REAL_WIDTH) - jx_S;
@@ -278,5 +275,3 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
         nbl->ci[nbl->nci].cj_ind_end = nbl->ncj;
     }
 }
-
-#undef STRIDE_S
