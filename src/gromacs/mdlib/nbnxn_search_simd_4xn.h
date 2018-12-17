@@ -33,12 +33,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if GMX_SIMD_REAL_WIDTH >= NBNXN_CPU_CLUSTER_I_SIZE
-#define STRIDE_S  (GMX_SIMD_REAL_WIDTH)
-#else
-#define STRIDE_S  NBNXN_CPU_CLUSTER_I_SIZE
-#endif
-
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
 static inline void
 icell_set_x_simd_4xn(int ci,
@@ -278,5 +272,3 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
         nbl->ci[nbl->nci].cj_ind_end = nbl->ncj;
     }
 }
-
-#undef STRIDE_S

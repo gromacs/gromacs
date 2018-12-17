@@ -65,8 +65,8 @@ nbnxn_kernel_prune_ref(nbnxn_pairlist_t *         nbl,
     GMX_ASSERT(c_xStride == nbat->xstride, "xStride should match nbat->xstride");
     constexpr int c_xiStride = 3;
 
-    constexpr int c_iUnroll  = NBNXN_CPU_CLUSTER_I_SIZE;
-    constexpr int c_jUnroll  = NBNXN_CPU_CLUSTER_I_SIZE;
+    constexpr int c_iUnroll  = c_nbnxnCpuIClusterSize;
+    constexpr int c_jUnroll  = c_nbnxnCpuIClusterSize;
 
     /* Initialize the new list as empty and add pairs that are in range */
     int nciInner = 0;

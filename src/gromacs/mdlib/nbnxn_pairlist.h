@@ -77,6 +77,9 @@ struct NbnxnListParameters
 
 /*! \endcond */
 
+/* With CPU kernels the i-cluster size is always 4 atoms. */
+static constexpr int c_nbnxnCpuIClusterSize = 4;
+
 /* With GPU kernels the i and j cluster size is 8 atoms for CUDA and can be set at compile time for OpenCL */
 #if GMX_GPU == GMX_GPU_OPENCL
 static constexpr int c_nbnxnGpuClusterSize = GMX_OPENCL_NB_CLUSTER_SIZE;
