@@ -446,7 +446,7 @@ void done_mdoutf(gmx_mdoutf_t of)
 {
     if (of->fp_ene != nullptr)
     {
-        close_enx(of->fp_ene);
+        done_ener_file(of->fp_ene);
     }
     if (of->fp_xtc)
     {
