@@ -2203,41 +2203,41 @@ static void do_grps(t_fileio *fio, int ngrp, t_grps grps[], gmx_bool bRead)
     }
 }
 
-static void do_symstr(t_fileio *fio, char ***nm, gmx_bool bRead, t_symtab *symtab)
+static void do_symstr(t_fileio *fio, SymbolPtr nm, gmx_bool bRead, SymbolTable *symtab)
 {
-    int ls;
-
     if (bRead)
     {
+        int ls;
         gmx_fio_do_int(fio, ls);
-        *nm = get_symtab_handle(symtab, ls);
+        nm = get_symtab_handle(symtab, ls);
     }
     else
     {
-        ls = lookup_symtab(symtab, *nm);
-        gmx_fio_do_int(fio, ls);
+        auto ls     = lookup_symtab(*symtab, *nm);
+        int  second = ls.number();
+        gmx_fio_do_int(fio, second);
     }
 }
 
-static void do_strstr(t_fileio *fio, int nstr, char ***nm, gmx_bool bRead,
-                      t_symtab *symtab)
+static void do_strstr(t_fileio *fio, int nstr, gmx::ArrayRef<SymbolPtr> nm, gmx_bool bRead,
+                      SymbolTable *symtab)
 {
     int  j;
 
     for (j = 0; (j < nstr); j++)
     {
-        do_symstr(fio, &(nm[j]), bRead, symtab);
+        do_symstr(fio, nm[j], bRead, symtab);
     }
 }
 
 static void do_resinfo(t_fileio *fio, int n, t_resinfo *ri, gmx_bool bRead,
-                       t_symtab *symtab, int file_version)
+                       SymbolTable *symtab, int file_version)
 {
     int  j;
 
     for (j = 0; (j < n); j++)
     {
-        do_symstr(fio, &(ri[j].name), bRead, symtab);
+        do_symstr(fio, ri[j].name, bRead, symtab);
         if (file_version >= 63)
         {
             gmx_fio_do_int(fio, ri[j].nr);
@@ -2251,13 +2251,15 @@ static void do_resinfo(t_fileio *fio, int n, t_resinfo *ri, gmx_bool bRead,
     }
 }
 
-static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *symtab,
+static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, SymbolTable *symtab,
                      int file_version)
 {
     int i;
 
-    gmx_fio_do_int(fio, atoms->nr);
-    gmx_fio_do_int(fio, atoms->nres);
+    int natoms    = atoms->getNatoms();
+    int nresidues = atoms->getNresidues();
+    gmx_fio_do_int(fio, natoms);
+    gmx_fio_do_int(fio, nresidues);
     if (bRead)
     {
         /* Since we have always written all t_atom properties in the tpr file
@@ -2270,30 +2272,30 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
         atoms->haveBState  = TRUE;
         atoms->havePdbInfo = FALSE;
 
-        snew(atoms->atom, atoms->nr);
-        snew(atoms->atomname, atoms->nr);
-        snew(atoms->atomtype, atoms->nr);
-        snew(atoms->atomtypeB, atoms->nr);
-        snew(atoms->resinfo, atoms->nres);
-        atoms->pdbinfo = nullptr;
+        atoms->atom.resize(natoms);
+        atoms->atomname.resize(natoms);
+        atoms->atomtype.resize(natoms);
+        atoms->atomtypeB.resize(natoms);
+        atoms->resinfo.resize(nresidues);
+        atoms->pdbinfo.clear();
     }
     else
     {
         GMX_RELEASE_ASSERT(atoms->haveMass && atoms->haveCharge && atoms->haveType && atoms->haveBState, "Mass, charge, atomtype and B-state parameters should be present in t_atoms when writing a tpr file");
     }
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         do_atom(fio, &atoms->atom[i], bRead);
     }
-    do_strstr(fio, atoms->nr, atoms->atomname, bRead, symtab);
-    do_strstr(fio, atoms->nr, atoms->atomtype, bRead, symtab);
-    do_strstr(fio, atoms->nr, atoms->atomtypeB, bRead, symtab);
+    do_strstr(fio, atoms->getNatoms(), atoms->atomname, bRead, symtab);
+    do_strstr(fio, atoms->getNatoms(), atoms->atomtype, bRead, symtab);
+    do_strstr(fio, atoms->getNatoms(), atoms->atomtypeB, bRead, symtab);
 
-    do_resinfo(fio, atoms->nres, atoms->resinfo, bRead, symtab, file_version);
+    do_resinfo(fio, atoms->getNresidues(), atoms->resinfo.data(), bRead, symtab, file_version);
 }
 
 static void do_groups(t_fileio *fio, gmx_groups_t *groups,
-                      gmx_bool bRead, t_symtab *symtab)
+                      gmx_bool bRead, SymbolTable *symtab)
 {
     int      g;
 
@@ -2301,7 +2303,7 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
     gmx_fio_do_int(fio, groups->ngrpname);
     if (bRead)
     {
-        snew(groups->grpname, groups->ngrpname);
+        groups->grpname.resize(groups->ngrpname);
     }
     do_strstr(fio, groups->ngrpname, groups->grpname, bRead, symtab);
     for (g = 0; g < egcNR; g++)
@@ -2353,41 +2355,25 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
     }
 }
 
-static void do_symtab(t_fileio *fio, t_symtab *symtab, gmx_bool bRead)
+static void do_symtab(t_fileio *fio, SymbolTable *symtab, gmx_bool bRead)
 {
-    int       i, nr;
-    t_symbuf *symbuf;
     char      buf[STRLEN];
 
-    gmx_fio_do_int(fio, symtab->nr);
-    nr     = symtab->nr;
+    int       nr = symtab->size();
+    gmx_fio_do_int(fio, nr);
     if (bRead)
     {
-        snew(symtab->symbuf, 1);
-        symbuf          = symtab->symbuf;
-        symbuf->bufsize = nr;
-        snew(symbuf->buf, nr);
-        for (i = 0; (i < nr); i++)
+        for (int i = 0; (i < nr); i++)
         {
             gmx_fio_do_string(fio, buf);
-            symbuf->buf[i] = gmx_strdup(buf);
+            put_symtab(symtab, buf);
         }
     }
     else
     {
-        symbuf = symtab->symbuf;
-        while (symbuf != nullptr)
+        for (auto &entry : *symtab)
         {
-            for (i = 0; (i < symbuf->bufsize) && (i < nr); i++)
-            {
-                gmx_fio_do_string(fio, symbuf->buf[i]);
-            }
-            nr    -= i;
-            symbuf = symbuf->next;
-        }
-        if (nr != 0)
-        {
-            gmx_fatal(FARGS, "nr of symtab strings left: %d", nr);
+            gmx_fio_do_string(fio, gmx_strdup(entry.first.c_str()));
         }
     }
 }
@@ -2426,9 +2412,9 @@ static void do_cmap(t_fileio *fio, gmx_cmap_t *cmap_grid, gmx_bool bRead)
 
 
 static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
-                       t_symtab *symtab, int file_version)
+                       SymbolTable *symtab, int file_version)
 {
-    do_symstr(fio, &(molt->name), bRead, symtab);
+    do_symstr(fio, molt->name, bRead, symtab);
 
     do_atoms(fio, &molt->atoms, bRead, symtab, file_version);
 
@@ -2509,7 +2495,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
 {
     do_symtab(fio, &(mtop->symtab), bRead);
 
-    do_symstr(fio, &(mtop->name), bRead, &(mtop->symtab));
+    do_symstr(fio, mtop->name, bRead, &(mtop->symtab));
 
     do_ffparams(fio, &mtop->ffparams, bRead, file_version);
 
@@ -2532,7 +2518,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     }
     for (gmx_molblock_t &molblock : mtop->molblock)
     {
-        int numAtomsPerMolecule = (bRead ? 0 : mtop->moltype[molblock.type].atoms.nr);
+        int numAtomsPerMolecule = (bRead ? 0 : mtop->moltype[molblock.type].atoms.getNatoms());
         do_molblock(fio, &molblock, numAtomsPerMolecule, bRead);
     }
     gmx_fio_do_int(fio, mtop->natoms);

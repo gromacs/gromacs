@@ -38,8 +38,11 @@
 #define GMX_TOPOLOGY_INDEX_H
 
 #include <stdio.h>
+#include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/topology/symtab.h"
 
 struct t_atoms;
 struct t_blocka;
@@ -51,11 +54,11 @@ void check_index(const char *gname, int n, int index[],
  * and traj (if traj=NULL, "the trajectory" is used).
  */
 
-struct t_blocka *init_index(const char *gfile, char ***grpname);
+struct t_blocka *init_index(const char *gfile, SymbolTable *symtab, std::vector<SymbolPtr> *grpname);
 /* Lower level routine than the next */
 
 void rd_index(const char *statfile, int ngrps, int isize[],
-              int *index[], char *grpnames[]);
+              int *index[], gmx::ArrayRef<SymbolPtr> grpnames, SymbolTable *symtab);
 /* Assume the group file is generated, so the
  * format need not be user-friendly. The format is:
  * nr of groups, total nr of atoms
@@ -72,30 +75,31 @@ void rd_index(const char *statfile, int ngrps, int isize[],
  */
 
 void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
-               int isize[], int *index[], char *grpnames[]);
+               int isize[], int *index[], gmx::ArrayRef<SymbolPtr> grpnames,
+               SymbolTable *symtab);
 /* Does the same as rd_index, but if the fnm pointer is NULL it
  * will not read from fnm, but it will make default index groups
  * for the atoms in *atoms.
  */
 
 typedef struct {
-    int               maxframe;
-    char            **grpname;
-    struct t_blocka  *clust;
-    int              *inv_clust;
+    int                    maxframe = 0;
+    std::vector<SymbolPtr> grpname;
+    struct t_blocka       *clust     = nullptr;
+    int                   *inv_clust = nullptr;
 } t_cluster_ndx;
 
-t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx);
+t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx, SymbolTable *symtab);
 
 
-void write_index(const char *outf, struct t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms);
+void write_index(const char *outf, struct t_blocka *b, gmx::ArrayRef<SymbolPtr> gnames, gmx_bool bDuplicate, int natoms);
 /* Writes index blocks to outf (writes an indexfile) */
 
-void add_grp(struct t_blocka *b, char ***gnames, int nra, const int a[], const char *name);
+void add_grp(struct t_blocka *b, std::vector<SymbolPtr> *gnames, SymbolTable *symtab, int nra, const int a[], const char *name);
 /* Ads group a with name name to block b and namelist gnames */
 
-void analyse(const t_atoms *atoms, struct t_blocka *gb, char ***gn,
-             gmx_bool bASK, gmx_bool bVerb);
+void analyse(const t_atoms &atoms, struct t_blocka *gb, std::vector<SymbolPtr> *gn,
+             SymbolTable *symtab, gmx_bool bASK, gmx_bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.
  */
@@ -107,7 +111,7 @@ void analyse(const t_atoms *atoms, struct t_blocka *gb, char ***gn,
  * \param[in] grpname The names of the groups
  * \return the group number or -1 if not found.
  */
-int find_group(const char *s, int ngrps, char **grpname);
+int find_group(const char *s, int ngrps, gmx::ArrayRef<SymbolPtr> grpname);
 
 
 #endif

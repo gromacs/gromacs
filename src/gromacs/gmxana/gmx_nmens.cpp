@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,6 @@ int gmx_nmens(int argc, char *argv[])
     matrix              box;
     real               *eigval, *invsqrtm, t, disp;
     int                 natoms;
-    char               *grpname;
     const char         *indexfile;
     int                 i, j, d, s, v;
     int                 nout, *iout, noutvec, *outvec;
@@ -134,7 +133,8 @@ int gmx_nmens(int argc, char *argv[])
     atoms = &top.atoms;
 
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n", natoms);
-    get_index(atoms, indexfile, 1, &i, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(atoms, indexfile, 1, &i, &index, grpname, &top.symtab);
     if (i != natoms)
     {
         gmx_fatal(FARGS, "you selected a group with %d elements instead of %d",
@@ -226,7 +226,7 @@ int gmx_nmens(int argc, char *argv[])
     jran = dist(rng);
 
     snew(xout1, natoms);
-    snew(xout2, atoms->nr);
+    snew(xout2, atoms->getNatoms());
     out  = open_trx(ftp2fn(efTRO, NFILE, fnm), "w");
 
     for (s = 0; s < nstruct; s++)

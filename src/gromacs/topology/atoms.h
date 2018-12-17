@@ -38,12 +38,12 @@
 #define GMX_TOPOLOGY_ATOMS_H
 
 #include <stdio.h>
+#include <vector>
 
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
-
-struct t_symtab;
 
 /* The particle type */
 enum {
@@ -74,15 +74,15 @@ typedef struct t_atom
     char           elem[4];     /* Element name                         */
 } t_atom;
 
-typedef struct t_resinfo
+struct t_resinfo
 {
-    char          **name;       /* Pointer to the residue name          */
-    int             nr;         /* Residue number                       */
-    unsigned char   ic;         /* Code for insertion of residues       */
-    int             chainnum;   /* Iincremented at TER or new chain id  */
-    char            chainid;    /* Chain identifier written/read to pdb */
-    char          **rtp;        /* rtp building block name (optional)   */
-} t_resinfo;
+    SymbolPtr        name;     /* Iterator to the residue name          */
+    int              nr;       /* Residue number                       */
+    unsigned char    ic;       /* Code for insertion of residues       */
+    int              chainnum; /* Iincremented at TER or new chain id  */
+    char             chainid;  /* Chain identifier written/read to pdb */
+    SymbolPtr        rtp;      /* rtp building block name (optional)   */
+};
 
 typedef struct t_pdbinfo
 {
@@ -102,32 +102,51 @@ typedef struct t_grps
     int  *nm_ind;               /* Index in the group names             */
 } t_grps;
 
-typedef struct t_atoms
+/*! \brief
+ * Structure for atomic data.
+ *
+ * Blabla add more info here.
+ */
+struct t_atoms
 {
-    int          nr;            /* Nr of atoms                          */
-    t_atom      *atom;          /* Array of atoms (dim: nr)             */
-                                /* The following entries will not       */
-                                /* always be used (nres==0)             */
-    char      ***atomname;      /* Array of pointers to atom name       */
-                                /* use: (*(atomname[i]))                */
-    char      ***atomtype;      /* Array of pointers to atom types      */
-                                /* use: (*(atomtype[i]))                */
-    char      ***atomtypeB;     /* Array of pointers to B atom types    */
-                                /* use: (*(atomtypeB[i]))               */
-    int          nres;          /* The number of resinfo entries        */
-    t_resinfo   *resinfo;       /* Array of residue names and numbers   */
-    t_pdbinfo   *pdbinfo;       /* PDB Information, such as aniso. Bfac */
+    //! Vector of atoms
+    std::vector<t_atom> atom;
+    /* The following entries will not
+     * always be used (nres = 0)
+     */
+    //! Vector of pointers to atom names in symbol table.
+    std::vector<SymbolPtr> atomname;
+    //! Vector to pointers of atom types in symbol table.
+    std::vector<SymbolPtr> atomtype;
+    //! Vector of pointers to B atom types in symbol table.
+    std::vector<SymbolPtr> atomtypeB;
+    //! Vector of residue names and numbers.
+    std::vector<t_resinfo> resinfo;
+    //! Vector of PDB information, such as aniso. Bfac.
+    std::vector<t_pdbinfo> pdbinfo;
 
     /* Flags that tell if properties are set for all nr atoms.
      * For B-state parameters, both haveBState and the mass/charge/type
      * flag should be TRUE.
      */
-    gmx_bool     haveMass;      /* Mass available                       */
-    gmx_bool     haveCharge;    /* Charge available                     */
-    gmx_bool     haveType;      /* Atom type available                  */
-    gmx_bool     haveBState;    /* B-state parameters available         */
-    gmx_bool     havePdbInfo;   /* pdbinfo available                    */
-} t_atoms;
+    //! Mass available
+    bool     haveMass    = false;
+    //! Charge available
+    bool     haveCharge  = false;
+    //! Atom type available
+    bool     haveType    = false;
+    //! B-state parameters available
+    bool     haveBState  = false;
+    //! pdbinfo available
+    bool     havePdbInfo = false;
+
+    //! Return number of entries in atom.
+    int getNatoms() const { return atom.size(); }
+    //! Return number of residue entries
+    int getNresidues() const { return resinfo.size(); }
+    //! Return number of pdbinfo entries.
+    int getNpdb() const { return pdbinfo.size(); }
+};
 
 typedef struct t_atomtypes
 {
@@ -155,7 +174,7 @@ t_atoms *copy_t_atoms(const t_atoms *src);
 void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra);
 /* allocate extra space for more atoms and or residues */
 
-void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, struct t_symtab *symtab,
+void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, SymbolTable *symtab,
                          const char *resname, int resnr, unsigned char ic,
                          int chainnum, char chainid);
 /* Set the residue name, number, insertion code and chain identifier
@@ -180,5 +199,16 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses);
 //! Deleter for t_atoms, needed until it has a proper destructor.
 using AtomsDataPtr = gmx::unique_cptr<t_atoms, done_and_delete_atoms>;
 
+/*! \brief Print strings from symbol table.
+ *
+ * \param[in] fp File pointer.
+ * \param[in] indent Indentation level.
+ * \param[in] title Title of entry.
+ * \param[in] nm Symboltable entry.
+ * \param[in] n entry number.
+ * \param[in] bShowNumbers If we want to show numbers or not.
+ */
+void pr_stringsSymtab(FILE *fp, int indent, const char *title,
+                      const SymbolPtr *nm, int n, bool bShowNumbers);
 
 #endif

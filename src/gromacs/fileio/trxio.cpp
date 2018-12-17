@@ -728,9 +728,9 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
 
 static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
 {
-    t_atoms   atoms;
-    t_symtab *symtab;
-    matrix    boxpdb;
+    t_atoms     atoms;
+    SymbolTable symtab;
+    matrix      boxpdb;
     // Initiate model_nr to -1 rather than NOTSET.
     // It is not worthwhile introducing extra variables in the
     // read_pdbfile call to verify that a model_nr was read.
@@ -738,15 +738,10 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     char      title[STRLEN], *time, *step;
     double    dbl;
 
-    atoms.nr      = fr->natoms;
-    atoms.atom    = nullptr;
-    atoms.pdbinfo = nullptr;
     /* the other pointers in atoms should not be accessed if these are NULL */
-    snew(symtab, 1);
-    open_symtab(symtab);
-    na       = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, nullptr);
-    free_symtab(symtab);
-    sfree(symtab);
+    open_symtab(&symtab);
+    na       = read_pdbfile(fp, title, &model_nr, &atoms, &symtab, fr->x, &ePBC, boxpdb, TRUE, nullptr);
+    free_symtab(&symtab);
     set_trxframe_ePBC(fr, ePBC);
     if (nframes_read(status) == 0)
     {
@@ -836,7 +831,7 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
                 break;
             case efG96:
             {
-                t_symtab *symtab = nullptr;
+                SymbolTable *symtab = nullptr;
                 read_g96_conf(gmx_fio_getfp(status->fio), nullptr, nullptr, fr,
                               symtab, status->persistent_line);
                 bRet = (fr->natoms > 0);
@@ -968,7 +963,7 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                 /* allocate the persistent line */
                 snew((*status)->persistent_line, STRLEN+1);
             }
-            t_symtab *symtab = nullptr;
+            SymbolTable *symtab = nullptr;
             read_g96_conf(gmx_fio_getfp(fio), fn, nullptr, fr, symtab, (*status)->persistent_line);
             gmx_fio_close(fio);
             clear_trxframe(fr, FALSE);
@@ -1124,9 +1119,8 @@ void rewind_trj(t_trxstatus *status)
 t_topology *read_top(const char *fn, int *ePBC)
 {
     int         epbc, natoms;
-    t_topology *top;
+    t_topology *top = new t_topology;
 
-    snew(top, 1);
     epbc = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
     if (ePBC)
     {

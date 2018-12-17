@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,14 +57,14 @@ namespace gmx
  * AtomsBuilder
  */
 
-AtomsBuilder::AtomsBuilder(t_atoms *atoms, t_symtab *symtab)
+AtomsBuilder::AtomsBuilder(t_atoms *atoms, SymbolTable *symtab)
     : atoms_(atoms), symtab_(symtab),
-      nrAlloc_(atoms->nr), nresAlloc_(atoms->nres),
-      currentResidueIndex_(atoms->nres), nextResidueNumber_(-1)
+      nrAlloc_(atoms->getNatoms()), nresAlloc_(atoms->getNresidues()),
+      currentResidueIndex_(atoms->getNresidues()), nextResidueNumber_(-1)
 {
-    if (atoms->nres > 0)
+    if (atoms->getNresidues() > 0)
     {
-        nextResidueNumber_ = atoms->resinfo[atoms->nres - 1].nr + 1;
+        nextResidueNumber_ = atoms->resinfo[atoms->getNresidues() - 1].nr + 1;
     }
 }
 
@@ -72,39 +72,39 @@ AtomsBuilder::~AtomsBuilder()
 {
 }
 
-char **AtomsBuilder::symtabString(char **source)
+SymbolPtr AtomsBuilder::symtabString(const char *source)
 {
-    if (symtab_ != nullptr)
-    {
-        return put_symtab(symtab_, *source);
-    }
-    return source;
+    GMX_RELEASE_ASSERT(symtab_, "Need valid symtab to add entry");
+
+    return put_symtab(symtab_, source);
 }
 
 void AtomsBuilder::reserve(int atomCount, int residueCount)
 {
-    srenew(atoms_->atom,     atomCount);
-    srenew(atoms_->atomname, atomCount);
-    srenew(atoms_->resinfo,  residueCount);
-    if (atoms_->pdbinfo != nullptr)
-    {
-        srenew(atoms_->pdbinfo, atomCount);
-    }
+    /*
+       atoms_->atom.resize(atomCount);
+       atoms_->atomname.resize(atomCount);
+       atoms_->resinfo.resize(residueCount);
+       if (!atoms_->pdbinfo.empty())
+       {
+        atoms_->pdbinfo.resize(atomCount);
+       }
+     */
     nrAlloc_   = atomCount;
     nresAlloc_ = residueCount;
 }
 
 void AtomsBuilder::clearAtoms()
 {
-    atoms_->nr           = 0;
-    atoms_->nres         = 0;
+    atoms_->atom.empty();
+    atoms_->resinfo.empty();
     currentResidueIndex_ = 0;
     nextResidueNumber_   = -1;
 }
 
 int AtomsBuilder::currentAtomCount() const
 {
-    return atoms_->nr;
+    return atoms_->getNatoms();
 }
 
 void AtomsBuilder::setNextResidueNumber(int number)
@@ -114,22 +114,22 @@ void AtomsBuilder::setNextResidueNumber(int number)
 
 void AtomsBuilder::addAtom(const t_atoms &atoms, int i)
 {
-    const int index = atoms_->nr;
-    atoms_->atom[index]        = atoms.atom[i];
-    atoms_->atomname[index]    = symtabString(atoms.atomname[i]);
-    atoms_->atom[index].resind = currentResidueIndex_;
-    if (atoms_->pdbinfo != nullptr)
+    atoms_->atom.emplace_back(atoms.atom[i]);
+    atoms_->atomname.emplace_back(symtabString(atoms.atomname[i]->c_str()));
+    atoms_->atom.end()->resind = currentResidueIndex_;
+    if (!atoms_->pdbinfo.empty())
     {
-        if (atoms.pdbinfo != nullptr)
+        if (!atoms.pdbinfo.empty())
         {
-            atoms_->pdbinfo[index]  = atoms.pdbinfo[i];
+            atoms_->pdbinfo.emplace_back(atoms.pdbinfo[i]);
         }
         else
         {
-            gmx_pdbinfo_init_default(&atoms_->pdbinfo[index]);
+            t_pdbinfo newPdbinfo;
+            gmx_pdbinfo_init_default(&newPdbinfo);
+            atoms_->pdbinfo.emplace_back(newPdbinfo);
         }
     }
-    ++atoms_->nr;
 }
 
 void AtomsBuilder::startResidue(const t_resinfo &resinfo)
@@ -138,13 +138,12 @@ void AtomsBuilder::startResidue(const t_resinfo &resinfo)
     {
         nextResidueNumber_ = resinfo.nr;
     }
-    const int index = atoms_->nres;
-    atoms_->resinfo[index]      = resinfo;
-    atoms_->resinfo[index].nr   = nextResidueNumber_;
-    atoms_->resinfo[index].name = symtabString(resinfo.name);
+    const int index = atoms_->getNresidues();
+    atoms_->resinfo.emplace_back(resinfo);
+    atoms_->resinfo.end()->nr   = nextResidueNumber_;
+    atoms_->resinfo.end()->name = symtabString(resinfo.name->c_str());
     ++nextResidueNumber_;
     currentResidueIndex_      = index;
-    ++atoms_->nres;
 }
 
 void AtomsBuilder::finishResidue(const t_resinfo &resinfo)
@@ -156,35 +155,30 @@ void AtomsBuilder::finishResidue(const t_resinfo &resinfo)
     const int index = currentResidueIndex_;
     atoms_->resinfo[index]      = resinfo;
     atoms_->resinfo[index].nr   = nextResidueNumber_;
-    atoms_->resinfo[index].name = symtabString(resinfo.name);
+    atoms_->resinfo[index].name = symtabString(resinfo.name->c_str());
     ++nextResidueNumber_;
     currentResidueIndex_      = index + 1;
-    if (index >= atoms_->nres)
-    {
-        ++atoms_->nres;
-    }
+//    if (index >= atoms_->nres)
+//    {
+//        ++atoms_->nres;
+//    }
 }
 
 void AtomsBuilder::discardCurrentResidue()
 {
-    int index = atoms_->nr - 1;
+    int index = atoms_->getNatoms() - 1;
     while (index > 0 && atoms_->atom[index - 1].resind == currentResidueIndex_)
     {
+        atoms_->atom.erase(atoms_->atom.end());
         --index;
     }
-    atoms_->nr   = index;
-    atoms_->nres = currentResidueIndex_;
+    atoms_->resinfo.erase(atoms_->resinfo.end());
 }
 
 void AtomsBuilder::mergeAtoms(const t_atoms &atoms)
 {
-    if (atoms_->nr + atoms.nr > nrAlloc_
-        || atoms_->nres + atoms.nres > nresAlloc_)
-    {
-        reserve(atoms_->nr + atoms.nr, atoms_->nres + atoms.nres);
-    }
     int prevResInd = -1;
-    for (int i = 0; i < atoms.nr; ++i)
+    for (int i = 0; i < atoms.getNatoms(); ++i)
     {
         const int resind = atoms.atom[i].resind;
         if (resind != prevResInd)
@@ -201,7 +195,7 @@ void AtomsBuilder::mergeAtoms(const t_atoms &atoms)
  */
 
 AtomsRemover::AtomsRemover(const t_atoms &atoms)
-    : removed_(atoms.nr, 0)
+    : removed_(atoms.getNatoms(), 0)
 {
 }
 
@@ -211,7 +205,7 @@ AtomsRemover::~AtomsRemover()
 
 void AtomsRemover::refreshAtomCount(const t_atoms &atoms)
 {
-    removed_.resize(atoms.nr, 0);
+    removed_.resize(atoms.getNatoms(), 0);
 }
 
 void AtomsRemover::markAll()
@@ -226,7 +220,7 @@ void AtomsRemover::markResidue(const t_atoms &atoms, int atomIndex, bool bStatus
     {
         --atomIndex;
     }
-    while (atomIndex < atoms.nr && resind == atoms.atom[atomIndex].resind)
+    while (atomIndex < atoms.getNatoms() && resind == atoms.atom[atomIndex].resind)
     {
         removed_[atomIndex] = (bStatus ? 1 : 0);
         ++atomIndex;
@@ -267,9 +261,9 @@ void AtomsRemover::removeMarkedElements(std::vector<real> *container) const
 
 void AtomsRemover::removeMarkedAtoms(t_atoms *atoms) const
 {
-    const int    originalAtomCount = atoms->nr;
+    const int    originalAtomCount = atoms->getNatoms();
     AtomsBuilder builder(atoms, nullptr);
-    if (atoms->nr > 0)
+    if (atoms->getNatoms() > 0)
     {
         builder.setNextResidueNumber(atoms->resinfo[0].nr);
     }

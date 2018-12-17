@@ -81,7 +81,7 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
     {
         const gmx_moltype_t *molt = &mtop->moltype[molb.type];
         const t_block       *cgs  = &molt->cgs;
-        const t_atom        *atom = molt->atoms.atom;
+        const t_atom        *atom = molt->atoms.atom.data();
         for (m = 0; m < molb.nmol; m++)
         {
             for (cg = 0; cg < cgs->nr; cg++)
@@ -128,7 +128,7 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
                     }
                 }
             }
-            a_mol += molt->atoms.nr;
+            a_mol += molt->atoms.getNatoms();
         }
     }
 

@@ -291,7 +291,8 @@ extern void set_reference_positions(
 }
 
 
-extern void make_rotation_groups(t_rot *rot, char **rotgnames, t_blocka *grps, char **gnames)
+extern void make_rotation_groups(t_rot *rot, char **rotgnames, t_blocka *grps,
+                                 gmx::ArrayRef<SymbolPtr> gnames)
 {
     int       g, ig = -1, i;
     t_rotgrp *rotg;
@@ -300,7 +301,7 @@ extern void make_rotation_groups(t_rot *rot, char **rotgnames, t_blocka *grps, c
     for (g = 0; g < rot->ngrp; g++)
     {
         rotg      = &rot->grp[g];
-        ig        = search_string(rotgnames[g], grps->nr, gnames);
+        ig        = searchGroupString(rotgnames[g], grps->nr, gnames);
         rotg->nat = grps->index[ig+1] - grps->index[ig];
 
         if (rotg->nat > 0)

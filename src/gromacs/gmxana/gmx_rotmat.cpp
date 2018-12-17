@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -225,7 +225,6 @@ int gmx_rotmat(int argc, char *argv[])
     matrix            box, R;
     real              t;
     int               natoms, i;
-    char             *grpname;
     int               gnx;
     gmx_rmpbc_t       gpbc = nullptr;
     int              *index;
@@ -249,11 +248,12 @@ int gmx_rotmat(int argc, char *argv[])
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x_ref, nullptr, box, bMW);
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.getNatoms());
 
-    gmx_rmpbc(gpbc, top.atoms.nr, box, x_ref);
+    gmx_rmpbc(gpbc, top.atoms.getNatoms(), box, x_ref);
 
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, grpname, &top.symtab);
 
     GMX_RELEASE_ASSERT(reffit[0] != nullptr, "Options inconsistency; reffit[0] is NULL");
     if (reffit[0][0] != 'n')

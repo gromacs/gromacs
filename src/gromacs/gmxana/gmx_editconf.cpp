@@ -73,13 +73,13 @@ static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
     int  i;
 
     tmass = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         if (bGetMass)
         {
             gmx_atomprop_query(aps, epropMass,
-                               *atoms->resinfo[atoms->atom[i].resind].name,
-                               *atoms->atomname[i], &(atoms->atom[i].m));
+                               atoms->resinfo[atoms->atom[i].resind].name->c_str(),
+                               atoms->atomname[i]->c_str(), &(atoms->atom[i].m));
         }
         tmass += atoms->atom[i].m;
     }
@@ -209,9 +209,7 @@ static void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac
     fprintf(stderr, "Reading %d B-factors from %s\n", *n_bfac, fn);
     for (i = 0; (i < *n_bfac); i++)
     {
-        /*fprintf(stderr, "Line %d: %s",i,bfac_lines[i]);*/
         sscanf(bfac_lines[i], "%d %lf", &(*bfac_nr)[i], &(*bfac_val)[i]);
-        /*fprintf(stderr," nr %d val %g\n",(*bfac_nr)[i],(*bfac_val)[i]);*/
     }
 
 }
@@ -223,7 +221,7 @@ static void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     int      i, n;
     gmx_bool found;
 
-    if (n_bfac > atoms->nres)
+    if (n_bfac > atoms->getNresidues())
     {
         peratom = TRUE;
     }
@@ -232,9 +230,6 @@ static void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     bfac_min = 1e10;
     for (i = 0; (i < n_bfac); i++)
     {
-        /*    if ((bfac_nr[i]-1<0) || (bfac_nr[i]-1>=atoms->nr))
-           gmx_fatal(FARGS,"Index of B-Factor %d is out of range: %d (%g)",
-           i+1,bfac_nr[i],bfac[i]); */
         if (bfac[i] > bfac_max)
         {
             bfac_max = bfac[i];
@@ -336,25 +331,23 @@ static void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[]
     }
 }
 
-static void visualize_images(const char *fn, int ePBC, matrix box)
+static void visualize_images(const char *fn, int ePBC, matrix box, SymbolTable *symtab)
 {
     t_atoms atoms;
     rvec   *img;
-    char   *c, *ala;
     int     nat, i;
 
     nat = NTRICIMG + 1;
     init_t_atoms(&atoms, nat, FALSE);
-    atoms.nr = nat;
     snew(img, nat);
-    /* FIXME: Constness should not be cast away */
-    c   = const_cast<char*>("C");
-    ala = const_cast<char*>("ALA");
+
+    const char *c   = "C";
+    const char *ala = "ALA";
     for (i = 0; i < nat; i++)
     {
-        atoms.atomname[i]        = &c;
+        atoms.atomname[i]        = put_symtab(symtab, c);
         atoms.atom[i].resind     = i;
-        atoms.resinfo[i].name    = &ala;
+        atoms.resinfo[i].name    = put_symtab(symtab, ala);
         atoms.resinfo[i].nr      = i + 1;
         atoms.resinfo[i].chainid = 'A' + i / NCUCVERT;
     }
@@ -706,7 +699,6 @@ int gmx_editconf(int argc, char *argv[])
     double           *bfac    = nullptr, c6, c12;
     int              *bfac_nr = nullptr;
     t_topology       *top     = nullptr;
-    char             *grpname, *sgrpname, *agrpname;
     int               isize, ssize, numAlignmentAtoms;
     int              *index, *sindex, *aindex;
     rvec             *x, *v, gc, rmin, rmax, size;
@@ -794,14 +786,13 @@ int gmx_editconf(int argc, char *argv[])
                   " when using the -mead option\n");
     }
 
-    t_topology *top_tmp;
-    snew(top_tmp, 1);
+    t_topology *top_tmp = new t_topology;
     read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
-    t_atoms  &atoms = top_tmp->atoms;
-    natom = atoms.nr;
-    if (atoms.pdbinfo == nullptr)
+    t_atoms    &atoms = top_tmp->atoms;
+    natom = atoms.getNatoms();
+    if (atoms.pdbinfo.empty())
     {
-        snew(atoms.pdbinfo, atoms.nr);
+        atoms.pdbinfo.resize(atoms.getNatoms());
     }
     atoms.havePdbInfo = TRUE;
 
@@ -809,7 +800,7 @@ int gmx_editconf(int argc, char *argv[])
     {
         get_pdb_atomnumber(&atoms, aps);
     }
-    printf("Read %d atoms\n", atoms.nr);
+    printf("Read %d atoms\n", atoms.getNatoms());
 
     /* Get the element numbers if available in a pdb file */
     if (fn2ftp(infile) == efPDB)
@@ -831,20 +822,20 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bMead || bGrasp)
     {
-        if (atoms.nr != top->atoms.nr)
+        if (atoms.getNatoms() != top->atoms.getNatoms())
         {
-            gmx_fatal(FARGS, "Atom numbers don't match (%d vs. %d)", atoms.nr, top->atoms.nr);
+            gmx_fatal(FARGS, "Atom numbers don't match (%d vs. %d)", atoms.getNatoms(), top->atoms.getNatoms());
         }
-        snew(atoms.pdbinfo, top->atoms.nr);
+        atoms.pdbinfo.resize(top->atoms.getNatoms());
         ntype = top->idef.atnr;
-        for (i = 0; (i < atoms.nr); i++)
+        for (i = 0; (i < atoms.getNatoms()); i++)
         {
             /* Determine the Van der Waals radius from the force field */
             if (bReadVDW)
             {
                 if (!gmx_atomprop_query(aps, epropVDW,
-                                        *top->atoms.resinfo[top->atoms.atom[i].resind].name,
-                                        *top->atoms.atomname[i], &vdw))
+                                        top->atoms.resinfo[top->atoms.atom[i].resind].name->c_str(),
+                                        top->atoms.atomname[i]->c_str(), &vdw))
                 {
                     vdw = rvdw;
                 }
@@ -910,7 +901,7 @@ int gmx_editconf(int argc, char *argv[])
     }
     else if (visbox[0] == -1)
     {
-        visualize_images("images.pdb", ePBC, box);
+        visualize_images("images.pdb", ePBC, box, &top->symtab);
     }
 
     /* remove pbc */
@@ -919,17 +910,18 @@ int gmx_editconf(int argc, char *argv[])
         rm_gropbc(&atoms, x, box);
     }
 
+    std::vector<SymbolPtr> sgrpname(1);
     if (bCalcGeom)
     {
         if (bIndex)
         {
             fprintf(stderr, "\nSelect a group for determining the system size:\n");
             get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &ssize, &sindex, &sgrpname);
+                      1, &ssize, &sindex, sgrpname, &top->symtab);
         }
         else
         {
-            ssize  = atoms.nr;
+            ssize  = atoms.getNatoms();
             sindex = nullptr;
         }
         diam = calc_geom(ssize, sindex, x, gc, rmin, rmax, bCalcDiam);
@@ -960,17 +952,16 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bOrient)
     {
-        int     *index;
-        char    *grpnames;
+        int                   *index;
+        std::vector<SymbolPtr> grpnames(1);
 
         /* Get a group for principal component analysis */
         fprintf(stderr, "\nSelect group for the determining the orientation\n");
-        get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
+        get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpnames, &top->symtab);
 
         /* Orient the principal axes along the coordinate axes */
         orient_princ(&atoms, isize, index, natom, x, bHaveV ? v : nullptr, nullptr);
         sfree(index);
-        sfree(grpnames);
     }
 
     if (bScale)
@@ -995,20 +986,21 @@ int gmx_editconf(int argc, char *argv[])
             scale[XX] = scale[YY] = scale[ZZ] = std::cbrt(dens/rho);
             fprintf(stderr, "Scaling all box vectors by %g\n", scale[XX]);
         }
-        scale_conf(atoms.nr, x, box, scale);
+        scale_conf(atoms.getNatoms(), x, box, scale);
     }
 
     if (bAlign)
     {
         if (bIndex)
         {
+            std::vector<SymbolPtr> agrpname(1);
             fprintf(stderr, "\nSelect a group that you want to align:\n");
             get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &numAlignmentAtoms, &aindex, &agrpname);
+                      1, &numAlignmentAtoms, &aindex, agrpname, &top->symtab);
         }
         else
         {
-            numAlignmentAtoms = atoms.nr;
+            numAlignmentAtoms = atoms.getNatoms();
             snew(aindex, numAlignmentAtoms);
             for (i = 0; i < numAlignmentAtoms; i++)
             {
@@ -1054,13 +1046,14 @@ int gmx_editconf(int argc, char *argv[])
     {
         if (bIndex)
         {
+            std::vector<SymbolPtr> sgrpname(1);
             fprintf(stderr, "\nSelect a group that you want to translate:\n");
             get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &ssize, &sindex, &sgrpname);
+                      1, &ssize, &sindex, sgrpname, &top->symtab);
         }
         else
         {
-            ssize  = atoms.nr;
+            ssize  = atoms.getNatoms();
             sindex = nullptr;
         }
         printf("Translating %d atoms (out of %d) by %g %g %g nm\n", ssize, natom,
@@ -1242,9 +1235,10 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bIndex)
     {
+        std::vector<SymbolPtr> grpname(1);
         fprintf(stderr, "\nSelect a group for output:\n");
         get_index(&atoms, opt2fn_null("-n", NFILE, fnm),
-                  1, &isize, &index, &grpname);
+                  1, &isize, &index, grpname, &top->symtab);
 
         if (resnr_start >= 0)
         {
@@ -1253,7 +1247,7 @@ int gmx_editconf(int argc, char *argv[])
 
         if (opt2parg_bSet("-label", NPA, pa))
         {
-            for (i = 0; (i < atoms.nr); i++)
+            for (i = 0; (i < atoms.getNatoms()); i++)
             {
                 atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
             }
@@ -1267,19 +1261,19 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
+            write_pdbfile_indexed(out, top_tmp->name->c_str(), &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, top_tmp->name->c_str(), &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
         }
     }
     else
     {
         if (resnr_start >= 0)
         {
-            renum_resnr(&atoms, atoms.nr, nullptr, resnr_start);
+            renum_resnr(&atoms, atoms.getNatoms(), nullptr, resnr_start);
         }
 
         if ((outftp == efPDB) || (outftp == efPQR))
@@ -1303,12 +1297,12 @@ int gmx_editconf(int argc, char *argv[])
             else if (opt2bSet("-bf", NFILE, fnm))
             {
                 read_bfac(opt2fn("-bf", NFILE, fnm), &n_bfac, &bfac, &bfac_nr);
-                set_pdb_conf_bfac(atoms.nr, atoms.nres, &atoms,
+                set_pdb_conf_bfac(atoms.getNatoms(), atoms.getNresidues(), &atoms,
                                   n_bfac, bfac, bfac_nr, peratom);
             }
             if (opt2parg_bSet("-label", NPA, pa))
             {
-                for (i = 0; (i < atoms.nr); i++)
+                for (i = 0; (i < atoms.getNatoms()); i++)
                 {
                     atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
                 }
@@ -1317,28 +1311,28 @@ int gmx_editconf(int argc, char *argv[])
              * all instances to include the boolean flag for writing out PQR files.
              */
             int *index;
-            snew(index, atoms.nr);
-            for (int i = 0; i < atoms.nr; i++)
+            snew(index, atoms.getNatoms());
+            for (int i = 0; i < atoms.getNatoms(); i++)
             {
                 index[i] = i;
             }
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
+            write_pdbfile_indexed(out, top_tmp->name->c_str(), &atoms, x, ePBC, box, ' ', -1, atoms.getNatoms(), index, conect,
                                   TRUE, outftp == efPQR);
             sfree(index);
             if (bLegend)
             {
-                pdb_legend(out, atoms.nr, atoms.nres, &atoms, x);
+                pdb_legend(out, atoms.getNatoms(), atoms.getNresidues(), &atoms, x);
             }
             if (visbox[0] > 0)
             {
-                visualize_box(out, bLegend ? atoms.nr+12 : atoms.nr,
-                              bLegend ? atoms.nres = 12 : atoms.nres, box, visbox);
+                visualize_box(out, bLegend ? atoms.getNatoms()+12 : atoms.getNatoms(),
+                              bLegend ? atoms.getNresidues() + 12 : atoms.getNresidues(), box, visbox);
             }
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
+            write_sto_conf(outfile, top_tmp->name->c_str(), &atoms, x, bHaveV ? v : nullptr, ePBC, box);
         }
     }
     gmx_atomprop_destroy(aps);

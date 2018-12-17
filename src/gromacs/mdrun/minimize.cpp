@@ -580,7 +580,7 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
             }
 
             write_sto_conf_mtop(confout,
-                                *top_global->name, top_global,
+                                top_global->name->c_str(), top_global,
                                 state_global->x.rvec_array(), nullptr, ir->ePBC, state->s.box);
         }
     }
@@ -2783,7 +2783,7 @@ Integrator::do_nm()
     if (bIsMaster)
     {
         fprintf(stderr, "starting normal mode calculation '%s'\n%" PRId64 " steps.\n\n",
-                *(top_global->name), inputrec->nsteps);
+                top_global->name->c_str(), inputrec->nsteps);
     }
 
     nnodes = cr->nnodes;

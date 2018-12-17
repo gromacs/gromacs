@@ -68,13 +68,13 @@ static int *res_ndx(t_atoms *atoms)
     int *rndx;
     int  i, r0;
 
-    if (atoms->nr <= 0)
+    if (atoms->getNatoms() <= 0)
     {
         return nullptr;
     }
-    snew(rndx, atoms->nr);
+    snew(rndx, atoms->getNatoms());
     r0 = atoms->atom[0].resind;
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         rndx[i] = atoms->atom[i].resind-r0;
     }
@@ -87,14 +87,14 @@ static int *res_natm(t_atoms *atoms)
     int *natm;
     int  i, j, r0;
 
-    if (atoms->nr <= 0)
+    if (atoms->getNatoms() <= 0)
     {
         return nullptr;
     }
-    snew(natm, atoms->nres);
+    snew(natm, atoms->getNresidues());
     r0 = atoms->atom[0].resind;
     j  = 0;
-    for (i = 0; (i < atoms->nres); i++)
+    for (i = 0; (i < atoms->getNresidues()); i++)
     {
         while ((atoms->atom[j].resind)-r0 == i)
         {
@@ -209,7 +209,6 @@ int gmx_mdmat(int argc, char *argv[])
     t_atoms           useatoms;
     int               isize;
     int              *index;
-    char             *grpname;
     int              *rndx, *natm, prevres, newres;
 
     int               i, j, nres, natoms, nframes, trxnat;
@@ -244,14 +243,11 @@ int gmx_mdmat(int argc, char *argv[])
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, FALSE);
 
     fprintf(stderr, "Select group for analysis\n");
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname, &top.symtab);
 
     natoms = isize;
-    snew(useatoms.atom, natoms);
-    snew(useatoms.atomname, natoms);
-
-    useatoms.nres = 0;
-    snew(useatoms.resinfo, natoms);
+    init_t_atoms(&useatoms, natoms, false);
 
     prevres = top.atoms.atom[index[0]].resind;
     newres  = 0;
@@ -267,19 +263,17 @@ int gmx_mdmat(int argc, char *argv[])
             if (debug)
             {
                 fprintf(debug, "New residue: atom %5s %5s %6d, index entry %5d, newres %5d\n",
-                        *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
-                        *(top.atoms.atomname[ii]),
+                        top.atoms.resinfo[top.atoms.atom[ii].resind].name->c_str(),
+                        top.atoms.atomname[ii]->c_str(),
                         ii, i, newres);
             }
         }
         useatoms.atom[i].resind = newres;
     }
-    useatoms.nres = newres+1;
-    useatoms.nr   = isize;
 
     rndx = res_ndx(&(useatoms));
     natm = res_natm(&(useatoms));
-    nres = useatoms.nres;
+    nres = useatoms.getNresidues();
     fprintf(stderr, "There are %d residues with %d atoms\n", nres, natoms);
 
     snew(resnr, nres);

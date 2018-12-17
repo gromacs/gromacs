@@ -345,7 +345,7 @@ extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, const i
         for (i = 0; i < isize; i++)
         {
             pos[i].t =
-                return_atom_type (*(top->atoms.atomname[index[i]]), gsf);
+                return_atom_type (top->atoms.atomname[index[i]]->c_str(), gsf);
         }
     }
     for (i = 0; i < isize; i++)
@@ -443,7 +443,6 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 {
     int                     i, *isize, flags = TRX_READ_X, **index_atp;
     t_trxstatus            *status;
-    char                  **grpname;
     int                   **index;
     t_topology              top;
     int                     ePBC;
@@ -476,17 +475,17 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     /* groups stuff... */
     snew (isize, ng);
     snew (index, ng);
-    snew (grpname, ng);
+    std::vector<SymbolPtr> grpname(ng);
 
     fprintf (stderr, "\nSelect %d group%s\n", ng,
              ng == 1 ? "" : "s");
     if (fnTPS)
     {
-        get_index (&top.atoms, fnNDX, ng, isize, index, grpname);
+        get_index (&top.atoms, fnNDX, ng, isize, index, grpname, &top.symtab);
     }
     else
     {
-        rd_index (fnNDX, ng, isize, index, grpname);
+        rd_index (fnNDX, ng, isize, index, grpname, &top.symtab);
     }
 
     /* The first time we read data is a little special */

@@ -208,7 +208,7 @@ real ca_phi(int gnx, const int index[], rvec x[])
     return (phitot/(gnx-4.0));
 }
 
-real dip(int nbb, int const bbind[], const rvec x[], const t_atom atom[])
+real dip(int nbb, int const bbind[], const rvec x[], gmx::ArrayRef<const t_atom> atom)
 {
     int  i, m, ai;
     rvec dipje;
@@ -332,19 +332,20 @@ static void set_ahcity(int nbb, t_bb bb[])
 
 t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
               int *nall, int **index,
-              char ***atomname, t_atom atom[],
-              t_resinfo *resinfo)
+              gmx::ArrayRef<const SymbolPtr> atomname, gmx::ArrayRef<const t_atom> atom,
+              gmx::ArrayRef<const t_resinfo> resinfo,
+              SymbolTable *symtab)
 {
     static const char * bb_nm[] = { "N", "H", "CA", "C", "O", "HN" };
 #define NBB asize(bb_nm)
     t_bb               *bb;
-    char               *grpname;
     int                 ai, i, i0, i1, j, k, rnr, gnx, r0, r1;
 
     fprintf(stderr, "Please select a group containing the entire backbone\n");
-    rd_index(fn, 1, &gnx, index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    rd_index(fn, 1, &gnx, index, grpname, symtab);
     *nall = gnx;
-    fprintf(stderr, "Checking group %s\n", grpname);
+    fprintf(stderr, "Checking group %s\n", grpname[0]->c_str());
     r0 = r1 = atom[(*index)[0]].resind;
     for (i = 1; (i < gnx); i++)
     {
@@ -367,18 +368,18 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
         // Create an index into the residues present in the selected
         // index group.
         int bbindex  = resindex -r0;
-        if (std::strcmp(*(resinfo[resindex].name), "PRO") == 0)
+        if (std::strcmp(resinfo[resindex].name->c_str(), "PRO") == 0)
         {
             // For PRO in a peptide, there is no H bound to backbone
             // N, so use CD instead.
-            if (std::strcmp(*(atomname[ai]), "CD") == 0)
+            if (std::strcmp(atomname[ai]->c_str(), "CD") == 0)
             {
                 bb[bbindex].H = ai;
             }
         }
         for (k = 0; (k < NBB); k++)
         {
-            if (std::strcmp(bb_nm[k], *(atomname[ai])) == 0)
+            if (std::strcmp(bb_nm[k], atomname[ai]->c_str()) == 0)
             {
                 break;
             }
@@ -455,7 +456,7 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     for (i = 0; (i < rnr); i++)
     {
         int resindex = atom[bb[i].CA].resind;
-        sprintf(bb[i].label, "%s%d", *(resinfo[resindex].name), resinfo[resindex].nr);
+        sprintf(bb[i].label, "%s%d", resinfo[resindex].name->c_str(), resinfo[resindex].nr);
     }
 
     *nres = rnr;

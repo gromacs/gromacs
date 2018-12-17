@@ -117,7 +117,6 @@ int gmx_genpr(int argc, char *argv[])
     real              d, dd, lo, hi;
     int              *ind_grp;
     const char       *xfn, *nfn;
-    char             *gn_grp;
     matrix            box;
     gmx_bool          bFreeze;
     rvec              dx, *x = nullptr, *v = nullptr;
@@ -156,23 +155,23 @@ int gmx_genpr(int argc, char *argv[])
     }
 
     const char *title = "";
+    t_topology  top;
     if (xfn != nullptr)
     {
         fprintf(stderr, "\nReading structure file\n");
-        t_topology *top = nullptr;
-        snew(top, 1);
-        read_tps_conf(xfn, top, nullptr, &x, &v, box, FALSE);
-        title = *top->name;
-        atoms = &top->atoms;
-        if (atoms->pdbinfo == nullptr)
+        read_tps_conf(xfn, &top, nullptr, &x, &v, box, FALSE);
+        title = top.name->c_str();
+        atoms = &top.atoms;
+        if (atoms->pdbinfo.empty())
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            atoms->pdbinfo.resize(atoms->getNatoms());
         }
     }
 
+    std::vector<SymbolPtr> gn_grp(1);
     if (bFreeze)
     {
-        if (!atoms || !atoms->pdbinfo)
+        if (!atoms || atoms->pdbinfo.empty())
         {
             gmx_fatal(FARGS, "No B-factors in input file %s, use a pdb file next time.",
                       xfn);
@@ -180,7 +179,7 @@ int gmx_genpr(int argc, char *argv[])
 
         out = opt2FILE("-of", NFILE, fnm, "w");
         fprintf(out, "[ freeze ]\n");
-        for (i = 0; (i < atoms->nr); i++)
+        for (i = 0; (i < atoms->getNatoms()); i++)
         {
             if (atoms->pdbinfo[i].bfac <= freeze_level)
             {
@@ -193,18 +192,18 @@ int gmx_genpr(int argc, char *argv[])
     {
         printf("Select group to generate %s matrix from\n",
                bConstr ? "constraint" : "distance restraint");
-        get_index(atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
+        get_index(atoms, nfn, 1, &igrp, &ind_grp, gn_grp, &top.symtab);
 
         out = ftp2FILE(efITP, NFILE, fnm, "w");
         if (bConstr)
         {
-            fprintf(out, "; constraints for %s of %s\n\n", gn_grp, title);
+            fprintf(out, "; constraints for %s of %s\n\n", gn_grp[0]->c_str(), title);
             fprintf(out, "[ constraints ]\n");
             fprintf(out, ";%4s %5s %1s %10s\n", "i", "j", "tp", "dist");
         }
         else
         {
-            fprintf(out, "; distance restraints for %s of %s\n\n", gn_grp, title);
+            fprintf(out, "; distance restraints for %s of %s\n\n", gn_grp[0]->c_str(), title);
             fprintf(out, "[ distance_restraints ]\n");
             fprintf(out, ";%4s %5s %1s %5s %10s %10s %10s %10s %10s\n", "i", "j", "?",
                     "label", "funct", "lo", "up1", "up2", "weight");
@@ -245,10 +244,10 @@ int gmx_genpr(int argc, char *argv[])
     else
     {
         printf("Select group to position restrain\n");
-        get_index(atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
+        get_index(atoms, nfn, 1, &igrp, &ind_grp, gn_grp, &top.symtab);
 
         out = ftp2FILE(efITP, NFILE, fnm, "w");
-        fprintf(out, "; position restraints for %s of %s\n\n", gn_grp, title);
+        fprintf(out, "; position restraints for %s of %s\n\n", gn_grp[0]->c_str(), title);
         fprintf(out, "[ position_restraints ]\n");
         fprintf(out, ";%3s %5s %9s %10s %10s\n", "i", "funct", "fcx", "fcy", "fcz");
         for (i = 0; i < igrp; i++)

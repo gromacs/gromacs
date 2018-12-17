@@ -573,7 +573,7 @@ void gmx::Integrator::do_md()
 
         char tbuf[20];
         fprintf(stderr, "starting mdrun '%s'\n",
-                *(top_global->name));
+                top_global->name->c_str());
         if (ir->nsteps >= 0)
         {
             sprintf(tbuf, "%8.1f", (ir->init_step+ir->nsteps)*ir->delta_t);

@@ -579,7 +579,8 @@ static char *mkatomname(const t_atoms *atoms, int i)
 
     rnr = atoms->atom[i].resind;
     sprintf(buf, "%4s%d%-4s",
-            *atoms->resinfo[rnr].name, atoms->resinfo[rnr].nr, *atoms->atomname[i]);
+            atoms->resinfo[rnr].name->c_str(),
+            atoms->resinfo[rnr].nr, atoms->atomname[i]->c_str());
 
     return buf;
 }
@@ -637,8 +638,8 @@ static void search_acceptors(const t_topology *top, int isize,
         {
             n = index[i];
             if ((bContact ||
-                 (((*top->atoms.atomname[n])[0] == 'O') ||
-                  (bNitAcc && ((*top->atoms.atomname[n])[0] == 'N')))) &&
+                 ((top->atoms.atomname[n]->c_str()[0] == 'O') ||
+                  (bNitAcc && (top->atoms.atomname[n]->c_str()[0] == 'N')))) &&
                 ISINGRP(datable[n]))
             {
                 datable[n] |= c_acceptorMask;
@@ -646,8 +647,8 @@ static void search_acceptors(const t_topology *top, int isize,
             }
         }
     }
-    snew(a->aptr, top->atoms.nr);
-    for (i = 0; (i < top->atoms.nr); i++)
+    snew(a->aptr, top->atoms.getNatoms());
+    for (i = 0; (i < top->atoms.getNatoms()); i++)
     {
         a->aptr[i] = NOTSET;
     }
@@ -737,8 +738,8 @@ static void search_donors(const t_topology *top, int isize, const int *index,
 
     if (!ddd->dptr)
     {
-        snew(ddd->dptr, top->atoms.nr);
-        for (i = 0; (i < top->atoms.nr); i++)
+        snew(ddd->dptr, top->atoms.getNatoms());
+        for (i = 0; (i < top->atoms.getNatoms()); i++)
         {
             ddd->dptr[i] = NOTSET;
         }
@@ -804,10 +805,16 @@ static void search_donors(const t_topology *top, int isize, const int *index,
                     {
                         nr1 = interaction->iatoms[i+1+j];
                         nr2 = interaction->iatoms[i+2-j];
-                        if ((*top->atoms.atomname[nr1][0] == 'H') &&
-                            ((*top->atoms.atomname[nr2][0] == 'O') ||
-                             (*top->atoms.atomname[nr2][0] == 'N')) &&
-                            ISINGRP(datable[nr1]) && ISINGRP(datable[nr2]))
+                        if (
+                            (
+                                (top->atoms.atomname[nr1]->c_str()[0] == 'H') &&
+                                (top->atoms.atomname[nr2]->c_str()[0] == 'O')
+                            ) ||
+                            (
+                                (top->atoms.atomname[nr2]->c_str()[0] == 'N') &&
+                                (ISINGRP(datable[nr1]) && ISINGRP(datable[nr2]))
+                            )
+                            )
                         {
                             datable[nr2] |= c_donorMask;
                             add_dh(ddd, nr2, nr1, grp, datable);
@@ -2226,8 +2233,8 @@ static void analyse_donor_properties(FILE *fp, t_hbdata *hb, int nframes, real t
 
 static void dump_hbmap(t_hbdata *hb,
                        int nfile, t_filenm fnm[], gmx_bool bTwo,
-                       gmx_bool bContact, const int isize[], int *index[], char *grpnames[],
-                       const t_atoms *atoms)
+                       gmx_bool bContact, const int isize[], int *index[], gmx::ArrayRef<const SymbolPtr> grpnames,
+                       const t_atoms &atoms)
 {
     FILE    *fp, *fplog;
     int      ddd, hhh, aaa, i, j, k, m, grp;
@@ -2246,7 +2253,7 @@ static void dump_hbmap(t_hbdata *hb,
     }
     for (grp = gr0; grp <= (bTwo ? gr1 : gr0); grp++)
     {
-        fprintf(fp, "[ %s ]", grpnames[grp]);
+        fprintf(fp, "[ %s ]", grpnames[grp]->c_str());
         for (i = 0; i < isize[grp]; i++)
         {
             fprintf(fp, (i%15) ? " " : "\n");
@@ -2256,7 +2263,7 @@ static void dump_hbmap(t_hbdata *hb,
 
         if (!bContact)
         {
-            fprintf(fp, "[ donors_hydrogens_%s ]\n", grpnames[grp]);
+            fprintf(fp, "[ donors_hydrogens_%s ]\n", grpnames[grp]->c_str());
             for (i = 0; (i < hb->d.nrd); i++)
             {
                 if (hb->d.grp[i] == grp)
@@ -2270,7 +2277,7 @@ static void dump_hbmap(t_hbdata *hb,
                 }
             }
             first = TRUE;
-            fprintf(fp, "[ acceptors_%s ]", grpnames[grp]);
+            fprintf(fp, "[ acceptors_%s ]", grpnames[grp]->c_str());
             for (i = 0; (i < hb->a.nra); i++)
             {
                 if (hb->a.grp[i] == grp)
@@ -2286,11 +2293,11 @@ static void dump_hbmap(t_hbdata *hb,
     if (bTwo)
     {
         fprintf(fp, bContact ? "[ contacts_%s-%s ]\n" :
-                "[ hbonds_%s-%s ]\n", grpnames[0], grpnames[1]);
+                "[ hbonds_%s-%s ]\n", grpnames[0]->c_str(), grpnames[1]->c_str());
     }
     else
     {
-        fprintf(fp, bContact ? "[ contacts_%s ]" : "[ hbonds_%s ]\n", grpnames[0]);
+        fprintf(fp, bContact ? "[ contacts_%s ]" : "[ hbonds_%s ]\n", grpnames[0]->c_str());
     }
 
     for (i = 0; (i < hb->d.nrd); i++)
@@ -2303,8 +2310,8 @@ static void dump_hbmap(t_hbdata *hb,
             {
                 if (hb->hbmap[i][k] && ISHB(hb->hbmap[i][k]->history[m]))
                 {
-                    sprintf(ds, "%s", mkatomname(atoms, ddd));
-                    sprintf(as, "%s", mkatomname(atoms, aaa));
+                    sprintf(ds, "%s", mkatomname(&atoms, ddd));
+                    sprintf(as, "%s", mkatomname(&atoms, aaa));
                     if (bContact)
                     {
                         fprintf(fp, " %6d %6d\n", ddd+1, aaa+1);
@@ -2316,7 +2323,7 @@ static void dump_hbmap(t_hbdata *hb,
                     else
                     {
                         hhh = hb->d.hydro[i][m];
-                        sprintf(hs, "%s", mkatomname(atoms, hhh));
+                        sprintf(hs, "%s", mkatomname(&atoms, hhh));
                         fprintf(fp, " %6d %6d %6d\n", ddd+1, hhh+1, aaa+1);
                         if (fplog)
                         {
@@ -2512,7 +2519,6 @@ int gmx_hbond(int argc, char *argv[])
     t_pargs              *ppa;
     int                   npargs, natoms, nframes = 0, shatom;
     int                  *isize;
-    char                **grpnames;
     int                 **index;
     rvec                 *x, hbox;
     matrix                box;
@@ -2589,23 +2595,23 @@ int gmx_hbond(int argc, char *argv[])
     t_inputrec     *ir = &irInstance;
     read_tpx_top(ftp2fn(efTPR, NFILE, fnm), ir, box, &natoms, nullptr, nullptr, &top);
 
-    snew(grpnames, grNR);
+    std::vector<SymbolPtr> grpnames(grNR);
     snew(index, grNR);
     snew(isize, grNR);
     /* Make Donor-Acceptor table */
-    snew(datable, top.atoms.nr);
+    snew(datable, top.atoms.getNatoms());
 
     if (bSelected)
     {
         /* analyze selected hydrogen bonds */
         printf("Select group with selected atoms:\n");
         get_index(&(top.atoms), opt2fn("-sel", NFILE, fnm),
-                  1, &nsel, index, grpnames);
+                  1, &nsel, index, grpnames, &top.symtab);
         if (nsel % 3)
         {
             gmx_fatal(FARGS, "Number of atoms in group '%s' not a multiple of 3\n"
                       "and therefore cannot contain triplets of "
-                      "Donor-Hydrogen-Acceptor", grpnames[0]);
+                      "Donor-Hydrogen-Acceptor", grpnames[0]->c_str());
         }
         bTwo = FALSE;
 
@@ -2617,19 +2623,19 @@ int gmx_hbond(int argc, char *argv[])
             add_dh (&hb->d, dd, hh, i, datable);
             add_acc(&hb->a, aa, i);
             /* Should this be here ? */
-            snew(hb->d.dptr, top.atoms.nr);
-            snew(hb->a.aptr, top.atoms.nr);
+            snew(hb->d.dptr, top.atoms.getNatoms());
+            snew(hb->a.aptr, top.atoms.getNatoms());
             add_hbond(hb, dd, aa, hh, gr0, gr0, 0, bMerge, 0, bContact);
         }
         printf("Analyzing %d selected hydrogen bonds from '%s'\n",
-               isize[0], grpnames[0]);
+               isize[0], grpnames[0]->c_str());
     }
     else
     {
         /* analyze all hydrogen bonds: get group(s) */
         printf("Specify 2 groups to analyze:\n");
         get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
-                  2, isize, index, grpnames);
+                  2, isize, index, grpnames, &top.symtab);
 
         /* check if we have two identical or two non-overlapping groups */
         bTwo = isize[0] != isize[1];
@@ -2640,16 +2646,16 @@ int gmx_hbond(int argc, char *argv[])
         if (bTwo)
         {
             printf("Checking for overlap in atoms between %s and %s\n",
-                   grpnames[0], grpnames[1]);
+                   grpnames[0]->c_str(), grpnames[1]->c_str());
 
-            gen_datable(index[0], isize[0], datable, top.atoms.nr);
+            gen_datable(index[0], isize[0], datable, top.atoms.getNatoms());
 
             for (i = 0; i < isize[1]; i++)
             {
                 if (ISINGRP(datable[index[1][i]]))
                 {
                     gmx_fatal(FARGS, "Partial overlap between groups '%s' and '%s'",
-                              grpnames[0], grpnames[1]);
+                              grpnames[0]->c_str(), grpnames[1]->c_str());
                 }
             }
         }
@@ -2658,24 +2664,24 @@ int gmx_hbond(int argc, char *argv[])
             printf("Calculating %s "
                    "between %s (%d atoms) and %s (%d atoms)\n",
                    bContact ? "contacts" : "hydrogen bonds",
-                   grpnames[0], isize[0], grpnames[1], isize[1]);
+                   grpnames[0]->c_str(), isize[0], grpnames[1]->c_str(), isize[1]);
         }
         else
         {
             fprintf(stderr, "Calculating %s in %s (%d atoms)\n",
-                    bContact ? "contacts" : "hydrogen bonds", grpnames[0], isize[0]);
+                    bContact ? "contacts" : "hydrogen bonds", grpnames[0]->c_str(), isize[0]);
         }
     }
     sfree(datable);
 
     /* search donors and acceptors in groups */
-    snew(datable, top.atoms.nr);
+    snew(datable, top.atoms.getNatoms());
     for (i = 0; (i < grNR); i++)
     {
         if ( ((i == gr0) && !bSelected ) ||
              ((i == gr1) && bTwo ))
         {
-            gen_datable(index[i], isize[i], datable, top.atoms.nr);
+            gen_datable(index[i], isize[i], datable, top.atoms.getNatoms());
             if (bContact)
             {
                 search_acceptors(&top, isize[i], index[i], &hb->a, i,
@@ -2690,7 +2696,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             if (bTwo)
             {
-                clear_datable_grp(datable, top.atoms.nr);
+                clear_datable_grp(datable, top.atoms.getNatoms());
             }
         }
     }
@@ -2737,15 +2743,15 @@ int gmx_hbond(int argc, char *argv[])
     shatom = 0;
     if (rshell > 0)
     {
-        int      shisz;
-        int     *shidx;
-        char    *shgrpnm;
+        int                    shisz;
+        int                   *shidx;
+        std::vector<SymbolPtr> shgrpnm(1);
         /* get index group with atom for shell */
         do
         {
             printf("Select atom for shell (1 atom):\n");
             get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &shisz, &shidx, &shgrpnm);
+                      1, &shisz, &shidx, shgrpnm, &top.symtab);
             if (shisz != 1)
             {
                 printf("group contains %d atoms, should be 1 (one)\n", shisz);
@@ -2759,10 +2765,10 @@ int gmx_hbond(int argc, char *argv[])
 
     /* Analyze trajectory */
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > top.atoms.getNatoms())
     {
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
-                  top.atoms.nr, natoms);
+                  top.atoms.getNatoms(), natoms);
     }
 
     bBox  = (ir->ePBC != epbcNONE);
@@ -3198,7 +3204,7 @@ int gmx_hbond(int argc, char *argv[])
 
             if (opt2bSet("-hbn", NFILE, fnm))
             {
-                dump_hbmap(hb, NFILE, fnm, bTwo, bContact, isize, index, grpnames, &top.atoms);
+                dump_hbmap(hb, NFILE, fnm, bTwo, bContact, isize, index, grpnames, top.atoms);
             }
 
             /* Moved the call to merge_hb() to a line BEFORE dump_hbmap
@@ -3410,9 +3416,9 @@ int gmx_hbond(int argc, char *argv[])
         {
             if (USE_THIS_GROUP(j) )
             {
-                sprintf(buf, "Donors %s", grpnames[j]);
+                sprintf(buf, "Donors %s", grpnames[j]->c_str());
                 legnames[i++] = gmx_strdup(buf);
-                sprintf(buf, "Acceptors %s", grpnames[j]);
+                sprintf(buf, "Acceptors %s", grpnames[j]->c_str());
                 legnames[i++] = gmx_strdup(buf);
             }
         }

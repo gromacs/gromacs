@@ -189,7 +189,7 @@ double check_mol(const gmx_mtop_t *mtop, warninp_t wi)
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         const t_atoms *atoms = &mtop->moltype[molb.type].atoms;
-        for (i = 0; (i < atoms->nr); i++)
+        for (i = 0; (i < atoms->getNatoms()); i++)
         {
             q += molb.nmol*atoms->atom[i].q;
             m  = atoms->atom[i].m;
@@ -202,8 +202,8 @@ double check_mol(const gmx_mtop_t *mtop, warninp_t wi)
             {
                 ri = atoms->atom[i].resind;
                 sprintf(buf, "atom %s (Res %s-%d) has mass %g (state A) / %g (state B)\n",
-                        *(atoms->atomname[i]),
-                        *(atoms->resinfo[ri].name),
+                        atoms->atomname[i]->c_str(),
+                        atoms->resinfo[ri].name->c_str(),
                         atoms->resinfo[ri].nr,
                         m, mB);
                 warning_error(wi, buf);
@@ -214,8 +214,8 @@ double check_mol(const gmx_mtop_t *mtop, warninp_t wi)
                 ri = atoms->atom[i].resind;
                 sprintf(buf, "virtual site %s (Res %s-%d) has non-zero mass %g (state A) / %g (state B)\n"
                         "     Check your topology.\n",
-                        *(atoms->atomname[i]),
-                        *(atoms->resinfo[ri].name),
+                        atoms->atomname[i]->c_str(),
+                        atoms->resinfo[ri].name->c_str(),
                         atoms->resinfo[ri].nr,
                         m, mB);
                 warning_error(wi, buf);
@@ -269,7 +269,7 @@ static void sum_q(const t_atoms *atoms, int numMols,
     double qmolB    = 0;
     double sumAbsQA = 0;
     double sumAbsQB = 0;
-    for (int i = 0; i < atoms->nr; i++)
+    for (int i = 0; i < atoms->getNatoms(); i++)
     {
         qmolA    += atoms->atom[i].q;
         qmolB    += atoms->atom[i].qB;
@@ -392,48 +392,46 @@ static void make_atoms_sys(const std::vector<gmx_molblock_t> &molblock,
                            const t_molinfo                   *molinfo,
                            t_atoms                           *atoms)
 {
-    atoms->nr   = 0;
-    atoms->atom = nullptr;
+    atoms->atom.clear();
 
     for (const gmx_molblock_t &molb : molblock)
     {
         const t_atoms &mol_atoms = molinfo[molb.type].atoms;
 
-        srenew(atoms->atom, atoms->nr + molb.nmol*mol_atoms.nr);
-
         for (int m = 0; m < molb.nmol; m++)
         {
-            for (int a = 0; a < mol_atoms.nr; a++)
+            for (int a = 0; a < mol_atoms.getNatoms(); a++)
             {
-                atoms->atom[atoms->nr++] = mol_atoms.atom[a];
+                atoms->atom.emplace_back(mol_atoms.atom[a]);
             }
         }
     }
 }
 
 
-static char **read_topol(const char *infile, const char *outfile,
-                         const char *define, const char *include,
-                         t_symtab    *symtab,
-                         gpp_atomtype_t atype,
-                         int         *nrmols,
-                         t_molinfo   **molinfo,
-                         t_molinfo   **intermolecular_interactions,
-                         t_params    plist[],
-                         int         *combination_rule,
-                         double      *reppow,
-                         t_gromppopts *opts,
-                         real        *fudgeQQ,
-                         std::vector<gmx_molblock_t> *molblock,
-                         bool       *ffParametrizedWithHBondConstraints,
-                         bool        bFEP,
-                         bool        bZero,
-                         bool        usingFullRangeElectrostatics,
-                         warninp_t       wi)
+static SymbolPtr read_topol(const char *infile, const char *outfile,
+                            const char *define, const char *include,
+                            SymbolTable    *symtab,
+                            gpp_atomtype_t atype,
+                            int         *nrmols,
+                            std::vector<t_molinfo> *molinfo,
+                            std::vector<t_molinfo> *intermolecular_interactions,
+                            t_params    plist[],
+                            int         *combination_rule,
+                            double      *reppow,
+                            t_gromppopts *opts,
+                            real        *fudgeQQ,
+                            std::vector<gmx_molblock_t> *molblock,
+                            bool       *ffParametrizedWithHBondConstraints,
+                            bool        bFEP,
+                            bool        bZero,
+                            bool        usingFullRangeElectrostatics,
+                            warninp_t       wi)
 {
     FILE                 *out;
     int                   i, sl, nb_funct;
-    char                 *pline = nullptr, **title = nullptr;
+    char                 *pline = nullptr;
+    SymbolPtr             title;
     char                  line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
     char                  genpairs[32];
     char                 *dirstr, *dummy2;
@@ -491,7 +489,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
     *reppow  = 12.0;      /* Default value for repulsion power     */
 
-    *intermolecular_interactions = nullptr;
+    intermolecular_interactions->clear();
 
     /* Init the number of CMAP torsion angles  and grid spacing */
     plist[F_CMAP].grid_spacing = 0;
@@ -611,16 +609,16 @@ static char **read_topol(const char *infile, const char *outfile,
 
                         if (d == d_intermolecular_interactions)
                         {
-                            if (*intermolecular_interactions == nullptr)
+                            if (intermolecular_interactions->empty())
                             {
                                 /* We (mis)use the moleculetype processing
                                  * to process the intermolecular interactions
                                  * by making a "molecule" of the size of the system.
                                  */
-                                snew(*intermolecular_interactions, 1);
-                                init_molinfo(*intermolecular_interactions);
-                                mi0 = *intermolecular_interactions;
-                                make_atoms_sys(*molblock, *molinfo,
+                                intermolecular_interactions->resize(1);
+                                init_molinfo(&intermolecular_interactions->at(0));
+                                *mi0 = intermolecular_interactions->at(0);
+                                make_atoms_sys(*molblock, molinfo->data(),
                                                &mi0->atoms);
                             }
                         }
@@ -711,18 +709,6 @@ static char **read_topol(const char *infile, const char *outfile,
                         case d_nonbond_params:
                             push_nbt(d, nbparam, atype, pline, nb_funct, wi);
                             break;
-                        /*
-                           case d_blocktype:
-                           nblock++;
-                           srenew(block,nblock);
-                           srenew(blockinfo,nblock);
-                           blk0=&(block[nblock-1]);
-                           bi0=&(blockinfo[nblock-1]);
-                           init_top(blk0);
-                           init_molinfo(bi0);
-                           push_molt(symtab,bi0,pline);
-                           break;
-                         */
 
                         case d_implicit_genborn_params:
                             // Skip this line, so old topologies with
@@ -778,11 +764,11 @@ static char **read_topol(const char *infile, const char *outfile,
                             srenew(exclusionBlocks, nmol);
                             exclusionBlocks[nmol-1].nr      = 0;
                             mi0                             = &((*molinfo)[nmol-1]);
-                            mi0->atoms.haveMass             = TRUE;
-                            mi0->atoms.haveCharge           = TRUE;
-                            mi0->atoms.haveType             = TRUE;
-                            mi0->atoms.haveBState           = TRUE;
-                            mi0->atoms.havePdbInfo          = FALSE;
+                            mi0->atoms.haveMass             = true;
+                            mi0->atoms.haveCharge           = true;
+                            mi0->atoms.haveType             = true;
+                            mi0->atoms.haveBState           = true;
+                            mi0->atoms.havePdbInfo          = false;
                             break;
                         }
                         case d_atoms:
@@ -829,7 +815,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             GMX_ASSERT(exclusionBlocks, "exclusionBlocks must always be allocated so exclusions can be processed");
                             if (!exclusionBlocks[nmol-1].nr)
                             {
-                                initExclusionBlocks(&(exclusionBlocks[nmol-1]), mi0->atoms.nr);
+                                initExclusionBlocks(&(exclusionBlocks[nmol-1]), mi0->atoms.getNatoms());
                             }
                             push_excl(pline, &(exclusionBlocks[nmol-1]), wi);
                             break;
@@ -842,7 +828,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             int      whichmol;
                             bool     bCouple;
 
-                            push_mol(nmol, *molinfo, pline, &whichmol, &nrcopies, wi);
+                            push_mol(nmol, molinfo->data(), pline, &whichmol, &nrcopies, wi);
                             mi0 = &((*molinfo)[whichmol]);
                             molblock->resize(molblock->size() + 1);
                             molblock->back().type = whichmol;
@@ -850,26 +836,26 @@ static char **read_topol(const char *infile, const char *outfile,
 
                             bCouple = (opts->couple_moltype != nullptr &&
                                        (gmx_strcasecmp("system", opts->couple_moltype) == 0 ||
-                                        strcmp(*(mi0->name), opts->couple_moltype) == 0));
+                                        strcmp(mi0->name->c_str(), opts->couple_moltype) == 0));
                             if (bCouple)
                             {
                                 nmol_couple += nrcopies;
                             }
 
-                            if (mi0->atoms.nr == 0)
+                            if (mi0->atoms.getNatoms() == 0)
                             {
                                 gmx_fatal(FARGS, "Molecule type '%s' contains no atoms",
-                                          *mi0->name);
+                                          mi0->name->c_str());
                             }
                             fprintf(stderr,
                                     "Excluding %d bonded neighbours molecule type '%s'\n",
-                                    mi0->nrexcl, *mi0->name);
+                                    mi0->nrexcl, mi0->name->c_str());
                             sum_q(&mi0->atoms, nrcopies, &qt, &qBt);
                             if (!mi0->bProcessed)
                             {
                                 t_nextnb nnb;
                                 generate_excl(mi0->nrexcl,
-                                              mi0->atoms.nr,
+                                              mi0->atoms.getNatoms(),
                                               mi0->plist,
                                               &nnb,
                                               &(mi0->excls));
@@ -888,7 +874,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                                            opts->bCoupleIntra,
                                                            nb_funct, &(plist[nb_funct]), wi);
                                 }
-                                stupid_fill_block(&mi0->mols, mi0->atoms.nr, TRUE);
+                                stupid_fill_block(&mi0->mols, mi0->atoms.getNatoms(), TRUE);
                                 mi0->bProcessed = TRUE;
                             }
                             break;
@@ -945,7 +931,7 @@ static char **read_topol(const char *infile, const char *outfile,
     }
 
     /* this is not very clean, but fixes core dump on empty system name */
-    if (!title)
+    if ((*title).empty())
     {
         title = put_symtab(symtab, "");
     }
@@ -975,9 +961,9 @@ static char **read_topol(const char *infile, const char *outfile,
 
     done_bond_atomtype(&batype);
 
-    if (*intermolecular_interactions != nullptr)
+    if (!intermolecular_interactions->empty())
     {
-        sfree(mi0->atoms.atom);
+        mi0->atoms.atom.clear();
     }
 
     *nrmols = nmol;
@@ -985,28 +971,28 @@ static char **read_topol(const char *infile, const char *outfile,
     return title;
 }
 
-char **do_top(bool                          bVerbose,
-              const char                   *topfile,
-              const char                   *topppfile,
-              t_gromppopts                 *opts,
-              bool                          bZero,
-              t_symtab                     *symtab,
-              t_params                      plist[],
-              int                          *combination_rule,
-              double                       *repulsion_power,
-              real                         *fudgeQQ,
-              gpp_atomtype_t                atype,
-              int                          *nrmols,
-              t_molinfo                   **molinfo,
-              t_molinfo                   **intermolecular_interactions,
-              const t_inputrec             *ir,
-              std::vector<gmx_molblock_t>  *molblock,
-              bool                         *ffParametrizedWithHBondConstraints,
-              warninp_t                     wi)
+SymbolPtr do_top(bool                          bVerbose,
+                 const char                   *topfile,
+                 const char                   *topppfile,
+                 t_gromppopts                 *opts,
+                 bool                          bZero,
+                 SymbolTable                  *symtab,
+                 t_params                      plist[],
+                 int                          *combination_rule,
+                 double                       *repulsion_power,
+                 real                         *fudgeQQ,
+                 gpp_atomtype_t                atype,
+                 int                          *nrmols,
+                 std::vector<t_molinfo>       *molinfo,
+                 std::vector<t_molinfo>       *intermolecular_interactions,
+                 const t_inputrec             *ir,
+                 std::vector<gmx_molblock_t>  *molblock,
+                 bool                         *ffParametrizedWithHBondConstraints,
+                 warninp_t                     wi)
 {
     /* Tmpfile might contain a long path */
     const char *tmpfile;
-    char      **title;
+    SymbolPtr   title;
 
     if (topppfile)
     {
@@ -1081,7 +1067,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
      */
     for (int j = 0; j < ir->opts.ngQM; j++)
     {
-        for (int i = 0; i < molt->atoms.nr; i++)
+        for (int i = 0; i < molt->atoms.getNatoms(); i++)
         {
             if (qm_nr >= qm_max)
             {
@@ -1101,8 +1087,8 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
      * the qm_arr to change the elements corresponding to the QM atoms
      * to TRUE.
      */
-    snew(bQMMM, molt->atoms.nr);
-    for (int i = 0; i < molt->atoms.nr; i++)
+    snew(bQMMM, molt->atoms.getNatoms());
+    for (int i = 0; i < molt->atoms.getNatoms(); i++)
     {
         bQMMM[i] = FALSE;
     }
@@ -1261,8 +1247,8 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
             }
         }
     }
-    snew(blink, molt->atoms.nr);
-    for (int i = 0; i < molt->atoms.nr; i++)
+    snew(blink, molt->atoms.getNatoms());
+    for (int i = 0; i < molt->atoms.getNatoms(); i++)
     {
         blink[i] = FALSE;
     }
@@ -1278,7 +1264,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
      * as excluded elements all the other QMatoms (and itself).
      */
     t_blocka  qmexcl;
-    qmexcl.nr  = molt->atoms.nr;
+    qmexcl.nr  = molt->atoms.getNatoms();
     qmexcl.nra = qm_nr*(qm_nr+link_nr)+link_nr*qm_nr;
     snew(qmexcl.index, qmexcl.nr+1);
     snew(qmexcl.a, qmexcl.nra);
@@ -1313,7 +1299,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
      */
 
     gmx::ExclusionBlocks  qmexcl2;
-    initExclusionBlocks(&qmexcl2, molt->atoms.nr);
+    initExclusionBlocks(&qmexcl2, molt->atoms.getNatoms());
     gmx::blockaToExclusionBlocks(&qmexcl, &qmexcl2);
     gmx::mergeExclusions(&(molt->excls), &qmexcl2);
     gmx::doneExclusionBlocks(&qmexcl2);
@@ -1376,7 +1362,7 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t wi, GmxQmmmMode 
     for (size_t mb = 0; mb < sys->molblock.size(); mb++)
     {
         molb    = &sys->molblock[mb];
-        nat_mol = sys->moltype[molb->type].atoms.nr;
+        nat_mol = sys->moltype[molb->type].atoms.getNatoms();
         for (mol = 0; mol < molb->nmol; mol++)
         {
             bQMMM = FALSE;

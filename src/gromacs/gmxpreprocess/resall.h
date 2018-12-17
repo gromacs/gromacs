@@ -42,7 +42,7 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 
-char *search_rtp(const char *key, int nrtp, t_restp rtp[]);
+const char *search_rtp(const char *key, int nrtp, t_restp rtp[]);
 /* Search for an entry in the rtp database, returns the rtp residue name.
  * A mismatch of one character is allowed, if there is only one nearly
  * matching entry in the database, a warning will be generated.
@@ -53,11 +53,11 @@ t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[]);
  * Generates a fatal error when rtpname is not found.
  */
 
-gpp_atomtype_t read_atype(const char *ffdir, struct t_symtab *tab);
+gpp_atomtype_t read_atype(const char *ffdir, SymbolTable *tab);
 /* read atom type database(s) */
 
-void read_resall(const char *resdb, int *nrtp, t_restp **rtp,
-                 gpp_atomtype_t atype, struct t_symtab *tab,
+void read_resall(const char *resdb, int *nrtp, std::vector<t_restp> *rtp,
+                 gpp_atomtype_t atype, SymbolTable *tab,
                  bool bAllowOverrideRTP);
 /* read rtp database, append to the existing database */
 

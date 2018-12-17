@@ -211,7 +211,6 @@ int gmx_velacc(int argc, char *argv[])
     gmx_bool        bTPS = FALSE, bTop = FALSE;
     int             gnx;
     int            *index;
-    char           *grpname;
     /* t0, t1 are the beginning and end time respectively.
      * dt is the time step, mass is temp variable for atomic mass.
      */
@@ -251,15 +250,17 @@ int gmx_velacc(int argc, char *argv[])
         bTPS = ftp2bSet(efTPS, NFILE, fnm) || !ftp2bSet(efNDX, NFILE, fnm);
     }
 
+    std::vector<SymbolPtr> grpname(1);
+    SymbolTable            symtab;
     if (bTPS)
     {
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box,
                              TRUE);
-        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
+        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, grpname, &top.symtab);
     }
     else
     {
-        rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
+        rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &gnx, &index, grpname, &symtab);
     }
 
     if (bMol)
@@ -268,7 +269,7 @@ int gmx_velacc(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Need a topology to determine the molecules");
         }
-        snew(normm, top.atoms.nr);
+        snew(normm, top.atoms.getNatoms());
         precalc(top, normm);
         index_atom2mol(&gnx, index, &top.mols);
     }

@@ -72,11 +72,11 @@ struct gmx_moltype_t
     /*! \brief Default copy constructor */
     gmx_moltype_t(const gmx_moltype_t &) = default;
 
-    char              **name;   /**< Name of the molecule type            */
-    t_atoms             atoms;  /**< The atoms in this molecule           */
-    InteractionLists    ilist;  /**< Interaction list with local indices  */
-    t_block             cgs;    /**< The charge groups                    */
-    t_blocka            excls;  /**< The exclusions                       */
+    SymbolPtr           name;  /**< Name of the molecule type            */
+    t_atoms             atoms; /**< The atoms in this molecule           */
+    InteractionLists    ilist; /**< Interaction list with local indices  */
+    t_block             cgs;   /**< The charge groups                    */
+    t_blocka            excls; /**< The exclusions                       */
 };
 
 /*! \brief Block of molecules of the same type, used in gmx_mtop_t */
@@ -101,11 +101,11 @@ struct MoleculeBlockIndices
 
 typedef struct gmx_groups_t
 {
-    t_grps            grps[egcNR];  /* Groups of things                     */
-    int               ngrpname;     /* Number of groupnames                 */
-    char           ***grpname;      /* Names of the groups                  */
-    int               ngrpnr[egcNR];
-    unsigned char    *grpnr[egcNR]; /* Group numbers or NULL                */
+    t_grps                 grps[egcNR]; /* Groups of things                     */
+    int                    ngrpname;    /* Number of groupnames                 */
+    std::vector<SymbolPtr> grpname;
+    int                    ngrpnr[egcNR];
+    unsigned char         *grpnr[egcNR]; /* Group numbers or NULL                */
 } gmx_groups_t;
 
 /*! \brief
@@ -133,7 +133,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     ~gmx_mtop_t();
 
     //! Name of the topology.
-    char                            **name = nullptr;
+    SymbolPtr                         name;
     //! Force field parameters used.
     gmx_ffparams_t                    ffparams;
     //! Vector of different molecule types.
@@ -158,7 +158,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     //! Groups of atoms for different purposes
     gmx_groups_t                      groups;
     //! The symbol table
-    t_symtab                          symtab;
+    SymbolTable                       symtab;
     //! Tells whether we have valid molecule indices
     bool                              haveMoleculeIndices = false;
     /*! \brief List of global atom indices of atoms between which
@@ -194,15 +194,15 @@ struct gmx_localtop_t
 /* The old topology struct, completely written out, used in analysis tools */
 typedef struct t_topology
 {
-    char          **name;                        /* Name of the topology                 */
-    t_idef          idef;                        /* The interaction function definition  */
-    t_atoms         atoms;                       /* The atoms                            */
-    t_atomtypes     atomtypes;                   /* Atomtype properties                  */
-    t_block         cgs;                         /* The charge groups                    */
-    t_block         mols;                        /* The molecules                        */
-    gmx_bool        bIntermolecularInteractions; /* Inter.mol. int. ?   */
-    t_blocka        excls;                       /* The exclusions                       */
-    t_symtab        symtab;                      /* The symbol table                     */
+    SymbolPtr          name;                        /* Name of the topology                 */
+    t_idef             idef;                        /* The interaction function definition  */
+    t_atoms            atoms;                       /* The atoms                            */
+    t_atomtypes        atomtypes;                   /* Atomtype properties                  */
+    t_block            cgs;                         /* The charge groups                    */
+    t_block            mols;                        /* The molecules                        */
+    gmx_bool           bIntermolecularInteractions; /* Inter.mol. int. ?   */
+    t_blocka           excls;                       /* The exclusions                       */
+    SymbolTable        symtab;                      /* The symbol table                     */
 } t_topology;
 
 void init_top(t_topology *top);

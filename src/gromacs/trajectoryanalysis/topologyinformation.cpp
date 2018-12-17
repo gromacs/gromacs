@@ -184,9 +184,9 @@ TopologyInformation::getBox(matrix box) const
 const char *
 TopologyInformation::name() const
 {
-    if (hasTopology() && mtop_->name)
+    if (hasTopology())
     {
-        return *mtop_->name;
+        return mtop_->name->c_str();
     }
     return nullptr;
 }

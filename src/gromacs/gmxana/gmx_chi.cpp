@@ -1139,11 +1139,11 @@ static void order_params(FILE *log,
 
         atoms->havePdbInfo = TRUE;
 
-        if (nullptr == atoms->pdbinfo)
+        if (atoms->pdbinfo.empty())
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            atoms->pdbinfo.resize(atoms->getNatoms());
         }
-        for (i = 0; (i < atoms->nr); i++)
+        for (i = 0; (i < atoms->getNatoms()); i++)
         {
             atoms->pdbinfo[i].bfac = bfac_init;
         }
@@ -1169,7 +1169,7 @@ static void order_params(FILE *log,
                 "B-factor field contains negative of dihedral order parameters\n");
         write_pdbfile(fp, nullptr, atoms, x, ePBC, box, ' ', 0, nullptr, TRUE);
         x0 = y0 = z0 = 1000.0;
-        for (i = 0; (i < atoms->nr); i++)
+        for (i = 0; (i < atoms->getNatoms()); i++)
         {
             x0 = std::min(x0, x[i][XX]);
             y0 = std::min(y0, x[i][YY]);
@@ -1180,7 +1180,7 @@ static void order_params(FILE *log,
         z0 *= 10.0; /* nm -> angstrom */
         for (i = 0; (i < 10); i++)
         {
-            gmx_fprintf_pdb_atomline(fp, epdbATOM, atoms->nr+1+i, "CA", ' ', "LEG", ' ', atoms->nres+1, ' ',
+            gmx_fprintf_pdb_atomline(fp, epdbATOM, atoms->getNatoms()+1+i, "CA", ' ', "LEG", ' ', atoms->getNresidues()+1, ' ',
                                      x0, y0, z0+(1.2*i), 0.0, -0.1*i, "");
         }
         gmx_ffclose(fp);
@@ -1443,15 +1443,14 @@ int gmx_chi(int argc, char *argv[])
     nbin     = 360/ndeg;
 
     /* Find the chi angles using atoms struct and a list of amino acids */
-    t_topology *top;
-    snew(top, 1);
+    t_topology *top = new t_topology;
     read_tps_conf(ftp2fn(efSTX, NFILE, fnm), top, &ePBC, &x, nullptr, box, FALSE);
     t_atoms    &atoms = top->atoms;
-    if (atoms.pdbinfo == nullptr)
+    if (atoms.pdbinfo.empty())
     {
-        snew(atoms.pdbinfo, atoms.nr);
+        atoms.pdbinfo.resize(atoms.getNatoms());
     }
-    fprintf(log, "Title: %s\n", *top->name);
+    fprintf(log, "Title: %s\n", top->name->c_str());
 
     gmx_residuetype_init(&rt);
     dlist = mk_dlist(log, &atoms, &nlist, bPhi, bPsi, bChi, bHChi, maxchi, r0, rt);

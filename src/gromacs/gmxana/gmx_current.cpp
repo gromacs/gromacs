@@ -805,7 +805,6 @@ int gmx_current(int argc, char *argv[])
 
     gmx_output_env_t      *oenv;
     t_topology             top;
-    char                 **grpname = nullptr;
     const char            *indexfn;
     t_trxframe             fr;
     real                  *mass2 = nullptr;
@@ -891,16 +890,15 @@ int gmx_current(int argc, char *argv[])
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
 
     indexfn = ftp2fn_null(efNDX, NFILE, fnm);
-    snew(grpname, 1);
-
-    get_index(&(top.atoms), indexfn, 1, &isize, &index0, grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(&(top.atoms), indexfn, 1, &isize, &index0, grpname, &top.symtab);
 
     flags = flags | TRX_READ_X | TRX_READ_V;
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
 
-    snew(mass2, top.atoms.nr);
-    snew(qmol, top.atoms.nr);
+    snew(mass2, top.atoms.getNatoms());
+    snew(qmol, top.atoms.getNatoms());
 
     precalc(top, mass2, qmol);
 

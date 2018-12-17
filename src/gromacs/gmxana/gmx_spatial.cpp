@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,7 +140,6 @@ int gmx_spatial(int argc, char *argv[])
     t_pbc             pbc;
     t_atoms          *atoms;
     int               natoms;
-    char             *grpnm, *grpnmp;
     int              *index, *indexp;
     int               i, nidx, nidxp;
     int               v;
@@ -176,9 +175,10 @@ int gmx_spatial(int argc, char *argv[])
 
     atoms = &(top.atoms);
     printf("Select group to generate SDF:\n");
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nidx, &index, &grpnm);
+    std::vector<SymbolPtr> grpnm(1), grpnmp(1);
+    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nidx, &index, grpnm, &top.symtab);
     printf("Select group to output coords (e.g. solute):\n");
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nidxp, &indexp, &grpnmp);
+    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nidxp, &indexp, grpnmp, &top.symtab);
 
     /* The first time we read data is a little special */
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
@@ -188,7 +188,7 @@ int gmx_spatial(int argc, char *argv[])
     MINBIN[XX] = MAXBIN[XX] = fr.x[0][XX];
     MINBIN[YY] = MAXBIN[YY] = fr.x[0][YY];
     MINBIN[ZZ] = MAXBIN[ZZ] = fr.x[0][ZZ];
-    for (i = 1; i < top.atoms.nr; ++i)
+    for (i = 1; i < top.atoms.getNatoms(); ++i)
     {
         if (fr.x[i][XX] < MINBIN[XX])
         {
@@ -321,23 +321,23 @@ int gmx_spatial(int argc, char *argv[])
     for (i = 0; i < nidxp; i++)
     {
         v = 2;
-        if (*(top.atoms.atomname[indexp[i]][0]) == 'C')
+        if ((top.atoms.atomname[indexp[i]]->c_str()[0]) == 'C')
         {
             v = 6;
         }
-        if (*(top.atoms.atomname[indexp[i]][0]) == 'N')
+        if ((top.atoms.atomname[indexp[i]]->c_str()[0]) == 'N')
         {
             v = 7;
         }
-        if (*(top.atoms.atomname[indexp[i]][0]) == 'O')
+        if ((top.atoms.atomname[indexp[i]]->c_str()[0]) == 'O')
         {
             v = 8;
         }
-        if (*(top.atoms.atomname[indexp[i]][0]) == 'H')
+        if ((top.atoms.atomname[indexp[i]]->c_str()[0]) == 'H')
         {
             v = 1;
         }
-        if (*(top.atoms.atomname[indexp[i]][0]) == 'S')
+        if ((top.atoms.atomname[indexp[i]]->c_str()[0]) == 'S')
         {
             v = 16;
         }

@@ -221,27 +221,27 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
     const MoleculeBlockIndices &indices = mtop->moleculeBlockIndices[*moleculeBlock];
     if (atomName != nullptr)
     {
-        *atomName = *(atoms.atomname[atomIndexInMolecule]);
+        *atomName = atoms.atomname[atomIndexInMolecule]->c_str();
     }
     if (residueNumber != nullptr)
     {
-        if (atoms.nres > mtop->maxres_renum)
+        if (atoms.getNresidues() > mtop->maxres_renum)
         {
             *residueNumber = atoms.resinfo[atoms.atom[atomIndexInMolecule].resind].nr;
         }
         else
         {
             /* Single residue molecule, keep counting */
-            *residueNumber = indices.residueNumberStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
+            *residueNumber = indices.residueNumberStart + moleculeIndex*atoms.getNresidues() + atoms.atom[atomIndexInMolecule].resind;
         }
     }
     if (residueName != nullptr)
     {
-        *residueName = *(atoms.resinfo[atoms.atom[atomIndexInMolecule].resind].name);
+        *residueName = atoms.resinfo[atoms.atom[atomIndexInMolecule].resind].name->c_str();
     }
     if (globalResidueIndex != nullptr)
     {
-        *globalResidueIndex = indices.globalResidueStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
+        *globalResidueIndex = indices.globalResidueStart + moleculeIndex*atoms.getNresidues() + atoms.atom[atomIndexInMolecule].resind;
     }
 }
 

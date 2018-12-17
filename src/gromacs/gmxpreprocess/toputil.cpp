@@ -421,7 +421,7 @@ static double get_residue_charge(const t_atoms *atoms, int at)
 
     ri = atoms->atom[at].resind;
     q  = 0;
-    while (at < atoms->nr && atoms->atom[at].resind == ri)
+    while (at < atoms->getNatoms() && atoms->atom[at].resind == ri)
     {
         q += atoms->atom[at].q;
         at++;
@@ -433,11 +433,11 @@ static double get_residue_charge(const t_atoms *atoms, int at)
 void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                  bool bRTPresname)
 {
-    int         i, ri;
-    int         tpA, tpB;
-    const char *as;
-    char       *tpnmA, *tpnmB;
-    double      qres, qtot;
+    int               i, ri;
+    int               tpA, tpB;
+    const char       *as;
+    const char       *tpnmA, *tpnmB;
+    double            qres, qtot;
 
     as = dir2str(d_atoms);
     fprintf(out, "[ %s ]\n", as);
@@ -446,20 +446,20 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
 
     qtot  = 0;
 
-    if (at->nres)
+    if (at->getNresidues())
     {
         /* if the information is present... */
-        for (i = 0; (i < at->nr); i++)
+        for (i = 0; (i < at->getNatoms()); i++)
         {
             ri = at->atom[i].resind;
             if ((i == 0 || ri != at->atom[i-1].resind) &&
-                at->resinfo[ri].rtp != nullptr)
+                !(*at->resinfo[ri].rtp).empty())
             {
                 qres = get_residue_charge(at, i);
                 fprintf(out, "; residue %3d %-3s rtp %-4s q ",
                         at->resinfo[ri].nr,
-                        *at->resinfo[ri].name,
-                        *at->resinfo[ri].rtp);
+                        at->resinfo[ri].name->c_str(),
+                        at->resinfo[ri].rtp->c_str());
                 if (fabs(qres) < 0.001)
                 {
                     fprintf(out, " %s", "0.0");
@@ -477,15 +477,15 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
             }
 
             /* This is true by construction, but static analysers don't know */
-            GMX_ASSERT(!bRTPresname || at->resinfo[at->atom[i].resind].rtp, "-rtpres did not have residue name available");
+            GMX_ASSERT(!bRTPresname || !(*at->resinfo[at->atom[i].resind].rtp).empty(), "-rtpres did not have residue name available");
             fprintf(out, "%6d %10s %6d%c %5s %6s %6d %10g %10g",
                     i+1, tpnmA,
                     at->resinfo[ri].nr,
                     at->resinfo[ri].ic,
                     bRTPresname ?
-                    *(at->resinfo[at->atom[i].resind].rtp) :
-                    *(at->resinfo[at->atom[i].resind].name),
-                    *(at->atomname[i]), cgnr[i],
+                    at->resinfo[at->atom[i].resind].rtp->c_str() :
+                    at->resinfo[at->atom[i].resind].name->c_str(),
+                    at->atomname[i]->c_str(), cgnr[i],
                     at->atom[i].q, at->atom[i].m);
             if (PERTURBED(at->atom[i]))
             {
@@ -508,7 +508,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
             // Write the total charge for the last atom of the system
             // and/or residue, because generally that's where it is
             // expected to be an integer.
-            if (i == at->nr-1 || ri != at->atom[i+1].resind)
+            if (i == at->getNatoms()-1 || ri != at->atom[i+1].resind)
             {
                 fprintf(out, "   ; qtot %.4g\n", qtot);
             }
@@ -525,11 +525,11 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
 void print_bondeds(FILE *out, int natoms, directive d,
                    int ftype, int fsubtype, t_params plist[])
 {
-    t_symtab       stab;
-    gpp_atomtype_t atype;
-    t_param       *param;
-    t_atom        *a;
-    int            i;
+    SymbolTable       stab;
+    gpp_atomtype_t    atype;
+    t_param          *param;
+    t_atom           *a;
+    int               i;
 
     atype = init_atomtype();
     snew(a, 1);

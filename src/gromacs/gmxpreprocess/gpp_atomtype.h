@@ -41,10 +41,27 @@
 #include <stdio.h>
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/topology/symtab.h"
 
 struct gmx_mtop_t;
 
-typedef struct gpp_atomtype *gpp_atomtype_t;
+//! Local storage of atom types
+struct t_gpp_atomtype {
+    //! The number of atomtypes.
+    int                    nr = 0;
+    //! Vector of atoms.
+    std::vector<t_atom>    atom;
+    //! Vector of symbol table entries for atom names.
+    std::vector<SymbolPtr> atomname;
+    //! Vector of nonbonded force default params.
+    std::vector<t_param>   nb;
+    //! The bond_atomtype for each atomtype.
+    std::vector<int>       bondatomtype;
+    //! Atomic number, used for QM/MM.
+    std::vector<int>       atomnumber;
+};
+
+typedef t_gpp_atomtype *gpp_atomtype_t;
 
 int get_atomtype_type(const char *str, gpp_atomtype_t at);
 /* Return atomtype corresponding to case-insensitive str
@@ -53,7 +70,7 @@ int get_atomtype_type(const char *str, gpp_atomtype_t at);
 int get_atomtype_ntypes(gpp_atomtype_t at);
 /* Return number of atomtypes */
 
-char *get_atomtype_name(int nt, gpp_atomtype_t at);
+const char *get_atomtype_name(int nt, gpp_atomtype_t at);
 /* Return name corresponding to atomtype nt, or NULL if not found */
 
 real get_atomtype_massA(int nt, gpp_atomtype_t at);
@@ -61,7 +78,7 @@ real get_atomtype_massB(int nt, gpp_atomtype_t at);
 real get_atomtype_qA(int nt, gpp_atomtype_t at);
 real get_atomtype_qB(int nt, gpp_atomtype_t at);
 int get_atomtype_ptype(int nt, gpp_atomtype_t at);
-int get_atomtype_batype(int nt, const gpp_atomtype* at);
+int get_atomtype_batype(int nt, const gpp_atomtype_t at);
 int get_atomtype_atomnumber(int nt, gpp_atomtype_t at);
 
 /* Return the above variable for atomtype nt, or NOTSET if not found */
@@ -75,13 +92,13 @@ gpp_atomtype_t init_atomtype();
 void done_atomtype(gpp_atomtype_t at);
 /* Free the memory in the structure */
 
-int set_atomtype(int nt, gpp_atomtype_t at, struct t_symtab *tab,
+int set_atomtype(int nt, gpp_atomtype_t at, SymbolTable *tab,
                  t_atom *a, const char *name, t_param *nb,
                  int bondatomtype, int atomnumber);
 /* Set the values of an existing atom type nt. Returns nt on success or
    NOTSET on error. */
 
-int add_atomtype(gpp_atomtype_t at, struct t_symtab *tab,
+int add_atomtype(gpp_atomtype_t at, SymbolTable *tab,
                  t_atom *a, const char *name, t_param *nb,
                  int bondatomtype, int atomnumber);
 /* Add a complete new atom type to an existing atomtype structure. Returns

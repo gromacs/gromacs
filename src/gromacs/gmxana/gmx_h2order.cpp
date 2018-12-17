@@ -288,8 +288,6 @@ int gmx_h2order(int argc, char *argv[])
     real              *slOrder,               /* av. cosine, per slice      */
                        slWidth = 0.0;         /* width of a slice           */
     rvec              *slDipole;
-    char              *grpname,               /* groupnames                 */
-    *micname;
     int                ngx,                   /* nr. of atomsin sol group   */
                        nmic = 0;              /* nr. of atoms in micelle    */
     t_topology        *top;                   /* topology           */
@@ -317,11 +315,13 @@ int gmx_h2order(int argc, char *argv[])
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
-    rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &ngx, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    std::vector<SymbolPtr> micname(1);
+    rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &ngx, &index, grpname, &top->symtab);
 
     if (bMicel)
     {
-        rd_index(opt2fn("-nm", NFILE, fnm), 1, &nmic, &micelle, &micname);
+        rd_index(opt2fn("-nm", NFILE, fnm), 1, &nmic, &micelle, micname, &top->symtab);
     }
 
     calc_h2order(ftp2fn(efTRX, NFILE, fnm), index, ngx, &slDipole, &slOrder,

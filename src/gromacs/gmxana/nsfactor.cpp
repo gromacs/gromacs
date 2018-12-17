@@ -154,10 +154,10 @@ gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefa
     int            i, j;
     /* Try to assing scattering length from nsfactor.dat */
     snew(gsans, 1);
-    snew(gsans->slength, top->atoms.nr);
+    snew(gsans->slength, top->atoms.getNatoms());
     /* copy topology data */
     gsans->top = top;
-    for (i = 0; i < top->atoms.nr; i++)
+    for (i = 0; i < top->atoms.getNatoms(); i++)
     {
         for (j = 0; j < gnsf->nratoms; j++)
         {

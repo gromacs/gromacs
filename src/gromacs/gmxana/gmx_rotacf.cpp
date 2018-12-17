@@ -86,7 +86,6 @@ int gmx_rotacf(int argc, char *argv[])
     t_trxstatus      *status;
     int               isize;
     int              *index;
-    char             *grpname;
     rvec             *x, *x_s;
     matrix            box;
     real            **c1;
@@ -119,7 +118,9 @@ int gmx_rotacf(int argc, char *argv[])
         return 0;
     }
 
-    rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, grpname, &top->symtab);
 
     if (bVec)
     {
@@ -140,8 +141,6 @@ int gmx_rotacf(int argc, char *argv[])
         gmx_fatal(FARGS, "number of index elements not multiple of 2, "
                   "these can not be atom doublets\n");
     }
-
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
 
     snew(c1, nvec);
     for (i = 0; (i < nvec); i++)

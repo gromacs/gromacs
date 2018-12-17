@@ -261,7 +261,6 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     matrix        box;
     real          sg, sk, sgintf;
     int         **index   = nullptr;
-    char        **grpname = nullptr;
     int           i, j, k, n, *isize, ng, nslicez, framenr;
     real       ***sg_grid = nullptr, ***sk_grid = nullptr, ***sg_fravg = nullptr, ***sk_fravg = nullptr, ****sk_4d = nullptr, ****sg_4d = nullptr;
     int          *perm;
@@ -283,17 +282,17 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     ng = 1;
     /* get index groups */
     printf("Select the group that contains the atoms you want to use for the tetrahedrality order parameter calculation:\n");
-    snew(grpname, ng);
+    std::vector<SymbolPtr> grpname (ng);
     snew(index, ng);
     snew(isize, ng);
-    get_index(&top.atoms, fnNDX, ng, isize, index, grpname);
+    get_index(&top.atoms, fnNDX, ng, isize, index, grpname, &top.symtab);
 
     /* Analyze trajectory */
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > top.atoms.getNatoms())
     {
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
-                  top.atoms.nr, natoms);
+                  top.atoms.getNatoms(), natoms);
     }
     check_index(nullptr, ng, index[0], nullptr, natoms);
 
@@ -368,7 +367,6 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     while (read_next_x(oenv, status, &t, x, box));
     close_trx(status);
 
-    sfree(grpname);
     sfree(index);
     sfree(isize);
 

@@ -82,11 +82,6 @@ TopologyManager::~TopologyManager()
         sfree(frame_->index);
         sfree(frame_);
     }
-
-    for (char *atomtype : atomtypes_)
-    {
-        sfree(atomtype);
-    }
 }
 
 void TopologyManager::requestFrame()
@@ -184,24 +179,24 @@ void TopologyManager::initAtoms(int count)
     }
 }
 
-void TopologyManager::initAtomTypes(const ArrayRef<const char *const> &types)
+void TopologyManager::initAtomTypes(const ArrayRef<const char * const> &types)
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
     atomtypes_.reserve(types.size());
     for (const char *type : types)
     {
-        atomtypes_.push_back(gmx_strdup(type));
+        atomtypes_.push_back(put_symtab(&mtop_->symtab, type));
     }
     t_atoms &atoms = this->atoms();
-    snew(atoms.atomtype, atoms.nr);
+    atoms.atomtype.resize(atoms.getNatoms());
     index    j = 0;
-    for (int i = 0; i < atoms.nr; ++i, ++j)
+    for (int i = 0; i < atoms.getNatoms(); ++i, ++j)
     {
         if (j == types.size())
         {
             j = 0;
         }
-        atoms.atomtype[i] = &atomtypes_[j];
+        atoms.atomtype[i] = atomtypes_[j];
     }
     atoms.haveType = TRUE;
 }
@@ -211,7 +206,7 @@ void TopologyManager::initUniformResidues(int residueSize)
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
     t_atoms &atoms        = this->atoms();
     int      residueIndex = -1;
-    for (int i = 0; i < atoms.nr; ++i)
+    for (int i = 0; i < atoms.getNatoms(); ++i)
     {
         if (i % residueSize == 0)
         {
@@ -219,7 +214,7 @@ void TopologyManager::initUniformResidues(int residueSize)
         }
         atoms.atom[i].resind = residueIndex;
     }
-    atoms.nres = residueIndex;
+    atoms.resinfo.resize(residueIndex);
 }
 
 void TopologyManager::initUniformMolecules(int moleculeSize)
@@ -228,14 +223,15 @@ void TopologyManager::initUniformMolecules(int moleculeSize)
     GMX_RELEASE_ASSERT(mtop_->molblock.size() == 1, "initUniformMolecules only implemented for a single molblock");
     gmx_molblock_t &molblock = mtop_->molblock[0];
     t_atoms        &atoms    = mtop_->moltype[molblock.type].atoms;
-    GMX_RELEASE_ASSERT(atoms.nr % moleculeSize == 0,
+    GMX_RELEASE_ASSERT(atoms.getNatoms() % moleculeSize == 0,
                        "The number of atoms should be a multiple of moleculeSize");
-    molblock.nmol  = atoms.nr/moleculeSize;
-    atoms.nr       = moleculeSize;
-    const int nres = atoms.atom[atoms.nr].resind;
-    GMX_RELEASE_ASSERT(atoms.atom[atoms.nr-1].resind != nres,
+    molblock.nmol  = atoms.getNatoms()/moleculeSize;
+    atoms.atom.resize(moleculeSize);
+    atoms.atomname.resize(moleculeSize);
+    const int nres = atoms.atom[atoms.getNatoms()].resind;
+    GMX_RELEASE_ASSERT(atoms.atom[atoms.getNatoms()-1].resind != nres,
                        "The residues should break at molecule boundaries");
-    atoms.nres                 = nres;
+    atoms.resinfo.resize(nres);
     mtop_->haveMoleculeIndices = true;
     gmx_mtop_finalize(mtop_.get());
 }
@@ -255,7 +251,7 @@ void TopologyManager::initFrameIndices(const ArrayRef<const int> &index)
 t_atoms &TopologyManager::atoms()
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
-    GMX_RELEASE_ASSERT(mtop_->natoms == mtop_->moltype[0].atoms.nr,
+    GMX_RELEASE_ASSERT(mtop_->natoms == mtop_->moltype[0].atoms.getNatoms(),
                        "Test setup assumes all atoms in a single molecule type");
     return mtop_->moltype[0].atoms;
 }

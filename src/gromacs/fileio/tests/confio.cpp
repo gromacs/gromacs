@@ -94,23 +94,23 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             if (testTop_ != nullptr)
             {
                 done_top(testTop_);
-                sfree(testTop_);
+                delete testTop_;
             }
             sfree(testX_);
             done_top(refTop_);
-            sfree(refTop_);
+            delete refTop_;
         }
 
         void writeReferenceFile()
         {
-            write_sto_conf(referenceFilename_.c_str(), *refTop_->name,
+            write_sto_conf(referenceFilename_.c_str(), refTop_->name->c_str(),
                            &refTop_->atoms, as_rvec_array(refX_.data()), nullptr, -1,
                            refBox_);
         }
 
         void readReferenceFileTps()
         {
-            snew(testTop_, 1);
+            testTop_ = new t_topology;
             int  ePBC = -2;
             read_tps_conf(referenceFilename_.c_str(), testTop_,
                           &ePBC, &testX_, nullptr, testBox_, FALSE);
@@ -123,7 +123,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
 
         void writeTestFileAndTest()
         {
-            write_sto_conf(testFilename_.c_str(), *testTop_->name,
+            write_sto_conf(testFilename_.c_str(), testTop_->name->c_str(),
                            &testTop_->atoms, testX_, nullptr, -1, testBox_);
             testFilesEqual(referenceFilename_, testFilename_);
         }
@@ -136,7 +136,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
 
         void generateReferenceTopology()
         {
-            snew(refTop_, 1);
+            refTop_ = new t_topology;
             open_symtab(&refTop_->symtab);
             if (GetParam() == efESP)
             {
@@ -167,7 +167,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
                                         resname, i/3 + 1, ' ', 0, ' ');
                 }
             }
-            refTop_->atoms.nres = 4;
+            refTop_->atoms.resinfo.resize(4);
             close_symtab(&refTop_->symtab);
         }
 
@@ -177,7 +177,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             refBox_[XX][XX] = 1;
             refBox_[YY][YY] = 2;
             refBox_[ZZ][ZZ] = 3;
-            const int atomCount = refTop_->atoms.nr;
+            const int atomCount = refTop_->atoms.getNatoms();
             refX_.reserve(atomCount);
             for (int i = 0; i < atomCount; ++i)
             {

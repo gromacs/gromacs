@@ -198,7 +198,7 @@ void do_conect(const char *fn, int n, rvec x[])
  * Plots the surface into a PDB file, optionally including the original atoms.
  */
 void connolly_plot(const char *fn, int ndots, const real dots[], rvec x[], t_atoms *atoms,
-                   t_symtab *symtab, int ePBC, const matrix box, gmx_bool bIncludeSolute)
+                   SymbolTable *symtab, int ePBC, const matrix box, gmx_bool bIncludeSolute)
 {
     const char *const  atomnm = "DOT";
     const char *const  resnm  = "DOT";
@@ -210,20 +210,19 @@ void connolly_plot(const char *fn, int ndots, const real dots[], rvec x[], t_ato
 
     if (bIncludeSolute)
     {
-        i0 = atoms->nr;
-        r0 = atoms->nres;
-        srenew(atoms->atom, atoms->nr+ndots);
-        memset(&atoms->atom[i0], 0, sizeof(*atoms->atom)*ndots);
-        srenew(atoms->atomname, atoms->nr+ndots);
-        srenew(atoms->resinfo, r0+1);
+        i0 = atoms->getNatoms();
+        r0 = atoms->getNresidues();
+        atoms->atom.resize(atoms->getNatoms()+ndots);
+        atoms->atomname.resize(atoms->getNatoms()+ndots);
+        atoms->resinfo.resize(r0+1);
         atoms->atom[i0].resind = r0;
         t_atoms_set_resinfo(atoms, i0, symtab, resnm, r0+1, ' ', 0, ' ');
-        if (atoms->pdbinfo != nullptr)
+        if (!atoms->pdbinfo.empty())
         {
-            srenew(atoms->pdbinfo, atoms->nr+ndots);
+            atoms->pdbinfo.resize(atoms->getNatoms()+ndots);
         }
-        snew(xnew, atoms->nr+ndots);
-        for (i = 0; (i < atoms->nr); i++)
+        snew(xnew, atoms->getNatoms()+ndots);
+        for (i = 0; (i < atoms->getNatoms()); i++)
         {
             copy_rvec(x[i], xnew[i]);
         }
@@ -235,7 +234,7 @@ void connolly_plot(const char *fn, int ndots, const real dots[], rvec x[], t_ato
             xnew[ii0][XX]              = dots[k++];
             xnew[ii0][YY]              = dots[k++];
             xnew[ii0][ZZ]              = dots[k++];
-            if (atoms->pdbinfo != nullptr)
+            if (!atoms->pdbinfo.empty())
             {
                 atoms->pdbinfo[ii0].type   = epdbATOM;
                 atoms->pdbinfo[ii0].atomnr = ii0;
@@ -243,11 +242,7 @@ void connolly_plot(const char *fn, int ndots, const real dots[], rvec x[], t_ato
                 atoms->pdbinfo[ii0].occup  = 0.0;
             }
         }
-        atoms->nr   = i0+ndots;
-        atoms->nres = r0+1;
         write_sto_conf(fn, title, atoms, xnew, nullptr, ePBC, const_cast<rvec *>(box));
-        atoms->nres = r0;
-        atoms->nr   = i0;
     }
     else
     {
@@ -268,7 +263,6 @@ void connolly_plot(const char *fn, int ndots, const real dots[], rvec x[], t_ato
             aaa.pdbinfo[ii0].bfac   = 0.0;
             aaa.pdbinfo[ii0].occup  = 0.0;
         }
-        aaa.nr = ndots;
         write_sto_conf(fn, title, &aaa, xnew, nullptr, ePBC, const_cast<rvec *>(box));
         do_conect(fn, ndots, xnew);
         done_atom(&aaa);
@@ -538,7 +532,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         else
         {
-            if (strcmp(*(atoms_->atomtype[0]), "?") == 0)
+            if (strcmp(atoms_->atomtype[0]->c_str(), "?") == 0)
             {
                 GMX_THROW(InconsistentInputError("Your input tpr file is too old (does not contain atom types). Cannot not compute Delta G of solvation"));
             }
@@ -574,8 +568,8 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         const int resind = atoms_->atom[ii].resind;
         real      radius;
         if (!gmx_atomprop_query(aps, epropVDW,
-                                *(atoms_->resinfo[resind].name),
-                                *(atoms_->atomname[ii]), &radius))
+                                atoms_->resinfo[resind].name->c_str(),
+                                atoms_->atomname[ii]->c_str(), &radius))
         {
             ndefault++;
         }
@@ -584,8 +578,8 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         {
             real dgsFactor;
             if (!gmx_atomprop_query(aps, epropDGsol,
-                                    *(atoms_->resinfo[resind].name),
-                                    *(atoms_->atomtype[ii]), &dgsFactor))
+                                    atoms_->resinfo[resind].name->c_str(),
+                                    atoms_->atomtype[ii]->c_str(), &dgsFactor))
             {
                 dgsFactor = dgsDefault_;
             }

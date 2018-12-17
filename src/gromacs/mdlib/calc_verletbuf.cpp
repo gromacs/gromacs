@@ -352,7 +352,7 @@ get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
          * Thus we need a list of properties for all atoms which
          * we partially fill when looping over constraints.
          */
-        std::vector<atom_nonbonded_kinetic_prop_t> prop(atoms->nr);
+        std::vector<atom_nonbonded_kinetic_prop_t> prop(atoms->getNatoms());
 
         for (ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
         {
@@ -400,7 +400,7 @@ get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             prop[a3].con_len  = ip->settle.doh;
         }
 
-        std::vector<real> vsite_m(atoms->nr);
+        std::vector<real> vsite_m(atoms->getNatoms());
         get_vsite_masses(moltype,
                          mtop->ffparams,
                          setMassesToOne,
@@ -411,7 +411,7 @@ get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             *n_nonlin_vsite += nmol*n_nonlin_vsite_mol;
         }
 
-        for (a = 0; a < atoms->nr; a++)
+        for (a = 0; a < atoms->getNatoms(); a++)
         {
             if (atoms->atom[a].ptype == eptVSite)
             {
@@ -1211,7 +1211,7 @@ getAtomConstraintProps(const gmx_moltype_t  &moltype,
                        const gmx_ffparams_t &ffparams)
 {
     const t_atoms                    &atoms = moltype.atoms;
-    std::vector<AtomConstraintProps>  props(atoms.nr);
+    std::vector<AtomConstraintProps>  props(atoms.getNatoms());
 
     for (const auto &ilist : extractILists(moltype.ilist, IF_CONSTRAINT))
     {
@@ -1244,7 +1244,7 @@ chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
                                 real                          cellSize)
 {
     const t_atoms &atoms = moltype.atoms;
-    GMX_ASSERT(updateGrouping.fullRange().end() == atoms.nr, "The update groups should match the molecule type");
+    GMX_ASSERT(updateGrouping.fullRange().end() == atoms.getNatoms(), "The update groups should match the molecule type");
 
     const pot_derivatives_t boundaryInteraction = { 1/cellSize, 0, 0 };
 

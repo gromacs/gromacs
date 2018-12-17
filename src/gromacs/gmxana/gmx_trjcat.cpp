@@ -482,8 +482,7 @@ int gmx_trjcat(int argc, char *argv[])
     real              last_frame_time, searchtime;
     int               isize = 0, j;
     int              *index = nullptr, imax;
-    char             *grpname;
-    real            **val = nullptr, *t = nullptr, dt_remd;
+    real            **val   = nullptr, *t = nullptr, dt_remd;
     int               n, nset, ftpout = -1, prevEndStep = 0, filetype;
     gmx_off_t         fpos;
     gmx_output_env_t *oenv;
@@ -510,12 +509,14 @@ int gmx_trjcat(int argc, char *argv[])
     bIndex = ftp2bSet(efNDX, NFILE, fnm);
     bDeMux = ftp2bSet(efXVG, NFILE, fnm);
     bSort  = bSort && !bDeMux;
+    SymbolTable            symtab;
+    std::vector<SymbolPtr> grpname(1);
 
     imax = -1;
     if (bIndex)
     {
         printf("Select group for output\n");
-        rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+        rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, grpname, &symtab);
         /* scan index */
         imax = index[0];
         for (i = 1; i < isize; i++)
@@ -657,7 +658,11 @@ int gmx_trjcat(int argc, char *argv[])
                 if (bIndex)
                 {
                     trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), isize, nullptr, gmx::arrayRefFromArray(index, isize), grpname);
+                                                              inFilesEdited[0].c_str(),
+                                                              isize,
+                                                              nullptr,
+                                                              gmx::arrayRefFromArray(index, isize),
+                                                              grpname[0]->c_str());
                 }
                 else
                 {

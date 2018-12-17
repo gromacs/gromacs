@@ -400,9 +400,10 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
     return grpbuf;
 }
 
-void make_pull_groups(pull_params_t *pull,
-                      char **pgnames,
-                      const t_blocka *grps, char **gnames)
+void make_pull_groups(pull_params_t           *pull,
+                      char                   **pgnames,
+                      const t_blocka          *grps,
+                      gmx::ArrayRef<SymbolPtr> gnames)
 {
     int           g, ig = -1, i;
     t_pull_group *pgrp;
@@ -423,7 +424,7 @@ void make_pull_groups(pull_params_t *pull,
             gmx_fatal(FARGS, "Pull option pull_group%d required by grompp has not been set.", g);
         }
 
-        ig        = search_string(pgnames[g], grps->nr, gnames);
+        ig        = searchGroupString(pgnames[g], grps->nr, gnames);
         pgrp->nat = grps->index[ig+1] - grps->index[ig];
 
         fprintf(stderr, "Pull group %d '%s' has %d atoms\n",

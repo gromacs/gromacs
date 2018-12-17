@@ -56,10 +56,8 @@
 
 t_vcm *init_vcm(FILE *fp, const gmx_groups_t *groups, const t_inputrec *ir)
 {
-    t_vcm *vcm;
+    t_vcm *vcm = new t_vcm;
     int    g;
-
-    snew(vcm, 1);
 
     vcm->mode     = (ir->nstcomm > 0) ? ir->comm_mode : ecmNO;
     vcm->ndim     = ndof_com(ir);
@@ -90,7 +88,7 @@ t_vcm *init_vcm(FILE *fp, const gmx_groups_t *groups, const t_inputrec *ir)
         snew(vcm->group_p, vcm->size);
         snew(vcm->group_v, vcm->size);
         snew(vcm->group_mass, vcm->size);
-        snew(vcm->group_name, vcm->size);
+        vcm->group_name.resize(vcm->size);
         snew(vcm->group_ndf, vcm->size);
         for (g = 0; (g < vcm->nr); g++)
         {
@@ -107,10 +105,10 @@ t_vcm *init_vcm(FILE *fp, const gmx_groups_t *groups, const t_inputrec *ir)
         }
         for (g = 0; (g < vcm->nr); g++)
         {
-            vcm->group_name[g] = *groups->grpname[groups->grps[egcVCM].nm_ind[g]];
+            vcm->group_name[g] = groups->grpname[groups->grps[egcVCM].nm_ind[g]];
             if (fp)
             {
-                fprintf(fp, "%3d:  %s\n", g, vcm->group_name[g]);
+                fprintf(fp, "%3d:  %s\n", g, vcm->group_name[g]->c_str());
             }
         }
 
@@ -530,7 +528,7 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
             if ((Temp_cm > Temp_Max) && fp)
             {
                 fprintf(fp, "Large VCM(group %s): %12.5f, %12.5f, %12.5f, Temp-cm: %12.5e\n",
-                        vcm->group_name[g], vcm->group_v[g][XX],
+                        vcm->group_name[g]->c_str(), vcm->group_v[g][XX],
                         vcm->group_v[g][YY], vcm->group_v[g][ZZ], Temp_cm);
             }
 
@@ -542,7 +540,7 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
                     /* if we have an integrator that may not conserve momenta, skip */
                     tm    = vcm->group_mass[g];
                     fprintf(fp, "Group %s with mass %12.5e, Ekrot %12.5e Det(I) = %12.5e\n",
-                            vcm->group_name[g], tm, ekrot, det(vcm->group_i[g]));
+                            vcm->group_name[g]->c_str(), tm, ekrot, det(vcm->group_i[g]));
                     fprintf(fp, "  COM: %12.5f  %12.5f  %12.5f\n",
                             vcm->group_x[g][XX], vcm->group_x[g][YY], vcm->group_x[g][ZZ]);
                     fprintf(fp, "  P:   %12.5f  %12.5f  %12.5f\n",

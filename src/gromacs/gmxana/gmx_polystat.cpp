@@ -155,7 +155,6 @@ int gmx_polystat(int argc, char *argv[])
     gmx_output_env_t *oenv;
     int               ePBC;
     int               isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
-    char             *grpname;
     t_trxstatus      *status;
     real              t;
     rvec             *x, *bond = nullptr;
@@ -185,13 +184,14 @@ int gmx_polystat(int argc, char *argv[])
         return 0;
     }
 
-    snew(top, 1);
+    top  = new t_topology;
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                         nullptr, box, &natoms, nullptr, nullptr, top);
 
     fprintf(stderr, "Select a group of polymer mainchain atoms:\n");
+    std::vector<SymbolPtr> grpname(1);
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm),
-              1, &isize, &index, &grpname);
+              1, &isize, &index, grpname, &top->symtab);
 
     snew(molind, top->mols.nr+1);
     nmol = 0;
@@ -209,14 +209,14 @@ int gmx_polystat(int argc, char *argv[])
         }
     }
     molind[nmol] = i;
-    nat_min      = top->atoms.nr;
+    nat_min      = top->atoms.getNatoms();
     nat_max      = 0;
     for (mol = 0; mol < nmol; mol++)
     {
         nat_min = std::min(nat_min, molind[mol+1]-molind[mol]);
         nat_max = std::max(nat_max, molind[mol+1]-molind[mol]);
     }
-    fprintf(stderr, "Group %s consists of %d molecules\n", grpname, nmol);
+    fprintf(stderr, "Group %s consists of %d molecules\n", grpname[0]->c_str(), nmol);
     fprintf(stderr, "Group size per molecule, min: %d atoms, max %d atoms\n",
             nat_min, nat_max);
 

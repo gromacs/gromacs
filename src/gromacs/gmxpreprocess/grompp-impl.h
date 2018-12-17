@@ -41,6 +41,7 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -57,61 +58,78 @@ typedef struct {
  * non-bonded parameter combinations, which will be copied to t_params.
  */
 
-typedef struct {
-    int        a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
-    /* i = a[0] (ai), j = a[1] (aj))	*/
-    real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
-    char       s[MAXSLEN];       /* A string (instead of parameters),    *
-                                  * read from the .rtp file in pdb2gmx   */
+struct t_param {
+    //! The atom list (eg. bonds: particle i = a[0] (ai), j = a[1] (aj))
+    int        a[MAXATOMLIST];
+    //! Force parameters (eg. b0 = c[0])
+    real       c[MAXFORCEPARAM];
+    //! A string (instead of parameters), read from the .rtp file in pdb2gmx
+    char       s[MAXSLEN];
     const int &ai() const { return a[0]; }
-    int   &ai() { return a[0]; }
+    int       &ai() { return a[0]; }
     const int &aj() const { return a[1]; }
-    int   &aj() { return a[1]; }
+    int       &aj() { return a[1]; }
     const int &ak() const { return a[2]; }
-    int   &ak() { return a[2]; }
+    int       &ak() { return a[2]; }
     const int &al() const { return a[3]; }
-    int   &al() { return a[3]; }
+    int       &al() { return a[3]; }
     const int &am() const { return a[4]; }
-    int   &am() { return a[4]; }
+    int       &am() { return a[4]; }
 
     real      &c0() { return c[0]; }
     real      &c1() { return c[1]; }
     real      &c2() { return c[2]; }
-} t_param;
+};
 
-typedef struct {        // NOLINT (clang-analyzer-optin.performance.Padding)
-    int          nr;    /* The number of bonds in this record   */
-    int          maxnr; /* The amount of elements in the array  */
-    t_param     *param; /* Array of parameters (dim: nr or nr*nr) */
+struct t_params {        // NOLINT (clang-analyzer-optin.performance.Padding)
+    //! The number of bonds in this record
+    int          nr;
+    //! The amount of elements in the array
+    int          maxnr;
+    //! Array of parameters (dim: nr or nr*nr)
+    t_param     *param;
 
     /* CMAP tmp data, there are probably better places for this */
-    int         grid_spacing; /* Cmap grid spacing */
-    int         nc;           /* Number of cmap angles */
+    //! Cmap grid spacing TODO remove here.
+    int         grid_spacing;
+    //! Number of cmap angles TODO remove here.
+    int         nc;
+    //! Temporary storage of the raw cmap grid data TODO remove here.
+    real       *cmap;
+    //! Number of allocated elements in cmap grid TODO remove here.
+    int         ncmap;
+    //! Store the five atomtypes followed by a number that identifies the type
+    int        *cmap_types;
+    //! Number of allocated elements in cmap_types
+    int         nct;
 
-    real       *cmap;         /* Temporary storage of the raw cmap grid data */
-    int         ncmap;        /* Number of allocated elements in cmap grid*/
-
-    int        *cmap_types;   /* Store the five atomtypes followed by a number that identifies the type */
-    int         nct;          /* Number of allocated elements in cmap_types */
-
-} t_params;
+};
 
 typedef struct {
     int            nr;      /* The number of exclusions             */
     int           *e;       /* The excluded atoms                   */
 } t_excls;
 
-typedef struct {
-    char            **name;
-    int               nrexcl;       /* Number of exclusions per atom	*/
-    bool              excl_set;     /* Have exclusions been generated?	*/
-    bool              bProcessed;   /* Has the mol been processed           */
-    t_atoms           atoms;        /* Atoms                                */
-    t_block           cgs;          /* Charge groups                        */
-    t_block           mols;         /* Molecules                            */
-    t_blocka          excls;        /* Exclusions                           */
-    t_params          plist[F_NRE]; /* Parameters in old style              */
-} t_molinfo;
+struct t_molinfo {
+    //! Entry in symbol table for name.
+    SymbolPtr         name;
+    //! Number of exclusions per atom
+    int               nrexcl = 0;
+    //! Have exclusions been generated?
+    bool              excl_set = false;
+    //! Has the mol been processed
+    bool              bProcessed = false;
+    //! Molecule atoms
+    t_atoms           atoms;
+    //! Molecule charge groups
+    t_block           cgs;
+    //! Molecule molecules :)
+    t_block           mols;
+    //! Molecule exclusions
+    t_blocka          excls;
+    //! Molecule Parameters in old style
+    t_params          plist[F_NRE];
+};
 
 typedef struct {
     char *name;

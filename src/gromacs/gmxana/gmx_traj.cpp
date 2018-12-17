@@ -183,10 +183,10 @@ static void write_trx_x(t_trxstatus *status, const t_trxframe *fr, real *mass, g
         if (xav == nullptr)
         {
             snew(xav, ngrps);
-            snew(atoms, 1);
+            atoms  = new t_atoms;
             *atoms = *fr->atoms;
-            snew(atoms->atom, ngrps);
-            atoms->nr = ngrps;
+            atoms->atom.resize(ngrps);
+            atoms->atomname.resize(ngrps);
             /* Note that atom and residue names will be the ones
              * of the first atom in each group.
              */
@@ -210,7 +210,7 @@ static void write_trx_x(t_trxstatus *status, const t_trxframe *fr, real *mass, g
 }
 
 static void make_legend(FILE *fp, int ngrps, int isize, int index[],
-                        char **name, gmx_bool bCom, gmx_bool bMol, const gmx_bool bDim[],
+                        gmx::ArrayRef<SymbolPtr> name, gmx_bool bCom, gmx_bool bMol, const gmx_bool bDim[],
                         const gmx_output_env_t *oenv)
 {
     char      **leg;
@@ -241,7 +241,7 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
                 }
                 else if (bCom)
                 {
-                    sprintf(leg[j], "%s%s", name[i], dimtxt[d]);
+                    sprintf(leg[j], "%s%s", name[i]->c_str(), dimtxt[d]);
                 }
                 else
                 {
@@ -491,13 +491,13 @@ static void write_pdb_bfac(const char *fname, const char *xname,
         }
 
         printf("Maximum %s is %g on atom %d %s, res. %s %d\n",
-               title, std::sqrt(max), maxi+1, *(atoms->atomname[maxi]),
-               *(atoms->resinfo[atoms->atom[maxi].resind].name),
+               title, std::sqrt(max), maxi+1, atoms->atomname[maxi]->c_str(),
+               atoms->resinfo[atoms->atom[maxi].resind].name->c_str(),
                atoms->resinfo[atoms->atom[maxi].resind].nr);
 
-        if (atoms->pdbinfo == nullptr)
+        if (atoms->pdbinfo.empty())
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            atoms->pdbinfo.resize(atoms->getNatoms());
         }
         atoms->havePdbInfo = TRUE;
 
@@ -663,7 +663,6 @@ int gmx_traj(int argc, char *argv[])
     gmx_rmpbc_t       gpbc       = nullptr;
     int               i, j;
     int               nr_xfr, nr_vfr, nr_ffr;
-    char            **grpname;
     int              *isize0, *isize;
     int             **index0, **index;
     int              *atndx;
@@ -760,10 +759,10 @@ int gmx_traj(int argc, char *argv[])
     {
         ngroups = 1;
     }
-    snew(grpname, ngroups);
+    std::vector<SymbolPtr> grpname(ngroups);
     snew(isize0, ngroups);
     snew(index0, ngroups);
-    get_index(&(top.atoms), indexfn, ngroups, isize0, index0, grpname);
+    get_index(&(top.atoms), indexfn, ngroups, isize0, index0, grpname, &top.symtab);
 
     if (bMol)
     {
@@ -794,8 +793,8 @@ int gmx_traj(int argc, char *argv[])
     }
     if (bCom)
     {
-        snew(mass, top.atoms.nr);
-        for (i = 0; i < top.atoms.nr; i++)
+        snew(mass, top.atoms.getNatoms());
+        for (i = 0; i < top.atoms.getNatoms(); i++)
         {
             mass[i] = top.atoms.atom[i].m;
         }
@@ -1139,11 +1138,9 @@ int gmx_traj(int argc, char *argv[])
     for (int i = 0; i < ngroups; i++)
     {
         sfree(index0[i]);
-        sfree(grpname[i]);
     }
     sfree(index0);
     sfree(isize0);
-    sfree(grpname);
     done_frame(&fr);
     output_env_done(oenv);
 

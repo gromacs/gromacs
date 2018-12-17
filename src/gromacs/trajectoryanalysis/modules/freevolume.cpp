@@ -239,7 +239,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     // Compute total mass
     mtot_ = 0;
-    for (int i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->getNatoms()); i++)
     {
         mtot_ += atoms->atom[i].m;
     }
@@ -259,8 +259,8 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
         // Lookup the Van der Waals radius of this atom
         int resnr = atoms->atom[i].resind;
         if (gmx_atomprop_query(aps, epropVDW,
-                               *(atoms->resinfo[resnr].name),
-                               *(atoms->atomname[i]),
+                               atoms->resinfo[resnr].name->c_str(),
+                               atoms->atomname[i]->c_str(),
                                &value))
         {
             vdw_radius_.push_back(value);
@@ -275,8 +275,8 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
             if (nnovdw < maxnovdw)
             {
                 fprintf(stderr, "Could not determine VDW radius for %s-%s. Set to zero.\n",
-                        *(atoms->resinfo[resnr].name),
-                        *(atoms->atomname[i]));
+                        atoms->resinfo[resnr].name->c_str(),
+                        atoms->atomname[i]->c_str());
             }
             vdw_radius_.push_back(0.0);
         }

@@ -243,8 +243,8 @@ static void dump_equiv(FILE *out, int neq, t_equiv **equiv)
 }
 
 static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
-                         int rnr1, char *rname1, char *aname1,
-                         int rnr2, char *rname2, char *aname2)
+                         int rnr1, const char *rname1, const char *aname1,
+                         int rnr2, const char *rname2, const char *aname2)
 {
     int      i, j;
     gmx_bool bFound;
@@ -285,10 +285,11 @@ static int analyze_noe_equivalent(const char *eq_fn,
                                   gmx_bool bSumH,
                                   int *noe_index, t_noe_gr *noe_gr)
 {
-    int       i, j, anmil, anmjl, rnri, rnrj, gi, groupnr, neq;
-    char     *anmi, *anmj, **nnm;
-    gmx_bool  bMatch, bEquiv;
-    t_equiv **equiv;
+    int             i, j, anmil, anmjl, rnri, rnrj, gi, groupnr, neq;
+    const char     *anmi, *anmj;
+    char          **nnm;
+    gmx_bool        bMatch, bEquiv;
+    t_equiv       **equiv;
 
     snew(nnm, isize);
     if (bSumH)
@@ -320,8 +321,10 @@ static int analyze_noe_equivalent(const char *eq_fn,
                     rnrj   = atoms->atom[index[j]].resind;
                     bEquiv =
                         is_equiv(neq, equiv, &nnm[i],
-                                 rnri, *atoms->resinfo[rnri].name, *atoms->atomname[index[i]],
-                                 rnrj, *atoms->resinfo[rnrj].name, *atoms->atomname[index[j]]);
+                                 rnri, atoms->resinfo[rnri].name->c_str(),
+                                 atoms->atomname[index[i]]->c_str(),
+                                 rnrj, atoms->resinfo[rnrj].name->c_str(),
+                                 atoms->atomname[index[j]]->c_str());
                     if (nnm[i] && bEquiv)
                     {
                         nnm[j] = gmx_strdup(nnm[i]);
@@ -345,14 +348,14 @@ static int analyze_noe_equivalent(const char *eq_fn,
                 /* look for triplets of consecutive atoms with name XX?,
                    X are any number of letters or digits and ? goes from 1 to 3
                    This is supposed to cover all CH3 groups and the like */
-                anmi   = *atoms->atomname[index[i]];
+                anmi   = atoms->atomname[index[i]]->c_str();
                 anmil  = std::strlen(anmi);
                 bMatch = i <= isize-3 && anmi[anmil-1] == '1';
                 if (bMatch)
                 {
                     for (j = 1; j < 3; j++)
                     {
-                        anmj   = *atoms->atomname[index[i+j]];
+                        anmj   = atoms->atomname[index[i+j]]->c_str();
                         anmjl  = std::strlen(anmj);
                         bMatch = bMatch && ( anmil == anmjl && anmj[anmjl-1] == Hnum[j] &&
                                              std::strncmp(anmi, anmj, anmil-1) == 0 );
@@ -391,8 +394,8 @@ static int analyze_noe_equivalent(const char *eq_fn,
         for (i = 0; i < isize; i++)
         {
             rnri = atoms->atom[index[i]].resind;
-            fprintf(debug, "%s %s %d -> %s\n", *atoms->atomname[index[i]],
-                    *atoms->resinfo[rnri].name, rnri, nnm[i] ? nnm[i] : "");
+            fprintf(debug, "%s %s %d -> %s\n", atoms->atomname[index[i]]->c_str(),
+                    atoms->resinfo[rnri].name->c_str(), rnri, nnm[i] ? nnm[i] : "");
         }
     }
 
@@ -409,14 +412,14 @@ static int analyze_noe_equivalent(const char *eq_fn,
             }
             else
             {
-                noe_gr[gi].aname = gmx_strdup(*atoms->atomname[index[i]]);
+                noe_gr[gi].aname = gmx_strdup(atoms->atomname[index[i]]->c_str());
                 if (noe_index[i] == noe_index[i+1])
                 {
                     noe_gr[gi].aname[std::strlen(noe_gr[gi].aname)-1] = '*';
                 }
             }
             noe_gr[gi].rnr   = atoms->atom[index[i]].resind;
-            noe_gr[gi].rname = gmx_strdup(*atoms->resinfo[noe_gr[gi].rnr].name);
+            noe_gr[gi].rname = gmx_strdup(atoms->resinfo[noe_gr[gi].rnr].name->c_str());
             /* dump group definitions */
             if (debug)
             {
@@ -669,7 +672,6 @@ int gmx_rmsdist(int argc, char *argv[])
     t_trxstatus      *status;
     int               isize, gnr = 0;
     int              *index, *noe_index;
-    char             *grpname;
     real            **d_r, **d, **dtot, **dtot2, **mean, **rms, **rmsc, *resnr;
     real            **dtot1_3 = nullptr, **dtot1_6 = nullptr;
     real              rmsnow, meanmax, rmsmax, rmscmax;
@@ -743,8 +745,8 @@ int gmx_rmsdist(int argc, char *argv[])
         ePBC = epbcNONE;
     }
     atoms = &(top.atoms);
-
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname, &top.symtab);
 
     /* initialize arrays */
     snew(d, isize);
@@ -786,7 +788,7 @@ int gmx_rmsdist(int argc, char *argv[])
                   oenv);
     if (output_env_get_print_xvgr_codes(oenv))
     {
-        fprintf(fp, "@ subtitle \"of distances between %s atoms\"\n", grpname);
+        fprintf(fp, "@ subtitle \"of distances between %s atoms\"\n", grpname[0]->c_str());
     }
 
     /*do a first step*/

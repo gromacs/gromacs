@@ -1433,7 +1433,6 @@ int gmx_cluster(int argc, char *argv[])
 
     int                isize = 0, ifsize = 0, iosize = 0;
     int               *index = nullptr, *fitidx = nullptr, *outidx = nullptr, *frameindexes = nullptr;
-    char              *grpname;
     real               rmsd, **d1, **d2, *time = nullptr, time_invfac, *mass = nullptr;
     char               buf[STRLEN], buf1[80];
     gmx_bool           bAnalyze, bUseRmsdCut, bJP_RMSD = FALSE, bReadMat, bReadTraj, bPBC = TRUE;
@@ -1632,6 +1631,7 @@ int gmx_cluster(int argc, char *argv[])
     }
 
     /* get input */
+    std::vector<SymbolPtr> grpname(1);
     if (bReadTraj)
     {
         /* don't read mass-database as masses (and top) are not used */
@@ -1639,18 +1639,18 @@ int gmx_cluster(int argc, char *argv[])
                       TRUE);
         if (bPBC)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.getNatoms());
         }
 
         fprintf(stderr, "\nSelect group for least squares fit%s:\n",
                 bReadMat ? "" : " and RMSD calculation");
         get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
-                  1, &ifsize, &fitidx, &grpname);
+                  1, &ifsize, &fitidx, grpname, &top.symtab);
         if (trx_out_fn)
         {
             fprintf(stderr, "\nSelect group for output:\n");
             get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &iosize, &outidx, &grpname);
+                      1, &iosize, &outidx, grpname, &top.symtab);
             /* merge and convert both index groups: */
             /* first copy outidx to index. let outidx refer to elements in index */
             snew(index, iosize);
@@ -1920,10 +1920,8 @@ int gmx_cluster(int argc, char *argv[])
         {
             useatoms.atomname[i]    = top.atoms.atomname[index[i]];
             useatoms.atom[i].resind = top.atoms.atom[index[i]].resind;
-            useatoms.nres           = std::max(useatoms.nres, useatoms.atom[i].resind+1);
             copy_rvec(xtps[index[i]], usextps[i]);
         }
-        useatoms.nr = isize;
         analyze_clusters(nf, &clust, rms->mat, isize, &useatoms, usextps, mass, xx, time, boxes, frameindexes,
                          ifsize, fitidx, iosize, outidx,
                          bReadTraj ? trx_out_fn : nullptr,

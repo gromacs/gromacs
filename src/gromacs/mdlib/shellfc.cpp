@@ -391,7 +391,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
         const gmx_moltype_t  *molt = &mtop->moltype[molb->type];
         const t_block        *cgs  = &molt->cgs;
 
-        snew(at2cg, molt->atoms.nr);
+        snew(at2cg, molt->atoms.getNatoms());
         for (cg = 0; cg < cgs->nr; cg++)
         {
             for (i = cgs->index[cg]; i < cgs->index[cg+1]; i++)
@@ -400,7 +400,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
             }
         }
 
-        atom = molt->atoms.atom;
+        atom = molt->atoms.atom.data();
         for (mol = 0; mol < molb->nmol; mol++)
         {
             for (j = 0; (j < NBT); j++)
@@ -525,7 +525,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                     i  += nra+1;
                 }
             }
-            a_offset += molt->atoms.nr;
+            a_offset += molt->atoms.getNatoms();
         }
         /* Done with this molecule type */
         sfree(at2cg);

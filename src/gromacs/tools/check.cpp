@@ -460,8 +460,8 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     fprintf(stderr, "Checking coordinate file %s\n", fn);
     read_tps_conf(fn, &top, &ePBC, &x, &v, box, TRUE);
     atoms = &top.atoms;
-    natom = atoms->nr;
-    fprintf(stderr, "%d atoms in file\n", atoms->nr);
+    natom = atoms->getNatoms();
+    fprintf(stderr, "%d atoms in file\n", atoms->getNatoms());
 
     /* check coordinates and box */
     bV = FALSE;
@@ -524,13 +524,13 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
         for (i = 0; (i < natom); i++)
         {
             gmx_atomprop_query(aps, epropVDW,
-                               *(atoms->resinfo[atoms->atom[i].resind].name),
-                               *(atoms->atomname[i]), &(atom_vdw[i]));
+                               atoms->resinfo[atoms->atom[i].resind].name->c_str(),
+                               atoms->atomname[i]->c_str(), &(atom_vdw[i]));
             if (debug)
             {
                 fprintf(debug, "%5d %4s %4s %7g\n", i+1,
-                        *(atoms->resinfo[atoms->atom[i].resind].name),
-                        *(atoms->atomname[i]),
+                        atoms->resinfo[atoms->atom[i].resind].name->c_str(),
+                        atoms->atomname[i]->c_str(),
                         atom_vdw[i]);
             }
         }
@@ -572,12 +572,12 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                     }
                     fprintf(stderr,
                             "\r%5d %4s %4s%4d %-5.3g  %5d %4s %4s%4d %-5.3g  %-6.4g\n",
-                            i+1, *(atoms->atomname[i]),
-                            *(atoms->resinfo[atoms->atom[i].resind].name),
+                            i+1, atoms->atomname[i]->c_str(),
+                            atoms->resinfo[atoms->atom[i].resind].name->c_str(),
                             atoms->resinfo[atoms->atom[i].resind].nr,
                             atom_vdw[i],
-                            j+1, *(atoms->atomname[j]),
-                            *(atoms->resinfo[atoms->atom[j].resind].name),
+                            j+1, atoms->atomname[j]->c_str(),
+                            atoms->resinfo[atoms->atom[j].resind].name->c_str(),
                             atoms->resinfo[atoms->atom[j].resind].nr,
                             atom_vdw[j],
                             std::sqrt(r2) );
@@ -620,8 +620,8 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                     }
                     fprintf(stderr,
                             "%5d %4s %4s%4d %-5.3g",
-                            i, *(atoms->atomname[i]),
-                            *(atoms->resinfo[atoms->atom[i].resind].name),
+                            i, atoms->atomname[i]->c_str(),
+                            atoms->resinfo[atoms->atom[i].resind].name->c_str(),
                             atoms->resinfo[atoms->atom[i].resind].nr, atom_vdw[i]);
                     for (j = 0; (j < DIM); j++)
                     {
@@ -645,11 +645,12 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
 
 static void chk_ndx(const char *fn)
 {
-    t_blocka *grps;
-    char    **grpname;
-    int       i;
+    t_blocka              *grps;
+    std::vector<SymbolPtr> grpname;
+    SymbolTable            symtab;
+    int                    i;
 
-    grps = init_index(fn, &grpname);
+    grps = init_index(fn, &symtab, &grpname);
     if (debug)
     {
         pr_blocka(debug, 0, fn, grps, FALSE);
@@ -661,17 +662,12 @@ static void chk_ndx(const char *fn)
         printf("Nr.   Group               #Entries   First    Last\n");
         for (i = 0; (i < grps->nr); i++)
         {
-            printf("%4d  %-20s%8d%8d%8d\n", i, grpname[i],
+            printf("%4d  %-20s%8d%8d%8d\n", i, grpname[i]->c_str(),
                    grps->index[i+1]-grps->index[i],
                    grps->a[grps->index[i]]+1,
                    grps->a[grps->index[i+1]-1]+1);
         }
     }
-    for (i = 0; (i < grps->nr); i++)
-    {
-        sfree(grpname[i]);
-    }
-    sfree(grpname);
     done_blocka(grps);
 }
 

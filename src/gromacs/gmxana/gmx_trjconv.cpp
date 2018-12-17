@@ -108,7 +108,7 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
     snew(m_shift, nmol);
     snew(cluster, nmol);
     snew(added, nmol);
-    snew(bTmp, top->atoms.nr);
+    snew(bTmp, top->atoms.getNatoms());
 
     for (i = 0; (i < nrefat); i++)
     {
@@ -878,12 +878,9 @@ int gmx_trjconv(int argc, char *argv[])
     t_atoms          *atoms = nullptr, useatoms;
     matrix            top_box;
     int              *index = nullptr, *cindex = nullptr;
-    char             *grpnm = nullptr;
     int              *frindex, nrfri;
-    char             *frname;
     int               ifit, my_clust = -1;
     int              *ind_fit;
-    char             *gn_fit;
     t_cluster_ndx    *clust           = nullptr;
     t_trxstatus     **clust_status    = nullptr;
     int              *clust_status_id = nullptr;
@@ -1051,7 +1048,7 @@ int gmx_trjconv(int argc, char *argv[])
                 gmx_fatal(FARGS, "Can only use the sub option with output file types "
                           "xtc and trr");
             }
-            clust = cluster_index(nullptr, opt2fn("-sub", NFILE, fnm));
+            clust = cluster_index(nullptr, opt2fn("-sub", NFILE, fnm), &top->symtab);
 
             /* Check for number of files disabled, as FOPEN_MAX is not the correct
              * number to check for. In my linux box it is only 16.
@@ -1098,10 +1095,10 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bTPS)
         {
-            snew(top, 1);
+            top = new t_topology;
             read_tps_conf(top_file, top, &ePBC, &xp, nullptr, top_box,
                           bReset || bPBCcomRes);
-            std::strncpy(top_title, *top->name, 255);
+            std::strncpy(top_title, top->name->c_str(), 255);
             top_title[255] = '\0';
             atoms          = &top->atoms;
 
@@ -1132,16 +1129,17 @@ int gmx_trjconv(int argc, char *argv[])
             }
             if (bRmPBC)
             {
-                gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+                gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.getNatoms());
             }
         }
 
         /* get frame number index */
         frindex = nullptr;
+        std::vector<SymbolPtr> frname(1);
         if (opt2bSet("-fr", NFILE, fnm))
         {
             printf("Select groups of frame number indices:\n");
-            rd_index(opt2fn("-fr", NFILE, fnm), 1, &nrfri, &frindex, &frname);
+            rd_index(opt2fn("-fr", NFILE, fnm), 1, &nrfri, &frindex, frname, &top->symtab);
             if (debug)
             {
                 for (i = 0; i < nrfri; i++)
@@ -1152,12 +1150,14 @@ int gmx_trjconv(int argc, char *argv[])
         }
 
         /* get index groups etc. */
+        std::vector<SymbolPtr> gn_fit(1);
+        std::vector<SymbolPtr> grpnm(1);
         if (bReset)
         {
             printf("Select group for %s fit\n",
                    bFit ? "least squares" : "translational");
             get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &ifit, &ind_fit, &gn_fit);
+                      1, &ifit, &ind_fit, gn_fit, &top->symtab);
 
             if (bFit)
             {
@@ -1175,7 +1175,7 @@ int gmx_trjconv(int argc, char *argv[])
         {
             printf("Select group for clustering\n");
             get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &ifit, &ind_fit, &gn_fit);
+                      1, &ifit, &ind_fit, gn_fit, &top->symtab);
         }
 
         if (bIndex)
@@ -1184,11 +1184,11 @@ int gmx_trjconv(int argc, char *argv[])
             {
                 printf("Select group for centering\n");
                 get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm),
-                          1, &ncent, &cindex, &grpnm);
+                          1, &ncent, &cindex, grpnm, &top->symtab);
             }
             printf("Select group for output\n");
             get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &nout, &index, &grpnm);
+                      1, &nout, &index, grpnm, &top->symtab);
         }
         else
         {
@@ -1215,7 +1215,7 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bReset)
         {
-            snew(w_rls, atoms->nr);
+            snew(w_rls, atoms->getNatoms());
             for (i = 0; (i < ifit); i++)
             {
                 w_rls[ind_fit[i]] = atoms->atom[ind_fit[i]].m;
@@ -1225,10 +1225,10 @@ int gmx_trjconv(int argc, char *argv[])
                store original location (to put structure back) */
             if (bRmPBC)
             {
-                gmx_rmpbc(gpbc, top->atoms.nr, top_box, xp);
+                gmx_rmpbc(gpbc, top->atoms.getNatoms(), top_box, xp);
             }
             copy_rvec(xp[index[0]], x_shift);
-            reset_x_ndim(nfitdim, ifit, ind_fit, atoms->nr, nullptr, xp, w_rls);
+            reset_x_ndim(nfitdim, ifit, ind_fit, atoms->getNatoms(), nullptr, xp, w_rls);
             rvec_dec(x_shift, xp[index[0]]);
         }
         else
@@ -1257,8 +1257,8 @@ int gmx_trjconv(int argc, char *argv[])
             /* get memory for stuff to go in .pdb file, and initialize
              * the pdbinfo structure part if the input has it.
              */
-            init_t_atoms(&useatoms, atoms->nr, atoms->havePdbInfo);
-            sfree(useatoms.resinfo);
+            init_t_atoms(&useatoms, atoms->getNatoms(), atoms->havePdbInfo);
+            useatoms.resinfo.clear();
             useatoms.resinfo = atoms->resinfo;
             for (i = 0; (i < nout); i++)
             {
@@ -1268,9 +1268,7 @@ int gmx_trjconv(int argc, char *argv[])
                 {
                     useatoms.pdbinfo[i]  = atoms->pdbinfo[index[i]];
                 }
-                useatoms.nres        = std::max(useatoms.nres, useatoms.atom[i].resind+1);
             }
-            useatoms.nr = nout;
         }
         /* select what to read */
         if (ftp == efTRR)
@@ -1373,7 +1371,7 @@ int gmx_trjconv(int argc, char *argv[])
                                                               nout,
                                                               mtop.get(),
                                                               gmx::arrayRefFromArray(index, nout),
-                                                              grpnm);
+                                                              grpnm[0]->c_str());
                     break;
                 case efXTC:
                 case efTRR:
@@ -1708,13 +1706,13 @@ int gmx_trjconv(int argc, char *argv[])
                         if (bPBCcomRes)
                         {
                             put_residue_com_in_box(unitcell_enum, ecenter,
-                                                   natoms, atoms->atom, ePBC, fr.box, fr.x);
+                                                   natoms, atoms->atom.data(), ePBC, fr.box, fr.x);
                         }
                         if (bPBCcomMol)
                         {
                             put_molecule_com_in_box(unitcell_enum, ecenter,
                                                     &top->mols,
-                                                    natoms, atoms->atom, ePBC, fr.box, fr.x);
+                                                    natoms, atoms->atom.data(), ePBC, fr.box, fr.x);
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
                         frout        = fr;
@@ -1803,7 +1801,7 @@ int gmx_trjconv(int argc, char *argv[])
                                         char buf[STRLEN];
                                         if (clust_status_id[my_clust] == -1)
                                         {
-                                            sprintf(buf, "%s.%s", clust->grpname[my_clust], ftp2ext(ftp));
+                                            sprintf(buf, "%s.%s", clust->grpname[my_clust]->c_str(), ftp2ext(ftp));
                                             clust_status[my_clust]    = open_trx(buf, "w");
                                             clust_status_id[my_clust] = 1;
                                             ntrxopen++;
@@ -1811,7 +1809,7 @@ int gmx_trjconv(int argc, char *argv[])
                                         else if (clust_status_id[my_clust] == -2)
                                         {
                                             gmx_fatal(FARGS, "File %s.xtc should still be open (%d open .xtc files)\n" "in order to write frame %d. my_clust = %d",
-                                                      clust->grpname[my_clust], ntrxopen, frame,
+                                                      clust->grpname[my_clust]->c_str(), ntrxopen, frame,
                                                       my_clust);
                                         }
                                         write_trxframe(clust_status[my_clust], &frout, gc);
@@ -1985,13 +1983,12 @@ int gmx_trjconv(int argc, char *argv[])
     if (bTPS)
     {
         done_top(top);
-        sfree(top);
+        delete top;
     }
     sfree(xp);
     sfree(xmem);
     sfree(vmem);
     sfree(fmem);
-    sfree(grpnm);
     sfree(index);
     sfree(cindex);
     done_frame(&fr);

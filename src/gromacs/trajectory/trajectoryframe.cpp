@@ -97,7 +97,6 @@ void done_frame(t_trxframe *frame)
     if (frame->atoms)
     {
         done_atom(frame->atoms);
-        sfree(frame->atoms);
     }
     sfree(frame->x);
     sfree(frame->v);

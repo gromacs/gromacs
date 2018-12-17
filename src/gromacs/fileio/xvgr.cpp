@@ -379,12 +379,25 @@ static void xvgr_legend(FILE *out, int nsets, const T * setname,
     }
 }
 
-void xvgrLegend(FILE                           *out,
-                const std::vector<std::string> &setNames,
-                const struct gmx_output_env_t  *oenv)
+void xvgrLegend(FILE                            *out,
+                gmx::ArrayRef<const std::string> setNames,
+                const struct gmx_output_env_t   *oenv)
 {
     xvgr_legend(out, setNames.size(), setNames.data(), oenv);
 }
+
+void xvgrLegendSymbol(FILE                           *out,
+                      gmx::ArrayRef<const SymbolPtr>  setnames,
+                      const struct gmx_output_env_t  *oenv)
+{
+    std::vector<std::string> setNameStrings;
+    for (auto sets : setnames)
+    {
+        setNameStrings.emplace_back(*sets);
+    }
+    xvgrLegend(out, setNameStrings, oenv);
+}
+
 void xvgr_legend(FILE *out, int nsets, const char*const* setnames,
                  const struct gmx_output_env_t *oenv)
 {

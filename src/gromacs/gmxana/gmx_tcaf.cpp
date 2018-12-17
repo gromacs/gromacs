@@ -310,7 +310,6 @@ int gmx_tcaf(int argc, char *argv[])
     gmx_bool          bTop;
     int               gnx;
     int              *index, *atndx = nullptr, at;
-    char             *grpname;
     char              title[256];
     real              t0, t1, dt, m, mtot, sysmass, rho, sx, cx;
     t_trxstatus      *status;
@@ -349,7 +348,8 @@ int gmx_tcaf(int argc, char *argv[])
 
     bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box,
                          TRUE);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
+    std::vector<SymbolPtr> grpname(1);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, grpname, &top.symtab);
 
     if (bMol)
     {
@@ -372,7 +372,7 @@ int gmx_tcaf(int argc, char *argv[])
     GMX_ASSERT(nk >= 16, "Has to be over 16 because nkc is either NKC or NKC0.");
     ntc = nk*NPK;
 
-    sprintf(title, "Velocity Autocorrelation Function for %s", grpname);
+    sprintf(title, "Velocity Autocorrelation Function for %s", grpname[0]->c_str());
 
     sysmass = 0;
     for (i = 0; i < nk; i++)
@@ -393,7 +393,7 @@ int gmx_tcaf(int argc, char *argv[])
         unitv(v2[i], v2[i]);
     }
     snew(tc, ntc);
-    for (i = 0; i < top.atoms.nr; i++)
+    for (i = 0; i < top.atoms.getNatoms(); i++)
     {
         sysmass += top.atoms.atom[i].m;
     }

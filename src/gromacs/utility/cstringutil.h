@@ -179,4 +179,12 @@ int64_t str_to_int64_t(const char *str, char **endptr);
  */
 char *gmx_step_str(int64_t i, char *buf);
 
+/*! \brief Find string in array of characters.
+ *
+ * \param[in] s String to find.
+ * \param[in] ng Size of array.
+ * \param[in] gn Array to search.
+ */
+int search_string(const char *s, int ng, char *gn[]);
+
 #endif

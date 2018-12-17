@@ -84,7 +84,7 @@ void get_coordnum(const char *infile, int *natoms)
  * issues with other software packages.
  */
 static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
-                           t_symtab *symtab, t_atoms *atoms, int *ndec,
+                           SymbolTable *symtab, t_atoms *atoms, int *ndec,
                            rvec x[], rvec *v, matrix box)
 {
     char       name[6];
@@ -105,15 +105,15 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     /* Read the title and number of atoms */
     get_coordnum_fp(in, title, &natoms);
 
-    if (natoms > atoms->nr)
+    if (natoms > atoms->getNatoms())
     {
         gmx_fatal(FARGS, "gro file contains more atoms (%d) than expected (%d)",
-                  natoms, atoms->nr);
+                  natoms, atoms->getNatoms());
     }
-    else if (natoms <  atoms->nr)
+    else if (natoms <  atoms->getNatoms())
     {
         fprintf(stderr, "Warning: gro file contains less atoms (%d) than expected"
-                " (%d)\n", natoms, atoms->nr);
+                " (%d)\n", natoms, atoms->getNatoms());
     }
 
     atoms->haveMass    = FALSE;
@@ -250,7 +250,6 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
             }
         }
     }
-    atoms->nres = newres + 1;
 
     /* box */
     fgets2(line, STRLEN, in);
@@ -263,7 +262,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         {
             xmin[m] = xmax[m] = x[0][m];
         }
-        for (i = 1; (i < atoms->nr); i++)
+        for (i = 1; (i < atoms->getNatoms()); i++)
         {
             for (m = 0; (m < DIM); m++)
             {
@@ -308,7 +307,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
 }
 
 void gmx_gro_read_conf(const char *infile,
-                       t_symtab *symtab, char **name, t_atoms *atoms,
+                       SymbolTable *symtab, char **name, t_atoms *atoms,
                        rvec x[], rvec *v, matrix box)
 {
     FILE *in = gmx_fio_fopen(infile, "r");
@@ -336,11 +335,11 @@ static gmx_bool gmx_one_before_eof(FILE *fp)
 
 gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
 {
-    t_atoms  atoms;
-    t_symtab symtab;
-    char     title[STRLEN], *p;
-    double   tt;
-    int      ndec = 0, i;
+    t_atoms     atoms;
+    SymbolTable symtab;
+    char        title[STRLEN], *p;
+    double      tt;
+    int         ndec = 0, i;
 
     if (gmx_one_before_eof(status))
     {
@@ -348,11 +347,7 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
     }
 
     open_symtab(&symtab);
-    atoms.nr = fr->natoms;
-    snew(atoms.atom, fr->natoms);
-    atoms.nres = fr->natoms;
-    snew(atoms.resinfo, fr->natoms);
-    snew(atoms.atomname, fr->natoms);
+    init_t_atoms(&atoms, fr->natoms, false);
 
     fr->bV    = get_w_conf(status, title, title, &symtab, &atoms, &ndec, fr->x, fr->v, fr->box);
     fr->bPrec = TRUE;
@@ -365,9 +360,6 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
     fr->bX     = TRUE;
     fr->bBox   = TRUE;
 
-    sfree(atoms.atom);
-    sfree(atoms.resinfo);
-    sfree(atoms.atomname);
     done_symtab(&symtab);
 
     if ((p = strstr(title, "t=")) != nullptr)
@@ -392,9 +384,9 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
         fr->bStep = (sscanf(p, "%" SCNd64, &fr->step) == 1);
     }
 
-    if (atoms.nr != fr->natoms)
+    if (atoms.getNatoms() != fr->natoms)
     {
-        gmx_fatal(FARGS, "Number of atoms in gro frame (%d) doesn't match the number in the previous frame (%d)", atoms.nr, fr->natoms);
+        gmx_fatal(FARGS, "Number of atoms in gro frame (%d) doesn't match the number in the previous frame (%d)", atoms.getNatoms(), fr->natoms);
     }
 
     return TRUE;
@@ -468,7 +460,7 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
 
         resind = atoms->atom[ai].resind;
         std::string resnm;
-        if (resind < atoms->nres)
+        if (resind < atoms->getNresidues())
         {
             resnm = *atoms->resinfo[resind].name;
             resnr = atoms->resinfo[resind].nr;
@@ -480,9 +472,9 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
         }
 
         std::string nm;
-        if (atoms->atom)
+        if (!atoms->atom.empty())
         {
-            nm = *atoms->atomname[i];
+            nm = *atoms->atomname[ai];
         }
         else
         {
@@ -511,10 +503,10 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
 void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
                       const rvec *x, const rvec *v, const matrix box)
 {
-    int                     i, resnr;
-    gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
-    char                   *atomname, *resname;
+    int                           i, resnr;
+    gmx_mtop_atomloop_all_t       aloop;
+    const t_atom                 *atom;
+    const char                   *atomname, *resname;
 
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", mtop->natoms);
@@ -552,12 +544,12 @@ void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms,
     int     *aa;
     int      i;
 
-    snew(aa, atoms->nr);
-    for (i = 0; (i < atoms->nr); i++)
+    snew(aa, atoms->getNatoms());
+    for (i = 0; (i < atoms->getNatoms()); i++)
     {
         aa[i] = i;
     }
-    write_hconf_indexed_p(out, title, atoms, atoms->nr, aa, x, v, box);
+    write_hconf_indexed_p(out, title, atoms, atoms->getNatoms(), aa, x, v, box);
     sfree(aa);
 }
 

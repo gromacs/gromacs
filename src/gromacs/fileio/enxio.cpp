@@ -1209,7 +1209,7 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
         for (i = 0; i < state->ngtc; i++)
         {
             ni   = groups->grps[egcTC].nm_ind[i];
-            bufi = *(groups->grpname[ni]);
+            bufi = groups->grpname[ni]->c_str();
             for (j = 0; (j < state->nhchainlength); j++)
             {
                 if (inputrecNvtTrotter(ir))

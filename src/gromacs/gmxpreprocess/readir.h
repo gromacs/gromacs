@@ -96,8 +96,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
  */
-int search_string(const char *s, int ng, char *gn[]);
-/* Returns the index of string s in the index groups */
 
 void double_check(t_inputrec *ir, matrix box,
                   bool bHasNormalConstraints,
@@ -138,9 +136,10 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
                        warninp_t               wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
-void make_pull_groups(pull_params_t *pull,
-                      char **pgnames,
-                      const t_blocka *grps, char **gnames);
+void make_pull_groups(pull_params_t           *pull,
+                      char                   **pgnames,
+                      const t_blocka          *grps,
+                      gmx::ArrayRef<SymbolPtr> gnames);
 /* Process the pull group parameters after reading the index groups */
 
 void make_pull_coords(pull_params_t *pull);
@@ -155,14 +154,20 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
  * after all modules have registered their external potentials, if present.
  */
 
-char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot, warninp_t wi);
+char ** read_rotparams(std::vector<t_inpfile> *inp,
+                       t_rot                  *rot,
+                       warninp_t               wi);
 /* Reads enforced rotation parameters, returns a list of the rot group names */
 
 void make_rotation_groups(t_rot *rot, char **rotgnames,
-                          t_blocka *grps, char **gnames);
+                          t_blocka *grps,
+                          gmx::ArrayRef<SymbolPtr> gnames);
 /* Process the rotation parameters after reading the index groups */
 
 void set_reference_positions(t_rot *rot, rvec *x, matrix box,
                              const char *fn, bool bSet, warninp_t wi);
+
+//! Search for string in group names.
+int searchGroupString(const char *s, int ng, gmx::ArrayRef<SymbolPtr> gn);
 
 #endif

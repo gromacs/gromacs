@@ -138,7 +138,7 @@ int gmx_densmap(int argc, char *argv[])
     real               t, m, mtot;
     t_pbc              pbc;
     int                cav = 0, c1 = 0, c2 = 0;
-    char             **grpname, buf[STRLEN];
+    char               buf[STRLEN];
     const char        *unit;
     int                i, j, k, l, ngrps, anagrp, *gnx = nullptr, nindex, nradial = 0, nfr, nmpower;
     int              **ind = nullptr, *index;
@@ -212,9 +212,9 @@ int gmx_densmap(int argc, char *argv[])
                 "\nSelect two groups to define the axis and an analysis group\n");
     }
     snew(gnx, ngrps);
-    snew(grpname, ngrps);
+    std::vector<SymbolPtr> grpname(ngrps);
     snew(ind, ngrps);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, gnx, ind, grpname);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, gnx, ind, grpname, &top.symtab);
     anagrp = ngrps - 1;
     nindex = gnx[anagrp];
     index  = ind[anagrp];
@@ -480,7 +480,7 @@ int gmx_densmap(int argc, char *argv[])
         fprintf(stdout, "\n");
     }
 
-    sprintf(buf, "%s number density", grpname[anagrp]);
+    sprintf(buf, "%s number density", grpname[anagrp]->c_str());
     if (!bRadial && (bXmin || bXmax))
     {
         if (!bXmax)

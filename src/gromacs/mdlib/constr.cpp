@@ -832,7 +832,7 @@ t_blocka make_at2con(const gmx_moltype_t            &moltype,
                      gmx::ArrayRef<const t_iparams>  iparams,
                      FlexibleConstraintTreatment     flexibleConstraintTreatment)
 {
-    return makeAtomsToConstraintsList(moltype.atoms.nr, moltype.ilist.data(), iparams.data(), flexibleConstraintTreatment);
+    return makeAtomsToConstraintsList(moltype.atoms.getNatoms(), moltype.ilist.data(), iparams.data(), flexibleConstraintTreatment);
 }
 
 //! Return the number of flexible constraints in the \c ilist and \c iparams.
@@ -1080,7 +1080,7 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
         /* Make an atom to settle index for use in domain decomposition */
         for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
         {
-            at2settle_mt.emplace_back(make_at2settle(mtop.moltype[mt].atoms.nr,
+            at2settle_mt.emplace_back(make_at2settle(mtop.moltype[mt].atoms.getNatoms(),
                                                      mtop.moltype[mt].ilist[F_SETTLE]));
         }
 
@@ -1159,7 +1159,7 @@ bool inter_charge_group_constraints(const gmx_mtop_t &mtop)
             molt->ilist[F_SETTLE].size()   > 0)
         {
             cgs  = &molt->cgs;
-            snew(at2cg, molt->atoms.nr);
+            snew(at2cg, molt->atoms.getNatoms());
             for (cg = 0; cg < cgs->nr; cg++)
             {
                 for (a = cgs->index[cg]; a < cgs->index[cg+1]; a++)
@@ -1202,7 +1202,7 @@ bool inter_charge_group_settles(const gmx_mtop_t &mtop)
         if (molt->ilist[F_SETTLE].size() > 0)
         {
             cgs  = &molt->cgs;
-            snew(at2cg, molt->atoms.nr);
+            snew(at2cg, molt->atoms.getNatoms());
             for (cg = 0; cg < cgs->nr; cg++)
             {
                 for (a = cgs->index[cg]; a < cgs->index[cg+1]; a++)

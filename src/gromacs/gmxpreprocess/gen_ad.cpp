@@ -55,6 +55,8 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -328,14 +330,14 @@ static void sort_id(int nr, t_param ps[])
     }
 }
 
-static int n_hydro(const int a[], char ***atomname)
+static int n_hydro(const int a[], gmx::ArrayRef<const SymbolPtr> atomname)
 {
     int  i, nh = 0;
-    char c0, c1, *aname;
+    char c0, c1;
 
     for (i = 0; (i < 4); i += 3)
     {
-        aname = *atomname[a[i]];
+        const char *aname = atomname[a[i]]->c_str();
         c0    = toupper(aname[0]);
         if (c0 == 'H')
         {
@@ -478,7 +480,7 @@ static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
     start     = 0;
     if (hb != nullptr)
     {
-        for (i = 0; (i < atoms->nres); i++)
+        for (i = 0; (i < atoms->getNresidues()); i++)
         {
             impropers = &hb[i].rb[ebtsIDIHS];
             for (j = 0; (j < impropers->nb); j++)
@@ -506,7 +508,7 @@ static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
                     nimproper++;
                 }
             }
-            while ((start < atoms->nr) && (atoms->atom[start].resind == i))
+            while ((start < atoms->getNatoms()) && (atoms->atom[start].resind == i))
             {
                 start++;
             }
@@ -545,7 +547,7 @@ static int nb_dist(t_nextnb *nnb, int ai, int aj)
 
 static bool is_hydro(t_atoms *atoms, int ai)
 {
-    return ((*(atoms->atomname[ai]))[0] == 'H');
+    return ((atoms->atomname[ai]->c_str())[0] == 'H');
 }
 
 static void get_atomnames_min(int n, char **anm,
@@ -568,7 +570,7 @@ static void get_atomnames_min(int n, char **anm,
         {
             strcpy(anm[m], "");
         }
-        strcat(anm[m], *(atoms->atomname[a[m]]));
+        strcat(anm[m], atoms->atomname[a[m]]->c_str());
     }
 }
 
@@ -582,10 +584,10 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
     char       *anm;
 
     astart = 0;
-    for (a = 0; a < atoms->nr; a++)
+    for (a = 0; a < atoms->getNatoms(); a++)
     {
         r = atoms->atom[a].resind;
-        if (a == atoms->nr-1 || atoms->atom[a+1].resind != r)
+        if (a == atoms->getNatoms()-1 || atoms->atom[a+1].resind != r)
         {
             hbexcl = &hb[r].rb[ebtsEXCLS];
 
@@ -615,7 +617,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
         }
     }
 
-    for (a = 0; a < atoms->nr; a++)
+    for (a = 0; a < atoms->getNatoms(); a++)
     {
         if (excls[a].nr > 1)
         {
@@ -766,7 +768,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     {
         gen_excls(atoms, excls, hb, bAllowMissing);
         /* mark all entries as not matched yet */
-        for (i = 0; i < atoms->nres; i++)
+        for (i = 0; i < atoms->getNresidues(); i++)
         {
             for (j = 0; j < ebtsNR; j++)
             {
@@ -993,7 +995,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
          * generally true. Go through the angle and dihedral hackblocks to add
          * entries that we have not yet marked as matched when going through bonds.
          */
-        for (i = 0; i < atoms->nres; i++)
+        for (i = 0; i < atoms->getNresidues(); i++)
         {
             /* Add remaining angles from hackblock */
             hbang = &hb[i].rb[ebtsANGLES];

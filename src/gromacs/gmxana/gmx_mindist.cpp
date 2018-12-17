@@ -327,7 +327,7 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
 static void dist_plot(const char *fn, const char *afile, const char *dfile,
                       const char *nfile, const char *rfile, const char *xfile,
                       real rcut, gmx_bool bMat, const t_atoms *atoms,
-                      int ng, int *index[], int gnx[], char *grpn[], gmx_bool bSplit,
+                      int ng, int *index[], int gnx[], gmx::ArrayRef<SymbolPtr> grpn, gmx_bool bSplit,
                       gmx_bool bMin, int nres, int *residue, gmx_bool bPBC, int ePBC,
                       gmx_bool bGroup, gmx_bool bEachResEachTime, gmx_bool bPrintResName,
                       const gmx_output_env_t *oenv)
@@ -366,7 +366,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
         if (ng == 1)
         {
             snew(leg, 1);
-            sprintf(buf, "Internal in %s", grpn[0]);
+            sprintf(buf, "Internal in %s", grpn[0]->c_str());
             leg[0] = gmx_strdup(buf);
             xvgr_legend(dist, 0, leg, oenv);
             if (num)
@@ -381,7 +381,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
             {
                 for (k = i+1; (k < ng); k++, j++)
                 {
-                    sprintf(buf, "%s-%s", grpn[i], grpn[k]);
+                    sprintf(buf, "%s-%s", grpn[i]->c_str(), grpn[k]->c_str());
                     leg[j] = gmx_strdup(buf);
                 }
             }
@@ -397,7 +397,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
         snew(leg, ng-1);
         for (i = 0; (i < ng-1); i++)
         {
-            sprintf(buf, "%s-%s", grpn[0], grpn[i+1]);
+            sprintf(buf, "%s-%s", grpn[0]->c_str(), grpn[i+1]->c_str());
             leg[i] = gmx_strdup(buf);
         }
         xvgr_legend(dist, ng-1, leg, oenv);
@@ -418,7 +418,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
 
             for (j = 0; j < nres; j++)
             {
-                fprintf(respertime, "%s%d ", *(atoms->resinfo[atoms->atom[index[0][residue[j]]].resind].name), atoms->atom[index[0][residue[j]]].resind);
+                fprintf(respertime, "%s%d ", atoms->resinfo[atoms->atom[index[0][residue[j]]].resind].name->c_str(), atoms->atom[index[0][residue[j]]].resind);
             }
             fprintf(respertime, "\n");
         }
@@ -604,7 +604,7 @@ static int find_residues(const t_atoms *atoms, int n, const int index[], int **r
     int *residx;
 
     /* build index of first atom numbers for each residue */
-    snew(residx, atoms->nres+1);
+    snew(residx, atoms->getNresidues()+1);
     for (i = 0; i < n; i++)
     {
         resnr = atoms->atom[index[i]].resind;
@@ -619,7 +619,7 @@ static int find_residues(const t_atoms *atoms, int n, const int index[], int **r
     if (debug)
     {
         printf("Found %d residues out of %d (%d/%d atoms)\n",
-               nres, atoms->nres, atoms->nr, n);
+               nres, atoms->getNresidues(), atoms->getNatoms(), n);
     }
     srenew(residx, nres+1);
     /* mark end of last residue */
@@ -695,7 +695,6 @@ int gmx_mindist(int argc, char *argv[])
           "Write residue names" }
     };
     gmx_output_env_t *oenv;
-    t_topology       *top  = nullptr;
     int               ePBC = -1;
     rvec             *x;
     matrix            box;
@@ -703,7 +702,6 @@ int gmx_mindist(int argc, char *argv[])
 
     int               i, nres = 0;
     const char       *trxfnm, *tpsfnm, *ndxfnm, *distfnm, *numfnm, *atmfnm, *oxfnm, *resfnm;
-    char            **grpname;
     int              *gnx;
     int             **index, *residues = nullptr;
     t_filenm          fnm[] = {
@@ -759,27 +757,27 @@ int gmx_mindist(int argc, char *argv[])
 
     snew(gnx, ng);
     snew(index, ng);
-    snew(grpname, ng);
+    std::vector<SymbolPtr> grpname(ng);
 
+    t_topology             top;
     if (tpsfnm || resfnm || !ndxfnm)
     {
-        snew(top, 1);
-        bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
+        bTop = read_tps_conf(tpsfnm, &top, &ePBC, &x, nullptr, box, FALSE);
         if (bPI && !bTop)
         {
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");
         }
     }
-    get_index(top ? &(top->atoms) : nullptr, ndxfnm, ng, gnx, index, grpname);
+    get_index(bTop ? &(top.atoms) : nullptr, ndxfnm, ng, gnx, index, grpname, &top.symtab);
 
     if (bMat && (ng == 1))
     {
         ng = gnx[0];
         printf("Special case: making distance matrix between all atoms in group %s\n",
-               grpname[0]);
+               grpname[0]->c_str());
         srenew(gnx, ng);
         srenew(index, ng);
-        srenew(grpname, ng);
+        grpname.resize(ng);
         for (i = 1; (i < ng); i++)
         {
             gnx[i]      = 1;
@@ -792,8 +790,8 @@ int gmx_mindist(int argc, char *argv[])
 
     if (resfnm)
     {
-        GMX_RELEASE_ASSERT(top != nullptr, "top pointer cannot be NULL when finding residues");
-        nres = find_residues(&(top->atoms), gnx[0], index[0], &residues);
+        GMX_RELEASE_ASSERT(bTop, "top needs to be valid when finding residues");
+        nres = find_residues(&(top.atoms), gnx[0], index[0], &residues);
 
         if (debug)
         {
@@ -807,12 +805,12 @@ int gmx_mindist(int argc, char *argv[])
 
     if (bPI)
     {
-        periodic_mindist_plot(trxfnm, distfnm, top, ePBC, gnx[0], index[0], bSplit, oenv);
+        periodic_mindist_plot(trxfnm, distfnm, &top, ePBC, gnx[0], index[0], bSplit, oenv);
     }
     else
     {
         dist_plot(trxfnm, atmfnm, distfnm, numfnm, resfnm, oxfnm,
-                  rcutoff, bMat, top ? &(top->atoms) : nullptr,
+                  rcutoff, bMat, bTop ? &(top.atoms) : nullptr,
                   ng, index, gnx, grpname, bSplit, !bMax, nres, residues, bPBC, ePBC,
                   bGroup, bEachResEachTime, bPrintResName, oenv);
     }

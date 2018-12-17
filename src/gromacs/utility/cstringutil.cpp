@@ -503,6 +503,20 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
     return b2;
 }
 
+int search_string(const char *s, int ng, char *gn[])
+{
+    for (int i = 0; (i < ng); i++)
+    {
+        if (gmx_strcasecmp(s, gn[i]) == 0)
+        {
+            return i;
+        }
+    }
+    gmx_fatal(FARGS,
+              "String %s was not found.",
+              s);
+}
+
 int64_t
 str_to_int64_t(const char *str, char **endptr)
 {

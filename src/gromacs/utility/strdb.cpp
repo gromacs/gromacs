@@ -112,7 +112,7 @@ gmx_bool get_header(char line[], char *header)
     return sscanf(temp, "%s%*s", header) == 1;
 }
 
-int search_str(int nstr, char **str, char *key)
+int search_str(int nstr, char **str, const char *key)
 {
     int i;
 

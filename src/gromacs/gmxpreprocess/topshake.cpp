@@ -80,11 +80,11 @@ static void copy_bond (t_params *pr, int to, int from)
     }
 }
 
-static int count_hydrogens (char ***atomname, int nra, const int a[])
+static int count_hydrogens (gmx::ArrayRef<SymbolPtr> atomname, int nra, const int a[])
 {
     int  i, nh;
 
-    if (!atomname)
+    if (atomname.empty())
     {
         gmx_fatal(FARGS, "Cannot call count_hydrogens with no atomname (%s %d)",
                   __FILE__, __LINE__);
@@ -93,7 +93,7 @@ static int count_hydrogens (char ***atomname, int nra, const int a[])
     nh = 0;
     for (i = 0; (i < nra); i++)
     {
-        if (toupper(**(atomname[a[i]])) == 'H')
+        if (toupper(*atomname[a[i]]->c_str()) == 'H')
         {
             nh++;
         }
@@ -104,13 +104,13 @@ static int count_hydrogens (char ***atomname, int nra, const int a[])
 
 void make_shake (t_params plist[], t_atoms *atoms, int nshake)
 {
-    char          ***info = atoms->atomname;
-    t_params        *pr;
-    t_params        *bonds;
-    t_param          p, *bond, *ang;
-    real             b_ij, b_jk;
-    int              i, j, ftype, ftype_a;
-    bool             bFound;
+    std::vector<SymbolPtr> info = atoms->atomname;
+    t_params              *pr;
+    t_params              *bonds;
+    t_param                p, *bond, *ang;
+    real                   b_ij, b_jk;
+    int                    i, j, ftype, ftype_a;
+    bool                   bFound;
 
     if (nshake != eshNONE)
     {
@@ -160,7 +160,7 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                                 numhydrogens = count_hydrogens(info, 3, ang->a);
                                 if ((nshake == eshALLANGLES) ||
                                     (numhydrogens > 1) ||
-                                    (numhydrogens == 1 && toupper(**(info[ang->a[1]])) == 'O'))
+                                    (numhydrogens == 1 && toupper(*(info[ang->a[1]]->c_str())) == 'O'))
                                 {
                                     /* Can only add hydrogen angle shake, if the two bonds
                                      * are constrained.

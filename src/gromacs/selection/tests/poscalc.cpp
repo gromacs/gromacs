@@ -145,7 +145,7 @@ void PositionCalculationTest::generateCoordinates()
 {
     t_atoms    &atoms = topManager_.atoms();
     t_trxframe *frame = topManager_.frame();
-    for (int i = 0; i < atoms.nr; ++i)
+    for (int i = 0; i < atoms.getNatoms(); ++i)
     {
         frame->x[i][XX] = i;
         frame->x[i][YY] = atoms.atom[i].resind;

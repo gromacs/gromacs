@@ -87,8 +87,8 @@ void make_wall_tables(FILE *fplog,
             {
                 sprintf(buf, "%s", tabfn);
                 sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
-                        *groups->grpname[nm_ind[egp]],
-                        *groups->grpname[nm_ind[negp_pp+w]],
+                        groups->grpname[nm_ind[egp]]->c_str(),
+                        groups->grpname[nm_ind[negp_pp+w]]->c_str(),
                         ftp2ext(efXVG));
                 fr->wall_tab[w][egp] = make_tables(fplog, fr->ic, buf, 0,
                                                    GMX_MAKETABLES_FORCEUSER);

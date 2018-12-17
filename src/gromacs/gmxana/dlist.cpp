@@ -50,20 +50,20 @@ t_dlist *mk_dlist(FILE *log,
                   gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
                   int maxchi, int r0, gmx_residuetype_t *rt)
 {
-    int       i, j, ii;
-    t_dihatms atm, prev;
-    int       nl = 0, nc[edMax];
-    char     *thisres;
-    t_dlist  *dl;
+    int             i, j, ii;
+    t_dihatms       atm, prev;
+    int             nl = 0, nc[edMax];
+    const char     *thisres;
+    t_dlist        *dl;
 
-    snew(dl, atoms->nres+1);
+    snew(dl, atoms->getNresidues()+1);
     prev.C = prev.Cn[1] = -1; /* Keep the compiler quiet */
     for (i = 0; (i < edMax); i++)
     {
         nc[i] = 0;
     }
     i    =  0;
-    while (i < atoms->nr)
+    while (i < atoms->getNatoms())
     {
         int ires = atoms->atom[i].resind;
 
@@ -76,80 +76,80 @@ t_dlist *mk_dlist(FILE *log,
 
         /* Look for atoms in this residue */
         /* maybe should allow for chis to hydrogens? */
-        while ((i < atoms->nr) && (atoms->atom[i].resind == ires))
+        while ((i < atoms->getNatoms()) && (atoms->atom[i].resind == ires))
         {
-            if ((std::strcmp(*(atoms->atomname[i]), "H") == 0) ||
-                (std::strcmp(*(atoms->atomname[i]), "H1") == 0) ||
-                (std::strcmp(*(atoms->atomname[i]), "HN") == 0) )
+            if ((std::strcmp(atoms->atomname[i]->c_str(), "H") == 0) ||
+                (std::strcmp(atoms->atomname[i]->c_str(), "H1") == 0) ||
+                (std::strcmp(atoms->atomname[i]->c_str(), "HN") == 0) )
             {
                 atm.H = i;
             }
-            else if (std::strcmp(*(atoms->atomname[i]), "N") == 0)
+            else if (std::strcmp(atoms->atomname[i]->c_str(), "N") == 0)
             {
                 atm.N = i;
             }
-            else if (std::strcmp(*(atoms->atomname[i]), "C") == 0)
+            else if (std::strcmp(atoms->atomname[i]->c_str(), "C") == 0)
             {
                 atm.C = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "O") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "O1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "OC1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "OT1") == 0))
+            else if ((std::strcmp(atoms->atomname[i]->c_str(), "O") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "O1") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "OC1") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "OT1") == 0))
             {
                 atm.O = i;
             }
-            else if (std::strcmp(*(atoms->atomname[i]), "CA") == 0)
+            else if (std::strcmp(atoms->atomname[i]->c_str(), "CA") == 0)
             {
                 atm.Cn[1] = i;
             }
-            else if (std::strcmp(*(atoms->atomname[i]), "CB") == 0)
+            else if (std::strcmp(atoms->atomname[i]->c_str(), "CB") == 0)
             {
                 atm.Cn[2] = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CG") == 0)  ||
-                     (std::strcmp(*(atoms->atomname[i]), "CG1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "OG") == 0)  ||
-                     (std::strcmp(*(atoms->atomname[i]), "OG1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "SG") == 0))
+            else if ((std::strcmp(atoms->atomname[i]->c_str(), "CG") == 0)  ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "CG1") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "OG") == 0)  ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "OG1") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "SG") == 0))
             {
                 atm.Cn[3] = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CD") == 0)  ||
-                     (std::strcmp(*(atoms->atomname[i]), "CD1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "SD") == 0)  ||
-                     (std::strcmp(*(atoms->atomname[i]), "OD1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "ND1") == 0))
+            else if ((std::strcmp(atoms->atomname[i]->c_str(), "CD") == 0)  ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "CD1") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "SD") == 0)  ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "OD1") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "ND1") == 0))
             {
                 atm.Cn[4] = i;
             }
             /* by grs - split the Cn[4] into 2 bits to check allowing dih to H */
-            else if (bHChi && ((std::strcmp(*(atoms->atomname[i]), "HG")  == 0) ||
-                               (std::strcmp(*(atoms->atomname[i]), "HG1")  == 0)) )
+            else if (bHChi && ((std::strcmp(atoms->atomname[i]->c_str(), "HG")  == 0) ||
+                               (std::strcmp(atoms->atomname[i]->c_str(), "HG1")  == 0)) )
             {
                 atm.Cn[4] = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CE") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "CE1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "OE1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "NE") == 0))
+            else if ((std::strcmp(atoms->atomname[i]->c_str(), "CE") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "CE1") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "OE1") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "NE") == 0))
             {
                 atm.Cn[5] = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CZ") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "NZ") == 0))
+            else if ((std::strcmp(atoms->atomname[i]->c_str(), "CZ") == 0) ||
+                     (std::strcmp(atoms->atomname[i]->c_str(), "NZ") == 0))
             {
                 atm.Cn[6] = i;
             }
             /* HChi flag here too */
-            else if (bHChi && (std::strcmp(*(atoms->atomname[i]), "NH1") == 0))
+            else if (bHChi && (std::strcmp(atoms->atomname[i]->c_str(), "NH1") == 0))
             {
                 atm.Cn[7] = i;
             }
             i++;
         }
 
-        thisres = *(atoms->resinfo[ires].name);
+        thisres = atoms->resinfo[ires].name->c_str();
 
         /* added by grs - special case for aromatics, whose chis above 2 are
            not real and produce rubbish output - so set back to -1 */

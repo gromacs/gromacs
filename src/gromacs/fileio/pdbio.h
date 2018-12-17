@@ -47,7 +47,6 @@
 
 struct gmx_atomprop;
 struct t_atoms;
-struct t_symtab;
 struct t_topology;
 
 typedef struct gmx_conect_t *gmx_conect;
@@ -111,11 +110,11 @@ void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms,
  * which may be useful for visualization purposes.
  */
 
-void get_pdb_atomnumber(const t_atoms *atoms, struct gmx_atomprop *aps);
+void get_pdb_atomnumber(t_atoms *atoms, struct gmx_atomprop *aps);
 /* Routine to extract atomic numbers from the atom names */
 
 int read_pdbfile(FILE *in, char *title, int *model_nr,
-                 struct t_atoms *atoms, struct t_symtab *symtab,
+                 struct t_atoms *atoms, SymbolTable *symtab,
                  rvec x[], int *ePBC, matrix box,
                  gmx_bool bChange, gmx_conect conect);
 /* Function returns number of atoms found.
@@ -123,7 +122,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
  */
 
 void gmx_pdb_read_conf(const char *infile,
-                       t_symtab *symtab, char **name, t_atoms *atoms,
+                       SymbolTable *symtab, char **name, t_atoms *atoms,
                        rvec x[], int *ePBC, matrix box);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.

@@ -139,13 +139,13 @@ static char *aname(const char *mname)
 
 static void sort_ions(int nsa, int nw, const int repl[], const int index[],
                       t_atoms *atoms, rvec x[],
-                      const char *p_name, const char *n_name)
+                      const char *p_name, const char *n_name, SymbolTable *symtab)
 {
     int    i, j, k, r, np, nn, starta, startr, npi, nni;
     rvec  *xt;
-    char **pptr = nullptr, **nptr = nullptr, **paptr = nullptr, **naptr = nullptr;
+    char  *pptr, *nptr, *paptr, *naptr;
 
-    snew(xt, atoms->nr);
+    snew(xt, atoms->getNatoms());
 
     /* Put all the solvent in front and count the added ions */
     np = 0;
@@ -179,17 +179,13 @@ static void sort_ions(int nsa, int nw, const int repl[], const int index[],
 
         if (np)
         {
-            snew(pptr, 1);
-            pptr[0] = gmx_strdup(p_name);
-            snew(paptr, 1);
-            paptr[0] = aname(p_name);
+            pptr  = gmx_strdup(p_name);
+            paptr = aname(p_name);
         }
         if (nn)
         {
-            snew(nptr, 1);
-            nptr[0] = gmx_strdup(n_name);
-            snew(naptr, 1);
-            naptr[0] = aname(n_name);
+            nptr  = gmx_strdup(n_name);
+            naptr = aname(n_name);
         }
         npi = 0;
         nni = 0;
@@ -201,9 +197,9 @@ static void sort_ions(int nsa, int nw, const int repl[], const int index[],
                 j = starta+npi;
                 k = startr+npi;
                 copy_rvec(x[index[nsa*i]], xt[j]);
-                atoms->atomname[j]     = paptr;
+                atoms->atomname[j]     = put_symtab(symtab, paptr);
                 atoms->atom[j].resind  = k;
-                atoms->resinfo[k].name = pptr;
+                atoms->resinfo[k].name = put_symtab(symtab, pptr);
                 npi++;
             }
             else if (r < 0)
@@ -211,23 +207,26 @@ static void sort_ions(int nsa, int nw, const int repl[], const int index[],
                 j = starta+np+nni;
                 k = startr+np+nni;
                 copy_rvec(x[index[nsa*i]], xt[j]);
-                atoms->atomname[j]     = naptr;
+                atoms->atomname[j]     = put_symtab(symtab, naptr);
                 atoms->atom[j].resind  = k;
-                atoms->resinfo[k].name = nptr;
+                atoms->resinfo[k].name = put_symtab(symtab, nptr);
                 nni++;
             }
         }
-        for (i = index[nsa*nw-1]+1; i < atoms->nr; i++)
+        for (i = index[nsa*nw-1]+1; i < atoms->getNatoms(); i++)
         {
             j                  = i-(nsa-1)*(np+nn);
             atoms->atomname[j] = atoms->atomname[i];
             atoms->atom[j]     = atoms->atom[i];
             copy_rvec(x[i], xt[j]);
         }
-        atoms->nr -= (nsa-1)*(np+nn);
+        int newAtoms =  atoms->getNatoms() - (nsa-1)*(np+nn);
+        atoms->atom.resize(newAtoms);
+        atoms->atomname.resize(newAtoms);
+        atoms->resinfo.resize(newAtoms);
 
         /* Copy the new positions back */
-        for (i = index[0]; i < atoms->nr; i++)
+        for (i = index[0]; i < atoms->getNatoms(); i++)
         {
             copy_rvec(xt[i], x[i]);
         }
@@ -236,7 +235,7 @@ static void sort_ions(int nsa, int nw, const int repl[], const int index[],
 }
 
 static void update_topol(const char *topinout, int p_num, int n_num,
-                         const char *p_name, const char *n_name, char *grpname)
+                         const char *p_name, const char *n_name, const SymbolPtr grpname)
 {
     FILE    *fpin, *fpout;
     char     buf[STRLEN], buf2[STRLEN], *temp, **mol_line = nullptr;
@@ -288,7 +287,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
         {
             /* Check if this is a line with solvent molecules */
             sscanf(buf, "%s", buf2);
-            if (gmx_strcasecmp(buf2, grpname) == 0)
+            if (gmx_strcasecmp(buf2, grpname->c_str()) == 0)
             {
                 sol_line = nmol_line;
                 sscanf(buf, "%*s %d", &nsol_last);
@@ -304,12 +303,12 @@ static void update_topol(const char *topinout, int p_num, int n_num,
     if (sol_line == -1)
     {
         gmx_ffclose(fpout);
-        gmx_fatal(FARGS, "No line with moleculetype '%s' found the [ molecules ] section of file '%s'", grpname, topinout);
+        gmx_fatal(FARGS, "No line with moleculetype '%s' found the [ molecules ] section of file '%s'", grpname->c_str(), topinout);
     }
     if (nsol_last < p_num+n_num)
     {
         gmx_ffclose(fpout);
-        gmx_fatal(FARGS, "The last entry for moleculetype '%s' in the [ molecules ] section of file '%s' has less solvent molecules (%d) than were replaced (%d)", grpname, topinout, nsol_last, p_num+n_num);
+        gmx_fatal(FARGS, "The last entry for moleculetype '%s' in the [ molecules ] section of file '%s' has less solvent molecules (%d) than were replaced (%d)", grpname->c_str(), topinout, nsol_last, p_num+n_num);
     }
 
     /* Print all the molecule entries */
@@ -327,7 +326,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
             nsol_last -= p_num + n_num;
             if (nsol_last > 0)
             {
-                fprintf(fpout, "%-10s  %d\n", grpname, nsol_last);
+                fprintf(fpout, "%-10s  %d\n", grpname->c_str(), nsol_last);
             }
             if (p_num > 0)
             {
@@ -391,7 +390,6 @@ int gmx_genion(int argc, char *argv[])
     t_pbc              pbc;
     int               *repl, ePBC;
     int               *index;
-    char              *grpname;
     gmx_bool          *bSet;
     int                i, nw, nwa, nsa, nsalt, iqtot;
     gmx_output_env_t  *oenv;
@@ -426,7 +424,7 @@ int gmx_genion(int argc, char *argv[])
 
     /* Compute total charge */
     double qtot = 0;
-    for (i = 0; (i < atoms.nr); i++)
+    for (i = 0; (i < atoms.getNatoms()); i++)
     {
         qtot += atoms.atom[i].q;
     }
@@ -469,6 +467,7 @@ int gmx_genion(int argc, char *argv[])
         }
     }
 
+    std::vector<SymbolPtr> grpname(1);
     if ((p_num == 0) && (n_num == 0))
     {
         fprintf(stderr, "No ions to add, will just copy input configuration.\n");
@@ -478,14 +477,14 @@ int gmx_genion(int argc, char *argv[])
         printf("Will try to add %d %s ions and %d %s ions.\n",
                p_num, p_name, n_num, n_name);
         printf("Select a continuous group of solvent molecules\n");
-        get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nwa, &index, &grpname);
+        get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nwa, &index, grpname, &top.symtab);
         for (i = 1; i < nwa; i++)
         {
             if (index[i] != index[i-1]+1)
             {
                 gmx_fatal(FARGS, "The solvent group %s is not continuous: "
                           "index[%d]=%d, index[%d]=%d",
-                          grpname, i, index[i-1]+1, i+1, index[i]+1);
+                          grpname[0]->c_str(), i, index[i-1]+1, i+1, index[i]+1);
             }
         }
         nsa = 1;
@@ -509,14 +508,14 @@ int gmx_genion(int argc, char *argv[])
 
         if (opt2bSet("-p", NFILE, fnm))
         {
-            update_topol(opt2fn("-p", NFILE, fnm), p_num, n_num, p_name, n_name, grpname);
+            update_topol(opt2fn("-p", NFILE, fnm), p_num, n_num, p_name, n_name, grpname[1]);
         }
 
         snew(bSet, nw);
         snew(repl, nw);
 
-        snew(v, atoms.nr);
-        snew(atoms.pdbinfo, atoms.nr);
+        snew(v, atoms.getNatoms());
+        atoms.pdbinfo.resize(atoms.getNatoms());
 
         set_pbc(&pbc, ePBC, box);
 
@@ -545,13 +544,12 @@ int gmx_genion(int argc, char *argv[])
 
         if (nw)
         {
-            sort_ions(nsa, nw, repl, index, &atoms, x, p_name, n_name);
+            sort_ions(nsa, nw, repl, index, &atoms, x, p_name, n_name, &top.symtab);
         }
 
-        sfree(atoms.pdbinfo);
-        atoms.pdbinfo = nullptr;
+        atoms.pdbinfo.clear();
     }
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, nullptr, ePBC, box);
+    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), top.name->c_str(), &atoms, x, nullptr, ePBC, box);
 
     return 0;
 }

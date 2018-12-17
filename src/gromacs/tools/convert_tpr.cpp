@@ -178,24 +178,20 @@ static void reduce_rvec(int gnx, const int index[], rvec vv[])
     sfree(ptr);
 }
 
-static void reduce_atom(int gnx, const int index[], t_atom atom[], char ***atomname,
-                        int *nres, t_resinfo *resinfo)
+static void reduce_atom(int gnx, const int index[], gmx::ArrayRef<t_atom> atom,
+                        gmx::ArrayRef<SymbolPtr> atomname,
+                        int *nres, gmx::ArrayRef<t_resinfo> resinfo)
 {
-    t_atom    *ptr;
-    char    ***aname;
-    t_resinfo *rinfo;
-    int        i, nr;
-
-    snew(ptr, gnx);
-    snew(aname, gnx);
-    snew(rinfo, atom[index[gnx-1]].resind+1);
-    for (i = 0; (i < gnx); i++)
+    std::vector<t_atom>    ptr(gnx);
+    std::vector<SymbolPtr> aname(gnx);
+    std::vector<t_resinfo> rinfo(atom[index[gnx-1]].resind+1);
+    for (int i = 0; (i < gnx); i++)
     {
         ptr[i]   = atom[index[i]];
         aname[i] = atomname[index[i]];
     }
-    nr = -1;
-    for (i = 0; (i < gnx); i++)
+    int nr = -1;
+    for (int i = 0; (i < gnx); i++)
     {
         atom[i]     = ptr[i];
         atomname[i] = aname[i];
@@ -207,15 +203,11 @@ static void reduce_atom(int gnx, const int index[], t_atom atom[], char ***atomn
         atom[i].resind = nr;
     }
     nr++;
-    for (i = 0; (i < nr); i++)
+    for (int i = 0; (i < nr); i++)
     {
         resinfo[i] = rinfo[i];
     }
     *nres = nr;
-
-    sfree(aname);
-    sfree(ptr);
-    sfree(rinfo);
 }
 
 static void reduce_ilist(const int invindex[], const gmx_bool bKeep[],
@@ -268,16 +260,19 @@ static void reduce_topology_x(int gnx, int index[],
     int          i;
 
     top      = gmx_mtop_t_to_t_topology(mtop, false);
-    bKeep    = bKeepIt(gnx, top.atoms.nr, index);
-    invindex = invind(gnx, top.atoms.nr, index);
+    bKeep    = bKeepIt(gnx, top.atoms.getNatoms(), index);
+    invindex = invind(gnx, top.atoms.getNatoms(), index);
 
     reduce_block(bKeep, &(top.cgs), "cgs");
     reduce_block(bKeep, &(top.mols), "mols");
     reduce_blocka(invindex, bKeep, &(top.excls), "excls");
     reduce_rvec(gnx, index, x);
     reduce_rvec(gnx, index, v);
+    int nresidues = top.atoms.getNresidues();
     reduce_atom(gnx, index, top.atoms.atom, top.atoms.atomname,
-                &(top.atoms.nres), top.atoms.resinfo);
+                &nresidues, top.atoms.resinfo);
+    top.atoms.resinfo.resize(nresidues);
+    top.atoms.atom.resize(gnx);
 
     for (i = 0; (i < F_NRE); i++)
     {
@@ -285,8 +280,6 @@ static void reduce_topology_x(int gnx, int index[],
                      interaction_function[i].nratoms,
                      interaction_function[i].name);
     }
-
-    top.atoms.nr = gnx;
 
     mtop->moltype.resize(1);
     mtop->moltype[0].name  = mtop->name;
@@ -308,14 +301,14 @@ static void reduce_topology_x(int gnx, int index[],
     mtop->molblock[0].type = 0;
     mtop->molblock[0].nmol = 1;
 
-    mtop->natoms           = top.atoms.nr;
+    mtop->natoms           = top.atoms.getNatoms();
 }
 
 static void zeroq(const int index[], gmx_mtop_t *mtop)
 {
     for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        for (int i = 0; i < moltype.atoms.nr; i++)
+        for (int i = 0; i < moltype.atoms.getNatoms(); i++)
         {
             moltype.atoms.atom[index[i]].q  = 0;
             moltype.atoms.atom[index[i]].qB = 0;
@@ -351,7 +344,6 @@ int gmx_convert_tpr(int argc, char *argv[])
     t_atoms           atoms;
     t_state           state;
     int               gnx;
-    char             *grpname;
     int              *index = nullptr;
     char              buf[200], buf2[200];
     gmx_output_env_t *oenv;
@@ -436,12 +428,13 @@ int gmx_convert_tpr(int argc, char *argv[])
     {
         ir->init_step = run_step;
 
+        std::vector<SymbolPtr> grpname(1);
         if (ftp2bSet(efNDX, NFILE, fnm) ||
             !(bNsteps || bExtend || bUntil))
         {
             atoms = gmx_mtop_global_atoms(&mtop);
             get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1,
-                      &gnx, &index, &grpname);
+                      &gnx, &index, grpname, &mtop.symtab);
             if (!bZeroQ)
             {
                 bSel = (gnx != state.natoms);
@@ -457,14 +450,14 @@ int gmx_convert_tpr(int argc, char *argv[])
             if (bSel)
             {
                 fprintf(stderr, "Will write subset %s of original tpx containing %d "
-                        "atoms\n", grpname, gnx);
+                        "atoms\n", grpname[0]->c_str(), gnx);
                 reduce_topology_x(gnx, index, &mtop, state.x.rvec_array(), state.v.rvec_array());
                 state.natoms = gnx;
             }
             else if (bZeroQ)
             {
                 zeroq(index, &mtop);
-                fprintf(stderr, "Zero-ing charges for group %s\n", grpname);
+                fprintf(stderr, "Zero-ing charges for group %s\n", grpname[0]->c_str());
             }
             else
             {

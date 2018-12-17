@@ -37,20 +37,33 @@
 #ifndef GMX_TOPOLOGY_SYMTAB_H
 #define GMX_TOPOLOGY_SYMTAB_H
 
+#include <memory>
+#include <unordered_map>
+#include <utility>
+#include <string>
+
 #include <stdio.h>
 
-typedef struct t_symbuf
+using SymbolTable = std::unordered_map<std::string, int>;
+class SymbolPtr
 {
-    int               bufsize;
-    char            **buf;
-    struct t_symbuf  *next;
-} t_symbuf;
+    public:
+        SymbolPtr(SymbolTable::iterator i) : it_(i), isSet_(true) {}
+        SymbolPtr(SymbolTable::const_iterator i) : it_(i), isSet_(true) {}
+        SymbolPtr() : it_(nullptr), isSet_(false) {}
+        SymbolPtr &operator= ( const SymbolPtr & ) = default;
+        SymbolPtr ( SymbolPtr && )                 = default;
+        SymbolPtr &operator= ( SymbolPtr && )      = default;
+        SymbolPtr ( const SymbolPtr & )            = default;
+        const std::string &operator*() const { return it_->first; }
+        const std::string* operator->() const { return &it_->first; }
+        int number() const { return it_->second; }
+        bool isSet() const { return isSet_; }
 
-typedef struct t_symtab
-{
-    int       nr;
-    t_symbuf *symbuf;
-} t_symtab;
+    private:
+        SymbolTable::const_iterator it_;
+        bool isSet_;
+};
 
 /*
  * This module handles symbol table manipulation. All text strings
@@ -63,60 +76,60 @@ typedef struct t_symtab
  * back to a text string handle by get_symtab_handle().
  */
 
-void open_symtab(t_symtab *symtab);
+void open_symtab(SymbolTable *symtab);
 /* Initialises the symbol table symtab.
  */
 
-void close_symtab(t_symtab *symtab);
+void close_symtab(SymbolTable *symtab);
 /* Undoes the effect of open_symtab(), after invoking this function,
  * no value can be added to the symbol table, only values can be
- * retrieved using get_symtab().
+ * retrieved using geSymbolTable().
  *
  * Note that this does no work.
  */
 
-/*! \brief Returns a deep copy of \c symtab. */
-t_symtab *duplicateSymtab(const t_symtab *symtab);
-
-void free_symtab(t_symtab *symtab);
+void free_symtab(SymbolTable *symtab);
 /* Frees the space allocated by the symbol table itself */
 
-void done_symtab(t_symtab *symtab);
+void done_symtab(SymbolTable *symtab);
 /* Frees the space allocated by the symbol table, including all
  * entries in it */
 
-char **put_symtab(t_symtab *symtab, const char *name);
-/* Enters a string into the symbol table symtab, if it was not
+const SymbolPtr put_symtab(SymbolTable *symtab, const std::string &name);
+/* Enters a string into the symbol table symtab
+ * and returns the value of the entry in the map.
+ *
+ * , if it was not
  * available, a reference to a copy is returned else a reference
  * to the earlier entered value is returned. Strings are trimmed
  * of spaces.
  */
 
-int lookup_symtab(t_symtab *symtab, char **name);
+const SymbolPtr lookup_symtab(const SymbolTable &symtab, const std::string &name);
 /* Returns a unique handle for **name, without a memory reference.
  * It is a failure when name cannot be found in the symbol table,
- * it should be entered before with put_symtab().
+ * it should be entered before with puSymbolTable().
  */
 
-char **get_symtab_handle(t_symtab *symtab, int name);
+const SymbolPtr get_symtab_handle(SymbolTable *symtab, const int &name);
 /* Returns a text string handle for name. Name should be a value
- * returned from lookup_symtab(). So get_symtab_handle() and
+ * returned from lookup_symtab(). So geSymbolTable_handle() and
  * lookup_symtab() are inverse functions.
  */
 
-long wr_symtab(FILE *fp, t_symtab *symtab);
+long wr_symtab(FILE *fp, SymbolTable *symtab);
 /* Writes the symbol table symtab to the file, specified by fp.
  * The function returns the number of bytes written.
  */
 
-long rd_symtab(FILE *fp, t_symtab *symtab);
+long rd_symtab(FILE *fp, SymbolTable *symtab);
 /* Reads the symbol table symtab from the file, specified by fp.
  * This will include allocating the needed space. The function
  * returns the number of bytes read. The symtab is in the closed
  * state afterwards, so no strings can be added to it.
  */
 
-void pr_symtab(FILE *fp, int indent, const char *title, t_symtab *symtab);
+void pr_symtab(FILE *fp, int indent, const char *title, const SymbolTable &symtab);
 /* This routine prints out a (human) readable representation of
  * the symbol table symtab to the file fp. Ident specifies the
  * number of spaces the text should be indented. Title is used

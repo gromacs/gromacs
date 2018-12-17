@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,8 +88,6 @@ int gmx_helixorient(int argc, char *argv[])
     int               iCA, iSC;
     int              *ind_CA;
     int              *ind_SC;
-    char             *gn_CA;
-    char             *gn_SC;
     rvec              v1, v2;
     rvec             *x_CA, *x_SC;
     rvec             *r12;
@@ -173,9 +171,10 @@ int gmx_helixorient(int argc, char *argv[])
         weight[i] = 1.0;
     }
 
+    std::vector<SymbolPtr> gn_CA(1);
     /* read index files */
     printf("Select a group of Calpha atoms corresponding to a single continuous helix:\n");
-    get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iCA, &ind_CA, &gn_CA);
+    get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iCA, &ind_CA, gn_CA, &top->symtab);
     snew(x_CA, iCA);
     snew(x_SC, iCA); /* sic! */
 
@@ -206,8 +205,9 @@ int gmx_helixorient(int argc, char *argv[])
 
     if (bSC)
     {
+        std::vector<SymbolPtr> gn_SC(1);
         printf("Select a group of atoms defining the sidechain direction (1/residue):\n");
-        get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iSC, &ind_SC, &gn_SC);
+        get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iSC, &ind_SC, gn_SC, &top->symtab);
         if (iSC != iCA)
         {
             gmx_fatal(FARGS, "Number of sidechain atoms (%d) != number of CA atoms (%d)", iSC, iCA);

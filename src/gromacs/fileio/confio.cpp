@@ -80,7 +80,7 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             break;
         case efG96:
             clear_trxframe(&fr, TRUE);
-            fr.natoms = atoms->nr;
+            fr.natoms = atoms->getNatoms();
             fr.bAtoms = TRUE;
             fr.atoms  = const_cast<t_atoms *>(atoms);
             fr.bX     = TRUE;
@@ -131,7 +131,7 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
             break;
         case efG96:
             clear_trxframe(&fr, TRUE);
-            fr.natoms = atoms->nr;
+            fr.natoms = atoms->getNatoms();
             fr.bAtoms = TRUE;
             fr.atoms  = const_cast<t_atoms *>(atoms); // TODO check
             fr.bX     = TRUE;
@@ -156,7 +156,7 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
             break;
         case efESP:
             out = gmx_fio_fopen(outfile, "w");
-            write_espresso_conf_indexed(out, title, atoms, atoms->nr, nullptr, x, v, box);
+            write_espresso_conf_indexed(out, title, atoms, atoms->getNatoms(), nullptr, x, v, box);
             gmx_fio_fclose(out);
             break;
         case efTPR:
@@ -290,7 +290,7 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     /* Blank out the chain id if there was only one chain */
     if (chainid == 'B')
     {
-        for (int r = 0; r < atoms->nres; r++)
+        for (int r = 0; r < atoms->getNresidues(); r++)
         {
             atoms->resinfo[r].chainid = ' ';
         }
@@ -298,7 +298,7 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
 }
 
 static void read_stx_conf(const char *infile,
-                          t_symtab *symtab, char **name, t_atoms *atoms,
+                          SymbolTable *symtab, char **name, t_atoms *atoms,
                           rvec x[], rvec *v, int *ePBC, matrix box)
 {
     FILE       *in;
@@ -306,13 +306,13 @@ static void read_stx_conf(const char *infile,
     int         ftp;
     char        g96_line[STRLEN+1];
 
-    if (atoms->nr == 0)
+    if (atoms->getNatoms() == 0)
     {
         fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile);
     }
-    else if (atoms->atom == nullptr)
+    else if (atoms->atom.empty())
     {
-        gmx_mem("Uninitialized array atom");
+        gmx_mem("Empty atom information");
     }
 
     if (ePBC)
@@ -327,7 +327,7 @@ static void read_stx_conf(const char *infile,
             gmx_gro_read_conf(infile, symtab, name, atoms, x, v, box);
             break;
         case efG96:
-            fr.natoms = atoms->nr;
+            fr.natoms = atoms->getNatoms();
             fr.atoms  = atoms;
             fr.x      = x;
             fr.v      = v;
@@ -351,7 +351,7 @@ static void read_stx_conf(const char *infile,
 }
 
 void readConfAndAtoms(const char *infile,
-                      t_symtab *symtab, char **name, t_atoms *atoms,
+                      SymbolTable *symtab, char **name, t_atoms *atoms,
                       int *ePBC,
                       rvec **x, rvec **v, matrix box)
 {
@@ -417,15 +417,14 @@ void readConfAndTopology(const char *infile,
     }
     else
     {
-        t_symtab   symtab;
         char      *name;
         t_atoms    atoms;
 
-        open_symtab(&symtab);
+        open_symtab(&mtop->symtab);
 
-        readConfAndAtoms(infile, &symtab, &name, &atoms, ePBC, x, v, box);
+        readConfAndAtoms(infile, &mtop->symtab, &name, &atoms, ePBC, x, v, box);
 
-        convertAtomsToMtop(&symtab, put_symtab(&symtab, name), &atoms, mtop);
+        convertAtomsToMtop(mtop->symtab, put_symtab(&mtop->symtab, name), &atoms, mtop);
         sfree(name);
     }
 }

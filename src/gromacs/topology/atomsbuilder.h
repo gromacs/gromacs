@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,13 +44,14 @@
 
 #include <vector>
 
+#include "symtab.h"
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct t_atoms;
 struct t_resinfo;
-struct t_symtab;
 
 namespace gmx
 {
@@ -58,7 +59,7 @@ namespace gmx
 class AtomsBuilder
 {
     public:
-        AtomsBuilder(t_atoms *atoms, t_symtab *symtab);
+        AtomsBuilder(t_atoms *atoms, SymbolTable *symtab);
         ~AtomsBuilder();
 
         void reserve(int atomCount, int residueCount);
@@ -75,14 +76,14 @@ class AtomsBuilder
         void mergeAtoms(const t_atoms &atoms);
 
     private:
-        char **symtabString(char **source);
+        SymbolPtr symtabString(const char *source);
 
-        t_atoms  *atoms_;
-        t_symtab *symtab_;
-        int       nrAlloc_;
-        int       nresAlloc_;
-        int       currentResidueIndex_;
-        int       nextResidueNumber_;
+        t_atoms     *atoms_;
+        SymbolTable *symtab_;
+        int          nrAlloc_;
+        int          nresAlloc_;
+        int          currentResidueIndex_;
+        int          nextResidueNumber_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AtomsBuilder);
 };

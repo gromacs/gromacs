@@ -38,18 +38,18 @@
 #ifndef GMX_GMXPREPROCESS_XLATE_H
 #define GMX_GMXPREPROCESS_XLATE_H
 
+#include "gromacs/topology/symtab.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_residuetype_t;
 struct t_atoms;
-struct t_symtab;
 
 /* If bResname is true renames atoms based on residue names,
  * otherwise renames atoms based on rtp entry names.
  */
 void rename_atoms(const char* xlfile, const char *ffdir,
-                  struct t_atoms *atoms, struct t_symtab *symtab, const t_restp *restp,
+                  struct t_atoms *atoms, SymbolTable *symtab, const t_restp *restp,
                   bool bResname, struct gmx_residuetype_t *rt, bool bReorderNum,
                   bool bVerbose);
 

@@ -45,6 +45,8 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/topology/symtab.h"
+
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_trxframe;
@@ -70,7 +72,7 @@ class TopologyManager
 
         void loadTopology(const char *filename);
         void initAtoms(int count);
-        void initAtomTypes(const ArrayRef<const char *const> &types);
+        void initAtomTypes(const ArrayRef<const char* const> &types);
         void initUniformResidues(int residueSize);
         void initUniformMolecules(int moleculeSize);
 
@@ -81,9 +83,9 @@ class TopologyManager
         t_trxframe *frame() { return frame_; }
 
     private:
-        std::unique_ptr<gmx_mtop_t>  mtop_;
-        t_trxframe                  *frame_;
-        std::vector<char *>          atomtypes_;
+        std::unique_ptr<gmx_mtop_t>     mtop_;
+        t_trxframe                     *frame_;
+        std::vector<SymbolPtr>          atomtypes_;
 };
 
 } // namespace test

@@ -39,14 +39,23 @@
 #define GMX_GMXPREPROCESS_GPP_BONDATOMTYPE_H
 
 #include <stdio.h>
+#include <vector>
 
-typedef struct gpp_bondatomtype *t_bond_atomtype;
+#include "gromacs/topology/symtab.h"
+
+struct gpp_bond_atomtype {
+    int                    nr;       /* The number of atomtypes               */
+    std::vector<SymbolPtr> atomname; /* Names of the atomtypes                */
+};
+
+
+typedef gpp_bond_atomtype *t_bond_atomtype;
 
 int get_bond_atomtype_type(char *str, t_bond_atomtype at);
 /* Return atomtype corresponding to case-insensitive str
    or NOTSET if not found */
 
-char *get_bond_atomtype_name(int nt, t_bond_atomtype at);
+const char *get_bond_atomtype_name(int nt, t_bond_atomtype at);
 /* Return name corresponding to atomtype nt, or NULL if not found */
 
 t_bond_atomtype init_bond_atomtype();
@@ -55,7 +64,7 @@ t_bond_atomtype init_bond_atomtype();
 void done_bond_atomtype(t_bond_atomtype *at);
 /* Free the memory in the structure */
 
-void add_bond_atomtype(t_bond_atomtype at, struct t_symtab *tab,
+void add_bond_atomtype(t_bond_atomtype at, SymbolTable *tab,
                        char *name);
 /* Add a complete new atom type to an existing atomtype structure */
 

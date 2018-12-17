@@ -1217,7 +1217,7 @@ static void outputStartStructureIfWanted(gmx_mtop_t *mtop, rvec *x, int ePBC, co
                 "%s In case of multimeric channels, please check whether they have the correct PBC representation.\n",
                 SwS, SwSEmpty);
 
-        write_sto_conf_mtop("CompELAssumedWholeConfiguration.pdb", *mtop->name, mtop, x, nullptr, ePBC, box);
+        write_sto_conf_mtop("CompELAssumedWholeConfiguration.pdb", mtop->name->c_str(), mtop, x, nullptr, ePBC, box);
     }
 }
 

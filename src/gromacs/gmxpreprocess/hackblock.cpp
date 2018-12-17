@@ -82,21 +82,12 @@ void free_t_restp(int nrtp, t_restp **rtp)
 
     for (i = 0; i < nrtp; i++)
     {
-        sfree((*rtp)[i].resname);
-        sfree((*rtp)[i].atom);
-        for (j = 0; j < (*rtp)[i].natom; j++)
-        {
-            sfree(*(*rtp)[i].atomname[j]);
-            sfree((*rtp)[i].atomname[j]);
-        }
-        sfree((*rtp)[i].atomname);
-        sfree((*rtp)[i].cgnr);
         for (j = 0; j < ebtsNR; j++)
         {
             free_t_bondeds(&(*rtp)[i].rb[j]);
         }
     }
-    sfree(*rtp);
+    delete *rtp;
 }
 
 void free_t_hack(int nh, t_hack **h)
@@ -325,23 +316,6 @@ void copy_t_restp(t_restp *s, t_restp *d)
     int i;
 
     *d         = *s;
-    d->resname = safe_strdup(s->resname);
-    snew(d->atom, s->natom);
-    for (i = 0; i < s->natom; i++)
-    {
-        d->atom[i] = s->atom[i];
-    }
-    snew(d->atomname, s->natom);
-    for (i = 0; i < s->natom; i++)
-    {
-        snew(d->atomname[i], 1);
-        *d->atomname[i] = safe_strdup(*s->atomname[i]);
-    }
-    snew(d->cgnr, s->natom);
-    for (i = 0; i < s->natom; i++)
-    {
-        d->cgnr[i] = s->cgnr[i];
-    }
     for (i = 0; i < ebtsNR; i++)
     {
         d->rb[i].type = s->rb[i].type;

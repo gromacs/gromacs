@@ -77,7 +77,7 @@ TEST(TopologyInformation, CantWorkWithoutReadingAFile)
     auto atoms2 = topInfo.copyAtoms();
     ASSERT_TRUE(atoms2);
     EXPECT_NE(atoms1.get(), atoms2.get());
-    EXPECT_EQ(0, atoms1->nr);
+    EXPECT_EQ(0, atoms1->getNatoms());
     EXPECT_EQ(-1, topInfo.ePBC());
     EXPECT_THROW(topInfo.x().size(), gmx::APIError);
     EXPECT_THROW(topInfo.v().size(), gmx::APIError);
@@ -144,7 +144,7 @@ TEST(TopologyInformation, WorksWithGroFile)
 
     // Check the per-atom data
     auto atoms = topInfo.copyAtoms();
-    ASSERT_EQ(numAtoms, atoms->nr);
+    ASSERT_EQ(numAtoms, atoms->getNatoms());
     EXPECT_TRUE(atoms->haveMass);
     // TODO atommass.dat assumes united atom CA, which is probably not expected behaviour
     EXPECT_FLOAT_EQ(13.019, atoms->atom[26].m);
@@ -155,11 +155,10 @@ TEST(TopologyInformation, WorksWithGroFile)
     EXPECT_EQ(1, atoms->atom[26].resind);
     // gro files don't have the information that pdb files might
     EXPECT_FALSE(atoms->havePdbInfo);
-    EXPECT_FALSE(atoms->pdbinfo);
-    EXPECT_EQ(10, atoms->nres);
-    ASSERT_TRUE(atoms->resinfo);
-    ASSERT_TRUE(atoms->resinfo[4].name);
-    EXPECT_STREQ("ARG", *atoms->resinfo[4].name);
+    EXPECT_TRUE(atoms->pdbinfo.empty());
+    EXPECT_EQ(10, atoms->getNresidues());
+    ASSERT_FALSE(atoms->resinfo.empty());
+    EXPECT_STREQ("ARG", atoms->resinfo[4].name->c_str());
     EXPECT_EQ(5, atoms->resinfo[4].nr);
     EXPECT_EQ(0, atoms->resinfo[4].chainnum);
     EXPECT_EQ(' ', atoms->resinfo[4].chainid);
@@ -177,7 +176,7 @@ TEST(TopologyInformation, WorksWithPdbFile)
 
     // Check the per-atom data
     auto atoms = topInfo.copyAtoms();
-    ASSERT_EQ(numAtoms, atoms->nr);
+    ASSERT_EQ(numAtoms, atoms->getNatoms());
     EXPECT_TRUE(atoms->haveMass);
     // TODO atommass.dat assumes united atom CA, which is probably not expected behaviour
     EXPECT_FLOAT_EQ(13.019, atoms->atom[26].m);
@@ -188,11 +187,10 @@ TEST(TopologyInformation, WorksWithPdbFile)
     EXPECT_EQ(1, atoms->atom[26].resind);
     // pdb files can carry more information than gro
     EXPECT_TRUE(atoms->havePdbInfo);
-    ASSERT_TRUE(atoms->pdbinfo);
-    EXPECT_EQ(10, atoms->nres);
-    ASSERT_TRUE(atoms->resinfo);
-    ASSERT_TRUE(atoms->resinfo[4].name);
-    EXPECT_STREQ("ARG", *atoms->resinfo[4].name);
+    ASSERT_FALSE(atoms->pdbinfo.empty());
+    EXPECT_EQ(10, atoms->getNresidues());
+    ASSERT_FALSE(atoms->resinfo.empty());
+    EXPECT_STREQ("ARG", atoms->resinfo[4].name->c_str());
     EXPECT_EQ(5, atoms->resinfo[4].nr);
     EXPECT_EQ(0, atoms->resinfo[4].chainnum);
     EXPECT_EQ('B', atoms->resinfo[4].chainid);
@@ -229,7 +227,7 @@ TEST(TopologyInformation, WorksWithTprFromPdbFile)
 
     // Check the per-atom data
     auto atoms = topInfo.copyAtoms();
-    ASSERT_EQ(numAtoms, atoms->nr);
+    ASSERT_EQ(numAtoms, atoms->getNatoms());
     EXPECT_TRUE(atoms->haveMass);
     EXPECT_FLOAT_EQ(12.011, atoms->atom[26].m);
     EXPECT_TRUE(atoms->haveCharge);
@@ -239,11 +237,10 @@ TEST(TopologyInformation, WorksWithTprFromPdbFile)
     EXPECT_EQ(1, atoms->atom[26].resind);
     // tpr files also don't carry pdb information
     EXPECT_FALSE(atoms->havePdbInfo);
-    EXPECT_FALSE(atoms->pdbinfo);
-    EXPECT_EQ(10, atoms->nres);
-    ASSERT_TRUE(atoms->resinfo);
-    ASSERT_TRUE(atoms->resinfo[4].name);
-    EXPECT_STREQ("ARG", *atoms->resinfo[4].name);
+    EXPECT_TRUE(atoms->pdbinfo.empty());
+    EXPECT_EQ(10, atoms->getNresidues());
+    ASSERT_FALSE(atoms->resinfo.empty());
+    EXPECT_STREQ("ARG", atoms->resinfo[4].name->c_str());
     EXPECT_EQ(5, atoms->resinfo[4].nr);
     EXPECT_EQ(0, atoms->resinfo[4].chainnum);
     // In particular, chain ID does not get recorded in the .tpr file
