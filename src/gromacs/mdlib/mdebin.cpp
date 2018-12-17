@@ -621,6 +621,7 @@ void done_mdebin(t_mdebin *mdebin)
     done_mde_delta_h_coll(mdebin->dhc);
     sfree(mdebin->dE);
     sfree(mdebin->temperatures);
+    sfree(mdebin->ebin);
     sfree(mdebin);
 }
 

@@ -122,6 +122,27 @@ t_vcm *init_vcm(FILE *fp, const gmx_groups_t *groups, const t_inputrec *ir)
     return vcm;
 }
 
+void done_vcm(t_vcm * vcm)
+{
+    if (vcm->mode != ecmNO)
+    {
+        if (vcm->mode == ecmANGULAR)
+        {
+            sfree(vcm->group_x);
+            sfree(vcm->group_j);
+            sfree(vcm->group_w);
+            sfree(vcm->group_i);
+        }
+        sfree(vcm->group_ndf);
+        sfree(vcm->group_p);
+        sfree(vcm->group_v);
+        sfree(vcm->group_mass);
+        sfree(vcm->group_name);
+        sfree(vcm->thread_vcm);
+        sfree(vcm);
+    }
+}
+
 static void update_tensor(const rvec x, real m0, tensor I)
 {
     real xy, xz, yz;

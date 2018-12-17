@@ -1539,6 +1539,8 @@ void gmx::Integrator::do_md()
 
     sfree(enerd);
 
+    done_vcm(vcm);
+
     /* Clean up topology. top->atomtypes has an allocated pointer if no domain decomposition*/
     if (!DOMAINDECOMP(cr))
     {
