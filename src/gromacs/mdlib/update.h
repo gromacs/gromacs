@@ -39,6 +39,7 @@
 
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -226,10 +227,12 @@ void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real 
                        double xi[], double vxi[], const t_extmass *MassQ);
 
 void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
-                    const gmx_enerdata_t *enerd, t_state *state, const tensor vir, const t_mdatoms *md,
-                    const t_extmass *MassQ, const int * const *trotter_seqlist, int trotter_seqno);
+                    const gmx_enerdata_t *enerd, t_state *state, const tensor vir,
+                    const t_mdatoms *md, const t_extmass *MassQ,
+                    gmx::ArrayRef < std::vector < int>> trotter_seqlist, int trotter_seqno);
 
-int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);
+std::array < std::vector < int>, ettTSEQMAX> init_npt_vars(const t_inputrec *ir, t_state *state,
+                                                           t_extmass *Mass, gmx_bool bTrotter);
 
 real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
