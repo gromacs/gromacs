@@ -192,7 +192,6 @@ void gmx::Integrator::do_md()
     real                    saved_conserved_quantity = 0;
     real                    last_ekin                = 0;
     t_extmass               MassQ;
-    int                   **trotter_seq;
     char                    sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
     /* PME load balancing data for GPU kernels */
@@ -544,7 +543,7 @@ void gmx::Integrator::do_md()
 
     /* need to make an initiation call to get the Trotter variables set, as well as other constants for non-trotter
        temperature control */
-    trotter_seq = init_npt_vars(ir, state, &MassQ, bTrotter);
+    auto trotter_seq = init_npt_vars(ir, state, &MassQ, bTrotter);
 
     if (MASTER(cr))
     {
