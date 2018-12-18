@@ -108,17 +108,17 @@ static void NHC_trotter(const t_grpopts *opts, int nvar, const gmx_ekindata_t *e
 {
     /* general routine for both barostat and thermostat nose hoover chains */
 
-    int           i, j, mi, mj;
-    double        Ekin, Efac, reft, kT, nd;
-    double        dt;
-    t_grp_tcstat *tcstat;
-    double       *ivxi, *ixi;
-    double       *iQinv;
-    double       *GQ;
-    gmx_bool      bBarostat;
-    int           mstepsi, mstepsj;
-    int           ns = SUZUKI_YOSHIDA_NUM; /* set the degree of integration in the types/state.h file */
-    int           nh = opts->nhchainlength;
+    int                 i, j, mi, mj;
+    double              Ekin, Efac, reft, kT, nd;
+    double              dt;
+    t_grp_tcstat       *tcstat;
+    double             *ivxi, *ixi;
+    const double       *iQinv;
+    double             *GQ;
+    gmx_bool            bBarostat;
+    int                 mstepsi, mstepsj;
+    int                 ns = SUZUKI_YOSHIDA_NUM; /* set the degree of integration in the types/state.h file */
+    int                 nh = opts->nhchainlength;
 
     snew(GQ, nh);
     mstepsi = mstepsj = ns;
@@ -987,7 +987,7 @@ extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *Mas
     {
         if (bInit)
         {
-            snew(MassQ->Qinv, ngtc);
+            MassQ->Qinv.resize(ngtc);
         }
         for (i = 0; (i < ngtc); i++)
         {
@@ -1033,7 +1033,7 @@ extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *Mas
         /* Allocate space for thermostat variables */
         if (bInit)
         {
-            snew(MassQ->Qinv, ngtc*nh);
+            MassQ->Qinv.resize(ngtc * nh);
         }
 
         /* now, set temperature variables */
@@ -1220,7 +1220,7 @@ int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_
             bmass = DIM*DIM; /* recommended mass parameters for isotropic barostat */
     }
 
-    snew(MassQ->QPinv, nnhpres*opts->nhchainlength);
+    MassQ->QPinv.resize(nnhpres*opts->nhchainlength);
 
     /* barostat temperature */
     if ((ir->tau_p > 0) && (opts->ref_t[0] > 0))
