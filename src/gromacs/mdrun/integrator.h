@@ -74,6 +74,7 @@ namespace gmx
 
 class BoxDeformation;
 class Constraints;
+class PpForceWorkload;
 class IMDOutputProvider;
 class MDLogger;
 class MDAtoms;
@@ -153,6 +154,8 @@ struct Integrator
     gmx_wallcycle                      *wcycle;
     //! Parameters for force calculations.
     t_forcerec                         *fr;
+    //! Schedule of force-calculation work each step for this task.
+    PpForceWorkload                    *ppForceWorkload;
     //! Parameters for replica exchange algorihtms.
     const ReplicaExchangeParameters    &replExParams;
     //! Parameters for membrane embedding.

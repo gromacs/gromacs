@@ -67,6 +67,7 @@ struct t_nrnb;
 namespace gmx
 {
 class Awh;
+class PpForceWorkload;
 class ForceWithVirial;
 class MDLogger;
 }
@@ -114,6 +115,7 @@ void do_force(FILE                                     *log,
               gmx::ArrayRef<real>                       lambda,
               t_graph                                  *graph,
               t_forcerec                               *fr,
+              gmx::PpForceWorkload                     *ppForceWorkload,
               const gmx_vsite_t                        *vsite,
               rvec                                      mu_tot,
               double                                    t,

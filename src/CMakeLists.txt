@@ -115,7 +115,7 @@ if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY OR NOT BUILD_SHARED_LIBS)
     # GMXAPI requires position-independent code
     set(_GMXAPI_DEFAULT OFF)
 else()
-    set(_GMXAPI_DEFAULT ON)
+    set(_GMXAPI_DEFAULT OFF)
 endif()
 option(GMXAPI "Experimental external interfaces" ${_GMXAPI_DEFAULT})
 if (GMXAPI)

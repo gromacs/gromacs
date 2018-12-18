@@ -53,18 +53,34 @@ struct nbnxn_atomdata_t;
 enum class GpuTaskCompletion;
 
 /*! \brief
+ * Launch asynchronously the xq buffer host to device copy.
+ *
+ * The nonlocal copy is skipped if there is no dependent work to do,
+ * neither non-local nonbonded interactions nor bonded GPU work.
+ *
+ * \param [in]    nb        GPU nonbonded data.
+ * \param [in]    nbdata    Host-side atom data structure.
+ * \param [in]    iloc      Interaction locality flag.
+ * \param [in]    haveOtherWork  True if there are other tasks that require the nbnxn coordinate input.
+ */
+GPU_FUNC_QUALIFIER
+void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_gpu_t gmx_unused               *nb,
+                              const struct nbnxn_atomdata_t gmx_unused *nbdata,
+                              int gmx_unused                            iloc,
+                              bool gmx_unused                           haveOtherWork) GPU_FUNC_TERM
+
+/*! \brief
  * Launch asynchronously the nonbonded force calculations.
  *
- *  This consists of the following (async) steps launched:
- *  - upload x and q;
- *  - upload shift vector;
- *  - launch kernel;
+ *  Also launches the initial pruning of a fresh list after search.
+ *
  *  The local and non-local interaction calculations are launched in two
- *  separate streams.
+ *  separate streams. If there is no work (i.e. empty pair list), the
+ *  force kernel launch is omitted.
+ *
  */
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_launch_kernel(gmx_nbnxn_gpu_t gmx_unused               *nb,
-                             const struct nbnxn_atomdata_t gmx_unused *nbdata,
                              int gmx_unused                            flags,
                              int gmx_unused                            iloc) GPU_FUNC_TERM
 

@@ -188,6 +188,9 @@ struct ComSums
     int    dummy[32];
 };
 
+/*! \brief The normal COM buffer needs 3 elements per group */
+static constexpr int c_comBufferStride = 3;
+
 /*! \brief The cylinder buffer needs 9 elements per group */
 static constexpr int c_cylinderBufferStride = 9;
 
@@ -255,5 +258,20 @@ struct pull_t
     /* */
     int                numExternalPotentialsStillToBeAppliedThisStep;
 };
+
+/*! \brief Copies the pull group COM of the previous step from the checkpoint state to the pull state
+ *
+ * \param[in]   pull  The COM pull force calculation data structure
+ * \param[in]   state The global state container
+ */
+void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state);
+
+/*! \brief Resizes the vector, in the state container, containing the COMs from the previous step
+ *
+ * \param[in]   state The global state container
+ * \param[in]   pull  The COM pull force calculation data structure
+ */
+void allocStatePrevStepPullCom(t_state *state, pull_t *pull);
+
 
 #endif

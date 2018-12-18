@@ -649,7 +649,7 @@ Integrator::do_tpi()
                      state_global->box, state_global->x.arrayRefWithPadding(), &state_global->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state_global->lambda,
-                     nullptr, fr, nullptr, mu_tot, t, nullptr,
+                     nullptr, fr, ppForceWorkload, nullptr, mu_tot, t, nullptr,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
                      (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0) |
                      (bStateChanged ? GMX_FORCE_STATECHANGED : 0),

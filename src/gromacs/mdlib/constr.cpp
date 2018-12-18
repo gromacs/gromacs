@@ -104,7 +104,7 @@ class Constraints::Impl
              FILE                 *log_p,
              const t_mdatoms      &md_p,
              const t_commrec      *cr_p,
-             const gmx_multisim_t &ms,
+             const gmx_multisim_t *ms,
              t_nrnb               *nrnb,
              gmx_wallcycle        *wcycle_p,
              bool                  pbcHandlingRequired,
@@ -171,7 +171,7 @@ class Constraints::Impl
         //! Communication support.
         const t_commrec      *cr = nullptr;
         //! Multi-sim support.
-        const gmx_multisim_t &ms;
+        const gmx_multisim_t *ms = nullptr;
         /*!\brief Input options.
          *
          * \todo Replace with IMdpOptions */
@@ -958,7 +958,7 @@ Constraints::Constraints(const gmx_mtop_t     &mtop,
                          FILE                 *log,
                          const t_mdatoms      &md,
                          const t_commrec      *cr,
-                         const gmx_multisim_t &ms,
+                         const gmx_multisim_t *ms,
                          t_nrnb               *nrnb,
                          gmx_wallcycle        *wcycle,
                          bool                  pbcHandlingRequired,
@@ -983,7 +983,7 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
                         FILE                 *log_p,
                         const t_mdatoms      &md_p,
                         const t_commrec      *cr_p,
-                        const gmx_multisim_t &ms_p,
+                        const gmx_multisim_t *ms_p,
                         t_nrnb               *nrnb_p,
                         gmx_wallcycle        *wcycle_p,
                         bool                  pbcHandlingRequired,

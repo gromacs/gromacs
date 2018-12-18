@@ -50,6 +50,9 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/invertmatrix.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -264,81 +267,114 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
 
-/*! \brief Reduce staged virial and energy outputs.
- *
- * \param[in]  pme            The PME data structure.
- * \param[out] forces         Output forces pointer, the internal ArrayRef pointers gets assigned to it.
- * \param[out] virial         The output virial matrix.
- * \param[out] energy         The output energy.
- */
-static void pme_gpu_get_staged_results(const gmx_pme_t                *pme,
-                                       gmx::ArrayRef<const gmx::RVec> *forces,
-                                       matrix                          virial,
-                                       real                           *energy)
+//! Accumulate the \c forcesToAdd to \c f, using the available threads.
+static void sum_forces(gmx::ArrayRef<gmx::RVec>       f,
+                       gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {
-    const bool haveComputedEnergyAndVirial = (pme->gpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR) != 0;
-    *forces = pme_gpu_get_forces(pme->gpu);
+    const int      end = forceToAdd.size();
 
-    if (haveComputedEnergyAndVirial)
+    int gmx_unused nt = gmx_omp_nthreads_get(emntPME);
+#pragma omp parallel for num_threads(nt) schedule(static)
+    for (int i = 0; i < end; i++)
     {
-        if (pme_gpu_performs_solve(pme->gpu))
-        {
-            pme_gpu_get_energy_virial(pme->gpu, energy, virial);
-        }
-        else
-        {
-            get_pme_ener_vir_q(pme->solve_work, pme->nthread, energy, virial);
-        }
+        f[i] += forceToAdd[i];
     }
 }
 
-bool pme_gpu_try_finish_task(const gmx_pme_t                *pme,
-                             gmx_wallcycle                  *wcycle,
-                             gmx::ArrayRef<const gmx::RVec> *forces,
-                             matrix                          virial,
-                             real                           *energy,
-                             GpuTaskCompletion               completionKind)
+//! Reduce quantities from \c output to \c forceWithVirial and \c enerd.
+static void pme_gpu_reduce_outputs(const int             flags,
+                                   const PmeOutput      &output,
+                                   gmx_wallcycle        *wcycle,
+                                   gmx::ForceWithVirial *forceWithVirial,
+                                   gmx_enerdata_t       *enerd)
+{
+    wallcycle_start(wcycle, ewcPME_GPU_F_REDUCTION);
+    GMX_ASSERT(forceWithVirial, "Invalid force pointer");
+    const bool haveComputedEnergyAndVirial = (flags & GMX_PME_CALC_ENER_VIR) != 0;
+    if (haveComputedEnergyAndVirial)
+    {
+        GMX_ASSERT(enerd, "Invalid energy output manager");
+        forceWithVirial->addVirialContribution(output.coulombVirial_);
+        enerd->term[F_COUL_RECIP] += output.coulombEnergy_;
+    }
+    sum_forces(forceWithVirial->force_, output.forces_);
+    wallcycle_stop(wcycle, ewcPME_GPU_F_REDUCTION);
+}
+
+bool pme_gpu_try_finish_task(gmx_pme_t            *pme,
+                             const int             flags,
+                             gmx_wallcycle        *wcycle,
+                             gmx::ForceWithVirial *forceWithVirial,
+                             gmx_enerdata_t       *enerd,
+                             GpuTaskCompletion     completionKind)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
-    wallcycle_start_nocount(wcycle, ewcWAIT_GPU_PME_GATHER);
-
+    // First, if possible, check whether all tasks on the stream have
+    // completed, and return fast if not. Accumulate to wcycle the
+    // time needed for that checking, but do not yet record that the
+    // gather has occured.
+    bool           needToSynchronize      = true;
     constexpr bool c_streamQuerySupported = (GMX_GPU == GMX_GPU_CUDA);
     // TODO: implement c_streamQuerySupported with an additional GpuEventSynchronizer per stream (#2521)
     if ((completionKind == GpuTaskCompletion::Check) && c_streamQuerySupported)
     {
+        wallcycle_start_nocount(wcycle, ewcWAIT_GPU_PME_GATHER);
         // Query the PME stream for completion of all tasks enqueued and
         // if we're not done, stop the timer before early return.
-        if (!pme_gpu_stream_query(pme->gpu))
+        const bool pmeGpuDone = pme_gpu_stream_query(pme->gpu);
+        wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
+
+        if (!pmeGpuDone)
         {
-            wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
             return false;
         }
+        needToSynchronize = false;
     }
-    else
+
+    wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
+    // If the above check passed, then there is no need to make an
+    // explicit synchronization call.
+    if (needToSynchronize)
     {
         // Synchronize the whole PME stream at once, including D2H result transfers.
         pme_gpu_synchronize(pme->gpu);
     }
+    pme_gpu_update_timings(pme->gpu);
+    PmeOutput output = pme_gpu_getOutput(*pme, flags);
     wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
 
-    // Time the final staged data handling separately with a counting call to get
-    // the call count right.
-    wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
-    pme_gpu_update_timings(pme->gpu);
-    pme_gpu_get_staged_results(pme, forces, virial, energy);
-    wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
+    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd);
 
     return true;
 }
 
-void pme_gpu_wait_finish_task(const gmx_pme_t                *pme,
-                              gmx_wallcycle                  *wcycle,
-                              gmx::ArrayRef<const gmx::RVec> *forces,
-                              matrix                          virial,
-                              real                           *energy)
+// This is used by PME-only ranks
+PmeOutput pme_gpu_wait_finish_task(gmx_pme_t     *pme,
+                                   const int      flags,
+                                   gmx_wallcycle *wcycle)
 {
-    pme_gpu_try_finish_task(pme, wcycle, forces, virial, energy, GpuTaskCompletion::Wait);
+    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+
+    wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
+    // Synchronize the whole PME stream at once, including D2H result transfers.
+    pme_gpu_synchronize(pme->gpu);
+
+    pme_gpu_update_timings(pme->gpu);
+    PmeOutput output = pme_gpu_getOutput(*pme, flags);
+    wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
+    return output;
+}
+
+// This is used when not using the alternate-waiting reduction
+void pme_gpu_wait_and_reduce(gmx_pme_t            *pme,
+                             const int             flags,
+                             gmx_wallcycle        *wcycle,
+                             gmx::ForceWithVirial *forceWithVirial,
+                             gmx_enerdata_t       *enerd)
+{
+    PmeOutput output = pme_gpu_wait_finish_task(pme, flags, wcycle);
+    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd);
 }
 
 void pme_gpu_reinit_computation(const gmx_pme_t *pme,

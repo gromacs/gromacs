@@ -83,6 +83,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
@@ -92,6 +93,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "pme-gpu-internal.h"
 #include "pme-internal.h"
 #include "pme-pp-communication.h"
 
@@ -462,9 +464,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
 
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
 static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
-                                        const rvec *f,
-                                        matrix vir_q, real energy_q,
-                                        matrix vir_lj, real energy_lj,
+                                        const PmeOutput &output,
                                         real dvdlambda_q, real dvdlambda_lj,
                                         float cycles)
 {
@@ -480,7 +480,7 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
     {
         ind_start = ind_end;
         ind_end   = ind_start + receiver.numAtoms;
-        if (MPI_Isend(const_cast<void *>(static_cast<const void *>(f[ind_start])),
+        if (MPI_Isend(const_cast<void *>(static_cast<const void *>(output.forces_[ind_start])),
                       (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
                       receiver.rankId, 0,
                       pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
@@ -490,10 +490,10 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
     }
 
     /* send virial and energy to our last PP node */
-    copy_mat(vir_q, cve.vir_q);
-    copy_mat(vir_lj, cve.vir_lj);
-    cve.energy_q     = energy_q;
-    cve.energy_lj    = energy_lj;
+    copy_mat(output.coulombVirial_, cve.vir_q);
+    copy_mat(output.lennardJonesVirial_, cve.vir_lj);
+    cve.energy_q     = output.coulombEnergy_;
+    cve.energy_lj    = output.lennardJonesEnergy_;
     cve.dvdlambda_q  = dvdlambda_q;
     cve.dvdlambda_lj = dvdlambda_lj;
     /* check for the signals to send back to a PP node */
@@ -515,11 +515,7 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
 #else
     gmx_call("MPI not enabled");
     GMX_UNUSED_VALUE(pme_pp);
-    GMX_UNUSED_VALUE(f);
-    GMX_UNUSED_VALUE(vir_q);
-    GMX_UNUSED_VALUE(energy_q);
-    GMX_UNUSED_VALUE(vir_lj);
-    GMX_UNUSED_VALUE(energy_lj);
+    GMX_UNUSED_VALUE(output);
     GMX_UNUSED_VALUE(dvdlambda_q);
     GMX_UNUSED_VALUE(dvdlambda_lj);
     GMX_UNUSED_VALUE(cycles);
@@ -538,8 +534,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     real               lambda_q   = 0;
     real               lambda_lj  = 0;
     int                maxshift_x = 0, maxshift_y = 0;
-    real               energy_q, energy_lj, dvdlambda_q, dvdlambda_lj;
-    matrix             vir_q, vir_lj;
+    real               dvdlambda_q, dvdlambda_lj;
     float              cycles;
     int                count;
     gmx_bool           bEnerVir = FALSE;
@@ -617,17 +612,13 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
         dvdlambda_q  = 0;
         dvdlambda_lj = 0;
-        clear_mat(vir_q);
-        clear_mat(vir_lj);
-        energy_q  = 0;
-        energy_lj = 0;
 
         // TODO Make a struct of array refs onto these per-atom fields
         // of pme_pp (maybe box, energy and virial, too; and likewise
         // from mdatoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
         const int pmeFlags = GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0);
-        gmx::ArrayRef<const gmx::RVec> forces;
+        PmeOutput output   = {gmx::EmptyArrayRef {}, 0, {{0}}, 0, {{0}}};
         if (useGpuForPme)
         {
             const bool boxChanged = false;
@@ -637,7 +628,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             pme_gpu_launch_spread(pme, pme_pp->x.rvec_array(), wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
             pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set);
-            pme_gpu_wait_finish_task(pme, wcycle, &forces, vir_q, &energy_q);
+            output = pme_gpu_wait_finish_task(pme, pmeFlags, wcycle);
             pme_gpu_reinit_computation(pme, wcycle);
         }
         else
@@ -647,16 +638,16 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                        pme_pp->sqrt_c6A.data(), pme_pp->sqrt_c6B.data(),
                        pme_pp->sigmaA.data(), pme_pp->sigmaB.data(), box,
                        cr, maxshift_x, maxshift_y, mynrnb, wcycle,
-                       vir_q, vir_lj,
-                       &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
+                       output.coulombVirial_, output.lennardJonesVirial_,
+                       &output.coulombEnergy_, &output.lennardJonesEnergy_,
+                       lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
                        pmeFlags);
-            forces = pme_pp->f;
+            output.forces_ = pme_pp->f;
         }
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
-        gmx_pme_send_force_vir_ener(pme_pp.get(), as_rvec_array(forces.data()),
-                                    vir_q, energy_q, vir_lj, energy_lj,
+        gmx_pme_send_force_vir_ener(pme_pp.get(), output,
                                     dvdlambda_q, dvdlambda_lj, cycles);
 
         count++;

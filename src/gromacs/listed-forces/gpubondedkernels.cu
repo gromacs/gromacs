@@ -54,21 +54,22 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpu_vec.cuh"
 #include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/listed-forces/gpubonded.h"
 #include "gromacs/listed-forces/listed-forces.h"
-#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/enerdata.h"
-#include "gromacs/mdtypes/forcerec.h" // TODO try remove when integrating
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/gpu_pbc.cuh"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "gpubonded-impl.h"
 
 #if defined(_MSVC)
 #include <limits>
@@ -1003,86 +1004,29 @@ static void setPbcAiuc(int           numPbcDim,
     }
 }
 
-/*------------------------------------------------------------------------------*/
-// bonded forces //
-
-// initial setup (called once)
-void
-init_gpu_bonded(GpuBondedLists       *gpuBondedLists,
-                const gmx_ffparams_t &ffparams,
-                void                 *streamPtr)
+namespace gmx
 {
-    gpuBondedLists->stream = streamPtr;
-
-    cudaStream_t   *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
-
-    allocateDeviceBuffer(&gpuBondedLists->forceparamsDevice, ffparams.numTypes(), nullptr);
-    copyToDeviceBuffer(&gpuBondedLists->forceparamsDevice, ffparams.iparams.data(),
-                       0, ffparams.numTypes(),
-                       *stream, GpuApiCallBehavior::Sync, nullptr);
-    gpuBondedLists->vtot.resize(F_NRE);
-    allocateDeviceBuffer(&gpuBondedLists->vtotDevice, F_NRE, nullptr);
-    clearDeviceBufferAsync(&gpuBondedLists->vtotDevice, 0, F_NRE, *stream);
-}
-
-//----//
-// update after a neighbour list update step
-void
-update_gpu_bonded(GpuBondedLists *gpuBondedLists)
-{
-    GMX_RELEASE_ASSERT(gpuBondedLists, "Need a valid gpuBondedLists object");
-
-    cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
-
-    // forceatoms
-    for (int ftype : ftypesOnGpu)
-    {
-        const auto &iList = gpuBondedLists->iLists[ftype];
-
-        if (iList.size() > 0)
-        {
-            t_ilist &iListDevice = gpuBondedLists->iListsDevice[ftype];
-
-            reallocateDeviceBuffer(&iListDevice.iatoms, iList.size(), &iListDevice.nr, &iListDevice.nalloc, nullptr);
-
-            copyToDeviceBuffer(&iListDevice.iatoms, iList.iatoms.data(),
-                               0, iList.size(),
-                               *stream, GpuApiCallBehavior::Async, nullptr);
-        }
-    }
-}
 
 template <bool calcVir, bool calcEner>
-static void
-launch_bonded_kernels(t_forcerec   *fr,
-                      void         *xqDevicePtr,
-                      const matrix  box,
-                      void         *forceDevicePtr,
-                      fvec         *fshiftDevicePtr)
+void
+GpuBonded::Impl::launchKernels(const t_forcerec *fr,
+                               const matrix      box)
 {
-    GpuBondedLists *gpuBondedLists = fr->gpuBondedLists;
-
-    GMX_ASSERT(gpuBondedLists, "Need a valid bonded lists object");
-
-    if (!gpuBondedLists->haveInteractions)
-    {
-        return;
-    }
-
-    cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
-
-    const float4 *xq    = static_cast<float4 *>(xqDevicePtr);
-    fvec         *force = static_cast<fvec *>(forceDevicePtr);
+    GMX_ASSERT(haveInteractions_,
+               "Cannot launch bonded GPU kernels unless bonded GPU work was scheduled");
 
     PbcAiuc       pbcAiuc;
     setPbcAiuc(fr->bMolPBC ? ePBC2npbcdim(fr->ePBC) : 0, box, &pbcAiuc);
 
-    const t_iparams *forceparams_d = gpuBondedLists->forceparamsDevice;
-    float           *vtot_d        = gpuBondedLists->vtotDevice;
+    const t_iparams *forceparams_d = forceparamsDevice;
+    float           *vtot_d        = vtotDevice;
+    const float4    *xq_d          = xqDevice;
+    fvec            *force_d       = forceDevice;
+    fvec            *fshift_d      = fshiftDevice;
 
     for (int ftype : ftypesOnGpu)
     {
-        const auto &iList = gpuBondedLists->iLists[ftype];
+        const auto &iList = iLists[ftype];
 
         if (iList.size() > 0)
         {
@@ -1096,9 +1040,9 @@ launch_bonded_kernels(t_forcerec   *fr,
             config.gridSize[0]  = (nbonds + TPB_BONDED - 1)/TPB_BONDED;
             config.gridSize[1]  = 1;
             config.gridSize[2]  = 1;
-            config.stream       = *stream;
+            config.stream       = stream;
 
-            const t_iatom *iatoms = gpuBondedLists->iListsDevice[ftype].iatoms;
+            const t_iatom *iatoms = iListsDevice[ftype].iatoms;
 
             if (ftype == F_PDIHS || ftype == F_PIDIHS)
             {
@@ -1107,7 +1051,7 @@ launch_bonded_kernels(t_forcerec   *fr,
                 const auto kernelArgs     = prepareGpuKernelArguments(kernelPtr, config,
                                                                       &ftypeEnergyPtr, &nbonds,
                                                                       &iatoms, &forceparams_d,
-                                                                      &xq, &force, &fshiftDevicePtr,
+                                                                      &xq_d, &force_d, &fshift_d,
                                                                       &pbcAiuc);
                 launchGpuKernel(kernelPtr, config, nullptr, "pdihs_gpu<calcVir, calcEner>", kernelArgs);
             }
@@ -1116,14 +1060,14 @@ launch_bonded_kernels(t_forcerec   *fr,
 
     for (int ftype : ftypesOnGpu)
     {
-        const auto &iList = fr->gpuBondedLists->iLists[ftype];
+        const auto &iList = iLists[ftype];
 
         if (iList.size() > 0)
         {
             int                nat1   = interaction_function[ftype].nratoms + 1;
             int                nbonds = iList.size()/nat1;
 
-            const t_iatom     *iatoms = gpuBondedLists->iListsDevice[ftype].iatoms;
+            const t_iatom     *iatoms = iListsDevice[ftype].iatoms;
 
             KernelLaunchConfig config;
             config.blockSize[0] = TPB_BONDED;
@@ -1132,7 +1076,7 @@ launch_bonded_kernels(t_forcerec   *fr,
             config.gridSize[0]  = (nbonds + TPB_BONDED - 1)/TPB_BONDED;
             config.gridSize[1]  = 1;
             config.gridSize[2]  = 1;
-            config.stream       = *stream;
+            config.stream       = stream;
 
             float *ftypeEnergyPtr = vtot_d + ftype;
             // TODO consider using a map to assign the fn pointers to ftypes
@@ -1142,7 +1086,7 @@ launch_bonded_kernels(t_forcerec   *fr,
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
-                                                                  &xq, &force, &fshiftDevicePtr,
+                                                                  &xq_d, &force_d, &fshift_d,
                                                                   &pbcAiuc);
                 launchGpuKernel(kernelPtr, config, nullptr, "bonds_gpu<calcVir, calcEner>", kernelArgs);
             }
@@ -1153,9 +1097,9 @@ launch_bonded_kernels(t_forcerec   *fr,
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
-                                                                  &xq, &force, &fshiftDevicePtr,
+                                                                  &xq_d, &force_d, &fshift_d,
                                                                   &pbcAiuc);
-                launchGpuKernel(kernelPtr, config, nullptr, "angles_gp<calcVir, calcEner>", kernelArgs);
+                launchGpuKernel(kernelPtr, config, nullptr, "angles_gpu<calcVir, calcEner>", kernelArgs);
             }
 
             if (ftype == F_UREY_BRADLEY)
@@ -1164,7 +1108,7 @@ launch_bonded_kernels(t_forcerec   *fr,
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
-                                                                  &xq, &force, &fshiftDevicePtr,
+                                                                  &xq_d, &force_d, &fshift_d,
                                                                   &pbcAiuc);
                 launchGpuKernel(kernelPtr, config, nullptr, "urey_bradley_gpu<calcVir, calcEner>", kernelArgs);
             }
@@ -1175,7 +1119,7 @@ launch_bonded_kernels(t_forcerec   *fr,
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
-                                                                  &xq, &force, &fshiftDevicePtr,
+                                                                  &xq_d, &force_d, &fshift_d,
                                                                   &pbcAiuc);
                 launchGpuKernel(kernelPtr, config, nullptr, "rbdihs_gpu<calcVir, calcEner>", kernelArgs);
             }
@@ -1186,7 +1130,7 @@ launch_bonded_kernels(t_forcerec   *fr,
                 const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                                   &ftypeEnergyPtr, &nbonds,
                                                                   &iatoms, &forceparams_d,
-                                                                  &xq, &force, &fshiftDevicePtr,
+                                                                  &xq_d, &force_d, &fshift_d,
                                                                   &pbcAiuc);
                 launchGpuKernel(kernelPtr, config, nullptr, "idihs_gpu<calcVir, calcEner>", kernelArgs);
             }
@@ -1200,7 +1144,7 @@ launch_bonded_kernels(t_forcerec   *fr,
                 const auto kernelArgs      = prepareGpuKernelArguments(kernelPtr, config,
                                                                        &nbonds,
                                                                        &iatoms, &forceparams_d,
-                                                                       &xq, &force, &fshiftDevicePtr,
+                                                                       &xq_d, &force_d, &fshift_d,
                                                                        &pbcAiuc,
                                                                        &scale_factor,
                                                                        &lj14Energy, &coulomb14Energy);
@@ -1211,83 +1155,26 @@ launch_bonded_kernels(t_forcerec   *fr,
 }
 
 void
-do_bonded_gpu(t_forcerec   *fr,
-              int           forceFlags,
-              void         *xqDevicePtr,
-              const matrix  box,
-              void         *forceDevicePtr,
-              fvec         *fshiftDevicePtr)
+GpuBonded::launchKernels(const t_forcerec *fr,
+                         int               forceFlags,
+                         const matrix      box)
 {
     if (forceFlags & GMX_FORCE_ENERGY)
     {
         // When we need the energy, we also need the virial
-        launch_bonded_kernels<true, true>
-            (fr, xqDevicePtr, box, forceDevicePtr, fshiftDevicePtr);
+        impl_->launchKernels<true, true>
+            (fr, box);
     }
     else if (forceFlags & GMX_FORCE_VIRIAL)
     {
-        launch_bonded_kernels<true, false>
-            (fr, xqDevicePtr, box, forceDevicePtr, fshiftDevicePtr);
+        impl_->launchKernels<true, false>
+            (fr, box);
     }
     else
     {
-        launch_bonded_kernels<false, false>
-            (fr, xqDevicePtr, box, forceDevicePtr, fshiftDevicePtr);
+        impl_->launchKernels<false, false>
+            (fr, box);
     }
 }
 
-void
-bonded_gpu_get_energies(t_forcerec *fr,  gmx_enerdata_t *enerd)
-{
-    GpuBondedLists *gpuBondedLists = fr->gpuBondedLists;
-
-    if (!gpuBondedLists->haveInteractions)
-    {
-        return;
-    }
-
-    cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
-    float        *vtot   = gpuBondedLists->vtot.data();
-    copyFromDeviceBuffer(vtot, &gpuBondedLists->vtotDevice,
-                         0, F_NRE,
-                         *stream, GpuApiCallBehavior::Async, nullptr);
-    cudaError_t stat = cudaStreamSynchronize(*stream);
-    CU_RET_ERR(stat, "D2H transfer failed");
-
-    for (int ftype : ftypesOnGpu)
-    {
-        if (ftype != F_LJ14 && ftype != F_COUL14)
-        {
-            enerd->term[ftype] += vtot[ftype];
-        }
-    }
-
-    // Note: We do not support energy groups here
-    gmx_grppairener_t *grppener = &enerd->grpp;
-    GMX_RELEASE_ASSERT(grppener->nener == 1, "No energy group support for bondeds on the GPU");
-    grppener->ener[egLJ14][0]   += vtot[F_LJ14];
-    grppener->ener[egCOUL14][0] += vtot[F_COUL14];
-}
-
-void
-bonded_gpu_clear_energies(GpuBondedLists *gpuBondedLists)
-{
-    cudaStream_t *stream = static_cast<cudaStream_t *>(gpuBondedLists->stream);
-
-    clearDeviceBufferAsync(&gpuBondedLists->vtotDevice, 0, F_NRE, *stream);
-}
-
-GpuBondedLists::~GpuBondedLists()
-{
-    for (int ftype : ftypesOnGpu)
-    {
-        if (iListsDevice[ftype].iatoms)
-        {
-            freeDeviceBuffer(&iListsDevice[ftype].iatoms);
-            iListsDevice[ftype].iatoms = nullptr;
-        }
-    }
-
-    freeDeviceBuffer(&forceparamsDevice);
-    freeDeviceBuffer(&vtotDevice);
-}
+} // namespace gmx
