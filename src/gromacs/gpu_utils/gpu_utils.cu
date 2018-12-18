@@ -75,25 +75,26 @@ static __global__ void k_dummy_test(void)
 {
 }
 
-static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
+static void checkCompiledTargetCompatibility(int                   deviceId,
+                                             const cudaDeviceProp &deviceProp)
 {
-    assert(devInfo);
-
     cudaFuncAttributes attributes;
     cudaError_t        stat = cudaFuncGetAttributes(&attributes, k_dummy_test);
 
     if (cudaErrorInvalidDeviceFunction == stat)
     {
         gmx_fatal(FARGS,
-                  "The %s binary does not include support for the CUDA architecture "
-                  "of the selected GPU (device ID #%d, compute capability %d.%d). "
+                  "The %s binary does not include support for the CUDA architecture of "
+                  "the GPU ID #%d (compute capability %d.%d) detected during detection. "
                   "By default, GROMACS supports all architectures of compute "
                   "capability >= 3.0, so your GPU "
                   "might be rare, or some architectures were disabled in the build. "
                   "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
-                  "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture.",
-                  gmx::getProgramContext().displayName(), devInfo->id,
-                  devInfo->prop.major, devInfo->prop.minor);
+                  "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture. "
+                  "To work around this error, use the CUDA_VISIBLE_DEVICES environment"
+                  "variable to pass a list of GPUs that excludes the ID %d.",
+                  gmx::getProgramContext().displayName(), deviceId,
+                  deviceProp.major, deviceProp.minor, deviceId);
     }
 
     CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
@@ -205,6 +206,8 @@ static int do_sanity_checks(int dev_id, const cudaDeviceProp &dev_prop)
     }
 
     /* try to execute a dummy kernel */
+    checkCompiledTargetCompatibility(dev_id, dev_prop);
+
     KernelLaunchConfig config;
     config.blockSize[0] = 512;
     const auto         dummyArguments = prepareGpuKernelArguments(k_dummy_test, config);
@@ -241,8 +244,6 @@ void init_gpu(const gmx_device_info_t *deviceInfo)
     {
         fprintf(stderr, "Initialized GPU ID #%d: %s\n", deviceInfo->id, deviceInfo->prop.name);
     }
-
-    checkCompiledTargetCompatibility(deviceInfo);
 }
 
 void free_gpu(const gmx_device_info_t *deviceInfo)
