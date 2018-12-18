@@ -62,10 +62,18 @@ macro(find_power_vsx_toolchain_flags TOOLCHAIN_C_FLAGS_VARIABLE TOOLCHAIN_CXX_FL
         if(CPU_DETECTION_BRAND MATCHES "POWER7")
             gmx_test_cflag(GNU_C_VSX_POWER7   "-mcpu=power7 -mtune=power7" ${TOOLCHAIN_C_FLAGS_VARIABLE})
             gmx_test_cflag(GNU_CXX_VSX_POWER7 "-mcpu=power7 -mtune=power7" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
+        elseif(CPU_DETECTION_BRAND MATCHES "POWER8")
+            # Enable power8 vector extensions on such platforms.
+            gmx_test_cflag(GNU_C_VSX_POWER8   "-mcpu=power8 -mpower8-vector -mpower8-fusion" ${TOOLCHAIN_C_FLAGS_VARIABLE})
+            gmx_test_cflag(GNU_CXX_VSX_POWER8 "-mcpu=power8 -mpower8-vector -mpower8-fusion" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
+        elseif(CPU_DETECTION_BRAND MATCHES "POWER9")
+            # Enable power9 vector extensions on such platforms.
+            # TODO consider whether adding " -mpower9-vector -mpower9-fusion"
+            # is an advantage.
+            gmx_test_cflag(GNU_C_VSX_POWER9   "-mcpu=power9 -mtune=power9" ${TOOLCHAIN_C_FLAGS_VARIABLE})
+            gmx_test_cflag(GNU_CXX_VSX_POWER9 "-mcpu=power9 -mtune=power9" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
         else()
-            # Enable power8 vector extensions on all platforms except old Power7.
-            gmx_test_cflag(GNU_C_VSX_POWER8   "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" ${TOOLCHAIN_C_FLAGS_VARIABLE})
-            gmx_test_cflag(GNU_CXX_VSX_POWER8 "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
+            # Don't add arch-specific flags for unknown architectures.
         endif()
         # Altivec was originally single-only, and it took a while for compilers
         # to support the double-precision features in VSX.

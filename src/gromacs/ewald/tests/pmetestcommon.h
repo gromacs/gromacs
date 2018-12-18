@@ -100,8 +100,6 @@ enum class PmeSolveAlgorithm
     Coulomb,
     LennardJones,
 };
-//! PME solver results - reciprocal energy and virial
-typedef std::tuple<real, Matrix3x3> PmeSolveOutput;
 
 // Misc.
 
@@ -175,8 +173,8 @@ SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t *pme, CodePath mode);
 SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath mode,
                                                 GridOrdering gridOrdering);
 //! Getting the reciprocal energy and virial
-PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
-                                               PmeSolveAlgorithm method);
+PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
+                                          PmeSolveAlgorithm method);
 }  // namespace test
 }  // namespace gmx
 

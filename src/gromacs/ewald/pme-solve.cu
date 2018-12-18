@@ -112,7 +112,7 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
     const int gridLineSize      = localCountMinor;
     const int gridLineIndex     = threadLocalId / gridLineSize;
     const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
-    const int gridLinesPerBlock = blockDim.x / gridLineSize;
+    const int gridLinesPerBlock = max(blockDim.x / gridLineSize, 1);
     const int activeWarps       = (blockDim.x / warp_size);
     const int indexMinor        = blockIdx.x * blockDim.x + gridLineCellIndex;
     const int indexMiddle       = blockIdx.y * gridLinesPerBlock + gridLineIndex;
@@ -321,6 +321,11 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
         }
 
         /* Now use shuffle again */
+        /* NOTE: This reduction assumes there are at least 4 warps (asserted).
+         *       To use fewer warps, add to the conditional:
+         *       && threadLocalId < activeWarps * stride
+         */
+        assert(activeWarps*stride >= warp_size);
         if (threadLocalId < warp_size)
         {
             float output = sm_virialAndEnergy[threadLocalId];

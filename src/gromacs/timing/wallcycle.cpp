@@ -109,7 +109,7 @@ static const char *wcn[ewcNR] =
     "PME redist. X/F", "PME spread", "PME gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
     "PME wait for PP", "Wait + Recv. PME F",
     "Wait PME GPU spread", "PME 3D-FFT", "PME solve", /* the strings for FFT/solve are repeated here for mixed mode counters */
-    "Wait PME GPU gather", "Reduce GPU PME F",
+    "Wait PME GPU gather", "Wait Bonded GPU", "Reduce GPU PME F",
     "Wait GPU NB nonloc.", "Wait GPU NB local", "NB X/F buffer ops.",
     "Vsite spread", "COM pull force", "AWH",
     "Write traj.", "Update", "Constraints", "Comm. energies",
@@ -128,6 +128,7 @@ static const char *wcsn[ewcsNR] =
     "Nonbonded pruning",
     "Nonbonded F",
     "Launch NB GPU tasks",
+    "Launch Bonded GPU tasks",
     "Launch PME GPU tasks",
     "Ewald F correction",
     "NB X buffer ops.",

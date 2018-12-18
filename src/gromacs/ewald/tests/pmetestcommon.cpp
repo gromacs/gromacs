@@ -45,6 +45,8 @@
 
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme-gather.h"
 #include "gromacs/ewald/pme-gpu-internal.h"
@@ -404,20 +406,14 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
         case CodePath::GPU:
         {
             // Variable initialization needs a non-switch scope
-            auto stagingForces = pme_gpu_get_forces(pme->gpu);
-            GMX_ASSERT(forces.size() == stagingForces.size(), "Size of force buffers did not match");
+            PmeOutput output = pme_gpu_getOutput(*pme, GMX_PME_CALC_F);
+            GMX_ASSERT(forces.size() == output.forces_.size(), "Size of force buffers did not match");
             if (forceReductionWithInput)
             {
-                for (index i = 0; i != forces.size(); ++i)
-                {
-                    stagingForces[i] = forces[i];
-                }
+                std::copy(std::begin(forces), std::end(forces), std::begin(output.forces_));
             }
             pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid));
-            for (index i = 0; i != forces.size(); ++i)
-            {
-                forces[i] = stagingForces[i];
-            }
+            std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;
 
@@ -677,23 +673,21 @@ SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath m
 }
 
 //! Getting the reciprocal energy and virial
-PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
-                                               PmeSolveAlgorithm method)
+PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
+                                          PmeSolveAlgorithm method)
 {
-    real      energy = 0.0f;
-    Matrix3x3 virial;
-    matrix    virialTemp = {{0}}; //TODO get rid of
+    PmeOutput output;
     switch (mode)
     {
         case CodePath::CPU:
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:
-                    get_pme_ener_vir_q(pme->solve_work, pme->nthread, &energy, virialTemp);
+                    get_pme_ener_vir_q(pme->solve_work, pme->nthread, &output);
                     break;
 
                 case PmeSolveAlgorithm::LennardJones:
-                    get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy, virialTemp);
+                    get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output);
                     break;
 
                 default:
@@ -704,7 +698,7 @@ PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mo
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:
-                    pme_gpu_get_energy_virial(pme->gpu, &energy, virialTemp);
+                    output = pme_gpu_getEnergyAndVirial(*pme);
                     break;
 
                 default:
@@ -715,14 +709,7 @@ PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mo
         default:
             GMX_THROW(InternalError("Test not implemented for this mode"));
     }
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            virial[i * DIM + j] = virialTemp[i][j];
-        }
-    }
-    return std::make_tuple(energy, virial);
+    return output;
 }
 
 }  // namespace test

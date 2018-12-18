@@ -93,9 +93,8 @@ endif()
 
 # Machinery for running the external project
 set(EXTERNAL_FFTW_VERSION 3.3.8)
-# cmake make eats slashes //// -> //
 set(GMX_BUILD_OWN_FFTW_URL
-    "http:////www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz" CACHE PATH
+    "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz" CACHE STRING
     "URL from where to download fftw (use an absolute path when offline, adjust GMX_BUILD_OWN_FFTW_MD5 if downloading other version than ${EXTERNAL_FFTW_VERSION})")
 set(GMX_BUILD_OWN_FFTW_MD5 8aac833c943d8e90d51b697b27d4384d CACHE STRING
     "Expected MD5 hash for the file at GMX_BUILD_OWN_FFTW_URL")
@@ -106,6 +105,7 @@ mark_as_advanced(GMX_BUILD_OWN_FFTW_URL GMX_BUILD_OWN_FFTW_MD5)
 # ourselves so that MD5 sum is not verified there, and then pass a local file
 # as the URL to ExternalProject.  This way, ExternalProject still verifies the
 # MD5 sum with a proper message if that fails.
+# TODO remove this when we require CMake 3.5+
 set(url "${GMX_BUILD_OWN_FFTW_URL}")
 # Determine whether we are actually downloading (this matches the conditions in
 # ExternalProject).  ExternalProject works as expected if passed a local file.

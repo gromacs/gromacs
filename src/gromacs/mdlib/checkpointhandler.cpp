@@ -48,6 +48,18 @@
 namespace gmx
 {
 
+/*! \brief Convert signed char (as used by SimulationSignal) to CheckpointSignal enum
+ *
+ * Expected values are
+ *   \p sig == 0 -- no signal
+ *   \p sig >= 1 -- signal received
+ */
+static inline CheckpointSignal convertToCheckpointSignal(signed char sig)
+{
+    GMX_ASSERT(sig >= 0, "Unexpected checkpoint signal < 0 received");
+    return sig >= 1 ? CheckpointSignal::doCheckpoint : CheckpointSignal::noSignal;
+}
+
 CheckpointHandler::CheckpointHandler(
         compat::not_null<SimulationSignal*> signal,
         bool                                simulationsShareState,
@@ -74,8 +86,8 @@ void CheckpointHandler::setSignalImpl(
         gmx_walltime_accounting_t walltime_accounting) const
 {
     const double secondsSinceStart = walltime_accounting_get_time_since_start(walltime_accounting);
-    if (static_cast<CheckpointSignal>(signal_.set) == CheckpointSignal::noSignal &&
-        static_cast<CheckpointSignal>(signal_.sig) == CheckpointSignal::noSignal &&
+    if (convertToCheckpointSignal(signal_.set) == CheckpointSignal::noSignal &&
+        convertToCheckpointSignal(signal_.sig) == CheckpointSignal::noSignal &&
         (checkpointingPeriod_ == 0 || secondsSinceStart >= numberOfNextCheckpoint_ * checkpointingPeriod_ * 60.0))
     {
         signal_.sig = static_cast<signed char>(CheckpointSignal::doCheckpoint);
@@ -85,7 +97,7 @@ void CheckpointHandler::setSignalImpl(
 void CheckpointHandler::decideIfCheckpointingThisStepImpl(
         bool bNS, bool bFirstStep, bool bLastStep)
 {
-    checkpointThisStep_ = (((static_cast<CheckpointSignal>(signal_.set) == CheckpointSignal::doCheckpoint &&
+    checkpointThisStep_ = (((convertToCheckpointSignal(signal_.set) == CheckpointSignal::doCheckpoint &&
                              (bNS || neverUpdateNeighborlist_)) ||
                             (bLastStep && writeFinalCheckpoint_)) &&
                            !bFirstStep);

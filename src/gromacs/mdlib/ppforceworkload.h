@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,49 +32,42 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_EWALD_PME_SOLVE_H
-#define GMX_EWALD_PME_SOLVE_H
-
-#include "gromacs/math/gmxcomplex.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
-
-struct pme_solve_work_t;
-struct gmx_pme_t;
-struct PmeOutput;
-
-/*! \brief Allocates array of work structures
+/*! \libinternal \file
+ * \brief Declares force calculation workload manager.
  *
- * Note that work is the address of a pointer allocated by
- * this function. Upon return it will point at
- * an array of work structures.
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdlib
+ * \inlibraryapi
  */
-void pme_init_all_work(struct pme_solve_work_t **work, int nthread, int nkx);
+#ifndef GMX_MDLIB_PPFORCEWORKLOAD_H
+#define GMX_MDLIB_PPFORCEWORKLOAD_H
 
-/*! \brief Frees array of work structures
+namespace gmx
+{
+
+/*! \libinternal
+ * \brief Manage what force calculation work is required each step.
  *
- * Frees work and sets it to NULL. */
-void pme_free_all_work(struct pme_solve_work_t **work, int nthread);
-
-/*! \brief Get energy and virial for electrostatics
+ * An object of this type is updated every neighbour search stage to
+ * reflect what work is required during normal MD steps, e.g. whether
+ * there are bonded interactions in this PP task.
  *
- * Note that work is an array of work structures
- */
-void get_pme_ener_vir_q(pme_solve_work_t *work, int nthread, PmeOutput *output);
-
-/*! \brief Get energy and virial for L-J
+ * This will remove the desire for inline getters from modules that
+ * describe whether they have work to do, because that can be set up
+ * once per simulation or neighborlist lifetime and not changed
+ * thereafter.
  *
- * Note that work is an array of work structures
- */
-void get_pme_ener_vir_lj(pme_solve_work_t *work, int nthread, PmeOutput *output);
+ * \todo Add more responsibilities, including whether GPUs are in use,
+ * whether there is PME work, whether DD is active, whether NB
+ * local/nonlocal regions have work, whether forces/virial/energy are
+ * required. */
+class PpForceWorkload
+{
+    public:
+        //! Whether this MD step has bonded work to run on a GPU.
+        bool haveGpuBondedWork = false;
+};
 
-int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid,
-                  real vol,
-                  gmx_bool bEnerVir,
-                  int nthread, int thread);
-
-int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
-                     real vol,
-                     gmx_bool bEnerVir, int nthread, int thread);
+} // namespace gmx
 
 #endif
