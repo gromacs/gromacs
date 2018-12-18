@@ -113,7 +113,6 @@ static void NHC_trotter(const t_grpopts *opts, int nvar, const gmx_ekindata_t *e
     double        dt;
     t_grp_tcstat *tcstat;
     double       *ivxi, *ixi;
-    double       *iQinv;
     double       *GQ;
     gmx_bool      bBarostat;
     int           mstepsi, mstepsj;
@@ -139,16 +138,17 @@ static void NHC_trotter(const t_grpopts *opts, int nvar, const gmx_ekindata_t *e
 
         ivxi = &vxi[i*nh];
         ixi  = &xi[i*nh];
+        gmx::ArrayRef<const double> iQinv;
         if (bBarostat)
         {
-            iQinv = &(MassQ->QPinv[i*nh]);
+            iQinv = gmx::arrayRefFromArray(&MassQ->QPinv[i*nh], nh);
             nd    = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
             reft  = std::max<real>(0, opts->ref_t[0]);
             Ekin  = gmx::square(*veta)/MassQ->Winv;
         }
         else
         {
-            iQinv  = &(MassQ->Qinv[i*nh]);
+            iQinv  = gmx::arrayRefFromArray(&MassQ->Qinv[i*nh], nh);
             tcstat = &ekind->tcstat[i];
             nd     = opts->nrdf[i];
             reft   = std::max<real>(0, opts->ref_t[i]);
@@ -987,7 +987,7 @@ extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *Mas
     {
         if (bInit)
         {
-            snew(MassQ->Qinv, ngtc);
+            MassQ->Qinv.resize(ngtc);
         }
         for (i = 0; (i < ngtc); i++)
         {
@@ -1033,7 +1033,7 @@ extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *Mas
         /* Allocate space for thermostat variables */
         if (bInit)
         {
-            snew(MassQ->Qinv, ngtc*nh);
+            MassQ->Qinv.resize(ngtc * nh);
         }
 
         /* now, set temperature variables */
@@ -1220,7 +1220,7 @@ int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_
             bmass = DIM*DIM; /* recommended mass parameters for isotropic barostat */
     }
 
-    snew(MassQ->QPinv, nnhpres*opts->nhchainlength);
+    MassQ->QPinv.resize(nnhpres*opts->nhchainlength);
 
     /* barostat temperature */
     if ((ir->tau_p > 0) && (opts->ref_t[0] > 0))
