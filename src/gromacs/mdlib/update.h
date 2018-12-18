@@ -227,9 +227,9 @@ void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real 
 
 void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
                     const gmx_enerdata_t *enerd, t_state *state, const tensor vir, const t_mdatoms *md,
-                    const t_extmass *MassQ, const int * const *trotter_seqlist, int trotter_seqno);
+                    const t_extmass *MassQ, const std::vector < std::vector < int>> &trotter_seqlist, int trotter_seqno);
 
-int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);
+std::vector < std::vector < int>> init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);
 
 real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */

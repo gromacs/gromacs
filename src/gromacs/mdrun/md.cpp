@@ -192,7 +192,7 @@ void gmx::Integrator::do_md()
     real                    saved_conserved_quantity = 0;
     real                    last_ekin                = 0;
     t_extmass               MassQ;
-    int                   **trotter_seq;
+    std::vector < std::vector < int>> trotter_seq;
     char                    sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
     /* PME load balancing data for GPU kernels */

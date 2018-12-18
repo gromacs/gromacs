@@ -855,7 +855,7 @@ void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real 
 void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
                     const gmx_enerdata_t *enerd, t_state *state,
                     const tensor vir, const t_mdatoms *md,
-                    const t_extmass *MassQ, const int * const *trotter_seqlist, int trotter_seqno)
+                    const t_extmass *MassQ, const std::vector < std::vector < int>> &trotter_seqlist, int trotter_seqno)
 {
 
     int              n, i, d, ngtc, gc = 0, t;
@@ -883,7 +883,7 @@ void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
     bCouple = (ir->nsttcouple == 1 ||
                do_per_step(step_eff+ir->nsttcouple, ir->nsttcouple));
 
-    trotter_seq = trotter_seqlist[trotter_seqno];
+    trotter_seq = trotter_seqlist[trotter_seqno].data();
 
     if ((trotter_seq[0] == etrtSKIPALL) || (!bCouple))
     {
@@ -1068,12 +1068,12 @@ extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *Mas
     }
 }
 
-int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
+std::vector < std::vector < int>> init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
 {
     int              i, j, nnhpres, nh;
     const t_grpopts *opts;
     real             bmass, qmass, reft, kT;
-    int            **trotter_seq;
+    std::vector < std::vector < int>> trotter_seq;
 
     opts    = &(ir->opts); /* just for ease of referencing */
     nnhpres = state->nnhpres;
@@ -1087,14 +1087,10 @@ int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_
     init_npt_masses(ir, state, MassQ, TRUE);
 
     /* first, initialize clear all the trotter calls */
-    snew(trotter_seq, ettTSEQMAX);
+    trotter_seq.resize(ettTSEQMAX);
     for (i = 0; i < ettTSEQMAX; i++)
     {
-        snew(trotter_seq[i], NTROTTERPARTS);
-        for (j = 0; j < NTROTTERPARTS; j++)
-        {
-            trotter_seq[i][j] = etrtNONE;
-        }
+        trotter_seq[i].resize(NTROTTERPARTS, etrtNONE);
         trotter_seq[i][0] = etrtSKIPALL;
     }
 
