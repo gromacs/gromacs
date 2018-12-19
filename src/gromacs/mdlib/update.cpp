@@ -448,6 +448,13 @@ updateMDLeapfrogGeneral(int                         start,
     int  gt       = 0;
     real factorNH = 0;
 
+    real fac      = 0;
+
+    if (AccelerationType::cosine == accelerationType)
+    {
+        fac = 2*static_cast<real>(M_PI)/box[ZZ][ZZ];
+    }
+
     for (int n = start; n < nrend; n++)
     {
         if (cTC)
@@ -475,7 +482,7 @@ updateMDLeapfrogGeneral(int                         start,
                 rvec_sub(v[n], grpstat[ga].u, vRel);
                 break;
             case AccelerationType::cosine:
-                cosineZ = std::cos(x[n][ZZ]*static_cast<real>(M_PI)/box[ZZ][ZZ]);
+                cosineZ = std::cos(x[n][ZZ]*fac);
                 vCosine = cosineZ*ekind->cosacc.vcos;
                 /* Avoid scaling the cosine profile velocity */
                 copy_rvec(v[n], vRel);
