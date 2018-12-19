@@ -3159,6 +3159,11 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
         // PME-only ranks don't have a forcerec
         return;
     }
+    // cginfo is dynamically allocated if no domain decomposition
+    if (fr->cginfo != nullptr)
+    {
+        sfree(fr->cginfo);
+    }
     done_cginfo_mb(fr->cginfo_mb, numMolBlocks);
     sfree(fr->nbfp);
     done_interaction_const(fr->ic);
