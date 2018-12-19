@@ -448,6 +448,13 @@ updateMDLeapfrogGeneral(int                         start,
     int  gt       = 0;
     real factorNH = 0;
 
+    real omega_Z  = 0;
+
+    if (AccelerationType::cosine == accelerationType)
+    {
+        omega_Z = 2*static_cast<real>(M_PI)/box[ZZ][ZZ];
+    }
+
     for (int n = start; n < nrend; n++)
     {
         if (cTC)
@@ -475,7 +482,7 @@ updateMDLeapfrogGeneral(int                         start,
                 rvec_sub(v[n], grpstat[ga].u, vRel);
                 break;
             case AccelerationType::cosine:
-                cosineZ = std::cos(x[n][ZZ]*static_cast<real>(M_PI)/box[ZZ][ZZ]);
+                cosineZ = std::cos(x[n][ZZ]*omega_Z);
                 vCosine = cosineZ*ekind->cosacc.vcos;
                 /* Avoid scaling the cosine profile velocity */
                 copy_rvec(v[n], vRel);
@@ -1187,7 +1194,7 @@ static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
     t_grp_tcstat *tcstat = ekind->tcstat;
     t_cos_acc    *cosacc = &(ekind->cosacc);
     real          dekindl;
-    real          fac, cosz;
+    real          omega_Z, cosz;
     double        mvcos;
 
     for (g = 0; g < opts->ngtc; g++)
@@ -1197,7 +1204,7 @@ static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
     }
     ekind->dekindl_old = ekind->dekindl;
 
-    fac     = 2*M_PI/box[ZZ][ZZ];
+    omega_Z = 2*M_PI/box[ZZ][ZZ];
     mvcos   = 0;
     dekindl = 0;
     for (n = start; n < start+homenr; n++)
@@ -1210,7 +1217,7 @@ static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
 
         /* Note that the times of x and v differ by half a step */
         /* MRS -- would have to be changed for VV */
-        cosz         = std::cos(fac*x[n][ZZ]);
+        cosz         = std::cos(omega_Z*x[n][ZZ]);
         /* Calculate the amplitude of the new velocity profile */
         mvcos       += 2*cosz*md->massT[n]*v[n][XX];
 
