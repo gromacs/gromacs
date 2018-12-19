@@ -268,55 +268,31 @@ static inline int calc_shmem_required_nonbonded(const int num_threads_z, const g
     return shmem;
 }
 
-/*! As we execute nonbonded workload in separate streams, before launching
-   the kernel we need to make sure that he following operations have completed:
-   - atomdata allocation and related H2D transfers (every nstlist step);
-   - pair list H2D transfer (every nstlist step);
-   - shift vector H2D transfer (every nstlist step);
-   - force (+shift force and energy) output clearing (every step).
-
-   These operations are issued in the local stream at the beginning of the step
-   and therefore always complete before the local kernel launch. The non-local
-   kernel is launched after the local on the same device/context hence it is
-   inherently scheduled after the operations in the local stream (including the
-   above "misc_ops") on pre-GK110 devices with single hardware queue, but on later
-   devices with multiple hardware queues the dependency needs to be enforced.
-   We use the misc_ops_and_local_H2D_done event to record the point where
-   the local x+q H2D (and all preceding) tasks are complete and synchronize
-   with this event in the non-local stream before launching the non-bonded kernel.
- */
-void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
-                             const nbnxn_atomdata_t *nbatom,
-                             int                     flags,
-                             int                     iloc)
+/*! \brief Launch asynchronously the xq buffer host to device copy. */
+void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
+                              const nbnxn_atomdata_t *nbatom,
+                              int                     iloc,
+                              bool                    haveOtherWork)
 {
-    cudaError_t          stat;
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
-    /* CUDA kernel launch-related stuff */
-    int                  nblock;
-    dim3                 dim_block, dim_grid;
-    nbnxn_cu_kfunc_ptr_t nb_kernel = nullptr; /* fn pointer to the nonbonded kernel */
 
     cu_atomdata_t       *adat    = nb->atdat;
-    cu_nbparam_t        *nbp     = nb->nbparam;
     cu_plist_t          *plist   = nb->plist[iloc];
     cu_timers_t         *t       = nb->timers;
     cudaStream_t         stream  = nb->stream[iloc];
 
-    bool                 bCalcEner   = flags & GMX_FORCE_ENERGY;
-    bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = nb->bDoTime;
 
-    /* Don't launch the non-local kernel if there is no work to do.
+    /* Don't launch the non-local H2D copy if there is no dependent
+       work to do: neither non-local nor other (e.g. bonded) work
+       to do that has as input the nbnxn coordaintes.
        Doing the same for the local kernel is more complicated, since the
        local part of the force array also depends on the non-local kernel.
        So to avoid complicating the code and to reduce the risk of bugs,
-       we always call the local kernel, the local x+q copy and later (not in
-       this function) the stream wait, local f copyback and the f buffer
-       clearing. All these operations, except for the local interaction kernel,
-       are needed for the non-local interactions. The skip of the local kernel
-       call is taken care of later in this function. */
-    if (canSkipWork(nb, iloc))
+       we always call the local local x+q copy (and the rest of the local
+       work in nbnxn_gpu_launch_kernel().
+     */
+    if (!haveOtherWork && canSkipWork(nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -350,21 +326,77 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         t->nb_h2d[iloc].closeTimingRegion(stream);
     }
 
-    /* When we get here all misc operations issues in the local stream as well as
+    /* When we get here all misc operations issued in the local stream as well as
        the local xq H2D are done,
-       so we record that in the local stream and wait for it in the nonlocal one. */
+       so we record that in the local stream and wait for it in the nonlocal one.
+       This wait needs to precede any PP tasks, bonded or nonbonded, that may
+       compute on interactions between local and nonlocal atoms.
+     */
     if (nb->bUseTwoStreams)
     {
         if (iloc == eintLocal)
         {
-            stat = cudaEventRecord(nb->misc_ops_and_local_H2D_done, stream);
+            cudaError_t stat = cudaEventRecord(nb->misc_ops_and_local_H2D_done, stream);
             CU_RET_ERR(stat, "cudaEventRecord on misc_ops_and_local_H2D_done failed");
         }
         else
         {
-            stat = cudaStreamWaitEvent(stream, nb->misc_ops_and_local_H2D_done, 0);
+            cudaError_t stat = cudaStreamWaitEvent(stream, nb->misc_ops_and_local_H2D_done, 0);
             CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_and_local_H2D_done failed");
         }
+    }
+}
+
+/*! As we execute nonbonded workload in separate streams, before launching
+   the kernel we need to make sure that he following operations have completed:
+   - atomdata allocation and related H2D transfers (every nstlist step);
+   - pair list H2D transfer (every nstlist step);
+   - shift vector H2D transfer (every nstlist step);
+   - force (+shift force and energy) output clearing (every step).
+
+   These operations are issued in the local stream at the beginning of the step
+   and therefore always complete before the local kernel launch. The non-local
+   kernel is launched after the local on the same device/context hence it is
+   inherently scheduled after the operations in the local stream (including the
+   above "misc_ops") on pre-GK110 devices with single hardware queue, but on later
+   devices with multiple hardware queues the dependency needs to be enforced.
+   We use the misc_ops_and_local_H2D_done event to record the point where
+   the local x+q H2D (and all preceding) tasks are complete and synchronize
+   with this event in the non-local stream before launching the non-bonded kernel.
+ */
+void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
+                             int                     flags,
+                             int                     iloc)
+{
+    /* CUDA kernel launch-related stuff */
+    int                  nblock;
+    dim3                 dim_block, dim_grid;
+    nbnxn_cu_kfunc_ptr_t nb_kernel = nullptr; /* fn pointer to the nonbonded kernel */
+
+    cu_atomdata_t       *adat    = nb->atdat;
+    cu_nbparam_t        *nbp     = nb->nbparam;
+    cu_plist_t          *plist   = nb->plist[iloc];
+    cu_timers_t         *t       = nb->timers;
+    cudaStream_t         stream  = nb->stream[iloc];
+
+    bool                 bCalcEner   = flags & GMX_FORCE_ENERGY;
+    bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool                 bDoTime     = nb->bDoTime;
+
+    /* Don't launch the non-local kernel if there is no work to do.
+       Doing the same for the local kernel is more complicated, since the
+       local part of the force array also depends on the non-local kernel.
+       So to avoid complicating the code and to reduce the risk of bugs,
+       we always call the local kernel, and later (not in
+       this function) the stream wait, local f copyback and the f buffer
+       clearing. All these operations, except for the local interaction kernel,
+       are needed for the non-local interactions. The skip of the local kernel
+       call is taken care of later in this function. */
+    if (canSkipWork(nb, iloc))
+    {
+        plist->haveFreshList = false;
+
+        return;
     }
 
     if (nbp->useDynamicPruning && plist->haveFreshList)

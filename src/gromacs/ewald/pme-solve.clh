@@ -108,7 +108,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_solve_kernel)(const struct PmeOpenCLKer
     const int gridLineSize      = localCountMinor;
     const int gridLineIndex     = threadLocalId / gridLineSize;
     const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
-    const int gridLinesPerBlock = get_local_size(XX) / gridLineSize;
+    const int gridLinesPerBlock = max((int)(get_local_size(XX)) / gridLineSize, 1);
     const int activeWarps       = (get_local_size(XX) / warp_size);
     const int indexMinor        = get_group_id(XX) * get_local_size(XX) + gridLineCellIndex;
     const int indexMiddle       = get_group_id(YY) * gridLinesPerBlock + gridLineIndex;

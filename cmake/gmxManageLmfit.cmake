@@ -71,7 +71,7 @@ function(gmx_manage_lmfit)
         # we will not be installing any content.
         install(TARGETS lmfit EXPORT libgromacs)
 
-        set(HAVE_LMFIT_VALUE TRUE)
+        set(HAVE_LMFIT 1 CACHE INTERNAL "Is lmfit found?")
     elseif(GMX_USE_LMFIT STREQUAL "EXTERNAL")
         # Find an external lmfit library.
         find_package(Lmfit ${GMX_LMFIT_MINIMUM_REQUIRED_VERSION})
@@ -79,7 +79,7 @@ function(gmx_manage_lmfit)
             message(FATAL_ERROR "External lmfit could not be found, please adjust your pkg-config path to include the lmfit.pc file")
         endif()
 
-        set(HAVE_LMFIT_VALUE TRUE)
+        set(HAVE_LMFIT 1 CACHE INTERNAL "Is lmfit found?")
     else()
         # Create a dummy link target so the calling code doesn't need to know
         # whether lmfit support is being compiled.
@@ -88,6 +88,6 @@ function(gmx_manage_lmfit)
         # we will not be installing any content.
         install(TARGETS lmfit EXPORT libgromacs)
 
-        set(HAVE_LMFIT_VALUE FALSE)
+        set(HAVE_LMFIT 0 CACHE INTERNAL "Is lmfit found?")
     endif()
 endfunction()

@@ -56,6 +56,9 @@
 /* Use FFTW3 FFT library */
 #cmakedefine01 GMX_FFT_FFTW3
 
+/* Use the ARM Performance library with FFTW3 compatibility */
+#cmakedefine01 GMX_FFT_ARMPL_FFTW3
+
 /* Use MKL FFT library */
 #cmakedefine01 GMX_FFT_MKL
 

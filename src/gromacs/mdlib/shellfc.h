@@ -59,6 +59,7 @@ class t_state;
 namespace gmx
 {
 class Constraints;
+class PpForceWorkload;
 }
 
 /* Initialization function, also predicts the initial shell postions.
@@ -97,6 +98,7 @@ void relax_shell_flexcon(FILE                                     *log,
                          const gmx_groups_t                       *groups,
                          gmx_shellfc_t                            *shfc,
                          t_forcerec                               *fr,
+                         gmx::PpForceWorkload                     *ppForceWorkload,
                          double                                    t,
                          rvec                                      mu_tot,
                          const gmx_vsite_t                        *vsite,

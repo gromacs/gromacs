@@ -360,55 +360,31 @@ static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
     *ocl_event = nullptr;
 }
 
-/*! \brief Launch GPU kernel
-
-   As we execute nonbonded workload in separate queues, before launching
-   the kernel we need to make sure that he following operations have completed:
-   - atomdata allocation and related H2D transfers (every nstlist step);
-   - pair list H2D transfer (every nstlist step);
-   - shift vector H2D transfer (every nstlist step);
-   - force (+shift force and energy) output clearing (every step).
-
-   These operations are issued in the local queue at the beginning of the step
-   and therefore always complete before the local kernel launch. The non-local
-   kernel is launched after the local on the same device/context, so this is
-   inherently scheduled after the operations in the local stream (including the
-   above "misc_ops").
-   However, for the sake of having a future-proof implementation, we use the
-   misc_ops_done event to record the point in time when the above  operations
-   are finished and synchronize with this event in the non-local stream.
- */
-void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
-                             const struct nbnxn_atomdata_t *nbatom,
-                             int                            flags,
-                             int                            iloc)
+/*! \brief Launch asynchronously the xq buffer host to device copy. */
+void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
+                              const nbnxn_atomdata_t *nbatom,
+                              int                     iloc,
+                              bool                    haveOtherWork)
 {
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
-    /* OpenCL kernel launch-related stuff */
-    cl_kernel            nb_kernel = nullptr;  /* fn pointer to the nonbonded kernel */
 
     cl_atomdata_t       *adat    = nb->atdat;
-    cl_nbparam_t        *nbp     = nb->nbparam;
     cl_plist_t          *plist   = nb->plist[iloc];
     cl_timers_t         *t       = nb->timers;
     cl_command_queue     stream  = nb->stream[iloc];
 
-    bool                 bCalcEner   = (flags & GMX_FORCE_ENERGY) != 0;
-    int                  bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = (nb->bDoTime) != 0;
 
-    cl_nbparam_params_t  nbparams_params;
-
-    /* Don't launch the non-local kernel if there is no work to do.
+    /* Don't launch the non-local H2D copy if there is no dependent
+       work to do: neither non-local nor other (e.g. bonded) work
+       to do that has as input the nbnxn coordinates.
        Doing the same for the local kernel is more complicated, since the
        local part of the force array also depends on the non-local kernel.
        So to avoid complicating the code and to reduce the risk of bugs,
-       we always call the local kernel, the local x+q copy and later (not in
-       this function) the stream wait, local f copyback and the f buffer
-       clearing. All these operations, except for the local interaction kernel,
-       are needed for the non-local interactions. The skip of the local kernel
-       call is taken care of later in this function. */
-    if (canSkipWork(nb, iloc))
+       we always call the local local x+q copy (and the rest of the local
+       work in nbnxn_gpu_launch_kernel().
+     */
+    if (!haveOtherWork && canSkipWork(nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -464,6 +440,61 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
             sync_ocl_event(stream, &(nb->misc_ops_and_local_H2D_done));
         }
     }
+}
+
+
+/*! \brief Launch GPU kernel
+
+   As we execute nonbonded workload in separate queues, before launching
+   the kernel we need to make sure that he following operations have completed:
+   - atomdata allocation and related H2D transfers (every nstlist step);
+   - pair list H2D transfer (every nstlist step);
+   - shift vector H2D transfer (every nstlist step);
+   - force (+shift force and energy) output clearing (every step).
+
+   These operations are issued in the local queue at the beginning of the step
+   and therefore always complete before the local kernel launch. The non-local
+   kernel is launched after the local on the same device/context, so this is
+   inherently scheduled after the operations in the local stream (including the
+   above "misc_ops").
+   However, for the sake of having a future-proof implementation, we use the
+   misc_ops_done event to record the point in time when the above  operations
+   are finished and synchronize with this event in the non-local stream.
+ */
+void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
+                             int                            flags,
+                             int                            iloc)
+{
+    /* OpenCL kernel launch-related stuff */
+    cl_kernel            nb_kernel = nullptr;  /* fn pointer to the nonbonded kernel */
+
+    cl_atomdata_t       *adat    = nb->atdat;
+    cl_nbparam_t        *nbp     = nb->nbparam;
+    cl_plist_t          *plist   = nb->plist[iloc];
+    cl_timers_t         *t       = nb->timers;
+    cl_command_queue     stream  = nb->stream[iloc];
+
+    bool                 bCalcEner   = (flags & GMX_FORCE_ENERGY) != 0;
+    int                  bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool                 bDoTime     = (nb->bDoTime) != 0;
+
+    cl_nbparam_params_t  nbparams_params;
+
+    /* Don't launch the non-local kernel if there is no work to do.
+       Doing the same for the local kernel is more complicated, since the
+       local part of the force array also depends on the non-local kernel.
+       So to avoid complicating the code and to reduce the risk of bugs,
+       we always call the local kernel and later (not in
+       this function) the stream wait, local f copyback and the f buffer
+       clearing. All these operations, except for the local interaction kernel,
+       are needed for the non-local interactions. The skip of the local kernel
+       call is taken care of later in this function. */
+    if (canSkipWork(nb, iloc))
+    {
+        plist->haveFreshList = false;
+
+        return;
+    }
 
     if (nbp->useDynamicPruning && plist->haveFreshList)
     {
@@ -477,7 +508,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     if (plist->nsci == 0)
     {
         /* Don't launch an empty local kernel (is not allowed with OpenCL).
-         * TODO: Separate H2D and kernel launch into separate functions.
          */
         return;
     }

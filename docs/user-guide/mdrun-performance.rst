@@ -2,9 +2,17 @@
 
 Getting good performance from :ref:`mdrun <gmx mdrun>`
 ======================================================
-The |Gromacs| build system and the :ref:`gmx mdrun` tool has a lot of built-in
+
+Here we give an overview on the parallelization and acceleration schemes employed by |Gromacs|.
+The aim is to provide an understanding of the underlying mechanisms that make |Gromacs| one of the
+fastest molecular dynamics packages. The information presented
+should help choosing appropriate parallelization options, run configuration,
+as well as acceleration options to achieve optimal simulation performance.
+
+
+The |Gromacs| build system and the :ref:`gmx mdrun` tool have a lot of built-in
 and configurable intelligence to detect your hardware and make pretty
-effective use of that hardware. For a lot of casual and serious use of
+effective use of it. For a lot of casual and serious use of
 :ref:`gmx mdrun`, the automatic machinery works well enough. But to get the
 most from your hardware to maximize your scientific quality, read on!
 
@@ -112,15 +120,16 @@ definitions. Experienced HPC users can skip this section.
         hardware is also supported.
 
     SIMD
-        A type of CPU instruction by which modern CPU cores can execute large
-        numbers of floating-point instructions in a single cycle.
+        A type of CPU instruction by which modern CPU cores can execute multiple
+        floating-point instructions in a single cycle.
 
 
-|Gromacs| background information
---------------------------------
+Work distribution by parallelization in |Gromacs|
+-------------------------------------------------
+
 The algorithms in :ref:`gmx mdrun` and their implementations are most relevant
 when choosing how to make good use of the hardware. For details,
-see the Reference Manual. The most important of these are
+see the :ref:`Reference Manual <gmx-reference-manual-rst>`. The most important of these are
 
 .. _gmx-domain-decomp:
 
@@ -146,16 +155,248 @@ see the Reference Manual. The most important of these are
 
     Particle-mesh Ewald
         The particle-mesh Ewald (PME) algorithm treats the long-ranged
-        component of the non-bonded interactions (Coulomb and/or
+        component of the non-bonded interactions (Coulomb and possibly also
         Lennard-Jones).  Either all, or just a subset of ranks may
         participate in the work for computing the long-ranged component
         (often inaccurately called simply the "PME"
         component). Because the algorithm uses a 3D FFT that requires
-        global communication, its performance gets worse as more ranks
+        global communication, its parallel efficiency gets worse as more ranks
         participate, which can mean it is fastest to use just a subset
         of ranks (e.g.  one-quarter to one-half of the ranks). If
         there are separate PME ranks, then the remaining ranks handle
         the PP work. Otherwise, all ranks do both PP and PME work.
+
+Parallelization schemes
+-----------------------
+
+|Gromacs|, being performance-oriented, has a strong focus on efficient parallelization.
+There are multiple parallelization schemes available, therefore a simulation can be run on a
+given hardware with different choices of run configuration.
+
+Core level parallelization via SIMD: SSE, AVX, etc.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+One level of performance improvement available in |Gromacs| is through the use of
+``Single Instruction Multiple Data (SIMD)`` instructions. In detail information
+for those can be found under :ref:`SIMD support <gmx-simd-support>` in the installation
+guide.
+
+In |Gromacs|, SIMD instructions are used to parallelize the parts of the code with
+the highest impact on performance (nonbonded and bonded force calculation,
+PME and neighbour searching), through the use of hardware specific SIMD kernels.
+Those form one of the three levels of non-bonded kernels that are available: reference or generic
+kernels (slow but useful for producing reference values for testing),
+optimized plain-C kernels (can be used cross-platform but still slow)
+and SIMD intrinsics accelerated kernels.
+
+The SIMD intrinsic code is compiled by the compiler.
+Technically, it is possible to compile different levels of acceleration into one binary,
+but this is difficult to manage with acceleration in many parts of the code.
+Thus, you need to configure and compile |Gromacs| for the SIMD capabilities of the target CPU.
+By default, the build system will detect the highest supported
+acceleration of the host where the compilation is carried out. For cross-compiling for
+a machine with a different highest SIMD instructions set, in order to set the target acceleration,
+the ``-DGMX_SIMD`` CMake option can be used. For best performance always pick the highest
+(latest) SIMD instruction set supported by the target architecture (and |Gromacs|). To use a single
+installation on multiple different machines, it is convenient to compile the analysis tools with
+the lowest common SIMD instruction set (as these rely little on SIMD acceleration), but for best
+performance :ref:`mdrun <gmx mdrun>` should be compiled separately for each machine.
+
+Process(-or) level parallelization via OpenMP
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|Gromacs| :ref:`mdrun <gmx mdrun>` supports OpenMP multithreading for all parts
+of the code for the :doc:`Verlet cut-off scheme <cutoff-schemes>`, as well as for the PME
+code in case of the group scheme. OpenMP is enabled by default and
+can be turned on/off at configure time with the ``GMX_OPENMP`` CMake variable
+and at run-time with the ``-ntomp`` option (or the ``OMP_NUM_THREADS`` environment variable).
+The OpenMP implementation is quite efficient and scales well for up to 12-24 threads on
+Intel and 6-8 threads on AMD CPUs.
+
+Node level parallelization via GPU offloading and thread-MPI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Multithreading with thread-MPI
+..............................
+
+The thread-MPI library implements a subset of the MPI 1.1 specification,
+based on the system threading support. Both POSIX pthreads and Windows threads are supported,
+thus providing great portability to most UNIX/Linux and Windows operating systems.
+Acting as a drop-in replacement for MPI, thread-MPI enables compiling and running :ref:`mdrun <gmx mdrun>`
+on a single machine (i.e. not across a network) without MPI. Additionally, it not only provides a
+convenient way to use computers with multicore CPU(s), but thread-MPI does in some
+cases make :ref:`mdrun <gmx mdrun>` run slightly faster than with MPI.
+
+Thread-MPI is included in the |Gromacs| source and it is the default parallelization since
+version 4.5, practically rendering the serial :ref:`mdrun <gmx mdrun>` deprecated.
+Compilation with thread-MPI is controlled by the ``GMX_THREAD_MPI`` CMake variable.
+
+Thread-MPI is compatible with most :ref:`mdrun <gmx mdrun>` features and parallelization schemes,
+including OpenMP, GPUs; it is not compatible with MPI and multi-simulation runs.
+
+By default, the thread-MPI mdrun will use all available cores in the machine by starting
+an appropriate number of ranks or OpenMP threads to occupy all of them. The number of
+ranks can be controlled using the
+``-nt`` and ``-ntmpi`` options. ``-nt`` represents the total number of threads
+to be used (which can be a mix of thread-MPI and OpenMP threads with the
+:doc:`Verlet scheme <cutoff-schemes>`).
+
+Hybrid/heterogeneous acceleration
+.................................
+
+Hybrid acceleration means distributing compute work between available CPUs and GPUs
+to improve simulation performance.
+Along the :doc:`Verlet cut-off scheme <cutoff-schemes>` new non-bonded algorithms
+have been developed with the aim of efficient acceleration both on CPUs and GPUs.
+
+The most compute-intensive parts of simulations, non-bonded force calculation, as well
+as possibly the PME and bonded force calculation can be
+offloaded to GPUs and carried out simultaneously with remaining CPU work.
+Native GPU acceleration is supported with the :doc:`Verlet cut-off scheme <cutoff-schemes>`
+(not with the group scheme) with PME, reaction-field, and plain cut-off electrostatics.
+For more information about the GPU kernels, please see the :ref:`Installation guide <gmx-gpu-support>`.
+
+The native GPU acceleration can be turned on or off, either at run-time using the
+:ref:`mdrun <gmx mdrun>` ``-nb`` option, or at configuration time using the ``GMX_GPU`` CMake variable.
+
+To efficiently use all compute resource available, CPU and GPU computation is done simultaneously.
+Overlapping with the OpenMP multithreaded bonded force and PME long-range electrostatic calculations
+on the CPU, non-bonded forces are calculated on the GPU. Multiple GPUs, both in a single node as
+well as across multiple nodes, are supported using domain-decomposition. A single GPU is assigned
+to the non-bonded workload of a domain, therefore, the number GPUs used has to match the number
+of of MPI processes (or thread-MPI threads) the simulation is started with. The available
+CPU cores are partitioned among the processes (or thread-MPI threads) and a set of cores
+with a GPU do the calculations on the respective domain.
+
+With PME electrostatics, :ref:`mdrun <gmx mdrun>` supports automated CPU-GPU load-balancing by
+shifting workload from the PME mesh calculations, done on the CPU, to the particle-particle
+non-bonded calculations, done on the GPU. At startup a few iterations of tuning are executed
+during the first 100 to 1000 MD steps. These iterations involve scaling the electrostatics cut-off
+and PME grid spacing to determine the value that gives optimal CPU-GPU load balance. The cut-off
+value provided using the :mdp:`rcoulomb` ``=rvdw`` :ref:`mdp` option represents the minimum
+electrostatics cut-off the tuning starts with and therefore should be chosen as small as
+possible (but still reasonable for the physics simulated). The Lennard-Jones cut-off ``rvdw``
+is kept fixed. We don't allow scaling to shorter cut-off as we don't want to change ``rvdw``
+and there would be no performance gain in the Verlet cut-off scheme.
+
+While the automated CPU-GPU load balancing always attempts to find the optimal cut-off setting,
+it might not always be possible to balance CPU and GPU workload. This happens when the CPU threads
+finish calculating the bonded forces and PME faster than the GPU the non-bonded force calculation,
+even with the shortest possible cut-off. In such cases the CPU will wait for the GPU and this
+time will show up as ``Wait GPU local`` in the cycle and timing summary table at the end
+of the log file.
+
+Parallelization over multiple nodes via MPI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+At the heart of the MPI parallelization in |Gromacs| is the neutral-territory
+:ref:`domain decomposition <gmx-domain-decomp>` with dynamic load balancing.
+To parallelize simulations across multiple machines (e.g. nodes of a cluster)
+:ref:`mdrun <gmx mdrun>` needs to be compiled with MPI which can be enabled using the ``GMX_MPI`` CMake variable.
+
+.. _controlling-the-domain-decomposition-algorithm:
+
+Controlling the domain decomposition algorithm
+..............................................
+
+This section lists options that affect how the domain
+decomposition algorithm decomposes the workload to the available
+parallel hardware.
+
+``-rdd``
+    Can be used to set the required maximum distance for inter
+    charge-group bonded interactions. Communication for two-body
+    bonded interactions below the non-bonded cut-off distance always
+    comes for free with the non-bonded communication. Particles beyond
+    the non-bonded cut-off are only communicated when they have
+    missing bonded interactions; this means that the extra cost is
+    minor and nearly independent of the value of ``-rdd``. With dynamic
+    load balancing, option ``-rdd`` also sets the lower limit for the
+    domain decomposition cell sizes. By default ``-rdd`` is determined
+    by :ref:`gmx mdrun` based on the initial coordinates. The chosen value will
+    be a balance between interaction range and communication cost.
+
+``-ddcheck``
+    On by default. When inter charge-group bonded interactions are
+    beyond the bonded cut-off distance, :ref:`gmx mdrun` terminates with an
+    error message. For pair interactions and tabulated bonds that do
+    not generate exclusions, this check can be turned off with the
+    option ``-noddcheck``.
+
+``-rcon``
+    When constraints are present, option ``-rcon`` influences
+    the cell size limit as well.
+    Particles connected by NC constraints, where NC is the LINCS order
+    plus 1, should not be beyond the smallest cell size. A error
+    message is generated when this happens, and the user should change
+    the decomposition or decrease the LINCS order and increase the
+    number of LINCS iterations.  By default :ref:`gmx mdrun` estimates the
+    minimum cell size required for P-LINCS in a conservative
+    fashion. For high parallelization, it can be useful to set the
+    distance required for P-LINCS with ``-rcon``.
+
+``-dds``
+    Sets the minimum allowed x, y and/or z scaling of the cells with
+    dynamic load balancing. :ref:`gmx mdrun` will ensure that the cells can
+    scale down by at least this factor. This option is used for the
+    automated spatial decomposition (when not using ``-dd``) as well as
+    for determining the number of grid pulses, which in turn sets the
+    minimum allowed cell size. Under certain circumstances the value
+    of ``-dds`` might need to be adjusted to account for high or low
+    spatial inhomogeneity of the system.
+
+
+
+Multi-level parallelization: MPI and OpenMP
+...........................................
+
+The multi-core trend in CPU development substantiates the need for multi-level parallelization.
+Current multiprocessor machines can have 2-4 CPUs with a core count as high as 64. As the memory
+and cache subsystem is lagging more and more behind the multicore evolution, this emphasizes
+non-uniform memory access (NUMA) effects, which can become a performance bottleneck. At the same
+time, all cores share a network interface. In a purely MPI-parallel scheme, all MPI processes
+use the same network interface, and although MPI intra-node communication is generally efficient,
+communication between nodes can become a limiting factor to parallelization. This is especially
+pronounced in the case of highly parallel simulations with PME (which is very communication
+intensive) and with ``''fat''`` nodes connected by a slow network. Multi-level parallelism aims
+to address the NUMA and communication related issues by employing efficient
+intra-node parallelism, typically multithreading.
+
+Combining OpenMP with MPI creates an additional overhead
+especially when running separate multi-threaded PME nodes. Depending on the architecture,
+input system size, as well as other factors, MPI+OpenMP runs can be as fast and faster
+already at small number of processes (e.g. multi-processor Intel Westmere or Sandy Bridge),
+but can also be considerably slower (e.g. multi-processor AMD Interlagos machines). However,
+there is a more pronounced benefit of multi-level parallelization in highly parallel runs.
+
+Separate PME nodes
+^^^^^^^^^^^^^^^^^^
+
+On CPU nodes, particle-particle (PP) and PME calculations are done in the same process one after
+another. As PME requires all-to-all global communication, this is most of the time the limiting
+factor to scaling on a large number of cores. By designating a subset of nodes for PME
+calculations only, performance of parallel runs can be greatly improved.
+
+OpenMP mutithreading in PME nodes is also possible and is supported with both group and
+Verlet cut-off schemes. Using multi-threading in PME can can improve performance at high
+parallelization. The reason for this is that with N>1 threads the number of processes
+communicating, and therefore the number of messages, is reduced by a factor of N.
+But note that modern communication networks can process several messages simultaneously,
+such that it could be advantageous to have more processes communicating.
+
+Separate PME nodes are not used at low parallelization, the switch at higher parallelization
+happens automatically (at > 16 processes). The number of PME nodes is estimated by mdrun.
+If the PME load is higher than the PP load, mdrun will automatically balance the load, but
+this leads to additional (non-bonded) calculations. This avoids the idling of a large fraction
+of the nodes; usually 3/4 of the nodes are PP nodes. But to ensure the best absolute performance
+of highly parallel runs, it is advisable to tweak this number which is automated by
+the :ref:`tune_pme <gmx tune_pme>` tool.
+
+The number of PME nodes can be set manually on the :ref:`mdrun <gmx mdrun>` command line using the ``-npme``
+option, the number of PME threads can be specified on the command line with ``-ntomp_pme`` or
+alternatively using the ``GMX_PME_NUM_THREADS`` environment variable. The latter is especially
+useful when running on compute nodes with different number of cores as it enables
+setting different number of PME threads on different nodes.
 
 Running :ref:`mdrun <gmx mdrun>` within a single node
 -----------------------------------------------------
@@ -205,7 +446,7 @@ behavior.
 
 ``-ntomp_pme``
     When using PME with separate PME ranks,
-    the total number of OpenMP threads per separate PME ranks.
+    the total number of OpenMP threads per separate PME rank.
     The default, 0, copies the value from ``-ntomp``.
 
 ``-pin``
@@ -226,7 +467,7 @@ behavior.
     If ``-pin on``, specifies the stride in logical core
     numbers for the cores to which :ref:`mdrun <gmx mdrun>` should pin its threads. When
     running more than one instance of :ref:`mdrun <gmx mdrun>` on a node, use this option
-    to to avoid pinning threads from different :ref:`mdrun <gmx mdrun>` instances to the
+    to avoid pinning threads from different :ref:`mdrun <gmx mdrun>` instances to the
     same core.  Use the default, 0, to minimize the number of threads
     per physical core - this lets :ref:`mdrun <gmx mdrun>` manage the hardware-, OS- and
     configuration-specific details of how to map logical cores to
@@ -236,7 +477,7 @@ behavior.
     Can be set to "interleave," "pp_pme" or "cartesian."
     Defaults to "interleave," which means that any separate PME ranks
     will be mapped to MPI ranks in an order like PP, PP, PME, PP, PP,
-    PME, ... etc. This generally makes the best use of the available
+    PME, etc. This generally makes the best use of the available
     hardware. "pp_pme" maps all PP ranks first, then all PME
     ranks. "cartesian" is a special-purpose mapping generally useful
     only on special torus networks with accelerated global
@@ -273,12 +514,13 @@ behavior.
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
-    are available to be used by ranks on this node. For example,
+    are available to be used by ranks on each node. For example,
     "12" specifies that the GPUs with IDs 1 and 2 (as reported
     by the GPU runtime) can be used by :ref:`mdrun <gmx mdrun>`. This is useful
-    when sharing a node with other computations, or if a GPU
-    is best used to support a display.  Without specifying this
-    parameter, :ref:`mdrun <gmx mdrun>` will utilize all GPUs. When many GPUs are
+    when sharing a node with other computations, or if a GPU that
+    is dedicated to a display should not be used by |Gromacs|.
+    Without specifying this parameter, :ref:`mdrun <gmx mdrun>`
+    will utilize all GPUs. When many GPUs are
     present, a comma may be used to separate the IDs, so
     "12,13" would make GPUs 12 and 13 available to :ref:`mdrun <gmx mdrun>`.
     It could be necessary to use different GPUs on different
@@ -298,13 +540,13 @@ behavior.
     tasks of different types should be run, such as by using
     ``-nb gpu`` - only the tasks which are set to run on GPUs
     count for parsing the mapping. See `Assigning tasks to GPUs`_
-    for more details.
-
+    for more details. Note that ``-gpu_id`` and
+    ``-gputasks`` can not be used at the same time!
     In |Gromacs| versions preceding 2018 only a single type
     of GPU task ("PP") could be run on any rank. Now that there is some
     support for running PME on GPUs, the number of GPU tasks
     (and the number of GPU IDs expected in the ``-gputasks`` string)
-    can actually be 2 for a single-rank simulation. The IDs
+    can actually be 3 for a single-rank simulation. The IDs
     still have to be the same in this case, as using multiple GPUs
     per single rank is not yet implemented.
     The order of GPU tasks per rank in the string is PP first,
@@ -346,6 +588,8 @@ behavior.
     combined with fast CPU cores in a run, moving some work off of the GPU
     back to the CPU by computing FFTs on the CPU can improve performance.
 
+.. _gmx-mdrun-single-node:
+
 Examples for :ref:`mdrun <gmx mdrun>` on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -376,8 +620,8 @@ ranks and four OpenMP threads per rank. You should only use
 these options when seeking optimal performance, and
 must take care that the ranks you create can have
 all of their OpenMP threads run on the same socket.
-The number of ranks must be a multiple of the number of
-sockets, and the number of cores per node must be
+The number of ranks should be a multiple of the number of
+sockets, and the number of cores per node should be
 a multiple of the number of threads per rank.
 
 ::
@@ -456,6 +700,9 @@ above would work well on an Intel CPU with six physical cores and
 hyper-threading enabled. Use this kind of setup only
 if restricting :ref:`mdrun <gmx mdrun>` to a subset of cores to share a
 node with other processes.
+A word of caution: The mapping of logical CPUs/cores to physical
+cores may differ between operating systems. On Linux,
+``cat /proc/cpuinfo`` can be examined to determine this mapping.
 
 ::
 
@@ -467,8 +714,11 @@ as the hardware and MPI setup will permit. If the
 MPI setup is restricted to one node, then the resulting
 :ref:`gmx mdrun` will be local to that node.
 
+.. _gmx-mdrun-multiple-nodes:
+
 Running :ref:`mdrun <gmx mdrun>` on more than one node
 ------------------------------------------------------
+
 This requires configuring |Gromacs| to build with an external MPI
 library. By default, this :ref:`mdrun <gmx mdrun>` executable is run with
 :ref:`mdrun_mpi`. All of the considerations for running single-node
@@ -542,6 +792,7 @@ any aspect of OpenMP during the optimization.
 
 Examples for :ref:`mdrun <gmx mdrun>` on more than one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 The examples and explanations for for single-node :ref:`mdrun <gmx mdrun>` are
 still relevant, but ``-ntmpi`` is no longer the way
 to choose the number of MPI ranks.
@@ -624,55 +875,16 @@ GPUs, but there is no need to specify ``-gpu_id`` for the
 normal case where all the GPUs on the node are available
 for use.
 
-.. _controlling-the-domain-decomposition-algorithm:
+Approaching the scaling limit
+-----------------------------
 
-Controlling the domain decomposition algorithm
-----------------------------------------------
-This section lists all the options that affect how the domain
-decomposition algorithm decomposes the workload to the available
-parallel hardware.
+There are several aspects of running a |Gromacs| simulation that are important as the number
+of atoms per core approaches the current scaling limit of ~100 atoms/core.
 
-``-rdd``
-    Can be used to set the required maximum distance for inter
-    charge-group bonded interactions. Communication for two-body
-    bonded interactions below the non-bonded cut-off distance always
-    comes for free with the non-bonded communication. Particles beyond
-    the non-bonded cut-off are only communicated when they have
-    missing bonded interactions; this means that the extra cost is
-    minor and nearly independent of the value of ``-rdd``. With dynamic
-    load balancing, option ``-rdd`` also sets the lower limit for the
-    domain decomposition cell sizes. By default ``-rdd`` is determined
-    by :ref:`gmx mdrun` based on the initial coordinates. The chosen value will
-    be a balance between interaction range and communication cost.
-
-``-ddcheck``
-    On by default. When inter charge-group bonded interactions are
-    beyond the bonded cut-off distance, :ref:`gmx mdrun` terminates with an
-    error message. For pair interactions and tabulated bonds that do
-    not generate exclusions, this check can be turned off with the
-    option ``-noddcheck``.
-
-``-rcon``
-    When constraints are present, option ``-rcon`` influences
-    the cell size limit as well.
-    Particles connected by NC constraints, where NC is the LINCS order
-    plus 1, should not be beyond the smallest cell size. A error
-    message is generated when this happens, and the user should change
-    the decomposition or decrease the LINCS order and increase the
-    number of LINCS iterations.  By default :ref:`gmx mdrun` estimates the
-    minimum cell size required for P-LINCS in a conservative
-    fashion. For high parallelization, it can be useful to set the
-    distance required for P-LINCS with ``-rcon``.
-
-``-dds``
-    Sets the minimum allowed x, y and/or z scaling of the cells with
-    dynamic load balancing. :ref:`gmx mdrun` will ensure that the cells can
-    scale down by at least this factor. This option is used for the
-    automated spatial decomposition (when not using ``-dd``) as well as
-    for determining the number of grid pulses, which in turn sets the
-    minimum allowed cell size. Under certain circumstances the value
-    of ``-dds`` might need to be adjusted to account for high or low
-    spatial inhomogeneity of the system.
+One of these is that the use of ``constraints = all-bonds``  with P-LINCS
+sets an artificial minimum on the size of domains. You should reconsider the use
+of constraints to all bonds (and bear in mind possible consequences on the safe maximum for dt),
+or change lincs_order and lincs_iter suitably.
 
 Finding out how to run :ref:`mdrun <gmx mdrun>` better
 ------------------------------------------------------
@@ -772,9 +984,9 @@ An additional set of subcounters can offer more fine-grained inspection of perfo
 Subcounters are geared toward developers and have to be enabled during compilation. See
 :doc:`/dev-manual/build-system` for more information.
 
-TODO In future patch:
-- red flags in log files, how to interpret wallcycle output
-- hints to devs how to extend wallcycles
+.. TODO In future patch:
+   - red flags in log files, how to interpret wallcycle output
+   - hints to devs how to extend wallcycles
 
 .. _gmx-mdrun-on-gpu:
 
@@ -991,7 +1203,7 @@ Note that assigning fewer resources to :ref:`gmx mdrun` CPU computation
 involves a tradeoff which may outweigh the benefits of reduced GPU driver overhead,
 in particular without HyperThreading and with few CPU cores.
 
-TODO In future patch: any tips not covered above
+.. TODO In future patch: any tips not covered above
 
 Running the OpenCL version of mdrun
 -----------------------------------

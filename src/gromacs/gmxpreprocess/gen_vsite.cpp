@@ -171,6 +171,7 @@ static void read_vsite_database(const char *ddbname,
     t_vsitetop  *vsitetoplist;
     char        *ch;
     char         s1[MAXNAME], s2[MAXNAME], s3[MAXNAME], s4[MAXNAME];
+    std::string  s1String, s2String, s3String;
 
     gmx::FilePtr ddb = gmx::openLibraryFile(ddbname);
 
@@ -230,11 +231,20 @@ static void read_vsite_database(const char *ddbname,
                     case DDB_CH3:
                     case DDB_NH3:
                     case DDB_NH2:
-                        n = sscanf(pline, "%s%s%s", s1, s2, s3);
-                        if (n < 3 && !gmx_strcasecmp(s2, "planar"))
+                        n        = sscanf(pline, "%s%s%s", s1, s2, s3);
+                        s1String = s1;
+                        s2String = s2;
+                        s3String = s3;
+                        /* We resize the strings here to ensure that the copy operations
+                         * below always copy a null-terminated string.
+                         */
+                        s1String.resize(MAXNAME-1);
+                        s2String.resize(MAXNAME-1);
+                        s3String.resize(MAXNAME-1);
+                        if (n < 3 && !gmx_strcasecmp(s2String.c_str(), "planar"))
                         {
                             srenew(vsiteconflist, nvsite+1);
-                            strncpy(vsiteconflist[nvsite].atomtype, s1, MAXNAME-1);
+                            strncpy(vsiteconflist[nvsite].atomtype, s1String.c_str(), MAXNAME-1);
                             vsiteconflist[nvsite].isplanar         = TRUE;
                             vsiteconflist[nvsite].nextheavytype[0] = 0;
                             vsiteconflist[nvsite].dummymass[0]     = 0;
@@ -244,10 +254,10 @@ static void read_vsite_database(const char *ddbname,
                         else if (n == 3)
                         {
                             srenew(vsiteconflist, (nvsite+1));
-                            strncpy(vsiteconflist[nvsite].atomtype, s1, MAXNAME-1);
+                            strncpy(vsiteconflist[nvsite].atomtype, s1String.c_str(), MAXNAME-1);
                             vsiteconflist[nvsite].isplanar = FALSE;
-                            strncpy(vsiteconflist[nvsite].nextheavytype, s2, MAXNAME-1);
-                            strncpy(vsiteconflist[nvsite].dummymass, s3, MAXNAME-1);
+                            strncpy(vsiteconflist[nvsite].nextheavytype, s2String.c_str(), MAXNAME-1);
+                            strncpy(vsiteconflist[nvsite].dummymass, s3String.c_str(), MAXNAME-1);
                             if (curdir == DDB_NH2)
                             {
                                 vsiteconflist[nvsite].nhydrogens = 2;
@@ -279,19 +289,30 @@ static void read_vsite_database(const char *ddbname,
                         {
                             srenew(vsitetoplist, ntop+1);
                             ntop++; /* i still points to current vsite topology entry */
-                            strncpy(vsitetoplist[i].resname, dirstr, MAXNAME-1);
+                            std::string tmp(dirstr);
+                            // Resize to ensure copy of a null-terminated string.
+                            tmp.resize(MAXNAME-1);
+                            strncpy(vsitetoplist[i].resname, tmp.c_str(), MAXNAME-1);
                             vsitetoplist[i].nbonds = vsitetoplist[i].nangles = 0;
                             snew(vsitetoplist[i].bond, 1);
                             snew(vsitetoplist[i].angle, 1);
                         }
-                        n = sscanf(pline, "%s%s%s%s", s1, s2, s3, s4);
+                        n        = sscanf(pline, "%s%s%s%s", s1, s2, s3, s4);
+                        s1String = s1;
+                        s2String = s2;
+                        s3String = s3;
+                        // Resize to ensure copy of a null-terminated string.
+                        s1String.resize(MAXNAME-1);
+                        s2String.resize(MAXNAME-1);
+                        s3String.resize(MAXNAME-1);
+
                         if (n == 3)
                         {
                             /* bond */
                             k = vsitetoplist[i].nbonds++;
                             srenew(vsitetoplist[i].bond, k+1);
-                            strncpy(vsitetoplist[i].bond[k].atom1, s1, MAXNAME-1);
-                            strncpy(vsitetoplist[i].bond[k].atom2, s2, MAXNAME-1);
+                            strncpy(vsitetoplist[i].bond[k].atom1, s1String.c_str(), MAXNAME-1);
+                            strncpy(vsitetoplist[i].bond[k].atom2, s2String.c_str(), MAXNAME-1);
                             vsitetoplist[i].bond[k].value = strtod(s3, nullptr);
                         }
                         else if (n == 4)
@@ -299,9 +320,9 @@ static void read_vsite_database(const char *ddbname,
                             /* angle */
                             k = vsitetoplist[i].nangles++;
                             srenew(vsitetoplist[i].angle, k+1);
-                            strncpy(vsitetoplist[i].angle[k].atom1, s1, MAXNAME-1);
-                            strncpy(vsitetoplist[i].angle[k].atom2, s2, MAXNAME-1);
-                            strncpy(vsitetoplist[i].angle[k].atom3, s3, MAXNAME-1);
+                            strncpy(vsitetoplist[i].angle[k].atom1, s1String.c_str(), MAXNAME-1);
+                            strncpy(vsitetoplist[i].angle[k].atom2, s2String.c_str(), MAXNAME-1);
+                            strncpy(vsitetoplist[i].angle[k].atom3, s3String.c_str(), MAXNAME-1);
                             vsitetoplist[i].angle[k].value = strtod(s4, nullptr);
                         }
                         else

@@ -113,6 +113,14 @@ using myInt = int;
 // Test template using statement
 template<class T> using myPointer = T*;
 myPointer<int> x;
+// Test in-class array initalizers used with constructor initializer lists
+struct TestStruct
+{
+    float a[3][3] = {{0}}; // in-class initializer
+    float b; // not initialized until constructor initializer list
+    TestStruct();
+};
+TestStruct::TestStruct() : b(0) {}
 int main() {
   // Test nullptr
   double *x = nullptr;
@@ -146,6 +154,8 @@ int main() {
         if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.0.23026")
             message(FATAL_ERROR "GROMACS requires version 2015 (19.0.23026) or later of the MSVC C++ compiler for complete C++11 support")
         endif()
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
+        message(FATAL_ERROR "No known version of xlC can compile the normal C++11 code in GROMACS, highest version checked is 16.1.0")
     endif()
     if(CXX11_SUPPORTED)
         set(${CXX11_CXX_FLAG_NAME} ${CXX11_CXX_FLAG} PARENT_SCOPE)

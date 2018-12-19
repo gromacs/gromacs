@@ -58,7 +58,7 @@
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/listed-forces/listed-forces.h"
+#include "gromacs/listed-forces/gpubonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/functions.h"
@@ -3065,11 +3065,6 @@ void init_forcerec(FILE                             *fp,
     init_bonded_threading(fp, mtop->groups.grps[egcENER].nr,
                           &fr->bondedThreading);
 
-    if (useGpuForBonded)
-    {
-        fr->gpuBondedLists = new GpuBondedLists;
-    }
-
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
 
@@ -3092,11 +3087,13 @@ void init_forcerec(FILE                             *fp,
 
         if (useGpuForBonded)
         {
-            init_gpu_bonded(fr->gpuBondedLists,
-                            mtop->ffparams,
-                            DOMAINDECOMP(cr) ?
-                            nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintNonlocal) :
-                            nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintLocal));
+            auto stream = DOMAINDECOMP(cr) ?
+                nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintNonlocal) :
+                nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintLocal);
+            // TODO the heap allocation is only needed while
+            // t_forcerec lacks a constructor.
+            fr->gpuBonded = new gmx::GpuBonded(mtop->ffparams,
+                                               stream);
         }
     }
 
@@ -3135,12 +3132,8 @@ void free_gpu_resources(t_forcerec                          *fr,
     {
         /* free nbnxn data in GPU memory */
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
-
-        if (fr->gpuBondedLists)
-        {
-            delete fr->gpuBondedLists;
-            fr->gpuBondedLists = nullptr;
-        }
+        delete fr->gpuBonded;
+        fr->gpuBonded = nullptr;
     }
 
     /* With tMPI we need to wait for all ranks to finish deallocation before
@@ -3175,7 +3168,7 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
     done_ns(fr->ns, numEnergyGroups);
     sfree(fr->ewc_t);
     tear_down_bonded_threading(fr->bondedThreading);
-    GMX_RELEASE_ASSERT(fr->gpuBondedLists == nullptr, "Should have been deleted earlier, when used");
+    GMX_RELEASE_ASSERT(fr->gpuBonded == nullptr, "Should have been deleted earlier, when used");
     fr->bondedThreading = nullptr;
     sfree(fr);
 }

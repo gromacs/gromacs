@@ -83,18 +83,6 @@ appropriate value instead of ``xxx`` :
 * ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw3``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
 * ``-DCMAKE_BUILD_TYPE=Debug`` to build |Gromacs| in debug mode
 
-Building with MiMiC QM/MM support
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-MiMiC QM/MM interface integration will require linking against MiMiC
-communication library, that establishes the communication channel between
-|Gromacs| and CPMD. Check that the installation folder of the library
-is added to CMAKE_PREFIX_PATH if it is installed in non-standard location.
-Building QM/MM-capable version requires double-precision version of |Gromacs|
-compiled with MPI support:
-
-* ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
-
 Building older versions
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -135,9 +123,9 @@ Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
 the performance with C++ is very bad.
 
-The xlc compiler is not supported and has not been tested on POWER
-architectures for |Gromacs|\ -\ |version|. We recommend to use the gcc
-compiler instead, as it is being extensively tested.
+The xlc compiler is not supported and version 16.1 does not compile on
+POWER architectures for |Gromacs|\ -\ |version|. We recommend to use
+the gcc compiler instead, as it is being extensively tested.
 
 You may also need the most recent version of other compiler toolchain
 components beside the compiler itself (e.g. assembler or linker);
@@ -191,6 +179,8 @@ For maximum performance you will need to examine how you will use
 |Gromacs| and what hardware you plan to run on. Often OpenMP_
 parallelism is an advantage for |Gromacs|, but support for this is
 generally built into your compiler and detected automatically.
+
+.. _gmx-gpu-support:
 
 GPU support
 ~~~~~~~~~~~
@@ -333,6 +323,24 @@ If you need to customize this further, use
           -DMKL_INCLUDE_DIR="/full/path/to/mkl/include"
 
 The full list and order(!) of libraries you require are found in Intel's MKL documentation for your system.
+
+Using ARM Performance Libraries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ARM Performance Libraries provides FFT transforms implementation for ARM
+architectures.
+Preliminary support is provided for ARMPL in |Gromacs| through its FFTW-compatible API.
+Assuming that the ARM HPC toolchain environment including the ARMPL paths
+are set up (e.g. through loading the appropriate modules like
+``module load Module-Prefix/arm-hpc-compiler-X.Y/armpl/X.Y``) use the following cmake
+options:
+
+::
+
+    cmake -DGMX_FFT_LIBRARY=fftw3 \
+          -DFFTWF_LIBRARY="${ARMPL_DIR}/lib/libarmpl_lp64.so" \
+          -DFFTWF_INCLUDE_DIR=${ARMPL_DIR}/include
+
 
 Other optional build components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -494,6 +502,8 @@ easier next time. You can also do this kind of thing with ``ccmake``,
 but you should avoid this, because the options set with ``-D`` will not
 be able to be changed interactively in that run of ``ccmake``.
 
+.. _gmx-simd-support:
+
 SIMD support
 ~~~~~~~~~~~~
 
@@ -554,7 +564,7 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors
 10. ``Sparc64_HPC_ACE`` Fujitsu machines like the K computer have this.
 11. ``IBM_VMX`` Power6 and similar Altivec processors have this.
-12. ``IBM_VSX`` Power7, Power8 and later have this.
+12. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
 13. ``ARM_NEON`` 32-bit ARMv7 with NEON support.
 14. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
 
@@ -821,7 +831,8 @@ is found, and otherwise fall back on a version of BLAS internal to
 accordingly. The internal versions are fine for normal use. If you
 need to specify a non-standard path to search, use
 ``-DCMAKE_PREFIX_PATH=/path/to/search``. If you need to specify a
-library with a non-standard name (e.g. ESSL on Power machines), then
+library with a non-standard name (e.g. ESSL on Power machines
+or ARMPL on ARM machines), then
 set ``-DGMX_BLAS_USER=/path/to/reach/lib/libwhatever.a``.
 
 If you are using Intel MKL_ for FFT, then the BLAS and
@@ -831,6 +842,22 @@ over-ridden with ``GMX_BLAS_USER``, etc.
 On Apple platforms where the Accelerate Framework is available, these
 will be automatically used for BLAS and LAPACK. This could be
 over-ridden with ``GMX_BLAS_USER``, etc.
+
+.. _installing with MiMiC:
+
+Building with MiMiC QM/MM support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MiMiC QM/MM interface integration will require linking against MiMiC
+communication library, that establishes the communication channel
+between |Gromacs| and CPMD. The MiMiC Communication library can be
+downloaded `here <https://gitlab.com/MiMiC-projects/CommLib>`__.
+Compile and install it. Check that the installation folder of the
+MiMiC library is added to CMAKE_PREFIX_PATH if it is installed in
+non-standard location. Building QM/MM-capable version requires
+double-precision version of |Gromacs| compiled with MPI support:
+
+* ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
 
 Changing the names of |Gromacs| binaries and libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

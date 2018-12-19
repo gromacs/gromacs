@@ -622,6 +622,6 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
 
     if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
     {
-        state->flags |= (1<<estPREVSTEPCOM);
+        state->flags |= (1<<estPULLCOMPREVSTEP);
     }
 }
