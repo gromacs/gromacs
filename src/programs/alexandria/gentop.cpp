@@ -113,7 +113,7 @@ int alex_gentop(int argc, char *argv[])
         { efXVG, "-his",      "pot-histo", ffOPTWR },
         { efXVG, "-pc",       "pot-comp",  ffOPTWR },
         { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR },
-        { efXVG, "-plotESP",  "ESPcorr",   ffWRITE}
+        { efXVG, "-plotESP",  "ESPcorr",   ffOPTWR }
     };
 
     const  int                       NFILE          = asize(fnm);

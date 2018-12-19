@@ -1377,7 +1377,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 topology_->atoms.atom[i].q      =
                     topology_->atoms.atom[i].qB = Qgresp_.getAtomCharge(i);
             }
-            if (nullptr != ESPcorr && nullptr != oenv)
+            if (ESPcorr && oenv)
             {
                 Qgresp_.plotLsq(oenv, ESPcorr);
             }
