@@ -438,14 +438,18 @@ void print_electric_props(FILE                           *fp,
         }
     }
 
+    std::vector<const char*> atypes;
+    for (const auto &k : lsqt)
+    {
+        atypes.push_back(k.ztype.c_str());
+    }
+    fprintf(fp, "\nParameters are optimized for %zu atom types:\n", atypes.size());
+    
     fprintf(fp, "Dipoles are %s in Calc Parametrization.\n",     (bDipole ?     "used" : "not used"));
     fprintf(fp, "Quadrupoles are %s in Calc Parametrization.\n", (bQuadrupole ? "used" : "not used"));
     fprintf(fp, "\n"); 
     
     print_stats(fp, "ESP  (kJ/mol e)",  lsq_esp, true,  "Electronic", "Calculated");
-    fprintf(fp, "\n");
-    
-    print_stats(fp, "Atomic Partial Charge  (e)",  lsq_charge, true,  "CM5", "Calculated");
     fprintf(fp, "\n");
     
     for (int i = 0; i < qtElec; i++)
@@ -462,24 +466,16 @@ void print_electric_props(FILE                           *fp,
         }    
         fprintf(fp, "\n");
     }
-
-    std::vector<const char*> atypes;
-    for (const auto &k : lsqt)
-    {
-        atypes.push_back(k.ztype.c_str());
-    }
-
+    
     hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
-    xvgr_legend(hh, atypes.size(), atypes.data(), oenv);
-
-    fprintf(fp, "\nParameters are optimized for %zu atom types:\n", atypes.size());
+    xvgr_legend(hh, atypes.size(), atypes.data(), oenv);   
+    print_stats(fp, "All Partial Charges  (e)",  lsq_charge, true,  "CM5", "Calculated");
     for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
         int   nbins;
         if (gmx_stats_get_npoints(k->lsq, &nbins) == estatsOK)
         {
-            real *x, *y;
-            fprintf(fp, "%-4d copies for %4s\n", nbins, k->ztype.c_str());
+            real *x, *y;            
             if (gmx_stats_make_histogram(k->lsq, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
             {
                 fprintf(hh, "@type xy\n");
@@ -492,12 +488,13 @@ void print_electric_props(FILE                           *fp,
                 free(x);
                 free(y);
             }
+            print_stats(fp, k->ztype.c_str(),  k->lsq, false,  "CM5", "Calculated");
         }
         gmx_stats_free(k->lsq);
     }
     fclose(hh);
     fprintf(fp, "\n");
-
+    
     dipc = xvgropen(DipCorr, "Dipole Moment (Debye)", "Electronic", "Empirical", oenv);
     xvgr_symbolize(dipc, 5, eprnm, oenv);
     for (int i = 0; i < qtElec; i++)

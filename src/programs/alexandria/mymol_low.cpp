@@ -34,7 +34,6 @@
 #include "mymol_low.h"
 
 #include <assert.h>
-
 #include <cstdio>
 #include <cstring>
 
@@ -481,7 +480,7 @@ void getLjParams(const Poldata     &pd,
     }
     else
     {
-        gmx_fatal(FARGS, "Can not find atomtype %s looking for LJ", ai.c_str());
+        gmx_fatal(FARGS, "Cannot find atomtype %s looking for LJ", ai.c_str());
     }
     auto faj = pd.findAtype(aj);
     if (faj != pd.getAtypeEnd())
@@ -490,7 +489,7 @@ void getLjParams(const Poldata     &pd,
     }
     else
     {
-        gmx_fatal(FARGS, "Can not find atomtype %s looking for LJ", aj.c_str());
+        gmx_fatal(FARGS, "Cannot find atomtype %s looking for LJ", aj.c_str());
     }
 
     auto si = vdwi[0];

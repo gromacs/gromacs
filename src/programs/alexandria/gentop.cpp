@@ -122,7 +122,6 @@ int alex_gentop(int argc, char *argv[])
     static int                       nsymm          = 0;
     static int                       qcycle         = 1000;
     static int                       nexcl          = 2;
-    static real                      btol           = 0.2;
     static real                      qtol           = 1e-6;
     static real                      qtot           = 0;
     static real                      hfac           = 0;
@@ -186,8 +185,6 @@ int alex_gentop(int argc, char *argv[])
           "Generate virtual sites. Check and double check." },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
           "HIDDENUse the B-factor supplied in a pdb file for the atomic charges" },
-        { "-btol",  FALSE, etREAL, {&btol},
-          "HIDDENRelative tolerance for determining whether two atoms are bonded." },
         { "-spacing", FALSE, etREAL, {&spacing},
           "Spacing of grid points for computing the potential (not used when a reference file is read)." },
         { "-watoms", FALSE, etREAL, {&watoms},
@@ -249,10 +246,6 @@ int alex_gentop(int argc, char *argv[])
 
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);
-    if ((btol < 0) || (btol > 1))
-    {
-        gmx_fatal(FARGS, "Bond tolerance should be between 0 and 1 (not %g)", btol);
-    }
     if ((qtol < 0) || (qtol > 1))
     {
         gmx_fatal(FARGS, "Charge tolerance should be between 0 and 1 (not %g)", qtol);
@@ -414,7 +407,7 @@ int alex_gentop(int argc, char *argv[])
     }
     else
     {
-        printf("\nWARNING: Alexandria gentop ended prematurely due to \"%s\"\n", alexandria::immsg(imm));
+        gmx_fatal(FARGS,"Alexandria gentop ended prematurely due to \"%s\"\n", alexandria::immsg(imm));
     }
     return 0;
 }
