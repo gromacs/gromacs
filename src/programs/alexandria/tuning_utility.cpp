@@ -272,7 +272,6 @@ void print_electric_props(FILE                           *fp,
     struct ZetaTypeLsq {
         std::string ztype;
         gmx_stats_t lsq;
-        gmx_stats_t lsq2;
     };
 
     gmx_stats_t               lsq_mu[qtNR], lsq_dip[qtNR], lsq_quad[qtNR];
@@ -298,8 +297,7 @@ void print_electric_props(FILE                           *fp,
     {
         ZetaTypeLsq k;
         k.ztype.assign(ai->name());
-        k.lsq  = gmx_stats_init();
-        k.lsq2 = gmx_stats_init();
+        k.lsq = gmx_stats_init();
         lsqt.push_back(std::move(k));
     }
     
@@ -412,7 +410,7 @@ void print_electric_props(FILE                           *fp,
                                 qCalc += mol.topology_->atoms.atom[j+1].q;
                             }
                             gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);
-                            gmx_stats_add_point(k->lsq2, qcm5[i], qCalc, 0, 0);
+
                             gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
 
                             qrmsd += gmx::square(qcm5[i]-qCalc);
@@ -475,7 +473,6 @@ void print_electric_props(FILE                           *fp,
     for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
         int   nbins;
-        print_stats(fp, k->ztype.c_str(),  k->lsq2, false,  "CM5", "Calculated");
         if (gmx_stats_get_npoints(k->lsq, &nbins) == estatsOK)
         {
             real *x, *y;            
@@ -487,12 +484,12 @@ void print_electric_props(FILE                           *fp,
                     fprintf(hh, "%10g  %10g\n", x[i], y[i]);
                 }
                 fprintf(hh, "&\n");
+                print_stats(fp, k->ztype.c_str(),  k->lsq, false,  "CM5", "Calculated");
                 free(x);
                 free(y);
-            }            
+            }           
         }
         gmx_stats_free(k->lsq);
-        gmx_stats_free(k->lsq2);
     }
     fclose(hh);
     fprintf(fp, "\n");
