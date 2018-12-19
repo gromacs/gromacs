@@ -138,6 +138,7 @@ template <typename GpuRegionTimerImpl> class GpuRegionTimerWrapper
             }
             double milliseconds = impl_.getLastRangeTime();
             totalMilliseconds_ += milliseconds;
+            reset();
             return milliseconds;
         }
         /*! \brief Resets the implementation and total time/call count to zeroes. */
