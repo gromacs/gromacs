@@ -1458,6 +1458,9 @@ int Mdrunner::mdrunner()
                pmedata,
                EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
 
+    // clean up cycle counter
+    wallcycle_destroy(wcycle);
+
     // Free PME data
     if (pmedata)
     {
