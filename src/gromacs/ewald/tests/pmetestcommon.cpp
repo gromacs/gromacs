@@ -132,7 +132,7 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
             boxTemp[i][j] = box[i * DIM + j];
         }
     }
-    const char *boxError = check_box(-1, boxTemp);
+    const char *gmx_unused boxError = check_box(-1, boxTemp);
     GMX_RELEASE_ASSERT(boxError == nullptr, boxError);
 
     switch (mode)
@@ -443,12 +443,12 @@ void pmeFinalizeTest(const gmx_pme_t *pme, CodePath mode)
 void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
                       const SplineParamsDimVector &splineValues, PmeSplineDataType type, int dimIndex)
 {
-    const pme_atomcomm_t *atc         = &(pme->atc[0]);
-    const index           atomCount   = atc->n;
-    const index           pmeOrder    = pme->pme_order;
-    const index           dimSize     = pmeOrder * atomCount;
+    const pme_atomcomm_t            *atc         = &(pme->atc[0]);
+    const index                      atomCount   = atc->n;
+    const index                      pmeOrder    = pme->pme_order;
+    const gmx_unused index           dimSize     = pmeOrder * atomCount;
     GMX_RELEASE_ASSERT(dimSize == splineValues.size(), "Mismatch in spline data");
-    real                 *splineBuffer = pmeGetSplineDataInternal(pme, type, dimIndex);
+    real                            *splineBuffer = pmeGetSplineDataInternal(pme, type, dimIndex);
 
     switch (mode)
     {
@@ -477,7 +477,7 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
     IVec paddedGridSizeUnused, gridSize(0, 0, 0);
     pmeGetRealGridSizesInternal(pme, mode, gridSize, paddedGridSizeUnused);
 
-    for (const auto &index : gridLineIndices)
+    for (const auto gmx_unused &index : gridLineIndices)
     {
         for (int i = 0; i < DIM; i++)
         {

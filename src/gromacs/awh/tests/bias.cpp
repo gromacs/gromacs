@@ -206,9 +206,9 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
 
             seed_ = params.awhParams.seed;
 
-            double mdTimeStep = 0.1;
+            double         mdTimeStep = 0.1;
 
-            int    numSamples = coordinates_.size() - 1; // No sample taken at step 0
+            int gmx_unused numSamples = coordinates_.size() - 1; // No sample taken at step 0
             GMX_RELEASE_ASSERT(numSamples % params.awhParams.numSamplesUpdateFreeEnergy == 0, "This test is intended to reproduce the situation when the might need to write output during a normal AWH run, therefore the number of samples should be a multiple of the free-energy update interval (but the test should also runs fine without this condition).");
 
             bias_ = gmx::compat::make_unique<Bias>(-1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, mdTimeStep, 1, "", Bias::ThisRankWillDoIO::No, disableUpdateSkips);

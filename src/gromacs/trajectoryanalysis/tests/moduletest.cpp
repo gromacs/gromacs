@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -174,7 +174,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::includeDataset(const char *name)
         }
     }
     Impl::DatasetList::iterator dataset = impl_->datasets_.find(name);
-    const bool                  bFound  = (dataset != impl_->datasets_.end());
+    const gmx_unused bool       bFound  = (dataset != impl_->datasets_.end());
     GMX_RELEASE_ASSERT(bFound, "Attempted to include a non-existent dataset");
     dataset->second.bCheck = true;
 }
@@ -184,7 +184,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::excludeDataset(const char *name)
 {
     impl_->ensureModuleCreated();
     Impl::DatasetList::iterator dataset = impl_->datasets_.find(name);
-    const bool                  bFound  = (dataset != impl_->datasets_.end());
+    const gmx_unused bool       bFound  = (dataset != impl_->datasets_.end());
     GMX_RELEASE_ASSERT(bFound, "Attempted to exclude a non-existent dataset");
     dataset->second.bCheck = false;
 }
@@ -195,7 +195,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::setDatasetTolerance(
 {
     impl_->ensureModuleCreated();
     Impl::DatasetList::iterator dataset = impl_->datasets_.find(name);
-    const bool                  bFound  = (dataset != impl_->datasets_.end());
+    const gmx_unused bool       bFound  = (dataset != impl_->datasets_.end());
     GMX_RELEASE_ASSERT(bFound, "Attempted to set a tolerance for a non-existent dataset");
     dataset->second.tolerance = tolerance;
 }
