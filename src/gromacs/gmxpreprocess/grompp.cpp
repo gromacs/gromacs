@@ -80,6 +80,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -2137,7 +2138,7 @@ int gmx_grompp(int argc, char *argv[])
         pr_symtab(debug, 0, "After close", &sys.symtab);
     }
 
-    /* make exclusions between QM atoms */
+    /* make exclusions between QM atoms and remove charges if needed */
     if (ir->bQMMM)
     {
         if (ir->QMMMscheme == eQMMMschemenormal && ir->ns_type == ensSIMPLE)
@@ -2147,6 +2148,11 @@ int gmx_grompp(int argc, char *argv[])
         else
         {
             generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_ORIGINAL);
+        }
+        if (ir->QMMMscheme != eQMMMschemeoniom)
+        {
+            std::vector<int> qmmmAtoms = populateQmmmArray(*ir, sys);
+            removeQmmmAtomCharges(&sys, qmmmAtoms);
         }
     }
 
