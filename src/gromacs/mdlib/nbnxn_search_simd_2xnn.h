@@ -61,7 +61,7 @@ icell_set_x_simd_2xnn(int ci,
  * Checks bouding box distances and possibly atom pair distances.
  * This is an accelerated version of make_cluster_list_simple.
  *
- * \param[in]     gridj               The j-grid
+ * \param[in]     jGrid               The j-grid
  * \param[in,out] nbl                 The pair-list to store the cluster pairs in
  * \param[in]     icluster            The index of the i-cluster
  * \param[in]     firstCell           The first cluster in the j-range, using i-cluster size indexing
@@ -73,7 +73,7 @@ icell_set_x_simd_2xnn(int ci,
  * \param[in,out] numDistanceChecks   The number of distance checks performed
  */
 static inline void
-makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
+makeClusterListSimd2xnn(const nbnxn_grid_t       &jGrid,
                         NbnxnPairlistCpu *        nbl,
                         int                       icluster,
                         int                       firstCell,
@@ -116,9 +116,9 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
     while (!InRange && jclusterFirst <= jclusterLast)
     {
 #if NBNXN_SEARCH_BB_SIMD4
-        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterFirst, gridj->bbj);
+        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterFirst, jGrid.bbj);
 #else
-        d2 = subc_bb_dist2(0, bb_ci, jclusterFirst, gridj->bbj);
+        d2 = subc_bb_dist2(0, bb_ci, jclusterFirst, jGrid.bbj);
 #endif
         *numDistanceChecks += 2;
 
@@ -133,7 +133,7 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
         }
         else if (d2 < rlist2)
         {
-            xind_f  = xIndexFromCj<NbnxnLayout::Simd2xNN>(cjFromCi<NbnxnLayout::Simd2xNN, 0>(gridj->cell0) + jclusterFirst);
+            xind_f  = xIndexFromCj<NbnxnLayout::Simd2xNN>(cjFromCi<NbnxnLayout::Simd2xNN, 0>(jGrid.cell0) + jclusterFirst);
 
             jx_S  = loadDuplicateHsimd(x_j + xind_f + 0*c_xStride2xNN);
             jy_S  = loadDuplicateHsimd(x_j + xind_f + 1*c_xStride2xNN);
@@ -174,9 +174,9 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
     while (!InRange && jclusterLast > jclusterFirst)
     {
 #if NBNXN_SEARCH_BB_SIMD4
-        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterLast, gridj->bbj);
+        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterLast, jGrid.bbj);
 #else
-        d2 = subc_bb_dist2(0, bb_ci, jclusterLast, gridj->bbj);
+        d2 = subc_bb_dist2(0, bb_ci, jclusterLast, jGrid.bbj);
 #endif
         *numDistanceChecks += 2;
 
@@ -191,7 +191,7 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
         }
         else if (d2 < rlist2)
         {
-            xind_l  = xIndexFromCj<NbnxnLayout::Simd2xNN>(cjFromCi<NbnxnLayout::Simd2xNN, 0>(gridj->cell0) + jclusterLast);
+            xind_l  = xIndexFromCj<NbnxnLayout::Simd2xNN>(cjFromCi<NbnxnLayout::Simd2xNN, 0>(jGrid.cell0) + jclusterLast);
 
             jx_S  = loadDuplicateHsimd(x_j + xind_l + 0*c_xStride2xNN);
             jy_S  = loadDuplicateHsimd(x_j + xind_l + 1*c_xStride2xNN);
@@ -230,7 +230,7 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
         {
             /* Store cj and the interaction mask */
             nbnxn_cj_t cjEntry;
-            cjEntry.cj   = cjFromCi<NbnxnLayout::Simd2xNN, 0>(gridj->cell0) + jcluster;
+            cjEntry.cj   = cjFromCi<NbnxnLayout::Simd2xNN, 0>(jGrid.cell0) + jcluster;
             cjEntry.excl = get_imask_simd_2xnn(excludeSubDiagonal, icluster, jcluster);
             nbl->cj.push_back(cjEntry);
         }
