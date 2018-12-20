@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Paul Bauer <paul.bauer.q@gmail.com>
+Code-Review+1: Artem Zhmurov <zhmurov@gmail.com>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Thu, 20 Dec 2018 22:33:57 +0100
+Reviewed-on: https://gerrit.gromacs.org/8844
+Project: gromacs
+Branch: refs/heads/release-2019
