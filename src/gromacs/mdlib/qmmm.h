@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,8 +39,11 @@
 
 #include "config.h"
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/utility/arrayref.h"
 
 #define GMX_QMMM (GMX_QMMM_MOPAC || GMX_QMMM_GAMESS || GMX_QMMM_GAUSSIAN || GMX_QMMM_ORCA)
 
@@ -145,5 +148,22 @@ real calculate_QMMM(const t_commrec  *cr,
  * (listed in QMMMrec.QMpackage). The binary of the QM package is
  * called by system().
  */
+
+/*! \brief
+ * Return vector of atom indices for atoms in the QMMM region.
+ *
+ * \param[in] mtop Topology to use for populating array.
+ * \param[in] ir   Inputrec used in simulation.
+ * \returns Vector of atoms.
+ */
+std::vector<int> qmmmAtomIndices(const t_inputrec &ir, const gmx_mtop_t &mtop);
+
+/*! \brief
+ * Remove charges from QMMM atoms.
+ *
+ * \param[in] mtop Topology used for removing atoms.
+ * \param[in] qmmmAtoms ArrayRef to vector conatining qmmm atom indices.
+ */
+void removeQmmmAtomCharges(gmx_mtop_t *mtop, gmx::ArrayRef<const int> qmmmAtoms);
 
 #endif
