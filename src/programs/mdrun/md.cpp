@@ -1161,6 +1161,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                    called in the previous step */
                 unshift_self(graph, state->box, state->x);
             }
+
             /* if VV, compute the pressure and constraints */
             /* For VV2, we strictly only need this if using pressure
              * control, but we really would like to have accurate pressures
@@ -1387,6 +1388,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    TRUE, bCalcVir);
             }
         }
+
         /* Box is changed in update() when we do pressure coupling,
          * but we should still use the old box for energy corrections and when
          * writing it to the energy file, so it matches the trajectory files for
