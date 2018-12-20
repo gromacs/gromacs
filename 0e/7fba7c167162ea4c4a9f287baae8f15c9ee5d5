@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Verified+1: M. Eric Irrgang <ericirrgang@gmail.com>
+Code-Review+2: Paul Bauer <paul.bauer.q@gmail.com>
+Code-Review+1: Joe Jordan <e.jjordan12@gmail.com>
+Submitted-by: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-at: Thu, 20 Dec 2018 14:40:31 +0100
+Reviewed-on: https://gerrit.gromacs.org/8715
+Project: gromacs
+Branch: refs/heads/release-2019
