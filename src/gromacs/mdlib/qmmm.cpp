@@ -351,6 +351,78 @@ t_QMMMrec *mk_QMMMrec()
 } /* mk_QMMMrec */
 #endif
 
+std::vector<int> populateQmmmArray(const t_inputrec &ir, const gmx_mtop_t &mtop)
+{
+    const int           numQmmmGroups = ir.opts.ngQM;
+    const gmx_groups_t &groups        = mtop.groups;
+    std::vector<int>    qmmmAtoms;
+    for (int i = 0; i < numQmmmGroups; i++)
+    {
+        gmx_mtop_atomloop_all_t aloop = gmx_mtop_atomloop_all_init(&mtop);
+        const t_atom           *atom;
+        int                     index = 0;
+        while (gmx_mtop_atomloop_all_next(aloop, &index, &atom))
+        {
+            if (getGroupType(groups, egcQMMM, index) == i)
+            {
+                qmmmAtoms.push_back(index);
+            }
+        }
+        if (ir.QMMMscheme == eQMMMschemeoniom)
+        {
+            /* add the atoms to the bQMMM array
+             */
+
+            /* I assume that users specify the QM groups from small to
+             * big(ger) in the mdp file
+             */
+            gmx_mtop_ilistloop_all_t iloop = gmx_mtop_ilistloop_all_init(&mtop);
+            int nral1                      = 1 + NRAL(F_VSITE2);
+            int atomOffset                 = 0;
+            while (const InteractionLists *ilists = gmx_mtop_ilistloop_all_next(iloop, &atomOffset))
+            {
+                const InteractionList &ilist = (*ilists)[F_VSITE2];
+                for (int j = 0; j < ilist.size(); j += nral1)
+                {
+                    const int vsite = atomOffset + ilist.iatoms[j  ]; /* the vsite         */
+                    const int ai    = atomOffset + ilist.iatoms[j+1]; /* constructing atom */
+                    const int aj    = atomOffset + ilist.iatoms[j+2]; /* constructing atom */
+                    if (getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, ai)
+                        &&
+                        getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, aj))
+                    {
+                        /* this dummy link atom needs to be removed from qmmmAtoms
+                         * before making the QMrec of this layer!
+                         */
+                        for (size_t k = 0; k < qmmmAtoms.size(); k++)
+                        {
+                            if (qmmmAtoms[k] == vsite)
+                            {
+                                /* drop the element */
+                                qmmmAtoms.erase(qmmmAtoms.begin() + k);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return qmmmAtoms;
+}
+
+void removeQmmmAtomCharges(gmx_mtop_t *mtop, gmx::ArrayRef<const int> qmmmAtoms)
+{
+    int molb = 0;
+    for (int i = 0; i < qmmmAtoms.size(); i++)
+    {
+        int     indexInMolecule;
+        mtopGetMolblockIndex(mtop, qmmmAtoms[i], &molb, nullptr, &indexInMolecule);
+        t_atom *atom = &mtop->moltype[mtop->molblock[molb].type].atoms.atom[indexInMolecule];
+        atom->q  = 0.0;
+        atom->qB = 0.0;
+    }
+}
+
 void init_QMMMrec(const t_commrec  *cr,
                   const gmx_mtop_t *mtop,
                   const t_inputrec *ir,
@@ -362,12 +434,8 @@ void init_QMMMrec(const t_commrec  *cr,
      * simply contains true/false for QM and MM (the other) atoms.
      */
 
-    int                     *qm_arr = nullptr, vsite, ai, aj;
-    int                      qm_max = 0, qm_nr = 0, i, j, jmax, k, l;
     t_QMMMrec               *qr;
     t_MMrec                 *mm;
-    gmx_mtop_atomloop_all_t  aloop;
-    int                      a_offset;
 
     if (!GMX_QMMM)
     {
@@ -409,44 +477,28 @@ void init_QMMMrec(const t_commrec  *cr,
 
     /* small problem if there is only QM.... so no MM */
 
-    jmax = ir->opts.ngQM;
+    int numQmmmGroups = ir->opts.ngQM;
 
     if (qr->QMMMscheme == eQMMMschemeoniom)
     {
-        qr->nrQMlayers = jmax;
+        qr->nrQMlayers = numQmmmGroups;
     }
     else
     {
         qr->nrQMlayers = 1;
     }
 
-    const gmx_groups_t &groups = mtop->groups;
-
-    /* there are jmax groups of QM atoms. In case of multiple QM groups
+    /* there are numQmmmGroups groups of QM atoms. In case of multiple QM groups
      * I assume that the users wants to do ONIOM. However, maybe it
      * should also be possible to define more than one QM subsystem with
      * independent neighbourlists. I have to think about
      * that.. 11-11-2003
      */
-    snew(qr->qm, jmax);
-    for (j = 0; j < jmax; j++)
+    std::vector<int> qmmmAtoms = populateQmmmArray(*ir, *mtop);
+    snew(qr->qm, numQmmmGroups);
+    for (int i = 0; i < numQmmmGroups; i++)
     {
         /* new layer */
-        aloop = gmx_mtop_atomloop_all_init(mtop);
-        const t_atom *atom;
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
-        {
-            if (qm_nr >= qm_max)
-            {
-                qm_max += 1000;
-                srenew(qm_arr, qm_max);
-            }
-            if (getGroupType(groups, egcQMMM, i) == j)
-            {
-                /* hack for tip4p */
-                qm_arr[qm_nr++] = i;
-            }
-        }
         if (qr->QMMMscheme == eQMMMschemeoniom)
         {
             /* add the atoms to the bQMMM array
@@ -455,50 +507,16 @@ void init_QMMMrec(const t_commrec  *cr,
             /* I assume that users specify the QM groups from small to
              * big(ger) in the mdp file
              */
-            qr->qm[j] = mk_QMrec();
+            qr->qm[i] = mk_QMrec();
             /* we need to throw out link atoms that in the previous layer
              * existed to separate this QMlayer from the previous
              * QMlayer. We use the iatoms array in the idef for that
              * purpose. If all atoms defining the current Link Atom (Dummy2)
              * are part of the current QM layer it needs to be removed from
              * qm_arr[].  */
-
-            gmx_mtop_ilistloop_all_t iloop = gmx_mtop_ilistloop_all_init(mtop);
-            int nral1 = 1 + NRAL(F_VSITE2);
-            while (const InteractionLists *ilists = gmx_mtop_ilistloop_all_next(iloop, &a_offset))
-            {
-                const InteractionList &ilist = (*ilists)[F_VSITE2];
-                for (int i = 0; i < ilist.size(); i += nral1)
-                {
-                    vsite = a_offset + ilist.iatoms[i  ]; /* the vsite         */
-                    ai    = a_offset + ilist.iatoms[i+1]; /* constructing atom */
-                    aj    = a_offset + ilist.iatoms[i+2]; /* constructing atom */
-                    if (getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, ai)
-                        &&
-                        getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, aj))
-                    {
-                        /* this dummy link atom needs to be removed from the qm_arr
-                         * before making the QMrec of this layer!
-                         */
-                        for (i = 0; i < qm_nr; i++)
-                        {
-                            if (qm_arr[i] == vsite)
-                            {
-                                /* drop the element */
-                                for (l = i; l < qm_nr; l++)
-                                {
-                                    qm_arr[l] = qm_arr[l+1];
-                                }
-                                qm_nr--;
-                            }
-                        }
-                    }
-                }
-            }
-
             /* store QM atoms in this layer in the QMrec and initialise layer
              */
-            init_QMrec(j, qr->qm[j], qm_nr, qm_arr, mtop, ir);
+            init_QMrec(i, qr->qm[i], qmmmAtoms.size(), qmmmAtoms.data(), mtop, ir);
         }
     }
     if (qr->QMMMscheme != eQMMMschemeoniom)
@@ -511,19 +529,10 @@ void init_QMMMrec(const t_commrec  *cr,
          * TODO: Consider doing this in grompp instead.
          */
 
-        int molb = 0;
-        for (k = 0; k < qm_nr; k++)
-        {
-            int     indexInMolecule;
-            mtopGetMolblockIndex(mtop, qm_arr[k], &molb, nullptr, &indexInMolecule);
-            t_atom *atom = &mtop->moltype[mtop->molblock[molb].type].atoms.atom[indexInMolecule];
-            atom->q  = 0.0;
-            atom->qB = 0.0;
-        }
         qr->qm[0] = mk_QMrec();
         /* store QM atoms in the QMrec and initialise
          */
-        init_QMrec(0, qr->qm[0], qm_nr, qm_arr, mtop, ir);
+        init_QMrec(0, qr->qm[0], qmmmAtoms.size(), qmmmAtoms.data(), mtop, ir);
 
         /* MM rec creation */
         mm               = mk_MMrec();

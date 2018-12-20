@@ -39,8 +39,11 @@
 
 #include "config.h"
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/utility/arrayref.h"
 
 #define GMX_QMMM (GMX_QMMM_MOPAC || GMX_QMMM_GAMESS || GMX_QMMM_GAUSSIAN || GMX_QMMM_ORCA)
 
@@ -145,5 +148,22 @@ real calculate_QMMM(const t_commrec  *cr,
  * (listed in QMMMrec.QMpackage). The binary of the QM package is
  * called by system().
  */
+
+/*! \brief
+ * Populate vector of atoms that are in QMMM region.
+ *
+ * \param[in] mtop Topology to use for populating array.
+ * \param[in] ir   Inputrec used in simulation.
+ * \returns Vector of atoms.
+ */
+std::vector<int> populateQmmmArray(const t_inputrec &ir, const gmx_mtop_t &mtop);
+
+/*! \brief
+ * Remove charges from QMMM atoms.
+ *
+ * \param[in] mtop Topology used for removing atoms.
+ * \param[in] qmmmAtoms ArrayRef to vector conatining qmmm atom indices.
+ */
+void removeQmmmAtomCharges(gmx_mtop_t *mtop, gmx::ArrayRef<const int> qmmmAtoms);
 
 #endif
