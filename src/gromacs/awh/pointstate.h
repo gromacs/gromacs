@@ -338,10 +338,10 @@ class PointState
          * \param[in] weighthistScaling   Scaling factor for the reference weight histogram.
          * \param[in] logPmfSumScaling    Log of the scaling factor for the PMF histogram.
          */
-        void updateWithNewSampling(const BiasParams &params,
-                                   int64_t           numUpdates,
-                                   double            weighthistScaling,
-                                   double            logPmfSumScaling)
+        void updateWithNewSampling(const BiasParams            &params,
+                                   gmx_unused int64_t           numUpdates,
+                                   double                       weighthistScaling,
+                                   double                       logPmfSumScaling)
         {
             GMX_RELEASE_ASSERT(lastUpdateIndex_ == numUpdates, "When doing a normal update, the point update index should match the global index, otherwise we lost (skipped?) updates.");
 

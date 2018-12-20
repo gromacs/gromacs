@@ -462,7 +462,7 @@ constraintGroupRadius(const gmx_moltype_t                     &moltype,
                       const real                               constraintLength,
                       const real                               temperature)
 {
-    const int numConstraints = at2con.index[centralAtom + 1] - at2con.index[centralAtom];
+    const int gmx_unused numConstraints = at2con.index[centralAtom + 1] - at2con.index[centralAtom];
     GMX_RELEASE_ASSERT(numConstraints == numPartnerAtoms, "We expect as many constraints as partner atoms here");
 
     std::array<int, numPartnerAtoms> partnerAtoms;

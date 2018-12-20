@@ -388,7 +388,7 @@ early_termination:
         }
         else
         {
-            int status = runParserLoop(scanner, parserState.get(), false);
+            int gmx_unused status = runParserLoop(scanner, parserState.get(), false);
             GMX_RELEASE_ASSERT(status == 0,
                                "Parser errors should have resulted in an exception");
         }
