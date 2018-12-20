@@ -174,7 +174,6 @@ void gmx::Integrator::do_md()
     gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
     gmx_global_stat_t       gstat;
-    gmx_update_t           *upd   = nullptr;
     t_graph                *graph = nullptr;
     gmx_groups_t           *groups;
     gmx_ekindata_t         *ekind;
@@ -252,10 +251,11 @@ void gmx::Integrator::do_md()
                         oenv, mdrunOptions.continuationOptions.appendFiles);
     }
 
+    std::unique_ptr<gmx_update_t> upd = nullptr;
     /* Initial values */
     init_md(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
             &t, &t0, state_global, lam0,
-            nrnb, top_global, &upd, deform,
+            nrnb, top_global, upd, deform,
             nfile, fnm, &outf, &mdebin,
             force_vir, shake_vir, total_vir, pres, mu_tot, &bSimAnn, &vcm, wcycle);
 
@@ -720,7 +720,7 @@ void gmx::Integrator::do_md()
 
         if (bSimAnn)
         {
-            update_annealing_target_temp(ir, t, upd);
+            update_annealing_target_temp(ir, t, upd.get());
         }
 
         /* Stop Center of Mass motion */
