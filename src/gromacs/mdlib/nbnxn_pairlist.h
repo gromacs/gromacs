@@ -48,7 +48,8 @@
 #include "gromacs/utility/defaultinitallocator.h"
 #include "gromacs/utility/real.h"
 
-struct nbnxn_list_work_t;
+struct NbnxnPairlistCpuWork;
+struct NbnxnPairlistGpuWork;
 struct tMPI_Atomic;
 
 /* Convenience type for vector that avoids initialization at resize() */
@@ -205,7 +206,7 @@ struct NbnxnPairlistCpu
 
     int                     nci_tot;     /* The total number of i clusters           */
 
-    nbnxn_list_work_t      *work;
+    NbnxnPairlistCpuWork   *work;
 
     gmx_cache_protect_t     cp1;
 };
@@ -233,7 +234,7 @@ struct NbnxnPairlistGpu
     int                     excl_nalloc; /* The allocation size for excl             */
     int                     nci_tot;     /* The total number of i clusters           */
 
-    nbnxn_list_work_t      *work;
+    NbnxnPairlistGpuWork   *work;
 
     gmx_cache_protect_t     cp1;
 };
