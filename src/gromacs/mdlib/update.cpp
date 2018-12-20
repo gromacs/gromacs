@@ -43,6 +43,7 @@
 
 #include <algorithm>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
@@ -92,22 +93,75 @@ typedef struct {
     real V;
 } gmx_sd_sigma_t;
 
-typedef struct {
+struct gmx_stochd_t
+{
     /* BD stuff */
-    real           *bd_rf;
+    std::vector<real>           bd_rf;
     /* SD stuff */
-    gmx_sd_const_t *sdc;
-    gmx_sd_sigma_t *sdsig;
+    std::vector<gmx_sd_const_t> sdc;
+    std::vector<gmx_sd_sigma_t> sdsig;
     /* andersen temperature control stuff */
-    gmx_bool       *randomize_group;
-    real           *boltzfac;
-} gmx_stochd_t;
+    std::vector<gmx_bool>       randomize_group;
+    std::vector<real>           boltzfac;
+
+    gmx_stochd_t(const t_inputrec *ir)
+    {
+        const t_grpopts *opts = &ir->opts;
+        const int        ngtc = opts->ngtc;
+
+        if (ir->eI == eiBD)
+        {
+            bd_rf.resize(ngtc);
+        }
+        else if (EI_SD(ir->eI))
+        {
+            sdc.resize(ngtc);
+            sdsig.resize(ngtc);
+
+            for (int gt = 0; gt < ngtc; gt++)
+            {
+                if (opts->tau_t[gt] > 0)
+                {
+                    sdc[gt].em  = std::exp(-ir->delta_t/opts->tau_t[gt]);
+                }
+                else
+                {
+                    /* No friction and noise on this group */
+                    sdc[gt].em  = 1;
+                }
+            }
+        }
+        else if (ETC_ANDERSEN(ir->etc))
+        {
+            randomize_group.resize(ngtc);
+            boltzfac.resize(ngtc);
+
+            /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
+            /* since constraint groups don't necessarily match up with temperature groups! This is checked in readir.c */
+
+            for (int gt = 0; gt < ngtc; gt++)
+            {
+                real reft = std::max<real>(0, opts->ref_t[gt]);
+                if ((opts->tau_t[gt] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
+                {
+                    randomize_group[gt] = TRUE;
+                    boltzfac[gt]        = BOLTZ*opts->ref_t[gt];
+                }
+                else
+                {
+                    randomize_group[gt] = FALSE;
+                }
+            }
+        }
+    }
+};
+
 
 struct gmx_update_t
 {
-    gmx_stochd_t           *sd;
+    std::unique_ptr<gmx_stochd_t> sd = nullptr;
     /* xprime for constraint algorithms */
-    PaddedVector<gmx::RVec> xp;
+    PaddedVector<gmx::RVec>       xp;
 
     /* Variables for the deform algorithm */
     int64_t           deformref_step;
@@ -763,65 +817,6 @@ static void do_update_vv_pos(int start, int nrend, real dt,
     }
 } /* do_update_vv_pos */
 
-static gmx_stochd_t *init_stochd(const t_inputrec *ir)
-{
-    gmx_stochd_t   *sd;
-
-    snew(sd, 1);
-
-    const t_grpopts *opts = &ir->opts;
-    int              ngtc = opts->ngtc;
-
-    if (ir->eI == eiBD)
-    {
-        snew(sd->bd_rf, ngtc);
-    }
-    else if (EI_SD(ir->eI))
-    {
-        snew(sd->sdc, ngtc);
-        snew(sd->sdsig, ngtc);
-
-        gmx_sd_const_t *sdc = sd->sdc;
-
-        for (int gt = 0; gt < ngtc; gt++)
-        {
-            if (opts->tau_t[gt] > 0)
-            {
-                sdc[gt].em  = std::exp(-ir->delta_t/opts->tau_t[gt]);
-            }
-            else
-            {
-                /* No friction and noise on this group */
-                sdc[gt].em  = 1;
-            }
-        }
-    }
-    else if (ETC_ANDERSEN(ir->etc))
-    {
-        snew(sd->randomize_group, ngtc);
-        snew(sd->boltzfac, ngtc);
-
-        /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
-        /* since constraint groups don't necessarily match up with temperature groups! This is checked in readir.c */
-
-        for (int gt = 0; gt < ngtc; gt++)
-        {
-            real reft = std::max<real>(0, opts->ref_t[gt]);
-            if ((opts->tau_t[gt] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
-            {
-                sd->randomize_group[gt] = TRUE;
-                sd->boltzfac[gt]        = BOLTZ*opts->ref_t[gt];
-            }
-            else
-            {
-                sd->randomize_group[gt] = FALSE;
-            }
-        }
-    }
-
-    return sd;
-}
-
 void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
 {
     if (ir->eI == eiBD)
@@ -857,10 +852,7 @@ gmx_update_t *init_update(const t_inputrec    *ir,
 {
     gmx_update_t *upd = new(gmx_update_t);
 
-    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
-    {
-        upd->sd    = init_stochd(ir);
-    }
+    upd->sd    = gmx::compat::make_unique<gmx_stochd_t>(ir);
 
     update_temperature_constants(upd, ir);
 
@@ -930,8 +922,8 @@ doSDUpdateGeneral(gmx_stochd_t *sd,
     gmx::ThreeFry2x64<0> rng(seed, gmx::RandomDomain::UpdateCoordinates);
     gmx::TabulatedNormalDistribution<real, 14> dist;
 
-    gmx_sd_const_t *sdc = sd->sdc;
-    gmx_sd_sigma_t *sig = sd->sdsig;
+    gmx_sd_const_t *sdc = sd->sdc.data();
+    gmx_sd_sigma_t *sig = sd->sdsig.data();
 
     for (int n = start; n < nrend; n++)
     {
@@ -1568,7 +1560,7 @@ update_sd_second_half(int64_t                        step,
                 getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
                 doSDUpdateGeneral<SDUpdate::FrictionAndNoiseOnly>
-                    (upd->sd,
+                    (upd->sd.get(),
                     start_th, end_th, dt,
                     inputrec->opts.acc, inputrec->opts.nFreeze,
                     md->invmass, md->ptype,
@@ -1846,7 +1838,7 @@ void update_coords(int64_t                             step,
                     {
                         // With constraints, the SD update is done in 2 parts
                         doSDUpdateGeneral<SDUpdate::ForcesOnly>
-                            (upd->sd,
+                            (upd->sd.get(),
                             start_th, end_th, dt,
                             inputrec->opts.acc, inputrec->opts.nFreeze,
                             md->invmass, md->ptype,
@@ -1857,7 +1849,7 @@ void update_coords(int64_t                             step,
                     else
                     {
                         doSDUpdateGeneral<SDUpdate::Combined>
-                            (upd->sd,
+                            (upd->sd.get(),
                             start_th, end_th, dt,
                             inputrec->opts.acc, inputrec->opts.nFreeze,
                             md->invmass, md->ptype,
@@ -1873,7 +1865,7 @@ void update_coords(int64_t                             step,
                                  md->cFREEZE, md->cTC,
                                  x_rvec, xp_rvec, v_rvec, f_rvec,
                                  inputrec->bd_fric,
-                                 upd->sd->bd_rf,
+                                 upd->sd->bd_rf.data(),
                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
                     break;
                 case (eiVV):
@@ -1940,7 +1932,8 @@ extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, 
     if ((ir->etc == etcANDERSEN) || do_per_step(step, roundToInt(1.0/rate)))
     {
         andersen_tcoupl(ir, step, cr, md, v, rate,
-                        upd->sd->randomize_group, upd->sd->boltzfac);
+                        upd->sd->randomize_group,
+                        upd->sd->boltzfac);
         return TRUE;
     }
     return FALSE;

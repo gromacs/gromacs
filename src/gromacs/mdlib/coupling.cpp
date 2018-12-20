@@ -781,7 +781,8 @@ void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt
 void andersen_tcoupl(const t_inputrec *ir, int64_t step,
                      const t_commrec *cr, const t_mdatoms *md,
                      gmx::ArrayRef<gmx::RVec> v,
-                     real rate, const gmx_bool *randomize, const real *boltzfac)
+                     real rate, const std::vector<gmx_bool> &randomize,
+                     gmx::ArrayRef<const real> boltzfac)
 {
     const int                                 *gatindex = (DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
     int                                        i;
