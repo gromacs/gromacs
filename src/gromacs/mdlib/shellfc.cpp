@@ -1006,7 +1006,6 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xpr
     t_iatom    *iatoms;
     int         nral;
     char        buf[22];
-    int         nhw = 0;
 
     snew(pbc, 1);
     set_pbc(pbc, ir->ePBC, box);
@@ -1023,11 +1022,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xpr
         fprintf(debug, "HARDWALL: rwall = %f  rwall2 = %f\n", rwall, rwall2);
     }
 
-    /* communicate x and v */
-    if (DOMAINDECOMP(cr))
-    {
-        dd_move_x_shells(cr->dd, box, xprime);
-    }
+    /* NB that communication of x and v are done in update_coords, since not all
+     * polarizable simulations necessarily use the hardwall function */
 
     /* loop over all entries in ilist for Drude bonds */
     nral  = NRAL(F_DRUDEBONDS);
@@ -1279,8 +1275,6 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xpr
             /* copy new velocities back */
             copy_rvec(va, v[ia]);
             copy_rvec(vb, v[ib]);
-
-            nhw++;
 
         } /* end of hard wall conditions */
 
