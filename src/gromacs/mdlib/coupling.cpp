@@ -102,8 +102,7 @@ static const double* sy_const[] = {
    };*/
 
 /* these integration routines are only referenced inside this file */
-/* TODO: remove use of commrec - jal debugging */
-static void NHC_trotter(t_commrec *cr, t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real dtfull,
+static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real dtfull,
                         double xi[], double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel,
                         gmx_bool bUpdateXi)
 
@@ -163,15 +162,6 @@ static void NHC_trotter(t_commrec *cr, t_grpopts *opts, int nvar, gmx_ekindata_t
                 Ekin = 2*trace(tcstat->ekinh)*tcstat->ekinscaleh_nhc;
             }
         }
-
-        if (debug)
-        {
-            if (MASTER(cr))
-            {
-                fprintf(debug, "NHC TROTTER: i = %d Ekin = %f iQinv = %f nd = %f reft = %f\n", i, Ekin, iQinv[0], nd, reft);
-            }
-        }
-
         kT = BOLTZ*reft;
 
         for (mi = 0; mi < mstepsi; mi++)
@@ -661,8 +651,7 @@ void nosehoover_KE(t_inputrec *ir, t_commrec *cr, t_idef *idef, t_mdatoms *md, t
         /****************************************/
 
         /* we already have masses and velocities from above */
-        /* ti = md->cTC[ib]; */
-        /* TODO: THIS IS WRONG for non-local atoms, assume correct setup */
+        /* fetching ti from md->cTC[ib] is not defined for non-local atoms, so we assume a correct setup */
         ti += 1;
 
         if (debug)
@@ -803,8 +792,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, real dt, t_
 
         /* propagate thermostat variables for subdivided time step */
         /* here, only the velocities (positions at end) */
-        /* TODO: remove commrec after debugging */
-        NHC_trotter(cr, opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
+        NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
                     state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), FALSE);
 
         for (i=0; i<opts->ngtc; i++)
@@ -861,15 +849,19 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, real dt, t_
             invmtot = (1.0)/mtot;
 
             /* TODO: REMOVE */
+#if 0
             if (debug)
             {
-                fprintf(debug, "DRUDE TFP: init atom v[%d]: %f %f %f drude v[%d]: %f %f %f (%p)\n",
+#endif
+                fprintf(stderr, "DRUDE TFP: init atom v[%d]: %f %f %f drude v[%d]: %f %f %f (%p)\n",
                         DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1),
                         state->v[ia][XX], state->v[ia][YY], state->v[ia][ZZ],
                         DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1),
                         state->v[ib][XX], state->v[ib][YY], state->v[ib][ZZ],
                         state->v[ib]);
+#if 0
             }
+#endif
 
             /* get velocities */
             copy_rvec(state->v[ia], va);    /* atom */
@@ -998,9 +990,12 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, real dt, t_
         /* TODO: TESTING */
         relative_tstat(state->v, md, idef, ir, cr, grpmass, FALSE, FALSE);
 
+        /* jal - TO REMOVE */
+#if 0
         if (debug)
         {
             fprintf(debug, "DRUDE TFP: after REL TSTAT after scale: n = %d\n", n);
+#endif
 
             for (i = 0; i < ilist->nr; i += 1+nral)
             {
@@ -1008,14 +1003,16 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, real dt, t_
                 ftype  = iatoms[0];
                 ia     = iatoms[1];
                 ib     = iatoms[2];
-                fprintf(debug, "DRUDE TFP: iatoms after REL TSTAT after scale: atom v[%d] = %f %f %f drude v[%d(%d)] = %f %f %f (%p)\n",
+                fprintf(stderr, "DRUDE TFP: iatoms after REL TSTAT after scale: atom v[%d] = %f %f %f drude v[%d] = %f %f %f (%p)\n",
                         DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1),
                         state->v[ia][XX], state->v[ia][YY], state->v[ia][ZZ],
-                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), ib,
+                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1),
                         state->v[ib][XX], state->v[ib][YY], state->v[ib][ZZ],
                         state->v[ib]);
             }
+#if 0
         }
+#endif
 
         /* calculate new kinetic energies */
         nosehoover_KE(ir, cr, idef, md, state, grpmass, ekind, NULL, TRUE);
@@ -1037,8 +1034,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, real dt, t_
 
         /* propagate remaining thermostat variables for subdivided time step */
         /* here, include the position update */
-        /* TODO: remove commrec */
-        NHC_trotter(cr, opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
+        NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
                     state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), TRUE); 
     } /* end for-loop over thermostat subdivided time steps */
 
@@ -1780,7 +1776,7 @@ void trotter_update(t_commrec *cr, t_inputrec *ir, t_idef *idef, gmx_int64_t ste
                 }
                 else
                 {
-                    NHC_trotter(cr, opts, state->nnhpres, ekind, dt, state->nhpres_xi,
+                    NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
                                 state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE, TRUE);
                 }
                 break;
@@ -1788,11 +1784,11 @@ void trotter_update(t_commrec *cr, t_inputrec *ir, t_idef *idef, gmx_int64_t ste
             case etrtNHC2:
                 if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
                 {
-                    drude_tstat_for_particles(cr, ir, dt, idef, md, state, grpmass, MassQ, vcm, ekind, scalefac, trotter_seq[i]); 
+                    drude_tstat_for_particles(cr, ir, dt, idef, md, state, grpmass, MassQ, vcm, ekind, scalefac, trotter_seq[i]);
                 }
                 else
                 {
-                    NHC_trotter(cr, opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
+                    NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
                                 state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), TRUE);
                 }
 
