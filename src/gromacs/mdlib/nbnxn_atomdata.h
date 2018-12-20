@@ -41,6 +41,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -125,7 +126,8 @@ void nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
                                               bool                  FillLocal,
                                               nbnxn_atomdata_t     *nbat,
                                               gmx_nbnxn_gpu_t      *gpu_nbv,
-                                              int                   iloc);
+                                              int                   iloc,
+                                              int                   xsize);
 
 /*! \brief Outer body of X buffer operations on GPU: performs conversion from rvec to nb format.
  * returns true if GPU buffer ops are completed. !*/
@@ -136,7 +138,8 @@ gmx_bool nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
                                              gmx_nbnxn_gpu_t      *gpu_nbv,
                                              void                 *xPmeDevicePtr,
                                              int                   iloc,
-                                             rvec                 *x);
+                                             rvec                 *x,
+                                             const t_commrec      *cr);
 
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
@@ -161,7 +164,8 @@ void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search           *nbs,
                                         gmx_nbnxn_gpu_t        *gpu_nbv,
                                         void                   *fPmeDevicePtr,
                                         rvec                   *f,
-                                        gmx_wallcycle          *wcycle);
+                                        gmx_wallcycle          *wcycle,
+                                        const t_commrec        *cr);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,

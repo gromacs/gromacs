@@ -113,7 +113,7 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int         ncxy,
 
 /* CUDA kernel to add part of the force array(s) from nbnxn_atomdata_t to f */
 __global__ void
-nbnxn_gpu_add_nbat_f_to_f_kernel(const real* fnb, const rvec* pme_f,
+nbnxn_gpu_add_nbat_f_to_f_kernel(const real* fnb, rvec* pme_f,
                                  rvec* f, const int* cell,
                                  const int a0, const int a1,
                                  const int stride, const bool addPmeF)

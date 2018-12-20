@@ -217,6 +217,9 @@ struct gmx_nbnxn_cuda_t
     cu_atomdata_t            *atdat;          /**< atom data                                            */
     rvec                     *xrvec;          /**< coordinates in rvec format                           */
     rvec                     *frvec;          /**< force in rvec format                                 */
+    rvec                     *fpmervec;       /**< pme force buffer in rvec format                      */
+    rvec                     *xprvec;         /**< updated coordinates in rvec format                   */
+    rvec                     *vrvec;          /**< velocity in rvec format                              */
     int                      *abufops;        /**< x buf ops input buffer index mapping                 */
     int                      *nabufops[2];    /**< x buf ops num of atoms (local and non-local)         */
     int                      *cxybufops[2];   /**< x buf ops cell index mapping (local and non-local)   */

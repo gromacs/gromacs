@@ -1138,7 +1138,8 @@ void nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
                                               bool                  FillLocal,
                                               nbnxn_atomdata_t     *nbat,
                                               gmx_nbnxn_gpu_t      *gpu_nbv,
-                                              int                   iloc)
+                                              int                   iloc,
+                                              int                   xsize)
 {
     int g0 = 0, g1 = 0;
 
@@ -1173,7 +1174,7 @@ void nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
                                    nbs->a.data(), nbs->a.size(),
                                    grid.cxy_na.data(),
                                    grid.cxy_ind.data(),
-                                   iloc);
+                                   iloc, xsize);
 
     }
 
@@ -1186,7 +1187,8 @@ bool nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
                                          gmx_nbnxn_gpu_t      *gpu_nbv,
                                          void                 *xPmeDevicePtr,
                                          int                   iloc,
-                                         rvec                 *x)
+                                         rvec                 *x,
+                                         const t_commrec      *cr)
 {
     int g0 = 0, g1 = 0;
 
@@ -1223,7 +1225,7 @@ bool nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
                                                       grid.cxy_na.data(),
                                                       grid.cxy_ind.data(),
                                                       grid.cell0, grid.na_sc,
-                                                      iloc, x);
+                                                      iloc, x, cr);
 
     }
 
@@ -1736,7 +1738,8 @@ void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search            *nbs,
                                         gmx_nbnxn_gpu_t         *gpu_nbv,
                                         void                    *fPmeDevicePtr,
                                         rvec                    *f,
-                                        gmx_wallcycle           *wcycle)
+                                        gmx_wallcycle           *wcycle,
+                                        const t_commrec         *cr)
 {
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
@@ -1773,7 +1776,8 @@ void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search            *nbs,
                               gpu_nbv,
                               fPmeDevicePtr,
                               a0, a0+na,
-                              f);
+                              f,
+                              cr);
 
     wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);

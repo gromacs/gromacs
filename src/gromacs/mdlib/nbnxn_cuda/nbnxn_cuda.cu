@@ -686,6 +686,12 @@ void nbnxn_cuda_set_cacheconfig()
     }
 }
 
+//START TEMP INTEGRATION
+#include "gromacs/utility/gmxmpi.h"
+#include "gpuD2DCUDA.h"
+//END TEMP INTEGRATION
+
+
 /* Initialization for X buffer operations on GPU. */
 /* TODO  Remove explicit pinning from host arrays from here and manage in a more natural way*/
 void nbnxn_gpu_init_x_to_nbat_x(int                 ncxy,
@@ -695,7 +701,8 @@ void nbnxn_gpu_init_x_to_nbat_x(int                 ncxy,
                                 int                 a_nalloc,
                                 const int          *na_all,
                                 const int          *cxy_ind,
-                                int                 iloc)
+                                int                 iloc,
+                                int                 xsize)
 {
     cudaError_t   stat;
     cudaStream_t  stream  = gpu_nbv->stream[iloc];
@@ -710,10 +717,22 @@ void nbnxn_gpu_init_x_to_nbat_x(int                 ncxy,
         {
             freeDeviceBuffer(&gpu_nbv->xrvec);
         }
-        allocateDeviceBuffer(&gpu_nbv->xrvec, nbs->natoms_nonlocal, nullptr);
+        allocateDeviceBuffer(&gpu_nbv->xrvec, xsize, nullptr);
+
+        if (gpu_nbv->xprvec)
+        {
+            freeDeviceBuffer(&gpu_nbv->xprvec);
+        }
+        allocateDeviceBuffer(&gpu_nbv->xprvec, xsize, nullptr);
+
+
+        if (gpu_nbv->vrvec)
+        {
+            freeDeviceBuffer(&gpu_nbv->vrvec);
+        }
+        allocateDeviceBuffer(&gpu_nbv->vrvec, xsize, nullptr);
 
         gpu_nbv->bGpuBufferOps = false;
-
 
         if (gpu_nbv->abufops)
         {
@@ -802,6 +821,8 @@ void nbnxn_gpu_init_x_to_nbat_x(int                 ncxy,
     return;
 }
 
+
+
 /* X buffer operations on GPU: performs conversion from rvec to nb format. */
 bool nbnxn_gpu_x_to_nbat_x(int                   ncxy,
                            int                   g,
@@ -814,7 +835,8 @@ bool nbnxn_gpu_x_to_nbat_x(int                   ncxy,
                            int                   cell0,
                            int                   na_sc,
                            int                   iloc,
-                           rvec                 *x)
+                           rvec                 *x,
+                           const t_commrec      *cr)
 {
 
 
@@ -826,7 +848,7 @@ bool nbnxn_gpu_x_to_nbat_x(int                   ncxy,
 
     bool           bDoTime = gpu_nbv->bDoTime;
     cu_timers_t   *t       = gpu_nbv->timers;
-
+    cudaError_t    stat;
 
     gpu_nbv->bGpuBufferOps = true;
 
@@ -878,7 +900,10 @@ bool nbnxn_gpu_x_to_nbat_x(int                   ncxy,
     }
 
     const rvec *x_d;
-    bool        copyCoord = (xPmeDevicePtr == nullptr);
+    //bool        copyCoord = (xPmeDevicePtr == nullptr);
+    // coordinate data is now resident on GPU throughout.
+    bool        copyCoord = false;
+
 
     // copy X-coordinate data to device
     if (copyCoord)
@@ -889,11 +914,11 @@ bool nbnxn_gpu_x_to_nbat_x(int                   ncxy,
         }
 
         //FIXME: use copyToDeviceBuffer wrapper when multi-GPU pinning issue with x has been resolved
-        // auto devicePtr = &gpu_nbv->xrvec[copyAtomStart][0];
-        // copyToDeviceBuffer(&devicePtr, &x[copyAtomStart][0], 0, nCopyAtoms,
-        //                    stream, GpuApiCallBehavior::Async, nullptr);
-        cudaError_t stat = cudaMemcpyAsync(&gpu_nbv->xrvec[copyAtomStart][0], &x[copyAtomStart][0],
-                                           nCopyAtoms*sizeof(rvec), cudaMemcpyHostToDevice, stream);
+        //auto devicePtr = &gpu_nbv->xrvec[copyAtomStart][0];
+        //copyToDeviceBuffer(&devicePtr, &x[copyAtomStart][0], 0, nCopyAtoms,
+        //                   stream, GpuApiCallBehavior::Async, nullptr);
+        stat = cudaMemcpyAsync(&gpu_nbv->xrvec[copyAtomStart][0], &x[copyAtomStart][0],
+                               nCopyAtoms*sizeof(rvec), cudaMemcpyHostToDevice, stream);
         CU_RET_ERR(stat, "cudaMemcpy failed on gpu_nbv->xrvec");
 
 
@@ -901,17 +926,47 @@ bool nbnxn_gpu_x_to_nbat_x(int                   ncxy,
         {
             t->nb_h2d[iloc].closeTimingRegion(stream);
         }
-
-        x_d = gpu_nbv->xrvec;
     }
-    else //coordinates have already been copied by PME stream
+
+
+
+    if (xPmeDevicePtr != nullptr) //coordinates are in PME GPU array, device copy required
     {
-        x_d = (rvec*) xPmeDevicePtr;
+
+        stat = cudaMemcpyAsync(gpu_nbv->xrvec, (rvec*) xPmeDevicePtr, nCopyAtoms*sizeof(rvec),
+                               cudaMemcpyDeviceToDevice, stream);
+        CU_RET_ERR(stat, "cudaMemcpy failed on gpu_nbv->xrvec");
+
+    }
+
+    x_d = gpu_nbv->xrvec;
+
+    if (!LOCAL_I(iloc))
+    {
+
+        //PME coordinate gather from PP tasks
+
+        //get buffer size from PME rank
+        int msize;
+        //TODO
+        int pme_nodeid = cr->dd->pme_nodeid;
+        MPI_Recv(&msize, 1, MPI_INT, pme_nodeid, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        cudaStreamSynchronize(stream);
+        //send buffer to PME rank
+        if (msize > 0)
+        {
+            MPI_Send(gpu_nbv->xrvec, msize, MPI_FLOAT, pme_nodeid, 0, MPI_COMM_WORLD);
+        }
+
+        //Local/nonlocal multi-gpu D2D
+        cudaStreamSynchronize(stream);
+        gpuBufferOpsXCommCoord(gpu_nbv->xrvec, stream);
+
     }
 
     /* launch kernel on GPU */
     const int          threadsPerBlock = 128;
-
     KernelLaunchConfig config;
     config.blockSize[0]     = threadsPerBlock;
     config.blockSize[1]     = 1;
@@ -960,6 +1015,12 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int                *cell,
     }
     allocateDeviceBuffer(&gpu_nbv->frvec, nbs->natoms_nonlocal, nullptr);
 
+    if (gpu_nbv->fpmervec)
+    {
+        freeDeviceBuffer(&gpu_nbv->fpmervec);
+    }
+    allocateDeviceBuffer(&gpu_nbv->fpmervec, nbs->natoms_nonlocal, nullptr);
+
     if (a1 > 0)
     {
 
@@ -991,7 +1052,8 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
                                void                          *fPmeDevicePtr,
                                int                            a0,
                                int                            a1,
-                               rvec                          *f)
+                               rvec                          *f,
+                               const t_commrec               *cr)
 {
 
 
@@ -1001,11 +1063,40 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
     bool                 bDoTime = gpu_nbv->bDoTime;
     cu_timers_t         *t       = gpu_nbv->timers;
 
-    bool                 addPmeF = (fPmeDevicePtr != nullptr);
+    rvec                *fPmePtr;
+
+    int                  commsize = 1;
+    if (cr)
+    {
+        MPI_Comm_size(cr->mpi_comm_mysim, &commsize);
+    }
+
+    if (fPmeDevicePtr != nullptr)
+    {
+        fPmePtr = (rvec*) fPmeDevicePtr;
+    }
+    else
+    {
+        fPmePtr = gpu_nbv->fpmervec;
+
+        // Recieve PME Force from PME GPU
+        // TODO add support for case when PME is on CPU.
+        int msize = 0;
+        MPI_Recv(&msize, 1, MPI_INT, cr->dd->pme_nodeid, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        MPI_Recv(fPmePtr, msize, MPI_FLOAT,
+                 cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
+                 MPI_STATUS_IGNORE);
+
+    }
+
+    bool addPmeF = (fPmePtr != nullptr);
 
     //TODO (AG) enable copyForce=false (and zero device buffer)
     //when all bonded forces are done on GPU
-    bool        copyForce = true;
+    //bool        copyForce = true;
+    bool        copyForce = false;
+    cudaMemset(&gpu_nbv->frvec[a0][0], 0, (a1-a0)*sizeof(rvec));
 
     if (copyForce)
     {
@@ -1027,8 +1118,11 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
 
     }
 
-    /* ensure that PME GPU force calculations have completed */
-    cudaDeviceSynchronize();
+    if (commsize == 1)
+    {
+        /* ensure that PME GPU force calculations have completed */
+        cudaDeviceSynchronize();
+    }
 
     /* launch kernel */
     const int          threadsPerBlock = 128;
@@ -1045,7 +1139,6 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
 
     auto             kernelFn                = nbnxn_gpu_add_nbat_f_to_f_kernel;
     const float     *fPtr                    = (float*) adat->f;
-    const rvec      *fPmePtr                 = (rvec*) fPmeDevicePtr;
     rvec            *frvec                   = gpu_nbv->frvec;
     const int       *cell                    = gpu_nbv->cell;
     const int        stride                  = nbat->fstride;
@@ -1062,14 +1155,22 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
 
     launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
 
+    cudaStreamSynchronize(stream);
+    if (commsize > 1)
+    {
+        gpuBufferOpsFCommCoord(gpu_nbv->frvec, stream);
+    }
+
     if (bDoTime)
     {
         t->nb_d2h[0].openTimingRegion(stream);
     }
 
     //FIXME: use copyToDeviceBuffer wrapper when multi-GPU pinning issue with f has been resolved
+    //F copyback no longer required since force stays resident on GPU
     //copyFromDeviceBuffer(f, &gpu_nbv->frvec, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
-    cudaMemcpyAsync(f, gpu_nbv->frvec, a1*sizeof(rvec), cudaMemcpyDeviceToHost, stream);
+    //TODO
+    //cudaMemcpyAsync(f, gpu_nbv->frvec, a1*sizeof(rvec), cudaMemcpyDeviceToHost, stream);
 
     if (bDoTime)
     {
