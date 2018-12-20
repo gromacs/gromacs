@@ -614,7 +614,7 @@ static void subc_bb_dist2_simd4_xxxx(const float *bb_j,
 
 /* Returns if any atom pair from two clusters is within distance sqrt(rlist2) */
 static inline gmx_bool
-clusterpair_in_range(const nbnxn_list_work_t *work,
+clusterpair_in_range(const NbnxnPairlistGpuWork &work,
                      int si,
                      int csj, int stride, const real *x_j,
                      real rlist2)
@@ -625,7 +625,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
      * All coordinates are stored as xyzxyz...
      */
 
-    const real *x_i = work->x_ci;
+    const real *x_i = work.iSuperClusterData.x.data();
 
     for (int i = 0; i < c_nbnxnGpuClusterSize; i++)
     {
@@ -656,7 +656,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
 
     Simd4Real   rc2_S      = Simd4Real(rlist2);
 
-    const real *x_i        = work->x_ci_simd;
+    const real *x_i        = work.iSuperClusterData.xSimd.data();
 
     int         dim_stride = c_nbnxnGpuClusterSize*DIM;
     Simd4Real   ix_S0      = load4(x_i + si*dim_stride + 0*GMX_SIMD4_WIDTH);
@@ -858,19 +858,7 @@ static void nbnxn_init_pairlist(NbnxnPairlistCpu *nbl)
     nbl->cjOuter.clear();
     nbl->nci_tot     = 0;
 
-    nbl->work        = new nbnxn_list_work_t();
-    snew_aligned(nbl->work->bb_ci, 1, NBNXN_SEARCH_BB_MEM_ALIGN);
-    snew(nbl->work->x_ci, c_nbnxnCpuIClusterSize*DIM);
-#if GMX_SIMD
-    snew_aligned(nbl->work->x_ci_simd,
-                 c_nbnxnCpuIClusterSize*DIM*GMX_SIMD_REAL_WIDTH,
-                 GMX_SIMD_REAL_WIDTH);
-#endif
-
-    nbl->work->sort            = nullptr;
-    nbl->work->sort_nalloc     = 0;
-    nbl->work->sci_sort        = nullptr;
-    nbl->work->sci_sort_nalloc = 0;
+    nbl->work        = new NbnxnPairlistCpuWork();
 }
 
 /* Initializes a single NbnxnPairlistGpu data structure */
@@ -919,23 +907,7 @@ static void nbnxn_init_pairlist(NbnxnPairlistGpu *nbl,
     nbl->nexcl       = 1;
     set_no_excls(&nbl->excl[0]);
 
-    nbl->work        = new nbnxn_list_work_t();
-#if NBNXN_BBXXXX
-    snew_aligned(nbl->work->pbb_ci, c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX, NBNXN_SEARCH_BB_MEM_ALIGN);
-#else
-    snew_aligned(nbl->work->bb_ci, c_gpuNumClusterPerCell, NBNXN_SEARCH_BB_MEM_ALIGN);
-#endif
-    int gpu_clusterpair_nc = c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize*DIM;
-    snew(nbl->work->x_ci, gpu_clusterpair_nc*DIM);
-#if GMX_SIMD
-    snew_aligned(nbl->work->x_ci_simd, gpu_clusterpair_nc*DIM*GMX_SIMD_REAL_WIDTH, GMX_SIMD_REAL_WIDTH);
-#endif
-    snew_aligned(nbl->work->d2, c_gpuNumClusterPerCell, NBNXN_SEARCH_BB_MEM_ALIGN);
-
-    nbl->work->sort            = nullptr;
-    nbl->work->sort_nalloc     = 0;
-    nbl->work->sci_sort        = nullptr;
-    nbl->work->sci_sort_nalloc = 0;
+    nbl->work        = new NbnxnPairlistGpuWork();
 }
 
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
@@ -1273,8 +1245,8 @@ makeClusterListSimple(const nbnxn_grid_t *      gridj,
                       float                     rbb2,
                       int * gmx_restrict        numDistanceChecks)
 {
-    const nbnxn_bb_t * gmx_restrict bb_ci = nbl->work->bb_ci;
-    const real * gmx_restrict       x_ci  = nbl->work->x_ci;
+    const nbnxn_bb_t * gmx_restrict bb_ci = nbl->work->iClusterData.bb.data();
+    const real * gmx_restrict       x_ci  = nbl->work->iClusterData.x.data();
 
     gmx_bool                        InRange;
 
@@ -1393,12 +1365,12 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
                                        real rlist2, float rbb2,
                                        int *numDistanceChecks)
 {
-    nbnxn_list_work_t *work   = nbl->work;
+    NbnxnPairlistGpuWork &work   = *nbl->work;
 
 #if NBNXN_BBXXXX
-    const float       *pbb_ci = work->pbb_ci;
+    const float          *pbb_ci = work.iSuperClusterData.bbPacked.data();
 #else
-    const nbnxn_bb_t  *bb_ci  = work->bb_ci;
+    const nbnxn_bb_t     *bb_ci  = work.iSuperClusterData.bb.data();
 #endif
 
     assert(c_nbnxnGpuClusterSize == gridi->na_c);
@@ -1416,7 +1388,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
     int  ci_last = -1;
 #endif
 
-    float *d2l = work->d2;
+    float *d2l = work.distanceBuffer.data();
 
     for (int subc = 0; subc < gridj->nsubc[scj]; subc++)
     {
@@ -2287,14 +2259,12 @@ static void addNewIEntry(NbnxnPairlistGpu *nbl, int sci, int shift, int gmx_unus
  * Entries with exclusions will all be sorted to the beginning of the list.
  */
 static void sort_cj_excl(nbnxn_cj_t *cj, int ncj,
-                         nbnxn_list_work_t *work)
+                         NbnxnPairlistCpuWork *work)
 {
-    int jnew;
-
     work->cj.resize(ncj);
 
     /* Make a list of the j-cells involving exclusions */
-    jnew = 0;
+    int jnew = 0;
     for (int j = 0; j < ncj; j++)
     {
         if (cj[j].excl != NBNXN_INTERACTION_MASK_ALL)
@@ -2529,9 +2499,6 @@ static void clear_pairlist(NbnxnPairlistGpu *nbl)
     nbl->ncj4          = 0;
     nbl->nci_tot       = 0;
     nbl->nexcl         = 1;
-
-    nbl->work->ncj_noq = 0;
-    nbl->work->ncj_hlj = 0;
 }
 
 /* Clears a group scheme pair list */
@@ -2558,6 +2525,15 @@ static inline void set_icell_bb_simple(gmx::ArrayRef<const nbnxn_bb_t> bb,
     bb_ci->upper[BB_X] = bb[ci].upper[BB_X] + shx;
     bb_ci->upper[BB_Y] = bb[ci].upper[BB_Y] + shy;
     bb_ci->upper[BB_Z] = bb[ci].upper[BB_Z] + shz;
+}
+
+/* Sets a simple list i-cell bounding box, including PBC shift */
+static inline void set_icell_bb(const nbnxn_grid_t &iGrid,
+                                int ci,
+                                real shx, real shy, real shz,
+                                NbnxnPairlistCpuWork *work)
+{
+    set_icell_bb_simple(iGrid.bb, ci, shx, shy, shz, &work->iClusterData.bb[0]);
 }
 
 #if NBNXN_BBXXXX
@@ -2597,31 +2573,76 @@ gmx_unused static void set_icell_bb_supersub(gmx::ArrayRef<const nbnxn_bb_t> bb,
     }
 }
 
+/* Sets a super-cell and sub cell bounding boxes, including PBC shift */
+gmx_unused static void set_icell_bb(const nbnxn_grid_t &iGrid,
+                                    int ci,
+                                    real shx, real shy, real shz,
+                                    NbnxnPairlistGpuWork *work)
+{
+#if NBNXN_BBXXXX
+    set_icell_bbxxxx_supersub(iGrid.pbb, ci, shx, shy, shz,
+                              work->iSuperClusterData.bbPacked.data());
+#else
+    set_icell_bb_supersub(iGrid.bb, ci, shx, shy, shz,
+                          work->iSuperClusterData.bb.data());
+#endif
+}
+
 /* Copies PBC shifted i-cell atom coordinates x,y,z to working array */
 static void icell_set_x_simple(int ci,
                                real shx, real shy, real shz,
                                int stride, const real *x,
-                               nbnxn_list_work_t *work)
+                               NbnxnPairlistCpuWork::IClusterData *iClusterData)
 {
-    int ia = ci*c_nbnxnCpuIClusterSize;
+    const int ia = ci*c_nbnxnCpuIClusterSize;
 
     for (int i = 0; i < c_nbnxnCpuIClusterSize; i++)
     {
-        work->x_ci[i*STRIDE_XYZ+XX] = x[(ia+i)*stride+XX] + shx;
-        work->x_ci[i*STRIDE_XYZ+YY] = x[(ia+i)*stride+YY] + shy;
-        work->x_ci[i*STRIDE_XYZ+ZZ] = x[(ia+i)*stride+ZZ] + shz;
+        iClusterData->x[i*STRIDE_XYZ+XX] = x[(ia+i)*stride+XX] + shx;
+        iClusterData->x[i*STRIDE_XYZ+YY] = x[(ia+i)*stride+YY] + shy;
+        iClusterData->x[i*STRIDE_XYZ+ZZ] = x[(ia+i)*stride+ZZ] + shz;
+    }
+}
+
+static void icell_set_x(int ci,
+                        real shx, real shy, real shz,
+                        int stride, const real *x,
+                        int nb_kernel_type,
+                        NbnxnPairlistCpuWork *work)
+{
+    switch (nb_kernel_type)
+    {
+#if GMX_SIMD
+#ifdef GMX_NBNXN_SIMD_4XN
+        case nbnxnk4xN_SIMD_4xN:
+            icell_set_x_simd_4xn(ci, shx, shy, shz, stride, x, work);
+            break;
+#endif
+#ifdef GMX_NBNXN_SIMD_2XNN
+        case nbnxnk4xN_SIMD_2xNN:
+            icell_set_x_simd_2xnn(ci, shx, shy, shz, stride, x, work);
+            break;
+#endif
+#endif
+        case nbnxnk4x4_PlainC:
+            icell_set_x_simple(ci, shx, shy, shz, stride, x, &work->iClusterData);
+            break;
+        default:
+            GMX_ASSERT(false, "Unhandled case");
+            break;
     }
 }
 
 /* Copies PBC shifted super-cell atom coordinates x,y,z to working array */
-static void icell_set_x_supersub(int ci,
-                                 real shx, real shy, real shz,
-                                 int stride, const real *x,
-                                 nbnxn_list_work_t *work)
+static void icell_set_x(int ci,
+                        real shx, real shy, real shz,
+                        int stride, const real *x,
+                        int gmx_unused nb_kernel_type,
+                        NbnxnPairlistGpuWork *work)
 {
 #if !GMX_SIMD4_HAVE_REAL
 
-    real * x_ci = work->x_ci;
+    real * x_ci = work->iSuperClusterData.x.data();
 
     int    ia = ci*c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize;
     for (int i = 0; i < c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize; i++)
@@ -2633,7 +2654,7 @@ static void icell_set_x_supersub(int ci,
 
 #else /* !GMX_SIMD4_HAVE_REAL */
 
-    real * x_ci = work->x_ci_simd;
+    real * x_ci = work->iSuperClusterData.xSimd.data();
 
     for (int si = 0; si < c_gpuNumClusterPerCell; si++)
     {
@@ -3716,25 +3737,13 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                         cxf = ci_x;
                     }
 
-                    if (bSimple)
-                    {
-                        set_icell_bb_simple(bb_i, ci, shx, shy, shz,
-                                            nbl->work->bb_ci);
-                    }
-                    else
-                    {
-#if NBNXN_BBXXXX
-                        set_icell_bbxxxx_supersub(pbb_i, ci, shx, shy, shz,
-                                                  nbl->work->pbb_ci);
-#else
-                        set_icell_bb_supersub(bb_i, ci, shx, shy, shz,
-                                              nbl->work->bb_ci);
-#endif
-                    }
+                    set_icell_bb(*gridi, ci, shx, shy, shz,
+                                 nbl->work);
 
-                    nbs->icell_set_x(cell0_i+ci, shx, shy, shz,
-                                     nbat->xstride, nbat->x,
-                                     nbl->work);
+                    icell_set_x(cell0_i+ci, shx, shy, shz,
+                                nbat->xstride, nbat->x,
+                                nb_kernel_type,
+                                nbl->work);
 
                     for (int cx = cxf; cx <= cxl; cx++)
                     {
@@ -4179,67 +4188,56 @@ static bool checkRebalanceSimpleLists(const nbnxn_pairlist_set_t *listSet)
  */
 static void sort_sci(NbnxnPairlistGpu *nbl)
 {
-    nbnxn_list_work_t *work;
-    int                m, s0, s1;
-    nbnxn_sci_t       *sci_sort;
-
     if (nbl->ncj4 <= nbl->nsci)
     {
         /* nsci = 0 or all sci have size 1, sorting won't change the order */
         return;
     }
 
-    work = nbl->work;
+    NbnxnPairlistGpuWork &work = *nbl->work;
 
     /* We will distinguish differences up to double the average */
-    m = (2*nbl->ncj4)/nbl->nsci;
+    const int m = (2*nbl->ncj4)/nbl->nsci;
 
-    if (m + 1 > work->sort_nalloc)
+    if (work.sci_sort_nalloc != nbl->sci_nalloc)
     {
-        work->sort_nalloc = over_alloc_large(m + 1);
-        srenew(work->sort, work->sort_nalloc);
-    }
-
-    if (work->sci_sort_nalloc != nbl->sci_nalloc)
-    {
-        work->sci_sort_nalloc = nbl->sci_nalloc;
-        nbnxn_realloc_void(reinterpret_cast<void **>(&work->sci_sort),
+        work.sci_sort_nalloc = nbl->sci_nalloc;
+        nbnxn_realloc_void(reinterpret_cast<void **>(&work.sci_sort),
                            0,
-                           work->sci_sort_nalloc*sizeof(*work->sci_sort),
+                           work.sci_sort_nalloc*sizeof(*work.sci_sort),
                            nbl->alloc, nbl->free);
     }
 
+    std::vector<int> &sort = work.sortBuffer;
+    /* Set up m + 1 entries in sort, initialized at 0 */
+    sort.clear();
+    sort.resize(m + 1, 0);
     /* Count the entries of each size */
-    for (int i = 0; i <= m; i++)
-    {
-        work->sort[i] = 0;
-    }
     for (int s = 0; s < nbl->nsci; s++)
     {
         int i = std::min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
-        work->sort[i]++;
+        sort[i]++;
     }
     /* Calculate the offset for each count */
-    s0            = work->sort[m];
-    work->sort[m] = 0;
+    int s0  = sort[m];
+    sort[m] = 0;
     for (int i = m - 1; i >= 0; i--)
     {
-        s1            = work->sort[i];
-        work->sort[i] = work->sort[i + 1] + s0;
-        s0            = s1;
+        int s1  = sort[i];
+        sort[i] = sort[i + 1] + s0;
+        s0      = s1;
     }
 
     /* Sort entries directly into place */
-    sci_sort = work->sci_sort;
+    nbnxn_sci_t *sci_sort = work.sci_sort;
     for (int s = 0; s < nbl->nsci; s++)
     {
         int i = std::min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
-        sci_sort[work->sort[i]++] = nbl->sci[s];
+        sci_sort[sort[i]++] = nbl->sci[s];
     }
 
     /* Swap the sci pointers so we use the new, sorted list */
-    work->sci_sort = nbl->sci;
-    nbl->sci       = sci_sort;
+    std::swap(nbl->sci, work.sci_sort);
 }
 
 /* Make a local or non-local pair-list, depending on iloc */
@@ -4254,7 +4252,6 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
                          t_nrnb               *nrnb)
 {
     nbnxn_grid_t      *gridi, *gridj;
-    int                nzi, zj0, zj1;
     int                nsubpair_target;
     float              nsubpair_tot_est;
     int                nnbl;
@@ -4278,41 +4275,11 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
         init_buffer_flags(&nbat->buffer_flags, nbat->natoms);
     }
 
-    if (nbl_list->bSimple)
-    {
-#if GMX_SIMD
-        switch (nb_kernel_type)
-        {
-#ifdef GMX_NBNXN_SIMD_4XN
-            case nbnxnk4xN_SIMD_4xN:
-                nbs->icell_set_x = icell_set_x_simd_4xn;
-                break;
-#endif
-#ifdef GMX_NBNXN_SIMD_2XNN
-            case nbnxnk4xN_SIMD_2xNN:
-                nbs->icell_set_x = icell_set_x_simd_2xnn;
-                break;
-#endif
-            default:
-                nbs->icell_set_x = icell_set_x_simple;
-                break;
-        }
-#else   // GMX_SIMD
-        /* MSVC 2013 complains about switch statements without case */
-        nbs->icell_set_x = icell_set_x_simple;
-#endif  // GMX_SIMD
-    }
-    else
-    {
-        nbs->icell_set_x = icell_set_x_supersub;
-    }
-
+    int nzi;
     if (LOCAL_I(iloc))
     {
         /* Only zone (grid) 0 vs 0 */
         nzi = 1;
-        zj0 = 0;
-        zj1 = 1;
     }
     else
     {
@@ -4352,7 +4319,14 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
     {
         gridi = &nbs->grid[zi];
 
-        if (NONLOCAL_I(iloc))
+        int zj0;
+        int zj1;
+        if (LOCAL_I(iloc))
+        {
+            zj0 = 0;
+            zj1 = 1;
+        }
+        else
         {
             zj0 = nbs->zones->izone[zi].j0;
             zj1 = nbs->zones->izone[zi].j1;
