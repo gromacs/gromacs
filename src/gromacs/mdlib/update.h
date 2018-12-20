@@ -47,6 +47,7 @@
 class ekinstate_t;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
+struct gmx_stochd_t;
 struct t_extmass;
 struct t_fcdata;
 struct t_graph;
@@ -56,18 +57,28 @@ struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 
-/* Abstract type for update */
-struct gmx_update_t;
-
 namespace gmx
 {
 class BoxDeformation;
 class Constraints;
 }
 
-/* Initialize the stochastic dynamics struct */
-gmx_update_t *init_update(const t_inputrec    *ir,
-                          gmx::BoxDeformation *deform);
+struct gmx_update_t
+{
+    gmx_stochd_t           *sd = nullptr;
+    /* xprime for constraint algorithms */
+    PaddedVector<gmx::RVec> xp;
+
+    /* Variables for the deform algorithm */
+    int64_t           deformref_step = 0;
+    matrix            deformref_box;
+
+    //! Box deformation handler (or nullptr if inactive).
+    gmx::BoxDeformation *deform;
+
+    gmx_update_t(const t_inputrec    *ir, gmx::BoxDeformation *deform);
+    ~gmx_update_t();
+};
 
 /* Update pre-computed constants that depend on the reference
  * temperature for coupling.
@@ -77,7 +88,7 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir);
 
 /* Update the size of per-atom arrays (e.g. after DD re-partitioning,
    which might increase the number of home atoms). */
-void update_realloc(gmx_update_t *upd, int natoms);
+void update_realloc(std::unique_ptr<gmx_update_t> &upd, int natoms);
 
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
@@ -107,37 +118,37 @@ void update_pcouple_before_coordinates(FILE             *fplog,
  * and scales the coordinates.
  * When the deform option is used, scales coordinates and box here.
  */
-void update_pcouple_after_coordinates(FILE             *fplog,
-                                      int64_t           step,
-                                      const t_inputrec *inputrec,
-                                      const t_mdatoms  *md,
-                                      const matrix      pressure,
-                                      const matrix      forceVirial,
-                                      const matrix      constraintVirial,
-                                      const matrix      parrinellorahmanMu,
-                                      t_state          *state,
-                                      t_nrnb           *nrnb,
-                                      gmx_update_t     *upd);
+void update_pcouple_after_coordinates(FILE                          *fplog,
+                                      int64_t                        step,
+                                      const t_inputrec              *inputrec,
+                                      const t_mdatoms               *md,
+                                      const matrix                   pressure,
+                                      const matrix                   forceVirial,
+                                      const matrix                   constraintVirial,
+                                      const matrix                   parrinellorahmanMu,
+                                      t_state                       *state,
+                                      t_nrnb                        *nrnb,
+                                      std::unique_ptr<gmx_update_t> &upd);
 
-void update_coords(int64_t                              step,
-                   const t_inputrec                    *inputrec, /* input record and box stuff	*/
-                   const t_mdatoms                     *md,
-                   t_state                             *state,
-                   gmx::ArrayRefWithPadding<gmx::RVec>  f, /* forces on home particles */
-                   const t_fcdata                      *fcd,
-                   const gmx_ekindata_t                *ekind,
-                   const matrix                         M,
-                   gmx_update_t                        *upd,
-                   int                                  bUpdatePart,
-                   const t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
-                   const gmx::Constraints              *constr);
+void update_coords(int64_t                               step,
+                   const t_inputrec                     *inputrec, /* input record and box stuff	*/
+                   const t_mdatoms                      *md,
+                   t_state                              *state,
+                   gmx::ArrayRefWithPadding<gmx::RVec>   f, /* forces on home particles */
+                   const t_fcdata                       *fcd,
+                   const gmx_ekindata_t                 *ekind,
+                   const matrix                          M,
+                   std::unique_ptr<gmx_update_t>        &upd,
+                   int                                   bUpdatePart,
+                   const t_commrec                      *cr, /* these shouldn't be here -- need to think about it */
+                   const gmx::Constraints               *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
                                             const t_mdatoms *md,
                                             gmx::ArrayRef<gmx::RVec> v,
-                                            const gmx_update_t *upd,
+                                            const std::unique_ptr<gmx_update_t> &upd,
                                             const gmx::Constraints *constr);
 
 void constrain_velocities(int64_t                        step,
@@ -153,7 +164,7 @@ void constrain_coordinates(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                            t_state                       *state,
                            tensor                         vir_part,
-                           gmx_update_t                  *upd,
+                           std::unique_ptr<gmx_update_t> &upd,
                            gmx::Constraints              *constr,
                            gmx_bool                       bCalcVir,
                            bool                           do_log,
@@ -167,7 +178,7 @@ void update_sd_second_half(int64_t                        step,
                            const t_commrec               *cr,
                            t_nrnb                        *nrnb,
                            gmx_wallcycle_t                wcycle,
-                           gmx_update_t                  *upd,
+                           std::unique_ptr<gmx_update_t> &upd,
                            gmx::Constraints              *constr,
                            bool                           do_log,
                            bool                           do_ene);
@@ -178,7 +189,7 @@ void finish_update(const t_inputrec              *inputrec,
                    const t_graph                 *graph,
                    t_nrnb                        *nrnb,
                    gmx_wallcycle_t                wcycle,
-                   gmx_update_t                  *upd,
+                   std::unique_ptr<gmx_update_t> &upd,
                    const gmx::Constraints        *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
@@ -248,7 +259,8 @@ void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
 /* Rescale the velocities with the scaling factor in ekind */
 
 // TODO: This is the only function in update.h altering the inputrec
-void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t *upd);
+void update_annealing_target_temp(t_inputrec *ir, real t,
+                                  gmx_update_t *upd);
 /* Set reference temp for simulated annealing at time t*/
 
 real calc_temp(real ekin, real nrdf);

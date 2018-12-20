@@ -92,7 +92,8 @@ typedef struct {
     real V;
 } gmx_sd_sigma_t;
 
-typedef struct {
+struct gmx_stochd_t
+{
     /* BD stuff */
     real           *bd_rf;
     /* SD stuff */
@@ -101,21 +102,29 @@ typedef struct {
     /* andersen temperature control stuff */
     gmx_bool       *randomize_group;
     real           *boltzfac;
-} gmx_stochd_t;
-
-struct gmx_update_t
-{
-    gmx_stochd_t           *sd;
-    /* xprime for constraint algorithms */
-    PaddedVector<gmx::RVec> xp;
-
-    /* Variables for the deform algorithm */
-    int64_t           deformref_step;
-    matrix            deformref_box;
-
-    //! Box deformation handler (or nullptr if inactive).
-    gmx::BoxDeformation *deform;
 };
+
+// forward declaration
+static gmx_stochd_t *init_stochd(const t_inputrec *ir);
+
+gmx_update_t::gmx_update_t(const t_inputrec    *ir, gmx::BoxDeformation *deform) :
+    deform(deform)
+{
+    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
+    {
+        sd    = init_stochd(ir);
+    }
+    xp.resizeWithPadding(0);
+};
+
+gmx_update_t::~gmx_update_t()
+{
+    if (sd != nullptr)
+    {
+        sfree(sd);
+    }
+}
+
 
 static bool isTemperatureCouplingStep(int64_t step, const t_inputrec *ir)
 {
@@ -852,26 +861,7 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
     }
 }
 
-gmx_update_t *init_update(const t_inputrec    *ir,
-                          gmx::BoxDeformation *deform)
-{
-    gmx_update_t *upd = new(gmx_update_t);
-
-    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
-    {
-        upd->sd    = init_stochd(ir);
-    }
-
-    update_temperature_constants(upd, ir);
-
-    upd->xp.resizeWithPadding(0);
-
-    upd->deform = deform;
-
-    return upd;
-}
-
-void update_realloc(gmx_update_t *upd, int natoms)
+void update_realloc(std::unique_ptr<gmx_update_t> &upd, int natoms)
 {
     GMX_ASSERT(upd, "upd must be allocated before its fields can be reallocated");
 
@@ -1491,7 +1481,7 @@ void constrain_coordinates(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                            t_state                       *state,
                            tensor                         vir_part,
-                           gmx_update_t                  *upd,
+                           std::unique_ptr<gmx_update_t> &upd,
                            gmx::Constraints              *constr,
                            gmx_bool                       bCalcVir,
                            bool                           do_log,
@@ -1532,7 +1522,7 @@ update_sd_second_half(int64_t                        step,
                       const t_commrec               *cr,
                       t_nrnb                        *nrnb,
                       gmx_wallcycle_t                wcycle,
-                      gmx_update_t                  *upd,
+                      std::unique_ptr<gmx_update_t> &upd,
                       gmx::Constraints              *constr,
                       bool                           do_log,
                       bool                           do_ene)
@@ -1599,7 +1589,7 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
                    const t_graph                 *graph,
                    t_nrnb                        *nrnb,
                    gmx_wallcycle_t                wcycle,
-                   gmx_update_t                  *upd,
+                   std::unique_ptr<gmx_update_t> &upd,
                    const gmx::Constraints        *constr)
 {
     int homenr = md->homenr;
@@ -1681,17 +1671,17 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
     /* ############# END the update of velocities and positions ######### */
 }
 
-void update_pcouple_after_coordinates(FILE             *fplog,
-                                      int64_t           step,
-                                      const t_inputrec *inputrec,
-                                      const t_mdatoms  *md,
-                                      const matrix      pressure,
-                                      const matrix      forceVirial,
-                                      const matrix      constraintVirial,
-                                      const matrix      parrinellorahmanMu,
-                                      t_state          *state,
-                                      t_nrnb           *nrnb,
-                                      gmx_update_t     *upd)
+void update_pcouple_after_coordinates(FILE                          *fplog,
+                                      int64_t                        step,
+                                      const t_inputrec              *inputrec,
+                                      const t_mdatoms               *md,
+                                      const matrix                   pressure,
+                                      const matrix                   forceVirial,
+                                      const matrix                   constraintVirial,
+                                      const matrix                   parrinellorahmanMu,
+                                      t_state                       *state,
+                                      t_nrnb                        *nrnb,
+                                      std::unique_ptr<gmx_update_t> &upd)
 {
     int  start  = 0;
     int  homenr = md->homenr;
@@ -1780,18 +1770,18 @@ void update_pcouple_after_coordinates(FILE             *fplog,
     }
 }
 
-void update_coords(int64_t                             step,
-                   const t_inputrec                   *inputrec, /* input record and box stuff	*/
-                   const t_mdatoms                    *md,
-                   t_state                            *state,
-                   gmx::ArrayRefWithPadding<gmx::RVec> f,
-                   const t_fcdata                     *fcd,
-                   const gmx_ekindata_t               *ekind,
-                   const matrix                        M,
-                   gmx_update_t                       *upd,
-                   int                                 UpdatePart,
-                   const t_commrec                    *cr, /* these shouldn't be here -- need to think about it */
-                   const gmx::Constraints             *constr)
+void update_coords(int64_t                              step,
+                   const t_inputrec                    *inputrec, /* input record and box stuff	*/
+                   const t_mdatoms                     *md,
+                   t_state                             *state,
+                   gmx::ArrayRefWithPadding<gmx::RVec>  f,
+                   const t_fcdata                      *fcd,
+                   const gmx_ekindata_t                *ekind,
+                   const matrix                         M,
+                   std::unique_ptr<gmx_update_t>       &upd,
+                   int                                  UpdatePart,
+                   const t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
+                   const gmx::Constraints              *constr)
 {
     gmx_bool bDoConstr = (nullptr != constr);
 
@@ -1918,7 +1908,7 @@ void update_coords(int64_t                             step,
 extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
                                             const t_mdatoms *md,
                                             gmx::ArrayRef<gmx::RVec> v,
-                                            const gmx_update_t *upd,
+                                            const std::unique_ptr<gmx_update_t> &upd,
                                             const gmx::Constraints *constr)
 {
 
