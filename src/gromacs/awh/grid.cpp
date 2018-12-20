@@ -342,11 +342,11 @@ bool stepInMultiDimArray(int            numDim,
  * \param[in]     point           Grid point to get subgrid index for.
  * \param[in,out] subgridIndex    Subgrid multidimensional index.
  */
-void gridToSubgridIndex(const Grid     &grid,
-                        const awh_ivec  subgridOrigin,
-                        const awh_ivec  subgridNpoints,
-                        int             point,
-                        awh_ivec        subgridIndex)
+void gridToSubgridIndex(const Grid                &grid,
+                        const awh_ivec             subgridOrigin,
+                        const gmx_unused awh_ivec  subgridNpoints,
+                        int                        point,
+                        awh_ivec                   subgridIndex)
 {
     /* Get the subgrid index of the given grid point, for each dimension. */
     for (int d = 0; d < grid.numDimensions(); d++)
