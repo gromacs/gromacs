@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,6 +79,7 @@
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -2137,7 +2138,7 @@ int gmx_grompp(int argc, char *argv[])
         pr_symtab(debug, 0, "After close", &sys.symtab);
     }
 
-    /* make exclusions between QM atoms */
+    /* make exclusions between QM atoms and remove charges if needed */
     if (ir->bQMMM)
     {
         if (ir->QMMMscheme == eQMMMschemenormal && ir->ns_type == ensSIMPLE)
@@ -2147,6 +2148,11 @@ int gmx_grompp(int argc, char *argv[])
         else
         {
             generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_ORIGINAL);
+        }
+        if (ir->QMMMscheme != eQMMMschemeoniom)
+        {
+            std::vector<int> qmmmAtoms = populateQmmmArray(*ir, sys);
+            removeQmmmAtomCharges(&sys, qmmmAtoms);
         }
     }
 
