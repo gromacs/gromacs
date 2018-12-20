@@ -205,9 +205,8 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
     return wc;
 }
 
-/* TODO: Should be called from finish_run() or runner()
-   void wallcycle_destroy(gmx_wallcycle_t wc)
-   {
+void wallcycle_destroy(gmx_wallcycle_t wc)
+{
     if (wc == nullptr)
     {
         return;
@@ -226,8 +225,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
         sfree(wc->wcsc);
     }
     sfree(wc);
-   }
- */
+}
 
 static void wallcycle_all_start(gmx_wallcycle_t wc, int ewc, gmx_cycles_t cycle)
 {

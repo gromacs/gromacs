@@ -90,6 +90,9 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, struct t_commrec *cr)
  * Returns NULL when cycle counting is not supported.
  */
 
+/* cleans up wallcycle structure */
+void wallcycle_destroy(gmx_wallcycle_t wc);
+
 void wallcycle_start(gmx_wallcycle_t wc, int ewc);
 /* Starts the cycle counter (and increases the call count) */
 
