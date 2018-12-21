@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -271,7 +271,7 @@
     gmx_load_simd_4xn_interactions(l_cj[cjind].excl,
                                    filter_S0, filter_S1,
                                    filter_S2, filter_S3,
-                                   nbat->simd_interaction_array,
+                                   nbat->simdMasks.interaction_array.data(),
                                    &interact_S0, &interact_S1,
                                    &interact_S2, &interact_S3);
 #endif /* CHECK_EXCLS */
@@ -1066,7 +1066,7 @@
     {
         int egps_j;
 #if UNROLLJ == 2
-        egps_j    = nbat->energrp[cj>>1];
+        egps_j    = nbatParams.energrp[cj >> 1];
         egp_jj[0] = ((egps_j >> ((cj & 1)*egps_jshift)) & egps_jmask)*egps_jstride;
 #else
         /* We assume UNROLLI <= UNROLLJ */
@@ -1074,7 +1074,7 @@
         for (jdi = 0; jdi < UNROLLJ/UNROLLI; jdi++)
         {
             int jj;
-            egps_j = nbat->energrp[cj*(UNROLLJ/UNROLLI)+jdi];
+            egps_j = nbatParams.energrp[cj*(UNROLLJ/UNROLLI) + jdi];
             for (jj = 0; jj < (UNROLLI/2); jj++)
             {
                 egp_jj[jdi*(UNROLLI/2)+jj] = ((egps_j >> (jj*egps_jshift)) & egps_jmask)*egps_jstride;

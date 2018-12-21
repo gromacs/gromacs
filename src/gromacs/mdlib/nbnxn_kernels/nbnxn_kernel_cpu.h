@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ struct nonbonded_verlet_group_t;
  * within this function.
  *
  * \param[in,out] nbvg          The group (local/non-local) to compute interaction for
- * \param[in]     nbat          The atomdata for the interactions
+ * \param[in,out] nbat          The atomdata for the interactions
  * \param[in]     ic            Non-bonded interaction constants
  * \param[in]     shiftVectors  The PBC shift vectors
  * \param[in]     forceFlags    Flags that tell what to compute
@@ -69,7 +69,7 @@ struct nonbonded_verlet_group_t;
  */
 void
 nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
-                 const nbnxn_atomdata_t    *nbat,
+                 nbnxn_atomdata_t          *nbat,
                  const interaction_const_t *ic,
                  rvec                      *shiftVectors,
                  int                        forceFlags,
