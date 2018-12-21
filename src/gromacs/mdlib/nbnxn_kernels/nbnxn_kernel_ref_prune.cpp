@@ -60,7 +60,7 @@ nbnxn_kernel_prune_ref(NbnxnPairlistCpu *         nbl,
     nbnxn_cj_t       * gmx_restrict cjInner   = nbl->cj.data();
 
     const real       * gmx_restrict shiftvec = shift_vec[0];
-    const real       * gmx_restrict x        = nbat->x;
+    const real       * gmx_restrict x        = nbat->x().data();
 
     const real                      rlist2   = rlistInner*rlistInner;
 

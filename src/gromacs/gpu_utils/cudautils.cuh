@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,13 +157,13 @@ int cu_copy_D2H_async(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/, cud
  *
  *  The copy is launched in stream s or if not specified, in stream 0.
  */
-int cu_copy_H2D(void *d_dest, void *h_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = nullptr*/);
+int cu_copy_H2D(void *d_dest, const void *h_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = nullptr*/);
 
 /*! Launches synchronous host to device memory copy. */
-int cu_copy_H2D_sync(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
+int cu_copy_H2D_sync(void * /*d_dest*/, const void * /*h_src*/, size_t /*bytes*/);
 
 /*! Launches asynchronous host to device memory copy in stream s. */
-int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = nullptr*/);
+int cu_copy_H2D_async(void * /*d_dest*/, const void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = nullptr*/);
 
 // TODO: the 2 functions below are pretty much a constructor/destructor of a simple
 // GPU table object. There is also almost self-contained fetchFromParamLookupTable()
