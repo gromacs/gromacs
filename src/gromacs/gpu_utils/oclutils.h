@@ -132,20 +132,20 @@ int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
  *  identifying this particular host to device operation. The event can further
  *  be used to queue a wait for this operation or to query profiling information.
  */
-int ocl_copy_H2D(cl_mem d_dest, void* h_src,
+int ocl_copy_H2D(cl_mem d_dest, const void* h_src,
                  size_t offset, size_t bytes,
                  GpuApiCallBehavior transferKind,
                  cl_command_queue command_queue,
                  cl_event *copy_event);
 
 /*! \brief Launches asynchronous host to device memory copy. */
-int ocl_copy_H2D_async(cl_mem d_dest, void * h_src,
+int ocl_copy_H2D_async(cl_mem d_dest, const void * h_src,
                        size_t offset, size_t bytes,
                        cl_command_queue command_queue,
                        cl_event *copy_event);
 
 /*! \brief Launches synchronous host to device memory copy. */
-int ocl_copy_H2D_sync(cl_mem d_dest, void * h_src,
+int ocl_copy_H2D_sync(cl_mem d_dest, const void * h_src,
                       size_t offset, size_t bytes,
                       cl_command_queue command_queue);
 
