@@ -614,9 +614,10 @@ int Mdrunner::mdrunner()
             // If the user specified the number of ranks, then we must
             // respect that, but in default mode, we need to allow for
             // the number of GPUs to choose the number of ranks.
-
+            auto canUseGpuForNonbonded = nonbondedGpuSupportsBuild(nullptr);
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
+                    canUseGpuForNonbonded,
                     inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
@@ -682,10 +683,13 @@ int Mdrunner::mdrunner()
         // different nodes, which is the user's responsibilty to
         // handle. If unsuitable, we will notice that during task
         // assignment.
-        bool gpusWereDetected  = hwinfo->ngpu_compatible_tot > 0;
-        bool usingVerletScheme = inputrec->cutoff_scheme == ecutsVERLET;
+        bool gpusWereDetected      = hwinfo->ngpu_compatible_tot > 0;
+        bool usingVerletScheme     = inputrec->cutoff_scheme == ecutsVERLET;
+        auto canUseGpuForNonbonded = nonbondedGpuSupportsBuild(nullptr);
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
-                                                                emulateGpuNonbonded, usingVerletScheme,
+                                                                emulateGpuNonbonded,
+                                                                canUseGpuForNonbonded,
+                                                                usingVerletScheme,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
         auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
