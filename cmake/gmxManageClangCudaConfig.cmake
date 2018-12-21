@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -82,6 +82,10 @@ else()
     if (NOT CUDA_VERSION VERSION_LESS 9.0)
         list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_70")
     endif()
+    # Enable this when clang (8.0 ?) introduces sm_75 support
+    #if (NOT CUDA_VERSION VERSION_LESS 10.0)
+    #    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_75")
+    #endif()
 endif()
 if (GMX_CUDA_TARGET_SM)
     set_property(CACHE GMX_CUDA_TARGET_SM PROPERTY HELPSTRING "List of CUDA GPU architecture codes to compile for (without the sm_ prefix)")
