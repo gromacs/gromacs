@@ -82,6 +82,8 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "gromacs/mdlib/nbnxn_cuda/gpuUpdateConstraintsCUDA.h"
+
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 typedef struct {
@@ -169,12 +171,13 @@ static void clearVsiteVelocities(int                   start,
     }
 }
 
-/*! \brief Sets the number of different temperature coupling values */
-enum class NumTempScaleValues
-{
-    single,   //!< Single T-scaling value (either one group or all values =1)
-    multiple  //!< Multiple T-scaling values, need to use T-group indices
-};
+// now in header file
+// /*! \brief Sets the number of different temperature coupling values */
+// enum class NumTempScaleValues
+// {
+//    single,   //!< Single T-scaling value (either one group or all values =1)
+//    multiple  //!< Multiple T-scaling values, need to use T-group indices
+// };
 
 /*! \brief Sets if to apply no or diagonal Parrinello-Rahman pressure scaling
  *
@@ -646,8 +649,29 @@ static void do_update_md(int                         start,
                 /* Check if we can use invmass instead of invMassPerDim */
                 if (!md->havePartiallyFrozenAtoms)
                 {
-                    updateMDLeapfrogSimpleSimd
-                        (start, nrend, dt, md->invmass, tcstat, x, xprime, v, f);
+                    //TODO add approptiate CPU/GPU switch to this conditional
+                    if (gpuUpdateConstraintsGetSize() == 0)
+                    {
+                        updateMDLeapfrogSimpleSimd
+                            (start, nrend, dt, md->invmass, tcstat, x, xprime, v, f);
+                    }
+                    else
+                    {
+#pragma omp barrier
+                        if (gmx_omp_get_thread_num() == 0)
+                        {
+
+                            bool bpcs = isPressureCouplingStep(step, ir);
+                            gpuUpdateConstraintsSetPressureCouplingStep(bpcs);
+
+                            updateMDLeapfrogSimple_gpu
+                                (md->homenr, dt, dtPressureCouple,
+                                invMassPerDim, tcstat, cTC,
+                                x, xprime, v, f, NumTempScaleValues::single);
+                        }
+#pragma omp barrier
+
+                    }
                 }
                 else
 #endif
@@ -1675,6 +1699,8 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
                 // Trivial statement, does not throw
                 x[i] = xp[i];
             }
+            //TODO add cpu/gpu conditional
+            gpuUpdateConstraintsCopyXPToXOnDevice();
         }
         wallcycle_stop(wcycle, ewcUPDATE);
     }
