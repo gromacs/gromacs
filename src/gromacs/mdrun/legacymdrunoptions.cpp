@@ -216,6 +216,7 @@ LegacyMdrunOptions::~LegacyMdrunOptions()
     {
         done_commrec(cr);
     }
+    output_env_done(oenv);
     done_multisim(ms);
 }
 
