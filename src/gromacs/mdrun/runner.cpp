@@ -1513,11 +1513,11 @@ int Mdrunner::mdrunner()
        wait for that. */
     if (PAR(cr) && MASTER(cr))
     {
-        done_commrec(cr);
         tMPI_Finalize();
     }
+    //TODO free commrec in MPI simulations
+    done_commrec(cr);
 #endif
-
     return rc;
 }
 

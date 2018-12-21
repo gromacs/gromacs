@@ -125,12 +125,15 @@ void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
 
 void done_commrec(t_commrec *cr)
 {
-    if (nullptr != cr->dd)
+    if (MASTER(cr))
     {
-        // TODO: implement
-        // done_domdec(cr->dd);
+        if (nullptr != cr->dd)
+        {
+            // TODO: implement
+            // done_domdec(cr->dd);
+        }
+        done_mpi_in_place_buf(cr->mpb);
     }
-    done_mpi_in_place_buf(cr->mpb);
     sfree(cr);
 }
 
