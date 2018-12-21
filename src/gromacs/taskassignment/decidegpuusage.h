@@ -72,6 +72,7 @@ enum class TaskTarget : int
  * \param[in]  gpuIdsToUse               The compatible GPUs that the user permitted us to use.
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  emulateGpuNonbonded       Whether we will emulate GPU calculation of nonbonded interactions.
+ * \param[in]  nonbondedGpuSupportsBuild Whether GROMACS was build with GPU support.
  * \param[in]  usingVerletScheme         Whether the nonbondeds are using the Verlet scheme.
  * \param[in]  nonbondedOnGpuIsUseful    Whether computing nonbonded interactions on a GPU is useful for this calculation.
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
@@ -84,6 +85,7 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget                n
                                                      const std::vector<int>   &gpuIdsToUse,
                                                      const std::vector<int>   &userGpuTaskAssignment,
                                                      EmulateGpuNonbonded       emulateGpuNonbonded,
+                                                     bool                      nonbondedGpuSupportsBuild,
                                                      bool                      usingVerletScheme,
                                                      bool                      nonbondedOnGpuIsUseful,
                                                      int                       numRanksPerSimulation);
@@ -135,6 +137,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
  * \param[in]  nonbondedTarget           The user's choice for mdrun -nb for where to assign short-ranged nonbonded interaction tasks.
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  emulateGpuNonbonded       Whether we will emulate GPU calculation of nonbonded interactions.
+ * \param[in]  nonbondedGpuSupportsBuild Whether GROMACS was build with GPU support.
  * \param[in]  usingVerletScheme         Whether the nonbondeds are using the Verlet scheme.
  * \param[in]  nonbondedOnGpuIsUseful    Whether computing nonbonded interactions on a GPU is useful for this calculation.
  * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
@@ -146,6 +149,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
 bool decideWhetherToUseGpusForNonbonded(TaskTarget                 nonbondedTarget,
                                         const std::vector<int>    &userGpuTaskAssignment,
                                         EmulateGpuNonbonded        emulateGpuNonbonded,
+                                        bool                       nonbondedGpuSupportsBuild,
                                         bool                       usingVerletScheme,
                                         bool                       nonbondedOnGpuIsUseful,
                                         bool                       gpusWereDetected);
