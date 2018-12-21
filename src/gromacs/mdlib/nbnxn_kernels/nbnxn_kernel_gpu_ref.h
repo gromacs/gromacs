@@ -39,6 +39,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 /* Reference (slow) kernel for nb n vs n GPU type pair lists */
@@ -49,7 +50,7 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
                      rvec                       *shift_vec,
                      int                         force_flags,
                      int                         clearF,
-                     real  *                     f,
+                     gmx::ArrayRef<real>         f,
                      real  *                     fshift,
                      real  *                     Vc,
                      real  *                     Vvdw);
