@@ -142,8 +142,10 @@ else()
     elseif(CUDA_VERSION VERSION_LESS "9.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=compute_60")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=compute_61")
-    else() # version >= 9.0
+    elseif(CUDA_VERSION VERSION_LESS "10.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=compute_70")
+    else() # version >= 10.0
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_75,code=compute_75")
     endif()
 endif()
 
