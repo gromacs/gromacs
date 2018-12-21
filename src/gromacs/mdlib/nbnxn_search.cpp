@@ -2006,9 +2006,9 @@ static void make_fep_list(const nbnxn_search     *nbs,
 
                 bFEP_i = ((iGrid.fep[c_abs - iGrid.cell0*c_gpuNumClusterPerCell] & (1 << i)) != 0u);
 
-                xi = nbat->x[ind_i*nbat->xstride+XX] + shx;
-                yi = nbat->x[ind_i*nbat->xstride+YY] + shy;
-                zi = nbat->x[ind_i*nbat->xstride+ZZ] + shz;
+                xi = nbat->x()[ind_i*nbat->xstride+XX] + shx;
+                yi = nbat->x()[ind_i*nbat->xstride+YY] + shy;
+                zi = nbat->x()[ind_i*nbat->xstride+ZZ] + shz;
 
                 if ((nlist->nrj + cj4_ind_end - cj4_ind_start)*c_nbnxnGpuJgroupSize*nbl->na_cj > nlist->maxnrj)
                 {
@@ -2057,9 +2057,9 @@ static void make_fep_list(const nbnxn_search     *nbs,
                                     excl_pair = a_mod_wj(j)*nbl->na_ci + i;
                                     excl_bit  = (1U << (gcj*c_gpuNumClusterPerCell + c));
 
-                                    dx = nbat->x[ind_j*nbat->xstride+XX] - xi;
-                                    dy = nbat->x[ind_j*nbat->xstride+YY] - yi;
-                                    dz = nbat->x[ind_j*nbat->xstride+ZZ] - zi;
+                                    dx = nbat->x()[ind_j*nbat->xstride+XX] - xi;
+                                    dy = nbat->x()[ind_j*nbat->xstride+YY] - yi;
+                                    dz = nbat->x()[ind_j*nbat->xstride+ZZ] - zi;
 
                                     /* The unpruned GPU list has more than 2/3
                                      * of the atom pairs beyond rlist. Using
@@ -3328,7 +3328,7 @@ static void makeClusterListWrapper(NbnxnPairlistCpu              *nbl,
             makeClusterListSimple(jGrid,
                                   nbl, ci, firstCell, lastCell,
                                   excludeSubDiagonal,
-                                  nbat->x,
+                                  nbat->x().data(),
                                   rlist2, rbb2,
                                   numDistanceChecks);
             break;
@@ -3337,7 +3337,7 @@ static void makeClusterListWrapper(NbnxnPairlistCpu              *nbl,
             makeClusterListSimd4xn(jGrid,
                                    nbl, ci, firstCell, lastCell,
                                    excludeSubDiagonal,
-                                   nbat->x,
+                                   nbat->x().data(),
                                    rlist2, rbb2,
                                    numDistanceChecks);
             break;
@@ -3347,7 +3347,7 @@ static void makeClusterListWrapper(NbnxnPairlistCpu              *nbl,
             makeClusterListSimd2xnn(jGrid,
                                     nbl, ci, firstCell, lastCell,
                                     excludeSubDiagonal,
-                                    nbat->x,
+                                    nbat->x().data(),
                                     rlist2, rbb2,
                                     numDistanceChecks);
             break;
@@ -3373,7 +3373,7 @@ static void makeClusterListWrapper(NbnxnPairlistGpu              *nbl,
         make_cluster_list_supersub(iGrid, jGrid,
                                    nbl, ci, cj,
                                    excludeSubDiagonal,
-                                   nbat->xstride, nbat->x,
+                                   nbat->xstride, nbat->x().data(),
                                    rlist2, rbb2,
                                    numDistanceChecks);
     }
@@ -3744,7 +3744,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                  nbl->work);
 
                     icell_set_x(cell0_i+ci, shx, shy, shz,
-                                nbat->xstride, nbat->x,
+                                nbat->xstride, nbat->x().data(),
                                 nb_kernel_type,
                                 nbl->work);
 
@@ -4270,11 +4270,11 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
         fprintf(debug, "ns making %d nblists\n", nnbl);
     }
 
-    nbat->bUseBufferFlags = (nbat->nout > 1);
+    nbat->bUseBufferFlags = (nbat->out.size() > 1);
     /* We should re-init the flags before making the first list */
     if (nbat->bUseBufferFlags && LOCAL_I(iloc))
     {
-        init_buffer_flags(&nbat->buffer_flags, nbat->natoms);
+        init_buffer_flags(&nbat->buffer_flags, nbat->numAtoms());
     }
 
     int nzi;
@@ -4365,7 +4365,7 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
                      */
                     if (nbat->bUseBufferFlags && ((zi == 0 && zj == 0)))
                     {
-                        init_buffer_flags(&nbs->work[th].buffer_flags, nbat->natoms);
+                        init_buffer_flags(&nbs->work[th].buffer_flags, nbat->numAtoms());
                     }
 
                     if (CombineNBLists && th > 0)

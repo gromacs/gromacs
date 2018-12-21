@@ -271,7 +271,7 @@
     gmx_load_simd_4xn_interactions(l_cj[cjind].excl,
                                    filter_S0, filter_S1,
                                    filter_S2, filter_S3,
-                                   nbat->simd_interaction_array,
+                                   nbat->simd_interaction_array.data(),
                                    &interact_S0, &interact_S1,
                                    &interact_S2, &interact_S3);
 #endif /* CHECK_EXCLS */

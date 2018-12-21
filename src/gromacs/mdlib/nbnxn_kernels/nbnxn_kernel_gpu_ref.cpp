@@ -64,13 +64,12 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
                      rvec                       *shift_vec,
                      int                         force_flags,
                      int                         clearF,
-                     real  *                     f,
+                     gmx::ArrayRef<real>         f,
                      real  *                     fshift,
                      real  *                     Vc,
                      real  *                     Vvdw)
 {
     const nbnxn_sci_t  *nbln;
-    const real         *x;
     gmx_bool            bEner;
     gmx_bool            bEwald;
     const real         *Ftab = nullptr;
@@ -102,9 +101,6 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
     int                 int_bit;
     real                fexcl;
     real                c6, c12;
-    const real       *  shiftvec;
-    real       *        vdwparam;
-    int       *         type;
     const nbnxn_excl_t *excl[2];
 
     int                 npair_tot, npair;
@@ -117,7 +113,7 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
 
     if (clearF == enbvClearFYes)
     {
-        clear_f(nbat, 0, f);
+        clear_f(nbat, 0, f.data());
     }
 
     bEner = ((force_flags & GMX_FORCE_ENERGY) != 0);
@@ -128,18 +124,18 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
         Ftab = iconst->tabq_coul_F;
     }
 
-    rcut2               = iconst->rcoulomb*iconst->rcoulomb;
-    rvdw2               = iconst->rvdw*iconst->rvdw;
+    rcut2                = iconst->rcoulomb*iconst->rcoulomb;
+    rvdw2                = iconst->rvdw*iconst->rvdw;
 
-    rlist2              = nbl->rlist*nbl->rlist;
+    rlist2               = nbl->rlist*nbl->rlist;
 
-    type                = nbat->type;
-    facel               = iconst->epsfac;
-    shiftvec            = shift_vec[0];
-    vdwparam            = nbat->nbfp;
-    ntype               = nbat->ntype;
+    const int *type      = nbat->type.data();
+    facel                = iconst->epsfac;
+    const real *shiftvec = shift_vec[0];
+    const real *vdwparam = nbat->nbfp.data();
+    ntype                = nbat->ntype;
 
-    x = nbat->x;
+    const real *x        = nbat->x().data();
 
     npair_tot   = 0;
     nhwu        = 0;

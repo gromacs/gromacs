@@ -145,7 +145,7 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
 
     /* An element of the shift_vec device buffer has the same size as one element
        of the host side shift_vec buffer. */
-    ad->shift_vec_elem_size = sizeof(*nbnxn_atomdata_t::shift_vec);
+    ad->shift_vec_elem_size = sizeof(*nbnxn_atomdata_t::shift_vec.data());
 
     ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
                                    SHIFTS * ad->shift_vec_elem_size, nullptr, &cl_error);
@@ -358,8 +358,12 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
             &array_format, nnbfp, 1, 0, nbat->nbfp, &cl_error);
          */
 
-        nbp->nbfp_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
-                                           nnbfp*sizeof(cl_float), nbat->nbfp, &cl_error);
+        nbp->nbfp_climg2d =
+            clCreateBuffer(runData->context,
+                           CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
+                           nnbfp*sizeof(cl_float),
+                           const_cast<float *>(nbat->nbfp.data()),
+                           &cl_error);
         GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                            ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
@@ -369,8 +373,12 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
             // TODO: decide which alternative is most efficient - textures or buffers.
             /*  nbp->nbfp_comb_climg2d = clCreateImage2D(runData->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                 &array_format, nnbfp_comb, 1, 0, nbat->nbfp_comb, &cl_error);*/
-            nbp->nbfp_comb_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
-                                                    nnbfp_comb*sizeof(cl_float), nbat->nbfp_comb, &cl_error);
+            nbp->nbfp_comb_climg2d =
+                clCreateBuffer(runData->context,
+                               CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
+                               nnbfp_comb*sizeof(cl_float),
+                               const_cast<float *>(nbat->nbfp_comb.data()),
+                               &cl_error);
             GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                                ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
         }
@@ -839,7 +847,7 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_ocl_t        *nb,
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
-        ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 0,
+        ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec.data(), 0,
                            SHIFTS * adat->shift_vec_elem_size, ls, nullptr);
         adat->bShiftVecUploaded = CL_TRUE;
     }
@@ -857,7 +865,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
     cl_atomdata_t   *d_atdat = nb->atdat;
     cl_command_queue ls      = nb->stream[eintLocal];
 
-    natoms    = nbat->natoms;
+    natoms    = nbat->numAtoms();
     realloced = false;
 
     if (bDoTime)
@@ -923,12 +931,12 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
 
     if (useLjCombRule(nb->nbparam->vdwtype))
     {
-        ocl_copy_H2D_async(d_atdat->lj_comb, nbat->lj_comb, 0,
+        ocl_copy_H2D_async(d_atdat->lj_comb, nbat->lj_comb.data(), 0,
                            natoms*sizeof(cl_float2), ls, bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
     else
     {
-        ocl_copy_H2D_async(d_atdat->atom_types, nbat->type, 0,
+        ocl_copy_H2D_async(d_atdat->atom_types, nbat->type.data(), 0,
                            natoms*sizeof(int), ls, bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
 
     }

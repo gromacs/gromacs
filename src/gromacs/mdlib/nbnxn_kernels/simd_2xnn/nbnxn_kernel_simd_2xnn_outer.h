@@ -37,10 +37,6 @@
 {
     using namespace gmx;
     const nbnxn_cj_t   *l_cj;
-    const real         *q;
-    const real         *shiftvec;
-    const real         *x;
-    real                facel;
     int                 ci, ci_sh;
     int                 ish, ish3;
     gmx_bool            do_LJ, half_LJ, do_coul;
@@ -71,7 +67,6 @@
     SimdBool  diagonal_mask1_S0, diagonal_mask1_S2;
 #endif
 
-    unsigned            *exclusion_filter;
     SimdBitMask          filter_S0, filter_S2;
 
     SimdReal             zero_S(0.0);
@@ -132,18 +127,12 @@
 #endif
 
 #ifdef LJ_COMB_LB
-    const real       *ljc;
-
     SimdReal          hsig_i_S0, seps_i_S0;
     SimdReal          hsig_i_S2, seps_i_S2;
 #else
 #ifdef FIX_LJ_C
     alignas(GMX_SIMD_ALIGNMENT) real  pvdw_c6[2*UNROLLI*UNROLLJ];
     real  *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
-#endif
-
-#if defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
-    const real       *ljc;
 #endif
 #endif /* LJ_COMB_LB */
 
@@ -160,16 +149,16 @@
 #endif
 
 #if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
-    ljc = nbat->lj_comb;
+    const real * gmx_restrict ljc      = nbat->lj_comb.data();
 #endif
 #if !(defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined FIX_LJ_C)
     /* No combination rule used */
-    real      *nbfp_ptr = nbat->nbfp_aligned;
-    const int *type     = nbat->type;
+    const real * gmx_restrict nbfp_ptr = nbat->nbfp_aligned.data();
+    const int * gmx_restrict  type     = nbat->type.data();
 #endif
 
     /* Load j-i for the first i */
-    diagonal_jmi_S    = load<SimdReal>(nbat->simd_2xnn_diagonal_j_minus_i);
+    diagonal_jmi_S    = load<SimdReal>(nbat->simd_2xnn_diagonal_j_minus_i.data());
     /* Generate all the diagonal masks as comparison results */
 #if UNROLLI == UNROLLJ
     diagonal_mask_S0  = (zero_S < diagonal_jmi_S);
@@ -194,9 +183,9 @@
     /* Load masks for topology exclusion masking. filter_stride is
        static const, so the conditional will be optimized away. */
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
-    exclusion_filter = nbat->simd_exclusion_filter64;
+    const std::uint64_t * gmx_restrict exclusion_filter = nbat->simd_exclusion_filter64.data();
 #else
-    exclusion_filter = nbat->simd_exclusion_filter;
+    const std::uint32_t * gmx_restrict exclusion_filter = nbat->simd_exclusion_filter.data();
 #endif
 
     /* Here we cast the exclusion filters from unsigned * to int * or real *.
@@ -305,12 +294,12 @@
     rcvdw2_S = SimdReal(ic->rvdw*ic->rvdw);
 #endif
 
-    minRsq_S            = SimdReal(NBNXN_MIN_RSQ);
+    minRsq_S                           = SimdReal(NBNXN_MIN_RSQ);
 
-    q                   = nbat->q;
-    facel               = ic->epsfac;
-    shiftvec            = shift_vec[0];
-    x                   = nbat->x;
+    const real * gmx_restrict q        = nbat->q.data();
+    const real                facel    = ic->epsfac;
+    const real * gmx_restrict shiftvec = shift_vec[0];
+    const real * gmx_restrict x        = nbat->x().data();
 
 #ifdef FIX_LJ_C
 

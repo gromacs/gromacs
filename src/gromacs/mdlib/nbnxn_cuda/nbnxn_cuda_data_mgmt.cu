@@ -318,14 +318,14 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     if (!useLjCombRule(nbp))
     {
         initParamLookupTable(nbp->nbfp, nbp->nbfp_texobj,
-                             nbat->nbfp, 2*ntypes*ntypes);
+                             nbat->nbfp.data(), 2*ntypes*ntypes);
     }
 
     /* set up LJ-PME parameter lookup table */
     if (ic->vdwtype == evdwPME)
     {
         initParamLookupTable(nbp->nbfp_comb, nbp->nbfp_comb_texobj,
-                             nbat->nbfp_comb, 2*ntypes);
+                             nbat->nbfp_comb.data(), 2*ntypes);
     }
 }
 
@@ -584,7 +584,7 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_cuda_t       *nb,
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
-        cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec,
+        cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec.data(),
                           SHIFTS * sizeof(*adat->shift_vec), ls);
         adat->bShiftVecUploaded = true;
     }
@@ -638,7 +638,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     cu_atomdata_t *d_atdat   = nb->atdat;
     cudaStream_t   ls        = nb->stream[eintLocal];
 
-    natoms    = nbat->natoms;
+    natoms    = nbat->numAtoms();
     realloced = false;
 
     if (bDoTime)
@@ -692,12 +692,12 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
 
     if (useLjCombRule(nb->nbparam))
     {
-        cu_copy_H2D_async(d_atdat->lj_comb, nbat->lj_comb,
+        cu_copy_H2D_async(d_atdat->lj_comb, nbat->lj_comb.data(),
                           natoms*sizeof(*d_atdat->lj_comb), ls);
     }
     else
     {
-        cu_copy_H2D_async(d_atdat->atom_types, nbat->type,
+        cu_copy_H2D_async(d_atdat->atom_types, nbat->type.data(),
                           natoms*sizeof(*d_atdat->atom_types), ls);
     }
 

@@ -107,11 +107,6 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 )
 {
     const nbnxn_cj_t   *l_cj;
-    const int          *type;
-    const real         *q;
-    const real         *shiftvec;
-    const real         *x;
-    const real         *nbfp;
     real                rcut2;
 #ifdef VDW_CUTOFF_CHECK
     real                rvdw2;
@@ -145,7 +140,6 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #ifdef CALC_ENERGIES
     real        lje_vc;
 #endif
-    const real *ljc;
 #endif
 
 #ifdef CALC_COUL_RF
@@ -186,7 +180,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
     lje_vc       = ic->sh_lj_ewald;
 #endif
 
-    ljc          = nbat->nbfp_comb;
+    const real *ljc = nbat->nbfp_comb.data();
 #endif
 
 #ifdef CALC_COUL_RF
@@ -214,18 +208,18 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 
 
-    rcut2               = ic->rcoulomb*ic->rcoulomb;
+    rcut2                = ic->rcoulomb*ic->rcoulomb;
 #ifdef VDW_CUTOFF_CHECK
-    rvdw2               = ic->rvdw*ic->rvdw;
+    rvdw2                = ic->rvdw*ic->rvdw;
 #endif
 
-    ntype2              = nbat->ntype*2;
-    nbfp                = nbat->nbfp;
-    q                   = nbat->q;
-    type                = nbat->type;
-    facel               = ic->epsfac;
-    shiftvec            = shift_vec[0];
-    x                   = nbat->x;
+    ntype2               = nbat->ntype*2;
+    const real *nbfp     = nbat->nbfp.data();
+    const real *q        = nbat->q.data();
+    const int *type      = nbat->type.data();
+    facel                = ic->epsfac;
+    const real *shiftvec = shift_vec[0];
+    const real *x        = nbat->x().data();
 
     l_cj = nbl->cj.data();
 

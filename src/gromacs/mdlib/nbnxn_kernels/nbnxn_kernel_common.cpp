@@ -42,9 +42,7 @@
 static void
 clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
 {
-    int i;
-
-    for (i = 0; i < nbat->natoms*nbat->fstride; i++)
+    for (int i = 0; i < nbat->numAtoms()*nbat->fstride; i++)
     {
         f[i] = 0;
     }

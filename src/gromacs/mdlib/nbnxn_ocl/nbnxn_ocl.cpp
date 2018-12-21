@@ -434,7 +434,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     }
 
     /* HtoD x, q */
-    ocl_copy_H2D_async(adat->xq, nbatom->x + adat_begin * 4, adat_begin*sizeof(float)*4,
+    ocl_copy_H2D_async(adat->xq, nbatom->x().data() + adat_begin * 4, adat_begin*sizeof(float)*4,
                        adat_len * sizeof(float) * 4, stream, bDoTime ? t->nb_h2d[iloc].fetchNextEvent() : nullptr);
 
     if (bDoTime)
@@ -699,7 +699,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
  * (and energies/shift forces if required).
  */
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
-                              const struct nbnxn_atomdata_t *nbatom,
+                              struct nbnxn_atomdata_t       *nbatom,
                               int                            flags,
                               int                            aloc,
                               bool                           haveOtherWork)
@@ -750,7 +750,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     }
 
     /* DtoH f */
-    ocl_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f, adat_begin*3*sizeof(float),
+    ocl_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f, adat_begin*3*sizeof(float),
                        (adat_len)* adat->f_elem_size, stream, bDoTime ? t->nb_d2h[iloc].fetchNextEvent() : nullptr);
 
     /* kick off work */
