@@ -841,7 +841,7 @@ static void fill_cell(nbnxn_search                  *nbs,
 
     copy_rvec_to_nbat_real(nbs->a.data() + atomStart, numAtoms, grid->na_c,
                            as_rvec_array(x.data()),
-                           nbat->XFormat, nbat->x, atomStart);
+                           nbat->XFormat, nbat->x().data(), atomStart);
 
     if (nbat->XFormat == nbatX4)
     {
@@ -852,13 +852,13 @@ static void fill_cell(nbnxn_search                  *nbs,
 #if GMX_SIMD && GMX_SIMD_REAL_WIDTH == 2
         if (2*grid->na_cj == grid->na_c)
         {
-            calc_bounding_box_x_x4_halves(numAtoms, nbat->x + atom_to_x_index<c_packX4>(atomStart), bb_ptr,
+            calc_bounding_box_x_x4_halves(numAtoms, nbat->x().data() + atom_to_x_index<c_packX4>(atomStart), bb_ptr,
                                           grid->bbj.data() + offset*2);
         }
         else
 #endif
         {
-            calc_bounding_box_x_x4(numAtoms, nbat->x + atom_to_x_index<c_packX4>(atomStart), bb_ptr);
+            calc_bounding_box_x_x4(numAtoms, nbat->x().data() + atom_to_x_index<c_packX4>(atomStart), bb_ptr);
         }
     }
     else if (nbat->XFormat == nbatX8)
@@ -867,7 +867,7 @@ static void fill_cell(nbnxn_search                  *nbs,
         size_t      offset = (atomStart - grid->cell0*grid->na_sc) >> grid->na_c_2log;
         nbnxn_bb_t *bb_ptr = grid->bb.data() + offset;
 
-        calc_bounding_box_x_x8(numAtoms, nbat->x +  atom_to_x_index<c_packX8>(atomStart), bb_ptr);
+        calc_bounding_box_x_x8(numAtoms, nbat->x().data() + atom_to_x_index<c_packX8>(atomStart), bb_ptr);
     }
 #if NBNXN_BBXXXX
     else if (!grid->bSimple)
@@ -883,13 +883,13 @@ static void fill_cell(nbnxn_search                  *nbs,
 #if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
         if (nbat->XFormat == nbatXYZQ)
         {
-            calc_bounding_box_xxxx_simd4(numAtoms, nbat->x + atomStart*nbat->xstride,
+            calc_bounding_box_xxxx_simd4(numAtoms, nbat->x().data() + atomStart*nbat->xstride,
                                          bb_work_aligned, pbb_ptr);
         }
         else
 #endif
         {
-            calc_bounding_box_xxxx(numAtoms, nbat->xstride, nbat->x + atomStart*nbat->xstride,
+            calc_bounding_box_xxxx(numAtoms, nbat->xstride, nbat->x().data() + atomStart*nbat->xstride,
                                    pbb_ptr);
         }
         if (gmx_debug_at)
@@ -907,7 +907,7 @@ static void fill_cell(nbnxn_search                  *nbs,
         /* Store the bounding boxes as xyz.xyz. */
         nbnxn_bb_t *bb_ptr = grid->bb.data() + ((atomStart - grid->cell0*grid->na_sc) >> grid->na_c_2log);
 
-        calc_bounding_box(numAtoms, nbat->xstride, nbat->x + atomStart*nbat->xstride,
+        calc_bounding_box(numAtoms, nbat->xstride, nbat->x().data() + atomStart*nbat->xstride,
                           bb_ptr);
 
         if (gmx_debug_at)
@@ -1226,13 +1226,8 @@ static void resizeForNumberOfCells(const nbnxn_grid_t &grid,
      */
     nbs->a.resize(numNbnxnAtoms + numAtomsMoved);
 
-    /* We need padding up to a multiple of the buffer flag size: simply add */
-    if (numNbnxnAtoms + NBNXN_BUFFERFLAG_SIZE > nbat->nalloc)
-    {
-        nbnxn_atomdata_realloc(nbat, numNbnxnAtoms + NBNXN_BUFFERFLAG_SIZE);
-    }
-
-    nbat->natoms = numNbnxnAtoms;
+    /* Make space in nbat for storing the atom coordinates */
+    nbat->resizeCoordinateBuffer(numNbnxnAtoms);
 }
 
 /* Determine in which grid cells the atoms should go */
@@ -1441,8 +1436,6 @@ void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
     grid->na_sc     = (grid->bSimple ? 1 : c_gpuNumClusterPerCell)*grid->na_c;
     grid->na_c_2log = get_2log(grid->na_c);
 
-    nbat->na_c = grid->na_c;
-
     if (ddZone == 0)
     {
         grid->cell0 = 0;
@@ -1510,7 +1503,12 @@ void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
 
     if (ddZone == 0)
     {
-        nbat->natoms_local = nbat->natoms;
+        nbat->natoms_local = nbat->numAtoms();
+    }
+    if (ddZone == static_cast<int>(nbs->grid.size()) - 1)
+    {
+        /* We are done setting up all grids, we can resize the force buffers */
+        nbat->resizeForceBuffers();
     }
 
     nbs_cycle_stop(&nbs->cc[enbsCCgrid]);

@@ -40,6 +40,7 @@
 
 #include <cstddef>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdtypes/nblist.h"
@@ -51,6 +52,10 @@
 struct NbnxnPairlistCpuWork;
 struct NbnxnPairlistGpuWork;
 struct tMPI_Atomic;
+
+/* Convenience type for vector with aligned memory */
+template<typename T>
+using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
 
 /* Convenience type for vector that avoids initialization at resize() */
 template<typename T>
@@ -258,16 +263,24 @@ enum {
     nbatXYZ, nbatXYZQ, nbatX4, nbatX8
 };
 
-typedef struct {
-    real *f;      /* f, size natoms*fstride                             */
-    real *fshift; /* Shift force array, size SHIFTS*DIM                 */
-    int   nV;     /* The size of *Vvdw and *Vc                          */
-    real *Vvdw;   /* Temporary Van der Waals group energy storage       */
-    real *Vc;     /* Temporary Coulomb group energy storage             */
-    int   nVS;    /* The size of *VSvdw and *VSc                        */
-    real *VSvdw;  /* Temporary SIMD Van der Waals group energy storage  */
-    real *VSc;    /* Temporary SIMD Coulomb group energy storage        */
-} nbnxn_atomdata_output_t;
+//! Convenience alias for std::vector that is aligned and uses HostAllocator.
+template <class T>
+using AlignedHostVector = std::vector<T, gmx::HostAllocator<T> >;
+
+struct nbnxn_atomdata_output_t
+{
+    nbnxn_atomdata_output_t(int                nb_kernel_type,
+                            int                nenergrp,
+                            int                stride,
+                            gmx::PinningPolicy pinningPolicy);
+
+    AlignedHostVector<real> f;      // f, size natoms*fstride
+    AlignedHostVector<real> fshift; // Shift force array, size SHIFTS*DIM
+    AlignedHostVector<real> Vvdw;   // Temporary Van der Waals group energy storage
+    AlignedHostVector<real> Vc;     // Temporary Coulomb group energy storage
+    AlignedHostVector<real> VSvdw;  // Temporary SIMD Van der Waals group energy storage
+    AlignedHostVector<real> VSc;    // Temporary SIMD Coulomb group energy storage
+};
 
 /* Block size in atoms for the non-bonded thread force-buffer reduction,
  * should be a multiple of all cell and x86 SIMD sizes (i.e. 2, 4 and 8).
@@ -298,49 +311,132 @@ enum {
     ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR
 };
 
-typedef struct nbnxn_atomdata_t { //NOLINT(clang-analyzer-optin.performance.Padding)
-    nbnxn_alloc_t           *alloc;
-    nbnxn_free_t            *free;
-    int                      ntype;           /* The number of different atom types                 */
-    real                    *nbfp;            /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
-    int                      comb_rule;       /* Combination rule, see enum above                   */
-    real                    *nbfp_comb;       /* LJ parameter per atom type, size ntype*2           */
-    real                    *nbfp_aligned;    /* As nbfp, but with an alignment (stride) suitable
-                                               * for the present SIMD architectures
-                                               */
-    int                      natoms;          /* Number of atoms                                    */
-    int                      natoms_local;    /* Number of local atoms                           */
-    int                     *type;            /* Atom types                                         */
-    real                    *lj_comb;         /* LJ parameters per atom for combining for pairs     */
-    int                      XFormat;         /* The format of x (and q), enum                      */
-    int                      FFormat;         /* The format of f, enum                              */
-    real                    *q;               /* Charges, can be NULL if incorporated in x          */
-    int                      na_c;            /* The number of atoms per cluster                    */
-    int                      nenergrp;        /* The number of energy groups                        */
-    int                      neg_2log;        /* Log2 of nenergrp                                   */
-    int                     *energrp;         /* The energy groups per cluster, can be NULL         */
-    gmx_bool                 bDynamicBox;     /* Do we need to update shift_vec every step?    */
-    rvec                    *shift_vec;       /* Shift vectors, copied from t_forcerec              */
-    int                      xstride;         /* stride for a coordinate in x (usually 3 or 4)      */
-    int                      fstride;         /* stride for a coordinate in f (usually 3 or 4)      */
-    real                    *x;               /* x and possibly q, size natoms*xstride              */
+/* Struct that stores atom related data for the nbnxn module
+ *
+ * Note: performance would improve slightly when all std::vector containers
+ *       in this struct would not initialize during resize().
+ */
+struct nbnxn_atomdata_t
+{   //NOLINT(clang-analyzer-optin.performance.Padding)
+    struct Params
+    {
+        /* Constructor
+         *
+         * \param[in] pinningPolicy  Sets the pinning policy for all data that might be transfered to a GPU
+         */
+        Params(gmx::PinningPolicy pinningPolicy);
 
-    /* j-atom minus i-atom index for generating self and Newton exclusions
-     * cluster-cluster pairs of the diagonal, for 4xn and 2xnn kernels.
+        // The number of different atom types
+        int                      numTypes;
+        // Lennard-Jone 6*C6 and 12*C12 parameters, size numTypes*2*2
+        AlignedHostVector<real>  nbfp;
+        // Combination rule, see enum defined above
+        int                      comb_rule;
+        // LJ parameters per atom type, size numTypes*2
+        AlignedHostVector<real>  nbfp_comb;
+        // As nbfp, but with a stride for the present SIMD architecture
+        AlignedVector<real>      nbfp_aligned;
+        // Atom types per atom
+        AlignedHostVector<int>   type;
+        // LJ parameters per atom for fast SIMD loading
+        AlignedHostVector<real>  lj_comb;
+        // Charges per atom, not set with format nbatXYZQ
+        AlignedHostVector<real>  q;
+        // The number of energy groups
+        int                      nenergrp;
+        // 2log(nenergrp)
+        int                      neg_2log;
+        // The energy groups, one int entry per cluster, only set when needed
+        AlignedHostVector<int>   energrp;
+    };
+
+    // Diagonal and topology exclusion helper data for all SIMD kernels
+    struct SimdMasks
+    {
+        SimdMasks();
+
+        // Helper data for setting up diagonal exclusion masks in the SIMD 4xN kernels
+        AlignedVector<real>      diagonal_4xn_j_minus_i;
+        // Helper data for setting up diaginal exclusion masks in the SIMD 2xNN kernels
+        AlignedVector<real>      diagonal_2xnn_j_minus_i;
+        // Filters for topology exclusion masks for the SIMD kernels
+        AlignedVector<uint32_t>  exclusion_filter;
+        // Filters for topology exclusion masks for double SIMD kernels without SIMD int32 logical support
+        AlignedVector<uint64_t>  exclusion_filter64;
+        // Array of masks needed for exclusions
+        AlignedVector<real>      interaction_array;
+    };
+
+    /* Constructor
+     *
+     * \param[in] pinningPolicy  Sets the pinning policy for all data that might be transfered to a GPU
      */
-    real                    *simd_4xn_diagonal_j_minus_i;
-    real                    *simd_2xnn_diagonal_j_minus_i;
-    /* Filters for topology exclusion masks for the SIMD kernels. */
-    uint32_t                *simd_exclusion_filter;
-    uint64_t                *simd_exclusion_filter64; //!< Used for double w/o SIMD int32 logical support
-    real                    *simd_interaction_array;  /* Array of masks needed for exclusions */
-    int                      nout;                    /* The number of force arrays                         */
-    nbnxn_atomdata_output_t *out;                     /* Output data structures               */
-    int                      nalloc;                  /* Allocation size of all arrays (for x/f *x/fstride) */
-    gmx_bool                 bUseBufferFlags;         /* Use the flags or operate on all atoms     */
-    nbnxn_buffer_flags_t     buffer_flags;            /* Flags for buffer zeroing+reduc.  */
-    gmx_bool                 bUseTreeReduce;          /* Use tree for force reduction */
-    tMPI_Atomic             *syncStep;                /* Synchronization step for tree reduce */
-} nbnxn_atomdata_t;
+    nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy);
+
+    /* Returns a const reference to the parameters */
+    const Params &params() const
+    {
+        return params_;
+    };
+
+    /* Returns a non-const reference to the parameters */
+    Params &paramsDeprecated()
+    {
+        return params_;
+    };
+
+    /* Returns the current total number of atoms stored */
+    int numAtoms() const
+    {
+        return numAtoms_;
+    };
+
+    /* Return the coordinate buffer, and q with xFormat==nbatXYZQ */
+    gmx::ArrayRef<const real> x() const
+    {
+        return x_;
+    };
+
+    /* Return the coordinate buffer, and q with xFormat==nbatXYZQ */
+    gmx::ArrayRef<real> x()
+    {
+        return x_;
+    };
+
+    /* Resizes the coordinate buffer and sets the number of atoms */
+    void resizeCoordinateBuffer(int numAtoms);
+
+    /* Resizes the force buffers for the current number of atoms */
+    void resizeForceBuffers();
+
+    private:
+        // The LJ and charge parameters
+        Params                       params_;
+        // The total number of atoms currently stored
+        int                          numAtoms_;
+    public:
+        int                          natoms_local; /* Number of local atoms                           */
+        int                          XFormat;      /* The format of x (and q), enum                      */
+        int                          FFormat;      /* The format of f, enum                              */
+        gmx_bool                     bDynamicBox;  /* Do we need to update shift_vec every step?    */
+        AlignedHostVector<gmx::RVec> shift_vec;    /* Shift vectors, copied from t_forcerec              */
+        int                          xstride;      /* stride for a coordinate in x (usually 3 or 4)      */
+        int                          fstride;      /* stride for a coordinate in f (usually 3 or 4)      */
+    private:
+        AlignedHostVector<real>      x_;           /* x and possibly q, size natoms*xstride              */
+
+    public:
+        // Masks for handling exclusions in the SIMD kernels
+        const SimdMasks          simdMasks;
+
+        /* Output data */
+        std::vector<nbnxn_atomdata_output_t> out; /* Output data structures, 1 per thread */
+
+        /* Reduction related data */
+        gmx_bool                 bUseBufferFlags;     /* Use the flags or operate on all atoms     */
+        nbnxn_buffer_flags_t     buffer_flags;        /* Flags for buffer zeroing+reduc.  */
+        gmx_bool                 bUseTreeReduce;      /* Use tree for force reduction */
+        tMPI_Atomic             *syncStep;            /* Synchronization step for tree reduce */
+};
 
 #endif

@@ -157,13 +157,13 @@ int cu_copy_D2H_async(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/, cud
  *
  *  The copy is launched in stream s or if not specified, in stream 0.
  */
-int cu_copy_H2D(void *d_dest, void *h_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = nullptr*/);
+int cu_copy_H2D(void *d_dest, const void *h_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = nullptr*/);
 
 /*! Launches synchronous host to device memory copy. */
-int cu_copy_H2D_sync(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
+int cu_copy_H2D_sync(void * /*d_dest*/, const void * /*h_src*/, size_t /*bytes*/);
 
 /*! Launches asynchronous host to device memory copy in stream s. */
-int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = nullptr*/);
+int cu_copy_H2D_async(void * /*d_dest*/, const void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = nullptr*/);
 
 // TODO: the 2 functions below are pretty much a constructor/destructor of a simple
 // GPU table object. There is also almost self-contained fetchFromParamLookupTable()

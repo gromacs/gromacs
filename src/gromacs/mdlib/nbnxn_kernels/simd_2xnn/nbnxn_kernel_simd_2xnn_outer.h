@@ -37,10 +37,6 @@
 {
     using namespace gmx;
     const nbnxn_cj_t   *l_cj;
-    const real         *q;
-    const real         *shiftvec;
-    const real         *x;
-    real                facel;
     int                 ci, ci_sh;
     int                 ish, ish3;
     gmx_bool            do_LJ, half_LJ, do_coul;
@@ -71,7 +67,6 @@
     SimdBool  diagonal_mask1_S0, diagonal_mask1_S2;
 #endif
 
-    unsigned            *exclusion_filter;
     SimdBitMask          filter_S0, filter_S2;
 
     SimdReal             zero_S(0.0);
@@ -132,18 +127,12 @@
 #endif
 
 #ifdef LJ_COMB_LB
-    const real       *ljc;
-
     SimdReal          hsig_i_S0, seps_i_S0;
     SimdReal          hsig_i_S2, seps_i_S2;
 #else
 #ifdef FIX_LJ_C
     alignas(GMX_SIMD_ALIGNMENT) real  pvdw_c6[2*UNROLLI*UNROLLJ];
     real  *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
-#endif
-
-#if defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
-    const real       *ljc;
 #endif
 #endif /* LJ_COMB_LB */
 
@@ -159,17 +148,19 @@
     int npair = 0;
 #endif
 
+    const nbnxn_atomdata_t::Params &nbatParams = nbat->params();
+
 #if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
-    ljc = nbat->lj_comb;
+    const real * gmx_restrict ljc      = nbatParams.lj_comb.data();
 #endif
 #if !(defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined FIX_LJ_C)
     /* No combination rule used */
-    real      *nbfp_ptr = nbat->nbfp_aligned;
-    const int *type     = nbat->type;
+    const real * gmx_restrict nbfp_ptr = nbatParams.nbfp_aligned.data();
+    const int * gmx_restrict  type     = nbatParams.type.data();
 #endif
 
     /* Load j-i for the first i */
-    diagonal_jmi_S    = load<SimdReal>(nbat->simd_2xnn_diagonal_j_minus_i);
+    diagonal_jmi_S    = load<SimdReal>(nbat->simdMasks.diagonal_2xnn_j_minus_i.data());
     /* Generate all the diagonal masks as comparison results */
 #if UNROLLI == UNROLLJ
     diagonal_mask_S0  = (zero_S < diagonal_jmi_S);
@@ -194,9 +185,9 @@
     /* Load masks for topology exclusion masking. filter_stride is
        static const, so the conditional will be optimized away. */
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
-    exclusion_filter = nbat->simd_exclusion_filter64;
+    const std::uint64_t * gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter64.data();
 #else
-    exclusion_filter = nbat->simd_exclusion_filter;
+    const std::uint32_t * gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter.data();
 #endif
 
     /* Here we cast the exclusion filters from unsigned * to int * or real *.
@@ -305,12 +296,12 @@
     rcvdw2_S = SimdReal(ic->rvdw*ic->rvdw);
 #endif
 
-    minRsq_S            = SimdReal(NBNXN_MIN_RSQ);
+    minRsq_S                           = SimdReal(NBNXN_MIN_RSQ);
 
-    q                   = nbat->q;
-    facel               = ic->epsfac;
-    shiftvec            = shift_vec[0];
-    x                   = nbat->x;
+    const real * gmx_restrict q        = nbatParams.q.data();
+    const real                facel    = ic->epsfac;
+    const real * gmx_restrict shiftvec = shift_vec[0];
+    const real * gmx_restrict x        = nbat->x().data();
 
 #ifdef FIX_LJ_C
 
@@ -338,13 +329,13 @@
 #endif /* FIX_LJ_C */
 
 #ifdef ENERGY_GROUPS
-    egps_ishift  = nbat->neg_2log;
+    egps_ishift  = nbatParams.neg_2log;
     egps_imask   = (1<<egps_ishift) - 1;
-    egps_jshift  = 2*nbat->neg_2log;
+    egps_jshift  = 2*nbatParams.neg_2log;
     egps_jmask   = (1<<egps_jshift) - 1;
     egps_jstride = (UNROLLJ>>1)*UNROLLJ;
     /* Major division is over i-particle energy groups, determine the stride */
-    Vstride_i    = nbat->nenergrp*(1<<nbat->neg_2log)*egps_jstride;
+    Vstride_i    = nbatParams.nenergrp*(1 << nbatParams.neg_2log)*egps_jstride;
 #endif
 
     l_cj = nbl->cj.data();
@@ -389,7 +380,7 @@
         half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 
 #ifdef ENERGY_GROUPS
-        egps_i = nbat->energrp[ci];
+        egps_i = nbatParams.energrp[ci];
         {
             int ia, egp_ia;
 
@@ -457,7 +448,7 @@
                 {
                     real c6_i;
 
-                    c6_i = nbat->nbfp[nbat->type[sci+ia]*(nbat->ntype + 1)*2]/6;
+                    c6_i = nbatParams.nbfp[nbatParams.type[sci+ia]*(nbatParams.numTypes + 1)*2]/6;
 #ifdef ENERGY_GROUPS
                     vvdwtp[ia][((egps_i>>(ia*egps_ishift)) & egps_imask)*egps_jstride]
 #else
@@ -520,13 +511,14 @@
             c12s_S2 = loadU1DualHsimd(ljc+sci2+STRIDE+2);
         }
 #elif !defined LJ_COMB_LB && !defined FIX_LJ_C
-        const real *nbfp0     = nbfp_ptr + type[sci  ]*nbat->ntype*c_simdBestPairAlignment;
-        const real *nbfp1     = nbfp_ptr + type[sci+1]*nbat->ntype*c_simdBestPairAlignment;
+        const int   numTypes  = nbatParams.numTypes;
+        const real *nbfp0     = nbfp_ptr + type[sci  ]*numTypes*c_simdBestPairAlignment;
+        const real *nbfp1     = nbfp_ptr + type[sci+1]*numTypes*c_simdBestPairAlignment;
         const real *nbfp2     = nullptr, *nbfp3 = nullptr;
         if (!half_LJ)
         {
-            nbfp2 = nbfp_ptr + type[sci+2]*nbat->ntype*c_simdBestPairAlignment;
-            nbfp3 = nbfp_ptr + type[sci+3]*nbat->ntype*c_simdBestPairAlignment;
+            nbfp2 = nbfp_ptr + type[sci+2]*numTypes*c_simdBestPairAlignment;
+            nbfp3 = nbfp_ptr + type[sci+3]*numTypes*c_simdBestPairAlignment;
         }
 #endif
 #endif
