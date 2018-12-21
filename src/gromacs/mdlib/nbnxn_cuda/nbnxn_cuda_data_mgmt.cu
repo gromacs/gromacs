@@ -219,14 +219,14 @@ static void set_cutoff_parameters(cu_nbparam_t              *nbp,
 }
 
 /*! Initializes the nonbonded parameter data structure. */
-static void init_nbparam(cu_nbparam_t              *nbp,
-                         const interaction_const_t *ic,
-                         const NbnxnListParameters *listParams,
-                         const nbnxn_atomdata_t    *nbat)
+static void init_nbparam(cu_nbparam_t                   *nbp,
+                         const interaction_const_t      *ic,
+                         const NbnxnListParameters      *listParams,
+                         const nbnxn_atomdata_t::Params &nbatParams)
 {
     int         ntypes;
 
-    ntypes  = nbat->ntype;
+    ntypes  = nbatParams.numTypes;
 
     set_cutoff_parameters(nbp, ic, listParams);
 
@@ -245,7 +245,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         {
             case eintmodNONE:
             case eintmodPOTSHIFT:
-                switch (nbat->comb_rule)
+                switch (nbatParams.comb_rule)
                 {
                     case ljcrNONE:
                         nbp->vdwtype = evdwCuCUT;
@@ -274,12 +274,12 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     {
         if (ic->ljpme_comb_rule == ljcrGEOM)
         {
-            assert(nbat->comb_rule == ljcrGEOM);
+            assert(nbatParams.comb_rule == ljcrGEOM);
             nbp->vdwtype = evdwCuEWALDGEOM;
         }
         else
         {
-            assert(nbat->comb_rule == ljcrLB);
+            assert(nbatParams.comb_rule == ljcrLB);
             nbp->vdwtype = evdwCuEWALDLB;
         }
     }
@@ -318,14 +318,14 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     if (!useLjCombRule(nbp))
     {
         initParamLookupTable(nbp->nbfp, nbp->nbfp_texobj,
-                             nbat->nbfp, 2*ntypes*ntypes);
+                             nbatParams.nbfp.data(), 2*ntypes*ntypes);
     }
 
     /* set up LJ-PME parameter lookup table */
     if (ic->vdwtype == evdwPME)
     {
         initParamLookupTable(nbp->nbfp_comb, nbp->nbfp_comb_texobj,
-                             nbat->nbfp_comb, 2*ntypes);
+                             nbatParams.nbfp_comb.data(), 2*ntypes);
     }
 }
 
@@ -412,10 +412,10 @@ static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
                                   const interaction_const_t      *ic,
                                   const NbnxnListParameters      *listParams,
-                                  const nbnxn_atomdata_t         *nbat)
+                                  const nbnxn_atomdata_t::Params &nbatParams)
 {
-    init_atomdata_first(nb->atdat, nbat->ntype);
-    init_nbparam(nb->nbparam, ic, listParams, nbat);
+    init_atomdata_first(nb->atdat, nbatParams.numTypes);
+    init_nbparam(nb->nbparam, ic, listParams, nbatParams);
 
     /* clear energy and shift force outputs */
     nbnxn_cuda_clear_e_fshift(nb);
@@ -504,7 +504,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     /* pick L1 cache configuration */
     nbnxn_cuda_set_cacheconfig();
 
-    nbnxn_cuda_init_const(nb, ic, listParams, nbat);
+    nbnxn_cuda_init_const(nb, ic, listParams, nbat->params());
 
     *p_nb = nb;
 
@@ -584,7 +584,7 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_cuda_t       *nb,
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
-        cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec,
+        cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec.data(),
                           SHIFTS * sizeof(*adat->shift_vec), ls);
         adat->bShiftVecUploaded = true;
     }
@@ -638,7 +638,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     cu_atomdata_t *d_atdat   = nb->atdat;
     cudaStream_t   ls        = nb->stream[eintLocal];
 
-    natoms    = nbat->natoms;
+    natoms    = nbat->numAtoms();
     realloced = false;
 
     if (bDoTime)
@@ -692,12 +692,12 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
 
     if (useLjCombRule(nb->nbparam))
     {
-        cu_copy_H2D_async(d_atdat->lj_comb, nbat->lj_comb,
+        cu_copy_H2D_async(d_atdat->lj_comb, nbat->params().lj_comb.data(),
                           natoms*sizeof(*d_atdat->lj_comb), ls);
     }
     else
     {
-        cu_copy_H2D_async(d_atdat->atom_types, nbat->type,
+        cu_copy_H2D_async(d_atdat->atom_types, nbat->params().type.data(),
                           natoms*sizeof(*d_atdat->atom_types), ls);
     }
 

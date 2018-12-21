@@ -2235,7 +2235,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
         enbnxninitcombrule = enbnxninitcombruleNONE;
     }
 
-    snew(nbv->nbat, 1);
+    nbv->nbat = new nbnxn_atomdata_t(nbv->bUseGPU ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
     int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
     if (ir->opts.ngener - ir->nwall == 1)
     {
@@ -2252,8 +2252,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
                         enbnxninitcombrule,
                         fr->ntype, fr->nbfp,
                         mimimumNumEnergyGroupNonbonded,
-                        bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
-                        nb_alloc, nb_free);
+                        bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1);
 
     if (nbv->bUseGPU)
     {
