@@ -15,3 +15,11 @@ When using CUDA 7.0 in a ``Debug`` build, if the PME FFT task is offloaded
 to a GPU, a floating point exception will abort the :ref:`mdrun <gmx mdrun>` execution.
 The exception originates from the CUDA FFT (cuFFT) library.
 To avoid this issue, we advise using a later CUDA version.
+
+Issues with GPU timer with OpenCL
+---------------------------------
+
+When building using OpenCL in ``Debug`` mode, it can happen that the GPU timer state gets
+corrupted, leading to an assertion failure during the :ref:`mdrun <gmx mdrun>`.
+This seems to be related to the load of other, unrelated tasks on the GPU.
+
