@@ -120,6 +120,9 @@
 #include "nbnxn_kernels/nbnxn_kernel_cpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_prune.h"
 
+#include "gromacs/mdlib/nbnxn_cuda/gpuD2DCUDA.h"
+#include "gromacs/mdlib/nbnxn_cuda/gpuUpdateConstraintsCUDA.h"
+
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
 // a blocking wait (so polling does not introduce overhead when the static
@@ -293,7 +296,8 @@ static void pull_potential_wrapper(const t_commrec *cr,
 static void pme_receive_force_ener(const t_commrec      *cr,
                                    gmx::ForceWithVirial *forceWithVirial,
                                    gmx_enerdata_t       *enerd,
-                                   gmx_wallcycle_t       wcycle)
+                                   gmx_wallcycle_t       wcycle,
+                                   bool                  bNS)
 {
     real   e_q, e_lj, dvdl_q, dvdl_lj;
     float  cycles_ppdpme, cycles_seppme;
@@ -308,7 +312,7 @@ static void pme_receive_force_ener(const t_commrec      *cr,
     dvdl_q  = 0;
     dvdl_lj = 0;
     gmx_pme_receive_f(cr, forceWithVirial, &e_q, &e_lj, &dvdl_q, &dvdl_lj,
-                      &cycles_seppme);
+                      &cycles_seppme, bNS);
     enerd->term[F_COUL_RECIP] += e_q;
     enerd->term[F_LJ_RECIP]   += e_lj;
     enerd->dvdl_lin[efptCOUL] += dvdl_q;
@@ -900,14 +904,15 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
                                       matrix          box,
                                       rvec            x[],
                                       int             flags,
-                                      gmx_wallcycle_t wcycle)
+                                      gmx_wallcycle_t wcycle,
+                                      bool            bNS)
 {
     int pmeFlags = GMX_PME_SPREAD | GMX_PME_SOLVE;
     pmeFlags |= (flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0;
     pmeFlags |= (flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0;
 
     pme_gpu_prepare_computation(pmedata, (flags & GMX_FORCE_DYNAMICBOX) != 0, box, wcycle, pmeFlags);
-    pme_gpu_launch_spread(pmedata, x, wcycle);
+    pme_gpu_launch_spread(pmedata, x, wcycle, bNS, true);
 }
 
 /*! \brief Launch the FFT and gather stages of PME GPU
@@ -916,6 +921,7 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
  *
  * \param[in]  pmedata        The PME structure
  * \param[in]  wcycle         The wallcycle structure
+ * \param[in]  bCopyPmeForceBack  Specifies whether the device->host copy should occur
  */
 static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
                                      gmx_wallcycle_t   wcycle,
@@ -1172,13 +1178,13 @@ static void do_force_cutsVERLET(FILE *fplog,
         gmx_pme_send_coordinates(cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
                                  lambda[efptCOUL], lambda[efptVDW],
                                  (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
-                                 step, wcycle);
+                                 step, wcycle, bNS);
     }
 #endif /* GMX_MPI */
 
     if (useGpuPme)
     {
-        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.unpaddedArrayRef().data()), flags, wcycle);
+        launchPmeGpuSpread(fr->pmedata, box, as_rvec_array(x.unpaddedArrayRef().data()), flags, wcycle, bNS);
     }
 
     /* do gridding for pair search */
@@ -1291,7 +1297,14 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                      FALSE,
                                                      nbv->nbat,
                                                      nbv->gpu_nbv,
-                                                     eintLocal);
+                                                     eintLocal,
+                                                     x.unpaddedArrayRef().size());
+            //Set required sizes and poointers in newly developed GPU modules
+            //TODO refactor.
+            gpuUpdateConstraintsSetSize(x.unpaddedArrayRef().size());
+            gpuUpdateConstraintsSetGpuNB(nbv->gpu_nbv);
+            gpuD2DSetCommrec(cr);
+
         }
 
     }
@@ -1300,6 +1313,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         bool gpuBufferOpsCompleted = false;
         if (bUseGPU)
         {
+
             gpuBufferOpsCompleted = nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
                                                                         eatLocal,
                                                                         FALSE,
@@ -1307,7 +1321,10 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                                         nbv->gpu_nbv,
                                                                         pme_gpu_get_device_x(fr->pmedata),
                                                                         eintLocal,
-                                                                        as_rvec_array(x.unpaddedArrayRef().data()));
+                                                                        as_rvec_array(x.unpaddedArrayRef().data()),
+                                                                        cr);
+
+
         }
         if (!bUseGPU || !gpuBufferOpsCompleted)
         {
@@ -1400,12 +1417,21 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                          FALSE,
                                                          nbv->nbat,
                                                          nbv->gpu_nbv,
-                                                         eintNonlocal);
+                                                         eintNonlocal,
+                                                         x.unpaddedArrayRef().size());
             }
         }
         else
         {
-            dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
+
+            if (bUseGPU) //setup "move-x"-style index map structure for D2D comms
+            {
+                dd_setup_gpu_d2d(cr->dd, box);
+            }
+            else
+            {
+                dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
+            }
 
             gmx_bool gpuBufferOpsCompleted = false;
             if (bUseGPU)
@@ -1417,7 +1443,8 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                                             nbv->gpu_nbv,
                                                                             pme_gpu_get_device_x(fr->pmedata),
                                                                             eintNonlocal,
-                                                                            as_rvec_array(x.unpaddedArrayRef().data()));
+                                                                            as_rvec_array(x.unpaddedArrayRef().data()),
+                                                                            cr);
             }
             if (!bUseGPU || !gpuBufferOpsCompleted)
             {
@@ -1447,7 +1474,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
     }
 
-    if (bUseGPU)
+    if (bUseGPU && bNS)
     {
         /* launch D2H copy-back F */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
@@ -1672,8 +1699,12 @@ static void do_force_cutsVERLET(FILE *fplog,
             /* skip the reduction if there was no non-local work to do */
             if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatNonlocal,
-                                               nbv->nbat, f, wcycle);
+                if (bNS)
+                {
+                    nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatNonlocal,
+                                                   nbv->nbat, f, wcycle);
+                }
+
             }
         }
     }
@@ -1691,7 +1722,14 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
         if (bDoForces)
         {
-            dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
+            if (!bNS)  //add force shift data to existing GPU D2D params structure
+            {
+                dd_gpu_d2d_add_fshift_to_params(cr->dd, fr->fshift);
+            }
+            else
+            {
+                dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
+            }
         }
     }
 
@@ -1795,20 +1833,31 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
+
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME))
+    {
+        /* In case of node-splitting, the PP nodes receive the long-range
+         * forces, virial and energy from the PME nodes here.
+         */
+        pme_receive_force_ener(cr, &forceWithVirial, enerd, wcycle, bNS);
+    }
+
+
+
     /* Do the nonbonded GPU (or emulation) force buffer reduction
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
 
 
-        if (bNS || !thisRankHasDuty(cr, DUTY_PME))
+        if (bNS)
         {
-            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
+            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatAll,
                                            nbv->nbat, f, wcycle);
 
 
             nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbv->nbs.get(),
-                                                    eatLocal,
+                                                    eatAll,
                                                     nbv->nbat,
                                                     nbv->gpu_nbv,
                                                     wcycle);
@@ -1819,14 +1868,15 @@ static void do_force_cutsVERLET(FILE *fplog,
 
 #if GMX_GPU == GMX_GPU_CUDA
             nbnxn_atomdata_add_nbat_f_to_f_gpu(nbv->nbs.get(),
-                                               eatLocal,
+                                               eatAll,
                                                nbv->nbat,
                                                nbv->gpu_nbv,
                                                pme_gpu_get_device_f(fr->pmedata),
                                                f,
-                                               wcycle);
+                                               wcycle,
+                                               cr);
 #else
-            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
+            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatAll,
                                            nbv->nbat, f, wcycle);
 #endif
         }
@@ -1866,13 +1916,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
     }
 
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME))
-    {
-        /* In case of node-splitting, the PP nodes receive the long-range
-         * forces, virial and energy from the PME nodes here.
-         */
-        pme_receive_force_ener(cr, &forceWithVirial, enerd, wcycle);
-    }
 
     if (bDoForces)
     {
@@ -2014,7 +2057,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         gmx_pme_send_coordinates(cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
                                  lambda[efptCOUL], lambda[efptVDW],
                                  (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
-                                 step, wcycle);
+                                 step, wcycle, bNS);
     }
 #endif /* GMX_MPI */
 
@@ -2205,7 +2248,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
-        pme_receive_force_ener(cr, &forceWithVirial, enerd, wcycle);
+        pme_receive_force_ener(cr, &forceWithVirial, enerd, wcycle, bNS);
     }
 
     if (bDoForces)

@@ -47,6 +47,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -204,7 +205,8 @@ void nbnxn_gpu_init_x_to_nbat_x(int                gmx_unused  ncxy,
                                 int                gmx_unused  a_nalloc,
                                 const int          gmx_unused *na_all,
                                 const int          gmx_unused *cxy_ind,
-                                int                gmx_unused  iloc) GPU_FUNC_TERM
+                                int                gmx_unused  iloc,
+                                int                gmx_unused  xsize) GPU_FUNC_TERM
 
 /*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
  * returns true if GPU buffer ops are completed. !*/
@@ -220,7 +222,8 @@ gmx_bool nbnxn_gpu_x_to_nbat_x(int                gmx_unused  ncxy,
                                int                gmx_unused  cell0,
                                int                gmx_unused  na_sc,
                                int                gmx_unused  iloc,
-                               rvec               gmx_unused *x) GPU_FUNC_TERM_WITH_RETURN(false)
+                               rvec               gmx_unused *x,
+                               const t_commrec    gmx_unused *cr) GPU_FUNC_TERM_WITH_RETURN(false)
 
 
 /*! \brief Initialization for F buffer operations on GPU */
@@ -232,12 +235,14 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
 
 /*! \brief F buffer operations on GPU: adds nb format force to rvec format. */
 GPU_FUNC_QUALIFIER
-void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t       gmx_unused *nbat,
+void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_search      gmx_unused      *nbs,
+                               const nbnxn_atomdata_t       gmx_unused *nbat,
                                gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
                                void                         gmx_unused *fPmeDevicePtr,
                                int                          gmx_unused  a0,
                                int                          gmx_unused  a1,
-                               rvec                         gmx_unused *f) GPU_FUNC_TERM
+                               rvec                         gmx_unused *f,
+                               const t_commrec              gmx_unused *cr) GPU_FUNC_TERM
 
 
 #endif
