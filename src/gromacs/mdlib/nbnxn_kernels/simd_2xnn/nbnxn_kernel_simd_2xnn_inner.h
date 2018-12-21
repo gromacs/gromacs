@@ -803,7 +803,7 @@
     {
         int egps_j;
 #if UNROLLJ == 2
-        egps_j    = nbat->energrp[cj>>1];
+        egps_j    = nbatParams.energrp[cj >> 1];
         egp_jj[0] = ((egps_j >> ((cj & 1)*egps_jshift)) & egps_jmask)*egps_jstride;
 #else
         /* We assume UNROLLI <= UNROLLJ */
@@ -811,7 +811,7 @@
         for (jdi = 0; jdi < UNROLLJ/UNROLLI; jdi++)
         {
             int jj;
-            egps_j = nbat->energrp[cj*(UNROLLJ/UNROLLI)+jdi];
+            egps_j = nbatParams.energrp[cj*(UNROLLJ/UNROLLI) + jdi];
             for (jj = 0; jj < (UNROLLI/2); jj++)
             {
                 egp_jj[jdi*(UNROLLI/2)+jj] = ((egps_j >> (jj*egps_jshift)) & egps_jmask)*egps_jstride;

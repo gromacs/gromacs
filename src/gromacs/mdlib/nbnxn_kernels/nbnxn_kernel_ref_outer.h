@@ -107,11 +107,6 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 )
 {
     const nbnxn_cj_t   *l_cj;
-    const int          *type;
-    const real         *q;
-    const real         *shiftvec;
-    const real         *x;
-    const real         *nbfp;
     real                rcut2;
 #ifdef VDW_CUTOFF_CHECK
     real                rvdw2;
@@ -145,7 +140,6 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #ifdef CALC_ENERGIES
     real        lje_vc;
 #endif
-    const real *ljc;
 #endif
 
 #ifdef CALC_COUL_RF
@@ -179,6 +173,8 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
     swF4 = 5*ic->vdw_switch.c5;
 #endif
 
+    const nbnxn_atomdata_t::Params &nbatParams = nbat->params();
+
 #ifdef LJ_EWALD
     lje_coeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
     lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2/6.0;
@@ -186,7 +182,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
     lje_vc       = ic->sh_lj_ewald;
 #endif
 
-    ljc          = nbat->nbfp_comb;
+    const real *ljc = nbatParams.nbfp_comb.data();
 #endif
 
 #ifdef CALC_COUL_RF
@@ -210,22 +206,22 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 
 #ifdef ENERGY_GROUPS
-    egp_mask = (1<<nbat->neg_2log) - 1;
+    egp_mask = (1 << nbatParams.neg_2log) - 1;
 #endif
 
 
-    rcut2               = ic->rcoulomb*ic->rcoulomb;
+    rcut2                = ic->rcoulomb*ic->rcoulomb;
 #ifdef VDW_CUTOFF_CHECK
-    rvdw2               = ic->rvdw*ic->rvdw;
+    rvdw2                = ic->rvdw*ic->rvdw;
 #endif
 
-    ntype2              = nbat->ntype*2;
-    nbfp                = nbat->nbfp;
-    q                   = nbat->q;
-    type                = nbat->type;
-    facel               = ic->epsfac;
-    shiftvec            = shift_vec[0];
-    x                   = nbat->x;
+    ntype2               = nbatParams.numTypes*2;
+    const real *nbfp     = nbatParams.nbfp.data();
+    const real *q        = nbatParams.q.data();
+    const int  *type     = nbatParams.type.data();
+    facel                = ic->epsfac;
+    const real *shiftvec = shift_vec[0];
+    const real *x        = nbat->x().data();
 
     l_cj = nbl->cj.data();
 
@@ -265,7 +261,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #else
         for (i = 0; i < UNROLLI; i++)
         {
-            egp_sh_i[i] = ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask)*nbat->nenergrp;
+            egp_sh_i[i] = ((nbatParams.energrp[ci] >> (i*nbatParams.neg_2log)) & egp_mask)*nbatParams.nenergrp;
         }
 #endif
 #endif
@@ -303,7 +299,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
                 {
                     int egp_ind;
 #ifdef ENERGY_GROUPS
-                    egp_ind = egp_sh_i[i] + ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask);
+                    egp_ind = egp_sh_i[i] + ((nbatParams.energrp[ci] >> (i*nbatParams.neg_2log)) & egp_mask);
 #else
                     egp_ind = 0;
 #endif
@@ -312,7 +308,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 
 #ifdef LJ_EWALD
                     /* LJ Ewald self interaction */
-                    Vvdw[egp_ind] += 0.5*nbat->nbfp[nbat->type[ci*UNROLLI+i]*(nbat->ntype + 1)*2]/6*lje_coeff6_6;
+                    Vvdw[egp_ind] += 0.5*nbatParams.nbfp[nbatParams.type[ci*UNROLLI+i]*(nbatParams.numTypes + 1)*2]/6*lje_coeff6_6;
 #endif
                 }
             }
