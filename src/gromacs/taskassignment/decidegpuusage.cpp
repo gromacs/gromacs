@@ -105,6 +105,7 @@ decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbon
                                                 const std::vector<int>   &gpuIdsToUse,
                                                 const std::vector<int>   &userGpuTaskAssignment,
                                                 const EmulateGpuNonbonded emulateGpuNonbonded,
+                                                const bool                buildSupportsNonbondedOnGpu,
                                                 const bool                usingVerletScheme,
                                                 const bool                nonbondedOnGpuIsUseful,
                                                 const int                 numRanksPerSimulation)
@@ -113,7 +114,8 @@ decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbon
     if (nonbondedTarget == TaskTarget::Cpu ||
         emulateGpuNonbonded == EmulateGpuNonbonded::Yes ||
         !usingVerletScheme ||
-        !nonbondedOnGpuIsUseful)
+        !nonbondedOnGpuIsUseful ||
+        !buildSupportsNonbondedOnGpu)
     {
         // If the user required NB on GPUs, we issue an error later.
         return false;
@@ -235,6 +237,7 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
 bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarget,
                                         const std::vector<int>    &userGpuTaskAssignment,
                                         const EmulateGpuNonbonded  emulateGpuNonbonded,
+                                        const bool                 buildSupportsNonbondedOnGpu,
                                         const bool                 usingVerletScheme,
                                         const bool                 nonbondedOnGpuIsUseful,
                                         const bool                 gpusWereDetected)
@@ -249,6 +252,15 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
         }
 
         return false;
+    }
+
+    if (!buildSupportsNonbondedOnGpu && nonbondedTarget == TaskTarget::Gpu)
+    {
+        GMX_THROW(InconsistentInputError
+                      ("Nonbonded interactions on the GPU were requested with -nb gpu, "
+                      "but the GROMACS binary has been built without GPU support. "
+                      "Either run without selecting GPU options, or recompile GROMACS "
+                      "with GPU support enabled"));
     }
 
     // TODO refactor all these TaskTarget::Gpu checks into one place?
