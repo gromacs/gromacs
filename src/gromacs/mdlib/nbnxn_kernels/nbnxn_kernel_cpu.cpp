@@ -66,20 +66,10 @@
  */
 static void clearGroupEnergies(nbnxn_atomdata_output_t *out)
 {
-    for (int i = 0; i < out->nV; i++)
-    {
-        out->Vvdw[i] = 0;
-        out->Vc[i]   = 0;
-    }
-
-    for (int i = 0; i < out->nVS; i++)
-    {
-        out->VSvdw[i] = 0;
-    }
-    for (int i = 0; i < out->nVS; i++)
-    {
-        out->VSc[i] = 0;
-    }
+    std::fill(out->Vvdw.begin(), out->Vvdw.end(), 0.0_real);
+    std::fill(out->Vc.begin(), out->Vc.end(), 0.0_real);
+    std::fill(out->VSvdw.begin(), out->VSvdw.end(), 0.0_real);
+    std::fill(out->VSc.begin(), out->VSc.end(), 0.0_real);
 }
 
 /*! \brief Reduce the group-pair energy buffers produced by a SIMD kernel
@@ -91,22 +81,21 @@ static void clearGroupEnergies(nbnxn_atomdata_output_t *out)
  * \tparam        unrollj         The unroll size for j-particles in the SIMD kernel
  * \param[in]     numGroups       The number of energy groups
  * \param[in]     numGroups_2log  Log2 of numGroups, rounded up
- * \param[in]     vVdwSimd        SIMD Van der Waals energy buffers
- * \param[in]     vCoulombSimd    SIMD Coulomb energy buffers
- * \param[in,out] vVdw            Van der Waals energy output buffer
- * \param[in,out] vCoulomb        Coulomb energy output buffer
+ * \param[in,out] out             Struct with energy buffers
  */
 template <int unrollj> static void
 reduceGroupEnergySimdBuffers(int                       numGroups,
                              int                       numGroups_2log,
-                             const real * gmx_restrict vVdwSimd,
-                             const real * gmx_restrict vCoulombSimd,
-                             real * gmx_restrict       vVdw,
-                             real * gmx_restrict       vCoulomb)
+                             nbnxn_atomdata_output_t  *out)
 {
-    const int unrollj_half     = unrollj/2;
+    const int                 unrollj_half     = unrollj/2;
     /* Energies are stored in SIMD registers with size 2^numGroups_2log */
-    const int numGroupsStorage = (1 << numGroups_2log);
+    const int                 numGroupsStorage = (1 << numGroups_2log);
+
+    const real * gmx_restrict vVdwSimd     = out->VSvdw.data();
+    const real * gmx_restrict vCoulombSimd = out->VSc.data();
+    real * gmx_restrict       vVdw         = out->Vvdw.data();
+    real * gmx_restrict       vCoulomb     = out->Vc.data();
 
     /* The size of the SIMD energy group buffer array is:
      * numGroups*numGroups*numGroupsStorage*unrollj_half*simd_width
@@ -133,7 +122,7 @@ reduceGroupEnergySimdBuffers(int                       numGroups,
 
 void
 nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
-                 const nbnxn_atomdata_t    *nbat,
+                 nbnxn_atomdata_t          *nbat,
                  const interaction_const_t *ic,
                  rvec                      *shiftVectors,
                  int                        forceFlags,
@@ -174,6 +163,8 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
         }
     }
 
+    const nbnxn_atomdata_t::Params &nbatParams = nbat->params();
+
     int vdwkt = 0;
     if (ic->vdwtype == evdwCUT)
     {
@@ -181,7 +172,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
         {
             case eintmodNONE:
             case eintmodPOTSHIFT:
-                switch (nbat->comb_rule)
+                switch (nbatParams.comb_rule)
                 {
                     case ljcrGEOM: vdwkt = vdwktLJCUT_COMBGEOM; break;
                     case ljcrLB:   vdwkt = vdwktLJCUT_COMBLB;   break;
@@ -231,7 +222,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
 
         if (clearF == enbvClearFYes)
         {
-            clear_f(nbat, nb, out->f);
+            clear_f(nbat, nb, out->f.data());
         }
 
         real *fshift_p;
@@ -241,7 +232,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
         }
         else
         {
-            fshift_p = out->fshift;
+            fshift_p = out->fshift.data();
 
             if (clearF == enbvClearFYes)
             {
@@ -258,7 +249,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                     nbnxn_kernel_noener_ref[coulkt][vdwkt](nbl[nb], nbat,
                                                            ic,
                                                            shiftVectors,
-                                                           out->f,
+                                                           out->f.data(),
                                                            fshift_p);
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
@@ -266,7 +257,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                     nbnxn_kernel_noener_simd_2xnn[coulkt][vdwkt](nbl[nb], nbat,
                                                                  ic,
                                                                  shiftVectors,
-                                                                 out->f,
+                                                                 out->f.data(),
                                                                  fshift_p);
                     break;
 #endif
@@ -275,7 +266,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                     nbnxn_kernel_noener_simd_4xn[coulkt][vdwkt](nbl[nb], nbat,
                                                                 ic,
                                                                 shiftVectors,
-                                                                out->f,
+                                                                out->f.data(),
                                                                 fshift_p);
                     break;
 #endif
@@ -283,7 +274,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                     GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
         }
-        else if (out->nV == 1)
+        else if (out->Vvdw.size() == 1)
         {
             /* A single energy group (pair) */
             out->Vvdw[0] = 0;
@@ -295,20 +286,20 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                     nbnxn_kernel_ener_ref[coulkt][vdwkt](nbl[nb], nbat,
                                                          ic,
                                                          shiftVectors,
-                                                         out->f,
+                                                         out->f.data(),
                                                          fshift_p,
-                                                         out->Vvdw,
-                                                         out->Vc);
+                                                         out->Vvdw.data(),
+                                                         out->Vc.data());
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case nbnxnk4xN_SIMD_2xNN:
                     nbnxn_kernel_ener_simd_2xnn[coulkt][vdwkt](nbl[nb], nbat,
                                                                ic,
                                                                shiftVectors,
-                                                               out->f,
+                                                               out->f.data(),
                                                                fshift_p,
-                                                               out->Vvdw,
-                                                               out->Vc);
+                                                               out->Vvdw.data(),
+                                                               out->Vc.data());
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -316,10 +307,10 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                     nbnxn_kernel_ener_simd_4xn[coulkt][vdwkt](nbl[nb], nbat,
                                                               ic,
                                                               shiftVectors,
-                                                              out->f,
+                                                              out->f.data(),
                                                               fshift_p,
-                                                              out->Vvdw,
-                                                              out->Vc);
+                                                              out->Vvdw.data(),
+                                                              out->Vc.data());
                     break;
 #endif
                 default:
@@ -340,10 +331,10 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                     nbnxn_kernel_energrp_ref[coulkt][vdwkt](nbl[nb], nbat,
                                                             ic,
                                                             shiftVectors,
-                                                            out->f,
+                                                            out->f.data(),
                                                             fshift_p,
-                                                            out->Vvdw,
-                                                            out->Vc);
+                                                            out->Vvdw.data(),
+                                                            out->Vc.data());
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case nbnxnk4xN_SIMD_2xNN:
@@ -351,10 +342,10 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                     nbnxn_kernel_energrp_simd_2xnn[coulkt][vdwkt](nbl[nb], nbat,
                                                                   ic,
                                                                   shiftVectors,
-                                                                  out->f,
+                                                                  out->f.data(),
                                                                   fshift_p,
-                                                                  out->VSvdw,
-                                                                  out->VSc);
+                                                                  out->VSvdw.data(),
+                                                                  out->VSc.data());
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -363,10 +354,10 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                     nbnxn_kernel_energrp_simd_4xn[coulkt][vdwkt](nbl[nb], nbat,
                                                                  ic,
                                                                  shiftVectors,
-                                                                 out->f,
+                                                                 out->f.data(),
                                                                  fshift_p,
-                                                                 out->VSvdw,
-                                                                 out->VSc);
+                                                                 out->VSvdw.data(),
+                                                                 out->VSc.data());
                     break;
 #endif
                 default:
@@ -378,22 +369,19 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                 switch (unrollj)
                 {
                     case 2:
-                        reduceGroupEnergySimdBuffers<2>(nbat->nenergrp,
-                                                        nbat->neg_2log,
-                                                        out->VSvdw, out->VSc,
-                                                        out->Vvdw, out->Vc);
+                        reduceGroupEnergySimdBuffers<2>(nbatParams.nenergrp,
+                                                        nbatParams.neg_2log,
+                                                        out);
                         break;
                     case 4:
-                        reduceGroupEnergySimdBuffers<4>(nbat->nenergrp,
-                                                        nbat->neg_2log,
-                                                        out->VSvdw, out->VSc,
-                                                        out->Vvdw, out->Vc);
+                        reduceGroupEnergySimdBuffers<4>(nbatParams.nenergrp,
+                                                        nbatParams.neg_2log,
+                                                        out);
                         break;
                     case 8:
-                        reduceGroupEnergySimdBuffers<8>(nbat->nenergrp,
-                                                        nbat->neg_2log,
-                                                        out->VSvdw, out->VSc,
-                                                        out->Vvdw, out->Vc);
+                        reduceGroupEnergySimdBuffers<8>(nbatParams.nenergrp,
+                                                        nbatParams.neg_2log,
+                                                        out);
                         break;
                     default:
                         GMX_RELEASE_ASSERT(false, "Unsupported j-unroll size");
