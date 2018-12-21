@@ -116,7 +116,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t gmx_unused *nb,
  */
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
-                              const struct nbnxn_atomdata_t gmx_unused *nbatom,
+                              struct nbnxn_atomdata_t gmx_unused       *nbatom,
                               int                    gmx_unused         flags,
                               int                    gmx_unused         aloc,
                               bool                   gmx_unused         haveOtherWork) GPU_FUNC_TERM

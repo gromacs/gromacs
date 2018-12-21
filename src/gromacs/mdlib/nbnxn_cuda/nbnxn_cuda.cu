@@ -342,7 +342,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* HtoD x, q */
-    cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
+    cu_copy_H2D_async(adat->xq + adat_begin,
+                      static_cast<const void *>(nbatom->x().data() + adat_begin * 4),
                       adat_len * sizeof(*adat->xq), stream);
 
     if (bDoTime)
@@ -580,7 +581,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
 }
 
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
-                              const nbnxn_atomdata_t *nbatom,
+                              nbnxn_atomdata_t       *nbatom,
                               int                     flags,
                               int                     aloc,
                               bool                    haveOtherWork)
@@ -622,7 +623,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* DtoH f */
-    cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f + adat_begin,
+    cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
                       (adat_len)*sizeof(*adat->f), stream);
 
     /* After the non-local D2H is launched the nonlocal_done event can be
