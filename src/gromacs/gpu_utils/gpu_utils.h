@@ -249,6 +249,13 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
 //! Get status of device with specified index
 int gpu_info_get_stat(const gmx_gpu_info_t &info, int index);
 
+/*! \brief Check if GROMACS has been built with GPU support.
+ *
+ * \param[in] error Pointer to error string or nullptr.
+ * \todo Move this to NB module once it exists.
+ */
+bool buildSupportsNonbondedOnGpu(std::string *error);
+
 /*! \brief Starts the GPU profiler if mdrun is being profiled.
  *
  *  When a profiler run is in progress (based on the presence of the NVPROF_ID

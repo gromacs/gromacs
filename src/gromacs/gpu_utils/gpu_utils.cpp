@@ -46,7 +46,9 @@
 #include <cassert>
 
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #if !GMX_GPU
 /*! \brief Set allocation functions used by the GPU host
@@ -94,4 +96,34 @@ const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &gpu_info,
     return (index >= gpu_info.n_dev ?
             gpu_detect_res_str[egpuNonexistent] :
             gpu_detect_res_str[gpu_info_get_stat(gpu_info, index)]);
+}
+/*! \brief Help build a descriptive message in \c error if there are
+ * \c errorReasons why nonbondeds on a GPU are not supported.
+ *
+ * \returns Whether the lack of errorReasons indicate there is support. */
+static bool
+addMessageIfNotSupported(gmx::ArrayRef <const std::string> errorReasons,
+                         std::string                      *error)
+{
+    bool isSupported = errorReasons.empty();
+    if (!isSupported && error)
+    {
+        *error  = "Nonbonded interactions cannot run on GPUs: ";
+        *error += joinStrings(errorReasons, "; ") + ".";
+    }
+    return isSupported;
+}
+
+bool buildSupportsNonbondedOnGpu(std::string *error)
+{
+    std::vector<std::string> errorReasons;
+    if (GMX_DOUBLE)
+    {
+        errorReasons.emplace_back("double precision");
+    }
+    if (GMX_GPU == GMX_GPU_NONE)
+    {
+        errorReasons.emplace_back("non-GPU build of GROMACS");
+    }
+    return addMessageIfNotSupported(errorReasons, error);
 }
