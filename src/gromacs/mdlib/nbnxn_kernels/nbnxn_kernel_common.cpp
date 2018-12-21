@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,7 @@
 static void
 clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
 {
-    int i;
-
-    for (i = 0; i < nbat->natoms*nbat->fstride; i++)
+    for (int i = 0; i < nbat->numAtoms()*nbat->fstride; i++)
     {
         f[i] = 0;
     }
@@ -103,24 +101,23 @@ reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
                            real                       *Vvdw,
                            real                       *Vc)
 {
-    int nb;
-    int i, j, ind, indr;
+    const int nenergrp = nbat->params().nenergrp;
 
-    for (nb = 0; nb < nlist; nb++)
+    for (int nb = 0; nb < nlist; nb++)
     {
-        for (i = 0; i < nbat->nenergrp; i++)
+        for (int i = 0; i < nenergrp; i++)
         {
             /* Reduce the diagonal terms */
-            ind        = i*nbat->nenergrp + i;
+            int ind    = i*nenergrp + i;
             Vvdw[ind] += nbat->out[nb].Vvdw[ind];
             Vc[ind]   += nbat->out[nb].Vc[ind];
 
             /* Reduce the off-diagonal terms */
-            for (j = i+1; j < nbat->nenergrp; j++)
+            for (int j = i + 1; j < nenergrp; j++)
             {
                 /* The output should contain only one off-diagonal part */
-                ind        = i*nbat->nenergrp + j;
-                indr       = j*nbat->nenergrp + i;
+                int ind    = i*nenergrp + j;
+                int indr   = j*nenergrp + i;
                 Vvdw[ind] += nbat->out[nb].Vvdw[ind] + nbat->out[nb].Vvdw[indr];
                 Vc[ind]   += nbat->out[nb].Vc[ind]   + nbat->out[nb].Vc[indr];
             }

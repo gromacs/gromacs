@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,11 +91,8 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          int enbnxninitcombrule,
                          int ntype, const real *nbfp,
                          int n_energygroups,
-                         int nout,
-                         nbnxn_alloc_t *alloc,
-                         nbnxn_free_t  *free);
+                         int nout);
 
-/* Copy the atom data to the non-bonded atom data structure */
 void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
                         const nbnxn_search  *nbs,
                         const t_mdatoms     *mdatoms,
@@ -119,7 +116,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
                                     int                     locality,
-                                    const nbnxn_atomdata_t *nbat,
+                                    nbnxn_atomdata_t       *nbat,
                                     rvec                   *f,
                                     gmx_wallcycle          *wcycle);
 
