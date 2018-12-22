@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Simulation Name="spc5">
+  <Simulation Name="tip3p5">
     <Minimizer Name="cg">
       <Energy Name="Potential">
         <Real Name="Time 0.000000 Step 0 in frame 0">-9.6231425679441998</Real>
