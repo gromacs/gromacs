@@ -157,6 +157,23 @@ struct t_corr {
             }
         }
     }
+    ~t_corr()
+    {
+        sfree(ndata);
+        sfree(data);
+        for (int i = 0; i < nrestart; i++)
+        {
+            for (int j = 0; j < nmol; j++)
+            {
+                gmx_stats_free(lsq[i][j]);
+            }
+        }
+        sfree(lsq);
+        if (mass)
+        {
+            sfree(mass);
+        }
+    }
 };
 
 typedef real t_calc_func (t_corr *curr, int nx, const int index[], int nx0, rvec xc[],
@@ -1204,6 +1221,7 @@ int gmx_msd(int argc, char *argv[])
             &top, ePBC, bTen, bMW, bRmCOMM, type, dim_factor, axis, dt, beginfit, endfit,
             oenv);
 
+    done_top(&top);
     view_all(oenv, NFILE, fnm);
 
     return 0;

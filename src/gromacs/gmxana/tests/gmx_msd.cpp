@@ -41,7 +41,11 @@
 
 #include "gmxpre.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/textreader.h"
 
@@ -74,6 +78,62 @@ class MsdTest : public gmx::test::CommandLineTestBase
             cmdline.merge(args);
             ASSERT_EQ(0, gmx_msd(cmdline.argc(), cmdline.argv()));
             checkOutputFiles();
+        }
+};
+
+class MsdMolTest : public gmx::test::CommandLineTestBase
+{
+    public:
+        MsdMolTest()
+        {
+            double    tolerance = 1e-5;
+            XvgMatch  xvg;
+            XvgMatch &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+            setOutputFile("-mol", "msdmol.xvg", toler);
+        }
+
+        void runTest(const CommandLine &args, const char *ndxfile,
+                     std::string simulationName)
+        {
+            setInputFile("-f", simulationName + ".pdb");
+            std::string tpr = fileManager().getTemporaryFilePath(".tpr");
+            std::string mdp = fileManager().getTemporaryFilePath(".mdp");
+            FILE       *fp  = fopen(mdp.c_str(), "w");
+            fprintf(fp, "cutoff-scheme = verlet\n");
+            fprintf(fp, "rcoulomb      = 0.85\n");
+            fprintf(fp, "rvdw          = 0.85\n");
+            fprintf(fp, "rlist         = 0.85\n");
+            fclose(fp);
+
+            // Prepare a .tpr file
+            {
+                // tests always expect the right number.
+                CommandLine     caller;
+                std::string     simDB = std::string(fileManager().getTestSimulationDatabaseDirectory()) + "/" + simulationName;
+                caller.append("grompp");
+                caller.addOption("-maxwarn", 0);
+                caller.addOption("-f", mdp.c_str());
+                std::string gro = (simDB + ".pdb");
+                caller.addOption("-c", gro.c_str());
+                std::string top = (simDB + ".top");
+                caller.addOption("-p", top.c_str());
+                std::string ndx = (simDB + ".ndx");
+                caller.addOption("-n", ndx.c_str());
+                caller.addOption("-o", tpr.c_str());
+                printf("tpr = %s\ntop = %s\nndx = %s\n",
+                       tpr.c_str(), top.c_str(), ndx.c_str());
+                ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
+            }
+            // Run the MSD analysis
+            {
+                setInputFile("-n", ndxfile);
+                CommandLine &cmdline = commandLine();
+                cmdline.merge(args);
+                cmdline.addOption("-s", tpr.c_str());
+                ASSERT_EQ(0, gmx_msd(cmdline.argc(), cmdline.argv()));
+                checkOutputFiles();
+                ASSERT_EQ(0, unlink(tpr.c_str()));
+            }
         }
 };
 
@@ -113,4 +173,32 @@ TEST_F(MsdTest, oneDimensionalDiffusion)
     };
     runTest(CommandLine(cmdline));
 }
+
+// Test the diffusion per molecule output, mass weighted
+TEST_F(MsdMolTest, diffMolMassWeighted)
+{
+    const char *const cmdline[] = {
+        "msd", "-trestart", "200"
+    };
+    runTest(CommandLine(cmdline), "spc5.ndx", "spc5");
+}
+
+// Test the diffusion per molecule output, non-mass weighted
+TEST_F(MsdMolTest, diffMolNonMassWeighted)
+{
+    const char *const cmdline[] = {
+        "msd", "-trestart", "200", "-mw", "no"
+    };
+    runTest(CommandLine(cmdline), "spc5.ndx", "spc5");
+}
+
+// Test the diffusion per molecule output, with selection
+TEST_F(MsdMolTest, diffMolSelected)
+{
+    const char *const cmdline[] = {
+        "msd", "-trestart", "200"
+    };
+    runTest(CommandLine(cmdline), "spc5_3.ndx", "spc5");
+}
+
 } //namespace
