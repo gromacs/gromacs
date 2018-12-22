@@ -234,10 +234,6 @@ int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_b
 real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
-// TODO: This doesn't seem to be used or implemented anywhere
-void NBaroT_trotter(t_grpopts *opts, real dt,
-                    double xi[], double vxi[], real *veta, t_extmass *MassQ);
-
 void vrescale_tcoupl(const t_inputrec *ir, int64_t step,
                      gmx_ekindata_t *ekind, real dt,
                      double therm_integral[]);
@@ -277,10 +273,4 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
                       int start, int nr_atoms,
                       rvec x[], const unsigned short cFREEZE[],
                       t_nrnb *nrnb);
-
-// TODO: This doesn't seem to be used or implemented anywhere
-void correct_ekin(FILE *log, int start, int end, rvec v[],
-                  rvec vcm, real mass[], real tmass, tensor ekin);
-/* Correct ekin for vcm */
-
 #endif
