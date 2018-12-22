@@ -48,6 +48,7 @@
 #include <array>
 
 #include "gromacs/awh/awh.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/partition.h"
@@ -2938,8 +2939,7 @@ void init_md(FILE *fplog,
              double *t, double *t0,
              t_state *globalState, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
-             gmx_update_t **upd,
-             gmx::BoxDeformation *deform,
+             gmx_update_t *upd,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
@@ -2978,14 +2978,9 @@ void init_md(FILE *fplog,
         initialize_lambdas(fplog, ir, &tmpFepState, tmpLambda, lam0);
     }
 
-    // TODO upd is never NULL in practice, but the analysers don't know that
-    if (upd)
-    {
-        *upd = init_update(ir, deform);
-    }
     if (*bSimAnn)
     {
-        update_annealing_target_temp(ir, ir->init_t, upd ? *upd : nullptr);
+        update_annealing_target_temp(ir, ir->init_t, upd);
     }
 
     if (EI_DYNAMICS(ir->eI) && !mdrunOptions.continuationOptions.appendFiles)
