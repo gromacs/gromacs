@@ -173,7 +173,6 @@ void gmx::Integrator::do_md()
     gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
     gmx_global_stat_t       gstat;
-    gmx_update_t           *upd   = nullptr;
     t_graph                *graph = nullptr;
     gmx_groups_t           *groups;
     gmx_shellfc_t          *shellfc;
@@ -248,10 +247,11 @@ void gmx::Integrator::do_md()
                         oenv, mdrunOptions.continuationOptions.appendFiles);
     }
 
+    Update upd(ir, deform);
     /* Initial values */
     init_md(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
             &t, &t0, state_global, lam0,
-            nrnb, top_global, &upd, deform,
+            nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
             force_vir, shake_vir, total_vir, pres, mu_tot, &bSimAnn, wcycle);
 
@@ -308,7 +308,7 @@ void gmx::Integrator::do_md()
                             vsite, constr,
                             nrnb, nullptr, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
-        update_realloc(upd, state->natoms);
+        upd.setNumAtoms(state->natoms);
     }
     else
     {
@@ -321,7 +321,7 @@ void gmx::Integrator::do_md()
         mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr,
                                   &graph, mdAtoms, constr, vsite, shellfc);
 
-        update_realloc(upd, state->natoms);
+        upd.setNumAtoms(state->natoms);
     }
 
     auto mdatoms = mdAtoms->mdatoms();
@@ -723,7 +723,7 @@ void gmx::Integrator::do_md()
 
         if (bSimAnn)
         {
-            update_annealing_target_temp(ir, t, upd);
+            update_annealing_target_temp(ir, t, &upd);
         }
 
         /* Stop Center of Mass motion */
@@ -771,7 +771,7 @@ void gmx::Integrator::do_md()
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
                 shouldCheckNumberOfBondedInteractions = true;
-                update_realloc(upd, state->natoms);
+                upd.setNumAtoms(state->natoms);
             }
         }
 
@@ -909,7 +909,7 @@ void gmx::Integrator::do_md()
             }
 
             update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
-                          ekind, M, upd, etrtVELOCITY1,
+                          ekind, M, &upd, etrtVELOCITY1,
                           cr, constr);
 
             wallcycle_stop(wcycle, ewcUPDATE);
@@ -1089,7 +1089,7 @@ void gmx::Integrator::do_md()
         if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
         {
             gmx_bool bIfRandomize;
-            bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state->v, upd, constr);
+            bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state->v, &upd, constr);
             /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
             if (constr && bIfRandomize)
             {
@@ -1132,7 +1132,7 @@ void gmx::Integrator::do_md()
         {
             /* velocity half-step update */
             update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
-                          ekind, M, upd, etrtVELOCITY2,
+                          ekind, M, &upd, etrtVELOCITY2,
                           cr, constr);
         }
 
@@ -1153,18 +1153,18 @@ void gmx::Integrator::do_md()
         }
 
         update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
-                      ekind, M, upd, etrtPOSITION, cr, constr);
+                      ekind, M, &upd, etrtPOSITION, cr, constr);
         wallcycle_stop(wcycle, ewcUPDATE);
 
         constrain_coordinates(step, &dvdl_constr, state,
                               shake_vir,
-                              upd, constr,
+                              &upd, constr,
                               bCalcVir, do_log, do_ene);
         update_sd_second_half(step, &dvdl_constr, ir, mdatoms, state,
-                              cr, nrnb, wcycle, upd, constr, do_log, do_ene);
+                              cr, nrnb, wcycle, &upd, constr, do_log, do_ene);
         finish_update(ir, mdatoms,
                       state, graph,
-                      nrnb, wcycle, upd, constr);
+                      nrnb, wcycle, &upd, constr);
 
         if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
         {
@@ -1187,7 +1187,7 @@ void gmx::Integrator::do_md()
             copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
 
             update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
-                          ekind, M, upd, etrtPOSITION, cr, constr);
+                          ekind, M, &upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
             /* do we need an extra constraint here? just need to copy out of as_rvec_array(state->v.data()) to upd->xp? */
@@ -1197,7 +1197,7 @@ void gmx::Integrator::do_md()
              * For now, will call without actually constraining, constr=NULL*/
             finish_update(ir, mdatoms,
                           state, graph,
-                          nrnb, wcycle, upd, nullptr);
+                          nrnb, wcycle, &upd, nullptr);
         }
         if (EI_VV(ir->eI))
         {
@@ -1298,7 +1298,7 @@ void gmx::Integrator::do_md()
         update_pcouple_after_coordinates(fplog, step, ir, mdatoms,
                                          pres, force_vir, shake_vir,
                                          parrinellorahmanMu,
-                                         state, nrnb, upd);
+                                         state, nrnb, &upd);
 
         /* ################# END UPDATE STEP 2 ################# */
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */
@@ -1433,7 +1433,7 @@ void gmx::Integrator::do_md()
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);
             shouldCheckNumberOfBondedInteractions = true;
-            update_realloc(upd, state->natoms);
+            upd.setNumAtoms(state->natoms);
         }
 
         bFirstStep             = FALSE;

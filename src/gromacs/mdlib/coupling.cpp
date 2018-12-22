@@ -1619,7 +1619,7 @@ void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
 
 
 /* set target temperatures if we are annealing */
-void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t *upd)
+void update_annealing_target_temp(t_inputrec *ir, real t, gmx::Update *upd)
 {
     int  i, j, n, npoints;
     real pert, thist = 0, x;
@@ -1679,5 +1679,5 @@ void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t *upd)
         }
     }
 
-    update_temperature_constants(upd, ir);
+    update_temperature_constants(upd->sd(), ir);
 }
