@@ -77,6 +77,29 @@ class MsdTest : public gmx::test::CommandLineTestBase
         }
 };
 
+class MsdMolTest : public gmx::test::CommandLineTestBase
+{
+    public:
+        MsdMolTest()
+        {
+            double    tolerance = 1e-5;
+            XvgMatch  xvg;
+            XvgMatch &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+            setOutputFile("-mol", "msdmol.xvg", toler);
+            setInputFile("-f", "spc5.xtc");
+            setInputFile("-s", "spc5.tpr");
+        }
+
+        void runTest(const CommandLine &args, const char *ndxfile)
+        {
+            setInputFile("-n", ndxfile);
+            CommandLine &cmdline = commandLine();
+            cmdline.merge(args);
+            ASSERT_EQ(0, gmx_msd(cmdline.argc(), cmdline.argv()));
+            checkOutputFiles();
+        }
+};
+
 /* msd_traj.xtc contains a 10 frame (1 ps per frame) simulation
  * containing 3 atoms, with different starting positions but identical
  * displacements. The displacements are calculated to yield the following
@@ -113,4 +136,32 @@ TEST_F(MsdTest, oneDimensionalDiffusion)
     };
     runTest(CommandLine(cmdline));
 }
+
+// Test the diffusion per molecule output, mass weighted
+TEST_F(MsdMolTest, diffMolMassWeighted)
+{
+    const char *const cmdline[] = {
+        "msd", "-trestart", "200"
+    };
+    runTest(CommandLine(cmdline), "spc5.ndx");
+}
+
+// Test the diffusion per molecule output, non-mass weighted
+TEST_F(MsdMolTest, diffMolNonMassWeighted)
+{
+    const char *const cmdline[] = {
+        "msd", "-trestart", "200", "-mw", "no"
+    };
+    runTest(CommandLine(cmdline), "spc5.ndx");
+}
+
+// Test the diffusion per molecule output, with selection
+TEST_F(MsdMolTest, diffMolSelected)
+{
+    const char *const cmdline[] = {
+        "msd", "-trestart", "200"
+    };
+    runTest(CommandLine(cmdline), "spc5_3.ndx");
+}
+
 } //namespace
