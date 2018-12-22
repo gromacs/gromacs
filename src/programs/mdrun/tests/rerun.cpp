@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -262,11 +262,11 @@ TEST_P(MdrunRerunTest, WithinTolerances)
 // tests can run in such configurations.
 #if GMX_GPU != GMX_GPU_OPENCL
 INSTANTIATE_TEST_CASE_P(NormalMdrunIsReproduced, MdrunRerunTest,
-                            ::testing::Combine(::testing::Values("argon12", "spc5", "alanine_vsite_vacuo"),
+                            ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
                                                    ::testing::Values("md", "md-vv", "bd", "sd")));
 #else
 INSTANTIATE_TEST_CASE_P(DISABLED_NormalMdrunIsReproduced, MdrunRerunTest,
-                            ::testing::Combine(::testing::Values("argon12", "spc5", "alanine_vsite_vacuo"),
+                            ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
                                                    ::testing::Values("md", "md-vv", "bd", "sd")));
 #endif
 

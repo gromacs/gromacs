@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,7 @@ using MdpFieldValues = std::map<std::string, std::string>;
  * comparisons is available, whose \c simulationName keys are
  *     - argon12
  *     - argon5832
- *     - spc5
+ *     - tip3p5
  *     - spc216
  *     - alanine_vsite_vacuo
  *     - alanine_vsite_solvated

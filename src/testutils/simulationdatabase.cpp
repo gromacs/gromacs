@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,15 +88,15 @@ const MdpFileValues mdpFileValueDatabase_g
     },
     // Simple system with 5 water molecules, fairly widely separated
     {
-        "spc5", { { {
-                        "compressibility", "5e-10"
-                    },
+        "tip3p5", { { {
+                          "compressibility", "5e-10"
+                      },
+                      {
+                          "tau-p", "1000"
+                      } },
                     {
-                        "tau-p", "1000"
-                    } },
-                  {
-                      1, 2, 3, 4, 5, 6, 8, 9
-                  } }
+                        1, 2, 3, 4, 5, 6, 8, 9
+                    } }
     },
     // Simple system with 5832 argon atoms, suitable for normal pressure coupling
     {
