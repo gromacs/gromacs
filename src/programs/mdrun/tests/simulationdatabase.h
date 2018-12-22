@@ -73,7 +73,7 @@ using MdpFieldValues = std::map<std::string, std::string>;
  * comparisons is available, whose \c simulationName keys are
  *     - argon12
  *     - argon5832
- *     - spc5
+ *     - tip3p5
  *     - spc216
  *     - alanine_vsite_vacuo
  *     - alanine_vsite_solvated
