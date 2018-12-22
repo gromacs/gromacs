@@ -262,11 +262,11 @@ TEST_P(MdrunRerunTest, WithinTolerances)
 // tests can run in such configurations.
 #if GMX_GPU != GMX_GPU_OPENCL
 INSTANTIATE_TEST_CASE_P(NormalMdrunIsReproduced, MdrunRerunTest,
-                            ::testing::Combine(::testing::Values("argon12", "spc5", "alanine_vsite_vacuo"),
+                            ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
                                                    ::testing::Values("md", "md-vv", "bd", "sd")));
 #else
 INSTANTIATE_TEST_CASE_P(DISABLED_NormalMdrunIsReproduced, MdrunRerunTest,
-                            ::testing::Combine(::testing::Values("argon12", "spc5", "alanine_vsite_vacuo"),
+                            ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
                                                    ::testing::Values("md", "md-vv", "bd", "sd")));
 #endif
 
