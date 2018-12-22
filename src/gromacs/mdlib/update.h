@@ -56,8 +56,6 @@ struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 
-/* Abstract type for update */
-struct gmx_update_t;
 
 namespace gmx
 {
@@ -65,9 +63,39 @@ class BoxDeformation;
 class Constraints;
 }
 
-/* Initialize the stochastic dynamics struct */
-gmx_update_t *init_update(const t_inputrec    *ir,
-                          gmx::BoxDeformation *deform);
+struct gmx_sd_const_t{
+    double em;
+};
+
+struct gmx_sd_sigma_t {
+    real V;
+};
+
+struct gmx_stochd_t
+{
+    /* BD stuff */
+    std::vector<real>           bd_rf;
+    /* SD stuff */
+    std::vector<gmx_sd_const_t> sdc;
+    std::vector<gmx_sd_sigma_t> sdsig;
+    /* andersen temperature control stuff */
+    std::vector<bool>           randomize_group;
+    std::vector<real>           boltzfac;
+
+    gmx_stochd_t(const t_inputrec *ir);
+};
+
+struct gmx_update_t
+{
+    std::unique_ptr<gmx_stochd_t> sd;
+    /* xprime for constraint algorithms */
+    PaddedVector<gmx::RVec>       xp;
+
+    //! Box deformation handler (or nullptr if inactive).
+    gmx::BoxDeformation *deform = nullptr;
+
+    gmx_update_t(const t_inputrec *ir, gmx::BoxDeformation *deform);
+};
 
 /* Update pre-computed constants that depend on the reference
  * temperature for coupling.
