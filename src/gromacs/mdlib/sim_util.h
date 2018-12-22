@@ -47,7 +47,6 @@
 
 struct gmx_output_env_t;
 struct gmx_pme_t;
-struct gmx_update_t;
 struct MdrunOptions;
 struct nonbonded_verlet_t;
 struct t_forcerec;
@@ -60,6 +59,7 @@ class BoxDeformation;
 class Constraints;
 class IMDOutputProvider;
 class MDLogger;
+class Update;
 }
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
@@ -149,8 +149,7 @@ void init_md(FILE *fplog,
              double *t, double *t0,
              t_state *globalState, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
-             gmx_update_t **upd,
-             gmx::BoxDeformation *deform,
+             gmx::Update *upd,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
