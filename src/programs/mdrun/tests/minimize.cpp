@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,7 +95,7 @@ std::unordered_map<std::string, FloatingPointTolerance> potentialEnergyTolerance
          relativeToleranceAsPrecisionDependentUlp(-1, 10, 200)
      },
      {
-         "spc5",
+         "tip3p5",
          relativeToleranceAsPrecisionDependentUlp(-50, 150, 3800)
      },
      {
@@ -189,7 +189,7 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
 std::vector<std::string> unconstrainedSystemsToTest_g = { "argon12", "glycine_no_constraints_vacuo" };
 std::vector<std::string> minimizersToTest_g           = { "steep", "cg", "l-bfgs" };
 
-std::vector<std::string> constrainedSystemsToTest_g        = { "spc5", "glycine_vacuo", "alanine_vsite_vacuo" };
+std::vector<std::string> constrainedSystemsToTest_g        = { "tip3p5", "glycine_vacuo", "alanine_vsite_vacuo" };
 std::vector<std::string> minimizersToTestWithConstraints_g = { "steep", "cg" };
 //! \}
 
