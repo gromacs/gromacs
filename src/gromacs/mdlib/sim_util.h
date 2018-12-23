@@ -156,7 +156,7 @@ void init_md(FILE *fplog,
              tensor force_vir, tensor shake_vir,
              tensor total_vir, tensor pres,
              rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm,
+             gmx_bool *bSimAnn,
              gmx_wallcycle_t wcycle);
 
 void init_rerun(FILE *fplog,
