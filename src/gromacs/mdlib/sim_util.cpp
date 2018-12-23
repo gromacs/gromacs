@@ -2944,7 +2944,7 @@ void init_md(FILE *fplog,
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              tensor total_vir, tensor pres, rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm,
+             gmx_bool *bSimAnn,
              gmx_wallcycle_t wcycle)
 {
     int  i;
@@ -2986,11 +2986,6 @@ void init_md(FILE *fplog,
     if (*bSimAnn)
     {
         update_annealing_target_temp(ir, ir->init_t, upd ? *upd : nullptr);
-    }
-
-    if (vcm != nullptr)
-    {
-        *vcm = init_vcm(fplog, &mtop->groups, ir);
     }
 
     if (EI_DYNAMICS(ir->eI) && !mdrunOptions.continuationOptions.appendFiles)
