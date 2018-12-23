@@ -261,7 +261,7 @@ void global_stat(const gmx_global_stat *gs,
     if (vcm)
     {
         icm   = add_binr(rb, DIM*vcm->nr, vcm->group_p[0]);
-        imass = add_binr(rb, vcm->nr, vcm->group_mass);
+        imass = add_binr(rb, vcm->nr, vcm->group_mass.data());
         if (vcm->mode == ecmANGULAR)
         {
             icj   = add_binr(rb, DIM*vcm->nr, vcm->group_j[0]);
@@ -359,7 +359,7 @@ void global_stat(const gmx_global_stat *gs,
     if (vcm)
     {
         extract_binr(rb, icm, DIM*vcm->nr, vcm->group_p[0]);
-        extract_binr(rb, imass, vcm->nr, vcm->group_mass);
+        extract_binr(rb, imass, vcm->nr, vcm->group_mass.data());
         if (vcm->mode == ecmANGULAR)
         {
             extract_binr(rb, icj, DIM*vcm->nr, vcm->group_j[0]);
