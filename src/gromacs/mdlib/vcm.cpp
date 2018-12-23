@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,73 +54,82 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-t_vcm *init_vcm(FILE *fp, const gmx_groups_t *groups, const t_inputrec *ir)
+t_vcm::t_vcm(const gmx_groups_t &groups, const t_inputrec &ir)
 {
-    t_vcm *vcm;
-    int    g;
+    mode     = (ir.nstcomm > 0) ? ir.comm_mode : ecmNO;
+    ndim     = ndof_com(&ir);
+    timeStep = ir.nstcomm*ir.delta_t;
 
-    snew(vcm, 1);
-
-    vcm->mode     = (ir->nstcomm > 0) ? ir->comm_mode : ecmNO;
-    vcm->ndim     = ndof_com(ir);
-    vcm->timeStep = ir->nstcomm*ir->delta_t;
-
-    if (vcm->mode == ecmANGULAR && vcm->ndim < 3)
+    if (mode == ecmANGULAR && ndim < 3)
     {
         gmx_fatal(FARGS, "Can not have angular comm removal with pbc=%s",
-                  epbc_names[ir->ePBC]);
+                  epbc_names[ir.ePBC]);
     }
 
-    if (vcm->mode != ecmNO)
+    if (mode != ecmNO)
     {
-        vcm->nr = groups->grps[egcVCM].nr;
+        nr = groups.grps[egcVCM].nr;
         /* Allocate one extra for a possible rest group */
-        vcm->size = vcm->nr + 1;
+        size = nr + 1;
         /* We need vcm->nr+1 elements per thread, but to avoid cache
          * invalidation we add 2 elements to get a 152 byte separation.
          */
-        vcm->stride = vcm->nr + 3;
-        if (vcm->mode == ecmANGULAR)
+        stride = nr + 3;
+        if (mode == ecmANGULAR)
         {
-            snew(vcm->group_j, vcm->size);
-            snew(vcm->group_x, vcm->size);
-            snew(vcm->group_i, vcm->size);
-            snew(vcm->group_w, vcm->size);
-        }
-        snew(vcm->group_p, vcm->size);
-        snew(vcm->group_v, vcm->size);
-        snew(vcm->group_mass, vcm->size);
-        snew(vcm->group_name, vcm->size);
-        snew(vcm->group_ndf, vcm->size);
-        for (g = 0; (g < vcm->nr); g++)
-        {
-            vcm->group_ndf[g] = ir->opts.nrdf[g];
+            snew(group_i, size);
+
+            group_j.resize(size);
+            group_x.resize(size);
+            group_w.resize(size);
+
         }
 
-        /* Copy pointer to group names and print it. */
-        if (fp)
+        group_name.resize(size);
+        group_p.resize(size);
+        group_v.resize(size);
+        group_mass.resize(size);
+        group_ndf.resize(size);
+        for (int g = 0; (g < nr); g++)
         {
-            fprintf(fp, "Center of mass motion removal mode is %s\n",
-                    ECOM(vcm->mode));
-            fprintf(fp, "We have the following groups for center of"
-                    " mass motion removal:\n");
-        }
-        for (g = 0; (g < vcm->nr); g++)
-        {
-            vcm->group_name[g] = *groups->grpname[groups->grps[egcVCM].nm_ind[g]];
-            if (fp)
-            {
-                fprintf(fp, "%3d:  %s\n", g, vcm->group_name[g]);
-            }
+            group_ndf[g]  = ir.opts.nrdf[g];
+            group_name[g] = *groups.grpname[groups.grps[egcVCM].nm_ind[g]];
+
         }
 
-        snew(vcm->thread_vcm, gmx_omp_nthreads_get(emntDefault) * vcm->stride);
+        thread_vcm.resize(gmx_omp_nthreads_get(emntDefault) * stride);
     }
 
-    vcm->nFreeze = ir->opts.nFreeze;
-
-    return vcm;
+    nFreeze = ir.opts.nFreeze;
 }
+
+t_vcm::~t_vcm()
+{
+    if (mode == ecmANGULAR)
+    {
+        sfree(group_i);
+    }
+}
+
+void reportComRemovalInfo(FILE * fp, const t_vcm &vcm)
+{
+
+    /* Copy pointer to group names and print it. */
+    if (fp && vcm.mode != ecmNO)
+    {
+        fprintf(fp, "Center of mass motion removal mode is %s\n",
+                ECOM(vcm.mode));
+        fprintf(fp, "We have the following groups for center of"
+                " mass motion removal:\n");
+
+        for (int g = 0; (g < vcm.nr); g++)
+        {
+
+            fprintf(fp, "%3d:  %s\n", g, vcm.group_name[g]);
+        }
+    }
+}
+
 
 static void update_tensor(const rvec x, real m0, tensor I)
 {
