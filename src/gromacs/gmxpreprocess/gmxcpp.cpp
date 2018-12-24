@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include <algorithm>
 #include <memory>
 
+#include <unordered_set>
 #include <sys/types.h>
 
 #include "gromacs/utility/arrayref.h"
@@ -73,16 +74,16 @@ struct gmx_cpp
 {
     std::shared_ptr < std::vector < t_define>>    defines;
     std::shared_ptr < std::vector < std::string>> includes;
-
-    FILE             *fp = nullptr;
-    std::string       path;
-    std::string       cwd;
-    std::string       fn;
-    std::string       line;
-    int               line_nr;
-    std::vector<int>  ifdefs;
-    struct gmx_cpp   *child  = nullptr;
-    struct gmx_cpp   *parent = nullptr;
+    std::unordered_set<std::string> unmatched_defines;
+    FILE                           *fp = nullptr;
+    std::string                     path;
+    std::string                     cwd;
+    std::string                     fn;
+    std::string                     line;
+    int                             line_nr;
+    std::vector<int>                ifdefs;
+    struct gmx_cpp                 *child  = nullptr;
+    struct gmx_cpp                 *parent = nullptr;
 };
 
 static bool is_word_end(char c)
@@ -258,12 +259,14 @@ cpp_open_file(const char                                     *filenm,
                 {
                     std::string buf = cppopts[i] + 2;
                     buf.resize(ptr - cppopts[i] - 2);
-
                     add_define(cpp->defines.get(), buf, ptr + 1);
+                    cpp->unmatched_defines.insert(buf);
+
                 }
                 else
                 {
                     add_define(cpp->defines.get(), cppopts[i] + 2, "");
+                    cpp->unmatched_defines.insert(cppopts[i] + 2);
                 }
             }
             i++;
@@ -379,6 +382,14 @@ process_directive(gmx_cpp_t         *handlep,
             {
                 if (define.name == dval)
                 {
+                    // erase from unmatched_defines in original handle
+                    gmx_cpp_t root = handle;
+                    while (root->parent != nullptr)
+                    {
+                        root = root->parent;
+                    }
+                    root->unmatched_defines.erase(dval);
+
                     found = true;
                     break;
                 }
@@ -627,6 +638,14 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
             }
             if (nn > 0)
             {
+                // Need to erase  unmatched define in original handle
+                gmx_cpp_t root = handle;
+                while (root->parent != nullptr)
+                {
+                    root = root->parent;
+                }
+                root->unmatched_defines.erase(define.name);
+
                 std::string  name;
                 const char  *ptr = buf;
                 const char  *ptr2;
@@ -737,4 +756,21 @@ char *cpp_error(gmx_cpp_t *handlep, int status)
             !handle->line.empty() ? handle->line.c_str() : "");
 
     return gmx_strdup(buf);
+}
+
+std::string checkAndWarnForUnusedDefines(const gmx_cpp &handle)
+{
+    std::string warning;
+    if (!handle.unmatched_defines.empty())
+    {
+        warning = "The following macros were defined in the 'define' mdp field with the -D prefix, but "
+            "were not used in the topology:\n";
+        for (auto &str : handle.unmatched_defines)
+        {
+            warning += ("    " + str + "\n");
+        }
+        warning += "If you haven't made a spelling error, either use the macro you defined, "
+            "or don't define the macro";
+    }
+    return warning;
 }

@@ -48,6 +48,7 @@
 
 #include <algorithm>
 
+#include <unordered_set>
 #include <sys/types.h>
 
 #include "gromacs/fileio/gmxfio.h"
@@ -892,6 +893,14 @@ static char **read_topol(const char *infile, const char *outfile,
         }
     }
     while (!done);
+
+    // Check that all strings defined with -D were used when processing topology
+    std::string unusedDefineWarning = checkAndWarnForUnusedDefines(*handle);
+    if (!unusedDefineWarning.empty())
+    {
+        warning(wi, unusedDefineWarning);
+    }
+
     sfree(cpp_opts_return);
 
     if (out)
