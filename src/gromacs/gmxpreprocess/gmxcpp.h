@@ -86,4 +86,8 @@ void cpp_done(gmx_cpp_t handle);
  */
 char *cpp_error(gmx_cpp_t *handlep, int status);
 
+/* Returns warning message if strings defined in mdp define section (e.g. -DFLEXIBLE)
+ * were not not found when processing the topology */
+std::string checkAndWarnForUnusedDefines(const gmx_cpp &handle);
+
 #endif
