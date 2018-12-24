@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 
 #include <algorithm>
 
+#include <unordered_set>
 #include <sys/types.h>
 
 #include "gromacs/fileio/gmxfio.h"
@@ -904,6 +905,14 @@ static char **read_topol(const char *infile, const char *outfile,
         }
     }
     while (!done);
+
+    // Check that all strings defined with -D were used when processing topology
+    std::string unusedDefineWarning = checkAndWarnForUnusedDefines(*handle);
+    if (!unusedDefineWarning.empty())
+    {
+        warning_note(wi, unusedDefineWarning);
+    }
+
     sfree(cpp_opts_return);
 
     if (out)
