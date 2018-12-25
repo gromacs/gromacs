@@ -95,7 +95,8 @@ class SimulationSignaller;
  * inputrec and the value of mdrun -gcom. */
 int check_nstglobalcomm(const gmx::MDLogger &mdlog,
                         int                  nstglobalcomm,
-                        t_inputrec          *ir);
+                        t_inputrec          *ir,
+                        const t_commrec    * cr);
 
 /*! \brief Return true if the \p value is equal across the set of multi-simulations
  *

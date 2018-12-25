@@ -445,7 +445,7 @@ static int lcd4(int i1, int i2, int i3, int i4)
     return nst;
 }
 
-int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputrec *ir)
+int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputrec *ir, const t_commrec * cr)
 {
     if (!EI_DYNAMICS(ir->eI))
     {
@@ -528,9 +528,13 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
         ir->nstcomm = nstglobalcomm;
     }
 
-    GMX_LOG(mdlog.info).appendTextFormatted(
-            "Intra-simulation communication will occur every %d steps.\n", nstglobalcomm);
+    if (cr->nnodes > 1)
+    {
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Intra-simulation communication will occur every %d steps.\n", nstglobalcomm);
+    }
     return nstglobalcomm;
+
 }
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
