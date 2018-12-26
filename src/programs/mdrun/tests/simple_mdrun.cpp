@@ -84,6 +84,10 @@ std::unordered_map<std::string, FloatingPointTolerance> energyToleranceForSystem
      {
          "angles1",
          relativeToleranceAsPrecisionDependentUlp(-1, 10, 200)
+     },
+     {
+         "bonds1",
+         relativeToleranceAsPrecisionDependentUlp(-1, 10, 200)
      }
  }};
 
@@ -93,6 +97,10 @@ std::unordered_map<std::string, FloatingPointTolerance> pressureToleranceForSyst
 {{
      {
          "angles1",
+         relativeToleranceAsPrecisionDependentUlp(-1, 10, 200)
+     },
+     {
+         "bonds1",
          relativeToleranceAsPrecisionDependentUlp(-1, 10, 200)
      }
  }};
@@ -143,7 +151,14 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
     // prepare the .tpr file
     {
         CommandLine caller;
-        runner_.useTopGroAndNdxFromDatabase(simulationName);
+        if (simulationName == "bonds1")
+        {
+            runner_.useTopG96AndNdxFromDatabase(simulationName);
+        }
+        else
+        {
+            runner_.useTopGroAndNdxFromDatabase(simulationName);
+        }
         runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
         EXPECT_EQ(0, runner_.callGrompp(caller));
     }
@@ -195,8 +210,7 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
 
 //! Containers of systems to test.
 //! \{
-std::vector<std::string> systemsToTest_g     = { "angles1" };
-std::string              md_                 = "md";
+std::string md_      = "md";
 //! \}
 
 // The time for OpenCL kernel compilation means these tests might time
@@ -205,7 +219,9 @@ std::string              md_                 = "md";
 // lifetime of the whole test binary process, these tests should run in
 // such configurations.
 #if GMX_DOUBLE
-INSTANTIATE_TEST_CASE_P(Angles1, SimpleMdrunTest, ::testing::Combine(::testing::ValuesIn(systemsToTest_g), ::testing::Values(md_)));
+INSTANTIATE_TEST_CASE_P(Bonds1, SimpleMdrunTest, ::testing::Combine(::testing::Values(std::string("bonds1")), ::testing::Values(md_)));
+
+INSTANTIATE_TEST_CASE_P(Angles1, SimpleMdrunTest, ::testing::Combine(::testing::Values(std::string("angles1")), ::testing::Values(md_)));
 #endif
 } // namespace
 } // namespace test
