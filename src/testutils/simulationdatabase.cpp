@@ -168,12 +168,18 @@ const MdpFileValues mdpFileValueDatabase_g
                                               1, 2, 3, 4, 5, 6, 7, 8, 9
                                           } }
     },
-    // Simple mdrun tests of energy
+    // Simple mdrun tests of energy and forces
     {
         "angles1", { { },
                      {
                          1, 2
                      } }
+    },
+    {
+        "bonds1", { { },
+                    {
+                        1, 2
+                    } }
     },
     // Scaled water for NMA
     {
