@@ -37,7 +37,7 @@
  * Implements declarations from in simulationdatabase.h
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun_integration_tests
+ * \ingroup module_testutils
  */
 #include "gmxpre.h"
 
