@@ -1122,6 +1122,18 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
 
 Constraints::Impl::~Impl()
 {
+    if (bSettleErrorHasOccurred != nullptr)
+    {
+        sfree(bSettleErrorHasOccurred);
+    }
+    if (vir_r_m_dr_th != nullptr)
+    {
+        sfree(vir_r_m_dr_th);
+    }
+    if (settled != nullptr)
+    {
+        settle_free(settled);
+    }
     done_lincs(lincsd);
 }
 
