@@ -37,8 +37,8 @@
  * \brief Functionality for testing whether calls to mdrun produce the
  * same energy and force quantities when they should do so.
  */
-#ifndef GMX_MDRUN_TESTS_SIMULATIONDATABASE_H
-#define GMX_MDRUN_TESTS_SIMULATIONDATABASE_H
+#ifndef GMX_TESTUTILS__SIMULATIONDATABASE_H
+#define GMX_TESTUTILS__SIMULATIONDATABASE_H
 
 #include <map>
 #include <string>

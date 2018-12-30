@@ -62,13 +62,13 @@
 
 #include "testutils/mpitest.h"
 #include "testutils/refdata.h"
+#include "testutils/simulationdatabase.h"
 #include "testutils/testasserts.h"
 #include "testutils/xvgtest.h"
 
 #include "energycomparison.h"
 #include "energyreader.h"
 #include "moduletest.h"
-#include "simulationdatabase.h"
 
 namespace gmx
 {

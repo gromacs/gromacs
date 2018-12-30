@@ -48,6 +48,7 @@ set(TESTUTILS_SOURCES
     mpitest.cpp
     refdata.cpp
     refdata-xml.cpp
+    simulationdatabase.cpp
     stdiohelper.cpp
     stringtest.cpp
     testasserts.cpp
