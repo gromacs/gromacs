@@ -23,6 +23,14 @@ can be found at https://redmine.gromacs.org at that issue number.
 |Gromacs| 2019 series
 ---------------------
 
+Patch releases
+^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2019/2019.1
+
 Major release
 ^^^^^^^^^^^^^
 
