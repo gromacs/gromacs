@@ -195,7 +195,6 @@ void gmx::Integrator::do_md()
     char                    sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
     /* PME load balancing data for GPU kernels */
-    pme_load_balancing_t *pme_loadbal      = nullptr;
     gmx_bool              bPMETune         = FALSE;
     gmx_bool              bPMETunePrinting = FALSE;
 
@@ -407,6 +406,8 @@ void gmx::Integrator::do_md()
      * Coulomb. It is not supported with only LJ PME. */
     bPMETune = (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) &&
                 !mdrunOptions.reproducible && ir->cutoff_scheme != ecutsGROUP);
+
+    pme_load_balancing_t *pme_loadbal      = nullptr;
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, *ir, state->box,

@@ -134,35 +134,35 @@ static const char *pmelblim_str[epmelblimNR] =
 { "no", "box size", "domain decompostion", "PME grid restriction", "maximum allowed grid scaling" };
 
 struct pme_load_balancing_t {
-    gmx_bool     bSepPMERanks;       /**< do we have separate PME ranks? */
-    gmx_bool     bActive;            /**< is PME tuning active? */
-    int64_t      step_rel_stop;      /**< stop the tuning after this value of step_rel */
-    gmx_bool     bTriggerOnDLB;      /**< trigger balancing only on DD DLB */
-    gmx_bool     bBalance;           /**< are we in the balancing phase, i.e. trying different setups? */
-    int          nstage;             /**< the current maximum number of stages */
+    gmx_bool                 bSepPMERanks;       /**< do we have separate PME ranks? */
+    gmx_bool                 bActive;            /**< is PME tuning active? */
+    int64_t                  step_rel_stop;      /**< stop the tuning after this value of step_rel */
+    gmx_bool                 bTriggerOnDLB;      /**< trigger balancing only on DD DLB */
+    gmx_bool                 bBalance;           /**< are we in the balancing phase, i.e. trying different setups? */
+    int                      nstage;             /**< the current maximum number of stages */
 
-    real         cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
-    real         rcut_vdw;           /**< Vdw cutoff (does not change) */
-    real         rcut_coulomb_start; /**< Initial electrostatics cutoff */
-    real         rbufOuter_coulomb;  /**< the outer pairlist buffer size */
-    real         rbufOuter_vdw;      /**< the outer pairlist buffer size */
-    real         rbufInner_coulomb;  /**< the inner pairlist buffer size */
-    real         rbufInner_vdw;      /**< the inner pairlist buffer size */
-    matrix       box_start;          /**< the initial simulation box */
-    int          n;                  /**< the count of setup as well as the allocation size */
-    pme_setup_t *setup;              /**< the PME+cutoff setups */
-    int          cur;                /**< the inex (in setup) of the current setup */
-    int          fastest;            /**< index of the fastest setup up till now */
-    int          lower_limit;        /**< don't go below this setup index */
-    int          start;              /**< start of setup index range to consider in stage>0 */
-    int          end;                /**< end   of setup index range to consider in stage>0 */
-    int          elimited;           /**< was the balancing limited, uses enum above */
-    int          cutoff_scheme;      /**< Verlet or group cut-offs */
+    real                     cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
+    real                     rcut_vdw;           /**< Vdw cutoff (does not change) */
+    real                     rcut_coulomb_start; /**< Initial electrostatics cutoff */
+    real                     rbufOuter_coulomb;  /**< the outer pairlist buffer size */
+    real                     rbufOuter_vdw;      /**< the outer pairlist buffer size */
+    real                     rbufInner_coulomb;  /**< the inner pairlist buffer size */
+    real                     rbufInner_vdw;      /**< the inner pairlist buffer size */
+    matrix                   box_start;          /**< the initial simulation box */
+    int                      n;                  /**< the count of setup as well as the allocation size */
+    std::vector<pme_setup_t> setup;              /**< the PME+cutoff setups */
+    int                      cur;                /**< the inex (in setup) of the current setup */
+    int                      fastest;            /**< index of the fastest setup up till now */
+    int                      lower_limit;        /**< don't go below this setup index */
+    int                      start;              /**< start of setup index range to consider in stage>0 */
+    int                      end;                /**< end   of setup index range to consider in stage>0 */
+    int                      elimited;           /**< was the balancing limited, uses enum above */
+    int                      cutoff_scheme;      /**< Verlet or group cut-offs */
 
-    int          stage;              /**< the current stage */
+    int                      stage;              /**< the current stage */
 
-    int          cycles_n;           /**< step cycle counter cummulative count */
-    double       cycles_c;           /**< step cycle counter cummulative cycles */
+    int                      cycles_n;           /**< step cycle counter cummulative count */
+    double                   cycles_c;           /**< step cycle counter cummulative cycles */
 };
 
 /* TODO The code in this file should call this getter, rather than
@@ -195,7 +195,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     // This is checked by grompp, but it doesn't hurt to check again.
     GMX_RELEASE_ASSERT(!(EEL_PME(ir.coulombtype) && EVDW_PME(ir.vdwtype) && ir.rcoulomb != ir.rvdw), "With Coulomb and LJ PME, rcoulomb should be equal to rvdw");
 
-    snew(pme_lb, 1);
+    pme_lb = new pme_load_balancing_t;
 
     pme_lb->bSepPMERanks      = !thisRankHasDuty(cr, DUTY_PME);
 
@@ -219,7 +219,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     boxScaler.scaleBox(box, pme_lb->box_start);
 
     pme_lb->n = 1;
-    snew(pme_lb->setup, pme_lb->n);
+    pme_lb->setup.resize(pme_lb->n);
 
     pme_lb->rcut_vdw                 = ic.rvdw;
     pme_lb->rcut_coulomb_start       = ir.rcoulomb;
@@ -325,7 +325,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
 
     /* Try to add a new setup with next larger cut-off to the list */
     pme_lb->n++;
-    srenew(pme_lb->setup, pme_lb->n);
+    pme_lb->setup.resize(pme_lb->n);
     set          = &pme_lb->setup[pme_lb->n-1];
     set->pmedata = nullptr;
 
@@ -1127,8 +1127,5 @@ void pme_loadbal_done(pme_load_balancing_t *pme_lb,
         print_pme_loadbal_settings(pme_lb, fplog, mdlog, bNonBondedOnGPU);
     }
 
-    /* TODO: Here we should free all pointers in pme_lb,
-     * but as it contains pme data structures,
-     * we need to first make pme.c free all data.
-     */
+    delete pme_lb;
 }
