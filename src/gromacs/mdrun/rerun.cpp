@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -212,7 +212,6 @@ void gmx::Integrator::do_rerun()
     gmx_global_stat_t       gstat;
     t_graph                *graph = nullptr;
     gmx_groups_t           *groups;
-    gmx_ekindata_t         *ekind;
     gmx_shellfc_t          *shellfc;
 
     double                  cycles;
@@ -306,7 +305,8 @@ void gmx::Integrator::do_rerun()
                   enerd);
 
     /* Kinetic energy data */
-    snew(ekind, 1);
+    std::unique_ptr<gmx_ekindata_t> eKinData = compat::make_unique<gmx_ekindata_t>();
+    gmx_ekindata_t                 *ekind    = eKinData.get();
     init_ekindata(fplog, top_global, &(ir->opts), ekind);
     /* Copy the cos acceleration to the groups struct */
     ekind->cosacc.cos_accel = ir->cos_accel;
