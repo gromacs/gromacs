@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,35 +134,34 @@ static const char *pmelblim_str[epmelblimNR] =
 { "no", "box size", "domain decompostion", "PME grid restriction", "maximum allowed grid scaling" };
 
 struct pme_load_balancing_t {
-    gmx_bool     bSepPMERanks;       /**< do we have separate PME ranks? */
-    gmx_bool     bActive;            /**< is PME tuning active? */
-    int64_t      step_rel_stop;      /**< stop the tuning after this value of step_rel */
-    gmx_bool     bTriggerOnDLB;      /**< trigger balancing only on DD DLB */
-    gmx_bool     bBalance;           /**< are we in the balancing phase, i.e. trying different setups? */
-    int          nstage;             /**< the current maximum number of stages */
+    gmx_bool                 bSepPMERanks;       /**< do we have separate PME ranks? */
+    gmx_bool                 bActive;            /**< is PME tuning active? */
+    int64_t                  step_rel_stop;      /**< stop the tuning after this value of step_rel */
+    gmx_bool                 bTriggerOnDLB;      /**< trigger balancing only on DD DLB */
+    gmx_bool                 bBalance;           /**< are we in the balancing phase, i.e. trying different setups? */
+    int                      nstage;             /**< the current maximum number of stages */
 
-    real         cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
-    real         rcut_vdw;           /**< Vdw cutoff (does not change) */
-    real         rcut_coulomb_start; /**< Initial electrostatics cutoff */
-    real         rbufOuter_coulomb;  /**< the outer pairlist buffer size */
-    real         rbufOuter_vdw;      /**< the outer pairlist buffer size */
-    real         rbufInner_coulomb;  /**< the inner pairlist buffer size */
-    real         rbufInner_vdw;      /**< the inner pairlist buffer size */
-    matrix       box_start;          /**< the initial simulation box */
-    int          n;                  /**< the count of setup as well as the allocation size */
-    pme_setup_t *setup;              /**< the PME+cutoff setups */
-    int          cur;                /**< the inex (in setup) of the current setup */
-    int          fastest;            /**< index of the fastest setup up till now */
-    int          lower_limit;        /**< don't go below this setup index */
-    int          start;              /**< start of setup index range to consider in stage>0 */
-    int          end;                /**< end   of setup index range to consider in stage>0 */
-    int          elimited;           /**< was the balancing limited, uses enum above */
-    int          cutoff_scheme;      /**< Verlet or group cut-offs */
+    real                     cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
+    real                     rcut_vdw;           /**< Vdw cutoff (does not change) */
+    real                     rcut_coulomb_start; /**< Initial electrostatics cutoff */
+    real                     rbufOuter_coulomb;  /**< the outer pairlist buffer size */
+    real                     rbufOuter_vdw;      /**< the outer pairlist buffer size */
+    real                     rbufInner_coulomb;  /**< the inner pairlist buffer size */
+    real                     rbufInner_vdw;      /**< the inner pairlist buffer size */
+    matrix                   box_start;          /**< the initial simulation box */
+    std::vector<pme_setup_t> setup;              /**< the PME+cutoff setups */
+    int                      cur;                /**< the index (in setup) of the current setup */
+    int                      fastest;            /**< index of the fastest setup up till now */
+    int                      lower_limit;        /**< don't go below this setup index */
+    int                      start;              /**< start of setup index range to consider in stage>0 */
+    int                      end;                /**< end   of setup index range to consider in stage>0 */
+    int                      elimited;           /**< was the balancing limited, uses enum above */
+    int                      cutoff_scheme;      /**< Verlet or group cut-offs */
 
-    int          stage;              /**< the current stage */
+    int                      stage;              /**< the current stage */
 
-    int          cycles_n;           /**< step cycle counter cummulative count */
-    double       cycles_c;           /**< step cycle counter cummulative cycles */
+    int                      cycles_n;           /**< step cycle counter cummulative count */
+    double                   cycles_c;           /**< step cycle counter cummulative cycles */
 };
 
 /* TODO The code in this file should call this getter, rather than
@@ -172,6 +171,7 @@ bool pme_loadbal_is_active(const pme_load_balancing_t *pme_lb)
     return pme_lb != nullptr && pme_lb->bActive;
 }
 
+// TODO Return a unique_ptr to pme_load_balancing_t
 void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       t_commrec                 *cr,
                       const gmx::MDLogger       &mdlog,
@@ -195,7 +195,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     // This is checked by grompp, but it doesn't hurt to check again.
     GMX_RELEASE_ASSERT(!(EEL_PME(ir.coulombtype) && EVDW_PME(ir.vdwtype) && ir.rcoulomb != ir.rvdw), "With Coulomb and LJ PME, rcoulomb should be equal to rvdw");
 
-    snew(pme_lb, 1);
+    pme_lb = new pme_load_balancing_t;
 
     pme_lb->bSepPMERanks      = !thisRankHasDuty(cr, DUTY_PME);
 
@@ -218,8 +218,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     EwaldBoxZScaler boxScaler(ir);
     boxScaler.scaleBox(box, pme_lb->box_start);
 
-    pme_lb->n = 1;
-    snew(pme_lb->setup, pme_lb->n);
+    pme_lb->setup.resize(1);
 
     pme_lb->rcut_vdw                 = ic.rvdw;
     pme_lb->rcut_coulomb_start       = ir.rcoulomb;
@@ -317,17 +316,15 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
                                             int                   pme_order,
                                             const gmx_domdec_t   *dd)
 {
-    pme_setup_t *set;
     real         fac, sp;
     real         tmpr_coulomb, tmpr_vdw;
     int          d;
     bool         grid_ok;
 
     /* Try to add a new setup with next larger cut-off to the list */
-    pme_lb->n++;
-    srenew(pme_lb->setup, pme_lb->n);
-    set          = &pme_lb->setup[pme_lb->n-1];
-    set->pmedata = nullptr;
+    pme_setup_t set;
+
+    set.pmedata = nullptr;
 
     NumPmeDomains numPmeDomains = getNumPmeDomains(dd);
 
@@ -341,19 +338,17 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
          */
         if (fac > 2.1)
         {
-            pme_lb->n--;
-
             return FALSE;
         }
 
         fac *= 1.01;
-        clear_ivec(set->grid);
+        clear_ivec(set.grid);
         sp = calcFftGrid(nullptr, pme_lb->box_start,
                          fac*pme_lb->setup[pme_lb->cur].spacing,
                          minimalPmeGridSize(pme_order),
-                         &set->grid[XX],
-                         &set->grid[YY],
-                         &set->grid[ZZ]);
+                         &set.grid[XX],
+                         &set.grid[YY],
+                         &set.grid[ZZ]);
 
         /* As here we can't easily check if one of the PME ranks
          * uses threading, we do a conservative grid check.
@@ -361,67 +356,68 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
          * per PME rank along x, which is not a strong restriction.
          */
         grid_ok = gmx_pme_check_restrictions(pme_order,
-                                             set->grid[XX], set->grid[YY], set->grid[ZZ],
+                                             set.grid[XX], set.grid[YY], set.grid[ZZ],
                                              numPmeDomains.x,
                                              true,
                                              false);
     }
     while (sp <= 1.001*pme_lb->setup[pme_lb->cur].spacing || !grid_ok);
 
-    set->rcut_coulomb = pme_lb->cut_spacing*sp;
-    if (set->rcut_coulomb < pme_lb->rcut_coulomb_start)
+    set.rcut_coulomb = pme_lb->cut_spacing*sp;
+    if (set.rcut_coulomb < pme_lb->rcut_coulomb_start)
     {
         /* This is unlikely, but can happen when e.g. continuing from
          * a checkpoint after equilibration where the box shrank a lot.
          * We want to avoid rcoulomb getting smaller than rvdw
          * and there might be more issues with decreasing rcoulomb.
          */
-        set->rcut_coulomb = pme_lb->rcut_coulomb_start;
+        set.rcut_coulomb = pme_lb->rcut_coulomb_start;
     }
 
     if (pme_lb->cutoff_scheme == ecutsVERLET)
     {
         /* Never decrease the Coulomb and VdW list buffers */
-        set->rlistOuter  = std::max(set->rcut_coulomb + pme_lb->rbufOuter_coulomb,
-                                    pme_lb->rcut_vdw + pme_lb->rbufOuter_vdw);
-        set->rlistInner  = std::max(set->rcut_coulomb + pme_lb->rbufInner_coulomb,
-                                    pme_lb->rcut_vdw + pme_lb->rbufInner_vdw);
+        set.rlistOuter  = std::max(set.rcut_coulomb + pme_lb->rbufOuter_coulomb,
+                                   pme_lb->rcut_vdw + pme_lb->rbufOuter_vdw);
+        set.rlistInner  = std::max(set.rcut_coulomb + pme_lb->rbufInner_coulomb,
+                                   pme_lb->rcut_vdw + pme_lb->rbufInner_vdw);
     }
     else
     {
         /* TODO Remove these lines and pme_lb->cutoff_scheme */
-        tmpr_coulomb     = set->rcut_coulomb + pme_lb->rbufOuter_coulomb;
+        tmpr_coulomb     = set.rcut_coulomb + pme_lb->rbufOuter_coulomb;
         tmpr_vdw         = pme_lb->rcut_vdw + pme_lb->rbufOuter_vdw;
         /* Two (known) bugs with cutoff-scheme=group here:
          * - This modification of rlist results in incorrect DD comunication.
          * - We should set fr->bTwinRange = (fr->rlistlong > fr->rlist).
          */
-        set->rlistOuter  = std::min(tmpr_coulomb, tmpr_vdw);
-        set->rlistInner  = set->rlistOuter;
+        set.rlistOuter  = std::min(tmpr_coulomb, tmpr_vdw);
+        set.rlistInner  = set.rlistOuter;
     }
 
-    set->spacing         = sp;
+    set.spacing         = sp;
     /* The grid efficiency is the size wrt a grid with uniform x/y/z spacing */
-    set->grid_efficiency = 1;
+    set.grid_efficiency = 1;
     for (d = 0; d < DIM; d++)
     {
-        set->grid_efficiency *= (set->grid[d]*sp)/norm(pme_lb->box_start[d]);
+        set.grid_efficiency *= (set.grid[d]*sp)/norm(pme_lb->box_start[d]);
     }
     /* The Ewald coefficient is inversly proportional to the cut-off */
-    set->ewaldcoeff_q =
-        pme_lb->setup[0].ewaldcoeff_q*pme_lb->setup[0].rcut_coulomb/set->rcut_coulomb;
+    set.ewaldcoeff_q =
+        pme_lb->setup[0].ewaldcoeff_q*pme_lb->setup[0].rcut_coulomb/set.rcut_coulomb;
     /* We set ewaldcoeff_lj in set, even when LJ-PME is not used */
-    set->ewaldcoeff_lj =
-        pme_lb->setup[0].ewaldcoeff_lj*pme_lb->setup[0].rcut_coulomb/set->rcut_coulomb;
+    set.ewaldcoeff_lj =
+        pme_lb->setup[0].ewaldcoeff_lj*pme_lb->setup[0].rcut_coulomb/set.rcut_coulomb;
 
-    set->count   = 0;
-    set->cycles  = 0;
+    set.count   = 0;
+    set.cycles  = 0;
 
     if (debug)
     {
         fprintf(debug, "PME loadbal: grid %d %d %d, coulomb cutoff %f\n",
-                set->grid[XX], set->grid[YY], set->grid[ZZ], set->rcut_coulomb);
+                set.grid[XX], set.grid[YY], set.grid[ZZ], set.rcut_coulomb);
     }
+    pme_lb->setup.push_back(set);
     return TRUE;
 }
 
@@ -460,7 +456,7 @@ static int pme_loadbal_end(pme_load_balancing_t *pme_lb)
     }
     else
     {
-        return pme_lb->n;
+        return pme_lb->setup.size();
     }
 }
 
@@ -493,7 +489,7 @@ static void switch_to_stage1(pme_load_balancing_t *pme_lb)
      * maxRelativeSlowdownAccepted times the fastest setup.
      */
     pme_lb->start = pme_lb->lower_limit;
-    while (pme_lb->start + 1 < pme_lb->n &&
+    while (pme_lb->start + 1 < static_cast<int>(pme_lb->setup.size()) &&
            (pme_lb->setup[pme_lb->start].count == 0 ||
             pme_lb->setup[pme_lb->start].cycles >
             pme_lb->setup[pme_lb->fastest].cycles*maxRelativeSlowdownAccepted))
@@ -512,7 +508,7 @@ static void switch_to_stage1(pme_load_balancing_t *pme_lb)
     }
 
     /* Decrease end only with setups that we timed and that are slow. */
-    pme_lb->end = pme_lb->n;
+    pme_lb->end = pme_lb->setup.size();
     if (pme_lb->setup[pme_lb->end - 1].count > 0 &&
         pme_lb->setup[pme_lb->end - 1].cycles >
         pme_lb->setup[pme_lb->fastest].cycles*maxRelativeSlowdownAccepted)
@@ -638,7 +634,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     if (pme_lb->stage == 0 && pme_lb->cur > 0 &&
         cycles > pme_lb->setup[pme_lb->fastest].cycles*maxRelativeSlowdownAccepted)
     {
-        pme_lb->n = pme_lb->cur + 1;
+        pme_lb->setup.resize(pme_lb->cur + 1);
         /* Done with scanning, go to stage 1 */
         switch_to_stage1(pme_lb);
     }
@@ -651,7 +647,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
         do
         {
-            if (pme_lb->cur+1 < pme_lb->n)
+            if (pme_lb->cur+1 < static_cast<int>(pme_lb->setup.size()))
             {
                 /* We had already generated the next setup */
                 OK = TRUE;
@@ -705,7 +701,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                 /* We hit the upper limit for the cut-off,
                  * the setup should not go further than cur.
                  */
-                pme_lb->n = pme_lb->cur + 1;
+                pme_lb->setup.resize(pme_lb->cur + 1);
                 print_loadbal_limited(fp_err, fp_log, step, pme_lb);
                 /* Switch to the next stage */
                 switch_to_stage1(pme_lb);
@@ -1127,8 +1123,5 @@ void pme_loadbal_done(pme_load_balancing_t *pme_lb,
         print_pme_loadbal_settings(pme_lb, fplog, mdlog, bNonBondedOnGPU);
     }
 
-    /* TODO: Here we should free all pointers in pme_lb,
-     * but as it contains pme data structures,
-     * we need to first make pme.c free all data.
-     */
+    delete pme_lb;
 }

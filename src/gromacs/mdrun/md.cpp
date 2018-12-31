@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -195,7 +195,6 @@ void gmx::Integrator::do_md()
     char                    sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
     /* PME load balancing data for GPU kernels */
-    pme_load_balancing_t *pme_loadbal      = nullptr;
     gmx_bool              bPMETune         = FALSE;
     gmx_bool              bPMETunePrinting = FALSE;
 
@@ -407,6 +406,8 @@ void gmx::Integrator::do_md()
      * Coulomb. It is not supported with only LJ PME. */
     bPMETune = (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) &&
                 !mdrunOptions.reproducible && ir->cutoff_scheme != ecutsGROUP);
+
+    pme_load_balancing_t *pme_loadbal      = nullptr;
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, *ir, state->box,
