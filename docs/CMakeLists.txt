@@ -367,6 +367,7 @@ if (SPHINX_FOUND)
         how-to/visualize.rst
         install-guide/index.rst
         release-notes/index.rst
+        release-notes/2019/2019.1.rst
         release-notes/2019/major/highlights.rst
         release-notes/2019/major/features.rst
         release-notes/2019/major/performance.rst
