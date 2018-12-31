@@ -157,7 +157,6 @@ void gmx::Integrator::do_mimic()
     gmx_global_stat_t        gstat;
     t_graph                 *graph = nullptr;
     gmx_groups_t            *groups;
-    gmx_ekindata_t          *ekind;
     gmx_shellfc_t           *shellfc;
 
     double                   cycles;
@@ -240,7 +239,8 @@ void gmx::Integrator::do_mimic()
                   enerd);
 
     /* Kinetic energy data */
-    snew(ekind, 1);
+    std::unique_ptr<gmx_ekindata_t> eKinData = gmx::compat::make_unique<gmx_ekindata_t>();
+    gmx_ekindata_t                 *ekind    = eKinData.get();
     init_ekindata(fplog, top_global, &(ir->opts), ekind);
     /* Copy the cos acceleration to the groups struct */
     ekind->cosacc.cos_accel = ir->cos_accel;
