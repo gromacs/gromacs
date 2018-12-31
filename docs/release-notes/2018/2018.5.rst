@@ -38,6 +38,14 @@ cause a slight loss of accuracy in inhomogeneous systems.
 
 :issue: `2808`
 
+Fix acceleration with ``cos-acceleration``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A factor of 2 was missing from the acceleration value, leading to incorrect
+results when e.g. calculating viscosities.
+
+:issue: `2572`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
