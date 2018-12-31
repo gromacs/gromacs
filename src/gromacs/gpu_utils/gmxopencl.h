@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,6 @@
    features that were deprecated in 1.2 or 2.0, so that they don't
    warn about it. */
 ///@{
-#  define CL_USE_DEPRECATED_OPENCL_1_1_APIS
 #  define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #  define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 ///@}
