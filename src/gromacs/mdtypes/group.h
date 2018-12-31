@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,51 +37,57 @@
 #ifndef GMX_MDTYPES_GROUP_H
 #define GMX_MDTYPES_GROUP_H
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 
-typedef struct {
-    real    Th;             /* Temperature at half step        */
-    real    T;              /* Temperature at full step        */
-    tensor  ekinh;          /* Kinetic energy at half step     */
-    tensor  ekinh_old;      /* Kinetic energy at old half step */
-    tensor  ekinf;          /* Kinetic energy at full step     */
-    real    lambda;         /* Berendsen coupling lambda       */
-    double  ekinscalef_nhc; /* Scaling factor for NHC- full step */
-    double  ekinscaleh_nhc; /* Scaling factor for NHC- half step */
-    double  vscale_nhc;     /* Scaling factor for NHC- velocity */
-} t_grp_tcstat;
+struct t_grp_tcstat{
+    real    Th             = 0;     /* Temperature at half step        */
+    real    T              = 0;     /* Temperature at full step        */
+    tensor  ekinh          = {{0}}; /* Kinetic energy at half step     */
+    tensor  ekinh_old      = {{0}}; /* Kinetic energy at old half step */
+    tensor  ekinf          = {{0}}; /* Kinetic energy at full step     */
+    real    lambda         = 0;     /* Berendsen coupling lambda       */
+    double  ekinscalef_nhc = 0;     /* Scaling factor for NHC- full step */
+    double  ekinscaleh_nhc = 0;     /* Scaling factor for NHC- half step */
+    double  vscale_nhc     = 0;     /* Scaling factor for NHC- velocity */
+};
 
-typedef struct {
+struct t_grp_acc {
     int     nat;    /* Number of atoms in this group		*/
     rvec    u;      /* Mean velocities of home particles        */
     rvec    uold;   /* Previous mean velocities of home particles   */
     double  mA;     /* Mass for topology A		                */
     double  mB;     /* Mass for topology B		                */
-} t_grp_acc;
+};
 
-typedef struct {
+struct t_cos_acc{
     real    cos_accel;  /* The acceleration for the cosine profile      */
     real    mvcos;      /* The cos momenta of home particles            */
     real    vcos;       /* The velocity of the cosine profile           */
-} t_cos_acc;
+};
 
-typedef struct gmx_ekindata_t {
-    gmx_bool         bNEMD;
-    int              ngtc;            /* The number of T-coupling groups      */
-    t_grp_tcstat    *tcstat;          /* T-coupling data            */
-    tensor         **ekin_work_alloc; /* Allocated locations for *_work members */
-    tensor         **ekin_work;       /* Work arrays for tcstat per thread    */
-    real           **dekindl_work;    /* Work location for dekindl per thread */
-    int              ngacc;           /* The number of acceleration groups    */
-    t_grp_acc       *grpstat;         /* Acceleration data			*/
-    tensor           ekin;            /* overall kinetic energy               */
-    tensor           ekinh;           /* overall 1/2 step kinetic energy      */
-    real             dekindl;         /* dEkin/dlambda at half step           */
-    real             dekindl_old;     /* dEkin/dlambda at old half step       */
-    t_cos_acc        cosacc;          /* Cosine acceleration data             */
-} gmx_ekindata_t;
+struct gmx_ekindata_t {
+    gmx_bool                  bNEMD;
+    int                       ngtc;            /* The number of T-coupling groups      */
+    int                       nthreads;        /* For size of ekin_work */
+    std::vector<t_grp_tcstat> tcstat;          /* T-coupling data            */
+    tensor                  **ekin_work_alloc; /* Allocated locations for *_work members */
+    tensor                  **ekin_work;       /* Work arrays for tcstat per thread    */
+    real                    **dekindl_work;    /* Work location for dekindl per thread */
+    int                       ngacc;           /* The number of acceleration groups    */
+    std::vector<t_grp_acc>    grpstat;         /* Acceleration data			*/
+    tensor                    ekin;            /* overall kinetic energy               */
+    tensor                    ekinh;           /* overall 1/2 step kinetic energy      */
+    real                      dekindl;         /* dEkin/dlambda at half step           */
+    real                      dekindl_old;     /* dEkin/dlambda at old half step       */
+    t_cos_acc                 cosacc;          /* Cosine acceleration data             */
+
+    ~gmx_ekindata_t();
+};
 
 #define GID(igid, jgid, gnr) (((igid) < (jgid)) ? ((igid)*(gnr)+(jgid)) : ((jgid)*(gnr)+(igid)))
 

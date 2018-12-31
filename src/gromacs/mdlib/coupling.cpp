@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,6 @@ static void NHC_trotter(const t_grpopts *opts, int nvar, const gmx_ekindata_t *e
     int           i, j, mi, mj;
     double        Ekin, Efac, reft, kT, nd;
     double        dt;
-    t_grp_tcstat *tcstat;
     double       *ivxi, *ixi;
     double       *GQ;
     gmx_bool      bBarostat;
@@ -149,7 +148,7 @@ static void NHC_trotter(const t_grpopts *opts, int nvar, const gmx_ekindata_t *e
         else
         {
             iQinv  = gmx::arrayRefFromArray(&MassQ->Qinv[i*nh], nh);
-            tcstat = &ekind->tcstat[i];
+            const t_grp_tcstat *tcstat = &ekind->tcstat[i];
             nd     = opts->nrdf[i];
             reft   = std::max<real>(0, opts->ref_t[i]);
             if (bEkinAveVel)
@@ -736,7 +735,7 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
     inc_nrnb(nrnb, eNR_PCOUPL, nr_atoms);
 }
 
-void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt,
+void berendsen_tcoupl(const t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
                       std::vector<double> &therm_integral)
 {
     const t_grpopts *opts = &ir->opts;
@@ -1565,19 +1564,18 @@ void vrescale_tcoupl(const t_inputrec *ir, int64_t step,
 void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
                         int start, int end, rvec v[])
 {
-    t_grp_acc      *gstat;
-    t_grp_tcstat   *tcstat;
     unsigned short *cACC, *cTC;
     int             ga, gt, n, d;
     real            lg;
     rvec            vrel;
 
-    tcstat = ekind->tcstat;
     cTC    = mdatoms->cTC;
+
+    gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
 
     if (ekind->bNEMD)
     {
-        gstat  = ekind->grpstat;
+        gmx::ArrayRef<const t_grp_acc> gstat = ekind->grpstat;
         cACC   = mdatoms->cACC;
 
         ga = 0;

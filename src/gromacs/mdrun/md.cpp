@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -177,7 +177,6 @@ void gmx::Integrator::do_md()
     gmx_update_t           *upd   = nullptr;
     t_graph                *graph = nullptr;
     gmx_groups_t           *groups;
-    gmx_ekindata_t         *ekind;
     gmx_shellfc_t          *shellfc;
     gmx_bool                bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     gmx_bool                bTemp, bPres, bTrotter;
@@ -264,7 +263,8 @@ void gmx::Integrator::do_md()
                   enerd);
 
     /* Kinetic energy data */
-    snew(ekind, 1);
+    std::unique_ptr<gmx_ekindata_t> eKinData = compat::make_unique<gmx_ekindata_t>();
+    gmx_ekindata_t                 *ekind    = eKinData.get();
     init_ekindata(fplog, top_global, &(ir->opts), ekind);
     /* Copy the cos acceleration to the groups struct */
     ekind->cosacc.cos_accel = ir->cos_accel;
