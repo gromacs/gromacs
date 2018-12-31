@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -217,18 +217,18 @@ enum class ApplyParrinelloRahmanVScaling
 template<NumTempScaleValues            numTempScaleValues,
          ApplyParrinelloRahmanVScaling applyPRVScaling>
 static void
-updateMDLeapfrogSimple(int                       start,
-                       int                       nrend,
-                       real                      dt,
-                       real                      dtPressureCouple,
-                       const rvec * gmx_restrict invMassPerDim,
-                       const t_grp_tcstat      * tcstat,
-                       const unsigned short    * cTC,
-                       const rvec                pRVScaleMatrixDiagonal,
-                       const rvec * gmx_restrict x,
-                       rvec       * gmx_restrict xprime,
-                       rvec       * gmx_restrict v,
-                       const rvec * gmx_restrict f)
+updateMDLeapfrogSimple(int                               start,
+                       int                               nrend,
+                       real                              dt,
+                       real                              dtPressureCouple,
+                       const rvec * gmx_restrict         invMassPerDim,
+                       gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                       const unsigned short            * cTC,
+                       const rvec                        pRVScaleMatrixDiagonal,
+                       const rvec * gmx_restrict         x,
+                       rvec       * gmx_restrict         xprime,
+                       rvec       * gmx_restrict         v,
+                       const rvec * gmx_restrict         f)
 {
     real lambdaGroup;
 
@@ -341,15 +341,15 @@ static inline void simdStoreRvecs(rvec     *r,
  * \param[in]    f                      Forces
  */
 static void
-updateMDLeapfrogSimpleSimd(int                       start,
-                           int                       nrend,
-                           real                      dt,
-                           const real * gmx_restrict invMass,
-                           const t_grp_tcstat      * tcstat,
-                           const rvec * gmx_restrict x,
-                           rvec       * gmx_restrict xprime,
-                           rvec       * gmx_restrict v,
-                           const rvec * gmx_restrict f)
+updateMDLeapfrogSimpleSimd(int                               start,
+                           int                               nrend,
+                           real                              dt,
+                           const real * gmx_restrict         invMass,
+                           gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                           const rvec * gmx_restrict         x,
+                           rvec       * gmx_restrict         xprime,
+                           rvec       * gmx_restrict         v,
+                           const rvec * gmx_restrict         f)
 {
     SimdReal                  timestep(dt);
     SimdReal                  lambdaSystem(tcstat[0].lambda);
@@ -438,14 +438,13 @@ updateMDLeapfrogGeneral(int                         start,
      * Holian et al. Phys Rev E 52(3) : 2338, 1995
      */
 
-    const unsigned short    * cTC           = md->cTC;
-    const t_grp_tcstat      * tcstat        = ekind->tcstat;
+    gmx::ArrayRef<const t_grp_tcstat> tcstat        = ekind->tcstat;
+    gmx::ArrayRef<const t_grp_acc>    grpstat       = ekind->grpstat;
+    const unsigned short            * cTC           = md->cTC;
+    const unsigned short            * cACC          = md->cACC;
+    const rvec                      * accel         = ir->opts.acc;
 
-    const unsigned short    * cACC          = md->cACC;
-    const rvec              * accel         = ir->opts.acc;
-    const t_grp_acc         * grpstat       = ekind->grpstat;
-
-    const rvec * gmx_restrict invMassPerDim = md->invMassPerDim;
+    const rvec * gmx_restrict         invMassPerDim = md->invMassPerDim;
 
     /* Initialize group values, changed later when multiple groups are used */
     int  ga       = 0;
@@ -606,9 +605,9 @@ static void do_update_md(int                         start,
         bool haveSingleTempScaleValue = (!doTempCouple || ekind->ngtc == 1);
 
         /* Extract some pointers needed by all cases */
-        const unsigned short *cTC           = md->cTC;
-        const t_grp_tcstat   *tcstat        = ekind->tcstat;
-        const rvec           *invMassPerDim = md->invMassPerDim;
+        const unsigned short             *cTC           = md->cTC;
+        gmx::ArrayRef<const t_grp_tcstat> tcstat        = ekind->tcstat;
+        const rvec                       *invMassPerDim = md->invMassPerDim;
 
         if (doParrinelloRahman)
         {
@@ -1052,10 +1051,10 @@ static void do_update_bd(int start, int nrend, real dt,
 static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_mdatoms *md,
                                 gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
-    int           g;
-    t_grp_tcstat *tcstat  = ekind->tcstat;
-    t_grp_acc    *grpstat = ekind->grpstat;
-    int           nthread, thread;
+    int                         g;
+    gmx::ArrayRef<t_grp_tcstat> tcstat  = ekind->tcstat;
+    gmx::ArrayRef<t_grp_acc>    grpstat = ekind->grpstat;
+    int                         nthread, thread;
 
     /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
        an option, but not supported now.
@@ -1170,15 +1169,15 @@ static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
                               gmx_ekindata_t *ekind,
                               t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
-    int           start = 0, homenr = md->homenr;
-    int           g, d, n, m, gt = 0;
-    rvec          v_corrt;
-    real          hm;
-    t_grp_tcstat *tcstat = ekind->tcstat;
-    t_cos_acc    *cosacc = &(ekind->cosacc);
-    real          dekindl;
-    real          fac, cosz;
-    double        mvcos;
+    int                         start = 0, homenr = md->homenr;
+    int                         g, d, n, m, gt = 0;
+    rvec                        v_corrt;
+    real                        hm;
+    gmx::ArrayRef<t_grp_tcstat> tcstat = ekind->tcstat;
+    t_cos_acc                  *cosacc = &(ekind->cosacc);
+    real                        dekindl;
+    real                        fac, cosz;
+    double                      mvcos;
 
     for (g = 0; g < opts->ngtc; g++)
     {
