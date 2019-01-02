@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,63 +38,67 @@
 #ifndef GMX_GMXPREPROCESS_GPP_ATOMTYPE_H
 #define GMX_GMXPREPROCESS_GPP_ATOMTYPE_H
 
-#include <stdio.h>
+#include <cstdio>
 
-#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
+struct gpp_atomtype;
+struct t_atom;
+struct t_atomtypes;
+struct t_param;
+struct t_params;
+struct t_symtab;
 
-typedef struct gpp_atomtype *gpp_atomtype_t;
-
-int get_atomtype_type(const char *str, gpp_atomtype_t at);
+int get_atomtype_type(const char *str, gpp_atomtype *at);
 /* Return atomtype corresponding to case-insensitive str
    or NOTSET if not found */
 
-int get_atomtype_ntypes(gpp_atomtype_t at);
+int get_atomtype_ntypes(gpp_atomtype *at);
 /* Return number of atomtypes */
 
-char *get_atomtype_name(int nt, gpp_atomtype_t at);
+char *get_atomtype_name(int nt, gpp_atomtype *at);
 /* Return name corresponding to atomtype nt, or NULL if not found */
 
-real get_atomtype_massA(int nt, gpp_atomtype_t at);
-real get_atomtype_massB(int nt, gpp_atomtype_t at);
-real get_atomtype_qA(int nt, gpp_atomtype_t at);
-real get_atomtype_qB(int nt, gpp_atomtype_t at);
-int get_atomtype_ptype(int nt, gpp_atomtype_t at);
+real get_atomtype_massA(int nt, gpp_atomtype *at);
+real get_atomtype_massB(int nt, gpp_atomtype *at);
+real get_atomtype_qA(int nt, gpp_atomtype *at);
+real get_atomtype_qB(int nt, gpp_atomtype *at);
+int get_atomtype_ptype(int nt, gpp_atomtype *at);
 int get_atomtype_batype(int nt, const gpp_atomtype* at);
-int get_atomtype_atomnumber(int nt, gpp_atomtype_t at);
+int get_atomtype_atomnumber(int nt, gpp_atomtype *at);
 
 /* Return the above variable for atomtype nt, or NOTSET if not found */
 
-real get_atomtype_nbparam(int nt, int param, gpp_atomtype_t at);
+real get_atomtype_nbparam(int nt, int param, gpp_atomtype *at);
 /* Similar to the previous but returns the paramth parameter or NOTSET */
 
-gpp_atomtype_t init_atomtype();
+gpp_atomtype *init_atomtype();
 /* Return a new atomtype structure */
 
-void done_atomtype(gpp_atomtype_t at);
+void done_atomtype(gpp_atomtype *at);
 /* Free the memory in the structure */
 
-int set_atomtype(int nt, gpp_atomtype_t at, struct t_symtab *tab,
+int set_atomtype(int nt, gpp_atomtype *at, t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
                  int bondatomtype, int atomnumber);
 /* Set the values of an existing atom type nt. Returns nt on success or
    NOTSET on error. */
 
-int add_atomtype(gpp_atomtype_t at, struct t_symtab *tab,
+int add_atomtype(gpp_atomtype *at, t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
                  int bondatomtype, int atomnumber);
 /* Add a complete new atom type to an existing atomtype structure. Returns
    the number of the atom type. */
 
-void print_at (FILE * out, gpp_atomtype_t at);
+void print_at (FILE * out, gpp_atomtype *at);
 /* Print an atomtype record to a text file */
 
 void renum_atype(t_params plist[], gmx_mtop_t *mtop,
                  int *wall_atomtype,
-                 gpp_atomtype_t at, bool bVerbose);
+                 gpp_atomtype *at, bool bVerbose);
 
-void copy_atomtype_atomtypes(gpp_atomtype_t atype, t_atomtypes *atypes);
+void copy_atomtype_atomtypes(gpp_atomtype *atype, t_atomtypes *atypes);
 /* Copy from one structure to another */
 
 #endif

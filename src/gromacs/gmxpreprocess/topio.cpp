@@ -53,6 +53,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
@@ -81,47 +82,6 @@
 
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */
-
-static void free_nbparam(t_nbparam **param, int nr)
-{
-    int i;
-
-    assert(param);
-    for (i = 0; i < nr; i++)
-    {
-        assert(param[i]);
-        sfree(param[i]);
-    }
-    sfree(param);
-}
-
-static int copy_nbparams(t_nbparam **param, int ftype, t_params *plist, int nr)
-{
-    int i, j, f;
-    int nrfp, ncopy;
-
-    nrfp = NRFP(ftype);
-
-    ncopy = 0;
-    for (i = 0; i < nr; i++)
-    {
-        for (j = 0; j <= i; j++)
-        {
-            assert(param);
-            if (param[i][j].bSet)
-            {
-                for (f = 0; f < nrfp; f++)
-                {
-                    plist->param[nr*i+j].c[f] = param[i][j].c[f];
-                    plist->param[nr*j+i].c[f] = param[i][j].c[f];
-                }
-                ncopy++;
-            }
-        }
-    }
-
-    return ncopy;
-}
 
 static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
 {
@@ -176,7 +136,7 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
     }
 }
 
-double check_mol(const gmx_mtop_t *mtop, warninp_t wi)
+double check_mol(const gmx_mtop_t *mtop, warninp *wi)
 {
     char     buf[256];
     int      i, ri, pt;
@@ -282,7 +242,7 @@ static void sum_q(const t_atoms *atoms, int numMols,
 }
 
 static void get_nbparm(char *nb_str, char *comb_str, int *nb, int *comb,
-                       warninp_t wi)
+                       warninp *wi)
 {
     int  i;
     char warn_buf[STRLEN];
@@ -328,7 +288,7 @@ static void get_nbparm(char *nb_str, char *comb_str, int *nb, int *comb,
 }
 
 static char ** cpp_opts(const char *define, const char *include,
-                        warninp_t wi)
+                        warninp *wi)
 {
     int         n, len;
     int         ncppopts = 0;
@@ -415,7 +375,7 @@ static void make_atoms_sys(const std::vector<gmx_molblock_t> &molblock,
 static char **read_topol(const char *infile, const char *outfile,
                          const char *define, const char *include,
                          t_symtab    *symtab,
-                         gpp_atomtype_t atype,
+                         gpp_atomtype *atype,
                          int         *nrmols,
                          t_molinfo   **molinfo,
                          t_molinfo   **intermolecular_interactions,
@@ -429,7 +389,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          bool        bFEP,
                          bool        bZero,
                          bool        usingFullRangeElectrostatics,
-                         warninp_t       wi)
+                         warninp    *wi)
 {
     FILE                 *out;
     int                   i, sl, nb_funct;
@@ -447,7 +407,7 @@ static char **read_topol(const char *infile, const char *outfile,
     real                  fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
     bool                  bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
     double                qt = 0, qBt = 0; /* total charge */
-    t_bond_atomtype       batype;
+    gpp_bond_atomtype    *batype;
     int                   lastcg = -1;
     int                   dcatt  = -1, nmol_couple;
     /* File handling variables */
@@ -983,14 +943,14 @@ char **do_top(bool                          bVerbose,
               int                          *combination_rule,
               double                       *repulsion_power,
               real                         *fudgeQQ,
-              gpp_atomtype_t                atype,
+              gpp_atomtype                 *atype,
               int                          *nrmols,
               t_molinfo                   **molinfo,
               t_molinfo                   **intermolecular_interactions,
               const t_inputrec             *ir,
               std::vector<gmx_molblock_t>  *molblock,
               bool                         *ffParametrizedWithHBondConstraints,
-              warninp_t                     wi)
+              warninp                      *wi)
 {
     /* Tmpfile might contain a long path */
     const char *tmpfile;
@@ -1347,7 +1307,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
     free(blink);
 } /* generate_qmexcl */
 
-void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t wi, GmxQmmmMode qmmmMode)
+void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp *wi, GmxQmmmMode qmmmMode)
 {
     /* This routine expects molt->molt[m].ilist to be of size F_NRE and ordered.
      */

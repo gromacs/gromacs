@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,8 +47,12 @@
 #include <vector>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -56,13 +60,13 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
+gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab)
 {
     FILE                    *in;
     char                     buf[STRLEN], name[STRLEN];
     double                   m;
     int                      nratt = 0;
-    gpp_atomtype_t           at;
+    gpp_atomtype            *at;
     t_atom                  *a;
     t_param                 *nb;
 
@@ -106,7 +110,7 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
     return at;
 }
 
-static void print_resatoms(FILE *out, gpp_atomtype_t atype, t_restp *rtp)
+static void print_resatoms(FILE *out, gpp_atomtype *atype, t_restp *rtp)
 {
     int   j, tp;
     char *tpnm;
@@ -130,7 +134,7 @@ static void print_resatoms(FILE *out, gpp_atomtype_t atype, t_restp *rtp)
 }
 
 static bool read_atoms(FILE *in, char *line,
-                       t_restp *r0, t_symtab *tab, gpp_atomtype_t atype)
+                       t_restp *r0, t_symtab *tab, gpp_atomtype *atype)
 {
     int    i, j, cg, maxentries;
     char   buf[256], buf1[256];
@@ -294,7 +298,7 @@ static void print_resall_header(FILE *out, t_restp rtp[])
 }
 
 void print_resall(FILE *out, int nrtp, t_restp rtp[],
-                  gpp_atomtype_t atype)
+                  gpp_atomtype *atype)
 {
     int i, bt;
 
@@ -319,7 +323,7 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
 }
 
 void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
-                 gpp_atomtype_t atype, t_symtab *tab,
+                 gpp_atomtype *atype, t_symtab *tab,
                  bool bAllowOverrideRTP)
 {
     FILE         *in;

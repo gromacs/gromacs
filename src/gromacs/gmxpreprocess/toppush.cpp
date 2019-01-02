@@ -49,6 +49,7 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
@@ -65,8 +66,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atype,
-                       warninp_t wi)
+void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype,
+                       warninp *wi)
 {
     int   i, j, k = -1, nf;
     int   nr, nrfp;
@@ -190,7 +191,15 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
     }
 }
 
-static void realloc_nb_params(gpp_atomtype_t at,
+/*! \brief Used to temporarily store the explicit non-bonded parameter
+ * combinations, which will be copied to t_params. */
+struct t_nbparam
+{
+        bool     bSet;          //! Has this combination been set
+        real     c[4];          //! The non-bonded parameters
+};
+
+static void realloc_nb_params(gpp_atomtype *at,
                               t_nbparam ***nbparam, t_nbparam ***pair)
 {
     /* Add space in the non-bonded parameters matrix */
@@ -202,6 +211,47 @@ static void realloc_nb_params(gpp_atomtype_t at,
         srenew(*pair, atnr);
         snew((*pair)[atnr-1], atnr);
     }
+}
+
+int copy_nbparams(t_nbparam **param, int ftype, t_params *plist, int nr)
+{
+    int i, j, f;
+    int nrfp, ncopy;
+
+    nrfp = NRFP(ftype);
+
+    ncopy = 0;
+    for (i = 0; i < nr; i++)
+    {
+        for (j = 0; j <= i; j++)
+        {
+            GMX_RELEASE_ASSERT(param, "Must have valid parameters");
+            if (param[i][j].bSet)
+            {
+                for (f = 0; f < nrfp; f++)
+                {
+                    plist->param[nr*i+j].c[f] = param[i][j].c[f];
+                    plist->param[nr*j+i].c[f] = param[i][j].c[f];
+                }
+                ncopy++;
+            }
+        }
+    }
+
+    return ncopy;
+}
+
+void free_nbparam(t_nbparam **param, int nr)
+{
+    int i;
+
+    GMX_RELEASE_ASSERT(param, "Must have valid parameters");
+    for (i = 0; i < nr; i++)
+    {
+        GMX_RELEASE_ASSERT(param[i], "Must have valid parameters");
+        sfree(param[i]);
+    }
+    sfree(param);
 }
 
 static void copy_B_from_A(int ftype, double *c)
@@ -218,10 +268,10 @@ static void copy_B_from_A(int ftype, double *c)
     }
 }
 
-void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
+void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
               char *line, int nb_funct,
               t_nbparam ***nbparam, t_nbparam ***pair,
-              warninp_t wi)
+              warninp *wi)
 {
     typedef struct {
         const char *entry;
@@ -535,7 +585,7 @@ static void push_bondtype(t_params     *       bt,
                           int                  ftype,
                           bool                 bAllowRepeat,
                           const char *         line,
-                          warninp_t            wi)
+                          warninp             *wi)
 {
     int      nr   = bt->nr;
     int      nrfp = NRFP(ftype);
@@ -664,9 +714,9 @@ static void push_bondtype(t_params     *       bt,
 }
 
 void push_bt(Directive d, t_params bt[], int nral,
-             gpp_atomtype_t at,
-             t_bond_atomtype bat, char *line,
-             warninp_t wi)
+             gpp_atomtype *at,
+             gpp_bond_atomtype *bat, char *line,
+             warninp *wi)
 {
     const char *formal[MAXATOMLIST+1] = {
         "%s",
@@ -764,8 +814,8 @@ void push_bt(Directive d, t_params bt[], int nral,
 
 
 void push_dihedraltype(Directive d, t_params bt[],
-                       t_bond_atomtype bat, char *line,
-                       warninp_t wi)
+                       gpp_bond_atomtype *bat, char *line,
+                       warninp *wi)
 {
     const char  *formal[MAXATOMLIST+1] = {
         "%s",
@@ -932,9 +982,9 @@ void push_dihedraltype(Directive d, t_params bt[],
 }
 
 
-void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype_t atype,
+void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
               char *pline, int nb_funct,
-              warninp_t wi)
+              warninp *wi)
 {
     /* swap the atoms */
     const char *form3 = "%*s%*s%*s%lf%lf%lf";
@@ -1059,9 +1109,9 @@ void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype_t atype,
 }
 
 void
-push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype_t at,
-              t_bond_atomtype bat, char *line,
-              warninp_t wi)
+push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
+              gpp_bond_atomtype *bat, char *line,
+              warninp *wi)
 {
     const char  *formal = "%s%s%s%s%s%s%s%s%n";
 
@@ -1210,7 +1260,7 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
                           char *resnumberic,
                           char *resname, char *name, real m0, real q0,
                           int typeB, char *ctypeB, real mB, real qB,
-                          warninp_t wi)
+                          warninp *wi)
 {
     int           j, resind = 0, resnr;
     unsigned char ric;
@@ -1306,8 +1356,8 @@ static void push_cg(t_block *block, int *lastindex, int index, int a)
 }
 
 void push_atom(t_symtab *symtab, t_block *cgs,
-               t_atoms *at, gpp_atomtype_t atype, char *line, int *lastcg,
-               warninp_t wi)
+               t_atoms *at, gpp_atomtype *atype, char *line, int *lastcg,
+               warninp *wi)
 {
     int           nr, ptype;
     int           cgnumber, atomnr, type, typeB, nscan;
@@ -1386,7 +1436,7 @@ void push_atom(t_symtab *symtab, t_block *cgs,
 }
 
 void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
-               warninp_t wi)
+               warninp *wi)
 {
     char       type[STRLEN];
     int        nrexcl, i;
@@ -1516,10 +1566,10 @@ static bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
 }
 
 static bool default_cmap_params(t_params bondtype[],
-                                t_atoms *at, gpp_atomtype_t atype,
+                                t_atoms *at, gpp_atomtype *atype,
                                 t_param *p, bool bB,
                                 int *cmap_type, int *nparam_def,
-                                warninp_t wi)
+                                warninp *wi)
 {
     int        i, nparam_found;
     int        ct;
@@ -1591,7 +1641,7 @@ static int natom_match(t_param *pi,
 }
 
 static bool default_params(int ftype, t_params bt[],
-                           t_atoms *at, gpp_atomtype_t atype,
+                           t_atoms *at, gpp_atomtype *atype,
                            t_param *p, bool bB,
                            t_param **param_def,
                            int *nparam_def)
@@ -1710,10 +1760,10 @@ static bool default_params(int ftype, t_params bt[],
 
 
 void push_bond(Directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype_t atype, char *line,
+               t_atoms *at, gpp_atomtype *atype, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
-               warninp_t wi)
+               warninp *wi)
 {
     const char  *aaformat[MAXATOMLIST] = {
         "%d%d",
@@ -2118,8 +2168,8 @@ void push_bond(Directive d, t_params bondtype[], t_params bond[],
 }
 
 void push_cmap(Directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype_t atype, char *line,
-               warninp_t wi)
+               t_atoms *at, gpp_atomtype *atype, char *line,
+               warninp *wi)
 {
     const char *aaformat[MAXATOMLIST+1] =
     {
@@ -2212,7 +2262,7 @@ void push_cmap(Directive d, t_params bondtype[], t_params bond[],
 
 void push_vsitesn(Directive d, t_params bond[],
                   t_atoms *at, char *line,
-                  warninp_t wi)
+                  warninp *wi)
 {
     char   *ptr;
     int     type, ftype, j, n, ret, nj, a;
@@ -2321,7 +2371,7 @@ void push_vsitesn(Directive d, t_params bond[],
 
 void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
               int *nrcopies,
-              warninp_t wi)
+              warninp *wi)
 {
     char type[STRLEN];
 
@@ -2385,7 +2435,7 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
     }
 }
 
-void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp_t wi)
+void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp *wi)
 {
     int  i, j;
     int  n;
@@ -2432,7 +2482,7 @@ void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp_t wi)
     while (n == 1);
 }
 
-int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype_t at,
+int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype *at,
                            t_nbparam ***nbparam, t_nbparam ***pair)
 {
     t_atom  atom;
@@ -2524,7 +2574,7 @@ static void convert_pairs_to_pairsQ(t_params *plist,
     plist[F_LJ14].param = nullptr;
 }
 
-static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, warninp_t wi)
+static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, warninp *wi)
 {
     int       n, ntype, i, j, k;
     t_atom   *atom;
@@ -2604,7 +2654,7 @@ static void set_excl_all(t_blocka *excl)
 
 static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
                            int couple_lam0, int couple_lam1,
-                           const char *mol_name, warninp_t wi)
+                           const char *mol_name, warninp *wi)
 {
     int  i;
 
@@ -2647,7 +2697,7 @@ static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
 void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple, real fudgeQQ,
                             int couple_lam0, int couple_lam1,
                             bool bCoupleIntra, int nb_funct, t_params *nbp,
-                            warninp_t wi)
+                            warninp *wi)
 {
     convert_pairs_to_pairsQ(mol->plist, fudgeQQ, &mol->atoms);
     if (!bCoupleIntra)
