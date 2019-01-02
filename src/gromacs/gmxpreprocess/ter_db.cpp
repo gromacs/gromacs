@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,10 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
@@ -90,7 +93,7 @@ static int find_kw(char *keyw)
 #define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
 
 static void read_atom(char *line, bool bAdd,
-                      char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr)
+                      char **nname, t_atom *a, gpp_atomtype *atype, int *cgnr)
 {
     int    nr, i;
     char   buf[5][30];
@@ -143,14 +146,14 @@ static void read_atom(char *line, bool bAdd,
     }
 }
 
-static void print_atom(FILE *out, t_atom *a, gpp_atomtype_t atype)
+static void print_atom(FILE *out, t_atom *a, gpp_atomtype *atype)
 {
     fprintf(out, "\t%s\t%g\t%g\n",
             get_atomtype_name(a->type, atype), a->m, a->q);
 }
 
 static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
-                         gpp_atomtype_t atype)
+                         gpp_atomtype *atype)
 {
     FILE *out;
     int   i, j, k, bt, nrepl, nadd, ndel;
@@ -247,7 +250,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
 
 static void read_ter_db_file(const char *fn,
                              int *ntbptr, t_hackblock **tbptr,
-                             gpp_atomtype_t atype)
+                             gpp_atomtype *atype)
 {
     char         filebase[STRLEN], *ptr;
     FILE        *in;
@@ -403,7 +406,7 @@ static void read_ter_db_file(const char *fn,
 }
 
 int read_ter_db(const char *ffdir, char ter,
-                t_hackblock **tbptr, gpp_atomtype_t atype)
+                t_hackblock **tbptr, gpp_atomtype *atype)
 {
     char   ext[STRLEN];
     int    ntb;

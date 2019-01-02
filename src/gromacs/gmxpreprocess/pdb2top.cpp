@@ -53,10 +53,13 @@
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gen_vsite.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/specbond.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
@@ -673,7 +676,7 @@ void print_top_mols(FILE *out,
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
-               gpp_atomtype_t atype, int *cgnr, int nrexcl)
+               gpp_atomtype *atype, int *cgnr, int nrexcl)
 /* NOTE: nrexcl is not the size of *excl! */
 {
     if (at && atype && cgnr)
@@ -1502,7 +1505,7 @@ scrub_charge_groups(int *cgnr, int natoms)
 
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
-             t_atoms *atoms, rvec **x, gpp_atomtype_t atype, t_symtab *tab,
+             t_atoms *atoms, rvec **x, gpp_atomtype *atype, t_symtab *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
              bool bAllowMissing,

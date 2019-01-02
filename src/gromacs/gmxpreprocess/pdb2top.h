@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,21 +38,26 @@
 #ifndef GMX_GMXPREPROCESS_PDB2TOP_H
 #define GMX_GMXPREPROCESS_PDB2TOP_H
 
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
-#include "gromacs/gmxpreprocess/toputil.h"
+#include <cstdio>
+
+#include "gromacs/math/vectypes.h"
+
+struct gpp_atomtype;
+struct t_atoms;
+struct t_excls;
+struct t_hackblock;
+struct t_mols;
+struct t_params;
+struct t_resinfo;
+struct t_restp;
+struct t_ssbond;
+struct t_symtab;
 
 /* this *MUST* correspond to array in pdb2top.c */
 enum {
     ehisA, ehisB, ehisH, ehis1, ehisNR
 };
 extern const char *hh[ehisNR];
-
-typedef struct {
-    int   res1, res2;
-    char *a1, *a2;
-} t_ssbond;
 
 void choose_ff(const char *ffsel,
                char *forcefield, int ff_maxlen,
@@ -101,12 +106,12 @@ void print_top_mols(FILE *out,
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
-               gpp_atomtype_t atype, int *cgnr, int nrexcl);
+               gpp_atomtype *atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms, rvec **x,
-             gpp_atomtype_t atype, struct t_symtab *tab,
+             gpp_atomtype *atype, t_symtab *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
              bool bAllowMissing,
