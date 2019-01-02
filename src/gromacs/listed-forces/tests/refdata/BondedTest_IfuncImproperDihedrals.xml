@@ -1,0 +1,924 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Ifunc Name="Improper Dih.">
+    <PBC Name="no">
+      <FEP Name="False">
+        <Sequence Name="Epot ">
+          <Int Name="Length">6</Int>
+          <Real>6.1685027506808492</Real>
+          <Real>8.6161737806736038</Real>
+          <Real>11.575991986205358</Real>
+          <Real>15.094024659670447</Real>
+          <Real>19.21633909346323</Real>
+          <Real>23.989002579978035</Real>
+        </Sequence>
+        <Sequence Name="dVdlambda ">
+          <Int Name="Length">6</Int>
+          <Real>11.034766031773518</Real>
+          <Real>24.515099710256166</Real>
+          <Real>40.671337497419657</Real>
+          <Real>59.733815855235719</Real>
+          <Real>81.932871245676068</Real>
+          <Real>107.49884013071242</Real>
+        </Sequence>
+        <Forces Name="Lambda 0">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">7.8539816339744828</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-7.8539816339744828</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">7.8539816339744828</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-7.8539816339744828</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.2">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">18.022269856093445</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-18.022269856093445</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">18.022269856093445</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-18.022269856093445</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.4">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">30.752701420140085</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-30.752701420140085</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">30.752701420140085</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-30.752701420140085</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.6">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">46.293113079897594</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-46.293113079897594</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">46.293113079897594</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-46.293113079897594</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.8">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">64.891341589149164</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-64.891341589149164</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">64.891341589149164</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-64.891341589149164</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 1">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">86.795223701677997</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-86.795223701677997</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">86.795223701677997</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-86.795223701677997</Real>
+          </Vector>
+        </Forces>
+      </FEP>
+      <FEP Name="True">
+        <Sequence Name="Epot ">
+          <Int Name="Length">6</Int>
+          <Real>6.1685027506808492</Real>
+          <Real>8.6161737806736038</Real>
+          <Real>11.575991986205358</Real>
+          <Real>15.094024659670447</Real>
+          <Real>19.21633909346323</Real>
+          <Real>23.989002579978035</Real>
+        </Sequence>
+        <Sequence Name="dVdlambda ">
+          <Int Name="Length">6</Int>
+          <Real>11.034766031773518</Real>
+          <Real>24.515099710256166</Real>
+          <Real>40.671337497419657</Real>
+          <Real>59.733815855235719</Real>
+          <Real>81.932871245676068</Real>
+          <Real>107.49884013071242</Real>
+        </Sequence>
+        <Forces Name="Lambda 0">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">7.8539816339744828</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-7.8539816339744828</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">7.8539816339744828</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-7.8539816339744828</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.2">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">18.022269856093445</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-18.022269856093445</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">18.022269856093445</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-18.022269856093445</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.4">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">30.752701420140085</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-30.752701420140085</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">30.752701420140085</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-30.752701420140085</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.6">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">46.293113079897594</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-46.293113079897594</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">46.293113079897594</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-46.293113079897594</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.8">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">64.891341589149164</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-64.891341589149164</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">64.891341589149164</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-64.891341589149164</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 1">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">86.795223701677997</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">-86.795223701677997</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">86.795223701677997</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-86.795223701677997</Real>
+          </Vector>
+        </Forces>
+      </FEP>
+    </PBC>
+    <PBC Name="xy">
+      <FEP Name="False">
+        <Sequence Name="Epot ">
+          <Int Name="Length">6</Int>
+          <Real>6.1685027506808492</Real>
+          <Real>8.6161737806736038</Real>
+          <Real>11.575991986205358</Real>
+          <Real>15.094024659670447</Real>
+          <Real>19.21633909346323</Real>
+          <Real>23.989002579978035</Real>
+        </Sequence>
+        <Sequence Name="dVdlambda ">
+          <Int Name="Length">6</Int>
+          <Real>11.034766031773518</Real>
+          <Real>24.515099710256166</Real>
+          <Real>40.671337497419657</Real>
+          <Real>59.733815855235719</Real>
+          <Real>81.932871245676068</Real>
+          <Real>107.49884013071242</Real>
+        </Sequence>
+        <Forces Name="Lambda 0">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-7.8539816339744828</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">7.8539816339744828</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">15.707963267948966</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-15.707963267948966</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.2">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-18.022269856093445</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">18.022269856093445</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">36.044539712186889</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-36.044539712186889</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.4">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-30.752701420140085</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">30.752701420140085</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">61.505402840280169</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-61.505402840280169</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.6">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-46.293113079897594</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">46.293113079897594</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">92.586226159795189</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-92.586226159795189</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.8">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-64.891341589149164</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">64.891341589149164</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">129.78268317829833</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-129.78268317829833</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 1">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-86.795223701677997</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">86.795223701677997</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">173.59044740335599</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-173.59044740335599</Real>
+          </Vector>
+        </Forces>
+      </FEP>
+      <FEP Name="True">
+        <Sequence Name="Epot ">
+          <Int Name="Length">6</Int>
+          <Real>6.1685027506808492</Real>
+          <Real>8.6161737806736038</Real>
+          <Real>11.575991986205358</Real>
+          <Real>15.094024659670447</Real>
+          <Real>19.21633909346323</Real>
+          <Real>23.989002579978035</Real>
+        </Sequence>
+        <Sequence Name="dVdlambda ">
+          <Int Name="Length">6</Int>
+          <Real>11.034766031773518</Real>
+          <Real>24.515099710256166</Real>
+          <Real>40.671337497419657</Real>
+          <Real>59.733815855235719</Real>
+          <Real>81.932871245676068</Real>
+          <Real>107.49884013071242</Real>
+        </Sequence>
+        <Forces Name="Lambda 0">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-7.8539816339744828</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">7.8539816339744828</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">15.707963267948966</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-15.707963267948966</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.2">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-18.022269856093445</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">18.022269856093445</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">36.044539712186889</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-36.044539712186889</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.4">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-30.752701420140085</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">30.752701420140085</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">61.505402840280169</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-61.505402840280169</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.6">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-46.293113079897594</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">46.293113079897594</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">92.586226159795189</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-92.586226159795189</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.8">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-64.891341589149164</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">64.891341589149164</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">129.78268317829833</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-129.78268317829833</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 1">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-86.795223701677997</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">86.795223701677997</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">173.59044740335599</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-173.59044740335599</Real>
+          </Vector>
+        </Forces>
+      </FEP>
+    </PBC>
+    <PBC Name="xyz">
+      <FEP Name="False">
+        <Sequence Name="Epot ">
+          <Int Name="Length">6</Int>
+          <Real>6.1685027506808492</Real>
+          <Real>6.2803674057491214</Real>
+          <Real>6.1257771113815638</Real>
+          <Real>5.750799159972523</Real>
+          <Real>5.2015008439163379</Real>
+          <Real>4.5239494556073554</Real>
+        </Sequence>
+        <Sequence Name="dVdlambda ">
+          <Int Name="Length">6</Int>
+          <Real>1.30223946958818</Real>
+          <Real>1.157035961011351</Real>
+          <Real>-0.20527406375876733</Real>
+          <Real>-2.5543541427504541</Real>
+          <Real>-5.6598678139919905</Real>
+          <Real>-9.2914786155116573</Real>
+        </Sequence>
+        <Forces Name="Lambda 0">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-15.707963267948966</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">15.707963267948966</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-15.707963267948966</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">15.707963267948966</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.2">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-33.070498666788552</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">33.070498666788552</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-33.070498666788552</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">33.070498666788552</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.4">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-51.591932688952376</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">51.591932688952376</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-51.591932688952376</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">51.591932688952376</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.6">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-70.776591826874039</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">70.776591826874039</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-70.776591826874039</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">70.776591826874039</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.8">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-90.128802572987169</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">90.128802572987169</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-90.128802572987169</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">90.128802572987169</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 1">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-109.15289141972536</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">109.15289141972536</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-109.15289141972536</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">109.15289141972536</Real>
+          </Vector>
+        </Forces>
+      </FEP>
+      <FEP Name="True">
+        <Sequence Name="Epot ">
+          <Int Name="Length">6</Int>
+          <Real>6.1685027506808492</Real>
+          <Real>6.2803674057491214</Real>
+          <Real>6.1257771113815638</Real>
+          <Real>5.750799159972523</Real>
+          <Real>5.2015008439163379</Real>
+          <Real>4.5239494556073554</Real>
+        </Sequence>
+        <Sequence Name="dVdlambda ">
+          <Int Name="Length">6</Int>
+          <Real>1.30223946958818</Real>
+          <Real>1.157035961011351</Real>
+          <Real>-0.20527406375876733</Real>
+          <Real>-2.5543541427504541</Real>
+          <Real>-5.6598678139919905</Real>
+          <Real>-9.2914786155116573</Real>
+        </Sequence>
+        <Forces Name="Lambda 0">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-15.707963267948966</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">15.707963267948966</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-15.707963267948966</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">15.707963267948966</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.2">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-33.070498666788552</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">33.070498666788552</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-33.070498666788552</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">33.070498666788552</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.4">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-51.591932688952376</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">51.591932688952376</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-51.591932688952376</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">51.591932688952376</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.6">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-70.776591826874039</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">70.776591826874039</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-70.776591826874039</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">70.776591826874039</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 0.8">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-90.128802572987169</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">90.128802572987169</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-90.128802572987169</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">90.128802572987169</Real>
+          </Vector>
+        </Forces>
+        <Forces Name="Lambda 1">
+          <Vector Name="Force  Atom 0">
+            <Real Name="X">-109.15289141972536</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 1">
+            <Real Name="X">109.15289141972536</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+          <Vector Name="Force  Atom 2">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">-109.15289141972536</Real>
+          </Vector>
+          <Vector Name="Force  Atom 3">
+            <Real Name="X">0</Real>
+            <Real Name="Y">0</Real>
+            <Real Name="Z">109.15289141972536</Real>
+          </Vector>
+        </Forces>
+      </FEP>
+    </PBC>
+  </Ifunc>
+</ReferenceData>
