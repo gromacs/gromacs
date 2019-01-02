@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Epot Improper Dih.">
+    <Int Name="Length">6</Int>
+    <Real>6.1685027506808492</Real>
+    <Real>7.4022033008170185</Real>
+    <Real>8.6359038509531878</Real>
+    <Real>9.869604401089358</Real>
+    <Real>11.103304951225528</Real>
+    <Real>12.337005501361698</Real>
+  </Sequence>
+  <Sequence Name="dVdlambda Improper Dih.">
+    <Int Name="Length">6</Int>
+    <Real>6.1685027506808492</Real>
+    <Real>12.337005501361698</Real>
+    <Real>18.505508252042546</Real>
+    <Real>24.674011002723397</Real>
+    <Real>30.842513753404248</Real>
+    <Real>37.011016504085099</Real>
+  </Sequence>
+  <Vector Name="Force Improper Dih. Atom 0 Lambda 0">
+    <Real Name="X">-15.707963267948966</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 1 Lambda 0">
+    <Real Name="X">15.707963267948966</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 2 Lambda 0">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">-15.707963267948966</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 3 Lambda 0">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">15.707963267948966</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 0 Lambda 0.2">
+    <Real Name="X">-34.557519189487721</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 1 Lambda 0.2">
+    <Real Name="X">34.557519189487721</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 2 Lambda 0.2">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">-34.557519189487721</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 3 Lambda 0.2">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">34.557519189487721</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 0 Lambda 0.4">
+    <Real Name="X">-56.548667764616269</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 1 Lambda 0.4">
+    <Real Name="X">56.548667764616269</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 2 Lambda 0.4">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">-56.548667764616269</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 3 Lambda 0.4">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">56.548667764616269</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 0 Lambda 0.6">
+    <Real Name="X">-81.681408993334614</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 1 Lambda 0.6">
+    <Real Name="X">81.681408993334614</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 2 Lambda 0.6">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">-81.681408993334614</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 3 Lambda 0.6">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">81.681408993334614</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 0 Lambda 0.8">
+    <Real Name="X">-109.95574287564276</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 1 Lambda 0.8">
+    <Real Name="X">109.95574287564276</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 2 Lambda 0.8">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">-109.95574287564276</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 3 Lambda 0.8">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">109.95574287564276</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 0 Lambda 1">
+    <Real Name="X">-141.37166941154069</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 1 Lambda 1">
+    <Real Name="X">141.37166941154069</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 2 Lambda 1">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">-141.37166941154069</Real>
+  </Vector>
+  <Vector Name="Force Improper Dih. Atom 3 Lambda 1">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">141.37166941154069</Real>
+  </Vector>
+</ReferenceData>

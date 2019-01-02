@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -127,9 +128,9 @@ class BondedTest : public ::testing::Test
         void testIfunc(int                         ftype,
                        const std::vector<t_iatom> &iatoms,
                        const t_iparams             iparams[],
-                       int                         epbc)
+                       int                         epbc,
+                       bool                        fep)
         {
-            real  lambda    = 0;
             real  dvdlambda = 0;
             rvec4 f[NATOMS];
             for (int i = 0; i < NATOMS; i++)
@@ -144,17 +145,68 @@ class BondedTest : public ::testing::Test
             t_pbc pbc;
             set_pbc(&pbc, epbc, box);
             int   ddgatindex = 0;
-            real  energy     = bondedFunction(ftype)(iatoms.size(),
-                                                     iatoms.data(),
-                                                     iparams,
-                                                     x, f, fshift,
-                                                     &pbc,
-                                                     /* const struct t_graph *g */ nullptr,
-                                                     lambda, &dvdlambda,
-                                                     /* const struct t_mdatoms *md */ nullptr,
-                                                     /* struct t_fcdata *fcd */ nullptr,
-                                                     &ddgatindex);
-            checker_.checkReal(energy, interaction_function[ftype].longname);
+            if (fep)
+            {
+                std::vector<real>                    energy;
+                std::vector<real>                    dvdl;
+                std::vector<std::vector<gmx::RVec> > forces;
+                const int nlambda = 5;
+                for (int i = 0; i <= nlambda; i++)
+                {
+                    real lambda = i/5.0;
+                    energy.push_back(bondedFunction(ftype)(iatoms.size(),
+                                                           iatoms.data(),
+                                                           iparams,
+                                                           x, f, fshift,
+                                                           &pbc,
+                                                           /* const struct t_graph *g */ nullptr,
+                                                           lambda, &dvdlambda,
+                                                           /* const struct t_mdatoms *md */ nullptr,
+                                                           /* struct t_fcdata *fcd */ nullptr,
+                                                           &ddgatindex));
+                    dvdl.push_back(dvdlambda);
+                    std::vector<gmx::RVec> flambda;
+                    for(int i = 0; i < NATOMS; i++)
+                    {
+                        flambda.push_back(f[i]);
+                    }
+                    forces.push_back(flambda);
+                }
+                std::string eid("Epot ");
+                eid.append(interaction_function[ftype].longname);
+                checker_.checkSequence(energy.begin(), energy.end(), eid.c_str());
+                std::string dvdlid("dVdlambda ");
+                dvdlid.append(interaction_function[ftype].longname);
+                checker_.checkSequence(dvdl.begin(), dvdl.end(), dvdlid.c_str());
+                int j = 0;
+                for(auto &flambda : forces)
+                {
+                    real lambda = j++/5.0;
+                    const rvec *force = as_rvec_array(flambda.data());
+                    for(int i = 0; i < NATOMS; i++)
+                    {
+                        std::string flid("Force ");
+                        flid.append(interaction_function[ftype].longname);
+                        flid.append(" Atom " + toString(i) + " Lambda " + toString(lambda));
+                        checker_.checkVector(force[i], flid.c_str());
+                    }
+                }   
+            }
+            else
+            {
+                real lambda = 0;
+                real energy = bondedFunction(ftype)(iatoms.size(),
+                                                    iatoms.data(),
+                                                    iparams,
+                                                    x, f, fshift,
+                                                    &pbc,
+                                                    /* const struct t_graph *g */ nullptr,
+                                                    lambda, &dvdlambda,
+                                                    /* const struct t_mdatoms *md */ nullptr,
+                                                    /* struct t_fcdata *fcd */ nullptr,
+                                                    &ddgatindex);
+                checker_.checkReal(energy, interaction_function[ftype].longname);
+            }
         }
 
 };
@@ -195,7 +247,7 @@ TEST_F (BondedTest, IfuncBondsPbcNo)
     t_iparams            iparams;
     iparams.harmonic.rA  = iparams.harmonic.rB  = 0.8;
     iparams.harmonic.krA = iparams.harmonic.krB = 50;
-    testIfunc(F_BONDS, iatoms, &iparams, epbcNONE);
+    testIfunc(F_BONDS, iatoms, &iparams, epbcNONE, 0);
 }
 
 TEST_F (BondedTest, IfuncBondsPbcXy)
@@ -204,7 +256,7 @@ TEST_F (BondedTest, IfuncBondsPbcXy)
     t_iparams            iparams;
     iparams.harmonic.rA  = iparams.harmonic.rB  = 0.8;
     iparams.harmonic.krA = iparams.harmonic.krB = 50;
-    testIfunc(F_BONDS, iatoms, &iparams, epbcXY);
+    testIfunc(F_BONDS, iatoms, &iparams, epbcXY, 0);
 }
 
 TEST_F (BondedTest, IfuncBondsPbcXyz)
@@ -213,7 +265,7 @@ TEST_F (BondedTest, IfuncBondsPbcXyz)
     t_iparams            iparams;
     iparams.harmonic.rA  = iparams.harmonic.rB  = 0.8;
     iparams.harmonic.krA = iparams.harmonic.krB = 50;
-    testIfunc(F_BONDS, iatoms, &iparams, epbcXYZ);
+    testIfunc(F_BONDS, iatoms, &iparams, epbcXYZ, 0);
 }
 
 TEST_F (BondedTest, IfuncAnglesPbcNo)
@@ -223,7 +275,7 @@ TEST_F (BondedTest, IfuncAnglesPbcNo)
     real                 k = 50;
     iparams.harmonic.rA  = iparams.harmonic.rB  = 100;
     iparams.harmonic.krA = iparams.harmonic.krB = k;
-    testIfunc(F_ANGLES, iatoms, &iparams, epbcNONE);
+    testIfunc(F_ANGLES, iatoms, &iparams, epbcNONE, 0);
 }
 
 TEST_F (BondedTest, IfuncAnglesPbcXy)
@@ -233,7 +285,7 @@ TEST_F (BondedTest, IfuncAnglesPbcXy)
     real                 k = 50;
     iparams.harmonic.rA  = iparams.harmonic.rB  = 100;
     iparams.harmonic.krA = iparams.harmonic.krB = k;
-    testIfunc(F_ANGLES, iatoms, &iparams, epbcXY);
+    testIfunc(F_ANGLES, iatoms, &iparams, epbcXY, 0);
 }
 
 TEST_F (BondedTest, IfuncAnglesPbcXYZ)
@@ -243,7 +295,7 @@ TEST_F (BondedTest, IfuncAnglesPbcXYZ)
     real                 k = 50;
     iparams.harmonic.rA  = iparams.harmonic.rB  = 100;
     iparams.harmonic.krA = iparams.harmonic.krB = k;
-    testIfunc(F_ANGLES, iatoms, &iparams, epbcXYZ);
+    testIfunc(F_ANGLES, iatoms, &iparams, epbcXYZ, 0);
 }
 
 TEST_F (BondedTest, IfuncProperDihedralsPbcNo)
@@ -253,7 +305,7 @@ TEST_F (BondedTest, IfuncProperDihedralsPbcNo)
     iparams.pdihs.phiA = iparams.pdihs.phiB = -100;
     iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10;
     iparams.pdihs.mult = 1;
-    testIfunc(F_PDIHS, iatoms, &iparams, epbcNONE);
+    testIfunc(F_PDIHS, iatoms, &iparams, epbcNONE, 0);
 }
 
 TEST_F (BondedTest, IfuncProperDihedralsPbcXy)
@@ -263,7 +315,7 @@ TEST_F (BondedTest, IfuncProperDihedralsPbcXy)
     iparams.pdihs.phiA = iparams.pdihs.phiB = -100;
     iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10;
     iparams.pdihs.mult = 1;
-    testIfunc(F_PDIHS, iatoms, &iparams, epbcXY);
+    testIfunc(F_PDIHS, iatoms, &iparams, epbcXY, 0);
 }
 
 TEST_F (BondedTest, IfuncProperDihedralsPbcXyz)
@@ -273,7 +325,69 @@ TEST_F (BondedTest, IfuncProperDihedralsPbcXyz)
     iparams.pdihs.phiA = iparams.pdihs.phiB = -100;
     iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10;
     iparams.pdihs.mult = 1;
-    testIfunc(F_PDIHS, iatoms, &iparams, epbcXYZ);
+    testIfunc(F_PDIHS, iatoms, &iparams, epbcXYZ, 0);
+}
+
+TEST_F (BondedTest, IfuncImproperDihedralsPbcNoFepNo)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.harmonic.rA  = iparams.harmonic.rB = 35.5;
+    iparams.harmonic.krA = 5;
+    iparams.harmonic.krB  = 10;
+    testIfunc(F_IDIHS, iatoms, &iparams, epbcNONE, false);
+}
+
+TEST_F (BondedTest, IfuncImproperDihedralsPbcXyFepNo)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.harmonic.rA  = 0;
+    iparams.harmonic.rB  = 10;
+    iparams.harmonic.krA = 5;
+    iparams.harmonic.krB = 10;
+    testIfunc(F_IDIHS, iatoms, &iparams, epbcXY, false);
+}
+
+TEST_F (BondedTest, IfuncImproperDihedralsPbcXyzFepNo)
+{
+    std::vector<t_iatom> iatoms  = { 0, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.harmonic.rA  = iparams.harmonic.rB  =  0;
+    iparams.harmonic.krA = 5;
+    iparams.harmonic.krB = 10;
+    testIfunc(F_IDIHS, iatoms, &iparams, epbcXYZ, false);
+}
+
+TEST_F (BondedTest, IfuncImproperDihedralsPbcNoFep)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.harmonic.rA  = iparams.harmonic.rB = 35.5;
+    iparams.harmonic.krA = 5;
+    iparams.harmonic.krB  = 10;
+    testIfunc(F_IDIHS, iatoms, &iparams, epbcNONE, true);
+}
+
+TEST_F (BondedTest, IfuncImproperDihedralsPbcXyFep)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.harmonic.rA  = 0;
+    iparams.harmonic.rB  = 10;
+    iparams.harmonic.krA = 5;
+    iparams.harmonic.krB = 10;
+    testIfunc(F_IDIHS, iatoms, &iparams, epbcXY, true);
+}
+
+TEST_F (BondedTest, IfuncImproperDihedralsPbcXyzFep)
+{
+    std::vector<t_iatom> iatoms  = { 0, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.harmonic.rA  = iparams.harmonic.rB  =  0;
+    iparams.harmonic.krA = 5;
+    iparams.harmonic.krB = 10;
+    testIfunc(F_IDIHS, iatoms, &iparams, epbcXYZ, true);
 }
 
 }  // namespace
