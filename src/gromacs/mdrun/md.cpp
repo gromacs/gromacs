@@ -234,7 +234,7 @@ void gmx::Integrator::do_md()
     const bool bRerunMD      = false;
     int        nstglobalcomm = mdrunOptions.globalCommunicationInterval;
 
-    nstglobalcomm   = check_nstglobalcomm(mdlog, nstglobalcomm, ir);
+    nstglobalcomm   = check_nstglobalcomm(mdlog, nstglobalcomm, ir, cr);
     bGStatEveryStep = (nstglobalcomm == 1);
 
     groups = &top_global->groups;

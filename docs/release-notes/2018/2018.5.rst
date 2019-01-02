@@ -19,6 +19,33 @@ was reduced to near machine precision. The change does not affect
 the results for non-polarizable systems, such as proteins or small
 molecules.
 
+Make large PME grids work on GPU
+"""""""""""""""""""""""""""""""""""""""""""
+
+PME grids with size along Z larger than 511 would make mdrun exit
+with a cryptic CUDA error.
+
+:issue: `2779`
+
+Fix LINCS accuracy with OpenMP when constraint triangles are present
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Constraint triangles, which usually only occur when replacing hydrogens
+by virtual interaction sites in CH3 and NH3 groups, need double the number
+of iterations as normal constraints. With OpenMP this would only happen
+when the last OpenMP thread has at least one such triangle. This would
+cause a slight loss of accuracy in inhomogeneous systems.
+
+:issue: `2808`
+
+Fix acceleration with ``cos-acceleration``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A factor of 2 was missing from the acceleration value, leading to incorrect
+results when e.g. calculating viscosities.
+
+:issue: `2572`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
