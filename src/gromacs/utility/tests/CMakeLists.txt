@@ -37,6 +37,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   arrayref.cpp
                   bitmask32.cpp bitmask64.cpp bitmask128.cpp
                   defaultinitializationallocator.cpp
+                  enumerationhelpers.cpp
                   keyvaluetreeserializer.cpp
                   keyvaluetreetransform.cpp
                   gmxregex.cpp
