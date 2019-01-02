@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,8 @@
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
@@ -71,7 +73,8 @@
 #define OPENDIR     '[' /* starting sign for directive		*/
 #define CLOSEDIR    ']' /* ending sign for directive		*/
 
-typedef struct {
+struct t_vsiteconf
+{
     char       atomtype[MAXNAME];  /* Type for the XH3/XH2 atom */
     bool       isplanar;           /* If true, the atomtype above and the three connected
                                     * ones are in a planar geometry. The two next entries
@@ -80,7 +83,7 @@ typedef struct {
     int    nhydrogens;             /* number of connected hydrogens */
     char   nextheavytype[MAXNAME]; /* Type for the heavy atom bonded to XH2/XH3 */
     char   dummymass[MAXNAME];     /* The type of MNH* or MCH3* dummy mass to use */
-} t_vsiteconf;
+};
 
 
 /* Structure to represent average bond and angles values in vsite aromatic
@@ -88,22 +91,25 @@ typedef struct {
  * forcefield; many forcefields (like Amber, OPLS) have some inherent strain in
  * 5-rings (i.e. the sum of angles is !=540, but impropers keep it planar)
  */
-typedef struct {
+struct t_vsitetop
+{
     char resname[MAXNAME];
     int  nbonds;
     int  nangles;
-    struct vsitetop_bond {
+    struct vsitetop_bond
+    {
         char   atom1[MAXNAME];
         char   atom2[MAXNAME];
         float  value;
     } *bond; /* list of bonds */
-    struct vsitetop_angle {
+    struct vsitetop_angle
+    {
         char   atom1[MAXNAME];
         char   atom2[MAXNAME];
         char   atom3[MAXNAME];
         float  value;
     } *angle; /* list of angles */
-} t_vsitetop;
+};
 
 
 enum {
@@ -557,7 +563,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     return type;
 }
 
-static int vsite_nm2type(const char *name, gpp_atomtype_t atype)
+static int vsite_nm2type(const char *name, gpp_atomtype *atype)
 {
     int tp;
 
@@ -861,7 +867,7 @@ static void calc_vsite3_param(real xd, real yd, real xi, real yi, real xj, real 
 }
 
 
-static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
+static int gen_vsites_trp(gpp_atomtype *atype, rvec *newx[],
                           t_atom *newatom[], char ***newatomname[],
                           int *o2n[], int *newvsite_type[], int *newcgnr[],
                           t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
@@ -1133,7 +1139,7 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
 }
 
 
-static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
+static int gen_vsites_tyr(gpp_atomtype *atype, rvec *newx[],
                           t_atom *newatom[], char ***newatomname[],
                           int *o2n[], int *newvsite_type[], int *newcgnr[],
                           t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
@@ -1533,7 +1539,7 @@ static bool is_vsite(int vsite_type)
 
 static char atomnamesuffix[] = "1234";
 
-void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
+void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
                t_atoms *at, t_symtab *symtab, rvec *x[],
                t_params plist[], int *vsite_type[], int *cgnr[],
                real mHmult, bool bVsiteAromatics,

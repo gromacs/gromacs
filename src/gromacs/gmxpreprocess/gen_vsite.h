@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,15 +38,19 @@
 #ifndef GMX_GMXPREPROCESS_GEN_VSITE_H
 #define GMX_GMXPREPROCESS_GEN_VSITE_H
 
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+
+struct gpp_atomtype;
+struct t_atoms;
+struct t_params;
+struct t_restp;
+struct t_symtab;
 
 /* stuff for pdb2gmx */
 
-void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
-               t_atoms *at, struct t_symtab *symtab, rvec *x[],
+void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
+               t_atoms *at, t_symtab *symtab, rvec *x[],
                t_params plist[], int *dummy_type[], int *cgnr[],
                real mHmult, bool bVSiteAromatics,
                const char *ffdir);

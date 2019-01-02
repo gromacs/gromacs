@@ -45,6 +45,7 @@
 #include <algorithm>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/topology/block.h"
@@ -202,7 +203,7 @@ void done_mi(t_molinfo *mi)
 
 /* PRINTING STRUCTURES */
 
-static void print_bt(FILE *out, Directive d, gpp_atomtype_t at,
+static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
                      int ftype, int fsubtype, t_params plist[],
                      bool bFullDih)
 {
@@ -430,7 +431,7 @@ static double get_residue_charge(const t_atoms *atoms, int at)
     return q;
 }
 
-void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
                  bool bRTPresname)
 {
     int         i, ri;
@@ -526,7 +527,7 @@ void print_bondeds(FILE *out, int natoms, Directive d,
                    int ftype, int fsubtype, t_params plist[])
 {
     t_symtab       stab;
-    gpp_atomtype_t atype;
+    gpp_atomtype  *atype;
     t_param       *param;
     t_atom        *a;
     int            i;

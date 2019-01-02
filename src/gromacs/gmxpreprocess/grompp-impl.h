@@ -44,42 +44,33 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct t_block;
-struct t_blocka;
-
 #define MAXSLEN 32
 
-typedef struct {
-    bool     bSet;          /* Has this combination been set        */
-    real     c[4];          /* The non-bonded parameters            */
-} t_nbparam;
-/* The t_nbparam struct is used to temporary store the explicit
- * non-bonded parameter combinations, which will be copied to t_params.
- */
-
-typedef struct {
+struct t_param
+{
     int        a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
     /* i = a[0] (ai), j = a[1] (aj))	*/
     real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
     char       s[MAXSLEN];       /* A string (instead of parameters),    *
                                   * read from the .rtp file in pdb2gmx   */
     const int &ai() const { return a[0]; }
-    int   &ai() { return a[0]; }
+    int       &ai() { return a[0]; }
     const int &aj() const { return a[1]; }
-    int   &aj() { return a[1]; }
+    int       &aj() { return a[1]; }
     const int &ak() const { return a[2]; }
-    int   &ak() { return a[2]; }
+    int       &ak() { return a[2]; }
     const int &al() const { return a[3]; }
-    int   &al() { return a[3]; }
+    int       &al() { return a[3]; }
     const int &am() const { return a[4]; }
-    int   &am() { return a[4]; }
+    int       &am() { return a[4]; }
 
     real      &c0() { return c[0]; }
     real      &c1() { return c[1]; }
     real      &c2() { return c[2]; }
-} t_param;
+};
 
-typedef struct {        // NOLINT (clang-analyzer-optin.performance.Padding)
+struct t_params
+{                       // NOLINT (clang-analyzer-optin.performance.Padding)
     int          nr;    /* The number of bonds in this record   */
     int          maxnr; /* The amount of elements in the array  */
     t_param     *param; /* Array of parameters (dim: nr or nr*nr) */
@@ -93,15 +84,16 @@ typedef struct {        // NOLINT (clang-analyzer-optin.performance.Padding)
 
     int        *cmap_types;   /* Store the five atomtypes followed by a number that identifies the type */
     int         nct;          /* Number of allocated elements in cmap_types */
+};
 
-} t_params;
-
-typedef struct {
+struct t_excls
+{
     int            nr;      /* The number of exclusions             */
     int           *e;       /* The excluded atoms                   */
-} t_excls;
+};
 
-typedef struct {
+struct t_molinfo
+{
     char            **name;
     int               nrexcl;       /* Number of exclusions per atom	*/
     bool              excl_set;     /* Have exclusions been generated?	*/
@@ -111,12 +103,13 @@ typedef struct {
     t_block           mols;         /* Molecules                            */
     t_blocka          excls;        /* Exclusions                           */
     t_params          plist[F_NRE]; /* Parameters in old style              */
-} t_molinfo;
+};
 
-typedef struct {
+struct t_mols
+{
     char *name;
     int   nr;
-} t_mols;
+};
 
 bool is_int(double x);
 /* Returns TRUE when x is integer */
