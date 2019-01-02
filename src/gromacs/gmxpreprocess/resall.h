@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,9 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_RESALL_H
 #define GMX_GMXPREPROCESS_RESALL_H
 
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
+#include <cstdio>
+
+struct gpp_atomtype;
+struct t_restp;
+struct t_symtab;
 
 char *search_rtp(const char *key, int nrtp, t_restp rtp[]);
 /* Search for an entry in the rtp database, returns the rtp residue name.
@@ -53,16 +55,16 @@ t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[]);
  * Generates a fatal error when rtpname is not found.
  */
 
-gpp_atomtype_t read_atype(const char *ffdir, struct t_symtab *tab);
+gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab);
 /* read atom type database(s) */
 
 void read_resall(const char *resdb, int *nrtp, t_restp **rtp,
-                 gpp_atomtype_t atype, struct t_symtab *tab,
+                 gpp_atomtype *atype, t_symtab *tab,
                  bool bAllowOverrideRTP);
 /* read rtp database, append to the existing database */
 
 void print_resall(FILE *out, int nrtp, t_restp rtp[],
-                  gpp_atomtype_t atype);
+                  gpp_atomtype *atype);
 /* write rtp database */
 
 #endif

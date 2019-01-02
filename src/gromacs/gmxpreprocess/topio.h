@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,13 +40,16 @@
 
 #include <vector>
 
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_molblock_t;
 struct gmx_mtop_t;
+struct gpp_atomtype;
 struct t_gromppopts;
 struct t_inputrec;
+struct t_molinfo;
+struct t_params;
+struct t_symtab;
 struct warninp;
 enum struct GmxQmmmMode;
 typedef warninp *warninp_t;
@@ -59,12 +62,12 @@ char **do_top(bool                          bVerbose,
               const char                   *topppfile,
               t_gromppopts                 *opts,
               bool                          bZero,
-              struct t_symtab              *symtab,
+              t_symtab                     *symtab,
               t_params                      plist[],
               int                          *combination_rule,
               double                       *repulsion_power,
               real                         *fudgeQQ,
-              gpp_atomtype_t                atype,
+              gpp_atomtype                 *atype,
               int                          *nrmols,
               t_molinfo                   **molinfo,
               t_molinfo                   **intermolecular_interactions,

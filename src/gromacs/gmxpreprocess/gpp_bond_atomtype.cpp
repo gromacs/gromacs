@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,21 +45,18 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct gpp_bond_atomtype
+{
     int              nr;       /* The number of atomtypes		*/
     char          ***atomname; /* Names of the atomtypes		*/
-} gpp_bond_atomtype;
+};
 
-int get_bond_atomtype_type(char *str, t_bond_atomtype at)
+int get_bond_atomtype_type(const char *str, gpp_bond_atomtype *at)
 {
-    gpp_bond_atomtype *ga = reinterpret_cast<gpp_bond_atomtype *>(at);
-
-    int                i;
-
-    for (i = 0; (i < ga->nr); i++)
+    for (int i = 0; (i < at->nr); i++)
     {
         /* Atom types are always case sensitive */
-        if (strcmp(str, *(ga->atomname[i])) == 0)
+        if (strcmp(str, *(at->atomname[i])) == 0)
         {
             return i;
         }
@@ -68,44 +65,38 @@ int get_bond_atomtype_type(char *str, t_bond_atomtype at)
     return NOTSET;
 }
 
-char *get_bond_atomtype_name(int nt, t_bond_atomtype at)
+char *get_bond_atomtype_name(int nt, gpp_bond_atomtype *at)
 {
-    gpp_bond_atomtype *ga = reinterpret_cast<gpp_bond_atomtype *>(at);
-
-    if ((nt < 0) || (nt >= ga->nr))
+    if ((nt < 0) || (nt >= at->nr))
     {
         return nullptr;
     }
 
-    return *(ga->atomname[nt]);
+    return *(at->atomname[nt]);
 }
 
-t_bond_atomtype init_bond_atomtype()
+gpp_bond_atomtype *init_bond_atomtype()
 {
     gpp_bond_atomtype *ga;
 
     snew(ga, 1);
 
-    return reinterpret_cast<t_bond_atomtype>(ga);
+    return ga;
 }
 
-void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
+void add_bond_atomtype(gpp_bond_atomtype *at, t_symtab *tab,
                        char *name)
 {
-    gpp_bond_atomtype *ga = reinterpret_cast<gpp_bond_atomtype *>(at);
-
-    ga->nr++;
-    srenew(ga->atomname, ga->nr);
-    ga->atomname[ga->nr-1] = put_symtab(tab, name);
+    at->nr++;
+    srenew(at->atomname, at->nr);
+    at->atomname[at->nr-1] = put_symtab(tab, name);
 }
 
-void done_bond_atomtype(t_bond_atomtype *at)
+void done_bond_atomtype(gpp_bond_atomtype **at)
 {
-    gpp_bond_atomtype *ga = reinterpret_cast<gpp_bond_atomtype *>(*at);
-
-    sfree(ga->atomname);
-    ga->nr = 0;
-    sfree(ga);
+    sfree((*at)->atomname);
+    (*at)->nr = 0;
+    sfree(*at);
 
     *at = nullptr;
 }

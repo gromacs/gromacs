@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,12 +45,15 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/nm2type.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
@@ -174,10 +177,10 @@ static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
     return cgnr;
 }
 
-static gpp_atomtype_t set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
-                                    int *nbonds, int nnm, t_nm2type nm2t[])
+static gpp_atomtype *set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
+                                   int *nbonds, int nnm, t_nm2type nm2t[])
 {
-    gpp_atomtype_t atype;
+    gpp_atomtype  *atype;
     int            nresolved;
 
     atype = init_atomtype();
@@ -333,7 +336,7 @@ static void print_pl(FILE *fp, t_params plist[], int ftp, const char *name,
 }
 
 static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
-                      t_params plist[], gpp_atomtype_t atype, int cgnr[])
+                      t_params plist[], gpp_atomtype *atype, int cgnr[])
 {
     FILE *fp;
     int   i, tp;
@@ -396,7 +399,7 @@ int gmx_x2top(int argc, char *argv[])
     FILE              *fp;
     t_params           plist[F_NRE];
     t_excls           *excls;
-    gpp_atomtype_t     atype;
+    gpp_atomtype      *atype;
     t_nextnb           nnb;
     t_nm2type         *nm2t;
     t_mols             mymol;
