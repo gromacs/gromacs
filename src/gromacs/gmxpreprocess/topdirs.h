@@ -85,10 +85,11 @@ enum class Directive : int
     Count
 };
 
-typedef struct tagDirStack {
+struct DirStack
+{
     Directive           d;
-    struct tagDirStack *prev;
-} DirStack;
+    DirStack           *prev;
+};
 
 int ifunc_index(Directive d, int type);
 

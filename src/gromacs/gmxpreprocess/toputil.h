@@ -38,9 +38,16 @@
 #ifndef GMX_GMXPREPROCESS_TOPUTIL_H
 #define GMX_GMXPREPROCESS_TOPUTIL_H
 
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include <cstdio>
 
 enum class Directive : int;
+struct gpp_atomtype;
+struct t_atoms;
+struct t_blocka;
+struct t_excls;
+struct t_molinfo;
+struct t_param;
+struct t_params;
 
 /* UTILITIES */
 
@@ -69,7 +76,7 @@ void done_mi(t_molinfo *mi);
 void print_blocka(FILE *out, const char *szName, const char *szIndex,
                   const char *szA, t_blocka *block);
 
-void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
                  bool bRTPresname);
 
 void print_bondeds(FILE *out, int natoms, Directive d,

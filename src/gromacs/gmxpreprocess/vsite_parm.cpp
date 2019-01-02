@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,8 @@
 #include <algorithm>
 
 #include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
@@ -390,7 +392,7 @@ static real get_angle(int nrang, t_mybonded angles[],
     return angle;
 }
 
-static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype_t atype)
+static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype *atype)
 {
     char *name;
 
@@ -414,7 +416,7 @@ static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype_t atype)
     return name;
 }
 
-static bool calc_vsite3_param(gpp_atomtype_t atype,
+static bool calc_vsite3_param(gpp_atomtype *atype,
                               t_param *param, t_atoms *at,
                               int nrbond, t_mybonded *bonds,
                               int nrang,  t_mybonded *angles )
@@ -552,7 +554,7 @@ static bool calc_vsite3fad_param(t_param *param,
     return bError;
 }
 
-static bool calc_vsite3out_param(gpp_atomtype_t atype,
+static bool calc_vsite3out_param(gpp_atomtype *atype,
                                  t_param *param, t_atoms *at,
                                  int nrbond, t_mybonded *bonds,
                                  int nrang,  t_mybonded *angles)
@@ -764,7 +766,7 @@ calc_vsite4fdn_param(t_param *param,
 
 
 
-int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
+int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
                t_params plist[])
 {
     int             i, j, ftype;

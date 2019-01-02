@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,9 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_HACKBLOCK_H
 #define GMX_GMXPREPROCESS_HACKBLOCK_H
 
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/topology/symtab.h"
+#include <cstdio>
+
+#include "gromacs/topology/ifunc.h"
+
+struct t_atom;
 
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
@@ -55,27 +57,30 @@ extern const int   btsNiatoms[ebtsNR];
    free/clear/copy/merge_t_* functions stay updated */
 
 /* BONDEDS */
-typedef struct {
+struct t_rbonded
+{
     char  *a[MAXATOMLIST]; /* atom names */
     char  *s;              /* optional define string which gets copied from
                               .rtp/.tdb to .top and will be parsed by cpp
                               during grompp */
-    bool match;            /* boolean to mark that the entry has been found */
+    bool     match;        /* boolean to mark that the entry has been found */
     char*   &ai() { return a[0]; }
     char*   &aj() { return a[1]; }
     char*   &ak() { return a[2]; }
     char*   &al() { return a[3]; }
     char*   &am() { return a[4]; }
-} t_rbonded;
+};
 
-typedef struct {
+struct t_rbondeds
+{
     int        type;     /* The type of bonded interaction */
     int        nb;       /* number of bondeds */
     t_rbonded *b;        /* bondeds */
-} t_rbondeds;
+};
 
 /* RESIDUES (rtp) */
-typedef struct {
+struct t_restp
+{
     char         *resname;
     /* The base file name this rtp entry was read from */
     char         *filebase;
@@ -91,10 +96,11 @@ typedef struct {
     bool          bRemoveDihedralIfWithImproper;
     /* list of bonded interactions to add */
     t_rbondeds    rb[ebtsNR];
-} t_restp;
+};
 
 /* Block to hack residues */
-typedef struct {
+struct t_hack
+{
     int      nr;      /* Number of atoms to hack    */
     char    *oname;   /* Old name                   */
     char    *nname;   /* New name                   */
@@ -116,9 +122,10 @@ typedef struct {
     char*      &aj() { return a[1]; }
     char*      &ak() { return a[2]; }
     char*      &al() { return a[3]; }
-} t_hack;
+};
 
-typedef struct {
+struct t_hackblock
+{
     char      *name;     /* Name of hack block (residue or terminus) */
     char      *filebase; /* The base file name this entry was read from */
     int        nhack;    /* Number of atoms to hack                  */
@@ -126,18 +133,7 @@ typedef struct {
     t_hack    *hack;     /* Hack list                                */
     /* list of bonded interactions to add */
     t_rbondeds rb[ebtsNR];
-} t_hackblock;
-
-typedef struct {
-    char *res1, *res2;
-    char *atom1, *atom2;
-    char *newres1, *newres2;
-    int   nbond1, nbond2;
-    real  length;
-} t_specbond;
-
-t_specbond *get_specbonds(int *nspecbond);
-void done_specbonds(int nsb, t_specbond sb[]);
+};
 
 void free_t_restp(int nrtp, t_restp **rtp);
 void free_t_hack(int nh, t_hack **h);

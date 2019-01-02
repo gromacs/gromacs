@@ -38,11 +38,19 @@
 #ifndef GMX_GMXPREPROCESS_TOPPUSH_H
 #define GMX_GMXPREPROCESS_TOPPUSH_H
 
-#include "gromacs/fileio/warninp.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
+#include "gromacs/utility/real.h"
 
 enum class Directive : int;
+struct gpp_atomtype;
+struct gpp_bond_atomtype;
+struct t_atoms;
+struct t_block;
+struct t_molinfo;
+struct t_nbparam;
+struct t_param;
+struct t_params;
+struct t_restp;
+struct warninp;
 
 namespace gmx
 {
@@ -50,62 +58,66 @@ struct ExclusionBlocks;
 } // namespace gmx
 
 void generate_nbparams(int comb, int funct, t_params plist[],
-                       gpp_atomtype_t atype,
-                       warninp_t wi);
+                       gpp_atomtype *atype,
+                       warninp *wi);
 
-void push_at (struct t_symtab *symtab, gpp_atomtype_t at,
-              t_bond_atomtype bat, char *line, int nb_funct,
+void push_at (struct t_symtab *symtab, gpp_atomtype *at,
+              gpp_bond_atomtype *bat, char *line, int nb_funct,
               t_nbparam ***nbparam, t_nbparam ***pair,
-              warninp_t wi);
+              warninp *wi);
 
 void push_bt(Directive d, t_params bt[], int nral,
-             gpp_atomtype_t at, t_bond_atomtype bat, char *line,
-             warninp_t wi);
+             gpp_atomtype *at, gpp_bond_atomtype *bat, char *line,
+             warninp *wi);
 
 void push_dihedraltype(Directive d, t_params bt[],
-                       t_bond_atomtype bat, char *line,
-                       warninp_t wi);
+                       gpp_bond_atomtype *bat, char *line,
+                       warninp *wi);
 
-void push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype_t at,
-                   t_bond_atomtype bat, char *line,
-                   warninp_t wi);
+void push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
+                   gpp_bond_atomtype *bat, char *line,
+                   warninp *wi);
 
-void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype_t atype,
+void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
               char *plines, int nb_funct,
-              warninp_t wi);
+              warninp *wi);
 
 void push_atom(struct t_symtab *symtab,
                t_block         *cgs,
                t_atoms         *at,
-               gpp_atomtype_t   atype,
+               gpp_atomtype    *atype,
                char            *line,
                int             *lastcg,
-               warninp_t        wi);
+               warninp         *wi);
 
 void push_bond(Directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype_t atype, char *line,
+               t_atoms *at, gpp_atomtype *atype, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
-               warninp_t wi);
+               warninp *wi);
 
 void push_cmap(Directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype_t atype, char *line,
-               warninp_t wi);
+               t_atoms *at, gpp_atomtype *atype, char *line,
+               warninp *wi);
 
 void push_vsitesn(Directive d, t_params bond[],
                   t_atoms *at, char *line,
-                  warninp_t wi);
+                  warninp *wi);
 
 void push_mol(int nrmols, t_molinfo mols[], char *pline,
               int *whichmol, int *nrcopies,
-              warninp_t wi);
+              warninp *wi);
 
 void push_molt(struct t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
-               warninp_t wi);
+               warninp *wi);
 
-void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp_t wi);
+void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp *wi);
 
-int add_atomtype_decoupled(struct t_symtab *symtab, gpp_atomtype_t at,
+int copy_nbparams(t_nbparam **param, int ftype, t_params *plist, int nr);
+
+void free_nbparam(t_nbparam **param, int nr);
+
+int add_atomtype_decoupled(struct t_symtab *symtab, gpp_atomtype *at,
                            t_nbparam ***nbparam, t_nbparam ***pair);
 /* Add an atom type with all parameters set to zero (no interactions).
  * Returns the atom type number.
@@ -116,7 +128,7 @@ void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple,
                             int couple_lam0, int couple_lam1,
                             bool bCoupleIntra,
                             int nb_funct, t_params *nbp,
-                            warninp_t wi);
+                            warninp *wi);
 /* Setup mol such that the B-state has no interaction with the rest
  * of the system, but full interaction with itself.
  */
