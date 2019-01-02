@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <cmath>
 
 #include <memory>
+#include <unordered_map>
 
 #include <gtest/gtest.h>
 
@@ -55,6 +56,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -156,7 +158,90 @@ class BondedTest : public ::testing::Test
                                                      &ddgatindex);
             checker_.checkReal(energy, interaction_function[ftype].longname);
         }
-
+        void testIfuncAll(int                         ftype,
+                          const std::vector<t_iatom> &iatoms,
+                          const t_iparams            &iparams_nofep,
+                          const t_iparams            &iparams_fep)
+        {
+            std::vector<int> epbc = { epbcNONE, epbcXY, epbcXYZ };
+            for (auto &e : epbc)
+            {
+                for (int ifep = 0; ifep < 2; ifep++)
+                {
+                    bool  fep = static_cast<bool>(ifep);
+                    t_pbc pbc;
+                    set_pbc(&pbc, e, box);
+                    std::unordered_map<bool, std::string> bool_names =
+                        {
+                            { false, "False" }, { true, "True" }
+                        };
+                    auto ifuncChecker = checker_.
+                        checkCompound("Ifunc", interaction_function[ftype].longname).
+                        checkCompound("PBC", epbc_names[e]).
+                        checkCompound("FEP", bool_names[fep].c_str());
+                    std::vector<real>                    energy;
+                    std::vector<real>                    dvdl;
+                    std::vector<std::vector<gmx::RVec> > forces;
+                    const int nlambda = fep ? 5 : 1;
+                    for (int i = 0; i < nlambda+ifep; i++)
+                    {
+                        real  lambda     = i/(1.0*nlambda);
+                        real  dvdlambda  = 0;
+                        int   ddgatindex = 0;
+                        rvec  fshift[N_IVEC];
+                        clear_rvecs(N_IVEC, fshift);
+                        rvec4 f[NATOMS];
+                        for (int k = 0; k < NATOMS; k++)
+                        {
+                            for (int j = 0; j < 4; j++)
+                            {
+                                f[k][j] = 0;
+                            }
+                        }
+                        energy.push_back(bondedFunction(ftype)(iatoms.size(),
+                                                               iatoms.data(),
+                                                               fep ? &iparams_fep : &iparams_nofep,
+                                                               x, f, fshift,
+                                                               &pbc,
+                                                               /* const struct t_graph *g */ nullptr,
+                                                               lambda, &dvdlambda,
+                                                               /* const struct t_mdatoms *md */ nullptr,
+                                                               /* struct t_fcdata *fcd */ nullptr,
+                                                               &ddgatindex));
+                        if (fep)
+                        {
+                            dvdl.push_back(dvdlambda);
+                        }
+                        std::vector<gmx::RVec> flambda;
+                        for(int i = 0; i < NATOMS; i++)
+                        {
+                            flambda.push_back(f[i]);
+                        }
+                        forces.push_back(flambda);
+                    }
+                    std::string eid("Epot ");
+                    ifuncChecker.checkSequence(energy.begin(), energy.end(), eid.c_str());
+                    if (fep)
+                    {
+                        std::string dvdlid("dVdlambda ");
+                        ifuncChecker.checkSequence(dvdl.begin(), dvdl.end(), dvdlid.c_str());
+                    }
+                    int j = 0;
+                    for(auto &flambda : forces)
+                    {
+                        real lambda = j++/(1.0*nlambda);
+                        auto forceChecker = ifuncChecker.checkCompound("Forces", "Lambda " + toString(lambda));
+                        const rvec *force = as_rvec_array(flambda.data());
+                        for(int i = 0; i < NATOMS; i++)
+                        {
+                            std::string flid("Force ");
+                            flid.append(" Atom " + toString(i));
+                            forceChecker.checkVector(force[i], flid.c_str());
+                        }
+                    }
+                }
+            }
+        }
 };
 
 TEST_F (BondedTest, BondAnglePbcNone)
@@ -274,6 +359,18 @@ TEST_F (BondedTest, IfuncProperDihedralsPbcXyz)
     iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10;
     iparams.pdihs.mult = 1;
     testIfunc(F_PDIHS, iatoms, &iparams, epbcXYZ);
+}
+
+TEST_F (BondedTest, IfuncImproperDihedrals)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
+    t_iparams            iparams_nofep, iparams_fep;
+    iparams_nofep.harmonic.rA  = iparams_nofep.harmonic.rB  = 0;
+    iparams_nofep.harmonic.krA = iparams_nofep.harmonic.krB = 5;
+    iparams_fep                = iparams_nofep;
+    iparams_fep.harmonic.rB    = 35.5;
+    iparams_fep.harmonic.krB   = 10;
+    testIfuncAll(F_IDIHS, iatoms, iparams_nofep, iparams_fep);
 }
 
 }  // namespace
