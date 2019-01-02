@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,8 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
-#include "gromacs/gmxpreprocess/toputil.h"
+
+enum class Directive : int;
 
 namespace gmx
 {
@@ -57,19 +58,19 @@ void push_at (struct t_symtab *symtab, gpp_atomtype_t at,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp_t wi);
 
-void push_bt(directive d, t_params bt[], int nral,
+void push_bt(Directive d, t_params bt[], int nral,
              gpp_atomtype_t at, t_bond_atomtype bat, char *line,
              warninp_t wi);
 
-void push_dihedraltype(directive d, t_params bt[],
+void push_dihedraltype(Directive d, t_params bt[],
                        t_bond_atomtype bat, char *line,
                        warninp_t wi);
 
-void push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
+void push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype_t at,
                    t_bond_atomtype bat, char *line,
                    warninp_t wi);
 
-void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
+void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype_t atype,
               char *plines, int nb_funct,
               warninp_t wi);
 
@@ -81,17 +82,17 @@ void push_atom(struct t_symtab *symtab,
                int             *lastcg,
                warninp_t        wi);
 
-void push_bond(directive d, t_params bondtype[], t_params bond[],
+void push_bond(Directive d, t_params bondtype[], t_params bond[],
                t_atoms *at, gpp_atomtype_t atype, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
                warninp_t wi);
 
-void push_cmap(directive d, t_params bondtype[], t_params bond[],
+void push_cmap(Directive d, t_params bondtype[], t_params bond[],
                t_atoms *at, gpp_atomtype_t atype, char *line,
                warninp_t wi);
 
-void push_vsitesn(directive d, t_params bond[],
+void push_vsitesn(Directive d, t_params bond[],
                   t_atoms *at, char *line,
                   warninp_t wi);
 
