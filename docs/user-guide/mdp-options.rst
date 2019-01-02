@@ -1075,7 +1075,7 @@ Temperature coupling
    integrators, the leap-frog :mdp-value:`integrator=md` integrator
    only supports 1. Data for the NH chain variables is not printed
    to the :ref:`edr` file by default, but can be turned on with the
-   :mdp:`print-nose-hoover-chains` option.
+   :mdp:`print-nose-hoover-chain-variables` option.
 
 .. mdp:: print-nose-hoover-chain-variables
 
@@ -3050,7 +3050,7 @@ Electric fields
    E(t) = E0 exp ( -(t-t0)\ :sup:`2`/(2 sigma\ :sup:`2`) ) cos(omega (t-t0))
 
    For example, the four parameters for direction x are set in the
-   three fields of :mdp:`electric-field-x` (and similar for y and z)
+   three fields of ``electric-field-x`` (and similar for y and z)
    like
 
    electric-field-x  = E0 omega t0 sigma
