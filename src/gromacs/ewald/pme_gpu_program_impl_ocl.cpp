@@ -222,26 +222,29 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
         // TODO use a map with string key instead?
         if (!strcmp(kernelNamesBuffer.data(), "pmeSplineKernel"))
         {
-            splineKernel = kernel;
+            splineKernel             = kernel;
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernel"))
         {
-            splineAndSpreadKernel = kernel;
+            splineAndSpreadKernel             = kernel;
+            splineAndSpreadKernelWriteSplines = kernel;
             checkRequiredWarpSize(splineAndSpreadKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeSpreadKernel"))
         {
-            spreadKernel = kernel;
+            spreadKernel             = kernel;
             checkRequiredWarpSize(spreadKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherKernel"))
         {
-            gatherKernel = kernel;
+            gatherKernel            = kernel;
+            gatherKernelReadSplines = kernel;
             checkRequiredWarpSize(gatherKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherReduceWithInputKernel"))
         {
-            gatherReduceWithInputKernel = kernel;
+            gatherReduceWithInputKernel            = kernel;
+            gatherReduceWithInputKernelReadSplines = kernel;
             checkRequiredWarpSize(gatherReduceWithInputKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernel"))

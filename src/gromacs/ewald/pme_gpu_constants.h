@@ -125,14 +125,20 @@ constexpr int c_pmeGpuOrder = 4;
  * The assumption is currently that any thread processes only a single atom's contributions.
  * TODO: this assumption leads to minimum execution width of 16. See Redmine #2516
  */
-constexpr int c_pmeSpreadGatherThreadsPerAtom = (c_pmeGpuOrder * c_pmeGpuOrder);
+constexpr int c_pmeSpreadGatherThreadsPerAtom  = c_pmeGpuOrder*c_pmeGpuOrder;
+
+//! Number of threads per atom when order threads are used
+constexpr int c_pmeSpreadGatherThreadsPerAtom4ThPerAtom = c_pmeGpuOrder;
 
 /*! \brief Minimum execution width of the PME spread and gather kernels.
  *
  * Due to the one thread per atom and order=4 implementation constraints, order^2 threads
  * should execute without synchronization needed. See c_pmeSpreadGatherThreadsPerAtom
  */
-constexpr int c_pmeSpreadGatherMinWarpSize = c_pmeSpreadGatherThreadsPerAtom;
+constexpr int c_pmeSpreadGatherMinWarpSize  = c_pmeSpreadGatherThreadsPerAtom;
+
+//! Minimum warp size if order threads pera atom are used instead of order^2
+constexpr int c_pmeSpreadGatherMinWarpSize4ThPerAtom = c_pmeSpreadGatherThreadsPerAtom4ThPerAtom;
 
 /*! \brief
  * Atom data alignment (in terms of number of atoms).
@@ -142,7 +148,7 @@ constexpr int c_pmeSpreadGatherMinWarpSize = c_pmeSpreadGatherThreadsPerAtom;
  * Then the numbers of atoms which would fit in the padded GPU buffers have to be divisible by this.
  * There are debug asserts for this divisibility in pme_gpu_spread() and pme_gpu_gather().
  */
-constexpr int c_pmeAtomDataAlignment = 32;
+constexpr int c_pmeAtomDataAlignment = 64;
 
 /*
  * The execution widths for PME GPU kernels, used both on host and device for correct scheduling.
@@ -176,7 +182,10 @@ constexpr int c_gatherMaxWarpsPerBlock = 4;
  * This macro depends on the templated order parameter (2 atoms per warp for order 4 and warp_size of 32).
  * It is mostly used for spline data layout tweaked for coalesced access.
  */
-constexpr int c_pmeSpreadGatherAtomsPerWarp = (warp_size / c_pmeSpreadGatherThreadsPerAtom);
+constexpr int c_pmeSpreadGatherAtomsPerWarp  = (warp_size / c_pmeSpreadGatherThreadsPerAtom);
+
+//! number of atoms per warp when order threads are used per atom
+constexpr int c_pmeSpreadGatherAtomsPerWarp4ThPerAtom = (warp_size / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom);
 
 //! Spreading max block size in threads
 constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;

@@ -99,24 +99,41 @@ struct PmeGpuProgramImpl
     //@{
     /**
      * Spread/spline kernels are compiled only for order of 4.
+     * There are multiple versions of each kernel, paramaretized according to
+     *   Number of threads per atom. Using either order(4) or order*order (16) threads per atom is supported
+     *   If the spline data is written in the spline/spread kernel and loaded in the gather
+     *   or recalculated in the gather.
      * Spreading kernels also have hardcoded X/Y indices wrapping parameters,
      * as a placeholder for implementing 1/2D decomposition.
      */
     size_t          spreadWorkGroupSize;
 
     PmeKernelHandle splineKernel;
+    PmeKernelHandle splineKernelThPerAtom4;
     PmeKernelHandle spreadKernel;
+    PmeKernelHandle spreadKernelThPerAtom4;
     PmeKernelHandle splineAndSpreadKernel;
+    PmeKernelHandle splineAndSpreadKernelThPerAtom4;
+    PmeKernelHandle splineAndSpreadKernelWriteSplines;
+    PmeKernelHandle splineAndSpreadKernelWriteSplinesThPerAtom4;
     //@}
 
     //@{
     /** Same for gather: hardcoded X/Y unwrap parameters, order of 4, plus
      * it can either reduce with previous forces in the host buffer, or ignore them.
+     * Also similarly to the gather we can use either order(4) or order*order (16) threads per atom
+     * and either recalculate the splines or read the ones written by the spread
      */
     size_t          gatherWorkGroupSize;
 
     PmeKernelHandle gatherReduceWithInputKernel;
+    PmeKernelHandle gatherReduceWithInputKernelThPerAtom4;
     PmeKernelHandle gatherKernel;
+    PmeKernelHandle gatherKernelThPerAtom4;
+    PmeKernelHandle gatherReduceWithInputKernelReadSplines;
+    PmeKernelHandle gatherReduceWithInputKernelReadSplinesThPerAtom4;
+    PmeKernelHandle gatherKernelReadSplines;
+    PmeKernelHandle gatherKernelReadSplinesThPerAtom4;
     //@}
 
     //@{
