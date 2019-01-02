@@ -543,7 +543,7 @@ if (SPHINX_FOUND)
     add_custom_target(install-guide
         COMMAND
             ${SPHINX_EXECUTABLE}
-            -q -E -b text
+            -q -b text
             -w sphinx-install.log
             -d ${CMAKE_CURRENT_BINARY_DIR}/install-guide/_doctrees
             -c ${SPHINX_INPUT_DIR}
@@ -566,12 +566,13 @@ if (SPHINX_FOUND)
     add_custom_target(webpage-sphinx
         DEPENDS sphinx-programs
         DEPENDS sphinx-input
-        DEPENDS sphinx-image-conversion 
+        DEPENDS sphinx-image-conversion
+        DEPENDS manual 
         COMMAND
             ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
         COMMAND
             ${SPHINX_EXECUTABLE}
-            -q -E -b html
+            -q -b html
             -w sphinx-html.log
             -d "${SPHINX_CACHE_DIR}"
             "${SPHINX_INPUT_DIR}"
@@ -585,7 +586,7 @@ if (SPHINX_FOUND)
     add_custom_target(man
         COMMAND
             ${SPHINX_EXECUTABLE}
-            -q -E -b man
+            -q -b man
             -w sphinx-man.log
             -d ${SPHINX_CACHE_DIR}
             -t do_man
