@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -202,7 +202,7 @@ void done_mi(t_molinfo *mi)
 
 /* PRINTING STRUCTURES */
 
-static void print_bt(FILE *out, directive d, gpp_atomtype_t at,
+static void print_bt(FILE *out, Directive d, gpp_atomtype_t at,
                      int ftype, int fsubtype, t_params plist[],
                      bool bFullDih)
 {
@@ -395,7 +395,7 @@ void print_excl(FILE *out, int natoms, t_excls excls[])
 
     if (have_excl)
     {
-        fprintf (out, "[ %s ]\n", dir2str(d_exclusions));
+        fprintf (out, "[ %s ]\n", dir2str(Directive::d_exclusions));
         fprintf (out, "; %4s    %s\n", "i", "excluded from i");
         for (i = 0; i < natoms; i++)
         {
@@ -439,7 +439,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
     char       *tpnmA, *tpnmB;
     double      qres, qtot;
 
-    as = dir2str(d_atoms);
+    as = dir2str(Directive::d_atoms);
     fprintf(out, "[ %s ]\n", as);
     fprintf(out, "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
             "nr", "type", "resnr", "residue", "atom", "cgnr", "charge", "mass", "typeB", "chargeB", "massB");
@@ -522,7 +522,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
     fflush(out);
 }
 
-void print_bondeds(FILE *out, int natoms, directive d,
+void print_bondeds(FILE *out, int natoms, Directive d,
                    int ftype, int fsubtype, t_params plist[])
 {
     t_symtab       stab;

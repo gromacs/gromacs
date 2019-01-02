@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,76 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Test routines that handle topology directive data structures
+ * and files.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ */
+#include "gmxpre.h"
 
-#ifndef GMX_GMXPREPROCESS_TOPDIRS_H
-#define GMX_GMXPREPROCESS_TOPDIRS_H
+#include "gromacs/gmxpreprocess/topdirs.h"
 
-/* Must correspond to strings in topdirs.cpp */
-enum class Directive : int
+#include <gtest/gtest.h>
+
+#include "gromacs/utility/enumerationhelpers.h"
+
+TEST(TopDirTests, NamesArrayHasCorrectSize)
 {
-    d_defaults,
-    d_atomtypes,
-    d_bondtypes,
-    d_constrainttypes,
-    d_pairtypes,
-    d_angletypes,
-    d_dihedraltypes,
-    d_nonbond_params,
-    d_implicit_genborn_params,
-    d_implicit_surface_params,
-    d_cmaptypes,
-    d_moleculetype,
-    d_atoms,
-    d_vsites2,
-    d_vsites3,
-    d_vsites4,
-    d_vsitesn,
-    d_bonds,
-    d_exclusions,
-    d_pairs,
-    d_pairs_nb,
-    d_angles,
-    d_dihedrals,
-    d_constraints,
-    d_settles,
-    d_polarization,
-    d_water_polarization,
-    d_thole_polarization,
-    d_system,
-    d_molecules,
-    d_position_restraints,
-    d_angle_restraints,
-    d_angle_restraints_z,
-    d_distance_restraints,
-    d_orientation_restraints,
-    d_dihedral_restraints,
-    d_cmap,
-    d_intermolecular_interactions,
-    d_maxdir,
-    d_invalid,
-    d_none,
-    Count
-};
-
-typedef struct tagDirStack {
-    Directive           d;
-    struct tagDirStack *prev;
-} DirStack;
-
-int ifunc_index(Directive d, int type);
-
-const char *dir2str (Directive d);
-
-Directive str2dir (char *dstr);
-
-void DS_Init (DirStack **DS);
-
-void DS_Done (DirStack **DS);
-
-void DS_Push (DirStack **DS, Directive d);
-
-int  DS_Search (DirStack *DS, Directive d);
-
-int  DS_Check_Order (DirStack *DS, Directive d);
-
-#endif
+    for (auto d : gmx::EnumerationIterator<Directive>())
+    {
+        // If the enumeration is extended, but there is no matching
+        // name, then at least one element will be value initialized,
+        // ie. to nullptr, which this test will catch.
+        auto name = dir2str(d);
+        EXPECT_NE(name, nullptr);
+    }
+}

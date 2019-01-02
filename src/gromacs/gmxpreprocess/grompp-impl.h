@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,50 +120,5 @@ typedef struct {
 
 bool is_int(double x);
 /* Returns TRUE when x is integer */
-
-/* Must correspond to strings in topdirs.c */
-typedef enum {
-    d_defaults,
-    d_atomtypes,
-    d_bondtypes,
-    d_constrainttypes,
-    d_pairtypes,
-    d_angletypes,
-    d_dihedraltypes,
-    d_nonbond_params,
-    d_implicit_genborn_params,
-    d_implicit_surface_params,
-    d_cmaptypes,
-    d_moleculetype,
-    d_atoms,
-    d_vsites2,
-    d_vsites3,
-    d_vsites4,
-    d_vsitesn,
-    d_bonds,
-    d_exclusions,
-    d_pairs,
-    d_pairs_nb,
-    d_angles,
-    d_dihedrals,
-    d_constraints,
-    d_settles,
-    d_polarization,
-    d_water_polarization,
-    d_thole_polarization,
-    d_system,
-    d_molecules,
-    d_position_restraints,
-    d_angle_restraints,
-    d_angle_restraints_z,
-    d_distance_restraints,
-    d_orientation_restraints,
-    d_dihedral_restraints,
-    d_cmap,
-    d_intermolecular_interactions,
-    d_maxdir,
-    d_invalid,
-    d_none
-} directive;
 
 #endif
