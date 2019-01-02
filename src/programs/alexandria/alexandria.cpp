@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018
+ * Copyright (C) 2014-2019
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -59,7 +59,7 @@ main(int argc, char *argv[])
         if (MASTER(cr))
         {
             printf("\n                   Welcome to Alexandria\n\n");
-            printf("                  Copyright (c) 2014-2018\n\n");
+            printf("                  Copyright (c) 2014-2019\n\n");
             printf("Mohammad M. Ghahremanpour, Paul J. van Maaren and David van der Spoel\n\n");
             printf("See http://folding.bmc.uu.se/ for details.\n\n");
             printf("Alexandria is free software under the Gnu Public License v 2.\n");
