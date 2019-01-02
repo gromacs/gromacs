@@ -56,7 +56,9 @@
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/genhydro.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/hizzie.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
@@ -1967,7 +1969,7 @@ int pdb2gmx::run()
     check_occupancy(&pdba_all, inputConfFile_.c_str(), bVerbose_);
 
     /* Read atomtypes... */
-    gpp_atomtype_t atype = read_atype(ffdir_, &symtab);
+    gpp_atomtype *atype = read_atype(ffdir_, &symtab);
 
     /* read residue database */
     printf("Reading residue database... (%s)\n", forcefield_);

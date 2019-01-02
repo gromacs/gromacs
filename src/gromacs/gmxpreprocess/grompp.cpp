@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -196,7 +196,7 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
     }
 }
 
-static void check_cg_sizes(const char *topfn, const t_block *cgs, warninp_t wi)
+static void check_cg_sizes(const char *topfn, const t_block *cgs, warninp *wi)
 {
     int  maxsize, cg;
     char warn_buf[STRLEN];
@@ -224,7 +224,7 @@ static void check_cg_sizes(const char *topfn, const t_block *cgs, warninp_t wi)
     }
 }
 
-static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi)
+static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp *wi)
 {
     /* This check is not intended to ensure accurate integration,
      * rather it is to signal mistakes in the mdp settings.
@@ -381,7 +381,7 @@ static void check_vel(gmx_mtop_t *mtop, rvec v[])
 
 static void check_shells_inputrec(gmx_mtop_t *mtop,
                                   t_inputrec *ir,
-                                  warninp_t   wi)
+                                  warninp    *wi)
 {
     gmx_mtop_atomloop_all_t aloop;
     const t_atom           *atom;
@@ -499,12 +499,12 @@ static void
 new_status(const char *topfile, const char *topppfile, const char *confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
            bool bGenVel, bool bVerbose, t_state *state,
-           gpp_atomtype_t atype, gmx_mtop_t *sys,
+           gpp_atomtype *atype, gmx_mtop_t *sys,
            int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
            t_params plist[],
            int *comb, double *reppow, real *fudgeQQ,
            gmx_bool bMorse,
-           warninp_t wi)
+           warninp *wi)
 {
     t_molinfo                  *molinfo = nullptr;
     std::vector<gmx_molblock_t> molblock;
@@ -820,7 +820,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                         const char *fn,
                         int rc_scaling, int ePBC,
                         rvec com,
-                        warninp_t wi)
+                        warninp *wi)
 {
     gmx_bool           *hadAtom;
     rvec               *x, *v;
@@ -997,7 +997,7 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
                        const char *fnA, const char *fnB,
                        int rc_scaling, int ePBC,
                        rvec com, rvec comB,
-                       warninp_t wi)
+                       warninp *wi)
 {
     read_posres  (mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
     /* It is safer to simply read the b-state posres rather than trying
@@ -1006,8 +1006,8 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
     read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
 }
 
-static void set_wall_atomtype(gpp_atomtype_t at, t_gromppopts *opts,
-                              t_inputrec *ir, warninp_t wi)
+static void set_wall_atomtype(gpp_atomtype *at, t_gromppopts *opts,
+                              t_inputrec *ir, warninp *wi)
 {
     int  i;
     char warn_buf[STRLEN];
@@ -1197,7 +1197,7 @@ static void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
 }
 
 
-static int count_constraints(const gmx_mtop_t *mtop, t_molinfo *mi, warninp_t wi)
+static int count_constraints(const gmx_mtop_t *mtop, t_molinfo *mi, warninp *wi)
 {
     int             count, count_mol, i;
     t_params       *plist;
@@ -1261,7 +1261,7 @@ static real calc_temp(const gmx_mtop_t *mtop,
 }
 
 static real get_max_reference_temp(const t_inputrec *ir,
-                                   warninp_t         wi)
+                                   warninp          *wi)
 {
     real         ref_t;
     int          i;
@@ -1298,7 +1298,7 @@ static real get_max_reference_temp(const t_inputrec *ir,
  */
 static void checkForUnboundAtoms(const gmx_moltype_t     *molt,
                                  gmx_bool                 bVerbose,
-                                 warninp_t                wi)
+                                 warninp                 *wi)
 {
     const t_atoms *atoms = &molt->atoms;
 
@@ -1356,7 +1356,7 @@ static void checkForUnboundAtoms(const gmx_moltype_t     *molt,
 /* Checks all moleculetypes for unbound atoms */
 static void checkForUnboundAtoms(const gmx_mtop_t     *mtop,
                                  gmx_bool              bVerbose,
-                                 warninp_t             wi)
+                                 warninp              *wi)
 {
     for (const gmx_moltype_t &molt : mtop->moltype)
     {
@@ -1456,7 +1456,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t            &molt,
  */
 static void checkDecoupledModeAccuracy(const gmx_mtop_t *mtop,
                                        const t_inputrec *ir,
-                                       warninp_t         wi)
+                                       warninp          *wi)
 {
     /* We only have issues with decoupled modes with normal MD.
      * With stochastic dynamics equipartitioning is enforced strongly.
@@ -1542,7 +1542,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               t_inputrec       *ir,
                               real              buffer_temp,
                               matrix            box,
-                              warninp_t         wi)
+                              warninp          *wi)
 {
     real                   rlist_1x1;
     int                    n_nonlin_vsite;
@@ -1689,7 +1689,7 @@ int gmx_grompp(int argc, char *argv[])
     t_gromppopts          *opts;
     int                    nmi;
     t_molinfo             *mi, *intermolecular_interactions;
-    gpp_atomtype_t         atype;
+    gpp_atomtype          *atype;
     int                    nvsite, comb;
     t_params              *plist;
     real                   fudgeQQ;
@@ -1700,7 +1700,7 @@ int gmx_grompp(int argc, char *argv[])
     gmx_bool               have_atomnumber;
     gmx_output_env_t      *oenv;
     gmx_bool               bVerbose = FALSE;
-    warninp_t              wi;
+    warninp               *wi;
     char                   warn_buf[STRLEN];
 
     t_filenm               fnm[] = {
@@ -2231,7 +2231,7 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
-    struct pull_t *pull = nullptr;
+    pull_t *pull = nullptr;
 
     if (ir->bPull)
     {
