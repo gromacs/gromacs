@@ -114,15 +114,17 @@ template <const int order,
           const int atomsPerBlock>
 __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams           kernelParams,
                                                   const int                              atomIndexOffset,
-                                                  const float3 * __restrict__            sm_coordinates,
-                                                  const float * __restrict__             sm_coefficients,
+                                                  const float3 * __restrict__ atomX,
+                                                  const float * __restrict__ atomCharge,
+//                                                  const float3 * __restrict__            sm_coordinates,
+//                                                  const float * __restrict__             sm_coefficients,
                                                   float * __restrict__                   sm_theta,
                                                   int * __restrict__                     sm_gridlineIndices)
 {
     /* Global memory pointers for output */
-    float * __restrict__ gm_theta           = kernelParams.atoms.d_theta;
-    float * __restrict__ gm_dtheta          = kernelParams.atoms.d_dtheta;
-    int * __restrict__   gm_gridlineIndices = kernelParams.atoms.d_gridlineIndices;
+//    float * __restrict__ gm_theta           = kernelParams.atoms.d_theta;
+//    float * __restrict__ gm_dtheta          = kernelParams.atoms.d_dtheta;
+//    int * __restrict__   gm_gridlineIndices = kernelParams.atoms.d_gridlineIndices;
 
     const int            atomsPerWarp = c_pmeSpreadGatherAtomsPerWarp;
 
@@ -137,16 +139,22 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
     /* Thread index w.r.t. warp */
     const int threadWarpIndex = threadLocalId % warp_size;
     /* Atom index w.r.t. warp - alternating 0 1 0 1 .. */
-    const int atomWarpIndex = threadWarpIndex % atomsPerWarp;
+//    const int atomWarpIndex = threadWarpIndex % atomsPerWarp;
+     const int atomWarpIndex = threadIdx.z %atomsPerWarp;
     /* Atom index w.r.t. block/shared memory */
     const int atomIndexLocal = warpIndex * atomsPerWarp + atomWarpIndex;
 
     /* Atom index w.r.t. global memory */
     const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
+
+    const int threadLocalIdXY = (threadIdx.y * blockDim.x) + threadIdx.x;
+    const int orderIndex = threadLocalIdXY / DIM ;
+
     /* Spline contribution index in one dimension */
-    const int orderIndex = threadWarpIndex / (atomsPerWarp * DIM);
+//    const int orderIndex = threadWarpIndex / (atomsPerWarp * DIM);
     /* Dimension index */
-    const int dimIndex = (threadWarpIndex - orderIndex * (atomsPerWarp * DIM)) / atomsPerWarp;
+//    const int dimIndex = (threadWarpIndex - orderIndex * (atomsPerWarp * DIM)) / atomsPerWarp;
+    const int dimIndex = threadLocalIdXY % DIM ;
 
     /* Multi-purpose index of rvec/ivec atom data */
     const int sharedMemoryIndex = atomIndexLocal * DIM + dimIndex;
@@ -183,7 +191,8 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
         {
             int           tableIndex, tInt;
             float         n, t;
-            const float3  x = sm_coordinates[atomIndexLocal];
+//            const float3  x = sm_coordinates[atomIndexLocal];
+            const float3 x = *atomX;
             /* Accessing fields in fshOffset/nXYZ/recipbox/... with dimIndex offset
              * puts them into local memory(!) instead of accessing the constant memory directly.
              * That's the reason for the switch, to unroll explicitly.
@@ -228,12 +237,13 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
                 fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable,
                                           kernelParams.gridlineIndicesTableTexture,
                                           tableIndex);
-            gm_gridlineIndices[atomIndexOffset * DIM + sharedMemoryIndex] = sm_gridlineIndices[sharedMemoryIndex];
+//            gm_gridlineIndices[atomIndexOffset * DIM + sharedMemoryIndex] = sm_gridlineIndices[sharedMemoryIndex];
         }
 
         /* B-spline calculation */
 
-        const int chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
+//        const int chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
+         const int chargeCheck = pme_gpu_check_atom_charge(*atomCharge);
         if (chargeCheck)
         {
             float       div;
@@ -263,7 +273,9 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
             const int thetaIndexBase        = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
             const int thetaGlobalOffsetBase = atomIndexOffset * DIM * order;
 
-            /* Differentiation and storing the spline derivatives (dtheta) */
+/*
+// dtheta not needed for spread
+            / * Differentiation and storing the spline derivatives (dtheta) * /
 #if !PME_GPU_PARALLEL_SPLINE
             // With PME_GPU_PARALLEL_SPLINE == 1, o is already set to orderIndex;
             // With PME_GPU_PARALLEL_SPLINE == 0, we loop o over range(order).
@@ -276,8 +288,9 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
 
                 const float dtheta = ((o > 0) ? SPLINE_DATA(o - 1) : 0.0f) - SPLINE_DATA(o);
                 assert(isfinite(dtheta));
-                gm_dtheta[thetaGlobalIndex] = dtheta;
+//                gm_dtheta[thetaGlobalIndex] = dtheta;
             }
+*/
 
             div  = 1.0f / (order - 1.0f);
             *SPLINE_DATA_PTR(order - 1) = div * dr * SPLINE_DATA(order - 2);
@@ -300,7 +313,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
 
                 sm_theta[thetaIndex]       = SPLINE_DATA(o);
                 assert(isfinite(sm_theta[thetaIndex]));
-                gm_theta[thetaGlobalIndex] = SPLINE_DATA(o);
+//                gm_theta[thetaGlobalIndex] = SPLINE_DATA(o);
             }
         }
     }
@@ -324,7 +337,8 @@ template <
     const int order, const bool wrapX, const bool wrapY>
 __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams           kernelParams,
                                                int                                    atomIndexOffset,
-                                               const float * __restrict__             sm_coefficients,
+//                                               const float * __restrict__             sm_coefficients,
+                                               const float *                          atomCharge,
                                                const int * __restrict__               sm_gridlineIndices,
                                                const float * __restrict__             sm_theta)
 {
@@ -346,7 +360,8 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
     const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
 
     const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
-    const int chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
+//    const int chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
+    const int chargeCheck = pme_gpu_check_atom_charge(*atomCharge);
     if (chargeCheck & globalCheck)
     {
         // Spline Y/Z coordinates
@@ -374,7 +389,7 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
         const float  thetaZ          = sm_theta[splineIndexZ];
         const int    splineIndexY    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
         const float  thetaY          = sm_theta[splineIndexY];
-        const float  constVal        = thetaZ * thetaY * sm_coefficients[atomIndexLocal];
+        const float  constVal        = thetaZ * thetaY * (*atomCharge); //sm_coefficients[atomIndexLocal];
         assert(isfinite(constVal));
         const int    constOffset     = iy * pnz + iz;
 
@@ -421,12 +436,30 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
     // Gridline indices, ivec
     __shared__ int   sm_gridlineIndices[atomsPerBlock * DIM];
     // Charges
-    __shared__ float sm_coefficients[atomsPerBlock];
+//    __shared__ float sm_coefficients[atomsPerBlock];
     // Spline values
     __shared__ float sm_theta[atomsPerBlock * DIM * order];
 
+    const int            atomsPerWarp = c_pmeSpreadGatherAtomsPerWarp;
+
+    float3 atomX;
+    float  atomCharge;
+
     const int        blockIndex      = blockIdx.y * gridDim.x + blockIdx.x;
     const int        atomIndexOffset = blockIndex * atomsPerBlock;
+
+  /* Thread index w.r.t. block */
+    const int threadLocalId = (threadIdx.z * (blockDim.x * blockDim.y))
+        + (threadIdx.y * blockDim.x) + threadIdx.x;
+    /* Warp index w.r.t. block - could probably be obtained easier? */
+    const int warpIndex = threadLocalId / warp_size;
+
+    /* Atom index w.r.t. warp */
+    const int atomWarpIndex = threadIdx.z %atomsPerWarp;
+    /* Atom index w.r.t. block/shared memory */
+    const int atomIndexLocal = warpIndex * atomsPerWarp + atomWarpIndex;
+    /* Atom index w.r.t. global memory */
+    const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
 
     /* Early return for fully empty blocks at the end
      * (should only happen for billions of input atoms)
@@ -437,37 +470,48 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
     }
 
     /* Staging coefficients/charges for both spline and spread */
-    pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(kernelParams, sm_coefficients, kernelParams.atoms.d_coefficients);
+//    pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(kernelParams, sm_coefficients, kernelParams.atoms.d_coefficients);
 
-    if (computeSplines)
-    {
+//    if (computeSplines)
+//    {
         /* Staging coordinates */
-        __shared__ float sm_coordinates[DIM * atomsPerBlock];
-        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM>(kernelParams, sm_coordinates, kernelParams.atoms.d_coordinates);
+//        __shared__ float sm_coordinates[DIM * atomsPerBlock];
+//        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM>(kernelParams, sm_coordinates, kernelParams.atoms.d_coordinates);
 
-        __syncthreads();
-        calculate_splines<order, atomsPerBlock>(kernelParams, atomIndexOffset, (const float3 *)sm_coordinates,
-                                                sm_coefficients, sm_theta, sm_gridlineIndices);
+//        __syncthreads();
+
+        atomCharge=kernelParams.atoms.d_coefficients[atomIndexGlobal];
+        atomX.x =  kernelParams.atoms.d_coordinates[ atomIndexGlobal*DIM + XX];
+        atomX.y =  kernelParams.atoms.d_coordinates[ atomIndexGlobal*DIM + YY];
+        atomX.z =  kernelParams.atoms.d_coordinates[ atomIndexGlobal*DIM + ZZ];
+
+        calculate_splines<order, atomsPerBlock>(kernelParams, atomIndexOffset, 
+// (const float3 *)sm_coordinates, sm_coefficients, 
+        &atomX,&atomCharge,
+        sm_theta, sm_gridlineIndices);
         gmx_syncwarp();
-    }
-    else
-    {
+
+//    }
+//    else
+//    {
         /* Staging the data for spread
          * (the data is assumed to be in GPU global memory with proper layout already,
          * as in after running the spline kernel)
          */
         /* Spline data - only thetas (dthetas will only be needed in gather) */
-        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order>(kernelParams, sm_theta, kernelParams.atoms.d_theta);
+//        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order>(kernelParams, sm_theta, kernelParams.atoms.d_theta);
         /* Gridline indices */
-        pme_gpu_stage_atom_data<int, atomsPerBlock, DIM>(kernelParams, sm_gridlineIndices, kernelParams.atoms.d_gridlineIndices);
+//        pme_gpu_stage_atom_data<int, atomsPerBlock, DIM>(kernelParams, sm_gridlineIndices, kernelParams.atoms.d_gridlineIndices);
 
-        __syncthreads();
-    }
+//        __syncthreads();
+//    }
 
     /* Spreading */
     if (spreadCharges)
     {
-        spread_charges<order, wrapX, wrapY>(kernelParams, atomIndexOffset, sm_coefficients, sm_gridlineIndices, sm_theta);
+        spread_charges<order, wrapX, wrapY>(kernelParams, atomIndexOffset, &atomCharge,
+//       sm_coefficients, 
+        sm_gridlineIndices, sm_theta);
     }
 }
 

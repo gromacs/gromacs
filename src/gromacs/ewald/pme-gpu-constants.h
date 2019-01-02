@@ -126,6 +126,7 @@ constexpr int c_pmeGpuOrder = 4;
  * TODO: this assumption leads to minimum execution width of 16. See Redmine #2516
  */
 constexpr int c_pmeSpreadGatherThreadsPerAtom = (c_pmeGpuOrder * c_pmeGpuOrder);
+constexpr int c_pmeGatherThreadsPerAtom = c_pmeGpuOrder;
 
 /*! \brief Minimum execution width of the PME spread and gather kernels.
  *
@@ -133,6 +134,7 @@ constexpr int c_pmeSpreadGatherThreadsPerAtom = (c_pmeGpuOrder * c_pmeGpuOrder);
  * should execute without synchronization needed. See c_pmeSpreadGatherThreadsPerAtom
  */
 constexpr int c_pmeSpreadGatherMinWarpSize = c_pmeSpreadGatherThreadsPerAtom;
+constexpr int c_pmeGatherMinWarpSize = c_pmeGatherThreadsPerAtom;
 
 /*! \brief
  * Atom data alignment (in terms of number of atoms).
@@ -177,6 +179,7 @@ constexpr int c_gatherMaxWarpsPerBlock = 4;
  * It is mostly used for spline data layout tweaked for coalesced access.
  */
 constexpr int c_pmeSpreadGatherAtomsPerWarp = (warp_size / c_pmeSpreadGatherThreadsPerAtom);
+constexpr int c_pmeGatherAtomsPerWarp = (warp_size / c_pmeGatherThreadsPerAtom);
 
 //! Spreading max block size in threads
 constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;

@@ -1223,7 +1223,7 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
     }
 
     const size_t blockSize     = pmeGpu->programHandle_->impl_->gatherWorkGroupSize;
-    const int    atomsPerBlock = blockSize / c_pmeSpreadGatherThreadsPerAtom;
+    const int    atomsPerBlock = blockSize / c_pmeGatherThreadsPerAtom;
     GMX_ASSERT(!c_usePadding || !(c_pmeAtomDataAlignment % atomsPerBlock), "inconsistent atom data padding vs. gathering block size");
 
     const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
@@ -1234,7 +1234,8 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
     GMX_ASSERT(order == c_pmeGpuOrder, "Only PME order 4 is implemented");
 
     KernelLaunchConfig config;
-    config.blockSize[0] = config.blockSize[1] = order;
+    config.blockSize[0] = order;
+    config.blockSize[1] = 1;
     config.blockSize[2] = atomsPerBlock;
     config.gridSize[0]  = dimGrid.first;
     config.gridSize[1]  = dimGrid.second;
