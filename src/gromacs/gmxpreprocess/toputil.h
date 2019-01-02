@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,8 @@
 #define GMX_GMXPREPROCESS_TOPUTIL_H
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
+
+enum class Directive : int;
 
 /* UTILITIES */
 
@@ -71,7 +72,7 @@ void print_blocka(FILE *out, const char *szName, const char *szIndex,
 void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                  bool bRTPresname);
 
-void print_bondeds(FILE *out, int natoms, directive d,
+void print_bondeds(FILE *out, int natoms, Directive d,
                    int ftype, int fsubtype, t_params plist[]);
 
 void print_excl(FILE *out, int natoms, t_excls excls[]);
