@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,10 +55,10 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -66,13 +66,46 @@ namespace
 {
 
 //! Number of atoms used in these tests.
-#define NATOMS 4
+constexpr int c_numAtoms = 4;
 
-class BondedTest : public ::testing::Test
+/*! \brief Output from bonded kernels
+ *
+ * \todo Later this might turn into the actual output struct. */
+struct OutputQuantities
+{
+    //! Energy of this interaction
+    real  energy         = 0;
+    //! Derivative with respect to lambda
+    real  dvdlambda      = 0;
+    //! Shift vectors
+    rvec  fshift[N_IVEC] = {{0}};
+    //! Forces
+    rvec4 f[c_numAtoms]  = {{0}};
+};
+
+/*! \brief Utility to check the output from bonded tests
+ *
+ * \param[in] checker Reference checker
+ * \param[in] output  The output from the test to check
+ */
+void checkOutput(test::TestReferenceChecker *checker,
+                 const OutputQuantities     &output)
+{
+    checker->checkReal(output.energy, "Epot ");
+    // Should still be zero if not doing FEP, so may as well test it.
+    checker->checkReal(output.dvdlambda, "dVdlambda ");
+    // TODO This is pretty inefficient, perhaps we should just check
+    // whether the central box fields have their values.
+    checker->checkSequence(std::begin(output.fshift), std::end(output.fshift), "ShiftForces");
+    checker->checkSequence(std::begin(output.f), std::end(output.f), "Forces");
+}
+
+class BondedTest : public ::testing::TestWithParam<int>
 {
     protected:
-        rvec   x[NATOMS];
-        matrix box;
+        rvec   x_[c_numAtoms];
+        matrix box_;
+        t_pbc  pbc_;
         test::TestReferenceData           refData_;
         test::TestReferenceChecker        checker_;
         BondedTest( ) :
@@ -80,24 +113,23 @@ class BondedTest : public ::testing::Test
         {
             test::FloatingPointTolerance tolerance(test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
             checker_.setDefaultTolerance(tolerance);
-            clear_rvecs(NATOMS, x);
-            x[1][2] = 1;
-            x[2][1] = x[2][2] = 1;
-            x[3][0] = x[3][1] = x[3][2] = 1;
+            clear_rvecs(c_numAtoms, x_);
+            x_[1][2] = 1;
+            x_[2][1] = x_[2][2] = 1;
+            x_[3][0] = x_[3][1] = x_[3][2] = 1;
 
-            clear_mat(box);
-            box[0][0] = box[1][1] = box[2][2] = 1.5;
+            clear_mat(box_);
+            box_[0][0] = box_[1][1] = box_[2][2] = 1.5;
+            set_pbc(&pbc_, GetParam(), box_);
         }
 
-        void testBondAngle(int epbc)
+        void testBondAngle()
         {
             rvec  r_ij, r_kj;
             real  cosine_angle, angle;
             int   t1, t2;
-            t_pbc pbc;
 
-            set_pbc(&pbc, epbc, box);
-            angle = bond_angle(x[0], x[1], x[2], &pbc,
+            angle = bond_angle(x_[0], x_[1], x_[2], &pbc_,
                                r_ij, r_kj, &cosine_angle,
                                &t1, &t2);
             checker_.checkReal(angle, "angle");
@@ -106,15 +138,13 @@ class BondedTest : public ::testing::Test
             checker_.checkInteger(t2, "t2");
         }
 
-        void testDihedralAngle(int epbc)
+        void testDihedralAngle()
         {
             rvec  r_ij, r_kj, r_kl, m, n;
             real  angle;
             int   t1, t2, t3;
-            t_pbc pbc;
 
-            set_pbc(&pbc, epbc, box);
-            angle = dih_angle(x[0], x[1], x[2], x[3], &pbc,
+            angle = dih_angle(x_[0], x_[1], x_[2], x_[3], &pbc_,
                               r_ij, r_kj, r_kl, m, n,
                               &t1, &t2, &t3);
 
@@ -123,159 +153,101 @@ class BondedTest : public ::testing::Test
             checker_.checkInteger(t2, "t2");
             checker_.checkInteger(t3, "t3");
         }
-
-        void testIfunc(int                         ftype,
+        void testIfunc(test::TestReferenceChecker *checker,
+                       const int                   ftype,
                        const std::vector<t_iatom> &iatoms,
-                       const t_iparams             iparams[],
-                       int                         epbc)
+                       const t_iparams            &iparams,
+                       const real                  lambda)
         {
-            real  lambda    = 0;
-            real  dvdlambda = 0;
-            rvec4 f[NATOMS];
-            for (int i = 0; i < NATOMS; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    f[i][j] = 0;
-                }
-            }
-            rvec  fshift[N_IVEC];
-            clear_rvecs(N_IVEC, fshift);
-            t_pbc pbc;
-            set_pbc(&pbc, epbc, box);
-            int   ddgatindex = 0;
-            real  energy     = bondedFunction(ftype)(iatoms.size(),
-                                                     iatoms.data(),
-                                                     iparams,
-                                                     x, f, fshift,
-                                                     &pbc,
-                                                     /* const struct t_graph *g */ nullptr,
-                                                     lambda, &dvdlambda,
-                                                     /* const struct t_mdatoms *md */ nullptr,
-                                                     /* struct t_fcdata *fcd */ nullptr,
-                                                     &ddgatindex);
-            checker_.checkReal(energy, interaction_function[ftype].longname);
-        }
+            SCOPED_TRACE(std::string("Testing PBC ") + epbc_names[GetParam()]);
 
+            int                           ddgatindex = 0;
+            OutputQuantities              output;
+            output.energy = bondedFunction(ftype)(iatoms.size(),
+                                                  iatoms.data(),
+                                                  &iparams,
+                                                  x_, output.f, output.fshift,
+                                                  &pbc_,
+                                                  /* const struct t_graph *g */ nullptr,
+                                                  lambda, &output.dvdlambda,
+                                                  /* const struct t_mdatoms *md */ nullptr,
+                                                  /* struct t_fcdata *fcd */ nullptr,
+                                                  &ddgatindex);
+            checkOutput(checker, output);
+        }
 };
 
-TEST_F (BondedTest, BondAnglePbcNone)
+TEST_P (BondedTest, BondAngle)
 {
-    testBondAngle(epbcNONE);
+    testBondAngle();
 }
 
-TEST_F (BondedTest, BondAnglePbcXy)
+TEST_P (BondedTest, DihedralAngle)
 {
-    testBondAngle(epbcXY);
+    testDihedralAngle();
 }
 
-TEST_F (BondedTest, BondAnglePbcXyz)
-{
-    testBondAngle(epbcXYZ);
-}
-
-TEST_F (BondedTest, DihedralAnglePbcNone)
-{
-    testDihedralAngle(epbcNONE);
-}
-
-TEST_F (BondedTest, DihedralAnglePbcXy)
-{
-    testDihedralAngle(epbcXY);
-}
-
-TEST_F (BondedTest, DihedralAnglePbcXyz)
-{
-    testDihedralAngle(epbcXYZ);
-}
-
-TEST_F (BondedTest, IfuncBondsPbcNo)
+TEST_P (BondedTest, IfuncBonds)
 {
     std::vector<t_iatom> iatoms = { 0, 0, 1, 0, 1, 2, 0, 2, 3 };
     t_iparams            iparams;
     iparams.harmonic.rA  = iparams.harmonic.rB  = 0.8;
-    iparams.harmonic.krA = iparams.harmonic.krB = 50;
-    testIfunc(F_BONDS, iatoms, &iparams, epbcNONE);
+    iparams.harmonic.krA = iparams.harmonic.krB = 50.0;
+    const real lambda = 0.0;
+    testIfunc(&checker_, F_BONDS, iatoms, iparams, lambda);
 }
 
-TEST_F (BondedTest, IfuncBondsPbcXy)
-{
-    std::vector<t_iatom> iatoms = { 0, 0, 1, 0, 1, 2, 0, 2, 3 };
-    t_iparams            iparams;
-    iparams.harmonic.rA  = iparams.harmonic.rB  = 0.8;
-    iparams.harmonic.krA = iparams.harmonic.krB = 50;
-    testIfunc(F_BONDS, iatoms, &iparams, epbcXY);
-}
-
-TEST_F (BondedTest, IfuncBondsPbcXyz)
-{
-    std::vector<t_iatom> iatoms = { 0, 0, 1, 0, 1, 2, 0, 2, 3 };
-    t_iparams            iparams;
-    iparams.harmonic.rA  = iparams.harmonic.rB  = 0.8;
-    iparams.harmonic.krA = iparams.harmonic.krB = 50;
-    testIfunc(F_BONDS, iatoms, &iparams, epbcXYZ);
-}
-
-TEST_F (BondedTest, IfuncAnglesPbcNo)
+TEST_P (BondedTest, IfuncAngles)
 {
     std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
     t_iparams            iparams;
-    real                 k = 50;
-    iparams.harmonic.rA  = iparams.harmonic.rB  = 100;
+    real                 k = 50.0;
+    iparams.harmonic.rA  = iparams.harmonic.rB  = 100.0;
     iparams.harmonic.krA = iparams.harmonic.krB = k;
-    testIfunc(F_ANGLES, iatoms, &iparams, epbcNONE);
+    const real lambda = 0.0;
+    testIfunc(&checker_, F_ANGLES, iatoms, iparams, lambda);
 }
 
-TEST_F (BondedTest, IfuncAnglesPbcXy)
-{
-    std::vector<t_iatom> iatoms  = { 0, 0, 1, 2, 0, 1, 2, 3 };
-    t_iparams            iparams;
-    real                 k = 50;
-    iparams.harmonic.rA  = iparams.harmonic.rB  = 100;
-    iparams.harmonic.krA = iparams.harmonic.krB = k;
-    testIfunc(F_ANGLES, iatoms, &iparams, epbcXY);
-}
-
-TEST_F (BondedTest, IfuncAnglesPbcXYZ)
-{
-    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
-    t_iparams            iparams;
-    real                 k = 50;
-    iparams.harmonic.rA  = iparams.harmonic.rB  = 100;
-    iparams.harmonic.krA = iparams.harmonic.krB = k;
-    testIfunc(F_ANGLES, iatoms, &iparams, epbcXYZ);
-}
-
-TEST_F (BondedTest, IfuncProperDihedralsPbcNo)
+TEST_P (BondedTest, IfuncProperDihedrals)
 {
     std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
     t_iparams            iparams;
-    iparams.pdihs.phiA = iparams.pdihs.phiB = -100;
-    iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10;
+    iparams.pdihs.phiA = iparams.pdihs.phiB = -100.0;
+    iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10.0;
     iparams.pdihs.mult = 1;
-    testIfunc(F_PDIHS, iatoms, &iparams, epbcNONE);
+    const real lambda = 0.0;
+    testIfunc(&checker_, F_PDIHS, iatoms, iparams, lambda);
 }
 
-TEST_F (BondedTest, IfuncProperDihedralsPbcXy)
+TEST_P (BondedTest, IfuncImproperDihedrals)
 {
     std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
     t_iparams            iparams;
-    iparams.pdihs.phiA = iparams.pdihs.phiB = -100;
-    iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10;
-    iparams.pdihs.mult = 1;
-    testIfunc(F_PDIHS, iatoms, &iparams, epbcXY);
+    iparams.harmonic.rA  = iparams.harmonic.rB  = 0.0;
+    iparams.harmonic.krA = iparams.harmonic.krB = 5.0;
+    const real lambda = 0.0;
+    testIfunc(&checker_, F_IDIHS, iatoms, iparams, lambda);
 }
 
-TEST_F (BondedTest, IfuncProperDihedralsPbcXyz)
+TEST_P (BondedTest, IfuncImproperDihedralsFEP)
 {
-    std::vector<t_iatom> iatoms  = { 0, 0, 1, 2, 3 };
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
     t_iparams            iparams;
-    iparams.pdihs.phiA = iparams.pdihs.phiB = -100;
-    iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10;
-    iparams.pdihs.mult = 1;
-    testIfunc(F_PDIHS, iatoms, &iparams, epbcXYZ);
+    iparams.harmonic.rA  = iparams.harmonic.rB  = 0.0;
+    iparams.harmonic.krA = iparams.harmonic.krB = 5.0;
+    iparams.harmonic.rB  = 35.5;
+    iparams.harmonic.krB = 10.0;
+
+    const int numLambdas = 3;
+    for (int i = 0; i < numLambdas; ++i)
+    {
+        const real lambda       = i / (numLambdas - 1.0);
+        auto       valueChecker = checker_.checkCompound("Lambda", toString(lambda));
+        testIfunc(&valueChecker, F_IDIHS, iatoms, iparams, lambda);
+    }
 }
 
+INSTANTIATE_TEST_CASE_P(ForPbcValues, BondedTest, ::testing::Values(epbcNONE, epbcXY, epbcXYZ));
 }  // namespace
 
 }  // namespace gmx
