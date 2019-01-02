@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -217,7 +217,9 @@ endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.0)
 
 # OpenCL required version: 1.2 or newer
-set(REQUIRED_OPENCL_MIN_VERSION 1.2)
+set(REQUIRED_OPENCL_MIN_VERSION_MAJOR 1)
+set(REQUIRED_OPENCL_MIN_VERSION_MINOR 2)
+set(REQUIRED_OPENCL_MIN_VERSION ${REQUIRED_OPENCL_MIN_VERSION_MAJOR}.${REQUIRED_OPENCL_MIN_VERSION_MINOR})
 
 if(NOT GMX_USE_OPENCL)
     # CUDA detection is done only if GMX_USE_OPENCL is OFF.

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -614,9 +614,10 @@ int Mdrunner::mdrunner()
             // If the user specified the number of ranks, then we must
             // respect that, but in default mode, we need to allow for
             // the number of GPUs to choose the number of ranks.
-
+            auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
+                    canUseGpuForNonbonded,
                     inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
@@ -682,10 +683,13 @@ int Mdrunner::mdrunner()
         // different nodes, which is the user's responsibilty to
         // handle. If unsuitable, we will notice that during task
         // assignment.
-        bool gpusWereDetected  = hwinfo->ngpu_compatible_tot > 0;
-        bool usingVerletScheme = inputrec->cutoff_scheme == ecutsVERLET;
+        bool gpusWereDetected      = hwinfo->ngpu_compatible_tot > 0;
+        bool usingVerletScheme     = inputrec->cutoff_scheme == ecutsVERLET;
+        auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
-                                                                emulateGpuNonbonded, usingVerletScheme,
+                                                                emulateGpuNonbonded,
+                                                                canUseGpuForNonbonded,
+                                                                usingVerletScheme,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
         auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);

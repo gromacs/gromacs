@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -125,6 +125,8 @@ def do_build(context):
         cmake_opts['GMX_FFT_LIBRARY'] = 'fftpack'
     elif context.opts.buildfftw:
         cmake_opts['GMX_BUILD_OWN_FFTW'] = 'ON'
+        cmake_opts['GMX_BUILD_OWN_FFTW_URL'] = 'ftp://ftp.gromacs.org/misc/fftw-3.3.8.tar.gz'
+        cmake_opts['GMX_BUILD_OWN_FFTW_MD5'] = '8aac833c943d8e90d51b697b27d4384d'
     if context.opts.mkl or context.opts.atlas or context.opts.armpl:
         cmake_opts['GMX_EXTERNAL_BLAS'] = 'ON'
         cmake_opts['GMX_EXTERNAL_LAPACK'] = 'ON'

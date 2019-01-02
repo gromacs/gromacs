@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -452,6 +452,8 @@ updateMDLeapfrogGeneral(int                         start,
     int  gt       = 0;
     real factorNH = 0;
 
+    real omega_Z  = 2*static_cast<real>(M_PI)/box[ZZ][ZZ];
+
     for (int n = start; n < nrend; n++)
     {
         if (cTC)
@@ -479,7 +481,7 @@ updateMDLeapfrogGeneral(int                         start,
                 rvec_sub(v[n], grpstat[ga].u, vRel);
                 break;
             case AccelerationType::cosine:
-                cosineZ = std::cos(x[n][ZZ]*static_cast<real>(M_PI)/box[ZZ][ZZ]);
+                cosineZ = std::cos(x[n][ZZ]*omega_Z);
                 vCosine = cosineZ*ekind->cosacc.vcos;
                 /* Avoid scaling the cosine profile velocity */
                 copy_rvec(v[n], vRel);
