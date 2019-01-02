@@ -1533,7 +1533,7 @@ void gmx::Integrator::do_md()
     /* Clean up topology. top->atomtypes has an allocated pointer if no domain decomposition*/
     if (!DOMAINDECOMP(cr))
     {
-        done_atomtypes(&top->atomtypes);
+        done_localtop(top);
     }
     sfree(top);
 }
