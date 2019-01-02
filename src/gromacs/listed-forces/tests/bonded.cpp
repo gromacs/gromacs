@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <cmath>
 
 #include <memory>
+#include <unordered_map>
 
 #include <gtest/gtest.h>
 
@@ -55,6 +56,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -156,7 +158,84 @@ class BondedTest : public ::testing::Test
                                                      &ddgatindex);
             checker_.checkReal(energy, interaction_function[ftype].longname);
         }
-
+        
+    void testIfuncAll(int                         ftype,
+                      const std::vector<t_iatom> &iatoms,
+                      const t_iparams             iparams[])
+    {
+        std::vector<int> epbc = { epbcNONE, epbcXY, epbcXYZ };
+        for (auto &e : epbc)
+        {
+            for (int ifep = 0; ifep < 2; ifep++)
+            {
+                bool fep = static_cast<bool>(ifep);
+                real  dvdlambda = 0;
+                rvec4 f[NATOMS];
+                for (int i = 0; i < NATOMS; i++)
+                {
+                    for (int j = 0; j < 4; j++)
+                    {
+                        f[i][j] = 0;
+                    }
+                }
+                rvec  fshift[N_IVEC];
+                clear_rvecs(N_IVEC, fshift);
+                t_pbc pbc;
+                set_pbc(&pbc, e, box);
+                int   ddgatindex = 0;
+                std::unordered_map<bool, std::string> bool_names = 
+                    {
+                        { false, "False" }, { true, "True" }
+                    };
+                auto ifuncChecker = checker_.
+                    checkCompound("Ifunc", interaction_function[ftype].longname).
+                    checkCompound("PBC", epbc_names[e]).
+                    checkCompound("FEP", bool_names[fep].c_str());
+                std::vector<real>                    energy;
+                std::vector<real>                    dvdl;
+                std::vector<std::vector<gmx::RVec> > forces;
+                const int nlambda = 5;
+                for (int i = 0; i <= nlambda; i++)
+                {
+                    real lambda = i/(1.0*nlambda);
+                    energy.push_back(bondedFunction(ftype)(iatoms.size(),
+                                                           iatoms.data(),
+                                                           iparams,
+                                                           x, f, fshift,
+                                                           &pbc,
+                                                           /* const struct t_graph *g */ nullptr,
+                                                           lambda, &dvdlambda,
+                                                           /* const struct t_mdatoms *md */ nullptr,
+                                                           /* struct t_fcdata *fcd */ nullptr,
+                                                           &ddgatindex));
+                    dvdl.push_back(dvdlambda);
+                    std::vector<gmx::RVec> flambda;
+                    for(int i = 0; i < NATOMS; i++)
+                    {
+                        flambda.push_back(f[i]);
+                    }
+                    forces.push_back(flambda);
+                }
+                std::string eid("Epot ");
+                ifuncChecker.checkSequence(energy.begin(), energy.end(), eid.c_str());
+                std::string dvdlid("dVdlambda ");
+                ifuncChecker.checkSequence(dvdl.begin(), dvdl.end(), dvdlid.c_str());
+                int j = 0;
+                for(auto &flambda : forces)
+                {
+                    real lambda = j++/(1.0*nlambda);
+                    auto forceChecker = ifuncChecker.checkCompound("Forces", "Lambda " + toString(lambda));
+                    const rvec *force = as_rvec_array(flambda.data());
+                    for(int i = 0; i < NATOMS; i++)
+                    {
+                        std::string flid("Force ");
+                        flid.append(" Atom " + toString(i));
+                        forceChecker.checkVector(force[i], flid.c_str());
+                    }
+                }
+            }
+        }
+    }
 };
 
 TEST_F (BondedTest, BondAnglePbcNone)
@@ -274,6 +353,17 @@ TEST_F (BondedTest, IfuncProperDihedralsPbcXyz)
     iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10;
     iparams.pdihs.mult = 1;
     testIfunc(F_PDIHS, iatoms, &iparams, epbcXYZ);
+}
+
+TEST_F (BondedTest, IfuncImproperDihedrals)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.harmonic.rA  = 0;
+    iparams.harmonic.rB  = 35.5;
+    iparams.harmonic.krA = 5;
+    iparams.harmonic.krB = 10;
+    testIfuncAll(F_IDIHS, iatoms, &iparams);
 }
 
 }  // namespace
