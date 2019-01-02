@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Epot Improper Dih.">
+    <Int Name="Length">6</Int>
+    <Real>11.994501289989017</Real>
+    <Real>14.393401547986819</Real>
+    <Real>16.792301805984625</Real>
+    <Real>19.191202063982427</Real>
+    <Real>21.590102321980229</Real>
+    <Real>23.989002579978035</Real>
+  </Sequence>
+  <Sequence Name="dVdlambda Improper Dih.">
+    <Int Name="Length">6</Int>
+    <Real>11.994501289989017</Real>
+    <Real>23.989002579978035</Real>
+    <Real>35.983503869967052</Real>
+    <Real>47.978005159956069</Real>
+    <Real>59.972506449945087</Real>
+    <Real>71.967007739934104</Real>
+  </Sequence>
+</ReferenceData>
