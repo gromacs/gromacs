@@ -96,7 +96,7 @@ struct AtomPair
     //! \brief Constructor, does not initialize to catch bugs and faster construction
     AtomPair()
     {
-    };
+    }
 
     //! Index of atom 1
     int index1;
