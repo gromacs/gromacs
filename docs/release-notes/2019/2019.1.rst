@@ -16,5 +16,10 @@ Fixes for ``gmx`` tools
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Explicitly require 64-bit OpenCL implementations
+------------------------------------------------
+
+On ARMv7, such implementations can be 32-bit, which we do not intend to support.
+
 Miscellaneous
 ^^^^^^^^^^^^^

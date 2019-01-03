@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -63,6 +63,21 @@ endif()
 add_definitions(${OpenCL_DEFINITIONS})
 
 include_directories(SYSTEM ${OpenCL_INCLUDE_DIRS})
+
+# Ensure the OpenCL implementation is 64-bit, because we only support that
+set (CMAKE_REQUIRED_INCLUDES ${OpenCL_INCLUDE_DIRS})
+check_cxx_source_compiles("
+#ifdef __APPLE__
+#    include <OpenCL/opencl.h>
+#else
+#    include <CL/opencl.h>
+#endif
+static_assert(sizeof(cl_mem) == 8, \"Only 64-bit OpenCL implementations are supported\");
+int main(int, char **) { return 0; }
+" OPENCL_IMPLEMENTATION_IS_64_BIT)
+if (NOT OPENCL_IMPLEMENTATION_IS_64_BIT)
+    message(FATAL_ERROR "Only 64-bit OpenCL implementations are supported")
+endif()
 
 set(GMX_OPENCL_NB_CLUSTER_SIZE 8 CACHE STRING "Cluster size used by nonbonded OpenCL kernel. Set to 4 for Intel GPUs.")
 mark_as_advanced(GMX_OPENCL_NB_CLUSTER_SIZE)
