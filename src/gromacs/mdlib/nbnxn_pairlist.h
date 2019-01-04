@@ -188,6 +188,12 @@ struct nbnxn_ci_t
 
 /* Grouped pair-list i-unit */
 typedef struct {
+    /* Returns the number of j-cluster groups in this entry */
+    int numJClusterGroups() const
+    {
+        return cj4_ind_end - cj4_ind_start;
+    };
+
     int sci;            /* i-super-cluster       */
     int shift;          /* Shift vector index plus possible flags */
     int cj4_ind_start;  /* Start index into cj4  */
