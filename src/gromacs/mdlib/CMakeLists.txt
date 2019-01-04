@@ -32,15 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.cpp nbnxn_kernels/simd_2xnn/*.cpp nbnxn_kernels/*.cpp *.cpp)
-
-if(GMX_USE_CUDA)
-    add_subdirectory(nbnxn_cuda)
-endif()
-if(GMX_USE_OPENCL)
-    add_subdirectory(nbnxn_ocl)
-    set(MDLIB_OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS} PARENT_SCOPE)
-endif()
+file(GLOB MDLIB_SOURCES *.cpp)
 
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
 if (BUILD_TESTING)
