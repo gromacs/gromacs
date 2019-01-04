@@ -763,13 +763,15 @@ clusterpair_in_range(const NbnxnPairlistGpuWork &work,
 }
 
 /* Returns the j-cluster index for index cjIndex in a cj list */
-static inline int nblCj(const nbnxn_cj_t *cjList, int cjIndex)
+static inline int nblCj(gmx::ArrayRef<const nbnxn_cj_t> cjList,
+                        int                             cjIndex)
 {
     return cjList[cjIndex].cj;
 }
 
 /* Returns the j-cluster index for index cjIndex in a cj4 list */
-static inline int nblCj(const nbnxn_cj4_t *cj4List, int cjIndex)
+static inline int nblCj(gmx::ArrayRef<const nbnxn_cj4_t> cj4List,
+                        int                              cjIndex)
 {
     return cj4List[cjIndex/c_nbnxnGpuJgroupSize].cj[cjIndex & (c_nbnxnGpuJgroupSize - 1)];
 }
@@ -778,72 +780,6 @@ static inline int nblCj(const nbnxn_cj4_t *cj4List, int cjIndex)
 static unsigned int nbl_imask0(const NbnxnPairlistGpu *nbl, int cj_ind)
 {
     return nbl->cj4[cj_ind/c_nbnxnGpuJgroupSize].imei[0].imask;
-}
-
-/* Ensures there is enough space for extra extra exclusion masks */
-static void check_excl_space(NbnxnPairlistGpu *nbl, int extra)
-{
-    if (nbl->nexcl+extra > nbl->excl_nalloc)
-    {
-        nbl->excl_nalloc = over_alloc_small(nbl->nexcl+extra);
-        nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->excl),
-                           nbl->nexcl*sizeof(*nbl->excl),
-                           nbl->excl_nalloc*sizeof(*nbl->excl),
-                           nbl->alloc, nbl->free);
-    }
-}
-
-/* Ensures there is enough space for ncell extra j-cells in the list */
-static void check_cell_list_space(NbnxnPairlistCpu gmx_unused *nbl,
-                                  int gmx_unused               ncell)
-{
-}
-
-/* Ensures there is enough space for ncell extra j-cells in the list */
-static void check_cell_list_space(NbnxnPairlistGpu *nbl,
-                                  int               ncell)
-{
-    int ncj4_max, w;
-
-    /* We can have maximally nsupercell*c_gpuNumClusterPerCell sj lists */
-    /* We can store 4 j-subcell - i-supercell pairs in one struct.
-     * since we round down, we need one extra entry.
-     */
-    ncj4_max = ((nbl->work->cj_ind + ncell*c_gpuNumClusterPerCell + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize);
-
-    if (ncj4_max > nbl->cj4_nalloc)
-    {
-        nbl->cj4_nalloc = over_alloc_small(ncj4_max);
-        nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->cj4),
-                           nbl->work->cj4_init*sizeof(*nbl->cj4),
-                           nbl->cj4_nalloc*sizeof(*nbl->cj4),
-                           nbl->alloc, nbl->free);
-    }
-
-    if (ncj4_max > nbl->work->cj4_init)
-    {
-        for (int j4 = nbl->work->cj4_init; j4 < ncj4_max; j4++)
-        {
-            /* No i-subcells and no excl's in the list initially */
-            for (w = 0; w < c_nbnxnGpuClusterpairSplit; w++)
-            {
-                nbl->cj4[j4].imei[w].imask    = 0U;
-                nbl->cj4[j4].imei[w].excl_ind = 0;
-
-            }
-        }
-        nbl->work->cj4_init = ncj4_max;
-    }
-}
-
-/* Set all excl masks for one GPU warp no exclusions */
-static void set_no_excls(nbnxn_excl_t *excl)
-{
-    for (int t = 0; t < c_nbnxnGpuExclSize; t++)
-    {
-        /* Turn all interaction bits on */
-        excl->pair[t] = NBNXN_INTERACTION_MASK_ALL;
-    }
 }
 
 /* Initializes a single NbnxnPairlistCpu data structure */
@@ -861,59 +797,32 @@ static void nbnxn_init_pairlist(NbnxnPairlistCpu *nbl)
     nbl->work        = new NbnxnPairlistCpuWork();
 }
 
-/* Initializes a single NbnxnPairlistGpu data structure */
-static void nbnxn_init_pairlist(NbnxnPairlistGpu *nbl,
-                                nbnxn_alloc_t    *alloc,
-                                nbnxn_free_t     *free)
+NbnxnPairlistGpu::NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy) :
+    na_ci(c_nbnxnGpuClusterSize),
+    na_cj(c_nbnxnGpuClusterSize),
+    na_sc(c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize),
+    rlist(0),
+    sci({}, {pinningPolicy}),
+    cj4({}, {pinningPolicy}),
+    excl({}, {pinningPolicy}),
+    nci_tot(0)
 {
-    if (alloc == nullptr)
-    {
-        nbl->alloc = nbnxn_alloc_aligned;
-    }
-    else
-    {
-        nbl->alloc = alloc;
-    }
-    if (free == nullptr)
-    {
-        nbl->free = nbnxn_free_aligned;
-    }
-    else
-    {
-        nbl->free = free;
-    }
+    static_assert(c_nbnxnGpuNumClusterPerSupercluster == c_gpuNumClusterPerCell,
+                  "The search code assumes that the a super-cluster matches a search grid cell");
 
-    nbl->na_ci       = c_nbnxnGpuClusterSize;
-    nbl->na_cj       = c_nbnxnGpuClusterSize;
-    nbl->na_sc       = c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize;
-    nbl->nsci        = 0;
-    nbl->sci         = nullptr;
-    nbl->sci_nalloc  = 0;
-    nbl->ncj4        = 0;
-    /* We need one element extra in sj, so alloc initially with 1 */
-    nbl->cj4_nalloc  = 0;
-    nbl->cj4         = nullptr;
-    nbl->nci_tot     = 0;
+    static_assert(sizeof(cj4[0].imei[0].imask)*8 >= c_nbnxnGpuJgroupSize*c_gpuNumClusterPerCell,
+                  "The i super-cluster cluster interaction mask does not contain a sufficient number of bits");
 
-    GMX_ASSERT(c_nbnxnGpuNumClusterPerSupercluster == c_gpuNumClusterPerCell, "The search code assumes that the a super-cluster matches a search grid cell");
+    static_assert(sizeof(excl[0])*8 >= c_nbnxnGpuJgroupSize*c_gpuNumClusterPerCell, "The GPU exclusion mask does not contain a sufficient number of bits");
 
-    GMX_ASSERT(sizeof(nbl->cj4[0].imei[0].imask)*8 >= c_nbnxnGpuJgroupSize*c_gpuNumClusterPerCell, "The i super-cluster cluster interaction mask does not contain a sufficient number of bits");
-    GMX_ASSERT(sizeof(nbl->excl[0])*8 >= c_nbnxnGpuJgroupSize*c_gpuNumClusterPerCell, "The GPU exclusion mask does not contain a sufficient number of bits");
+    // We always want a first entry without any exclusions
+    excl.resize(1);
 
-    nbl->excl        = nullptr;
-    nbl->excl_nalloc = 0;
-    nbl->nexcl       = 0;
-    check_excl_space(nbl, 1);
-    nbl->nexcl       = 1;
-    set_no_excls(&nbl->excl[0]);
-
-    nbl->work        = new NbnxnPairlistGpuWork();
+    work = new NbnxnPairlistGpuWork();
 }
 
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
-                             gmx_bool bSimple, gmx_bool bCombined,
-                             nbnxn_alloc_t *alloc,
-                             nbnxn_free_t  *free)
+                             gmx_bool bSimple, gmx_bool bCombined)
 {
     GMX_RELEASE_ASSERT(!bSimple || !bCombined, "Can only combine non-simple lists");
 
@@ -964,17 +873,10 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
             }
             else
             {
-                snew(nbl_list->nblGpu[i], 1);
-
                 /* Only list 0 is used on the GPU, use normal allocation for i>0 */
-                if (i == 0)
-                {
-                    nbnxn_init_pairlist(nbl_list->nblGpu[i], alloc, free);
-                }
-                else
-                {
-                    nbnxn_init_pairlist(nbl_list->nblGpu[i], nullptr, nullptr);
-                }
+                auto pinningPolicy = (i == 0 ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
+
+                nbl_list->nblGpu[i] = new NbnxnPairlistGpu(pinningPolicy);
             }
 
             snew(nbl_list->nbl_fep[i], 1);
@@ -1046,8 +948,8 @@ static void print_nblist_statistics(FILE *fp, const NbnxnPairlistGpu *nbl,
     /* This code only produces correct statistics with domain decomposition */
     grid = &nbs->grid[0];
 
-    fprintf(fp, "nbl nsci %d ncj4 %d nsi %d excl4 %d\n",
-            nbl->nsci, nbl->ncj4, nbl->nci_tot, nbl->nexcl);
+    fprintf(fp, "nbl nsci %zu ncj4 %zu nsi %d excl4 %zu\n",
+            nbl->sci.size(), nbl->cj4.size(), nbl->nci_tot, nbl->excl.size());
     fprintf(fp, "nbl na_c %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
             nbl->na_ci, rl, nbl->nci_tot, nbl->nci_tot/static_cast<double>(grid->nsubc_tot),
             nbl->nci_tot/static_cast<double>(grid->nsubc_tot)*grid->na_c,
@@ -1060,12 +962,10 @@ static void print_nblist_statistics(FILE *fp, const NbnxnPairlistGpu *nbl,
     {
         c[si] = 0;
     }
-    for (int i = 0; i < nbl->nsci; i++)
+    for (const nbnxn_sci_t &sci : nbl->sci)
     {
-        int nsp;
-
-        nsp = 0;
-        for (int j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
+        int nsp = 0;
+        for (int j4 = sci.cj4_ind_start; j4 < sci.cj4_ind_end; j4++)
         {
             for (int j = 0; j < c_nbnxnGpuJgroupSize; j++)
             {
@@ -1085,73 +985,43 @@ static void print_nblist_statistics(FILE *fp, const NbnxnPairlistGpu *nbl,
         sum_nsp2 += nsp*nsp;
         nsp_max   = std::max(nsp_max, nsp);
     }
-    if (nbl->nsci > 0)
+    if (!nbl->sci.empty())
     {
-        sum_nsp  /= nbl->nsci;
-        sum_nsp2 /= nbl->nsci;
+        sum_nsp  /= nbl->sci.size();
+        sum_nsp2 /= nbl->sci.size();
     }
     fprintf(fp, "nbl #cluster-pairs: av %.1f stddev %.1f max %d\n",
             sum_nsp, std::sqrt(sum_nsp2 - sum_nsp*sum_nsp), nsp_max);
 
-    if (nbl->ncj4 > 0)
+    if (!nbl->cj4.empty())
     {
         for (b = 0; b <= c_gpuNumClusterPerCell; b++)
         {
+            double numJClusters = nbl->cj4.size()*c_nbnxnGpuJgroupSize;
             fprintf(fp, "nbl j-list #i-subcell %d %7d %4.1f\n",
-                    b, c[b],
-                    100.0*c[b]/int{nbl->ncj4*c_nbnxnGpuJgroupSize});
+                    b, c[b], 100.0*c[b]/numJClusters);
         }
     }
 }
 
-/* Returns a pointer to the exclusion mask for cj4-unit cj4, warp warp */
-static void low_get_nbl_exclusions(NbnxnPairlistGpu *nbl, int cj4,
-                                   int warp, nbnxn_excl_t **excl)
+/* Returns a pointer to the, modifiable, exclusion mask for cj4-unit cj4, warp warp */
+static nbnxn_excl_t *get_exclusion_mask(NbnxnPairlistGpu *nbl,
+                                        int               cj4,
+                                        int               warp)
 {
     if (nbl->cj4[cj4].imei[warp].excl_ind == 0)
     {
         /* No exclusions set, make a new list entry */
-        nbl->cj4[cj4].imei[warp].excl_ind = nbl->nexcl;
-        nbl->nexcl++;
-        *excl = &nbl->excl[nbl->cj4[cj4].imei[warp].excl_ind];
-        set_no_excls(*excl);
+        const size_t oldSize = nbl->excl.size();
+        GMX_ASSERT(oldSize >= 1, "We should always have entry [0]");
+        /* Add entry with default values: no exclusions */
+        nbl->excl.resize(oldSize + 1);
+        nbl->cj4[cj4].imei[warp].excl_ind = oldSize;
     }
-    else
-    {
-        /* We already have some exclusions, new ones can be added to the list */
-        *excl = &nbl->excl[nbl->cj4[cj4].imei[warp].excl_ind];
-    }
+
+    return &nbl->excl[nbl->cj4[cj4].imei[warp].excl_ind];
 }
 
-/* Returns a pointer to the exclusion mask for cj4-unit cj4, warp warp,
- * generates a new element and allocates extra memory, if necessary.
- */
-static void get_nbl_exclusions_1(NbnxnPairlistGpu *nbl, int cj4,
-                                 int warp, nbnxn_excl_t **excl)
-{
-    if (nbl->cj4[cj4].imei[warp].excl_ind == 0)
-    {
-        /* We need to make a new list entry, check if we have space */
-        check_excl_space(nbl, 1);
-    }
-    low_get_nbl_exclusions(nbl, cj4, warp, excl);
-}
-
-/* Returns pointers to the exclusion masks for cj4-unit cj4 for both warps,
- * generates a new element and allocates extra memory, if necessary.
- */
-static void get_nbl_exclusions_2(NbnxnPairlistGpu *nbl, int cj4,
-                                 nbnxn_excl_t **excl_w0,
-                                 nbnxn_excl_t **excl_w1)
-{
-    /* Check for space we might need */
-    check_excl_space(nbl, 2);
-
-    low_get_nbl_exclusions(nbl, cj4, 0, excl_w0);
-    low_get_nbl_exclusions(nbl, cj4, 1, excl_w1);
-}
-
-/* Sets the self exclusions i=j and pair exclusions i>j */
 static void set_self_and_newton_excls_supersub(NbnxnPairlistGpu *nbl,
                                                int cj4_ind, int sj_offset,
                                                int i_cluster_in_cell)
@@ -1160,9 +1030,14 @@ static void set_self_and_newton_excls_supersub(NbnxnPairlistGpu *nbl,
 
     /* Here we only set the set self and double pair exclusions */
 
-    static_assert(c_nbnxnGpuClusterpairSplit == 2, "");
-
-    get_nbl_exclusions_2(nbl, cj4_ind, &excl[0], &excl[1]);
+    /* Reserve extra elements, so the resize() in get_exclusion_mask()
+     * will not invalidate excl entries in the loop below
+     */
+    nbl->excl.reserve(nbl->excl.size() + c_nbnxnGpuClusterpairSplit);
+    for (int w = 0; w < c_nbnxnGpuClusterpairSplit; w++)
+    {
+        excl[w] = get_exclusion_mask(nbl, cj4_ind, w);
+    }
 
     /* Only minor < major bits set */
     for (int ej = 0; ej < nbl->na_ci; ej++)
@@ -1392,16 +1267,11 @@ static void make_cluster_list_supersub(const nbnxn_grid_t &iGrid,
     {
         const int    cj4_ind   = work.cj_ind/c_nbnxnGpuJgroupSize;
         const int    cj_offset = work.cj_ind - cj4_ind*c_nbnxnGpuJgroupSize;
-        nbnxn_cj4_t *cj4       = &nbl->cj4[cj4_ind];
-
         const int    cj        = scj*c_gpuNumClusterPerCell + subc;
 
         const int    cj_gl     = jGrid.cell0*c_gpuNumClusterPerCell + cj;
 
-        /* Initialize this j-subcell i-subcell list */
-        cj4->cj[cj_offset] = cj_gl;
-
-        int ci1;
+        int          ci1;
         if (excludeSubDiagonal && sci == scj)
         {
             ci1 = subc + 1;
@@ -1477,7 +1347,14 @@ static void make_cluster_list_supersub(const nbnxn_grid_t &iGrid,
 
         if (npair > 0)
         {
-            /* We have a useful sj entry, close it now */
+            /* We have at least one cluster pair: add a j-entry */
+            if (static_cast<size_t>(cj4_ind) == nbl->cj4.size())
+            {
+                nbl->cj4.resize(nbl->cj4.size() + 1);
+            }
+            nbnxn_cj4_t *cj4   = &nbl->cj4[cj4_ind];
+
+            cj4->cj[cj_offset] = cj_gl;
 
             /* Set the exclusions for the ci==sj entry.
              * Here we don't bother to check if this entry is actually flagged,
@@ -1500,7 +1377,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t &iGrid,
             nbl->nci_tot += npair;
 
             /* Increase the closing index in i super-cell list */
-            nbl->sci[nbl->nsci - 1].cj4_ind_end =
+            nbl->sci.back().cj4_ind_end =
                 (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize;
         }
     }
@@ -1508,9 +1385,9 @@ static void make_cluster_list_supersub(const nbnxn_grid_t &iGrid,
 
 /* Returns how many contiguous j-clusters we have starting in the i-list */
 template <typename CjListType>
-static int numContiguousJClusters(const int         cjIndexStart,
-                                  const int         cjIndexEnd,
-                                  const CjListType *cjList)
+static int numContiguousJClusters(const int                       cjIndexStart,
+                                  const int                       cjIndexEnd,
+                                  gmx::ArrayRef<const CjListType> cjList)
 {
     const int firstJCluster = nblCj(cjList, cjIndexStart);
 
@@ -1525,26 +1402,29 @@ static int numContiguousJClusters(const int         cjIndexStart,
     return numContiguous;
 }
 
-/* Helper struct for efficient searching for excluded atoms in a j-list */
+/*! \internal
+ * \brief Helper struct for efficient searching for excluded atoms in a j-list
+ */
 struct JListRanges
 {
-    /* Constructor */
+    /*! \brief Constructs a j-list range from \p cjList with the given index range */
     template <typename CjListType>
-    JListRanges(int               cjIndexStart,
-                int               cjIndexEnd,
-                const CjListType &cjList);
+    JListRanges(int                             cjIndexStart,
+                int                             cjIndexEnd,
+                gmx::ArrayRef<const CjListType> cjList);
 
-    int cjIndexStart; // The start index in the j-list
-    int cjIndexEnd;   // The end index in the j-list
-    int cjFirst;      // The j-cluster with index cjIndexStart
-    int cjLast;       // The j-cluster with index cjIndexEnd-1
-    int numDirect;    // Up to cjIndexStart+numDirect the j-clusters are cjFirst + the index offset
+    int cjIndexStart; //!< The start index in the j-list
+    int cjIndexEnd;   //!< The end index in the j-list
+    int cjFirst;      //!< The j-cluster with index cjIndexStart
+    int cjLast;       //!< The j-cluster with index cjIndexEnd-1
+    int numDirect;    //!< Up to cjIndexStart+numDirect the j-clusters are cjFirst + the index offset
 };
 
+#ifndef DOXYGEN
 template <typename CjListType>
-JListRanges::JListRanges(int               cjIndexStart,
-                         int               cjIndexEnd,
-                         const CjListType &cjList) :
+JListRanges::JListRanges(int                             cjIndexStart,
+                         int                             cjIndexEnd,
+                         gmx::ArrayRef<const CjListType> cjList) :
     cjIndexStart(cjIndexStart),
     cjIndexEnd(cjIndexEnd)
 {
@@ -1559,6 +1439,7 @@ JListRanges::JListRanges(int               cjIndexStart,
      */
     numDirect = numContiguousJClusters(cjIndexStart, cjIndexEnd, cjList);
 }
+#endif // !DOXYGEN
 
 /* Return the index of \p jCluster in the given range or -1 when not present
  *
@@ -1566,9 +1447,10 @@ JListRanges::JListRanges(int               cjIndexStart,
  *       important. It should be inlined and fully optimized.
  */
 template <typename CjListType>
-static inline int findJClusterInJList(int                jCluster,
-                                      const JListRanges &ranges,
-                                      const CjListType  &cjList)
+static inline int
+findJClusterInJList(int                              jCluster,
+                    const JListRanges               &ranges,
+                    gmx::ArrayRef<const CjListType>  cjList)
 {
     int index;
 
@@ -1619,7 +1501,7 @@ static nbnxn_ci_t *getOpenIEntry(NbnxnPairlistCpu *nbl)
 /* Return the i-entry in the list we are currently operating on */
 static nbnxn_sci_t *getOpenIEntry(NbnxnPairlistGpu *nbl)
 {
-    return &nbl->sci[nbl->nsci - 1];
+    return &nbl->sci.back();
 }
 
 /* Set all atom-pair exclusions for a simple type list i-entry
@@ -1641,7 +1523,7 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
         return;
     }
 
-    const JListRanges        ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, nbl->cj.data());
+    const JListRanges        ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, gmx::makeConstArrayRef(nbl->cj));
 
     const int                iCluster = iEntry.ci;
 
@@ -1682,7 +1564,8 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
                 if (jCluster >= ranges.cjFirst && jCluster <= ranges.cjLast)
                 {
                     const int index =
-                        findJClusterInJList(jCluster, ranges, nbl->cj.data());
+                        findJClusterInJList(jCluster, ranges,
+                                            gmx::makeConstArrayRef(nbl->cj));
 
                     if (index >= 0)
                     {
@@ -2043,13 +1926,13 @@ static void make_fep_list(const nbnxn_search     *nbs,
                                     (bFEP_i || (fep_cj & (1 << j))) &&
                                     (!bDiagRemoved || ind_j >= ind_i))
                                 {
-                                    nbnxn_excl_t *excl;
                                     int           excl_pair;
                                     unsigned int  excl_bit;
                                     real          dx, dy, dz;
 
                                     const int     jHalf = j/(c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit);
-                                    get_nbl_exclusions_1(nbl, cj4_ind, jHalf, &excl);
+                                    nbnxn_excl_t *excl  =
+                                        get_exclusion_mask(nbl, cj4_ind, jHalf);
 
                                     excl_pair = a_mod_wj(j)*nbl->na_ci + i;
                                     excl_bit  = (1U << (gcj*c_gpuNumClusterPerCell + c));
@@ -2134,7 +2017,7 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
      */
     const JListRanges ranges(iEntry.cj4_ind_start*c_nbnxnGpuJgroupSize,
                              nbl->work->cj_ind,
-                             nbl->cj4);
+                             gmx::makeConstArrayRef(nbl->cj4));
 
     GMX_ASSERT(nbl->na_ci == c_nbnxnGpuClusterSize, "na_ci should match the GPU cluster size");
     constexpr int            c_clusterSize      = c_nbnxnGpuClusterSize;
@@ -2187,7 +2070,8 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
                 if (jCluster >= ranges.cjFirst && jCluster <= ranges.cjLast)
                 {
                     const int index =
-                        findJClusterInJList(jCluster, ranges, nbl->cj4);
+                        findJClusterInJList(jCluster, ranges,
+                                            gmx::makeConstArrayRef(nbl->cj4));
 
                     if (index >= 0)
                     {
@@ -2204,8 +2088,8 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
                             /* Determine which j-half (CUDA warp) we are in */
                             const int     jHalf = innerJ/(c_clusterSize/c_nbnxnGpuClusterpairSplit);
 
-                            nbnxn_excl_t *interactionMask;
-                            get_nbl_exclusions_1(nbl, cj_to_cj4(index), jHalf, &interactionMask);
+                            nbnxn_excl_t *interactionMask =
+                                get_exclusion_mask(nbl, cj_to_cj4(index), jHalf);
 
                             interactionMask->pair[a_mod_wj(innerJ)*c_clusterSize + innerI] &= ~pairMask;
                         }
@@ -2214,16 +2098,6 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
             }
         }
     }
-}
-
-/* Reallocate the super-cell sci list for at least n entries */
-static void nb_realloc_sci(NbnxnPairlistGpu *nbl, int n)
-{
-    nbl->sci_nalloc = over_alloc_small(n);
-    nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->sci),
-                       nbl->nsci*sizeof(*nbl->sci),
-                       nbl->sci_nalloc*sizeof(*nbl->sci),
-                       nbl->alloc, nbl->free);
 }
 
 /* Make a new ci entry at the back of nbl->ci */
@@ -2242,17 +2116,13 @@ static void addNewIEntry(NbnxnPairlistCpu *nbl, int ci, int shift, int flags)
 /* Make a new sci entry at index nbl->nsci */
 static void addNewIEntry(NbnxnPairlistGpu *nbl, int sci, int shift, int gmx_unused flags)
 {
-    if (nbl->nsci + 1 > nbl->sci_nalloc)
-    {
-        nb_realloc_sci(nbl, nbl->nsci + 1);
-    }
-    nbl->nsci++;
-    nbnxn_sci_t &sciEntry = nbl->sci[nbl->nsci - 1];
-
+    nbnxn_sci_t sciEntry;
     sciEntry.sci           = sci;
     sciEntry.shift         = shift;
-    sciEntry.cj4_ind_start = nbl->ncj4;
-    sciEntry.cj4_ind_end   = nbl->ncj4;
+    sciEntry.cj4_ind_start = nbl->cj4.size();
+    sciEntry.cj4_ind_end   = nbl->cj4.size();
+
+    nbl->sci.push_back(sciEntry);
 }
 
 /* Sort the simple j-list cj on exclusions.
@@ -2342,9 +2212,6 @@ static void split_sci_entry(NbnxnPairlistGpu *nbl,
                             int thread, int nthread)
 {
     int nsp_max;
-    int cj4_start, cj4_end, j4len;
-    int sci;
-    int nsp, nsp_sci, nsp_cj4, nsp_cj4_e, nsp_cj4_p;
 
     if (progBal)
     {
@@ -2368,23 +2235,21 @@ static void split_sci_entry(NbnxnPairlistGpu *nbl,
         nsp_max = nsp_target_av;
     }
 
-    cj4_start = nbl->sci[nbl->nsci-1].cj4_ind_start;
-    cj4_end   = nbl->sci[nbl->nsci-1].cj4_ind_end;
-    j4len     = cj4_end - cj4_start;
+    const int cj4_start = nbl->sci.back().cj4_ind_start;
+    const int cj4_end   = nbl->sci.back().cj4_ind_end;
+    const int j4len     = cj4_end - cj4_start;
 
     if (j4len > 1 && j4len*c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize > nsp_max)
     {
-        /* Remove the last ci entry and process the cj4's again */
-        nbl->nsci -= 1;
+        /* Modify the last ci entry and process the cj4's again */
 
-        sci        = nbl->nsci;
-        nsp        = 0;
-        nsp_sci    = 0;
-        nsp_cj4_e  = 0;
-        nsp_cj4    = 0;
+        int nsp        = 0;
+        int nsp_sci    = 0;
+        int nsp_cj4_e  = 0;
+        int nsp_cj4    = 0;
         for (int cj4 = cj4_start; cj4 < cj4_end; cj4++)
         {
-            nsp_cj4_p = nsp_cj4;
+            int nsp_cj4_p = nsp_cj4;
             /* Count the number of cluster pairs in this cj4 group */
             nsp_cj4   = 0;
             for (int p = 0; p < c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize; p++)
@@ -2398,37 +2263,33 @@ static void split_sci_entry(NbnxnPairlistGpu *nbl,
             if (nsp > 0 && nsp_max - nsp < nsp + nsp_cj4 - nsp_max)
             {
                 /* Split the list at cj4 */
-                nbl->sci[sci].cj4_ind_end = cj4;
+                nbl->sci.back().cj4_ind_end = cj4;
                 /* Create a new sci entry */
-                sci++;
-                nbl->nsci++;
-                if (nbl->nsci+1 > nbl->sci_nalloc)
-                {
-                    nb_realloc_sci(nbl, nbl->nsci+1);
-                }
-                nbl->sci[sci].sci           = nbl->sci[nbl->nsci-1].sci;
-                nbl->sci[sci].shift         = nbl->sci[nbl->nsci-1].shift;
-                nbl->sci[sci].cj4_ind_start = cj4;
-                nsp_sci                     = nsp;
-                nsp_cj4_e                   = nsp_cj4_p;
-                nsp                         = 0;
+                nbnxn_sci_t sciNew;
+                sciNew.sci           = nbl->sci.back().sci;
+                sciNew.shift         = nbl->sci.back().shift;
+                sciNew.cj4_ind_start = cj4;
+                nbl->sci.push_back(sciNew);
+
+                nsp_sci              = nsp;
+                nsp_cj4_e            = nsp_cj4_p;
+                nsp                  = 0;
             }
             nsp += nsp_cj4;
         }
 
         /* Put the remaining cj4's in the last sci entry */
-        nbl->sci[sci].cj4_ind_end = cj4_end;
+        nbl->sci.back().cj4_ind_end = cj4_end;
 
         /* Possibly balance out the last two sci's
          * by moving the last cj4 of the second last sci.
          */
         if (nsp_sci - nsp_cj4_e >= nsp + nsp_cj4_e)
         {
-            nbl->sci[sci-1].cj4_ind_end--;
-            nbl->sci[sci].cj4_ind_start--;
+            GMX_ASSERT(nbl->sci.size() >= 2, "We expect at least two elements");
+            nbl->sci[nbl->sci.size() - 2].cj4_ind_end--;
+            nbl->sci[nbl->sci.size() - 1].cj4_ind_start--;
         }
-
-        nbl->nsci++;
     }
 }
 
@@ -2438,7 +2299,7 @@ static void closeIEntry(NbnxnPairlistGpu *nbl,
                         gmx_bool progBal, float nsp_tot_est,
                         int thread, int nthread)
 {
-    nbnxn_sci_t &sciEntry = nbl->sci[nbl->nsci - 1];
+    nbnxn_sci_t &sciEntry = *getOpenIEntry(nbl);
 
     /* All content of the new ci entry have already been filled correctly,
      * we only need to, potentially, split or remove the entry when empty.
@@ -2449,8 +2310,8 @@ static void closeIEntry(NbnxnPairlistGpu *nbl,
         /* We can only have complete blocks of 4 j-entries in a list,
          * so round the count up before closing.
          */
-        nbl->ncj4         = (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize;
-        nbl->work->cj_ind = nbl->ncj4*c_nbnxnGpuJgroupSize;
+        int ncj4          = (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize;
+        nbl->work->cj_ind = ncj4*c_nbnxnGpuJgroupSize;
 
         if (nsp_max_av > 0)
         {
@@ -2462,7 +2323,7 @@ static void closeIEntry(NbnxnPairlistGpu *nbl,
     else
     {
         /* Entry is empty: remove it  */
-        nbl->nsci--;
+        nbl->sci.pop_back();
     }
 }
 
@@ -2474,8 +2335,7 @@ static void sync_work(NbnxnPairlistCpu gmx_unused *nbl)
 /* Syncs the working array before adding another grid pair to the GPU list */
 static void sync_work(NbnxnPairlistGpu *nbl)
 {
-    nbl->work->cj_ind   = nbl->ncj4*c_nbnxnGpuJgroupSize;
-    nbl->work->cj4_init = nbl->ncj4;
+    nbl->work->cj_ind   = nbl->cj4.size()*c_nbnxnGpuJgroupSize;
 }
 
 /* Clears an NbnxnPairlistCpu data structure */
@@ -2495,10 +2355,10 @@ static void clear_pairlist(NbnxnPairlistCpu *nbl)
 /* Clears an NbnxnPairlistGpu data structure */
 static void clear_pairlist(NbnxnPairlistGpu *nbl)
 {
-    nbl->nsci          = 0;
-    nbl->ncj4          = 0;
-    nbl->nci_tot       = 0;
-    nbl->nexcl         = 1;
+    nbl->sci.clear();
+    nbl->cj4.clear();
+    nbl->excl.resize(1);
+    nbl->nci_tot = 0;
 }
 
 /* Clears a group scheme pair list */
@@ -2912,14 +2772,14 @@ static void print_nblist_ci_cj(FILE *fp, const NbnxnPairlistCpu *nbl)
 /* Debug list print function */
 static void print_nblist_sci_cj(FILE *fp, const NbnxnPairlistGpu *nbl)
 {
-    for (int i = 0; i < nbl->nsci; i++)
+    for (const nbnxn_sci_t &sci : nbl->sci)
     {
         fprintf(fp, "ci %4d  shift %2d  ncj4 %2d\n",
-                nbl->sci[i].sci, nbl->sci[i].shift,
-                nbl->sci[i].cj4_ind_end - nbl->sci[i].cj4_ind_start);
+                sci.sci, sci.shift,
+                sci.cj4_ind_end - sci.cj4_ind_start);
 
         int ncp = 0;
-        for (int j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
+        for (int j4 = sci.cj4_ind_start; j4 < sci.cj4_ind_end; j4++)
         {
             for (int j = 0; j < c_nbnxnGpuJgroupSize; j++)
             {
@@ -2936,8 +2796,8 @@ static void print_nblist_sci_cj(FILE *fp, const NbnxnPairlistGpu *nbl)
             }
         }
         fprintf(fp, "ci %4d  shift %2d  ncj4 %2d ncp %3d\n",
-                nbl->sci[i].sci, nbl->sci[i].shift,
-                nbl->sci[i].cj4_ind_end - nbl->sci[i].cj4_ind_start,
+                sci.sci, sci.shift,
+                sci.cj4_ind_end - sci.cj4_ind_start,
                 ncp);
     }
 }
@@ -2946,38 +2806,21 @@ static void print_nblist_sci_cj(FILE *fp, const NbnxnPairlistGpu *nbl)
 static void combine_nblists(int nnbl, NbnxnPairlistGpu **nbl,
                             NbnxnPairlistGpu *nblc)
 {
-    int nsci, ncj4, nexcl;
-
-    nsci  = nblc->nsci;
-    ncj4  = nblc->ncj4;
-    nexcl = nblc->nexcl;
+    int nsci  = nblc->sci.size();
+    int ncj4  = nblc->cj4.size();
+    int nexcl = nblc->excl.size();
     for (int i = 0; i < nnbl; i++)
     {
-        nsci  += nbl[i]->nsci;
-        ncj4  += nbl[i]->ncj4;
-        nexcl += nbl[i]->nexcl;
+        nsci  += nbl[i]->sci.size();
+        ncj4  += nbl[i]->cj4.size();
+        nexcl += nbl[i]->excl.size();
     }
 
-    if (nsci > nblc->sci_nalloc)
-    {
-        nb_realloc_sci(nblc, nsci);
-    }
-    if (ncj4 > nblc->cj4_nalloc)
-    {
-        nblc->cj4_nalloc = over_alloc_small(ncj4);
-        nbnxn_realloc_void(reinterpret_cast<void **>(&nblc->cj4),
-                           nblc->ncj4*sizeof(*nblc->cj4),
-                           nblc->cj4_nalloc*sizeof(*nblc->cj4),
-                           nblc->alloc, nblc->free);
-    }
-    if (nexcl > nblc->excl_nalloc)
-    {
-        nblc->excl_nalloc = over_alloc_small(nexcl);
-        nbnxn_realloc_void(reinterpret_cast<void **>(&nblc->excl),
-                           nblc->nexcl*sizeof(*nblc->excl),
-                           nblc->excl_nalloc*sizeof(*nblc->excl),
-                           nblc->alloc, nblc->free);
-    }
+    /* Resize with the final, combined size, so we can fill in parallel */
+    /* NOTE: For better performance we should use default initialization */
+    nblc->sci.resize(nsci);
+    nblc->cj4.resize(ncj4);
+    nblc->excl.resize(nexcl);
 
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
@@ -2991,42 +2834,39 @@ static void combine_nblists(int nnbl, NbnxnPairlistGpu **nbl,
     {
         try
         {
-            int                     sci_offset;
-            int                     cj4_offset;
-            int                     excl_offset;
-            const NbnxnPairlistGpu *nbli;
+            /* Determine the offset in the combined data for our thread.
+             * Note that the original sizes in nblc are lost.
+             */
+            int sci_offset  = nsci;
+            int cj4_offset  = ncj4;
+            int excl_offset = nexcl;
 
-            /* Determine the offset in the combined data for our thread */
-            sci_offset  = nblc->nsci;
-            cj4_offset  = nblc->ncj4;
-            excl_offset = nblc->nexcl;
-
-            for (int i = 0; i < n; i++)
+            for (int i = n; i < nnbl; i++)
             {
-                sci_offset  += nbl[i]->nsci;
-                cj4_offset  += nbl[i]->ncj4;
-                excl_offset += nbl[i]->nexcl;
+                sci_offset  -= nbl[i]->sci.size();
+                cj4_offset  -= nbl[i]->cj4.size();
+                excl_offset -= nbl[i]->excl.size();
             }
 
-            nbli = nbl[n];
+            const NbnxnPairlistGpu &nbli = *nbl[n];
 
-            for (int i = 0; i < nbli->nsci; i++)
+            for (size_t i = 0; i < nbli.sci.size(); i++)
             {
-                nblc->sci[sci_offset+i]                = nbli->sci[i];
-                nblc->sci[sci_offset+i].cj4_ind_start += cj4_offset;
-                nblc->sci[sci_offset+i].cj4_ind_end   += cj4_offset;
+                nblc->sci[sci_offset + i]                = nbli.sci[i];
+                nblc->sci[sci_offset + i].cj4_ind_start += cj4_offset;
+                nblc->sci[sci_offset + i].cj4_ind_end   += cj4_offset;
             }
 
-            for (int j4 = 0; j4 < nbli->ncj4; j4++)
+            for (size_t j4 = 0; j4 < nbli.cj4.size(); j4++)
             {
-                nblc->cj4[cj4_offset+j4]                   = nbli->cj4[j4];
-                nblc->cj4[cj4_offset+j4].imei[0].excl_ind += excl_offset;
-                nblc->cj4[cj4_offset+j4].imei[1].excl_ind += excl_offset;
+                nblc->cj4[cj4_offset + j4]                   = nbli.cj4[j4];
+                nblc->cj4[cj4_offset + j4].imei[0].excl_ind += excl_offset;
+                nblc->cj4[cj4_offset + j4].imei[1].excl_ind += excl_offset;
             }
 
-            for (int j4 = 0; j4 < nbli->nexcl; j4++)
+            for (size_t j4 = 0; j4 < nbli.excl.size(); j4++)
             {
-                nblc->excl[excl_offset+j4] = nbli->excl[j4];
+                nblc->excl[excl_offset + j4] = nbli.excl[j4];
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -3034,10 +2874,7 @@ static void combine_nblists(int nnbl, NbnxnPairlistGpu **nbl,
 
     for (int n = 0; n < nnbl; n++)
     {
-        nblc->nsci    += nbl[n]->nsci;
-        nblc->ncj4    += nbl[n]->ncj4;
         nblc->nci_tot += nbl[n]->nci_tot;
-        nblc->nexcl   += nbl[n]->nexcl;
     }
 }
 
@@ -3881,8 +3718,6 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                     /* For f buffer flags with simple lists */
                                     ncj_old_j = getNumSimpleJClustersInList(*nbl);
 
-                                    check_cell_list_space(nbl, lastCell - firstCell + 1);
-
                                     makeClusterListWrapper(nbl,
                                                            iGrid, ci,
                                                            jGrid, firstCell, lastCell,
@@ -4188,7 +4023,7 @@ static bool checkRebalanceSimpleLists(const nbnxn_pairlist_set_t *listSet)
  */
 static void sort_sci(NbnxnPairlistGpu *nbl)
 {
-    if (nbl->ncj4 <= nbl->nsci)
+    if (nbl->cj4.size() <= nbl->sci.size())
     {
         /* nsci = 0 or all sci have size 1, sorting won't change the order */
         return;
@@ -4197,25 +4032,19 @@ static void sort_sci(NbnxnPairlistGpu *nbl)
     NbnxnPairlistGpuWork &work = *nbl->work;
 
     /* We will distinguish differences up to double the average */
-    const int m = (2*nbl->ncj4)/nbl->nsci;
+    const int m = (2*nbl->cj4.size())/nbl->sci.size();
 
-    if (work.sci_sort_nalloc != nbl->sci_nalloc)
-    {
-        work.sci_sort_nalloc = nbl->sci_nalloc;
-        nbnxn_realloc_void(reinterpret_cast<void **>(&work.sci_sort),
-                           0,
-                           work.sci_sort_nalloc*sizeof(*work.sci_sort),
-                           nbl->alloc, nbl->free);
-    }
+    /* Resize work.sci_sort so we can sort into it */
+    work.sci_sort.resize(nbl->sci.size());
 
     std::vector<int> &sort = work.sortBuffer;
     /* Set up m + 1 entries in sort, initialized at 0 */
     sort.clear();
     sort.resize(m + 1, 0);
     /* Count the entries of each size */
-    for (int s = 0; s < nbl->nsci; s++)
+    for (const nbnxn_sci_t &sci : nbl->sci)
     {
-        int i = std::min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
+        int i = std::min(m, sci.cj4_ind_end - sci.cj4_ind_start);
         sort[i]++;
     }
     /* Calculate the offset for each count */
@@ -4229,11 +4058,11 @@ static void sort_sci(NbnxnPairlistGpu *nbl)
     }
 
     /* Sort entries directly into place */
-    nbnxn_sci_t *sci_sort = work.sci_sort;
-    for (int s = 0; s < nbl->nsci; s++)
+    gmx::ArrayRef<nbnxn_sci_t> sci_sort = work.sci_sort;
+    for (const nbnxn_sci_t &sci : nbl->sci)
     {
-        int i = std::min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
-        sci_sort[sort[i]++] = nbl->sci[s];
+        int i = std::min(m, sci.cj4_ind_end - sci.cj4_ind_start);
+        sci_sort[sort[i]++] = sci;
     }
 
     /* Swap the sci pointers so we use the new, sorted list */

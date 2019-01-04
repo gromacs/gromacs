@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,20 +50,6 @@ class MDLogger;
 
 struct t_mdatoms;
 struct gmx_wallcycle;
-
-/* Default nbnxn allocation routine, allocates 32 byte aligned,
- * which works for plain C and aligned SSE and AVX loads/stores.
- */
-void nbnxn_alloc_aligned(void **ptr, size_t nbytes);
-
-/* Free function for memory allocated with nbnxn_alloc_aligned */
-void nbnxn_free_aligned(void *ptr);
-
-/* Reallocation wrapper function for nbnxn data structures */
-void nbnxn_realloc_void(void **ptr,
-                        int nbytes_copy, int nbytes_new,
-                        nbnxn_alloc_t *ma,
-                        nbnxn_free_t  *mf);
 
 /* Reallocate the nbnxn_atomdata_t for a size of n atoms */
 void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n);
