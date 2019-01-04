@@ -19,12 +19,12 @@ src/gromacs/ewald/pme-simd4.h: warning: should include "pme-simd.h"
 src/gromacs/ewald/pme-spline-work.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/ewald/pme-spline-work.h: warning: includes "simd.h" unnecessarily
 src/gromacs/ewald/pme-spread.cpp: warning: includes "simd.h" unnecessarily
-src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_inner.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_search_simd_2xnn.h: warning: should include "simd.h"
-src/gromacs/mdlib/nbnxn_search_simd_4xn.h: warning: should include "simd.h"
+src/gromacs/nbnxn/kernels_simd_2xnn/inner.h: warning: should include "simd.h"
+src/gromacs/nbnxn/kernels_simd_2xnn/outer.h: warning: should include "simd.h"
+src/gromacs/nbnxn/kernels_simd_4xn/inner.h: warning: should include "simd.h"
+src/gromacs/nbnxn/kernels_simd_4xn/outer.h: warning: should include "simd.h"
+src/gromacs/nbnxn/search_simd_2xnn.h: warning: should include "simd.h"
+src/gromacs/nbnxn/search_simd_4xn.h: warning: should include "simd.h"
 
 # This module name doesn't really fall into any currently used pattern; needs some thought
 : error: no matching directory for module: module_mdrun_integration_tests
