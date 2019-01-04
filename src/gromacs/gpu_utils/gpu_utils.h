@@ -227,25 +227,6 @@ OPENCL_FUNC_TERM_WITH_RETURN(false)
 GPU_FUNC_QUALIFIER
 size_t sizeof_gpu_dev_info() GPU_FUNC_TERM_WITH_RETURN(0)
 
-/*! \brief Returns a pointer *ptr to page-locked memory of size nbytes.
- *
- * The allocated memory is suitable to be used for data transfers between host
- * and GPU.
- * Error handling should be done within this function.
- */
-typedef void gmx_host_alloc_t (void **ptr, size_t nbytes);
-
-/*! \brief Frees page-locked memory pointed to by *ptr.
- *
- * NULL should not be passed to this function.
- */
-typedef void gmx_host_free_t (void *ptr);
-
-/*! \brief Set page-locked memory allocation functions used by the GPU host. */
-void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
-                                  gmx_host_alloc_t **nb_alloc,
-                                  gmx_host_free_t  **nb_free);
-
 //! Get status of device with specified index
 int gpu_info_get_stat(const gmx_gpu_info_t &info, int index);
 

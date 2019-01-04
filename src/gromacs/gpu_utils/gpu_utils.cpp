@@ -51,18 +51,6 @@
 #include "gromacs/utility/stringutil.h"
 
 #if !GMX_GPU
-/*! \brief Set allocation functions used by the GPU host
- *
- * Since GPU support is not configured, there is no host memory to
- * allocate. */
-void gpu_set_host_malloc_and_free(bool /*unused*/,
-                                  gmx_host_alloc_t **nb_alloc,
-                                  gmx_host_free_t  **nb_free)
-{
-    *nb_alloc = nullptr;
-    *nb_free  = nullptr;
-}
-
 int gpu_info_get_stat(const gmx_gpu_info_t & /*unused*/, int /*unused*/)
 {
     return egpuNonexistent;

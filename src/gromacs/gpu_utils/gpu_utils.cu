@@ -498,22 +498,6 @@ size_t sizeof_gpu_dev_info(void)
     return sizeof(gmx_device_info_t);
 }
 
-void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
-                                  gmx_host_alloc_t **nb_alloc,
-                                  gmx_host_free_t  **nb_free)
-{
-    if (bUseGpuKernels)
-    {
-        *nb_alloc = &pmalloc;
-        *nb_free  = &pfree;
-    }
-    else
-    {
-        *nb_alloc = nullptr;
-        *nb_free  = nullptr;
-    }
-}
-
 void startGpuProfiler(void)
 {
     /* The NVPROF_ID environment variable is set by nvprof and indicates that
