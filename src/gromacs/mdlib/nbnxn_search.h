@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,7 @@ nbnxn_search_t nbnxn_init_search(const ivec                *n_dd_cells,
 
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
-                             gmx_bool simple, gmx_bool combined,
-                             nbnxn_alloc_t *alloc,
-                             nbnxn_free_t  *free);
+                             gmx_bool simple, gmx_bool combined);
 
 /* Make a apir-list with radius rlist, store it in nbl.
  * The parameter min_ci_balanced sets the minimum required
