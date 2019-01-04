@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,47 +70,6 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-/* Default nbnxn allocation routine, allocates NBNXN_MEM_ALIGN byte aligned */
-void nbnxn_alloc_aligned(void **ptr, size_t nbytes)
-{
-    *ptr = save_malloc_aligned("ptr", __FILE__, __LINE__, nbytes, 1, NBNXN_MEM_ALIGN);
-}
-
-/* Free function for memory allocated with nbnxn_alloc_aligned */
-void nbnxn_free_aligned(void *ptr)
-{
-    sfree_aligned(ptr);
-}
-
-/* Reallocation wrapper function for nbnxn data structures */
-void nbnxn_realloc_void(void **ptr,
-                        int nbytes_copy, int nbytes_new,
-                        nbnxn_alloc_t *ma,
-                        nbnxn_free_t  *mf)
-{
-    void *ptr_new;
-
-    ma(&ptr_new, nbytes_new);
-
-    if (nbytes_new > 0 && ptr_new == nullptr)
-    {
-        gmx_fatal(FARGS, "Allocation of %d bytes failed", nbytes_new);
-    }
-
-    if (nbytes_copy > 0)
-    {
-        if (nbytes_new < nbytes_copy)
-        {
-            gmx_incons("In nbnxn_realloc_void: new size less than copy size");
-        }
-        memcpy(ptr_new, *ptr, nbytes_copy);
-    }
-    if (*ptr != nullptr)
-    {
-        mf(*ptr);
-    }
-    *ptr = ptr_new;
-}
 
 void nbnxn_atomdata_t::resizeCoordinateBuffer(int numAtoms)
 {
