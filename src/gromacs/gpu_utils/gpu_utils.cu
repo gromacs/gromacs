@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -513,22 +513,6 @@ int get_current_cuda_gpu_device_id(void)
 size_t sizeof_gpu_dev_info(void)
 {
     return sizeof(gmx_device_info_t);
-}
-
-void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
-                                  gmx_host_alloc_t **nb_alloc,
-                                  gmx_host_free_t  **nb_free)
-{
-    if (bUseGpuKernels)
-    {
-        *nb_alloc = &pmalloc;
-        *nb_free  = &pfree;
-    }
-    else
-    {
-        *nb_alloc = nullptr;
-        *nb_free  = nullptr;
-    }
 }
 
 void startGpuProfiler(void)
