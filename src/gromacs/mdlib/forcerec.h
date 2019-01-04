@@ -160,13 +160,6 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
  * with the type of kernel indicated.
  */
 
-gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
-                              const t_inputrec    *ir);
-/* Return if CPU SIMD support exists for the given inputrec
- * If the return value is FALSE and fplog/cr != NULL, prints a fallback
- * message to fplog/stderr.
- */
-
 /* Compute the average C6 and C12 params for LJ corrections */
 void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
                       const gmx_mtop_t *mtop);
