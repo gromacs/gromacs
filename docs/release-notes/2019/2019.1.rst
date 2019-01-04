@@ -18,6 +18,17 @@ Fix segmentation fault in mdrun with domain decomposition
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix trjconv -ndec
+---------------------------------------------------------
+
+This only works for writing .xtc files. The code and documentation now
+works correctly with .gro files, which was changed in 2016 release series so that
+it would only write fixed-width columns.
+
+:issue: `2813`
+:issue: `2037`
+
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
