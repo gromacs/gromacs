@@ -1080,4 +1080,4 @@ class GromacsTree(object):
         return (self._files['src/config.h'],
                 self._files['src/gromacs/simd/simd.h'],
                 self._files['src/gromacs/ewald/pme_simd.h'],
-                self._files['src/gromacs/mdlib/nbnxn_simd.h'])
+                self._files['src/gromacs/nbnxm/nbnxm_simd.h'])

@@ -49,6 +49,7 @@
 
 #include "gromacs/awh/awh.h"
 #include "gromacs/domdec/dlbtiming.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
@@ -78,15 +79,9 @@
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_atomdata.h"
-#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
-#include "gromacs/mdlib/nbnxn_grid.h"
-#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/update.h"
-#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -94,6 +89,11 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/nbnxm/atomdata.h"
+#include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/prunekerneldispatch.h"
+#include "gromacs/nbnxm/kernels_reference/kernel_gpu_ref.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -116,10 +116,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/sysinfo.h"
-
-#include "nbnxn_gpu.h"
-#include "nbnxn_kernels/nbnxn_kernel_cpu.h"
-#include "nbnxn_kernels/nbnxn_kernel_prune.h"
 
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
