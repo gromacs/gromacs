@@ -61,9 +61,7 @@ nbnxn_search_t nbnxn_init_search(const ivec                *n_dd_cells,
 
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
-                             gmx_bool simple, gmx_bool combined,
-                             nbnxn_alloc_t *alloc,
-                             nbnxn_free_t  *free);
+                             gmx_bool simple, gmx_bool combined);
 
 /* Make a apir-list with radius rlist, store it in nbl.
  * The parameter min_ci_balanced sets the minimum required
