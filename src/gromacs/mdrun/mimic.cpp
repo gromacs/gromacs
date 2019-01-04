@@ -85,8 +85,6 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/membed.h"
-#include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/resethandler.h"
 #include "gromacs/mdlib/shellfc.h"
