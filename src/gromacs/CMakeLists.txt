@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -97,6 +97,7 @@ add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(applied-forces)
 add_subdirectory(listed-forces)
+add_subdirectory(nbnxm)
 add_subdirectory(commandline)
 add_subdirectory(domdec)
 add_subdirectory(ewald)
@@ -399,25 +400,25 @@ if(GMX_USE_OPENCL)
         DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/pbcutil
         COMPONENT libraries)
 
-    # Install the NB source and headers
+    # Install the NBNXM source and headers
     file(GLOB OPENCL_INSTALLED_FILES
-        mdlib/nbnxn_consts.h
+        nbnxm/constants.h
         )
-    install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib
+    install(FILES ${OPENCL_INSTALLED_FILES}e
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/nbnxm
         COMPONENT libraries)
     file(GLOB OPENCL_INSTALLED_FILES
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.cl
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernel.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_pruneonly.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen_add_twincut.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_utils.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_consts.h
+        nbnxm/opencl/nbnxm_ocl_kernels.cl
+        nbnxm/opencl/nbnxm_ocl_kernel.clh
+        nbnxm/opencl/nbnxm_ocl_kernel_pruneonly.clh
+        nbnxm/opencl/nbnxm_ocl_kernels.clh
+        nbnxm/opencl/nbnxm_ocl_kernels_fastgen.clh
+        nbnxm/opencl/nbnxm_ocl_kernels_fastgen_add_twincut.clh
+        nbnxm/opencl/nbnxm_ocl_kernel_utils.clh
+        nbnxm/opencl/nbnxm_ocl_consts.h
         )
     install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib/nbnxn_ocl
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/nbnxm/opencl
         COMPONENT libraries)
 
     # Install the PME source and headers
