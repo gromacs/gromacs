@@ -12,6 +12,8 @@ mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
 mdlib -> awh
+nbnxm -> domdec
+nbnxm -> mdlib
 simd -> hardware
 gpu_utils -> hardware
 listed_forces -> mdlib
