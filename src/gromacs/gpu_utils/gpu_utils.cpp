@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,18 +49,6 @@
 #include "gromacs/utility/smalloc.h"
 
 #if !GMX_GPU
-/*! \brief Set allocation functions used by the GPU host
- *
- * Since GPU support is not configured, there is no host memory to
- * allocate. */
-void gpu_set_host_malloc_and_free(bool /*unused*/,
-                                  gmx_host_alloc_t **nb_alloc,
-                                  gmx_host_free_t  **nb_free)
-{
-    *nb_alloc = nullptr;
-    *nb_free  = nullptr;
-}
-
 int gpu_info_get_stat(const gmx_gpu_info_t & /*unused*/, int /*unused*/)
 {
     return egpuNonexistent;
