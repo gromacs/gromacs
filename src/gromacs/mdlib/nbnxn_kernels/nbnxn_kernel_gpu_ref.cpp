@@ -69,14 +69,12 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
                      real  *                     Vc,
                      real  *                     Vvdw)
 {
-    const nbnxn_sci_t  *nbln;
     gmx_bool            bEner;
     gmx_bool            bEwald;
     const real         *Ftab = nullptr;
     real                rcut2, rvdw2, rlist2;
     int                 ntype;
     real                facel;
-    int                 n;
     int                 ish3;
     int                 sci;
     int                 cj4_ind0, cj4_ind1, cj4_ind;
@@ -141,21 +139,19 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
     nhwu        = 0;
     nhwu_pruned = 0;
 
-    for (n = 0; n < nbl->nsci; n++)
+    for (const nbnxn_sci_t &nbln : nbl->sci)
     {
-        nbln = &nbl->sci[n];
-
-        ish3             = 3*nbln->shift;
+        ish3             = 3*nbln.shift;
         shX              = shiftvec[ish3];
         shY              = shiftvec[ish3+1];
         shZ              = shiftvec[ish3+2];
-        cj4_ind0         = nbln->cj4_ind_start;
-        cj4_ind1         = nbln->cj4_ind_end;
-        sci              = nbln->sci;
+        cj4_ind0         = nbln.cj4_ind_start;
+        cj4_ind1         = nbln.cj4_ind_end;
+        sci              = nbln.sci;
         vctot            = 0;
         Vvdwtot          = 0;
 
-        if (nbln->shift == CENTRAL &&
+        if (nbln.shift == CENTRAL &&
             nbl->cj4[cj4_ind0].cj[0] == sci*c_numClPerSupercl)
         {
             /* we have the diagonal:
@@ -224,7 +220,7 @@ nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
                             {
                                 ja               = cj*c_clSize + jc;
 
-                                if (nbln->shift == CENTRAL &&
+                                if (nbln.shift == CENTRAL &&
                                     ci == cj && ja <= ia)
                                 {
                                     continue;
