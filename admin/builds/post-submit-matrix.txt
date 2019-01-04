@@ -46,7 +46,10 @@ clang-4 simd=sse4.1 openmp nranks=1 gpuhw=nvidia cuda-8.0 clang_cuda
 
 # Test MPMD PME with library MPI
 # Test clang + OpenMP
-clang-5 openmp simd=avx_128_fma npme=1 nranks=2 mpi
+#
+# DISABLED pending fixing bs_nix-amd
+#
+# clang-5 openmp simd=avx_128_fma npme=1 nranks=2 mpi
 
 # Test SSE2 SIMD
 # Test CMAKE_BUILD_TYPE=Release
