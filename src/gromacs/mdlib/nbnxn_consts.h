@@ -51,20 +51,6 @@
 #endif
 
 
-/* Cluster-pair Interaction masks for 4xN and 2xNN kernels.
- * Bit i*CJ_SIZE + j tells if atom i and j interact.
- */
-/* All interaction mask is the same for all kernels */
-#define NBNXN_INTERACTION_MASK_ALL        0xffffffffU
-/* 4x4 kernel diagonal mask */
-#define NBNXN_INTERACTION_MASK_DIAG       0x08ceU
-/* 4x2 kernel diagonal masks */
-#define NBNXN_INTERACTION_MASK_DIAG_J2_0  0x0002U
-#define NBNXN_INTERACTION_MASK_DIAG_J2_1  0x002fU
-/* 4x8 kernel diagonal masks */
-#define NBNXN_INTERACTION_MASK_DIAG_J8_0  0xf0f8fcfeU
-#define NBNXN_INTERACTION_MASK_DIAG_J8_1  0x0080c0e0U
-
 /* The number of clusters in a super-cluster, used for GPU */
 #define c_nbnxnGpuNumClusterPerSupercluster  8
 

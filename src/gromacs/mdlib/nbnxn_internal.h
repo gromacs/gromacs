@@ -264,7 +264,8 @@ struct NbnxnPairlistGpuWork
     };
 
     NbnxnPairlistGpuWork() :
-        distanceBuffer(c_gpuNumClusterPerCell)
+        distanceBuffer(c_gpuNumClusterPerCell),
+        sci_sort({}, {gmx::PinningPolicy::PinnedIfSupported})
     {
     }
 
@@ -275,17 +276,14 @@ struct NbnxnPairlistGpuWork
     ISuperClusterData         iSuperClusterData;
     // The current j-cluster index for the current list
     int                       cj_ind;
-    // The first unitialized cj4 block
-    int                       cj4_init;
     // Bounding box distance work array
     AlignedVector<float>      distanceBuffer;
 
     // Buffer for sorting list entries
     std::vector<int>          sortBuffer;
 
-    // TODO: Replace by std::vector with default initialization when converting NbnxnPairlistGpu to C++
-    nbnxn_sci_t              *sci_sort        = nullptr; /* Second sci array, for sorting */
-    int                       sci_sort_nalloc = 0;       /* Allocation size of sci_sort   */
+    // Second sci array, for sorting
+    gmx::HostVector<nbnxn_sci_t> sci_sort;
 
     // Protect data from cache pollution between threads
     gmx_cache_protect_t       cp1;

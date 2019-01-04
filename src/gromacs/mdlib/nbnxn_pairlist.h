@@ -162,6 +162,21 @@ struct nbnxn_cj_t
 #define NBNXN_CI_HALF_LJ(subc)  (1<<(8+3*(subc)))
 #define NBNXN_CI_DO_COUL(subc)  (1<<(9+3*(subc)))
 
+/* Cluster-pair Interaction masks
+ * Bit i*j-cluster-size + j tells if atom i and j interact.
+ */
+// TODO: Rename according to convention when moving into Nbnxn namespace
+/* All interaction mask is the same for all kernels */
+constexpr unsigned int NBNXN_INTERACTION_MASK_ALL       = 0xffffffffU;
+/* 4x4 kernel diagonal mask */
+constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG      = 0x08ceU;
+/* 4x2 kernel diagonal masks */
+constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_0 = 0x0002U;
+constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_1 = 0x002fU;
+/* 4x8 kernel diagonal masks */
+constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_0 = 0xf0f8fcfeU;
+constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
+
 /* Simple pair-list i-unit */
 struct nbnxn_ci_t
 {
@@ -179,22 +194,37 @@ typedef struct {
     int cj4_ind_end;    /* End index into cj4    */
 } nbnxn_sci_t;
 
-typedef struct {
-    unsigned int imask;    /* The i-cluster interactions mask for 1 warp  */
-    int          excl_ind; /* Index into the exclusion array for 1 warp   */
-} nbnxn_im_ei_t;
+/* Interaction data for a j-group for one warp */
+struct nbnxn_im_ei_t
+{
+    // The i-cluster interactions mask for 1 warp
+    unsigned int imask    = 0U;
+    // Index into the exclusion array for 1 warp, default index 0 which means no exclusions
+    int          excl_ind = 0;
+};
 
 typedef struct {
     int           cj[c_nbnxnGpuJgroupSize];         /* The 4 j-clusters */
     nbnxn_im_ei_t imei[c_nbnxnGpuClusterpairSplit]; /* The i-cluster mask data       for 2 warps   */
 } nbnxn_cj4_t;
 
-typedef struct {
-    unsigned int pair[c_nbnxnGpuExclSize]; /* Topology exclusion interaction bits for one warp,
-                                            * each unsigned has bitS for 4*8 i clusters
-                                            */
-} nbnxn_excl_t;
+/* Struct for storing the atom-pair interaction bits for a cluster pair in a GPU pairlist */
+struct nbnxn_excl_t
+{
+    /* Constructor, sets no exclusions, so all atom pairs interacting */
+    nbnxn_excl_t()
+    {
+        for (int w = 0; w < c_nbnxnGpuExclSize; w++)
+        {
+            pair[w] = NBNXN_INTERACTION_MASK_ALL;
+        }
+    }
 
+    /* Topology exclusion interaction bits per warp */
+    unsigned int pair[c_nbnxnGpuExclSize];
+};
+
+/* Cluster pairlist type for use on CPUs */
 struct NbnxnPairlistCpu
 {
     gmx_cache_protect_t     cp0;
@@ -216,32 +246,38 @@ struct NbnxnPairlistCpu
     gmx_cache_protect_t     cp1;
 };
 
+/* Cluster pairlist type, with extra hierarchies, for on the GPU
+ *
+ * NOTE: for better performance when combining lists over threads,
+ *       all vectors should use default initialization. But when
+ *       changing this, excl should be intialized when adding entries.
+ */
 struct NbnxnPairlistGpu
 {
-    gmx_cache_protect_t     cp0;
+    /* Constructor
+     *
+     * \param[in] pinningPolicy  Sets the pinning policy for all buffers used on the GPU
+     */
+    NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy);
 
-    nbnxn_alloc_t          *alloc;
-    nbnxn_free_t           *free;
+    gmx_cache_protect_t            cp0;
 
-    int                     na_ci;       /* The number of atoms per i-cluster        */
-    int                     na_cj;       /* The number of atoms per j-cluster        */
-    int                     na_sc;       /* The number of atoms per super cluster    */
-    real                    rlist;       /* The radius for constructing the list     */
-    int                     nsci;        /* The number of i-super-clusters in the list */
-    nbnxn_sci_t            *sci;         /* The i-super-cluster list                 */
-    int                     sci_nalloc;  /* The allocation size of sci               */
+    int                            na_ci; /* The number of atoms per i-cluster        */
+    int                            na_cj; /* The number of atoms per j-cluster        */
+    int                            na_sc; /* The number of atoms per super cluster    */
+    real                           rlist; /* The radius for constructing the list     */
+    // The i-super-cluster list, indexes into cj4;
+    gmx::HostVector<nbnxn_sci_t>   sci;
+    // The list of 4*j-cluster groups
+    gmx::HostVector<nbnxn_cj4_t>   cj4;
+    // Atom interaction bits (non-exclusions)
+    gmx::HostVector<nbnxn_excl_t>  excl;
+    // The total number of i-clusters
+    int                            nci_tot;
 
-    int                     ncj4;        /* The total number of 4*j clusters         */
-    nbnxn_cj4_t            *cj4;         /* The 4*j cluster list, size ncj4          */
-    int                     cj4_nalloc;  /* The allocation size of cj4               */
-    int                     nexcl;       /* The count for excl                       */
-    nbnxn_excl_t           *excl;        /* Atom interaction bits (non-exclusions)   */
-    int                     excl_nalloc; /* The allocation size for excl             */
-    int                     nci_tot;     /* The total number of i clusters           */
+    NbnxnPairlistGpuWork          *work;
 
-    NbnxnPairlistGpuWork   *work;
-
-    gmx_cache_protect_t     cp1;
+    gmx_cache_protect_t            cp1;
 };
 
 typedef struct {
