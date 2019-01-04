@@ -51,20 +51,6 @@ class MDLogger;
 struct t_mdatoms;
 struct gmx_wallcycle;
 
-/* Default nbnxn allocation routine, allocates 32 byte aligned,
- * which works for plain C and aligned SSE and AVX loads/stores.
- */
-void nbnxn_alloc_aligned(void **ptr, size_t nbytes);
-
-/* Free function for memory allocated with nbnxn_alloc_aligned */
-void nbnxn_free_aligned(void *ptr);
-
-/* Reallocation wrapper function for nbnxn data structures */
-void nbnxn_realloc_void(void **ptr,
-                        int nbytes_copy, int nbytes_new,
-                        nbnxn_alloc_t *ma,
-                        nbnxn_free_t  *mf);
-
 /* Reallocate the nbnxn_atomdata_t for a size of n atoms */
 void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n);
 
