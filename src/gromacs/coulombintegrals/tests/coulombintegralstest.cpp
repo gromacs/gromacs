@@ -166,6 +166,21 @@ TEST_F (CoulombTest, GaussianSameXi)
     testCoulomb(ecdGaussian, 1, 1, 7.0, 7.0, 0.1);
 }
 
+TEST_F (CoulombTest, GaussianSmallDXi)
+{
+    testCoulomb(ecdGaussian, 1, 1, 7.0, 7.0001, 0.1);
+}
+
+TEST_F (CoulombTest, GaussianMediumDXi)
+{
+    testCoulomb(ecdGaussian, 1, 1, 7.0, 7.1, 0.1);
+}
+
+TEST_F (CoulombTest, GaussianLargeDXi)
+{
+    testCoulomb(ecdGaussian, 1, 1, 7.0, 8.0, 0.1);
+}
+
 TEST_F (CoulombTest, SlaterRow1Row2)
 {
     testCoulomb(ecdSlater, 1, 2, 12.0, 16.0, 0.1);
