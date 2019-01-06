@@ -78,5 +78,14 @@ configure-time fatal error is now issued in this case.
 
 :issue:`2500`
 
+Explicitly require 64-bit platforms for OpenCL
+------------------------------------------------
+
+A 64-bit OpenCL runtime is required by GROMACS.
+All known OpenCL implementations on 64-bit platforms are 64-bit
+(and there are no known 32-bit platforms with 64-bit OpenCL),
+hence we require a 64-bit platform at configure-time in OpenCL builds.
+A known unsupported 32-bit platform is ARMv7.
+
 Miscellaneous
 ^^^^^^^^^^^^^

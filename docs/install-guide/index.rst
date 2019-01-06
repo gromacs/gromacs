@@ -203,7 +203,8 @@ version for |Gromacs| code as used as the host compiler for nvcc.
 
 To make it possible to use other accelerators, |Gromacs| also includes
 OpenCL_ support. The minimum OpenCL version required is
-|REQUIRED_OPENCL_MIN_VERSION|. The current OpenCL implementation is recommended for
+|REQUIRED_OPENCL_MIN_VERSION| and only 64-bit implementations are supported.
+The current OpenCL implementation is recommended for
 use with GCN-based AMD GPUs, and on Linux we recommend the ROCm runtime.
 Intel integrated GPUs are supported with the Neo drivers.
 OpenCL is also supported with NVIDIA GPUs, but using
@@ -212,7 +213,8 @@ recommended. Also note that there are performance limitations (inherent
 to the NVIDIA OpenCL runtime).
 It is not possible to configure both CUDA and OpenCL
 support in the same build of |Gromacs|, nor to support both
-Intel and other vendors' GPUs with OpenCL.
+Intel and other vendors' GPUs with OpenCL. A 64-bit implementation
+of OpenCL is required and therefore OpenCL is only supported on 64-bit platforms.
 
 .. _mpi-support:
 
