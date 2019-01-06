@@ -21,5 +21,11 @@ Fixes for ``gmx`` tools
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Explicitly require 64-bit platforms for OpenCL
+------------------------------------------------
+
+We only support 64-bit implementations and therefore 64-bit platforms, hence
+e.g. ARMv7 OpenCL is not supported.
+
 Miscellaneous
 ^^^^^^^^^^^^^
