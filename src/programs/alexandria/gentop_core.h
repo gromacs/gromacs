@@ -60,7 +60,7 @@ void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
 
 void symmetrize_charges(gmx_bool bQsym,
                         t_atoms *atoms,
-                        alexandria::PlistWrapperIterator bonds,
+                        ConstPlistWrapperIterator bonds,
                         const Poldata &pd,
                         gmx_atomprop *aps, const char *symm_string,
                         std::vector<int> &sym_charges);
@@ -70,12 +70,12 @@ enum eChargeGroup {
 };
 
 int *generate_charge_groups(eChargeGroup cgtp, t_atoms *atoms,
-                            std::vector<alexandria::PlistWrapper> &pw,
+                            const std::vector<alexandria::PlistWrapper> &pw,
                             bool bUsePDBcharge,
                             real *qtot, real *mtot);
 
 void sort_on_charge_groups(int *cgnr, t_atoms *atoms,
-                           std::vector<alexandria::PlistWrapper> &pw,
+                           std::vector<alexandria::PlistWrapper> *pw,
                            rvec x[], t_excls excls[],
                            const char *ndxout,
                            int nmol);

@@ -173,13 +173,13 @@ void reset_q(t_atoms *atoms)
     }
 }
 
-void symmetrize_charges(gmx_bool                                        bQsym, 
-                        t_atoms                                        *atoms,
-                        std::vector<alexandria::PlistWrapper>::iterator bonds,
-                        const Poldata                                  &pd,
-                        gmx_atomprop_t                                  aps, 
-                        const char                                     *symm_string,
-                        std::vector<int>                               &sym_charges)
+void symmetrize_charges(gmx_bool                   bQsym, 
+                        t_atoms                   *atoms,
+                        ConstPlistWrapperIterator  bonds,
+                        const Poldata             &pd,
+                        gmx_atomprop_t             aps, 
+                        const char                *symm_string,
+                        std::vector<int>          &sym_charges)
 {
     std::string  central, attached;
     int          ai, aj, anri, anrj;
@@ -307,7 +307,7 @@ static int *generate_cg_neutral(t_atoms *atoms, gmx_bool bUsePDBcharge)
 }
 
 static int *generate_cg_group(t_atoms                               *atoms,
-                              std::vector<alexandria::PlistWrapper> &plist)
+                              const std::vector<alexandria::PlistWrapper> &plist)
 {
     int        i, j, k, atn, ai, aj, ncg = 1;
     int       *cgnr;
@@ -418,15 +418,14 @@ static int *generate_cg_atom(int natom)
 
 int *generate_charge_groups(eChargeGroup                           cgtp, 
                             t_atoms                               *atoms,
-                            std::vector<alexandria::PlistWrapper> &plist,
+                            const std::vector<alexandria::PlistWrapper> &plist,
                             bool                                   bUsePDBcharge,
                             real                                  *qtot, 
                             real                                  *mtot)
 {
     int i, *cgnr = nullptr;
-    std::vector<alexandria::PlistWrapper>::iterator pb, ps;
-    pb = alexandria::SearchPlist(plist, F_BONDS);
-    ps = alexandria::SearchPlist(plist, F_POLARIZATION);
+    //auto pb = alexandria::SearchPlist(plist, F_BONDS);
+    //auto ps = alexandria::SearchPlist(plist, F_POLARIZATION);
 
     switch (cgtp)
     {
@@ -484,7 +483,7 @@ static int cg_comp(const void *a, const void *b)
 
 void sort_on_charge_groups(int                                   *cgnr, 
                            t_atoms                               *atoms,
-                           std::vector<alexandria::PlistWrapper> &pw,
+                           std::vector<alexandria::PlistWrapper> *pw,
                            rvec                                  x[], 
                            t_excls                               excls[],
                            const char                            *ndxout, 
@@ -545,7 +544,7 @@ void sort_on_charge_groups(int                                   *cgnr,
         newi               = cg_renum[i];
         atoms->atomtype[i] = smn[newi];
     }
-    for (auto i = pw.begin(); i < pw.end(); ++i)
+    for (auto i = pw->begin(); i < pw->end(); ++i)
     {
         for (auto j = i->beginParam(); j < i->endParam(); j++)
         {

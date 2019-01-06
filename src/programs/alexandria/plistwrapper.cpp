@@ -46,24 +46,33 @@
 namespace alexandria
 {
 
+ConstPlistWrapperIterator SearchPlist(const std::vector<PlistWrapper> &plist, int ftype)
+{
+    return std::find_if(plist.begin(), plist.end(), [ftype](const PlistWrapper &p) 
+                        { return p.getFtype() == ftype; });
+}
+
+ConstPlistWrapperIterator SearchPlist(const std::vector<PlistWrapper> &plist, InteractionType itype)
+{
+    return std::find_if(plist.begin(), plist.end(), [itype](const PlistWrapper &p) 
+                        { return p.getItype() == itype; });
+}
+
 PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype)
 {
-    return std::find_if(plist.begin(), plist.end(),
-                        [ftype](PlistWrapper &p) 
+    return std::find_if(plist.begin(), plist.end(), [ftype](PlistWrapper &p) 
                         { return p.getFtype() == ftype; });
 }
 
 PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, InteractionType itype)
 {
-    return std::find_if(plist.begin(), plist.end(),
-                        [itype](PlistWrapper &p) 
-                        { return p.interactionType() == itype; });
+    return std::find_if(plist.begin(), plist.end(), [itype](PlistWrapper &p) 
+                        { return p.getItype() == itype; });
 }
 
-unsigned int CountPlist(std::vector<PlistWrapper> &plist, int ftype)
+unsigned int CountPlist(const std::vector<PlistWrapper> &plist, int ftype)
 {
-    return std::count_if(plist.begin(), plist.end(),
-                         [ftype](PlistWrapper &p) 
+    return std::count_if(plist.begin(), plist.end(), [ftype](const PlistWrapper &p) 
                          { return p.getFtype() == ftype; });
 }
 
@@ -71,8 +80,8 @@ void delete_params(std::vector<PlistWrapper> &plist_,
                    const int                  ftype,
                    const int                  alist[])
 {
-    int nra;
-    std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist_, ftype);
+    int  nra;
+    auto pwi = SearchPlist(plist_, ftype);
 
     if (plist_.end() != pwi)
     {

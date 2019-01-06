@@ -1304,7 +1304,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     if (bSymmetricCharges)
     {
         symmetric_charges_.clear();
-        auto bonds = SearchPlist(plist_, eitBONDS);
+        ConstPlistWrapperIterator bonds = SearchPlist(plist_, eitBONDS);
         if (plist_.end() != bonds)
         {
             symmetrize_charges(bSymmetricCharges, &topology_->atoms, bonds,

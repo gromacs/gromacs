@@ -133,14 +133,14 @@ void getBhamParams(const Poldata     &pd,
                    double            *b,
                    double            *c);
 
-void plist_to_mtop(const Poldata             &pd,
-                   std::vector<PlistWrapper>  plist,
-                   gmx_mtop_t                *mtop_);
+void plist_to_mtop(const Poldata                   &pd,
+                   const std::vector<PlistWrapper> &plist,
+                   gmx_mtop_t                      *mtop_);
 
 gmx_mtop_t *do_init_mtop(const Poldata            &pd,
                          char                    **molname,
                          t_atoms                  *atoms,
-                         std::vector<PlistWrapper> plist,
+                         const std::vector<PlistWrapper> &plist,
                          t_inputrec               *ir,
                          t_symtab                 *symtab,
                          const char               *tabfn);
@@ -167,13 +167,13 @@ void print_bondeds(FILE                     *out,
                    directive                 d,
                    int                       plist_ftype,
                    int                       print_ftype,
-                   std::vector<PlistWrapper> plist);
+                   const std::vector<PlistWrapper> &plist);
 
 void write_top(FILE                     *out,
                char                     *molname,
                t_atoms                  *at,
                gmx_bool                  bRTPresname,
-               std::vector<PlistWrapper> plist_,
+               const std::vector<PlistWrapper> &plist,
                t_excls                   excls[],
                gpp_atomtype_t            atype,
                int                      *cgnr,

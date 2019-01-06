@@ -592,9 +592,9 @@ void getBhamParams(const Poldata     &pd,
     }
 }
 
-void plist_to_mtop(const Poldata             &pd,
-                   std::vector<PlistWrapper>  plist,
-                   gmx_mtop_t                *mtop_)
+void plist_to_mtop(const Poldata                   &pd,
+                   const std::vector<PlistWrapper> &plist,
+                   gmx_mtop_t                      *mtop_)
 {
     double fudgeLJ;
     double reppow = 12.0;
@@ -666,7 +666,7 @@ void plist_to_mtop(const Poldata             &pd,
 gmx_mtop_t *do_init_mtop(const Poldata            &pd,
                          char                    **molname,
                          t_atoms                  *atoms,
-                         std::vector<PlistWrapper> plist,
+                         const std::vector<PlistWrapper> &plist,
                          t_inputrec               *ir,
                          t_symtab                 *symtab,
                          const char               *tabfn)
@@ -1024,9 +1024,12 @@ int get_subtype(directive d, int ftype)
     int i;
     for (i = 1; i < 20; i++)
     {
-        if (ifunc_index(d, i) == ftype)
+        if (!(d == d_angles && i == 7))
         {
-            return i;
+            if (ifunc_index(d, i) == ftype)
+            {
+                return i;
+            }
         }
     }
     return 1;
@@ -1036,7 +1039,7 @@ void print_bondeds(FILE                     *out,
                    directive                 d,
                    int                       plist_ftype,
                    int                       print_ftype,
-                   std::vector<PlistWrapper> plist)
+                   const std::vector<PlistWrapper> &plist)
 {
     auto p = SearchPlist(plist, plist_ftype);
 
@@ -1072,7 +1075,7 @@ void write_top(FILE                     *out,
                char                     *molname,
                t_atoms                  *at,
                gmx_bool                  bRTPresname,
-               std::vector<PlistWrapper> plist_,
+               const std::vector<PlistWrapper> &plist,
                t_excls                   excls[],
                gpp_atomtype_t            atype,
                int                      *cgnr,
@@ -1089,31 +1092,31 @@ void write_top(FILE                     *out,
         {
             if (eitBONDS == fs->iType())
             {
-                print_bondeds(out, d_bonds, fs->fType(), fs->fType(), plist_);
+                print_bondeds(out, d_bonds, fs->fType(), fs->fType(), plist);
             }
             else if (eitANGLES == fs->iType() || eitLINEAR_ANGLES == fs->iType())
             {
-                print_bondeds(out, d_angles, fs->fType(), fs->fType(), plist_);
+                print_bondeds(out, d_angles, fs->fType(), fs->fType(), plist);
             }
             else if (eitPROPER_DIHEDRALS == fs->iType() || eitIMPROPER_DIHEDRALS == fs->iType())
             {
-                print_bondeds(out, d_dihedrals, fs->fType(), fs->fType(), plist_);
+                print_bondeds(out, d_dihedrals, fs->fType(), fs->fType(), plist);
             }
         }
-        print_bondeds(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
-        print_bondeds(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
-        print_bondeds(out, d_pairs, F_LJ14, F_LJ14, plist_);
+        print_bondeds(out, d_constraints, F_CONSTR, F_CONSTR, plist);
+        print_bondeds(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist);
+        print_bondeds(out, d_pairs, F_LJ14, F_LJ14, plist);
         print_excl(out, at->nr, excls);
-        print_bondeds(out, d_cmap, F_CMAP, F_CMAP, plist_);
-        print_bondeds(out, d_polarization, F_POLARIZATION, F_POLARIZATION, plist_);
-        print_bondeds(out, d_thole_polarization, F_THOLE_POL, F_THOLE_POL, plist_);
-        print_bondeds(out, d_vsites2, F_VSITE2, F_VSITE2, plist_);
-        print_bondeds(out, d_vsites3, F_VSITE3, F_VSITE3, plist_);
-        print_bondeds(out, d_vsites3, F_VSITE3FD, F_VSITE3FD, plist_);
-        print_bondeds(out, d_vsites3, F_VSITE3FAD, F_VSITE3FAD, plist_);
-        print_bondeds(out, d_vsites3, F_VSITE3OUT, F_VSITE3OUT, plist_);
-        print_bondeds(out, d_vsites4, F_VSITE4FD, F_VSITE4FD, plist_);
-        print_bondeds(out, d_vsites4, F_VSITE4FDN, F_VSITE4FDN, plist_);
+        print_bondeds(out, d_cmap, F_CMAP, F_CMAP, plist);
+        print_bondeds(out, d_polarization, F_POLARIZATION, F_POLARIZATION, plist);
+        print_bondeds(out, d_thole_polarization, F_THOLE_POL, F_THOLE_POL, plist);
+        print_bondeds(out, d_vsites2, F_VSITE2, F_VSITE2, plist);
+        print_bondeds(out, d_vsites3, F_VSITE3, F_VSITE3, plist);
+        print_bondeds(out, d_vsites3, F_VSITE3FD, F_VSITE3FD, plist);
+        print_bondeds(out, d_vsites3, F_VSITE3FAD, F_VSITE3FAD, plist);
+        print_bondeds(out, d_vsites3, F_VSITE3OUT, F_VSITE3OUT, plist);
+        print_bondeds(out, d_vsites4, F_VSITE4FD, F_VSITE4FD, plist);
+        print_bondeds(out, d_vsites4, F_VSITE4FDN, F_VSITE4FDN, plist);
     }
 }
 

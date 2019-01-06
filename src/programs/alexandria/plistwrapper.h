@@ -60,7 +60,8 @@ enum InteractionType
     eitNR                 = 12
 };
 
-using ParamIterator = typename std::vector<t_param>::iterator;
+using ParamIterator      = typename std::vector<t_param>::iterator;
+using ConstParamIterator = typename std::vector<t_param>::const_iterator;
 
 //! Cleaner version of plist array
 class PlistWrapper
@@ -93,6 +94,12 @@ class PlistWrapper
         InteractionType interactionType() const { return itype_; }
 
         //! Loop over parameters
+        ConstParamIterator beginParam() const { return p_.begin(); }
+
+        //! Loop over parameters
+        ConstParamIterator endParam() const { return p_.end(); }
+
+        //! Loop over parameters
         ParamIterator beginParam() { return p_.begin(); }
 
         //! Loop over parameters
@@ -105,17 +112,23 @@ class PlistWrapper
         void eraseParams() { p_.clear(); }
 
         //! Return number of parameters
-        unsigned int nParam() { return p_.size(); }
+        unsigned int nParam() const { return p_.size(); }
 };
 
 //! Another utility typedef for a looper
-using  PlistWrapperIterator = typename std::vector<PlistWrapper>::iterator;
+using  PlistWrapperIterator      = typename std::vector<PlistWrapper>::iterator;
+//! Another utility typedef for a looper
+using  ConstPlistWrapperIterator = typename std::vector<PlistWrapper>::const_iterator;
 
-PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype);
+ConstPlistWrapperIterator SearchPlist(const std::vector<PlistWrapper> &plist, int ftype);
 
-PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, InteractionType itype);
+ ConstPlistWrapperIterator SearchPlist(const std::vector<PlistWrapper> &plist, InteractionType itype);
 
-unsigned int CountPlist(std::vector<PlistWrapper> &plist, int ftype);
+ PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype);
+
+ PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, InteractionType itype);
+
+ unsigned int CountPlist(const std::vector<PlistWrapper> &plist, int ftype);
 
 void add_param_to_plist(std::vector<PlistWrapper> &plist,
                         const int                  ftype,
