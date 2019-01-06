@@ -1622,6 +1622,17 @@ bool bCheckTemperature(double Tref, double T)
     return (Tref < 0) || (fabs(T - Tref) < 0.05);
 }
 
+static bool stringEqual(const std::string& a, const std::string& b)
+{
+    unsigned int sz = a.size();
+    if (b.size() != sz)
+        return false;
+    for (unsigned int i = 0; i < sz; ++i)
+        if (tolower(a[i]) != tolower(b[i]))
+            return false;
+    return true;
+}
+
 bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
                          const std::string &lot,
                          const std::string &conf,
@@ -1637,8 +1648,8 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
     {
         for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
         {
-            if ((conf.size() == 0) ||
-                (ei->getConformation().compare(conf) == 0))
+            if ((conf.size() == 0) || 
+                stringEqual(ei->getConformation(), conf))
             {
                 if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
                     bCheckTemperature(Told, *T))
@@ -1660,7 +1671,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
                 continue;
             }
             if ((conf.size() == 0) ||
-                (ei->getConformation().compare(conf) == 0))
+                stringEqual(ei->getConformation(), conf))
             {
                 if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
                     bCheckTemperature(Told, *T))
@@ -1684,8 +1695,8 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             char buf[256];
             snprintf(buf, sizeof(buf), "%s/%s",
                      ci->getMethod().c_str(), ci->getBasisset().c_str());
-            if (((lot.size() == 0) || (lot.compare(buf) == 0))  &&
-                ((conf.size() == 0) || (ci->getConformation().compare(conf)) == 0))
+            if (((lot.size() == 0)  || stringEqual(lot, buf)) &&
+                ((conf.size() == 0) || stringEqual(ci->getConformation(), conf)))
             {
                 if  (ci->getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
                      bCheckTemperature(Told, *T))

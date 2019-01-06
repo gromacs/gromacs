@@ -1774,8 +1774,10 @@ void MyMol::PrintTopology(FILE                   *fp,
     commercials.push_back(buf);
     
     T = -1;
-    if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, "",
-                              (char *)"electronic", &value, &error,
+    const char *qm_type = "electronic";
+    const char *qm_conf = "minimum";
+    if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, qm_conf,
+                              qm_type, &value, &error,
                               &T, myref, mylot, vec, myQ))
     {
         set_muQM(qtElec, vec);
@@ -1789,12 +1791,10 @@ void MyMol::PrintTopology(FILE                   *fp,
                  mu_qm_[qtElec][XX], mu_qm_[qtElec][YY], mu_qm_[qtElec][ZZ],
                  norm(mu_qm_[qtElec]));
         commercials.push_back(buf);
-        
-        printf("QM dipole found\n");
     }
     else
     {
-        printf("QM dipole not found\n");
+        printf("WARNING: QM dipole of type %s not found for lot %s\n", qm_type, lot);
     }
 
     add_tensor(&commercials,
@@ -1802,8 +1802,8 @@ void MyMol::PrintTopology(FILE                   *fp,
                QQM(qtCalc));
 
     T = -1;
-    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM, lot, "",
-                              (char *)"electronic", &value, &error,
+    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM, lot, qm_conf,
+                              qm_type, &value, &error,
                               &T, myref, mylot, vec, myQ))
     {
         set_QQM(qtElec, myQ);
@@ -1811,6 +1811,11 @@ void MyMol::PrintTopology(FILE                   *fp,
         snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham)", lot);
         add_tensor(&commercials, buf, Q_qm_[qtElec]);
     }
+    else
+    {
+        printf("WARNING: QM quadrupole of type %s not found for lot %s\n", qm_type, lot);
+    }
+
 
     snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additive Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
     commercials.push_back(buf);
