@@ -601,6 +601,15 @@ class Poldata
 
         EempropsIterator EndEemprops() { return eep_.end(); }
 
+        /*! \brief Find the EEM properties
+         *
+         * Find the EEM properties corresponding to an atom type.
+         * \param[in] eqdModel  The charge distriobution model
+         * \param[in] atype     The Alexandria atom type
+         * \returns   An iterator pointing to the right EEMprops
+         *            structure or EndEemprops in case the atom type
+         *            is not found.
+         */
         EempropsConstIterator findEem(ChargeDistributionModel  eqdModel,
                                       const std::string       &atype) const;
 

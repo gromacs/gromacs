@@ -1203,18 +1203,22 @@ void print_top_header(FILE                    *fp,
             for (auto atype = pd.getAtypeBegin(); atype != pd.getAtypeEnd(); atype++)
             {
                 auto eem = pd.findEem(iChargeDistributionModel, atype->getType());
+                if (eem == pd.EndEemprops())
+                {
+                    continue;
+                }
                 switch (iChargeDistributionModel)
                 {
                     case eqdAXpg:
                     {
                         fprintf(fp, "%-5s  1  %g\n",  atype->getType().c_str(),
-                                eem->getZeta(0));
+                                eem->getZeta(1));
                         break;
                     }
                     case eqdAXps:
                     {
                         fprintf(fp, "%-5s  2  %d  %g\n",  atype->getType().c_str(),
-                                eem->getRow(0), eem->getZeta(0));
+                                eem->getRow(0), eem->getZeta(1));
                         break;
                     }
                     default:
