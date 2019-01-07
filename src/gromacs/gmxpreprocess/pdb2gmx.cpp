@@ -586,7 +586,8 @@ static int read_pdball(const char *inf, bool bOutput, const char *outf, char **t
     rename_pdbres(atoms, "WAT", watres, false, symtab);
 
     rename_atoms("xlateat.dat", nullptr,
-                 atoms, symtab, nullptr, true, rt, true, bVerbose);
+                 atoms, symtab, nullptr, true,
+                 rt, true, bVerbose);
 
     if (natom == 0)
     {
@@ -887,14 +888,13 @@ checkResidueTypeSanity(t_atoms     *pdba,
     if (chainID0 != ' ')
     {
         bool        allResiduesHaveSameType = true;
-        const char *restype0;
-        const char *restype;
-        rt->nameIndexedInResidueTypes(*pdba->resinfo[r0].name, &restype0);
+        std::string restype;
+        std::string restype0 = rt->typeNameForIndexedResidue(*pdba->resinfo[r0].name);
 
         for (int i = r0 + 1; i < r1; i++)
         {
-            rt->nameIndexedInResidueTypes(*pdba->resinfo[i].name, &restype);
-            if (gmx_strcasecmp(restype, restype0))
+            restype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
+            if (gmx_strcasecmp(restype.c_str(), restype0.c_str()))
             {
                 allResiduesHaveSameType = false;
                 residueString           = gmx::formatString("%s%d", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
@@ -913,7 +913,7 @@ checkResidueTypeSanity(t_atoms     *pdba,
                       "such as ligands, they should not have the same chain ID as the "
                       "adjacent protein chain since it's a separate molecule.",
                       startResidueString.c_str(), endResidueString.c_str(),
-                      restype0, residueString.c_str(), restype);
+                      restype0.c_str(), residueString.c_str(), restype.c_str());
         }
     }
 }
@@ -922,8 +922,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
                         ResidueType *rt)
 {
     int         i;
-    const char *p_startrestype;
-    const char *p_restype;
+    std::string p_startrestype;
 
     *r_start = -1;
     *r_end   = -1;
@@ -949,13 +948,13 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
     /* Find the starting terminus (typially N or 5') */
     for (i = r0; i < r1 && *r_start == -1; i++)
     {
-        rt->nameIndexedInResidueTypes(*pdba->resinfo[i].name, &p_startrestype);
-        if (!gmx_strcasecmp(p_startrestype, "Protein") || !gmx_strcasecmp(p_startrestype, "DNA") || !gmx_strcasecmp(p_startrestype, "RNA") )
+        p_startrestype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
+        if (!gmx_strcasecmp(p_startrestype.c_str(), "Protein") || !gmx_strcasecmp(p_startrestype.c_str(), "DNA") || !gmx_strcasecmp(p_startrestype.c_str(), "RNA") )
         {
             printf("Identified residue %s%d as a starting terminus.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
             *r_start = i;
         }
-        else if (!gmx_strcasecmp(p_startrestype, "Ion"))
+        else if (!gmx_strcasecmp(p_startrestype.c_str(), "Ion"))
         {
             if (ionNotes < 5)
             {
@@ -1001,14 +1000,14 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
     if (*r_start >= 0)
     {
         /* Go through the rest of the residues, check that they are the same class, and identify the ending terminus. */
-        for (i = *r_start; i < r1; i++)
+        for (int i = *r_start; i < r1; i++)
         {
-            rt->nameIndexedInResidueTypes(*pdba->resinfo[i].name, &p_restype);
-            if (!gmx_strcasecmp(p_restype, p_startrestype) && endWarnings == 0)
+            std::string p_restype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
+            if (!gmx_strcasecmp(p_restype.c_str(), p_startrestype.c_str()) && endWarnings == 0)
             {
                 *r_end = i;
             }
-            else if (!gmx_strcasecmp(p_startrestype, "Ion"))
+            else if (!gmx_strcasecmp(p_startrestype.c_str(), "Ion"))
             {
                 if (ionNotes < 5)
                 {
@@ -1033,8 +1032,8 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
                            "introduce a break, but that will be catastrophic if they should in fact be\n"
                            "linked. Please check your structure, and add %s to residuetypes.dat\n"
                            "if this was not correct.\n\n",
-                           *pdba->resinfo[i].name, pdba->resinfo[i].nr, p_restype,
-                           *pdba->resinfo[*r_start].name, pdba->resinfo[*r_start].nr, p_startrestype, *pdba->resinfo[i].name);
+                           *pdba->resinfo[i].name, pdba->resinfo[i].nr, p_restype.c_str(),
+                           *pdba->resinfo[*r_start].name, pdba->resinfo[*r_start].nr, p_startrestype.c_str(), *pdba->resinfo[i].name);
                 }
                 if (endWarnings == 4)
                 {
@@ -1683,16 +1682,20 @@ int pdb2gmx::run()
 
     /* Add all alternative names from the residue renaming database to the list
        of recognized amino/nucleic acids. */
-    const char *p_restype;
     for (int i = 0; i < nrtprename; i++)
     {
         /* Only add names if the 'standard' gromacs/iupac base name was found */
-        if (rt.nameIndexedInResidueTypes(rtprename[i].gmx, &p_restype))
+
+        /* TODO this should be changed with gmx::optional so that we only need
+         * to search rt once.
+         */
+        if (rt.nameIndexedInResidueTypes(rtprename[i].gmx))
         {
-            rt.addResidue(rtprename[i].main, p_restype);
-            rt.addResidue(rtprename[i].nter, p_restype);
-            rt.addResidue(rtprename[i].cter, p_restype);
-            rt.addResidue(rtprename[i].bter, p_restype);
+            std::string restype = rt.typeNameForIndexedResidue(rtprename[i].gmx);
+            rt.addResidue(rtprename[i].main, restype);
+            rt.addResidue(rtprename[i].nter, restype);
+            rt.addResidue(rtprename[i].cter, restype);
+            rt.addResidue(rtprename[i].bter, restype);
         }
     }
 
@@ -2191,9 +2194,9 @@ int pdb2gmx::run()
 
         /* make up molecule name(s) */
 
-        int k = (cc->nterpairs > 0 && cc->r_start[0] >= 0) ? cc->r_start[0] : 0;
+        int         k = (cc->nterpairs > 0 && cc->r_start[0] >= 0) ? cc->r_start[0] : 0;
 
-        rt.nameIndexedInResidueTypes(*pdba->resinfo[k].name, &p_restype);
+        std::string restype = rt.typeNameForIndexedResidue(*pdba->resinfo[k].name);
 
         std::string molname;
         std::string suffix;
@@ -2228,12 +2231,12 @@ int pdb2gmx::run()
 
             if (suffix.length() > 0)
             {
-                molname.append(p_restype);
+                molname.append(restype);
                 molname.append(suffix);
             }
             else
             {
-                molname = p_restype;
+                molname = restype;
             }
         }
         std::string itp_fn   = topologyFile_;;
