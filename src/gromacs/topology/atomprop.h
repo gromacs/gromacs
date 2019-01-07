@@ -75,24 +75,17 @@ struct AtomProperty {
 };
 //! Datastructure containing all atom properties.
 struct AtomProperties {
-    //! Default constructor.
-    AtomProperties() : bWarned(false), bWarnVDW(false), restype(nullptr)
-    {
-        gmx_residuetype_init(&restype);
-    }
-    //! Need destructor to clean up residuetype.
-    ~AtomProperties()
-    {
-        gmx_residuetype_destroy(restype);
-    }
+    //! Default constructor
+    AtomProperties() : bWarned(false), bWarnVDW(false) {}
+
     //! Has user been warned about error.
-    bool               bWarned;
+    bool           bWarned;
     //! Has user been warned about vdW error.
-    bool               bWarnVDW;
+    bool           bWarnVDW;
     //! The different atom properties.
-    AtomProperty       prop[epropNR];
+    AtomProperty   prop[epropNR];
     //! The residue types.
-    gmx_residuetype_t *restype;
+    ResidueTypes   restype;
 };
 
 
@@ -112,6 +105,7 @@ using AtomPropertiesPtr = std::unique_ptr<AtomProperties>;
 std::string elementFromAtomnumber(AtomProperties *aps, int atomnumber);
 
 /*! \brief
+   >>>>>>> 4bdce1b253... Refactor ResidueTypes and AtomProperties
  * Get atomnumber from \p element name.
  *
  * \param[in] aps Atom properties data.

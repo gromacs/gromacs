@@ -547,7 +547,6 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
 
 void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
-    gmx_residuetype_t*rt = nullptr;
     char             *resnm;
     int               i;
     int               iwater, iion;
@@ -566,8 +565,8 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
     add_grp(gb, gn, aid, "System");
 
     /* For every residue, get a pointer to the residue type name */
-    gmx_residuetype_init(&rt);
-    assert(rt);
+    ResidueTypes rt = initializeResidueTypes();
+    GMX_RELEASE_ASSERT(!rt.empty(), "Residue types have been initialized");
 
     std::vector<std::string> restype;
     std::vector<std::string> previousTypename;
@@ -575,17 +574,14 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
     {
         int i = 0;
 
-        resnm = *atoms->resinfo[i].name;
-        const char *type = nullptr;
-        gmx_residuetype_get_type(rt, resnm, &type);
-        restype.emplace_back(type);
+        resnm      = *atoms->resinfo[i].name;
+        restype.push_back(previouslyDefinedType(&rt, resnm));
         previousTypename.push_back(restype[i]);
 
         for (i = 1; i < atoms->nres; i++)
         {
-            resnm = *atoms->resinfo[i].name;
-            gmx_residuetype_get_type(rt, resnm, &type);
-            restype.emplace_back(type);
+            resnm      = *atoms->resinfo[i].name;
+            restype.push_back(previouslyDefinedType(&rt, resnm));
 
             /* Note that this does not lead to a N*N loop, but N*K, where
              * K is the number of residue _types_, which is small and independent of N.
@@ -691,7 +687,6 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
         gb->nr++;
         gb->index[gb->nr] = gb->nra;
     }
-    gmx_residuetype_destroy(rt);
 }
 
 

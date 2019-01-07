@@ -400,7 +400,6 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
     int               numWarn  = 0;
 
     AtomPropertiesPtr aps      = gmx::compat::make_unique<AtomProperties>();
-
     bool              haveMass = TRUE;
     for (int i = 0; i < atoms->nr; i++)
     {

@@ -318,11 +318,10 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     real              occup, bfac;
     gmx_bool          bOccup;
     int               chainnum, lastchainnum;
-    gmx_residuetype_t*rt;
     const char       *p_restype;
     const char       *p_lastrestype;
 
-    gmx_residuetype_init(&rt);
+    ResidueTypes      rt = initializeResidueTypes();
 
     fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     if (box && ( (norm2(box[XX]) != 0.0f) || (norm2(box[YY]) != 0.0f) || (norm2(box[ZZ]) != 0.0f) ) )
@@ -357,13 +356,15 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         resind        = atoms->atom[i].resind;
         chainnum      = atoms->resinfo[resind].chainnum;
         p_lastrestype = p_restype;
-        gmx_residuetype_get_type(rt, *atoms->resinfo[resind].name, &p_restype);
+        p_restype     = previouslyDefinedType(&rt, *atoms->resinfo[resind].name).c_str();
 
         /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
         if (bTerSepChains && ii > 0 && chainnum != lastchainnum)
         {
             /* Only add TER if the previous chain contained protein/DNA/RNA. */
-            if (gmx_residuetype_is_protein(rt, p_lastrestype) || gmx_residuetype_is_dna(rt, p_lastrestype) || gmx_residuetype_is_rna(rt, p_lastrestype))
+            if (isResidueTypeProtein(&rt, p_lastrestype) ||
+                isResidueTypeDNA(&rt, p_lastrestype) ||
+                isResidueTypeRNA(&rt, p_lastrestype))
             {
                 fprintf(out, "TER\n");
             }
@@ -463,8 +464,6 @@ void write_pdbfile_indexed(FILE *out, const char *title,
             fprintf(out, "CONECT%5d%5d\n", gc->conect[i].ai+1, gc->conect[i].aj+1);
         }
     }
-
-    gmx_residuetype_destroy(rt);
 }
 
 void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rvec x[],
