@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -233,9 +233,9 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     // Initiate variable
     cutoff_               = 0;
-    int            nnovdw = 0;
-    gmx_atomprop_t aps    = gmx_atomprop_init();
-    auto           atoms  = top.copyAtoms();
+    int               nnovdw = 0;
+    AtomPropertiesPtr aps    = initializeAtomProps();
+    auto              atoms  = top.copyAtoms();
 
     // Compute total mass
     mtot_ = 0;
@@ -258,10 +258,10 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
         // Lookup the Van der Waals radius of this atom
         int resnr = atoms->atom[i].resind;
-        if (gmx_atomprop_query(aps, epropVDW,
-                               *(atoms->resinfo[resnr].name),
-                               *(atoms->atomname[i]),
-                               &value))
+        if (setAtomProperty(aps.get(), epropVDW,
+                            *(atoms->resinfo[resnr].name),
+                            *(atoms->atomname[i]),
+                            &value))
         {
             vdw_radius_.push_back(value);
             if (value > cutoff_)
@@ -281,7 +281,6 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
             vdw_radius_.push_back(0.0);
         }
     }
-    gmx_atomprop_destroy(aps);
 
     // Increase cutoff by proberadius to make sure we do not miss
     // anything

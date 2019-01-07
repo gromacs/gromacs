@@ -2185,7 +2185,7 @@ void dd_init_local_top(const gmx_mtop_t &top_global,
     top->idef.cmap_grid  = new gmx_cmap_t;
     *top->idef.cmap_grid = top_global.ffparams.cmap_grid;
 
-    top->idef.ilsort    = ilsortUNKNOWN;
+    top->idef.ilsort        = ilsortUNKNOWN;
     top->useInDomainDecomp_ = true;
 }
 

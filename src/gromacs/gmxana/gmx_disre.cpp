@@ -712,13 +712,13 @@ int gmx_disre(int argc, char *argv[])
         init5(ntop);
     }
 
-    t_inputrec      irInstance;
-    t_inputrec     *ir = &irInstance;
+    t_inputrec               irInstance;
+    t_inputrec              *ir = &irInstance;
 
     gmx::TopologyInformation topInfo;
     topInfo.fillFromInputFile(ftp2fn(efTPR, NFILE, fnm));
-    int ntopatoms = topInfo.mtop()->natoms;
-    AtomsDataPtr atoms;
+    int                      ntopatoms = topInfo.mtop()->natoms;
+    AtomsDataPtr             atoms;
     bPDB = opt2bSet("-q", NFILE, fnm);
     if (bPDB)
     {
