@@ -785,11 +785,6 @@ int Mdrunner::mdrunner()
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
     }
 
-    if (can_use_allvsall(inputrec, TRUE, cr, fplog) && DOMAINDECOMP(cr))
-    {
-        gmx_fatal(FARGS, "All-vs-all loops do not work with domain decomposition, use a single MPI rank");
-    }
-
     if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)))
     {
         if (domdecOptions.numPmeRanks > 0)

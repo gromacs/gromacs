@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,9 +76,8 @@ enum
     eNR_NBKERNEL_FREE_ENERGY,               /* Add other generic kernels _before_ the free energy one */
 
     eNR_NBKERNEL_TOTAL_NR,
-    eNR_NBKERNEL_ALLVSALL = eNR_NBKERNEL_TOTAL_NR, // Reuse the symbolic constant that indicates the last kernel
 
-    eNR_NBNXN_DIST2,
+    eNR_NBNXN_DIST2 = eNR_NBKERNEL_TOTAL_NR, // Reuse the symbolic constant that indicates the last kernel
     eNR_NBNXN_LJ_RF,          eNR_NBNXN_LJ_RF_E,
     eNR_NBNXN_LJ_TAB,         eNR_NBNXN_LJ_TAB_E,
     eNR_NBNXN_LJ_EWALD,       eNR_NBNXN_LJ_EWALD_E,

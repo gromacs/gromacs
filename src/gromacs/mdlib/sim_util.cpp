@@ -1049,7 +1049,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     nonbonded_verlet_t *nbv = fr->nbv;
 
     bStateChanged = ((flags & GMX_FORCE_STATECHANGED) != 0);
-    bNS           = ((flags & GMX_FORCE_NS) != 0) && (!fr->bAllvsAll);
+    bNS           = ((flags & GMX_FORCE_NS) != 0);
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
     bDoForces     = ((flags & GMX_FORCE_FORCES) != 0);
@@ -1836,7 +1836,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     }
 
     bStateChanged  = ((flags & GMX_FORCE_STATECHANGED) != 0);
-    bNS            = ((flags & GMX_FORCE_NS) != 0) && (!fr->bAllvsAll);
+    bNS            = ((flags & GMX_FORCE_NS) != 0);
     /* Should we perform the long-range nonbonded evaluation inside the neighborsearching? */
     bFillGrid      = (bNS && bStateChanged);
     bCalcCGCM      = (bFillGrid && !DOMAINDECOMP(cr));

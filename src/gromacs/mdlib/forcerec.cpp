@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1516,45 +1516,6 @@ static real cutoff_inf(real cutoff)
     return cutoff;
 }
 
-gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, const t_commrec *cr, FILE *fp)
-{
-    gmx_bool bAllvsAll;
-
-    bAllvsAll =
-        (
-            ir->rlist == 0            &&
-            ir->rcoulomb == 0         &&
-            ir->rvdw == 0             &&
-            ir->ePBC == epbcNONE      &&
-            ir->vdwtype == evdwCUT    &&
-            ir->coulombtype == eelCUT &&
-            ir->efep == efepNO        &&
-            getenv("GMX_NO_ALLVSALL") == nullptr
-        );
-
-    if (bAllvsAll && ir->opts.ngener > 1)
-    {
-        const char *note = "NOTE: Can not use all-vs-all force loops, because there are multiple energy monitor groups; you might get significantly higher performance when using only a single energy monitor group.\n";
-
-        if (bPrintNote)
-        {
-            if (fp != nullptr)
-            {
-                fprintf(fp, "\n%s\n", note);
-            }
-        }
-        bAllvsAll = FALSE;
-    }
-
-    if (bAllvsAll && fp && MASTER(cr))
-    {
-        fprintf(fp, "\nUsing SIMD all-vs-all kernels.\n\n");
-    }
-
-    return bAllvsAll;
-}
-
-
 gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
                               const t_inputrec    *ir)
 {
@@ -2460,25 +2421,6 @@ void init_forcerec(FILE                             *fp,
     }
 
     fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
-
-    /* Check if we can/should do all-vs-all kernels */
-    fr->bAllvsAll       = can_use_allvsall(ir, FALSE, nullptr, nullptr);
-    fr->AllvsAll_work   = nullptr;
-
-    /* All-vs-all kernels have not been implemented in 4.6 and later.
-     * See Redmine #1249. */
-    if (fr->bAllvsAll)
-    {
-        fr->bAllvsAll            = FALSE;
-        if (fp != nullptr)
-        {
-            fprintf(fp,
-                    "\nYour simulation settings would have triggered the efficient all-vs-all\n"
-                    "kernels in GROMACS 4.5, but these have not been implemented in GROMACS\n"
-                    "4.6 and 5.x. If performance is important, please use GROMACS 4.5.7\n"
-                    "or try cutoff-scheme = Verlet.\n\n");
-        }
-    }
 
     /* Neighbour searching stuff */
     fr->cutoff_scheme = ir->cutoff_scheme;

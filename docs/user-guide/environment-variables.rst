@@ -282,9 +282,6 @@ Performance and Run Control
 ``GMX_NOOPTIMIZEDKERNELS``
         deprecated, use ``GMX_DISABLE_SIMD_KERNELS`` instead.
 
-``GMX_NO_ALLVSALL``
-        disables optimized all-vs-all kernels.
-
 ``GMX_NO_CART_REORDER``
         used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.
