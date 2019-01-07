@@ -1210,18 +1210,19 @@ void print_top_header(FILE                    *fp,
                 {
                     continue;
                 }
+                std::string shellName = atype->getType() + std::string("_s");
                 switch (iChargeDistributionModel)
                 {
                     case eqdAXpg:
                     {
-                        fprintf(fp, "%-5s  1  %g\n",  atype->getType().c_str(),
+                        fprintf(fp, "%-5s  1  %g\n",  shellName.c_str(),
                                 eem->getZeta(1));
                         break;
                     }
                     case eqdAXps:
                     {
-                        fprintf(fp, "%-5s  2  %d  %g\n",  atype->getType().c_str(),
-                                eem->getRow(0), eem->getZeta(1));
+                        fprintf(fp, "%-5s  2  %d  %g\n",  shellName.c_str(),
+                                eem->getRow(1), eem->getZeta(1));
                         break;
                     }
                     default:
