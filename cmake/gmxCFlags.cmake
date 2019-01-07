@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -118,7 +118,6 @@ macro (gmx_c_flags)
                 GMX_TEST_CFLAG(CFLAGS_WARN_SUBSCRIPT "-Wno-char-subscripts" GMXC_CFLAGS)
             endif()
             GMX_TEST_CFLAG(CFLAGS_STRINGOP_TRUNCATION "-Werror=stringop-truncation" GMXC_CFLAGS)
-            GMX_TEST_CFLAG(CFLAGS_FORMAT_OVERFLOW "-Werror=format-overflow" GMXC_CFLAGS)
         endif()
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
@@ -146,7 +145,6 @@ macro (gmx_c_flags)
             if (CXXFLAGS_STRINGOP_TRUNCATION)
                 set(CXXFLAGS_NO_STRINGOP_TRUNCATION "-Wno-stringop-truncation")
             endif()
-            GMX_TEST_CXXFLAG(CXXFLAGS_FORMAT_OVERFLOW "-Wformat-overflow" GMXC_CXXFLAGS)
         endif()
         # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
