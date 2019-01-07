@@ -485,8 +485,8 @@ int gmx_nmr(int argc, char *argv[])
     do_enxnms(fp, &nre, &enm);
     free_enxnms(nre, enm);
 
-    t_inputrec  irInstance;
-    t_inputrec *ir = &irInstance;
+    t_inputrec               irInstance;
+    t_inputrec              *ir = &irInstance;
     init_enxframe(&fr);
     gmx::TopologyInformation topInfo;
     if (!bDisRe)

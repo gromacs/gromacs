@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -569,7 +569,6 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
 
 void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
-    gmx_residuetype_t*rt = nullptr;
     char             *resnm;
     int              *aid;
     const char    **  restype;
@@ -595,8 +594,8 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
     sfree(aid);
 
     /* For every residue, get a pointer to the residue type name */
-    gmx_residuetype_init(&rt);
-    assert(rt);
+    ResidueTypes rt = initializeResidueTypes();
+    GMX_RELEASE_ASSERT(!rt.empty(), "Residue types have been initialized");
 
     snew(restype, atoms->nres);
     ntypes     = 0;
@@ -605,16 +604,16 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
     {
         int i = 0;
 
-        resnm = *atoms->resinfo[i].name;
-        gmx_residuetype_get_type(rt, resnm, &(restype[i]));
+        resnm      = *atoms->resinfo[i].name;
+        restype[i] = previouslyDefinedType(&rt, resnm).c_str();
         snew(p_typename, ntypes+1);
         p_typename[ntypes] = gmx_strdup(restype[i]);
         ntypes++;
 
         for (i = 1; i < atoms->nres; i++)
         {
-            resnm = *atoms->resinfo[i].name;
-            gmx_residuetype_get_type(rt, resnm, &(restype[i]));
+            resnm      = *atoms->resinfo[i].name;
+            restype[i] = previouslyDefinedType(&rt, resnm).c_str();
 
             /* Note that this does not lead to a N*N loop, but N*K, where
              * K is the number of residue _types_, which is small and independent of N.
@@ -686,7 +685,6 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 
     sfree(p_typename);
     sfree(restype);
-    gmx_residuetype_destroy(rt);
 
     /* Create a merged water_and_ions group */
     iwater = -1;
