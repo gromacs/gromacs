@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,34 +37,95 @@
 #ifndef GMX_TOPOLOGY_ATOMPROP_H
 #define GMX_TOPOLOGY_ATOMPROP_H
 
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-/* Abstract type for the atom property database */
-typedef struct gmx_atomprop *gmx_atomprop_t;
 
 enum {
     epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement,
     epropNR
 };
 
-gmx_atomprop_t gmx_atomprop_init();
-/* Initializes and returns the atom properties struct */
+//! Basic entries in atomproperties.
+struct BaseEntry {
+    //! Name for atom.
+    std::string atomnm;
+    //! Name for residue.
+    std::string resnm;
+    //! Is property available.
+    bool        isAvailable = false;
+    //! Value set for property.
+    real        value = 0.0;
+};
 
-void gmx_atomprop_destroy(gmx_atomprop_t aps);
-/* Get rid of memory after use */
+//! Conglomeration of basic entries.
+struct AtomProperty {
+    //! Has property been set.
+    bool                   isSet = false;
+    //! Database the property is coming from.
+    std::string            db;
+    //! Default value for property.
+    double                 def = 0.0;
+    //! Basic entries for properties.
+    std::vector<BaseEntry> entry;
+};
+//! Datastructure containing all atom properties.
+struct AtomProperties {
+    //! Has user been warned about error.
+    bool           bWarned;
+    //! Has user been warned about vdW error.
+    bool           bWarnVDW;
+    //! The different atom properties.
+    AtomProperty   prop[epropNR];
+    //! The residue types.
+    ResidueTypes   restype;
+};
 
-char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber);
 
-int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *element);
+/* Abstract type for the atom property database */
+//! Forward declaration.
+struct AtomProperties;
+//! Convenvience definition for pointer to AtomProperties.
+using AtomPropertiesPtr = std::unique_ptr<AtomProperties>;
 
-gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
-                            int eprop, const char *resnm, const char *atomnm,
-                            real *value);
-/* Extract a value from the database. Returns TRUE on succes,
- * FALSE otherwise. In the latter case, value is a deafult value.
- * The first time this function is called for this property
- * the database will be read.
+//! Set up atoms properties datastructure.
+AtomPropertiesPtr initializeAtomProps();
+
+/*! \brief
+ * Get name of the element for \p atomnumber.
+ *
+ * \param[in] aps Atom properties data.
+ * \param[in] atomnumber Atomnumber to check.
+ * \returns Name of the element.
  */
+std::string elementFromAtomnumber(AtomProperties *aps, int atomnumber);
 
+/*! \brief
+ * Get atomnumber from \p element name.
+ *
+ * \param[in] aps Atom properties data.
+ * \param[in] element Name of element.
+ * \returns Atomnumber that was being looked for.
+ */
+int atomnumberFromElement(AtomProperties *aps, const char *element);
+
+/*! \brief
+ * Set atom property based on atomname.
+ *
+ * \param[in] aps Atom properties data.
+ * \param[in] eprop Property to set.
+ * \param[in] resnm Residue name for entry.
+ * \param[in] atomnm Atom name for entry.
+ * \param[in,out] value New value to set or default.
+ * \returns If the operation has been succesful.
+ */
+bool setAtomProperty(AtomProperties *aps,
+                     int             eprop,
+                     const char     *resnm,
+                     const char     *atomnm,
+                     real           *value);
 #endif

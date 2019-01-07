@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -535,8 +535,8 @@ static void write_posres(const char *fn, t_atoms *pdba, real fc)
 static int read_pdball(const char *inf, bool bOutput, const char *outf, char **title,
                        t_atoms *atoms, rvec **x,
                        int *ePBC, matrix box, bool bRemoveH,
-                       t_symtab *symtab, gmx_residuetype_t *rt, const char *watres,
-                       gmx_atomprop_t aps, bool bVerbose)
+                       t_symtab *symtab, ResidueTypes *rt, const char *watres,
+                       AtomProperties *aps, bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
     int natom, new_natom, i;
@@ -856,7 +856,7 @@ static void
 checkResidueTypeSanity(t_atoms *            pdba,
                        int                  r0,
                        int                  r1,
-                       gmx_residuetype_t *  rt)
+                       ResidueTypes        *rt)
 {
     std::string startResidueString = gmx::formatString("%s%d", *pdba->resinfo[r0].name, pdba->resinfo[r0].nr);
     std::string endResidueString   = gmx::formatString("%s%d", *pdba->resinfo[r1-1].name, pdba->resinfo[r1-1].nr);
@@ -894,11 +894,11 @@ checkResidueTypeSanity(t_atoms *            pdba,
         bool        allResiduesHaveSameType = true;
         const char *restype0;
         const char *restype;
-        gmx_residuetype_get_type(rt, *pdba->resinfo[r0].name, &restype0);
+        restype0 = previouslyDefinedType(rt, *pdba->resinfo[r0].name).c_str();
 
         for (int i = r0 + 1; i < r1; i++)
         {
-            gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &restype);
+            restype = previouslyDefinedType(rt, *pdba->resinfo[i].name).c_str();
             if (gmx_strcasecmp(restype, restype0))
             {
                 allResiduesHaveSameType = false;
@@ -924,11 +924,10 @@ checkResidueTypeSanity(t_atoms *            pdba,
 }
 
 static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
-                        gmx_residuetype_t *rt)
+                        ResidueTypes *rt)
 {
     int         i;
-    const char *p_startrestype;
-    const char *p_restype;
+    const char *p_startrestype = nullptr;
 
     *r_start = -1;
     *r_end   = -1;
@@ -954,7 +953,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
     /* Find the starting terminus (typially N or 5') */
     for (i = r0; i < r1 && *r_start == -1; i++)
     {
-        gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &p_startrestype);
+        p_startrestype = previouslyDefinedType(rt, *pdba->resinfo[i].name).c_str();
         if (!gmx_strcasecmp(p_startrestype, "Protein") || !gmx_strcasecmp(p_startrestype, "DNA") || !gmx_strcasecmp(p_startrestype, "RNA") )
         {
             printf("Identified residue %s%d as a starting terminus.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
@@ -1006,9 +1005,9 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
     if (*r_start >= 0)
     {
         /* Go through the rest of the residues, check that they are the same class, and identify the ending terminus. */
-        for (i = *r_start; i < r1; i++)
+        for (int i = *r_start; i < r1; i++)
         {
-            gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &p_restype);
+            const char *p_restype = previouslyDefinedType(rt, *pdba->resinfo[i].name).c_str();
             if (!gmx_strcasecmp(p_restype, p_startrestype) && endWarnings == 0)
             {
                 *r_end = i;
@@ -1671,8 +1670,7 @@ int pdb2gmx::run()
     open_symtab(&symtab);
 
     /* Residue type database */
-    gmx_residuetype_t *rt;
-    gmx_residuetype_init(&rt);
+    ResidueTypes rt = initializeResidueTypes();
 
     /* Read residue renaming database(s), if present */
     std::vector<std::string> rrn = fflib_search_file_end(ffdir_, ".r2b", FALSE);
@@ -1689,18 +1687,18 @@ int pdb2gmx::run()
 
     /* Add all alternative names from the residue renaming database to the list
        of recognized amino/nucleic acids. */
-    const char *p_restype;
     for (int i = 0; i < nrtprename; i++)
     {
-        int rc = gmx_residuetype_get_type(rt, rtprename[i].gmx, &p_restype);
+        int rc = isResidueInResidueTypes(&rt, rtprename[i].gmx);
 
         /* Only add names if the 'standard' gromacs/iupac base name was found */
         if (rc == 0)
         {
-            gmx_residuetype_add(rt, rtprename[i].main, p_restype);
-            gmx_residuetype_add(rt, rtprename[i].nter, p_restype);
-            gmx_residuetype_add(rt, rtprename[i].cter, p_restype);
-            gmx_residuetype_add(rt, rtprename[i].bter, p_restype);
+            std::string restype = previouslyDefinedType(&rt, rtprename[i].gmx);
+            addResidue(&rt, rtprename[i].main, restype.c_str());
+            addResidue(&rt, rtprename[i].nter, restype.c_str());
+            addResidue(&rt, rtprename[i].cter, restype.c_str());
+            addResidue(&rt, rtprename[i].bter, restype.c_str());
         }
     }
 
@@ -1722,14 +1720,14 @@ int pdb2gmx::run()
         watres = "HOH";
     }
 
-    gmx_atomprop_t aps   = gmx_atomprop_init();
-    char          *title;
-    int            ePBC;
-    t_atoms        pdba_all;
-    rvec          *pdbx;
-    int            natom = read_pdball(inputConfFile_.c_str(), bOutputSet_, outFile_.c_str(),
-                                       &title, &pdba_all, &pdbx, &ePBC, box, bRemoveH_,
-                                       &symtab, rt, watres, aps, bVerbose_);
+    AtomPropertiesPtr aps   = initializeAtomProps();
+    char             *title;
+    int               ePBC;
+    t_atoms           pdba_all;
+    rvec             *pdbx;
+    int               natom = read_pdball(inputConfFile_.c_str(), bOutputSet_, outFile_.c_str(),
+                                          &title, &pdba_all, &pdbx, &ePBC, box, bRemoveH_,
+                                          &symtab, &rt, watres, aps.get(), bVerbose_);
 
     if (natom == 0)
     {
@@ -2034,7 +2032,7 @@ int pdb2gmx::run()
         for (int i = 0; i < cc->nterpairs; i++)
         {
             find_nc_ter(pdba, cc->chainstart[i], cc->chainstart[i+1],
-                        &(cc->r_start[j]), &(cc->r_end[j]), rt);
+                        &(cc->r_start[j]), &(cc->r_end[j]), &rt);
 
             if (cc->r_start[j] >= 0 && cc->r_end[j] >= 0)
             {
@@ -2153,7 +2151,7 @@ int pdb2gmx::run()
            do now :( AF 26-7-99 */
 
         rename_atoms(nullptr, ffdir_,
-                     pdba, &symtab, restp_chain, false, rt, false, bVerbose_);
+                     pdba, &symtab, restp_chain, false, &rt, false, bVerbose_);
 
         match_atomnames_with_rtp(restp_chain, hb_chain, pdba, x, bVerbose_);
 
@@ -2199,9 +2197,9 @@ int pdb2gmx::run()
 
         /* make up molecule name(s) */
 
-        int k = (cc->nterpairs > 0 && cc->r_start[0] >= 0) ? cc->r_start[0] : 0;
+        int         k = (cc->nterpairs > 0 && cc->r_start[0] >= 0) ? cc->r_start[0] : 0;
 
-        gmx_residuetype_get_type(rt, *pdba->resinfo[k].name, &p_restype);
+        std::string restype = previouslyDefinedType(&rt, *pdba->resinfo[k].name);
 
         std::string molname;
         std::string suffix;
@@ -2236,12 +2234,12 @@ int pdb2gmx::run()
 
             if (suffix.length() > 0)
             {
-                molname.append(p_restype);
+                molname.append(restype);
                 molname.append(suffix);
             }
             else
             {
-                molname = p_restype;
+                molname = restype;
             }
         }
         std::string itp_fn   = topologyFile_;;
@@ -2359,8 +2357,6 @@ int pdb2gmx::run()
 
     print_top_mols(top_file, title, ffdir_, watermodel_, nincl_, incls_, nmol_, mols_);
     gmx_fio_fclose(top_file);
-
-    gmx_residuetype_destroy(rt);
 
     /* now merge all chains back together */
     natom     = 0;

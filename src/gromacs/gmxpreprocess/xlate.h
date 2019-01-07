@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_residuetype_t;
+struct ResidueType;
 struct t_atoms;
 struct t_symtab;
 
@@ -50,7 +50,7 @@ struct t_symtab;
  */
 void rename_atoms(const char* xlfile, const char *ffdir,
                   struct t_atoms *atoms, struct t_symtab *symtab, const t_restp *restp,
-                  bool bResname, struct gmx_residuetype_t *rt, bool bReorderNum,
+                  bool bResname, std::vector<ResidueType> *rt, bool bReorderNum,
                   bool bVerbose);
 
 #endif
