@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,7 @@
 #include "gromacs/utility/strdb.h"
 
 
-static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
+static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, AtomProperties *aps)
 {
     real tmass;
     int  i;
@@ -77,9 +77,9 @@ static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
     {
         if (bGetMass)
         {
-            gmx_atomprop_query(aps, epropMass,
-                               *atoms->resinfo[atoms->atom[i].resind].name,
-                               *atoms->atomname[i], &(atoms->atom[i].m));
+            setAtomProperty(aps, epropMass,
+                            *atoms->resinfo[atoms->atom[i].resind].name,
+                            *atoms->atomname[i], &(atoms->atom[i].m));
         }
         tmass += atoms->atom[i].m;
     }
@@ -716,7 +716,6 @@ int gmx_editconf(int argc, char *argv[])
     gmx_bool          bIndex, bSetSize, bSetAng, bDist, bSetCenter, bAlign;
     gmx_bool          bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
     real              diam = 0, mass = 0, d, vdw;
-    gmx_atomprop_t    aps;
     gmx_conect        conect;
     gmx_output_env_t *oenv;
     t_filenm          fnm[] =
@@ -776,7 +775,7 @@ int gmx_editconf(int argc, char *argv[])
     outftp = fn2ftp(outfile);
     inftp  = fn2ftp(infile);
 
-    aps = gmx_atomprop_init();
+    AtomPropertiesPtr aps = initializeAtomProps();
 
     if (bMead && bGrasp)
     {
@@ -807,14 +806,14 @@ int gmx_editconf(int argc, char *argv[])
 
     if (fn2ftp(infile) == efPDB)
     {
-        get_pdb_atomnumber(&atoms, aps);
+        get_pdb_atomnumber(&atoms, aps.get());
     }
     printf("Read %d atoms\n", atoms.nr);
 
     /* Get the element numbers if available in a pdb file */
     if (fn2ftp(infile) == efPDB)
     {
-        get_pdb_atomnumber(&atoms, aps);
+        get_pdb_atomnumber(&atoms, aps.get());
     }
 
     if (ePBC != epbcNONE)
@@ -842,9 +841,9 @@ int gmx_editconf(int argc, char *argv[])
             /* Determine the Van der Waals radius from the force field */
             if (bReadVDW)
             {
-                if (!gmx_atomprop_query(aps, epropVDW,
-                                        *top->atoms.resinfo[top->atoms.atom[i].resind].name,
-                                        *top->atoms.atomname[i], &vdw))
+                if (!setAtomProperty(aps.get(), epropVDW,
+                                     *top->atoms.resinfo[top->atoms.atom[i].resind].name,
+                                     *top->atoms.atomname[i], &vdw))
                 {
                     vdw = rvdw;
                 }
@@ -955,7 +954,7 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bRho || bOrient || bAlign)
     {
-        mass = calc_mass(&atoms, !fn2bTPX(infile), aps);
+        mass = calc_mass(&atoms, !fn2bTPX(infile), aps.get());
     }
 
     if (bOrient)
@@ -1341,8 +1340,6 @@ int gmx_editconf(int argc, char *argv[])
             write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
         }
     }
-    gmx_atomprop_destroy(aps);
-
     do_view(oenv, outfile, nullptr);
 
     return 0;
