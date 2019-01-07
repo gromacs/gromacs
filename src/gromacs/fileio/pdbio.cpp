@@ -310,19 +310,12 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                            bool usePqrFormat)
 {
     gmx_conect_t     *gc = static_cast<gmx_conect_t *>(conect);
-    int               i, ii;
-    int               resind, resnr;
     enum PDB_record   type;
-    unsigned char     resic, ch;
     char              altloc;
     real              occup, bfac;
     gmx_bool          bOccup;
-    int               chainnum, lastchainnum;
-    gmx_residuetype_t*rt;
-    const char       *p_restype;
-    const char       *p_lastrestype;
 
-    gmx_residuetype_init(&rt);
+    ResidueTypes      rt = initializeResidueTypes();
 
     fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     if (box && ( (norm2(box[XX]) != 0.0f) || (norm2(box[YY]) != 0.0f) || (norm2(box[ZZ]) != 0.0f) ) )
@@ -335,9 +328,9 @@ void write_pdbfile_indexed(FILE *out, const char *title,
          * otherwise set them all to one
          */
         bOccup = TRUE;
-        for (ii = 0; (ii < nindex) && bOccup; ii++)
+        for (int ii = 0; (ii < nindex) && bOccup; ii++)
         {
-            i      = index[ii];
+            int i      = index[ii];
             bOccup = bOccup && (atoms->pdbinfo[i].occup == 0.0);
         }
     }
@@ -348,22 +341,25 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
     fprintf(out, "MODEL %8d\n", model_nr > 0 ? model_nr : 1);
 
-    lastchainnum      = -1;
-    p_restype         = nullptr;
+    int         lastchainnum      = -1;
+    std::string prevRestype;
+    std::string lastRestype;
 
-    for (ii = 0; ii < nindex; ii++)
+    for (int ii = 0; ii < nindex; ii++)
     {
-        i             = index[ii];
-        resind        = atoms->atom[i].resind;
-        chainnum      = atoms->resinfo[resind].chainnum;
-        p_lastrestype = p_restype;
-        gmx_residuetype_get_type(rt, *atoms->resinfo[resind].name, &p_restype);
+        int i             = index[ii];
+        int resind        = atoms->atom[i].resind;
+        int chainnum      = atoms->resinfo[resind].chainnum;
+        lastRestype = prevRestype;
+        prevRestype = previouslyDefinedType(&rt, *atoms->resinfo[resind].name).c_str();
 
         /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
         if (bTerSepChains && ii > 0 && chainnum != lastchainnum)
         {
             /* Only add TER if the previous chain contained protein/DNA/RNA. */
-            if (gmx_residuetype_is_protein(rt, p_lastrestype) || gmx_residuetype_is_dna(rt, p_lastrestype) || gmx_residuetype_is_rna(rt, p_lastrestype))
+            if (isResidueTypeProtein(&rt, lastRestype.c_str()) ||
+                isResidueTypeDNA(&rt, lastRestype.c_str()) ||
+                isResidueTypeRNA(&rt, lastRestype.c_str()))
             {
                 fprintf(out, "TER\n");
             }
@@ -375,8 +371,9 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
         /* rename HG12 to 2HG1, etc. */
         nm    = xlate_atomname_gmx2pdb(nm);
-        resnr = atoms->resinfo[resind].nr;
-        resic = atoms->resinfo[resind].ic;
+        int           resnr = atoms->resinfo[resind].nr;
+        unsigned char resic = atoms->resinfo[resind].ic;
+        unsigned char ch;
         if (chainid != ' ')
         {
             ch = chainid;
@@ -458,13 +455,11 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     if (nullptr != gc)
     {
         /* Write conect records */
-        for (i = 0; (i < gc->nconect); i++)
+        for (int i = 0; (i < gc->nconect); i++)
         {
             fprintf(out, "CONECT%5d%5d\n", gc->conect[i].ai+1, gc->conect[i].aj+1);
         }
     }
-
-    gmx_residuetype_destroy(rt);
 }
 
 void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rvec x[],

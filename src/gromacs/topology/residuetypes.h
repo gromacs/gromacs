@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,43 +35,100 @@
 #ifndef GMX_TOPOLOGY_RESIDUETYPES_H
 #define GMX_TOPOLOGY_RESIDUETYPES_H
 
+#include <string>
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
-typedef struct gmx_residuetype_t gmx_residuetype_t;
+struct ResidueType
+{
+    //! Name of the stored residue.
+    std::string resname;
+    //! Type of the stored residue (Protein, DNA, Lipid, Other).
+    std::string restype;
+};
 
-int
-gmx_residuetype_init(gmx_residuetype_t **rt);
+//! Convenience definition for vector of residue types.
+using ResidueTypes = std::vector<ResidueType>;
+//! Convenience definition for const reference to residue types.
+using ConstResidueTypesRef = gmx::ArrayRef<const ResidueType>;
 
-int
-gmx_residuetype_destroy(gmx_residuetype_t *rt);
+//! Prepare a ResidueTypes datastructure with the basic information.
+ResidueTypes initializeResidueTypes();
 
-int
-gmx_residuetype_get_type(gmx_residuetype_t *rt, const char *resname, const char **p_restype);
+/*! \brief
+ * Find out if entry already exists in the datbase for \p resname.
+ *
+ * \param[in] rt Current state of the database.
+ * \param[in] resname Name of new residue that should be checked.
+ * \returns If the residue is already defined or not.
+ */
+bool isResidueInResidueTypes (const ResidueTypes *rt, const char *resname);
 
-int
-gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype);
+/*! \brief
+ * Find type previously defined residue.
+ *
+ * \param[in] rt ResidueTypes data.
+ * \param[in] resname Name of residue.
+ * \returns Name of the entry.
+ */
+std::string previouslyDefinedType(const ResidueTypes *rt, const char *resname);
 
-int
-gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
-                             const char        ***p_typenames,
-                             int                 *ntypes);
+/*! \brief
+ * Add new entry to ResidueTypes.
+ *
+ * Performs checking if entry is already defined.
+ *
+ * \param[in] rt Database to add entry to.
+ * \param[in] resname Name of new residue.
+ * \param[in] restype Type of enw residue.
+ */
+void addResidue(ResidueTypes *rt, const char *resname, const char *restype);
 
-gmx_bool
-gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm);
+/*! \brief
+ * Is the current residue of type protein.
+ *
+ * \param[in] rt ResidueTypes data.
+ * \param[in] resnm Residue name to check.
+ * \returns Result of check true or false.
+ */
+bool isResidueTypeProtein(const ResidueTypes *rt, const char *resnm);
 
-gmx_bool
-gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm);
+/*! \brief
+ * Is the current residue of type DNA.
+ *
+ * \param[in] rt ResidueTypes data.
+ * \param[in] resnm Residue name to check.
+ * \returns Result of check true or false.
+ */
+bool isResidueTypeDNA(const ResidueTypes *rt, const char *resnm);
 
-gmx_bool
-gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm);
+/*! \brief
+ * Is the current residue of type RNA.
+ *
+ * \param[in] rt ResidueTypes data.
+ * \param[in] resnm Residue name to check.
+ * \returns Result of check true or false.
+ */
+bool isResidueTypeRNA(const ResidueTypes *rt, const char *resnm);
 
-int
-gmx_residuetype_get_size(gmx_residuetype_t *rt);
+/*! \brief
+ * Find index for \p resnm into \p rt.
+ *
+ * \param[in] rt ResidueTypes data.
+ * \param[in] resnm Name of residue to find index for.
+ * \returns Index for the residue or -1 if not found.
+ */
+int findResidueIndex(ConstResidueTypesRef rt, const char *resnm);
 
-int
-gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm);
-
-const char *
-gmx_residuetype_get_name(gmx_residuetype_t *rt, int index);
+/*! \brief
+ * Find name of residue with \p index in \p rt.
+ *
+ * \param[in] rt ResidueTypes data.
+ * \param[in] index Index to check in \p rt.
+ * \returns Name of residue with \p index or nullptr if not found.
+ */
+const char *findResidueName(ConstResidueTypesRef rt, int index);
 
 #endif
