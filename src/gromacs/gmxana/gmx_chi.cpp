@@ -742,7 +742,7 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
                     normalize_histo(nbin, his_aa[Dih][i], (360.0/nbin), normhisto);
                 }
 
-                residue_name = rt->nameFromResidueIndex(i);
+                residue_name = rt->nameFromResidueIndex(i).c_str();
                 switch (Dih)
                 {
                     case edPhi:
