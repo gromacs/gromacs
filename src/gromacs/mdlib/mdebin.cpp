@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -473,16 +473,15 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     snew(md->tmp_r, md->mde_n);
     snew(md->tmp_v, md->mde_n);
-    char **grpnms;
-    snew(grpnms, md->mde_n);
+    std::vector<char *> grpnms;
 
     for (i = 0; (i < md->nTC); i++)
     {
         ni = groups->grps[egcTC].nm_ind[i];
         sprintf(buf, "T-%s", *(groups->grpname[ni]));
-        grpnms[i] = gmx_strdup(buf);
+        grpnms.push_back(buf);
     }
-    md->itemp = get_ebin_space(md->ebin, md->nTC, grpnms,
+    md->itemp = get_ebin_space(md->ebin, md->nTC, grpnms.data(),
                                unit_temp_K);
 
     if (md->etc == etcNOSEHOOVER)
@@ -498,13 +497,13 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     for (j = 0; (j < md->nNHC); j++)
                     {
                         sprintf(buf, "Xi-%d-%s", j, bufi);
-                        grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
+                        grpnms[2*(i*md->nNHC+j)] = buf;
                         sprintf(buf, "vXi-%d-%s", j, bufi);
-                        grpnms[2*(i*md->nNHC+j)+1] = gmx_strdup(buf);
+                        grpnms[2*(i*md->nNHC+j)+1] = buf;
                     }
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
-                                         grpnms, unit_invtime);
+                                         grpnms.data(), unit_invtime);
                 if (md->bMTTK)
                 {
                     for (i = 0; (i < md->nTCP); i++)
@@ -513,13 +512,13 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                         for (j = 0; (j < md->nNHC); j++)
                         {
                             sprintf(buf, "Xi-%d-%s", j, bufi);
-                            grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
+                            grpnms[2*(i*md->nNHC+j)] = buf;
                             sprintf(buf, "vXi-%d-%s", j, bufi);
-                            grpnms[2*(i*md->nNHC+j)+1] = gmx_strdup(buf);
+                            grpnms[2*(i*md->nNHC+j)+1] = buf;
                         }
                     }
                     md->itcb = get_ebin_space(md->ebin, md->mdeb_n,
-                                              grpnms, unit_invtime);
+                                              grpnms.data(), unit_invtime);
                 }
             }
             else
@@ -529,12 +528,12 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     ni   = groups->grps[egcTC].nm_ind[i];
                     bufi = *(groups->grpname[ni]);
                     sprintf(buf, "Xi-%s", bufi);
-                    grpnms[2*i] = gmx_strdup(buf);
+                    grpnms[2*i] = buf;
                     sprintf(buf, "vXi-%s", bufi);
-                    grpnms[2*i+1] = gmx_strdup(buf);
+                    grpnms[2*i+1] = buf;
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
-                                         grpnms, unit_invtime);
+                                         grpnms.data(), unit_invtime);
             }
         }
     }
@@ -545,33 +544,26 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             ni = groups->grps[egcTC].nm_ind[i];
             sprintf(buf, "Lamb-%s", *(groups->grpname[ni]));
-            grpnms[i] = gmx_strdup(buf);
+            grpnms[i] = buf;
         }
-        md->itc = get_ebin_space(md->ebin, md->mde_n, grpnms, "");
+        md->itc = get_ebin_space(md->ebin, md->mde_n, grpnms.data(), "");
     }
-
-    for (i = 0; i < md->mde_n; i++)
-    {
-        sfree(grpnms[i]);
-    }
-    sfree(grpnms);
 
     md->nU = groups->grps[egcACC].nr;
     if (md->nU > 1)
     {
-        snew(grpnms, 3*md->nU);
+        grpnms.resize(3*md->nU);
         for (i = 0; (i < md->nU); i++)
         {
             ni = groups->grps[egcACC].nm_ind[i];
             sprintf(buf, "Ux-%s", *(groups->grpname[ni]));
-            grpnms[3*i+XX] = gmx_strdup(buf);
+            grpnms[3*i+XX] = buf;
             sprintf(buf, "Uy-%s", *(groups->grpname[ni]));
-            grpnms[3*i+YY] = gmx_strdup(buf);
+            grpnms[3*i+YY] = buf;
             sprintf(buf, "Uz-%s", *(groups->grpname[ni]));
-            grpnms[3*i+ZZ] = gmx_strdup(buf);
+            grpnms[3*i+ZZ] = buf;
         }
-        md->iu = get_ebin_space(md->ebin, 3*md->nU, grpnms, unit_vel);
-        sfree(grpnms);
+        md->iu = get_ebin_space(md->ebin, 3*md->nU, grpnms.data(), unit_vel);
     }
 
     if (fp_ene)
