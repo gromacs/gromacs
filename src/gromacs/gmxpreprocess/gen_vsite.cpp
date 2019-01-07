@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -534,7 +534,7 @@ static void print_bonds(FILE *fp, int o2n[],
 }
 
 static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
-                     gmx_residuetype_t *rt)
+                     gmx::ArrayRef<const ResidueType> rt)
 {
     int      type;
     bool     bNterm;
@@ -549,7 +549,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     {
         /* get type from rtp */
         rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), nrtp, rtp);
-        bNterm = gmx_residuetype_is_protein(rt, *(at->resinfo[at->atom[atom].resind].name)) &&
+        bNterm = isResidueTypeProtein(rt, *(at->resinfo[at->atom[atom].resind].name)) &&
             (at->atom[atom].resind == 0);
         j    = search_jtype(rtpp, *(at->atomname[atom]), bNterm);
         type = rtpp->atom[j].type;
@@ -572,7 +572,7 @@ static int vsite_nm2type(const char *name, gpp_atomtype_t atype)
 }
 
 static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
-                      gmx_residuetype_t *rt)
+                      gmx::ArrayRef<const ResidueType> rt)
 {
     real     mass;
     bool     bNterm;
@@ -587,7 +587,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     {
         /* get mass from rtp */
         rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), nrtp, rtp);
-        bNterm = gmx_residuetype_is_protein(rt, *(at->resinfo[at->atom[atom].resind].name)) &&
+        bNterm = isResidueTypeProtein(rt, *(at->resinfo[at->atom[atom].resind].name)) &&
             (at->atom[atom].resind == 0);
         j    = search_jtype(rtpp, *(at->atomname[atom]), bNterm);
         mass = rtpp->atom[j].m;
@@ -1558,7 +1558,6 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     char             *resnm = nullptr;
     int               nvsiteconf, nvsitetop, cmplength;
     bool              isN, planarN, bFound;
-    gmx_residuetype_t*rt;
 
     t_vsiteconf      *vsiteconflist;
     /* pointer to a list of CH3/NH3/NH2 configuration entries.
@@ -1645,7 +1644,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     /* make index to tell which residues were already processed */
     snew(bResProcessed, at->nres);
 
-    gmx_residuetype_init(&rt);
+    std::vector<ResidueType> rt = initializeResidueTypes();
 
     /* generate vsite constructions */
     /* loop over all atoms */
@@ -1664,9 +1663,9 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
          * N-terminus that must be treated first.
          */
         if (bVsiteAromatics &&
-            !strcmp(*(at->atomname[i]), "CA") &&
+            (strcmp(*(at->atomname[i]), "CA") != 0) &&
             !bResProcessed[resind] &&
-            gmx_residuetype_is_protein(rt, *(at->resinfo[resind].name)) )
+            isResidueTypeProtein(rt, *(at->resinfo[resind].name)) )
         {
             /* mark this residue */
             bResProcessed[resind] = TRUE;
@@ -2047,8 +2046,6 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
         } /* if vsite NOTSET & is hydrogen */
 
     }     /* for i < at->nr */
-
-    gmx_residuetype_destroy(rt);
 
     if (debug)
     {

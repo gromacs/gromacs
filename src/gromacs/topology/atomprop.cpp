@@ -43,6 +43,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"
@@ -78,7 +79,7 @@ static int dbcmp_len(const char *search, const char *database)
     return i;
 }
 
-static int get_prop_index(AtomProperty *ap, gmx_residuetype_t *restype,
+static int get_prop_index(AtomProperty *ap, gmx::ArrayRef<const ResidueType> restype,
                           char *resnm, char *atomnm,
                           gmx_bool *bExact)
 {
@@ -87,7 +88,7 @@ static int get_prop_index(AtomProperty *ap, gmx_residuetype_t *restype,
     long int malen, mrlen;
     gmx_bool bProtein, bProtWild;
 
-    bProtein  = gmx_residuetype_is_protein(restype, resnm);
+    bProtein  = isResidueTypeProtein(restype, resnm);
     bProtWild = (strcmp(resnm, "AAA") == 0);
     malen     = NOTFOUND;
     mrlen     = NOTFOUND;
@@ -140,7 +141,7 @@ static int get_prop_index(AtomProperty *ap, gmx_residuetype_t *restype,
     return j;
 }
 
-static void add_prop(AtomProperty *ap, gmx_residuetype_t *restype,
+static void add_prop(AtomProperty *ap, gmx::ArrayRef<const ResidueType> restype,
                      char *resnm, char *atomnm,
                      real p, int line)
 {
