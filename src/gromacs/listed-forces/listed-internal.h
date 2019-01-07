@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,7 @@ struct bonded_threading_t
 {
     /* Thread local force and energy data */
     int            nthreads;     /**< Number of threads to be used for bondeds */
-    f_thread_t    *f_t;          /**< Force/enegry data per thread, size nthreads */
+    f_thread_t    *f_t;          /**< Force/energy data per thread, size nthreads */
     int            nblock_used;  /**< The number of force blocks to reduce */
     int           *block_index;  /**< Index of size nblock_used into mask */
     gmx_bitmask_t *mask;         /**< Mask array, one element corresponds to a block of reduction_block_size atoms of the force array, bit corresponding to thread indices set if a thread writes to that block */
