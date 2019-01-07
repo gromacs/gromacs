@@ -1669,7 +1669,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
          * N-terminus that must be treated first.
          */
         if (bVsiteAromatics &&
-            !strcmp(*(at->atomname[i]), "CA") &&
+            (strcmp(*(at->atomname[i]), "CA") == 0) &&
             !bResProcessed[resind] &&
             rt.namedResidueHasType(*(at->resinfo[resind].name), "Protein") )
         {

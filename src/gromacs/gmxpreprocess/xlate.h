@@ -38,6 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_XLATE_H
 #define GMX_GMXPREPROCESS_XLATE_H
 
+#include "gromacs/utility/arrayref.h"
+
 class ResidueType;
 struct t_atoms;
 struct t_restp;
