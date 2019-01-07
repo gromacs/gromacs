@@ -35,6 +35,8 @@
 #ifndef GMX_TOPOLOGY_RESIDUETYPES_H
 #define GMX_TOPOLOGY_RESIDUETYPES_H
 
+#include <string>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -55,20 +57,18 @@ class ResidueType
         int numberOfEntries() const;
         /*! \brief
          * Return true if residue \p residueName is found or false otherwise.
-         * \p residueTypePointer is set to the type name, or "Other" if not found.
          *
          * \param[in] residueName Residue name to search database for.
-         * \param[out] residueTypePointer Name of found type or "Other".
          * \returns true if successful.
          */
-        bool nameIndexedInResidueTypes(const char *residueName, const char **residueTypePointer);
+        bool nameIndexedInResidueTypes(const std::string &residueName);
         /*! \brief
          * Add entry to ResidueTypes if unique.
          *
          * \param[in] residueName Name of new residue.
          * \param[in] residueType Type of new residue.
          */
-        void addResidue(const char *residueName, const char *residueType);
+        void addResidue(const std::string &residueName, const std::string &residueType);
         /*! \brief
          * Checks if the indicated \p residueName if of \p residueType.
          *
@@ -76,21 +76,29 @@ class ResidueType
          * \param[in] residueType Which ResidueType the residue should have.
          * \returns If the check was successful.
          */
-        bool namedResidueHasType(const char *residueName, const char *residueType);
+        bool namedResidueHasType(const std::string &residueName, const std::string &residueType);
         /*! \brief
-         * Get entry index in ResidueTypes with name \p residueName.
+         * Get index to entry in ResidueTypes with name \p residueName.
          *
          * \param[in] residueName Name of the residue being searched.
-         * \returns Value of the entry or -1.
+         * \returns The index or -1 if not found.
          */
-        int indexFromResidueName(const char *residueName) const;
+        int indexFromResidueName(const std::string &residueName) const;
         /*! \brief
          * Get the name of the entry in ResidueTypes with \p index.
          *
          * \param[in] index Which entry should be returned.
          * \returns The name of the entry at \p index, or nullptr.
          */
-        const char *nameFromResidueIndex(int index) const;
+        const std::string nameFromResidueIndex(int index) const;
+        /*! \brief
+         * Get name of residue type for already defined residue.
+         *
+         *
+         * \param[in] residueName Name of the residue to search for.
+         * \returns Type name or UndefineResidueName if not found.
+         */
+        const std::string typeNameForIndexedResidue(const std::string &residueName);
 
     private:
         //! Implementation pointer.
@@ -98,6 +106,5 @@ class ResidueType
 
         gmx::PrivateImplPointer<Impl> impl_;
 };
-
 
 #endif

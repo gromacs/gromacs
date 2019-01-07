@@ -41,7 +41,9 @@
 
 #include <algorithm>
 #include <iterator>
+#include <string>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -49,25 +51,27 @@
 #include "gromacs/utility/strdb.h"
 
 //! Definition for residue type that is not known.
-const char undefinedResidueType[] = "Other";
+const std::string c_undefinedResidueType = "Other";
 
 //! Single ResidueType entry object
 struct ResidueTypeEntry
 {
-    //! Name of residue.
-    char *residueName;
-    //! Type name for residue entry.
-    char *residueType;
+    //! Default constructor creates complete object.
+    ResidueTypeEntry(const std::string &rName, const std::string &rType)
+        : residueName(rName), residueType(rType)
+    {}
+    //! Name of the residue in the entry.
+    std::string residueName;
+    //! Type of the residue in the entry.
+    std::string residueType;
 };
 
 //! Implementation detail for ResidueTypes
 class ResidueType::Impl
 {
     public:
-        //! Number of entries
-        int               n     = 0;
         //! Storage object for entries.
-        ResidueTypeEntry *entry = nullptr;
+        std::vector<ResidueTypeEntry> entry;
 };
 
 ResidueType::ResidueType()
@@ -95,87 +99,89 @@ ResidueType::ResidueType()
 
 ResidueType::~ResidueType()
 {
-    for (int i = 0; i < impl_->n; i++)
-    {
-        sfree(impl_->entry[i].residueName);
-        sfree(impl_->entry[i].residueType);
-    }
-    sfree(impl_->entry);
 }
 
-bool ResidueType::nameIndexedInResidueTypes(const char *residueName, const char **residueTypePointer)
+/*! \brief
+ * Find a residue entry by the residue name.
+ *
+ * \param[in] entries Currently registered residue entries in the database.
+ * \param[in] residueName Name of a residue to compare to database.
+ * \returns A pointer to the entry that was found, or nullptr.
+ */
+static gmx::ArrayRef<const ResidueTypeEntry>::iterator
+residueEntryByResidueName(gmx::ArrayRef<const ResidueTypeEntry> entries, const std::string &residueName)
 {
-    int    i, rc;
-
-    rc = -1;
-    for (i = 0; i < impl_->n && rc; i++)
-    {
-        rc = gmx_strcasecmp(impl_->entry[i].residueName, residueName);
-    }
-
-    *residueTypePointer = (rc == 0) ? impl_->entry[i-1].residueType : undefinedResidueType;
-
-    return (rc == 0);
+    return std::find_if(entries.begin(), entries.end(),
+                        [&residueName](const ResidueTypeEntry &old)
+                        { return gmx_strcasecmp(old.residueName.c_str(), residueName.c_str()) == 0; });
 }
 
-void ResidueType::addResidue(const char *residueName, const char *residueType)
+bool ResidueType::nameIndexedInResidueTypes(const std::string &residueName)
 {
-    const char *  p_oldtype;
+    return residueEntryByResidueName(impl_->entry, residueName) != nullptr;
+}
 
-    bool          found = nameIndexedInResidueTypes(residueName, &p_oldtype);
+void ResidueType::addResidue(const std::string &residueName, const std::string &residueType)
+{
+    gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
+    auto found = residueEntryByResidueName(temp, residueName);
 
-    if (found && gmx_strcasecmp(p_oldtype, residueType))
+    if (found != temp.end())
     {
-        fprintf(stderr, "Warning: Residue '%s' already present with type '%s' in database, ignoring new type '%s'.",
-                residueName, p_oldtype, residueType);
+        if (gmx_strcasecmp(found->residueType.c_str(), residueType.c_str()))
+        {
+            fprintf(stderr, "Warning: Residue '%s' already present with type '%s' in database, ignoring new type '%s'.\n",
+                    residueName.c_str(), found->residueType.c_str(), residueType.c_str());
+        }
     }
-
-    if (!found)
+    else
     {
-        srenew(impl_->entry, impl_->n+1);
-        impl_->entry[impl_->n].residueName = gmx_strdup(residueName);
-        impl_->entry[impl_->n].residueType = gmx_strdup(residueType);
-        impl_->n++;
+        impl_->entry.emplace_back(residueName, residueType);
     }
 }
 
-bool ResidueType::namedResidueHasType(const char *residueName, const char *residueType)
+bool ResidueType::namedResidueHasType(const std::string &residueName, const std::string &residueType)
 {
-    bool        rc;
-    const char *p_type;
-
-    rc = nameIndexedInResidueTypes(residueName, &p_type) &&
-        gmx_strcasecmp(p_type, residueType) == 0;
-
-    return rc;
+    gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
+    auto found = residueEntryByResidueName(temp, residueName);
+    return  ((found != temp.end()) &&
+             (gmx_strcasecmp(residueType.c_str(), found->residueType.c_str()) == 0));
 }
 
 int ResidueType::numberOfEntries() const
 {
-    return impl_->n;
+    return impl_->entry.size();
 }
 
-int ResidueType::indexFromResidueName(const char *residueName) const
+int ResidueType::indexFromResidueName(const std::string &residueName) const
 {
-    int i, rc;
-
-    rc = -1;
-    for (i = 0; i < impl_->n && rc; i++)
-    {
-        rc = gmx_strcasecmp(impl_->entry[i].residueName, residueName);
-    }
-
-    return (0 == rc) ? i-1 : -1;
+    gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
+    auto found = residueEntryByResidueName(temp, residueName);
+    return (found != temp.end()) ? std::distance(temp.begin(), found) : -1;
 }
 
-const char *ResidueType::nameFromResidueIndex(int index) const
+const std::string ResidueType::nameFromResidueIndex(int index) const
 {
-    if (index >= 0 && index < impl_->n)
+    if (index >= 0 && index < static_cast<int>(impl_->entry.size()))
     {
         return impl_->entry[index].residueName;
     }
     else
     {
-        return nullptr;
+        return "";
+    }
+}
+
+const std::string ResidueType::typeNameForIndexedResidue(const std::string &residueName)
+{
+    gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
+    auto found = residueEntryByResidueName(temp, residueName);
+    if (found != temp.end())
+    {
+        return found->residueType;
+    }
+    else
+    {
+        return c_undefinedResidueType;
     }
 }
