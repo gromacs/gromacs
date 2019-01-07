@@ -75,24 +75,17 @@ struct AtomProperty {
 };
 //! Datastructure containing all atom properties.
 struct AtomProperties {
-    //! Default constructor.
-    AtomProperties() : bWarned(false), bWarnVDW(false), restype(nullptr)
-    {
-        gmx_residuetype_init(&restype);
-    }
-    //! Need destructor to clean up residuetype.
-    ~AtomProperties()
-    {
-        gmx_residuetype_destroy(restype);
-    }
+    //! Default constructor
+    AtomProperties() : bWarned(false), bWarnVDW(false) {}
+
     //! Has user been warned about error.
-    bool               bWarned;
+    bool                     bWarned;
     //! Has user been warned about vdW error.
-    bool               bWarnVDW;
+    bool                     bWarnVDW;
     //! The different atom properties.
-    AtomProperty       prop[epropNR];
+    AtomProperty             prop[epropNR];
     //! The residue types.
-    gmx_residuetype_t *restype;
+    std::vector<ResidueType> restype;
 };
 
 
