@@ -51,7 +51,7 @@
 
 enum
 {
-    egcTC,    egcENER,   egcACC, egcFREEZE,
+    egcTC,    egcENER,   egcACC_NOTUSED, egcFREEZE,
     egcUser1, egcUser2,  egcVCM, egcCompressedX,
     egcORFIT, egcQMMM,
     egcNR

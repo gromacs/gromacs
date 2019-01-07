@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,43 +69,11 @@ static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
     }
 }
 
-static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
-{
-    gmx_mtop_atomloop_all_t aloop;
-    int                     i, grp;
-    const t_atom           *atom;
-
-    if (ngacc > 0)
-    {
-        const gmx_groups_t &groups = mtop->groups;
-        aloop  = gmx_mtop_atomloop_all_init(mtop);
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
-        {
-            grp = getGroupType(groups, egcACC, i);
-            if ((grp < 0) && (grp >= ngacc))
-            {
-                gmx_incons("Input for acceleration groups wrong");
-            }
-            gstat[grp].nat++;
-            /* This will not work for integrator BD */
-            gstat[grp].mA += atom->m;
-            gstat[grp].mB += atom->mB;
-        }
-    }
-}
-
-void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts *opts,
+void init_ekindata(FILE gmx_unused *log, const t_grpopts *opts,
                    gmx_ekindata_t *ekind)
 {
     int i;
     int nthread, thread;
-
-    /* bNEMD tells if we should remove remove the COM velocity
-     * from the velocities during velocity scaling in T-coupling.
-     * Turn this on when we have multiple acceleration groups
-     * or one accelerated group.
-     */
-    ekind->bNEMD = (opts->ngacc > 1 || norm2(opts->acc[0]) > 0);
 
     ekind->ngtc = opts->ngtc;
     snew(ekind->tcstat, opts->ngtc);
@@ -147,75 +115,6 @@ void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts
 #undef EKIN_WORK_BUFFER_SIZE
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
-
-    ekind->ngacc = opts->ngacc;
-    snew(ekind->grpstat, opts->ngacc);
-    init_grpstat(mtop, opts->ngacc, ekind->grpstat);
-}
-
-void accumulate_u(const t_commrec *cr, const t_grpopts *opts, gmx_ekindata_t *ekind)
-{
-    /* This routine will only be called when it's necessary */
-    t_bin *rb;
-    int    g;
-
-    rb = mk_bin();
-
-    for (g = 0; (g < opts->ngacc); g++)
-    {
-        add_binr(rb, DIM, ekind->grpstat[g].u);
-    }
-    sum_bin(rb, cr);
-
-    for (g = 0; (g < opts->ngacc); g++)
-    {
-        extract_binr(rb, DIM*g, DIM, ekind->grpstat[g].u);
-    }
-    destroy_bin(rb);
-}
-
-void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
-                     const t_grpopts *opts, const rvec v[], const t_mdatoms *md, real lambda)
-{
-    int  d, g, n;
-    real mv;
-
-    /* calculate mean velocities at whole timestep */
-    for (g = 0; (g < opts->ngtc); g++)
-    {
-        ekind->tcstat[g].T = 0;
-    }
-
-    if (ekind->bNEMD)
-    {
-        for (g = 0; (g < opts->ngacc); g++)
-        {
-            clear_rvec(ekind->grpstat[g].u);
-        }
-
-        g = 0;
-        for (n = start; (n < start+homenr); n++)
-        {
-            if (md->cACC)
-            {
-                g = md->cACC[n];
-            }
-            for (d = 0; (d < DIM); d++)
-            {
-                mv                      = md->massT[n]*v[n][d];
-                ekind->grpstat[g].u[d] += mv;
-            }
-        }
-
-        for (g = 0; (g < opts->ngacc); g++)
-        {
-            for (d = 0; (d < DIM); d++)
-            {
-                ekind->grpstat[g].u[d] /=
-                    (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
-            }
-        }
     }
 }
 

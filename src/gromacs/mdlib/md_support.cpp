@@ -191,14 +191,6 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
 
     if (bTemp)
     {
-        /* Non-equilibrium MD: this is parallellized, but only does communication
-         * when there really is NEMD.
-         */
-
-        if (PAR(cr) && (ekind->bNEMD))
-        {
-            accumulate_u(cr, &(ir->opts), ekind);
-        }
         if (!bReadEkin)
         {
             calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel);

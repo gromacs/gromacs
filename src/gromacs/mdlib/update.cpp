@@ -392,7 +392,7 @@ updateMDLeapfrogSimpleSimd(int                       start,
 /*! \brief Sets the NEMD acceleration type */
 enum class AccelerationType
 {
-    none, group, cosine
+    none, cosine
 };
 
 /*! \brief Integrate using leap-frog with support for everything
@@ -441,14 +441,9 @@ updateMDLeapfrogGeneral(int                         start,
     const unsigned short    * cTC           = md->cTC;
     const t_grp_tcstat      * tcstat        = ekind->tcstat;
 
-    const unsigned short    * cACC          = md->cACC;
-    const rvec              * accel         = ir->opts.acc;
-    const t_grp_acc         * grpstat       = ekind->grpstat;
-
     const rvec * gmx_restrict invMassPerDim = md->invMassPerDim;
 
     /* Initialize group values, changed later when multiple groups are used */
-    int  ga       = 0;
     int  gt       = 0;
     real factorNH = 0;
 
@@ -471,14 +466,6 @@ updateMDLeapfrogGeneral(int                         start,
         {
             case AccelerationType::none:
                 copy_rvec(v[n], vRel);
-                break;
-            case AccelerationType::group:
-                if (cACC)
-                {
-                    ga = cACC[n];
-                }
-                /* Avoid scaling the group velocity */
-                rvec_sub(v[n], grpstat[ga].u, vRel);
                 break;
             case AccelerationType::cosine:
                 cosineZ = std::cos(x[n][ZZ]*omega_Z);
@@ -505,10 +492,6 @@ updateMDLeapfrogGeneral(int                         start,
             switch (accelerationType)
             {
                 case AccelerationType::none:
-                    break;
-                case AccelerationType::group:
-                    /* Add back the mean velocity and apply acceleration */
-                    vNew += grpstat[ga].u[d] + accel[ga][d]*dt;
                     break;
                 case AccelerationType::cosine:
                     if (d == XX)
@@ -550,8 +533,8 @@ static void do_update_md(int                         start,
 
     real dtPressureCouple   = (doParrinelloRahman ? ir->nstpcouple*dt : 0);
 
-    /* NEMD (also cosine) acceleration is applied in updateMDLeapFrogGeneral */
-    bool doAcceleration     = (ekind->bNEMD || ekind->cosacc.cos_accel != 0);
+    /* NEMD cosine acceleration is applied in updateMDLeapFrogGeneral */
+    bool doAcceleration     = (ekind->cosacc.cos_accel != 0);
 
     if (doNoseHoover || doPROffDiagonal || doAcceleration)
     {
@@ -569,12 +552,6 @@ static void do_update_md(int                         start,
         if (!doAcceleration)
         {
             updateMDLeapfrogGeneral<AccelerationType::none>
-                (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, stepM);
-        }
-        else if (ekind->bNEMD)
-        {
-            updateMDLeapfrogGeneral<AccelerationType::group>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
                 ir, md, ekind, box, x, xprime, v, f, nh_vxi, stepM);
         }
@@ -678,12 +655,12 @@ static void do_update_md(int                         start,
 }
 
 static void do_update_vv_vel(int start, int nrend, real dt,
-                             const rvec accel[], const ivec nFreeze[], const real invmass[],
+                             const ivec nFreeze[], const real invmass[],
                              const unsigned short ptype[], const unsigned short cFREEZE[],
-                             const unsigned short cACC[], rvec v[], const rvec f[],
+                             rvec v[], const rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
 {
-    int    gf = 0, ga = 0;
+    int    gf = 0;
     int    n, d;
     real   g, mv1, mv2;
 
@@ -705,16 +682,12 @@ static void do_update_vv_vel(int start, int nrend, real dt,
         {
             gf   = cFREEZE[n];
         }
-        if (cACC)
-        {
-            ga   = cACC[n];
-        }
 
         for (d = 0; d < DIM; d++)
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
             {
-                v[n][d]             = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
+                v[n][d]             = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]));
             }
             else
             {
@@ -896,14 +869,14 @@ template <SDUpdate updateType>
 static void
 doSDUpdateGeneral(const gmx_stochd_t &sd,
                   int start, int nrend, real dt,
-                  const rvec accel[], const ivec nFreeze[],
+                  const ivec nFreeze[],
                   const real invmass[], const unsigned short ptype[],
-                  const unsigned short cFREEZE[], const unsigned short cACC[],
+                  const unsigned short cFREEZE[],
                   const unsigned short cTC[],
                   const rvec x[], rvec xprime[], rvec v[], const rvec f[],
                   int64_t step, int seed, const int *gatindex)
 {
-    // cTC, cACC and cFreeze can be nullptr any time, but various
+    // cTC and cFreeze can be nullptr any time, but various
     // instantiations do not make sense with particular pointer
     // values.
     if (updateType == SDUpdate::ForcesOnly)
@@ -914,7 +887,6 @@ doSDUpdateGeneral(const gmx_stochd_t &sd,
     if (updateType == SDUpdate::FrictionAndNoiseOnly)
     {
         GMX_ASSERT(f == nullptr, "SD update with only noise cannot handle forces");
-        GMX_ASSERT(cACC == nullptr, "SD update with only noise cannot handle acceleration groups");
     }
     if (updateType == SDUpdate::Combined)
     {
@@ -935,7 +907,6 @@ doSDUpdateGeneral(const gmx_stochd_t &sd,
         real invsqrtMass     = std::sqrt(inverseMass);
 
         int  freezeGroup       = cFREEZE ? cFREEZE[n] : 0;
-        int  accelerationGroup = cACC ? cACC[n] : 0;
         int  temperatureGroup  = cTC ? cTC[n] : 0;
 
         for (int d = 0; d < DIM; d++)
@@ -944,7 +915,7 @@ doSDUpdateGeneral(const gmx_stochd_t &sd,
             {
                 if (updateType == SDUpdate::ForcesOnly)
                 {
-                    real vn      = v[n][d] + (inverseMass*f[n][d] + accel[accelerationGroup][d])*dt;
+                    real vn      = v[n][d] + inverseMass*f[n][d]*dt;
                     v[n][d]      = vn;
                     // Simple position update.
                     xprime[n][d] = x[n][d] + v[n][d]*dt;
@@ -961,7 +932,7 @@ doSDUpdateGeneral(const gmx_stochd_t &sd,
                 }
                 else
                 {
-                    real vn      = v[n][d] + (inverseMass*f[n][d] + accel[accelerationGroup][d])*dt;
+                    real vn      = v[n][d] + inverseMass*f[n][d]*dt;
                     v[n][d]      = (vn*sd.sdc[temperatureGroup].em +
                                     invsqrtMass*sd.sdsig[temperatureGroup].V*dist(rng));
                     // Here we include half of the friction+noise
@@ -1056,7 +1027,6 @@ static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_m
 {
     int           g;
     t_grp_tcstat *tcstat  = ekind->tcstat;
-    t_grp_acc    *grpstat = ekind->grpstat;
     int           nthread, thread;
 
     /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
@@ -1064,10 +1034,7 @@ static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_m
        bEkinAveVel: If TRUE, we sum into ekin, if FALSE, into ekinh.
      */
 
-    /* group velocities are calculated in update_ekindata and
-     * accumulated in acumulate_groups.
-     * Now the partial global and groups ekin.
-     */
+    // Now accumulate the partial global and groups ekin.
     for (g = 0; (g < opts->ngtc); g++)
     {
         copy_mat(tcstat[g].ekinh, tcstat[g].ekinh_old);
@@ -1091,8 +1058,7 @@ static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_m
         // or memory allocation. It should not be able to throw, so for now
         // we do not need a try/catch wrapper.
         int     start_t, end_t, n;
-        int     ga, gt;
-        rvec    v_corrt;
+        int     gt;
         real    hm;
         int     d, m;
         matrix *ekin_sum;
@@ -1110,14 +1076,9 @@ static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_m
         }
         *dekindl_sum = 0.0;
 
-        ga = 0;
         gt = 0;
         for (n = start_t; n < end_t; n++)
         {
-            if (md->cACC)
-            {
-                ga = md->cACC[n];
-            }
             if (md->cTC)
             {
                 gt = md->cTC[n];
@@ -1126,20 +1087,16 @@ static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_m
 
             for (d = 0; (d < DIM); d++)
             {
-                v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
-            }
-            for (d = 0; (d < DIM); d++)
-            {
                 for (m = 0; (m < DIM); m++)
                 {
-                    /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
-                    ekin_sum[gt][m][d] += hm*v_corrt[m]*v_corrt[d];
+                    /* if we're computing a full step velocity, v[n][d] has v(t).  Otherwise, v(t+dt/2) */
+                    ekin_sum[gt][m][d] += hm*v[n][m]*v[n][d];
                 }
             }
             if (md->nMassPerturbed && md->bPerturbed[n])
             {
                 *dekindl_sum +=
-                    0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
+                    0.5*(md->massB[n] - md->massA[n])*iprod(v[n], v[n]);
             }
         }
     }
@@ -1562,9 +1519,9 @@ update_sd_second_half(int64_t                        step,
                 doSDUpdateGeneral<SDUpdate::FrictionAndNoiseOnly>
                     (*upd->sd,
                     start_th, end_th, dt,
-                    inputrec->opts.acc, inputrec->opts.nFreeze,
+                    inputrec->opts.nFreeze,
                     md->invmass, md->ptype,
-                    md->cFREEZE, nullptr, md->cTC,
+                    md->cFREEZE, md->cTC,
                     state->x.rvec_array(), upd->xp.rvec_array(),
                     state->v.rvec_array(), nullptr,
                     step, inputrec->ld_seed,
@@ -1840,9 +1797,9 @@ void update_coords(int64_t                             step,
                         doSDUpdateGeneral<SDUpdate::ForcesOnly>
                             (*upd->sd,
                             start_th, end_th, dt,
-                            inputrec->opts.acc, inputrec->opts.nFreeze,
+                            inputrec->opts.nFreeze,
                             md->invmass, md->ptype,
-                            md->cFREEZE, md->cACC, nullptr,
+                            md->cFREEZE, nullptr,
                             x_rvec, xp_rvec, v_rvec, f_rvec,
                             step, inputrec->ld_seed, nullptr);
                     }
@@ -1851,9 +1808,9 @@ void update_coords(int64_t                             step,
                         doSDUpdateGeneral<SDUpdate::Combined>
                             (*upd->sd,
                             start_th, end_th, dt,
-                            inputrec->opts.acc, inputrec->opts.nFreeze,
+                            inputrec->opts.nFreeze,
                             md->invmass, md->ptype,
-                            md->cFREEZE, md->cACC, md->cTC,
+                            md->cFREEZE, md->cTC,
                             x_rvec, xp_rvec, v_rvec, f_rvec,
                             step, inputrec->ld_seed,
                             DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
@@ -1882,9 +1839,9 @@ void update_coords(int64_t                             step,
                         case etrtVELOCITY1:
                         case etrtVELOCITY2:
                             do_update_vv_vel(start_th, end_th, dt,
-                                             inputrec->opts.acc, inputrec->opts.nFreeze,
+                                             inputrec->opts.nFreeze,
                                              md->invmass, md->ptype,
-                                             md->cFREEZE, md->cACC,
+                                             md->cFREEZE,
                                              v_rvec, f_rvec,
                                              bExtended, state->veta, alpha);
                             break;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -312,7 +312,6 @@ void done_inputrec(t_inputrec *ir)
     sfree(ir->opts.anneal_time);
     sfree(ir->opts.anneal_temp);
     sfree(ir->opts.tau_t);
-    sfree(ir->opts.acc);
     sfree(ir->opts.nFreeze);
     sfree(ir->opts.QMmethod);
     sfree(ir->opts.QMbasis);
@@ -425,17 +424,6 @@ static void pr_grp_opts(FILE *out, int indent, const char *title, const t_grpopt
             fprintf(out, "\n");
         }
     }
-
-    pr_indent(out, indent);
-    fprintf(out, "acc:\t");
-    for (i = 0; (i < opts->ngacc); i++)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            fprintf(out, "  %10g", opts->acc[i][m]);
-        }
-    }
-    fprintf(out, "\n");
 
     pr_indent(out, indent);
     fprintf(out, "nfreeze:");
@@ -1072,7 +1060,6 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
     char buf1[256], buf2[256];
 
     cmp_int(fp, "inputrec->grpopts.ngtc", -1,  opt1->ngtc, opt2->ngtc);
-    cmp_int(fp, "inputrec->grpopts.ngacc", -1, opt1->ngacc, opt2->ngacc);
     cmp_int(fp, "inputrec->grpopts.ngfrz", -1, opt1->ngfrz, opt2->ngfrz);
     cmp_int(fp, "inputrec->grpopts.ngener", -1, opt1->ngener, opt2->ngener);
     for (i = 0; (i < std::min(opt1->ngtc, opt2->ngtc)); i++)
@@ -1106,10 +1093,6 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
                         opt2->egp_flags[opt1->ngener*i+j]);
             }
         }
-    }
-    for (i = 0; (i < std::min(opt1->ngacc, opt2->ngacc)); i++)
-    {
-        cmp_rvec(fp, "inputrec->grpopts.acc", i, opt1->acc[i], opt2->acc[i], ftol, abstol);
     }
     for (i = 0; (i < std::min(opt1->ngfrz, opt2->ngfrz)); i++)
     {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1565,56 +1565,25 @@ void vrescale_tcoupl(const t_inputrec *ir, int64_t step,
 void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
                         int start, int end, rvec v[])
 {
-    t_grp_acc      *gstat;
     t_grp_tcstat   *tcstat;
-    unsigned short *cACC, *cTC;
-    int             ga, gt, n, d;
+    unsigned short *cTC;
+    int             gt, n, d;
     real            lg;
-    rvec            vrel;
 
     tcstat = ekind->tcstat;
     cTC    = mdatoms->cTC;
 
-    if (ekind->bNEMD)
+    gt = 0;
+    for (n = start; n < end; n++)
     {
-        gstat  = ekind->grpstat;
-        cACC   = mdatoms->cACC;
-
-        ga = 0;
-        gt = 0;
-        for (n = start; n < end; n++)
+        if (cTC)
         {
-            if (cACC)
-            {
-                ga   = cACC[n];
-            }
-            if (cTC)
-            {
-                gt   = cTC[n];
-            }
-            /* Only scale the velocity component relative to the COM velocity */
-            rvec_sub(v[n], gstat[ga].u, vrel);
-            lg = tcstat[gt].lambda;
-            for (d = 0; d < DIM; d++)
-            {
-                v[n][d] = gstat[ga].u[d] + lg*vrel[d];
-            }
+            gt   = cTC[n];
         }
-    }
-    else
-    {
-        gt = 0;
-        for (n = start; n < end; n++)
+        lg = tcstat[gt].lambda;
+        for (d = 0; d < DIM; d++)
         {
-            if (cTC)
-            {
-                gt   = cTC[n];
-            }
-            lg = tcstat[gt].lambda;
-            for (d = 0; d < DIM; d++)
-            {
-                v[n][d] *= lg;
-            }
+            v[n][d] *= lg;
         }
     }
 }

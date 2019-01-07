@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,7 @@
 typedef struct t_inputrec_strings
 {
     char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN],
-         acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
+         freeze[STRLEN], frdim[STRLEN],
          energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], x_compressed_groups[STRLEN],
          couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
          wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN],
@@ -1598,31 +1598,6 @@ convertReals(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *
     }
 }
 
-static void
-convertRvecs(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *name, rvec *outputs)
-{
-    int i = 0, d = 0;
-    for (const auto &input : inputs)
-    {
-        try
-        {
-            outputs[i][d] = gmx::fromString<real>(input);
-        }
-        catch (gmx::GromacsException &)
-        {
-            auto message = gmx::formatString("Invalid value for mdp option %s. %s should only consist of real numbers separated by spaces.",
-                                             name, name);
-            warning_error(wi, message);
-        }
-        ++d;
-        if (d == DIM)
-        {
-            d = 0;
-            ++i;
-        }
-    }
-}
-
 static void do_wall_params(t_inputrec *ir,
                            char *wall_atomtype, char *wall_density,
                            t_gromppopts *opts,
@@ -2185,8 +2160,6 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* Non-equilibrium MD stuff */
     printStringNewline(&inp, "Non-equilibrium MD stuff");
-    setStringEntry(&inp, "acc-grps",    is->accgrps,        nullptr);
-    setStringEntry(&inp, "accelerate",  is->acc,            nullptr);
     setStringEntry(&inp, "freezegrps",  is->freeze,         nullptr);
     setStringEntry(&inp, "freezedim",   is->frdim,          nullptr);
     ir->cos_accel = get_ereal(&inp, "cos-acceleration", 0, wi);
@@ -3491,21 +3464,6 @@ void do_index(const char* mdparin, const char *ndx,
         make_IMD_group(ir->imd, is->imd_grp, grps, gnames);
     }
 
-    auto accelerations          = gmx::splitString(is->acc);
-    auto accelerationGroupNames = gmx::splitString(is->accgrps);
-    if (accelerationGroupNames.size() * DIM != accelerations.size())
-    {
-        gmx_fatal(FARGS, "Invalid Acceleration input: %zu groups and %zu acc. values",
-                  accelerationGroupNames.size(), accelerations.size());
-    }
-    do_numbering(natoms, groups, accelerationGroupNames, grps, gnames, egcACC,
-                 restnm, egrptpALL_GENREST, bVerbose, wi);
-    nr = groups->grps[egcACC].nr;
-    snew(ir->opts.acc, nr);
-    ir->opts.ngacc = nr;
-
-    convertRvecs(wi, accelerations, "anneal-time", ir->opts.acc);
-
     auto freezeDims       = gmx::splitString(is->frdim);
     auto freezeGroupNames = gmx::splitString(is->freeze);
     if (freezeDims.size() != DIM * freezeGroupNames.size())
@@ -3949,11 +3907,8 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 {
     char                      err_buf[STRLEN];
     int                       i, m, c, nmol;
-    bool                      bCharge, bAcc;
-    real                     *mgrp, mt;
-    rvec                      acc;
+    bool                      bCharge;
     gmx_mtop_atomloop_block_t aloopb;
-    gmx_mtop_atomloop_all_t   aloop;
     ivec                      AbsRef;
     char                      warn_buf[STRLEN];
 
@@ -4125,57 +4080,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                 " ref-t for temperature coupling should be > 0",
                 eel_names[eelGRF]);
         CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
-    }
-
-    bAcc = FALSE;
-    for (i = 0; (i < sys->groups.grps[egcACC].nr); i++)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            if (fabs(ir->opts.acc[i][m]) > 1e-6)
-            {
-                bAcc = TRUE;
-            }
-        }
-    }
-    if (bAcc)
-    {
-        clear_rvec(acc);
-        snew(mgrp, sys->groups.grps[egcACC].nr);
-        aloop = gmx_mtop_atomloop_all_init(sys);
-        const t_atom *atom;
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
-        {
-            mgrp[getGroupType(sys->groups, egcACC, i)] += atom->m;
-        }
-        mt = 0.0;
-        for (i = 0; (i < sys->groups.grps[egcACC].nr); i++)
-        {
-            for (m = 0; (m < DIM); m++)
-            {
-                acc[m] += ir->opts.acc[i][m]*mgrp[i];
-            }
-            mt += mgrp[i];
-        }
-        for (m = 0; (m < DIM); m++)
-        {
-            if (fabs(acc[m]) > 1e-6)
-            {
-                const char *dim[DIM] = { "X", "Y", "Z" };
-                fprintf(stderr,
-                        "Net Acceleration in %s direction, will %s be corrected\n",
-                        dim[m], ir->nstcomm != 0 ? "" : "not");
-                if (ir->nstcomm != 0 && m < ndof_com(ir))
-                {
-                    acc[m] /= mt;
-                    for (i = 0; (i < sys->groups.grps[egcACC].nr); i++)
-                    {
-                        ir->opts.acc[i][m] -= acc[m];
-                    }
-                }
-            }
-        }
-        sfree(mgrp);
     }
 
     if (ir->efep != efepNO && ir->fepvals->sc_alpha != 0 &&

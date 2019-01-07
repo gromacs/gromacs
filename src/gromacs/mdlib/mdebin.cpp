@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -556,24 +556,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
     sfree(grpnms);
 
-    md->nU = groups->grps[egcACC].nr;
-    if (md->nU > 1)
-    {
-        snew(grpnms, 3*md->nU);
-        for (i = 0; (i < md->nU); i++)
-        {
-            ni = groups->grps[egcACC].nm_ind[i];
-            sprintf(buf, "Ux-%s", *(groups->grpname[ni]));
-            grpnms[3*i+XX] = gmx_strdup(buf);
-            sprintf(buf, "Uy-%s", *(groups->grpname[ni]));
-            grpnms[3*i+YY] = gmx_strdup(buf);
-            sprintf(buf, "Uz-%s", *(groups->grpname[ni]));
-            grpnms[3*i+ZZ] = gmx_strdup(buf);
-        }
-        md->iu = get_ebin_space(md->ebin, 3*md->nU, grpnms, unit_vel);
-        sfree(grpnms);
-    }
-
     if (fp_ene)
     {
         do_enxnms(fp_ene, &md->ebin->nener, &md->ebin->enm);
@@ -1102,15 +1084,6 @@ void upd_mdebin(t_mdebin               *md,
         }
     }
 
-    if (ekind && md->nU > 1)
-    {
-        for (i = 0; (i < md->nU); i++)
-        {
-            copy_rvec(ekind->grpstat[i].u, md->tmp_v[i]);
-        }
-        add_ebin(md->ebin, md->iu, 3*md->nU, md->tmp_v[0], bSum);
-    }
-
     ebin_increase_count(md->ebin, bSum);
 
     /* BAR + thermodynamic integration values */
@@ -1510,18 +1483,6 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
             if (md->nTC > 1)
             {
                 pr_ebin(log, md->ebin, md->itemp, md->nTC, 4, mode, TRUE);
-                fprintf(log, "\n");
-            }
-            if (md->nU > 1)
-            {
-                fprintf(log, "%15s   %12s   %12s   %12s\n",
-                        "Group", "Ux", "Uy", "Uz");
-                for (i = 0; (i < md->nU); i++)
-                {
-                    ni = groups->grps[egcACC].nm_ind[i];
-                    fprintf(log, "%15s", *groups->grpname[ni]);
-                    pr_ebin(log, md->ebin, md->iu+3*i, 3, 3, mode, FALSE);
-                }
                 fprintf(log, "\n");
             }
         }

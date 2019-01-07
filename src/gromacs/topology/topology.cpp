@@ -54,7 +54,7 @@
 #include "gromacs/utility/txtdump.h"
 
 const char *gtypes[egcNR+1] = {
-    "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
+    "T-Coupling", "Energy Mon.", "Acc. not used", "Freeze",
     "User1", "User2", "VCM", "Compressed X", "Or. Res. Fit", "QMMM", nullptr
 };
 

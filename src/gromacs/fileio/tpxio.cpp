@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,6 +123,7 @@ enum tpxv {
     tpxv_PullPrevStepCOMAsReference,                         /**< Enabled using the COM of the pull group of the last frame as reference for PBC */
     tpxv_MimicQMMM,                                          /**< Inroduced support for MiMiC QM/MM interface */
     tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
+    tpxv_RemovedConstantAcceleration,                        /**< Removed support for constant acceleration NEMD. */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -1531,7 +1532,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         ir->opts.nhchainlength = 1;
     }
-    gmx_fio_do_int(fio, ir->opts.ngacc);
+    int removedOptsNgacc = 0;
+    if (bRead && file_version < tpxv_RemovedConstantAcceleration)
+    {
+        gmx_fio_do_int(fio, removedOptsNgacc);
+    }
     gmx_fio_do_int(fio, ir->opts.ngfrz);
     gmx_fio_do_int(fio, ir->opts.ngener);
 
@@ -1545,7 +1550,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         snew(ir->opts.anneal_temp, ir->opts.ngtc);
         snew(ir->opts.tau_t,  ir->opts.ngtc);
         snew(ir->opts.nFreeze, ir->opts.ngfrz);
-        snew(ir->opts.acc,    ir->opts.ngacc);
         snew(ir->opts.egp_flags, ir->opts.ngener*ir->opts.ngener);
     }
     if (ir->opts.ngtc > 0)
@@ -1558,9 +1562,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         gmx_fio_ndo_ivec(fio, ir->opts.nFreeze, ir->opts.ngfrz);
     }
-    if (ir->opts.ngacc > 0)
+    if (bRead && file_version < tpxv_RemovedConstantAcceleration && removedOptsNgacc > 0)
     {
-        gmx_fio_ndo_rvec(fio, ir->opts.acc, ir->opts.ngacc);
+        std::vector<gmx::RVec> dummy;
+        dummy.resize(removedOptsNgacc);
+        gmx_fio_ndo_rvec(fio, reinterpret_cast<rvec *>(dummy.data()), removedOptsNgacc);
     }
     gmx_fio_ndo_int(fio, ir->opts.egp_flags,
                     ir->opts.ngener*ir->opts.ngener);

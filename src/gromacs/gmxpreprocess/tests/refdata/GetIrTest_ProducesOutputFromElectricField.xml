@@ -280,8 +280,6 @@ dh_hist_size             = 0
 dh_hist_spacing          = 0.1
 
 ; Non-equilibrium MD stuff
-acc-grps                 = 
-accelerate               = 
 freezegrps               = 
 freezedim                = 
 cos-acceleration         = 0

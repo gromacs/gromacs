@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,28 +54,17 @@ typedef struct {
 } t_grp_tcstat;
 
 typedef struct {
-    int     nat;    /* Number of atoms in this group		*/
-    rvec    u;      /* Mean velocities of home particles        */
-    rvec    uold;   /* Previous mean velocities of home particles   */
-    double  mA;     /* Mass for topology A		                */
-    double  mB;     /* Mass for topology B		                */
-} t_grp_acc;
-
-typedef struct {
     real    cos_accel;  /* The acceleration for the cosine profile      */
     real    mvcos;      /* The cos momenta of home particles            */
     real    vcos;       /* The velocity of the cosine profile           */
 } t_cos_acc;
 
 typedef struct gmx_ekindata_t {
-    gmx_bool         bNEMD;
     int              ngtc;            /* The number of T-coupling groups      */
     t_grp_tcstat    *tcstat;          /* T-coupling data            */
     tensor         **ekin_work_alloc; /* Allocated locations for *_work members */
     tensor         **ekin_work;       /* Work arrays for tcstat per thread    */
     real           **dekindl_work;    /* Work location for dekindl per thread */
-    int              ngacc;           /* The number of acceleration groups    */
-    t_grp_acc       *grpstat;         /* Acceleration data			*/
     tensor           ekin;            /* overall kinetic energy               */
     tensor           ekinh;           /* overall 1/2 step kinetic energy      */
     real             dekindl;         /* dEkin/dlambda at half step           */

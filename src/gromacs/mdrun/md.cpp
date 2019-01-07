@@ -264,7 +264,7 @@ void gmx::Integrator::do_md()
 
     /* Kinetic energy data */
     snew(ekind, 1);
-    init_ekindata(fplog, top_global, &(ir->opts), ekind);
+    init_ekindata(fplog, &(ir->opts), ekind);
     /* Copy the cos acceleration to the groups struct */
     ekind->cosacc.cos_accel = ir->cos_accel;
 
