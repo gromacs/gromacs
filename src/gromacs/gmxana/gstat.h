@@ -39,6 +39,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_output_env_t;
 class ResidueType;
