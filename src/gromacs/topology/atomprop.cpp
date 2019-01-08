@@ -43,6 +43,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
@@ -60,26 +62,32 @@ enum {
     NOTFOUND = -4, WILDCARD, WILDPROT, PROTEIN
 };
 
+//! Basic entries in AtomProperty.
+struct BaseEntry {
+    //! Default constructor.
+    BaseEntry(const std::string &aName, const std::string &rName)
+        : atomName(aName), residueName(rName), isAvailable(false), value(0.0)
+    {}
+    //! Name for atom.
+    std::string atomName;
+    //! Name for residue.
+    std::string residueName;
+    //! Is property available.
+    bool        isAvailable;
+    //! Value set for property.
+    real        value;
+};
+
 //! Conglomeration of atom property entries.
 struct AtomProperty {
     //! Has property been set.
-    bool   isSet = false;
-    //! Number of properties.
-    int    nprop;
-    //! Max number of properties.
-    int    maxprop;
+    bool                   isSet = false;
     //! Database the property is coming from.
-    char  *db = nullptr;
+    std::string            db;
     //! Default value for property.
-    double def;
-    //! Array of names for atoms.
-    char **atomName = nullptr;
-    //! Array of names for residues.
-    char **residueName = nullptr;
-    //! Array of flags if property is available.
-    bool  *isAvailable = nullptr;
-    //! Array of values for property.
-    real  *value = nullptr;
+    double                 def;
+    //! Basic entries for properties.
+    std::vector<BaseEntry> entry;
 };
 
 //! Implementation detail type for Atomproperties.
@@ -107,21 +115,28 @@ class AtomProperties::Impl
  * \param[in] database Name of the database entry to compare to.
  * \returns Number of matching characters or NOTFOUND.
  */
-static int findNumberOfMatches(const char *search, const char *database)
+static int findNumberOfMatches(const std::string &search, const std::string &database)
 {
-    int i;
-
-    i = 0;
-    while (search[i] && database[i] && (search[i] == database[i]) )
+    if (database.length() > search.length())
     {
-        i++;
+        return NOTFOUND;
     }
-
-    if (database[i])
+    size_t matches = 0;
+    for (size_t i = 0; i < database.length(); i++)
     {
-        i = NOTFOUND;
+        if (search[i] == database[i])
+        {
+            matches++;
+        }
     }
-    return i;
+    if (matches == database.length())
+    {
+        return matches;
+    }
+    else
+    {
+        return NOTFOUND;
+    }
 }
 
 /*! \brief
@@ -135,34 +150,34 @@ static int findNumberOfMatches(const char *search, const char *database)
  * \returns The index for the property.
  */
 static int findPropertyIndex(AtomProperty *ap, gmx_residuetype_t *restype,
-                             char *residueName, char *atomName,
+                             const std::string &residueName, const std::string &atomName,
                              gmx_bool *bExact)
 {
-    int      i, j = NOTFOUND;
+    int      j = NOTFOUND;
     long int alen, rlen;
     long int malen, mrlen;
     gmx_bool bProtein, bProtWild;
 
-    bProtein  = gmx_residuetype_is_protein(restype, residueName);
-    bProtWild = (strcmp(residueName, "AAA") == 0);
+    bProtein  = gmx_residuetype_is_protein(restype, residueName.c_str());
+    bProtWild = residueName ==  "AAA";
     malen     = NOTFOUND;
     mrlen     = NOTFOUND;
-    for (i = 0; (i < ap->nprop); i++)
+    for (size_t i = 0; (i < ap->entry.size()); i++)
     {
-        rlen = findNumberOfMatches(residueName, ap->residueName[i]);
+        rlen = findNumberOfMatches(residueName, ap->entry[i].residueName);
         if (rlen == NOTFOUND)
         {
-            if ( (strcmp(ap->residueName[i], "*") == 0) ||
-                 (strcmp(ap->residueName[i], "???") == 0) )
+            if ( (ap->entry[i].residueName == "*") ||
+                 (ap->entry[i].residueName == "???")  )
             {
                 rlen = WILDCARD;
             }
-            else if (strcmp(ap->residueName[i], "AAA") == 0)
+            else if (ap->entry[i].residueName == "AAA")
             {
                 rlen = WILDPROT;
             }
         }
-        alen = findNumberOfMatches(atomName, ap->atomName[i]);
+        alen = findNumberOfMatches(atomName, ap->entry[i].atomName);
         if ( (alen > NOTFOUND) && (rlen > NOTFOUND))
         {
             if ( ( (alen > malen) && (rlen >= mrlen)) ||
@@ -175,21 +190,23 @@ static int findPropertyIndex(AtomProperty *ap, gmx_residuetype_t *restype,
         }
     }
 
-    *bExact = ((malen == static_cast<long int>(strlen(atomName))) &&
-               ((mrlen == static_cast<long int>(strlen(residueName))) ||
+    *bExact = ((malen == static_cast<long int>(atomName.length())) &&
+               ((mrlen == static_cast<long int>(residueName.length())) ||
                 ((mrlen == WILDPROT) && bProtWild) ||
                 ((mrlen == WILDCARD) && !bProtein && !bProtWild)));
 
     if (debug)
     {
-        fprintf(debug, "searching residue: %4s atom: %4s\n", residueName, atomName);
+        fprintf(debug, "searching residue: %4s atom: %4s\n", residueName.c_str(),
+                atomName.c_str());
         if (j == NOTFOUND)
         {
             fprintf(debug, " not successful\n");
         }
         else
         {
-            fprintf(debug, " match: %4s %4s\n", ap->residueName[j], ap->atomName[j]);
+            fprintf(debug, " match: %4s %4s\n",
+                    ap->entry[j].residueName.c_str(), ap->entry[j].atomName.c_str());
         }
     }
     return j;
@@ -206,59 +223,44 @@ static int findPropertyIndex(AtomProperty *ap, gmx_residuetype_t *restype,
  * \param[in] line Where to add property.
  */
 static void addProperty(AtomProperty *ap, gmx_residuetype_t *restype,
-                        char *residueName, char *atomName,
+                        const std::string &residueName, const std::string &atomName,
                         real propValue, int line)
 {
-    int      i, j;
-    gmx_bool bExact;
+    bool bExact;
 
-    j = findPropertyIndex(ap, restype, residueName, atomName, &bExact);
+    int  j = findPropertyIndex(ap, restype, residueName, atomName, &bExact);
 
     if (!bExact)
     {
-        if (ap->nprop >= ap->maxprop)
-        {
-            ap->maxprop += 10;
-            srenew(ap->residueName, ap->maxprop);
-            srenew(ap->atomName, ap->maxprop);
-            srenew(ap->value, ap->maxprop);
-            srenew(ap->isAvailable, ap->maxprop);
-            for (i = ap->nprop; (i < ap->maxprop); i++)
-            {
-                ap->atomName[i]     = nullptr;
-                ap->residueName[i]  = nullptr;
-                ap->value[i]        = 0;
-                ap->isAvailable[i]  = FALSE;
-            }
-        }
-        ap->atomName[ap->nprop]     = gmx_strdup(atomName);
-        ap->residueName[ap->nprop]  = gmx_strdup(residueName);
-        j                           = ap->nprop;
-        ap->nprop++;
+        BaseEntry entry(atomName, residueName);
+        ap->entry.push_back(entry);
+
+        j = ap->entry.size() - 1;
     }
-    if (ap->isAvailable[j])
+    if (ap->entry[j].isAvailable)
     {
-        if (ap->value[j] == propValue)
+        if (ap->entry[j].value == propValue)
         {
             fprintf(stderr, "Warning double identical entries for %s %s %g on line %d in file %s\n",
-                    residueName, atomName, propValue, line, ap->db);
+                    residueName.c_str(), atomName.c_str(), propValue, line, ap->db.c_str());
         }
         else
         {
             fprintf(stderr, "Warning double different entries %s %s %g and %g on line %d in file %s\n"
                     "Using last entry (%g)\n",
-                    residueName, atomName, propValue, ap->value[j], line, ap->db, propValue);
-            ap->value[j] = propValue;
+                    residueName.c_str(), atomName.c_str(),
+                    propValue, ap->entry[j].value, line, ap->db.c_str(), propValue);
+            ap->entry[j].value = propValue;
         }
     }
     else
     {
-        ap->isAvailable[j] = TRUE;
-        ap->value[j]       = propValue;
+        ap->entry[j].isAvailable = TRUE;
+        ap->entry[j].value       = propValue;
     }
 }
 
-static void vdw_warning(FILE *fp)
+static void warnAboutvdWSettings(FILE *fp)
 {
     if (nullptr != fp)
     {
@@ -267,26 +269,6 @@ static void vdw_warning(FILE *fp)
         fprintf(fp, "from the source below. This means the results may be different\n");
         fprintf(fp, "compared to previous GROMACS versions.\n");
         please_cite(fp, "Bondi1964a");
-    }
-}
-
-static void destroy_prop(AtomProperty *ap)
-{
-    int i;
-
-    if (ap->isSet)
-    {
-        sfree(ap->db);
-
-        for (i = 0; i < ap->nprop; i++)
-        {
-            sfree(ap->atomName[i]);
-            sfree(ap->residueName[i]);
-        }
-        sfree(ap->atomName);
-        sfree(ap->residueName);
-        sfree(ap->isAvailable);
-        sfree(ap->value);
     }
 }
 
@@ -301,12 +283,11 @@ static void readProperty(AtomProperties *aps, int eprop, double factor)
 {
     char          line[STRLEN], resnm[32], atomnm[32];
     double        pp;
-    int           line_no;
 
     AtomProperty *ap = aps->prop(eprop);
 
-    gmx::FilePtr  fp = gmx::openLibraryFile(ap->db);
-    line_no = 0;
+    gmx::FilePtr  fp      = gmx::openLibraryFile(ap->db);
+    int           line_no = 0;
     while (get_a_line(fp.get(), line, STRLEN))
     {
         line_no++;
@@ -318,7 +299,7 @@ static void readProperty(AtomProperties *aps, int eprop, double factor)
         else
         {
             fprintf(stderr, "WARNING: Error in file %s at line %d ignored\n",
-                    ap->db, line_no);
+                    ap->db.c_str(), line_no);
         }
     }
     ap->isSet = TRUE;
@@ -340,13 +321,13 @@ static void setProperties(AtomProperties *aps, int eprop)
 
     if (!ap->isSet)
     {
-        ap->db  = gmx_strdup(fns[eprop]);
+        ap->db  = fns[eprop];
         ap->def = def[eprop];
         readProperty(aps, eprop, fac[eprop]);
 
         if (debug)
         {
-            fprintf(debug, "Entries in %s: %d\n", ap->db, ap->nprop);
+            fprintf(debug, "Entries in %s: %zu\n", ap->db.c_str(), ap->entry.size());
         }
 
         if ( ( (!aps->bWarned()) && (eprop == epropMass) ) || (eprop == epropVDW))
@@ -371,10 +352,6 @@ AtomProperties::AtomProperties()
 
 AtomProperties::~AtomProperties()
 {
-    for (int p = 0; p < epropNR; p++)
-    {
-        destroy_prop(&impl_->prop[p]);
-    }
     gmx_residuetype_destroy(impl_->restype);
 }
 
@@ -408,53 +385,37 @@ void AtomProperties::setWarnVDW()
     impl_->bWarnVDW = true;
 }
 
-bool AtomProperties::setAtomProperty(int         eprop,
-                                     const char *residueName,
-                                     const char *atomName,
-                                     real       *value)
+bool AtomProperties::setAtomProperty(int                eprop,
+                                     const std::string &residueName,
+                                     const std::string &atomName,
+                                     real              *value)
 {
     int           j;
-#define MAXQ 32
-    char          atomname[MAXQ], resname[MAXQ];
+    std::string   tmpAtomName, tmpResidueName;
     gmx_bool      bExact;
 
     setProperties(this, eprop);
-    if ((strlen(atomName) > MAXQ-1) || (strlen(residueName) > MAXQ-1))
-    {
-        if (debug)
-        {
-            fprintf(debug, "WARNING: will only compare first %d characters\n",
-                    MAXQ-1);
-        }
-    }
     if (isdigit(atomName[0]))
     {
-        int i;
         /* put digit after atomname */
-        for (i = 1; i < MAXQ-1 && atomName[i] != '\0'; i++)
-        {
-            atomname[i-1] = atomName[i];
-        }
-        atomname[i-1] = atomName[0];
-        atomname[i]   = '\0';
+        tmpAtomName.append(atomName.substr(1));
+        tmpAtomName.append(1, atomName[0]);
     }
     else
     {
-        strncpy(atomname, atomName, MAXQ-1);
+        tmpAtomName = atomName;
     }
-    strncpy(resname, residueName, MAXQ-1);
-
-    j = findPropertyIndex(&(impl_->prop[eprop]), impl_->restype, resname,
-                          atomname, &bExact);
+    j = findPropertyIndex(&(impl_->prop[eprop]), impl_->restype, residueName,
+                          tmpAtomName, &bExact);
 
     if (eprop == epropVDW && !impl_->bWarnVDW)
     {
-        vdw_warning(stdout);
+        warnAboutvdWSettings(stdout);
         impl_->bWarnVDW = TRUE;
     }
     if (j >= 0)
     {
-        *value = impl_->prop[eprop].value[j];
+        *value = impl_->prop[eprop].entry[j].value;
         return TRUE;
     }
     else
@@ -465,27 +426,27 @@ bool AtomProperties::setAtomProperty(int         eprop,
 }
 
 
-const char *AtomProperties::elementFromAtomNumber(int atomNumber)
+const std::string AtomProperties::elementFromAtomNumber(int atomNumber)
 {
     setProperties(this, epropElement);
-    for (int i = 0; (i < impl_->prop[epropElement].nprop); i++)
+    for (size_t i = 0; (i < impl_->prop[epropElement].entry.size()); i++)
     {
-        if (std::round(impl_->prop[epropElement].value[i]) == atomNumber)
+        if (std::round(impl_->prop[epropElement].entry[i].value) == atomNumber)
         {
-            return impl_->prop[epropElement].atomName[i];
+            return impl_->prop[epropElement].entry[i].atomName;
         }
     }
-    return nullptr;
+    return "";
 }
 
 int AtomProperties::atomNumberFromElement(const char *element)
 {
     setProperties(this, epropElement);
-    for (int i = 0; (i < impl_->prop[epropElement].nprop); i++)
+    for (size_t i = 0; (i < impl_->prop[epropElement].entry.size()); i++)
     {
-        if (gmx_strcasecmp(impl_->prop[epropElement].atomName[i], element) == 0)
+        if (gmx_strcasecmp(impl_->prop[epropElement].entry[i].atomName.c_str(), element) == 0)
         {
-            return gmx::roundToInt(impl_->prop[epropElement].value[i]);
+            return gmx::roundToInt(impl_->prop[epropElement].entry[i].value);
         }
     }
     return -1;
