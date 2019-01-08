@@ -328,6 +328,7 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     nbv->nbs = gmx::compat::make_unique<nbnxn_search>(DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
                                                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
+                                                      nbv->grp[0].kernel_type,
                                                       bFEP_NonBonded,
                                                       gmx_omp_nthreads_get(emntPairsearch));
 
