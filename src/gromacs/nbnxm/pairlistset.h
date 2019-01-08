@@ -61,12 +61,15 @@ typedef void nbnxn_alloc_t (void **ptr, size_t nbytes);
  */
 typedef void nbnxn_free_t (void *ptr);
 
-/* Allocates and initializes a pair search data structure */
-nbnxn_search *nbnxn_init_search(int                        ePBC,
-                                const ivec                *n_dd_cells,
-                                const gmx_domdec_zones_t  *zones,
-                                gmx_bool                   bFEP,
-                                int                        nthread_max);
+/* Tells if the pair-list corresponding to nb_kernel_type is simple.
+ * Returns FALSE for super-sub type pair-list.
+ */
+gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
+
+/* Due to the cluster size the effective pair-list is longer than
+ * that of a simple atom pair-list. This function gives the extra distance.
+ */
+real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density);
 
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
