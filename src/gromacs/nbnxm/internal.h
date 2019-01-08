@@ -58,7 +58,11 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_zones_t;
-struct nbnxn_grid_t;
+
+namespace Nbnxn
+{
+class Grid;
+}
 
 
 // TODO Document after refactoring
@@ -109,7 +113,7 @@ enum {
     enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCreducef, enbsCCnr
 };
 
-/* Thread-local work struct, contains part of nbnxn_grid_t */
+/* Thread-local work struct, contains working data for Grid */
 struct nbnxn_search_work_t
 {
     nbnxn_search_work_t();
@@ -139,16 +143,18 @@ struct nbnxn_search
 {
     /* \brief Constructor
      *
-     * \param[in] ePBC         The periodic boundary conditions
-     * \param[in] n_dd_cells   The number of domain decomposition cells per dimension, without DD nullptr should be passed
-     * \param[in] zones        The domain decomposition zone setup, without DD nullptr should be passed
-     * \param[in] bFEP         Tells whether non-bonded interactions are perturbed
-     * \param[in] nthread_max  The maximum number of threads used in the search
+     * \param[in] ePBC            The periodic boundary conditions
+     * \param[in] n_dd_cells      The number of domain decomposition cells per dimension, without DD nullptr should be passed
+     * \param[in] zones           The domain decomposition zone setup, without DD nullptr should be passed
+     * \param[in] nb_kernel_type  The nbnxn non-bonded kernel type
+     * \param[in] bFEP            Tells whether non-bonded interactions are perturbed
+     * \param[in] nthread_max     The maximum number of threads used in the search
      */
 
     nbnxn_search(int                       ePBC,
                  const ivec               *n_dd_cells,
                  const gmx_domdec_zones_t *zones,
+                 PairlistType              pairlistType,
                  gmx_bool                  bFEP,
                  int                       nthread_max);
 
@@ -160,7 +166,7 @@ struct nbnxn_search
     ivec                       dd_dim;          /* Are we doing DD in x,y,z?                  */
     const gmx_domdec_zones_t  *zones;           /* The domain decomposition zones        */
 
-    std::vector<nbnxn_grid_t>  grid;            /* Array of grids, size ngrid                 */
+    std::vector<Nbnxn::Grid>   grid;            /* Array of grids, size ngrid                 */
     std::vector<int>           cell;            /* Actual allocated cell array for all grids  */
     std::vector<int>           a;               /* Atom index for grid, the inverse of cell   */
 
