@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +38,8 @@
 #define GMX_TOPOLOGY_ATOMPROP_H
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -59,14 +63,14 @@ class AtomProperties
          * \param[in] atomNumber Atomnumber to check.
          * \returns Name of the element.
          */
-        char *elementFromAtomNumber(int atomNumber);
+        const std::string elementFromAtomNumber(int atomNumber) const;
         /*! \brief
          * Get atom number from element string.
          *
          * \param[in] element Name of element.
          * \returns AtomNumber that was being looked for.
          */
-        int atomNumberFromElement(const char *element);
+        int atomNumberFromElement(const char *element) const;
         /*! \brief
          * Set atom property based on atomname.
          *
@@ -81,10 +85,10 @@ class AtomProperties
          * \param[out] value New value to set or default.
          * \returns If the operation has been succesful.
          */
-        bool setAtomProperty(int         eprop,
-                             const char* residueName,
-                             const char* atomName,
-                             real       *value);
+        bool setAtomProperty(int                eprop,
+                             const std::string &residueName,
+                             const std::string &atomName,
+                             real              *value) const;
     private:
         /*! \brief
          * Read property value into structure.
@@ -92,13 +96,13 @@ class AtomProperties
          * \param[in] eprop Which property to add.
          * \param[in] factor Scaling factor for property.
          */
-        void readProperty(int eprop, double factor);
+        void readProperty(int eprop, double factor) const;
         /*! \brief
          * Set value for properties.
          *
          * \param[in] eprop Which property to set.
          */
-        void setProperties(int eprop);
+        void setProperties(int eprop) const;
         //! Implementation pointer.
         std::unique_ptr<AtomPropertiesImpl> impl_;
 };
