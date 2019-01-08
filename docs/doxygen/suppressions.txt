@@ -19,6 +19,7 @@ src/gromacs/ewald/pme-simd4.h: warning: should include "pme-simd.h"
 src/gromacs/ewald/pme-spline-work.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/ewald/pme-spline-work.h: warning: includes "simd.h" unnecessarily
 src/gromacs/ewald/pme-spread.cpp: warning: includes "simd.h" unnecessarily
+src/gromacs/nbnxn/grid.h: warning: includes "simd.h" unnecessarily
 src/gromacs/nbnxn/kernels_simd_2xnn/kernel_inner.h: warning: should include "simd.h"
 src/gromacs/nbnxn/kernels_simd_2xnn/kernel_outer.h: warning: should include "simd.h"
 src/gromacs/nbnxn/kernels_simd_4xn/kernel_inner.h: warning: should include "simd.h"
