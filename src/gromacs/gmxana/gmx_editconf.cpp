@@ -76,9 +76,11 @@ static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, AtomProperties *aps)
     {
         if (bGetMass)
         {
+            std::string resname  = *atoms->resinfo[atoms->atom[i].resind].name;
+            std::string atomName = *atoms->atomname[i];
             aps->setAtomProperty(epropMass,
-                                 *atoms->resinfo[atoms->atom[i].resind].name,
-                                 *atoms->atomname[i], &(atoms->atom[i].m));
+                                 resname,
+                                 atomName, &(atoms->atom[i].m));
         }
         tmass += atoms->atom[i].m;
     }
