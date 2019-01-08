@@ -460,6 +460,7 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
         std::make_unique<nbnxn_search>(ir->ePBC,
                                        DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
                                        DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
+                                       listParams.pairlistType,
                                        bFEP_NonBonded,
                                        gmx_omp_nthreads_get(emntPairsearch));
 
