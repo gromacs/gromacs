@@ -40,6 +40,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -77,8 +78,8 @@ static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, AtomProperties *aps)
         if (bGetMass)
         {
             aps->setAtomProperty(epropMass,
-                                 *atoms->resinfo[atoms->atom[i].resind].name,
-                                 *atoms->atomname[i], &(atoms->atom[i].m));
+                                 std::string(*atoms->resinfo[atoms->atom[i].resind].name),
+                                 std::string(*atoms->atomname[i]), &(atoms->atom[i].m));
         }
         tmass += atoms->atom[i].m;
     }
