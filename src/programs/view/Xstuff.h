@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,9 +60,9 @@ typedef char bmchar;
 
 #define XTextHeight(font) ((font)->max_bounds.ascent+(font)->max_bounds.descent)
 #define XDrawCircle(disp, win, gc, x, y, rad) \
-    XDrawArc(disp, win, gc, x-rad, y-rad, 2*rad, 2*rad, 0, 64*360)
+    XDrawArc(disp, win, gc, (x)-(rad), (y)-(rad), 2*(rad), 2*(rad), 0, 64*360)
 #define XFillCircle(disp, win, gc, x, y, rad) \
-    XFillArc(disp, win, gc, x-rad, y-rad, 2*rad, 2*rad, 0, 64*360)
+    XFillArc(disp, win, gc, (x)-(rad), (y)-(rad), 2*(rad), 2*(rad), 0, 64*360)
 
 #ifdef NEED_XSTUFF
 
