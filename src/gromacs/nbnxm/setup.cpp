@@ -60,6 +60,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
+#include "grid.h"
 #include "internal.h"
 
 /*! \brief Returns whether CPU SIMD support exists for the given inputrec
