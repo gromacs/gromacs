@@ -36,6 +36,7 @@
 
 #include "makeexclusiondistances.h"
 
+#include <string>
 #include <vector>
 
 #include "gromacs/topology/atomprop.h"
@@ -52,10 +53,10 @@ makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
         exclusionDistances.reserve(a->nr);
         for (int i = 0; i < a->nr; ++i)
         {
-            real value;
+            real        value;
             if (!aps->setAtomProperty(epropVDW,
-                                      *(a->resinfo[a->atom[i].resind].name),
-                                      *(a->atomname[i]), &value))
+                                      std::string(*(a->resinfo[a->atom[i].resind].name)),
+                                      std::string(*(a->atomname[i])), &value))
             {
                 value = defaultDistance;
             }
