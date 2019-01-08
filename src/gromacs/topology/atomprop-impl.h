@@ -37,6 +37,9 @@
 #ifndef GMX_TOPOLOGY_ATOMPROP_IMPL_H
 #define GMX_TOPOLOGY_ATOMPROP_IMPL_H
 
+#include <string>
+#include <vector>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -46,34 +49,41 @@ enum {
     epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement,
     epropNR
 };
+
+//! Basic entries in AtomProperty.
+struct BaseEntry {
+    //! Default constructor.
+    BaseEntry(const std::string &aName, const std::string &rName)
+        : atomName(aName), residueName(rName), isAvailable(false), value(0.0)
+    {}
+    //! Name for atom.
+    std::string atomName;
+    //! Name for residue.
+    std::string residueName;
+    //! Is property available.
+    bool        isAvailable;
+    //! Value set for property.
+    real        value;
+};
+
 //! Conglomeration of atom property entries.
 struct AtomProperty {
     //! Has property been set.
-    bool   isSet;
-    //! Number of properties.
-    int    nprop;
-    //! Max number of properties.
-    int    maxprop;
+    bool                   isSet = false;
     //! Database the property is coming from.
-    char  *db;
+    std::string            db;
     //! Default value for property.
-    double def;
-    //! Array of names for atoms.
-    char **atomName;
-    //! Array of names for residues.
-    char **residueName;
-    //! Array of flags if property is available.
-    bool  *isAvailable;
-    //! Array of values for property.
-    real  *value;
+    double                 def;
+    //! Basic entries for properties.
+    std::vector<BaseEntry> entry;
 };
 
 //! Implementation detail type for Atomproperties.
 struct AtomPropertiesImpl {
     //! Should user be warned about error.
-    bool               bWarned;
+    bool               bWarned = false;
     //! Should user be warned about vdW not found.
-    bool               bWarnVDW;
+    bool               bWarnVDW = false;
     //! The different atom properties.
     AtomProperty       prop[epropNR];
     //! The residue types.

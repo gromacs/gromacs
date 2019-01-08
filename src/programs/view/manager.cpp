@@ -51,6 +51,7 @@
 #include <unistd.h> // for usleep()
 #endif
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

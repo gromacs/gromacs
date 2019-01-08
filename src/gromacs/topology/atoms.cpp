@@ -396,12 +396,12 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
         return;
     }
 
-    int            maxWarn  = (printMissingMasses ? 10 : 0);
-    int            numWarn  = 0;
+    int               maxWarn  = (printMissingMasses ? 10 : 0);
+    int               numWarn  = 0;
 
-    AtomProperties aps;
+    AtomProperties    aps;
 
-    gmx_bool       haveMass = TRUE;
+    bool              haveMass = TRUE;
     for (int i = 0; i < atoms->nr; i++)
     {
         if (!aps.setAtomProperty(epropMass,

@@ -44,6 +44,7 @@
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
@@ -744,7 +745,11 @@ static void add_solv(const char *filename,
     }
 }
 
-static void update_top(t_atoms *atoms, int firstSolventResidueIndex, matrix box, int NFILE, t_filenm fnm[],
+static void update_top(t_atoms        *atoms,
+                       int             firstSolventResidueIndex,
+                       matrix          box,
+                       int             NFILE,
+                       t_filenm        fnm[],
                        AtomProperties *aps)
 {
     FILE        *fpin, *fpout;

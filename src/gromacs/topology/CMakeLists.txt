@@ -45,6 +45,7 @@ gmx_install_headers(
     ifunc.h
     index.h
     mtop_util.h
+    residuetypes.h
     symtab.h
     topology.h
     )

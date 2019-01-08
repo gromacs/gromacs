@@ -565,7 +565,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, AtomProperties *aps)
 {
     int    i, atomnumber, len;
     size_t k;
-    char   anm[6], anm_copy[6], *ptr;
+    char   anm[6], anm_copy[6];
     char   nc = '\0';
     real   eval;
 
@@ -612,21 +612,19 @@ void get_pdb_atomnumber(const t_atoms *atoms, AtomProperties *aps)
                 atomNumberSet = true;
             }
         }
+        std::string buf;
         if (atomNumberSet)
         {
             atoms->atom[i].atomnumber = atomnumber;
-            ptr = aps->elementFromAtomNumber(atomnumber);
+            buf = aps->elementFromAtomNumber(atomnumber);
             if (debug)
             {
                 fprintf(debug, "Atomnumber for atom '%s' is %d\n",
                         anm, atomnumber);
             }
         }
-        else
-        {
-            ptr = nullptr;
-        }
-        std::strncpy(atoms->atom[i].elem, ptr == nullptr ? "" : ptr, 4);
+        buf.resize(4);
+        std::strncpy(atoms->atom[i].elem, buf.c_str(), 4);
     }
 }
 
