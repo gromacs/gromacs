@@ -33,6 +33,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief
+ * Declares the Grid class.
+ *
+ * This class provides functionality for setting up and accessing atoms
+ * on a grid for one domain decomposition zone. This grid is use for
+ * generating cluster pair lists for computing non-bonded pair interactions.
+ * The grid consists of a regular array of columns along dimensions x and y.
+ * Within each column the cells are irregular along dimension z.
+ * Each cell can hold one or more clusters of atoms, depending on the grid
+ * geometry, which in turn is set by the non-bonded kernel type.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxn
+ */
+
 #ifndef GMX_NBNXN_GRID_H
 #define GMX_NBNXN_GRID_H
 
@@ -42,10 +59,20 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 
 
 struct gmx_domdec_zones_t;
+struct nbnxn_atomdata_t;
+struct nbnxn_search;
 
+namespace gmx
+{
+class UpdateGroupsCog;
+}
+
+namespace Nbnxn
+{
 
 /* Pair search box lower and upper corner in x,y,z.
  * Store this in 4 iso 3 reals, which is useful with 4-wide SIMD.
@@ -61,10 +88,11 @@ struct gmx_domdec_zones_t;
 
 
 /* Bounding box for a nbnxn atom cluster */
-typedef struct {
+struct BoundingBox
+{
     float lower[NNBSBB_C];
     float upper[NNBSBB_C];
-} nbnxn_bb_t;
+};
 
 
 /* Bounding box calculations are (currently) always in single precision, so
@@ -118,50 +146,248 @@ typedef struct {
  * and grid that they have been assigned to (as determined by the center
  * or geometry of the atom group they belong to).
  */
-struct nbnxn_grid_t
+class Grid
 {
-    rvec     c0;                   /* The lower corner of the (local) grid        */
-    rvec     c1;                   /* The upper corner of the (local) grid        */
-    rvec     size;                 /* c1 - c0                                     */
-    real     atom_density;         /* The atom number density for the local grid  */
-    real     maxAtomGroupRadius;   /* The maximum distance an atom can be outside
-                                    * of a cell and outside of the grid
-                                    */
+    public:
+        // The cluster and cell geometry of a grid
+        struct Geometry
+        {
+            Geometry(int nb_kernel_type);
 
-    gmx_bool bSimple;              /* Is this grid simple or super/sub            */
-    int      na_c;                 /* Number of atoms per cluster                 */
-    int      na_cj;                /* Number of atoms for list j-clusters         */
-    int      na_sc;                /* Number of atoms per super-cluster           */
-    int      na_c_2log;            /* 2log of na_c                                */
+            bool isSimple;             // Is this grid simple (CPU) or hierarchical (GPU)
+            int  numAtomsICluster;     // Number of atoms per cluster
+            int  numAtomsJCluster;     // Number of atoms for list j-clusters
+            int  numAtomsPerCell;      // Number of atoms per super-cluster
+            int  numAtomsICluster2Log; // 2log of na_c
+        };
 
-    int      numCells[DIM - 1];    /* Number of cells along x/y                   */
-    int      nc;                   /* Total number of cells                       */
+        // The physical dimensions of a grid
+        struct Dimensions
+        {
+            // The lower corner of the (local) grid
+            rvec lowerCorner;
+            // The upper corner of the (local) grid
+            rvec upperCorner;
+            // The physical grid size: upperCorner - lowerCorner
+            rvec gridSize;
+            // The atom number density for the (local) grid
+            real atomDensity;
+            // The maximum distance an atom can be outside of a cell and outside of the grid
+            real maxAtomGroupRadius;
+            // Size of cell along dimension x and y
+            real cellSize[DIM - 1];
+            // 1/size of a cell along dimensions x and y
+            real invCellSize[DIM - 1];
+            // The number of grid cells along dimensions x and y
+            int  numCells[DIM - 1];
+        };
 
-    real     cellSize[DIM - 1];    /* size of a cell                              */
-    real     invCellSize[DIM - 1]; /* 1/cellSize                                  */
+        // Data for each cluster on the grid
+        struct ClusterData
+        {
+            /* Bounding boxes */
+            // Bounding boxes for the i-clusters
+            std::vector < BoundingBox, gmx::AlignedAllocator < BoundingBox>> boundingBoxes;
+            // Storage for 3D j-bounding boxes for the case where the i- and j-cluster sizes are different
+            std::vector < BoundingBox, gmx::AlignedAllocator < BoundingBox>> jBoundingBoxesStorage;
+            // Bounding boxes for the j-clusters
+            gmx::ArrayRef<BoundingBox>                           jBoundingBoxes;
+            // 3D bounding boxes in packed xxxx format per cell
+            std::vector < float, gmx::AlignedAllocator < float>> packedBoundingBoxes;
 
-    int      cell0;                /* Index in nbs->cell corresponding to cell 0  */
+            /* Bit-flag information */
+            // Flags for properties of clusters in each cell
+            std::vector<int>          flags;
 
-    /* Grid data */
-    std::vector<int> cxy_na;        /* The number of atoms for each column in x,y  */
-    std::vector<int> cxy_ind;       /* Grid (super)cell index, offset from cell0   */
+            // Signal bits for atoms in each cell that tell whether an atom is perturbed
+            std::vector<unsigned int> fepBits;
+        };
 
-    std::vector<int> nsubc;         /* The number of sub cells for each super cell */
+        Grid(int nb_kernel_type);
 
-    /* Bounding boxes */
-    std::vector<float>                                    bbcz;                /* Bounding boxes in z for the cells */
-    std::vector < nbnxn_bb_t, gmx::AlignedAllocator < nbnxn_bb_t>> bb;         /* 3D bounding boxes for the sub cells */
-    std::vector < nbnxn_bb_t, gmx::AlignedAllocator < nbnxn_bb_t>> bbjStorage; /* 3D j-bounding boxes for the case where
-                                                                                * the i- and j-cluster sizes are different */
-    gmx::ArrayRef<nbnxn_bb_t>                              bbj;                /* 3D j-bounding boxes */
-    std::vector < float, gmx::AlignedAllocator < float>>            pbb;       /* 3D b. boxes in xxxx format per super cell   */
+        const Geometry &geometry() const
+        {
+            return geometry_;
+        }
 
-    /* Bit-flag information */
-    std::vector<int>          flags;     /* Flags for properties of clusters in each cell */
-    std::vector<unsigned int> fep;       /* FEP signal bits for atoms in each cluster */
+        const Dimensions &dimensions() const
+        {
+            return dimensions_;
+        }
 
-    /* Statistics */
-    int                       nsubc_tot; /* Total number of subcell, used for printing  */
+        int numColumns() const
+        {
+            return dimensions_.numCells[XX]*dimensions_.numCells[YY];
+        }
+
+        int numCells() const
+        {
+            return numCellsTotal_;
+        }
+
+        int cellOffset() const
+        {
+            return cellOffset_;
+        }
+
+        // Returns the first cell index in the grid, starting at 0 in this grid
+        int firstCellInColumn(int columnIndex) const
+        {
+            return cxy_ind_[columnIndex];
+        };
+
+        int numCellsInColumn(int columnIndex) const
+        {
+            return cxy_ind_[columnIndex + 1] - cxy_ind_[columnIndex];
+        };
+
+        int firstAtomInColumn(int columnIndex) const
+        {
+            return (cellOffset_ + cxy_ind_[columnIndex])*geometry_.numAtomsPerCell;
+        };
+
+        int numAtomsInColumn(int columnIndex) const
+        {
+            return cxy_na_[columnIndex];
+        };
+
+        int paddedNumAtomsInColumn(int columnIndex) const
+        {
+            return numCellsInColumn(columnIndex)*geometry_.numAtomsPerCell;
+        };
+
+        int atomIndexEnd() const
+        {
+            return (cellOffset_ + numCellsTotal_)*geometry_.numAtomsPerCell;
+        }
+
+        gmx::ArrayRef<const int> numClustersPerCell() const
+        {
+            return numClusters_;
+        }
+
+        int atomToCluster(int atomIndex) const
+        {
+            return (atomIndex >> geometry_.numAtomsICluster2Log);
+        }
+
+        int numClusters() const
+        {
+            if (geometry_.isSimple)
+            {
+                return numCellsTotal_;
+            }
+            else
+            {
+                return numClustersTotal_;
+            }
+        }
+
+        gmx::ArrayRef<const float> zBoundingBoxes() const
+        {
+            return zBoundingBoxes_;
+        }
+
+        const ClusterData &clusterData() const
+        {
+            return clusterData_;
+        }
+
+        bool clusterIsPerturbed(int clusterIndex) const
+        {
+            return clusterData_.fepBits[clusterIndex] != 0u;
+        }
+
+        bool atomIsPerturbed(int clusterIndex,
+                             int atomIndexInCluster) const
+        {
+            return (clusterData_.fepBits[clusterIndex] & (1 << atomIndexInCluster)) != 0u;
+        }
+
+        void setDimensions(const nbnxn_search   *nbs,
+                           int                   ddZone,
+                           int                   numAtoms,
+                           const rvec            lowerCorner,
+                           const rvec            upperCorner,
+                           real                  atomDensity,
+                           real                  maxAtomGroupRadius);
+
+        /* Determine in which grid cells the atoms should go */
+        void calcCellIndices(nbnxn_search                   *nbs,
+                             int                             ddZone,
+                             int                             cellOffset,
+                             const gmx::UpdateGroupsCog     *updateGroupsCog,
+                             int                             atomStart,
+                             int                             atomEnd,
+                             const int                      *atinfo,
+                             gmx::ArrayRef<const gmx::RVec>  x,
+                             int                             numAtomsMoved,
+                             const int                      *move,
+                             nbnxn_atomdata_t               *nbat);
+
+    private:
+        /* Fill a pair search cell with atoms.
+         * Potentially sorts atoms and sets the interaction flags.
+         */
+        void fillCell(nbnxn_search                   *nbs,
+                      nbnxn_atomdata_t               *nbat,
+                      int                             atomStart,
+                      int                             atomEnd,
+                      const int                      *atinfo,
+                      gmx::ArrayRef<const gmx::RVec>  x,
+                      BoundingBox gmx_unused         *bb_work_aligned);
+
+        /* Spatially sort the atoms within one grid column */
+        void sortColumnsSimple(nbnxn_search *nbs,
+                               int dd_zone,
+                               int atomStart, int atomEnd,
+                               const int *atinfo,
+                               gmx::ArrayRef<const gmx::RVec> x,
+                               nbnxn_atomdata_t *nbat,
+                               int cxy_start, int cxy_end,
+                               gmx::ArrayRef<int> sort_work);
+
+        /* Spatially sort the atoms within one grid column */
+        void sortColumnsSuperSub(nbnxn_search *nbs,
+                                 int dd_zone,
+                                 int atomStart, int atomEnd,
+                                 const int *atinfo,
+                                 gmx::ArrayRef<const gmx::RVec> x,
+                                 nbnxn_atomdata_t *nbat,
+                                 int cxy_start, int cxy_end,
+                                 gmx::ArrayRef<int> sort_work);
+
+        /* Data members */
+        // The geometry of the grid clusters and cells
+        Geometry   geometry_;
+        // The physical dimensions of the grid
+        Dimensions dimensions_;
+
+        // The total number of cells in this grid
+        int        numCellsTotal_;
+        // Index in nbs->cell corresponding to cell 0  */
+        int        cellOffset_;
+
+        /* Grid data */
+        // The number of, non-filler, atoms for each grid column
+        std::vector<int> cxy_na_;
+        // The grid-local cell index for each grid column
+        std::vector<int> cxy_ind_;
+
+        // The number of cluster for each cell
+        std::vector<int> numClusters_;
+
+        // Bounding boxes in z for the cells
+        std::vector<float> zBoundingBoxes_;
+
+        // Data per cluster on the grid
+        ClusterData clusterData_;
+
+        /* Statistics */
+        // Total number of clusters, used for printing
+        int numClustersTotal_;
 };
+
+} // namespace Nbnxn
 
 #endif
