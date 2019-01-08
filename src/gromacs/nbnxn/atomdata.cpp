@@ -70,7 +70,6 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-
 void nbnxn_atomdata_t::resizeCoordinateBuffer(int numAtoms)
 {
     numAtoms_ = numAtoms;
@@ -724,9 +723,7 @@ static void copy_lj_to_nbat_lj_comb(gmx::ArrayRef<const real> ljparam_type,
 
 static int numAtomsFromGrids(const nbnxn_search &nbs)
 {
-    const nbnxn_grid_t &lastGrid = nbs.grid.back();
-
-    return (lastGrid.cell0 + lastGrid.nc)*lastGrid.na_sc;
+    return nbs.grid.back().atomIndexEnd();
 }
 
 /* Sets the atom type in nbnxn_atomdata_t */
@@ -736,16 +733,16 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params *params,
 {
     params->type.resize(numAtomsFromGrids(*nbs));
 
-    for (const nbnxn_grid_t &grid : nbs->grid)
+    for (const Nbnxn::Grid &grid : nbs->grid)
     {
         /* Loop over all columns and copy and fill */
-        for (int i = 0; i < grid.numCells[XX]*grid.numCells[YY]; i++)
+        for (int i = 0; i < grid.numColumns(); i++)
         {
-            int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
-            int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
+            const int numAtoms   = grid.paddedNumAtomsInColumn(i);
+            const int atomOffset = grid.firstAtomInColumn(i);
 
-            copy_int_to_nbat_int(nbs->a.data() + ash, grid.cxy_na[i], ncz*grid.na_sc,
-                                 type, params->numTypes - 1, params->type.data() + ash);
+            copy_int_to_nbat_int(nbs->a.data() + atomOffset, grid.numAtomsInColumn(i), numAtoms,
+                                 type, params->numTypes - 1, params->type.data() + atomOffset);
         }
     }
 }
@@ -759,34 +756,34 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params *params,
 
     if (params->comb_rule != ljcrNONE)
     {
-        for (const nbnxn_grid_t &grid : nbs->grid)
+        for (const Nbnxn::Grid &grid : nbs->grid)
         {
             /* Loop over all columns and copy and fill */
-            for (int i = 0; i < grid.numCells[XX]*grid.numCells[YY]; i++)
+            for (int i = 0; i < grid.numColumns(); i++)
             {
-                int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
-                int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
+                const int numAtoms   = grid.paddedNumAtomsInColumn(i);
+                const int atomOffset = grid.firstAtomInColumn(i);
 
                 if (XFormat == nbatX4)
                 {
                     copy_lj_to_nbat_lj_comb<c_packX4>(params->nbfp_comb,
-                                                      params->type.data() + ash,
-                                                      ncz*grid.na_sc,
-                                                      params->lj_comb.data() + ash*2);
+                                                      params->type.data() + atomOffset,
+                                                      numAtoms,
+                                                      params->lj_comb.data() + atomOffset*2);
                 }
                 else if (XFormat == nbatX8)
                 {
                     copy_lj_to_nbat_lj_comb<c_packX8>(params->nbfp_comb,
-                                                      params->type.data() + ash,
-                                                      ncz*grid.na_sc,
-                                                      params->lj_comb.data() + ash*2);
+                                                      params->type.data() + atomOffset,
+                                                      numAtoms,
+                                                      params->lj_comb.data() + atomOffset*2);
                 }
                 else if (XFormat == nbatXYZQ)
                 {
                     copy_lj_to_nbat_lj_comb<1>(params->nbfp_comb,
-                                               params->type.data() + ash,
-                                               ncz*grid.na_sc,
-                                               params->lj_comb.data() + ash*2);
+                                               params->type.data() + atomOffset,
+                                               numAtoms,
+                                               params->lj_comb.data() + atomOffset*2);
                 }
             }
         }
@@ -803,26 +800,26 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
         nbat->paramsDeprecated().q.resize(nbat->numAtoms());
     }
 
-    for (const nbnxn_grid_t &grid : nbs->grid)
+    for (const Nbnxn::Grid &grid : nbs->grid)
     {
         /* Loop over all columns and copy and fill */
-        for (int cxy = 0; cxy < grid.numCells[XX]*grid.numCells[YY]; cxy++)
+        for (int cxy = 0; cxy < grid.numColumns(); cxy++)
         {
-            int ash      = (grid.cell0 + grid.cxy_ind[cxy])*grid.na_sc;
-            int na       = grid.cxy_na[cxy];
-            int na_round = (grid.cxy_ind[cxy+1] - grid.cxy_ind[cxy])*grid.na_sc;
+            const int atomOffset     = grid.firstAtomInColumn(cxy);
+            const int numAtoms       = grid.numAtomsInColumn(cxy);
+            const int paddedNumAtoms = grid.paddedNumAtomsInColumn(cxy);
 
             if (nbat->XFormat == nbatXYZQ)
             {
-                real *q = nbat->x().data() + ash*STRIDE_XYZQ + ZZ + 1;
+                real *q = nbat->x().data() + atomOffset*STRIDE_XYZQ + ZZ + 1;
                 int   i;
-                for (i = 0; i < na; i++)
+                for (i = 0; i < numAtoms; i++)
                 {
-                    *q = charge[nbs->a[ash+i]];
+                    *q = charge[nbs->a[atomOffset + i]];
                     q += STRIDE_XYZQ;
                 }
                 /* Complete the partially filled last cell with zeros */
-                for (; i < na_round; i++)
+                for (; i < paddedNumAtoms; i++)
                 {
                     *q = 0;
                     q += STRIDE_XYZQ;
@@ -830,15 +827,15 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
             }
             else
             {
-                real *q = nbat->paramsDeprecated().q.data() + ash;
+                real *q = nbat->paramsDeprecated().q.data() + atomOffset;
                 int   i;
-                for (i = 0; i < na; i++)
+                for (i = 0; i < numAtoms; i++)
                 {
-                    *q = charge[nbs->a[ash+i]];
+                    *q = charge[nbs->a[atomOffset + i]];
                     q++;
                 }
                 /* Complete the partially filled last cell with zeros */
-                for (; i < na_round; i++)
+                for (; i < paddedNumAtoms; i++)
                 {
                     *q = 0;
                     q++;
@@ -872,10 +869,10 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
         stride_q = 1;
     }
 
-    for (const nbnxn_grid_t &grid : nbs->grid)
+    for (const Nbnxn::Grid &grid : nbs->grid)
     {
         int nsubc;
-        if (grid.bSimple)
+        if (grid.geometry().isSimple)
         {
             nsubc = 1;
         }
@@ -884,20 +881,21 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
             nsubc = c_gpuNumClusterPerCell;
         }
 
-        int c_offset = grid.cell0*grid.na_sc;
+        int c_offset = grid.firstAtomInColumn(0);
 
         /* Loop over all columns and copy and fill */
-        for (int c = 0; c < grid.nc*nsubc; c++)
+        for (int c = 0; c < grid.numCells()*nsubc; c++)
         {
             /* Does this cluster contain perturbed particles? */
-            if (grid.fep[c] != 0)
+            if (grid.clusterIsPerturbed(c))
             {
-                for (int i = 0; i < grid.na_c; i++)
+                const int numAtomsPerCluster = grid.geometry().numAtomsICluster;
+                for (int i = 0; i < numAtomsPerCluster; i++)
                 {
                     /* Is this a perturbed particle? */
-                    if (grid.fep[c] & (1 << i))
+                    if (grid.atomIsPerturbed(c, i))
                     {
-                        int ind = c_offset + c*grid.na_c + i;
+                        int ind = c_offset + c*numAtomsPerCluster + i;
                         /* Set atom type and charge to non-interacting */
                         params.type[ind] = params.numTypes - 1;
                         q[ind*stride_q]  = 0;
@@ -950,18 +948,18 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params *params,
 
     params->energrp.resize(numAtomsFromGrids(*nbs));
 
-    for (const nbnxn_grid_t &grid : nbs->grid)
+    for (const Nbnxn::Grid &grid : nbs->grid)
     {
         /* Loop over all columns and copy and fill */
-        for (int i = 0; i < grid.numCells[XX]*grid.numCells[YY]; i++)
+        for (int i = 0; i < grid.numColumns(); i++)
         {
-            int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
-            int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
+            const int numAtoms   = grid.paddedNumAtomsInColumn(i);
+            const int atomOffset = grid.firstAtomInColumn(i);
 
-            copy_egp_to_nbat_egps(nbs->a.data() + ash, grid.cxy_na[i], ncz*grid.na_sc,
+            copy_egp_to_nbat_egps(nbs->a.data() + atomOffset, grid.numAtomsInColumn(i), numAtoms,
                                   c_nbnxnCpuIClusterSize, params->neg_2log,
                                   atinfo,
-                                  params->energrp.data() + (ash >> grid.na_c_2log));
+                                  params->energrp.data() + grid.atomToCluster(atomOffset));
         }
     }
 }
@@ -1035,7 +1033,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
 
     if (FillLocal)
     {
-        nbat->natoms_local = nbs->grid[0].nc*nbs->grid[0].na_sc;
+        nbat->natoms_local = nbs->grid[0].atomIndexEnd();
     }
 
     nth = gmx_omp_nthreads_get(emntPairsearch);
@@ -1047,23 +1045,21 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
         {
             for (int g = g0; g < g1; g++)
             {
-                const nbnxn_grid_t &grid       = nbs->grid[g];
-                const int           numCellsXY = grid.numCells[XX]*grid.numCells[YY];
+                const Nbnxn::Grid  &grid       = nbs->grid[g];
+                const int           numCellsXY = grid.numColumns();
 
                 const int           cxy0 = (numCellsXY* th      + nth - 1)/nth;
                 const int           cxy1 = (numCellsXY*(th + 1) + nth - 1)/nth;
 
                 for (int cxy = cxy0; cxy < cxy1; cxy++)
                 {
-                    int na, ash, na_fill;
+                    const int na  = grid.numAtomsInColumn(cxy);
+                    const int ash = grid.firstAtomInColumn(cxy);
 
-                    na  = grid.cxy_na[cxy];
-                    ash = (grid.cell0 + grid.cxy_ind[cxy])*grid.na_sc;
-
+                    int       na_fill;
                     if (g == 0 && FillLocal)
                     {
-                        na_fill =
-                            (grid.cxy_ind[cxy+1] - grid.cxy_ind[cxy])*grid.na_sc;
+                        na_fill = grid.paddedNumAtomsInColumn(cxy);
                     }
                     else
                     {

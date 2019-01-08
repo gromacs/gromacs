@@ -199,7 +199,7 @@ typedef struct {
     int numJClusterGroups() const
     {
         return cj4_ind_end - cj4_ind_start;
-    };
+    }
 
     int sci;            /* i-super-cluster       */
     int shift;          /* Shift vector index plus possible flags */
@@ -431,31 +431,31 @@ struct nbnxn_atomdata_t
     const Params &params() const
     {
         return params_;
-    };
+    }
 
     /* Returns a non-const reference to the parameters */
     Params &paramsDeprecated()
     {
         return params_;
-    };
+    }
 
     /* Returns the current total number of atoms stored */
     int numAtoms() const
     {
         return numAtoms_;
-    };
+    }
 
     /* Return the coordinate buffer, and q with xFormat==nbatXYZQ */
     gmx::ArrayRef<const real> x() const
     {
         return x_;
-    };
+    }
 
     /* Return the coordinate buffer, and q with xFormat==nbatXYZQ */
     gmx::ArrayRef<real> x()
     {
         return x_;
-    };
+    }
 
     /* Resizes the coordinate buffer and sets the number of atoms */
     void resizeCoordinateBuffer(int numAtoms);

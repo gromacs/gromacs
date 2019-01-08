@@ -48,8 +48,10 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/nbnxn/pairlist.h"
+#include "gromacs/simd/simd.h"
+
 #include "grid.h"
-#include "pairlist.h"
 
 /* Working data for the actual i-supercell during pair search */
 struct NbnxnPairlistCpuWork
@@ -65,11 +67,11 @@ struct NbnxnPairlistCpuWork
         }
 
         // The bounding boxes, pbc shifted, for each cluster
-        AlignedVector<nbnxn_bb_t> bb;
+        AlignedVector<Nbnxn::BoundingBox> bb;
         // The coordinates, pbc shifted, for each atom
-        std::vector<real>         x;
+        std::vector<real>                 x;
         // Aligned list for storing 4*DIM*GMX_SIMD_REAL_WIDTH reals
-        AlignedVector<real>       xSimd;
+        AlignedVector<real>               xSimd;
     };
 
     // Protect data from cache pollution between threads
@@ -107,13 +109,13 @@ struct NbnxnPairlistGpuWork
         }
 
         // The bounding boxes, pbc shifted, for each cluster
-        AlignedVector<nbnxn_bb_t> bb;
+        AlignedVector<Nbnxn::BoundingBox> bb;
         // As bb, but in packed xxxx format
-        AlignedVector<float>      bbPacked;
+        AlignedVector<float>              bbPacked;
         // The coordinates, pbc shifted, for each atom
-        AlignedVector<real>       x;
+        AlignedVector<real>               x;
         // Aligned coordinate list used for 4*DIM*GMX_SIMD_REAL_WIDTH floats
-        AlignedVector<real>       xSimd;
+        AlignedVector<real>               xSimd;
     };
 
     NbnxnPairlistGpuWork() :

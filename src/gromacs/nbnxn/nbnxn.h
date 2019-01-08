@@ -257,7 +257,6 @@ void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
                        gmx::ArrayRef<const gmx::RVec>  x,
                        int                             numAtomsMoved,
                        const int                      *move,
-                       int                             nb_kernel_type,
                        nbnxn_atomdata_t               *nbat);
 
 /*! \brief As nbnxn_put_on_grid, but for the non-local atoms
@@ -269,7 +268,6 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                                 const struct gmx_domdec_zones_t *zones,
                                 const int                       *atinfo,
                                 gmx::ArrayRef<const gmx::RVec>   x,
-                                int                              nb_kernel_type,
                                 nbnxn_atomdata_t                *nbat);
 
 /*! \brief Returns the number of x and y cells in the local grid */
