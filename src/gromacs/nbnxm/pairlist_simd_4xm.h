@@ -79,7 +79,7 @@ icell_set_x_simd_4xn(int ci,
  * \param[in,out] numDistanceChecks   The number of distance checks performed
  */
 static inline void
-makeClusterListSimd4xn(const nbnxn_grid_t       &jGrid,
+makeClusterListSimd4xn(const Grid               &jGrid,
                        NbnxnPairlistCpu *        nbl,
                        int                       icluster,
                        int                       firstCell,
@@ -129,9 +129,9 @@ makeClusterListSimd4xn(const nbnxn_grid_t       &jGrid,
     while (!InRange && jclusterFirst <= jclusterLast)
     {
 #if NBNXN_SEARCH_BB_SIMD4
-        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterFirst, jGrid.bbj);
+        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterFirst, jGrid.jBoundingBoxes());
 #else
-        d2 = subc_bb_dist2(0, bb_ci, jclusterFirst, jGrid.bbj);
+        d2 = subc_bb_dist2(0, bb_ci, jclusterFirst, jGrid.jBoundingBoxes());
 #endif
         *numDistanceChecks += 2;
 
@@ -146,7 +146,7 @@ makeClusterListSimd4xn(const nbnxn_grid_t       &jGrid,
         }
         else if (d2 < rlist2)
         {
-            xind_f  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN, 0>(jGrid.cell0) + jclusterFirst);
+            xind_f  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN, 0>(jGrid.cellOffset()) + jclusterFirst);
 
             jx_S  = load<SimdReal>(x_j + xind_f + 0*c_xStride4xN);
             jy_S  = load<SimdReal>(x_j + xind_f + 1*c_xStride4xN);
@@ -200,9 +200,9 @@ makeClusterListSimd4xn(const nbnxn_grid_t       &jGrid,
     while (!InRange && jclusterLast > jclusterFirst)
     {
 #if NBNXN_SEARCH_BB_SIMD4
-        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterLast, jGrid.bbj);
+        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterLast, jGrid.jBoundingBoxes());
 #else
-        d2 = subc_bb_dist2(0, bb_ci, jclusterLast, jGrid.bbj);
+        d2 = subc_bb_dist2(0, bb_ci, jclusterLast, jGrid.jBoundingBoxes());
 #endif
         *numDistanceChecks += 2;
 
@@ -217,7 +217,7 @@ makeClusterListSimd4xn(const nbnxn_grid_t       &jGrid,
         }
         else if (d2 < rlist2)
         {
-            xind_l  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN, 0>(jGrid.cell0) + jclusterLast);
+            xind_l  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN, 0>(jGrid.cellOffset()) + jclusterLast);
 
             jx_S  = load<SimdReal>(x_j +xind_l + 0*c_xStride4xN);
             jy_S  = load<SimdReal>(x_j +xind_l + 1*c_xStride4xN);
@@ -268,7 +268,7 @@ makeClusterListSimd4xn(const nbnxn_grid_t       &jGrid,
         {
             /* Store cj and the interaction mask */
             nbnxn_cj_t cjEntry;
-            cjEntry.cj   = cjFromCi<NbnxnLayout::Simd4xN, 0>(jGrid.cell0) + jcluster;
+            cjEntry.cj   = cjFromCi<NbnxnLayout::Simd4xN, 0>(jGrid.cellOffset()) + jcluster;
             cjEntry.excl = get_imask_simd_4xn(excludeSubDiagonal, icluster, jcluster);
             nbl->cj.push_back(cjEntry);
         }
