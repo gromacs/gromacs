@@ -65,6 +65,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "grid.h"
 #include "internal.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
