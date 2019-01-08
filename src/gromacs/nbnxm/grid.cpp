@@ -35,6 +35,8 @@
 
 #include "gmxpre.h"
 
+#include "grid.h"
+
 #include <cmath>
 #include <cstring>
 
