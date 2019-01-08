@@ -703,10 +703,8 @@ static void sort_pdbatoms(t_restp restp[],
 {
     t_atoms     *pdba, *pdbnew;
     rvec       **xnew;
-    int          i, j;
     t_restp     *rptr;
     t_pdbindex  *pdbi;
-    int         *a;
     char        *atomnm;
 
     pdba   = *pdbaptr;
@@ -715,17 +713,13 @@ static void sort_pdbatoms(t_restp restp[],
     snew(xnew, 1);
     snew(pdbi, natoms);
 
-    for (i = 0; i < natoms; i++)
+    for (int i = 0; i < natoms; i++)
     {
         atomnm = *pdba->atomname[i];
         rptr   = &restp[pdba->atom[i].resind];
-        for (j = 0; (j < rptr->natom); j++)
-        {
-            if (gmx_strcasecmp(atomnm, *(rptr->atomname[j])) == 0)
-            {
-                break;
-            }
-        }
+        int j = std::find_if(rptr->atomname, rptr->atomname+rptr->natom,
+                             [&atomnm](char** it){return gmx_strcasecmp(atomnm, *it) == 0; })
+            - rptr->atomname;
         if (j == rptr->natom)
         {
             char buf[STRLEN];
@@ -756,7 +750,7 @@ static void sort_pdbatoms(t_restp restp[],
     std::sort(pdbi, pdbi+natoms, pdbicomp);
 
     /* pdba is sorted in pdbnew using the pdbi index */
-    snew(a, natoms);
+    std::vector<int> a(natoms);
     snew(pdbnew, 1);
     init_t_atoms(pdbnew, natoms, true);
     snew(*xnew, natoms);
@@ -764,7 +758,7 @@ static void sort_pdbatoms(t_restp restp[],
     pdbnew->nres = pdba->nres;
     sfree(pdbnew->resinfo);
     pdbnew->resinfo = pdba->resinfo;
-    for (i = 0; i < natoms; i++)
+    for (int i = 0; i < natoms; i++)
     {
         pdbnew->atom[i]     = pdba->atom[pdbi[i].index];
         pdbnew->atomname[i] = pdba->atomname[pdbi[i].index];
@@ -782,9 +776,8 @@ static void sort_pdbatoms(t_restp restp[],
     /* copy the sorted pdbnew back to pdba */
     *pdbaptr = pdbnew;
     *x       = *xnew;
-    add_grp(block, gnames, natoms, a, "prot_sort");
+    add_grp(block, gnames, a, "prot_sort");
     sfree(xnew);
-    sfree(a);
     sfree(pdbi);
 }
 

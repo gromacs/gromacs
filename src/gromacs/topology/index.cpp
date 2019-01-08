@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,16 +113,14 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
     gmx_ffclose(out);
 }
 
-void add_grp(t_blocka *b, char ***gnames, int nra, const int a[], const char *name)
+void add_grp(t_blocka *b, char ***gnames, gmx::ArrayRef<const int> a, const std::string &name)
 {
-    int i;
-
     srenew(b->index, b->nr+2);
     srenew(*gnames, b->nr+1);
-    (*gnames)[b->nr] = gmx_strdup(name);
+    (*gnames)[b->nr] = gmx_strdup(name.c_str());
 
-    srenew(b->a, b->nra+nra);
-    for (i = 0; (i < nra); i++)
+    srenew(b->a, b->nra+a.size());
+    for (int i = 0; (i < a.size()); i++)
     {
         b->a[b->nra++] = a[i];
     }
@@ -130,12 +128,19 @@ void add_grp(t_blocka *b, char ***gnames, int nra, const int a[], const char *na
     b->index[b->nr] = b->nra;
 }
 
-/* compare index in `a' with group in `b' at `index',
-   when `index'<0 it is relative to end of `b' */
-static gmx_bool grp_cmp(t_blocka *b, int nra, const int a[], int index)
+/*! \brief
+ * Compare index in groups.
+ *
+ * Checks the index in \p a to the one in \p b at \p index.
+ * If \p index is < 0, it is taken as relative to the end of \p b.
+ *
+ * \param[in] b Block with groups.
+ * \param[in] a New group to compare to.
+ * \param[in] index The index to check.
+ * \returns True if groups are the same.
+ */
+static bool grp_cmp(t_blocka *b, gmx::ArrayRef<const int> a, int index)
 {
-    int i;
-
     if (index < 0)
     {
         index = b->nr-1+index;
@@ -145,75 +150,69 @@ static gmx_bool grp_cmp(t_blocka *b, int nra, const int a[], int index)
         gmx_fatal(FARGS, "no such index group %d in t_blocka (nr=%d)", index, b->nr);
     }
     /* compare sizes */
-    if (nra != b->index[index+1] - b->index[index])
+    if (a.size() != b->index[index+1] - b->index[index])
     {
         return FALSE;
     }
-    for (i = 0; i < nra; i++)
+    for (int i = 0; i < a.size(); i++)
     {
         if (a[i] != b->a[b->index[index]+i])
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
-
-static void
-p_status(const char *const *restype, int nres,
-         const char *const *typenames, int ntypes)
+//! Print out how many residues of a certain type are present.
+static void p_status(gmx::ArrayRef<const std::string> restype,
+                     gmx::ArrayRef<const std::string> typenames)
 {
-    int   i, j;
-    int * counter;
+    std::vector<int> counter(typenames.size(), 0);
+    std::transform(typenames.begin(), typenames.end(), counter.begin(),
+                   [&restype](const std::string &typenm) {
+                       return std::count_if(restype.begin(), restype.end(),
+                                            [&typenm](const std::string &res) {
+                                                return gmx_strcasecmp(res.c_str(), typenm.c_str()) == 0;
+                                            }
+                                            );
+                   }
+                   );
 
-    snew(counter, ntypes);
-    for (i = 0; i < ntypes; i++)
-    {
-        counter[i] = 0;
-    }
-    for (i = 0; i < nres; i++)
-    {
-        for (j = 0; j < ntypes; j++)
-        {
-            if (!gmx_strcasecmp(restype[i], typenames[j]))
-            {
-                counter[j]++;
-            }
-        }
-    }
-
-    for (i = 0; (i < ntypes); i++)
+    for (int i = 0; (i < typenames.size()); i++)
     {
         if (counter[i] > 0)
         {
-            printf("There are: %5d %10s residues\n", counter[i], typenames[i]);
+            printf("There are: %5d %10s residues\n", counter[i], typenames[i].c_str());
         }
     }
-
-    sfree(counter);
 }
 
-
-static int *
-mk_aid(const t_atoms *atoms, const char ** restype, const char * typestring, int *nra, gmx_bool bMatch)
-/* Make an array of ints for all atoms with residuetypes matching typestring, or the opposite if bMatch is false */
+/*! \brief
+ * Return a new group of atoms with \p restype that match \p typestring,
+ * or not matching if \p bMatch.
+ *
+ * \param[in] atoms Atoms data to use.
+ * \param[in] restype Residuetypes to match.
+ * \param[in] typestring Which type the residue should have.
+ * \param[in] bMatch whether to return matching atoms or those that don't.
+ * \returns Vector of atoms that match.
+ */
+static std::vector<int> mk_aid(const t_atoms                   *atoms,
+                               gmx::ArrayRef<const std::string> restype,
+                               const std::string               &typestring,
+                               bool                             bMatch)
 {
-    int     *a;
-    int      i;
-    bool     res;
-
-    snew(a, atoms->nr);
-    *nra = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    std::vector<int> a;
+    for (int i = 0; (i < atoms->nr); i++)
     {
-        res = gmx_strcasecmp(restype[atoms->atom[i].resind], typestring) == 0;
+        bool res = gmx_strcasecmp(restype[atoms->atom[i].resind].c_str(), typestring.c_str()) == 0;
         if (!bMatch)
         {
             res = !res;
         }
         if (res)
         {
-            a[(*nra)++] = i;
+            a.push_back(i);
         }
     }
 
@@ -226,18 +225,17 @@ typedef struct {
     char    *gname;
 } restp_t;
 
-static void analyse_other(const char ** restype, const t_atoms *atoms,
+static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *atoms,
                           t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     restp_t *restp = nullptr;
     char   **attp  = nullptr;
     char    *rname, *aname;
-    int     *aid, *aaid;
-    int      i, j, k, l, resind, naid, naaid, natp, nrestp = 0;
+    int      i, resind, natp, nrestp = 0;
 
     for (i = 0; (i < atoms->nres); i++)
     {
-        if (gmx_strcasecmp(restype[i], "Protein") && gmx_strcasecmp(restype[i], "DNA") && gmx_strcasecmp(restype[i], "RNA") && gmx_strcasecmp(restype[i], "Water"))
+        if (gmx_strcasecmp(restype[i].c_str(), "Protein") && gmx_strcasecmp(restype[i].c_str(), "DNA") && gmx_strcasecmp(restype[i].c_str(), "RNA") && gmx_strcasecmp(restype[i].c_str(), "Water"))
         {
             break;
         }
@@ -249,14 +247,14 @@ static void analyse_other(const char ** restype, const t_atoms *atoms,
         {
             printf("Analysing residues not classified as Protein/DNA/RNA/Water and splitting into groups...\n");
         }
-        for (k = 0; (k < atoms->nr); k++)
+        for (int k = 0; (k < atoms->nr); k++)
         {
             resind = atoms->atom[k].resind;
             rname  = *atoms->resinfo[resind].name;
-            if (gmx_strcasecmp(restype[resind], "Protein") && gmx_strcasecmp(restype[resind], "DNA") &&
-                gmx_strcasecmp(restype[resind], "RNA") && gmx_strcasecmp(restype[resind], "Water"))
+            if (gmx_strcasecmp(restype[resind].c_str(), "Protein") && gmx_strcasecmp(restype[resind].c_str(), "DNA") &&
+                gmx_strcasecmp(restype[resind].c_str(), "RNA") && gmx_strcasecmp(restype[resind].c_str(), "Water"))
             {
-
+                int l;
                 for (l = 0; (l < nrestp); l++)
                 {
                     assert(restp);
@@ -275,20 +273,19 @@ static void analyse_other(const char ** restype, const t_atoms *atoms,
                 }
             }
         }
-        for (i = 0; (i < nrestp); i++)
+        for (int i = 0; (i < nrestp); i++)
         {
-            snew(aid, atoms->nr);
-            naid = 0;
-            for (j = 0; (j < atoms->nr); j++)
+            std::vector<int> aid;
+            for (int j = 0; (j < atoms->nr); j++)
             {
                 rname = *atoms->resinfo[atoms->atom[j].resind].name;
                 if ((strcmp(restp[i].rname, rname) == 0 && !restp[i].bNeg) ||
                     (strcmp(restp[i].rname, rname) != 0 &&  restp[i].bNeg))
                 {
-                    aid[naid++] = j;
+                    aid.push_back(j);
                 }
             }
-            add_grp(gb, gn, naid, aid, restp[i].gname);
+            add_grp(gb, gn, aid, restp[i].gname);
             if (bASK)
             {
                 printf("split %s into atoms (y/n) ? ", restp[i].gname);
@@ -296,9 +293,10 @@ static void analyse_other(const char ** restype, const t_atoms *atoms,
                 if (gmx_ask_yesno(bASK))
                 {
                     natp = 0;
-                    for (k = 0; (k < naid); k++)
+                    for (size_t k = 0; (k < aid.size()); k++)
                     {
                         aname = *atoms->atomname[aid[k]];
+                        int l;
                         for (l = 0; (l < natp); l++)
                         {
                             if (strcmp(aname, attp[l]) == 0)
@@ -314,27 +312,24 @@ static void analyse_other(const char ** restype, const t_atoms *atoms,
                     }
                     if (natp > 1)
                     {
-                        for (l = 0; (l < natp); l++)
+                        for (int l = 0; (l < natp); l++)
                         {
-                            snew(aaid, naid);
-                            naaid = 0;
-                            for (k = 0; (k < naid); k++)
+                            std::vector<int> aaid;
+                            for (size_t k = 0; (k < aid.size()); k++)
                             {
                                 aname = *atoms->atomname[aid[k]];
                                 if (strcmp(aname, attp[l]) == 0)
                                 {
-                                    aaid[naaid++] = aid[k];
+                                    aaid.push_back(aid[k]);
                                 }
                             }
-                            add_grp(gb, gn, naaid, aaid, attp[l]);
-                            sfree(aaid);
+                            add_grp(gb, gn, aaid, attp[l]);
                         }
                     }
                     sfree(attp);
                     attp = nullptr;
                 }
             }
-            sfree(aid);
             sfree(restp[i].rname);
             sfree(restp[i].gname);
         }
@@ -369,7 +364,7 @@ typedef struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performa
     int compareto;
 } t_gmx_help_make_index_group;
 
-static void analyse_prot(const char ** restype, const t_atoms *atoms,
+static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms *atoms,
                          t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     /* lists of atomnames to be used in constructing index groups: */
@@ -401,8 +396,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
     const int   num_index_groups = asize(constructing_data);
 
     int         n, j;
-    int        *aid;
-    int         nra, npres;
+    int         npres;
     gmx_bool    match;
     char        ndx_name[STRLEN], *atnm;
     int         i;
@@ -411,13 +405,13 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
     {
         printf("Analysing Protein...\n");
     }
-    snew(aid, atoms->nr);
+    std::vector<int> aid;
 
     /* calculate the number of protein residues */
     npres = 0;
     for (i = 0; (i < atoms->nres); i++)
     {
-        if (0 == gmx_strcasecmp(restype[i], "Protein"))
+        if (0 == gmx_strcasecmp(restype[i].c_str(), "Protein"))
         {
             npres++;
         }
@@ -425,10 +419,9 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
     /* find matching or complement atoms */
     for (i = 0; (i < num_index_groups); i++)
     {
-        nra = 0;
         for (n = 0; (n < atoms->nr); n++)
         {
-            if (0 == gmx_strcasecmp(restype[atoms->atom[n].resind], "Protein"))
+            if (0 == gmx_strcasecmp(restype[atoms->atom[n].resind].c_str(), "Protein"))
             {
                 match = FALSE;
                 for (j = 0; (j < constructing_data[i].num_defining_atomnames); j++)
@@ -456,15 +449,15 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
                 }
                 if (constructing_data[i].bTakeComplement != match)
                 {
-                    aid[nra++] = n;
+                    aid.push_back(n);
                 }
             }
         }
         /* if we want to add this group always or it differs from previous
            group, add it: */
-        if (-1 == constructing_data[i].compareto || !grp_cmp(gb, nra, aid, constructing_data[i].compareto-i) )
+        if (-1 == constructing_data[i].compareto || !grp_cmp(gb, aid, constructing_data[i].compareto-i) )
         {
-            add_grp(gb, gn, nra, aid, constructing_data[i].group_name);
+            add_grp(gb, gn, aid, constructing_data[i].group_name);
         }
     }
 
@@ -476,7 +469,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
             if (gmx_ask_yesno(bASK))
             {
                 int resind;
-                nra = 0;
+                aid.clear();
                 for (n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr)); )
                 {
                     resind = atoms->atom[n].resind;
@@ -492,18 +485,18 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
                         }
                         if (constructing_data[i].bTakeComplement != match)
                         {
-                            aid[nra++] = n;
+                            aid.push_back(n);
                         }
                     }
                     /* copy the residuename to the tail of the groupname */
-                    if (nra > 0)
+                    if (!aid.empty())
                     {
                         t_resinfo *ri;
                         ri = &atoms->resinfo[resind];
                         sprintf(ndx_name, "%s_%s%d%c",
                                 constructing_data[i].group_name, *ri->name, ri->nr, ri->ic == ' ' ? '\0' : ri->ic);
-                        add_grp(gb, gn, nra, aid, ndx_name);
-                        nra = 0;
+                        add_grp(gb, gn, aid, ndx_name);
+                        aid.clear();
                     }
                 }
             }
@@ -512,19 +505,18 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
         if (gmx_ask_yesno(bASK))
         {
             /* Make swap sidechain C=O index */
-            int resind, hold;
-            nra = 0;
-            for (n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr)); )
+            aid.clear();
+            for (int n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr)); )
             {
-                resind = atoms->atom[n].resind;
-                hold   = -1;
+                int resind = atoms->atom[n].resind;
+                int hold   = -1;
                 for (; ((atoms->atom[n].resind == resind) && (n < atoms->nr)); n++)
                 {
                     if (strcmp("CA", *atoms->atomname[n]) == 0)
                     {
-                        aid[nra++] = n;
-                        hold       = nra;
-                        nra       += 2;
+                        aid.push_back(n);
+                        hold = aid.size();
+                        aid.resize(aid.size() + 3);
                     }
                     else if (strcmp("C", *atoms->atomname[n]) == 0)
                     {
@@ -552,18 +544,17 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
                     }
                     else
                     {
-                        aid[nra++] = n;
+                        aid.push_back(n);
                     }
                 }
             }
             /* copy the residuename to the tail of the groupname */
-            if (nra > 0)
+            if (!aid.empty())
             {
-                add_grp(gb, gn, nra, aid, "SwapSC-CO");
+                add_grp(gb, gn, aid, "SwapSC-CO");
             }
         }
     }
-    sfree(aid);
 }
 
 
@@ -571,122 +562,104 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 {
     gmx_residuetype_t*rt = nullptr;
     char             *resnm;
-    int              *aid;
-    const char    **  restype;
-    int               nra;
-    int               i, k;
-    int               ntypes;
-    char           ** p_typename;
+    int               i;
     int               iwater, iion;
     int               nwater, nion;
-    bool              found;
 
     if (bVerb)
     {
         printf("Analysing residue names:\n");
     }
     /* Create system group, every single atom */
-    snew(aid, atoms->nr);
+    std::vector<int> aid(atoms->nr);
     for (i = 0; i < atoms->nr; i++)
     {
         aid[i] = i;
     }
-    add_grp(gb, gn, atoms->nr, aid, "System");
-    sfree(aid);
+    add_grp(gb, gn, aid, "System");
 
     /* For every residue, get a pointer to the residue type name */
     gmx_residuetype_init(&rt);
     assert(rt);
 
-    snew(restype, atoms->nres);
-    ntypes     = 0;
-    p_typename = nullptr;
+    std::vector<std::string> restype;
+    std::vector<std::string> previousTypename;
     if (atoms->nres > 0)
     {
         int i = 0;
 
         resnm = *atoms->resinfo[i].name;
-        gmx_residuetype_get_type(rt, resnm, &(restype[i]));
-        snew(p_typename, ntypes+1);
-        p_typename[ntypes] = gmx_strdup(restype[i]);
-        ntypes++;
+        const char *type = nullptr;
+        gmx_residuetype_get_type(rt, resnm, &type);
+        restype.emplace_back(type);
+        previousTypename.push_back(restype[i]);
 
         for (i = 1; i < atoms->nres; i++)
         {
             resnm = *atoms->resinfo[i].name;
-            gmx_residuetype_get_type(rt, resnm, &(restype[i]));
+            gmx_residuetype_get_type(rt, resnm, &type);
+            restype.emplace_back(type);
 
             /* Note that this does not lead to a N*N loop, but N*K, where
              * K is the number of residue _types_, which is small and independent of N.
              */
-            found = false;
-            for (k = 0; k < ntypes && !found; k++)
+            bool found = false;
+            for (size_t k = 0; k < previousTypename.size() && !found; k++)
             {
-                found = strcmp(restype[i], p_typename[k]) == 0;
+                found = strcmp(restype[i].c_str(), previousTypename[k].c_str()) == 0;
             }
             if (!found)
             {
-                srenew(p_typename, ntypes+1);
-                p_typename[ntypes] = gmx_strdup(restype[i]);
-                ntypes++;
+                previousTypename.push_back(restype[i]);
             }
         }
     }
 
     if (bVerb)
     {
-        p_status(restype, atoms->nres, p_typename, ntypes);
+        p_status(restype, previousTypename);
     }
 
-    for (k = 0; k < ntypes; k++)
+    for (int k = 0; k < gmx::index(previousTypename.size()); k++)
     {
-        aid = mk_aid(atoms, restype, p_typename[k], &nra, TRUE);
+        aid = mk_aid(atoms, restype, previousTypename[k], TRUE);
 
         /* Check for special types to do fancy stuff with */
 
-        if (!gmx_strcasecmp(p_typename[k], "Protein") && nra > 0)
+        if (!gmx_strcasecmp(previousTypename[k].c_str(), "Protein") && !aid.empty())
         {
-            sfree(aid);
             /* PROTEIN */
             analyse_prot(restype, atoms, gb, gn, bASK, bVerb);
 
             /* Create a Non-Protein group */
-            aid = mk_aid(atoms, restype, "Protein", &nra, FALSE);
-            if ((nra > 0) && (nra < atoms->nr))
+            aid = mk_aid(atoms, restype, "Protein", FALSE);
+            if ((!aid.empty()) && (static_cast<int>(aid.size()) < atoms->nr))
             {
-                add_grp(gb, gn, nra, aid, "non-Protein");
+                add_grp(gb, gn, aid, "non-Protein");
             }
-            sfree(aid);
         }
-        else if (!gmx_strcasecmp(p_typename[k], "Water") && nra > 0)
+        else if (!gmx_strcasecmp(previousTypename[k].c_str(), "Water") && !aid.empty())
         {
-            add_grp(gb, gn, nra, aid, p_typename[k]);
+            add_grp(gb, gn, aid, previousTypename[k]);
             /* Add this group as 'SOL' too, for backward compatibility with older gromacs versions */
-            add_grp(gb, gn, nra, aid, "SOL");
+            add_grp(gb, gn, aid, "SOL");
 
-            sfree(aid);
 
             /* Solvent, create a negated group too */
-            aid = mk_aid(atoms, restype, "Water", &nra, FALSE);
-            if ((nra > 0) && (nra < atoms->nr))
+            aid = mk_aid(atoms, restype, "Water", FALSE);
+            if ((!aid.empty()) && (static_cast<int>(aid.size()) < atoms->nr))
             {
-                add_grp(gb, gn, nra, aid, "non-Water");
+                add_grp(gb, gn, aid, "non-Water");
             }
-            sfree(aid);
         }
-        else if (nra > 0)
+        else if (!aid.empty())
         {
             /* Other groups */
-            add_grp(gb, gn, nra, aid, p_typename[k]);
-            sfree(aid);
+            add_grp(gb, gn, aid, previousTypename[k]);
             analyse_other(restype, atoms, gb, gn, bASK, bVerb);
         }
-        sfree(p_typename[k]);
     }
 
-    sfree(p_typename);
-    sfree(restype);
-    gmx_residuetype_destroy(rt);
 
     /* Create a merged water_and_ions group */
     iwater = -1;
@@ -731,6 +704,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
         gb->nr++;
         gb->index[gb->nr] = gb->nra;
     }
+    gmx_residuetype_destroy(rt);
 }
 
 
