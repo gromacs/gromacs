@@ -40,6 +40,8 @@
 
 #include <algorithm>
 
+#include "grid.h"
+
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
