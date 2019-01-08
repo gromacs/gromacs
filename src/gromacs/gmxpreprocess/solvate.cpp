@@ -764,9 +764,11 @@ static void update_top(t_atoms        *atoms,
     mtot = 0;
     for (i = 0; (i < atoms->nr); i++)
     {
+        std::string resname  = *atoms->resinfo[atoms->atom[i].resind].name;
+        std::string atomName = *atoms->atomname[i];
         aps->setAtomProperty(epropMass,
-                             *atoms->resinfo[atoms->atom[i].resind].name,
-                             *atoms->atomname[i], &mm);
+                             resname,
+                             atomName, &mm);
         mtot += mm;
     }
 

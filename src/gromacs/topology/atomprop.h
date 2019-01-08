@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +68,7 @@ class AtomProperties
          * \todo This should be made const once the lazy
          * implementation is done properly for the class.
          */
-        const char *elementFromAtomNumber(int atomNumber);
+        const std::string elementFromAtomNumber(int atomNumber);
         /*! \brief
          * Get atom number from element string.
          *
@@ -91,11 +93,11 @@ class AtomProperties
          * \param[out] value New value to set or default.
          * \returns If the operation has been succesful.
          */
-        bool setAtomProperty(int         eprop,
-                             const char* residueName,
-                             const char* atomName,
-                             real       *value);
-        //! Print warning to terminal.
+        bool setAtomProperty(int                eprop,
+                             const std::string &residueName,
+                             const std::string &atomName,
+                             real              *value);
+        //! Set warning to true.
         void printWarning();
         /*! \brief
          * Get handle to property.

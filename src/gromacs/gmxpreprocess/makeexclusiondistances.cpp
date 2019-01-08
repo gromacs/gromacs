@@ -52,10 +52,12 @@ makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
         exclusionDistances.reserve(a->nr);
         for (int i = 0; i < a->nr; ++i)
         {
-            real value;
+            real        value;
+            std::string resname  = *(a->resinfo[a->atom[i].resind].name);
+            std::string atomName = *(a->atomname[i]);
             if (!aps->setAtomProperty(epropVDW,
-                                      *(a->resinfo[a->atom[i].resind].name),
-                                      *(a->atomname[i]), &value))
+                                      resname,
+                                      atomName, &value))
             {
                 value = defaultDistance;
             }
