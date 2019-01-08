@@ -67,7 +67,7 @@ struct NbnxnPairlistCpuWork
         }
 
         // The bounding boxes, pbc shifted, for each cluster
-        AlignedVector<nbnxn_bb_t> bb;
+        AlignedVector<Nbnxn::BoundingBox> bb;
         // The coordinates, pbc shifted, for each atom
         std::vector<real>         x;
         // Aligned list for storing 4*DIM*GMX_SIMD_REAL_WIDTH reals
@@ -109,7 +109,7 @@ struct NbnxnPairlistGpuWork
         }
 
         // The bounding boxes, pbc shifted, for each cluster
-        AlignedVector<nbnxn_bb_t> bb;
+        AlignedVector<Nbnxn::BoundingBox> bb;
         // As bb, but in packed xxxx format
         AlignedVector<float>      bbPacked;
         // The coordinates, pbc shifted, for each atom

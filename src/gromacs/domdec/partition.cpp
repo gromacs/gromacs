@@ -3422,7 +3422,6 @@ void dd_partition_system(FILE                    *fplog,
                                   fr->cginfo,
                                   state_local->x,
                                   ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr,
-                                  fr->nbv->grp[eintLocal].kernel_type,
                                   fr->nbv->nbat);
 
                 nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_new[XX], &ncells_new[YY]);
