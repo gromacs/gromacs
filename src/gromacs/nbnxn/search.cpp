@@ -55,6 +55,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxn/atomdata.h"
+#include "gromacs/nbnxn/grid.h"
 #include "gromacs/nbnxn/nbnxn.h"
 #include "gromacs/nbnxn/nbnxn_simd.h"
 #include "gromacs/nbnxn/pairlist.h"
@@ -70,6 +71,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "internal.h"
+#include "pairlistwork.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
