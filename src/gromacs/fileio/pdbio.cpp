@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -561,7 +561,7 @@ static void read_anisou(char line[], int natom, t_atoms *atoms)
     }
 }
 
-void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
+void get_pdb_atomnumber(const t_atoms *atoms, AtomProperties *aps)
 {
     int    i, atomnumber, len;
     size_t k;
@@ -582,7 +582,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
         if ((anm[0] != ' ') && ((len <= 2) || !std::isdigit(anm[2])))
         {
             anm_copy[2] = nc;
-            if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
+            if (setAtomProperty(aps, epropElement, "???", anm_copy, &eval))
             {
                 atomnumber    = gmx::roundToInt(eval);
                 atomNumberSet = true;
@@ -590,7 +590,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
             else
             {
                 anm_copy[1] = nc;
-                if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
+                if (setAtomProperty(aps, epropElement, "???", anm_copy, &eval))
                 {
                     atomnumber    = gmx::roundToInt(eval);
                     atomNumberSet = true;
@@ -606,7 +606,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
             }
             anm_copy[0] = anm[k];
             anm_copy[1] = nc;
-            if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
+            if (setAtomProperty(aps, epropElement, "???", anm_copy, &eval))
             {
                 atomnumber    = gmx::roundToInt(eval);
                 atomNumberSet = true;
@@ -615,7 +615,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
         if (atomNumberSet)
         {
             atoms->atom[i].atomnumber = atomnumber;
-            ptr = gmx_atomprop_element(aps, atomnumber);
+            ptr = gmx_strdup(elementFromAtomNumber(aps, atomnumber).c_str());
             if (debug)
             {
                 fprintf(debug, "Atomnumber for atom '%s' is %d\n",

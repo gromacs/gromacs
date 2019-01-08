@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -536,7 +536,7 @@ static int read_pdball(const char *inf, bool bOutput, const char *outf, char **t
                        t_atoms *atoms, rvec **x,
                        int *ePBC, matrix box, bool bRemoveH,
                        t_symtab *symtab, gmx_residuetype_t *rt, const char *watres,
-                       gmx_atomprop_t aps, bool bVerbose)
+                       AtomProperties *aps, bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
     int natom, new_natom, i;
@@ -1722,14 +1722,14 @@ int pdb2gmx::run()
         watres = "HOH";
     }
 
-    gmx_atomprop_t aps   = gmx_atomprop_init();
-    char          *title;
-    int            ePBC;
-    t_atoms        pdba_all;
-    rvec          *pdbx;
-    int            natom = read_pdball(inputConfFile_.c_str(), bOutputSet_, outFile_.c_str(),
-                                       &title, &pdba_all, &pdbx, &ePBC, box, bRemoveH_,
-                                       &symtab, rt, watres, aps, bVerbose_);
+    AtomPropertiesPtr aps   = gmx::compat::make_unique<AtomProperties>();
+    char             *title;
+    int               ePBC;
+    t_atoms           pdba_all;
+    rvec             *pdbx;
+    int               natom = read_pdball(inputConfFile_.c_str(), bOutputSet_, outFile_.c_str(),
+                                          &title, &pdba_all, &pdbx, &ePBC, box, bRemoveH_,
+                                          &symtab, rt, watres, aps.get(), bVerbose_);
 
     if (natom == 0)
     {
