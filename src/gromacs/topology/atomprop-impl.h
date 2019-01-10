@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,40 +34,50 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
+#ifndef GMX_TOPOLOGY_ATOMPROP_IMPL_H
+#define GMX_TOPOLOGY_ATOMPROP_IMPL_H
 
-#include "makeexclusiondistances.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-#include <vector>
+struct gmx_residuetype_t;
 
-#include "gromacs/topology/atomenum.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/atoms.h"
+enum {
+    epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement,
+    epropNR
+};
+//! Conglomeration of atom property entries.
+struct AtomProperty {
+    //! Has property been set.
+    bool   isSet;
+    //! Number of properties.
+    int    nprop;
+    //! Max number of properties.
+    int    maxprop;
+    //! Database the property is coming from.
+    char  *db;
+    //! Default value for property.
+    double def;
+    //! Array of names for atoms.
+    char **atomName;
+    //! Array of names for residues.
+    char **residueName;
+    //! Array of flags if property is available.
+    bool  *isAvailable;
+    //! Array of values for property.
+    real  *value;
+};
 
-std::vector<real>
-makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
-                       real defaultDistance, real scaleFactor)
-{
-    std::vector<real> exclusionDistances;
+//! Implementation detail type for Atomproperties.
+struct AtomPropertiesImpl {
+    //! Should user be warned about error.
+    bool               bWarned;
+    //! Should user be warned about vdW not found.
+    bool               bWarnVDW;
+    //! The different atom properties.
+    AtomProperty       prop[epropNR];
+    //! The residue types.
+    gmx_residuetype_t *restype;
+};
 
-    if (a != nullptr)
-    {
-        exclusionDistances.reserve(a->nr);
-        for (int i = 0; i < a->nr; ++i)
-        {
-            real value;
-            if (!aps->setAtomProperty(epropVDW,
-                                      *(a->resinfo[a->atom[i].resind].name),
-                                      *(a->atomname[i]), &value))
-            {
-                value = defaultDistance;
-            }
-            else
-            {
-                value *= scaleFactor;
-            }
-            exclusionDistances.push_back(value);
-        }
-    }
-    return exclusionDistances;
-}
+#endif
