@@ -35,15 +35,17 @@
 
 #include "gmxpre.h"
 
-#include "kerneldispatch.h"
-
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/nbnxn/gpu_data_mgmt.h"
 #include "gromacs/nbnxn/nbnxn.h"
 #include "gromacs/nbnxn/nbnxn_simd.h"
+#include "gromacs/nbnxn/kernels_reference/kernel_gpu_ref.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
@@ -119,20 +121,36 @@ reduceGroupEnergySimdBuffers(int                       numGroups,
     }
 }
 
-void
-nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
-                 nbnxn_atomdata_t          *nbat,
-                 const interaction_const_t *ic,
-                 rvec                      *shiftVectors,
-                 int                        forceFlags,
-                 int                        clearF,
-                 real                      *fshift,
-                 real                      *vCoulomb,
-                 real                      *vVdw)
+/*! \brief Dispatches the non-bonded N versus M atom cluster CPU kernels.
+ *
+ * OpenMP parallelization is performed within this function.
+ * Energy reduction, but not force and shift force reduction, is performed
+ * within this function.
+ *
+ * \param[in]     nbvg          The group (local/non-local) to compute interaction for
+ * \param[in,out] nbat          The atomdata for the interactions
+ * \param[in]     ic            Non-bonded interaction constants
+ * \param[in]     shiftVectors  The PBC shift vectors
+ * \param[in]     forceFlags    Flags that tell what to compute
+ * \param[in]     clearF        Enum that tells if to clear the force output buffer
+ * \param[out]    fshift        Shift force output buffer
+ * \param[out]    vCoulomb      Output buffer for Coulomb energies
+ * \param[out]    vVdw          Output buffer for Van der Waals energies
+ */
+static void
+nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
+                 nbnxn_atomdata_t               *nbat,
+                 const interaction_const_t      &ic,
+                 rvec                           *shiftVectors,
+                 int                             forceFlags,
+                 int                             clearF,
+                 real                           *fshift,
+                 real                           *vCoulomb,
+                 real                           *vVdw)
 {
 
     int                      coulkt;
-    if (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT)
+    if (EEL_RF(ic.eeltype) || ic.eeltype == eelCUT)
     {
         coulkt = coulktRF;
     }
@@ -140,7 +158,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
     {
         if (nbvg->ewald_excl == ewaldexclTable)
         {
-            if (ic->rcoulomb == ic->rvdw)
+            if (ic.rcoulomb == ic.rvdw)
             {
                 coulkt = coulktTAB;
             }
@@ -151,7 +169,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
         }
         else
         {
-            if (ic->rcoulomb == ic->rvdw)
+            if (ic.rcoulomb == ic.rvdw)
             {
                 coulkt = coulktEWALD;
             }
@@ -165,9 +183,9 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
     const nbnxn_atomdata_t::Params &nbatParams = nbat->params();
 
     int vdwkt = 0;
-    if (ic->vdwtype == evdwCUT)
+    if (ic.vdwtype == evdwCUT)
     {
-        switch (ic->vdw_modifier)
+        switch (ic.vdw_modifier)
         {
             case eintmodNONE:
             case eintmodPOTSHIFT:
@@ -190,9 +208,9 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                 GMX_RELEASE_ASSERT(false, "Unsupported VdW interaction modifier");
         }
     }
-    else if (ic->vdwtype == evdwPME)
+    else if (ic.vdwtype == evdwPME)
     {
-        if (ic->ljpme_comb_rule == eljpmeGEOM)
+        if (ic.ljpme_comb_rule == eljpmeGEOM)
         {
             vdwkt = vdwktLJEWALDCOMBGEOM;
         }
@@ -208,10 +226,10 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
         GMX_RELEASE_ASSERT(false, "Unsupported VdW interaction type");
     }
 
-    int                nnbl = nbvg->nbl_lists.nnbl;
-    NbnxnPairlistCpu **nbl  = nbvg->nbl_lists.nbl;
+    int                        nnbl = nbvg->nbl_lists.nnbl;
+    NbnxnPairlistCpu * const * nbl  = nbvg->nbl_lists.nbl;
 
-    int gmx_unused     nthreads = gmx_omp_nthreads_get(emntNonbonded);
+    int gmx_unused             nthreads = gmx_omp_nthreads_get(emntNonbonded);
 #pragma omp parallel for schedule(static) num_threads(nthreads)
     for (int nb = 0; nb < nnbl; nb++)
     {
@@ -246,7 +264,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
             {
                 case nbnxnk4x4_PlainC:
                     nbnxn_kernel_noener_ref[coulkt][vdwkt](nbl[nb], nbat,
-                                                           ic,
+                                                           &ic,
                                                            shiftVectors,
                                                            out->f.data(),
                                                            fshift_p);
@@ -254,7 +272,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case nbnxnk4xN_SIMD_2xNN:
                     nbnxn_kernel_noener_simd_2xnn[coulkt][vdwkt](nbl[nb], nbat,
-                                                                 ic,
+                                                                 &ic,
                                                                  shiftVectors,
                                                                  out->f.data(),
                                                                  fshift_p);
@@ -263,7 +281,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
 #ifdef GMX_NBNXN_SIMD_4XN
                 case nbnxnk4xN_SIMD_4xN:
                     nbnxn_kernel_noener_simd_4xn[coulkt][vdwkt](nbl[nb], nbat,
-                                                                ic,
+                                                                &ic,
                                                                 shiftVectors,
                                                                 out->f.data(),
                                                                 fshift_p);
@@ -283,7 +301,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
             {
                 case nbnxnk4x4_PlainC:
                     nbnxn_kernel_ener_ref[coulkt][vdwkt](nbl[nb], nbat,
-                                                         ic,
+                                                         &ic,
                                                          shiftVectors,
                                                          out->f.data(),
                                                          fshift_p,
@@ -293,7 +311,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case nbnxnk4xN_SIMD_2xNN:
                     nbnxn_kernel_ener_simd_2xnn[coulkt][vdwkt](nbl[nb], nbat,
-                                                               ic,
+                                                               &ic,
                                                                shiftVectors,
                                                                out->f.data(),
                                                                fshift_p,
@@ -304,7 +322,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
 #ifdef GMX_NBNXN_SIMD_4XN
                 case nbnxnk4xN_SIMD_4xN:
                     nbnxn_kernel_ener_simd_4xn[coulkt][vdwkt](nbl[nb], nbat,
-                                                              ic,
+                                                              &ic,
                                                               shiftVectors,
                                                               out->f.data(),
                                                               fshift_p,
@@ -328,7 +346,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                 case nbnxnk4x4_PlainC:
                     unrollj = c_nbnxnCpuIClusterSize;
                     nbnxn_kernel_energrp_ref[coulkt][vdwkt](nbl[nb], nbat,
-                                                            ic,
+                                                            &ic,
                                                             shiftVectors,
                                                             out->f.data(),
                                                             fshift_p,
@@ -339,7 +357,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                 case nbnxnk4xN_SIMD_2xNN:
                     unrollj = GMX_SIMD_REAL_WIDTH/2;
                     nbnxn_kernel_energrp_simd_2xnn[coulkt][vdwkt](nbl[nb], nbat,
-                                                                  ic,
+                                                                  &ic,
                                                                   shiftVectors,
                                                                   out->f.data(),
                                                                   fshift_p,
@@ -351,7 +369,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                 case nbnxnk4xN_SIMD_4xN:
                     unrollj = GMX_SIMD_REAL_WIDTH;
                     nbnxn_kernel_energrp_simd_4xn[coulkt][vdwkt](nbl[nb], nbat,
-                                                                 ic,
+                                                                 &ic,
                                                                  shiftVectors,
                                                                  out->f.data(),
                                                                  fshift_p,
@@ -393,4 +411,119 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
     {
         reduce_energies_over_lists(nbat, nnbl, vVdw, vCoulomb);
     }
+}
+
+static void accountFlops(t_nrnb                    *nrnb,
+                         const nonbonded_verlet_t  &nbv,
+                         const int                  ilocality,
+                         const interaction_const_t &ic,
+                         int                        forceFlags)
+{
+    const nonbonded_verlet_group_t &nbvg            = nbv.grp[ilocality];
+    const bool                      usingGpuKernels = (nbvg.kernel_type == nbnxnk8x8x8_GPU);
+
+    int enr_nbnxn_kernel_ljc;
+    if (EEL_RF(ic.eeltype) || ic.eeltype == eelCUT)
+    {
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
+    }
+    else if ((!usingGpuKernels && nbvg.ewald_excl == ewaldexclAnalytical) ||
+             (usingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(nbv.gpu_nbv)))
+    {
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
+    }
+    else
+    {
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_TAB;
+    }
+    int enr_nbnxn_kernel_lj = eNR_NBNXN_LJ;
+    if (forceFlags & GMX_FORCE_ENERGY)
+    {
+        /* In eNR_??? the nbnxn F+E kernels are always the F kernel + 1 */
+        enr_nbnxn_kernel_ljc += 1;
+        enr_nbnxn_kernel_lj  += 1;
+    }
+
+    inc_nrnb(nrnb, enr_nbnxn_kernel_ljc,
+             nbvg.nbl_lists.natpair_ljq);
+    inc_nrnb(nrnb, enr_nbnxn_kernel_lj,
+             nbvg.nbl_lists.natpair_lj);
+    /* The Coulomb-only kernels are offset -eNR_NBNXN_LJ_RF+eNR_NBNXN_RF */
+    inc_nrnb(nrnb, enr_nbnxn_kernel_ljc-eNR_NBNXN_LJ_RF+eNR_NBNXN_RF,
+             nbvg.nbl_lists.natpair_q);
+
+    const bool calcEnergy = ((forceFlags & GMX_FORCE_ENERGY) != 0);
+    if (ic.vdw_modifier == eintmodFORCESWITCH)
+    {
+        /* We add up the switch cost separately */
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_FSW + (calcEnergy ? 1 : 0),
+                 nbvg.nbl_lists.natpair_ljq + nbvg.nbl_lists.natpair_lj);
+    }
+    if (ic.vdw_modifier == eintmodPOTSWITCH)
+    {
+        /* We add up the switch cost separately */
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_PSW + (calcEnergy ? 1 : 0),
+                 nbvg.nbl_lists.natpair_ljq + nbvg.nbl_lists.natpair_lj);
+    }
+    if (ic.vdwtype == evdwPME)
+    {
+        /* We add up the LJ Ewald cost separately */
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_EWALD + (calcEnergy ? 1 : 0),
+                 nbvg.nbl_lists.natpair_ljq + nbvg.nbl_lists.natpair_lj);
+    }
+}
+
+void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
+                         const int                  ilocality,
+                         const interaction_const_t &ic,
+                         int                        forceFlags,
+                         int                        clearF,
+                         t_forcerec                *fr,
+                         gmx_enerdata_t            *enerd,
+                         t_nrnb                    *nrnb)
+{
+    const nonbonded_verlet_group_t &nbvg = nbv->grp[ilocality];
+
+    switch (nbvg.kernel_type)
+    {
+        case nbnxnk4x4_PlainC:
+        case nbnxnk4xN_SIMD_4xN:
+        case nbnxnk4xN_SIMD_2xNN:
+            nbnxn_kernel_cpu(&nbvg,
+                             nbv->nbat,
+                             ic,
+                             fr->shift_vec,
+                             forceFlags,
+                             clearF,
+                             fr->fshift[0],
+                             enerd->grpp.ener[egCOULSR],
+                             fr->bBHAM ?
+                             enerd->grpp.ener[egBHAMSR] :
+                             enerd->grpp.ener[egLJSR]);
+            break;
+
+        case nbnxnk8x8x8_GPU:
+            nbnxn_gpu_launch_kernel(nbv->gpu_nbv, forceFlags, ilocality);
+            break;
+
+        case nbnxnk8x8x8_PlainC:
+            nbnxn_kernel_gpu_ref(nbvg.nbl_lists.nblGpu[0],
+                                 nbv->nbat, &ic,
+                                 fr->shift_vec,
+                                 forceFlags,
+                                 clearF,
+                                 nbv->nbat->out[0].f,
+                                 fr->fshift[0],
+                                 enerd->grpp.ener[egCOULSR],
+                                 fr->bBHAM ?
+                                 enerd->grpp.ener[egBHAMSR] :
+                                 enerd->grpp.ener[egLJSR]);
+            break;
+
+        default:
+            GMX_RELEASE_ASSERT(false, "Invalid nonbonded kernel type passed!");
+
+    }
+
+    accountFlops(nrnb, *nbv, ilocality, ic, forceFlags);
 }

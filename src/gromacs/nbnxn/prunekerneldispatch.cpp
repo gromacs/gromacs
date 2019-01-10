@@ -35,8 +35,6 @@
 
 #include "gmxpre.h"
 
-#include "prunekerneldispatch.h"
-
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/nbnxn/nbnxn.h"
 #include "gromacs/nbnxn/pairlist.h"
@@ -46,12 +44,15 @@
 #include "kernels_simd_2xnn/kernel_prune.h"
 #include "kernels_simd_4xn/kernel_prune.h"
 
-void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t *nbvg,
-                            const nbnxn_atomdata_t   *nbat,
-                            const rvec               *shift_vec,
-                            real                      rlistInner)
+
+void NbnxnDispatchPruneKernel(nonbonded_verlet_t *nbv,
+                              int                 ilocality,
+                              const rvec         *shift_vec)
 {
-    nbnxn_pairlist_set_t   *nbl_lists = &nbvg->nbl_lists;
+    nonbonded_verlet_group_t &nbvg       = nbv->grp[ilocality];
+    nbnxn_pairlist_set_t     *nbl_lists  = &nbvg.nbl_lists;
+    const nbnxn_atomdata_t   *nbat       = nbv->nbat;
+    const real                rlistInner = nbv->listParams->rlistInner;
 
     GMX_ASSERT(nbl_lists->nbl[0]->ciOuter.size() >= nbl_lists->nbl[0]->ci.size(),
                "Here we should either have an empty ci list or ciOuter should be >= ci");
@@ -62,7 +63,7 @@ void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t *nbvg,
     {
         NbnxnPairlistCpu *nbl = nbl_lists->nbl[i];
 
-        switch (nbvg->kernel_type)
+        switch (nbvg.kernel_type)
         {
             case nbnxnk4xN_SIMD_4xN:
                 nbnxn_kernel_prune_4xn(nbl, nbat, shift_vec, rlistInner);
