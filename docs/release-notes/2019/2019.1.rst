@@ -15,6 +15,11 @@ Fix segmentation fault in mdrun with domain decomposition
 
 :issue: `2813`
 
+Fix possible division by zero in enforced-rotation code
+-------------------------------------------------------
+
+:issue: `1431`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
