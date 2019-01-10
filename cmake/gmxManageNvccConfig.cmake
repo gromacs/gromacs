@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -177,8 +177,9 @@ if(_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT G
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     if(${_cuda_test_res})
-        message(${_cuda_test_err})
         message(STATUS "Check for working NVCC/C compiler combination - broken")
+        message(STATUS "${CUDA_NVCC_EXECUTABLE} standard output: '${_cuda_test_out}'")
+        message(STATUS "${CUDA_NVCC_EXECUTABLE} standard error:  '${_cuda_test_err}'")
         if(${_cuda_test_err} MATCHES "nsupported")
             message(FATAL_ERROR "NVCC/C compiler combination does not seem to be supported. CUDA frequently does not support the latest versions of the host compiler, so you might want to try an earlier C/C++ compiler version and make sure your CUDA compiler and driver are as recent as possible.")
         else()
