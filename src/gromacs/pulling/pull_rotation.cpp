@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1818,6 +1818,17 @@ static void flex2_precalc_inner_sum(const gmx_enfrotgrp *erg)
 
             /* Calculate psi_i* and sin */
             rvec_sub(xi, xcn, tmpvec2);                /* tmpvec2 = xi - xcn       */
+
+            /* In rare cases, when an atom position coincides with a slab center
+             * (tmpvec2 == 0) we cannot compute the vector product for s_in.
+             * However, since the atom is located directly on the pivot, this
+             * slab's contribution to the force on that atom will be zero
+             * anyway. Therefore, we continue with the next atom. */
+            if (gmx_numzero(norm(tmpvec2))) /* 0 == norm(xi - xcn) */
+            {
+                continue;
+            }
+
             cprod(erg->vec, tmpvec2, tmpvec);          /* tmpvec = v x (xi - xcn)  */
             OOpsiistar = norm2(tmpvec)+erg->rotg->eps; /* OOpsii* = 1/psii* = |v x (xi-xcn)|^2 + eps */
             OOpsii     = norm(tmpvec);                 /* OOpsii = 1 / psii = |v x (xi - xcn)| */
@@ -1887,6 +1898,17 @@ static void flex_precalc_inner_sum(const gmx_enfrotgrp *erg)
 
             /* Calculate rin and qin */
             rvec_sub(erg->xc_ref_sorted[i], ycn, tmpvec); /* tmpvec = yi0-ycn */
+
+            /* In rare cases, when an atom position coincides with a slab center
+             * (tmpvec == 0) we cannot compute the vector product for qin.
+             * However, since the atom is located directly on the pivot, this
+             * slab's contribution to the force on that atom will be zero
+             * anyway. Therefore, we continue with the next atom. */
+            if (gmx_numzero(norm(tmpvec))) /* 0 == norm(yi0 - ycn) */
+            {
+                continue;
+            }
+
             mvmul(erg->rotmat, tmpvec, rin);              /* rin = Omega.(yi0 - ycn)  */
             cprod(erg->vec, rin, tmpvec);                 /* tmpvec = v x Omega*(yi0-ycn) */
 
