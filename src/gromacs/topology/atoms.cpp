@@ -464,17 +464,17 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
     int            maxWarn  = (printMissingMasses ? 10 : 0);
     int            numWarn  = 0;
 
-    gmx_atomprop_t aps      = gmx_atomprop_init();
+    AtomProperties aps;
 
-    gmx_bool       haveMass = TRUE;
+    bool           haveMass = true;
     for (int i = 0; i < atoms->nr; i++)
     {
-        if (!gmx_atomprop_query(aps, epropMass,
-                                *atoms->resinfo[atoms->atom[i].resind].name,
-                                *atoms->atomname[i],
-                                &atoms->atom[i].m))
+        if (!aps.setAtomProperty(epropMass,
+                                 *atoms->resinfo[atoms->atom[i].resind].name,
+                                 *atoms->atomname[i],
+                                 &atoms->atom[i].m))
         {
-            haveMass = FALSE;
+            haveMass = false;
 
             if (numWarn < maxWarn)
             {
@@ -491,6 +491,4 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
         }
     }
     atoms->haveMass = haveMass;
-
-    gmx_atomprop_destroy(aps);
 }
