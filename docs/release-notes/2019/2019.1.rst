@@ -34,8 +34,18 @@ it would only write fixed-width columns.
 :issue: `2037`
 
 
-Fixes to improve portability
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With MSVC, disabled internal clFFT fallback used for OpenCL support
+-------------------------------------------------------------------
+GROMACS requires MSVC 2017, and the GROMACS OpenCL build requires
+clFFT. If clFFT is found on the user's system, then all may be well,
+but the version of clFFT bundled within GROMACS cannot be built
+because only MSVC 2010 is supported by clFFT at this time. A
+configure-time fatal error is now issued in this case.
+
+:issue: `2500`
 
 Miscellaneous
 ^^^^^^^^^^^^^
