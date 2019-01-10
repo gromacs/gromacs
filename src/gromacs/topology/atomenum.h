@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,40 +32,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
+#ifndef GMX_TOPOLOGY_ATOMPROP_ENUM_H
+#define GMX_TOPOLOGY_ATOMPROP_ENUM_H
 
-#include "makeexclusiondistances.h"
+enum {
+    epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement,
+    epropNR
+};
 
-#include <vector>
-
-#include "gromacs/topology/atomenum.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/atoms.h"
-
-std::vector<real>
-makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
-                       real defaultDistance, real scaleFactor)
-{
-    std::vector<real> exclusionDistances;
-
-    if (a != nullptr)
-    {
-        exclusionDistances.reserve(a->nr);
-        for (int i = 0; i < a->nr; ++i)
-        {
-            real value;
-            if (!aps->setAtomProperty(epropVDW,
-                                      *(a->resinfo[a->atom[i].resind].name),
-                                      *(a->atomname[i]), &value))
-            {
-                value = defaultDistance;
-            }
-            else
-            {
-                value *= scaleFactor;
-            }
-            exclusionDistances.push_back(value);
-        }
-    }
-    return exclusionDistances;
-}
+#endif

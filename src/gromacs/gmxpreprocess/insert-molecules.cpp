@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -173,12 +173,11 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                         RotationType enum_rot)
 {
     fprintf(stderr, "Initialising inter-atomic distances...\n");
-    gmx_atomprop_t          aps = gmx_atomprop_init();
+    AtomProperties          aps;
     std::vector<real>       exclusionDistances(
-            makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor));
+            makeExclusionDistances(atoms, &aps, defaultDistance, scaleFactor));
     const std::vector<real> exclusionDistances_insrt(
-            makeExclusionDistances(&atoms_insrt, aps, defaultDistance, scaleFactor));
-    gmx_atomprop_destroy(aps);
+            makeExclusionDistances(&atoms_insrt, &aps, defaultDistance, scaleFactor));
 
     const real       maxInsertRadius
         = *std::max_element(exclusionDistances_insrt.begin(),
