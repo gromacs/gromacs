@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1129,10 +1129,10 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
             GMX_ASSERT(false, "Implement grid ordering here and below for the kernel launch");
     }
 
-    const size_t maxBlockSize      = pmeGpu->programHandle_->impl_->solveMaxWorkGroupSize;
+    const int    maxBlockSize       = pmeGpu->programHandle_->impl_->solveMaxWorkGroupSize;
 
     const int    gridLineSize       = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
-    const int    gridLinesPerBlock  = std::max(maxBlockSize / gridLineSize, 1UL);
+    const int    gridLinesPerBlock  = std::max(maxBlockSize / gridLineSize, 1);
     const int    blocksPerGridLine  = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
     int          cellsPerBlock;
     if (blocksPerGridLine == 1)
