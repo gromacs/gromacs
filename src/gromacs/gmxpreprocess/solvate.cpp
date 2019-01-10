@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -642,7 +642,7 @@ static void add_solv(const char *filename,
                      const gmx::TopologyInformation &topInfo,
                      t_atoms *atoms,
                      std::vector<RVec> *x, std::vector<RVec> *v,
-                     matrix box, gmx_atomprop_t aps,
+                     matrix box, AtomProperties *aps,
                      real defaultDistance, real scaleFactor,
                      real rshell, int max_sol)
 {
@@ -744,7 +744,7 @@ static void add_solv(const char *filename,
 }
 
 static void update_top(t_atoms *atoms, int firstSolventResidueIndex, matrix box, int NFILE, t_filenm fnm[],
-                       gmx_atomprop_t aps)
+                       AtomProperties *aps)
 {
     FILE        *fpin, *fpout;
     char         buf[STRLEN*2], buf2[STRLEN], *temp;
@@ -760,9 +760,9 @@ static void update_top(t_atoms *atoms, int firstSolventResidueIndex, matrix box,
     mtot = 0;
     for (i = 0; (i < atoms->nr); i++)
     {
-        gmx_atomprop_query(aps, epropMass,
-                           *atoms->resinfo[atoms->atom[i].resind].name,
-                           *atoms->atomname[i], &mm);
+        aps->setAtomProperty(epropMass,
+                             *atoms->resinfo[atoms->atom[i].resind].name,
+                             *atoms->atomname[i], &mm);
         mtot += mm;
     }
 
@@ -920,7 +920,6 @@ int gmx_solvate(int argc, char *argv[])
     /* parameter data */
     gmx_bool       bProt, bBox;
     const char    *conf_prot, *confout;
-    gmx_atomprop_t aps;
 
     t_filenm       fnm[] = {
         { efSTX, "-cp", "protein", ffOPTRD },
@@ -968,7 +967,7 @@ int gmx_solvate(int argc, char *argv[])
                   "a box size (-box) must be specified");
     }
 
-    aps = gmx_atomprop_init();
+    AtomProperties           aps;
 
     gmx::TopologyInformation topInfo;
     std::vector<RVec>        x, v;
@@ -1017,7 +1016,7 @@ int gmx_solvate(int argc, char *argv[])
     }
 
     add_solv(solventFileName, topInfo, atoms.get(), &x, &v, box,
-             aps, defaultDistance, scaleFactor, r_shell, max_sol);
+             &aps, defaultDistance, scaleFactor, r_shell, max_sol);
 
     /* write new configuration 1 to file confout */
     confout = ftp2fn(efSTO, NFILE, fnm);
@@ -1029,9 +1028,7 @@ int gmx_solvate(int argc, char *argv[])
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
             atoms->nr, atoms->nres);
-    update_top(atoms.get(), firstSolventResidueIndex, box, NFILE, fnm, aps);
-
-    gmx_atomprop_destroy(aps);
+    update_top(atoms.get(), firstSolventResidueIndex, box, NFILE, fnm, &aps);
     output_env_done(oenv);
 
     return 0;
