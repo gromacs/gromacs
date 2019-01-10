@@ -106,15 +106,17 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-// TODO: Remove these includes
-#include "kerneldispatch.h"
+// TODO: Remove this include and the two nbnxm includes above
 #include "nbnxm_gpu.h"
 
 struct gmx_device_info_t;
 struct gmx_domdec_zones_t;
+struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
+struct interaction_const_t;
 struct t_commrec;
+struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
 
@@ -281,5 +283,25 @@ void nbnxn_set_atomorder(nbnxn_search_t nbs);
 
 /*! \brief Returns the index position of the atoms on the pairlist search grid */
 gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs);
+
+/*! \brief Prune all pair-lists with given locality (currently CPU only)
+ *
+ * For all pair-lists with given locality, takes the outer list and prunes out
+ * pairs beyond the pairlist inner radius and writes the result to a list that is
+ * to be consumed by the non-bonded kernel.
+ */
+void NbnxnDispatchPruneKernel(nonbonded_verlet_t *nbv,
+                              int                 ilocality,
+                              const rvec         *shift_vec);
+
+/*! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU */
+void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
+                         int                        ilocality,
+                         const interaction_const_t &ic,
+                         int                        forceFlags,
+                         int                        clearF,
+                         t_forcerec                *fr,
+                         gmx_enerdata_t            *enerd,
+                         t_nrnb                    *nrnb);
 
 #endif // GMX_NBNXN_NBNXN_H

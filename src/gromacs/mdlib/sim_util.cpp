@@ -92,8 +92,6 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/prunekerneldispatch.h"
-#include "gromacs/nbnxm/kernels_reference/kernel_gpu_ref.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -389,7 +387,7 @@ static void post_process_forces(const t_commrec           *cr,
     }
 }
 
-static void do_nb_verlet(const t_forcerec *fr,
+static void do_nb_verlet(t_forcerec *fr,
                          const interaction_const_t *ic,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
@@ -427,105 +425,18 @@ static void do_nb_verlet(const t_forcerec *fr,
              * the current coordinates of the atoms.
              */
             wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNING);
-            nbnxn_kernel_cpu_prune(nbvg, nbv->nbat, fr->shift_vec, nbv->listParams->rlistInner);
+            NbnxnDispatchPruneKernel(nbv, ilocality, fr->shift_vec);
             wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNING);
         }
 
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
 
-    switch (nbvg->kernel_type)
-    {
-        case nbnxnk4x4_PlainC:
-        case nbnxnk4xN_SIMD_4xN:
-        case nbnxnk4xN_SIMD_2xNN:
-            nbnxn_kernel_cpu(nbvg,
-                             nbv->nbat,
-                             ic,
-                             fr->shift_vec,
-                             flags,
-                             clearF,
-                             fr->fshift[0],
-                             enerd->grpp.ener[egCOULSR],
-                             fr->bBHAM ?
-                             enerd->grpp.ener[egBHAMSR] :
-                             enerd->grpp.ener[egLJSR]);
-            break;
+    NbnxnDispatchKernel(nbv, ilocality, *ic, flags, clearF, fr, enerd, nrnb);
 
-        case nbnxnk8x8x8_GPU:
-            nbnxn_gpu_launch_kernel(nbv->gpu_nbv, flags, ilocality);
-            break;
-
-        case nbnxnk8x8x8_PlainC:
-            nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nblGpu[0],
-                                 nbv->nbat, ic,
-                                 fr->shift_vec,
-                                 flags,
-                                 clearF,
-                                 nbv->nbat->out[0].f,
-                                 fr->fshift[0],
-                                 enerd->grpp.ener[egCOULSR],
-                                 fr->bBHAM ?
-                                 enerd->grpp.ener[egBHAMSR] :
-                                 enerd->grpp.ener[egLJSR]);
-            break;
-
-        default:
-            GMX_RELEASE_ASSERT(false, "Invalid nonbonded kernel type passed!");
-
-    }
     if (!bUsingGpuKernels)
     {
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-    }
-
-    int enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
-    if (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT)
-    {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
-    }
-    else if ((!bUsingGpuKernels && nbvg->ewald_excl == ewaldexclAnalytical) ||
-             (bUsingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(nbv->gpu_nbv)))
-    {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
-    }
-    else
-    {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_TAB;
-    }
-    enr_nbnxn_kernel_lj = eNR_NBNXN_LJ;
-    if (flags & GMX_FORCE_ENERGY)
-    {
-        /* In eNR_??? the nbnxn F+E kernels are always the F kernel + 1 */
-        enr_nbnxn_kernel_ljc += 1;
-        enr_nbnxn_kernel_lj  += 1;
-    }
-
-    inc_nrnb(nrnb, enr_nbnxn_kernel_ljc,
-             nbvg->nbl_lists.natpair_ljq);
-    inc_nrnb(nrnb, enr_nbnxn_kernel_lj,
-             nbvg->nbl_lists.natpair_lj);
-    /* The Coulomb-only kernels are offset -eNR_NBNXN_LJ_RF+eNR_NBNXN_RF */
-    inc_nrnb(nrnb, enr_nbnxn_kernel_ljc-eNR_NBNXN_LJ_RF+eNR_NBNXN_RF,
-             nbvg->nbl_lists.natpair_q);
-
-    if (ic->vdw_modifier == eintmodFORCESWITCH)
-    {
-        /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_FSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
-                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
-    }
-    if (ic->vdw_modifier == eintmodPOTSWITCH)
-    {
-        /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_PSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
-                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
-    }
-    if (ic->vdwtype == evdwPME)
-    {
-        /* We add up the LJ Ewald cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_EWALD+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
-                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
     }
 }
 
