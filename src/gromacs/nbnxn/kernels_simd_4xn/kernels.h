@@ -38,6 +38,15 @@
  */
 
 
+/*! \internal \file
+ *
+ * \brief Declares SIMD kernel function pointers and function pointer tables
+ *
+ * \author Berk Hess <hess@kth.se>
+ *
+ * \ingroup module_nbnxn
+ */
+
 #include "gromacs/nbnxn/kernel_common.h"
 
 /* Declare all the different kernel functions.

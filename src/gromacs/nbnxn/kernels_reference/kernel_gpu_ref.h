@@ -33,6 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief Declares the GPU emulation reference kernel that runs on the CPU
+ *
+ * \author Berk Hess <hess@kth.se>
+ *
+ * \ingroup module_nbnxn
+ */
+
 #ifndef _nbnxn_kernel_gpu_ref_h
 #define _nbnxn_kernel_gpu_ref_h
 
@@ -44,7 +53,7 @@
 struct NbnxnPairlistGpu;
 struct nbnxn_atomdata_t;
 
-/* Reference (slow) kernel for nb n vs n GPU type pair lists */
+/*! \brief Reference (slow) kernel for nb n vs n GPU type pair lists */
 void
 nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
                      const nbnxn_atomdata_t     *nbat,
