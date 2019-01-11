@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,46 +35,19 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist.h"
-#include "gromacs/utility/gmxassert.h"
 
-#include "kernels_reference/kernel_ref_prune.h"
-#include "kernels_simd_2xmm/kernel_prune.h"
-#include "kernels_simd_4xm/kernel_prune.h"
-
-
-void NbnxnDispatchPruneKernel(nonbonded_verlet_t               *nbv,
-                              const Nbnxm::InteractionLocality  ilocality,
-                              const rvec                       *shift_vec)
+int nbnxnNumStepsWithPairlist(const nonbonded_verlet_t         &nbv,
+                              const Nbnxm::InteractionLocality  iLocality,
+                              const int64_t                     step)
 {
-    nbnxn_pairlist_set_t     *nbl_lists  = &nbv->pairlistSets[ilocality];
-    const nbnxn_atomdata_t   *nbat       = nbv->nbat;
-    const real                rlistInner = nbv->listParams->rlistInner;
+    return step - nbv.pairlistSets[iLocality].outerListCreationStep;
+}
 
-    GMX_ASSERT(nbl_lists->nbl[0]->ciOuter.size() >= nbl_lists->nbl[0]->ci.size(),
-               "Here we should either have an empty ci list or ciOuter should be >= ci");
-
-    int gmx_unused nthreads = gmx_omp_nthreads_get(emntNonbonded);
-#pragma omp parallel for schedule(static) num_threads(nthreads)
-    for (int i = 0; i < nbl_lists->nnbl; i++)
-    {
-        NbnxnPairlistCpu *nbl = nbl_lists->nbl[i];
-
-        switch (nbv->kernelType_)
-        {
-            case nbnxnk4xN_SIMD_4xN:
-                nbnxn_kernel_prune_4xn(nbl, nbat, shift_vec, rlistInner);
-                break;
-            case nbnxnk4xN_SIMD_2xNN:
-                nbnxn_kernel_prune_2xnn(nbl, nbat, shift_vec, rlistInner);
-                break;
-            case nbnxnk4x4_PlainC:
-                nbnxn_kernel_prune_ref(nbl, nbat, shift_vec, rlistInner);
-                break;
-            default:
-                GMX_RELEASE_ASSERT(false, "kernel type not handled (yet)");
-        }
-    }
+bool nbnxnIsDynamicPairlistPruningStep(const nonbonded_verlet_t         &nbv,
+                                       const Nbnxm::InteractionLocality  iLocality,
+                                       const int64_t                     step)
+{
+    return nbnxnNumStepsWithPairlist(nbv, iLocality, step) % nbv.listParams->nstlistPrune == 0;
 }

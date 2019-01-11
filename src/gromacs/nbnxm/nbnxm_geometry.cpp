@@ -41,6 +41,31 @@
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
+
+bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
+{
+    if (nb_kernel_type == nbnxnkNotSet)
+    {
+        gmx_fatal(FARGS, "Non-bonded kernel type not set for Verlet-style pair-list.");
+    }
+
+    switch (nb_kernel_type)
+    {
+        case nbnxnk8x8x8_GPU:
+        case nbnxnk8x8x8_PlainC:
+            return false;
+
+        case nbnxnk4x4_PlainC:
+        case nbnxnk4xN_SIMD_4xN:
+        case nbnxnk4xN_SIMD_2xNN:
+            return true;
+
+        default:
+            gmx_incons("Invalid nonbonded kernel type passed!");
+            return false;
+    }
+}
 
 int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type)
 {
@@ -91,4 +116,33 @@ int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
     }
 
     return cj_size;
+}
+
+/* Clusters at the cut-off only increase rlist by 60% of their size */
+static constexpr real c_nbnxnRlistIncreaseOutsideFactor = 0.6;
+
+real nbnxn_get_rlist_effective_inc(const int  jClusterSize,
+                                   const real atomDensity)
+{
+    /* We should get this from the setup, but currently it's the same for
+     * all setups, including GPUs.
+     */
+    const real iClusterSize    = c_nbnxnCpuIClusterSize;
+
+    const real iVolumeIncrease = (iClusterSize - 1)/atomDensity;
+    const real jVolumeIncrease = (jClusterSize - 1)/atomDensity;
+
+    return c_nbnxnRlistIncreaseOutsideFactor*std::cbrt(iVolumeIncrease +
+                                                       jVolumeIncrease);
+}
+
+real nbnxn_get_rlist_effective_inc(const int        clusterSize,
+                                   const gmx::RVec &averageClusterBoundingBox)
+{
+    /* The average length of the diagonal of a sub cell */
+    const real diagonal    = std::sqrt(norm2(averageClusterBoundingBox));
+
+    const real volumeRatio = (clusterSize - 1.0_real)/clusterSize;
+
+    return c_nbnxnRlistIncreaseOutsideFactor*gmx::square(volumeRatio)*0.5_real*diagonal;
 }
