@@ -49,8 +49,7 @@ void NbnxnDispatchPruneKernel(nonbonded_verlet_t               *nbv,
                               const Nbnxm::InteractionLocality  ilocality,
                               const rvec                       *shift_vec)
 {
-    nonbonded_verlet_group_t &nbvg       = nbv->grp[ilocality];
-    nbnxn_pairlist_set_t     *nbl_lists  = &nbvg.nbl_lists;
+    nbnxn_pairlist_set_t     *nbl_lists  = &nbv->pairlistSets[ilocality];
     const nbnxn_atomdata_t   *nbat       = nbv->nbat;
     const real                rlistInner = nbv->listParams->rlistInner;
 
@@ -63,7 +62,7 @@ void NbnxnDispatchPruneKernel(nonbonded_verlet_t               *nbv,
     {
         NbnxnPairlistCpu *nbl = nbl_lists->nbl[i];
 
-        switch (nbvg.kernel_type)
+        switch (nbv->kernelType_)
         {
             case nbnxnk4xN_SIMD_4xN:
                 nbnxn_kernel_prune_4xn(nbl, nbat, shift_vec, rlistInner);

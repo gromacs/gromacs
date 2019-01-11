@@ -33,59 +33,21 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_NBNXN_UTILITY_H
-#define GMX_NBNXN_UTILITY_H
+#include "gmxpre.h"
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/pairlist.h"
 
-/* Returns the base-2 log of n.
- * Generates a fatal error when n is not an integer power of 2.
- */
-static inline int get_2log(int n)
+int nbnxnNumStepsWithPairlist(const nonbonded_verlet_t         &nbv,
+                              const Nbnxm::InteractionLocality  iLocality,
+                              const int64_t                     step)
 {
-    int log2;
-
-    log2 = 0;
-    while ((1 << log2) < n)
-    {
-        log2++;
-    }
-    if ((1 << log2) != n)
-    {
-        gmx_fatal(FARGS, "nbnxn na_c (%d) is not a power of 2", n);
-    }
-
-    return log2;
+    return step - nbv.pairlistSets[iLocality].outerListCreationStep;
 }
 
-/* Returns whether the pair-list corresponding to nb_kernel_type is simple */
-bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
-
-/* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
-int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type);
-
-/* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
-int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type);
-
-/* Returns the effective list radius of the pair-list
- *
- * Due to the cluster size the effective pair-list is longer than
- * that of a simple atom pair-list. This function gives the extra distance.
- *
- * NOTE: If the i- and j-cluster sizes are identical and you know
- *       the physical dimensions of the clusters, use the next function
- *       for more accurate results
- */
-real nbnxn_get_rlist_effective_inc(int  jClusterSize,
-                                   real atomDensity);
-
-/* Returns the effective list radius of the pair-list
- *
- * Due to the cluster size the effective pair-list is longer than
- * that of a simple atom pair-list. This function gives the extra distance.
- */
-real nbnxn_get_rlist_effective_inc(int              clusterSize,
-                                   const gmx::RVec &averageClusterBoundingBox);
-
-#endif
+bool nbnxnIsDynamicPairlistPruningStep(const nonbonded_verlet_t         &nbv,
+                                       const Nbnxm::InteractionLocality  iLocality,
+                                       const int64_t                     step)
+{
+    return nbnxnNumStepsWithPairlist(nbv, iLocality, step) % nbv.listParams->nstlistPrune == 0;
+}
