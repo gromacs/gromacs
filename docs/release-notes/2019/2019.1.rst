@@ -30,7 +30,7 @@ This only works for writing .xtc files. The code and documentation now
 works correctly with .gro files, which was changed in 2016 release series so that
 it would only write fixed-width columns.
 
-:issue: `2813`
+:issue: `2824`
 :issue: `2037`
 
 
