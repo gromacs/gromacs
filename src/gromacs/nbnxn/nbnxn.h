@@ -102,7 +102,6 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxn/pairlist.h"
-#include "gromacs/nbnxn/search.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
@@ -118,6 +117,7 @@ struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
 struct interaction_const_t;
+struct t_blocka;
 struct t_commrec;
 struct t_nrnb;
 struct t_forcerec;
@@ -267,6 +267,16 @@ void nbnxn_set_atomorder(nbnxn_search_t nbs);
 
 /*! \brief Returns the index position of the atoms on the pairlist search grid */
 gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs);
+
+/*! \brief Generates a pair-list for the given locality.
+ *
+ * With perturbed particles, also a group scheme style nbl_fep list is made.
+ */
+void nbnxn_make_pairlist(nonbonded_verlet_t         *nbv,
+                         Nbnxn::InteractionLocality  iLocality,
+                         const t_blocka             *excl,
+                         int64_t                     step,
+                         t_nrnb                     *nrnb);
 
 /*! \brief Prune all pair-lists with given locality (currently CPU only)
  *

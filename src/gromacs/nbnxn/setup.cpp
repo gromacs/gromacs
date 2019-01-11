@@ -54,6 +54,7 @@
 #include "gromacs/nbnxn/gpu_data_mgmt.h"
 #include "gromacs/nbnxn/nbnxn.h"
 #include "gromacs/nbnxn/nbnxn_simd.h"
+#include "gromacs/nbnxn/search.h"
 #include "gromacs/nbnxn/tuning.h"
 #include "gromacs/nbnxn/utility.h"
 #include "gromacs/simd/simd.h"

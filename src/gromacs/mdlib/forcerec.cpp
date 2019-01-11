@@ -82,6 +82,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxn/gpu_data_mgmt.h"
 #include "gromacs/nbnxn/nbnxn.h"
+#include "gromacs/nbnxn/utility.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/tables/forcetable.h"

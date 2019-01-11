@@ -1148,19 +1148,8 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
-        nbnxn_make_pairlist(nbv->nbs.get(), nbv->nbat,
-                            &top->excls,
-                            nbv->listParams->rlistOuter,
-                            nbv->min_ci_balanced,
-                            &pairlistSet,
-                            Nbnxn::InteractionLocality::Local,
-                            nbv->grp[Nbnxn::InteractionLocality::Local].kernel_type,
-                            nrnb);
-        pairlistSet.outerListCreationStep = step;
-        if (nbv->listParams->useDynamicPruning && !bUseGPU)
-        {
-            nbnxnPrepareListForDynamicPruning(&pairlistSet);
-        }
+        nbnxn_make_pairlist(nbv, Nbnxn::InteractionLocality::Local,
+                            &top->excls, step, nrnb);
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
 
         if (bUseGPU)
@@ -1229,19 +1218,8 @@ static void do_force_cutsVERLET(FILE *fplog,
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
-            nbnxn_make_pairlist(nbv->nbs.get(), nbv->nbat,
-                                &top->excls,
-                                nbv->listParams->rlistOuter,
-                                nbv->min_ci_balanced,
-                                &pairlistSet,
-                                Nbnxn::InteractionLocality::NonLocal,
-                                nbv->grp[Nbnxn::InteractionLocality::NonLocal].kernel_type,
-                                nrnb);
-            pairlistSet.outerListCreationStep = step;
-            if (nbv->listParams->useDynamicPruning && !bUseGPU)
-            {
-                nbnxnPrepareListForDynamicPruning(&pairlistSet);
-            }
+            nbnxn_make_pairlist(nbv, Nbnxn::InteractionLocality::NonLocal,
+                                &top->excls, step, nrnb);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
             if (nbv->grp[Nbnxn::InteractionLocality::NonLocal].kernel_type == nbnxnk8x8x8_GPU)

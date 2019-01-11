@@ -36,6 +36,7 @@
 #ifndef GMX_NBNXN_UTILITY_H
 #define GMX_NBNXN_UTILITY_H
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
 /* Returns the base-2 log of n.
@@ -58,10 +59,33 @@ static inline int get_2log(int n)
     return log2;
 }
 
+/* Returns whether the pair-list corresponding to nb_kernel_type is simple */
+bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
+
 /* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
 int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type);
 
 /* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
 int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type);
+
+/* Returns the effective list radius of the pair-list
+ *
+ * Due to the cluster size the effective pair-list is longer than
+ * that of a simple atom pair-list. This function gives the extra distance.
+ *
+ * NOTE: If the i- and j-cluster sizes are identical and you know
+ *       the physical dimensions of the clusters, use the next function
+ *       for more accurate results
+ */
+real nbnxn_get_rlist_effective_inc(int  jClusterSize,
+                                   real atomDensity);
+
+/* Returns the effective list radius of the pair-list
+ *
+ * Due to the cluster size the effective pair-list is longer than
+ * that of a simple atom pair-list. This function gives the extra distance.
+ */
+real nbnxn_get_rlist_effective_inc(int              clusterSize,
+                                   const gmx::RVec &averageClusterBoundingBox);
 
 #endif

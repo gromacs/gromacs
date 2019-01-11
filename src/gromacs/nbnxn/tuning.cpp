@@ -61,6 +61,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/nbnxn/nbnxn.h"
+#include "gromacs/nbnxn/utility.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
