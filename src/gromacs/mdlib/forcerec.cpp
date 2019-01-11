@@ -82,6 +82,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/tables/forcetable.h"
@@ -1595,12 +1596,10 @@ static void initVdwEwaldParameters(FILE *fp, const t_inputrec *ir,
     }
 }
 
-gmx_bool uses_simple_tables(int                 cutoff_scheme,
-                            nonbonded_verlet_t *nbv,
-                            int                 group)
+gmx_bool uses_simple_tables(int                       cutoff_scheme,
+                            const nonbonded_verlet_t *nbv)
 {
     gmx_bool bUsesSimpleTables = TRUE;
-    int      grp_index;
 
     switch (cutoff_scheme)
     {
@@ -1608,9 +1607,8 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
             bUsesSimpleTables = TRUE;
             break;
         case ecutsVERLET:
-            assert(nullptr != nbv);
-            grp_index         = (group < 0) ? 0 : (nbv->ngrp - 1);
-            bUsesSimpleTables = nbnxn_kernel_pairlist_simple(nbv->grp[grp_index].kernel_type);
+            GMX_RELEASE_ASSERT(nullptr != nbv, "A non-bonded verlet object is required with the Verlet cutoff-scheme");
+            bUsesSimpleTables = nbv->pairlistIsSimple();
             break;
         default:
             gmx_incons("unimplemented");
@@ -2677,7 +2675,7 @@ void init_forcerec(FILE                             *fp,
 void free_gpu_resources(t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator)
 {
-    bool isPPrankUsingGPU = (fr != nullptr) && (fr->nbv != nullptr) && fr->nbv->bUseGPU;
+    bool isPPrankUsingGPU = (fr != nullptr) && (fr->nbv != nullptr) && fr->nbv->useGpu();
 
     /* stop the GPU profiler (only CUDA) */
     stopGpuProfiler();
