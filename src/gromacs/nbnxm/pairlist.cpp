@@ -55,6 +55,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/atomdata.h"
+#include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
@@ -239,30 +240,6 @@ static inline int xIndexFromCj(int cj)
 }
 #endif //GMX_SIMD
 
-gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
-{
-    if (nb_kernel_type == nbnxnkNotSet)
-    {
-        gmx_fatal(FARGS, "Non-bonded kernel type not set for Verlet-style pair-list.");
-    }
-
-    switch (nb_kernel_type)
-    {
-        case nbnxnk8x8x8_GPU:
-        case nbnxnk8x8x8_PlainC:
-            return FALSE;
-
-        case nbnxnk4x4_PlainC:
-        case nbnxnk4xN_SIMD_4xN:
-        case nbnxnk4xN_SIMD_2xNN:
-            return TRUE;
-
-        default:
-            gmx_incons("Invalid nonbonded kernel type passed!");
-            return FALSE;
-    }
-}
-
 /* Initializes a single nbnxn_pairlist_t data structure */
 static void nbnxn_init_pairlist_fep(t_nblist *nl)
 {
@@ -317,12 +294,13 @@ nbnxn_search_work_t::~nbnxn_search_work_t()
     free_nblist(nbl_fep.get());
 }
 
-nbnxn_search::nbnxn_search(const ivec               *n_dd_cells,
+nbnxn_search::nbnxn_search(int                       ePBC,
+                           const ivec               *n_dd_cells,
                            const gmx_domdec_zones_t *zones,
                            gmx_bool                  bFEP,
                            int                       nthread_max) :
     bFEP(bFEP),
-    ePBC(epbcNONE), // The correct value will be set during the gridding
+    ePBC(ePBC),
     zones(zones),
     natoms_local(0),
     natoms_nonlocal(0),
@@ -354,12 +332,13 @@ nbnxn_search::nbnxn_search(const ivec               *n_dd_cells,
     nbs_cycle_clear(cc);
 }
 
-nbnxn_search *nbnxn_init_search(const ivec                *n_dd_cells,
+nbnxn_search *nbnxn_init_search(int                        ePBC,
+                                const ivec                *n_dd_cells,
                                 const gmx_domdec_zones_t  *zones,
                                 gmx_bool                   bFEP,
                                 int                        nthread_max)
 {
-    return new nbnxn_search(n_dd_cells, zones, bFEP, nthread_max);
+    return new nbnxn_search(ePBC, n_dd_cells, zones, bFEP, nthread_max);
 }
 
 static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
@@ -2582,28 +2561,6 @@ static real effective_buffer_1x1_vs_MxN(const nbnxn_grid_t &iGrid,
                                        minimum_subgrid_size_xy(jGrid));
 }
 
-/* Clusters at the cut-off only increase rlist by 60% of their size */
-static real nbnxn_rlist_inc_outside_fac = 0.6;
-
-/* Due to the cluster size the effective pair-list is longer than
- * that of a simple atom pair-list. This function gives the extra distance.
- */
-real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
-{
-    int  cluster_size_i;
-    real vol_inc_i, vol_inc_j;
-
-    /* We should get this from the setup, but currently it's the same for
-     * all setups, including GPUs.
-     */
-    cluster_size_i = c_nbnxnCpuIClusterSize;
-
-    vol_inc_i = (cluster_size_i - 1)/atom_density;
-    vol_inc_j = (cluster_size_j - 1)/atom_density;
-
-    return nbnxn_rlist_inc_outside_fac*std::cbrt(vol_inc_i + vol_inc_j);
-}
-
 /* Estimates the interaction volume^2 for non-local interactions */
 static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones, const rvec ls, real r)
 {
@@ -2663,7 +2620,6 @@ static void get_nsubpair_target(const nbnxn_search        *nbs,
      * Maxwell is less sensitive to the exact value.
      */
     const int           nsubpair_target_min = 36;
-    rvec                ls;
     real                r_eff_sup, vol_est, nsp_est, nsp_est_nl;
 
     const nbnxn_grid_t &grid = nbs->grid[0];
@@ -2683,15 +2639,13 @@ static void get_nsubpair_target(const nbnxn_search        *nbs,
         return;
     }
 
+    gmx::RVec ls;
     ls[XX] = (grid.c1[XX] - grid.c0[XX])/(grid.numCells[XX]*c_gpuNumClusterPerCellX);
     ls[YY] = (grid.c1[YY] - grid.c0[YY])/(grid.numCells[YY]*c_gpuNumClusterPerCellY);
     ls[ZZ] = grid.na_c/(grid.atom_density*ls[XX]*ls[YY]);
 
-    /* The average length of the diagonal of a sub cell */
-    real diagonal = std::sqrt(ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ]);
-
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*gmx::square((grid.na_c - 1.0)/grid.na_c)*0.5*diagonal;
+    r_eff_sup = rlist + nbnxn_get_rlist_effective_inc(grid.na_c, ls);
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {
@@ -4078,17 +4032,17 @@ static void sort_sci(NbnxnPairlistGpu *nbl)
     std::swap(nbl->sci, work.sci_sort);
 }
 
-/* Make a local or non-local pair-list, depending on iloc */
-void nbnxn_make_pairlist(nbnxn_search              *nbs,
-                         nbnxn_atomdata_t          *nbat,
+void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
+                         const InteractionLocality  iLocality,
                          const t_blocka            *excl,
-                         const real                 rlist,
-                         const int                  min_ci_balanced,
-                         nbnxn_pairlist_set_t      *nbl_list,
-                         const InteractionLocality  iloc,
-                         const int                  nb_kernel_type,
+                         const int64_t              step,
                          t_nrnb                    *nrnb)
 {
+    nbnxn_search         *nbs      = nbv->nbs.get();
+    nbnxn_atomdata_t     *nbat     = nbv->nbat;
+    const real            rlist    = nbv->listParams->rlistOuter;
+    nbnxn_pairlist_set_t *nbl_list = &nbv->pairlistSets[iLocality];
+
     int                nsubpair_target;
     float              nsubpair_tot_est;
     int                nnbl;
@@ -4107,13 +4061,13 @@ void nbnxn_make_pairlist(nbnxn_search              *nbs,
 
     nbat->bUseBufferFlags = (nbat->out.size() > 1);
     /* We should re-init the flags before making the first list */
-    if (nbat->bUseBufferFlags && iloc == InteractionLocality::Local)
+    if (nbat->bUseBufferFlags && iLocality == InteractionLocality::Local)
     {
         init_buffer_flags(&nbat->buffer_flags, nbat->numAtoms());
     }
 
     int nzi;
-    if (iloc == InteractionLocality::Local)
+    if (iLocality == InteractionLocality::Local)
     {
         /* Only zone (grid) 0 vs 0 */
         nzi = 1;
@@ -4123,9 +4077,9 @@ void nbnxn_make_pairlist(nbnxn_search              *nbs,
         nzi = nbs->zones->nizone;
     }
 
-    if (!nbl_list->bSimple && min_ci_balanced > 0)
+    if (!nbl_list->bSimple && nbv->min_ci_balanced > 0)
     {
-        get_nsubpair_target(nbs, iloc, rlist, min_ci_balanced,
+        get_nsubpair_target(nbs, iLocality, rlist, nbv->min_ci_balanced,
                             &nsubpair_target, &nsubpair_tot_est);
     }
     else
@@ -4158,7 +4112,7 @@ void nbnxn_make_pairlist(nbnxn_search              *nbs,
 
         int                 zj0;
         int                 zj1;
-        if (iloc == InteractionLocality::Local)
+        if (iLocality == InteractionLocality::Local)
         {
             zj0 = 0;
             zj1 = 1;
@@ -4188,7 +4142,7 @@ void nbnxn_make_pairlist(nbnxn_search              *nbs,
             /* With GPU: generate progressively smaller lists for
              * load balancing for local only or non-local with 2 zones.
              */
-            progBal = (iloc == InteractionLocality::Local || nbs->zones->n <= 2);
+            progBal = (iLocality == InteractionLocality::Local || nbs->zones->n <= 2);
 
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for (int th = 0; th < nnbl; th++)
@@ -4216,7 +4170,7 @@ void nbnxn_make_pairlist(nbnxn_search              *nbs,
                         nbnxn_make_pairlist_part(nbs, iGrid, jGrid,
                                                  &nbs->work[th], nbat, *excl,
                                                  rlist,
-                                                 nb_kernel_type,
+                                                 nbv->kernelType_,
                                                  ci_block,
                                                  nbat->bUseBufferFlags,
                                                  nsubpair_target,
@@ -4230,7 +4184,7 @@ void nbnxn_make_pairlist(nbnxn_search              *nbs,
                         nbnxn_make_pairlist_part(nbs, iGrid, jGrid,
                                                  &nbs->work[th], nbat, *excl,
                                                  rlist,
-                                                 nb_kernel_type,
+                                                 nbv->kernelType_,
                                                  ci_block,
                                                  nbat->bUseBufferFlags,
                                                  nsubpair_target,
@@ -4343,13 +4297,15 @@ void nbnxn_make_pairlist(nbnxn_search              *nbs,
         GMX_ASSERT(nbl_list->nbl[0]->ciOuter.empty(), "ciOuter is invalid so it should be empty");
     }
 
+    nbl_list->outerListCreationStep = step;
+
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
-    if (iloc == InteractionLocality::Local)
+    if (iLocality == InteractionLocality::Local)
     {
         nbs->search_count++;
     }
     if (nbs->print_cycles &&
-        (!nbs->DomDec || iloc == InteractionLocality::NonLocal) &&
+        (!nbs->DomDec || iLocality == InteractionLocality::NonLocal) &&
         nbs->search_count % 100 == 0)
     {
         nbs_cycle_print(stderr, nbs);
@@ -4394,6 +4350,22 @@ void nbnxn_make_pairlist(nbnxn_search              *nbs,
         {
             print_reduction_cost(&nbat->buffer_flags, nbl_list->nnbl);
         }
+    }
+
+    if (nbv->listParams->useDynamicPruning && !nbv->useGpu())
+    {
+        nbnxnPrepareListForDynamicPruning(nbl_list);
+    }
+
+    if (nbv->useGpu())
+    {
+        /* Launch the transfer of the pairlist to the GPU.
+         *
+         * NOTE: The launch overhead is currently not timed separately
+         */
+        Nbnxm::gpu_init_pairlist(nbv->gpu_nbv,
+                                 nbl_list->nblGpu[0],
+                                 iLocality);
     }
 }
 

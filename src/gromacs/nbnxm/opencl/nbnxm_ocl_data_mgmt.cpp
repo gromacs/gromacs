@@ -409,7 +409,7 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
                                   const interaction_const_t   *ic,
                                   const NbnxnListParameters   *listParams)
 {
-    if (!nbv || nbv->grp[InteractionLocality::Local].kernel_type != nbnxnk8x8x8_GPU)
+    if (!nbv || !nbv->useGpu())
     {
         return;
     }

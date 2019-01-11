@@ -61,18 +61,9 @@ typedef void nbnxn_alloc_t (void **ptr, size_t nbytes);
  */
 typedef void nbnxn_free_t (void *ptr);
 
-/* Tells if the pair-list corresponding to nb_kernel_type is simple.
- * Returns FALSE for super-sub type pair-list.
- */
-gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
-
-/* Due to the cluster size the effective pair-list is longer than
- * that of a simple atom pair-list. This function gives the extra distance.
- */
-real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density);
-
 /* Allocates and initializes a pair search data structure */
-nbnxn_search *nbnxn_init_search(const ivec                *n_dd_cells,
+nbnxn_search *nbnxn_init_search(int                        ePBC,
+                                const ivec                *n_dd_cells,
                                 const gmx_domdec_zones_t  *zones,
                                 gmx_bool                   bFEP,
                                 int                        nthread_max);
@@ -80,23 +71,6 @@ nbnxn_search *nbnxn_init_search(const ivec                *n_dd_cells,
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                              gmx_bool simple, gmx_bool combined);
-
-/* Make a pair-list with radius rlist, store it in nbl.
- * The parameter min_ci_balanced sets the minimum required
- * number or roughly equally sized ci blocks in nbl.
- * When set >0 ci lists will be chopped up when the estimate
- * for the number of equally sized lists is below min_ci_balanced.
- * With perturbed particles, also a group scheme style nbl_fep list is made.
- */
-void nbnxn_make_pairlist(nbnxn_search               *nbs,
-                         nbnxn_atomdata_t           *nbat,
-                         const t_blocka             *excl,
-                         real                        rlist,
-                         int                         min_ci_balanced,
-                         nbnxn_pairlist_set_t       *nbl_list,
-                         Nbnxm::InteractionLocality  iloc,
-                         int                         nb_kernel_type,
-                         t_nrnb                     *nrnb);
 
 /*! \brief Prepare the list-set produced by the search for dynamic pruning
  *
