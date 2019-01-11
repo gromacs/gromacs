@@ -139,7 +139,7 @@ static void done_xlatom(int nxlate, t_xlate_atom *xlatom)
 
 void rename_atoms(const char* xlfile, const char *ffdir,
                   t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
-                  bool bResname, gmx_residuetype_t *rt, bool bReorderNum,
+                  bool bResname, ResidueType *rt, bool bReorderNum,
                   bool bVerbose)
 {
     int           nxlate, a, i, resind;
@@ -207,15 +207,15 @@ void rename_atoms(const char* xlfile, const char *ffdir,
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == nullptr ||
                           (gmx_strcasecmp("protein-nterm", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt, rnm) && bStartTerm) ||
+                           rt->namedResidueHasType(rnm, "Protein") && bStartTerm) ||
                           (gmx_strcasecmp("protein-cterm", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt, rnm) && bEndTerm) ||
+                           rt->namedResidueHasType(rnm, "Protein") && bEndTerm) ||
                           (gmx_strcasecmp("protein", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt, rnm)) ||
+                           rt->namedResidueHasType(rnm, "Protein")) ||
                           (gmx_strcasecmp("DNA", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_dna(rt, rnm)) ||
+                           rt->namedResidueHasType(rnm, "DNA")) ||
                           (gmx_strcasecmp("RNA", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_rna(rt, rnm)));
+                           rt->namedResidueHasType(rnm, "RNA")));
                 if (!bMatch)
                 {
                     ptr0 = rnm;

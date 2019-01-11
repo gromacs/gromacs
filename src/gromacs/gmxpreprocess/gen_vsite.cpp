@@ -540,7 +540,7 @@ static void print_bonds(FILE *fp, int o2n[],
 }
 
 static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
-                     gmx_residuetype_t *rt)
+                     ResidueType *rt)
 {
     int      type;
     bool     bNterm;
@@ -555,7 +555,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     {
         /* get type from rtp */
         rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), nrtp, rtp);
-        bNterm = gmx_residuetype_is_protein(rt, *(at->resinfo[at->atom[atom].resind].name)) &&
+        bNterm = rt->namedResidueHasType(*(at->resinfo[at->atom[atom].resind].name), "Protein") &&
             (at->atom[atom].resind == 0);
         j    = search_jtype(rtpp, *(at->atomname[atom]), bNterm);
         type = rtpp->atom[j].type;
@@ -578,7 +578,7 @@ static int vsite_nm2type(const char *name, gpp_atomtype *atype)
 }
 
 static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
-                      gmx_residuetype_t *rt)
+                      ResidueType *rt)
 {
     real     mass;
     bool     bNterm;
@@ -593,7 +593,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     {
         /* get mass from rtp */
         rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), nrtp, rtp);
-        bNterm = gmx_residuetype_is_protein(rt, *(at->resinfo[at->atom[atom].resind].name)) &&
+        bNterm = rt->namedResidueHasType(*(at->resinfo[at->atom[atom].resind].name), "Protein") &&
             (at->atom[atom].resind == 0);
         j    = search_jtype(rtpp, *(at->atomname[atom]), bNterm);
         mass = rtpp->atom[j].m;
@@ -1564,7 +1564,6 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
     char             *resnm = nullptr;
     int               nvsiteconf, nvsitetop, cmplength;
     bool              isN, planarN, bFound;
-    gmx_residuetype_t*rt;
 
     t_vsiteconf      *vsiteconflist;
     /* pointer to a list of CH3/NH3/NH2 configuration entries.
@@ -1651,7 +1650,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
     /* make index to tell which residues were already processed */
     snew(bResProcessed, at->nres);
 
-    gmx_residuetype_init(&rt);
+    ResidueType rt;
 
     /* generate vsite constructions */
     /* loop over all atoms */
@@ -1672,7 +1671,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
         if (bVsiteAromatics &&
             !strcmp(*(at->atomname[i]), "CA") &&
             !bResProcessed[resind] &&
-            gmx_residuetype_is_protein(rt, *(at->resinfo[resind].name)) )
+            rt.namedResidueHasType(*(at->resinfo[resind].name), "Protein") )
         {
             /* mark this residue */
             bResProcessed[resind] = TRUE;
@@ -1783,7 +1782,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
             count_bonds(i, &plist[F_BONDS], at->atomname,
                         &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
             /* get Heavy atom type */
-            tpHeavy = get_atype(Heavy, at, nrtp, rtp, rt);
+            tpHeavy = get_atype(Heavy, at, nrtp, rtp, &rt);
             strcpy(tpname, get_atomtype_name(tpHeavy, atype));
 
             bWARNING       = FALSE;
@@ -1890,7 +1889,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
                     }
                     /* get dummy mass type from first char of heavy atom type (N or C) */
 
-                    strcpy(nexttpname, get_atomtype_name(get_atype(heavies[0], at, nrtp, rtp, rt), atype));
+                    strcpy(nexttpname, get_atomtype_name(get_atype(heavies[0], at, nrtp, rtp, &rt), atype));
                     ch = get_dummymass_name(vsiteconflist, nvsiteconf, tpname, nexttpname);
 
                     if (ch == nullptr)
@@ -1940,10 +1939,10 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
                     /* get atom masses, and set Heavy and Hatoms mass to zero */
                     for (j = 0; j < nrHatoms; j++)
                     {
-                        mHtot                += get_amass(Hatoms[j], at, nrtp, rtp, rt);
+                        mHtot                += get_amass(Hatoms[j], at, nrtp, rtp, &rt);
                         at->atom[Hatoms[j]].m = at->atom[Hatoms[j]].mB = 0;
                     }
-                    mtot              = mHtot + get_amass(Heavy, at, nrtp, rtp, rt);
+                    mtot              = mHtot + get_amass(Heavy, at, nrtp, rtp, &rt);
                     at->atom[Heavy].m = at->atom[Heavy].mB = 0;
                     if (mHmult != 1.0)
                     {
@@ -2053,8 +2052,6 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
         } /* if vsite NOTSET & is hydrogen */
 
     }     /* for i < at->nr */
-
-    gmx_residuetype_destroy(rt);
 
     if (debug)
     {

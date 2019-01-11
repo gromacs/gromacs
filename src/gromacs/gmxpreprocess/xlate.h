@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_XLATE_H
 #define GMX_GMXPREPROCESS_XLATE_H
 
-struct gmx_residuetype_t;
+class ResidueType;
 struct t_atoms;
 struct t_restp;
 struct t_symtab;
@@ -48,7 +48,7 @@ struct t_symtab;
  */
 void rename_atoms(const char* xlfile, const char *ffdir,
                   t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
-                  bool bResname, gmx_residuetype_t *rt, bool bReorderNum,
+                  bool bResname, ResidueType *rt, bool bReorderNum,
                   bool bVerbose);
 
 #endif
