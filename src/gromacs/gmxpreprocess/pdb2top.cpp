@@ -442,7 +442,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 }
 
 static int name2type(t_atoms *at, int **cgnr,
-                     t_restp restp[], gmx_residuetype_t *rt)
+                     t_restp restp[], ResidueType *rt)
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
     char       *name;
@@ -467,7 +467,7 @@ static int name2type(t_atoms *at, int **cgnr,
         {
             bool bProt;
             resind = at->atom[i].resind;
-            bProt  = gmx_residuetype_is_protein(rt, *(at->resinfo[resind].name));
+            bProt  = rt->namedResidueHasType(*(at->resinfo[resind].name), "Protein");
             bNterm = bProt && (resind == 0);
             if (resind > 0)
             {
@@ -1528,10 +1528,9 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     int              *vsite_type;
     int               i, nmissat;
     int               bts[ebtsNR];
-    gmx_residuetype_t*rt;
 
     init_plist(plist);
-    gmx_residuetype_init(&rt);
+    ResidueType rt;
 
     /* Make bonds */
     at2bonds(&(plist[F_BONDS]), hb,
@@ -1543,7 +1542,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
                atoms, nssbonds, ssbonds,
                bAllowMissing);
 
-    nmissat = name2type(atoms, &cgnr, restp, rt);
+    nmissat = name2type(atoms, &cgnr, restp, &rt);
     if (nmissat)
     {
         if (bAllowMissing)
@@ -1656,7 +1655,6 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     /* cleaning up */
     free_t_hackblock(atoms->nres, &hb);
     free_t_restp(atoms->nres, &restp);
-    gmx_residuetype_destroy(rt);
 
     /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
     sfree(cgnr);

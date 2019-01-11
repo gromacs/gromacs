@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,42 +36,68 @@
 #define GMX_TOPOLOGY_RESIDUETYPES_H
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 
-typedef struct gmx_residuetype_t gmx_residuetype_t;
+struct ResidueTypeEntry;
 
-int
-gmx_residuetype_init(gmx_residuetype_t **rt);
+class ResidueType
+{
+    public:
+        //! Default constructor.
+        ResidueType();
+        //! Default destructor.
+        ~ResidueType();
 
-int
-gmx_residuetype_destroy(gmx_residuetype_t *rt);
+        //! Get handle to underlying residue type data.
+        ResidueTypeEntry *ResidueTypes();
 
-int
-gmx_residuetype_get_type(gmx_residuetype_t *rt, const char *resname, const char **p_restype);
+        //! Get number of entries in ResidueTypes.
+        int numberOfEntries() const;
+        /*! \brief
+         * Return true if residue \p residueName is found or false otherwise.
+         * \p residueTypePointer is set to the type name, or "Other" if not found.
+         *
+         * \param[in] residueName Residue name to search database for.
+         * \param[out] residueTypePointer Name of found type or "Other".
+         * \returns true if successful.
+         */
+        bool nameIndexedInResidueTypes(const char *residueName, const char **residueTypePointer);
+        /*! \brief
+         * Add entry to ResidueTypes if unique.
+         *
+         * \param[in] residueName Name of new residue.
+         * \param[in] residueType Type of new residue.
+         */
+        void addResidue(const char *residueName, const char *residueType);
+        /*! \brief
+         * Checks if the indicated \p residueName if of \p residueType.
+         *
+         * \param[in] residueName Residue that should be checked.
+         * \param[in] residueType Which ResidueType the residue should have.
+         * \returns If the check was successful.
+         */
+        bool namedResidueHasType(const char *residueName, const char *residueType);
+        /*! \brief
+         * Get entry index in ResidueTypes with name \p residueName.
+         *
+         * \param[in] residueName Name of the residue being searched.
+         * \returns Value of the entry or -1.
+         */
+        int indexFromResidueName(const char *residueName) const;
+        /*! \brief
+         * Get the name of the entry in ResidueTypes with \p index.
+         *
+         * \param[in] index Which entry should be returned.
+         * \returns The name of the entry at \p index, or nullptr.
+         */
+        const char *nameFromResidueIndex(int index) const;
 
-int
-gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype);
+    private:
+        //! Implementation pointer.
+        class Impl;
 
-int
-gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
-                             const char        ***p_typenames,
-                             int                 *ntypes);
+        gmx::PrivateImplPointer<Impl> impl_;
+};
 
-gmx_bool
-gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm);
-
-gmx_bool
-gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm);
-
-gmx_bool
-gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm);
-
-int
-gmx_residuetype_get_size(gmx_residuetype_t *rt);
-
-int
-gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm);
-
-const char *
-gmx_residuetype_get_name(gmx_residuetype_t *rt, int index);
 
 #endif

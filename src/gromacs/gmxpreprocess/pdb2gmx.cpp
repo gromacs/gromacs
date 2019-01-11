@@ -537,7 +537,7 @@ static void write_posres(const char *fn, t_atoms *pdba, real fc)
 static int read_pdball(const char *inf, bool bOutput, const char *outf, char **title,
                        t_atoms *atoms, rvec **x,
                        int *ePBC, matrix box, bool bRemoveH,
-                       t_symtab *symtab, gmx_residuetype_t *rt, const char *watres,
+                       t_symtab *symtab, ResidueType *rt, const char *watres,
                        AtomProperties *aps, bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
@@ -848,10 +848,10 @@ static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], bool bVerbose)
 }
 
 static void
-checkResidueTypeSanity(t_atoms *            pdba,
-                       int                  r0,
-                       int                  r1,
-                       gmx_residuetype_t *  rt)
+checkResidueTypeSanity(t_atoms     *pdba,
+                       int          r0,
+                       int          r1,
+                       ResidueType *rt)
 {
     std::string startResidueString = gmx::formatString("%s%d", *pdba->resinfo[r0].name, pdba->resinfo[r0].nr);
     std::string endResidueString   = gmx::formatString("%s%d", *pdba->resinfo[r1-1].name, pdba->resinfo[r1-1].nr);
@@ -889,11 +889,11 @@ checkResidueTypeSanity(t_atoms *            pdba,
         bool        allResiduesHaveSameType = true;
         const char *restype0;
         const char *restype;
-        gmx_residuetype_get_type(rt, *pdba->resinfo[r0].name, &restype0);
+        rt->nameIndexedInResidueTypes(*pdba->resinfo[r0].name, &restype0);
 
         for (int i = r0 + 1; i < r1; i++)
         {
-            gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &restype);
+            rt->nameIndexedInResidueTypes(*pdba->resinfo[i].name, &restype);
             if (gmx_strcasecmp(restype, restype0))
             {
                 allResiduesHaveSameType = false;
@@ -919,7 +919,7 @@ checkResidueTypeSanity(t_atoms *            pdba,
 }
 
 static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
-                        gmx_residuetype_t *rt)
+                        ResidueType *rt)
 {
     int         i;
     const char *p_startrestype;
@@ -949,7 +949,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
     /* Find the starting terminus (typially N or 5') */
     for (i = r0; i < r1 && *r_start == -1; i++)
     {
-        gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &p_startrestype);
+        rt->nameIndexedInResidueTypes(*pdba->resinfo[i].name, &p_startrestype);
         if (!gmx_strcasecmp(p_startrestype, "Protein") || !gmx_strcasecmp(p_startrestype, "DNA") || !gmx_strcasecmp(p_startrestype, "RNA") )
         {
             printf("Identified residue %s%d as a starting terminus.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
@@ -1003,7 +1003,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
         /* Go through the rest of the residues, check that they are the same class, and identify the ending terminus. */
         for (i = *r_start; i < r1; i++)
         {
-            gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &p_restype);
+            rt->nameIndexedInResidueTypes(*pdba->resinfo[i].name, &p_restype);
             if (!gmx_strcasecmp(p_restype, p_startrestype) && endWarnings == 0)
             {
                 *r_end = i;
@@ -1666,8 +1666,7 @@ int pdb2gmx::run()
     open_symtab(&symtab);
 
     /* Residue type database */
-    gmx_residuetype_t *rt;
-    gmx_residuetype_init(&rt);
+    ResidueType rt;
 
     /* Read residue renaming database(s), if present */
     std::vector<std::string> rrn = fflib_search_file_end(ffdir_, ".r2b", FALSE);
@@ -1687,15 +1686,13 @@ int pdb2gmx::run()
     const char *p_restype;
     for (int i = 0; i < nrtprename; i++)
     {
-        int rc = gmx_residuetype_get_type(rt, rtprename[i].gmx, &p_restype);
-
         /* Only add names if the 'standard' gromacs/iupac base name was found */
-        if (rc == 0)
+        if (rt.nameIndexedInResidueTypes(rtprename[i].gmx, &p_restype))
         {
-            gmx_residuetype_add(rt, rtprename[i].main, p_restype);
-            gmx_residuetype_add(rt, rtprename[i].nter, p_restype);
-            gmx_residuetype_add(rt, rtprename[i].cter, p_restype);
-            gmx_residuetype_add(rt, rtprename[i].bter, p_restype);
+            rt.addResidue(rtprename[i].main, p_restype);
+            rt.addResidue(rtprename[i].nter, p_restype);
+            rt.addResidue(rtprename[i].cter, p_restype);
+            rt.addResidue(rtprename[i].bter, p_restype);
         }
     }
 
@@ -1724,7 +1721,7 @@ int pdb2gmx::run()
     rvec          *pdbx;
     int            natom = read_pdball(inputConfFile_.c_str(), bOutputSet_, outFile_.c_str(),
                                        &title, &pdba_all, &pdbx, &ePBC, box, bRemoveH_,
-                                       &symtab, rt, watres, &aps, bVerbose_);
+                                       &symtab, &rt, watres, &aps, bVerbose_);
 
     if (natom == 0)
     {
@@ -2029,7 +2026,7 @@ int pdb2gmx::run()
         for (int i = 0; i < cc->nterpairs; i++)
         {
             find_nc_ter(pdba, cc->chainstart[i], cc->chainstart[i+1],
-                        &(cc->r_start[j]), &(cc->r_end[j]), rt);
+                        &(cc->r_start[j]), &(cc->r_end[j]), &rt);
 
             if (cc->r_start[j] >= 0 && cc->r_end[j] >= 0)
             {
@@ -2148,7 +2145,7 @@ int pdb2gmx::run()
            do now :( AF 26-7-99 */
 
         rename_atoms(nullptr, ffdir_,
-                     pdba, &symtab, restp_chain, false, rt, false, bVerbose_);
+                     pdba, &symtab, restp_chain, false, &rt, false, bVerbose_);
 
         match_atomnames_with_rtp(restp_chain, hb_chain, pdba, x, bVerbose_);
 
@@ -2196,7 +2193,7 @@ int pdb2gmx::run()
 
         int k = (cc->nterpairs > 0 && cc->r_start[0] >= 0) ? cc->r_start[0] : 0;
 
-        gmx_residuetype_get_type(rt, *pdba->resinfo[k].name, &p_restype);
+        rt.nameIndexedInResidueTypes(*pdba->resinfo[k].name, &p_restype);
 
         std::string molname;
         std::string suffix;
@@ -2354,8 +2351,6 @@ int pdb2gmx::run()
 
     print_top_mols(top_file, title, ffdir_, watermodel_, nincl_, incls_, nmol_, mols_);
     gmx_fio_fclose(top_file);
-
-    gmx_residuetype_destroy(rt);
 
     /* now merge all chains back together */
     natom     = 0;

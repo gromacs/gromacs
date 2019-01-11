@@ -101,7 +101,7 @@ class AtomProperties::Impl
         //! The different atom properties.
         AtomProperty       prop[epropNR];
         //! The residue types.
-        gmx_residuetype_t *restype = nullptr;
+        ResidueType        restype;
 };
 
 /*! \brief
@@ -149,13 +149,13 @@ static int compareToDatabase(const std::string &search, const std::string &datab
  * \param[in] bExact Do we have the correct match.
  * \returns The index for the property.
  */
-static int findPropertyIndex(AtomProperty *ap, gmx_residuetype_t *restype,
+static int findPropertyIndex(AtomProperty *ap, ResidueType *restype,
                              const std::string &residueName, const std::string &atomName,
                              gmx_bool *bExact)
 {
     int      j = NOTFOUND;
 
-    bool     bProtein  = gmx_residuetype_is_protein(restype, residueName.c_str());
+    bool     bProtein  = restype->namedResidueHasType(residueName.c_str(), "Protein");
     bool     bProtWild = residueName == "AAA";
     int      malen     = NOTFOUND;
     int      mrlen     = NOTFOUND;
@@ -219,7 +219,7 @@ static int findPropertyIndex(AtomProperty *ap, gmx_residuetype_t *restype,
  * \param[in] propValue Value of property.
  * \param[in] line Where to add property.
  */
-static void addProperty(AtomProperty *ap, gmx_residuetype_t *restype,
+static void addProperty(AtomProperty *ap, ResidueType *restype,
                         const std::string &residueName, const std::string &atomName,
                         real propValue, int line)
 {
@@ -262,7 +262,7 @@ static void addProperty(AtomProperty *ap, gmx_residuetype_t *restype,
  * \param[in] restype Library of residue types.
  * \param[in] factor Scaling factor for property.
  */
-static void readProperty(AtomProperty *ap, gmx_residuetype_t *restype, double factor)
+static void readProperty(AtomProperty *ap, ResidueType *restype, double factor)
 {
     char          line[STRLEN], resnm[32], atomnm[32];
 
@@ -295,7 +295,7 @@ static void readProperty(AtomProperty *ap, gmx_residuetype_t *restype, double fa
  * \param[in] haveBeenWarned If we already set a warning before
  * \returns True of warning should be printed.
  */
-static bool setProperties(AtomProperty *ap, gmx_residuetype_t *restype, int eprop, bool haveBeenWarned)
+static bool setProperties(AtomProperty *ap, ResidueType *restype, int eprop, bool haveBeenWarned)
 {
     const char       *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
     double            fac[epropNR]  = { 1.0,    1.0,  418.4, 1.0, 1.0 };
@@ -325,12 +325,10 @@ static bool setProperties(AtomProperty *ap, gmx_residuetype_t *restype, int epro
 AtomProperties::AtomProperties()
     : impl_(new Impl)
 {
-    gmx_residuetype_init(&impl_->restype);
 }
 
 AtomProperties::~AtomProperties()
 {
-    gmx_residuetype_destroy(impl_->restype);
 }
 
 AtomProperty *AtomProperties::prop(int eprop)
@@ -338,9 +336,9 @@ AtomProperty *AtomProperties::prop(int eprop)
     return &impl_->prop[eprop];
 }
 
-gmx_residuetype_t *AtomProperties::restype()
+ResidueType *AtomProperties::restype()
 {
-    return impl_->restype;
+    return &impl_->restype;
 }
 
 //! Print warning that vdW radii and masses are guessed.
@@ -391,7 +389,7 @@ bool AtomProperties::setAtomProperty(int                eprop,
     {
         tmpAtomName = atomName;
     }
-    j = findPropertyIndex(&(impl_->prop[eprop]), impl_->restype, residueName,
+    j = findPropertyIndex(&(impl_->prop[eprop]), &impl_->restype, residueName,
                           tmpAtomName, &bExact);
 
     if (eprop == epropVDW && !impl_->bWarnVDW)

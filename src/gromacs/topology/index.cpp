@@ -560,7 +560,6 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
 
 void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
-    gmx_residuetype_t*rt = nullptr;
     char             *resnm;
     int               i;
     int               iwater, iion;
@@ -579,8 +578,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
     add_grp(gb, gn, aid, "System");
 
     /* For every residue, get a pointer to the residue type name */
-    gmx_residuetype_init(&rt);
-    assert(rt);
+    ResidueType              rt;
 
     std::vector<std::string> restype;
     std::vector<std::string> previousTypename;
@@ -590,14 +588,14 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 
         resnm = *atoms->resinfo[i].name;
         const char *type = nullptr;
-        gmx_residuetype_get_type(rt, resnm, &type);
+        rt.nameIndexedInResidueTypes(resnm, &type);
         restype.emplace_back(type);
         previousTypename.push_back(restype[i]);
 
         for (i = 1; i < atoms->nres; i++)
         {
             resnm = *atoms->resinfo[i].name;
-            gmx_residuetype_get_type(rt, resnm, &type);
+            rt.nameIndexedInResidueTypes(resnm, &type);
             restype.emplace_back(type);
 
             /* Note that this does not lead to a N*N loop, but N*K, where
@@ -704,7 +702,6 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
         gb->nr++;
         gb->index[gb->nr] = gb->nra;
     }
-    gmx_residuetype_destroy(rt);
 }
 
 
