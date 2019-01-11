@@ -62,6 +62,7 @@
 
 #include "grid.h"
 #include "internal.h"
+#include "search.h"
 
 namespace Nbnxn
 {
