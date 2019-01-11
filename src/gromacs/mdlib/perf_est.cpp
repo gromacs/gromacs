@@ -46,7 +46,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/utility.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"

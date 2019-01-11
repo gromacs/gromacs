@@ -1407,8 +1407,7 @@ calc_cell_indices(nbnxn_search                   *nbs,
  * This function only operates on one domain of the domain decompostion.
  * Note that without domain decomposition there is only one domain.
  */
-void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
-                       int                             ePBC,
+void nbnxn_put_on_grid(nonbonded_verlet_t             *nbv,
                        const matrix                    box,
                        int                             ddZone,
                        const rvec                      lowerCorner,
@@ -1420,18 +1419,17 @@ void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
                        const int                      *atinfo,
                        gmx::ArrayRef<const gmx::RVec>  x,
                        int                             numAtomsMoved,
-                       const int                      *move,
-                       int                             nb_kernel_type,
-                       nbnxn_atomdata_t               *nbat)
+                       const int                      *move)
 {
+    nbnxn_search *nbs  = nbv->nbs.get();
     nbnxn_grid_t *grid = &nbs->grid[ddZone];
 
     nbs_cycle_start(&nbs->cc[enbsCCgrid]);
 
-    grid->bSimple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
+    grid->bSimple = nbv->pairlistIsSimple();
 
-    grid->na_c      = nbnxn_kernel_to_cluster_i_size(nb_kernel_type);
-    grid->na_cj     = nbnxn_kernel_to_cluster_j_size(nb_kernel_type);
+    grid->na_c      = nbnxn_kernel_to_cluster_i_size(nbv->kernelType_);
+    grid->na_cj     = nbnxn_kernel_to_cluster_j_size(nbv->kernelType_);
     grid->na_sc     = (grid->bSimple ? 1 : c_gpuNumClusterPerCell)*grid->na_c;
     grid->na_c_2log = get_2log(grid->na_c);
 
@@ -1450,7 +1448,6 @@ void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
 
     if (ddZone == 0)
     {
-        nbs->ePBC = ePBC;
         copy_mat(box, nbs->box);
 
         /* Avoid zero density */
@@ -1498,6 +1495,8 @@ void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
                      lowerCorner, upperCorner,
                      nbs->grid[0].atom_density);
 
+    nbnxn_atomdata_t *nbat = nbv->nbat;
+
     calc_cell_indices(nbs, ddZone, grid, updateGroupsCog, atomStart, atomEnd, atinfo, x, numAtomsMoved, move, nbat);
 
     if (ddZone == 0)
@@ -1514,12 +1513,10 @@ void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
 }
 
 /* Calls nbnxn_put_on_grid for all non-local domains */
-void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
+void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nbv,
                                 const struct gmx_domdec_zones_t *zones,
                                 const int                       *atinfo,
-                                gmx::ArrayRef<const gmx::RVec>   x,
-                                int                              nb_kernel_type,
-                                nbnxn_atomdata_t                *nbat)
+                                gmx::ArrayRef<const gmx::RVec>   x)
 {
     for (int zone = 1; zone < zones->n; zone++)
     {
@@ -1530,7 +1527,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
             c1[d] = zones->size[zone].bb_x1[d];
         }
 
-        nbnxn_put_on_grid(nbs, nbs->ePBC, nullptr,
+        nbnxn_put_on_grid(nbv, nullptr,
                           zone, c0, c1,
                           nullptr,
                           zones->cg_range[zone],
@@ -1538,9 +1535,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                           -1,
                           atinfo,
                           x,
-                          0, nullptr,
-                          nb_kernel_type,
-                          nbat);
+                          0, nullptr);
     }
 }
 
