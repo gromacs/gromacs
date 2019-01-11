@@ -139,13 +139,15 @@ struct nbnxn_search
 {
     /* \brief Constructor
      *
+     * \param[in] ePBC         The periodic boundary conditions
      * \param[in] n_dd_cells   The number of domain decomposition cells per dimension, without DD nullptr should be passed
      * \param[in] zones        The domain decomposition zone setup, without DD nullptr should be passed
      * \param[in] bFEP         Tells whether non-bonded interactions are perturbed
      * \param[in] nthread_max  The maximum number of threads used in the search
      */
 
-    nbnxn_search(const ivec               *n_dd_cells,
+    nbnxn_search(int                       ePBC,
+                 const ivec               *n_dd_cells,
                  const gmx_domdec_zones_t *zones,
                  gmx_bool                  bFEP,
                  int                       nthread_max);

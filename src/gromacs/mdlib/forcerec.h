@@ -153,9 +153,8 @@ void forcerec_set_excl_load(t_forcerec           *fr,
  */
 void update_forcerec(t_forcerec *fr, matrix box);
 
-gmx_bool uses_simple_tables(int                 cutoff_scheme,
-                            nonbonded_verlet_t *nbv,
-                            int                 group);
+gmx_bool uses_simple_tables(int                       cutoff_scheme,
+                            const nonbonded_verlet_t *nbv);
 /* Returns whether simple tables (i.e. not for use with GPUs) are used
  * with the type of kernel indicated.
  */
