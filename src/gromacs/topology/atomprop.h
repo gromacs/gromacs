@@ -49,7 +49,7 @@ enum {
 };
 
 struct AtomProperty;
-struct gmx_residuetype_t;
+class ResidueType;
 /*! \brief
  * Holds all the atom property information loaded.
  */
@@ -107,7 +107,7 @@ class AtomProperties
          */
         AtomProperty *prop(int eprop);
         //! Get handle to residuetype library.
-        gmx_residuetype_t *restype();
+        ResidueType *restype();
 
     private:
         //! Implementation pointer.
