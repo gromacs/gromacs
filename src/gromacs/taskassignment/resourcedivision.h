@@ -97,11 +97,18 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         t_commrec           *cr,
                                         const gmx::MDLogger &mdlog);
 
-/*! \brief Checks we can do when we don't (yet) know the cut-off scheme */
-void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
-                               gmx_hw_opt_t        *hw_opt,
-                               bool                 isSimulationMasterRank,
-                               int                  nPmeRanks);
+/*! \brief Checks what our hardware options are based on how Gromacs was compiled
+ *  and user-set options
+ *
+ *  \param[in]      mdlog                     Logger
+ *  \param[in, out] hw_opt                    Hardware-related and threading options
+ *  \param[in]      isSimulationMasterRank
+ *  \param[in]      nPmeRanks                 Number of PME ranks
+ *  */
+void checkAndUpdateHardwareOptions(const gmx::MDLogger &mdlog,
+                                   gmx_hw_opt_t        *hw_opt,
+                                   bool                 isSimulationMasterRank,
+                                   int                  nPmeRanks);
 
 /*! \brief Check, and if necessary update, the number of OpenMP threads requested
  *

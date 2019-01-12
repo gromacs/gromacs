@@ -426,12 +426,6 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
      * the group scheme, or is a rerun with energy groups. */
     ngpu = (nonbondedOnGpu ? gmx::ssize(gpuIdsToUse) : 0);
 
-    if (inputrec->cutoff_scheme == ecutsGROUP)
-    {
-        /* We checked this before, but it doesn't hurt to do it once more */
-        GMX_RELEASE_ASSERT(hw_opt->nthreads_omp == 1, "The group scheme only supports one OpenMP thread per rank");
-    }
-
     nrank =
         get_tmpi_omp_thread_division(hwinfo, *hw_opt, nthreads_tot_max, ngpu);
 
@@ -658,10 +652,10 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
             hw_opt->userGpuTaskAssignment.c_str());
 }
 
-void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
-                               gmx_hw_opt_t        *hw_opt,
-                               const bool           isSimulationMasterRank,
-                               int                  nPmeRanks)
+void checkAndUpdateHardwareOptions(const gmx::MDLogger &mdlog,
+                                   gmx_hw_opt_t        *hw_opt,
+                                   const bool           isSimulationMasterRank,
+                                   const int            nPmeRanks)
 {
     /* Currently hw_opt only contains default settings or settings supplied
      * by the user on the command line.

@@ -82,7 +82,6 @@ enum class EmulateGpuNonbonded : bool
  * \param[in]  userGpuTaskAssignment       The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  emulateGpuNonbonded         Whether we will emulate GPU calculation of nonbonded interactions.
  * \param[in]  buildSupportsNonbondedOnGpu Whether GROMACS was built with GPU support.
- * \param[in]  usingVerletScheme           Whether the nonbondeds are using the Verlet scheme.
  * \param[in]  nonbondedOnGpuIsUseful    Whether computing nonbonded interactions on a GPU is useful for this calculation.
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
  *
@@ -95,7 +94,6 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
                                                      const std::vector<int> &userGpuTaskAssignment,
                                                      EmulateGpuNonbonded     emulateGpuNonbonded,
                                                      bool                    buildSupportsNonbondedOnGpu,
-                                                     bool                    usingVerletScheme,
                                                      bool                    nonbondedOnGpuIsUseful,
                                                      int                     numRanksPerSimulation);
 
@@ -151,7 +149,6 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
  * \param[in]  userGpuTaskAssignment       The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  emulateGpuNonbonded         Whether we will emulate GPU calculation of nonbonded interactions.
  * \param[in]  buildSupportsNonbondedOnGpu Whether GROMACS was build with GPU support.
- * \param[in]  usingVerletScheme           Whether the nonbondeds are using the Verlet scheme.
  * \param[in]  nonbondedOnGpuIsUseful      Whether computing nonbonded interactions on a GPU is useful for this calculation.
  * \param[in]  gpusWereDetected            Whether compatible GPUs were detected on any node.
  *
@@ -163,7 +160,6 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
                                         const std::vector<int> &userGpuTaskAssignment,
                                         EmulateGpuNonbonded     emulateGpuNonbonded,
                                         bool                    buildSupportsNonbondedOnGpu,
-                                        bool                    usingVerletScheme,
                                         bool                    nonbondedOnGpuIsUseful,
                                         bool                    gpusWereDetected);
 
@@ -211,7 +207,6 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
  *
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
  * \param[in]  useGpuForPme              Whether GPUs will be used for PME interactions.
- * \param[in]  usingVerletScheme         Whether the nonbondeds are using the Verlet scheme.
  * \param[in]  bondedTarget              The user's choice for mdrun -bonded for where to assign tasks.
  * \param[in]  canUseGpuForBonded        Whether the bonded interactions can run on a GPU
  * \param[in]  usingLJPme                Whether Vdw interactions use LJ-PME.
@@ -225,7 +220,6 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
                                      bool       useGpuForPme,
-                                     bool       usingVerletScheme,
                                      TaskTarget bondedTarget,
                                      bool       canUseGpuForBonded,
                                      bool       usingLJPme,

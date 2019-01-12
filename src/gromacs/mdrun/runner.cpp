@@ -641,8 +641,8 @@ int Mdrunner::mdrunner()
         read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()), inputrec, globalState.get(), &mtop);
     }
 
-    // Check and update the hardware options for internal consistency
-    check_and_update_hw_opt_1(mdlog, &hw_opt, SIMMASTER(cr), domdecOptions.numPmeRanks);
+    /* Check and update the hardware options for internal consistency */
+    checkAndUpdateHardwareOptions(mdlog, &hw_opt, SIMMASTER(cr), domdecOptions.numPmeRanks);
 
     if (GMX_THREAD_MPI && SIMMASTER(cr))
     {
@@ -657,7 +657,6 @@ int Mdrunner::mdrunner()
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
                     canUseGpuForNonbonded,
-                    inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
@@ -722,12 +721,10 @@ int Mdrunner::mdrunner()
         // handle. If unsuitable, we will notice that during task
         // assignment.
         bool gpusWereDetected      = hwinfo->ngpu_compatible_tot > 0;
-        bool usingVerletScheme     = inputrec->cutoff_scheme == ecutsVERLET;
         auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
                                                                 emulateGpuNonbonded,
                                                                 canUseGpuForNonbonded,
-                                                                usingVerletScheme,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
@@ -736,7 +733,7 @@ int Mdrunner::mdrunner()
                                                     gpusWereDetected);
         auto canUseGpuForBonded = buildSupportsGpuBondeds(nullptr) && inputSupportsGpuBondeds(*inputrec, mtop, nullptr);
         useGpuForBonded =
-            decideWhetherToUseGpusForBonded(useGpuForNonbonded, useGpuForPme, usingVerletScheme,
+            decideWhetherToUseGpusForBonded(useGpuForNonbonded, useGpuForPme,
                                             bondedTarget, canUseGpuForBonded,
                                             EVDW_PME(inputrec->vdwtype),
                                             EEL_PME_EWALD(inputrec->coulombtype),
@@ -937,11 +934,8 @@ int Mdrunner::mdrunner()
         gmx_fatal(FARGS, "This group-scheme .tpr file can no longer be run by mdrun. Please update to the Verlet scheme, or use an earlier version of GROMACS if necessary.");
     }
     /* Update rlist and nstlist. */
-    if (inputrec->cutoff_scheme == ecutsVERLET)
-    {
-        prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
-                              useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
-    }
+    prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
+                          useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
 
     LocalAtomSetManager atomSets;
 
@@ -1011,17 +1005,16 @@ int Mdrunner::mdrunner()
                           physicalNodeComm.size_,
                           hw_opt.nthreads_omp,
                           hw_opt.nthreads_omp_pme,
-                          !thisRankHasDuty(cr, DUTY_PP),
-                          inputrec->cutoff_scheme == ecutsVERLET);
+                          !thisRankHasDuty(cr, DUTY_PP));
 
-    // Enable FP exception detection for the Verlet scheme, but not in
+    // Enable FP exception detection, but not in
     // Release mode and not for compilers with known buggy FP
     // exception support (clang with any optimization) or suspected
     // buggy FP exception support (gcc 7.* with optimization).
 #if !defined NDEBUG && \
     !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
     && defined __OPTIMIZE__)
-    const bool bEnableFPE = inputrec->cutoff_scheme == ecutsVERLET;
+    const bool bEnableFPE = true;
 #else
     const bool bEnableFPE = false;
 #endif
