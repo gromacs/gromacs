@@ -186,9 +186,8 @@ GPU support
 ~~~~~~~~~~~
 
 |Gromacs| has excellent support for NVIDIA GPUs supported via CUDA.
-On Linux, NVIDIA CUDA_ toolkit with minimum version |REQUIRED_CUDA_VERSION|
-is required, and the latest version is strongly encouraged. Using
-Microsoft MSVC compiler requires version 9.0. NVIDIA GPUs with at
+NVIDIA CUDA_ toolkit with minimum version |REQUIRED_CUDA_VERSION|
+is required, and the latest version is strongly encouraged. NVIDIA GPUs with at
 least NVIDIA compute capability |REQUIRED_CUDA_COMPUTE_CAPABILITY| are
 required. You are strongly recommended to
 get the latest CUDA version and driver that supports your hardware, but
@@ -668,8 +667,8 @@ CPUs also works well.
 
 Experimental support is available for compiling CUDA code, both for host and
 device, using clang (version 3.9 or later).
-A CUDA toolkit (>= v7.0) is still required but it is used only for GPU device code
-generation and to link against the CUDA runtime library.
+A CUDA toolkit (>= |REQUIRED_CUDA_VERSION|) is still required but it is used
+only for GPU device code generation and to link against the CUDA runtime library.
 The clang CUDA support simplifies compilation and provides benefits for development
 (e.g. allows the use code sanitizers in CUDA host-code).
 Additionally, using clang for both CPU and GPU compilation can be beneficial
