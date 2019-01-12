@@ -544,15 +544,9 @@ void stopGpuProfiler(void)
 
 void resetGpuProfiler(void)
 {
-    /* With CUDA <=7.5 the profiler can't be properly reset; we can only start
-     *  the profiling here (can't stop it) which will achieve the desired effect if
-     *  the run was started with the profiling disabled.
-     *
-     * TODO: add a stop (or replace it with reset) when this will work correctly in CUDA.
-     * stopGpuProfiler();
-     */
     if (cudaProfilerRun)
     {
+        stopGpuProfiler();
         startGpuProfiler();
     }
 }

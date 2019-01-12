@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -213,8 +213,7 @@ macro(gmx_gpu_setup)
         # (which should match the CUDA runtime API version AFAICT) and we want to
         # avoid creating the fragile dependency on cuda_runtime_api.h.
         #
-        # NOTE: CUDA v7.5 is expected to have nvcc define it own version, so in the
-        # future we should switch to using that version string instead of our own.
+        # TODO: nvcc defines it own version, so we should switch to using that version string instead of our own.
         if (NOT GMX_CUDA_VERSION OR _cuda_version_changed)
             MATH(EXPR GMX_CUDA_VERSION "${CUDA_VERSION_MAJOR}*1000 + ${CUDA_VERSION_MINOR}*10")
         endif()
