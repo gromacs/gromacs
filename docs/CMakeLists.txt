@@ -376,6 +376,8 @@ if (SPHINX_FOUND)
         release-notes/deprecated-functionality.rst
         release-notes/portability.rst
         release-notes/miscellaneous.rst
+	release-notes/2020/major/removed-functionality.rst
+	release-notes/2020/major/portability.rst
         release-notes/2019/2019.1.rst
         release-notes/2019/major/highlights.rst
         release-notes/2019/major/features.rst

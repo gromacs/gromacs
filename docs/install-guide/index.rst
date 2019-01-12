@@ -668,7 +668,7 @@ CPUs also works well.
 
 Experimental support is available for compiling CUDA code, both for host and
 device, using clang (version 3.9 or later).
-A CUDA toolkit (>= v7.0) is still required but it is used only for GPU device code
+A CUDA toolkit (>= v9.0) is still required but it is used only for GPU device code
 generation and to link against the CUDA runtime library.
 The clang CUDA support simplifies compilation and provides benefits for development
 (e.g. allows the use code sanitizers in CUDA host-code).

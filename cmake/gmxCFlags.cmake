@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -136,11 +136,6 @@ macro (gmx_c_flags)
             # Problematic with CUDA
             # GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith -Wmissing-declarations" GMXC_CXXFLAGS)
-            # CUDA versions prior to 7.5 come with a header (math_functions.h) which uses the _MSC_VER macro
-            # unconditionally, so we don't use -Wundef for earlier CUDA versions.
-            if(NOT(GMX_GPU AND CUDA_VERSION VERSION_LESS "7.5"))
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN_UNDEF "-Wundef" GMXC_CXXFLAGS)
-            endif()
             GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
             GMX_TEST_CXXFLAG(CXXFLAGS_STRINGOP_TRUNCATION "-Wstringop-truncation" GMXC_CXXFLAGS)
             if (CXXFLAGS_STRINGOP_TRUNCATION)

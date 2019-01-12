@@ -97,52 +97,23 @@ if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
     endforeach()
 else()
     # Set the CUDA GPU architectures to compile for:
-    # - with CUDA >=5.0 <6.5:   CC <=3.5 is supported
-    #     => compile sm_30, sm_35 SASS, and compute_35 PTX
-    # - with CUDA ==6.5:        CC <=3.7 and 5.0 are supported
-    #     => compile sm_30, sm_35, sm_37 sm_50, SASS, and compute_50 PTX
-    # - with CUDA >=7.0         CC 5.2 is supported (5.3, Tegra X1 we don't generate code for)
-    #     => compile sm_30, sm_35, sm_37, sm_50, & sm_52 SASS, and compute_52 PTX
-    # - with CUDA >=8.0         CC 6.0-6.2 is supported (but we know nothing about CC 6.2, so we won't generate code or it)
-    #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61 SASS, and compute_60 and compute_61 PTX
     # - with CUDA >=9.0         CC 7.0 is supported and CC 2.0 is no longer supported
     #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70 SASS, and compute_70 PTX
     #
-    #   Note that CUDA 6.5.19 second patch release supports cc 5.2 too, but
-    #   CUDA_VERSION does not contain patch version and having PTX 5.0 JIT-ed is
-    #   equally fast as compiling with sm_5.2 anyway.
 
     # First add flags that trigger SASS (binary) code generation for physical arch
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=sm_30")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=sm_35")
-
-    if(NOT CUDA_VERSION VERSION_LESS "6.5") # >= 6.5
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_37,code=sm_37")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=sm_50")
-    endif()
-    if(NOT CUDA_VERSION VERSION_LESS "7.0") # >= 7.0
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_52,code=sm_52")
-    endif()
-    if(NOT CUDA_VERSION VERSION_LESS "8.0") # >= 8.0
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=sm_60")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=sm_61")
-    endif()
-    if(NOT CUDA_VERSION VERSION_LESS "9.0") # >= 9.0
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=sm_70")
-    endif()
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_37,code=sm_37")
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=sm_50")
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_52,code=sm_52")
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=sm_60")
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=sm_61")
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=sm_70")
 
     # Next add flags that trigger PTX code generation for the newest supported virtual arch
     # that's useful to JIT to future architectures
-    if(CUDA_VERSION VERSION_LESS "6.5")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=compute_35")
-    elseif(CUDA_VERSION VERSION_LESS "7.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=compute_50")
-    elseif(CUDA_VERSION VERSION_LESS "8.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_52,code=compute_52")
-    elseif(CUDA_VERSION VERSION_LESS "9.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=compute_60")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=compute_61")
-    elseif(CUDA_VERSION VERSION_LESS "10.0")
+    if(CUDA_VERSION VERSION_LESS "10.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=compute_70")
     else() # version >= 10.0
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_75,code=compute_75")
