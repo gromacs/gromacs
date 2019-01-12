@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -418,15 +418,9 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
         nthreads_tot_max = nthreads_hw;
     }
 
-    /* nonbondedOnGpu might be false e.g. because this simulation uses
-     * the group scheme, or is a rerun with energy groups. */
+    /* nonbondedOnGpu might be false e.g. because this simulation
+     * is a rerun with energy groups. */
     ngpu = (nonbondedOnGpu ? static_cast<int>(gpuIdsToUse.size()) : 0);
-
-    if (inputrec->cutoff_scheme == ecutsGROUP)
-    {
-        /* We checked this before, but it doesn't hurt to do it once more */
-        GMX_RELEASE_ASSERT(hw_opt->nthreads_omp == 1, "The group scheme only supports one OpenMP thread per rank");
-    }
 
     nrank =
         get_tmpi_omp_thread_division(hwinfo, *hw_opt, nthreads_tot_max, ngpu);
@@ -790,23 +784,6 @@ void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
      * on. */
     GMX_RELEASE_ASSERT(!(hw_opt->nthreads_omp_pme >= 1 && hw_opt->nthreads_omp <= 0),
                        "PME thread count should only be set when the normal thread count is also set");
-}
-
-void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
-                               int           cutoff_scheme)
-{
-    if (cutoff_scheme == ecutsGROUP)
-    {
-        /* We only have OpenMP support for PME only nodes */
-        if (hw_opt->nthreads_omp > 1)
-        {
-            gmx_fatal(FARGS, "OpenMP threads have been requested with cut-off scheme %s, but these are only supported "
-                      "with cut-off scheme %s",
-                      ecutscheme_names[cutoff_scheme],
-                      ecutscheme_names[ecutsVERLET]);
-        }
-        hw_opt->nthreads_omp = 1;
-    }
 }
 
 void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,

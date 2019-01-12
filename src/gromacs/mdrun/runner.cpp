@@ -570,21 +570,6 @@ int Mdrunner::mdrunner()
             }
             globalState->flags &= ~(1 << estV);
         }
-
-        if (inputrec->cutoff_scheme != ecutsVERLET)
-        {
-            if (nstlist_cmdline > 0)
-            {
-                gmx_fatal(FARGS, "Can not set nstlist with the group cut-off scheme");
-            }
-
-            if (!compatibleGpus.empty())
-            {
-                GMX_LOG(mdlog.warning).asParagraph().appendText(
-                        "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
-                        "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
-            }
-        }
     }
 
     /* Check and update the hardware options for internal consistency */
@@ -601,12 +586,6 @@ int Mdrunner::mdrunner()
             gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
         }
 
-        /* Since the master knows the cut-off scheme, update hw_opt for this.
-         * This is done later for normal MPI and also once more with tMPI
-         * for all tMPI ranks.
-         */
-        check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
-
         bool useGpuForNonbonded = false;
         bool useGpuForPme       = false;
         try
@@ -618,7 +597,6 @@ int Mdrunner::mdrunner()
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
                     canUseGpuForNonbonded,
-                    inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
             auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
@@ -684,12 +662,10 @@ int Mdrunner::mdrunner()
         // handle. If unsuitable, we will notice that during task
         // assignment.
         bool gpusWereDetected      = hwinfo->ngpu_compatible_tot > 0;
-        bool usingVerletScheme     = inputrec->cutoff_scheme == ecutsVERLET;
         auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
                                                                 emulateGpuNonbonded,
                                                                 canUseGpuForNonbonded,
-                                                                usingVerletScheme,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
         auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
@@ -698,7 +674,7 @@ int Mdrunner::mdrunner()
                                                     gpusWereDetected);
         auto canUseGpuForBonded = buildSupportsGpuBondeds(nullptr) && inputSupportsGpuBondeds(*inputrec, mtop, nullptr);
         useGpuForBonded =
-            decideWhetherToUseGpusForBonded(useGpuForNonbonded, useGpuForPme, usingVerletScheme,
+            decideWhetherToUseGpusForBonded(useGpuForNonbonded, useGpuForPme,
                                             bondedTarget, canUseGpuForBonded,
                                             EVDW_PME(inputrec->vdwtype),
                                             EEL_PME_EWALD(inputrec->coulombtype),
@@ -895,11 +871,8 @@ int Mdrunner::mdrunner()
     }
 
     /* Update rlist and nstlist. */
-    if (inputrec->cutoff_scheme == ecutsVERLET)
-    {
-        prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
-                              useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
-    }
+    prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
+                          useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
 
     LocalAtomSetManager atomSets;
 
@@ -953,9 +926,6 @@ int Mdrunner::mdrunner()
     fflush(stderr);
 #endif
 
-    /* Check and update hw_opt for the cut-off scheme */
-    check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
-
     /* Check and update the number of OpenMP threads requested */
     checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, ms, physicalNodeComm.size_,
                                             pmeRunMode, mtop);
@@ -965,17 +935,16 @@ int Mdrunner::mdrunner()
                           physicalNodeComm.size_,
                           hw_opt.nthreads_omp,
                           hw_opt.nthreads_omp_pme,
-                          !thisRankHasDuty(cr, DUTY_PP),
-                          inputrec->cutoff_scheme == ecutsVERLET);
+                          !thisRankHasDuty(cr, DUTY_PP));
 
-    // Enable FP exception detection for the Verlet scheme, but not in
+    // Enable FP exception detection, but not in
     // Release mode and not for compilers with known buggy FP
     // exception support (clang with any optimization) or suspected
     // buggy FP exception support (gcc 7.* with optimization).
 #if !defined NDEBUG && \
     !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
     && defined __OPTIMIZE__)
-    const bool bEnableFPE = inputrec->cutoff_scheme == ecutsVERLET;
+    const bool bEnableFPE = true;
 #else
     const bool bEnableFPE = false;
 #endif
@@ -1382,6 +1351,7 @@ int Mdrunner::mdrunner()
                             cr, &atomSets, oenv, mdrunOptions);
         }
 
+        GMX_RELEASE_ASSERT((mdAtoms && mdAtoms->mdatoms()), "mdatoms is not initialized");
         /* Let makeConstraints know whether we have essential dynamics constraints.
          * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
          */
