@@ -59,7 +59,6 @@ struct t_nrnb;
 class t_state;
 
 /* Abstract type for update */
-struct gmx_update_t;
 struct gmx_stochd_t;
 
 namespace gmx
@@ -92,7 +91,7 @@ class Update
  * temperature for coupling.
  *
  * This could change e.g. in simulated annealing. */
-void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir);
+void update_temperature_constants(gmx_stochd_t *sd, const t_inputrec *ir);
 
 /* Update the size of per-atom arrays (e.g. after DD re-partitioning,
    which might increase the number of home atoms). */

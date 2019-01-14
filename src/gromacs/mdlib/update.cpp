@@ -107,32 +107,38 @@ struct gmx_stochd_t
     explicit gmx_stochd_t(const t_inputrec *ir);
 };
 
-struct gmx_update_t
-{
-    gmx_update_t(const t_inputrec    *ir,
-                 gmx::BoxDeformation *boxDeformation);
-
-    std::unique_ptr<gmx_stochd_t> sd;
-    /* xprime for constraint algorithms */
-    PaddedVector<gmx::RVec>       xp;
-
-    //! Box deformation handler (or nullptr if inactive).
-    gmx::BoxDeformation *deform = nullptr;
-};
-
 class Update::Impl
 {
     public:
         Impl(const t_inputrec    *ir, gmx::BoxDeformation *deform);
         ~Impl();
 
-        std::unique_ptr<gmx_update_t> upd;
+        std::unique_ptr<gmx_stochd_t> sd;
+        /* xprime for constraint algorithms */
+        PaddedVector<gmx::RVec>       xp;
+
+        //! Box deformation handler (or nullptr if inactive).
+        gmx::BoxDeformation *deform = nullptr;
 };
 
 Update::Update(const t_inputrec    *ir, gmx::BoxDeformation *deform)
     : impl_(new Impl(ir, deform))
 {};
 
+inline gmx_stochd_t* Update::sd()
+{
+    return impl_->sd.get();
+}
+
+inline rvec * Update::xp()
+{
+    return impl_->xp.rvec_array()
+}
+
+inline gmx::BoxDeformation * Update::deform()
+{
+    return Impl->BoxDeformation.get();
+}
 
 static bool isTemperatureCouplingStep(int64_t step, const t_inputrec *ir)
 {
@@ -832,7 +838,7 @@ gmx_stochd_t::gmx_stochd_t(const t_inputrec *ir)
     }
 }
 
-void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
+void update_temperature_constants(gmx_stochd_t *sd, const t_inputrec *ir)
 {
     if (ir->eI == eiBD)
     {
@@ -840,14 +846,14 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
         {
             for (int gt = 0; gt < ir->opts.ngtc; gt++)
             {
-                upd->sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]/(ir->bd_fric*ir->delta_t));
+                sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]/(ir->bd_fric*ir->delta_t));
             }
         }
         else
         {
             for (int gt = 0; gt < ir->opts.ngtc; gt++)
             {
-                upd->sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]);
+                sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]);
             }
         }
     }
@@ -857,25 +863,19 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
         {
             real kT = BOLTZ*ir->opts.ref_t[gt];
             /* The mass is accounted for later, since this differs per atom */
-            upd->sd->sdsig[gt].V  = std::sqrt(kT*(1 - upd->sd->sdc[gt].em*upd->sd->sdc[gt].em));
+            sd->sdsig[gt].V  = std::sqrt(kT*(1 - sd->sdc[gt].em * sd->sdc[gt].em));
         }
     }
 }
 
-gmx_update_t::gmx_update_t(const t_inputrec    *ir,
-                           gmx::BoxDeformation *boxDeformation)
+Update::Impl::Impl(const t_inputrec    *ir,
+                   gmx::BoxDeformation *boxDeformation)
 {
     sd = gmx::compat::make_unique<gmx_stochd_t>(ir);
-    update_temperature_constants(this, ir);
+    update_temperature_constants(sd.get(), ir);
     xp.resizeWithPadding(0);
     deform = boxDeformation;
 }
-
-Update::Impl::Impl(const t_inputrec    *ir, gmx::BoxDeformation *deform)
-    : upd(new gmx_update_t(ir, deform))
-{};
-
-
 
 void update_realloc(gmx_update_t *upd, int natoms)
 {
