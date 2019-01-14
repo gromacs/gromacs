@@ -46,12 +46,14 @@
 #include <cmath>
 
 #include <memory>
+#include <unordered_map>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
@@ -83,7 +85,16 @@ struct OutputQuantities
     rvec4 f[c_numAtoms]  = {{0}};
 };
 
-/*! \brief Utility to check the output from bonded tests
+//! \brief Input for tests
+struct TestParameters
+{
+    //! Type of periodic boundary conditions
+    int epbc_;
+    //! Input coordinates
+    std::vector<gmx::RVec> x_;
+};
+
+ /*! \brief Utility to check the output from bonded tests
  *
  * \param[in] checker Reference checker
  * \param[in] output  The output from the test to check
@@ -100,12 +111,12 @@ void checkOutput(test::TestReferenceChecker *checker,
     checker->checkSequence(std::begin(output.f), std::end(output.f), "Forces");
 }
 
-class BondedTest : public ::testing::TestWithParam<int>
+class BondedTest : public ::testing::TestWithParam<TestParameters>
 {
     protected:
-        rvec   x_[c_numAtoms];
-        matrix box_;
-        t_pbc  pbc_;
+        matrix       box_;
+        t_pbc        pbc_;
+        const rvec  *x_;
         test::TestReferenceData           refData_;
         test::TestReferenceChecker        checker_;
         BondedTest( ) :
@@ -113,14 +124,11 @@ class BondedTest : public ::testing::TestWithParam<int>
         {
             test::FloatingPointTolerance tolerance(test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
             checker_.setDefaultTolerance(tolerance);
-            clear_rvecs(c_numAtoms, x_);
-            x_[1][2] = 1;
-            x_[2][1] = x_[2][2] = 1;
-            x_[3][0] = x_[3][1] = x_[3][2] = 1;
+            x_ = as_rvec_array(GetParam().x_.data());
 
             clear_mat(box_);
             box_[0][0] = box_[1][1] = box_[2][2] = 1.5;
-            set_pbc(&pbc_, GetParam(), box_);
+            set_pbc(&pbc_, GetParam().epbc_, box_);
         }
 
         void testBondAngle()
@@ -159,7 +167,7 @@ class BondedTest : public ::testing::TestWithParam<int>
                        const t_iparams            &iparams,
                        const real                  lambda)
         {
-            SCOPED_TRACE(std::string("Testing PBC ") + epbc_names[GetParam()]);
+            SCOPED_TRACE(std::string("Testing PBC ") + epbc_names[GetParam().epbc_]);
 
             int                           ddgatindex = 0;
             OutputQuantities              output;
@@ -247,7 +255,21 @@ TEST_P (BondedTest, IfuncImproperDihedralsFEP)
     }
 }
 
-INSTANTIATE_TEST_CASE_P(ForPbcValues, BondedTest, ::testing::Values(epbcNONE, epbcXY, epbcXYZ));
+//! Coordinates for testing
+std::vector<std::vector<gmx::RVec> > c_coordinatesForTests = 
+    {
+        { 
+            {  0.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 0.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 }
+        },
+        {
+            {  0.5, 0.0, 0.0 }, { 0.5, 0.0, 0.15 }, { 0.5, 0.07, 0.22 }, { 0.5, 0.14, 0.29 }
+        }
+    };
+
+//! PBC values for testing
+std::vector<int> c_pbcForTests = { epbcNONE, epbcXY, epbcXYZ };
+
+INSTANTIATE_TEST_CASE_P(ForPbcValues, BondedTest,::testing::Combine(::testing::Values(c_pbcForTests), ::testing::ValuesIn(c_coordinatesForTests)));
 }  // namespace
 
 }  // namespace gmx
