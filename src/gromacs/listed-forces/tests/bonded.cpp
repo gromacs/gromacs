@@ -52,6 +52,7 @@
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
@@ -100,27 +101,29 @@ void checkOutput(test::TestReferenceChecker *checker,
     checker->checkSequence(std::begin(output.f), std::end(output.f), "Forces");
 }
 
-class BondedTest : public ::testing::TestWithParam<int>
+class BondedTest : public ::testing::TestWithParam<std::tuple<std::vector<gmx::RVec>, int> >
 {
     protected:
-        rvec   x_[c_numAtoms];
-        matrix box_;
-        t_pbc  pbc_;
-        test::TestReferenceData           refData_;
-        test::TestReferenceChecker        checker_;
+        matrix                     box_;
+        t_pbc                      pbc_;
+        std::vector<gmx::RVec>     x_;
+        int                        epbc_;
+        test::TestReferenceData    refData_;
+        test::TestReferenceChecker checker_;
         BondedTest( ) :
             checker_(refData_.rootChecker())
         {
-            test::FloatingPointTolerance tolerance(test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
+            // We need quite specific tolerances here since angle functions
+            // etc. are not very precise and reproducible.
+            test::FloatingPointTolerance tolerance(test::FloatingPointTolerance(1.0e-4, 2.0e-7,
+                                                                                1.0e-6, 1.0e-12,
+                                                                                1000000000, 10000, false));
             checker_.setDefaultTolerance(tolerance);
-            clear_rvecs(c_numAtoms, x_);
-            x_[1][2] = 1;
-            x_[2][1] = x_[2][2] = 1;
-            x_[3][0] = x_[3][1] = x_[3][2] = 1;
-
+            x_ = std::get<0>(GetParam());
             clear_mat(box_);
             box_[0][0] = box_[1][1] = box_[2][2] = 1.5;
-            set_pbc(&pbc_, GetParam(), box_);
+            epbc_      = std::get<1>(GetParam());
+            set_pbc(&pbc_, epbc_, box_);
         }
 
         void testBondAngle()
@@ -159,14 +162,15 @@ class BondedTest : public ::testing::TestWithParam<int>
                        const t_iparams            &iparams,
                        const real                  lambda)
         {
-            SCOPED_TRACE(std::string("Testing PBC ") + epbc_names[GetParam()]);
+            SCOPED_TRACE(std::string("Testing PBC ") + epbc_names[epbc_]);
 
             int                           ddgatindex = 0;
             OutputQuantities              output;
             output.energy = bondedFunction(ftype)(iatoms.size(),
                                                   iatoms.data(),
                                                   &iparams,
-                                                  x_, output.f, output.fshift,
+                                                  as_rvec_array(x_.data()),
+                                                  output.f, output.fshift,
                                                   &pbc_,
                                                   /* const struct t_graph *g */ nullptr,
                                                   lambda, &output.dvdlambda,
@@ -247,7 +251,18 @@ TEST_P (BondedTest, IfuncImproperDihedralsFEP)
     }
 }
 
-INSTANTIATE_TEST_CASE_P(ForPbcValues, BondedTest, ::testing::Values(epbcNONE, epbcXY, epbcXYZ));
+//! Coordinates for testing
+std::vector<std::vector<gmx::RVec> > c_coordinatesForTests =
+{
+    {{  0.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 0.0, 1.0, 1.0 }, { 1.0, 1.0, 1.0 }},
+    {{  0.5, 0.0, 0.0 }, { 0.5, 0.0, 0.15 }, { 0.5, 0.07, 0.22 }, { 0.5, 0.18, 0.22 }},
+    {{ -0.1143, -0.0282, 0.0 }, { 0.0, 0.0434, 0.0 }, { 0.1185, -0.0138, 0.0 }, { -0.0195, 0.1498, 0.0 }}
+};
+
+//! PBC values for testing
+std::vector<int> c_pbcForTests = { epbcNONE, epbcXY, epbcXYZ };
+
+INSTANTIATE_TEST_CASE_P(ForPbcValues, BondedTest, ::testing::Combine(::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
 }  // namespace
 
 }  // namespace gmx
