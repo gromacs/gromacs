@@ -85,13 +85,13 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-typedef struct {
+struct gmx_sd_const_t {
     double em;
-} gmx_sd_const_t;
+};
 
-typedef struct {
+struct gmx_sd_sigma_t {
     real V;
-} gmx_sd_sigma_t;
+};
 
 struct gmx_stochd_t
 {
@@ -104,22 +104,35 @@ struct gmx_stochd_t
     std::vector<bool>           randomize_group;
     std::vector<real>           boltzfac;
 
-    gmx_stochd_t(const t_inputrec *ir);
+    explicit gmx_stochd_t(const t_inputrec *ir);
 };
 
 struct gmx_update_t
 {
+    gmx_update_t(const t_inputrec    *ir,
+                 gmx::BoxDeformation *boxDeformation);
+
     std::unique_ptr<gmx_stochd_t> sd;
     /* xprime for constraint algorithms */
     PaddedVector<gmx::RVec>       xp;
 
-    /* Variables for the deform algorithm */
-    int64_t           deformref_step;
-    matrix            deformref_box;
-
     //! Box deformation handler (or nullptr if inactive).
-    gmx::BoxDeformation *deform;
+    gmx::BoxDeformation *deform = nullptr;
 };
+
+class Update::Impl
+{
+    public:
+        Impl(const t_inputrec    *ir, gmx::BoxDeformation *deform);
+        ~Impl();
+
+        std::unique_ptr<gmx_update_t> upd;
+};
+
+Update::Update(const t_inputrec    *ir, gmx::BoxDeformation *deform)
+    : impl_(new Impl(ir, deform))
+{};
+
 
 static bool isTemperatureCouplingStep(int64_t step, const t_inputrec *ir)
 {
@@ -849,21 +862,20 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
     }
 }
 
-gmx_update_t *init_update(const t_inputrec    *ir,
-                          gmx::BoxDeformation *deform)
+gmx_update_t::gmx_update_t(const t_inputrec    *ir,
+                           gmx::BoxDeformation *boxDeformation)
 {
-    gmx_update_t *upd = new(gmx_update_t);
-
-    upd->sd    = gmx::compat::make_unique<gmx_stochd_t>(ir);
-
-    update_temperature_constants(upd, ir);
-
-    upd->xp.resizeWithPadding(0);
-
-    upd->deform = deform;
-
-    return upd;
+    sd = gmx::compat::make_unique<gmx_stochd_t>(ir);
+    update_temperature_constants(this, ir);
+    xp.resizeWithPadding(0);
+    deform = boxDeformation;
 }
+
+Update::Impl::Impl(const t_inputrec    *ir, gmx::BoxDeformation *deform)
+    : upd(new gmx_update_t(ir, deform))
+{};
+
+
 
 void update_realloc(gmx_update_t *upd, int natoms)
 {

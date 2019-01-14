@@ -43,6 +43,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
 class ekinstate_t;
@@ -59,16 +60,33 @@ class t_state;
 
 /* Abstract type for update */
 struct gmx_update_t;
+struct gmx_stochd_t;
 
 namespace gmx
 {
 class BoxDeformation;
 class Constraints;
-}
 
-/* Initialize the stochastic dynamics struct */
-gmx_update_t *init_update(const t_inputrec    *ir,
-                          gmx::BoxDeformation *deform);
+
+/*! \libinternal
+ * \brief Handles updates */
+class Update
+{
+    public:
+        Update(const t_inputrec *ir, BoxDeformation * deform);
+
+        gmx_stochd_t * sd();
+        rvec * xp();
+        BoxDeformation * deform();
+
+    private:
+        //! Implementation type.
+        class Impl;
+        //! Implementation object.
+        PrivateImplPointer<Impl> impl_;
+};
+
+}; // namespace gmx
 
 /* Update pre-computed constants that depend on the reference
  * temperature for coupling.
@@ -79,12 +97,6 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir);
 /* Update the size of per-atom arrays (e.g. after DD re-partitioning,
    which might increase the number of home atoms). */
 void update_realloc(gmx_update_t *upd, int natoms);
-
-/* Store the box at step step
- * as a reference state for simulations with box deformation.
- */
-void set_deform_reference_box(gmx_update_t *upd,
-                              int64_t step, matrix box);
 
 void update_tcouple(int64_t           step,
                     const t_inputrec *inputrec,
