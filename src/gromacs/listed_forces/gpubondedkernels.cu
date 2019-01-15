@@ -962,48 +962,6 @@ void pairs_gpu(const int nbonds,
 /*-------------------------------- End CUDA kernels-----------------------------*/
 
 
-static void setPbcAiuc(int           numPbcDim,
-                       const matrix  box,
-                       PbcAiuc      *pbcAiuc)
-{
-    if (numPbcDim > ZZ)
-    {
-        pbcAiuc->invBoxDiagZ = 1/box[ZZ][ZZ];
-        pbcAiuc->boxZX       = box[ZZ][XX];
-        pbcAiuc->boxZY       = box[ZZ][YY];
-        pbcAiuc->boxZZ       = box[ZZ][ZZ];
-    }
-    else
-    {
-        pbcAiuc->invBoxDiagZ = 0;
-        pbcAiuc->boxZX       = 0;
-        pbcAiuc->boxZY       = 0;
-        pbcAiuc->boxZZ       = 0;
-    }
-    if (numPbcDim > YY)
-    {
-        pbcAiuc->invBoxDiagY = 1/box[YY][YY];
-        pbcAiuc->boxYX       = box[YY][XX];
-        pbcAiuc->boxYY       = box[YY][YY];
-    }
-    else
-    {
-        pbcAiuc->invBoxDiagY = 0;
-        pbcAiuc->boxYX       = 0;
-        pbcAiuc->boxYY       = 0;
-    }
-    if (numPbcDim > XX)
-    {
-        pbcAiuc->invBoxDiagX = 1/box[XX][XX];
-        pbcAiuc->boxXX       = box[XX][XX];
-    }
-    else
-    {
-        pbcAiuc->invBoxDiagX = 0;
-        pbcAiuc->boxXX       = 0;
-    }
-}
-
 namespace gmx
 {
 
