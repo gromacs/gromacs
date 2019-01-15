@@ -217,101 +217,112 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
-typedef struct gmx_mtop_atomloop_all
+class SystemAtomRange::Impl
 {
-    const gmx_mtop_t *mtop;
-    size_t            mblock;
-    const t_atoms    *atoms;
-    int               mol;
-    int               maxresnr;
-    int               at_local;
-    int               at_global;
-} t_gmx_mtop_atomloop_all;
+    public:
+        //! Default constructor.
+        explicit Impl(const gmx_mtop_t &mtop)
+            : mtop_(mtop), mblock_(0),
+              atoms_(&mtop.moltype[mtop.molblock[0].type].atoms),
+              currentMolecule_(0), highestResidueNumber_(mtop.maxresnr),
+              localAtomNumber_(-1), globalAtomNumber_(-1)
+        {}
 
-gmx_mtop_atomloop_all_t
-gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop)
+        //! Global topology.
+        const gmx_mtop_t &mtop_;
+        //! Current molecule block.
+        size_t            mblock_;
+        //! The atoms of the current molecule.
+        const t_atoms    *atoms_;
+        //! The current molecule.
+        int               currentMolecule_;
+        //! Current highest number for residues.
+        int               highestResidueNumber_;
+        //! Current local atom number.
+        int               localAtomNumber_;
+        //! Global current atom number.
+        int               globalAtomNumber_;
+};
+
+SystemAtomRange::SystemAtomRange(const gmx_mtop_t &mtop)
+    : impl_(new Impl(mtop))
+{}
+
+SystemAtomRange::~SystemAtomRange()
 {
-    struct gmx_mtop_atomloop_all *aloop;
-
-    snew(aloop, 1);
-
-    aloop->mtop         = mtop;
-    aloop->mblock       = 0;
-    aloop->atoms        =
-        &mtop->moltype[mtop->molblock[aloop->mblock].type].atoms;
-    aloop->mol          = 0;
-    aloop->maxresnr     = mtop->maxresnr;
-    aloop->at_local     = -1;
-    aloop->at_global    = -1;
-
-    return aloop;
 }
 
-static void gmx_mtop_atomloop_all_destroy(gmx_mtop_atomloop_all_t aloop)
+bool SystemAtomRange::nextAtom()
 {
-    sfree(aloop);
-}
+    impl_->localAtomNumber_++;
+    impl_->globalAtomNumber_++;
 
-gmx_bool gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
-                                    int *at_global, const t_atom **atom)
-{
-    if (aloop == nullptr)
+    if (impl_->localAtomNumber_ >= impl_->atoms_->nr)
     {
-        gmx_incons("gmx_mtop_atomloop_all_next called without calling gmx_mtop_atomloop_all_init");
-    }
-
-    aloop->at_local++;
-    aloop->at_global++;
-
-    if (aloop->at_local >= aloop->atoms->nr)
-    {
-        if (aloop->atoms->nres <= aloop->mtop->maxres_renum)
+        if (impl_->atoms_->nres <= impl_->mtop_.maxresnr)
         {
             /* Single residue molecule, increase the count with one */
-            aloop->maxresnr += aloop->atoms->nres;
+            impl_->highestResidueNumber_ += impl_->atoms_->nres;
         }
-        aloop->mol++;
-        aloop->at_local = 0;
-        if (aloop->mol >= aloop->mtop->molblock[aloop->mblock].nmol)
+        impl_->currentMolecule_++;
+        impl_->localAtomNumber_ = 0;
+        if (impl_->currentMolecule_ >= impl_->mtop_.molblock[impl_->mblock_].nmol)
         {
-            aloop->mblock++;
-            if (aloop->mblock >= aloop->mtop->molblock.size())
+            impl_->mblock_++;
+            if (impl_->mblock_ >= impl_->mtop_.molblock.size())
             {
-                gmx_mtop_atomloop_all_destroy(aloop);
-                return FALSE;
+                impl_.reset(new SystemAtomRange::Impl(impl_->mtop_));
+                return false;
             }
-            aloop->atoms = &aloop->mtop->moltype[aloop->mtop->molblock[aloop->mblock].type].atoms;
-            aloop->mol   = 0;
+            impl_->atoms_           = &impl_->mtop_.moltype[impl_->mtop_.molblock[impl_->mblock_].type].atoms;
+            impl_->currentMolecule_ = 0;
         }
     }
-
-    *at_global = aloop->at_global;
-    *atom      = &aloop->atoms->atom[aloop->at_local];
-
-    return TRUE;
+    return true;
 }
 
-void gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
-                                 char **atomname, int *resnr, char **resname)
+const t_atom &SystemAtomRange::atom() const
 {
-    int resind_mol;
+    return impl_->atoms_->atom[impl_->localAtomNumber_];
+}
 
-    *atomname  = *(aloop->atoms->atomname[aloop->at_local]);
-    resind_mol = aloop->atoms->atom[aloop->at_local].resind;
-    *resnr     = aloop->atoms->resinfo[resind_mol].nr;
-    if (aloop->atoms->nres <= aloop->mtop->maxres_renum)
+int SystemAtomRange::globalAtomNumber() const
+{
+    return impl_->globalAtomNumber_;
+}
+
+const char *SystemAtomRange::atomName() const
+{
+    return *(impl_->atoms_->atomname[impl_->localAtomNumber_]);
+}
+
+const char *SystemAtomRange::residueName() const
+{
+    int residueIndexInMolecule = impl_->atoms_->atom[impl_->localAtomNumber_].resind;
+    return *(impl_->atoms_->resinfo[residueIndexInMolecule].name);
+}
+
+int SystemAtomRange::residueNumber() const
+{
+    int residueIndexInMolecule = impl_->atoms_->atom[impl_->localAtomNumber_].resind;
+    if (impl_->atoms_->nres <= impl_->mtop_.maxres_renum)
     {
-        *resnr = aloop->maxresnr + 1 + resind_mol;
+        return impl_->highestResidueNumber_ + 1 + residueIndexInMolecule;
     }
-    *resname  = *(aloop->atoms->resinfo[resind_mol].name);
+    else
+    {
+        return impl_->atoms_->resinfo[residueIndexInMolecule].nr;
+    }
 }
 
-void gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t   aloop,
-                                   const gmx_moltype_t     **moltype,
-                                   int                      *at_mol)
+const gmx_moltype_t &SystemAtomRange::moleculeType() const
 {
-    *moltype = &aloop->mtop->moltype[aloop->mtop->molblock[aloop->mblock].type];
-    *at_mol  = aloop->at_local;
+    return impl_->mtop_.moltype[impl_->mtop_.molblock[impl_->mblock_].type];
+}
+
+int SystemAtomRange::atomNumberInMol() const
+{
+    return impl_->localAtomNumber_;
 }
 
 typedef struct gmx_mtop_atomloop_block
@@ -965,13 +976,13 @@ static void copyIdefFromMtop(const gmx_mtop_t &mtop,
     {
         std::vector<real>       qA(mtop.natoms);
         std::vector<real>       qB(mtop.natoms);
-        gmx_mtop_atomloop_all_t aloop = gmx_mtop_atomloop_all_init(&mtop);
-        const t_atom           *atom;
-        int                     ag = 0;
-        while (gmx_mtop_atomloop_all_next(aloop, &ag, &atom))
+        SystemAtomRange         aloop(mtop);
+        while (aloop.nextAtom())
         {
-            qA[ag] = atom->q;
-            qB[ag] = atom->qB;
+            const t_atom &local = aloop.atom();
+            int           index = aloop.globalAtomNumber();
+            qA[index] = local.q;
+            qB[index] = local.qB;
         }
         gmx_sort_ilist_fe(idef, qA.data(), qB.data());
     }
@@ -1230,14 +1241,14 @@ std::vector<int> get_atom_index(const gmx_mtop_t *mtop)
 {
 
     std::vector<int>          atom_index;
-    gmx_mtop_atomloop_all_t   aloop = gmx_mtop_atomloop_all_init(mtop);
-    const t_atom             *atom;
-    int                       at_global;
-    while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
+    SystemAtomRange           aloop(*mtop);
+    while (aloop.nextAtom())
     {
-        if (atom->ptype == eptAtom)
+        const t_atom &local = aloop.atom();
+        int           index = aloop.globalAtomNumber();
+        if (local.ptype == eptAtom)
         {
-            atom_index.push_back(at_global);
+            atom_index.push_back(index);
         }
     }
     return atom_index;

@@ -363,18 +363,16 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp *wi)
 
 static void check_vel(gmx_mtop_t *mtop, rvec v[])
 {
-    gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
-    int                     a;
-
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    SystemAtomRange        aloop(*mtop);
+    while (aloop.nextAtom())
     {
-        if (atom->ptype == eptShell ||
-            atom->ptype == eptBond  ||
-            atom->ptype == eptVSite)
+        const t_atom &local = aloop.atom();
+        int           i     = aloop.globalAtomNumber();
+        if (local.ptype == eptShell ||
+            local.ptype == eptBond  ||
+            local.ptype == eptVSite)
         {
-            clear_rvec(v[a]);
+            clear_rvec(v[i]);
         }
     }
 }
@@ -383,16 +381,15 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
                                   t_inputrec *ir,
                                   warninp    *wi)
 {
-    gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
-    int                     a, nshells = 0;
+    int                     nshells = 0;
     char                    warn_buf[STRLEN];
 
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    SystemAtomRange         aloop(*mtop);
+    while (aloop.nextAtom())
     {
-        if (atom->ptype == eptShell ||
-            atom->ptype == eptBond)
+        const t_atom &local = aloop.atom();
+        if (local.ptype == eptShell ||
+            local.ptype == eptBond)
         {
             nshells++;
         }
@@ -670,14 +667,14 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     if (bGenVel)
     {
         real                   *mass;
-        gmx_mtop_atomloop_all_t aloop;
-        const t_atom           *atom;
 
         snew(mass, state->natoms);
-        aloop = gmx_mtop_atomloop_all_init(sys);
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+        SystemAtomRange aloop(*sys);
+        while (aloop.nextAtom())
         {
-            mass[i] = atom->m;
+            const t_atom &local = aloop.atom();
+            int           i     = aloop.globalAtomNumber();
+            mass[i] = local.m;
         }
 
         if (opts->seed == -1)
@@ -1240,15 +1237,13 @@ static real calc_temp(const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
                       rvec             *v)
 {
-    gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
-    int                     a;
-
     double                  sum_mv2 = 0;
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    SystemAtomRange         aloop(*mtop);
+    while (aloop.nextAtom())
     {
-        sum_mv2 += atom->m*norm2(v[a]);
+        const t_atom &local = aloop.atom();
+        int           i     = aloop.globalAtomNumber();
+        sum_mv2 += local.m*norm2(v[i]);
     }
 
     double nrdf = 0;

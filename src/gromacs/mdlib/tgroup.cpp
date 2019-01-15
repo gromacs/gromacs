@@ -58,25 +58,23 @@
 
 static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 {
-    gmx_mtop_atomloop_all_t aloop;
-    int                     i, grp;
-    const t_atom           *atom;
-
     if (ngacc > 0)
     {
         const gmx_groups_t &groups = mtop->groups;
-        aloop  = gmx_mtop_atomloop_all_init(mtop);
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+        SystemAtomRange     aloop(*mtop);
+        while (aloop.nextAtom())
         {
-            grp = getGroupType(groups, egcACC, i);
+            const t_atom &local = aloop.atom();
+            int           i     = aloop.globalAtomNumber();
+            int           grp   = getGroupType(groups, egcACC, i);
             if ((grp < 0) && (grp >= ngacc))
             {
                 gmx_incons("Input for acceleration groups wrong");
             }
             gstat[grp].nat++;
             /* This will not work for integrator BD */
-            gstat[grp].mA += atom->m;
-            gstat[grp].mB += atom->mB;
+            gstat[grp].mA += local.m;
+            gstat[grp].mB += local.mB;
         }
     }
 }

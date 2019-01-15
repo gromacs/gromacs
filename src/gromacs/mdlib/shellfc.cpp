@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -304,7 +304,6 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     gmx_shellfc_t            *shfc;
     t_shell                  *shell;
     int                      *shell_index = nullptr, *at2cg;
-    const t_atom             *atom;
 
     int                       ns, nshell, nsi;
     int                       i, j, type, a_offset, cg, mol, ftype, nra;
@@ -312,7 +311,6 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     int                       aS, aN = 0; /* Shell and nucleus */
     int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
-    gmx_mtop_atomloop_all_t   aloop;
     const gmx_ffparams_t     *ffparams;
 
     std::array<int, eptNR>    n = countPtypes(fplog, mtop);
@@ -354,11 +352,13 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     /* Global system sized array, this should be avoided */
     snew(shell_index, mtop->natoms);
 
-    aloop  = gmx_mtop_atomloop_all_init(mtop);
+    SystemAtomRange aloop(*mtop);
     nshell = 0;
-    while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+    while (aloop.nextAtom())
     {
-        if (atom->ptype == eptShell)
+        const t_atom &local = aloop.atom();
+        int           i     = aloop.globalAtomNumber();
+        if (local.ptype == eptShell)
         {
             shell_index[i] = nshell++;
         }
@@ -400,7 +400,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
             }
         }
 
-        atom = molt->atoms.atom;
+        const t_atom *atom = molt->atoms.atom;
         for (mol = 0; mol < molb->nmol; mol++)
         {
             for (j = 0; (j < NBT); j++)
