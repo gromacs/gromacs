@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -961,48 +961,6 @@ void pairs_gpu(const int nbonds,
 
 /*-------------------------------- End CUDA kernels-----------------------------*/
 
-
-static void setPbcAiuc(int           numPbcDim,
-                       const matrix  box,
-                       PbcAiuc      *pbcAiuc)
-{
-    if (numPbcDim > ZZ)
-    {
-        pbcAiuc->invBoxDiagZ = 1/box[ZZ][ZZ];
-        pbcAiuc->boxZX       = box[ZZ][XX];
-        pbcAiuc->boxZY       = box[ZZ][YY];
-        pbcAiuc->boxZZ       = box[ZZ][ZZ];
-    }
-    else
-    {
-        pbcAiuc->invBoxDiagZ = 0;
-        pbcAiuc->boxZX       = 0;
-        pbcAiuc->boxZY       = 0;
-        pbcAiuc->boxZZ       = 0;
-    }
-    if (numPbcDim > YY)
-    {
-        pbcAiuc->invBoxDiagY = 1/box[YY][YY];
-        pbcAiuc->boxYX       = box[YY][XX];
-        pbcAiuc->boxYY       = box[YY][YY];
-    }
-    else
-    {
-        pbcAiuc->invBoxDiagY = 0;
-        pbcAiuc->boxYX       = 0;
-        pbcAiuc->boxYY       = 0;
-    }
-    if (numPbcDim > XX)
-    {
-        pbcAiuc->invBoxDiagX = 1/box[XX][XX];
-        pbcAiuc->boxXX       = box[XX][XX];
-    }
-    else
-    {
-        pbcAiuc->invBoxDiagX = 0;
-        pbcAiuc->boxXX       = 0;
-    }
-}
 
 namespace gmx
 {
