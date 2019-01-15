@@ -305,7 +305,6 @@ TEST_F (CoulombTest, SlaterRow3Row3MediumDZeta)
     testCoulomb(ecdSlater, 3, 3, 11.0, 11.1, 0.1);
 }
 
-
 TEST_F (CoulombTest, SlaterRow1Row2LargeDZeta)
 {
     testCoulomb(ecdSlater, 1, 2, 12.0, 13.0, 0.1);
@@ -334,6 +333,7 @@ TEST_F (CoulombTest, SlaterRow2Row3LargeDZeta)
 TEST_F (CoulombTest, SlaterRow3Row3LargeDZeta)
 {
     testCoulomb(ecdSlater, 3, 3, 11.0, 10.0, 0.1);
+}
 
 TEST_F (CoulombTest, SlaterRow1Row2MediumDZeta2)
 {
@@ -363,7 +363,6 @@ TEST_F (CoulombTest, SlaterRow2Row3MediumDZeta2)
 TEST_F (CoulombTest, SlaterRow3Row3MediumDZeta2)
 {
     testCoulomb(ecdSlater, 3, 3, 11.0, 12.0, 0.20);
-
 }
 
 TEST_F (CoulombTest, GaussianLargeDistance)
