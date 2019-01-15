@@ -1596,12 +1596,10 @@ static void initVdwEwaldParameters(FILE *fp, const t_inputrec *ir,
     }
 }
 
-gmx_bool uses_simple_tables(int                 cutoff_scheme,
-                            nonbonded_verlet_t *nbv,
-                            int                 group)
+gmx_bool uses_simple_tables(int                       cutoff_scheme,
+                            const nonbonded_verlet_t *nbv)
 {
     gmx_bool bUsesSimpleTables = TRUE;
-    int      grp_index;
 
     switch (cutoff_scheme)
     {
@@ -1610,8 +1608,7 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
             break;
         case ecutsVERLET:
             assert(nullptr != nbv);
-            grp_index         = (group < 0) ? 0 : (nbv->ngrp - 1);
-            bUsesSimpleTables = nbnxn_kernel_pairlist_simple(nbv->grp[grp_index].kernel_type);
+            bUsesSimpleTables = nbv->pairlistIsSimple();
             break;
         default:
             gmx_incons("unimplemented");
@@ -2683,7 +2680,7 @@ void init_forcerec(FILE                             *fp,
 void free_gpu_resources(t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator)
 {
-    bool isPPrankUsingGPU = (fr != nullptr) && (fr->nbv != nullptr) && fr->nbv->bUseGPU;
+    bool isPPrankUsingGPU = (fr != nullptr) && (fr->nbv != nullptr) && fr->nbv->useGpu();
 
     /* stop the GPU profiler (only CUDA) */
     stopGpuProfiler();

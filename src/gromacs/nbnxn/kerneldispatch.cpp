@@ -127,7 +127,9 @@ reduceGroupEnergySimdBuffers(int                       numGroups,
  * Energy reduction, but not force and shift force reduction, is performed
  * within this function.
  *
- * \param[in]     nbvg          The group (local/non-local) to compute interaction for
+ * \param[in]     pairlistSet   Pairlists with local or non-local interactions to compute
+ * \param[in]     kernel_type   The non-bonded kernel type
+ * \param[in]     ewald_excl    The Ewald exclusion treatment
  * \param[in,out] nbat          The atomdata for the interactions
  * \param[in]     ic            Non-bonded interaction constants
  * \param[in]     shiftVectors  The PBC shift vectors
@@ -138,7 +140,9 @@ reduceGroupEnergySimdBuffers(int                       numGroups,
  * \param[out]    vVdw          Output buffer for Van der Waals energies
  */
 static void
-nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
+nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
+		 const int                       kernel_type,
+		 const int                       ewald_excl,
                  nbnxn_atomdata_t               *nbat,
                  const interaction_const_t      &ic,
                  rvec                           *shiftVectors,
@@ -156,7 +160,7 @@ nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
     }
     else
     {
-        if (nbvg->ewald_excl == ewaldexclTable)
+        if (ewald_excl == ewaldexclTable)
         {
             if (ic.rcoulomb == ic.rvdw)
             {
@@ -218,7 +222,7 @@ nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
         {
             vdwkt = vdwktLJEWALDCOMBLB;
             /* At setup we (should have) selected the C reference kernel */
-            GMX_RELEASE_ASSERT(nbvg->kernel_type == nbnxnk4x4_PlainC, "Only the C reference nbnxn SIMD kernel supports LJ-PME with LB combination rules");
+            GMX_RELEASE_ASSERT(kernel_type == nbnxnk4x4_PlainC, "Only the C reference nbnxn SIMD kernel supports LJ-PME with LB combination rules");
         }
     }
     else
@@ -226,8 +230,8 @@ nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
         GMX_RELEASE_ASSERT(false, "Unsupported VdW interaction type");
     }
 
-    int                        nnbl = nbvg->nbl_lists.nnbl;
-    NbnxnPairlistCpu * const * nbl  = nbvg->nbl_lists.nbl;
+    int                        nnbl = pairlistSet.nnbl;
+    NbnxnPairlistCpu * const * nbl  = pairlistSet.nbl;
 
     int gmx_unused             nthreads = gmx_omp_nthreads_get(emntNonbonded);
 #pragma omp parallel for schedule(static) num_threads(nthreads)
@@ -260,7 +264,7 @@ nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
         if (!(forceFlags & GMX_FORCE_ENERGY))
         {
             /* Don't calculate energies */
-            switch (nbvg->kernel_type)
+            switch (kernel_type)
             {
                 case nbnxnk4x4_PlainC:
                     nbnxn_kernel_noener_ref[coulkt][vdwkt](nbl[nb], nbat,
@@ -297,7 +301,7 @@ nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
             out->Vvdw[0] = 0;
             out->Vc[0]   = 0;
 
-            switch (nbvg->kernel_type)
+            switch (kernel_type)
             {
                 case nbnxnk4x4_PlainC:
                     nbnxn_kernel_ener_ref[coulkt][vdwkt](nbl[nb], nbat,
@@ -341,7 +345,7 @@ nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
 
             int unrollj = 0;
 
-            switch (nbvg->kernel_type)
+            switch (kernel_type)
             {
                 case nbnxnk4x4_PlainC:
                     unrollj = c_nbnxnCpuIClusterSize;
@@ -381,7 +385,7 @@ nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
                     GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
 
-            if (nbvg->kernel_type != nbnxnk4x4_PlainC)
+            if (kernel_type != nbnxnk4x4_PlainC)
             {
                 switch (unrollj)
                 {
@@ -419,15 +423,15 @@ static void accountFlops(t_nrnb                           *nrnb,
                          const interaction_const_t        &ic,
                          const int                         forceFlags)
 {
-    const nonbonded_verlet_group_t &nbvg            = nbv.grp[iLocality];
-    const bool                      usingGpuKernels = (nbvg.kernel_type == nbnxnk8x8x8_GPU);
+    const nbnxn_pairlist_set_t &pairlistSet     = nbv.pairlistSets[iLocality];
+    const bool                  usingGpuKernels = nbv.useGpu();
 
     int enr_nbnxn_kernel_ljc;
     if (EEL_RF(ic.eeltype) || ic.eeltype == eelCUT)
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
-    else if ((!usingGpuKernels && nbvg.ewald_excl == ewaldexclAnalytical) ||
+    else if ((!usingGpuKernels && nbv.ewaldExclusionType_ == ewaldexclAnalytical) ||
              (usingGpuKernels && Nbnxn::gpu_is_kernel_ewald_analytical(nbv.gpu_nbv)))
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
@@ -445,31 +449,31 @@ static void accountFlops(t_nrnb                           *nrnb,
     }
 
     inc_nrnb(nrnb, enr_nbnxn_kernel_ljc,
-             nbvg.nbl_lists.natpair_ljq);
+             pairlistSet.natpair_ljq);
     inc_nrnb(nrnb, enr_nbnxn_kernel_lj,
-             nbvg.nbl_lists.natpair_lj);
+             pairlistSet.natpair_lj);
     /* The Coulomb-only kernels are offset -eNR_NBNXN_LJ_RF+eNR_NBNXN_RF */
     inc_nrnb(nrnb, enr_nbnxn_kernel_ljc-eNR_NBNXN_LJ_RF+eNR_NBNXN_RF,
-             nbvg.nbl_lists.natpair_q);
+             pairlistSet.natpair_q);
 
     const bool calcEnergy = ((forceFlags & GMX_FORCE_ENERGY) != 0);
     if (ic.vdw_modifier == eintmodFORCESWITCH)
     {
         /* We add up the switch cost separately */
         inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_FSW + (calcEnergy ? 1 : 0),
-                 nbvg.nbl_lists.natpair_ljq + nbvg.nbl_lists.natpair_lj);
+                 pairlistSet.natpair_ljq + pairlistSet.natpair_lj);
     }
     if (ic.vdw_modifier == eintmodPOTSWITCH)
     {
         /* We add up the switch cost separately */
         inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_PSW + (calcEnergy ? 1 : 0),
-                 nbvg.nbl_lists.natpair_ljq + nbvg.nbl_lists.natpair_lj);
+                 pairlistSet.natpair_ljq + pairlistSet.natpair_lj);
     }
     if (ic.vdwtype == evdwPME)
     {
         /* We add up the LJ Ewald cost separately */
         inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_EWALD + (calcEnergy ? 1 : 0),
-                 nbvg.nbl_lists.natpair_ljq + nbvg.nbl_lists.natpair_lj);
+                 pairlistSet.natpair_ljq + pairlistSet.natpair_lj);
     }
 }
 
@@ -482,14 +486,16 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
                          gmx_enerdata_t            *enerd,
                          t_nrnb                    *nrnb)
 {
-    const nonbonded_verlet_group_t &nbvg = nbv->grp[iLocality];
+    const nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSets[iLocality];
 
-    switch (nbvg.kernel_type)
+    switch (nbv->kernelType_)
     {
         case nbnxnk4x4_PlainC:
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
-            nbnxn_kernel_cpu(&nbvg,
+            nbnxn_kernel_cpu(pairlistSet,
+			     nbv->kernelType_,
+			     nbv->ewaldExclusionType_,
                              nbv->nbat,
                              ic,
                              fr->shift_vec,
@@ -507,7 +513,7 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
             break;
 
         case nbnxnk8x8x8_PlainC:
-            nbnxn_kernel_gpu_ref(nbvg.nbl_lists.nblGpu[0],
+            nbnxn_kernel_gpu_ref(pairlistSet.nblGpu[0],
                                  nbv->nbat, &ic,
                                  fr->shift_vec,
                                  forceFlags,

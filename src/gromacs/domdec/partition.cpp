@@ -3412,7 +3412,7 @@ void dd_partition_system(FILE                    *fplog,
             case ecutsVERLET:
                 set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
 
-                nbnxn_put_on_grid(fr->nbv->nbs.get(), fr->ePBC, state_local->box,
+                nbnxn_put_on_grid(fr->nbv, fr->ePBC, state_local->box,
                                   0,
                                   comm->zones.size[0].bb_x0,
                                   comm->zones.size[0].bb_x1,
@@ -3421,9 +3421,7 @@ void dd_partition_system(FILE                    *fplog,
                                   comm->zones.dens_zone0,
                                   fr->cginfo,
                                   state_local->x,
-                                  ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr,
-                                  fr->nbv->grp[Nbnxn::InteractionLocality::Local].kernel_type,
-                                  fr->nbv->nbat);
+                                  ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr);
 
                 nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_new[XX], &ncells_new[YY]);
                 break;

@@ -4034,7 +4034,7 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
     nbnxn_search         *nbs      = nbv->nbs.get();
     nbnxn_atomdata_t     *nbat     = nbv->nbat;
     const real            rlist    = nbv->listParams->rlistOuter;
-    nbnxn_pairlist_set_t *nbl_list = &nbv->grp[iLocality].nbl_lists;
+    nbnxn_pairlist_set_t *nbl_list = &nbv->pairlistSets[iLocality];
 
     int                nsubpair_target;
     float              nsubpair_tot_est;
@@ -4163,7 +4163,7 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
                         nbnxn_make_pairlist_part(nbs, iGrid, jGrid,
                                                  &nbs->work[th], nbat, *excl,
                                                  rlist,
-                                                 nbv->grp[iLocality].kernel_type,
+                                                 nbv->kernelType_,
                                                  ci_block,
                                                  nbat->bUseBufferFlags,
                                                  nsubpair_target,
@@ -4177,7 +4177,7 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
                         nbnxn_make_pairlist_part(nbs, iGrid, jGrid,
                                                  &nbs->work[th], nbat, *excl,
                                                  rlist,
-                                                 nbv->grp[iLocality].kernel_type,
+                                                 nbv->kernelType_,
                                                  ci_block,
                                                  nbat->bUseBufferFlags,
                                                  nsubpair_target,
@@ -4345,7 +4345,7 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
         }
     }
 
-    if (nbv->listParams->useDynamicPruning && !nbv->bUseGPU)
+    if (nbv->listParams->useDynamicPruning && !nbv->useGpu())
     {
 	nbnxnPrepareListForDynamicPruning(nbl_list);
     }
