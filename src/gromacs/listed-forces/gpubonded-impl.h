@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,7 @@ struct HostInteractionList
     }
 
     //! List of interactions, see \c HostInteractionLists
-    HostStdVector<int> iatoms = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
+    HostVector<int> iatoms = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
 };
 
 /*! \internal \brief Implements GPU bondeds */
@@ -130,7 +130,7 @@ class GpuBonded::Impl
         //! Shift force vector on the device.
         fvec                 *fshiftDevice = nullptr;
         //! \brief Host-side virial buffer
-        HostStdVector <float> vtot = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
+        HostVector <float>    vtot = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
         //! \brief Device-side total virial
         float                *vtotDevice   = nullptr;
 

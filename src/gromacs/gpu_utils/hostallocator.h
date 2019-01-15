@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,9 +33,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
- * \brief Declares gmx::HostAllocationPolicy, gmx::HostAllocator, and
- * gmx::HostVector, which are used to make/be standard library
- * containers that can allocate memory suitable for transfers.
+ * \brief Declares gmx::HostAllocationPolicy, gmx::HostAllocator,
+ * gmx::HostVector and gmx::PaddedHostVector, which are used to make/be
+ * standard library containers that can allocate memory suitable for transfers.
  * Currently the only supported transfers using pinned memory are
  * to CUDA GPUs, but other possibilities exist in future.
  *
@@ -93,13 +93,13 @@ class HostAllocationPolicy;
 template <class T>
 using HostAllocator = Allocator<T, HostAllocationPolicy>;
 
-//! Convenience alias for PaddedVector that uses HostAllocator.
-template <class T>
-using HostVector = PaddedVector<T, HostAllocator<T> >;
-
 //! Convenience alias for std::vector that uses HostAllocator.
 template <class T>
-using HostStdVector = std::vector<T, HostAllocator<T> >;
+using HostVector = std::vector<T, HostAllocator<T> >;
+
+//! Convenience alias for PaddedVector that uses HostAllocator.
+template <class T>
+using PaddedHostVector = PaddedVector<T, HostAllocator<T> >;
 
 /*! \libinternal
  * \brief Policy class for configuring gmx::Allocator, to manage
@@ -207,7 +207,7 @@ bool operator==(const Allocator<T1, HostAllocationPolicy> &a,
     return a.pinningPolicy() == b.pinningPolicy();
 }
 
-/*! \brief Helper function for changing the pinning policy of a HostVector.
+/*! \brief Helper function for changing the pinning policy of a pinnable vector.
  *
  * If the vector has contents, then a full reallocation and buffer
  * copy are needed if the policy change requires tighter restrictions,
@@ -215,12 +215,14 @@ bool operator==(const Allocator<T1, HostAllocationPolicy> &a,
  * restrictions. That cost is OK, because GROMACS will do this
  * operation very rarely (e.g. when auto-tuning and deciding to switch
  * whether a task will run on a GPU, or not). */
-template <class T>
-void changePinningPolicy(HostVector<T> *v, PinningPolicy pinningPolicy)
+template <typename PinnableVector>
+void changePinningPolicy(PinnableVector *v,
+                         PinningPolicy   pinningPolicy)
 {
-    //Force reallocation by element-wise move (because policy is different
-    //container is forced to realloc). Does nothing if policy is the same.
-    *v = HostVector<T>(std::move(*v), {pinningPolicy});
+    // Force reallocation by element-wise move (because policy is
+    // different container is forced to realloc). Does nothing if
+    // policy is the same.
+    *v = PinnableVector(std::move(*v), {pinningPolicy});
 }
 
 }      // namespace gmx

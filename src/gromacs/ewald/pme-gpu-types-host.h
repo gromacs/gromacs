@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -125,7 +125,7 @@ struct PmeOutput
 struct PmeGpuStaging
 {
     //! Host-side force buffer
-    gmx::HostVector<gmx::RVec> h_forces;
+    gmx::PaddedHostVector<gmx::RVec> h_forces;
 
     /*! \brief Virial and energy intermediate host-side buffer. Size is PME_GPU_VIRIAL_AND_ENERGY_COUNT. */
     float  *h_virialAndEnergy;
