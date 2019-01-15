@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,15 @@
 
 #include "gromacs/pbcutil/ishift.h"
 
+/*! \brief Compact and ordered version of the PBC matrix.
+ *
+ * The structure contains all the dimensions of the periodic box,
+ * arranged in a convenient order. This duplicates the information,
+ * stored in PBC 'box' matrix object. The structure can be set by
+ * setPbcAiuc( ... ) routine below.
+ *
+ */
+
 struct PbcAiuc
 {
     float invBoxDiagZ;
@@ -50,6 +59,22 @@ struct PbcAiuc
     float boxXX;
 };
 
+/*! \brief Computes the vector between two points taking PBC into account.
+ *
+ * Computes the vector dr between points x2 and x1, taking into account the
+ * periodic boundary conditions, described in pbcAiuc object. Note that this
+ * routine always does the PBC arithmetic for all directions, multiplying the
+ * displacements by zeroes if the corresponding direction is not periodic.
+ * For triclinic boxes only distances up to half the smallest box diagonal
+ * element are guaranteed to be the shortest. This means that distances from
+ * 0.5/sqrt(2) times a box vector length (e.g. for a rhombic dodecahedron)
+ * can use a more distant periodic image.
+ *
+ * \param[in]  pbcAiuc  PBC object.
+ * \param[in]  x1       Coordinates of the first point.
+ * \param[in]  x2       Coordinates of the second point.
+ * \param[out] dx       Resulting distance.
+ */
 template <bool returnShift>
 static __forceinline__ __device__
 int pbcDxAiuc(const PbcAiuc &pbcAiuc,
@@ -86,6 +111,52 @@ int pbcDxAiuc(const PbcAiuc &pbcAiuc,
     else
     {
         return 0;
+    }
+}
+
+/*! \brief Set the PBC data to use in GPU kernels.
+ *
+ * \param[in]   numPbcDim   Number of periodic dimensions:
+ *                          0 - no periodicity.
+ *                          1 - periodicity along X-axis.
+ *                          2 - periodicity in XY plane.
+ *                          3 - periodicity along all dimensions.
+ * \param[in]   box         Matrix, describing the periodic cell.
+ * \param[out]  pbcAiuc     Pointer to PbcAiuc structure to be initialized.
+ *
+ */
+static void setPbcAiuc(int           numPbcDim,
+                       const matrix  box,
+                       PbcAiuc      *pbcAiuc)
+{
+
+    pbcAiuc->invBoxDiagZ = 0;
+    pbcAiuc->boxZX       = 0;
+    pbcAiuc->boxZY       = 0;
+    pbcAiuc->boxZZ       = 0;
+    pbcAiuc->invBoxDiagY = 0;
+    pbcAiuc->boxYX       = 0;
+    pbcAiuc->boxYY       = 0;
+    pbcAiuc->invBoxDiagX = 0;
+    pbcAiuc->boxXX       = 0;
+
+    if (numPbcDim > ZZ)
+    {
+        pbcAiuc->invBoxDiagZ = 1/box[ZZ][ZZ];
+        pbcAiuc->boxZX       = box[ZZ][XX];
+        pbcAiuc->boxZY       = box[ZZ][YY];
+        pbcAiuc->boxZZ       = box[ZZ][ZZ];
+    }
+    if (numPbcDim > YY)
+    {
+        pbcAiuc->invBoxDiagY = 1/box[YY][YY];
+        pbcAiuc->boxYX       = box[YY][XX];
+        pbcAiuc->boxYY       = box[YY][YY];
+    }
+    if (numPbcDim > XX)
+    {
+        pbcAiuc->invBoxDiagX = 1/box[XX][XX];
+        pbcAiuc->boxXX       = box[XX][XX];
     }
 }
 
