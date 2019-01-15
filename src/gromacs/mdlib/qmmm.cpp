@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -363,10 +363,9 @@ void init_QMMMrec(const t_commrec  *cr,
      */
 
     int                     *qm_arr = nullptr, vsite, ai, aj;
-    int                      qm_max = 0, qm_nr = 0, i, j, jmax, k, l;
+    int                      qm_max = 0, qm_nr = 0, jmax;
     t_QMMMrec               *qr;
     t_MMrec                 *mm;
-    gmx_mtop_atomloop_all_t  aloop;
     int                      a_offset;
 
     if (!GMX_QMMM)
@@ -429,13 +428,13 @@ void init_QMMMrec(const t_commrec  *cr,
      * that.. 11-11-2003
      */
     snew(qr->qm, jmax);
-    for (j = 0; j < jmax; j++)
+    for (int j = 0; j < jmax; j++)
     {
         /* new layer */
-        aloop = gmx_mtop_atomloop_all_init(mtop);
-        const t_atom *atom;
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+        SystemAtomIterator aloop(*mtop);
+        while (aloop.nextAtom())
         {
+            int i = aloop.globalAtomNumber();
             if (qm_nr >= qm_max)
             {
                 qm_max += 1000;
@@ -480,12 +479,12 @@ void init_QMMMrec(const t_commrec  *cr,
                         /* this dummy link atom needs to be removed from the qm_arr
                          * before making the QMrec of this layer!
                          */
-                        for (i = 0; i < qm_nr; i++)
+                        for (int j = 0; j < qm_nr; j++)
                         {
-                            if (qm_arr[i] == vsite)
+                            if (qm_arr[j] == vsite)
                             {
                                 /* drop the element */
-                                for (l = i; l < qm_nr; l++)
+                                for (int l = i; l < qm_nr; l++)
                                 {
                                     qm_arr[l] = qm_arr[l+1];
                                 }
@@ -512,7 +511,7 @@ void init_QMMMrec(const t_commrec  *cr,
          */
 
         int molb = 0;
-        for (k = 0; k < qm_nr; k++)
+        for (int k = 0; k < qm_nr; k++)
         {
             int     indexInMolecule;
             mtopGetMolblockIndex(mtop, qm_arr[k], &molb, nullptr, &indexInMolecule);
