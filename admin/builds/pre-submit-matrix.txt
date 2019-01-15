@@ -42,9 +42,8 @@ gcc-7 tsan no-openmp fftpack cmake-3.10.0
 # Test 128-bit SIMD in double precision (to cover SimdInt32 support better)
 gcc-7 double mpi simd=avx_128_fma
 
-# Test on MacOS (because gcc-6 is only available there)
 # Test X11 build
-gcc-6 x11
+gcc-7 x11
 
 # Test oldest supported cmake
 # Test older clang
