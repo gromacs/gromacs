@@ -58,15 +58,14 @@
 
 static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 {
-    gmx_mtop_atomloop_all_t aloop;
     int                     i, grp;
     const t_atom           *atom;
 
     if (ngacc > 0)
     {
         const gmx_groups_t &groups = mtop->groups;
-        aloop  = gmx_mtop_atomloop_all_init(mtop);
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+        LoopOverAllAtoms    aloop(*mtop);
+        while (aloop.nextAtom(&i, &atom))
         {
             grp = getGroupType(groups, egcACC, i);
             if ((grp < 0) && (grp >= ngacc))

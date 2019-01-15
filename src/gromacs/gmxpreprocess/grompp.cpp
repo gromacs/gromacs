@@ -363,12 +363,11 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp *wi)
 
 static void check_vel(gmx_mtop_t *mtop, rvec v[])
 {
-    gmx_mtop_atomloop_all_t aloop;
     const t_atom           *atom;
     int                     a;
 
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    LoopOverAllAtoms        aloop(*mtop);
+    while (aloop.nextAtom(&a, &atom))
     {
         if (atom->ptype == eptShell ||
             atom->ptype == eptBond  ||
@@ -383,13 +382,12 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
                                   t_inputrec *ir,
                                   warninp    *wi)
 {
-    gmx_mtop_atomloop_all_t aloop;
     const t_atom           *atom;
     int                     a, nshells = 0;
     char                    warn_buf[STRLEN];
 
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    LoopOverAllAtoms        aloop(*mtop);
+    while (aloop.nextAtom(&a, &atom))
     {
         if (atom->ptype == eptShell ||
             atom->ptype == eptBond)
@@ -670,12 +668,11 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     if (bGenVel)
     {
         real                   *mass;
-        gmx_mtop_atomloop_all_t aloop;
         const t_atom           *atom;
 
         snew(mass, state->natoms);
-        aloop = gmx_mtop_atomloop_all_init(sys);
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+        LoopOverAllAtoms aloop(*sys);
+        while (aloop.nextAtom(&i, &atom))
         {
             mass[i] = atom->m;
         }
@@ -1240,13 +1237,12 @@ static real calc_temp(const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
                       rvec             *v)
 {
-    gmx_mtop_atomloop_all_t aloop;
     const t_atom           *atom;
     int                     a;
 
     double                  sum_mv2 = 0;
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    LoopOverAllAtoms        aloop(*mtop);
+    while (aloop.nextAtom(&a, &atom))
     {
         sum_mv2 += atom->m*norm2(v[a]);
     }

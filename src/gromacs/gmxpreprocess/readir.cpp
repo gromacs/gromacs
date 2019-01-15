@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2765,7 +2765,6 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     int                    *nrdf2, *na_vcm, na_tot;
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
     ivec                   *dof_vcm;
-    gmx_mtop_atomloop_all_t aloop;
     int                     mol, ftype, as;
 
     /* Calculate nrdf.
@@ -2803,9 +2802,9 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     }
 
     snew(nrdf2, natoms);
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    const t_atom *atom;
-    while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+    LoopOverAllAtoms aloop(*mtop);
+    const t_atom    *atom;
+    while (aloop.nextAtom(&i, &atom))
     {
         nrdf2[i] = 0;
         if (atom->ptype == eptAtom || atom->ptype == eptNucleus)
@@ -3953,7 +3952,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     real                     *mgrp, mt;
     rvec                      acc;
     gmx_mtop_atomloop_block_t aloopb;
-    gmx_mtop_atomloop_all_t   aloop;
     ivec                      AbsRef;
     char                      warn_buf[STRLEN];
 
@@ -4142,9 +4140,9 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     {
         clear_rvec(acc);
         snew(mgrp, sys->groups.grps[egcACC].nr);
-        aloop = gmx_mtop_atomloop_all_init(sys);
-        const t_atom *atom;
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+        LoopOverAllAtoms aloop(*sys);
+        const t_atom    *atom;
+        while (aloop.nextAtom(&i, &atom))
         {
             mgrp[getGroupType(sys->groups, egcACC, i)] += atom->m;
         }

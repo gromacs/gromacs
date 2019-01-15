@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -512,19 +512,18 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
                       const rvec *x, const rvec *v, const matrix box)
 {
     int                     i, resnr;
-    gmx_mtop_atomloop_all_t aloop;
     const t_atom           *atom;
     char                   *atomname, *resname;
 
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", mtop->natoms);
 
-    const char *format = get_hconf_format(v != nullptr);
+    const char      *format = get_hconf_format(v != nullptr);
 
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+    LoopOverAllAtoms aloop(*mtop);
+    while (aloop.nextAtom(&i, &atom))
     {
-        gmx_mtop_atomloop_all_names(aloop, &atomname, &resnr, &resname);
+        aloop.currentAtomNames(&atomname, &resnr, &resname);
 
         fprintf(out, "%5d%-5.5s%5.5s%5d",
                 resnr%100000, resname, atomname, (i+1)%100000);
