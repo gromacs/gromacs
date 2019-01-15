@@ -255,6 +255,22 @@ TEST_F(MultiDimArrayTest, staticMultiDimArrayFromArray)
     EXPECT_EQ(arr(2, 0), 7);
     EXPECT_EQ(arr(2, 1), 8);
     EXPECT_EQ(arr(2, 2), 9);
+TEST_F(MultiDimArrayTest, implicitConversionToView)
+{
+    static_array_type::view_type view = staticArray_;
+    view(2, 2) = testNumber_;
+    EXPECT_EQ(testNumber_, view(2, 2));
+}
+
+TEST_F(MultiDimArrayTest, implicitConstConversionToView)
+{
+    static_array_type::const_view_type view = staticArray_;
+    // the following must not compile:
+    // view(2, 2) = testNumber_;
+    for (const auto &x : view)
+    {
+        EXPECT_EQ(testNumber_ - 1, x);
+    }
 }
 
 } // namespace
