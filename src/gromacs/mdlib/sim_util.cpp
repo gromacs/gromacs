@@ -387,14 +387,15 @@ static void post_process_forces(const t_commrec           *cr,
     }
 }
 
-static void do_nb_verlet(t_forcerec *fr,
-                         const interaction_const_t *ic,
-                         gmx_enerdata_t *enerd,
-                         int flags, int ilocality,
-                         int clearF,
-                         int64_t step,
-                         t_nrnb *nrnb,
-                         gmx_wallcycle_t wcycle)
+static void do_nb_verlet(t_forcerec                       *fr,
+                         const interaction_const_t        *ic,
+                         gmx_enerdata_t                   *enerd,
+                         const int                         flags,
+			 const Nbnxn::InteractionLocality  ilocality,
+                         const int                         clearF,
+                         const int64_t                     step,
+                         t_nrnb                           *nrnb,
+                         gmx_wallcycle_t                   wcycle)
 {
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -859,11 +860,12 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
         {
             GpuTaskCompletion completionType = (isPmeGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
             wallcycle_start_nocount(wcycle, ewcWAIT_GPU_NB_L);
-            isNbGpuDone = nbnxn_gpu_try_finish_task(nbv->gpu_nbv,
-                                                    flags, eatLocal,
-                                                    haveOtherWork,
-                                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                                    fshift, completionType);
+            isNbGpuDone = Nbnxn::gpu_try_finish_task(nbv->gpu_nbv,
+						     flags,
+						     Nbnxn::AtomLocality::Local,
+						     haveOtherWork,
+						     enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+						     fshift, completionType);
             wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
             // To get the call count right, when the task finished we
             // issue a start/stop.
@@ -874,8 +876,8 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
-                                               nbv->nbat, as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
+		nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxn::AtomLocality::Local,
+					       nbv->nbat, as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
             }
         }
     }
@@ -905,15 +907,15 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
      */
     int  numRollingParts     = nbv->listParams->numRollingParts;
     GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
-    int  stepWithCurrentList = step - nbv->grp[eintLocal].nbl_lists.outerListCreationStep;
+    int  stepWithCurrentList = step - nbv->grp[Nbnxn::InteractionLocality::Local].nbl_lists.outerListCreationStep;
     bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
     if (stepWithCurrentList > 0 &&
         stepWithCurrentList < inputrec->nstlist - 1 &&
         (stepIsEven || DOMAINDECOMP(cr)))
     {
-        nbnxn_gpu_launch_kernel_pruneonly(nbv->gpu_nbv,
-                                          stepIsEven ? eintLocal : eintNonlocal,
-                                          numRollingParts);
+	Nbnxn::gpu_launch_kernel_pruneonly(nbv->gpu_nbv,
+					   stepIsEven ? Nbnxn::InteractionLocality::Local : Nbnxn::InteractionLocality::NonLocal,
+					   numRollingParts);
     }
 }
 
@@ -1084,7 +1086,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                               nullptr, 0, mdatoms->homenr, -1,
                               fr->cginfo, x.unpaddedArrayRef(),
                               0, nullptr,
-                              nbv->grp[eintLocal].kernel_type,
+                              nbv->grp[Nbnxn::InteractionLocality::Local].kernel_type,
                               nbv->nbat);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_LOCAL);
         }
@@ -1093,7 +1095,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_NONLOCAL);
             nbnxn_put_on_grid_nonlocal(nbv->nbs.get(), domdec_zones(cr->dd),
                                        fr->cginfo, x.unpaddedArrayRef(),
-                                       nbv->grp[eintNonlocal].kernel_type,
+                                       nbv->grp[Nbnxn::InteractionLocality::NonLocal].kernel_type,
                                        nbv->nbat);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
@@ -1111,10 +1113,10 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (bNS)
         {
-            nbnxn_gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat);
+	    Nbnxn::gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat);
         }
 
-        nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat);
+	Nbnxn::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat);
 
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
@@ -1130,9 +1132,9 @@ static void do_force_cutsVERLET(FILE *fplog,
             // higher-level object than the nb module.
             fr->gpuBonded->updateInteractionListsAndDeviceBuffers(nbnxn_get_gridindices(fr->nbv->nbs.get()),
                                                                   top->idef,
-                                                                  nbnxn_gpu_get_xq(nbv->gpu_nbv),
-                                                                  nbnxn_gpu_get_f(nbv->gpu_nbv),
-                                                                  nbnxn_gpu_get_fshift(nbv->gpu_nbv));
+                                                                  Nbnxn::gpu_get_xq(nbv->gpu_nbv),
+                                                                  Nbnxn::gpu_get_f(nbv->gpu_nbv),
+                                                                  Nbnxn::gpu_get_fshift(nbv->gpu_nbv));
             ppForceWorkload->haveGpuBondedWork = fr->gpuBonded->haveInteractions();
         }
 
@@ -1142,35 +1144,38 @@ static void do_force_cutsVERLET(FILE *fplog,
     /* do local pair search */
     if (bNS)
     {
+	nbnxn_pairlist_set_t &pairlistSet = nbv->grp[Nbnxn::InteractionLocality::Local].nbl_lists;
+
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
         nbnxn_make_pairlist(nbv->nbs.get(), nbv->nbat,
                             &top->excls,
                             nbv->listParams->rlistOuter,
                             nbv->min_ci_balanced,
-                            &nbv->grp[eintLocal].nbl_lists,
-                            eintLocal,
-                            nbv->grp[eintLocal].kernel_type,
+                            &pairlistSet,
+                            Nbnxn::InteractionLocality::Local,
+                            nbv->grp[Nbnxn::InteractionLocality::Local].kernel_type,
                             nrnb);
-        nbv->grp[eintLocal].nbl_lists.outerListCreationStep = step;
+        pairlistSet.outerListCreationStep = step;
         if (nbv->listParams->useDynamicPruning && !bUseGPU)
         {
-            nbnxnPrepareListForDynamicPruning(&nbv->grp[eintLocal].nbl_lists);
+            nbnxnPrepareListForDynamicPruning(&pairlistSet);
         }
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
 
         if (bUseGPU)
         {
             /* initialize local pair-list on the GPU */
-            nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
-                                    nbv->grp[eintLocal].nbl_lists.nblGpu[0],
-                                    eintLocal);
+	    Nbnxn::gpu_init_pairlist(nbv->gpu_nbv,
+				     pairlistSet.nblGpu[0],
+				     Nbnxn::InteractionLocality::Local);
         }
         wallcycle_stop(wcycle, ewcNS);
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
+        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxn::AtomLocality::Local,
+					FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
                                         nbv->nbat, wcycle);
     }
 
@@ -1184,7 +1189,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
         wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatLocal, ppForceWorkload->haveGpuBondedWork);
+	Nbnxn::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, Nbnxn::AtomLocality::Local, ppForceWorkload->haveGpuBondedWork);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
         // bonded work not split into separate local and non-local, so with DD
@@ -1198,7 +1203,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         /* launch local nonbonded work on GPU */
         wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
+        do_nb_verlet(fr, ic, enerd, flags, Nbnxn::InteractionLocality::Local, enbvClearFNo,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -1217,6 +1222,8 @@ static void do_force_cutsVERLET(FILE *fplog,
        do non-local pair search */
     if (DOMAINDECOMP(cr))
     {
+	nbnxn_pairlist_set_t &pairlistSet = nbv->grp[Nbnxn::InteractionLocality::NonLocal].nbl_lists;
+
         if (bNS)
         {
             wallcycle_start_nocount(wcycle, ewcNS);
@@ -1226,23 +1233,23 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 &top->excls,
                                 nbv->listParams->rlistOuter,
                                 nbv->min_ci_balanced,
-                                &nbv->grp[eintNonlocal].nbl_lists,
-                                eintNonlocal,
-                                nbv->grp[eintNonlocal].kernel_type,
+                                &pairlistSet,
+                                Nbnxn::InteractionLocality::NonLocal,
+                                nbv->grp[Nbnxn::InteractionLocality::NonLocal].kernel_type,
                                 nrnb);
-            nbv->grp[eintNonlocal].nbl_lists.outerListCreationStep = step;
+            pairlistSet.outerListCreationStep = step;
             if (nbv->listParams->useDynamicPruning && !bUseGPU)
             {
-                nbnxnPrepareListForDynamicPruning(&nbv->grp[eintNonlocal].nbl_lists);
+                nbnxnPrepareListForDynamicPruning(&pairlistSet);
             }
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
-            if (nbv->grp[eintNonlocal].kernel_type == nbnxnk8x8x8_GPU)
+            if (nbv->grp[Nbnxn::InteractionLocality::NonLocal].kernel_type == nbnxnk8x8x8_GPU)
             {
                 /* initialize non-local pair-list on the GPU */
-                nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
-                                        nbv->grp[eintNonlocal].nbl_lists.nblGpu[0],
-                                        eintNonlocal);
+		Nbnxn::gpu_init_pairlist(nbv->gpu_nbv,
+					 pairlistSet.nblGpu[0],
+					 Nbnxn::InteractionLocality::NonLocal);
             }
             wallcycle_stop(wcycle, ewcNS);
         }
@@ -1250,7 +1257,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxn::AtomLocality::NonLocal,
+					    FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
                                             nbv->nbat, wcycle);
         }
 
@@ -1260,7 +1268,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
             /* launch non-local nonbonded tasks on GPU */
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
+	    Nbnxn::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, Nbnxn::AtomLocality::NonLocal, ppForceWorkload->haveGpuBondedWork);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
             if (ppForceWorkload->haveGpuBondedWork)
@@ -1271,7 +1279,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             }
 
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
+            do_nb_verlet(fr, ic, enerd, flags, Nbnxn::InteractionLocality::NonLocal, enbvClearFNo,
                          step, nrnb, wcycle);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
@@ -1286,11 +1294,11 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         if (DOMAINDECOMP(cr))
         {
-            nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                     flags, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
+	    Nbnxn::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
+				      flags, Nbnxn::AtomLocality::NonLocal, ppForceWorkload->haveGpuBondedWork);
         }
-        nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                 flags, eatLocal, ppForceWorkload->haveGpuBondedWork);
+	Nbnxn::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
+				  flags, Nbnxn::AtomLocality::Local, ppForceWorkload->haveGpuBondedWork);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
         if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
@@ -1397,7 +1405,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (!bUseOrEmulGPU)
     {
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
+        do_nb_verlet(fr, ic, enerd, flags, Nbnxn::InteractionLocality::Local, enbvClearFYes,
                      step, nrnb, wcycle);
     }
 
@@ -1406,18 +1414,18 @@ static void do_force_cutsVERLET(FILE *fplog,
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.
          */
-        if (fr->nbv->grp[eintLocal].nbl_lists.nbl_fep[0]->nrj > 0)
+        if (fr->nbv->grp[Nbnxn::InteractionLocality::Local].nbl_lists.nbl_fep[0]->nrj > 0)
         {
-            do_nb_verlet_fep(&fr->nbv->grp[eintLocal].nbl_lists,
+            do_nb_verlet_fep(&fr->nbv->grp[Nbnxn::InteractionLocality::Local].nbl_lists,
                              fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
         }
 
         if (DOMAINDECOMP(cr) &&
-            fr->nbv->grp[eintNonlocal].nbl_lists.nbl_fep[0]->nrj > 0)
+            fr->nbv->grp[Nbnxn::InteractionLocality::NonLocal].nbl_lists.nbl_fep[0]->nrj > 0)
         {
-            do_nb_verlet_fep(&fr->nbv->grp[eintNonlocal].nbl_lists,
+            do_nb_verlet_fep(&fr->nbv->grp[Nbnxn::InteractionLocality::NonLocal].nbl_lists,
                              fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
@@ -1426,22 +1434,14 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (!bUseOrEmulGPU)
     {
-        int aloc;
-
         if (DOMAINDECOMP(cr))
         {
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
+            do_nb_verlet(fr, ic, enerd, flags, Nbnxn::InteractionLocality::NonLocal, enbvClearFNo,
                          step, nrnb, wcycle);
         }
 
-        if (!bUseOrEmulGPU)
-        {
-            aloc = eintLocal;
-        }
-        else
-        {
-            aloc = eintNonlocal;
-        }
+	const Nbnxn::InteractionLocality iloc =
+	    (!bUseOrEmulGPU ? Nbnxn::InteractionLocality::Local : Nbnxn::InteractionLocality::NonLocal);
 
         /* Add all the non-bonded force to the normal force array.
          * This can be split into a local and a non-local part when overlapping
@@ -1449,13 +1449,13 @@ static void do_force_cutsVERLET(FILE *fplog,
          */
         wallcycle_stop(wcycle, ewcFORCE);
 
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatAll, nbv->nbat, f, wcycle);
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxn::AtomLocality::All, nbv->nbat, f, wcycle);
 
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
         /* if there are multiple fshift output buffers reduce them */
         if ((flags & GMX_FORCE_VIRIAL) &&
-            nbv->grp[aloc].nbl_lists.nnbl > 1)
+            nbv->grp[iloc].nbl_lists.nnbl > 1)
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
@@ -1493,25 +1493,25 @@ static void do_force_cutsVERLET(FILE *fplog,
             if (bUseGPU)
             {
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
-                nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
-                                           flags, eatNonlocal,
-                                           ppForceWorkload->haveGpuBondedWork,
-                                           enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                           fr->fshift);
+		Nbnxn::gpu_wait_finish_task(nbv->gpu_nbv,
+					    flags, Nbnxn::AtomLocality::NonLocal,
+					    ppForceWorkload->haveGpuBondedWork,
+					    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+					    fr->fshift);
                 cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
             }
             else
             {
                 wallcycle_start_nocount(wcycle, ewcFORCE);
-                do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
+                do_nb_verlet(fr, ic, enerd, flags, Nbnxn::InteractionLocality::NonLocal, enbvClearFYes,
                              step, nrnb, wcycle);
                 wallcycle_stop(wcycle, ewcFORCE);
             }
 
             /* skip the reduction if there was no non-local work to do */
-            if (!nbv->grp[eintNonlocal].nbl_lists.nblGpu[0]->sci.empty())
+            if (!nbv->grp[Nbnxn::InteractionLocality::NonLocal].nbl_lists.nblGpu[0]->sci.empty())
             {
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatNonlocal,
+                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxn::AtomLocality::NonLocal,
                                                nbv->nbat, f, wcycle);
             }
         }
@@ -1558,9 +1558,9 @@ static void do_force_cutsVERLET(FILE *fplog,
         const float gpuWaitApiOverheadMargin = 2e6f; /* cycles */
 
         wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-        nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
-                                   flags, eatLocal, ppForceWorkload->haveGpuBondedWork,
-                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+	Nbnxn::gpu_wait_finish_task(nbv->gpu_nbv,
+				    flags, Nbnxn::AtomLocality::Local, ppForceWorkload->haveGpuBondedWork,
+				    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
         float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
@@ -1586,7 +1586,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         // NOTE: emulation kernel is not included in the balancing region,
         // but emulation mode does not target performance anyway
         wallcycle_start_nocount(wcycle, ewcFORCE);
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal,
+        do_nb_verlet(fr, ic, enerd, flags, Nbnxn::InteractionLocality::Local,
                      DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
                      step, nrnb, wcycle);
         wallcycle_stop(wcycle, ewcFORCE);
@@ -1602,7 +1602,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         /* now clear the GPU outputs while we finish the step on the CPU */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
+	Nbnxn::gpu_clear_outputs(nbv->gpu_nbv, flags);
 
         /* Is dynamic pair-list pruning activated? */
         if (nbv->listParams->useDynamicPruning)
@@ -1633,12 +1633,12 @@ static void do_force_cutsVERLET(FILE *fplog,
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxn::AtomLocality::Local,
                                        nbv->nbat, f, wcycle);
     }
     if (DOMAINDECOMP(cr))
     {
-        dd_force_flop_stop(cr->dd, nrnb);
+	dd_force_flop_stop(cr->dd, nrnb);
     }
 
     if (bDoForces)
@@ -2744,7 +2744,7 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, const t_commrec *cr,
 
     if (printReport)
     {
-        auto                    nbnxn_gpu_timings = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : nullptr;
+        auto                    nbnxn_gpu_timings = use_GPU(nbv) ? Nbnxn::gpu_get_timings(nbv->gpu_nbv) : nullptr;
         gmx_wallclock_gpu_pme_t pme_gpu_timings   = {};
         if (pme_gpu_task_enabled(pme))
         {

@@ -52,8 +52,10 @@
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nbnxn/gpu_types_common.h"
+#include "gromacs/nbnxn/nbnxn.h"
 #include "gromacs/nbnxn/pairlist.h"
 #include "gromacs/timing/gpu_timing.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 /*! \brief Macro definining default for the prune kernel's j4 processing concurrency.
  *
@@ -197,26 +199,26 @@ struct cu_nbparam
 /** \internal
  * \brief Pair list data.
  */
-using cu_plist_t = gpu_plist;
+using cu_plist_t = Nbnxn::gpu_plist;
 
 /** \internal
  * \brief Typedef of actual timer type.
  */
-typedef struct nbnxn_gpu_timers_t cu_timers_t;
+typedef struct Nbnxn::gpu_timers_t cu_timers_t;
 
 /** \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
  */
 struct gmx_nbnxn_cuda_t
 {
-    const gmx_device_info_t  *dev_info;       /**< CUDA device information                              */
-    bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
-    cu_atomdata_t            *atdat;          /**< atom data                                            */
-    cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */
-    cu_plist_t               *plist[2];       /**< pair-list data structures (local and non-local)      */
-    nb_staging_t              nbst;           /**< staging area where fshift/energies get downloaded    */
+    const gmx_device_info_t                                        *dev_info;       /**< CUDA device information                              */
+    bool                                                            bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
+    cu_atomdata_t                                                  *atdat;          /**< atom data                                            */
+    cu_nbparam_t                                                   *nbparam;        /**< parameters required for the non-bonded calc.         */
+    gmx::EnumerationArray<Nbnxn::InteractionLocality, cu_plist_t *> plist;          /**< pair-list data structures (local and non-local)      */
+    nb_staging_t                                                    nbst;           /**< staging area where fshift/energies get downloaded    */
 
-    cudaStream_t              stream[2];      /**< local and non-local GPU streams                      */
+    gmx::EnumerationArray<Nbnxn::InteractionLocality, cudaStream_t> stream;         /**< local and non-local GPU streams                      */
 
     /** events used for synchronization */
     cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel

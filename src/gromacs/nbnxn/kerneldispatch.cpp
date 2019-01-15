@@ -413,13 +413,13 @@ nbnxn_kernel_cpu(const nonbonded_verlet_group_t *nbvg,
     }
 }
 
-static void accountFlops(t_nrnb                    *nrnb,
-                         const nonbonded_verlet_t  &nbv,
-                         const int                  ilocality,
-                         const interaction_const_t &ic,
-                         int                        forceFlags)
+static void accountFlops(t_nrnb                           *nrnb,
+                         const nonbonded_verlet_t         &nbv,
+                         const Nbnxn::InteractionLocality  iLocality,
+                         const interaction_const_t        &ic,
+                         const int                         forceFlags)
 {
-    const nonbonded_verlet_group_t &nbvg            = nbv.grp[ilocality];
+    const nonbonded_verlet_group_t &nbvg            = nbv.grp[iLocality];
     const bool                      usingGpuKernels = (nbvg.kernel_type == nbnxnk8x8x8_GPU);
 
     int enr_nbnxn_kernel_ljc;
@@ -428,7 +428,7 @@ static void accountFlops(t_nrnb                    *nrnb,
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
     else if ((!usingGpuKernels && nbvg.ewald_excl == ewaldexclAnalytical) ||
-             (usingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(nbv.gpu_nbv)))
+             (usingGpuKernels && Nbnxn::gpu_is_kernel_ewald_analytical(nbv.gpu_nbv)))
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
     }
@@ -474,7 +474,7 @@ static void accountFlops(t_nrnb                    *nrnb,
 }
 
 void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
-                         const int                  ilocality,
+                         Nbnxn::InteractionLocality iLocality,
                          const interaction_const_t &ic,
                          int                        forceFlags,
                          int                        clearF,
@@ -482,7 +482,7 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
                          gmx_enerdata_t            *enerd,
                          t_nrnb                    *nrnb)
 {
-    const nonbonded_verlet_group_t &nbvg = nbv->grp[ilocality];
+    const nonbonded_verlet_group_t &nbvg = nbv->grp[iLocality];
 
     switch (nbvg.kernel_type)
     {
@@ -503,7 +503,7 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
             break;
 
         case nbnxnk8x8x8_GPU:
-            nbnxn_gpu_launch_kernel(nbv->gpu_nbv, forceFlags, ilocality);
+            Nbnxn::gpu_launch_kernel(nbv->gpu_nbv, forceFlags, iLocality);
             break;
 
         case nbnxnk8x8x8_PlainC:
@@ -525,5 +525,5 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
 
     }
 
-    accountFlops(nrnb, *nbv, ilocality, ic, forceFlags);
+    accountFlops(nrnb, *nbv, iLocality, ic, forceFlags);
 }

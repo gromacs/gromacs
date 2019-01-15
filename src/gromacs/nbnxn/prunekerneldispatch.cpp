@@ -45,9 +45,9 @@
 #include "kernels_simd_4xn/kernel_prune.h"
 
 
-void NbnxnDispatchPruneKernel(nonbonded_verlet_t *nbv,
-                              int                 ilocality,
-                              const rvec         *shift_vec)
+void NbnxnDispatchPruneKernel(nonbonded_verlet_t               *nbv,
+                              const Nbnxn::InteractionLocality  ilocality,
+                              const rvec                       *shift_vec)
 {
     nonbonded_verlet_group_t &nbvg       = nbv->grp[ilocality];
     nbnxn_pairlist_set_t     *nbl_lists  = &nbvg.nbl_lists;

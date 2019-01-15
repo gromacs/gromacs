@@ -44,6 +44,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// TODO We would like to move this down, but the way gmx_nbnxn_gpu_t
+//      is currently declared means this has to be before gpu_types.h
+#include "nbnxn_cuda_types.h"
+
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/pmalloc_cuda.h"
@@ -63,7 +67,9 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "nbnxn_cuda.h"
-#include "nbnxn_cuda_types.h"
+
+namespace Nbnxn
+{
 
 /* This is a heuristically determined parameter for the Kepler
  * and Maxwell architectures for the minimum size of ci lists by multiplying
@@ -330,11 +336,11 @@ static void init_nbparam(cu_nbparam_t                   *nbp,
 
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed. */
-void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
-                                        const interaction_const_t   *ic,
-                                        const NbnxnListParameters   *listParams)
+void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
+                                  const interaction_const_t   *ic,
+                                  const NbnxnListParameters   *listParams)
 {
-    if (!nbv || nbv->grp[0].kernel_type != nbnxnk8x8x8_GPU)
+    if (!nbv || nbv->grp[InteractionLocality::Local].kernel_type != nbnxnk8x8x8_GPU)
     {
         return;
     }
@@ -371,18 +377,6 @@ static void init_plist(cu_plist_t *pl)
     pl->haveFreshList  = false;
 }
 
-/*! Initializes the timer data structure. */
-static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
-{
-    /* The non-local counters/stream (second in the array) are needed only with DD. */
-    for (int i = 0; i <= (bUseTwoStreams ? 1 : 0); i++)
-    {
-        t->didPairlistH2D[i]  = false;
-        t->didPrune[i]        = false;
-        t->didRollingPrune[i] = false;
-    }
-}
-
 /*! Initializes the timings data structure. */
 static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 {
@@ -408,10 +402,10 @@ static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 }
 
 /*! Initializes simulation constant data. */
-static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
-                                  const interaction_const_t      *ic,
-                                  const NbnxnListParameters      *listParams,
-                                  const nbnxn_atomdata_t::Params &nbatParams)
+static void cuda_init_const(gmx_nbnxn_cuda_t               *nb,
+                            const interaction_const_t      *ic,
+                            const NbnxnListParameters      *listParams,
+                            const nbnxn_atomdata_t::Params &nbatParams)
 {
     init_atomdata_first(nb->atdat, nbatParams.numTypes);
     init_nbparam(nb->nbparam, ic, listParams, nbatParams);
@@ -420,13 +414,13 @@ static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
     nbnxn_cuda_clear_e_fshift(nb);
 }
 
-void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
-                    const gmx_device_info_t   *deviceInfo,
-                    const interaction_const_t *ic,
-                    const NbnxnListParameters *listParams,
-                    const nbnxn_atomdata_t    *nbat,
-                    int                        /*rank*/,
-                    gmx_bool                   bLocalAndNonlocal)
+void gpu_init(gmx_nbnxn_cuda_t         **p_nb,
+              const gmx_device_info_t   *deviceInfo,
+              const interaction_const_t *ic,
+              const NbnxnListParameters *listParams,
+              const nbnxn_atomdata_t    *nbat,
+              int                        /*rank*/,
+              gmx_bool                   bLocalAndNonlocal)
 {
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
@@ -439,10 +433,10 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     snew(nb, 1);
     snew(nb->atdat, 1);
     snew(nb->nbparam, 1);
-    snew(nb->plist[eintLocal], 1);
+    snew(nb->plist[InteractionLocality::Local], 1);
     if (bLocalAndNonlocal)
     {
-        snew(nb->plist[eintNonlocal], 1);
+        snew(nb->plist[InteractionLocality::NonLocal], 1);
     }
 
     nb->bUseTwoStreams = bLocalAndNonlocal;
@@ -455,17 +449,17 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
     pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
 
-    init_plist(nb->plist[eintLocal]);
+    init_plist(nb->plist[InteractionLocality::Local]);
 
     /* set device info, just point it to the right GPU among the detected ones */
     nb->dev_info = deviceInfo;
 
     /* local/non-local GPU streams */
-    stat = cudaStreamCreate(&nb->stream[eintLocal]);
-    CU_RET_ERR(stat, "cudaStreamCreate on stream[eintLocal] failed");
+    stat = cudaStreamCreate(&nb->stream[InteractionLocality::Local]);
+    CU_RET_ERR(stat, "cudaStreamCreate on stream[InterationLocality::Local] failed");
     if (nb->bUseTwoStreams)
     {
-        init_plist(nb->plist[eintNonlocal]);
+        init_plist(nb->plist[InteractionLocality::NonLocal]);
 
         /* Note that the device we're running on does not have to support
          * priorities, because we are querying the priority range which in this
@@ -475,10 +469,10 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
         stat = cudaDeviceGetStreamPriorityRange(nullptr, &highest_priority);
         CU_RET_ERR(stat, "cudaDeviceGetStreamPriorityRange failed");
 
-        stat = cudaStreamCreateWithPriority(&nb->stream[eintNonlocal],
+        stat = cudaStreamCreateWithPriority(&nb->stream[InteractionLocality::NonLocal],
                                             cudaStreamDefault,
                                             highest_priority);
-        CU_RET_ERR(stat, "cudaStreamCreateWithPriority on stream[eintNonlocal] failed");
+        CU_RET_ERR(stat, "cudaStreamCreateWithPriority on stream[InteractionLocality::NonLocal] failed");
     }
 
     /* init events for sychronization (timing disabled for performance reasons!) */
@@ -495,15 +489,14 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 
     if (nb->bDoTime)
     {
-        init_timers(nb->timers, nb->bUseTwoStreams);
         init_timings(nb->timings);
     }
 
     /* set the kernel type for the current GPU */
     /* pick L1 cache configuration */
-    nbnxn_cuda_set_cacheconfig();
+    cuda_set_cacheconfig();
 
-    nbnxn_cuda_init_const(nb, ic, listParams, nbat->params());
+    cuda_init_const(nb, ic, listParams, nbat->params());
 
     *p_nb = nb;
 
@@ -513,9 +506,9 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     }
 }
 
-void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
-                             const NbnxnPairlistGpu *h_plist,
-                             int                     iloc)
+void gpu_init_pairlist(gmx_nbnxn_cuda_t          *nb,
+                       const NbnxnPairlistGpu    *h_plist,
+                       const InteractionLocality  iloc)
 {
     char          sbuf[STRLEN];
     bool          bDoTime    =  (nb->bDoTime && !h_plist->sci.empty());
@@ -536,10 +529,12 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
         }
     }
 
+    gpu_timers_t::Interaction &iTimers = nb->timers->interaction[iloc];
+
     if (bDoTime)
     {
-        nb->timers->pl_h2d[iloc].openTimingRegion(stream);
-        nb->timers->didPairlistH2D[iloc] = true;
+        iTimers.pl_h2d.openTimingRegion(stream);
+        iTimers.didPairlistH2D = true;
     }
 
     Context context = nullptr;
@@ -548,13 +543,13 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
                            &d_plist->nsci, &d_plist->sci_nalloc, context);
     copyToDeviceBuffer(&d_plist->sci, h_plist->sci.data(), 0, h_plist->sci.size(),
                        stream, GpuApiCallBehavior::Async,
-                       bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     reallocateDeviceBuffer(&d_plist->cj4, h_plist->cj4.size(),
                            &d_plist->ncj4, &d_plist->cj4_nalloc, context);
     copyToDeviceBuffer(&d_plist->cj4, h_plist->cj4.data(), 0, h_plist->cj4.size(),
                        stream, GpuApiCallBehavior::Async,
-                       bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     reallocateDeviceBuffer(&d_plist->imask, h_plist->cj4.size()*c_nbnxnGpuClusterpairSplit,
                            &d_plist->nimask, &d_plist->imask_nalloc, context);
@@ -563,22 +558,22 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
                            &d_plist->nexcl, &d_plist->excl_nalloc, context);
     copyToDeviceBuffer(&d_plist->excl, h_plist->excl.data(), 0, h_plist->excl.size(),
                        stream, GpuApiCallBehavior::Async,
-                       bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     if (bDoTime)
     {
-        nb->timers->pl_h2d[iloc].closeTimingRegion(stream);
+        iTimers.pl_h2d.closeTimingRegion(stream);
     }
 
     /* the next use of thist list we be the first one, so we need to prune */
     d_plist->haveFreshList = true;
 }
 
-void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_cuda_t       *nb,
-                               const nbnxn_atomdata_t *nbatom)
+void gpu_upload_shiftvec(gmx_nbnxn_cuda_t       *nb,
+                         const nbnxn_atomdata_t *nbatom)
 {
     cu_atomdata_t *adat  = nb->atdat;
-    cudaStream_t   ls    = nb->stream[eintLocal];
+    cudaStream_t   ls    = nb->stream[InteractionLocality::Local];
 
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
@@ -594,7 +589,7 @@ static void nbnxn_cuda_clear_f(gmx_nbnxn_cuda_t *nb, int natoms_clear)
 {
     cudaError_t    stat;
     cu_atomdata_t *adat  = nb->atdat;
-    cudaStream_t   ls    = nb->stream[eintLocal];
+    cudaStream_t   ls    = nb->stream[InteractionLocality::Local];
 
     stat = cudaMemsetAsync(adat->f, 0, natoms_clear * sizeof(*adat->f), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on f falied");
@@ -605,7 +600,7 @@ static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb)
 {
     cudaError_t    stat;
     cu_atomdata_t *adat  = nb->atdat;
-    cudaStream_t   ls    = nb->stream[eintLocal];
+    cudaStream_t   ls    = nb->stream[InteractionLocality::Local];
 
     stat = cudaMemsetAsync(adat->fshift, 0, SHIFTS * sizeof(*adat->fshift), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on fshift falied");
@@ -615,7 +610,7 @@ static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb)
     CU_RET_ERR(stat, "cudaMemsetAsync on e_el falied");
 }
 
-void nbnxn_gpu_clear_outputs(gmx_nbnxn_cuda_t *nb, int flags)
+void gpu_clear_outputs(gmx_nbnxn_cuda_t *nb, int flags)
 {
     nbnxn_cuda_clear_f(nb, nb->atdat->natoms);
     /* clear shift force array and energies if the outputs were
@@ -626,8 +621,8 @@ void nbnxn_gpu_clear_outputs(gmx_nbnxn_cuda_t *nb, int flags)
     }
 }
 
-void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
-                             const nbnxn_atomdata_t        *nbat)
+void gpu_init_atomdata(gmx_nbnxn_cuda_t       *nb,
+                       const nbnxn_atomdata_t *nbat)
 {
     cudaError_t    stat;
     int            nalloc, natoms;
@@ -635,7 +630,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     bool           bDoTime   = nb->bDoTime;
     cu_timers_t   *timers    = nb->timers;
     cu_atomdata_t *d_atdat   = nb->atdat;
-    cudaStream_t   ls        = nb->stream[eintLocal];
+    cudaStream_t   ls        = nb->stream[InteractionLocality::Local];
 
     natoms    = nbat->numAtoms();
     realloced = false;
@@ -714,7 +709,7 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam)
     }
 }
 
-void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
+void gpu_free(gmx_nbnxn_cuda_t *nb)
 {
     cudaError_t      stat;
     cu_atomdata_t   *atdat;
@@ -773,7 +768,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     freeDeviceBuffer(&atdat->lj_comb);
 
     /* Free plist */
-    auto *plist = nb->plist[eintLocal];
+    auto *plist = nb->plist[InteractionLocality::Local];
     freeDeviceBuffer(&plist->sci);
     freeDeviceBuffer(&plist->cj4);
     freeDeviceBuffer(&plist->imask);
@@ -781,7 +776,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     sfree(plist);
     if (nb->bUseTwoStreams)
     {
-        auto *plist_nl = nb->plist[eintNonlocal];
+        auto *plist_nl = nb->plist[InteractionLocality::NonLocal];
         freeDeviceBuffer(&plist_nl->sci);
         freeDeviceBuffer(&plist_nl->cj4);
         freeDeviceBuffer(&plist_nl->imask);
@@ -811,12 +806,12 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 }
 
 //! This function is documented in the header file
-gmx_wallclock_gpu_nbnxn_t *nbnxn_gpu_get_timings(gmx_nbnxn_cuda_t *nb)
+gmx_wallclock_gpu_nbnxn_t *gpu_get_timings(gmx_nbnxn_cuda_t *nb)
 {
     return (nb != nullptr && nb->bDoTime) ? nb->timings : nullptr;
 }
 
-void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
+void gpu_reset_timings(nonbonded_verlet_t* nbv)
 {
     if (nbv->gpu_nbv && nbv->gpu_nbv->bDoTime)
     {
@@ -824,44 +819,46 @@ void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
     }
 }
 
-int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_cuda_t *nb)
+int gpu_min_ci_balanced(gmx_nbnxn_cuda_t *nb)
 {
     return nb != nullptr ?
            gpu_min_ci_balanced_factor*nb->dev_info->prop.multiProcessorCount : 0;
 
 }
 
-gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_cuda_t *nb)
+gmx_bool gpu_is_kernel_ewald_analytical(const gmx_nbnxn_cuda_t *nb)
 {
     return ((nb->nbparam->eeltype == eelCuEWALD_ANA) ||
             (nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
 }
 
-void *nbnxn_gpu_get_command_stream(gmx_nbnxn_gpu_t *nb,
-                                   int              iloc)
+void *gpu_get_command_stream(gmx_nbnxn_gpu_t           *nb,
+                             const InteractionLocality  iloc)
 {
     assert(nb);
 
     return static_cast<void *>(&nb->stream[iloc]);
 }
 
-void *nbnxn_gpu_get_xq(gmx_nbnxn_gpu_t *nb)
+void *gpu_get_xq(gmx_nbnxn_gpu_t *nb)
 {
     assert(nb);
 
     return static_cast<void *>(nb->atdat->xq);
 }
 
-void *nbnxn_gpu_get_f(gmx_nbnxn_gpu_t *nb)
+void *gpu_get_f(gmx_nbnxn_gpu_t *nb)
 {
     assert(nb);
 
     return static_cast<void *>(nb->atdat->f);
 }
 
-rvec *nbnxn_gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
+rvec *gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
 {
     assert(nb);
 
     return reinterpret_cast<rvec *>(nb->atdat->fshift);
 }
+
+} // namespace Nbnxn
