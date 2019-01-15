@@ -492,6 +492,11 @@ void OptACM::TuneACM2PolData()
                         {
                             zeta   = param_[n]; // shell
                             sigma  = psigma_[n++];
+                            
+                            if (iChargeDistributionModel() == eqdAXps)
+                            {
+                                zeta = nearbyint(zeta);
+                            }
                         }
                         sprintf(buf, "%g ", zeta);
                         sprintf(buf_sig, "%g ", sigma);
@@ -505,6 +510,12 @@ void OptACM::TuneACM2PolData()
                     {
                         zeta   = param_[n];
                         sigma  = psigma_[n++];
+                        
+                        if (iChargeDistributionModel() == eqdAXs)
+                        {
+                            zeta = nearbyint(zeta);
+                        }
+                        
                         sprintf(buf, "%g ", zeta);
                         sprintf(buf_sig, "%g ", sigma);
                         strcat(zstr, buf);
