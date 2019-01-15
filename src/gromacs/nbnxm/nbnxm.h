@@ -104,7 +104,10 @@
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/nbnxm/search.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
+
+#include "locality.h"
 
 // TODO: Remove this include and the two nbnxn includes above
 #include "gpu.h"
@@ -148,49 +151,22 @@ typedef enum
     nbnxnkNR
 } nbnxn_kernel_type;
 
+namespace Nbnxm
+{
+
 /*! \brief Return a string identifying the kernel type.
  *
  * \param [in] kernel_type   nonbonded kernel types, takes values from the nbnxn_kernel_type enum
  * \returns                  a string identifying the kernel corresponding to the type passed as argument
  */
-const char *lookup_nbnxn_kernel_name(int kernel_type);
+const char *lookup_kernel_name(int kernel_type);
+
+} // namespace Nbnxm
 
 /*! \brief Ewald exclusion types */
 enum {
     ewaldexclTable, ewaldexclAnalytical
 };
-
-/*! \brief Atom locality indicator: local, non-local, all.
- *
- * Used for calls to:
- * gridding, pair-search, force calculation, x/f buffer operations
- * */
-enum {
-    eatLocal = 0, eatNonlocal = 1, eatAll
-};
-
-/*! \brief Tests for local atom range */
-#define LOCAL_A(x)               ((x) == eatLocal)
-/*! \brief Tests for non-local atom range */
-#define NONLOCAL_A(x)            ((x) == eatNonlocal)
-/*! \brief Tests for either local or non-local atom range */
-#define LOCAL_OR_NONLOCAL_A(x)   (LOCAL_A(x) || NONLOCAL_A(x))
-
-/*! \brief Interaction locality indicator
- *
- * Used in pair-list search/calculations in the following manner:
- *  - local interactions require local atom data and affect local output only;
- *  - non-local interactions require both local and non-local atom data and
- *    affect both local- and non-local output.
- */
-enum {
-    eintLocal = 0, eintNonlocal = 1
-};
-
-/*! \brief Tests for local interaction indicator */
-#define LOCAL_I(x)               ((x) == eintLocal)
-/*! \brief Tests for non-local interaction indicator */
-#define NONLOCAL_I(x)            ((x) == eintNonlocal)
 
 /*! \brief Flag to tell the nonbonded kernels whether to clear the force output buffers */
 enum {
@@ -207,19 +183,25 @@ typedef struct nonbonded_verlet_group_t {
 
 /*! \libinternal
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
-typedef struct nonbonded_verlet_t {
-    std::unique_ptr<NbnxnListParameters> listParams;      /**< Parameters for the search and list pruning setup */
-    std::unique_ptr<nbnxn_search>        nbs;             /**< n vs n atom pair searching data       */
-    int                                  ngrp;            /**< number of interaction groups          */
-    nonbonded_verlet_group_t             grp[2];          /**< local and non-local interaction group */
-    nbnxn_atomdata_t                    *nbat;            /**< atom data                             */
+struct nonbonded_verlet_t
+{
+    std::unique_ptr<NbnxnListParameters>                                        listParams; /**< Parameters for the search and list pruning setup */
+    std::unique_ptr<nbnxn_search>                                               nbs;        /**< n vs n atom pair searching data       */
+    int                                                                         ngrp;       /**< number of interaction groups          */
+    //! Local and non-local interaction group
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, nonbonded_verlet_group_t> grp;
+    //! Atom data
+    nbnxn_atomdata_t                                                           *nbat;
 
-    gmx_bool                             bUseGPU;         /**< TRUE when non-bonded interactions are computed on a physical GPU */
-    EmulateGpuNonbonded                  emulateGpu;      /**< true when non-bonded interactions are computed on the CPU using GPU-style pair lists */
-    gmx_nbnxn_gpu_t                     *gpu_nbv;         /**< pointer to GPU nb verlet data     */
-    int                                  min_ci_balanced; /**< pair list balancing parameter
-                                                               used for the 8x8x8 GPU kernels    */
-} nonbonded_verlet_t;
+    gmx_bool                                                                    bUseGPU;         /**< TRUE when non-bonded interactions are computed on a physical GPU */
+    EmulateGpuNonbonded                                                         emulateGpu;      /**< true when non-bonded interactions are computed on the CPU using GPU-style pair lists */
+    gmx_nbnxn_gpu_t                                                            *gpu_nbv;         /**< pointer to GPU nb verlet data     */
+    int                                                                         min_ci_balanced; /**< pair list balancing parameter
+                                                                                                      used for the 8x8x8 GPU kernels    */
+};
+
+namespace Nbnxm
+{
 
 /*! \brief Initializes the nbnxn module */
 void init_nb_verlet(const gmx::MDLogger     &mdlog,
@@ -232,6 +214,8 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
                     const gmx_device_info_t *deviceInfo,
                     const gmx_mtop_t        *mtop,
                     matrix                   box);
+
+} // namespace Nbnxm
 
 /*! \brief Put the atoms on the pair search grid.
  *
@@ -290,18 +274,18 @@ gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs);
  * pairs beyond the pairlist inner radius and writes the result to a list that is
  * to be consumed by the non-bonded kernel.
  */
-void NbnxnDispatchPruneKernel(nonbonded_verlet_t *nbv,
-                              int                 ilocality,
-                              const rvec         *shift_vec);
+void NbnxnDispatchPruneKernel(nonbonded_verlet_t         *nbv,
+                              Nbnxm::InteractionLocality  iLocality,
+                              const rvec                 *shift_vec);
 
 /*! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU */
-void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
-                         int                        ilocality,
-                         const interaction_const_t &ic,
-                         int                        forceFlags,
-                         int                        clearF,
-                         t_forcerec                *fr,
-                         gmx_enerdata_t            *enerd,
-                         t_nrnb                    *nrnb);
+void NbnxnDispatchKernel(nonbonded_verlet_t         *nbv,
+                         Nbnxm::InteractionLocality  iLocality,
+                         const interaction_const_t  &ic,
+                         int                         forceFlags,
+                         int                         clearF,
+                         t_forcerec                 *fr,
+                         gmx_enerdata_t             *enerd,
+                         t_nrnb                     *nrnb);
 
 #endif // GMX_NBNXN_NBNXN_H
