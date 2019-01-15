@@ -62,6 +62,9 @@
 #include "grid.h"
 #include "internal.h"
 
+namespace Nbnxm
+{
+
 /*! \brief Returns whether CPU SIMD support exists for the given inputrec
  *
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback
@@ -134,7 +137,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
             /* One 256-bit FMA per cycle makes 2xNN faster */
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
-#endif  /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
+#endif      /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
 
 
         if (getenv("GMX_NBNXN_SIMD_4XN") != nullptr)
@@ -181,10 +184,10 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
         }
 
     }
-#endif // GMX_SIMD
+#endif  // GMX_SIMD
 }
 
-const char *lookup_nbnxn_kernel_name(int kernel_type)
+const char *lookup_kernel_name(int kernel_type)
 {
     const char *returnvalue = nullptr;
     switch (kernel_type)
@@ -260,7 +263,7 @@ static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
     {
         GMX_LOG(mdlog.info).asParagraph().appendTextFormatted(
                 "Using %s %dx%d nonbonded short-range kernels",
-                lookup_nbnxn_kernel_name(*kernel_type),
+                lookup_kernel_name(*kernel_type),
                 nbnxn_kernel_to_cluster_i_size(*kernel_type),
                 nbnxn_kernel_to_cluster_j_size(*kernel_type));
 
@@ -270,7 +273,7 @@ static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "WARNING: Using the slow %s kernels. This should\n"
                     "not happen during routine usage on supported platforms.",
-                    lookup_nbnxn_kernel_name(*kernel_type));
+                    lookup_kernel_name(*kernel_type));
         }
     }
 }
@@ -388,13 +391,13 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        nbnxn_gpu_init(&nbv->gpu_nbv,
-                       deviceInfo,
-                       fr->ic,
-                       nbv->listParams.get(),
-                       nbv->nbat,
-                       cr->nodeid,
-                       (nbv->ngrp > 1));
+        gpu_init(&nbv->gpu_nbv,
+                 deviceInfo,
+                 fr->ic,
+                 nbv->listParams.get(),
+                 nbv->nbat,
+                 cr->nodeid,
+                 (nbv->ngrp > 1));
 
         if ((env = getenv("GMX_NB_MIN_CI")) != nullptr)
         {
@@ -414,7 +417,7 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
         }
         else
         {
-            nbv->min_ci_balanced = nbnxn_gpu_min_ci_balanced(nbv->gpu_nbv);
+            nbv->min_ci_balanced = gpu_min_ci_balanced(nbv->gpu_nbv);
             if (debug)
             {
                 fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",
@@ -426,3 +429,5 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     *nb_verlet = nbv;
 }
+
+} // namespace Nbnxm

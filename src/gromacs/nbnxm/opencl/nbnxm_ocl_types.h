@@ -51,7 +51,9 @@
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
@@ -243,12 +245,12 @@ typedef struct cl_nbparam_params
 /*! \internal
  * \brief Pair list data.
  */
-using cl_plist_t = gpu_plist;
+using cl_plist_t = Nbnxm::gpu_plist;
 
 /** \internal
  * \brief Typedef of actual timer type.
  */
-typedef struct nbnxn_gpu_timers_t cl_timers_t;
+typedef struct Nbnxm::gpu_timers_t cl_timers_t;
 
 /*! \internal
  * \brief Main data structure for OpenCL nonbonded force calculations.
@@ -278,15 +280,15 @@ struct gmx_nbnxn_ocl_t
     cl_kernel           kernel_zero_e_fshift;
     ///@}
 
-    cl_bool             bUseTwoStreams;        /**< true if doing both local/non-local NB work on GPU          */
-    cl_bool             bNonLocalStreamActive; /**< true indicates that the nonlocal_done event was enqueued   */
+    cl_bool                                                             bUseTwoStreams;        /**< true if doing both local/non-local NB work on GPU          */
+    cl_bool                                                             bNonLocalStreamActive; /**< true indicates that the nonlocal_done event was enqueued   */
 
-    cl_atomdata_t      *atdat;                 /**< atom data                                                  */
-    cl_nbparam_t       *nbparam;               /**< parameters required for the non-bonded calc.               */
-    cl_plist_t         *plist[2];              /**< pair-list data structures (local and non-local)            */
-    cl_nb_staging_t     nbst;                  /**< staging area where fshift/energies get downloaded          */
+    cl_atomdata_t                                                      *atdat;                 /**< atom data                                                  */
+    cl_nbparam_t                                                       *nbparam;               /**< parameters required for the non-bonded calc.               */
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_plist_t *>     plist;                 /**< pair-list data structures (local and non-local)            */
+    cl_nb_staging_t                                                     nbst;                  /**< staging area where fshift/energies get downloaded          */
 
-    cl_command_queue    stream[2];             /**< local and non-local GPU queues                             */
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_command_queue> stream;                /**< local and non-local GPU queues                             */
 
     /** events used for synchronization */
     cl_event nonlocal_done;                     /**< event triggered when the non-local non-bonded kernel
