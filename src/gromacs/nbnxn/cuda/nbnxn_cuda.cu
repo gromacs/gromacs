@@ -107,6 +107,9 @@
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
 
+namespace Nbnxn
+{
+
 /*! Nonbonded kernel function pointer type */
 typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
                                      const cu_nbparam_t,
@@ -268,19 +271,24 @@ static inline int calc_shmem_required_nonbonded(const int num_threads_z, const g
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
-void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
-                              const nbnxn_atomdata_t *nbatom,
-                              int                     iloc,
-                              bool                    haveOtherWork)
+void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
+                        const nbnxn_atomdata_t *nbatom,
+                        const AtomLocality      atomLocality,
+                        const bool              haveOtherWork)
 {
-    int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
+    GMX_ASSERT(atomLocality == AtomLocality::Local || atomLocality == AtomLocality::NonLocal,
+               "Only local and non-local xq transfers are supported");
 
-    cu_atomdata_t       *adat    = nb->atdat;
-    cu_plist_t          *plist   = nb->plist[iloc];
-    cu_timers_t         *t       = nb->timers;
-    cudaStream_t         stream  = nb->stream[iloc];
+    const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
 
-    bool                 bDoTime     = nb->bDoTime;
+    int                       adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
+
+    cu_atomdata_t            *adat    = nb->atdat;
+    cu_plist_t               *plist   = nb->plist[iloc];
+    cu_timers_t              *t       = nb->timers;
+    cudaStream_t              stream  = nb->stream[iloc];
+
+    bool                      bDoTime     = nb->bDoTime;
 
     /* Don't launch the non-local H2D copy if there is no dependent
        work to do: neither non-local nor other (e.g. bonded) work
@@ -291,7 +299,7 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
        we always call the local local x+q copy (and the rest of the local
        work in nbnxn_gpu_launch_kernel().
      */
-    if (!haveOtherWork && canSkipWork(nb, iloc))
+    if (!haveOtherWork && canSkipWork(*nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -299,7 +307,7 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* calculate the atom data index range based on locality */
-    if (LOCAL_I(iloc))
+    if (atomLocality == AtomLocality::Local)
     {
         adat_begin  = 0;
         adat_len    = adat->natoms_local;
@@ -313,7 +321,7 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
     /* beginning of timed HtoD section */
     if (bDoTime)
     {
-        t->nb_h2d[iloc].openTimingRegion(stream);
+        t->xf[atomLocality].nb_h2d.openTimingRegion(stream);
     }
 
     /* HtoD x, q */
@@ -323,7 +331,7 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        t->nb_h2d[iloc].closeTimingRegion(stream);
+        t->xf[atomLocality].nb_h2d.closeTimingRegion(stream);
     }
 
     /* When we get here all misc operations issued in the local stream as well as
@@ -334,7 +342,7 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
      */
     if (nb->bUseTwoStreams)
     {
-        if (iloc == eintLocal)
+        if (iloc == InteractionLocality::Local)
         {
             cudaError_t stat = cudaEventRecord(nb->misc_ops_and_local_H2D_done, stream);
             CU_RET_ERR(stat, "cudaEventRecord on misc_ops_and_local_H2D_done failed");
@@ -364,9 +372,9 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
    the local x+q H2D (and all preceding) tasks are complete and synchronize
    with this event in the non-local stream before launching the non-bonded kernel.
  */
-void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
-                             int                     flags,
-                             int                     iloc)
+void gpu_launch_kernel(gmx_nbnxn_cuda_t          *nb,
+                       const int                  flags,
+                       const InteractionLocality  iloc)
 {
     /* CUDA kernel launch-related stuff */
     int                  nblock;
@@ -392,7 +400,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
        clearing. All these operations, except for the local interaction kernel,
        are needed for the non-local interactions. The skip of the local kernel
        call is taken care of later in this function. */
-    if (canSkipWork(nb, iloc))
+    if (canSkipWork(*nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -405,7 +413,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
            (TODO: ATM that's the way the timing accounting can distinguish between
            separate prune kernel and combined force+prune, maybe we need a better way?).
          */
-        nbnxn_gpu_launch_kernel_pruneonly(nb, iloc, 1);
+        gpu_launch_kernel_pruneonly(nb, iloc, 1);
     }
 
     if (plist->nsci == 0)
@@ -417,14 +425,14 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* beginning of timed nonbonded calculation section */
     if (bDoTime)
     {
-        t->nb_k[iloc].openTimingRegion(stream);
+        t->interaction[iloc].nb_k.openTimingRegion(stream);
     }
 
     /* get the pointer to the kernel flavor we need to use */
     nb_kernel = select_nbnxn_kernel(nbp->eeltype,
                                     nbp->vdwtype,
                                     bCalcEner,
-                                    (plist->haveFreshList && !nb->timers->didPrune[iloc]),
+                                    (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune),
                                     nb->dev_info);
 
     /* Kernel launch config:
@@ -458,13 +466,13 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
                 config.sharedMemorySize);
     }
 
-    auto      *timingEvent = bDoTime ? t->nb_k[iloc].fetchNextEvent() : nullptr;
+    auto      *timingEvent = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
     const auto kernelArgs  = prepareGpuKernelArguments(nb_kernel, config, adat, nbp, plist, &bCalcFshift);
     launchGpuKernel(nb_kernel, config, timingEvent, "k_calc_nb", kernelArgs);
 
     if (bDoTime)
     {
-        t->nb_k[iloc].closeTimingRegion(stream);
+        t->interaction[iloc].nb_k.closeTimingRegion(stream);
     }
 
     if (GMX_NATIVE_WINDOWS)
@@ -487,9 +495,9 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
     return shmem;
 }
 
-void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
-                                       int                     iloc,
-                                       int                     numParts)
+void gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t          *nb,
+                                 const InteractionLocality  iloc,
+                                 const int                  numParts)
 {
     cu_atomdata_t       *adat    = nb->atdat;
     cu_nbparam_t        *nbp     = nb->nbparam;
@@ -544,7 +552,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
     GpuRegionTimer *timer = nullptr;
     if (bDoTime)
     {
-        timer = &(plist->haveFreshList ? t->prune_k[iloc] : t->rollingPrune_k[iloc]);
+        timer = &(plist->haveFreshList ? t->interaction[iloc].prune_k : t->interaction[iloc].rollingPrune_k);
     }
 
     /* beginning of timed prune calculation section */
@@ -589,14 +597,14 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
        (combined or separate 1st pass prune, rolling prune). */
     if (plist->haveFreshList)
     {
-        plist->haveFreshList         = false;
+        plist->haveFreshList                   = false;
         /* Mark that pruning has been done */
-        nb->timers->didPrune[iloc] = true;
+        nb->timers->interaction[iloc].didPrune = true;
     }
     else
     {
         /* Mark that rolling pruning has been done */
-        nb->timers->didRollingPrune[iloc] = true;
+        nb->timers->interaction[iloc].didRollingPrune = true;
     }
 
     if (bDoTime)
@@ -611,18 +619,19 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
     }
 }
 
-void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
-                              nbnxn_atomdata_t       *nbatom,
-                              int                     flags,
-                              int                     aloc,
-                              bool                    haveOtherWork)
+void gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
+                        nbnxn_atomdata_t       *nbatom,
+                        const int               flags,
+                        const AtomLocality      atomLocality,
+                        const bool              haveOtherWork)
 {
     cudaError_t stat;
     int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
     /* determine interaction locality from atom locality */
-    int              iloc = gpuAtomToInteractionLocality(aloc);
+    const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
 
+    /* extract the data */
     cu_atomdata_t   *adat    = nb->atdat;
     cu_timers_t     *t       = nb->timers;
     bool             bDoTime = nb->bDoTime;
@@ -632,22 +641,22 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* don't launch non-local copy-back if there was no non-local work to do */
-    if (!haveOtherWork && canSkipWork(nb, iloc))
+    if (!haveOtherWork && canSkipWork(*nb, iloc))
     {
         return;
     }
 
-    getGpuAtomRange(adat, aloc, &adat_begin, &adat_len);
+    getGpuAtomRange(adat, atomLocality, &adat_begin, &adat_len);
 
     /* beginning of timed D2H section */
     if (bDoTime)
     {
-        t->nb_d2h[iloc].openTimingRegion(stream);
+        t->xf[atomLocality].nb_d2h.openTimingRegion(stream);
     }
 
     /* With DD the local D2H transfer can only start after the non-local
        kernel has finished. */
-    if (iloc == eintLocal && nb->bUseTwoStreams)
+    if (iloc == InteractionLocality::Local && nb->bUseTwoStreams)
     {
         stat = cudaStreamWaitEvent(stream, nb->nonlocal_done, 0);
         CU_RET_ERR(stat, "cudaStreamWaitEvent on nonlocal_done failed");
@@ -661,14 +670,14 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
        recorded which signals that the local D2H can proceed. This event is not
        placed after the non-local kernel because we want the non-local data
        back first. */
-    if (iloc == eintNonlocal)
+    if (iloc == InteractionLocality::NonLocal)
     {
         stat = cudaEventRecord(nb->nonlocal_done, stream);
         CU_RET_ERR(stat, "cudaEventRecord on nonlocal_done failed");
     }
 
     /* only transfer energies in the local stream */
-    if (LOCAL_I(iloc))
+    if (iloc == InteractionLocality::Local)
     {
         /* DtoH fshift */
         if (bCalcFshift)
@@ -689,11 +698,11 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        t->nb_d2h[iloc].closeTimingRegion(stream);
+        t->xf[atomLocality].nb_d2h.closeTimingRegion(stream);
     }
 }
 
-void nbnxn_cuda_set_cacheconfig()
+void cuda_set_cacheconfig()
 {
     cudaError_t stat;
 
@@ -710,3 +719,5 @@ void nbnxn_cuda_set_cacheconfig()
         }
     }
 }
+
+} // namespace Nbnxn
