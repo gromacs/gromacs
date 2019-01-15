@@ -191,15 +191,13 @@ std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>  c
                                                  gmx::LogFilePtr               logFilehandle,
                                                  gmx_multisim_t              * multiSim)
 {
-    using gmx::compat::make_unique;
     // We should be able to get a communicator (or subcommunicator) through the
     // Context.
-    std::unique_ptr<SessionImpl> impl = make_unique<SessionImpl>(std::move(context),
-                                                                 std::move(runnerBuilder),
-                                                                 simulationContext,
-                                                                 std::move(logFilehandle),
-                                                                 multiSim);
-    return impl;
+    return gmx::compat::make_unique<SessionImpl>(std::move(context),
+                                                 std::move(runnerBuilder),
+                                                 simulationContext,
+                                                 std::move(logFilehandle),
+                                                 multiSim);
 }
 
 SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,

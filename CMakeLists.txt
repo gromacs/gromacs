@@ -146,21 +146,6 @@ set(GMX_STDLIB_LIBRARIES "" CACHE STRING "Linker libraries for a particular C++ 
 mark_as_advanced(GMX_STDLIB_CXX_FLAGS)
 mark_as_advanced(GMX_STDLIB_LIBRARIES)
 
-########################################################################
-# Detect CXX11 support and flags
-########################################################################
-# The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
-# are used with permission from CMake v3.0.0 so that GROMACS can detect
-# invalid options with the Intel Compilers, and we have added a line
-# to detect warnings with the Fujitsu compilers on K computer and ICC.
-# CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
-# a semicolon. Since this is also used as a separator in lists inside CMake,
-# that string ends up being split into two separate patterns, and the last
-# part is just a single word that also matches other messages. We solved this
-# by replacing the semicolon with a period that matches any character.
-#
-# These files should be removed from the source tree when a CMake version that
-# includes the features in question becomes required for building GROMACS.
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
