@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,21 +85,23 @@ namespace test
  *
  * The fixture uses three simple and one real-life system for testing.
  * Simple systems include:
- * 1.1. Two atoms, connected with one constrain.
- * 1.2. Three atoms, connected consequently with two constraints
- * 1.3. Four atoms, connected by two independent constraints.
- * 1.4. Three atoms, connected by three constraints in a triangle.
- * 1.5. Four atoms, connected by three consequentive constraints.
- * The real-life system is a Cys-Val-Trp peptide with constraints
- * on:
+ * 1.1. Two atoms, connected with one constrain (e.g. NH).
+ * 1.2. Three atoms, connected consequently with two constraints (e.g. CH2).
+ * 1.3. Three atoms, constrained to the fourth atom (e.g. CH3).
+ * 1.4. Four atoms, connected by two independent constraints.
+ * 1.5. Three atoms, connected by three constraints in a triangle
+ *      (e.g. H2O with constrained H-O-H angle).
+ * 1.6. Four atoms, connected by three consequential constraints.
+ * The real-life system is a Cys-Val-Trp peptide with constraints on:
  * 2.1. Bonds, containing hydrogens (SHAKE and LINCS)
  * 2.2. All bonds (SHAKE and LINCS).
  * 2.3. Angles with hydrogens and all bonds (SHAKE).
  * 2.4. All angles and all bonds (disabled).
  *
- * For all systems, the final length of the constraints is tested ageinst the
- * reference values. For systems 2.1 and 2.2, the exact final coordinates of
- * all atoms are also tested against the reference values.
+ * For all systems, the final length of the constraints is tested against the
+ * reference values. For systems 2.1 -- 2.3, the exact final coordinates of
+ * all atoms are also tested against the reference values. For system 2.1, the
+ * tensor with virials is checked against reference values.
  */
 class ConstraintsTest : public ::testing::Test
 {
@@ -128,7 +130,7 @@ class ConstraintsTest : public ::testing::Test
          *
          * \param[in] natom          Number of atoms in the system.
          * \param[in] masses         Atom masses. Size of this vector should be equal to natom.
-         * \param[in] constraints    List of constraints, organized in tripples of integers.
+         * \param[in] constraints    List of constraints, organized in triples of integers.
          *                           First integer is the index of type for a constrain, second
          *                           and third are the indices of constrained atoms. The types
          *                           of constraints should be sequential but not nesseseraly
@@ -140,22 +142,26 @@ class ConstraintsTest : public ::testing::Test
          * \param[in] firstType      The index of first interaction type used for constraints
          *                           (i.e. the lowest number that appear as type in constraints
          *                           vector). This is not fail-safe, since technically the
-         *                           numbering of the types may not be sequantial, but (i) this
+         *                           numbering of the types may not be sequential, but (i) this
          *                           is the way things are in GROMACS, (ii) everything is fine
          *                           in the examples provided for the test.
          * \param[in] epbc           Type of PBC (epbcXYZ / epbcNONE are used in this test,
          *                           see src/gromacs/pbcutil/pbc.h for details).
          * \param[in] box            The PBC box.
+         * \param[in] bCalcVir       If the virials should be computed.
+         * \param[in] bCalcDHDL      Enable free energy calculation.
          * \param[in] init_t         Initial time.
          * \param[in] delta_t        Timestep.
-         * \param[in] coordinates    Initial (unconstrained) coordinates.
+         * \param[in] x              Coordinates before integration step.
+         * \param[in] xprime         Coordinates after integration step, but before constraining.
          *
          */
         void initSystem(int natom, std::vector<real> masses,
                         std::vector<int> constraints, std::vector<real> constraintsR0, int firstType,
                         int epbc, const matrix box,
+                        bool bCalcVir, bool bCalcDHDL,
                         real init_t, real delta_t,
-                        std::vector<RVec> coordinates)
+                        std::vector<RVec> x, std::vector<RVec> xprime)
 
         {
 
@@ -170,19 +176,13 @@ class ConstraintsTest : public ::testing::Test
 
             // Saving constraints to check if they are satisfied after algorithm was applied
             this->constraints   = constraints;   // Constraints indexes (in type-i-j format)
-            this->constraintsR0 = constraintsR0; // Euilibrium distances for each type of constraint
+            this->constraintsR0 = constraintsR0; // Equilibrium distances for each type of constraint
             this->firstType     = firstType;     // The first type index used for constraints
 
             // PBC initialization
             this->epbc = epbc;
-            for (int i = 0; i < DIM; i++)
-            {
-                for (int j = 0; j < DIM; j++)
-                {
-                    this->box[i][j] = box[i][j]; // Periodic box
-                }
-            }
-            set_pbc(&pbc, epbc, box);
+            copy_mat(box, this->box);   // Periodic box
+            set_pbc(&pbc, epbc, box);   // Initialize pbc data structure
 
             this->invdt  = 1.0/delta_t; // Inverse timestep
 
@@ -190,7 +190,11 @@ class ConstraintsTest : public ::testing::Test
             cr.nnodes = 1;
             cr.dd     = nullptr;
 
-            // Input record - data that usualy comes from configurtion file (.mdp)
+            // Multisim data
+            ms.sim  = 0;
+            ms.nsim = 1;
+
+            // Input record - data that usually comes from configuration file (.mdp)
             ir.efep           = 0;
             ir.init_t         = init_t;
             ir.delta_t        = delta_t;
@@ -202,6 +206,31 @@ class ConstraintsTest : public ::testing::Test
             md.invmass        = invmass.data();
             md.nr             = n;
             md.homenr         = n;
+
+            // Virial evaluation
+            this->bCalcVir = bCalcVir;
+            if (bCalcVir)
+            {
+                for (int i = 0; i < DIM; i++)
+                {
+                    for (int j = 0; j < DIM; j++)
+                    {
+                        this->vir_r_m_dr[i][j] = 0;
+                    }
+                }
+            }
+
+            // Free energy evaluation
+            this->bCalcDHDL = bCalcDHDL;
+            this->dvdlambda = 0;
+            if (bCalcDHDL)
+            {
+                ir.efep = efepYES;
+            }
+            else
+            {
+                ir.efep = efepNO;
+            }
 
             // Constraints and their parameters in old data format (local topology)
             for (int i = 0; i < F_NRE; i++)
@@ -229,7 +258,6 @@ class ConstraintsTest : public ::testing::Test
                 idef.iparams[constraints.at(3*i)].constr.dA = constraintsR0.at(constraints.at(3*i) - firstType);
                 idef.iparams[constraints.at(3*i)].constr.dB = constraintsR0.at(constraints.at(3*i) - firstType);
             }
-
 
             // Constraints and their parameters in new data format (global topology)
             InteractionList ilist;
@@ -260,20 +288,20 @@ class ConstraintsTest : public ::testing::Test
             }
             mtop.bIntermolecularInteractions = false;
 
-            // Log file may be here. Redirect it somewhere usefull?
+            // Log file may be here. Redirect it somewhere useful?
             log = gmx_fio_open("constraintstest.log", "w");
 
-            // Set the coordinates in convinient format
-            snew(x, n);
-            snew(xprime, n);
-            snew(xprime2, n);
+            // Set the coordinates in convenient format
+            snew(this->x, n);
+            snew(this->xprime, n);
+            snew(this->xprime2, n);
 
             for (int i = 0; i < n; i++)
             {
                 for (int j = 0; j < DIM; j++)
                 {
-                    x[i][j]      = coordinates.at(i)[j];
-                    xprime[i][j] = coordinates.at(i)[j];
+                    this->x[i][j]      = x.at(i)[j];
+                    this->xprime[i][j] = xprime.at(i)[j];
                 }
             }
 
@@ -313,7 +341,7 @@ class ConstraintsTest : public ::testing::Test
                                                 mtop.ffparams.iparams,
                                                 flexibleConstraintTreatment(EI_DYNAMICS(ir.eI))));
             }
-            // Initialie LINCS
+            // Initialize LINCS
             lincsd = init_lincs(gmx_fio_getfp(log), mtop,
                                 nflexcon, at2con_mt,
                                 false,
@@ -323,11 +351,11 @@ class ConstraintsTest : public ::testing::Test
             // Evaluate constraints
             bool bOK = constrain_lincs(false, ir, 0, lincsd, md,
                                        &cr,
-                                       nullptr,
+                                       &ms,
                                        x, xprime, xprime2,
-                                       box, &pbc, md.lambda, dvdlambda,
+                                       box, &pbc, md.lambda, &dvdlambda,
                                        invdt, v,
-                                       computeVirial, vir_r_m_dr,
+                                       bCalcVir, vir_r_m_dr,
                                        gmx::ConstraintVariable::Positions, &nrnb,
                                        maxwarn, &warncount_lincs);
             EXPECT_TRUE(bOK) << "Something went wrong: LINCS returned false value.";
@@ -369,10 +397,10 @@ class ConstraintsTest : public ::testing::Test
                         xprime2,
                         &nrnb,
                         md.lambda,
-                        dvdlambda,
+                        &dvdlambda,
                         invdt,
                         v,
-                        computeVirial,
+                        bCalcVir,
                         vir_r_m_dr,
                         false,
                         gmx::ConstraintVariable::Positions);
@@ -384,7 +412,7 @@ class ConstraintsTest : public ::testing::Test
          * The test on the final length of constrained bonds.
          *
          * Goes through all the constraints and checks if the final length of all the constraints is equal
-         * to the target lenght with provided tolerance.
+         * to the target length with provided tolerance.
          *
          * \param[in] tolerance                  Allowed tolerance in final lengths.
          */
@@ -414,7 +442,7 @@ class ConstraintsTest : public ::testing::Test
                 d1 = norm(v1);
                 EXPECT_REAL_EQ_TOL(r0, d1, tolerance) << "rij = " << d1 << ", which is not equal to r0 = " << r0
                 << " for constraint #" << c << ", between atoms " << i << " and " << j
-                << " (before lincs rij was " << d0 << ").";
+                << " (before constraining rij was " << d0 << ").";
             }
         }
 
@@ -439,6 +467,41 @@ class ConstraintsTest : public ::testing::Test
             }
         }
 
+        /*! \brief
+         * The test of virial tensor.
+         *
+         * Checks if the values in the virial tensor are equal to pre-computed values.
+         *
+         * \param[in] virialTensor           Tensor with reference values.
+         * \param[in] virialTensorTolerance  Tolerance for the tensor values.
+         */
+        void checkVirialTensor(const tensor virialTensor, FloatingPointTolerance virialTensorTolerance)
+        {
+            for (int i = 0; i < DIM; i++)
+            {
+                for (int j = 0; j < DIM; j++)
+                {
+                    EXPECT_REAL_EQ_TOL(virialTensor[i][j], vir_r_m_dr[i][j], virialTensorTolerance) <<
+                    "Values in virial tensor at [" << i << "][" << j << "] are not within the " <<
+                    "tolerance from reference value.";
+                }
+            }
+        }
+
+        /*! \brief
+         * The test for FEP (not used yet).
+         *
+         * Checks if the value of dV/dLambda is equal to the reference value.
+         *
+         * \param[in] dvdlmbdaRef           Reference value.
+         * \param[in] dvdlambdaTolerance    Tolerance.
+         */
+        void checkFEP(const real dvdlmbdaRef, FloatingPointTolerance dvdlambdaTolerance)
+        {
+            EXPECT_REAL_EQ_TOL(dvdlmbdaRef, this->dvdlambda, dvdlambdaTolerance) <<
+            "Computed value for dV/dLambda is not equal to the reference value.";
+        }
+
 
     private:
         int                   n;                            // Number of atoms
@@ -451,13 +514,15 @@ class ConstraintsTest : public ::testing::Test
         t_inputrec            ir;                           // Input record (info that usually in .mdp file)
         t_idef                idef;                         // Local topology
         t_mdatoms             md;                           // MD atoms
+        gmx_multisim_t        ms;                           // Multisim data
         t_nrnb                nrnb;
 
         real                  invdt         = 1.0/0.001;    // Inverse timestep
         int                   nflexcon      = 0;            // Number of flexible constraints
-        real                 *dvdlambda     = nullptr;      // Free energy computation stub (not tested)
-        bool                  computeVirial = false;        // If the virials should be conputed (not tested)
-        tensor                vir_r_m_dr;                   // Virials stuff
+        bool                  bCalcVir;                     // If the virials should be computed
+        tensor                vir_r_m_dr;                   // Virials tensor
+        bool                  bCalcDHDL;                    // If the free energy is computed (not tested yet)
+        real                  dvdlambda;                    // For free energy computation
         rvec                 *x;                            // Coordinates before constraints are applied
         rvec                 *xprime;                       // Coordinates after constraints are applied
         rvec                 *xprime2;                      // Intermediate set of coordinates used by LINCS and
@@ -474,7 +539,7 @@ class ConstraintsTest : public ::testing::Test
 /*
  *
  * Tests that the interatomic distance along constraints correspond to the reference distances.
- * Performed on basic systems of up to four constaints.
+ * Performed on basic systems of up to four constraints.
  *
  */
 
@@ -484,11 +549,13 @@ class ConstraintsTest : public ::testing::Test
 TEST_F(ConstraintsTest, ShakeOneBond)
 {
 
-    FloatingPointTolerance tolerance = relativeToleranceAsFloatingPoint(0.1, 0.0001);
+    FloatingPointTolerance tolerance = relativeToleranceAsFloatingPoint(0.1, 0.0002);
     initSystem(2, c_oneBondMasses,
                c_oneBondConstraints, c_oneBondConstraintsR0, c_oneBondConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_oneBondCoordinates);
+               false, false,
+               real(0.0), real(0.001),
+               c_oneBondX, c_oneBondXPrime);
     applyConstraintsShake(0.0001, false);
     checkConstrained(tolerance);
 }
@@ -503,13 +570,15 @@ TEST_F(ConstraintsTest, LincsOneBond)
     initSystem(2, c_oneBondMasses,
                c_oneBondConstraints, c_oneBondConstraintsR0, c_oneBondConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_oneBondCoordinates);
+               false, false,
+               real(0.0), real(0.001),
+               c_oneBondX, c_oneBondXPrime);
     applyConstraintsLincs(1, 4, real(30.0));
     checkConstrained(tolerance);
 }
 
 /*
- * Two disjoint bonds test for SHAKE
+ * Two disjoint constraints test for SHAKE
  */
 TEST_F(ConstraintsTest, ShakeTwoDisjointBonds)
 {
@@ -518,14 +587,15 @@ TEST_F(ConstraintsTest, ShakeTwoDisjointBonds)
     initSystem(4, c_twoDJBondsMasses,
                c_twoDJBondsConstraints, c_twoDJBondsConstraintsR0, c_twoDJBondsConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_twoDJBondsCoordinates);
-
+               false, false,
+               real(0.0), real(0.001),
+               c_twoDJBondsX, c_twoDJBondsX);
     applyConstraintsShake(0.000001, true);
     checkConstrained(tolerance);
 }
 
 /*
- * Two disjoint bonds test for LINCS
+ * Two disjoint constraints test for LINCS
  */
 TEST_F(ConstraintsTest, LincsTwoDisjointBonds)
 {
@@ -534,14 +604,15 @@ TEST_F(ConstraintsTest, LincsTwoDisjointBonds)
     initSystem(4, c_twoDJBondsMasses,
                c_twoDJBondsConstraints, c_twoDJBondsConstraintsR0, c_twoDJBondsConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_twoDJBondsCoordinates);
-
+               false, false,
+               real(0.0), real(0.001),
+               c_twoDJBondsX, c_twoDJBondsX);
     applyConstraintsLincs(1, 4, real(30.0));
     checkConstrained(tolerance);
 }
 
 /*
- * Two consequentive constraints test for SHAKE.
+ * Two consequential constraints test for SHAKE (e.g. CH2).
  */
 TEST_F(ConstraintsTest, ShakeTwoBonds)
 {
@@ -550,25 +621,27 @@ TEST_F(ConstraintsTest, ShakeTwoBonds)
     initSystem(3, c_twoBondsMasses,
                c_twoBondsConstraints, c_twoBondsConstraintsR0, c_twoBondsConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_twoBondsCoordinates);
-
+               false, false,
+               real(0.0), real(0.001),
+               c_twoBondsX, c_twoBondsXPrime);
     applyConstraintsShake(0.0001, true);
     checkConstrained(tolerance);
 }
 
 /*
- * Two consequentive constraints test for LINCS.
+ * Two consequential constraints test for LINCS (e.g. CH2).
  */
 TEST_F(ConstraintsTest, LincsTwoBonds)
 {
 
-    FloatingPointTolerance tolerance = relativeToleranceAsFloatingPoint(0.1, 0.000001);
+    FloatingPointTolerance tolerance = relativeToleranceAsFloatingPoint(0.1, 0.0001);
     initSystem(3, c_twoBondsMasses,
                c_twoBondsConstraints, c_twoBondsConstraintsR0, c_twoBondsConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_twoBondsCoordinates);
-
-    applyConstraintsLincs(1, 4, real(30.0));
+               false, false,
+               real(0.0), real(0.001),
+               c_twoBondsX, c_twoBondsXPrime);
+    applyConstraintsLincs(2, 4, real(30.0));
     checkConstrained(tolerance);
 }
 
@@ -582,7 +655,9 @@ TEST_F(ConstraintsTest, ShakeTriangleOfBonds)
     initSystem(3, c_triangleMasses,
                c_triangleConstraints, c_triangleConstraintsR0, c_triangleConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_triangleCoordinates);
+               false, false,
+               real(0.0), real(0.001),
+               c_triangleX, c_triangleXPrime);
     applyConstraintsShake(0.0001, true);
     checkConstrained(tolerance);
 }
@@ -597,8 +672,44 @@ TEST_F(ConstraintsTest, LincsTriangleOfBonds)
     initSystem(3, c_triangleMasses,
                c_triangleConstraints, c_triangleConstraintsR0, c_triangleConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_triangleCoordinates);
+               false, false,
+               real(0.0), real(0.001),
+               c_triangleX, c_triangleXPrime);
     applyConstraintsLincs(4, 4, real(30.0));
+    checkConstrained(tolerance);
+}
+
+/*
+ * Three constraints with central atom test for SHAKE (e.g. CH3).
+ */
+TEST_F(ConstraintsTest, ShakeThreeConstraintsCentralAtom)
+{
+
+    FloatingPointTolerance tolerance = relativeToleranceAsFloatingPoint(0.1, 0.0002);
+    initSystem(4, c_threeBondsCentralMasses,
+               c_threeBondsCentralConstraints, c_threeBondsCentralConstraintsR0, c_threeBondsCentralConstraintsFirstType,
+               epbcNONE, c_infinitesimalBox,
+               false, false,
+               real(0.0), real(0.001),
+               c_threeBondsCentralX, c_threeBondsCentralXPrime);
+    applyConstraintsShake(0.0001, true);
+    checkConstrained(tolerance);
+}
+
+/*
+ * Three constraints with central atom test for LINCS (e.g. CH3)
+ */
+TEST_F(ConstraintsTest, LincsThreeConstraintsCentralAtom)
+{
+
+    FloatingPointTolerance tolerance = relativeToleranceAsFloatingPoint(0.1, 0.0002);
+    initSystem(4, c_threeBondsCentralMasses,
+               c_threeBondsCentralConstraints, c_threeBondsCentralConstraintsR0, c_threeBondsCentralConstraintsFirstType,
+               epbcNONE, c_infinitesimalBox,
+               false, false,
+               real(0.0), real(0.001),
+               c_threeBondsCentralX, c_threeBondsCentralXPrime);
+    applyConstraintsLincs(1, 4, real(30.0));
     checkConstrained(tolerance);
 }
 
@@ -612,7 +723,9 @@ TEST_F(ConstraintsTest, ShakeThreeConsequativeConstraints)
     initSystem(4, c_threeBondsMasses,
                c_threeBondsConstraints, c_threeBondsConstraintsR0, c_threeBondsConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_threeBondsCoordinates);
+               false, false,
+               real(0.0), real(0.001),
+               c_threeBondsX, c_threeBondsX);
     applyConstraintsShake(0.0001, true);
     checkConstrained(tolerance);
 }
@@ -627,7 +740,9 @@ TEST_F(ConstraintsTest, LincsThreeConsequativeConstraints)
     initSystem(4, c_threeBondsMasses,
                c_threeBondsConstraints, c_threeBondsConstraintsR0, c_threeBondsConstraintsFirstType,
                epbcNONE, c_infinitesimalBox,
-               real(0.0), real(0.001), c_threeBondsCoordinates);
+               false, false,
+               real(0.0), real(0.001),
+               c_threeBondsX, c_threeBondsX);
     applyConstraintsLincs(4, 4, real(30.0));
     checkConstrained(tolerance);
 }
@@ -636,7 +751,7 @@ TEST_F(ConstraintsTest, LincsThreeConsequativeConstraints)
 /*
  *
  * Tests of both final interatomic distances and final coordinates.
- * Peformed on the peptide Cys-Val-Trp, with constraints along HBonds,
+ * Performed on the peptide Cys-Val-Trp, with constraints along HBonds,
  * AllBonds (for both SHAKE and LINCS), HAngles and AllAlngles (for
  * SHAKE only).
  */
@@ -648,16 +763,20 @@ TEST_F(ConstraintsTest, LincsThreeConsequativeConstraints)
 TEST_F(ConstraintsTest, ShakeCysValTrpHBonds)
 {
 
-    FloatingPointTolerance tolerance            = relativeToleranceAsFloatingPoint(0.1, 0.0001);
-    FloatingPointTolerance coordinatesTolerance = absoluteTolerance(0.0001);
+    FloatingPointTolerance tolerance             = relativeToleranceAsFloatingPoint(0.1, 0.0001);
+    FloatingPointTolerance coordinatesTolerance  = absoluteTolerance(0.0002);
+    FloatingPointTolerance virialTensorTolerance = absoluteTolerance(0.0000001);
 
     initSystem(54, c_cvwMasses,
                c_cvwHBondsConstraints, c_cvwHBondsConstraintsR0, c_cvwHBondsConstraintsFirstType,
                epbcXYZ, c_cvwBox,
-               real(0.0), real(0.001), c_cvwInitialCoordinates);
+               true, false,
+               real(0.0), real(0.001),
+               c_cvwX, c_cvwXPrime);
     applyConstraintsShake(0.0001, true);
     checkConstrained(tolerance);
-    checkFinalCoordinates(c_cvwFinalCoordinatesHBonds, coordinatesTolerance);
+    checkFinalCoordinates(c_cvwXConstrainedHBondsShake, coordinatesTolerance);
+    checkVirialTensor(c_cvwVirialHBondsShake, virialTensorTolerance);
 }
 
 /*
@@ -667,16 +786,20 @@ TEST_F(ConstraintsTest, ShakeCysValTrpHBonds)
 TEST_F(ConstraintsTest, LincsCysValTrpHBonds)
 {
 
-    FloatingPointTolerance tolerance            = relativeToleranceAsFloatingPoint(0.1, 0.00001);
-    FloatingPointTolerance coordinatesTolerance = absoluteTolerance(0.0001);
+    FloatingPointTolerance tolerance             = relativeToleranceAsFloatingPoint(0.1, 0.00001);
+    FloatingPointTolerance coordinatesTolerance  = absoluteTolerance(0.00001);
+    FloatingPointTolerance virialTensorTolerance = absoluteTolerance(0.0000001);
 
     initSystem(54, c_cvwMasses,
                c_cvwHBondsConstraints, c_cvwHBondsConstraintsR0, c_cvwHBondsConstraintsFirstType,
                epbcXYZ, c_cvwBox,
-               real(0.0), real(0.001), c_cvwInitialCoordinates);
+               true, false,
+               real(0.0), real(0.001),
+               c_cvwX, c_cvwXPrime);
     applyConstraintsLincs(1, 4, real(30.0));
     checkConstrained(tolerance);
-    checkFinalCoordinates(c_cvwFinalCoordinatesHBonds, coordinatesTolerance);
+    checkFinalCoordinates(c_cvwXConstrainedHBondsLincs, coordinatesTolerance);
+    checkVirialTensor(c_cvwVirialHBondsLincs, virialTensorTolerance);
 }
 
 /*
@@ -692,10 +815,12 @@ TEST_F(ConstraintsTest, ShakeCysValTrpAllBonds)
     initSystem(54, c_cvwMasses,
                c_cvwAllBondsConstraints, c_cvwAllBondsConstraintsR0, c_cvwAllBondsConstraintsFirstType,
                epbcXYZ, c_cvwBox,
-               real(0.0), real(0.001), c_cvwInitialCoordinates);
+               false, false,
+               real(0.0), real(0.001),
+               c_cvwX, c_cvwXPrime);
     applyConstraintsShake(0.0001, true);
     checkConstrained(tolerance);
-    checkFinalCoordinates(c_cvwFinalCoordinatesAllBonds, coordinatesTolerance);
+    checkFinalCoordinates(c_cvwXConstrainedAllBondsShake, coordinatesTolerance);
 }
 
 /*
@@ -711,43 +836,34 @@ TEST_F(ConstraintsTest, LincsCysValTrpAllBonds)
     initSystem(54, c_cvwMasses,
                c_cvwAllBondsConstraints, c_cvwAllBondsConstraintsR0, c_cvwAllBondsConstraintsFirstType,
                epbcXYZ, c_cvwBox,
-               real(0.0), real(0.001), c_cvwInitialCoordinates);
+               false, false,
+               real(0.0), real(0.001),
+               c_cvwX, c_cvwXPrime);
     applyConstraintsLincs(4, 4, real(30.0));
     checkConstrained(tolerance);
-    checkFinalCoordinates(c_cvwFinalCoordinatesAllBonds, coordinatesTolerance);
+    checkFinalCoordinates(c_cvwXConstrainedAllBondsLincs, coordinatesTolerance);
 }
 
 /*
- * H angles and all bonds are constrained by SHAKE. Only final lengths of constraints are tested.
+ * H angles and all bonds are constrained by SHAKE. Both final length of each constraint and final coordinates
+ * for each atom are tested.
  */
 TEST_F(ConstraintsTest, ShakeCysValTrpHAngles)
 {
 
     FloatingPointTolerance tolerance            = relativeToleranceAsFloatingPoint(0.1, 0.0001);
+    FloatingPointTolerance coordinatesTolerance = absoluteTolerance(0.001);
 
     initSystem(54, c_cvwMasses,
                c_cvwHAnglesConstraints, c_cvwHAnglesConstraintsR0, c_cvwHAnglesConstraintsFirstType,
                epbcXYZ, c_cvwBox,
-               real(0.0), real(0.001), c_cvwInitialCoordinates);
+               false, false,
+               real(0.0), real(0.001),
+               c_cvwX, c_cvwXPrime);
     applyConstraintsShake(0.0001, true);
     checkConstrained(tolerance);
+    checkFinalCoordinates(c_cvwXConstrainedHAnglesShake, coordinatesTolerance);
 }
 
-/*
- * All angles and all bonds are constrained by SHAKE. Only final lengths of constraints are tested.
- */
-/*TEST_F(ConstraintsTest, ShakeCysValTrpAllAngles)
-   {
-
-    FloatingPointTolerance tolerance            = relativeToleranceAsFloatingPoint(0.1, 0.001);
-
-    initSystem(54, c_cvwMasses,
-               c_cvwAllAnglesConstraints, c_cvwAllAnglesConstraintsR0, c_cvwAllAnglesConstraintsFirstType,
-               epbcXYZ, c_cvwBox,
-               real(0.0), real(0.001), c_cvwInitialCoordinates);
-    applyConstraintsShake(0.000001, true);
-    checkConstrained(tolerance);
-   }
- */
 } // namespace test
 } // namespace gmx
