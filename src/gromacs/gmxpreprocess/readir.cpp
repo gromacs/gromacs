@@ -3951,7 +3951,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     bool                      bCharge, bAcc;
     real                     *mgrp, mt;
     rvec                      acc;
-    gmx_mtop_atomloop_block_t aloopb;
     ivec                      AbsRef;
     char                      warn_buf[STRLEN];
 
@@ -4071,9 +4070,9 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     }
 
     bCharge = FALSE;
-    aloopb  = gmx_mtop_atomloop_block_init(sys);
-    const t_atom *atom;
-    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    LoopOverAtomsInBlock aloopb(*sys);
+    const t_atom        *atom;
+    while (aloopb.nextAtom(&atom, &nmol))
     {
         if (atom->q != 0 || atom->qB != 0)
         {

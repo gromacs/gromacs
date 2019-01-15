@@ -263,10 +263,10 @@ static std::array<int, eptNR> countPtypes(FILE             *fplog,
         nptype[i] = 0;
     }
 
-    gmx_mtop_atomloop_block_t  aloopb = gmx_mtop_atomloop_block_init(mtop);
+    LoopOverAtomsInBlock       aloopb(*mtop);
     int                        nmol;
     const t_atom              *atom;
-    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    while (aloopb.nextAtom(&atom, &nmol))
     {
         switch (atom->ptype)
         {

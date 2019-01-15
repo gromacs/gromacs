@@ -303,60 +303,53 @@ void LoopOverAllAtoms::currentMoleculeType(const gmx_moltype_t **moleculeType, i
     *atomNumberInMol  = impl_->localAtomNumber_;
 }
 
-typedef struct gmx_mtop_atomloop_block
+class LoopOverAtomsInBlock::Impl
 {
-    const gmx_mtop_t *mtop;
-    size_t            mblock;
-    const t_atoms    *atoms;
-    int               at_local;
-} t_gmx_mtop_atomloop_block;
+    public:
+        //! Default constructor.
+        explicit Impl(const gmx_mtop_t &mtop) :
+            mtop_(mtop), mblock_(0),
+            atoms_(&mtop.moltype[mtop.molblock[0].type].atoms),
+            localAtomNumber_(-1)
+        {}
 
-gmx_mtop_atomloop_block_t
-gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop)
+        //! Global topology.
+        const gmx_mtop_t &mtop_;
+        //! Current molecule block.
+        size_t            mblock_;
+        //! The atoms of the current molecule.
+        const t_atoms    *atoms_;
+        //! Current local atom number.
+        int               localAtomNumber_;
+};
+
+LoopOverAtomsInBlock::LoopOverAtomsInBlock(const gmx_mtop_t &mtop)
+    : impl_(new Impl(mtop))
 {
-    struct gmx_mtop_atomloop_block *aloop;
-
-    snew(aloop, 1);
-
-    aloop->mtop      = mtop;
-    aloop->mblock    = 0;
-    aloop->atoms     = &mtop->moltype[mtop->molblock[aloop->mblock].type].atoms;
-    aloop->at_local  = -1;
-
-    return aloop;
 }
 
-static void gmx_mtop_atomloop_block_destroy(gmx_mtop_atomloop_block_t aloop)
+LoopOverAtomsInBlock::~LoopOverAtomsInBlock()
 {
-    sfree(aloop);
 }
 
-gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                                      const t_atom **atom, int *nmol)
+bool LoopOverAtomsInBlock::nextAtom(const t_atom **atom, int *numberOfMolecules)
 {
-    if (aloop == nullptr)
+    impl_->localAtomNumber_++;
+    if (impl_->localAtomNumber_ >= impl_->atoms_->nr)
     {
-        gmx_incons("gmx_mtop_atomloop_all_next called without calling gmx_mtop_atomloop_all_init");
-    }
-
-    aloop->at_local++;
-
-    if (aloop->at_local >= aloop->atoms->nr)
-    {
-        aloop->mblock++;
-        if (aloop->mblock >= aloop->mtop->molblock.size())
+        impl_->mblock_++;
+        if (impl_->mblock_ >= impl_->mtop_.molblock.size())
         {
-            gmx_mtop_atomloop_block_destroy(aloop);
-            return FALSE;
+            impl_.reset(new LoopOverAtomsInBlock::Impl(impl_->mtop_));
+            return false;
         }
-        aloop->atoms    = &aloop->mtop->moltype[aloop->mtop->molblock[aloop->mblock].type].atoms;
-        aloop->at_local = 0;
+        impl_->atoms_           = &impl_->mtop_.moltype[impl_->mtop_.molblock[impl_->mblock_].type].atoms;
+        impl_->localAtomNumber_ = 0;
     }
+    *atom              = &impl_->atoms_->atom[impl_->localAtomNumber_];
+    *numberOfMolecules = impl_->mtop_.molblock[impl_->mblock_].nmol;
 
-    *atom = &aloop->atoms->atom[aloop->at_local];
-    *nmol = aloop->mtop->molblock[aloop->mblock].nmol;
-
-    return TRUE;
+    return true;
 }
 
 typedef struct gmx_mtop_ilistloop

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,12 +72,11 @@ void writeHeader(TextWriter *writer, const std::string &text, const std::string 
 void writeSystemInformation(TextWriter *writer, const gmx_mtop_t &top, bool writeFormattedText)
 {
     int                       nmol, nvsite = 0;
-    gmx_mtop_atomloop_block_t aloop;
     const t_atom             *atom;
 
     writeHeader(writer, "Simulation system", "subsection", writeFormattedText);
-    aloop = gmx_mtop_atomloop_block_init(&top);
-    while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
+    LoopOverAtomsInBlock aloop(top);
+    while (aloop.nextAtom(&atom, &nmol))
     {
         if (atom->ptype == eptVSite)
         {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,10 +140,10 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     double                     totalMassB = 0.0;
 
     md->haveVsites = FALSE;
-    gmx_mtop_atomloop_block_t  aloop = gmx_mtop_atomloop_block_init(&mtop);
+    LoopOverAtomsInBlock       aloop(mtop);
     const t_atom              *atom;
     int                        nmol;
-    while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
+    while (aloop.nextAtom(&atom, &nmol))
     {
         totalMassA += nmol*atom->m;
         totalMassB += nmol*atom->mB;

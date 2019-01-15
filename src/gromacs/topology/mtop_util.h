@@ -140,30 +140,41 @@ class LoopOverAllAtoms
         gmx::PrivateImplPointer<Impl> impl_;
 };
 
-/* Abstract type for atom loop over atoms in all molecule blocks */
-typedef struct gmx_mtop_atomloop_block *gmx_mtop_atomloop_block_t;
-
-/* Initialize an atom loop over atoms in all molecule blocks the system.
+/*! \brief
+ * Loop over all atoms in a molecule block.
  */
-gmx_mtop_atomloop_block_t
-gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop);
+class LoopOverAtomsInBlock
+{
+    public:
+        //! Default constructor.
+        explicit LoopOverAtomsInBlock(const gmx_mtop_t &mtop);
+        //! Default destructor.
+        ~LoopOverAtomsInBlock();
 
-/* Loop to the next atom.
- * When not at the end:
- *   returns TRUE
- *   sets the pointer atom to the t_atom struct of that atom
- *   and return the number of molecules corresponding to this atom.
- * When at the end, destroys aloop and returns FALSE.
- * Use as:
- * gmx_mtop_atomloop_block_t aloop;
- * aloop = gmx_mtop_atomloop_block_init(mtop)
- * while (gmx_mtop_atomloop_block_next(aloop,&atom,&nmol)) {
- *     ...
- * }
- */
-gmx_bool
-gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                             const t_atom **atom, int *nmol);
+        /*! \brief
+         * Loop to next atom in block.
+         * When not at the end:
+         *   returns true
+         *   sets the pointer atom to the t_atom struct of that \p atom
+         *   and return the number of molecules corresponding to this atom.
+         * When at the end, resets the object and returns false.
+         * Use as:
+         * LoopOverAtomsInBLock t aloop(mtop);
+         * while (aloop.nextAtom(&atom,&numberOfMolecules)) {
+         *     ...
+         * }
+         *
+         * \param[out] atom The currently handled t_atom.
+         * \param[out] numberOfMolecules The total number of molecules corresponding to \p atom.
+         */
+        bool nextAtom(const t_atom **atom, int *numberOfMolecules);
+
+    private:
+        //! Implementation pointer.
+        class Impl;
+
+        gmx::PrivateImplPointer<Impl> impl_;
+};
 
 
 /* Abstract type for ilist loop over all ilists */
