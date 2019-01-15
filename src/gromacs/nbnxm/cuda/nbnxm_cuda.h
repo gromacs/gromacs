@@ -36,10 +36,15 @@
  * \brief
  * Declares nbnxn cuda cache and texture helper functions
  */
-#ifndef GMX_MDLIB_NBNXN_CUDA_NBNXN_CUDA_H
-#define GMX_MDLIB_NBNXN_CUDA_NBNXN_CUDA_H
+#ifndef GMX_NBNXN_CUDA_NBNXN_CUDA_H
+#define GMX_NBNXN_CUDA_NBNXN_CUDA_H
+
+namespace Nbnxm
+{
 
 //! Set up the cache configuration for the non-bonded kernels.
-void nbnxn_cuda_set_cacheconfig();
+void cuda_set_cacheconfig();
+
+} // namespace Nbnxm
 
 #endif

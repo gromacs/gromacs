@@ -75,6 +75,8 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
+// Convience alias for partial Nbnxn namespace usage
+using InteractionLocality = Nbnxm::InteractionLocality;
 
 /* We shift the i-particles backward for PBC.
  * This leads to more conditionals than shifting forward.
@@ -2646,12 +2648,12 @@ static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones, const rvec ls,
 }
 
 /* Estimates the average size of a full j-list for super/sub setup */
-static void get_nsubpair_target(const nbnxn_search   *nbs,
-                                int                   iloc,
-                                real                  rlist,
-                                int                   min_ci_balanced,
-                                int                  *nsubpair_target,
-                                float                *nsubpair_tot_est)
+static void get_nsubpair_target(const nbnxn_search        *nbs,
+                                const InteractionLocality  iloc,
+                                const real                 rlist,
+                                const int                  min_ci_balanced,
+                                int                       *nsubpair_target,
+                                float                     *nsubpair_tot_est)
 {
     /* The target value of 36 seems to be the optimum for Kepler.
      * Maxwell is less sensitive to the exact value.
@@ -2698,7 +2700,7 @@ static void get_nsubpair_target(const nbnxn_search   *nbs,
             nonlocal_vol2(nbs->zones, ls, r_eff_sup);
     }
 
-    if (LOCAL_I(iloc))
+    if (iloc == InteractionLocality::Local)
     {
         /* Sub-cell interacts with itself */
         vol_est  = ls[XX]*ls[YY]*ls[ZZ];
@@ -4073,15 +4075,15 @@ static void sort_sci(NbnxnPairlistGpu *nbl)
 }
 
 /* Make a local or non-local pair-list, depending on iloc */
-void nbnxn_make_pairlist(nbnxn_search         *nbs,
-                         nbnxn_atomdata_t     *nbat,
-                         const t_blocka       *excl,
-                         real                  rlist,
-                         int                   min_ci_balanced,
-                         nbnxn_pairlist_set_t *nbl_list,
-                         int                   iloc,
-                         int                   nb_kernel_type,
-                         t_nrnb               *nrnb)
+void nbnxn_make_pairlist(nbnxn_search              *nbs,
+                         nbnxn_atomdata_t          *nbat,
+                         const t_blocka            *excl,
+                         const real                 rlist,
+                         const int                  min_ci_balanced,
+                         nbnxn_pairlist_set_t      *nbl_list,
+                         const InteractionLocality  iloc,
+                         const int                  nb_kernel_type,
+                         t_nrnb                    *nrnb)
 {
     int                nsubpair_target;
     float              nsubpair_tot_est;
@@ -4101,13 +4103,13 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
 
     nbat->bUseBufferFlags = (nbat->out.size() > 1);
     /* We should re-init the flags before making the first list */
-    if (nbat->bUseBufferFlags && LOCAL_I(iloc))
+    if (nbat->bUseBufferFlags && iloc == InteractionLocality::Local)
     {
         init_buffer_flags(&nbat->buffer_flags, nbat->numAtoms());
     }
 
     int nzi;
-    if (LOCAL_I(iloc))
+    if (iloc == InteractionLocality::Local)
     {
         /* Only zone (grid) 0 vs 0 */
         nzi = 1;
@@ -4152,7 +4154,7 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
 
         int                 zj0;
         int                 zj1;
-        if (LOCAL_I(iloc))
+        if (iloc == InteractionLocality::Local)
         {
             zj0 = 0;
             zj1 = 1;
@@ -4182,7 +4184,7 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
             /* With GPU: generate progressively smaller lists for
              * load balancing for local only or non-local with 2 zones.
              */
-            progBal = (LOCAL_I(iloc) || nbs->zones->n <= 2);
+            progBal = (iloc == InteractionLocality::Local || nbs->zones->n <= 2);
 
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for (int th = 0; th < nnbl; th++)
@@ -4338,12 +4340,12 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
     }
 
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
-    if (LOCAL_I(iloc))
+    if (iloc == InteractionLocality::Local)
     {
         nbs->search_count++;
     }
     if (nbs->print_cycles &&
-        (!nbs->DomDec || !LOCAL_I(iloc)) &&
+        (!nbs->DomDec || iloc == InteractionLocality::NonLocal) &&
         nbs->search_count % 100 == 0)
     {
         nbs_cycle_print(stderr, nbs);

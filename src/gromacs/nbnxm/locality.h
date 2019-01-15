@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,46 +32,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief Implements common util routines for different NBNXN GPU implementations
+
+/*! \libinternal \file
+ * \brief Defines nbnxn locality enums
  *
- * \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
  */
 
-#ifndef GMX_NBNXM_GPU_COMMON_UTILS_H
-#define GMX_NBNXM_GPU_COMMON_UTILS_H
-
-#include "config.h"
-
-#include "gromacs/nbnxm/nbnxm.h"
-
-#if GMX_GPU == GMX_GPU_CUDA
-#include "cuda/nbnxm_cuda_types.h"
-#endif
-
-#if GMX_GPU == GMX_GPU_OPENCL
-#include "opencl/nbnxm_ocl_types.h"
-#endif
+#ifndef GMX_NBNXM_LOCALITY_H
+#define GMX_NBNXM_LOCALITY_H
 
 namespace Nbnxm
 {
 
-/*! \brief An early return condition for empty NB GPU workloads
+/*! \brief Atom locality indicator: local, non-local, all.
  *
- * This is currently used for non-local kernels/transfers only.
- * Skipping the local kernel is more complicated, since the
- * local part of the force array also depends on the non-local kernel.
- * The skip of the local kernel is taken care of separately.
+ * Used for calls to:
+ * gridding, force calculation, x/f buffer operations
  */
-static inline bool canSkipWork(const gmx_nbnxn_gpu_t &nb,
-                               InteractionLocality    iloc)
+enum class AtomLocality : int
 {
-    assert(nb.plist[iloc]);
-    return (iloc == InteractionLocality::NonLocal &&
-            nb.plist[iloc]->nsci == 0);
-}
+    Local    = 0, //!< Local atoms
+    NonLocal = 1, //!< Non-local atoms
+    All      = 2, //!< Both local and non-local atoms
+    Count    = 3  //!< The number of atom locality types
+};
 
-} // namespace Nbnxm
+/*! \brief Interaction locality indicator: local, non-local, all.
+ *
+ * Used for calls to:
+ * pair-search, force calculation, x/f buffer operations
+ */
+enum class InteractionLocality : int
+{
+    Local    = 0, //!< Interactions between local atoms only
+    NonLocal = 1, //!< Interactions between non-local and (non-)local atoms
+    Count    = 2  //!< The number of interaction locality types
+};
 
-#endif
+}      // namespace Nbnxm
+
+#endif // GMX_NBNXM_LOCALITY_H
