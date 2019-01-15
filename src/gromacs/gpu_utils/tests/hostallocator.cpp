@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -145,7 +145,7 @@ typedef ::testing::Types<int32_t, real, RVec, test::MoveOnly> TestTypes;
 template <typename T>
 struct HostAllocatorTest : HostMemoryTest<T>
 {
-    using VectorType = HostVector<T>; //!< HostVector of type tested
+    using VectorType = PaddedHostVector<T>; //!< PaddedHostVector of type tested
 };
 TYPED_TEST_CASE(HostAllocatorTest, TestTypes);
 
@@ -153,7 +153,7 @@ TYPED_TEST_CASE(HostAllocatorTest, TestTypes);
 template <typename T>
 struct HostAllocatorTestNoMem : ::testing::Test
 {
-    using VectorType = HostVector<T>; //!< HostVector of type tested
+    using VectorType = PaddedHostVector<T>; //!< PaddedHostVector of type tested
 };
 TYPED_TEST_CASE(HostAllocatorTestNoMem, TestTypes);
 

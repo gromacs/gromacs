@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,15 +113,15 @@ struct gmx_pme_pp {
     int                  peerRankId;     /**< The peer PP rank id                  */
     //@{
     /**< Vectors of A- and B-state parameters used to transfer vectors to PME ranks  */
-    gmx::HostVector<real>      chargeA;
-    std::vector<real>          chargeB;
-    std::vector<real>          sqrt_c6A;
-    std::vector<real>          sqrt_c6B;
-    std::vector<real>          sigmaA;
-    std::vector<real>          sigmaB;
+    gmx::PaddedHostVector<real> chargeA;
+    std::vector<real>           chargeB;
+    std::vector<real>           sqrt_c6A;
+    std::vector<real>           sqrt_c6B;
+    std::vector<real>           sigmaA;
+    std::vector<real>           sigmaB;
     //@}
-    gmx::HostVector<gmx::RVec> x; /**< Vector of atom coordinates to transfer to PME ranks */
-    std::vector<gmx::RVec>     f; /**< Vector of atom forces received from PME ranks */
+    gmx::HostVector<gmx::RVec>  x; /**< Vector of atom coordinates to transfer to PME ranks */
+    std::vector<gmx::RVec>      f; /**< Vector of atom forces received from PME ranks */
     //@{
     /**< Vectors of MPI objects used in non-blocking communication between multiple PP ranks per PME rank */
     std::vector<MPI_Request> req;
@@ -348,7 +348,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             {
                 pme_pp->sigmaB.resize(nat);
             }
-            pme_pp->x.resizeWithPadding(nat);
+            pme_pp->x.resize(nat);
             pme_pp->f.resize(nat);
 
             /* maxshift is sent when the charges are sent */
@@ -625,7 +625,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags);
-            pme_gpu_launch_spread(pme, pme_pp->x.rvec_array(), wcycle);
+            pme_gpu_launch_spread(pme, as_rvec_array(pme_pp->x.data()), wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
             pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set);
             output = pme_gpu_wait_finish_task(pme, pmeFlags, wcycle);
@@ -633,7 +633,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         }
         else
         {
-            gmx_pme_do(pme, 0, natoms, pme_pp->x.rvec_array(), as_rvec_array(pme_pp->f.data()),
+            gmx_pme_do(pme, 0, natoms, as_rvec_array(pme_pp->x.data()), as_rvec_array(pme_pp->f.data()),
                        pme_pp->chargeA.data(), pme_pp->chargeB.data(),
                        pme_pp->sqrt_c6A.data(), pme_pp->sqrt_c6B.data(),
                        pme_pp->sigmaA.data(), pme_pp->sigmaB.data(), box,
