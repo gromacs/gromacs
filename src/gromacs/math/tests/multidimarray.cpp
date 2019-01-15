@@ -243,6 +243,24 @@ TEST_F(MultiDimArrayTest, dynamicMultiDimArrayResizeAndSetValue)
     EXPECT_EQ(dynamicArray_(4, 3), testNumber_);
 }
 
+TEST_F(MultiDimArrayTest, implicitConversionToView)
+{
+    static_array_type::view_type view = staticArray_;
+    view(2, 2) = testNumber_;
+    EXPECT_EQ(testNumber_, view(2, 2));
+}
+
+TEST_F(MultiDimArrayTest, implicitConstConversionToView)
+{
+    static_array_type::const_view_type view = staticArray_;
+    // the following must not compile:
+    // view(2, 2) = testNumber_;
+    for (const auto &x : view)
+    {
+        EXPECT_EQ(testNumber_ - 1, x);
+    }
+}
+
 } // namespace
 
 } // namespace test
