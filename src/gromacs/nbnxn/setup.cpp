@@ -222,7 +222,7 @@ const char *lookup_kernel_name(int kernel_type)
 static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
                               gmx_bool             use_simd_kernels,
                               const gmx_hw_info_t &hardwareInfo,
-                              gmx_bool             bUseGPU,
+                              bool                 useGpu,
                               EmulateGpuNonbonded  emulateGpu,
                               const t_inputrec    *ir,
                               int                 *kernel_type,
@@ -243,7 +243,7 @@ static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
             GMX_LOG(mdlog.warning).asParagraph().appendText("Emulating a GPU run on the CPU (slow)");
         }
     }
-    else if (bUseGPU)
+    else if (useGpu)
     {
         *kernel_type = nbnxnk8x8x8_GPU;
     }
@@ -291,57 +291,42 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
                     const gmx_mtop_t        *mtop,
                     matrix                   box)
 {
-    nonbonded_verlet_t *nbv;
-    char               *env;
+    nonbonded_verlet_t        *nbv        = new nonbonded_verlet_t();
 
-    nbv = new nonbonded_verlet_t();
+    const EmulateGpuNonbonded  emulateGpu =
+        ((getenv("GMX_EMULATE_GPU") != nullptr) ? EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
+    bool                       useGpu     = deviceInfo != nullptr;
 
-    nbv->emulateGpu = ((getenv("GMX_EMULATE_GPU") != nullptr) ? EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
-    nbv->bUseGPU    = deviceInfo != nullptr;
-
-    GMX_RELEASE_ASSERT(!(nbv->emulateGpu == EmulateGpuNonbonded::Yes && nbv->bUseGPU), "When GPU emulation is active, there cannot be a GPU assignment");
+    GMX_RELEASE_ASSERT(!(emulateGpu == EmulateGpuNonbonded::Yes && useGpu), "When GPU emulation is active, there cannot be a GPU assignment");
 
     nbv->nbs             = nullptr;
-    nbv->min_ci_balanced = 0;
 
-    nbv->ngrp = (DOMAINDECOMP(cr) ? 2 : 1);
-    for (int i = 0; i < nbv->ngrp; i++)
+    pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hardwareInfo,
+                      useGpu, emulateGpu, ir,
+                      &nbv->kernelType_,
+                      &nbv->ewaldExclusionType_,
+                      fr->bNonbonded);
+
+    const bool pairlistIsSimple = nbv->pairlistIsSimple();
+    for (nbnxn_pairlist_set_t &pairlistSet : nbv->pairlistSets)
     {
-        nbv->grp[i].nbl_lists.nnbl = 0;
-        nbv->grp[i].kernel_type    = nbnxnkNotSet;
-
-        if (i == 0) /* local */
-        {
-            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hardwareInfo,
-                              nbv->bUseGPU, nbv->emulateGpu, ir,
-                              &nbv->grp[i].kernel_type,
-                              &nbv->grp[i].ewald_excl,
-                              fr->bNonbonded);
-        }
-        else /* non-local */
-        {
-            /* Use the same kernel for local and non-local interactions */
-            nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
-            nbv->grp[i].ewald_excl  = nbv->grp[0].ewald_excl;
-        }
+        // TODO Change this to a constructor
+        /* The second parameter tells whether lists should be combined,
+         * this is currently only and always done for GPU lists.
+         */
+        nbnxn_init_pairlist_set(&pairlistSet, pairlistIsSimple, !pairlistIsSimple);
     }
 
+    nbv->min_ci_balanced = 0;
+
     nbv->listParams = gmx::compat::make_unique<NbnxnListParameters>(ir->rlist);
-    setupDynamicPairlistPruning(mdlog, ir, mtop, box, nbv->grp[0].kernel_type, fr->ic,
+    setupDynamicPairlistPruning(mdlog, ir, mtop, box, nbv->kernelType_, fr->ic,
                                 nbv->listParams.get());
 
     nbv->nbs = gmx::compat::make_unique<nbnxn_search>(DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
                                                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
                                                       bFEP_NonBonded,
                                                       gmx_omp_nthreads_get(emntPairsearch));
-
-    for (int i = 0; i < nbv->ngrp; i++)
-    {
-        nbnxn_init_pairlist_set(&nbv->grp[i].nbl_lists,
-                                nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
-                                /* 8x8x8 "non-simple" lists are ATM always combined */
-                                !nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type));
-    }
 
     int      enbnxninitcombrule;
     if (fr->ic->vdwtype == evdwCUT &&
@@ -370,7 +355,7 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
         enbnxninitcombrule = enbnxninitcombruleNONE;
     }
 
-    nbv->nbat = new nbnxn_atomdata_t(nbv->bUseGPU ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
+    nbv->nbat = new nbnxn_atomdata_t(useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
     int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
     if (ir->opts.ngener - ir->nwall == 1)
     {
@@ -380,16 +365,15 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
          */
         mimimumNumEnergyGroupNonbonded = 1;
     }
-    bool bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[0].kernel_type);
     nbnxn_atomdata_init(mdlog,
                         nbv->nbat,
-                        nbv->grp[0].kernel_type,
+                        nbv->kernelType_,
                         enbnxninitcombrule,
                         fr->ntype, fr->nbfp,
                         mimimumNumEnergyGroupNonbonded,
-                        bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1);
+                        pairlistIsSimple ? gmx_omp_nthreads_get(emntNonbonded) : 1);
 
-    if (nbv->bUseGPU)
+    if (useGpu)
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
@@ -399,9 +383,9 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
                  nbv->listParams.get(),
                  nbv->nbat,
                  cr->nodeid,
-                 (nbv->ngrp > 1));
+                 (nbv->pairlistSets.size() > 1));
 
-        if ((env = getenv("GMX_NB_MIN_CI")) != nullptr)
+        if (const char *env = getenv("GMX_NB_MIN_CI"))
         {
             char *end;
 

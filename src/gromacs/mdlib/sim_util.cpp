@@ -403,8 +403,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         return;
     }
 
-    nonbonded_verlet_t       *nbv  = fr->nbv;
-    nonbonded_verlet_group_t *nbvg = &nbv->grp[ilocality];
+    nonbonded_verlet_t *nbv  = fr->nbv;
 
     /* GPU kernel launch overhead is already timed separately */
     if (fr->cutoff_scheme != ecutsVERLET)
@@ -412,15 +411,13 @@ static void do_nb_verlet(t_forcerec                       *fr,
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
-    bool bUsingGpuKernels = (nbvg->kernel_type == nbnxnk8x8x8_GPU);
-
-    if (!bUsingGpuKernels)
+    if (!nbv->useGpu())
     {
         /* When dynamic pair-list  pruning is requested, we need to prune
          * at nstlistPrune steps.
          */
         if (nbv->listParams->useDynamicPruning &&
-            (step - nbvg->nbl_lists.outerListCreationStep) % nbv->listParams->nstlistPrune == 0)
+            nbnxnIsDynamicPairlistPruningStep(*nbv, ilocality, step))
         {
             /* Prune the pair-list beyond fr->ic->rlistPrune using
              * the current coordinates of the atoms.
@@ -435,7 +432,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
 
     NbnxnDispatchKernel(nbv, ilocality, *ic, flags, clearF, fr, enerd, nrnb);
 
-    if (!bUsingGpuKernels)
+    if (!nbv->useGpu())
     {
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
@@ -555,7 +552,7 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
 
 gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
 {
-    return nbv != nullptr && nbv->bUseGPU;
+    return nbv != nullptr && nbv->useGpu();
 }
 
 static inline void clear_rvecs_omp(int n, rvec v[])
@@ -907,7 +904,7 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
      */
     int  numRollingParts     = nbv->listParams->numRollingParts;
     GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
-    int  stepWithCurrentList = step - nbv->grp[Nbnxn::InteractionLocality::Local].nbl_lists.outerListCreationStep;
+    int  stepWithCurrentList = nbnxnNumStepsWithPairlist(*nbv, Nbnxn::InteractionLocality::Local, step);
     bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
     if (stepWithCurrentList > 0 &&
         stepWithCurrentList < inputrec->nstlist - 1 &&
@@ -962,8 +959,8 @@ static void do_force_cutsVERLET(FILE *fplog,
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
     bDoForces     = ((flags & GMX_FORCE_FORCES) != 0);
-    bUseGPU       = fr->nbv->bUseGPU;
-    bUseOrEmulGPU = bUseGPU || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
+    bUseGPU       = fr->nbv->useGpu();
+    bUseOrEmulGPU = bUseGPU || fr->nbv->emulateGpu();
 
     const auto pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
     // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
@@ -1081,22 +1078,18 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (!DOMAINDECOMP(cr))
         {
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_LOCAL);
-            nbnxn_put_on_grid(nbv->nbs.get(), fr->ePBC, box,
+            nbnxn_put_on_grid(nbv, fr->ePBC, box,
                               0, vzero, box_diag,
                               nullptr, 0, mdatoms->homenr, -1,
                               fr->cginfo, x.unpaddedArrayRef(),
-                              0, nullptr,
-                              nbv->grp[Nbnxn::InteractionLocality::Local].kernel_type,
-                              nbv->nbat);
+                              0, nullptr);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_LOCAL);
         }
         else
         {
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_NONLOCAL);
-            nbnxn_put_on_grid_nonlocal(nbv->nbs.get(), domdec_zones(cr->dd),
-                                       fr->cginfo, x.unpaddedArrayRef(),
-                                       nbv->grp[Nbnxn::InteractionLocality::NonLocal].kernel_type,
-                                       nbv->nbat);
+            nbnxn_put_on_grid_nonlocal(nbv, domdec_zones(cr->dd),
+                                       fr->cginfo, x.unpaddedArrayRef());
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
 
@@ -1144,7 +1137,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     /* do local pair search */
     if (bNS)
     {
-        nbnxn_pairlist_set_t &pairlistSet = nbv->grp[Nbnxn::InteractionLocality::Local].nbl_lists;
+        nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSets[Nbnxn::InteractionLocality::Local];
 
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
@@ -1211,7 +1204,7 @@ static void do_force_cutsVERLET(FILE *fplog,
        do non-local pair search */
     if (DOMAINDECOMP(cr))
     {
-        nbnxn_pairlist_set_t &pairlistSet = nbv->grp[Nbnxn::InteractionLocality::NonLocal].nbl_lists;
+        nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSets[Nbnxn::InteractionLocality::NonLocal];
 
         if (bNS)
         {
@@ -1222,7 +1215,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 &top->excls, step, nrnb);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
-            if (nbv->grp[Nbnxn::InteractionLocality::NonLocal].kernel_type == nbnxnk8x8x8_GPU)
+            if (nbv->useGpu())
             {
                 /* initialize non-local pair-list on the GPU */
                 Nbnxn::gpu_init_pairlist(nbv->gpu_nbv,
@@ -1392,18 +1385,18 @@ static void do_force_cutsVERLET(FILE *fplog,
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.
          */
-        if (fr->nbv->grp[Nbnxn::InteractionLocality::Local].nbl_lists.nbl_fep[0]->nrj > 0)
+        if (fr->nbv->pairlistSets[Nbnxn::InteractionLocality::Local].nbl_fep[0]->nrj > 0)
         {
-            do_nb_verlet_fep(&fr->nbv->grp[Nbnxn::InteractionLocality::Local].nbl_lists,
+            do_nb_verlet_fep(&fr->nbv->pairlistSets[Nbnxn::InteractionLocality::Local],
                              fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
         }
 
         if (DOMAINDECOMP(cr) &&
-            fr->nbv->grp[Nbnxn::InteractionLocality::NonLocal].nbl_lists.nbl_fep[0]->nrj > 0)
+            fr->nbv->pairlistSets[Nbnxn::InteractionLocality::NonLocal].nbl_fep[0]->nrj > 0)
         {
-            do_nb_verlet_fep(&fr->nbv->grp[Nbnxn::InteractionLocality::NonLocal].nbl_lists,
+            do_nb_verlet_fep(&fr->nbv->pairlistSets[Nbnxn::InteractionLocality::NonLocal],
                              fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
@@ -1433,7 +1426,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         /* if there are multiple fshift output buffers reduce them */
         if ((flags & GMX_FORCE_VIRIAL) &&
-            nbv->grp[iloc].nbl_lists.nnbl > 1)
+            nbv->pairlistSets[iloc].nnbl > 1)
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
@@ -1487,7 +1480,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             }
 
             /* skip the reduction if there was no non-local work to do */
-            if (!nbv->grp[Nbnxn::InteractionLocality::NonLocal].nbl_lists.nblGpu[0]->sci.empty())
+            if (!nbv->pairlistSets[Nbnxn::InteractionLocality::NonLocal].nblGpu[0]->sci.empty())
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxn::AtomLocality::NonLocal,
                                                nbv->nbat, f, wcycle);
@@ -1559,7 +1552,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
     }
 
-    if (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes)
+    if (fr->nbv->emulateGpu())
     {
         // NOTE: emulation kernel is not included in the balancing region,
         // but emulation mode does not target performance anyway

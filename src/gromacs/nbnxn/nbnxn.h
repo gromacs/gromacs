@@ -117,6 +117,7 @@ struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
 struct interaction_const_t;
+struct nbnxn_pairlist_set_t;
 struct t_blocka;
 struct t_commrec;
 struct t_nrnb;
@@ -174,30 +175,41 @@ enum {
 };
 
 /*! \libinternal
- *  \brief Non-bonded interaction group data structure. */
-typedef struct nonbonded_verlet_group_t {
-    nbnxn_pairlist_set_t  nbl_lists;   /**< pair list(s)                       */
-    int                   kernel_type; /**< non-bonded kernel - see enum above */
-    int                   ewald_excl;  /**< Ewald exclusion - see enum above   */
-} nonbonded_verlet_group_t;
-
-/*! \libinternal
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 struct nonbonded_verlet_t
 {
+    //! Returns whether a GPU is use for the non-bonded calculations
+    bool useGpu() const
+    {
+        return kernelType_ == nbnxnk8x8x8_GPU;
+    }
+
+    bool emulateGpu() const
+    {
+        return kernelType_ == nbnxnk8x8x8_PlainC;
+    }
+
+    //! Return whether the pairlist is of simple, CPU type
+    bool pairlistIsSimple() const
+    {
+        return !useGpu() && !emulateGpu();
+    }
+
     std::unique_ptr<NbnxnListParameters>                                        listParams; /**< Parameters for the search and list pruning setup */
     std::unique_ptr<nbnxn_search>                                               nbs;        /**< n vs n atom pair searching data       */
     int                                                                         ngrp;       /**< number of interaction groups          */
-    //! Local and non-local interaction group
-    gmx::EnumerationArray<Nbnxn::InteractionLocality, nonbonded_verlet_group_t> grp;
+    //! Local and non-local pairlist sets
+    gmx::EnumerationArray<Nbnxn::InteractionLocality, nbnxn_pairlist_set_t>     pairlistSets;
     //! Atom data
     nbnxn_atomdata_t                                                           *nbat;
 
-    gmx_bool                                                                    bUseGPU;         /**< TRUE when non-bonded interactions are computed on a physical GPU */
-    EmulateGpuNonbonded                                                         emulateGpu;      /**< true when non-bonded interactions are computed on the CPU using GPU-style pair lists */
-    gmx_nbnxn_gpu_t                                                            *gpu_nbv;         /**< pointer to GPU nb verlet data     */
-    int                                                                         min_ci_balanced; /**< pair list balancing parameter
-                                                                                                      used for the 8x8x8 GPU kernels    */
+    //! Non-bonded kernel - see enum above
+    int                  kernelType_;
+    //! Ewald exclusion - see enum above
+    int                  ewaldExclusionType_;
+
+    gmx_nbnxn_gpu_t     *gpu_nbv;         /**< pointer to GPU nb verlet data     */
+    int                  min_ci_balanced; /**< pair list balancing parameter used for the 8x8x8 GPU kernels    */
 };
 
 namespace Nbnxn
@@ -227,7 +239,7 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
  * When move[i] < 0 particle i has migrated and will not be put on the grid.
  * Without domain decomposition move will be NULL.
  */
-void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
+void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
                        int                             ePBC,
                        const matrix                    box,
                        int                             ddZone,
@@ -240,21 +252,17 @@ void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
                        const int                      *atinfo,
                        gmx::ArrayRef<const gmx::RVec>  x,
                        int                             numAtomsMoved,
-                       const int                      *move,
-                       int                             nb_kernel_type,
-                       nbnxn_atomdata_t               *nbat);
+                       const int                      *move);
 
 /*! \brief As nbnxn_put_on_grid, but for the non-local atoms
  *
  * with domain decomposition. Should be called after calling
  * nbnxn_search_put_on_grid for the local atoms / home zone.
  */
-void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
+void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nb_verlet,
                                 const struct gmx_domdec_zones_t *zones,
                                 const int                       *atinfo,
-                                gmx::ArrayRef<const gmx::RVec>   x,
-                                int                              nb_kernel_type,
-                                nbnxn_atomdata_t                *nbat);
+                                gmx::ArrayRef<const gmx::RVec>   x);
 
 /*! \brief Returns the number of x and y cells in the local grid */
 void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy);
@@ -277,6 +285,16 @@ void nbnxn_make_pairlist(nonbonded_verlet_t         *nbv,
                          const t_blocka             *excl,
                          int64_t                     step,
                          t_nrnb                     *nrnb);
+
+/*! \brief Returns the number of steps performed with the current pair list */
+int nbnxnNumStepsWithPairlist(const nonbonded_verlet_t   &nbv,
+                              Nbnxn::InteractionLocality  ilocality,
+                              int64_t                     step);
+
+/*! \brief Returns whether step is a dynamic list pruning step */
+bool nbnxnIsDynamicPairlistPruningStep(const nonbonded_verlet_t   &nbv,
+                                       Nbnxn::InteractionLocality  ilocality,
+                                       int64_t                     step);
 
 /*! \brief Prune all pair-lists with given locality (currently CPU only)
  *
