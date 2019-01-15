@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-od">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Minimum Distance"
+xaxis  label "Time (ps)"
+yaxis  label "Distance (nm)"
+TYPE xy
+s0 legend "atoms123-atoms123"
+s1 legend "atoms123-atoms123"
+s2 legend "atoms123-atoms123"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">4</Int>
+          <Real>0.000000e+00</Real>
+          <Real>2.000000e+00</Real>
+          <Real>1.500000e+00</Real>
+          <Real>5.000000e-01</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
