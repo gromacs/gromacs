@@ -88,6 +88,9 @@
 #include "nbnxn_ocl_internal.h"
 #include "nbnxn_ocl_types.h"
 
+namespace Nbnxn
+{
+
 /*! \brief Convenience constants */
 //@{
 static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
@@ -359,19 +362,22 @@ static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
-void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
-                              const nbnxn_atomdata_t *nbatom,
-                              int                     iloc,
-                              bool                    haveOtherWork)
+void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
+                        const nbnxn_atomdata_t *nbatom,
+                        const AtomLocality      atomLocality,
+                        const bool              haveOtherWork)
 {
-    int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
+    const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
+
+    /* local/nonlocal offset and length used for xq and f */
+    int                  adat_begin, adat_len;
 
     cl_atomdata_t       *adat    = nb->atdat;
     cl_plist_t          *plist   = nb->plist[iloc];
     cl_timers_t         *t       = nb->timers;
     cl_command_queue     stream  = nb->stream[iloc];
 
-    bool                 bDoTime     = (nb->bDoTime) != 0;
+    bool                 bDoTime = (nb->bDoTime) != 0;
 
     /* Don't launch the non-local H2D copy if there is no dependent
        work to do: neither non-local nor other (e.g. bonded) work
@@ -382,7 +388,7 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
        we always call the local local x+q copy (and the rest of the local
        work in nbnxn_gpu_launch_kernel().
      */
-    if (!haveOtherWork && canSkipWork(nb, iloc))
+    if (!haveOtherWork && canSkipWork(*nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -390,7 +396,7 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
     }
 
     /* calculate the atom data index range based on locality */
-    if (LOCAL_I(iloc))
+    if (atomLocality == AtomLocality::Local)
     {
         adat_begin  = 0;
         adat_len    = adat->natoms_local;
@@ -404,16 +410,16 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
     /* beginning of timed HtoD section */
     if (bDoTime)
     {
-        t->nb_h2d[iloc].openTimingRegion(stream);
+        t->xf[atomLocality].nb_h2d.openTimingRegion(stream);
     }
 
     /* HtoD x, q */
     ocl_copy_H2D_async(adat->xq, nbatom->x().data() + adat_begin * 4, adat_begin*sizeof(float)*4,
-                       adat_len * sizeof(float) * 4, stream, bDoTime ? t->nb_h2d[iloc].fetchNextEvent() : nullptr);
+                       adat_len * sizeof(float) * 4, stream, bDoTime ? t->xf[atomLocality].nb_h2d.fetchNextEvent() : nullptr);
 
     if (bDoTime)
     {
-        t->nb_h2d[iloc].closeTimingRegion(stream);
+        t->xf[atomLocality].nb_h2d.closeTimingRegion(stream);
     }
 
     /* When we get here all misc operations issues in the local stream as well as
@@ -421,7 +427,7 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
        so we record that in the local stream and wait for it in the nonlocal one. */
     if (nb->bUseTwoStreams)
     {
-        if (iloc == eintLocal)
+        if (iloc == InteractionLocality::Local)
         {
             cl_int gmx_used_in_debug cl_error = clEnqueueMarkerWithWaitList(stream, 0, nullptr, &(nb->misc_ops_and_local_H2D_done));
             assert(CL_SUCCESS == cl_error);
@@ -459,9 +465,9 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
    misc_ops_done event to record the point in time when the above  operations
    are finished and synchronize with this event in the non-local stream.
  */
-void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
-                             int                            flags,
-                             int                            iloc)
+void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
+                       const int                         flags,
+                       const Nbnxn::InteractionLocality  iloc)
 {
     /* OpenCL kernel launch-related stuff */
     cl_kernel            nb_kernel = nullptr;  /* fn pointer to the nonbonded kernel */
@@ -487,7 +493,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
        clearing. All these operations, except for the local interaction kernel,
        are needed for the non-local interactions. The skip of the local kernel
        call is taken care of later in this function. */
-    if (canSkipWork(nb, iloc))
+    if (canSkipWork(*nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -500,7 +506,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
            (that's the way the timing accounting can distinguish between
            separate prune kernel and combined force+prune).
          */
-        nbnxn_gpu_launch_kernel_pruneonly(nb, iloc, 1);
+        Nbnxn::gpu_launch_kernel_pruneonly(nb, iloc, 1);
     }
 
     if (plist->nsci == 0)
@@ -513,7 +519,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     /* beginning of timed nonbonded calculation section */
     if (bDoTime)
     {
-        t->nb_k[iloc].openTimingRegion(stream);
+        t->interaction[iloc].nb_k.openTimingRegion(stream);
     }
 
     /* get the pointer to the kernel flavor we need to use */
@@ -521,7 +527,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
                                     nbp->eeltype,
                                     nbp->vdwtype,
                                     bCalcEner,
-                                    (plist->haveFreshList && !nb->timers->didPrune[iloc]));
+                                    (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune));
 
     /* kernel launch config */
 
@@ -545,7 +551,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
     fillin_ocl_structures(nbp, &nbparams_params);
 
-    auto          *timingEvent  = bDoTime ? t->nb_k[iloc].fetchNextEvent() : nullptr;
+    auto          *timingEvent  = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
     constexpr char kernelName[] = "k_calc_nb";
     if (useLjCombRule(nb->nbparam->vdwtype))
     {
@@ -570,7 +576,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
     if (bDoTime)
     {
-        t->nb_k[iloc].closeTimingRegion(stream);
+        t->interaction[iloc].nb_k.closeTimingRegion(stream);
     }
 }
 
@@ -600,9 +606,9 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
     return shmem;
 }
 
-void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
-                                       int                    iloc,
-                                       int                    numParts)
+void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
+                                 const InteractionLocality  iloc,
+                                 const int                  numParts)
 {
     cl_atomdata_t       *adat    = nb->atdat;
     cl_nbparam_t        *nbp     = nb->nbparam;
@@ -656,7 +662,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
     GpuRegionTimer *timer = nullptr;
     if (bDoTime)
     {
-        timer = &(plist->haveFreshList ? t->prune_k[iloc] : t->rollingPrune_k[iloc]);
+        timer = &(plist->haveFreshList ? t->interaction[iloc].prune_k : t->interaction[iloc].rollingPrune_k);
     }
 
     /* beginning of timed prune calculation section */
@@ -708,12 +714,12 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
     {
         plist->haveFreshList         = false;
         /* Mark that pruning has been done */
-        nb->timers->didPrune[iloc] = true;
+        nb->timers->interaction[iloc].didPrune = true;
     }
     else
     {
         /* Mark that rolling pruning has been done */
-        nb->timers->didRollingPrune[iloc] = true;
+        nb->timers->interaction[iloc].didRollingPrune = true;
     }
 
     if (bDoTime)
@@ -726,29 +732,29 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
  */
-void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
-                              struct nbnxn_atomdata_t       *nbatom,
-                              int                            flags,
-                              int                            aloc,
-                              bool                           haveOtherWork)
+void gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
+                        struct nbnxn_atomdata_t       *nbatom,
+                        const int                      flags,
+                        const AtomLocality             aloc,
+                        const bool                     haveOtherWork)
 {
     cl_int gmx_unused cl_error;
     int               adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
     /* determine interaction locality from atom locality */
-    int              iloc = gpuAtomToInteractionLocality(aloc);
+    const InteractionLocality iloc = gpuAtomToInteractionLocality(aloc);
 
-    cl_atomdata_t   *adat    = nb->atdat;
-    cl_timers_t     *t       = nb->timers;
-    bool             bDoTime = nb->bDoTime == CL_TRUE;
-    cl_command_queue stream  = nb->stream[iloc];
+    cl_atomdata_t            *adat    = nb->atdat;
+    cl_timers_t              *t       = nb->timers;
+    bool                      bDoTime = nb->bDoTime == CL_TRUE;
+    cl_command_queue          stream  = nb->stream[iloc];
 
-    bool             bCalcEner   = (flags & GMX_FORCE_ENERGY) != 0;
-    int              bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool                      bCalcEner   = (flags & GMX_FORCE_ENERGY) != 0;
+    int                       bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
 
     /* don't launch non-local copy-back if there was no non-local work to do */
-    if (!haveOtherWork && canSkipWork(nb, iloc))
+    if (!haveOtherWork && canSkipWork(*nb, iloc))
     {
         /* TODO An alternative way to signal that non-local work is
            complete is to use a clEnqueueMarker+clEnqueueBarrier
@@ -767,19 +773,19 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     /* beginning of timed D2H section */
     if (bDoTime)
     {
-        t->nb_d2h[iloc].openTimingRegion(stream);
+        t->xf[aloc].nb_d2h.openTimingRegion(stream);
     }
 
     /* With DD the local D2H transfer can only start after the non-local
        has been launched. */
-    if (iloc == eintLocal && nb->bNonLocalStreamActive)
+    if (iloc == InteractionLocality::Local && nb->bNonLocalStreamActive)
     {
         sync_ocl_event(stream, &(nb->nonlocal_done));
     }
 
     /* DtoH f */
     ocl_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f, adat_begin*3*sizeof(float),
-                       (adat_len)* adat->f_elem_size, stream, bDoTime ? t->nb_d2h[iloc].fetchNextEvent() : nullptr);
+                       (adat_len)* adat->f_elem_size, stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
 
     /* kick off work */
     cl_error = clFlush(stream);
@@ -789,7 +795,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
        recorded which signals that the local D2H can proceed. This event is not
        placed after the non-local kernel because we first need the non-local
        data back first. */
-    if (iloc == eintNonlocal)
+    if (iloc == InteractionLocality::NonLocal)
     {
         cl_error = clEnqueueMarkerWithWaitList(stream, 0, nullptr, &(nb->nonlocal_done));
         assert(CL_SUCCESS == cl_error);
@@ -797,35 +803,35 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     }
 
     /* only transfer energies in the local stream */
-    if (LOCAL_I(iloc))
+    if (iloc == InteractionLocality::Local)
     {
         /* DtoH fshift */
         if (bCalcFshift)
         {
             ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0,
-                               SHIFTS * adat->fshift_elem_size, stream, bDoTime ? t->nb_d2h[iloc].fetchNextEvent() : nullptr);
+                               SHIFTS * adat->fshift_elem_size, stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
         }
 
         /* DtoH energies */
         if (bCalcEner)
         {
             ocl_copy_D2H_async(nb->nbst.e_lj, adat->e_lj, 0,
-                               sizeof(float), stream, bDoTime ? t->nb_d2h[iloc].fetchNextEvent() : nullptr);
+                               sizeof(float), stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
 
             ocl_copy_D2H_async(nb->nbst.e_el, adat->e_el, 0,
-                               sizeof(float), stream, bDoTime ? t->nb_d2h[iloc].fetchNextEvent() : nullptr);
+                               sizeof(float), stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
         }
     }
 
     if (bDoTime)
     {
-        t->nb_d2h[iloc].closeTimingRegion(stream);
+        t->xf[aloc].nb_d2h.closeTimingRegion(stream);
     }
 }
 
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
+int gpu_pick_ewald_kernel_type(const bool bTwinCut)
 {
     bool bUseAnalyticalEwald, bForceAnalyticalEwald, bForceTabulatedEwald;
     int  kernel_type;
@@ -879,3 +885,5 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
 
     return kernel_type;
 }
+
+} // namespace Nbnxn

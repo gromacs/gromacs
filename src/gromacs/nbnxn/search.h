@@ -40,6 +40,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+#include "locality.h"
+
 struct gmx_domdec_zones_t;
 struct gmx_groups_t;
 struct nbnxn_atomdata_t;
@@ -86,15 +88,15 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
  * for the number of equally sized lists is below min_ci_balanced.
  * With perturbed particles, also a group scheme style nbl_fep list is made.
  */
-void nbnxn_make_pairlist(nbnxn_search         *nbs,
-                         nbnxn_atomdata_t     *nbat,
-                         const t_blocka       *excl,
-                         real                  rlist,
-                         int                   min_ci_balanced,
-                         nbnxn_pairlist_set_t *nbl_list,
-                         int                   iloc,
-                         int                   nb_kernel_type,
-                         t_nrnb               *nrnb);
+void nbnxn_make_pairlist(nbnxn_search               *nbs,
+                         nbnxn_atomdata_t           *nbat,
+                         const t_blocka             *excl,
+                         real                        rlist,
+                         int                         min_ci_balanced,
+                         nbnxn_pairlist_set_t       *nbl_list,
+                         Nbnxn::InteractionLocality  iloc,
+                         int                         nb_kernel_type,
+                         t_nrnb                     *nrnb);
 
 /*! \brief Prepare the list-set produced by the search for dynamic pruning
  *
