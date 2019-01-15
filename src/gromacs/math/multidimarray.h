@@ -104,6 +104,8 @@ class MultiDimArray
         using const_reference = typename TContainer::const_reference;
         //! the view used to access the data
         using view_type = basic_mdspan<value_type, Extents, LayoutPolicy>;
+        //! const view on the data
+        using const_view_type = basic_mdspan<const value_type, Extents, LayoutPolicy>;
         /*! \brief Iterator type for contiguous iteration over the stored data.
          * Used, e.g., in free begin and end functions
          */
@@ -269,6 +271,16 @@ class MultiDimArray
         {
             return view_.extent(k);
         }
+        //! Implicit conversion to multidimensional view on the data
+        constexpr operator view_type() const noexcept
+        {
+            return view_;
+        }
+        //! Implicit conversion to const multidimensional view on the data
+        constexpr operator const_view_type() const noexcept
+        {
+            return {data_.data(), view_.mapping()};
+        }
     private:
         //! The contiguous data that is equipped with multidimensional indexing in this class
         TContainer data_;
@@ -306,6 +318,24 @@ constexpr typename MultiDimArray<TContainer, Extents>::iterator
 end(MultiDimArray<TContainer, Extents> &multiDimArray)
 {
     return multiDimArray.toArrayRef().end();
+}
+
+//! Free MultiDimArray begin function addressing its contiguous memory.
+template <class BasicMdspan>
+constexpr typename std::enable_if<BasicMdspan::is_always_contiguous(),
+                                  typename BasicMdspan::pointer>::type
+begin(const BasicMdspan &basicMdspan)
+{
+    return basicMdspan.data();
+}
+
+//! Free MultiDimArray begin function addressing its contiguous memory.
+template <class BasicMdspan>
+constexpr typename std::enable_if<BasicMdspan::is_always_contiguous(),
+                                  typename BasicMdspan::pointer>::type
+end(const BasicMdspan &basicMdspan)
+{
+    return basicMdspan.data() + basicMdspan.mapping().required_span_size();
 }
 
 //! Swap function
