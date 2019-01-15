@@ -100,47 +100,16 @@ set(GMX_BUILD_OWN_FFTW_MD5 8aac833c943d8e90d51b697b27d4384d CACHE STRING
     "Expected MD5 hash for the file at GMX_BUILD_OWN_FFTW_URL")
 mark_as_advanced(GMX_BUILD_OWN_FFTW_URL GMX_BUILD_OWN_FFTW_MD5)
 
-# ExternalProject at least up to CMake 3.0 prints a confusing error message if
-# download fails when MD5 verification is enabled.  So we manage the download
-# ourselves so that MD5 sum is not verified there, and then pass a local file
-# as the URL to ExternalProject.  This way, ExternalProject still verifies the
-# MD5 sum with a proper message if that fails.
-# TODO remove this when we require CMake 3.5+
-set(url "${GMX_BUILD_OWN_FFTW_URL}")
-# Determine whether we are actually downloading (this matches the conditions in
-# ExternalProject).  ExternalProject works as expected if passed a local file.
-set(is_download TRUE)
-if (IS_DIRECTORY "${url}" OR "${url}" MATCHES "^file://" OR NOT "${url}" MATCHES "^[a-z]+://")
-    set(is_download FALSE)
-endif()
-if (is_download)
-    # For simplicity, don't try to extract the file name from the URL, but use
-    # a hard-coded value.
-    set(remote_url "${GMX_BUILD_OWN_FFTW_URL}")
-    set(local_path "${CMAKE_CURRENT_BINARY_DIR}/fftw.tar.gz")
-    set(url ${local_path})
-    # Write a script to do our own download step (mimics what ExternalProject
-    # would do, but without MD5 sum verification at this step).
-    set(download_script ${CMAKE_CURRENT_BINARY_DIR}/fftw-download.cmake)
-    configure_file(fftw-download.cmake.cmakein ${download_script} @ONLY)
-endif()
-
 # The actual build target.
 set(EXTERNAL_FFTW_BUILD_TARGET fftwBuild)
 include(ExternalProject)
 ExternalProject_add(${EXTERNAL_FFTW_BUILD_TARGET}
-        URL "${url}" URL_MD5 ${GMX_BUILD_OWN_FFTW_MD5}
+        URL "${GMX_BUILD_OWN_FFTW_URL}"
+        URL_MD5 ${GMX_BUILD_OWN_FFTW_MD5}
         CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib --disable-fortran
         ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
         ${GMX_BUILD_OWN_FFTW_PREC}
         ${GMX_BUILD_OWN_FFTW_TARGET_HOST})
-# Add a custom step to do our own download if that is necessary.
-if (is_download)
-    ExternalProject_add_step(${EXTERNAL_FFTW_BUILD_TARGET} pre-download
-            COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/fftw-download.cmake
-            DEPENDERS download)
-endif()
-
 ExternalProject_get_property(${EXTERNAL_FFTW_BUILD_TARGET} INSTALL_DIR)
 
 string(REGEX REPLACE "fftw" "fftw3" FFTW_LIBNAME ${LOWERFFTW})
