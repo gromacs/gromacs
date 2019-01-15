@@ -1004,12 +1004,12 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          bDynamicBox,
 }
 
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
-void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
-                                     int                  locality,
-                                     gmx_bool             FillLocal,
-                                     rvec                *x,
-                                     nbnxn_atomdata_t    *nbat,
-                                     gmx_wallcycle       *wcycle)
+void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search       *nbs,
+                                     const Nbnxm::AtomLocality locality,
+                                     gmx_bool                  FillLocal,
+                                     rvec                     *x,
+                                     nbnxn_atomdata_t         *nbat,
+                                     gmx_wallcycle            *wcycle)
 {
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
@@ -1019,15 +1019,16 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
 
     switch (locality)
     {
-        case eatAll:
+        case Nbnxm::AtomLocality::All:
+        case Nbnxm::AtomLocality::Count:
             g0 = 0;
             g1 = nbs->grid.size();
             break;
-        case eatLocal:
+        case Nbnxm::AtomLocality::Local:
             g0 = 0;
             g1 = 1;
             break;
-        case eatNonlocal:
+        case Nbnxm::AtomLocality::NonLocal:
             g0 = 1;
             g1 = nbs->grid.size();
             break;
@@ -1467,11 +1468,11 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t *nbat,
 }
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
-void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
-                                    int                     locality,
-                                    nbnxn_atomdata_t       *nbat,
-                                    rvec                   *f,
-                                    gmx_wallcycle          *wcycle)
+void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search             *nbs,
+                                    const Nbnxm::AtomLocality locality,
+                                    nbnxn_atomdata_t         *nbat,
+                                    rvec                     *f,
+                                    gmx_wallcycle            *wcycle)
 {
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
@@ -1482,15 +1483,16 @@ void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
 
     switch (locality)
     {
-        case eatAll:
+        case Nbnxm::AtomLocality::All:
+        case Nbnxm::AtomLocality::Count:
             a0 = 0;
             na = nbs->natoms_nonlocal;
             break;
-        case eatLocal:
+        case Nbnxm::AtomLocality::Local:
             a0 = 0;
             na = nbs->natoms_local;
             break;
-        case eatNonlocal:
+        case Nbnxm::AtomLocality::NonLocal:
             a0 = nbs->natoms_local;
             na = nbs->natoms_nonlocal - nbs->natoms_local;
             break;
@@ -1500,7 +1502,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
 
     if (nbat->out.size() > 1)
     {
-        if (locality != eatAll)
+        if (locality != Nbnxm::AtomLocality::All)
         {
             gmx_incons("add_f_to_f called with nout>1 and locality!=eatAll");
         }

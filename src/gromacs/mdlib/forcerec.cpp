@@ -2640,15 +2640,15 @@ void init_forcerec(FILE                             *fp,
             GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
-                       cr, hardwareInfo, deviceInfo,
-                       mtop, box);
+        Nbnxm::init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
+                              cr, hardwareInfo, deviceInfo,
+                              mtop, box);
 
         if (useGpuForBonded)
         {
             auto stream = DOMAINDECOMP(cr) ?
-                nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintNonlocal) :
-                nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintLocal);
+                Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal) :
+                Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::Local);
             // TODO the heap allocation is only needed while
             // t_forcerec lacks a constructor.
             fr->gpuBonded = new gmx::GpuBonded(mtop->ffparams,
@@ -2690,7 +2690,7 @@ void free_gpu_resources(t_forcerec                          *fr,
     if (isPPrankUsingGPU)
     {
         /* free nbnxn data in GPU memory */
-        nbnxn_gpu_free(fr->nbv->gpu_nbv);
+        Nbnxm::gpu_free(fr->nbv->gpu_nbv);
         delete fr->gpuBonded;
         fr->gpuBonded = nullptr;
     }
