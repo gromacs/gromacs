@@ -44,7 +44,9 @@
 
 #include "config.h"
 
+#include "gromacs/nbnxn/locality.h"
 #include "gromacs/nbnxn/pairlist.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 #if GMX_GPU == GMX_GPU_OPENCL
 #include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
@@ -54,24 +56,46 @@
 #include "gromacs/gpu_utils/gpuregiontimer.cuh"
 #endif
 
+namespace Nbnxn
+{
+
 /*! \internal
  * \brief GPU region timers used for timing GPU kernels and H2D/D2H transfers.
  *
  * The two-sized arrays hold the local and non-local values and should always
  * be indexed with eintLocal/eintNonlocal.
  */
-struct nbnxn_gpu_timers_t
+struct gpu_timers_t
 {
-    GpuRegionTimer atdat;              /**< timer for atom data transfer (every PS step)            */
-    GpuRegionTimer nb_h2d[2];          /**< timer for x/q H2D transfers (l/nl, every step)          */
-    GpuRegionTimer nb_d2h[2];          /**< timer for f D2H transfer (l/nl, every step)             */
-    GpuRegionTimer pl_h2d[2];          /**< timer for pair-list H2D transfers (l/nl, every PS step) */
-    bool           didPairlistH2D[2];  /**< true when a pair-list transfer has been done at this step */
-    GpuRegionTimer nb_k[2];            /**< timer for non-bonded kernels (l/nl, every step)         */
-    GpuRegionTimer prune_k[2];         /**< timer for the 1st pass list pruning kernel (l/nl, every PS step)   */
-    bool           didPrune[2];        /**< true when we timed pruning and the timings need to be accounted for */
-    GpuRegionTimer rollingPrune_k[2];  /**< timer for rolling pruning kernels (l/nl, frequency depends on chunk size)  */
-    bool           didRollingPrune[2]; /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
+    /*! \internal
+     * \brief Timers for local or non-local coordinate/force transfers
+     */
+    struct XFTransfers
+    {
+        GpuRegionTimer nb_h2d; /**< timer for x/q H2D transfers (l/nl, every step) */
+        GpuRegionTimer nb_d2h; /**< timer for f D2H transfer (l/nl, every step) */
+    };
+
+    /*! \internal
+     * \brief Timers for local or non-local interaction related operations
+     */
+    struct Interaction
+    {
+        GpuRegionTimer pl_h2d;                  /**< timer for pair-list H2D transfers (l/nl, every PS step) */
+        bool           didPairlistH2D = false;  /**< true when a pair-list transfer has been done at this step */
+        GpuRegionTimer nb_k;                    /**< timer for non-bonded kernels (l/nl, every step)         */
+        GpuRegionTimer prune_k;                 /**< timer for the 1st pass list pruning kernel (l/nl, every PS step)   */
+        bool           didPrune = false;        /**< true when we timed pruning and the timings need to be accounted for */
+        GpuRegionTimer rollingPrune_k;          /**< timer for rolling pruning kernels (l/nl, frequency depends on chunk size)  */
+        bool           didRollingPrune = false; /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
+    };
+
+    //! timer for atom data transfer (every PS step)
+    GpuRegionTimer                                                               atdat;
+    //! timers for coordinate/force transfers (every step)
+    gmx::EnumerationArray<AtomLocality, XFTransfers>                             xf;
+    //! timers for interaction related transfers
+    gmx::EnumerationArray<InteractionLocality, Nbnxn::gpu_timers_t::Interaction> interaction;
 };
 
 struct gpu_plist
@@ -98,5 +122,7 @@ struct gpu_plist
     int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
     int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
 };
+
+} // namespace Nbnxn
 
 #endif

@@ -54,6 +54,9 @@
 #include "opencl/nbnxn_ocl_types.h"
 #endif
 
+namespace Nbnxn
+{
+
 /*! \brief An early return condition for empty NB GPU workloads
  *
  * This is currently used for non-local kernels/transfers only.
@@ -61,10 +64,14 @@
  * local part of the force array also depends on the non-local kernel.
  * The skip of the local kernel is taken care of separately.
  */
-static inline bool canSkipWork(const gmx_nbnxn_gpu_t *nb, int iloc)
+static inline bool canSkipWork(const gmx_nbnxn_gpu_t &nb,
+                               InteractionLocality    iloc)
 {
-    assert(nb && nb->plist[iloc]);
-    return (iloc == eintNonlocal) && (nb->plist[iloc]->nsci == 0);
+    assert(nb.plist[iloc]);
+    return (iloc == InteractionLocality::NonLocal &&
+            nb.plist[iloc]->nsci == 0);
 }
+
+} // namespace Nbnxn
 
 #endif
