@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,11 +45,12 @@
 
 #include "config.h"
 
+// TODO Remove this now that we have std::regex available
 #if HAVE_POSIX_REGEX
 #    include <sys/types.h>
 // old Mac needs sys/types.h before regex.h
 #    include <regex.h>
-#elif HAVE_CXX11_REGEX
+#else
 #    include <regex>
 #endif
 
@@ -60,13 +61,9 @@ namespace gmx
 {
 
 // static
-bool Regex::isSupported()
+bool Regex::isSupported() //TODO: Remove
 {
-#if HAVE_POSIX_REGEX || HAVE_CXX11_REGEX
     return true;
-#else
-    return false;
-#endif
 }
 
 #if HAVE_POSIX_REGEX
@@ -111,7 +108,7 @@ class Regex::Impl
 
         regex_t                 regex_;
 };
-#elif HAVE_CXX11_REGEX
+#else
 class Regex::Impl
 {
     public:
@@ -151,28 +148,6 @@ class Regex::Impl
 
     private:
         std::regex              regex_;
-};
-#else
-class Regex::Impl
-{
-    public:
-        explicit Impl(const char * /*value*/)
-        {
-            GMX_THROW(NotImplementedError(
-                              "GROMACS is compiled without regular expression support"));
-        }
-        explicit Impl(const std::string & /*value*/)
-        {
-            GMX_THROW(NotImplementedError(
-                              "GROMACS is compiled without regular expression support"));
-        }
-
-        bool match(const char * /*value*/) const
-        {
-            // Should never be reached.
-            GMX_THROW(NotImplementedError(
-                              "GROMACS is compiled without regular expression support"));
-        }
 };
 #endif
 

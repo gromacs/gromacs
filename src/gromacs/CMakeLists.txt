@@ -297,7 +297,6 @@ target_link_libraries(libgromacs
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS}
                       ${OpenCL_LIBRARIES}
-                      ${GMX_STDLIB_LIBRARIES}
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}
                       )
