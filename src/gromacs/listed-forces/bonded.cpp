@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3356,9 +3356,9 @@ real g96bonds(int nbonds,
     return vtot;
 }
 
-static real g96bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
-                          rvec r_ij, rvec r_kj,
-                          int *t1, int *t2)
+real g96_cos_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
+                   rvec r_ij, rvec r_kj,
+                   int *t1, int *t2)
 /* Return value is the angle between the bonds i-j and j-k */
 {
     real costh;
@@ -3394,7 +3394,7 @@ real g96angles(int nbonds,
         aj   = forceatoms[i++];
         ak   = forceatoms[i++];
 
-        cos_theta  = g96bond_angle(x[ai], x[aj], x[ak], pbc, r_ij, r_kj, &t1, &t2);
+        cos_theta  = g96_cos_angle(x[ai], x[aj], x[ak], pbc, r_ij, r_kj, &t1, &t2);
 
         *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
                                   forceparams[type].harmonic.krB,
