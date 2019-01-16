@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,12 +75,12 @@ typedef struct {
     int   res0;
 } t_moltypes;
 
-static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
+static void sort_molecule(t_atoms **newatoms, t_atoms **atoms_solvt, std::vector<RVec> *x,
                           std::vector<RVec> *v)
 {
     int         atnr, i, j, moltp = 0, nrmoltypes, resi_o, resi_n, resnr;
     t_moltypes *moltypes;
-    t_atoms    *atoms, *newatoms;
+    t_atoms    *atoms;
 
     fprintf(stderr, "Sorting configuration\n");
 
@@ -153,10 +153,11 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
         }
 
         /* now put them there: */
-        snew(newatoms, 1);
-        init_t_atoms(newatoms, atoms->nr, FALSE);
-        newatoms->nres = atoms->nres;
-        snew(newatoms->resinfo, atoms->nres);
+        snew(*newatoms, 1);
+        t_atoms *prevAtoms = *newatoms;
+        init_t_atoms(prevAtoms, atoms->nr, FALSE);
+        prevAtoms->nres = atoms->nres;
+        srenew(prevAtoms->resinfo, atoms->nres);
         std::vector<RVec> newx(x->size());
         std::vector<RVec> newv(v->size());
 
@@ -172,14 +173,14 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
                 if (strcmp(*atoms->resinfo[resi_o].name, moltypes[moltp].name) == 0)
                 {
                     /* Copy the residue info */
-                    newatoms->resinfo[resi_n]    = atoms->resinfo[resi_o];
-                    newatoms->resinfo[resi_n].nr = resnr;
+                    prevAtoms->resinfo[resi_n]    = atoms->resinfo[resi_o];
+                    prevAtoms->resinfo[resi_n].nr = resnr;
                     /* Copy the atom info */
                     do
                     {
-                        newatoms->atom[j]        = atoms->atom[i];
-                        newatoms->atomname[j]    = atoms->atomname[i];
-                        newatoms->atom[j].resind = resi_n;
+                        prevAtoms->atom[j]        = atoms->atom[i];
+                        prevAtoms->atomname[j]    = atoms->atomname[i];
+                        prevAtoms->atom[j].resind = resi_n;
                         copy_rvec((*x)[i], newx[j]);
                         if (!v->empty())
                         {
@@ -207,7 +208,7 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
 
         /* put them back into the original arrays and throw away temporary arrays */
         done_atom(atoms);
-        *atoms_solvt = newatoms;
+        *atoms_solvt = *newatoms;
         std::swap(*x, newx);
         std::swap(*v, newv);
     }
@@ -709,8 +710,9 @@ static void add_solv(const char *fn, t_topology *top,
         removeExtraSolventMolecules(atoms_solvt, &x_solvt, &v_solvt, numberToRemove);
     }
 
+    t_atoms *newatoms = nullptr;
     /* Sort the solvent mixture, not the protein... */
-    sort_molecule(&atoms_solvt, &x_solvt, &v_solvt);
+    sort_molecule(&newatoms, &atoms_solvt, &x_solvt, &v_solvt);
 
     // Merge the two configurations.
     x->insert(x->end(), x_solvt.begin(), x_solvt.end());
@@ -725,6 +727,11 @@ static void add_solv(const char *fn, t_topology *top,
     fprintf(stderr, "Generated solvent containing %d atoms in %d residues\n",
             atoms_solvt->nr, atoms_solvt->nres);
 
+    if (newatoms != nullptr)
+    {
+        done_atom(newatoms);
+    }
+    sfree(newatoms);
     done_top(top_solvt);
     sfree(top_solvt);
 }
