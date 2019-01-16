@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
-<ReferenceData>
-  <Real Name="angle">2.3561944901923448</Real>
-  <Real Name="cosine_angle">-0.70710678118654757</Real>
-  <Int Name="t1">22</Int>
-  <Int Name="t2">22</Int>
-</ReferenceData>
