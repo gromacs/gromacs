@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="LINEAR_ANGLES">
+    <FEP Name="No">
+      <Real Name="Epot ">0.81969981249999979</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">-0.052499999999999943</Real>
+          <Real Name="Y">1.6099999999999999</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">3.3112499999999994</Real>
+          <Real Name="Y">-5.9799999999999995</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-6.464999999999999</Real>
+          <Real Name="Y">7.129999999999999</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">3.2062499999999994</Real>
+          <Real Name="Y">-2.7599999999999998</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>
