@@ -595,12 +595,12 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
         penalty += (ai_atn * penalty_);
     }
 
-    if (ai->name() == "z_hc" && ai_chi < 3.5)
+    if (ai->name() == "z_ha" && ai_chi < 3.5)
     {
         penalty += (6 * penalty_);
     }
 
-    if (ai->name() == "z_ha" && ai_chi > 3.5)
+    if (ai->name() == "z_h1" && ai_chi > 3.5)
     {
        penalty += (6 * penalty_);
     }
