@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Epot ">0.97247013487921008</Real>
+  <Real Name="dVdlambda ">0</Real>
+  <Vector Name="ShiftForces">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Sequence Name="Forces">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">1.8054587570305012</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.8054587570305012</Real>
+      <Real Name="Y">-1.8054587570305012</Real>
+      <Real Name="Z">1.8054587570305012</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.8054587570305012</Real>
+      <Real Name="Y">1.8054587570305012</Real>
+      <Real Name="Z">-1.8054587570305012</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">-1.8054587570305012</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>
