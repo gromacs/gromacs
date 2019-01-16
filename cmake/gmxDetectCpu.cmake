@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -83,8 +83,7 @@ function(gmx_run_cpu_detection TYPE)
                 set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM=0")
             endif()
 
-            set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${PROJECT_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE ${GMX_STDLIB_CXX_FLAGS} -DGMX_TARGET_X86=${GMX_TARGET_X86_VALUE}")
-            set(LINK_LIBRARIES "${GMX_STDLIB_LIBRARIES}")
+            set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${PROJECT_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE -DGMX_TARGET_X86=${GMX_TARGET_X86_VALUE}")
             try_compile(CPU_DETECTION_COMPILED
                 "${PROJECT_BINARY_DIR}"
                 "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/cpuinfo.cpp"

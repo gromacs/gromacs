@@ -22,7 +22,7 @@
 # Test MPI with CUDA
 # Test MPI with gcc
 # Test MPMD PME with library MPI
-gcc-4.8 gpuhw=nvidia cuda-7.0 cmake-3.9.6 mpi npme=1 nranks=2 openmp
+gcc-5 gpuhw=nvidia cuda-7.0 cmake-3.9.6 mpi npme=1 nranks=2 openmp
 
 # Test non-default use of mdrun -gpu_id
 # Test newest gcc supported by newest CUDA at time of release

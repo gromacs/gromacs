@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.4.3)
 
 project(template CXX)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
@@ -24,7 +28,7 @@ else()
     set(GROMACS_SUFFIX ${GMX_SUFFIX})
 endif()
 
-find_package(GROMACS 5.1 REQUIRED)
+find_package(GROMACS 2020 REQUIRED)
 gromacs_check_double(GMX_DOUBLE)
 gromacs_check_compiler(CXX)
 include_directories(${GROMACS_INCLUDE_DIRS})

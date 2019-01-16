@@ -114,7 +114,7 @@ You should strive to use the most recent version of your
 compiler. Since we require full C++11 support the minimum supported
 compiler versions are
 
-* GNU (gcc) 4.8.1
+* GNU (gcc) 5.0
 * Intel (icc) 17.0.1
 * LLVM (clang) 3.3
 * Microsoft (MSVC) 2017 (C++14 is used)
@@ -138,10 +138,10 @@ other compilers, read on.
 
 On Linux, both the Intel and clang compiler use the libstdc++ which
 comes with gcc as the default C++ library. For |Gromacs|, we require
-the compiler to support libstc++ version 4.8.1 or higher. To select a
+the compiler to support libstc++ version 5.0 or higher. To select a
 particular libstdc++ library, use:
 
-* For Intel: ``-DGMX_STDLIB_CXX_FLAGS=-gcc-name=/path/to/gcc/binary``
+* For Intel: ``-DCMAKE_CXX_FLAGS=-gcc-name=/path/to/gcc/binary``
   or make sure that the correct gcc version is first in path (e.g. by
   loading the gcc module). It can also be useful to add
   ``-DCMAKE_CXX_LINK_FLAGS="-Wl,-rpath,/path/to/gcc/lib64
@@ -154,9 +154,8 @@ On Windows with the Intel compiler, the MSVC standard library is used,
 and at least MSVC 2017 is required. Load the enviroment variables with
 vcvarsall.bat.
 
-To build with any compiler and clang's libcxx standard library, use
-``-DGMX_STDLIB_CXX_FLAGS=-stdlib=libc++
--DGMX_STDLIB_LIBRARIES='-lc++abi -lc++'``.
+To build with clang and llvm's libcxx standard library, use
+``-DCMAKE_CXX_FLAGS=-stdlib=libc++``.
 
 If you are running on Mac OS X, the best option is the Intel
 compiler. Both clang and gcc will work, but they produce lower
@@ -1259,7 +1258,7 @@ much everywhere, it is important that we tell you where we really know
 it works because we have tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code repository
-is currently tested on x86 with a number of gcc versions ranging from 4.8.1
+is currently tested on x86 with a number of gcc versions ranging from 5.0
 through 7, versions 16 and 18 of the Intel compiler, and Clang
 versions 3.4 through 5. For this, we use a variety of GNU/Linux
 flavors and versions as well as recent versions of Windows. Under
