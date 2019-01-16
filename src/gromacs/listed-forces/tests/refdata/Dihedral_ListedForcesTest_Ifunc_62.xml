@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="CBTDIHS">
+    <FEP Name="No">
+      <Real Name="Epot ">-12.0375</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">0</Real>
+        <Real Name="Y">1.9895196601282805e-13</Real>
+        <Real Name="Z">1.7053025658242404e-13</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">240.75000000000003</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">-240.75000000000006</Real>
+          <Real Name="Z">3.4106051316484809e-13</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">2.2737367544323206e-13</Real>
+          <Real Name="Z">328.29545454545439</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">-328.29545454545456</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>
