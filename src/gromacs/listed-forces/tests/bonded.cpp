@@ -201,6 +201,48 @@ TEST_P (BondedTest, IfuncBonds)
     testIfunc(&checker_, F_BONDS, iatoms, iparams, lambda);
 }
 
+TEST_P (BondedTest, IfuncG96Bonds)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 0, 1, 2, 0, 2, 3 };
+    t_iparams            iparams;
+    iparams.harmonic.rA  = iparams.harmonic.rB  = 0.8;
+    iparams.harmonic.krA = iparams.harmonic.krB = 50.0;
+    const real lambda = 0.0;
+    testIfunc(&checker_, F_G96BONDS, iatoms, iparams, lambda);
+}
+
+TEST_P (BondedTest, IfuncMorse)
+{
+  std::vector<t_iatom> iatoms = { 0, 0, 1, 0, 1, 2, 0, 2, 3 };
+  t_iparams            iparams;
+  iparams.morse.b0A   = iparams.morse.b0B   = 0.8;
+  iparams.morse.cbA   = iparams.morse.cbB   = 50.0;
+  iparams.morse.betaA = iparams.morse.betaB = 20.0;
+  const real lambda = 0.0;
+  testIfunc(&checker_, F_MORSE, iatoms, iparams, lambda);
+}
+
+TEST_P (BondedTest, IfuncCubicBonds)
+{
+  std::vector<t_iatom> iatoms = { 0, 0, 1, 0, 1, 2, 0, 2, 3 };
+  t_iparams            iparams;
+  iparams.cubic.b0   = 0.8;
+  iparams.cubic.kb   = 50.0;
+  iparams.cubic.kcub = 2.0;
+  const real lambda = 0.0;
+  testIfunc(&checker_, F_CUBICBONDS, iatoms, iparams, lambda);
+}
+
+TEST_P (BondedTest, IfuncFeneBonds)
+{
+  std::vector<t_iatom> iatoms = { 0, 0, 1, 0, 1, 2, 0, 2, 3 };
+  t_iparams            iparams;
+  iparams.fene.bm   = 1.01;
+  iparams.fene.kb   = 5.0;
+  const real lambda = 0.0;
+  testIfunc(&checker_, F_FENEBONDS, iatoms, iparams, lambda);
+}
+
 TEST_P (BondedTest, IfuncAngles)
 {
     std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
