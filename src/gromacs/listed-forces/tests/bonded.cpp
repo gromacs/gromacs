@@ -115,7 +115,7 @@ class BondedTest : public ::testing::TestWithParam<std::tuple<std::vector<gmx::R
         {
             // We need quite specific tolerances here since angle functions
             // etc. are not very precise and reproducible.
-            test::FloatingPointTolerance tolerance(test::FloatingPointTolerance(1.0e-4, 2.0e-7,
+            test::FloatingPointTolerance tolerance(test::FloatingPointTolerance(1.0e-2, 2.0e-7,
                                                                                 1.0e-6, 1.0e-12,
                                                                                 1000000000, 10000, false));
             checker_.setDefaultTolerance(tolerance);
@@ -136,6 +136,19 @@ class BondedTest : public ::testing::TestWithParam<std::tuple<std::vector<gmx::R
                                r_ij, r_kj, &cosine_angle,
                                &t1, &t2);
             checker_.checkReal(angle, "angle");
+            checker_.checkReal(cosine_angle, "cosine_angle");
+            checker_.checkInteger(t1, "t1");
+            checker_.checkInteger(t2, "t2");
+        }
+
+        void testG96BondAngle()
+        {
+            rvec  r_ij, r_kj;
+            real  cosine_angle;
+            int   t1, t2;
+
+            cosine_angle = g96_cos_angle(x_[0], x_[1], x_[2], &pbc_,
+                                         r_ij, r_kj, &t1, &t2);
             checker_.checkReal(cosine_angle, "cosine_angle");
             checker_.checkInteger(t1, "t1");
             checker_.checkInteger(t2, "t2");
@@ -184,6 +197,11 @@ class BondedTest : public ::testing::TestWithParam<std::tuple<std::vector<gmx::R
 TEST_P (BondedTest, BondAngle)
 {
     testBondAngle();
+}
+
+TEST_P (BondedTest, G96BondAngle)
+{
+    testG96BondAngle();
 }
 
 TEST_P (BondedTest, DihedralAngle)
@@ -252,6 +270,77 @@ TEST_P (BondedTest, IfuncAngles)
     iparams.harmonic.krA = iparams.harmonic.krB = k;
     const real lambda    = 0.0;
     testIfunc(&checker_, F_ANGLES, iatoms, iparams, lambda);
+}
+
+TEST_P (BondedTest, IfuncLinearAngles)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    real                 k = 50.0;
+    iparams.linangle.aA    = 0.4;
+    iparams.linangle.aB    = 0.6;
+    iparams.linangle.klinA = iparams.linangle.klinB = k;
+    const real lambda    = 0.0;
+    testIfunc(&checker_, F_LINEAR_ANGLES, iatoms, iparams, lambda);
+}
+
+TEST_P (BondedTest, IfuncG96Angles)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    real                 k = 50.0;
+    iparams.harmonic.rA  = iparams.harmonic.rB  = 100.0;
+    iparams.harmonic.krA = iparams.harmonic.krB = k;
+    const real lambda    = 0.0;
+    testIfunc(&checker_, F_G96ANGLES, iatoms, iparams, lambda);
+}
+
+TEST_P (BondedTest, IfuncCrossBondBonds)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.cross_bb.r1e = 0.8;
+    iparams.cross_bb.r2e = 0.7;
+    iparams.cross_bb.krr = 45;
+    const real lambda    = 0.0;
+    testIfunc(&checker_, F_CROSS_BOND_BONDS, iatoms, iparams, lambda);
+}
+
+TEST_P (BondedTest, IfuncCrossBondAngles)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.cross_ba.r1e = 0.8;
+    iparams.cross_ba.r2e = 0.7;
+    iparams.cross_ba.r3e = 0.3;
+    iparams.cross_ba.krt = 45;
+    const real lambda    = 0.0;
+    testIfunc(&checker_, F_CROSS_BOND_ANGLES, iatoms, iparams, lambda);
+}
+
+TEST_P (BondedTest, IfuncUreyBradley)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.u_b.thetaA  = iparams.u_b.thetaB  = 0.8;
+    iparams.u_b.r13A    = iparams.u_b.r13B    = 0.7;
+    iparams.u_b.kUBA    = iparams.u_b.kUBB    = 0.3;
+    iparams.u_b.kthetaA = iparams.u_b.kthetaB = 45;
+    const real lambda   = 0.0;
+    testIfunc(&checker_, F_UREY_BRADLEY, iatoms, iparams, lambda);
+}
+
+TEST_P (BondedTest, IfuncQAngles)
+{
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
+    t_iparams            iparams;
+    iparams.qangle.theta = 87.0;
+    for (int i = 0; i < 5; i++)
+    {
+        iparams.qangle.c[i] = 1.1*i+0.4;
+    }
+    const real lambda   = 0.0;
+    testIfunc(&checker_, F_QUARTIC_ANGLES, iatoms, iparams, lambda);
 }
 
 TEST_P (BondedTest, IfuncProperDihedrals)
