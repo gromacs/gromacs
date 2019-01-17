@@ -36,13 +36,54 @@
 #include "gmxpre.h"
 
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/nbnxm/pairlist.h"
+#include "gromacs/nbnxm/pairlistset.h"
+#include "gromacs/utility/gmxassert.h"
+
+NbnxnListParameters::NbnxnListParameters(const Nbnxm::KernelType kernelType,
+                                         const real              rlist) :
+    useDynamicPruning(false),
+    nstlistPrune(-1),
+    rlistOuter(rlist),
+    rlistInner(rlist),
+    numRollingParts(1)
+{
+    if (!Nbnxm::kernelTypeUsesSimplePairlist(kernelType))
+    {
+        pairlistType = PairlistType::Hierarchical8x8;
+    }
+    else
+    {
+        switch (Nbnxm::JClusterSizePerKernelType[kernelType])
+        {
+            case 2:
+                pairlistType = PairlistType::Simple4x2;
+                break;
+            case 4:
+                pairlistType = PairlistType::Simple4x4;
+                break;
+            case 8:
+                pairlistType = PairlistType::Simple4x8;
+                break;
+            default:
+                GMX_RELEASE_ASSERT(false, "Kernel type does not have a pairlist type");
+        }
+    }
+}
+
+nbnxn_pairlist_set_t::nbnxn_pairlist_set_t(NbnxnListParameters &listParams) :
+    params(listParams)
+{
+    // TODO move this into this constructor
+    nbnxn_init_pairlist_set(this);
+}
 
 int nbnxnNumStepsWithPairlist(const nonbonded_verlet_t         &nbv,
                               const Nbnxm::InteractionLocality  iLocality,
                               const int64_t                     step)
 {
-    return step - nbv.pairlistSets[iLocality].outerListCreationStep;
+    return step - nbv.pairlistSet(iLocality).outerListCreationStep;
 }
 
 bool nbnxnIsDynamicPairlistPruningStep(const nonbonded_verlet_t         &nbv,

@@ -46,6 +46,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 // This file with constants is separate from this file to be able
@@ -56,6 +57,11 @@ struct NbnxnPairlistCpuWork;
 struct NbnxnPairlistGpuWork;
 struct tMPI_Atomic;
 
+namespace Nbnxm
+{
+enum class KernelType;
+}
+
 /* Convenience type for vector with aligned memory */
 template<typename T>
 using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
@@ -63,6 +69,18 @@ using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
 /* Convenience type for vector that avoids initialization at resize() */
 template<typename T>
 using FastVector = std::vector < T, gmx::DefaultInitializationAllocator < T>>;
+
+enum class PairlistType : int
+{
+    Simple4x2,
+    Simple4x4,
+    Simple4x8,
+    Hierarchical8x8,
+    Count
+};
+
+static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = { 4, 4, 4, 8 };
+static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = { 2, 4, 8, 8 };
 
 /*! \cond INTERNAL */
 
@@ -74,20 +92,15 @@ struct NbnxnListParameters
 {
     /*! \brief Constructor producing a struct with dynamic pruning disabled
      */
-    NbnxnListParameters(real rlist) :
-        useDynamicPruning(false),
-        nstlistPrune(-1),
-        rlistOuter(rlist),
-        rlistInner(rlist),
-        numRollingParts(1)
-    {
-    }
+    NbnxnListParameters(Nbnxm::KernelType kernelType,
+                        real              rlist);
 
-    bool useDynamicPruning; //!< Are we using dynamic pair-list pruning
-    int  nstlistPrune;      //!< Pair-list dynamic pruning interval
-    real rlistOuter;        //!< Cut-off of the larger, outer pair-list
-    real rlistInner;        //!< Cut-off of the smaller, inner pair-list
-    int  numRollingParts;   //!< The number parts to divide the pair-list into for rolling pruning, a value of 1 gives no rolling pruning
+    PairlistType pairlistType;      //!< The type of cluster-pair list
+    bool         useDynamicPruning; //!< Are we using dynamic pair-list pruning
+    int          nstlistPrune;      //!< Pair-list dynamic pruning interval
+    real         rlistOuter;        //!< Cut-off of the larger, outer pair-list
+    real         rlistInner;        //!< Cut-off of the smaller, inner pair-list
+    int          numRollingParts;   //!< The number parts to divide the pair-list into for rolling pruning, a value of 1 gives no rolling pruning
 };
 
 /*! \endcond */
@@ -292,10 +305,13 @@ struct NbnxnPairlistGpu
 
 struct nbnxn_pairlist_set_t
 {
+    nbnxn_pairlist_set_t(NbnxnListParameters &listParams);
+
     int                nnbl;                  /* number of lists */
     NbnxnPairlistCpu **nbl;                   /* lists for CPU */
     NbnxnPairlistCpu **nbl_work;              /* work space for rebalancing lists */
     NbnxnPairlistGpu **nblGpu;                /* lists for GPU */
+    NbnxnListParameters &params;              /* Pairlist parameters desribing setup and ranges */
     gmx_bool           bCombined;             /* TRUE if lists get combined into one (the 1st) */
     gmx_bool           bSimple;               /* TRUE if the list of of type "simple"
                                                  (na_sc=na_s, no super-clusters used) */
@@ -315,12 +331,12 @@ struct nbnxn_atomdata_output_t
 {
     /* Constructor
      *
-     * \param[in] nb_kernel_type          Type of non-bonded kernel
+     * \param[in] kernelType              Type of non-bonded kernel
      * \param[in] numEnergyGroups         The number of energy groups
      * \param[in] simdEnergyBufferStride  Stride for entries in the energy buffers for SIMD kernels
      * \param[in] pinningPolicy           Sets the pinning policy for all buffers used on the GPU
      */
-    nbnxn_atomdata_output_t(int                nb_kernel_type,
+    nbnxn_atomdata_output_t(Nbnxm::KernelType  kernelType,
                             int                numEnergyGroups,
                             int                simdEnergyBUfferStride,
                             gmx::PinningPolicy pinningPolicy);

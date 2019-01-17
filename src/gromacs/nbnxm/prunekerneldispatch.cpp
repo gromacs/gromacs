@@ -45,13 +45,12 @@
 #include "kernels_simd_4xm/kernel_prune.h"
 
 
-void NbnxnDispatchPruneKernel(nonbonded_verlet_t               *nbv,
-                              const Nbnxm::InteractionLocality  ilocality,
-                              const rvec                       *shift_vec)
+void NbnxnDispatchPruneKernel(nbnxn_pairlist_set_t   *nbl_lists,
+                              const Nbnxm::KernelType kernelType,
+                              const nbnxn_atomdata_t *nbat,
+                              const rvec             *shift_vec)
 {
-    nbnxn_pairlist_set_t     *nbl_lists  = &nbv->pairlistSets[ilocality];
-    const nbnxn_atomdata_t   *nbat       = nbv->nbat;
-    const real                rlistInner = nbv->listParams->rlistInner;
+    const real rlistInner = nbl_lists->params.rlistInner;
 
     GMX_ASSERT(nbl_lists->nbl[0]->ciOuter.size() >= nbl_lists->nbl[0]->ci.size(),
                "Here we should either have an empty ci list or ciOuter should be >= ci");
@@ -62,15 +61,15 @@ void NbnxnDispatchPruneKernel(nonbonded_verlet_t               *nbv,
     {
         NbnxnPairlistCpu *nbl = nbl_lists->nbl[i];
 
-        switch (nbv->kernelType_)
+        switch (kernelType)
         {
-            case nbnxnk4xN_SIMD_4xN:
+            case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
                 nbnxn_kernel_prune_4xn(nbl, nbat, shift_vec, rlistInner);
                 break;
-            case nbnxnk4xN_SIMD_2xNN:
+            case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
                 nbnxn_kernel_prune_2xnn(nbl, nbat, shift_vec, rlistInner);
                 break;
-            case nbnxnk4x4_PlainC:
+            case Nbnxm::KernelType::Cpu4x4_PlainC:
                 nbnxn_kernel_prune_ref(nbl, nbat, shift_vec, rlistInner);
                 break;
             default:
