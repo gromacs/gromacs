@@ -141,7 +141,7 @@ comes with gcc as the default C++ library. For |Gromacs|, we require
 the compiler to support libstc++ version 4.8.1 or higher. To select a
 particular libstdc++ library, use:
 
-* For Intel: ``-DGMX_STDLIB_CXX_FLAGS=-gcc-name=/path/to/gcc/binary``
+* For Intel: ``-DCMAKE_CXX_FLAGS=-gcc-name=/path/to/gcc/binary``
   or make sure that the correct gcc version is first in path (e.g. by
   loading the gcc module). It can also be useful to add
   ``-DCMAKE_CXX_LINK_FLAGS="-Wl,-rpath,/path/to/gcc/lib64
@@ -154,9 +154,8 @@ On Windows with the Intel compiler, the MSVC standard library is used,
 and at least MSVC 2017 is required. Load the enviroment variables with
 vcvarsall.bat.
 
-To build with any compiler and clang's libcxx standard library, use
-``-DGMX_STDLIB_CXX_FLAGS=-stdlib=libc++
--DGMX_STDLIB_LIBRARIES='-lc++abi -lc++'``.
+To build with clang and llvm's libcxx standard library, use
+``-DCMAKE_CXX_FLAGS=-stdlib=libc++``.
 
 If you are running on Mac OS X, the best option is the Intel
 compiler. Both clang and gcc will work, but they produce lower

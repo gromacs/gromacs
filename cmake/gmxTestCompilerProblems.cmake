@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,6 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(CheckCXXSourceCompiles)
+
 # Macro that runs through a number of tests for buggy compiler
 # versions, or other potential problems.
 macro(gmx_test_compiler_problems)
@@ -44,7 +46,21 @@ macro(gmx_test_compiler_problems)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
 
-    # Note that we've already tested that the compiler works with C++11
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
+        check_cxx_source_compiles(
+"// Test in-class array initalizers used with constructor initializer lists
+struct TestStruct
+{
+    float a[3][3] = {{0}}; // in-class initializer
+    float b; // not initialized until constructor initializer list
+    TestStruct();
+};
+TestStruct::TestStruct() : b(0) {}
+}" XLC_COMPILES_CORRECTLY)
+        if (NOT XLC_COMPILES_CORRECTLY)
+            message(FATAL_ERROR "No known version of xlC can compile the normal C++11 code in GROMACS, highest version checked is 16.1.0")
+        endif()
+    endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         if(WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.5.0")
             message(WARNING "Using Clang on Windows requires Clang 3.5.0")

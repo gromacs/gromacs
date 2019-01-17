@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2016,2018, by the GROMACS development team, led by
+# Copyright (c) 2014,2016,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@ function (do_pkgconfig)
             set(PKG_CFLAGS "${PKG_CFLAGS} ${_def}")
         endforeach()
     endif()
-    set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS} ${GMX_CXX11_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
+    set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 
     configure_file(libgromacs.pc.cmakein
                    libgromacs.pc @ONLY)
