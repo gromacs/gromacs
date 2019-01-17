@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,10 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxpreprocess/editconf.h"
 #include "gromacs/gmxpreprocess/genconf.h"
+#include "gromacs/gmxpreprocess/genion.h"
+#include "gromacs/gmxpreprocess/genrestr.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/insert-molecules.h"
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
@@ -214,7 +217,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Multiply a conformation in 'random' orientations");
     registerModule(manager, &gmx_genion, "genion",
                    "Generate monoatomic ions on energetically favorable positions");
-    registerModule(manager, &gmx_genpr, "genrestr",
+    registerModule(manager, &gmx_genrestr, "genrestr",
                    "Generate position restraints or distance restraints for index groups");
     registerModule(manager, &gmx_make_edi, "make_edi",
                    "Generate input files for essential dynamics sampling");
