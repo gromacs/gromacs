@@ -91,7 +91,7 @@ void nbnxn_atomdata_t::resizeForceBuffers()
 }
 
 /* Initializes an nbnxn_atomdata_output_t data structure */
-nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(int                nb_kernel_type,
+nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(Nbnxm::KernelType  kernelType,
                                                  int                numEnergyGroups,
                                                  int                simdEnergyBufferStride,
                                                  gmx::PinningPolicy pinningPolicy) :
@@ -104,10 +104,9 @@ nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(int                nb_kernel_ty
     Vvdw.resize(numEnergyGroups*numEnergyGroups);
     Vc.resize(numEnergyGroups*numEnergyGroups);
 
-    if (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
-        nb_kernel_type == nbnxnk4xN_SIMD_2xNN)
+    if (Nbnxm::kernelTypeIsSimd(kernelType))
     {
-        int cj_size     = nbnxn_kernel_to_cluster_j_size(nb_kernel_type);
+        int cj_size     = Nbnxm::JClusterSizePerKernelType[kernelType];
         int numElements = numEnergyGroups*numEnergyGroups*simdEnergyBufferStride*(cj_size/2)*cj_size;
         VSvdw.resize(numElements);
         VSc.resize(numElements);
@@ -438,7 +437,7 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy) :
 /* Initializes an nbnxn_atomdata_t::Params data structure */
 static void nbnxn_atomdata_params_init(const gmx::MDLogger &mdlog,
                                        nbnxn_atomdata_t::Params *params,
-                                       int nb_kernel_type,
+                                       const Nbnxm::KernelType kernelType,
                                        int enbnxninitcombrule,
                                        int ntype, const real *nbfp,
                                        int n_energygroups)
@@ -538,7 +537,7 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger &mdlog,
                 gmx::boolToString(bCombGeom), gmx::boolToString(bCombLB));
     }
 
-    simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
+    simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
 
     switch (enbnxninitcombrule)
     {
@@ -590,8 +589,7 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger &mdlog,
             gmx_incons("Unknown enbnxninitcombrule");
     }
 
-    bSIMD = (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
-             nb_kernel_type == nbnxnk4xN_SIMD_2xNN);
+    bSIMD = Nbnxm::kernelTypeIsSimd(kernelType);
 
     set_lj_parameter_data(params, bSIMD);
 
@@ -616,18 +614,17 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger &mdlog,
 /* Initializes an nbnxn_atomdata_t data structure */
 void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          nbnxn_atomdata_t *nbat,
-                         int nb_kernel_type,
+                         const Nbnxm::KernelType kernelType,
                          int enbnxninitcombrule,
                          int ntype, const real *nbfp,
                          int n_energygroups,
                          int nout)
 {
-    nbnxn_atomdata_params_init(mdlog, &nbat->paramsDeprecated(), nb_kernel_type,
+    nbnxn_atomdata_params_init(mdlog, &nbat->paramsDeprecated(), kernelType,
                                enbnxninitcombrule, ntype, nbfp, n_energygroups);
 
-    const gmx_bool simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
-    const gmx_bool bSIMD  = (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
-                             nb_kernel_type == nbnxnk4xN_SIMD_2xNN);
+    const bool simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
+    const bool bSIMD  = Nbnxm::kernelTypeIsSimd(kernelType);
 
     if (simple)
     {
@@ -636,7 +633,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
         if (bSIMD)
         {
             pack_x = std::max(c_nbnxnCpuIClusterSize,
-                              nbnxn_kernel_to_cluster_j_size(nb_kernel_type));
+                              Nbnxm::JClusterSizePerKernelType[kernelType]);
             switch (pack_x)
             {
                 case 4:
@@ -671,7 +668,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
     for (int i = 0; i < nout; i++)
     {
         const auto &pinningPolicy = nbat->params().type.get_allocator().pinningPolicy();
-        nbat->out.emplace_back(nb_kernel_type, nbat->params().nenergrp, 1 << nbat->params().neg_2log,
+        nbat->out.emplace_back(kernelType, nbat->params().nenergrp, 1 << nbat->params().neg_2log,
                                pinningPolicy);
     }
 

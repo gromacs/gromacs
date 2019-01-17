@@ -423,7 +423,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
              * the current coordinates of the atoms.
              */
             wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNING);
-            NbnxnDispatchPruneKernel(nbv, ilocality, fr->shift_vec);
+            nbv->dispatchPruneKernel(ilocality, fr->shift_vec);
             wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNING);
         }
 
@@ -438,17 +438,17 @@ static void do_nb_verlet(t_forcerec                       *fr,
     }
 }
 
-static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
-                             t_forcerec           *fr,
-                             rvec                  x[],
-                             rvec                  f[],
-                             const t_mdatoms      *mdatoms,
-                             t_lambda             *fepvals,
-                             real                 *lambda,
-                             gmx_enerdata_t       *enerd,
-                             int                   flags,
-                             t_nrnb               *nrnb,
-                             gmx_wallcycle_t       wcycle)
+static void do_nb_verlet_fep(const nbnxn_pairlist_set_t *nbl_lists,
+                             t_forcerec                 *fr,
+                             rvec                        x[],
+                             rvec                        f[],
+                             const t_mdatoms            *mdatoms,
+                             t_lambda                   *fepvals,
+                             real                       *lambda,
+                             gmx_enerdata_t             *enerd,
+                             int                         flags,
+                             t_nrnb                     *nrnb,
+                             gmx_wallcycle_t             wcycle)
 {
     int              donb_flags;
     nb_kernel_data_t kernel_data;
@@ -1135,17 +1135,17 @@ static void do_force_cutsVERLET(FILE *fplog,
     /* do local pair search */
     if (bNS)
     {
-        nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSets[Nbnxm::InteractionLocality::Local];
-
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
-        nbnxn_make_pairlist(nbv, Nbnxm::InteractionLocality::Local,
-                            &top->excls, step, nrnb);
+        nbv->constructPairlist(Nbnxm::InteractionLocality::Local,
+                               &top->excls, step, nrnb);
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
 
         if (bUseGPU)
         {
             /* initialize local pair-list on the GPU */
+            const nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSet(Nbnxm::InteractionLocality::Local);
+
             Nbnxm::gpu_init_pairlist(nbv->gpu_nbv,
                                      pairlistSet.nblGpu[0],
                                      Nbnxm::InteractionLocality::Local);
@@ -1199,20 +1199,20 @@ static void do_force_cutsVERLET(FILE *fplog,
        do non-local pair search */
     if (havePPDomainDecomposition(cr))
     {
-        nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSets[Nbnxm::InteractionLocality::NonLocal];
-
         if (bNS)
         {
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
-            nbnxn_make_pairlist(nbv, Nbnxm::InteractionLocality::NonLocal,
-                                &top->excls, step, nrnb);
+            nbv->constructPairlist(Nbnxm::InteractionLocality::NonLocal,
+                                   &top->excls, step, nrnb);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
             if (nbv->useGpu())
             {
                 /* initialize non-local pair-list on the GPU */
+                const nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSet(Nbnxm::InteractionLocality::NonLocal);
+
                 Nbnxm::gpu_init_pairlist(nbv->gpu_nbv,
                                          pairlistSet.nblGpu[0],
                                          Nbnxm::InteractionLocality::NonLocal);
@@ -1381,18 +1381,18 @@ static void do_force_cutsVERLET(FILE *fplog,
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.
          */
-        if (fr->nbv->pairlistSets[Nbnxm::InteractionLocality::Local].nbl_fep[0]->nrj > 0)
+        if (fr->nbv->pairlistSet(Nbnxm::InteractionLocality::Local).nbl_fep[0]->nrj > 0)
         {
-            do_nb_verlet_fep(&fr->nbv->pairlistSets[Nbnxm::InteractionLocality::Local],
+            do_nb_verlet_fep(&fr->nbv->pairlistSet(Nbnxm::InteractionLocality::Local),
                              fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
         }
 
-        if (DOMAINDECOMP(cr) &&
-            fr->nbv->pairlistSets[Nbnxm::InteractionLocality::NonLocal].nbl_fep[0]->nrj > 0)
+        if (havePPDomainDecomposition(cr) &&
+            fr->nbv->pairlistSet(Nbnxm::InteractionLocality::NonLocal).nbl_fep[0]->nrj > 0)
         {
-            do_nb_verlet_fep(&fr->nbv->pairlistSets[Nbnxm::InteractionLocality::NonLocal],
+            do_nb_verlet_fep(&fr->nbv->pairlistSet(Nbnxm::InteractionLocality::NonLocal),
                              fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
@@ -1422,7 +1422,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         /* if there are multiple fshift output buffers reduce them */
         if ((flags & GMX_FORCE_VIRIAL) &&
-            nbv->pairlistSets[iloc].nnbl > 1)
+            nbv->pairlistSet(iloc).nnbl > 1)
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
@@ -1477,7 +1477,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             }
 
             /* skip the reduction if there was no non-local work to do */
-            if (!nbv->pairlistSets[Nbnxm::InteractionLocality::NonLocal].nblGpu[0]->sci.empty())
+            if (!nbv->pairlistSet(Nbnxm::InteractionLocality::NonLocal).nblGpu[0]->sci.empty())
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxm::AtomLocality::NonLocal,
                                                nbv->nbat, f, wcycle);

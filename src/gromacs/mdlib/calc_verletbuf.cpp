@@ -107,18 +107,17 @@ struct pot_derivatives_t
     real  md3; // -V''' at the cutoff
 };
 
-VerletbufListSetup verletbufGetListSetup(int nbnxnKernelType)
+VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType)
 {
     /* Note that the current buffer estimation code only handles clusters
      * of size 1, 2 or 4, so for 4x8 or 8x8 we use the estimate for 4x4.
      */
     VerletbufListSetup listSetup;
 
-    listSetup.cluster_size_i = nbnxn_kernel_to_cluster_i_size(nbnxnKernelType);
-    listSetup.cluster_size_j = nbnxn_kernel_to_cluster_j_size(nbnxnKernelType);
+    listSetup.cluster_size_i = Nbnxm::IClusterSizePerKernelType[nbnxnKernelType];
+    listSetup.cluster_size_j = Nbnxm::JClusterSizePerKernelType[nbnxnKernelType];
 
-    if (nbnxnKernelType == nbnxnk8x8x8_GPU ||
-        nbnxnKernelType == nbnxnk8x8x8_PlainC)
+    if (!Nbnxm::kernelTypeUsesSimplePairlist(nbnxnKernelType))
     {
         /* The GPU kernels (except for OpenCL) split the j-clusters in two halves */
         listSetup.cluster_size_j /= 2;
@@ -134,24 +133,24 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType)
      * i- and j-cluster sizes, so we potentially overestimate, but never
      * underestimate, the buffer drift.
      */
-    int nbnxnKernelType;
+    Nbnxm::KernelType nbnxnKernelType;
 
     if (listType == ListSetupType::Gpu)
     {
-        nbnxnKernelType = nbnxnk8x8x8_GPU;
+        nbnxnKernelType = Nbnxm::KernelType::Gpu8x8x8;
     }
     else if (GMX_SIMD && listType == ListSetupType::CpuSimdWhenSupported)
     {
 #ifdef GMX_NBNXN_SIMD_2XNN
         /* We use the smallest cluster size to be on the safe side */
-        nbnxnKernelType = nbnxnk4xN_SIMD_2xNN;
+        nbnxnKernelType = Nbnxm::KernelType::Cpu4xN_Simd_2xNN;
 #else
-        nbnxnKernelType = nbnxnk4xN_SIMD_4xN;
+        nbnxnKernelType = Nbnxm::KernelType::Cpu4xN_Simd_4xN;
 #endif
     }
     else
     {
-        nbnxnKernelType = nbnxnk4x4_PlainC;
+        nbnxnKernelType = Nbnxm::KernelType::Cpu4x4_PlainC;
     }
 
     return verletbufGetListSetup(nbnxnKernelType);

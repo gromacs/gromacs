@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,12 @@ namespace gmx
 class RangePartitioning;
 } // namespace gmx
 
+namespace Nbnxm
+{
+enum class KernelType;
+} // namespace Nbnxm
+
+
 struct VerletbufListSetup
 {
     int  cluster_size_i;  /* Cluster pair-list i-cluster size atom count */
@@ -68,7 +74,7 @@ static const real verlet_buffer_ratio_NVE_T0     = 0.10;
 
 /* Returns the pair-list setup for the given nbnxn kernel type.
  */
-VerletbufListSetup verletbufGetListSetup(int nbnxnKernelType);
+VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType);
 
 /* Enum for choosing the list type for verletbufGetSafeListSetup() */
 enum class ListSetupType
