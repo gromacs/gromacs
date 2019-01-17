@@ -48,6 +48,12 @@ namespace gmx
 class RangePartitioning;
 } // namespace gmx
 
+namespace Nbnxm
+{
+enum class KernelType;
+} // namespace Nbnxn
+
+
 struct VerletbufListSetup
 {
     int  cluster_size_i;  /* Cluster pair-list i-cluster size atom count */
@@ -68,7 +74,7 @@ static const real verlet_buffer_ratio_NVE_T0     = 0.10;
 
 /* Returns the pair-list setup for the given nbnxn kernel type.
  */
-VerletbufListSetup verletbufGetListSetup(int nbnxnKernelType);
+VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType);
 
 /* Enum for choosing the list type for verletbufGetSafeListSetup() */
 enum class ListSetupType
