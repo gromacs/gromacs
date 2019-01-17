@@ -68,9 +68,11 @@ nbnxn_search *nbnxn_init_search(int                        ePBC,
                                 gmx_bool                   bFEP,
                                 int                        nthread_max);
 
-/* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
-void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
-                             gmx_bool simple, gmx_bool combined);
+/* Initializes a set of pair lists stored in nbnxn_pairlist_set_t
+ *
+ * TODO: Merge into the constructor
+ */
+void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list);
 
 /*! \brief Prepare the list-set produced by the search for dynamic pruning
  *

@@ -37,6 +37,9 @@
 #define GMX_NBNXM_NBNXM_GEOMETRY_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/pairlist.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 
 /* Returns the base-2 log of n.
@@ -59,14 +62,51 @@ static inline int get_2log(int n)
     return log2;
 }
 
+namespace Nbnxm
+{
+
+/* The nbnxn i-cluster size in atoms for each nbnxn kernel type */
+static constexpr gmx::EnumerationArray<KernelType, int> IClusterSizePerKernelType =
+{
+    0,
+    c_nbnxnCpuIClusterSize,
+    c_nbnxnCpuIClusterSize,
+    c_nbnxnCpuIClusterSize,
+    c_nbnxnGpuClusterSize,
+    c_nbnxnGpuClusterSize
+};
+
+/* The nbnxn j-cluster size in atoms for each nbnxn kernel type */
+static constexpr gmx::EnumerationArray<KernelType, int> JClusterSizePerKernelType =
+{
+    0,
+    c_nbnxnCpuIClusterSize,
+#if GMX_SIMD
+    GMX_SIMD_REAL_WIDTH,
+    GMX_SIMD_REAL_WIDTH/2,
+#else
+    0,
+    0,
+#endif
+    c_nbnxnGpuClusterSize,
+    c_nbnxnGpuClusterSize
+};
+
 /* Returns whether the pair-list corresponding to nb_kernel_type is simple */
-bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
+static inline bool kernelTypeUsesSimplePairlist(const KernelType kernelType)
+{
+    return (kernelType == KernelType::Cpu4x4_PlainC ||
+            kernelType == KernelType::Cpu4xN_Simd_4xN ||
+            kernelType == KernelType::Cpu4xN_Simd_2xNN);
+}
 
-/* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
-int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type);
+static inline bool kernelTypeIsSimd(const KernelType kernelType)
+{
+    return (kernelType == KernelType::Cpu4xN_Simd_4xN ||
+            kernelType == KernelType::Cpu4xN_Simd_2xNN);
+}
 
-/* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
-int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type);
+} // namespace Nbnxm
 
 /* Returns the effective list radius of the pair-list
  *

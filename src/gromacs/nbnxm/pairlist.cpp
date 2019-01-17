@@ -804,13 +804,14 @@ NbnxnPairlistGpu::NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy) :
     work = new NbnxnPairlistGpuWork();
 }
 
-void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
-                             gmx_bool bSimple, gmx_bool bCombined)
+void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list)
 {
-    GMX_RELEASE_ASSERT(!bSimple || !bCombined, "Can only combine non-simple lists");
-
-    nbl_list->bSimple   = bSimple;
-    nbl_list->bCombined = bCombined;
+    nbl_list->bSimple   =
+        (nbl_list->params.pairlistType == PairlistType::Simple4x2 ||
+         nbl_list->params.pairlistType == PairlistType::Simple4x4 ||
+         nbl_list->params.pairlistType == PairlistType::Simple4x8);
+    // Currently GPU lists are always combined
+    nbl_list->bCombined = !nbl_list->bSimple;
 
     nbl_list->nnbl = gmx_omp_nthreads_get(emntNonbonded);
 
@@ -821,7 +822,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                   nbl_list->nnbl, NBNXN_BUFFERFLAG_MAX_THREADS, NBNXN_BUFFERFLAG_MAX_THREADS);
     }
 
-    if (bSimple)
+    if (nbl_list->bSimple)
     {
         snew(nbl_list->nbl, nbl_list->nnbl);
         if (nbl_list->nnbl > 1)
@@ -843,7 +844,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
             /* Allocate the nblist data structure locally on each thread
              * to optimize memory access for NUMA architectures.
              */
-            if (bSimple)
+            if (nbl_list->bSimple)
             {
                 nbl_list->nbl[i] = new NbnxnPairlistCpu();
 
@@ -2455,24 +2456,24 @@ static void icell_set_x_simple(int ci,
 static void icell_set_x(int ci,
                         real shx, real shy, real shz,
                         int stride, const real *x,
-                        int nb_kernel_type,
+                        const Nbnxm::KernelType kernelType,
                         NbnxnPairlistCpuWork *work)
 {
-    switch (nb_kernel_type)
+    switch (kernelType)
     {
 #if GMX_SIMD
 #ifdef GMX_NBNXN_SIMD_4XN
-        case nbnxnk4xN_SIMD_4xN:
+        case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
             icell_set_x_simd_4xn(ci, shx, shy, shz, stride, x, work);
             break;
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-        case nbnxnk4xN_SIMD_2xNN:
+        case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
             icell_set_x_simd_2xnn(ci, shx, shy, shz, stride, x, work);
             break;
 #endif
 #endif
-        case nbnxnk4x4_PlainC:
+        case Nbnxm::KernelType::Cpu4x4_PlainC:
             icell_set_x_simple(ci, shx, shy, shz, stride, x, &work->iClusterData);
             break;
         default:
@@ -2485,7 +2486,7 @@ static void icell_set_x(int ci,
 static void icell_set_x(int ci,
                         real shx, real shy, real shz,
                         int stride, const real *x,
-                        int gmx_unused nb_kernel_type,
+                        Nbnxm::KernelType gmx_unused kernelType,
                         NbnxnPairlistGpuWork *work)
 {
 #if !GMX_SIMD4_HAVE_REAL
@@ -3116,12 +3117,12 @@ static void makeClusterListWrapper(NbnxnPairlistCpu              *nbl,
                                    const nbnxn_atomdata_t        *nbat,
                                    const real                     rlist2,
                                    const real                     rbb2,
-                                   const int                      nb_kernel_type,
+                                   const Nbnxm::KernelType        kernelType,
                                    int                           *numDistanceChecks)
 {
-    switch (nb_kernel_type)
+    switch (kernelType)
     {
-        case nbnxnk4x4_PlainC:
+        case Nbnxm::KernelType::Cpu4x4_PlainC:
             makeClusterListSimple(jGrid,
                                   nbl, ci, firstCell, lastCell,
                                   excludeSubDiagonal,
@@ -3130,7 +3131,7 @@ static void makeClusterListWrapper(NbnxnPairlistCpu              *nbl,
                                   numDistanceChecks);
             break;
 #ifdef GMX_NBNXN_SIMD_4XN
-        case nbnxnk4xN_SIMD_4xN:
+        case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
             makeClusterListSimd4xn(jGrid,
                                    nbl, ci, firstCell, lastCell,
                                    excludeSubDiagonal,
@@ -3140,7 +3141,7 @@ static void makeClusterListWrapper(NbnxnPairlistCpu              *nbl,
             break;
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-        case nbnxnk4xN_SIMD_2xNN:
+        case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
             makeClusterListSimd2xnn(jGrid,
                                     nbl, ci, firstCell, lastCell,
                                     excludeSubDiagonal,
@@ -3149,6 +3150,8 @@ static void makeClusterListWrapper(NbnxnPairlistCpu              *nbl,
                                     numDistanceChecks);
             break;
 #endif
+        default:
+            GMX_ASSERT(false, "Unhandled kernel type");
     }
 }
 
@@ -3162,7 +3165,7 @@ static void makeClusterListWrapper(NbnxnPairlistGpu              *nbl,
                                    const nbnxn_atomdata_t        *nbat,
                                    const real                     rlist2,
                                    const real                     rbb2,
-                                   const int gmx_unused           nb_kernel_type,
+                                   Nbnxm::KernelType gmx_unused   kernelType,
                                    int                           *numDistanceChecks)
 {
     for (int cj = firstCell; cj <= lastCell; cj++)
@@ -3248,7 +3251,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                      const nbnxn_atomdata_t *nbat,
                                      const t_blocka &exclusions,
                                      real rlist,
-                                     int nb_kernel_type,
+                                     const Nbnxm::KernelType kernelType,
                                      int ci_block,
                                      gmx_bool bFBufferFlag,
                                      int nsubpair_max,
@@ -3283,7 +3286,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
 
     sync_work(nbl);
     GMX_ASSERT(nbl->na_ci == jGrid.na_c, "The cluster sizes in the list and grid should match");
-    nbl->na_cj = nbnxn_kernel_to_cluster_j_size(nb_kernel_type);
+    nbl->na_cj = Nbnxm::JClusterSizePerKernelType[kernelType];
     na_cj_2log = get_2log(nbl->na_cj);
 
     nbl->rlist  = rlist;
@@ -3542,7 +3545,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
 
                     icell_set_x(cell0_i+ci, shx, shy, shz,
                                 nbat->xstride, nbat->x().data(),
-                                nb_kernel_type,
+                                kernelType,
                                 nbl->work);
 
                     for (int cx = cxf; cx <= cxl; cx++)
@@ -3687,7 +3690,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                                            excludeSubDiagonal,
                                                            nbat,
                                                            rlist2, rbb2,
-                                                           nb_kernel_type,
+                                                           kernelType,
                                                            &numDistanceChecks);
 
                                     if (bFBufferFlag)
@@ -4034,6 +4037,7 @@ static void sort_sci(NbnxnPairlistGpu *nbl)
 
 void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
                          const InteractionLocality  iLocality,
+                         nbnxn_pairlist_set_t      *nbl_list,
                          const t_blocka            *excl,
                          const int64_t              step,
                          t_nrnb                    *nrnb)
@@ -4041,7 +4045,6 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
     nbnxn_search         *nbs      = nbv->nbs.get();
     nbnxn_atomdata_t     *nbat     = nbv->nbat;
     const real            rlist    = nbv->listParams->rlistOuter;
-    nbnxn_pairlist_set_t *nbl_list = &nbv->pairlistSets[iLocality];
 
     int                nsubpair_target;
     float              nsubpair_tot_est;
@@ -4170,7 +4173,7 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
                         nbnxn_make_pairlist_part(nbs, iGrid, jGrid,
                                                  &nbs->work[th], nbat, *excl,
                                                  rlist,
-                                                 nbv->kernelType_,
+                                                 nbv->kernelSetup().kernelType,
                                                  ci_block,
                                                  nbat->bUseBufferFlags,
                                                  nsubpair_target,
@@ -4184,7 +4187,7 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
                         nbnxn_make_pairlist_part(nbs, iGrid, jGrid,
                                                  &nbs->work[th], nbat, *excl,
                                                  rlist,
-                                                 nbv->kernelType_,
+                                                 nbv->kernelSetup().kernelType,
                                                  ci_block,
                                                  nbat->bUseBufferFlags,
                                                  nsubpair_target,
