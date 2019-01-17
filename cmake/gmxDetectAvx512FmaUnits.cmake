@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017, by the GROMACS development team, led by
+# Copyright (c) 2017,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -58,12 +58,11 @@ function(gmx_detect_avx_512_fma_units RESULT)
             if(SIMD_AVX_512_CXX_SUPPORTED AND GMX_X86_GCC_INLINE_ASM)
                 # Compile the detection program
 
-                set(_compile_definitions "-I${PROJECT_SOURCE_DIR}/src -DGMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE -DSIMD_AVX_512_CXX_SUPPORTED=1 -DGMX_X86_GCC_INLINE_ASM=1 ${SIMD_AVX_512_CXX_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
+                set(_compile_definitions "-I${PROJECT_SOURCE_DIR}/src -DGMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE -DSIMD_AVX_512_CXX_SUPPORTED=1 -DGMX_X86_GCC_INLINE_ASM=1 ${SIMD_AVX_512_CXX_FLAGS}")
                 try_compile(AVX_512_FMA_UNIT_DETECTION_COMPILED
                     "${PROJECT_BINARY_DIR}"
                     "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/identifyavx512fmaunits.cpp"
                     COMPILE_DEFINITIONS "${_compile_definitions}"
-                    LINK_LIBRARIES "${GMX_STDLIB_LIBRARIES}"
                     OUTPUT_VARIABLE AVX_512_FMA_UNIT_DETECTION_COMPILED_OUTPUT
                     COPY_FILE ${AVX_512_FMA_UNIT_DETECTION_BINARY})
                 if(NOT AVX_512_FMA_UNIT_DETECTION_COMPILED AND NOT RUN_AVX_512_FMA_UNIT_DETECTION_COMPILATION_QUIETLY)
