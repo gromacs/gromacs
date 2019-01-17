@@ -1952,9 +1952,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 
     switch (fr->cutoff_scheme)
     {
-        case ecutsGROUP:
-            cg_cm = fr->cg_cm;
-            break;
         case ecutsVERLET:
             cg_cm = state->x.rvec_array();
             break;
@@ -2215,14 +2212,8 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 
             /* Make space for cg_cm */
             dd_check_alloc_ncg(fr, state, f, pos_cg + ind->nrecv[nzone]);
-            if (fr->cutoff_scheme == ecutsGROUP)
-            {
-                cg_cm = fr->cg_cm;
-            }
-            else
-            {
-                cg_cm = state->x.rvec_array();
-            }
+            cg_cm = state->x.rvec_array();
+
             /* Communicate cg_cm */
             gmx::ArrayRef<gmx::RVec> rvecBufferRef;
             if (cd->receiveInPlace)
@@ -2585,17 +2576,6 @@ static void set_zones_size(gmx_domdec_t *dd,
     }
 }
 
-//! Comparator for sorting charge groups.
-static bool comp_cgsort(const gmx_cgsort_t &a, const gmx_cgsort_t &b)
-{
-
-    if (a.nsc == b.nsc)
-    {
-        return a.ind_gl < b.ind_gl;
-    }
-    return a.nsc < b.nsc;
-}
-
 /*! \brief Order data in \p dataToSort according to \p sort
  *
  * Note: both buffers should have at least \p sort.size() elements.
@@ -2672,120 +2652,6 @@ static void order_vec_atom(const gmx::RangePartitioning      *atomGroups,
     }
 }
 
-//! Returns whether a < b */
-static bool compareCgsort(const gmx_cgsort_t &a,
-                          const gmx_cgsort_t &b)
-{
-    return (a.nsc < b.nsc ||
-            (a.nsc == b.nsc && a.ind_gl < b.ind_gl));
-}
-
-//! Do sorting of charge groups.
-static void orderedSort(gmx::ArrayRef<const gmx_cgsort_t>  stationary,
-                        gmx::ArrayRef<gmx_cgsort_t>        moved,
-                        std::vector<gmx_cgsort_t>         *sort1)
-{
-    /* The new indices are not very ordered, so we qsort them */
-    std::sort(moved.begin(), moved.end(), comp_cgsort);
-
-    /* stationary is already ordered, so now we can merge the two arrays */
-    sort1->resize(stationary.size() + moved.size());
-    std::merge(stationary.begin(), stationary.end(),
-               moved.begin(), moved.end(),
-               sort1->begin(),
-               compareCgsort);
-}
-
-/*! \brief Set the sorting order for systems with charge groups, returned in sort->sort.
- *
- * The order is according to the global charge group index.
- * This adds and removes charge groups that moved between domains.
- */
-static void dd_sort_order(const gmx_domdec_t *dd,
-                          const t_forcerec   *fr,
-                          int                 ncg_home_old,
-                          gmx_domdec_sort_t  *sort)
-{
-    const int *a          = fr->ns->grid->cell_index;
-
-    const int  movedValue = NSGRID_SIGNAL_MOVED_FAC*fr->ns->grid->ncells;
-
-    if (ncg_home_old >= 0)
-    {
-        std::vector<gmx_cgsort_t> &stationary = sort->stationary;
-        std::vector<gmx_cgsort_t> &moved      = sort->moved;
-
-        /* The charge groups that remained in the same ns grid cell
-         * are completely ordered. So we can sort efficiently by sorting
-         * the charge groups that did move into the stationary list.
-         * Note: push_back() seems to be slightly slower than direct access.
-         */
-        stationary.clear();
-        moved.clear();
-        for (int i = 0; i < dd->ncg_home; i++)
-        {
-            /* Check if this cg did not move to another node */
-            if (a[i] < movedValue)
-            {
-                gmx_cgsort_t entry;
-                entry.nsc    = a[i];
-                entry.ind_gl = dd->globalAtomGroupIndices[i];
-                entry.ind    = i;
-
-                if (i >= ncg_home_old || a[i] != sort->sorted[i].nsc)
-                {
-                    /* This cg is new on this node or moved ns grid cell */
-                    moved.push_back(entry);
-                }
-                else
-                {
-                    /* This cg did not move */
-                    stationary.push_back(entry);
-                }
-            }
-        }
-
-        if (debug)
-        {
-            fprintf(debug, "ordered sort cgs: stationary %zu moved %zu\n",
-                    stationary.size(), moved.size());
-        }
-        /* Sort efficiently */
-        orderedSort(stationary, moved, &sort->sorted);
-    }
-    else
-    {
-        std::vector<gmx_cgsort_t> &cgsort   = sort->sorted;
-        cgsort.clear();
-        cgsort.reserve(dd->ncg_home);
-        int                        numCGNew = 0;
-        for (int i = 0; i < dd->ncg_home; i++)
-        {
-            /* Sort on the ns grid cell indices
-             * and the global topology index
-             */
-            gmx_cgsort_t entry;
-            entry.nsc    = a[i];
-            entry.ind_gl = dd->globalAtomGroupIndices[i];
-            entry.ind    = i;
-            cgsort.push_back(entry);
-            if (cgsort[i].nsc < movedValue)
-            {
-                numCGNew++;
-            }
-        }
-        if (debug)
-        {
-            fprintf(debug, "qsort cgs: %d new home %d\n", dd->ncg_home, numCGNew);
-        }
-        /* Determine the order of the charge groups using qsort */
-        std::sort(cgsort.begin(), cgsort.end(), comp_cgsort);
-
-        /* Remove the charge groups which are no longer at home here */
-        cgsort.resize(numCGNew);
-    }
-}
-
 //! Returns the sorting order for atoms based on the nbnxn grid order in sort
 static void dd_sort_order_nbnxn(const t_forcerec          *fr,
                                 std::vector<gmx_cgsort_t> *sort)
@@ -2808,16 +2674,12 @@ static void dd_sort_order_nbnxn(const t_forcerec          *fr,
 }
 
 //! Returns the sorting state for DD.
-static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state *state,
-                          int ncg_home_old)
+static void dd_sort_state(gmx_domdec_t *dd, t_forcerec *fr, t_state *state)
 {
     gmx_domdec_sort_t *sort = dd->comm->sort.get();
 
     switch (fr->cutoff_scheme)
     {
-        case ecutsGROUP:
-            dd_sort_order(dd, fr, ncg_home_old, sort);
-            break;
         case ecutsVERLET:
             dd_sort_order_nbnxn(fr, &sort->sorted);
             break;
@@ -2857,13 +2719,6 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     if (state->flags & (1 << estCGP))
     {
         order_vec_atom(atomGroupsPtr, cgsort, state->cg_p, rvecBuffer.buffer);
-    }
-
-    if (fr->cutoff_scheme == ecutsGROUP)
-    {
-        /* Reorder cgcm */
-        gmx::ArrayRef<gmx::RVec> cgcmRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(cgcm[0]), cgsort.size());
-        orderVector(cgsort, cgcmRef, rvecBuffer.buffer);
     }
 
     /* Reorder the global cg index */
@@ -3021,9 +2876,9 @@ void dd_partition_system(FILE                    *fplog,
     t_block           *cgs_gl;
     int64_t            step_pcoupl;
     rvec               cell_ns_x0, cell_ns_x1;
-    int                ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
+    int                ncgindex_set, ncg_moved, nat_f_novirsum;
     gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckWhetherToTurnDlbOn, bLogLoad;
-    gmx_bool           bRedist, bResortAll;
+    gmx_bool           bRedist;
     ivec               ncells_old = {0, 0, 0}, ncells_new = {0, 0, 0}, np;
     real               grid_density;
     char               sbuf[22];
@@ -3250,12 +3105,6 @@ void dd_partition_system(FILE                    *fplog,
         /* Ensure that we have space for the new distribution */
         dd_check_alloc_ncg(fr, state_local, f, dd->ncg_home);
 
-        if (fr->cutoff_scheme == ecutsGROUP)
-        {
-            calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
-        }
-
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
         dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr, comm->bLocalCG);
@@ -3279,13 +3128,6 @@ void dd_partition_system(FILE                    *fplog,
         restoreAtomGroups(dd, cgs_gl->index, state_local);
         make_dd_indices(dd, cgs_gl->index, 0);
         ncgindex_set = dd->ncg_home;
-
-        if (fr->cutoff_scheme == ecutsGROUP)
-        {
-            /* Redetermine the cg COMs */
-            calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
-        }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
@@ -3337,8 +3179,6 @@ void dd_partition_system(FILE                    *fplog,
     /* Check if we should sort the charge groups */
     const bool bSortCG = (bMasterState || bRedist);
 
-    ncg_home_old = dd->ncg_home;
-
     /* When repartitioning we mark atom groups that will move to neighboring
      * DD cells, but we do not move them right away for performance reasons.
      * Thus we need to keep track of how many charge groups will move for
@@ -3378,12 +3218,6 @@ void dd_partition_system(FILE                    *fplog,
 
     switch (fr->cutoff_scheme)
     {
-        case ecutsGROUP:
-            copy_ivec(fr->ns->grid->n, ncells_old);
-            grid_first(fplog, fr->ns->grid, dd, &ddbox,
-                       state_local->box, cell_ns_x0, cell_ns_x1,
-                       fr->rlist, grid_density);
-            break;
         case ecutsVERLET:
             nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_old[XX], &ncells_old[YY]);
             break;
@@ -3428,26 +3262,8 @@ void dd_partition_system(FILE                    *fplog,
 
                 nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_new[XX], &ncells_new[YY]);
                 break;
-            case ecutsGROUP:
-                fill_grid(&comm->zones, fr->ns->grid, dd->ncg_home,
-                          0, dd->ncg_home, fr->cg_cm);
-
-                copy_ivec(fr->ns->grid->n, ncells_new);
-                break;
             default:
                 gmx_incons("unimplemented");
-        }
-
-        bResortAll = bMasterState;
-
-        /* Check if we can user the old order and ns grid cell indices
-         * of the charge groups to sort the charge groups efficiently.
-         */
-        if (ncells_new[XX] != ncells_old[XX] ||
-            ncells_new[YY] != ncells_old[YY] ||
-            ncells_new[ZZ] != ncells_old[ZZ])
-        {
-            bResortAll = TRUE;
         }
 
         if (debug)
@@ -3455,8 +3271,7 @@ void dd_partition_system(FILE                    *fplog,
             fprintf(debug, "Step %s, sorting the %d home charge groups\n",
                     gmx_step_str(step, sbuf), dd->ncg_home);
         }
-        dd_sort_state(dd, fr->cg_cm, fr, state_local,
-                      bResortAll ? -1 : ncg_home_old);
+        dd_sort_state(dd, fr, state_local);
 
         /* After sorting and compacting we set the correct size */
         dd_resize_state(state_local, f, comm->atomRanges.numHomeAtoms());
@@ -3512,7 +3327,7 @@ void dd_partition_system(FILE                    *fplog,
     dd_make_local_top(dd, &comm->zones, dd->npbcdim, state_local->box,
                       comm->cellsize_min, np,
                       fr,
-                      fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x.rvec_array(),
+                      state_local->x.rvec_array(),
                       vsite, top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);

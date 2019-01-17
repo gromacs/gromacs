@@ -1813,26 +1813,15 @@ static void initVdwEwaldParameters(FILE *fp, const t_inputrec *ir,
     }
 }
 
-gmx_bool uses_simple_tables(int                 cutoff_scheme,
-                            nonbonded_verlet_t *nbv,
+gmx_bool uses_simple_tables(nonbonded_verlet_t *nbv,
                             int                 group)
 {
-    gmx_bool bUsesSimpleTables = TRUE;
+    bool     bUsesSimpleTables = true;
     int      grp_index;
+    assert(nullptr != nbv);
+    grp_index         = (group < 0) ? 0 : (nbv->ngrp - 1);
+    bUsesSimpleTables = nbnxn_kernel_pairlist_simple(nbv->grp[grp_index].kernel_type);
 
-    switch (cutoff_scheme)
-    {
-        case ecutsGROUP:
-            bUsesSimpleTables = TRUE;
-            break;
-        case ecutsVERLET:
-            assert(nullptr != nbv);
-            grp_index         = (group < 0) ? 0 : (nbv->ngrp - 1);
-            bUsesSimpleTables = nbnxn_kernel_pairlist_simple(nbv->grp[grp_index].kernel_type);
-            break;
-        default:
-            gmx_incons("unimplemented");
-    }
     return bUsesSimpleTables;
 }
 
@@ -2039,12 +2028,6 @@ init_interaction_const(FILE                       *fp,
             calc_rffac(fp, ic->eeltype, ic->epsilon_r, ic->epsilon_rf,
                        ic->rcoulomb, 0, 0, nullptr,
                        &ic->k_rf, &ic->c_rf);
-        }
-
-        if (ir->cutoff_scheme == ecutsGROUP && ic->eeltype == eelRF_ZERO)
-        {
-            /* grompp should have done this, but this scheme is obsolete */
-            ic->coulomb_modifier = eintmodEXACTCUTOFF;
         }
     }
     else
@@ -2427,21 +2410,6 @@ void init_forcerec(FILE                             *fp,
     fr->bGrid         = (ir->ns_type == ensGRID);
     fr->ePBC          = ir->ePBC;
 
-    if (fr->cutoff_scheme == ecutsGROUP)
-    {
-        const char *note = "NOTE: This file uses the deprecated 'group' cutoff_scheme. This will be\n"
-            "removed in a future release when 'verlet' supports all interaction forms.\n";
-
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "\n%s\n", note);
-        }
-        if (fp != nullptr)
-        {
-            fprintf(fp, "\n%s\n", note);
-        }
-    }
-
     /* Determine if we will do PBC for distances in bonded interactions */
     if (fr->ePBC == epbcNONE)
     {
@@ -2462,8 +2430,7 @@ void init_forcerec(FILE                             *fp,
              * With intermolecular interactions we need PBC for calculating
              * distances between atoms in different molecules.
              */
-            if ((fr->cutoff_scheme == ecutsGROUP || bSHAKE) &&
-                !mtop->bIntermolecularInteractions)
+            if (bSHAKE && !mtop->bIntermolecularInteractions)
             {
                 fr->bMolPBC = ir->bPeriodicMols;
 
@@ -2595,80 +2562,6 @@ void init_forcerec(FILE                             *fp,
     }
     fr->nbkernel_vdw_modifier = ic->vdw_modifier;
 
-    if (ir->cutoff_scheme == ecutsGROUP)
-    {
-        fr->bvdwtab    = ((ic->vdwtype != evdwCUT || !gmx_within_tol(ic->reppow, 12.0, 10*GMX_DOUBLE_EPS))
-                          && !EVDW_PME(ic->vdwtype));
-        /* We have special kernels for standard Ewald and PME, but the pme-switch ones are tabulated above */
-        fr->bcoultab   = !(ic->eeltype == eelCUT ||
-                           ic->eeltype == eelEWALD ||
-                           ic->eeltype == eelPME ||
-                           ic->eeltype == eelP3M_AD ||
-                           ic->eeltype == eelRF ||
-                           ic->eeltype == eelRF_ZERO);
-
-        /* If the user absolutely wants different switch/shift settings for coul/vdw, it is likely
-         * going to be faster to tabulate the interaction than calling the generic kernel.
-         * However, if generic kernels have been requested we keep things analytically.
-         */
-        if (fr->nbkernel_elec_modifier == eintmodPOTSWITCH &&
-            fr->nbkernel_vdw_modifier == eintmodPOTSWITCH &&
-            !bGenericKernelOnly)
-        {
-            if ((ic->rcoulomb_switch != ic->rvdw_switch) || (ic->rcoulomb != ic->rvdw))
-            {
-                fr->bcoultab = TRUE;
-                /* Once we tabulate electrostatics, we can use the switch function for LJ,
-                 * which would otherwise need two tables.
-                 */
-            }
-        }
-        else if ((fr->nbkernel_elec_modifier == eintmodPOTSHIFT && fr->nbkernel_vdw_modifier == eintmodPOTSHIFT) ||
-                 ((fr->nbkernel_elec_interaction == GMX_NBKERNEL_ELEC_REACTIONFIELD &&
-                   fr->nbkernel_elec_modifier == eintmodEXACTCUTOFF &&
-                   (fr->nbkernel_vdw_modifier == eintmodPOTSWITCH || fr->nbkernel_vdw_modifier == eintmodPOTSHIFT))))
-        {
-            if ((ic->rcoulomb != ic->rvdw) && (!bGenericKernelOnly))
-            {
-                fr->bcoultab = TRUE;
-            }
-        }
-
-        if (fr->nbkernel_elec_modifier == eintmodFORCESWITCH)
-        {
-            fr->bcoultab = TRUE;
-        }
-        if (fr->nbkernel_vdw_modifier == eintmodFORCESWITCH)
-        {
-            fr->bvdwtab = TRUE;
-        }
-
-        if (getenv("GMX_REQUIRE_TABLES"))
-        {
-            fr->bvdwtab  = TRUE;
-            fr->bcoultab = TRUE;
-        }
-
-        if (fp)
-        {
-            fprintf(fp, "Table routines are used for coulomb: %s\n",
-                    gmx::boolToString(fr->bcoultab));
-            fprintf(fp, "Table routines are used for vdw:     %s\n",
-                    gmx::boolToString(fr->bvdwtab));
-        }
-
-        if (fr->bvdwtab)
-        {
-            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
-            fr->nbkernel_vdw_modifier    = eintmodNONE;
-        }
-        if (fr->bcoultab)
-        {
-            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
-            fr->nbkernel_elec_modifier    = eintmodNONE;
-        }
-    }
-
     if (ir->cutoff_scheme == ecutsVERLET)
     {
         if (!gmx_within_tol(ic->reppow, 12.0, 10*GMX_DOUBLE_EPS))
@@ -2715,13 +2608,6 @@ void init_forcerec(FILE                             *fp,
         fr->forceBufferForDirectVirialContributions = new std::vector<gmx::RVec>;
     }
 
-    if (fr->cutoff_scheme == ecutsGROUP &&
-        ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))
-    {
-        /* Count the total number of charge groups */
-        fr->cg_nalloc = ncg_mtop(mtop);
-        srenew(fr->cg_cm, fr->cg_nalloc);
-    }
     if (fr->shift_vec == nullptr)
     {
         snew(fr->shift_vec, SHIFTS);
@@ -2774,12 +2660,6 @@ void init_forcerec(FILE                             *fp,
     if (fr->bBHAM && fr->cutoff_scheme == ecutsVERLET)
     {
         gmx_fatal(FARGS, "Verlet cutoff-scheme is not supported with Buckingham");
-    }
-
-    if (fp && fr->cutoff_scheme == ecutsGROUP)
-    {
-        fprintf(fp, "Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
-                fr->rlist, ic->rcoulomb, fr->bBHAM ? "BHAM" : "LJ", ic->rvdw);
     }
 
     fr->eDispCorr = ir->eDispCorr;

@@ -780,9 +780,7 @@ void dd_make_reverse_top(FILE *fplog,
      * kernels and only exclusions inside the cut-off lead to exclusion
      * forces. Since each atom pair is treated at most once in the non-bonded
      * kernels, it doesn't matter if the exclusions for the same atom pair
-     * appear multiple times in the exclusion list. In contrast, the, old,
-     * group cut-off scheme loops over a list of exclusions, so there each
-     * excluded pair should appear exactly once.
+     * appear multiple times in the exclusion list.
      */
     rt->bExclRequired = (ir->cutoff_scheme == ecutsGROUP &&
                          inputrecExclForces(ir));

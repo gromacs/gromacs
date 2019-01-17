@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -161,11 +161,10 @@ void do_force_lowlevel(t_forcerec           *fr,
                        int                   flags,
                        float                *cycles_pme)
 {
-    int         i, j;
-    int         donb_flags;
+    int         i;
     int         pme_flags;
     t_pbc       pbc;
-    real        dvdl_dum[efptNR], dvdl_nb[efptNR];
+    real        dvdl_nb[efptNR];
 
 #if GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
@@ -177,7 +176,6 @@ void do_force_lowlevel(t_forcerec           *fr,
     for (i = 0; i < efptNR; i++)
     {
         dvdl_nb[i]  = 0;
-        dvdl_dum[i] = 0;
     }
 
     /* do QMMM first if requested */
@@ -205,58 +203,6 @@ void do_force_lowlevel(t_forcerec           *fr,
                                    forceWithVirial, lambda[efptVDW],
                                    enerd->grpp.ener[egLJSR], nrnb);
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
-    }
-
-    /* We only do non-bonded calculation with group scheme here, the verlet
-     * calls are done from do_force_cutsVERLET(). */
-    if (fr->cutoff_scheme == ecutsGROUP && (flags & GMX_FORCE_NONBONDED))
-    {
-        donb_flags = 0;
-        /* Add short-range interactions */
-        donb_flags |= GMX_NONBONDED_DO_SR;
-
-        /* Currently all group scheme kernels always calculate (shift-)forces */
-        if (flags & GMX_FORCE_FORCES)
-        {
-            donb_flags |= GMX_NONBONDED_DO_FORCE;
-        }
-        if (flags & GMX_FORCE_VIRIAL)
-        {
-            donb_flags |= GMX_NONBONDED_DO_SHIFTFORCE;
-        }
-        if (flags & GMX_FORCE_ENERGY)
-        {
-            donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
-        }
-
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        do_nonbonded(fr, x, forceForUseWithShiftForces, md, excl,
-                     &enerd->grpp, nrnb,
-                     lambda, dvdl_nb, -1, -1, donb_flags);
-
-        /* If we do foreign lambda and we have soft-core interactions
-         * we have to recalculate the (non-linear) energies contributions.
-         */
-        if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
-        {
-            for (i = 0; i < enerd->n_lambda; i++)
-            {
-                real lam_i[efptNR];
-
-                for (j = 0; j < efptNR; j++)
-                {
-                    lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
-                }
-                reset_foreign_enerdata(enerd);
-                do_nonbonded(fr, x, forceForUseWithShiftForces, md, excl,
-                             &(enerd->foreign_grpp), nrnb,
-                             lam_i, dvdl_dum, -1, -1,
-                             (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);
-                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
-                enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
-            }
-        }
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
 
 #if GMX_MPI
@@ -368,8 +314,7 @@ void do_force_lowlevel(t_forcerec           *fr,
              * contributions will be calculated in
              * gmx_pme_calc_energy.
              */
-            if ((ir->cutoff_scheme == ecutsGROUP && fr->n_tpi == 0) ||
-                ir->ewald_geometry != eewg3D ||
+            if (ir->ewald_geometry != eewg3D ||
                 ir->epsilon_surface != 0)
             {
                 int nthreads, t;
