@@ -182,7 +182,6 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting)
 {
-    GMX_RELEASE_ASSERT(ir.cutoff_scheme != ecutsGROUP, "PME tuning is not supported with cutoff-scheme=group (because it contains bugs)");
 
     pme_load_balancing_t *pme_lb;
     real                  spm, sp;

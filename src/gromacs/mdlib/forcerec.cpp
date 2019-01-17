@@ -996,78 +996,6 @@ static real calcBuckinghamBMax(FILE *fplog, const gmx_mtop_t *mtop)
     return bham_b_max;
 }
 
-static void make_nbf_tables(FILE *fp,
-                            const interaction_const_t *ic, real rtab,
-                            const char *tabfn, char *eg1, char *eg2,
-                            t_nblists *nbl)
-{
-    char buf[STRLEN];
-    int  i, j;
-
-    if (tabfn == nullptr)
-    {
-        if (debug)
-        {
-            fprintf(debug, "No table file name passed, can not read table, can not do non-bonded interactions\n");
-        }
-        return;
-    }
-
-    sprintf(buf, "%s", tabfn);
-    if (eg1 && eg2)
-    {
-        /* Append the two energy group names */
-        sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
-                eg1, eg2, ftp2ext(efXVG));
-    }
-    nbl->table_elec_vdw = make_tables(fp, ic, buf, rtab, 0);
-    /* Copy the contents of the table to separate coulomb and LJ tables too,
-     * to improve cache performance.
-     */
-    /* For performance reasons we want
-     * the table data to be aligned to 16-byte.
-     */
-    nbl->table_elec                =
-        new t_forcetable(GMX_TABLE_INTERACTION_ELEC,
-                         nbl->table_elec_vdw->format);
-    nbl->table_elec->r             = nbl->table_elec_vdw->r;
-    nbl->table_elec->n             = nbl->table_elec_vdw->n;
-    nbl->table_elec->scale         = nbl->table_elec_vdw->scale;
-    nbl->table_elec->formatsize    = nbl->table_elec_vdw->formatsize;
-    nbl->table_elec->ninteractions = 1;
-    nbl->table_elec->stride        = nbl->table_elec->formatsize * nbl->table_elec->ninteractions;
-    snew_aligned(nbl->table_elec->data, nbl->table_elec->stride*(nbl->table_elec->n+1), 32);
-
-    nbl->table_vdw                =
-        new t_forcetable(GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
-                         nbl->table_elec_vdw->format);
-    nbl->table_vdw->r             = nbl->table_elec_vdw->r;
-    nbl->table_vdw->n             = nbl->table_elec_vdw->n;
-    nbl->table_vdw->scale         = nbl->table_elec_vdw->scale;
-    nbl->table_vdw->formatsize    = nbl->table_elec_vdw->formatsize;
-    nbl->table_vdw->ninteractions = 2;
-    nbl->table_vdw->stride        = nbl->table_vdw->formatsize * nbl->table_vdw->ninteractions;
-    snew_aligned(nbl->table_vdw->data, nbl->table_vdw->stride*(nbl->table_vdw->n+1), 32);
-
-    /* NOTE: Using a single i-loop here leads to mix-up of data in table_vdw
-     *       with (at least) gcc 6.2, 6.3 and 6.4 when compiled with -O3 and AVX
-     */
-    for (i = 0; i <= nbl->table_elec_vdw->n; i++)
-    {
-        for (j = 0; j < 4; j++)
-        {
-            nbl->table_elec->data[4*i+j] = nbl->table_elec_vdw->data[12*i+j];
-        }
-    }
-    for (i = 0; i <= nbl->table_elec_vdw->n; i++)
-    {
-        for (j = 0; j < 8; j++)
-        {
-            nbl->table_vdw->data[8*i+j] = nbl->table_elec_vdw->data[12*i+4+j];
-        }
-    }
-}
-
 /*!\brief If there's bonded interactions of type \c ftype1 or \c
  * ftype2 present in the topology, build an array of the number of
  * interactions present for each bonded interaction index found in the
@@ -1316,26 +1244,6 @@ static void initVdwEwaldParameters(FILE *fp, const t_inputrec *ir,
     }
 }
 
-gmx_bool uses_simple_tables(int                       cutoff_scheme,
-                            const nonbonded_verlet_t *nbv)
-{
-    gmx_bool bUsesSimpleTables = TRUE;
-
-    switch (cutoff_scheme)
-    {
-        case ecutsGROUP:
-            bUsesSimpleTables = TRUE;
-            break;
-        case ecutsVERLET:
-            GMX_RELEASE_ASSERT(nullptr != nbv, "A non-bonded verlet object is required with the Verlet cutoff-scheme");
-            bUsesSimpleTables = nbv->pairlistIsSimple();
-            break;
-        default:
-            gmx_incons("unimplemented");
-    }
-    return bUsesSimpleTables;
-}
-
 static void init_ewald_f_table(interaction_const_t *ic,
                                real                 rtab)
 {
@@ -1540,12 +1448,6 @@ init_interaction_const(FILE                       *fp,
                        ic->rcoulomb, 0, 0, nullptr,
                        &ic->k_rf, &ic->c_rf);
         }
-
-        if (ir->cutoff_scheme == ecutsGROUP && ic->eeltype == eelRF_ZERO)
-        {
-            /* grompp should have done this, but this scheme is obsolete */
-            ic->coulomb_modifier = eintmodEXACTCUTOFF;
-        }
     }
     else
     {
@@ -1616,16 +1518,12 @@ void init_forcerec(FILE                             *fp,
                    gmx_bool                          bNoSolvOpt,
                    real                              print_force)
 {
-    int            m, negp_pp, negptable, egi, egj;
     real           rtab;
     char          *env;
     double         dbl;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
-    gmx_bool       needGroupSchemeTables, bSomeNormalNbListsAreInUse;
     gmx_bool       bFEP_NonBonded;
-    int            egp_flags;
-
 
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
     fr->use_simd_kernels = TRUE;
@@ -1763,21 +1661,6 @@ void init_forcerec(FILE                             *fp,
     fr->bGrid         = (ir->ns_type == ensGRID);
     fr->ePBC          = ir->ePBC;
 
-    if (fr->cutoff_scheme == ecutsGROUP)
-    {
-        const char *note = "NOTE: This file uses the deprecated 'group' cutoff_scheme. This will be\n"
-            "removed in a future release when 'verlet' supports all interaction forms.\n";
-
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "\n%s\n", note);
-        }
-        if (fp != nullptr)
-        {
-            fprintf(fp, "\n%s\n", note);
-        }
-    }
-
     /* Determine if we will do PBC for distances in bonded interactions */
     if (fr->ePBC == epbcNONE)
     {
@@ -1798,8 +1681,7 @@ void init_forcerec(FILE                             *fp,
              * With intermolecular interactions we need PBC for calculating
              * distances between atoms in different molecules.
              */
-            if ((fr->cutoff_scheme == ecutsGROUP || bSHAKE) &&
-                !mtop->bIntermolecularInteractions)
+            if (bSHAKE && !mtop->bIntermolecularInteractions)
             {
                 fr->bMolPBC = ir->bPeriodicMols;
 
@@ -1931,80 +1813,6 @@ void init_forcerec(FILE                             *fp,
     }
     fr->nbkernel_vdw_modifier = ic->vdw_modifier;
 
-    if (ir->cutoff_scheme == ecutsGROUP)
-    {
-        fr->bvdwtab    = ((ic->vdwtype != evdwCUT || !gmx_within_tol(ic->reppow, 12.0, 10*GMX_DOUBLE_EPS))
-                          && !EVDW_PME(ic->vdwtype));
-        /* We have special kernels for standard Ewald and PME, but the pme-switch ones are tabulated above */
-        fr->bcoultab   = !(ic->eeltype == eelCUT ||
-                           ic->eeltype == eelEWALD ||
-                           ic->eeltype == eelPME ||
-                           ic->eeltype == eelP3M_AD ||
-                           ic->eeltype == eelRF ||
-                           ic->eeltype == eelRF_ZERO);
-
-        /* If the user absolutely wants different switch/shift settings for coul/vdw, it is likely
-         * going to be faster to tabulate the interaction than calling the generic kernel.
-         * However, if generic kernels have been requested we keep things analytically.
-         */
-        if (fr->nbkernel_elec_modifier == eintmodPOTSWITCH &&
-            fr->nbkernel_vdw_modifier == eintmodPOTSWITCH &&
-            !bGenericKernelOnly)
-        {
-            if ((ic->rcoulomb_switch != ic->rvdw_switch) || (ic->rcoulomb != ic->rvdw))
-            {
-                fr->bcoultab = TRUE;
-                /* Once we tabulate electrostatics, we can use the switch function for LJ,
-                 * which would otherwise need two tables.
-                 */
-            }
-        }
-        else if ((fr->nbkernel_elec_modifier == eintmodPOTSHIFT && fr->nbkernel_vdw_modifier == eintmodPOTSHIFT) ||
-                 ((fr->nbkernel_elec_interaction == GMX_NBKERNEL_ELEC_REACTIONFIELD &&
-                   fr->nbkernel_elec_modifier == eintmodEXACTCUTOFF &&
-                   (fr->nbkernel_vdw_modifier == eintmodPOTSWITCH || fr->nbkernel_vdw_modifier == eintmodPOTSHIFT))))
-        {
-            if ((ic->rcoulomb != ic->rvdw) && (!bGenericKernelOnly))
-            {
-                fr->bcoultab = TRUE;
-            }
-        }
-
-        if (fr->nbkernel_elec_modifier == eintmodFORCESWITCH)
-        {
-            fr->bcoultab = TRUE;
-        }
-        if (fr->nbkernel_vdw_modifier == eintmodFORCESWITCH)
-        {
-            fr->bvdwtab = TRUE;
-        }
-
-        if (getenv("GMX_REQUIRE_TABLES"))
-        {
-            fr->bvdwtab  = TRUE;
-            fr->bcoultab = TRUE;
-        }
-
-        if (fp)
-        {
-            fprintf(fp, "Table routines are used for coulomb: %s\n",
-                    gmx::boolToString(fr->bcoultab));
-            fprintf(fp, "Table routines are used for vdw:     %s\n",
-                    gmx::boolToString(fr->bvdwtab));
-        }
-
-        if (fr->bvdwtab)
-        {
-            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
-            fr->nbkernel_vdw_modifier    = eintmodNONE;
-        }
-        if (fr->bcoultab)
-        {
-            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
-            fr->nbkernel_elec_modifier    = eintmodNONE;
-        }
-    }
-
     if (ir->cutoff_scheme == ecutsVERLET)
     {
         if (!gmx_within_tol(ic->reppow, 12.0, 10*GMX_DOUBLE_EPS))
@@ -2116,82 +1924,12 @@ void init_forcerec(FILE                             *fp,
         gmx_fatal(FARGS, "Implict solvation is no longer supported.");
     }
 
-    /* Construct tables for the group scheme. A little unnecessary to
-     * make both vdw and coul tables sometimes, but what the
-     * heck. Note that both cutoff schemes construct Ewald tables in
-     * init_interaction_const_tables. */
-    needGroupSchemeTables = (ir->cutoff_scheme == ecutsGROUP &&
-                             (fr->bcoultab || fr->bvdwtab));
-
-    negp_pp   = ir->opts.ngener - ir->nwall;
-    negptable = 0;
-    if (!needGroupSchemeTables)
-    {
-        bSomeNormalNbListsAreInUse = TRUE;
-    }
-    else
-    {
-        bSomeNormalNbListsAreInUse = FALSE;
-        for (egi = 0; egi < negp_pp; egi++)
-        {
-            for (egj = egi; egj < negp_pp; egj++)
-            {
-                egp_flags = ir->opts.egp_flags[GID(egi, egj, ir->opts.ngener)];
-                if (!(egp_flags & EGP_EXCL))
-                {
-                    if (egp_flags & EGP_TABLE)
-                    {
-                        negptable++;
-                    }
-                    else
-                    {
-                        bSomeNormalNbListsAreInUse = TRUE;
-                    }
-                }
-            }
-        }
-    }
 
     /* This code automatically gives table length tabext without cut-off's,
      * in that case grompp should already have checked that we do not need
      * normal tables and we only generate tables for 1-4 interactions.
      */
     rtab = ir->rlist + ir->tabext;
-
-    if (needGroupSchemeTables)
-    {
-        /* make tables for ordinary interactions */
-        if (bSomeNormalNbListsAreInUse)
-        {
-            make_nbf_tables(fp, ic, rtab, tabfn, nullptr, nullptr, nullptr);
-            m = 1;
-        }
-        else
-        {
-            m = 0;
-        }
-        if (negptable > 0)
-        {
-            /* Read the special tables for certain energy group pairs */
-            gmx::ArrayRef<const int> nm_ind = mtop->groups.groups[SimulationAtomGroupType::EnergyOutput];
-            for (egi = 0; egi < negp_pp; egi++)
-            {
-                for (egj = egi; egj < negp_pp; egj++)
-                {
-                    egp_flags = ir->opts.egp_flags[GID(egi, egj, ir->opts.ngener)];
-                    if ((egp_flags & EGP_TABLE) && !(egp_flags & EGP_EXCL))
-                    {
-                        /* Read the table file with the two energy groups names appended */
-                        make_nbf_tables(fp, ic, rtab, tabfn,
-                                        *mtop->groups.groupNames[nm_ind[egi]],
-                                        *mtop->groups.groupNames[nm_ind[egj]],
-                                        nullptr);
-                        m++;
-                    }
-                }
-            }
-        }
-    }
 
     /* We want to use unmodified tables for 1-4 coulombic
      * interactions, so we must in general have an extra set of

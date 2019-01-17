@@ -143,10 +143,6 @@ bool inputSupportsGpuBondeds(const t_inputrec &ir,
     {
         errorReasons.emplace_back("No supported bonded interactions are present");
     }
-    if (ir.cutoff_scheme == ecutsGROUP)
-    {
-        errorReasons.emplace_back("group cutoff scheme");
-    }
     if (!EI_DYNAMICS(ir.eI))
     {
         errorReasons.emplace_back("not a dynamical integrator");

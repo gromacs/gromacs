@@ -768,15 +768,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         warning(wi, buf);
     }
 
-    /* If using the group scheme, make sure charge groups are made whole to avoid errors
-     * in calculating charge group size later on
-     */
-    if (ir->cutoff_scheme == ecutsGROUP && ir->ePBC != epbcNONE)
-    {
-        // Need temporary rvec for coordinates
-        do_pbc_first_mtop(nullptr, ir->ePBC, state->box, sys, state->x.rvec_array());
-    }
-
     /* Do more checks, mostly related to constraints */
     if (bVerbose)
     {

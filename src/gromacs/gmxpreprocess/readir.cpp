@@ -291,26 +291,10 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
-        warning_note(wi,
-                     "The group cutoff scheme is deprecated since GROMACS 5.0 and will be removed in a future "
-                     "release when all interaction forms are supported for the verlet scheme. The verlet "
-                     "scheme already scales better, and it is compatible with GPUs and other accelerators.");
-
-        if (ir->rlist > 0 && ir->rlist < ir->rcoulomb)
-        {
-            gmx_fatal(FARGS, "rcoulomb must not be greater than rlist (twin-range schemes are not supported)");
-        }
-        if (ir->rlist > 0 && ir->rlist < ir->rvdw)
-        {
-            gmx_fatal(FARGS, "rvdw must not be greater than rlist (twin-range schemes are not supported)");
-        }
-
-        if (ir->rlist == 0 && ir->ePBC != epbcNONE)
-        {
-            warning_error(wi, "Can not have an infinite cut-off with PBC");
-        }
+        gmx_fatal(FARGS,
+                  "The group cutoff scheme has been removed since GROMACS 2020. "
+                  "Please use the Verlet cutoff scheme.");
     }
-
     if (ir->cutoff_scheme == ecutsVERLET)
     {
         real rc_max;
@@ -1116,15 +1100,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
         }
     }
-    else if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype))
-    {
-        if (ir->cutoff_scheme == ecutsGROUP && ir->coulomb_modifier == eintmodNONE)
-        {
-            sprintf(err_buf, "With coulombtype = %s, rcoulomb should be >= rlist unless you use a potential modifier",
-                    eel_names[ir->coulombtype]);
-            CHECK(ir->rlist > ir->rcoulomb);
-        }
-    }
 
     if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT)
     {
@@ -1176,17 +1151,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             sprintf(err_buf, "With coulombtype = %s, rcoulomb must be <= rlist",
                     eel_names[ir->coulombtype]);
             CHECK(ir->rcoulomb > ir->rlist);
-        }
-        else if (ir->cutoff_scheme == ecutsGROUP && ir->coulomb_modifier == eintmodNONE)
-        {
-            if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD)
-            {
-                sprintf(err_buf,
-                        "With coulombtype = %s (without modifier), rcoulomb must be equal to rlist.\n"
-                        "For optimal energy conservation,consider using\n"
-                        "a potential modifier.", eel_names[ir->coulombtype]);
-                CHECK(ir->rcoulomb != ir->rlist);
-            }
         }
     }
 
@@ -1250,14 +1214,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             warning_note(wi, warn_buf);
         }
     }
-    else if (ir->vdwtype == evdwCUT || ir->vdwtype == evdwPME)
-    {
-        if (ir->cutoff_scheme == ecutsGROUP && ir->vdw_modifier == eintmodNONE)
-        {
-            sprintf(err_buf, "With vdwtype = %s, rvdw must be >= rlist unless you use a potential modifier", evdw_names[ir->vdwtype]);
-            CHECK(ir->rlist > ir->rvdw);
-        }
-    }
 
     if (ir->vdwtype == evdwPME)
     {
@@ -1268,29 +1224,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                     eintmod_names[eintmodPOTSHIFT],
                     eintmod_names[eintmodNONE]);
             warning_error(wi, err_buf);
-        }
-    }
-
-    if (ir->cutoff_scheme == ecutsGROUP)
-    {
-        if (((ir->coulomb_modifier != eintmodNONE && ir->rcoulomb == ir->rlist) ||
-             (ir->vdw_modifier != eintmodNONE && ir->rvdw == ir->rlist)))
-        {
-            warning_note(wi, "With exact cut-offs, rlist should be "
-                         "larger than rcoulomb and rvdw, so that there "
-                         "is a buffer region for particle motion "
-                         "between neighborsearch steps");
-        }
-
-        if (ir_coulomb_is_zero_at_cutoff(ir) && ir->rlist <= ir->rcoulomb)
-        {
-            sprintf(warn_buf, "For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb.");
-            warning_note(wi, warn_buf);
-        }
-        if (ir_vdw_switched(ir) && (ir->rlist <= ir->rvdw))
-        {
-            sprintf(warn_buf, "For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rvdw.");
-            warning_note(wi, warn_buf);
         }
     }
 
@@ -1308,23 +1241,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     if (ir->eI == eiLBFGS && ir->nbfgscorr <= 0)
     {
         warning(wi, "Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
-    }
-
-    /* ENERGY CONSERVATION */
-    if (ir_NVE(ir) && ir->cutoff_scheme == ecutsGROUP)
-    {
-        if (!ir_vdw_might_be_zero_at_cutoff(ir) && ir->rvdw > 0 && ir->vdw_modifier == eintmodNONE)
-        {
-            sprintf(warn_buf, "You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
-                    evdw_names[evdwSHIFT]);
-            warning_note(wi, warn_buf);
-        }
-        if (!ir_coulomb_might_be_zero_at_cutoff(ir) && ir->rcoulomb > 0)
-        {
-            sprintf(warn_buf, "You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
-                    eel_names[eelPMESWITCH], eel_names[eelRF_ZERO]);
-            warning_note(wi, warn_buf);
-        }
     }
 
     /* IMPLICIT SOLVENT */
@@ -1794,11 +1710,10 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         sprintf(warn_buf,
                 "%s did not specify a value for the .mdp option "
-                "\"cutoff-scheme\". Probably it was first intended for use "
-                "with GROMACS before 4.6. In 4.6, the Verlet scheme was "
-                "introduced, but the group scheme was still the default. "
-                "The default is now the Verlet scheme, so you will observe "
-                "different behaviour.", mdparin);
+                "\"cutoff-scheme\". As of GROMACS 2020, the Verlet scheme "
+                "is the only cutoff scheme supported. This may affect your "
+                "simulation if you are using an old mdp file that assumes use "
+                "of the (removed) group cutoff scheme.", mdparin);
         warning_note(wi, warn_buf);
     }
 

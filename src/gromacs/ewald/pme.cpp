@@ -202,10 +202,6 @@ bool pme_gpu_supports_input(const t_inputrec &ir, const gmx_mtop_t &mtop, std::s
     {
         errorReasons.emplace_back("Lennard-Jones PME");
     }
-    if (ir.cutoff_scheme == ecutsGROUP)
-    {
-        errorReasons.emplace_back("group cutoff scheme");
-    }
     if (!EI_DYNAMICS(ir.eI))
     {
         errorReasons.emplace_back("not a dynamical integrator");
