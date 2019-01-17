@@ -118,6 +118,7 @@ struct gmx_hw_info_t;
 struct gmx_mtop_t;
 struct interaction_const_t;
 struct nbnxn_pairlist_set_t;
+struct nonbonded_verlet_t;
 struct t_blocka;
 struct t_commrec;
 struct t_nrnb;
@@ -130,87 +131,173 @@ class MDLogger;
 class UpdateGroupsCog;
 }
 
-//! Help pass GPU-emulation parameters with type safety.
-enum class EmulateGpuNonbonded : bool
+/*! \brief Resources that can be used to execute non-bonded kernels on */
+enum class NonbondedResource : int
 {
-    //! Do not emulate GPUs.
-    No,
-    //! Do emulate GPUs.
-    Yes
+    Cpu,
+    Gpu,
+    EmulateGpu
 };
-
-
-/*! \brief Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
-typedef enum
-{
-    nbnxnkNotSet = 0,
-    nbnxnk4x4_PlainC,
-    nbnxnk4xN_SIMD_4xN,
-    nbnxnk4xN_SIMD_2xNN,
-    nbnxnk8x8x8_GPU,
-    nbnxnk8x8x8_PlainC,
-    nbnxnkNR
-} nbnxn_kernel_type;
 
 namespace Nbnxm
 {
 
-/*! \brief Return a string identifying the kernel type.
- *
- * \param [in] kernel_type   nonbonded kernel types, takes values from the nbnxn_kernel_type enum
- * \returns                  a string identifying the kernel corresponding to the type passed as argument
- */
-const char *lookup_kernel_name(int kernel_type);
-
-} // namespace Nbnxm
+/*! \brief Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
+enum class KernelType : int
+{
+    NotSet = 0,
+    Cpu4x4_PlainC,
+    Cpu4xN_Simd_4xN,
+    Cpu4xN_Simd_2xNN,
+    Gpu8x8x8,
+    Cpu8x8x8_PlainC,
+    Count
+};
 
 /*! \brief Ewald exclusion types */
-enum {
-    ewaldexclTable, ewaldexclAnalytical
+enum class EwaldExclusionType : int
+{
+    NotSet = 0,
+    Table,
+    Analytical,
+    DecidedByGpuModule
 };
+
+/* \brief The non-bonded setup, also affects the pairlist construction kernel */
+struct KernelSetup
+{
+    //! The non-bonded type, also affects the pairlist construction kernel
+    KernelType         kernelType = KernelType::NotSet;
+    //! Ewald exclusion computation handling type, currently only used for CPU
+    EwaldExclusionType ewaldExclusionType = EwaldExclusionType::NotSet;
+};
+
+/*! \brief Return a string identifying the kernel type.
+ *
+ * \param [in] kernelType   nonbonded kernel type, takes values from the nbnxn_kernel_type enum
+ * \returns                 a string identifying the kernel corresponding to the type passed as argument
+ */
+const char *lookup_kernel_name(Nbnxm::KernelType kernelType);
+
+} // namespace Nbnxm
 
 /*! \brief Flag to tell the nonbonded kernels whether to clear the force output buffers */
 enum {
     enbvClearFNo, enbvClearFYes
 };
 
+/*! \brief Generates a pair-list for the given locality.
+ *
+ * With perturbed particles, also a group scheme style nbl_fep list is made.
+ */
+void nbnxn_make_pairlist(nonbonded_verlet_t         *nbv,
+                         Nbnxm::InteractionLocality  iLocality,
+                         nbnxn_pairlist_set_t       *pairlistSet,
+                         const t_blocka             *excl,
+                         int64_t                     step,
+                         t_nrnb                     *nrnb);
+
+/*! \brief Prune all pair-lists with given locality (currently CPU only)
+ *
+ * For all pair-lists with given locality, takes the outer list and prunes out
+ * pairs beyond the pairlist inner radius and writes the result to a list that is
+ * to be consumed by the non-bonded kernel.
+ */
+void NbnxnDispatchPruneKernel(nbnxn_pairlist_set_t   *pairlistSet,
+                              Nbnxm::KernelType       kernelType,
+                              const nbnxn_atomdata_t *nbat,
+                              const rvec             *shift_vec);
+
 /*! \libinternal
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 struct nonbonded_verlet_t
 {
-    //! Returns whether a GPU is used for the non-bonded calculations
-    bool useGpu() const
-    {
-        return kernelType_ == nbnxnk8x8x8_GPU;
-    }
+    public:
+        //! Returns whether a GPU is use for the non-bonded calculations
+        bool useGpu() const
+        {
+            return kernelSetup_.kernelType == Nbnxm::KernelType::Gpu8x8x8;
+        }
 
-    //! Returns whether a GPU is emulated for the non-bonded calculations
-    bool emulateGpu() const
-    {
-        return kernelType_ == nbnxnk8x8x8_PlainC;
-    }
+        //! Returns whether a GPU is emulated for the non-bonded calculations
+        bool emulateGpu() const
+        {
+            return kernelSetup_.kernelType == Nbnxm::KernelType::Cpu8x8x8_PlainC;
+        }
 
-    //! Return whether the pairlist is of simple, CPU type
-    bool pairlistIsSimple() const
-    {
-        return !useGpu() && !emulateGpu();
-    }
+        //! Return whether the pairlist is of simple, CPU type
+        bool pairlistIsSimple() const
+        {
+            return !useGpu() && !emulateGpu();
+        }
 
-    std::unique_ptr<NbnxnListParameters>                                        listParams; /**< Parameters for the search and list pruning setup */
-    std::unique_ptr<nbnxn_search>                                               nbs;        /**< n vs n atom pair searching data       */
-    int                                                                         ngrp;       /**< number of interaction groups          */
-    //! Local and non-local pairlist sets
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, nbnxn_pairlist_set_t>     pairlistSets;
-    //! Atom data
-    nbnxn_atomdata_t                                                           *nbat;
+        //! Initialize the pair list sets, TODO this should be private
+        void initPairlistSets(bool haveMultipleDomains);
 
-    //! Non-bonded kernel - see enum above
-    int                  kernelType_;
-    //! Ewald exclusion - see enum above
-    int                  ewaldExclusionType_;
+        //! Returns a reference to the pairlist set for the requested locality
+        const nbnxn_pairlist_set_t &pairlistSet(Nbnxm::InteractionLocality iLocality) const
+        {
+            GMX_ASSERT(static_cast<size_t>(iLocality) < pairlistSets_.size(),
+                       "The requested locality should be in the list");
+            return pairlistSets_[static_cast<int>(iLocality)];
+        }
 
-    gmx_nbnxn_gpu_t     *gpu_nbv;         /**< pointer to GPU nb verlet data     */
-    int                  min_ci_balanced; /**< pair list balancing parameter used for the 8x8x8 GPU kernels    */
+        //! Constructs the pairlist for the given locality
+        void constructPairlist(Nbnxm::InteractionLocality  iLocality,
+                               const t_blocka             *excl,
+                               int64_t                     step,
+                               t_nrnb                     *nrnb)
+        {
+            nbnxn_make_pairlist(this, iLocality, &pairlistSets_[static_cast<int>(iLocality)], excl, step, nrnb);
+        }
+
+        //! Dispatches the dynamic pruning kernel for the given locality
+        void dispatchPruneKernel(Nbnxm::InteractionLocality  iLocality,
+                                 const rvec                 *shift_vec)
+        {
+            GMX_ASSERT(static_cast<size_t>(iLocality) < pairlistSets_.size(),
+                       "The requested locality should be in the list");
+            NbnxnDispatchPruneKernel(&pairlistSets_[static_cast<int>(iLocality)],
+                                     kernelSetup_.kernelType, nbat, shift_vec);
+        }
+
+        //! Return the kernel setup
+        const Nbnxm::KernelSetup &kernelSetup() const
+        {
+            return kernelSetup_;
+        }
+
+        //! Sets the kernel setup, TODO: make private
+        void setKernelSetup(const Nbnxm::KernelSetup &kernelSetup)
+        {
+            kernelSetup_ = kernelSetup;
+        }
+
+        //! Returns the a list of free-energy pairlists for the given locality
+        const gmx::ArrayRef<t_nblist const * const>
+        freeEnergyPairlistSet(Nbnxm::InteractionLocality iLocality) const
+        {
+            return pairlistSet(iLocality).nbl_fep;
+        }
+
+        //! Parameters for the search and list pruning setup
+        std::unique_ptr<NbnxnListParameters>  listParams;
+        //! Working data for constructing the pairlists
+        std::unique_ptr<nbnxn_search>         nbs;
+    private:
+        //! Local and, optionally, non-local pairlist sets
+        std::vector<nbnxn_pairlist_set_t>     pairlistSets_;
+    public:
+        //! Atom data
+        nbnxn_atomdata_t                     *nbat;
+
+    private:
+        //! The non-bonded setup, also affects the pairlist construction kernel
+        Nbnxm::KernelSetup   kernelSetup_;
+    public:
+
+        gmx_nbnxn_gpu_t     *gpu_nbv;         /**< pointer to GPU nb verlet data     */
+        int                  min_ci_balanced; /**< pair list balancing parameter used for the 8x8x8 GPU kernels    */
 };
 
 namespace Nbnxm
@@ -276,16 +363,6 @@ void nbnxn_set_atomorder(nbnxn_search_t nbs);
 /*! \brief Returns the index position of the atoms on the pairlist search grid */
 gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs);
 
-/*! \brief Generates a pair-list for the given locality.
- *
- * With perturbed particles, also a group scheme style nbl_fep list is made.
- */
-void nbnxn_make_pairlist(nonbonded_verlet_t         *nbv,
-                         Nbnxm::InteractionLocality  iLocality,
-                         const t_blocka             *excl,
-                         int64_t                     step,
-                         t_nrnb                     *nrnb);
-
 /*! \brief Returns the number of steps performed with the current pair list */
 int nbnxnNumStepsWithPairlist(const nonbonded_verlet_t   &nbv,
                               Nbnxm::InteractionLocality  ilocality,
@@ -295,16 +372,6 @@ int nbnxnNumStepsWithPairlist(const nonbonded_verlet_t   &nbv,
 bool nbnxnIsDynamicPairlistPruningStep(const nonbonded_verlet_t   &nbv,
                                        Nbnxm::InteractionLocality  ilocality,
                                        int64_t                     step);
-
-/*! \brief Prune all pair-lists with given locality (currently CPU only)
- *
- * For all pair-lists with given locality, takes the outer list and prunes out
- * pairs beyond the pairlist inner radius and writes the result to a list that is
- * to be consumed by the non-bonded kernel.
- */
-void NbnxnDispatchPruneKernel(nonbonded_verlet_t         *nbv,
-                              Nbnxm::InteractionLocality  iLocality,
-                              const rvec                 *shift_vec);
 
 /*! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU */
 void NbnxnDispatchKernel(nonbonded_verlet_t         *nbv,

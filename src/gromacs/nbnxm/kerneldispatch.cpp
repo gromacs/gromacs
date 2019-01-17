@@ -128,8 +128,7 @@ reduceGroupEnergySimdBuffers(int                       numGroups,
  * within this function.
  *
  * \param[in]     pairlistSet   Pairlists with local or non-local interactions to compute
- * \param[in]     kernel_type   The non-bonded kernel type
- * \param[in]     ewald_excl    The Ewald exclusion treatment
+ * \param[in]     kernelSetup   The non-bonded kernel setup
  * \param[in,out] nbat          The atomdata for the interactions
  * \param[in]     ic            Non-bonded interaction constants
  * \param[in]     shiftVectors  The PBC shift vectors
@@ -141,8 +140,7 @@ reduceGroupEnergySimdBuffers(int                       numGroups,
  */
 static void
 nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
-                 const int                       kernel_type,
-                 const int                       ewald_excl,
+                 const Nbnxm::KernelSetup       &kernelSetup,
                  nbnxn_atomdata_t               *nbat,
                  const interaction_const_t      &ic,
                  rvec                           *shiftVectors,
@@ -160,7 +158,7 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
     }
     else
     {
-        if (ewald_excl == ewaldexclTable)
+        if (kernelSetup.ewaldExclusionType == Nbnxm::EwaldExclusionType::Table)
         {
             if (ic.rcoulomb == ic.rvdw)
             {
@@ -222,7 +220,7 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
         {
             vdwkt = vdwktLJEWALDCOMBLB;
             /* At setup we (should have) selected the C reference kernel */
-            GMX_RELEASE_ASSERT(kernel_type == nbnxnk4x4_PlainC, "Only the C reference nbnxn SIMD kernel supports LJ-PME with LB combination rules");
+            GMX_RELEASE_ASSERT(kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC, "Only the C reference nbnxn SIMD kernel supports LJ-PME with LB combination rules");
         }
     }
     else
@@ -264,9 +262,9 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
         if (!(forceFlags & GMX_FORCE_ENERGY))
         {
             /* Don't calculate energies */
-            switch (kernel_type)
+            switch (kernelSetup.kernelType)
             {
-                case nbnxnk4x4_PlainC:
+                case Nbnxm::KernelType::Cpu4x4_PlainC:
                     nbnxn_kernel_noener_ref[coulkt][vdwkt](nbl[nb], nbat,
                                                            &ic,
                                                            shiftVectors,
@@ -274,7 +272,7 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
                                                            fshift_p);
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
-                case nbnxnk4xN_SIMD_2xNN:
+                case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
                     nbnxm_kernel_noener_simd_2xmm[coulkt][vdwkt](nbl[nb], nbat,
                                                                  &ic,
                                                                  shiftVectors,
@@ -283,7 +281,7 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
-                case nbnxnk4xN_SIMD_4xN:
+                case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
                     nbnxm_kernel_noener_simd_4xm[coulkt][vdwkt](nbl[nb], nbat,
                                                                 &ic,
                                                                 shiftVectors,
@@ -301,9 +299,9 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
             out->Vvdw[0] = 0;
             out->Vc[0]   = 0;
 
-            switch (kernel_type)
+            switch (kernelSetup.kernelType)
             {
-                case nbnxnk4x4_PlainC:
+                case Nbnxm::KernelType::Cpu4x4_PlainC:
                     nbnxn_kernel_ener_ref[coulkt][vdwkt](nbl[nb], nbat,
                                                          &ic,
                                                          shiftVectors,
@@ -313,7 +311,7 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
                                                          out->Vc.data());
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
-                case nbnxnk4xN_SIMD_2xNN:
+                case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
                     nbnxm_kernel_ener_simd_2xmm[coulkt][vdwkt](nbl[nb], nbat,
                                                                &ic,
                                                                shiftVectors,
@@ -324,7 +322,7 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
-                case nbnxnk4xN_SIMD_4xN:
+                case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
                     nbnxm_kernel_ener_simd_4xm[coulkt][vdwkt](nbl[nb], nbat,
                                                               &ic,
                                                               shiftVectors,
@@ -345,9 +343,9 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
 
             int unrollj = 0;
 
-            switch (kernel_type)
+            switch (kernelSetup.kernelType)
             {
-                case nbnxnk4x4_PlainC:
+                case Nbnxm::KernelType::Cpu4x4_PlainC:
                     unrollj = c_nbnxnCpuIClusterSize;
                     nbnxn_kernel_energrp_ref[coulkt][vdwkt](nbl[nb], nbat,
                                                             &ic,
@@ -358,7 +356,7 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
                                                             out->Vc.data());
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
-                case nbnxnk4xN_SIMD_2xNN:
+                case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
                     unrollj = GMX_SIMD_REAL_WIDTH/2;
                     nbnxm_kernel_energrp_simd_2xmm[coulkt][vdwkt](nbl[nb], nbat,
                                                                   &ic,
@@ -370,7 +368,7 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
-                case nbnxnk4xN_SIMD_4xN:
+                case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
                     unrollj = GMX_SIMD_REAL_WIDTH;
                     nbnxm_kernel_energrp_simd_4xm[coulkt][vdwkt](nbl[nb], nbat,
                                                                  &ic,
@@ -385,7 +383,7 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
                     GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
 
-            if (kernel_type != nbnxnk4x4_PlainC)
+            if (kernelSetup.kernelType != Nbnxm::KernelType::Cpu4x4_PlainC)
             {
                 switch (unrollj)
                 {
@@ -423,7 +421,7 @@ static void accountFlops(t_nrnb                           *nrnb,
                          const interaction_const_t        &ic,
                          const int                         forceFlags)
 {
-    const nbnxn_pairlist_set_t &pairlistSet     = nbv.pairlistSets[iLocality];
+    const nbnxn_pairlist_set_t &pairlistSet     = nbv.pairlistSet(iLocality);
     const bool                  usingGpuKernels = nbv.useGpu();
 
     int enr_nbnxn_kernel_ljc;
@@ -431,7 +429,7 @@ static void accountFlops(t_nrnb                           *nrnb,
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
-    else if ((!usingGpuKernels && nbv.ewaldExclusionType_ == ewaldexclAnalytical) ||
+    else if ((!usingGpuKernels && nbv.kernelSetup().ewaldExclusionType == Nbnxm::EwaldExclusionType::Analytical) ||
              (usingGpuKernels && Nbnxm::gpu_is_kernel_ewald_analytical(nbv.gpu_nbv)))
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
@@ -486,16 +484,15 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
                          gmx_enerdata_t            *enerd,
                          t_nrnb                    *nrnb)
 {
-    const nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSets[iLocality];
+    const nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSet(iLocality);
 
-    switch (nbv->kernelType_)
+    switch (nbv->kernelSetup().kernelType)
     {
-        case nbnxnk4x4_PlainC:
-        case nbnxnk4xN_SIMD_4xN:
-        case nbnxnk4xN_SIMD_2xNN:
+        case Nbnxm::KernelType::Cpu4x4_PlainC:
+        case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
+        case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
             nbnxn_kernel_cpu(pairlistSet,
-                             nbv->kernelType_,
-                             nbv->ewaldExclusionType_,
+                             nbv->kernelSetup(),
                              nbv->nbat,
                              ic,
                              fr->shift_vec,
@@ -508,11 +505,11 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
                              enerd->grpp.ener[egLJSR]);
             break;
 
-        case nbnxnk8x8x8_GPU:
+        case Nbnxm::KernelType::Gpu8x8x8:
             Nbnxm::gpu_launch_kernel(nbv->gpu_nbv, forceFlags, iLocality);
             break;
 
-        case nbnxnk8x8x8_PlainC:
+        case Nbnxm::KernelType::Cpu8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(pairlistSet.nblGpu[0],
                                  nbv->nbat, &ic,
                                  fr->shift_vec,

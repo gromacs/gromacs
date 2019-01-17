@@ -54,6 +54,11 @@ struct nbnxn_search;
 struct t_mdatoms;
 struct gmx_wallcycle;
 
+namespace Nbnxm
+{
+enum class KernelType;
+}
+
 /* Reallocate the nbnxn_atomdata_t for a size of n atoms */
 void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n);
 
@@ -76,7 +81,7 @@ enum {
  */
 void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          nbnxn_atomdata_t *nbat,
-                         int nb_kernel_type,
+                         Nbnxm::KernelType kernelType,
                          int enbnxninitcombrule,
                          int ntype, const real *nbfp,
                          int n_energygroups,

@@ -423,7 +423,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
              * the current coordinates of the atoms.
              */
             wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNING);
-            NbnxnDispatchPruneKernel(nbv, ilocality, fr->shift_vec);
+            nbv->dispatchPruneKernel(ilocality, fr->shift_vec);
             wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNING);
         }
 
@@ -438,23 +438,23 @@ static void do_nb_verlet(t_forcerec                       *fr,
     }
 }
 
-static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
-                             t_forcerec           *fr,
-                             rvec                  x[],
-                             rvec                  f[],
-                             const t_mdatoms      *mdatoms,
-                             t_lambda             *fepvals,
-                             real                 *lambda,
-                             gmx_enerdata_t       *enerd,
-                             int                   flags,
-                             t_nrnb               *nrnb,
-                             gmx_wallcycle_t       wcycle)
+static void do_nb_verlet_fep(const nonbonded_verlet_t         &nbv,
+                             const Nbnxm::InteractionLocality  iLocality,
+                             t_forcerec                       *fr,
+                             rvec                              x[],
+                             rvec                              f[],
+                             const t_mdatoms                  *mdatoms,
+                             t_lambda                         *fepvals,
+                             real                             *lambda,
+                             gmx_enerdata_t                   *enerd,
+                             int                               flags,
+                             t_nrnb                           *nrnb,
+                             gmx_wallcycle_t                   wcycle)
 {
     int              donb_flags;
     nb_kernel_data_t kernel_data;
     real             lam_i[efptNR];
     real             dvdl_nb[efptNR];
-    int              th;
     int              i, j;
 
     donb_flags = 0;
@@ -488,15 +488,17 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
         dvdl_nb[i]  = 0;
     }
 
-    GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_lists->nnbl, "Number of lists should be same as number of NB threads");
+    const gmx::ArrayRef<t_nblist const * const > nbl_fep = nbv.freeEnergyPairlistSet(iLocality);
+
+    GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_fep.ssize(), "Number of lists should be same as number of NB threads");
 
     wallcycle_sub_start(wcycle, ewcsNONBONDED);
-#pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
-    for (th = 0; th < nbl_lists->nnbl; th++)
+#pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
+    for (int th = 0; th < nbl_fep.ssize(); th++)
     {
         try
         {
-            gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
+            gmx_nb_free_energy_kernel(nbl_fep[th],
                                       x, f, fr, mdatoms, &kernel_data, nrnb);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -531,12 +533,12 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
                 lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
             }
             reset_foreign_enerdata(enerd);
-#pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
-            for (th = 0; th < nbl_lists->nnbl; th++)
+#pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
+            for (int th = 0; th < nbl_fep.ssize(); th++)
             {
                 try
                 {
-                    gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
+                    gmx_nb_free_energy_kernel(nbl_fep[th],
                                               x, f, fr, mdatoms, &kernel_data, nrnb);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -1138,8 +1140,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
         /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-        nbnxn_make_pairlist(nbv, Nbnxm::InteractionLocality::Local,
-                            &top->excls, step, nrnb);
+        nbv->constructPairlist(Nbnxm::InteractionLocality::Local,
+                               &top->excls, step, nrnb);
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
         wallcycle_stop(wcycle, ewcNS);
     }
@@ -1195,8 +1197,8 @@ static void do_force_cutsVERLET(FILE *fplog,
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-            nbnxn_make_pairlist(nbv, Nbnxm::InteractionLocality::NonLocal,
-                                &top->excls, step, nrnb);
+            nbv->constructPairlist(Nbnxm::InteractionLocality::NonLocal,
+                                   &top->excls, step, nrnb);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             wallcycle_stop(wcycle, ewcNS);
         }
@@ -1362,18 +1364,18 @@ static void do_force_cutsVERLET(FILE *fplog,
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.
          */
-        if (fr->nbv->pairlistSets[Nbnxm::InteractionLocality::Local].nbl_fep[0]->nrj > 0)
+        if (fr->nbv->freeEnergyPairlistSet(Nbnxm::InteractionLocality::Local)[0]->nrj > 0)
         {
-            do_nb_verlet_fep(&fr->nbv->pairlistSets[Nbnxm::InteractionLocality::Local],
+            do_nb_verlet_fep(*nbv, Nbnxm::InteractionLocality::Local,
                              fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
         }
 
-        if (DOMAINDECOMP(cr) &&
-            fr->nbv->pairlistSets[Nbnxm::InteractionLocality::NonLocal].nbl_fep[0]->nrj > 0)
+        if (havePPDomainDecomposition(cr) &&
+            fr->nbv->freeEnergyPairlistSet(Nbnxm::InteractionLocality::NonLocal)[0]->nrj > 0)
         {
-            do_nb_verlet_fep(&fr->nbv->pairlistSets[Nbnxm::InteractionLocality::NonLocal],
+            do_nb_verlet_fep(*nbv, Nbnxm::InteractionLocality::NonLocal,
                              fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
                              inputrec->fepvals, lambda,
                              enerd, flags, nrnb, wcycle);
@@ -1403,7 +1405,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         /* if there are multiple fshift output buffers reduce them */
         if ((flags & GMX_FORCE_VIRIAL) &&
-            nbv->pairlistSets[iloc].nnbl > 1)
+            nbv->pairlistSet(iloc).nnbl > 1)
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
@@ -1458,7 +1460,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             }
 
             /* skip the reduction if there was no non-local work to do */
-            if (!nbv->pairlistSets[Nbnxm::InteractionLocality::NonLocal].nblGpu[0]->sci.empty())
+            if (!nbv->pairlistSet(Nbnxm::InteractionLocality::NonLocal).nblGpu[0]->sci.empty())
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxm::AtomLocality::NonLocal,
                                                nbv->nbat, f, wcycle);
