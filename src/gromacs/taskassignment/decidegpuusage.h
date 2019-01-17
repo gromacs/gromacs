@@ -49,8 +49,6 @@ struct gmx_hw_info_t;
 struct gmx_mtop_t;
 struct t_inputrec;
 
-enum class EmulateGpuNonbonded : bool;
-
 namespace gmx
 {
 
@@ -60,6 +58,15 @@ enum class TaskTarget : int
     Auto,
     Cpu,
     Gpu
+};
+
+//! Help pass GPU-emulation parameters with type safety.
+enum class EmulateGpuNonbonded : bool
+{
+    //! Do not emulate GPUs.
+    No,
+    //! Do emulate GPUs.
+    Yes
 };
 
 /*! \brief Decide whether this thread-MPI simulation will run

@@ -86,7 +86,6 @@ void increaseNstlist(FILE *fplog, t_commrec *cr,
  * \param[in]     ir               The input parameter record
  * \param[in]     mtop             The global topology
  * \param[in]     box              The unit cell
- * \param[in]     nbnxnKernelType  The type of nbnxn kernel used
  * \param[in]     ic               The nonbonded interactions constants
  * \param[in,out] listParams       The list setup parameters
  */
@@ -94,7 +93,6 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
                                  const t_inputrec          *ir,
                                  const gmx_mtop_t          *mtop,
                                  matrix                     box,
-                                 int                        nbnxnKernelType,
                                  const interaction_const_t *ic,
                                  NbnxnListParameters       *listParams);
 
