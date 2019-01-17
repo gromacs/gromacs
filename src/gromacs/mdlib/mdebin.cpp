@@ -890,23 +890,6 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
     return fp;
 }
 
-static void copy_energy(t_mdebin *md, const real e[], real ecpy[])
-{
-    int i, j;
-
-    for (i = j = 0; (i < F_NRE); i++)
-    {
-        if (md->bEner[i])
-        {
-            ecpy[j++] = e[i];
-        }
-    }
-    if (j != md->f_nre)
-    {
-        gmx_incons("Number of energy terms wrong");
-    }
-}
-
 void upd_mdebin(t_mdebin               *md,
                 gmx_bool                bDoDHDL,
                 gmx_bool                bSum,
@@ -929,7 +912,6 @@ void upd_mdebin(t_mdebin               *md,
     real   crmsd[2], tmp6[6];
     real   bs[NTRICLBOXS], vol, dens, pv, enthalpy;
     real   eee[egNR];
-    real   ecopy[F_NRE];
     double store_dhdl[efptNR];
     real   store_energy = 0;
     real   tmp;
@@ -938,8 +920,7 @@ void upd_mdebin(t_mdebin               *md,
      * as an argument. This is because we sometimes need to write the box from
      * the last timestep to match the trajectory frames.
      */
-    copy_energy(md, enerd->term, ecopy);
-    add_ebin(md->ebin, md->ie, md->f_nre, ecopy, bSum);
+    add_ebin_indexed(md->ebin, md->ie, gmx::ArrayRef<gmx_bool>(md->bEner), enerd->term, bSum);
     if (md->nCrmsd)
     {
         crmsd[0] = constr->rmsd();
