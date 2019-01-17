@@ -483,7 +483,6 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
                                  const t_inputrec          *ir,
                                  const gmx_mtop_t          *mtop,
                                  matrix                     box,
-                                 int                        nbnxnKernelType,
                                  const interaction_const_t *ic,
                                  NbnxnListParameters       *listParams)
 {
@@ -492,11 +491,14 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
     /* Initialize the parameters to no dynamic list pruning */
     listParams->useDynamicPruning = false;
 
-    const VerletbufListSetup ls   = verletbufGetListSetup(nbnxnKernelType);
+    const VerletbufListSetup ls   =
+    {
+        IClusterSizePerListType[listParams->pairlistType],
+        JClusterSizePerListType[listParams->pairlistType]
+    };
 
     /* Currently emulation mode does not support dual pair-lists */
-    const bool useGpuList         = (nbnxnKernelType == nbnxnk8x8x8_GPU ||
-                                     nbnxnKernelType == nbnxnk8x8x8_PlainC); 
+    const bool useGpuList         = (listParams->pairlistType == PairlistType::Hierarchical8x8);
 
     if (supportsDynamicPairlistGenerationInterval(*ir) &&
         getenv("GMX_DISABLE_DYNAMICPRUNING") == nullptr)
