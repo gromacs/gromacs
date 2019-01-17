@@ -170,8 +170,7 @@ compile the \Gromacs headers.</dd>
 <dt>`GROMACS_IS_DOUBLE`</dt>
 <dd>Whether the found \Gromacs was compiled in double precision.</dd>
 <dt>`GROMACS_CXX_FLAGS`</dt>
-<dd>Required compiler flags, e.g. for compiling in C++11 mode,
-or selecting the standard library flavour.</dd>
+<dd>Required compiler flags.</dd>
 </dl>
 
 Declared macros/functions that can be used for checking for correctness of some

@@ -40,6 +40,14 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_
 
 project(Gromacs)
 
+if (MSVC)
+    set(CMAKE_CXX_STANDARD 14)
+else()
+    set(CMAKE_CXX_STANDARD 11)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 include(gmxManageCcache)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -139,24 +147,8 @@ endif()
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
 
-# Permit the user to specify a particular standard library, e.g. compiling
-# with "-stdlib=libc++" and linking with "-lc++abi -lc++" to get clang's libcxx.
-set(GMX_STDLIB_CXX_FLAGS "" CACHE STRING "Compiler flag for a C++ standard library flavour")
-set(GMX_STDLIB_LIBRARIES "" CACHE STRING "Linker libraries for a particular C++ standard library")
-mark_as_advanced(GMX_STDLIB_CXX_FLAGS)
-mark_as_advanced(GMX_STDLIB_LIBRARIES)
-
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
-
-# This must come early, since some of our configuration flag tests
-# depend on being able to compile C++11 source files.
-include(gmxTestCXX11)
-gmx_test_cxx11(GMX_CXX11_FLAGS GMX_STDLIB_CXX_FLAGS GMX_STDLIB_LIBRARIES)
-
-# Make sure all C++ code will be compiled in C++11 mode, with the
-# expected standard library.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX11_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
 
 ########################################################################
 # User input options                                                   #
