@@ -2153,46 +2153,23 @@ void do_force(FILE                                     *fplog,
         flags &= ~GMX_FORCE_NONBONDED;
     }
 
-    switch (inputrec->cutoff_scheme)
-    {
-        case ecutsVERLET:
-            do_force_cutsVERLET(fplog, cr, ms, inputrec,
-                                awh, enforcedRotation, step, nrnb, wcycle,
-                                top,
-                                groups,
-                                box, x, hist,
-                                force, vir_force,
-                                mdatoms,
-                                enerd, fcd,
-                                lambda.data(), graph,
-                                fr,
-                                ppForceWorkload,
-                                fr->ic,
-                                vsite, mu_tot,
-                                t, ed,
-                                flags,
-                                ddOpenBalanceRegion,
-                                ddCloseBalanceRegion);
-            break;
-        case ecutsGROUP:
-            do_force_cutsGROUP(fplog, cr, ms, inputrec,
-                               awh, enforcedRotation, step, nrnb, wcycle,
-                               top,
-                               groups,
-                               box, x, hist,
-                               force, vir_force,
-                               mdatoms,
-                               enerd, fcd,
-                               lambda.data(), graph,
-                               fr, vsite, mu_tot,
-                               t, ed,
-                               flags,
-                               ddOpenBalanceRegion,
-                               ddCloseBalanceRegion);
-            break;
-        default:
-            gmx_incons("Invalid cut-off scheme passed!");
-    }
+    do_force_cutsVERLET(fplog, cr, ms, inputrec,
+                        awh, enforcedRotation, step, nrnb, wcycle,
+                        top,
+                        groups,
+                        box, x, hist,
+                        force, vir_force,
+                        mdatoms,
+                        enerd, fcd,
+                        lambda.data(), graph,
+                        fr,
+                        ppForceWorkload,
+                        fr->ic,
+                        vsite, mu_tot,
+                        t, ed,
+                        flags,
+                        ddOpenBalanceRegion,
+                        ddCloseBalanceRegion);
 
     /* In case we don't have constraints and are using GPUs, the next balancing
      * region starts here.
@@ -2530,19 +2507,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             gmx_fatal(FARGS,
                       "Dispersion correction is not implemented for vdw-type = %s",
                       evdw_names[ic->vdwtype]);
-        }
-
-        /* When we deprecate the group kernels the code below can go too */
-        if (ic->vdwtype == evdwPME && fr->cutoff_scheme == ecutsGROUP)
-        {
-            /* Calculate self-interaction coefficient (assuming that
-             * the reciprocal-space contribution is constant in the
-             * region that contributes to the self-interaction).
-             */
-            fr->enershiftsix = gmx::power6(ic->ewaldcoeff_lj) / 6.0;
-
-            eners[0] += -gmx::power3(std::sqrt(M_PI)*ic->ewaldcoeff_lj)/3.0;
-            virs[0]  +=  gmx::power3(std::sqrt(M_PI)*ic->ewaldcoeff_lj);
         }
 
         fr->enerdiffsix    = eners[0];

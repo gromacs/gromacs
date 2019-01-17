@@ -1952,9 +1952,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 
     switch (fr->cutoff_scheme)
     {
-        case ecutsGROUP:
-            cg_cm = fr->cg_cm;
-            break;
         case ecutsVERLET:
             cg_cm = state->x.rvec_array();
             break;
@@ -2215,14 +2212,8 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 
             /* Make space for cg_cm */
             dd_check_alloc_ncg(fr, state, f, pos_cg + ind->nrecv[nzone]);
-            if (fr->cutoff_scheme == ecutsGROUP)
-            {
-                cg_cm = fr->cg_cm;
-            }
-            else
-            {
-                cg_cm = state->x.rvec_array();
-            }
+            cg_cm = state->x.rvec_array();
+
             /* Communicate cg_cm */
             gmx::ArrayRef<gmx::RVec> rvecBufferRef;
             if (cd->receiveInPlace)
@@ -2815,9 +2806,6 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
 
     switch (fr->cutoff_scheme)
     {
-        case ecutsGROUP:
-            dd_sort_order(dd, fr, ncg_home_old, sort);
-            break;
         case ecutsVERLET:
             dd_sort_order_nbnxn(fr, &sort->sorted);
             break;
@@ -2857,13 +2845,6 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     if (state->flags & (1 << estCGP))
     {
         order_vec_atom(atomGroupsPtr, cgsort, state->cg_p, rvecBuffer.buffer);
-    }
-
-    if (fr->cutoff_scheme == ecutsGROUP)
-    {
-        /* Reorder cgcm */
-        gmx::ArrayRef<gmx::RVec> cgcmRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(cgcm[0]), cgsort.size());
-        orderVector(cgsort, cgcmRef, rvecBuffer.buffer);
     }
 
     /* Reorder the global cg index */
@@ -3250,12 +3231,6 @@ void dd_partition_system(FILE                    *fplog,
         /* Ensure that we have space for the new distribution */
         dd_check_alloc_ncg(fr, state_local, f, dd->ncg_home);
 
-        if (fr->cutoff_scheme == ecutsGROUP)
-        {
-            calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
-        }
-
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
         dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr, comm->bLocalCG);
@@ -3279,13 +3254,6 @@ void dd_partition_system(FILE                    *fplog,
         restoreAtomGroups(dd, cgs_gl->index, state_local);
         make_dd_indices(dd, cgs_gl->index, 0);
         ncgindex_set = dd->ncg_home;
-
-        if (fr->cutoff_scheme == ecutsGROUP)
-        {
-            /* Redetermine the cg COMs */
-            calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
-        }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
@@ -3378,12 +3346,6 @@ void dd_partition_system(FILE                    *fplog,
 
     switch (fr->cutoff_scheme)
     {
-        case ecutsGROUP:
-            copy_ivec(fr->ns->grid->n, ncells_old);
-            grid_first(fplog, fr->ns->grid, dd, &ddbox,
-                       state_local->box, cell_ns_x0, cell_ns_x1,
-                       fr->rlist, grid_density);
-            break;
         case ecutsVERLET:
             nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_old[XX], &ncells_old[YY]);
             break;
@@ -3427,12 +3389,6 @@ void dd_partition_system(FILE                    *fplog,
                                   fr->nbv->nbat);
 
                 nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_new[XX], &ncells_new[YY]);
-                break;
-            case ecutsGROUP:
-                fill_grid(&comm->zones, fr->ns->grid, dd->ncg_home,
-                          0, dd->ncg_home, fr->cg_cm);
-
-                copy_ivec(fr->ns->grid->n, ncells_new);
                 break;
             default:
                 gmx_incons("unimplemented");
@@ -3512,7 +3468,7 @@ void dd_partition_system(FILE                    *fplog,
     dd_make_local_top(dd, &comm->zones, dd->npbcdim, state_local->box,
                       comm->cellsize_min, np,
                       fr,
-                      fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x.rvec_array(),
+                      state_local->x.rvec_array(),
                       vsite, top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
