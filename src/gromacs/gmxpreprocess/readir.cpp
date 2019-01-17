@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019. by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1793,18 +1793,6 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);
-
-    if (-1 == search_einp(inp, "cutoff-scheme"))
-    {
-        sprintf(warn_buf,
-                "%s did not specify a value for the .mdp option "
-                "\"cutoff-scheme\". Probably it was first intended for use "
-                "with GROMACS before 4.6. In 4.6, the Verlet scheme was "
-                "introduced, but the group scheme was still the default. "
-                "The default is now the Verlet scheme, so you will observe "
-                "different behaviour.", mdparin);
-        warning_note(wi, warn_buf);
-    }
 
     /* ignore the following deprecated commands */
     replace_inp_entry(inp, "title", nullptr);
