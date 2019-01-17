@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "editconf.h"
+
 #include <cmath>
 #include <cstring>
 
@@ -48,7 +50,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/math/functions.h"
