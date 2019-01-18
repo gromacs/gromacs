@@ -87,29 +87,14 @@ int gmx_mtop_nres(const gmx_mtop_t *mtop);
 /* Removes the charge groups, i.e. makes single atom charge groups, in mtop */
 void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
 
-/*! \brief
- * Object that allows looping over all atoms in an mtop.
- */
-class SystemAtomIterator
+class SystemAtomIterator;
+
+//! Proxy object returned from SystemAtomIterator
+class SystemAtomProxy
 {
     public:
         //! Default constructor.
-        explicit SystemAtomIterator(const gmx_mtop_t &mtop);
-
-        /*! \brief
-         * Loop to next atoms.
-         *
-         * When not at the end:
-         *   returns true.
-         *   sets internal variables to next atom, and sets new global atom number.
-         * When at the end, returns false and resets the loop.
-         * Use as:
-         * LoopOverAllAtom aloop(mtop);
-         * while (aloop.nextAtom()) {
-         *     ...
-         * }
-         */
-        bool nextAtom();
+        SystemAtomProxy(const SystemAtomIterator* it) : it_(it) {}
         //! Access current global atom number.
         int globalAtomNumber() const;
         //! Access current t_atom struct.
@@ -124,6 +109,33 @@ class SystemAtomIterator
         const gmx_moltype_t &moleculeType() const;
         //! Access the position of the current atom in the molecule.
         int atomNumberInMol() const;
+    private:
+        const SystemAtomIterator* it_;
+};
+
+/*! \brief
+ * Object that allows looping over all atoms in an mtop.
+ */
+class SystemAtomIterator
+{
+    public:
+        //! Default constructor.
+        explicit SystemAtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber = 0);
+
+        //! Prefix increment.
+        SystemAtomIterator &operator++();
+        //! Postfix increment.
+        SystemAtomIterator operator++(int);
+
+        //! Equality comparison.
+        bool operator==(SystemAtomIterator &) const;
+        //! Non-equal comparison.
+        bool operator!=(SystemAtomIterator &) const;
+
+        //! Dereference. Returns proxy.
+        SystemAtomProxy operator*() const { return {this}; }
+        //! Member of pointer.
+        std::unique_ptr<SystemAtomProxy> operator->() const;
 
     private:
         //! Global topology.
@@ -140,6 +152,23 @@ class SystemAtomIterator
         int               localAtomNumber_;
         //! Global current atom number.
         int               globalAtomNumber_;
+
+        friend class SystemAtomProxy;
+};
+
+//! Range over all atoms of topology.
+class SystemAtomRange
+{
+    public:
+        //! Default constructor.
+        explicit SystemAtomRange(const gmx_mtop_t &mtop) :
+            begin_(mtop), end_(mtop, mtop.natoms) {}
+        //! Iterator to begin of range.
+        SystemAtomIterator &begin() { return begin_; }
+        //! Iterator to end of range.
+        SystemAtomIterator &end() { return end_; }
+    private:
+        SystemAtomIterator begin_, end_;
 };
 
 /* Abstract type for atom loop over atoms in all molecule blocks */

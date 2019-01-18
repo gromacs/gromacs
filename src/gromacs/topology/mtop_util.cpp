@@ -43,6 +43,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
@@ -217,14 +218,17 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
-SystemAtomIterator::SystemAtomIterator(const gmx_mtop_t &mtop)
+SystemAtomIterator::SystemAtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber)
     : mtop_(&mtop), mblock_(0),
       atoms_(&mtop.moltype[mtop.molblock[0].type].atoms),
       currentMolecule_(0), highestResidueNumber_(mtop.maxresnr),
-      localAtomNumber_(-1), globalAtomNumber_(-1)
-{}
+      localAtomNumber_(0), globalAtomNumber_(globalAtomNumber)
+{
+    GMX_ASSERT(globalAtomNumber == 0 || globalAtomNumber == mtop.natoms,
+               "Starting at other atoms not implemented yet");
+}
 
-bool SystemAtomIterator::nextAtom()
+SystemAtomIterator &SystemAtomIterator::operator++()
 {
     localAtomNumber_++;
     globalAtomNumber_++;
@@ -243,57 +247,79 @@ bool SystemAtomIterator::nextAtom()
             mblock_++;
             if (mblock_ >= mtop_->molblock.size())
             {
-                return false;
+                return *this;
             }
             atoms_           = &mtop_->moltype[mtop_->molblock[mblock_].type].atoms;
             currentMolecule_ = 0;
         }
     }
-    return true;
+    return *this;
 }
 
-const t_atom &SystemAtomIterator::atom() const
+SystemAtomIterator SystemAtomIterator::operator++(int)
 {
-    return atoms_->atom[localAtomNumber_];
+    SystemAtomIterator temp = *this;
+    ++(*this);
+    return temp;
 }
 
-int SystemAtomIterator::globalAtomNumber() const
+bool SystemAtomIterator::operator==(SystemAtomIterator &o) const
 {
-    return globalAtomNumber_;
+    return mtop_ == o.mtop_ && globalAtomNumber_ == o.globalAtomNumber_;
 }
 
-const char *SystemAtomIterator::atomName() const
+bool SystemAtomIterator::operator!=(SystemAtomIterator &o) const
 {
-    return *(atoms_->atomname[localAtomNumber_]);
+    return !(*this == o);
 }
 
-const char *SystemAtomIterator::residueName() const
+std::unique_ptr<SystemAtomProxy> SystemAtomIterator::operator->() const
 {
-    int residueIndexInMolecule = atoms_->atom[localAtomNumber_].resind;
-    return *(atoms_->resinfo[residueIndexInMolecule].name);
+    return gmx::compat::make_unique<SystemAtomProxy>(this);
 }
 
-int SystemAtomIterator::residueNumber() const
+const t_atom &SystemAtomProxy::atom() const
 {
-    int residueIndexInMolecule = atoms_->atom[localAtomNumber_].resind;
-    if (atoms_->nres <= mtop_->maxres_renum)
+    return it_->atoms_->atom[it_->localAtomNumber_];
+}
+
+int SystemAtomProxy::globalAtomNumber() const
+{
+    return it_->globalAtomNumber_;
+}
+
+const char *SystemAtomProxy::atomName() const
+{
+    return *(it_->atoms_->atomname[it_->localAtomNumber_]);
+}
+
+const char *SystemAtomProxy::residueName() const
+{
+    int residueIndexInMolecule = it_->atoms_->atom[it_->localAtomNumber_].resind;
+    return *(it_->atoms_->resinfo[residueIndexInMolecule].name);
+}
+
+int SystemAtomProxy::residueNumber() const
+{
+    int residueIndexInMolecule = it_->atoms_->atom[it_->localAtomNumber_].resind;
+    if (it_->atoms_->nres <= it_->mtop_->maxres_renum)
     {
-        return highestResidueNumber_ + 1 + residueIndexInMolecule;
+        return it_->highestResidueNumber_ + 1 + residueIndexInMolecule;
     }
     else
     {
-        return atoms_->resinfo[residueIndexInMolecule].nr;
+        return it_->atoms_->resinfo[residueIndexInMolecule].nr;
     }
 }
 
-const gmx_moltype_t &SystemAtomIterator::moleculeType() const
+const gmx_moltype_t &SystemAtomProxy::moleculeType() const
 {
-    return mtop_->moltype[mtop_->molblock[mblock_].type];
+    return it_->mtop_->moltype[it_->mtop_->molblock[it_->mblock_].type];
 }
 
-int SystemAtomIterator::atomNumberInMol() const
+int SystemAtomProxy::atomNumberInMol() const
 {
-    return localAtomNumber_;
+    return it_->localAtomNumber_;
 }
 
 typedef struct gmx_mtop_atomloop_block
@@ -947,11 +973,10 @@ static void copyIdefFromMtop(const gmx_mtop_t &mtop,
     {
         std::vector<real>          qA(mtop.natoms);
         std::vector<real>          qB(mtop.natoms);
-        SystemAtomIterator         aloop(mtop);
-        while (aloop.nextAtom())
+        for (const SystemAtomProxy &atomP : SystemAtomRange(mtop))
         {
-            const t_atom &local = aloop.atom();
-            int           index = aloop.globalAtomNumber();
+            const t_atom &local = atomP.atom();
+            int           index = atomP.globalAtomNumber();
             qA[index] = local.q;
             qB[index] = local.qB;
         }
@@ -1212,11 +1237,10 @@ std::vector<int> get_atom_index(const gmx_mtop_t *mtop)
 {
 
     std::vector<int>             atom_index;
-    SystemAtomIterator           aloop(*mtop);
-    while (aloop.nextAtom())
+    for (const SystemAtomProxy &atomP : SystemAtomRange(*mtop))
     {
-        const t_atom &local = aloop.atom();
-        int           index = aloop.globalAtomNumber();
+        const t_atom &local = atomP.atom();
+        int           index = atomP.globalAtomNumber();
         if (local.ptype == eptAtom)
         {
             atom_index.push_back(index);

@@ -352,12 +352,11 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     /* Global system sized array, this should be avoided */
     snew(shell_index, mtop->natoms);
 
-    SystemAtomIterator aloop(*mtop);
     nshell = 0;
-    while (aloop.nextAtom())
+    for (const SystemAtomProxy &atomP : SystemAtomRange(*mtop))
     {
-        const t_atom &local = aloop.atom();
-        int           i     = aloop.globalAtomNumber();
+        const t_atom &local = atomP.atom();
+        int           i     = atomP.globalAtomNumber();
         if (local.ptype == eptShell)
         {
             shell_index[i] = nshell++;

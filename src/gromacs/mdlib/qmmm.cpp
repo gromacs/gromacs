@@ -431,10 +431,9 @@ void init_QMMMrec(const t_commrec  *cr,
     for (int j = 0; j < jmax; j++)
     {
         /* new layer */
-        SystemAtomIterator aloop(*mtop);
-        while (aloop.nextAtom())
+        for (const SystemAtomProxy &atomP : SystemAtomRange(*mtop))
         {
-            int i = aloop.globalAtomNumber();
+            int i = atomP.globalAtomNumber();
             if (qm_nr >= qm_max)
             {
                 qm_max += 1000;

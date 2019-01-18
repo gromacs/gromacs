@@ -61,11 +61,10 @@ static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
     if (ngacc > 0)
     {
         const gmx_groups_t    &groups = mtop->groups;
-        SystemAtomIterator     aloop(*mtop);
-        while (aloop.nextAtom())
+        for (const SystemAtomProxy &atomP : SystemAtomRange(*mtop))
         {
-            const t_atom &local = aloop.atom();
-            int           i     = aloop.globalAtomNumber();
+            const t_atom &local = atomP.atom();
+            int           i     = atomP.globalAtomNumber();
             int           grp   = getGroupType(groups, egcACC, i);
             if ((grp < 0) && (grp >= ngacc))
             {
