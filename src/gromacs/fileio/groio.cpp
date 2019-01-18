@@ -516,13 +516,12 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
 
     const char         *format = get_hconf_format(v != nullptr);
 
-    SystemAtomIterator  aloop(*mtop);
-    while (aloop.nextAtom())
+    for (const AtomProxy &atomP : AtomRange(*mtop))
     {
-        int         i             = aloop.globalAtomNumber();
-        int         residueNumber = aloop.residueNumber();
-        const char *atomName      = aloop.atomName();
-        const char *residueName   = aloop.residueName();
+        int         i             = atomP.globalAtomNumber();
+        int         residueNumber = atomP.residueNumber();
+        const char *atomName      = atomP.atomName();
+        const char *residueName   = atomP.residueName();
 
         fprintf(out, "%5d%-5.5s%5.5s%5d",
                 residueNumber%100000, residueName, atomName, (i+1)%100000);
