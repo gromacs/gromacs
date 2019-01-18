@@ -221,11 +221,10 @@ void init_orires(FILE                 *fplog,
     rvec                        com   = { 0, 0, 0 };
     double                      mtot  = 0.0;
     int                         j     = 0;
-    SystemAtomIterator          aloop(*mtop);
-    while (aloop.nextAtom())
+    for (const AtomProxy &atomP : AtomRange(*mtop))
     {
-        const t_atom &local = aloop.atom();
-        int           i     = aloop.globalAtomNumber();
+        const t_atom &local = atomP.atom();
+        int           i     = atomP.globalAtomNumber();
         if (mtop->groups.grpnr[egcORFIT] == nullptr ||
             mtop->groups.grpnr[egcORFIT][i] == 0)
         {
