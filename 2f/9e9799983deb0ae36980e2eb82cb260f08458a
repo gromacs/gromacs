@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: David van der Spoel <spoel@xray.bmc.uu.se>
+Code-Review+2: Christian Blau <cblau@gwdg.de>
+Submitted-by: Christian Blau <cblau@gwdg.de>
+Submitted-at: Fri, 18 Jan 2019 11:37:44 +0100
+Reviewed-on: https://gerrit.gromacs.org/8973
+Project: gromacs
+Branch: refs/heads/master
