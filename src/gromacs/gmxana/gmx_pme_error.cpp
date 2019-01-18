@@ -810,11 +810,10 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
         snew(*x, mtop->natoms);
         nq = 0;
 
-        SystemAtomIterator aloop(*mtop);
-        while (aloop.nextAtom())
+        for (const SystemAtomProxy &atomP : SystemAtomRange(*mtop))
         {
-            const t_atom &local = aloop.atom();
-            int           i     = aloop.globalAtomNumber();
+            const t_atom &local = atomP.atom();
+            int           i     = atomP.globalAtomNumber();
             if (is_charge(local.q))
             {
                 (*q)[nq]     = local.q;
