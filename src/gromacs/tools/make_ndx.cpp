@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "make_ndx.h"
+
 #include <cctype>
 #include <cstring>
 
@@ -43,7 +45,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"

@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "eneconv.h"
+
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -45,7 +47,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/listed_forces/disre.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"

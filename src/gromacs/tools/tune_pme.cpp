@@ -34,6 +34,8 @@
  */
 #include "gmxpre.h"
 
+#include "tune_pme.h"
+
 #include "config.h"
 
 #include <cmath>
@@ -53,7 +55,6 @@
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"

@@ -34,5 +34,6 @@
 
 gmx_add_unit_test(ToolUnitTests tool-test
                   dump.cpp
-                  report_methods.cpp)
+                  report_methods.cpp
+                  trjconv.cpp)
 

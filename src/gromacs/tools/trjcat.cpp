@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "trjcat.h"
+
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -51,7 +53,6 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/index.h"
