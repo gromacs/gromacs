@@ -15,3 +15,9 @@ When building using OpenCL in ``Debug`` mode, it can happen that the GPU timer s
 corrupted, leading to an assertion failure during the :ref:`mdrun <gmx mdrun>`.
 This seems to be related to the load of other, unrelated tasks on the GPU.
 
+GPU emulation does not work
+---------------------------
+
+The non-bonded GPU emulation mode does not work, at least for builds
+with GPU support; then a GPU setup call is called.
+Also dynamic pruning needs to be implemented for GPU emulation.
