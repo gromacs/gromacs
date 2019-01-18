@@ -2802,11 +2802,10 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     }
 
     snew(nrdf2, natoms);
-    SystemAtomIterator aloop(*mtop);
-    while (aloop.nextAtom())
+    for (const AtomProxy &atomP : AtomRange(*mtop))
     {
-        const t_atom &local = aloop.atom();
-        int           i     = aloop.globalAtomNumber();
+        const t_atom &local = atomP.atom();
+        int           i     = atomP.globalAtomNumber();
         nrdf2[i] = 0;
         if (local.ptype == eptAtom || local.ptype == eptNucleus)
         {
@@ -4141,11 +4140,10 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     {
         clear_rvec(acc);
         snew(mgrp, sys->groups.grps[egcACC].nr);
-        SystemAtomIterator aloop(*sys);
-        while (aloop.nextAtom())
+        for (const AtomProxy &atomP : AtomRange(*sys))
         {
-            const t_atom &local = aloop.atom();
-            int           i     = aloop.globalAtomNumber();
+            const t_atom &local = atomP.atom();
+            int           i     = atomP.globalAtomNumber();
             mgrp[getGroupType(sys->groups, egcACC, i)] += local.m;
         }
         mt = 0.0;
