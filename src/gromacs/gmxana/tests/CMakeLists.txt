@@ -38,7 +38,6 @@ gmx_add_gtest_executable(
     ${exename}
     entropy.cpp
     gmx_traj.cpp
-    gmx_trjconv.cpp
     gmx_mindist.cpp
     gmx_msd.cpp
     )

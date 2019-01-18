@@ -99,9 +99,6 @@ int
 gmx_dyecoupl(int argc, char *argv[]);
 
 int
-gmx_eneconv(int argc, char *argv[]);
-
-int
 gmx_enemat(int argc, char *argv[]);
 
 int
@@ -135,13 +132,7 @@ int
 gmx_make_edi(int argc, char *argv[]);
 
 int
-gmx_make_ndx(int argc, char *argv[]);
-
-int
 gmx_mindist(int argc, char *argv[]);
-
-int
-gmx_mk_angndx(int argc, char *argv[]);
 
 int
 gmx_msd(int argc, char *argv[]);
@@ -213,16 +204,7 @@ int
 gmx_traj(int argc, char *argv[]);
 
 int
-gmx_trjcat(int argc, char *argv[]);
-
-int
-gmx_trjconv(int argc, char *argv[]);
-
-int
 gmx_trjorder(int argc, char *argv[]);
-
-int
-gmx_tune_pme(int argc, char *argv[]);
 
 int
 gmx_velacc(int argc, char *argv[]);
@@ -247,9 +229,6 @@ gmx_xpm2ps(int argc, char *argv[]);
 
 int
 gmx_membed(int argc, char *argv[]);
-
-int
-gmx_pme_error(int argc, char *argv[]);
 
 int
 gmx_sans(int argc, char *argv[]);
