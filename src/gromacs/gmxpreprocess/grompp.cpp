@@ -364,11 +364,10 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp *wi)
 
 static void check_vel(gmx_mtop_t *mtop, rvec v[])
 {
-    SystemAtomIterator        aloop(*mtop);
-    while (aloop.nextAtom())
+    for (const AtomProxy &atomP : AtomRange(*mtop))
     {
-        const t_atom &local = aloop.atom();
-        int           i     = aloop.globalAtomNumber();
+        const t_atom &local = atomP.atom();
+        int           i     = atomP.globalAtomNumber();
         if (local.ptype == eptShell ||
             local.ptype == eptBond  ||
             local.ptype == eptVSite)
@@ -385,10 +384,9 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
     int                        nshells = 0;
     char                       warn_buf[STRLEN];
 
-    SystemAtomIterator         aloop(*mtop);
-    while (aloop.nextAtom())
+    for (const AtomProxy &atomP : AtomRange(*mtop))
     {
-        const t_atom &local = aloop.atom();
+        const t_atom &local = atomP.atom();
         if (local.ptype == eptShell ||
             local.ptype == eptBond)
         {
@@ -670,11 +668,10 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         real                   *mass;
 
         snew(mass, state->natoms);
-        SystemAtomIterator aloop(*sys);
-        while (aloop.nextAtom())
+        for (const AtomProxy &atomP : AtomRange(*sys))
         {
-            const t_atom &local = aloop.atom();
-            int           i     = aloop.globalAtomNumber();
+            const t_atom &local = atomP.atom();
+            int           i     = atomP.globalAtomNumber();
             mass[i] = local.m;
         }
 
@@ -1239,11 +1236,10 @@ static real calc_temp(const gmx_mtop_t *mtop,
                       rvec             *v)
 {
     double                     sum_mv2 = 0;
-    SystemAtomIterator         aloop(*mtop);
-    while (aloop.nextAtom())
+    for (const AtomProxy &atomP : AtomRange(*mtop))
     {
-        const t_atom &local = aloop.atom();
-        int           i     = aloop.globalAtomNumber();
+        const t_atom &local = atomP.atom();
+        int           i     = atomP.globalAtomNumber();
         sum_mv2 += local.m*norm2(v[i]);
     }
 

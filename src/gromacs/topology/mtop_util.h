@@ -85,29 +85,14 @@ int gmx_mtop_nres(const gmx_mtop_t *mtop);
 /* Removes the charge groups, i.e. makes single atom charge groups, in mtop */
 void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
 
-/*! \brief
- * Object that allows looping over all atoms in an mtop.
- */
-class SystemAtomIterator
+class AtomIterator;
+
+//! Proxy object returned from AtomIterator
+class AtomProxy
 {
     public:
         //! Default constructor.
-        explicit SystemAtomIterator(const gmx_mtop_t &mtop);
-
-        /*! \brief
-         * Loop to next atoms.
-         *
-         * When not at the end:
-         *   returns true.
-         *   sets internal variables to next atom, and sets new global atom number.
-         * When at the end, returns false and resets the loop.
-         * Use as:
-         * LoopOverAllAtom aloop(mtop);
-         * while (aloop.nextAtom()) {
-         *     ...
-         * }
-         */
-        bool nextAtom();
+        AtomProxy(const AtomIterator* it) : it_(it) {}
         //! Access current global atom number.
         int globalAtomNumber() const;
         //! Access current t_atom struct.
@@ -122,6 +107,46 @@ class SystemAtomIterator
         const gmx_moltype_t &moleculeType() const;
         //! Access the position of the current atom in the molecule.
         int atomNumberInMol() const;
+    private:
+        const AtomIterator* it_;
+};
+
+//! Wrapper around proxy object to implement operator->
+template <typename T>
+class ProxyPtr
+{
+    public:
+        //! Construct with proxy object.
+        ProxyPtr(T t) : t_(t) {}
+        //! Member of pointer operator.
+        T* operator->() { return &t_; }
+    private:
+        T t_;
+};
+
+/*! \brief
+ * Object that allows looping over all atoms in an mtop.
+ */
+class AtomIterator
+{
+    public:
+        //! Construct from topology and optionalally a global atom number.
+        explicit AtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber = 0);
+
+        //! Prefix increment.
+        AtomIterator &operator++();
+        //! Postfix increment.
+        AtomIterator operator++(int);
+
+        //! Equality comparison.
+        bool operator==(const AtomIterator &o) const;
+        //! Non-equal comparison.
+        bool operator!=(const AtomIterator &o) const;
+
+        //! Dereference operator. Returns proxy.
+        AtomProxy operator*() const { return {this}; }
+        //! Member of pointer operator.
+        ProxyPtr<AtomProxy> operator->() const { return {this}; };
 
     private:
         //! Global topology.
@@ -138,6 +163,23 @@ class SystemAtomIterator
         int               localAtomNumber_;
         //! Global current atom number.
         int               globalAtomNumber_;
+
+        friend class AtomProxy;
+};
+
+//! Range over all atoms of topology.
+class AtomRange
+{
+    public:
+        //! Default constructor.
+        explicit AtomRange(const gmx_mtop_t &mtop) :
+            begin_(mtop), end_(mtop, mtop.natoms) {}
+        //! Iterator to begin of range.
+        AtomIterator &begin() { return begin_; }
+        //! Iterator to end of range.
+        AtomIterator &end() { return end_; }
+    private:
+        AtomIterator begin_, end_;
 };
 
 /* Abstract type for atom loop over atoms in all molecule blocks */
