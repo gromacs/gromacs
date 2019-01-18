@@ -372,7 +372,7 @@ static const int c_nbnxnDynamicListPruningMinLifetime = 4;
  * \param[in]     ir          The input parameter record
  * \param[in]     mtop        The global topology
  * \param[in]     box         The unit cell
- * \param[in]     useGpu      Tells if we are using a GPU for non-bondeds
+ * \param[in]     useGpuList  Tells if we are using a GPU type pairlist
  * \param[in]     listSetup   The nbnxn pair list setup
  * \param[in]     userSetNstlistPrune  The user set ic->nstlistPrune (using an env.var.)
  * \param[in] ic              The nonbonded interactions constants
@@ -381,10 +381,10 @@ static const int c_nbnxnDynamicListPruningMinLifetime = 4;
 static void
 setDynamicPairlistPruningParameters(const t_inputrec             *ir,
                                     const gmx_mtop_t             *mtop,
-                                    matrix                        box,
-                                    gmx_bool                      useGpu,
+                                    const matrix                  box,
+                                    const bool                    useGpuList,
                                     const VerletbufListSetup     &listSetup,
-                                    bool                          userSetNstlistPrune,
+                                    const bool                    userSetNstlistPrune,
                                     const interaction_const_t    *ic,
                                     NbnxnListParameters          *listParams)
 {
@@ -401,7 +401,7 @@ setDynamicPairlistPruningParameters(const t_inputrec             *ir,
          * the next step on the coordinates of the current step,
          * so the list lifetime is nstlistPrune (not the usual nstlist-1).
          */
-        int listLifetime         = tunedNstlistPrune - (useGpu ? 0 : 1);
+        int listLifetime         = tunedNstlistPrune - (useGpuList ? 0 : 1);
         listParams->nstlistPrune = tunedNstlistPrune;
         calc_verlet_buffer_size(mtop, det(box), ir,
                                 tunedNstlistPrune, listLifetime,
@@ -412,7 +412,7 @@ setDynamicPairlistPruningParameters(const t_inputrec             *ir,
          * every c_nbnxnGpuRollingListPruningInterval steps,
          * so keep nstlistPrune a multiple of the interval.
          */
-        tunedNstlistPrune += useGpu ? c_nbnxnGpuRollingListPruningInterval : 1;
+        tunedNstlistPrune += useGpuList ? c_nbnxnGpuRollingListPruningInterval : 1;
     }
     while (!userSetNstlistPrune &&
            tunedNstlistPrune < ir->nstlist &&
@@ -498,7 +498,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
     };
 
     /* Currently emulation mode does not support dual pair-lists */
-    const bool useGpu             = (listParams->pairlistType == PairlistType::Hierarchical8x8);
+    const bool useGpuList         = (listParams->pairlistType == PairlistType::Hierarchical8x8);
 
     if (supportsDynamicPairlistGenerationInterval(*ir) &&
         getenv("GMX_DISABLE_DYNAMICPRUNING") == nullptr)
@@ -529,11 +529,11 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
             listParams->nstlistPrune = c_nbnxnDynamicListPruningMinLifetime;
         }
 
-        setDynamicPairlistPruningParameters(ir, mtop, box, useGpu, ls,
+        setDynamicPairlistPruningParameters(ir, mtop, box, useGpuList, ls,
                                             userSetNstlistPrune, ic,
                                             listParams);
 
-        if (listParams->useDynamicPruning && useGpu)
+        if (listParams->useDynamicPruning && useGpuList)
         {
             /* Note that we can round down here. This makes the effective
              * rolling pruning interval slightly shorter than nstlistTune,
@@ -577,7 +577,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
                                 -1, &listSetup1x1, nullptr, &rlistOuter);
         if (listParams->useDynamicPruning)
         {
-            int listLifeTime = listParams->nstlistPrune - (useGpu ? 0 : 1);
+            int listLifeTime = listParams->nstlistPrune - (useGpuList ? 0 : 1);
             calc_verlet_buffer_size(mtop, det(box), ir, listParams->nstlistPrune, listLifeTime,
                                     -1, &listSetup1x1, nullptr, &rlistInner);
         }
