@@ -43,6 +43,10 @@
 
 #include "cmdlinerunner.h"
 
+#include <atomic>
+#include <future>
+#include <thread>
+
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -74,6 +78,7 @@ namespace
 class RunnerModule : public ICommandLineOptionsModule
 {
     public:
+        friend class TrajectoryAnalysisThreadPool;
         explicit RunnerModule(TrajectoryAnalysisModulePointer module)
             : module_(std::move(module)), common_(&settings_)
         {
@@ -84,17 +89,17 @@ class RunnerModule : public ICommandLineOptionsModule
                          ICommandLineOptionsModuleSettings *settings) override;
         void optionsFinished() override;
         int run() override;
-        void doFrame(TrajectoryAnalysisModuleData* pdata,
-                     const TopologyInformation    &topology,
-                     t_pbc                       * ppbc,
-                     int                           nframes);
-        int doFrames(TrajectoryAnalysisModuleData* pdata,
-                     const TopologyInformation    &topology);
 
         TrajectoryAnalysisModulePointer module_;
         TrajectoryAnalysisSettings      settings_;
         TrajectoryAnalysisRunnerCommon  common_;
         SelectionCollection             selections_;
+
+    private:
+        void doFrame(const TopologyInformation    &topology,
+                     t_pbc                       * ppbc,
+                     int                           nframes);
+        int doFrames(const TopologyInformation    &topology);
 };
 
 void RunnerModule::initOptions(
@@ -123,11 +128,14 @@ void RunnerModule::optionsFinished()
     module_->optionsFinished(&settings_);
 }
 
-void RunnerModule::doFrame(TrajectoryAnalysisModuleData* pdata,
-                           const TopologyInformation    &topology,
+void RunnerModule::doFrame(const TopologyInformation    &topology,
                            t_pbc                       * ppbc,
                            int                           nframes)
 {
+    AnalysisDataParallelOptions         dataOptions;
+    TrajectoryAnalysisModuleDataPointer pdata(
+            module_->startFrames(dataOptions, selections_));
+
     common_.initFrame();
     t_trxframe &frame = common_.frame();
     if (ppbc != nullptr)
@@ -136,25 +144,79 @@ void RunnerModule::doFrame(TrajectoryAnalysisModuleData* pdata,
     }
 
     selections_.evaluate(&frame, ppbc);
-    module_->analyzeFrame(nframes, frame, ppbc, pdata);
+    module_->analyzeFrame(nframes, frame, ppbc, pdata.get());
     module_->finishFrameSerial(nframes);
+
+    module_->finishFrames(pdata.get());
+    if (pdata.get() != nullptr)
+    {
+        pdata->finish();
+    }
+    pdata.reset();
 
 }
 
+class TrajectoryAnalysisThreadPool
+{
+    public:
+
+        explicit TrajectoryAnalysisThreadPool(const int nThreads) :
+            nThreads(nThreads)
+        {
+            threads.reserve(nThreads);
+        }
+        void dispatchFrame(RunnerModule                * runner,
+                           const TopologyInformation    &topology,
+                           t_pbc                       * ppbc,
+                           int                           nframes)
+        {
+            const int currThread = nframes % nThreads;
+            if (nframes >= nThreads)
+            {
+                threads[currThread].wait();
+            }
+            threads[currThread] = std::async([&] {runner->doFrame(topology, ppbc, nframes); });
+
+        }
+    private:
+        int nThreads;
+        std::vector < std::future < void>> threads;
+};
+
+
+
 /* Returns nframes */
-int RunnerModule::doFrames(TrajectoryAnalysisModuleData* pdata,
-                           const TopologyInformation    &topology)
+int RunnerModule::doFrames(const TopologyInformation    &topology)
 {
 
     t_pbc  pbc;
-    t_pbc *ppbc    = settings_.hasPBC() ? &pbc : nullptr;
-    int    nframes = 0;
-    do
+    t_pbc *ppbc      = settings_.hasPBC() ? &pbc : nullptr;
+    int    nframes   = 0;
+    auto   parPolicy = module_->parallelPolicy();
+    if (parPolicy == parallelizationPolicy::serialOnly)
     {
-        doFrame(pdata, topology, ppbc, nframes);
-        ++nframes;
+        do
+        {
+            doFrame(topology, ppbc, nframes);
+            ++nframes;
+        }
+        while (common_.readNextFrame());
     }
-    while (common_.readNextFrame());
+    else if (parPolicy == parallelizationPolicy::parallelOverFrames)
+    {
+        TrajectoryAnalysisThreadPool threadPool(module_->nThreadsAvailable());
+
+        do
+        {
+            threadPool.dispatchFrame(this, topology, ppbc, nframes);
+            ++nframes;
+        }
+        while (common_.readNextFrame());
+    }
+    else
+    {
+
+    }
     return nframes;
 }
 
@@ -170,18 +232,7 @@ int RunnerModule::run()
     module_->initAfterFirstFrame(settings_, common_.frame());
 
 
-    AnalysisDataParallelOptions         dataOptions;
-    TrajectoryAnalysisModuleDataPointer pdata(
-            module_->startFrames(dataOptions, selections_));
-
-    int nframes = doFrames(pdata.get(), topology);
-
-    module_->finishFrames(pdata.get());
-    if (pdata.get() != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata.reset();
+    int nframes = doFrames(topology);
 
     if (common_.hasTrajectory())
     {
