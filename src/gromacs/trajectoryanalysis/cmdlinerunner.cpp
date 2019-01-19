@@ -43,6 +43,9 @@
 
 #include "cmdlinerunner.h"
 
+#include <atomic>
+#include <thread>
+
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -84,17 +87,19 @@ class RunnerModule : public ICommandLineOptionsModule
                          ICommandLineOptionsModuleSettings *settings) override;
         void optionsFinished() override;
         int run() override;
+
+        TrajectoryAnalysisModulePointer module_;
+        TrajectoryAnalysisSettings      settings_;
+        TrajectoryAnalysisRunnerCommon  common_;
+        SelectionCollection             selections_;
+
+    private:
         void doFrame(TrajectoryAnalysisModuleData* pdata,
                      const TopologyInformation    &topology,
                      t_pbc                       * ppbc,
                      int                           nframes);
         int doFrames(TrajectoryAnalysisModuleData* pdata,
                      const TopologyInformation    &topology);
-
-        TrajectoryAnalysisModulePointer module_;
-        TrajectoryAnalysisSettings      settings_;
-        TrajectoryAnalysisRunnerCommon  common_;
-        SelectionCollection             selections_;
 };
 
 void RunnerModule::initOptions(
@@ -141,20 +146,56 @@ void RunnerModule::doFrame(TrajectoryAnalysisModuleData* pdata,
 
 }
 
+class TrajectoryAnalysisThreadPool
+{
+    public:
+        explicit TrajectoryAnalysisThreadPool(int nThreads) :
+            threads(nThreads)
+        {}
+        void dispatchFrame(TrajectoryAnalysisModuleData* pdata,
+                           const TopologyInformation    &topology,
+                           t_pbc                       * ppbc,
+                           int                           nframes)
+        {}
+    private:
+        std::vector<std::thread> threads;
+};
+
+
+
 /* Returns nframes */
 int RunnerModule::doFrames(TrajectoryAnalysisModuleData* pdata,
                            const TopologyInformation    &topology)
 {
 
     t_pbc  pbc;
-    t_pbc *ppbc    = settings_.hasPBC() ? &pbc : nullptr;
-    int    nframes = 0;
-    do
+    t_pbc *ppbc      = settings_.hasPBC() ? &pbc : nullptr;
+    int    nframes   = 0;
+    auto   parPolicy = module_->parallelPolicy();
+    if (parPolicy == parallelizationPolicy::serialOnly)
     {
-        doFrame(pdata, topology, ppbc, nframes);
-        ++nframes;
+        do
+        {
+            doFrame(pdata, topology, ppbc, nframes);
+            ++nframes;
+        }
+        while (common_.readNextFrame());
     }
-    while (common_.readNextFrame());
+    else if (parPolicy == parallelizationPolicy::parallelOverFrames)
+    {
+        TrajectoryAnalysisThreadPool threadPool(module_->nThreadsAvailable());
+
+        do
+        {
+            threadPool.dispatchFrame(pdata, topology, ppbc, nframes);
+            ++nframes;
+        }
+        while (common_.readNextFrame());
+    }
+    else
+    {
+
+    }
     return nframes;
 }
 
