@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,8 +133,10 @@ class Rdf : public TrajectoryAnalysisModule
 
         void finishAnalysis(int nframes) override;
         void writeOutput() override;
+        parallelizationPolicy parallelPolicy() override;
+        unsigned long nThreadsAvailable() override;
 
-    private:
+private:
         std::string                               fnRdf_;
         std::string                               fnCumulative_;
         SurfaceType                               surface_;
@@ -202,6 +204,9 @@ class Rdf : public TrajectoryAnalysisModule
         real                                      rmax2_;
         int                                       surfaceGroupCount_;
 
+
+        // multithreaded options
+        int                                       numThreads_;
         // Copy and assign disallowed by base.
 };
 
@@ -213,7 +218,8 @@ Rdf::Rdf()
       binwidth_(0.002), cutoff_(0.0), rmax_(0.0),
       normalization_(Normalization_Rdf), bNormalizationSet_(false), bXY_(false),
       bExclusions_(false),
-      cut2_(0.0), rmax2_(0.0), surfaceGroupCount_(0)
+      cut2_(0.0), rmax2_(0.0), surfaceGroupCount_(0),
+      numThreads_(1)
 {
     pairDist_.setMultipoint(true);
     pairDist_.addModule(pairCounts_);
@@ -311,6 +317,8 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
     options->addOption(SelectionOption("sel").storeVector(&sel_)
                            .required().multiValue()
                            .description("Selections to compute RDFs for from the reference"));
+
+    options->addOption(IntegerOption("nt").store(&numThreads_).description("number of threads"));
 }
 
 void
@@ -421,7 +429,18 @@ Rdf::initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
     pairCounts_->init(histogramFromRange(0.0, rmax_).binWidth(binwidth_ / 2.0));
 }
 
-/*! \brief
+parallelizationPolicy Rdf::parallelPolicy()
+{
+    return parallelizationPolicy::parallelOverFrames;
+}
+
+unsigned long Rdf::nThreadsAvailable()
+{
+    return static_cast<unsigned long>(numThreads_);
+}
+
+
+        /*! \brief
  * Temporary memory for use within a single-frame calculation.
  */
 class RdfModuleData : public TrajectoryAnalysisModuleData

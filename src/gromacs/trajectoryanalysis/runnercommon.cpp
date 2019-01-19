@@ -480,11 +480,11 @@ TrajectoryAnalysisRunnerCommon::topologyInformation() const
 }
 
 
-t_trxframe &
+t_trxframe *
 TrajectoryAnalysisRunnerCommon::frame() const
 {
     GMX_RELEASE_ASSERT(impl_->fr != nullptr, "Frame not available when accessed");
-    return *impl_->fr;
+    return impl_->fr;
 }
 
 } // namespace gmx

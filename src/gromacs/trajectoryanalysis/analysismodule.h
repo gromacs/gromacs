@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -180,6 +180,13 @@ class TrajectoryAnalysisModuleData
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
 typedef std::unique_ptr<TrajectoryAnalysisModuleData>
     TrajectoryAnalysisModuleDataPointer;
+
+enum class parallelizationPolicy
+{
+    serialOnly,
+    parallelOverFrames
+};
+
 
 /*! \brief
  * Base class for trajectory analysis modules.
@@ -443,6 +450,19 @@ class TrajectoryAnalysisModule
          * \see AnalysisData::finishFrameSerial()
          */
         void finishFrameSerial(int frameIndex);
+
+        /*! \brief
+         * Returns parallelization policy
+         *
+         * \returns paralellizationPolicy:policy
+         */
+        virtual parallelizationPolicy parallelPolicy();
+
+        /*! \brief
+         *
+         * \returns number of threads to run
+         */
+        virtual unsigned long nThreadsAvailable();
 
     protected:
         /*! \brief

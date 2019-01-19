@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,11 @@
 
 #include "cmdlinerunner.h"
 
+#include <condition_variable>
+#include <deque>
+#include <mutex>
+#include <thread>
+
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -61,6 +66,20 @@
 
 #include "runnercommon.h"
 
+std::mutex mx;
+std::condition_variable waitForThreadInit;
+
+
+enum class ThreadStatus
+{
+    uninitialized,
+    readyForFrame,
+    analyzingFrame,
+
+};
+
+
+
 namespace gmx
 {
 
@@ -74,6 +93,7 @@ namespace
 class RunnerModule : public ICommandLineOptionsModule
 {
     public:
+        friend class TrajectoryAnalysisThreadPool;
         explicit RunnerModule(TrajectoryAnalysisModulePointer module)
             : module_(std::move(module)), common_(&settings_)
         {
@@ -89,6 +109,14 @@ class RunnerModule : public ICommandLineOptionsModule
         TrajectoryAnalysisSettings      settings_;
         TrajectoryAnalysisRunnerCommon  common_;
         SelectionCollection             selections_;
+
+    private:
+        void doFramesParallel(const TopologyInformation   * topology,
+                              t_pbc                       * ppbc,
+                              std::atomic<int>              &nframes,
+                              std::atomic<ThreadStatus> &threadStatus);
+        int doFrames(const TopologyInformation    *topology);
+
 };
 
 void RunnerModule::initOptions(
@@ -117,6 +145,132 @@ void RunnerModule::optionsFinished()
     module_->optionsFinished(&settings_);
 }
 
+
+
+
+void RunnerModule::doFramesParallel(const TopologyInformation   * topology,
+                                   t_pbc                       * ppbc,
+                                   std::atomic<int>              &assignedFrame,
+                                   std::atomic<ThreadStatus> *threadStatus )
+{
+    AnalysisDataParallelOptions         dataOptions(module_->nThreadsAvailable());
+    TrajectoryAnalysisModuleDataPointer pdata(
+            module_->startFrames(dataOptions, selections_));
+    std::atomic_store(threadStatus, ThreadStatus::readyForFrame);
+    common_.initFrame();
+    while (assignedFrame < 0);
+    *threadStatus = ThreadStatus::analyzingFrame;
+    t_trxframe *frame = common_.frame();
+
+    if (ppbc != nullptr)
+    {
+        set_pbc(ppbc, topology->ePBC(), frame->box);
+    }
+
+    selections_.evaluate(frame, ppbc);
+    // Signal to runner that it can intialize next frame
+
+    module_->analyzeFrame(nframes, *frame, ppbc, pdata.get());
+    module_->finishFrameSerial(nframes);
+
+
+    module_->finishFrames(pdata.get());
+}
+
+
+
+class TrajectoryAnalysisThreadPool
+{
+    public:
+
+        explicit TrajectoryAnalysisThreadPool(RunnerModule * runner,
+                                              const unsigned long nThreads,
+                                              const t_topology& topology,
+                                              t_pbc *ppbc,
+                                              std::atomic<int> * nframes) :
+            nThreads_(nThreads)
+        {
+            for (int i = 0; i < nThreads_; i++)
+            {
+                status_.emplace_back(ThreadStatus::uninitialized);
+                threads_.push_back(std::thread(&RunnerModule::doFramesParallel, runner, topology, ppbc, nframes,
+                                               &status_[i]));
+            }
+        }
+
+
+
+        void finishFrames()
+        {
+            for (auto &thread : threads_)
+            {
+                thread.join();
+            }
+        }
+
+    private:
+        const unsigned long nThreads_;
+        std::vector<std::thread> threads_;
+        std::vector<std::atomic<ThreadStatus>> status_;
+};
+
+
+
+/* Returns nframes */
+int RunnerModule::doFrames(const TopologyInformation    *topology)
+{
+
+    t_pbc  pbc;
+    t_pbc *ppbc      = settings_.hasPBC() ? &pbc : nullptr;
+    int    nframes   = 0;
+    auto   parPolicy = module_->parallelPolicy();
+    if (parPolicy == parallelizationPolicy::serialOnly)
+    {
+        AnalysisDataParallelOptions         dataOptions;
+        TrajectoryAnalysisModuleDataPointer pdata(
+                module_->startFrames(dataOptions, selections_));
+        do
+        {
+            common_.initFrame();
+            t_trxframe *frame = common_.frame();
+            if (ppbc != nullptr)
+            {
+                set_pbc(ppbc, topology->ePBC(), frame->box);
+            }
+
+            selections_.evaluate(frame, ppbc);
+            module_->analyzeFrame(nframes, *frame, ppbc, pdata.get());
+            module_->finishFrameSerial(nframes);
+            ++nframes;
+        }
+        while (common_.readNextFrame());
+        module_->finishFrames(pdata.get());
+        if (pdata.get() != nullptr)
+        {
+            pdata->finish();
+        }
+        pdata.reset();
+
+    }
+    else if (parPolicy == parallelizationPolicy::parallelOverFrames)
+    {
+        TrajectoryAnalysisThreadPool threadPool(module_->nThreadsAvailable());
+        std::unique_lock<std::mutex> lk(mx);
+        do
+        {
+            threadPool.dispatchFrame(this, topology, ppbc, nframes);
+            // get signal when thread-local stuff is initialized, can safely increment frame
+            waitForThreadInit.wait(lk);
+            ++nframes;
+        }
+        while (common_.readNextFrame());
+        threadPool.finishFrames();
+    }
+    else
+    {}
+    return nframes;
+}
+
 int RunnerModule::run()
 {
     common_.initTopology();
@@ -126,42 +280,15 @@ int RunnerModule::run()
     // Load first frame.
     common_.initFirstFrame();
     common_.initFrameIndexGroup();
-    module_->initAfterFirstFrame(settings_, common_.frame());
+    module_->initAfterFirstFrame(settings_, *common_.frame());
 
-    t_pbc  pbc;
-    t_pbc *ppbc = settings_.hasPBC() ? &pbc : nullptr;
 
-    int    nframes = 0;
-    AnalysisDataParallelOptions         dataOptions;
-    TrajectoryAnalysisModuleDataPointer pdata(
-            module_->startFrames(dataOptions, selections_));
-    do
-    {
-        common_.initFrame();
-        t_trxframe &frame = common_.frame();
-        if (ppbc != nullptr)
-        {
-            set_pbc(ppbc, topology.ePBC(), frame.box);
-        }
-
-        selections_.evaluate(&frame, ppbc);
-        module_->analyzeFrame(nframes, frame, ppbc, pdata.get());
-        module_->finishFrameSerial(nframes);
-
-        ++nframes;
-    }
-    while (common_.readNextFrame());
-    module_->finishFrames(pdata.get());
-    if (pdata.get() != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata.reset();
+    int nframes = doFrames(&topology);
 
     if (common_.hasTrajectory())
     {
         fprintf(stderr, "Analyzed %d frames, last time %.3f\n",
-                nframes, common_.frame().time);
+                nframes, common_.frame()->time);
     }
     else
     {
