@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,6 +84,12 @@ class RunnerModule : public ICommandLineOptionsModule
                          ICommandLineOptionsModuleSettings *settings) override;
         void optionsFinished() override;
         int run() override;
+        void doFrame(TrajectoryAnalysisModuleData* pdata,
+                     const TopologyInformation    &topology,
+                     t_pbc                       * ppbc,
+                     int                           nframes);
+        int doFrames(TrajectoryAnalysisModuleData* pdata,
+                     const TopologyInformation    &topology);
 
         TrajectoryAnalysisModulePointer module_;
         TrajectoryAnalysisSettings      settings_;
@@ -117,6 +123,41 @@ void RunnerModule::optionsFinished()
     module_->optionsFinished(&settings_);
 }
 
+void RunnerModule::doFrame(TrajectoryAnalysisModuleData* pdata,
+                           const TopologyInformation    &topology,
+                           t_pbc                       * ppbc,
+                           int                           nframes)
+{
+    common_.initFrame();
+    t_trxframe &frame = common_.frame();
+    if (ppbc != nullptr)
+    {
+        set_pbc(ppbc, topology.ePBC(), frame.box);
+    }
+
+    selections_.evaluate(&frame, ppbc);
+    module_->analyzeFrame(nframes, frame, ppbc, pdata);
+    module_->finishFrameSerial(nframes);
+
+}
+
+/* Returns nframes */
+int RunnerModule::doFrames(TrajectoryAnalysisModuleData* pdata,
+                           const TopologyInformation    &topology)
+{
+
+    t_pbc  pbc;
+    t_pbc *ppbc    = settings_.hasPBC() ? &pbc : nullptr;
+    int    nframes = 0;
+    do
+    {
+        doFrame(pdata, topology, ppbc, nframes);
+        ++nframes;
+    }
+    while (common_.readNextFrame());
+    return nframes;
+}
+
 int RunnerModule::run()
 {
     common_.initTopology();
@@ -128,29 +169,13 @@ int RunnerModule::run()
     common_.initFrameIndexGroup();
     module_->initAfterFirstFrame(settings_, common_.frame());
 
-    t_pbc  pbc;
-    t_pbc *ppbc = settings_.hasPBC() ? &pbc : nullptr;
 
-    int    nframes = 0;
     AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
             module_->startFrames(dataOptions, selections_));
-    do
-    {
-        common_.initFrame();
-        t_trxframe &frame = common_.frame();
-        if (ppbc != nullptr)
-        {
-            set_pbc(ppbc, topology.ePBC(), frame.box);
-        }
 
-        selections_.evaluate(&frame, ppbc);
-        module_->analyzeFrame(nframes, frame, ppbc, pdata.get());
-        module_->finishFrameSerial(nframes);
+    int nframes = doFrames(pdata.get(), topology);
 
-        ++nframes;
-    }
-    while (common_.readNextFrame());
     module_->finishFrames(pdata.get());
     if (pdata.get() != nullptr)
     {
