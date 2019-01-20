@@ -213,7 +213,6 @@ void OptACM::calcDeviation()
 {
     int                 i         = 0;
     int                 j         = 0;
-    int                 maxiter   = 20;
     int                 iter      = 0;
     double              qtot      = 0;
     double              EemRms    = 0;
@@ -285,7 +284,7 @@ void OptACM::calcDeviation()
                 converged = (EemRms < qtol()) || (nullptr == mymol.shellfc_);
                 iter++;
             }
-            while ((!converged) && (iter < maxiter));
+            while ((!converged) && (iter < qcycle()));
             for (auto i = 0; i < mymol.mtop_->natoms; i++)
             {
                 mymol.mtop_->moltype[0].atoms.atom[i].q      =
