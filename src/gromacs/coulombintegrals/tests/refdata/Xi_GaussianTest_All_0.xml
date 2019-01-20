@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Potential-Gaussian">
+    <Int Name="Length">6</Int>
+    <Real>4.5075182233285522</Real>
+    <Real>3.7073391983153883</Real>
+    <Real>2.4404056695999023</Real>
+    <Real>1.6655000963660398</Real>
+    <Real>1.2499922506363577</Real>
+    <Real>0.99999998389315303</Real>
+  </Sequence>
+  <Sequence Name="Force-Gaussian">
+    <Int Name="Length">6</Int>
+    <Real>-0</Real>
+    <Real>-6.6325753122696902</Real>
+    <Real>-5.2239390339683656</Real>
+    <Real>-2.7517956966011603</Real>
+    <Real>-1.5622835446367067</Real>
+    <Real>-0.99999945461602602</Real>
+  </Sequence>
+  <Sequence Name="NuclearPotential-Gaussian">
+    <Int Name="Length">6</Int>
+    <Real>6.3189233357348709</Real>
+    <Real>4.4339394508262728</Real>
+    <Real>2.4961605782121561</Real>
+    <Real>1.6666633057322178</Real>
+    <Real>1.2499999997046227</Real>
+    <Real>0.99999999999999756</Real>
+  </Sequence>
+  <Sequence Name="NuclearForce-Gaussian">
+    <Int Name="Length">6</Int>
+    <Real>-0</Real>
+    <Real>-13.157429366282919</Real>
+    <Real>-6.1358169989585711</Real>
+    <Real>-2.7776405080341386</Real>
+    <Real>-1.5624999844571608</Real>
+    <Real>-0.99999999999984579</Real>
+  </Sequence>
+</ReferenceData>
