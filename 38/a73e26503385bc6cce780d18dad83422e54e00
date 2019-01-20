@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+2: David van der Spoel <spoel@xray.bmc.uu.se>
+Submitted-by: David van der Spoel <spoel@xray.bmc.uu.se>
+Submitted-at: Sun, 20 Jan 2019 14:41:42 +0100
+Reviewed-on: https://gerrit.gromacs.org/8992
+Project: gromacs
+Branch: refs/heads/release-2018
