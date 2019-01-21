@@ -172,7 +172,7 @@ static void calc_potential(const char *fn, int **index, int gnx[],
         gmx_rmpbc(gpbc, natoms, box, x0);
 
         /* calculate position of center of mass based on group 1 */
-        calc_xcm(x0, gnx[0], index[0], top->atoms.atom, xcm, FALSE);
+        calc_xcm(x0, gnx[0], index[0], top->atoms, xcm, FALSE);
         svmul(-1, xcm, xcm);
 
         for (n = 0; n < nr_grps; n++)
@@ -200,7 +200,7 @@ static void calc_potential(const char *fn, int **index, int gnx[],
                        fprintf(stderr,"Warning: slice = %d\n",slice);
                        }
                      */
-                    (*slCharge)[n][slice] += top->atoms.atom[index[n][i]].q;
+                    (*slCharge)[n][slice] += top->atoms[index[n][i]].q_;
                 }
                 else
                 {
@@ -216,7 +216,7 @@ static void calc_potential(const char *fn, int **index, int gnx[],
                     }
                     /* determine which slice atom is in */
                     slice                  = static_cast<int>((z / (*slWidth)));
-                    (*slCharge)[n][slice] += top->atoms.atom[index[n][i]].q;
+                    (*slCharge)[n][slice] += top->atoms[index[n][i]].q_;
                 }
             }
         }

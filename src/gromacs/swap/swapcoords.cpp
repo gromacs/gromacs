@@ -1411,8 +1411,8 @@ static void convertOldToNewGroupFormat(
     int molb = 0;
     for (int i = 0; i < g->nat; i++)
     {
-        const t_atom &atom = mtopGetAtomParameters(mtop, g->ind[i], &molb);
-        if (atom.q < 0)
+        const AtomInfo &atom = mtopGetAtomParameters(mtop, g->ind[i], &molb);
+        if (atom.q_ < 0)
         {
             // This is an anion, add it to the list of anions
             indAnions[nAnions++] = g->ind[i];
@@ -1593,9 +1593,9 @@ void init_swapcoords(
         int molb = 0;
         for (int j = 0; j < g->apm; j++)
         {
-            const t_atom &atom = mtopGetAtomParameters(mtop, g->atomset.globalIndex()[j], &molb);
-            g->m[j] = atom.m;
-            charge += atom.q;
+            const AtomInfo &atom = mtopGetAtomParameters(mtop, g->atomset.globalIndex()[j], &molb);
+            g->m[j] = atom.m_;
+            charge += atom.q_;
         }
         /* Total charge of one molecule of this group: */
         g->q = charge;

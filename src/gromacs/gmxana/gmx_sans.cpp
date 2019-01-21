@@ -123,7 +123,6 @@ int gmx_sans(int argc, char *argv[])
     FILE                                 *fp;
     const char                           *fnTPX, *fnTRX, *fnDAT = nullptr;
     t_trxstatus                          *status;
-    t_topology                           *top  = nullptr;
     gmx_rmpbc_t                           gpbc = nullptr;
     gmx_bool                              bFFT = FALSE, bDEBYE = FALSE;
     gmx_bool                              bMC  = FALSE;
@@ -223,35 +222,35 @@ int gmx_sans(int argc, char *argv[])
     gnsf = gmx_neutronstructurefactors_init(fnDAT);
     fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n", gnsf->nratoms, fnDAT);
 
-    snew(top, 1);
+    t_topology *top = new t_topology;
     snew(grpname, 1);
     snew(index, 1);
 
     read_tps_conf(fnTPX, top, &ePBC, &x, nullptr, box, TRUE);
 
     printf("\nPlease select group for SANS spectra calculation:\n");
-    get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname);
+    get_index(top->atoms, top->resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname);
 
     gsans = gmx_sans_init(top, gnsf);
 
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
-        gmx_rmpbc(gpbc, top->atoms.nr, box, x);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.size());
+        gmx_rmpbc(gpbc, top->atoms.size(), box, x);
     }
 
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
-    if (natoms != top->atoms.nr)
+    if (natoms != gmx::index(top->atoms.size()))
     {
-        fprintf(stderr, "\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n", natoms, top->atoms.nr);
+        fprintf(stderr, "\nWARNING: number of atoms in tpx (%d) and trajectory (%lu) do not match\n", natoms, top->atoms.size());
     }
 
     do
     {
         if (bPBC)
         {
-            gmx_rmpbc(gpbc, top->atoms.nr, box, x);
+            gmx_rmpbc(gpbc, top->atoms.size(), box, x);
         }
         /* allocate memory for pr */
         if (pr == nullptr)

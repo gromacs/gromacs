@@ -52,14 +52,13 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct gpp_atomtype {
+struct gpp_atomtype {
     int              nr;           /* The number of atomtypes		*/
-    t_atom          *atom;         /* Array of atoms			*/
-    char          ***atomname;     /* Names of the atomtypes		*/
-    t_param         *nb;           /* Nonbonded force default params	*/
-    int             *bondatomtype; /* The bond_atomtype for each atomtype  */
-    int             *atomnumber;   /* Atomic number, used for QM/MM        */
-} t_gpp_atomtype;
+    std::vector<AtomInfo> atom;         /* Array of atoms			*/
+    std::vector<t_param> nb;           /* Nonbonded force default params	*/
+    std::vector<int> bondatomtype; /* The bond_atomtype for each atomtype  */
+    std::vector<int> atomnumber;   /* Atomic number, used for QM/MM        */
+};
 
 int get_atomtype_type(const char *str, gpp_atomtype_t ga)
 {
@@ -68,7 +67,7 @@ int get_atomtype_type(const char *str, gpp_atomtype_t ga)
     /* Atom types are always case sensitive */
     for (i = 0; (i < ga->nr); i++)
     {
-        if (strcmp(str, *(ga->atomname[i])) == 0)
+        if (strcmp(str, *(ga->atom[i].atomname)) == 0)
         {
             return i;
         }
@@ -89,7 +88,7 @@ char *get_atomtype_name(int nt, gpp_atomtype_t ga)
         return nullptr;
     }
 
-    return *(ga->atomname[nt]);
+    return *(ga->atom[nt].atomname);
 }
 
 real get_atomtype_massA(int nt, gpp_atomtype_t ga)
@@ -99,7 +98,7 @@ real get_atomtype_massA(int nt, gpp_atomtype_t ga)
         return NOTSET;
     }
 
-    return ga->atom[nt].m;
+    return ga->atom[nt].m_;
 }
 
 real get_atomtype_massB(int nt, gpp_atomtype_t ga)
@@ -109,7 +108,7 @@ real get_atomtype_massB(int nt, gpp_atomtype_t ga)
         return NOTSET;
     }
 
-    return ga->atom[nt].mB;
+    return ga->atom[nt].mB_;
 }
 
 real get_atomtype_qA(int nt, gpp_atomtype_t ga)
@@ -119,7 +118,7 @@ real get_atomtype_qA(int nt, gpp_atomtype_t ga)
         return NOTSET;
     }
 
-    return ga->atom[nt].q;
+    return ga->atom[nt].q_;
 }
 
 real get_atomtype_qB(int nt, gpp_atomtype_t ga)
@@ -129,7 +128,7 @@ real get_atomtype_qB(int nt, gpp_atomtype_t ga)
         return NOTSET;
     }
 
-    return ga->atom[nt].qB;
+    return ga->atom[nt].qB_;
 }
 
 int get_atomtype_ptype(int nt, gpp_atomtype_t ga)
@@ -139,7 +138,7 @@ int get_atomtype_ptype(int nt, gpp_atomtype_t ga)
         return NOTSET;
     }
 
-    return ga->atom[nt].ptype;
+    return ga->atom[nt].ptype_;
 }
 
 int get_atomtype_batype(int nt, const gpp_atomtype* ga)
@@ -177,22 +176,15 @@ real get_atomtype_nbparam(int nt, int param, gpp_atomtype_t ga)
 
 gpp_atomtype_t init_atomtype()
 {
-    gpp_atomtype_t ga;
-
-    snew(ga, 1);
+    gpp_atomtype_t ga = new gpp_atomtype;
 
     ga->nr           = 0;
-    ga->atom         = nullptr;
-    ga->atomname     = nullptr;
-    ga->nb           = nullptr;
-    ga->bondatomtype = nullptr;
-    ga->atomnumber   = nullptr;
 
     return ga;
 }
 
 int set_atomtype(int nt, gpp_atomtype_t ga, t_symtab *tab,
-                 t_atom *a, const char *name, t_param *nb,
+                 const AtomInfo &a, const char *name, t_param *nb,
                  int bondatomtype, int atomnumber)
 {
     if ((nt < 0) || (nt >= ga->nr))
@@ -200,24 +192,24 @@ int set_atomtype(int nt, gpp_atomtype_t ga, t_symtab *tab,
         return NOTSET;
     }
 
-    ga->atom[nt]         = *a;
-    ga->atomname[nt]     = put_symtab(tab, name);
-    ga->nb[nt]           = *nb;
-    ga->bondatomtype[nt] = bondatomtype;
-    ga->atomnumber[nt]   = atomnumber;
+    ga->atom.push_back(a);
+    ga->atom.back().atomname     = put_symtab(tab, name);
+    ga->nb.push_back(*nb);
+    ga->bondatomtype.push_back(bondatomtype);
+    ga->atomnumber.push_back(atomnumber);
 
     return nt;
 }
 
 int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
-                 t_atom *a, const char *name, t_param *nb,
+                 const AtomInfo &a, const char *name, t_param *nb,
                  int bondatomtype, int atomnumber)
 {
     int i;
 
     for (i = 0; (i < ga->nr); i++)
     {
-        if (strcmp(*ga->atomname[i], name) == 0)
+        if (strcmp(*ga->atom[i].atomname, name) == 0)
         {
             break;
         }
@@ -225,12 +217,6 @@ int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
     if (i == ga->nr)
     {
         ga->nr++;
-        srenew(ga->atom, ga->nr);
-        srenew(ga->atomname, ga->nr);
-        srenew(ga->nb, ga->nr);
-        srenew(ga->bondatomtype, ga->nr);
-        srenew(ga->atomnumber, ga->nr);
-
         return set_atomtype(ga->nr-1, ga, tab, a, name, nb, bondatomtype, atomnumber);
     }
     else
@@ -242,8 +228,8 @@ int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
 void print_at (FILE * out, gpp_atomtype_t ga)
 {
     int         i;
-    t_atom     *atom = ga->atom;
-    t_param    *nb   = ga->nb;
+    gmx::ArrayRef<const AtomInfo> atom = ga->atom;
+    gmx::ArrayRef<t_param> nb   = ga->nb;
 
     fprintf (out, "[ %s ]\n", dir2str(d_atomtypes));
     fprintf (out, "; %6s  %8s  %8s  %8s  %12s  %12s\n",
@@ -251,7 +237,7 @@ void print_at (FILE * out, gpp_atomtype_t ga)
     for (i = 0; (i < ga->nr); i++)
     {
         fprintf(out, "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n",
-                *(ga->atomname[i]), atom[i].m, atom[i].q, "A",
+                *(ga->atom[i].atomname), atom[i].m_, atom[i].q_, "A",
                 nb[i].c0(), nb[i].c1());
     }
 
@@ -260,13 +246,8 @@ void print_at (FILE * out, gpp_atomtype_t ga)
 
 void done_atomtype(gpp_atomtype_t ga)
 {
-    sfree(ga->atom);
-    sfree(ga->atomname);
-    sfree(ga->nb);
-    sfree(ga->bondatomtype);
-    sfree(ga->atomnumber);
     ga->nr = 0;
-    sfree(ga);
+    delete ga;
 }
 
 static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],
@@ -329,11 +310,8 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
                  gpp_atomtype_t ga, bool bVerbose)
 {
     int         i, j, k, l, mi, mj, nat, nrfp, ftype, ntype;
-    t_atoms    *atoms;
     t_param    *nbsnew;
     int        *typelist;
-    int        *new_atomnumber;
-    char     ***new_atomname;
 
     ntype = get_atomtype_ntypes(ga);
     snew(typelist, ntype);
@@ -368,15 +346,16 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     nat = 0;
     for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        atoms = &moltype.atoms;
-        for (i = 0; (i < atoms->nr); i++)
+        gmx::ArrayRef<AtomInfo> atoms = moltype.atoms;
+        for (i = 0; (i < atoms.size()); i++)
         {
-            atoms->atom[i].type =
-                search_atomtypes(ga, &nat, typelist, atoms->atom[i].type,
+            atoms[i].type_ =
+                search_atomtypes(ga, &nat, typelist, atoms[i].type_,
                                  plist[ftype].param, ftype);
-            atoms->atom[i].typeB =
-                search_atomtypes(ga, &nat, typelist, atoms->atom[i].typeB,
+            atoms[i].typeB_ =
+                search_atomtypes(ga, &nat, typelist, atoms[i].typeB_,
                                  plist[ftype].param, ftype);
+            atoms[i].haveType_ = true;
         }
     }
 
@@ -389,8 +368,8 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
         }
     }
 
-    snew(new_atomnumber, nat);
-    snew(new_atomname, nat);
+    std::vector<int> new_atomnumber;
+    std::vector<char **> new_atomname;
     /* We now have a list of unique atomtypes in typelist */
 
     /* Renumber nlist */
@@ -410,8 +389,8 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
                 nbsnew[k].c[l] = plist[ftype].param[ntype*mi+mj].c[l];
             }
         }
-        new_atomnumber[i] = get_atomtype_atomnumber(mi, ga);
-        new_atomname[i]   = ga->atomname[mi];
+        new_atomnumber.push_back(get_atomtype_atomnumber(mi, ga));
+        new_atomname.push_back(ga->atom[mi].atomname);
     }
 
     for (i = 0; (i < nat*nat); i++)
@@ -424,12 +403,11 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     plist[ftype].nr     = i;
     mtop->ffparams.atnr = nat;
 
-    sfree(ga->atomnumber);
-    /* Dangling atomname pointers ? */
-    sfree(ga->atomname);
-
-    ga->atomnumber = new_atomnumber;
-    ga->atomname   = new_atomname;
+    ga->atomnumber = std::vector<int>(new_atomnumber.begin(), new_atomnumber.end());
+    for (int i = 0; i < gmx::index(new_atomname.size()); i++)
+    {
+        ga->atom[i].atomname = new_atomname[i];
+    }
 
     ga->nr = nat;
 

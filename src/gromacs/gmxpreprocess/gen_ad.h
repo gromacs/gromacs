@@ -45,7 +45,10 @@
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
+void gen_pad(t_nextnb *nnb,
+             gmx::ArrayRef<const AtomInfo> atoms,
+             gmx::ArrayRef<const Residue> resinfo,
+             t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
              bool bAllowMissing);
 

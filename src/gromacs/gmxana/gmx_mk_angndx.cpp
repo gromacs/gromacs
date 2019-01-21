@@ -148,12 +148,11 @@ static void fill_ang(int nft, const int *ft, int fac,
     int           f, ftype, i, j, indg, nr_fac;
     gmx_bool      bUse;
     const t_idef *idef;
-    t_atom       *atom;
     t_iatom      *ia;
 
 
     idef = &top->idef;
-    atom = top->atoms.atom;
+    gmx::ArrayRef<const AtomInfo> atoms = top->atoms;
 
     for (f = 0; f < nft; f++)
     {
@@ -171,7 +170,7 @@ static void fill_ang(int nft, const int *ft, int fac,
             {
                 for (j = 0; j < fac; j++)
                 {
-                    if (atom[ia[1+j]].m < 1.5)
+                    if (atoms[ia[1+j]].m_ < 1.5)
                     {
                         bUse = FALSE;
                     }
@@ -181,7 +180,7 @@ static void fill_ang(int nft, const int *ft, int fac,
             {
                 for (j = 0; j < fac; j++)
                 {
-                    if (atom[ia[1+j]].m < 1.5 && std::abs(atom[ia[1+j]].q) < hq)
+                    if (atoms[ia[1+j]].m_ < 1.5 && std::abs(atoms[ia[1+j]].q_) < hq)
                     {
                         bUse = FALSE;
                     }

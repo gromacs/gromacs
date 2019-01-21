@@ -281,7 +281,9 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
 }
 
 static int analyze_noe_equivalent(const char *eq_fn,
-                                  const t_atoms *atoms, int isize, const int *index,
+                                  gmx::ArrayRef<const AtomInfo> atoms,
+                                  gmx::ArrayRef<const Residue> resinfo,
+                                  int isize, const int *index,
                                   gmx_bool bSumH,
                                   int *noe_index, t_noe_gr *noe_gr)
 {
@@ -316,12 +318,12 @@ static int analyze_noe_equivalent(const char *eq_fn,
                 do
                 {
                     j      = i+1;
-                    rnri   = atoms->atom[index[i]].resind;
-                    rnrj   = atoms->atom[index[j]].resind;
+                    rnri   = atoms[index[i]].resind_;
+                    rnrj   = atoms[index[j]].resind_;
                     bEquiv =
                         is_equiv(neq, equiv, &nnm[i],
-                                 rnri, *atoms->resinfo[rnri].name, *atoms->atomname[index[i]],
-                                 rnrj, *atoms->resinfo[rnrj].name, *atoms->atomname[index[j]]);
+                                 rnri, *resinfo[rnri].name_, *atoms[index[i]].atomname,
+                                 rnrj, *resinfo[rnrj].name_, *atoms[index[j]].atomname);
                     if (nnm[i] && bEquiv)
                     {
                         nnm[j] = gmx_strdup(nnm[i]);
@@ -345,14 +347,14 @@ static int analyze_noe_equivalent(const char *eq_fn,
                 /* look for triplets of consecutive atoms with name XX?,
                    X are any number of letters or digits and ? goes from 1 to 3
                    This is supposed to cover all CH3 groups and the like */
-                anmi   = *atoms->atomname[index[i]];
+                anmi   = *atoms[index[i]].atomname;
                 anmil  = std::strlen(anmi);
                 bMatch = i <= isize-3 && anmi[anmil-1] == '1';
                 if (bMatch)
                 {
                     for (j = 1; j < 3; j++)
                     {
-                        anmj   = *atoms->atomname[index[i+j]];
+                        anmj   = *atoms[index[i+j]].atomname;
                         anmjl  = std::strlen(anmj);
                         bMatch = bMatch && ( anmil == anmjl && anmj[anmjl-1] == Hnum[j] &&
                                              std::strncmp(anmi, anmj, anmil-1) == 0 );
@@ -390,9 +392,9 @@ static int analyze_noe_equivalent(const char *eq_fn,
         /* dump new names */
         for (i = 0; i < isize; i++)
         {
-            rnri = atoms->atom[index[i]].resind;
-            fprintf(debug, "%s %s %d -> %s\n", *atoms->atomname[index[i]],
-                    *atoms->resinfo[rnri].name, rnri, nnm[i] ? nnm[i] : "");
+            rnri = atoms[index[i]].resind_;
+            fprintf(debug, "%s %s %d -> %s\n", *atoms[index[i]].atomname,
+                    *resinfo[rnri].name_, rnri, nnm[i] ? nnm[i] : "");
         }
     }
 
@@ -409,14 +411,14 @@ static int analyze_noe_equivalent(const char *eq_fn,
             }
             else
             {
-                noe_gr[gi].aname = gmx_strdup(*atoms->atomname[index[i]]);
+                noe_gr[gi].aname = gmx_strdup(*atoms[index[i]].atomname);
                 if (noe_index[i] == noe_index[i+1])
                 {
                     noe_gr[gi].aname[std::strlen(noe_gr[gi].aname)-1] = '*';
                 }
             }
-            noe_gr[gi].rnr   = atoms->atom[index[i]].resind;
-            noe_gr[gi].rname = gmx_strdup(*atoms->resinfo[noe_gr[gi].rnr].name);
+            noe_gr[gi].rnr   = atoms[index[i]].resind_;
+            noe_gr[gi].rname = gmx_strdup(*resinfo[noe_gr[gi].rnr].name_);
             /* dump group definitions */
             if (debug)
             {
@@ -661,7 +663,6 @@ int gmx_rmsdist(int argc, char *argv[])
 
     t_topology        top;
     int               ePBC;
-    t_atoms          *atoms;
     matrix            box;
     rvec             *x;
     FILE             *fp;
@@ -742,9 +743,10 @@ int gmx_rmsdist(int argc, char *argv[])
     {
         ePBC = epbcNONE;
     }
-    atoms = &(top.atoms);
+    gmx::ArrayRef<const AtomInfo> atoms = top.atoms;
+    gmx::ArrayRef<const Residue> resinfo = top.resinfo;
 
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
     /* initialize arrays */
     snew(d, isize);
@@ -831,7 +833,7 @@ int gmx_rmsdist(int argc, char *argv[])
         snew(noe_index, isize+1);
         snew(noe_gr, isize);
         gnr = analyze_noe_equivalent(opt2fn_null("-equiv", NFILE, fnm),
-                                     atoms, isize, index, bSumH, noe_index, noe_gr);
+                                     atoms, resinfo, isize, index, bSumH, noe_index, noe_gr);
         fprintf(stdout, "Found %d non-equivalent atom-groups in %d atoms\n",
                 gnr, isize);
         /* make half matrix of of noe-group distances from atom distances */

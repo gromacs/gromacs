@@ -43,6 +43,6 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
-void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype);
+void convert_harmonics(int nrmols, gmx::ArrayRef<t_molinfo> mols, gpp_atomtype_t atype);
 
 #endif

@@ -69,13 +69,12 @@ typedef struct {
 
 static void rotate_ends(t_bundle *bun, rvec axis, int c0, int c1)
 {
-    int  end, i;
     rvec ax, tmp;
 
     unitv(axis, ax);
-    for (end = 0; end < bun->nend; end++)
+    for (int end = 0; end < bun->nend; end++)
     {
-        for (i = 0; i < bun->n; i++)
+        for (int i = 0; i < bun->n; i++)
         {
             copy_rvec(bun->end[end][i], tmp);
             bun->end[end][i][c0] = ax[c1]*tmp[c0] - ax[c0]*tmp[c1];
@@ -87,11 +86,12 @@ static void rotate_ends(t_bundle *bun, rvec axis, int c0, int c1)
     axis[c1] = ax[c0]*tmp[c0] + ax[c1]*tmp[c1];
 }
 
-static void calc_axes(rvec x[], t_atom atom[], const int gnx[], int *index[],
+static void calc_axes(rvec x[],
+                      gmx::ArrayRef<AtomInfo> atom,
+                      gmx::ArrayRef<const int> gnx, int *index[],
                       gmx_bool bRot, t_bundle *bun)
 {
-    int   end, i, div, d;
-    real *mtot, m;
+    real *mtot;
     rvec  axis[MAX_ENDS], cent;
 
     snew(mtot, bun->n);
@@ -99,25 +99,25 @@ static void calc_axes(rvec x[], t_atom atom[], const int gnx[], int *index[],
     clear_rvec(axis[0]);
     clear_rvec(axis[1]);
 
-    for (end = 0; end < bun->nend; end++)
+    for (int end = 0; end < bun->nend; end++)
     {
-        for (i = 0; i < bun->n; i++)
+        for (int i = 0; i < bun->n; i++)
         {
             clear_rvec(bun->end[end][i]);
             mtot[i] = 0;
         }
-        div = gnx[end]/bun->n;
-        for (i = 0; i < gnx[end]; i++)
+        int div = gnx[end]/bun->n;
+        for (int i = 0; i < gnx[end]; i++)
         {
-            m = atom[index[end][i]].m;
-            for (d = 0; d < DIM; d++)
+            real m = atom[index[end][i]].m_;
+            for (int d = 0; d < DIM; d++)
             {
                 bun->end[end][i/div][d] += m*x[index[end][i]][d];
             }
             mtot[i/div] += m;
         }
         clear_rvec(axis[end]);
-        for (i = 0; i < bun->n; i++)
+        for (int i = 0; i < bun->n; i++)
         {
             svmul(1.0/mtot[i], bun->end[end][i], bun->end[end][i]);
             rvec_inc(axis[end], bun->end[end][i]);
@@ -129,10 +129,10 @@ static void calc_axes(rvec x[], t_atom atom[], const int gnx[], int *index[],
     rvec_add(axis[0], axis[1], cent);
     svmul(0.5, cent, cent);
     /* center the bundle on the origin */
-    for (end = 0; end < bun->nend; end++)
+    for (int end = 0; end < bun->nend; end++)
     {
         rvec_dec(axis[end], cent);
-        for (i = 0; i < bun->n; i++)
+        for (int i = 0; i < bun->n; i++)
         {
             rvec_dec(bun->end[end][i], cent);
         }
@@ -143,7 +143,7 @@ static void calc_axes(rvec x[], t_atom atom[], const int gnx[], int *index[],
         rotate_ends(bun, axis[0], YY, ZZ);
         rotate_ends(bun, axis[0], XX, ZZ);
     }
-    for (i = 0; i < bun->n; i++)
+    for (int i = 0; i < bun->n; i++)
     {
         rvec_add(bun->end[0][i], bun->end[1][i], bun->mid[i]);
         svmul(0.5, bun->mid[i], bun->mid[i]);
@@ -153,20 +153,22 @@ static void calc_axes(rvec x[], t_atom atom[], const int gnx[], int *index[],
     }
 }
 
-static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
+static void dump_axes(t_trxstatus *status,
+                      t_trxframe *fr,
+                      gmx::ArrayRef<const AtomInfo> outat,
+                      gmx::ArrayRef<const Residue> outres,
                       t_bundle *bun)
 {
     t_trxframe   frout;
     static rvec *xout = nullptr;
-    int          i;
 
-    GMX_ASSERT(outat->nr >= bun->n, "");
+    GMX_ASSERT(outat.size() >= bun->n, "");
     if (xout == nullptr)
     {
-        snew(xout, outat->nr);
+        snew(xout, outat.size());
     }
 
-    for (i = 0; i < bun->n; i++)
+    for (int i = 0; i < bun->n; i++)
     {
         copy_rvec(bun->end[0][i], xout[3*i]);
         if (bun->nend >= 3)
@@ -184,8 +186,8 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
     frout.bF     = FALSE;
     frout.bBox   = FALSE;
     frout.bAtoms = TRUE;
-    frout.natoms = outat->nr;
-    frout.atoms  = outat;
+    frout.atoms  = std::vector<AtomInfo>(outat.begin(), outat.end());
+    frout.resinfo = std::vector<Residue>(outres.begin(), outres.end());
     frout.x      = xout;
     write_trxframe(status, &frout, nullptr);
 }
@@ -232,7 +234,6 @@ int gmx_bundle(int argc, char *argv[])
     rvec             *xtop;
     matrix            box;
     t_trxframe        fr;
-    t_atoms           outatoms;
     real              t, comp;
     char             *grpname[MAX_ENDS];
     /* FIXME: The constness should not be cast away */
@@ -288,7 +289,7 @@ int gmx_bundle(int argc, char *argv[])
         fprintf(stderr, "and a group of kink ");
     }
     fprintf(stderr, "atoms\n");
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), bun.nend,
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), bun.nend,
               gnx, index, grpname);
 
     if (n <= 0 || gnx[0] % n || gnx[1] % n || (bKink && gnx[2] % n))
@@ -334,17 +335,17 @@ int gmx_bundle(int argc, char *argv[])
                           output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
     }
 
+    std::vector<AtomInfo> outatoms(3*n);
+    std::vector<Residue> outres(n);
     if (opt2bSet("-oa", NFILE, fnm))
     {
-        init_t_atoms(&outatoms, 3*n, FALSE);
-        outatoms.nr = 3*n;
-        for (i = 0; i < 3*n; i++)
+        for (int i = 0; i < 3*n; i++)
         {
-            outatoms.atomname[i]       = &anm;
-            outatoms.atom[i].resind    = i/3;
-            outatoms.resinfo[i/3].name = &rnm;
-            outatoms.resinfo[i/3].nr   = i/3 + 1;
-            outatoms.resinfo[i/3].ic   = ' ';
+            outatoms[i].atomname       = &anm;
+            outatoms[i].resind_    = i/3;
+            outres[i/3].name_ = &rnm;
+            outres[i/3].nr_   = i/3 + 1;
+            outres[i/3].ic_   = ' ';
         }
         fpdb = open_trx(opt2fn("-oa", NFILE, fnm), "w");
     }
@@ -359,7 +360,7 @@ int gmx_bundle(int argc, char *argv[])
     do
     {
         gmx_rmpbc_trxfr(gpbc, &fr);
-        calc_axes(fr.x, top.atoms.atom, gnx, index, !bZ, &bun);
+        calc_axes(fr.x, top.atoms, gnx, index, !bZ, &bun);
         t = output_env_conv_time(oenv, fr.time);
         fprintf(flen, " %10g", t);
         fprintf(fdist, " %10g", t);
@@ -418,7 +419,7 @@ int gmx_bundle(int argc, char *argv[])
         }
         if (fpdb)
         {
-            dump_axes(fpdb, &fr, &outatoms, &bun);
+            dump_axes(fpdb, &fr, outatoms, outres, &bun);
         }
     }
     while (read_next_frame(oenv, status, &fr));

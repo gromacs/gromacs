@@ -108,7 +108,7 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
     snew(m_shift, nmol);
     snew(cluster, nmol);
     snew(added, nmol);
-    snew(bTmp, top->atoms.nr);
+    snew(bTmp, top->atoms.size());
 
     for (i = 0; (i < nrefat); i++)
     {
@@ -267,7 +267,7 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
 
 static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
                                     t_block *mols,
-                                    int natoms, t_atom atom[],
+                                    int natoms, gmx::ArrayRef<const AtomInfo> atoms,
                                     int ePBC, matrix box, rvec x[])
 {
     int     i, j;
@@ -290,7 +290,7 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
         mtot = 0;
         for (j = mols->index[i]; (j < mols->index[i+1] && j < natoms); j++)
         {
-            m = atom[j].m;
+            m = atoms[j].m_;
             for (d = 0; d < DIM; d++)
             {
                 com[d] += m*x[j][d];
@@ -334,7 +334,7 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
 }
 
 static void put_residue_com_in_box(int unitcell_enum, int ecenter,
-                                   int natoms, t_atom atom[],
+                                   int natoms, gmx::ArrayRef<const AtomInfo> atoms,
                                    int ePBC, matrix box, rvec x[])
 {
     int              i, j, res_start, res_end;
@@ -351,7 +351,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
     mtot = 0;
     for (i = 0; i < natoms+1; i++)
     {
-        if (i == natoms || (presnr != atom[i].resind && presnr != NOTSET))
+        if (i == natoms || (presnr != atoms[i].resind_ && presnr != NOTSET))
         {
             /* calculate final COM */
             res_end = i;
@@ -379,7 +379,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
                 if (debug)
                 {
                     fprintf(debug, "\nShifting position of residue %d (atoms %d-%d) "
-                            "by %g,%g,%g\n", atom[res_start].resind+1,
+                            "by %g,%g,%g\n", atoms[res_start].resind_+1,
                             res_start+1, res_end+1, shift[XX], shift[YY], shift[ZZ]);
                 }
                 for (j = res_start; j < res_end; j++)
@@ -396,14 +396,14 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
         if (i < natoms)
         {
             /* calc COM */
-            m = atom[i].m;
+            m = atoms[i].m_;
             for (d = 0; d < DIM; d++)
             {
                 com[d] += m*x[i][d];
             }
             mtot += m;
 
-            presnr = atom[i].resind;
+            presnr = atoms[i].resind_;
         }
     }
 }
@@ -875,7 +875,6 @@ int gmx_trjconv(int argc, char *argv[])
     t_topology       *top   = nullptr;
     gmx_conect        gc    = nullptr;
     int               ePBC  = -1;
-    t_atoms          *atoms = nullptr, useatoms;
     matrix            top_box;
     int              *index = nullptr, *cindex = nullptr;
     char             *grpnm = nullptr;
@@ -1096,14 +1095,19 @@ int gmx_trjconv(int argc, char *argv[])
         /* Determine if when can read index groups */
         bIndex = (bIndex || bTPS);
 
+        gmx::ArrayRef<const AtomInfo> atoms;
+        gmx::ArrayRef<const Residue> resinfo;
+        gmx::ArrayRef<const PdbEntry> pdb;
         if (bTPS)
         {
-            snew(top, 1);
+            top = new t_topology;
             read_tps_conf(top_file, top, &ePBC, &xp, nullptr, top_box,
                           bReset || bPBCcomRes);
             std::strncpy(top_title, *top->name, 255);
             top_title[255] = '\0';
-            atoms          = &top->atoms;
+            atoms          = top->atoms;
+            resinfo = top->resinfo;
+            pdb = top->pdb;
 
             if (0 == top->mols.nr && (bCluster || bPBCcomMol))
             {
@@ -1132,7 +1136,7 @@ int gmx_trjconv(int argc, char *argv[])
             }
             if (bRmPBC)
             {
-                gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+                gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.size());
             }
         }
 
@@ -1156,7 +1160,7 @@ int gmx_trjconv(int argc, char *argv[])
         {
             printf("Select group for %s fit\n",
                    bFit ? "least squares" : "translational");
-            get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm),
+            get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm),
                       1, &ifit, &ind_fit, &gn_fit);
 
             if (bFit)
@@ -1174,7 +1178,7 @@ int gmx_trjconv(int argc, char *argv[])
         else if (bCluster)
         {
             printf("Select group for clustering\n");
-            get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm),
+            get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm),
                       1, &ifit, &ind_fit, &gn_fit);
         }
 
@@ -1183,11 +1187,11 @@ int gmx_trjconv(int argc, char *argv[])
             if (bCenter)
             {
                 printf("Select group for centering\n");
-                get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm),
+                get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm),
                           1, &ncent, &cindex, &grpnm);
             }
             printf("Select group for output\n");
-            get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm),
+            get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm),
                       1, &nout, &index, &grpnm);
         }
         else
@@ -1215,20 +1219,20 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bReset)
         {
-            snew(w_rls, atoms->nr);
+            snew(w_rls, atoms.size());
             for (i = 0; (i < ifit); i++)
             {
-                w_rls[ind_fit[i]] = atoms->atom[ind_fit[i]].m;
+                w_rls[ind_fit[i]] = atoms[ind_fit[i]].m_;
             }
 
             /* Restore reference structure and set to origin,
                store original location (to put structure back) */
             if (bRmPBC)
             {
-                gmx_rmpbc(gpbc, top->atoms.nr, top_box, xp);
+                gmx_rmpbc(gpbc, top->atoms.size(), top_box, xp);
             }
             copy_rvec(xp[index[0]], x_shift);
-            reset_x_ndim(nfitdim, ifit, ind_fit, atoms->nr, nullptr, xp, w_rls);
+            reset_x_ndim(nfitdim, ifit, ind_fit, atoms.size(), nullptr, xp, w_rls);
             rvec_dec(x_shift, xp[index[0]]);
         }
         else
@@ -1252,25 +1256,23 @@ int gmx_trjconv(int argc, char *argv[])
         }
 
         /* Make atoms struct for output in GRO or PDB files */
+        std::vector<AtomInfo> useatoms;
+        std::vector<Residue> useres;
+        std::vector<PdbEntry> usepdb;
         if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB))
         {
             /* get memory for stuff to go in .pdb file, and initialize
              * the pdbinfo structure part if the input has it.
              */
-            init_t_atoms(&useatoms, atoms->nr, atoms->havePdbInfo);
-            sfree(useatoms.resinfo);
-            useatoms.resinfo = atoms->resinfo;
             for (i = 0; (i < nout); i++)
             {
-                useatoms.atomname[i] = atoms->atomname[index[i]];
-                useatoms.atom[i]     = atoms->atom[index[i]];
-                if (atoms->havePdbInfo)
+                useatoms.push_back(atoms[index[i]]);
+                if (allAtomsHavePdbInfo(pdb))
                 {
-                    useatoms.pdbinfo[i]  = atoms->pdbinfo[index[i]];
+                    usepdb.push_back(pdb[index[i]]);
                 }
-                useatoms.nres        = std::max(useatoms.nres, useatoms.atom[i].resind+1);
             }
-            useatoms.nr = nout;
+            useres = std::vector<Residue>(resinfo.begin(), resinfo.end());
         }
         /* select what to read */
         if (ftp == efTRR)
@@ -1708,13 +1710,13 @@ int gmx_trjconv(int argc, char *argv[])
                         if (bPBCcomRes)
                         {
                             put_residue_com_in_box(unitcell_enum, ecenter,
-                                                   natoms, atoms->atom, ePBC, fr.box, fr.x);
+                                                   natoms, atoms, ePBC, fr.box, fr.x);
                         }
                         if (bPBCcomMol)
                         {
                             put_molecule_com_in_box(unitcell_enum, ecenter,
                                                     &top->mols,
-                                                    natoms, atoms->atom, ePBC, fr.box, fr.x);
+                                                    natoms, atoms, ePBC, fr.box, fr.x);
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
                         frout        = fr;
@@ -1869,7 +1871,7 @@ int gmx_trjconv(int argc, char *argv[])
                                 switch (ftp)
                                 {
                                     case efGRO:
-                                        write_hconf_p(out, title.c_str(), &useatoms,
+                                        write_hconf_p(out, title.c_str(), useatoms, useres,
                                                       frout.x, frout.bV ? frout.v : nullptr, frout.box);
                                         break;
                                     case efPDB:
@@ -1885,7 +1887,7 @@ int gmx_trjconv(int argc, char *argv[])
                                         {
                                             model_nr++;
                                         }
-                                        write_pdbfile(out, title.c_str(), &useatoms, frout.x,
+                                        write_pdbfile(out, title.c_str(), useatoms, useres, usepdb, frout.x,
                                                       frout.ePBC, frout.box, ' ', model_nr, gc, TRUE);
                                         break;
                                     case efG96:
@@ -1897,7 +1899,9 @@ int gmx_trjconv(int argc, char *argv[])
                                             {
                                                 frout.bAtoms = TRUE;
                                             }
-                                            frout.atoms  = &useatoms;
+                                            frout.atoms  = useatoms;
+                                            frout.resinfo = useres;
+                                            frout.pdb = usepdb;
                                             frout.bStep  = FALSE;
                                             frout.bTime  = FALSE;
                                         }
@@ -1911,7 +1915,7 @@ int gmx_trjconv(int argc, char *argv[])
                                             frout.bStep  = TRUE;
                                             frout.bTime  = TRUE;
                                         }
-                                        write_g96_conf(out, outputTitle, &frout, -1, nullptr);
+                                        write_g96_conf(out, outputTitle, &frout, gmx::EmptyArrayRef());
                                 }
                                 if (bSeparate || bSplitHere)
                                 {
@@ -1985,7 +1989,7 @@ int gmx_trjconv(int argc, char *argv[])
     if (bTPS)
     {
         done_top(top);
-        sfree(top);
+        delete top;
     }
     sfree(xp);
     sfree(xmem);

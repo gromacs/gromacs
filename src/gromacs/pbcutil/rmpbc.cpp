@@ -219,13 +219,13 @@ void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc, t_trxframe *fr)
     }
 }
 
-void rm_gropbc(const t_atoms *atoms, rvec x[], const matrix box)
+void rm_gropbc(gmx::ArrayRef<const AtomInfo> atoms, rvec x[], const matrix box)
 {
     real dist;
     int  n, m, d;
 
     /* check periodic boundary */
-    for (n = 1; (n < atoms->nr); n++)
+    for (n = 1; (n < atoms.size()); n++)
     {
         for (m = DIM-1; m >= 0; m--)
         {

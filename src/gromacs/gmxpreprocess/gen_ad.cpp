@@ -328,14 +328,14 @@ static void sort_id(int nr, t_param ps[])
     }
 }
 
-static int n_hydro(const int a[], char ***atomname)
+static int n_hydro(const int a[], gmx::ArrayRef<const AtomInfo> atoms)
 {
     int  i, nh = 0;
     char c0, c1, *aname;
 
     for (i = 0; (i < 4); i += 3)
     {
-        aname = *atomname[a[i]];
+        aname = *atoms[a[i]].atomname;
         c0    = toupper(aname[0]);
         if (c0 == 'H')
         {
@@ -356,7 +356,7 @@ static int n_hydro(const int a[], char ***atomname)
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
 static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper,
-                      t_atoms *atoms, bool bKeepAllGeneratedDihedrals,
+                      gmx::ArrayRef<const AtomInfo> atoms, bool bKeepAllGeneratedDihedrals,
                       bool bRemoveDihedralIfWithImproper)
 {
     int   i, j, k, l;
@@ -432,7 +432,7 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
                       is_dihedral_on_same_bond(&dih[index[i]], &dih[l]));
                      l++)
                 {
-                    int nh = n_hydro(dih[l].a, atoms->atomname);
+                    int nh = n_hydro(dih[l].a, atoms);
                     if (nh < minh)
                     {
                         minh  = nh;
@@ -461,7 +461,9 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
     sfree(index);
 }
 
-static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
+static int get_impropers(gmx::ArrayRef<const AtomInfo> atoms,
+                         gmx::ArrayRef<const Residue> resinfo,
+                         t_hackblock hb[], t_param **improper,
                          bool bAllowMissing)
 {
     t_rbondeds   *impropers;
@@ -478,7 +480,7 @@ static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
     start     = 0;
     if (hb != nullptr)
     {
-        for (i = 0; (i < atoms->nres); i++)
+        for (i = 0; (i < resinfo.size()); i++)
         {
             impropers = &hb[i].rb[ebtsIDIHS];
             for (j = 0; (j < impropers->nb); j++)
@@ -506,7 +508,7 @@ static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
                     nimproper++;
                 }
             }
-            while ((start < atoms->nr) && (atoms->atom[start].resind == i))
+            while ((start < atoms.size()) && (atoms[start].resind_ == i))
             {
                 start++;
             }
@@ -543,24 +545,25 @@ static int nb_dist(t_nextnb *nnb, int ai, int aj)
     return NRE;
 }
 
-static bool is_hydro(t_atoms *atoms, int ai)
+static bool is_hydro(gmx::ArrayRef<const AtomInfo> atoms, int ai)
 {
-    return ((*(atoms->atomname[ai]))[0] == 'H');
+    return ((*(atoms[ai].atomname))[0] == 'H');
 }
 
 static void get_atomnames_min(int n, char **anm,
-                              int resind, t_atoms *atoms, const int *a)
+                              int resind,
+                              gmx::ArrayRef<const AtomInfo> atoms, const int *a)
 {
     int m;
 
     /* Assume ascending residue numbering */
     for (m = 0; m < n; m++)
     {
-        if (atoms->atom[a[m]].resind < resind)
+        if (atoms[a[m]].resind_ < resind)
         {
             strcpy(anm[m], "-");
         }
-        else if (atoms->atom[a[m]].resind > resind)
+        else if (atoms[a[m]].resind_ > resind)
         {
             strcpy(anm[m], "+");
         }
@@ -568,11 +571,12 @@ static void get_atomnames_min(int n, char **anm,
         {
             strcpy(anm[m], "");
         }
-        strcat(anm[m], *(atoms->atomname[a[m]]));
+        strcat(anm[m], *(atoms[a[m]].atomname));
     }
 }
 
-static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
+static void gen_excls(gmx::ArrayRef<const AtomInfo> atoms,
+                      t_excls *excls, t_hackblock hb[],
                       bool bAllowMissing)
 {
     int         r;
@@ -582,10 +586,10 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
     char       *anm;
 
     astart = 0;
-    for (a = 0; a < atoms->nr; a++)
+    for (a = 0; a < atoms.size(); a++)
     {
-        r = atoms->atom[a].resind;
-        if (a == atoms->nr-1 || atoms->atom[a+1].resind != r)
+        r = atoms[a].resind_;
+        if (a == atoms.size()-1 || atoms[a+1].resind_ != r)
         {
             hbexcl = &hb[r].rb[ebtsEXCLS];
 
@@ -615,7 +619,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
         }
     }
 
-    for (a = 0; a < atoms->nr; a++)
+    for (a = 0; a < atoms.size(); a++)
     {
         if (excls[a].nr > 1)
         {
@@ -728,7 +732,10 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 }
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
+void gen_pad(t_nextnb *nnb,
+             gmx::ArrayRef<const AtomInfo> atoms,
+             gmx::ArrayRef<const Residue> resinfo,
+             t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
              bool bAllowMissing)
 {
@@ -766,7 +773,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     {
         gen_excls(atoms, excls, hb, bAllowMissing);
         /* mark all entries as not matched yet */
-        for (i = 0; i < atoms->nres; i++)
+        for (i = 0; i < resinfo.size(); i++)
         {
             for (j = 0; j < ebtsNR; j++)
             {
@@ -809,12 +816,12 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         set_p_string(&(ang[nang]), "");
                         if (hb)
                         {
-                            minres = atoms->atom[ang[nang].a[0]].resind;
+                            minres = atoms[ang[nang].a[0]].resind_;
                             maxres = minres;
                             for (m = 1; m < 3; m++)
                             {
-                                minres = std::min(minres, atoms->atom[ang[nang].a[m]].resind);
-                                maxres = std::max(maxres, atoms->atom[ang[nang].a[m]].resind);
+                                minres = std::min(minres, atoms[ang[nang].a[m]].resind_);
+                                maxres = std::max(maxres, atoms[ang[nang].a[m]].resind_);
                             }
                             res = 2*minres-maxres;
                             do
@@ -873,12 +880,12 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 nFound = 0;
                                 if (hb)
                                 {
-                                    minres = atoms->atom[dih[ndih].a[0]].resind;
+                                    minres = atoms[dih[ndih].a[0]].resind_;
                                     maxres = minres;
                                     for (m = 1; m < 4; m++)
                                     {
-                                        minres = std::min(minres, atoms->atom[dih[ndih].a[m]].resind);
-                                        maxres = std::max(maxres, atoms->atom[dih[ndih].a[m]].resind);
+                                        minres = std::min(minres, atoms[dih[ndih].a[m]].resind_);
+                                        maxres = std::max(maxres, atoms[dih[ndih].a[m]].resind_);
                                     }
                                     res = 2*minres-maxres;
                                     do
@@ -993,7 +1000,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
          * generally true. Go through the angle and dihedral hackblocks to add
          * entries that we have not yet marked as matched when going through bonds.
          */
-        for (i = 0; i < atoms->nres; i++)
+        for (i = 0; i < resinfo.size(); i++)
         {
             /* Add remaining angles from hackblock */
             hbang = &hb[i].rb[ebtsANGLES];
@@ -1025,7 +1032,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         p++;
                         res++;
                     }
-                    ang[nang].a[k] = search_res_atom(p, res, atoms, "angle", TRUE);
+                    ang[nang].a[k] = search_res_atom(p, res, atoms, resinfo, "angle", TRUE);
                     bFound         = (ang[nang].a[k] != -1);
                 }
                 ang[nang].c0() = NOTSET;
@@ -1070,7 +1077,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         p++;
                         res++;
                     }
-                    dih[ndih].a[k] = search_res_atom(p, res, atoms, "dihedral", TRUE);
+                    dih[ndih].a[k] = search_res_atom(p, res, atoms, resinfo, "dihedral", TRUE);
                     bFound         = (dih[ndih].a[k] != -1);
                 }
                 for (m = 0; m < MAXFORCEPARAM; m++)
@@ -1116,7 +1123,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     }
 
     /* Get the impropers from the database */
-    nimproper = get_impropers(atoms, hb, &improper, bAllowMissing);
+    nimproper = get_impropers(atoms, resinfo, hb, &improper, bAllowMissing);
 
     /* Sort the impropers */
     sort_id(nimproper, improper);

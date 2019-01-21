@@ -43,7 +43,7 @@
 
 struct gmx_moltype_t;
 
-int set_vsites(bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
+int set_vsites(bool bVerbose, gmx::ArrayRef<const AtomInfo> atoms,  gpp_atomtype_t atype,
                t_params plist[]);
 /* set parameters for virtual sites, return number of virtual sites */
 

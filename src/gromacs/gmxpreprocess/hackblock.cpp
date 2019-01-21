@@ -83,38 +83,27 @@ void free_t_restp(int nrtp, t_restp **rtp)
     for (i = 0; i < nrtp; i++)
     {
         sfree((*rtp)[i].resname);
-        sfree((*rtp)[i].atom);
-        for (j = 0; j < (*rtp)[i].natom; j++)
-        {
-            sfree(*(*rtp)[i].atomname[j]);
-            sfree((*rtp)[i].atomname[j]);
-        }
-        sfree((*rtp)[i].atomname);
-        sfree((*rtp)[i].cgnr);
         for (j = 0; j < ebtsNR; j++)
         {
             free_t_bondeds(&(*rtp)[i].rb[j]);
         }
     }
-    sfree(*rtp);
+    delete *rtp;
 }
 
-void free_t_hack(int nh, t_hack **h)
+void free_t_hack(int nh, gmx::ArrayRef<t_hack> h)
 {
     int i, j;
 
     for (i = 0; i < nh; i++)
     {
-        sfree((*h)[i].oname);
-        sfree((*h)[i].nname);
-        sfree((*h)[i].atom);
+        sfree(h[i].oname);
+        sfree(h[i].nname);
         for (j = 0; j < 4; j++)
         {
-            sfree((*h)[i].a[j]);
+            sfree(h[i].a[j]);
         }
     }
-    sfree(*h);
-    *h = nullptr;
 }
 
 void free_t_hackblock(int nhb, t_hackblock **hb)
@@ -124,13 +113,12 @@ void free_t_hackblock(int nhb, t_hackblock **hb)
     for (i = 0; i < nhb; i++)
     {
         sfree((*hb)[i].name);
-        free_t_hack((*hb)[i].nhack, &(*hb)[i].hack);
         for (j = 0; j < ebtsNR; j++)
         {
             free_t_bondeds(&(*hb)[i].rb[j]);
         }
     }
-    sfree(*hb);
+    delete *hb;
 }
 
 void clear_t_hackblock(t_hackblock *hb)
@@ -140,7 +128,7 @@ void clear_t_hackblock(t_hackblock *hb)
     hb->name    = nullptr;
     hb->nhack   = 0;
     hb->maxhack = 0;
-    hb->hack    = nullptr;
+    hb->hack.clear();
     for (i = 0; i < ebtsNR; i++)
     {
         hb->rb[i].nb = 0;
@@ -155,7 +143,7 @@ void clear_t_hack(t_hack *hack)
     hack->nr    = 0;
     hack->oname = nullptr;
     hack->nname = nullptr;
-    hack->atom  = nullptr;
+    hack->atom.clear();
     hack->cgnr  = NOTSET;
     hack->tp    = 0;
     hack->nctl  = 0;
@@ -326,21 +314,17 @@ void copy_t_restp(t_restp *s, t_restp *d)
 
     *d         = *s;
     d->resname = safe_strdup(s->resname);
-    snew(d->atom, s->natom);
-    for (i = 0; i < s->natom; i++)
+    d->atom.clear();
+    for (const auto &a : s->atom)
     {
-        d->atom[i] = s->atom[i];
+        d->atom.push_back(a);
+        snew(d->atom.back().atomname, 1);
+        *(d->atom.back().atomname) = safe_strdup(*a.atomname);
     }
-    snew(d->atomname, s->natom);
-    for (i = 0; i < s->natom; i++)
+    d->cgnr.clear();
+    for (const auto &c : s->cgnr)
     {
-        snew(d->atomname[i], 1);
-        *d->atomname[i] = safe_strdup(*s->atomname[i]);
-    }
-    snew(d->cgnr, s->natom);
-    for (i = 0; i < s->natom; i++)
-    {
-        d->cgnr[i] = s->cgnr[i];
+        d->cgnr.push_back(c);
     }
     for (i = 0; i < ebtsNR; i++)
     {
@@ -358,14 +342,10 @@ void copy_t_hack(t_hack *s, t_hack *d)
     *d       = *s;
     d->oname = safe_strdup(s->oname);
     d->nname = safe_strdup(s->nname);
-    if (s->atom)
+    d->atom.clear();
+    for (const auto &a : s->atom)
     {
-        snew(d->atom, 1);
-        *(d->atom) = *(s->atom);
-    }
-    else
-    {
-        d->atom = nullptr;
+        d->atom.push_back(a);
     }
     for (i = 0; i < 4; i++)
     {
@@ -374,13 +354,13 @@ void copy_t_hack(t_hack *s, t_hack *d)
     copy_rvec(s->newx, d->newx);
 }
 
-void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d)
+void merge_hacks_lo(int ns, gmx::ArrayRef<t_hack> s, int *nd, std::vector<t_hack> *d)
 {
     int i;
 
     if (ns)
     {
-        srenew(*d, *nd + ns);
+        d->resize(*nd + ns);
         for (i = 0; i < ns; i++)
         {
             copy_t_hack(&s[i], &(*d)[*nd + i]);
@@ -407,7 +387,7 @@ void copy_t_hackblock(t_hackblock *s, t_hackblock *d)
     *d       = *s;
     d->name  = safe_strdup(s->name);
     d->nhack = 0;
-    d->hack  = nullptr;
+    d->hack.clear();
     for (i = 0; i < ebtsNR; i++)
     {
         d->rb[i].nb = 0;
@@ -436,7 +416,7 @@ void dump_hb(FILE *out, int nres, t_hackblock hb[])
                 fprintf(out, "%d: %d %4s %4s %1s %2d %d %4s %4s %4s %4s\n",
                         j, hb[i].hack[j].nr,
                         SS(hb[i].hack[j].oname), SS(hb[i].hack[j].nname),
-                        SA(hb[i].hack[j].atom), hb[i].hack[j].tp, hb[i].hack[j].cgnr,
+                        SA(!hb[i].hack[j].atom.empty()), hb[i].hack[j].tp, hb[i].hack[j].cgnr,
                         SS(hb[i].hack[j].ai()), SS(hb[i].hack[j].aj()),
                         SS(hb[i].hack[j].ak()), SS(hb[i].hack[j].al()) );
             }

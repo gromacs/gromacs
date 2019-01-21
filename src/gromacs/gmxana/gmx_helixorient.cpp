@@ -175,7 +175,7 @@ int gmx_helixorient(int argc, char *argv[])
 
     /* read index files */
     printf("Select a group of Calpha atoms corresponding to a single continuous helix:\n");
-    get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iCA, &ind_CA, &gn_CA);
+    get_index(top->atoms, top->resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &iCA, &ind_CA, &gn_CA);
     snew(x_CA, iCA);
     snew(x_SC, iCA); /* sic! */
 
@@ -207,7 +207,7 @@ int gmx_helixorient(int argc, char *argv[])
     if (bSC)
     {
         printf("Select a group of atoms defining the sidechain direction (1/residue):\n");
-        get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iSC, &ind_SC, &gn_SC);
+        get_index(top->atoms, top->resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &iSC, &ind_SC, &gn_SC);
         if (iSC != iCA)
         {
             gmx_fatal(FARGS, "Number of sidechain atoms (%d) != number of CA atoms (%d)", iSC, iCA);

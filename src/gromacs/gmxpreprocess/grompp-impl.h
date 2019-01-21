@@ -101,17 +101,17 @@ typedef struct {
     int           *e;       /* The excluded atoms                   */
 } t_excls;
 
-typedef struct {
+struct t_molinfo {
     char            **name;
     int               nrexcl;       /* Number of exclusions per atom	*/
     bool              excl_set;     /* Have exclusions been generated?	*/
     bool              bProcessed;   /* Has the mol been processed           */
-    t_atoms           atoms;        /* Atoms                                */
+    AtomResiduePdb    system;       /* Atoms, Residues, Pdb info            */
     t_block           cgs;          /* Charge groups                        */
     t_block           mols;         /* Molecules                            */
     t_blocka          excls;        /* Exclusions                           */
     t_params          plist[F_NRE]; /* Parameters in old style              */
-} t_molinfo;
+};
 
 typedef struct {
     char *name;

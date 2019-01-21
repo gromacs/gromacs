@@ -187,7 +187,7 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
     }
 }
 
-void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
+void convert_harmonics(int nrmols, gmx::ArrayRef<t_molinfo> mols, gpp_atomtype_t atype)
 {
     int       n2m;
     t_2morse *t2m;
@@ -228,8 +228,8 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
                     nj   = mols[i].plist[bb].param[j].aj();
                     edis =
                         search_e_diss(n2m, t2m,
-                                      get_atomtype_name(mols[i].atoms.atom[ni].type, atype),
-                                      get_atomtype_name(mols[i].atoms.atom[nj].type, atype));
+                                      get_atomtype_name(mols[i].system.atoms[ni].type_, atype),
+                                      get_atomtype_name(mols[i].system.atoms[nj].type_, atype));
                     if (edis != 0)
                     {
                         bRemoveHarm[j] = TRUE;

@@ -43,7 +43,9 @@
 
 struct gmx_mtop_t;
 struct gmx_output_env_t;
-struct t_atoms;
+struct AtomInfo;
+struct Residue;
+struct PdbEntry;
 struct t_fileio;
 struct t_topology;
 struct t_trxframe;
@@ -76,8 +78,8 @@ void set_trxframe_ePBC(struct t_trxframe *fr, int ePBC);
 int nframes_read(t_trxstatus *status);
 /* Returns the number of frames read from the trajectory */
 
-int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
-                           const int *ind, gmx_conect gc);
+int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr,
+                           gmx::ArrayRef<const int> ind, gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
 int write_trxframe(t_trxstatus *status, struct t_trxframe *fr, gmx_conect gc);
@@ -90,8 +92,16 @@ int write_trxframe(t_trxstatus *status, struct t_trxframe *fr, gmx_conect gc);
  * gc is important for pdb file writing only and may be NULL.
  */
 
-int write_trx(t_trxstatus *status, int nind, const int *ind, const t_atoms *atoms,
-              int step, real time, matrix box, rvec x[], rvec *v,
+int write_trx(t_trxstatus *status,
+              gmx::ArrayRef<const int> ind,
+              gmx::ArrayRef<const AtomInfo> atoms,
+              gmx::ArrayRef<const Residue> resinfo,
+              gmx::ArrayRef<const PdbEntry> pdb,
+              int step,
+              real time,
+              matrix box,
+              rvec x[],
+              rvec *v,
               gmx_conect gc);
 /* Write an indexed frame to a TRX file.
  * v can be NULL.

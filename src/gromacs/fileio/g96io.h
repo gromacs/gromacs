@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 
+#include "gromacs/utility/arrayref.h"
 
 struct t_symtab;
 struct t_trxframe;
@@ -58,7 +59,7 @@ int read_g96_conf(FILE *fp, const char *infile, char **name, struct t_trxframe *
  *
  * If name is not nullptr, gmx_strdup the first g96 title string into it. */
 
-void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr, int nindex, const int *index);
+void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr, gmx::ArrayRef<const int> index);
 /* write a Gromos96 coordinate file or trajectory frame *
  * index can be NULL                                    */
 

@@ -129,10 +129,20 @@ class TopologyInformation
         /*! \brief Returns a read-only handle to the fully expanded
          * atom data arrays, which might be valid but empty if no
          * topology is available. */
-        const t_atoms *atoms() const;
+        gmx::ArrayRef<const AtomInfo> atoms() const;
+        /*! \brief Returns a read-only handle to complete residue information.
+         * This might be valid but empty if such information is not available.
+         */
+        gmx::ArrayRef<const Residue> resinfo() const;
+        /*! \brief
+         * Returns read only handle to complete pdb information,
+         * that might be valid but empty.
+         */
+        gmx::ArrayRef<const PdbEntry> pdb() const;
         /*! \brief Copies the fully expanded atom data arrays, which
          * might be valid but empty if no topology is available. */
-        AtomsDataPtr copyAtoms() const;
+        AtomResiduePdbDataPtr copySystem() const;
+
         //! Returns the ePBC field from the topology.
         int ePBC() const { return ePBC_; }
         /*! \brief
@@ -176,7 +186,7 @@ class TopologyInformation
         //! The fully expanded topology structure, nullptr if not yet constructed.
         mutable ExpandedTopologyPtr      expandedTopology_;
         //! The fully expanded atoms data structure, nullptr if not yet constructed.
-        mutable AtomsDataPtr             atoms_;
+        mutable AtomResiduePdbDataPtr             system_;
         //! true if full tpx file was loaded, false otherwise.
         bool                             bTop_;
         //! Position coordinates from the topology (can be nullptr).

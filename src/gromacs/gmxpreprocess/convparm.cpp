@@ -518,7 +518,8 @@ static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
 }
 
 void convert_params(int atnr, t_params nbtypes[],
-                    t_molinfo *mi, t_molinfo *intermolecular_interactions,
+                    gmx::ArrayRef<t_molinfo> mi,
+                    gmx::ArrayRef<t_molinfo> intermolecular_interactions,
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop)
 {
@@ -561,7 +562,7 @@ void convert_params(int atnr, t_params nbtypes[],
     }
 
     mtop->bIntermolecularInteractions = FALSE;
-    if (intermolecular_interactions != nullptr)
+    if (!intermolecular_interactions.empty())
     {
         /* Process the intermolecular interaction list */
         mtop->intermolecular_ilist = gmx::compat::make_unique<InteractionLists>();
@@ -570,7 +571,7 @@ void convert_params(int atnr, t_params nbtypes[],
         {
             (*mtop->intermolecular_ilist)[i].iatoms.clear();
 
-            plist = intermolecular_interactions->plist;
+            plist = intermolecular_interactions.back().plist;
 
             if (plist[i].nr > 0)
             {

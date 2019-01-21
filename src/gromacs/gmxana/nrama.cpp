@@ -103,13 +103,13 @@ gmx_bool new_data(t_xrama *xr)
     return TRUE;
 }
 
-static int find_atom(const char *find, char ***names, int start, int nr)
+static int find_atom(const char *find, gmx::ArrayRef<const AtomInfo> atoms, int start, int nr)
 {
     int i;
 
     for (i = start; (i < nr); i++)
     {
-        if (std::strcmp(find, *names[i]) == 0)
+        if (std::strcmp(find, *atoms[i].atomname) == 0)
         {
             return i;
         }
@@ -117,7 +117,10 @@ static int find_atom(const char *find, char ***names, int start, int nr)
     return -1;
 }
 
-static void add_xr(t_xrama *xr, const int ff[5], const t_atoms *atoms)
+static void add_xr(t_xrama *xr,
+                   const int ff[5],
+                   gmx::ArrayRef<const AtomInfo> atoms,
+                   gmx::ArrayRef<const Residue> resinfo)
 {
     char buf[12];
     int  i;
@@ -137,24 +140,26 @@ static void add_xr(t_xrama *xr, const int ff[5], const t_atoms *atoms)
     xr->pp[xr->npp].iphi  = xr->ndih-2;
     xr->pp[xr->npp].ipsi  = xr->ndih-1;
     xr->pp[xr->npp].bShow = FALSE;
-    sprintf(buf, "%s-%d", *atoms->resinfo[atoms->atom[ff[1]].resind].name,
-            atoms->resinfo[atoms->atom[ff[1]].resind].nr);
+    sprintf(buf, "%s-%d", *resinfo[atoms[ff[1]].resind_].name_,
+            resinfo[atoms[ff[1]].resind_].nr_);
     xr->pp[xr->npp].label = gmx_strdup(buf);
     xr->npp++;
 }
 
-static void get_dih(t_xrama *xr, const t_atoms *atoms)
+static void get_dih(t_xrama *xr,
+                    gmx::ArrayRef<const AtomInfo> atoms,
+                    gmx::ArrayRef<const Residue> resinfo)
 {
     int    found, ff[NPP];
     int    i;
     size_t j;
 
-    for (i = 0; (i < atoms->nr); )
+    for (i = 0; (i < atoms.size()); )
     {
         found = i;
         for (j = 0; (j < NPP); j++)
         {
-            if ((ff[j] = find_atom(pp_pat[j], atoms->atomname, found, atoms->nr)) == -1)
+            if ((ff[j] = find_atom(pp_pat[j], atoms, found, atoms.size())) == -1)
             {
                 break;
             }
@@ -164,7 +169,7 @@ static void get_dih(t_xrama *xr, const t_atoms *atoms)
         {
             break;
         }
-        add_xr(xr, ff, atoms);
+        add_xr(xr, ff, atoms, resinfo);
         i = ff[0]+1;
     }
     fprintf(stderr, "Found %d phi-psi combinations\n", xr->npp);
@@ -248,7 +253,7 @@ t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
     top = read_top(topfile, &xr->ePBC);
 
     /*get_dih2(xr,top->idef.functype,&(top->idef.bondeds),&(top->atoms));*/
-    get_dih(xr, &(top->atoms));
+    get_dih(xr, top->atoms, top->resinfo);
     get_dih_props(xr, &(top->idef), mult);
     xr->natoms = read_first_x(oenv, &xr->traj, infile, &t, &(xr->x), xr->box);
     xr->idef   = &(top->idef);

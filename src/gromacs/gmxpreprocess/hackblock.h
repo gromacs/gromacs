@@ -75,15 +75,13 @@ typedef struct {
 } t_rbondeds;
 
 /* RESIDUES (rtp) */
-typedef struct {
+struct t_restp {
     char         *resname;
     /* The base file name this rtp entry was read from */
     char         *filebase;
     /* atom data */
-    int           natom;
-    t_atom       *atom;
-    char       ***atomname;
-    int          *cgnr;
+    std::vector<AtomInfo> atom;
+    std::vector<int>      cgnr;
     /* Bonded interaction setup */
     bool          bKeepAllGeneratedDihedrals;
     int           nrexcl;
@@ -91,10 +89,10 @@ typedef struct {
     bool          bRemoveDihedralIfWithImproper;
     /* list of bonded interactions to add */
     t_rbondeds    rb[ebtsNR];
-} t_restp;
+};
 
 /* Block to hack residues */
-typedef struct {
+struct t_hack {
     int      nr;      /* Number of atoms to hack    */
     char    *oname;   /* Old name                   */
     char    *nname;   /* New name                   */
@@ -103,7 +101,7 @@ typedef struct {
      * if oname!=NULL && nname==NULL we're deleting
      * if oname!=NULL && nname!=NULL we're replacing
      */
-    t_atom     *atom; /* New atom data              */
+    std::vector<AtomInfo> atom; /* New atom data              */
     int         cgnr; /* chargegroup number. if not read will be NOTSET */
     int         tp;   /* Type of attachment (1..11) */
     int         nctl; /* How many control atoms there are */
@@ -116,17 +114,17 @@ typedef struct {
     char*      &aj() { return a[1]; }
     char*      &ak() { return a[2]; }
     char*      &al() { return a[3]; }
-} t_hack;
+};
 
-typedef struct {
+struct t_hackblock {
     char      *name;     /* Name of hack block (residue or terminus) */
     char      *filebase; /* The base file name this entry was read from */
     int        nhack;    /* Number of atoms to hack                  */
     int        maxhack;  /* used for efficient srenew-ing            */
-    t_hack    *hack;     /* Hack list                                */
+    std::vector<t_hack> hack;     /* Hack list                                */
     /* list of bonded interactions to add */
     t_rbondeds rb[ebtsNR];
-} t_hackblock;
+};
 
 typedef struct {
     char *res1, *res2;
@@ -140,7 +138,7 @@ t_specbond *get_specbonds(int *nspecbond);
 void done_specbonds(int nsb, t_specbond sb[]);
 
 void free_t_restp(int nrtp, t_restp **rtp);
-void free_t_hack(int nh, t_hack **h);
+void free_t_hack(int nh, gmx::ArrayRef<t_hack> h);
 void free_t_hackblock(int nhb, t_hackblock **hb);
 /* free the whole datastructure */
 

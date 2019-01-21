@@ -63,40 +63,40 @@
 
 #define FARAWAY 10000
 
-static int *res_ndx(t_atoms *atoms)
+static int *res_ndx(gmx::ArrayRef<const AtomInfo> atoms)
 {
     int *rndx;
     int  i, r0;
 
-    if (atoms->nr <= 0)
+    if (atoms.size() <= 0)
     {
         return nullptr;
     }
-    snew(rndx, atoms->nr);
-    r0 = atoms->atom[0].resind;
-    for (i = 0; (i < atoms->nr); i++)
+    snew(rndx, atoms.size());
+    r0 = atoms[0].resind_;
+    for (i = 0; (i < atoms.size()); i++)
     {
-        rndx[i] = atoms->atom[i].resind-r0;
+        rndx[i] = atoms[i].resind_-r0;
     }
 
     return rndx;
 }
 
-static int *res_natm(t_atoms *atoms)
+static int *res_natm(gmx::ArrayRef<const AtomInfo> atoms, int nres)
 {
     int *natm;
     int  i, j, r0;
 
-    if (atoms->nr <= 0)
+    if (atoms.size() <= 0)
     {
         return nullptr;
     }
-    snew(natm, atoms->nres);
-    r0 = atoms->atom[0].resind;
+    snew(natm, nres);
+    r0 = atoms[0].resind_;
     j  = 0;
-    for (i = 0; (i < atoms->nres); i++)
+    for (i = 0; (i < nres); i++)
     {
-        while ((atoms->atom[j].resind)-r0 == i)
+        while ((atoms[j].resind_)-r0 == i)
         {
             natm[i]++;
             j++;
@@ -206,7 +206,6 @@ int gmx_mdmat(int argc, char *argv[])
     FILE             *out = nullptr, *fp;
     t_topology        top;
     int               ePBC;
-    t_atoms           useatoms;
     int               isize;
     int              *index;
     char             *grpname;
@@ -244,42 +243,40 @@ int gmx_mdmat(int argc, char *argv[])
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, FALSE);
 
     fprintf(stderr, "Select group for analysis\n");
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
     natoms = isize;
-    snew(useatoms.atom, natoms);
-    snew(useatoms.atomname, natoms);
+    std::vector<AtomInfo> useatoms;
+    std::vector<Residue> useres;
 
-    useatoms.nres = 0;
-    snew(useatoms.resinfo, natoms);
-
-    prevres = top.atoms.atom[index[0]].resind;
+    prevres = top.atoms[index[0]].resind_;
     newres  = 0;
     for (i = 0; (i < isize); i++)
     {
         int ii = index[i];
-        useatoms.atomname[i] = top.atoms.atomname[ii];
-        if (top.atoms.atom[ii].resind != prevres)
+        AtomInfo newAtom;
+        newAtom = top.atoms[ii];
+
+        if (top.atoms[ii].resind_ != prevres)
         {
-            prevres = top.atoms.atom[ii].resind;
+            prevres = top.atoms[ii].resind_;
             newres++;
-            useatoms.resinfo[i] = top.atoms.resinfo[prevres];
+            useres.push_back(top.resinfo[prevres]);
             if (debug)
             {
                 fprintf(debug, "New residue: atom %5s %5s %6d, index entry %5d, newres %5d\n",
-                        *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
-                        *(top.atoms.atomname[ii]),
+                        *(top.resinfo[top.atoms[ii].resind_].name_),
+                        *(top.atoms[ii].atomname),
                         ii, i, newres);
             }
         }
-        useatoms.atom[i].resind = newres;
+        newAtom.resind_ = newres;
+        useatoms.push_back(newAtom);
     }
-    useatoms.nres = newres+1;
-    useatoms.nr   = isize;
 
-    rndx = res_ndx(&(useatoms));
-    natm = res_natm(&(useatoms));
-    nres = useatoms.nres;
+    rndx = res_ndx(useatoms);
+    natm = res_natm(useatoms, useres.size());
+    nres = useres.size();
     fprintf(stderr, "There are %d residues with %d atoms\n", nres, natoms);
 
     snew(resnr, nres);

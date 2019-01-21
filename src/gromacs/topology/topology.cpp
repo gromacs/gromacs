@@ -76,7 +76,6 @@ void init_top(t_topology *top)
 {
     top->name = nullptr;
     init_idef(&top->idef);
-    init_atom(&(top->atoms));
     init_atomtypes(&(top->atomtypes));
     init_block(&top->cgs);
     init_block(&top->mols);
@@ -90,12 +89,10 @@ gmx_moltype_t::gmx_moltype_t() :
     cgs(),
     excls()
 {
-    init_t_atoms(&atoms, 0, FALSE);
 }
 
 gmx_moltype_t::~gmx_moltype_t()
 {
-    done_atom(&atoms);
     done_block(&cgs);
     done_blocka(&excls);
 }
@@ -141,7 +138,6 @@ gmx_mtop_t::~gmx_mtop_t()
 void done_top(t_topology *top)
 {
     done_idef(&top->idef);
-    done_atom(&(top->atoms));
 
     /* For GB */
     done_atomtypes(&(top->atomtypes));
@@ -159,7 +155,6 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
         if (top != nullptr)
         {
             done_idef(&top->idef);
-            done_atom(&top->atoms);
             done_block(&top->cgs);
             done_blocka(&top->excls);
             done_block(&top->mols);
@@ -197,7 +192,7 @@ bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->moltype.empty() || mtop->moltype[0].atoms.haveMass;
+    return mtop->moltype.empty() || allAtomsHaveMass(mtop->moltype[0].atoms);
 }
 
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
@@ -206,19 +201,19 @@ bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->moltype.empty() || mtop->moltype[0].atoms.haveCharge;
+    return mtop->moltype.empty() || allAtomsHaveCharge(mtop->moltype[0].atoms);
 }
 
 bool gmx_mtop_has_perturbed_charges(const gmx_mtop_t &mtop)
 {
     for (const gmx_moltype_t &moltype : mtop.moltype)
     {
-        const t_atoms &atoms = moltype.atoms;
-        if (atoms.haveBState)
+        gmx::ArrayRef<const AtomInfo> atoms = moltype.atoms;
+        if (allAtomsHaveBstate(atoms))
         {
-            for (int a = 0; a < atoms.nr; a++)
+            for (const auto &a : atoms)
             {
-                if (atoms.atom[a].q != atoms.atom[a].qB)
+                if (a.q_ != a.qB_)
                 {
                     return true;
                 }
@@ -234,7 +229,7 @@ bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->moltype.empty() || mtop->moltype[0].atoms.haveType;
+    return mtop->moltype.empty() || allAtomsHaveType(mtop->moltype[0].atoms);
 }
 
 bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
@@ -243,7 +238,7 @@ bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->moltype.empty() || mtop->moltype[0].atoms.havePdbInfo;
+    return mtop->moltype.empty() || allAtomsHavePdbInfo(mtop->moltype[0].pdb);
 }
 
 static void pr_grps(FILE *fp, const char *title, const t_grps grps[], char **grpname[])
@@ -324,7 +319,8 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
     indent = pr_title_n(fp, indent, title, n);
     pr_indent(fp, indent);
     fprintf(fp, "name=\"%s\"\n", *(molt->name));
-    pr_atoms(fp, indent, "atoms", &(molt->atoms), bShowNumbers);
+    printAtoms(fp, indent, "atoms", molt->atoms, bShowNumbers);
+    printResidues(fp, indent, "residues", molt->resinfo, bShowNumbers);
     pr_block(fp, indent, "cgs", &molt->cgs, bShowNumbers);
     pr_blocka(fp, indent, "excls", &molt->excls, bShowNumbers);
     for (j = 0; (j < F_NRE); j++)
@@ -401,7 +397,8 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
         indent = pr_title(fp, indent, title);
         pr_indent(fp, indent);
         fprintf(fp, "name=\"%s\"\n", *(top->name));
-        pr_atoms(fp, indent, "atoms", &(top->atoms), bShowNumbers);
+        printAtoms(fp, indent, "atoms", top->atoms, bShowNumbers);
+        printResidues(fp, indent, "residues", top->resinfo, bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(top->atomtypes), bShowNumbers);
         pr_block(fp, indent, "cgs", &top->cgs, bShowNumbers);
         pr_block(fp, indent, "mols", &top->mols, bShowNumbers);
@@ -579,7 +576,7 @@ void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, re
     if (t2)
     {
         cmp_idef(fp, &(t1->idef), &(t2->idef), ftol, abstol);
-        cmp_atoms(fp, &(t1->atoms), &(t2->atoms), ftol, abstol);
+        compareAtomInfo(fp, t1->atoms, t2->atoms, ftol, abstol);
         cmp_block(fp, &t1->cgs, &t2->cgs, "cgs");
         cmp_block(fp, &t1->mols, &t2->mols, "mols");
         cmp_bool(fp, "bIntermolecularInteractions", -1, t1->bIntermolecularInteractions, t2->bIntermolecularInteractions);
@@ -588,7 +585,7 @@ void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, re
     else
     {
         cmp_idef(fp, &(t1->idef), nullptr, ftol, abstol);
-        cmp_atoms(fp, &(t1->atoms), nullptr, ftol, abstol);
+        compareAtomFEPData(fp, t1->atoms, ftol, abstol);
     }
 }
 
@@ -636,9 +633,9 @@ void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)
     dst->name = src->name;
     copy_blocka(&src->excls, &dst->excls);
     copy_block(&src->cgs, &dst->cgs);
-    t_atoms *atomsCopy = copy_t_atoms(&src->atoms);
-    dst->atoms = *atomsCopy;
-    sfree(atomsCopy);
+    dst->atoms = std::vector<AtomInfo>(src->atoms.begin(), src->atoms.end());
+    dst->resinfo = std::vector<Residue>(src->resinfo.begin(), src->resinfo.end());
+    dst->pdb = std::vector<PdbEntry>(src->pdb.begin(), src->pdb.end());
 
     for (int i = 0; i < F_NRE; ++i)
     {

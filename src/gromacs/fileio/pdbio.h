@@ -46,7 +46,6 @@
 #include "gromacs/utility/real.h"
 
 struct AtomProperties;
-struct t_atoms;
 struct t_symtab;
 struct t_topology;
 
@@ -88,16 +87,34 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box);
  * This function is fundamentally broken as far as thread-safety is concerned.
  */
 
-void write_pdbfile_indexed(FILE *out, const char *title, const t_atoms *atoms,
-                           const rvec x[], int ePBC, const matrix box, char chain,
-                           int model_nr, int nindex, const int index[],
-                           gmx_conect conect, gmx_bool bTerSepChains,
+void write_pdbfile_indexed(FILE *out,
+                           const char *title,
+                           gmx::ArrayRef<const AtomInfo> atoms,
+                           gmx::ArrayRef<const Residue> resinfo,
+                           gmx::ArrayRef<const PdbEntry> pdb,
+                           const rvec x[],
+                           int ePBC,
+                           const matrix box,
+                           char chain,
+                           int model_nr,
+                           gmx::ArrayRef<const int> index,
+                           gmx_conect conect,
+                           gmx_bool bTerSepChains,
                            bool usePqrFormat);
 /* REALLY low level */
 
-void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms,
-                   const rvec x[], int ePBC, const matrix box, char chain,
-                   int model_nr, gmx_conect conect, gmx_bool bTerSepChains);
+void write_pdbfile(FILE *out,
+                   const char *title,
+                   gmx::ArrayRef<const AtomInfo> atoms,
+                   gmx::ArrayRef<const Residue> resinfo,
+                   gmx::ArrayRef<const PdbEntry> pdb,
+                   const rvec x[],
+                   int ePBC,
+                   const matrix box,
+                   char chain,
+                   int model_nr,
+                   gmx_conect conect,
+                   gmx_bool bTerSepChains);
 /* Low level pdb file writing routine.
  *
  *          ONLY FOR SPECIAL PURPOSES,
@@ -111,19 +128,33 @@ void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms,
  * which may be useful for visualization purposes.
  */
 
-void get_pdb_atomnumber(const t_atoms *atoms, AtomProperties *aps);
+void get_pdb_atomnumber(gmx::ArrayRef<AtomInfo> atom,
+                        gmx::ArrayRef<const PdbEntry> pdb,
+                        AtomProperties *aps);
 /* Routine to extract atomic numbers from the atom names */
 
-int read_pdbfile(FILE *in, char *title, int *model_nr,
-                 struct t_atoms *atoms, struct t_symtab *symtab,
-                 rvec x[], int *ePBC, matrix box,
-                 gmx_bool bChange, gmx_conect conect);
+int read_pdbfile(FILE *in,
+                 char *title,
+                 int *model_nr,
+                 std::vector<AtomInfo> *atoms,
+                 std::vector<Residue> *resinfo,
+                 std::vector<PdbEntry> *pdb,
+                 struct t_symtab *symtab,
+                 rvec x[],
+                 int *ePBC,
+                 matrix box,
+                 gmx_bool bChange,
+                 gmx_conect conect);
 /* Function returns number of atoms found.
  * ePBC and gmx_conect structure may be NULL.
  */
 
 void gmx_pdb_read_conf(const char *infile,
-                       t_symtab *symtab, char **name, t_atoms *atoms,
+                       t_symtab *symtab,
+                       char **name,
+                       std::vector<AtomInfo> *atoms,
+                       std::vector<Residue> *resinfo,
+                       std::vector<PdbEntry> *pdb,
                        rvec x[], int *ePBC, matrix box);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.

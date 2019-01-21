@@ -61,35 +61,40 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static real find_pdb_bfac(const t_atoms *atoms, t_resinfo *ri, char *atomnm)
+static real find_pdb_bfac(gmx::ArrayRef<const AtomInfo> atoms,
+                          gmx::ArrayRef<const Residue> resinfo,
+                          gmx::ArrayRef<const PdbEntry> pdb,
+                          const Residue &ri, char *atomnm)
 {
     char rresnm[8];
     int  i;
 
-    std::strcpy(rresnm, *ri->name);
+    std::strcpy(rresnm, *ri.name_);
     rresnm[3] = '\0';
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms.size()); i++)
     {
-        if ((ri->nr == atoms->resinfo[atoms->atom[i].resind].nr) &&
-            (ri->ic == atoms->resinfo[atoms->atom[i].resind].ic) &&
-            (std::strcmp(*atoms->resinfo[atoms->atom[i].resind].name, rresnm) == 0) &&
-            (std::strstr(*atoms->atomname[i], atomnm) != nullptr))
+        if ((ri.nr_ == resinfo[atoms[i].resind_].nr_) &&
+            (ri.ic_ == resinfo[atoms[i].resind_].ic_) &&
+            (std::strcmp(*resinfo[atoms[i].resind_].name_, rresnm) == 0) &&
+            (std::strstr(*atoms[i].atomname, atomnm) != nullptr))
         {
             break;
         }
     }
-    if (i == atoms->nr)
+    if (i == atoms.size())
     {
         fprintf(stderr, "\rCan not find %s%d-%s in pdbfile\n",
-                rresnm, ri->nr, atomnm);
+                rresnm, ri.nr_, atomnm);
         fflush(stderr);
         return 0.0;
     }
 
-    return atoms->pdbinfo[i].bfac;
+    return pdb[i].bfac_;
 }
 
-static void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
+static void correlate_aniso(const char *fn,
+                            gmx::ArrayRef<const PdbEntry> ref,
+                            gmx::ArrayRef<const PdbEntry> calc,
                             const gmx_output_env_t *oenv)
 {
     FILE *fp;
@@ -97,13 +102,13 @@ static void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
 
     fp = xvgropen(fn, "Correlation between X-Ray and Computed Uij", "X-Ray",
                   "Computed", oenv);
-    for (i = 0; (i < ref->nr); i++)
+    for (i = 0; (i < ref.size()); i++)
     {
-        if (ref->pdbinfo[i].bAnisotropic)
+        if (ref[i].haveAnisotropic_)
         {
             for (j = U11; (j <= U23); j++)
             {
-                fprintf(fp, "%10d  %10d\n", ref->pdbinfo[i].uij[j], calc->pdbinfo[i].uij[j]);
+                fprintf(fp, "%10d  %10d\n", ref[i].uij_[j], calc[i].uij_[j]);
             }
         }
     }
@@ -112,7 +117,7 @@ static void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
 
 static void average_residues(double f[], double **U, int uind,
                              int isize, const int index[], const real w_rls[],
-                             const t_atoms *atoms)
+                             gmx::ArrayRef<const AtomInfo> atoms)
 {
     int    i, j, start;
     double av, m;
@@ -129,7 +134,7 @@ static void average_residues(double f[], double **U, int uind,
         av += w_rls[index[i]]*(f != nullptr ? f[i] : U[i][uind]);
         m  += w_rls[index[i]];
         if (i+1 == isize ||
-            atoms->atom[index[i]].resind != atoms->atom[index[i+1]].resind)
+            atoms[index[i]].resind_ != atoms[index[i+1]].resind_)
         {
             av /= m;
             if (f != nullptr)
@@ -239,7 +244,6 @@ int gmx_rmsf(int argc, char *argv[])
 
     t_topology        top;
     int               ePBC;
-    t_atoms          *pdbatoms, *refatoms;
 
     matrix            box, pdbbox;
     rvec             *x, *pdbx, *xref;
@@ -296,15 +300,15 @@ int gmx_rmsf(int argc, char *argv[])
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, nullptr, box, TRUE);
     const char *title = *top.name;
-    snew(w_rls, top.atoms.nr);
+    snew(w_rls, top.atoms.size());
 
     fprintf(stderr, "Select group(s) for root mean square calculation\n");
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
 
     /* Set the weight */
     for (i = 0; i < isize; i++)
     {
-        w_rls[index[i]] = top.atoms.atom[index[i]].m;
+        w_rls[index[i]] = top.atoms[index[i]].m_;
     }
 
     /* Malloc the rmsf arrays */
@@ -320,35 +324,36 @@ int gmx_rmsf(int argc, char *argv[])
         snew(rmsd_x, isize);
     }
 
+    std::vector<PdbEntry> pdb;
+    std::vector<PdbEntry> ref;
     if (bReadPDB)
     {
-        t_topology *top_pdb;
-        snew(top_pdb, 1);
+        t_topology *top_pdb = new t_topology;
         /* Read coordinates twice */
         read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, nullptr, nullptr, pdbbox, FALSE);
-        snew(pdbatoms, 1);
-        *pdbatoms = top_pdb->atoms;
+        pdb = std::vector<PdbEntry>(top_pdb->pdb.begin(), top_pdb->pdb.end());
         read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, &pdbx, nullptr, pdbbox, FALSE);
         /* TODO Should this assert that top_pdb->atoms.nr == top.atoms.nr?
          * See discussion at https://gerrit.gromacs.org/#/c/6430/1 */
         title = *top_pdb->name;
-        snew(refatoms, 1);
-        *refatoms = top_pdb->atoms;
-        sfree(top_pdb);
+        ref = std::vector<PdbEntry>(top_pdb->pdb.begin(), top_pdb->pdb.end());
+        delete top_pdb;
     }
     else
     {
-        pdbatoms  = &top.atoms;
-        refatoms  = &top.atoms;
+        pdb.resize(top.atoms.size());
+        for (auto it = pdb.begin(); it != pdb.end(); it++)
+        {
+          it->isSet_ = true;
+        }
+        ref = pdb;
         pdbx      = xref;
-        snew(pdbatoms->pdbinfo, pdbatoms->nr);
-        pdbatoms->havePdbInfo = TRUE;
         copy_mat(box, pdbbox);
     }
 
     if (bFit)
     {
-        sub_xcm(xref, isize, index, top.atoms.atom, xcm, FALSE);
+        sub_xcm(xref, isize, index, top.atoms, xcm, FALSE);
     }
 
     natom = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
@@ -368,7 +373,7 @@ int gmx_rmsf(int argc, char *argv[])
             gmx_rmpbc(gpbc, natom, box, x);
 
             /* Set center of mass to zero */
-            sub_xcm(x, isize, index, top.atoms.atom, xcm, FALSE);
+            sub_xcm(x, isize, index, top.atoms, xcm, FALSE);
 
             /* Fit to reference structure */
             do_fit(natom, w_rls, xref, x);
@@ -427,10 +432,10 @@ int gmx_rmsf(int argc, char *argv[])
             {
                 U[i][d*DIM + m] = U[i][d*DIM + m]*invcount
                     - xav[i*DIM + d]*xav[i*DIM + m];
-                Uaver[3*d+m] += top.atoms.atom[index[i]].m*U[i][d*DIM + m];
+                Uaver[3*d+m] += top.atoms[index[i]].m_*U[i][d*DIM + m];
             }
         }
-        totmass += top.atoms.atom[index[i]].m;
+        totmass += top.atoms[index[i]].m_;
     }
     for (d = 0; d < DIM*DIM; d++)
     {
@@ -441,7 +446,7 @@ int gmx_rmsf(int argc, char *argv[])
     {
         for (d = 0; d < DIM*DIM; d++)
         {
-            average_residues(nullptr, U, d, isize, index, w_rls, &top.atoms);
+            average_residues(nullptr, U, d, isize, index, w_rls, top.atoms);
         }
     }
 
@@ -450,13 +455,13 @@ int gmx_rmsf(int argc, char *argv[])
         for (i = 0; i < isize; i++)
         {
             aid = index[i];
-            pdbatoms->pdbinfo[aid].bAnisotropic = TRUE;
-            pdbatoms->pdbinfo[aid].uij[U11]     = static_cast<int>(1e6*U[i][XX*DIM + XX]);
-            pdbatoms->pdbinfo[aid].uij[U22]     = static_cast<int>(1e6*U[i][YY*DIM + YY]);
-            pdbatoms->pdbinfo[aid].uij[U33]     = static_cast<int>(1e6*U[i][ZZ*DIM + ZZ]);
-            pdbatoms->pdbinfo[aid].uij[U12]     = static_cast<int>(1e6*U[i][XX*DIM + YY]);
-            pdbatoms->pdbinfo[aid].uij[U13]     = static_cast<int>(1e6*U[i][XX*DIM + ZZ]);
-            pdbatoms->pdbinfo[aid].uij[U23]     = static_cast<int>(1e6*U[i][YY*DIM + ZZ]);
+            pdb[aid].haveAnisotropic_ = TRUE;
+            pdb[aid].uij_[U11]     = static_cast<int>(1e6*U[i][XX*DIM + XX]);
+            pdb[aid].uij_[U22]     = static_cast<int>(1e6*U[i][YY*DIM + YY]);
+            pdb[aid].uij_[U33]     = static_cast<int>(1e6*U[i][ZZ*DIM + ZZ]);
+            pdb[aid].uij_[U12]     = static_cast<int>(1e6*U[i][XX*DIM + YY]);
+            pdb[aid].uij_[U13]     = static_cast<int>(1e6*U[i][XX*DIM + ZZ]);
+            pdb[aid].uij_[U23]     = static_cast<int>(1e6*U[i][YY*DIM + ZZ]);
         }
     }
     if (bRes)
@@ -498,14 +503,14 @@ int gmx_rmsf(int argc, char *argv[])
         for (i = 0; (i < isize); i++)
         {
             if (!bRes || i+1 == isize ||
-                top.atoms.atom[index[i]].resind != top.atoms.atom[index[i+1]].resind)
+                top.atoms[index[i]].resind_ != top.atoms[index[i+1]].resind_)
             {
-                resind    = top.atoms.atom[index[i]].resind;
-                pdb_bfac  = find_pdb_bfac(pdbatoms, &top.atoms.resinfo[resind],
-                                          *(top.atoms.atomname[index[i]]));
+                resind    = top.atoms[index[i]].resind_;
+                pdb_bfac  = find_pdb_bfac(top.atoms, top.resinfo, pdb, top.resinfo[resind],
+                                          *(top.atoms[index[i]].atomname));
 
                 fprintf(fp, "%5d  %10.5f  %10.5f\n",
-                        bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, rmsf[i]*bfac,
+                        bRes ? top.resinfo[top.atoms[index[i]].resind_].nr_ : index[i]+1, rmsf[i]*bfac,
                         pdb_bfac);
             }
         }
@@ -517,10 +522,10 @@ int gmx_rmsf(int argc, char *argv[])
         for (i = 0; i < isize; i++)
         {
             if (!bRes || i+1 == isize ||
-                top.atoms.atom[index[i]].resind != top.atoms.atom[index[i+1]].resind)
+                top.atoms[index[i]].resind_ != top.atoms[index[i+1]].resind_)
             {
                 fprintf(fp, "%5d %8.4f\n",
-                        bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, std::sqrt(rmsf[i]));
+                        bRes ? top.resinfo[top.atoms[index[i]].resind_].nr_ : index[i]+1, std::sqrt(rmsf[i]));
             }
         }
         xvgrclose(fp);
@@ -528,7 +533,7 @@ int gmx_rmsf(int argc, char *argv[])
 
     for (i = 0; i < isize; i++)
     {
-        pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
+        pdb[index[i]].bfac_ = 800*M_PI*M_PI/3.0*rmsf[i];
     }
 
     if (devfn)
@@ -539,17 +544,17 @@ int gmx_rmsf(int argc, char *argv[])
         }
         if (bRes)
         {
-            average_residues(rmsf, nullptr, 0, isize, index, w_rls, &top.atoms);
+            average_residues(rmsf, nullptr, 0, isize, index, w_rls, top.atoms);
         }
         /* Write RMSD output */
         fp = xvgropen(devfn, "RMS Deviation", label, "(nm)", oenv);
         for (i = 0; i < isize; i++)
         {
             if (!bRes || i+1 == isize ||
-                top.atoms.atom[index[i]].resind != top.atoms.atom[index[i+1]].resind)
+                top.atoms[index[i]].resind_ != top.atoms[index[i+1]].resind_)
             {
                 fprintf(fp, "%5d %8.4f\n",
-                        bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, std::sqrt(rmsf[i]));
+                        bRes ? top.resinfo[top.atoms[index[i]].resind_].nr_ : index[i]+1, std::sqrt(rmsf[i]));
             }
         }
         xvgrclose(fp);
@@ -562,13 +567,13 @@ int gmx_rmsf(int argc, char *argv[])
         {
             rvec_inc(pdbx[index[i]], xcm);
         }
-        write_sto_conf_indexed(opt2fn("-oq", NFILE, fnm), title, pdbatoms, pdbx,
-                               nullptr, ePBC, pdbbox, isize, index);
+        write_sto_conf_indexed(opt2fn("-oq", NFILE, fnm), title, top.atoms, top.resinfo, pdb, pdbx,
+                               nullptr, ePBC, pdbbox, gmx::arrayRefFromArray(index, isize));
     }
     if (opt2bSet("-ox", NFILE, fnm))
     {
         rvec *bFactorX;
-        snew(bFactorX, top.atoms.nr);
+        snew(bFactorX, top.atoms.size());
         for (i = 0; i < isize; i++)
         {
             for (d = 0; d < DIM; d++)
@@ -577,13 +582,14 @@ int gmx_rmsf(int argc, char *argv[])
             }
         }
         /* Write a .pdb file with B-factors and optionally anisou records */
-        write_sto_conf_indexed(opt2fn("-ox", NFILE, fnm), title, pdbatoms, bFactorX, nullptr,
-                               ePBC, pdbbox, isize, index);
+        write_sto_conf_indexed(opt2fn("-ox", NFILE, fnm),
+                               title, top.atoms, top.resinfo, pdb, bFactorX, nullptr,
+                               ePBC, pdbbox, gmx::arrayRefFromArray(index, isize));
         sfree(bFactorX);
     }
     if (bAniso)
     {
-        correlate_aniso(opt2fn("-oc", NFILE, fnm), refatoms, pdbatoms, oenv);
+        correlate_aniso(opt2fn("-oc", NFILE, fnm), ref, pdb, oenv);
         do_view(oenv, opt2fn("-oc", NFILE, fnm), "-nxy");
     }
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");

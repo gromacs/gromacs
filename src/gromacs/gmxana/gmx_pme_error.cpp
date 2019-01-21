@@ -131,9 +131,9 @@ static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
         q2_mol   = 0.0;                                   /* q squared value of this molecule */
         nrq_mol  = 0;                                     /* number of charges this molecule carries */
         const gmx_moltype_t &molecule = mtop->moltype[molblock.type];
-        for (int i = 0; i < molecule.atoms.nr; i++)
+        for (const auto &a : molecule.atoms)
         {
-            qi = molecule.atoms.atom[i].q;
+            qi = a.q_;
             /* Is this charge worth to be considered? */
             if (is_charge(qi))
             {
@@ -146,7 +146,7 @@ static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
         nrq_all += nrq_mol*molblock.nmol;
 #ifdef DEBUG
         fprintf(stderr, "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n",
-                imol, molecule.atoms.nr, q2_mol, nrq_mol, molblock.nmol, q2_all, nrq_all);
+                imol, molecule.atoms.size(), q2_mol, nrq_mol, molblock.nmol, q2_all, nrq_all);
 #endif
     }
 
@@ -803,7 +803,6 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
 {
     int                     i;
     int                     nq; /* number of charged particles */
-    gmx_mtop_atomloop_all_t aloop;
 
 
     if (MASTER(cr))
@@ -812,13 +811,13 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
         snew(*x, mtop->natoms);
         nq = 0;
 
-        aloop = gmx_mtop_atomloop_all_init(mtop);
-        const t_atom *atom;
-        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+        LoopOverAllAtoms aloop(*mtop);
+        const AtomInfo *atom;
+        while (aloop.nextAtom(&i, &atom))
         {
-            if (is_charge(atom->q))
+            if (is_charge(atom->q_))
             {
-                (*q)[nq]     = atom->q;
+                (*q)[nq]     = atom->q_;
                 (*x)[nq][XX] = x_orig[i][XX];
                 (*x)[nq][YY] = x_orig[i][YY];
                 (*x)[nq][ZZ] = x_orig[i][ZZ];

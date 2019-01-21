@@ -326,13 +326,13 @@ static void print_missing_interactions_atoms(const gmx::MDLogger &mdlog,
     {
         const gmx_moltype_t &moltype  = mtop->moltype[molb.type];
         int                  a_start  = a_end;
-        a_end                        = a_start + molb.nmol*moltype.atoms.nr;
+        a_end                        = a_start + molb.nmol*moltype.atoms.size();
 
         GMX_LOG(mdlog.warning).appendText(
                 print_missing_interactions_mb(cr, rt,
                                               *(moltype.name),
                                               &rt->ril_mt[molb.type],
-                                              a_start, a_end, moltype.atoms.nr,
+                                              a_start, a_end, moltype.atoms.size(),
                                               molb.nmol,
                                               idef));
     }
@@ -496,7 +496,7 @@ static void count_excls(const t_block *cgs, const t_blocka *excls,
 
 /*! \brief Run the reverse ilist generation and store it in r_il when \p bAssign = TRUE */
 static int low_make_reverse_ilist(const InteractionLists &il_mt,
-                                  const t_atom *atom,
+                                  gmx::ArrayRef<const AtomInfo> atom,
                                   gmx::ArrayRef < const std::vector < int>> vsitePbc,
                                   int *count,
                                   gmx_bool bConstr, gmx_bool bSettle,
@@ -567,7 +567,7 @@ static int low_make_reverse_ilist(const InteractionLists &il_mt,
                             r_il[r_index[a]+count[a]+2+nral] = 0;
                             for (j = 2; j < 1+nral; j++)
                             {
-                                if (atom[ia[j]].ptype == eptVSite)
+                                if (atom[ia[j]].ptype_ == eptVSite)
                                 {
                                     r_il[r_index[a]+count[a]+2+nral] |= (2<<j);
                                 }
@@ -600,7 +600,7 @@ static int low_make_reverse_ilist(const InteractionLists &il_mt,
 
 /*! \brief Make the reverse ilist: a list of bonded interactions linked to atoms */
 static int make_reverse_ilist(const InteractionLists &ilist,
-                              const t_atoms *atoms,
+                              gmx::ArrayRef<const AtomInfo> atoms,
                               gmx::ArrayRef < const std::vector < int>> vsitePbc,
                               gmx_bool bConstr, gmx_bool bSettle,
                               gmx_bool bBCheck,
@@ -610,9 +610,9 @@ static int make_reverse_ilist(const InteractionLists &ilist,
     int nat_mt, *count, i, nint_mt;
 
     /* Count the interactions */
-    nat_mt = atoms->nr;
+    nat_mt = atoms.size();
     snew(count, nat_mt);
-    low_make_reverse_ilist(ilist, atoms->atom, vsitePbc,
+    low_make_reverse_ilist(ilist, atoms, vsitePbc,
                            count,
                            bConstr, bSettle, bBCheck,
                            gmx::EmptyArrayRef(), gmx::EmptyArrayRef(),
@@ -628,7 +628,7 @@ static int make_reverse_ilist(const InteractionLists &ilist,
 
     /* Store the interactions */
     nint_mt =
-        low_make_reverse_ilist(ilist, atoms->atom, vsitePbc,
+        low_make_reverse_ilist(ilist, atoms, vsitePbc,
                                count,
                                bConstr, bSettle, bBCheck,
                                ril_mt->index, ril_mt->il,
@@ -636,7 +636,7 @@ static int make_reverse_ilist(const InteractionLists &ilist,
 
     sfree(count);
 
-    ril_mt->numAtomsInMolecule = atoms->nr;
+    ril_mt->numAtomsInMolecule = atoms.size();
 
     return nint_mt;
 }
@@ -673,12 +673,12 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
             vsitePbc = gmx::makeConstArrayRef(vsitePbcPerMoltype[mt]);
         }
         int numberOfInteractions =
-            make_reverse_ilist(molt.ilist, &molt.atoms, vsitePbc,
+            make_reverse_ilist(molt.ilist, molt.atoms, vsitePbc,
                                rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
                                &rt.ril_mt[mt]);
         nint_mt.push_back(numberOfInteractions);
 
-        rt.ril_mt_tot_size += rt.ril_mt[mt].index[molt.atoms.nr];
+        rt.ril_mt_tot_size += rt.ril_mt[mt].index[molt.atoms.size()];
     }
     if (debug)
     {
@@ -695,16 +695,13 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     rt.bIntermolecularInteractions = mtop->bIntermolecularInteractions;
     if (rt.bIntermolecularInteractions)
     {
-        t_atoms atoms_global;
-
-        atoms_global.nr   = mtop->natoms;
-        atoms_global.atom = nullptr; /* Only used with virtual sites */
+        std::vector<AtomInfo> atoms_global(mtop->natoms);
 
         GMX_RELEASE_ASSERT(mtop->intermolecular_ilist, "We should have an ilist when intermolecular interactions are on");
 
         *nint +=
             make_reverse_ilist(*mtop->intermolecular_ilist,
-                               &atoms_global,
+                               atoms_global,
                                gmx::EmptyArrayRef(),
                                rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
                                &rt.ril_intermol);
@@ -724,7 +721,7 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
         const gmx_molblock_t &molb           = mtop->molblock[mb];
-        const int             numAtomsPerMol = mtop->moltype[molb.type].atoms.nr;
+        const int             numAtomsPerMol = mtop->moltype[molb.type].atoms.size();
         MolblockIndices       mbi;
         mbi.a_start                          = i;
         i                                   += molb.nmol*numAtomsPerMol;
@@ -2276,15 +2273,13 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
             gmx_fatal(FARGS, "The combination of intermolecular interactions, charge groups and domain decomposition is not supported. Use cutoff-scheme=Verlet (which removes the charge groups) or run without domain decomposition.");
         }
 
-        t_atoms atoms;
+        std::vector<AtomInfo> atoms(mtop->natoms);
 
-        atoms.nr   = mtop->natoms;
-        atoms.atom = nullptr;
 
         GMX_RELEASE_ASSERT(mtop->intermolecular_ilist, "We should have an ilist when intermolecular interactions are on");
 
         make_reverse_ilist(*mtop->intermolecular_ilist,
-                           &atoms,
+                           atoms,
                            gmx::EmptyArrayRef(),
                            FALSE, FALSE, FALSE, TRUE, &ril_intermol);
     }
@@ -2313,7 +2308,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
          * The constraints are discarded here.
          */
         reverse_ilist_t ril;
-        make_reverse_ilist(molt.ilist, &molt.atoms, gmx::EmptyArrayRef(),
+        make_reverse_ilist(molt.ilist, molt.atoms, gmx::EmptyArrayRef(),
                            FALSE, FALSE, FALSE, TRUE, &ril);
 
         cgi_mb = &cginfo_mb[mb];
@@ -2651,7 +2646,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
         const gmx_moltype_t &molt = mtop->moltype[molb.type];
         if (molt.cgs.nr == 1 || molb.nmol == 0)
         {
-            at_offset += molb.nmol*molt.atoms.nr;
+            at_offset += molb.nmol*molt.atoms.size();
         }
         else
         {
@@ -2661,7 +2656,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
             }
 
             std::vector<int> at2cg = make_at2cg(molt.cgs);
-            snew(xs, molt.atoms.nr);
+            snew(xs, molt.atoms.size());
             snew(cg_cm, molt.cgs.nr);
             for (int mol = 0; mol < molb.nmol; mol++)
             {
@@ -2684,7 +2679,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
                                            at_offset + bd_mol_mb.a2,
                                            &bd_mb);
 
-                at_offset += molt.atoms.nr;
+                at_offset += molt.atoms.size();
             }
             sfree(cg_cm);
             sfree(xs);

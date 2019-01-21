@@ -58,7 +58,7 @@ void print_h_db(FILE *out, int nh, t_hackblock ah[]);
 
 int compaddh(const void *a, const void *b);
 
-t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key);
+t_hackblock *search_h_db(int nh, gmx::ArrayRef<t_hackblock> ah, const char *key);
 /* Search for an entry in the database */
 
 #endif

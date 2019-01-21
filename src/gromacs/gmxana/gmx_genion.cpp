@@ -64,7 +64,7 @@ static void insert_ion(int nsa, const int *nwater,
                        gmx_bool bSet[], int repl[], int index[],
                        rvec x[], t_pbc *pbc,
                        int sign, int q, const char *ionname,
-                       t_atoms *atoms,
+                       gmx::ArrayRef<AtomInfo> atoms,
                        real rmin,
                        gmx::DefaultRandomEngine * rng)
 {
@@ -96,10 +96,10 @@ static void insert_ion(int nsa, const int *nwater,
     bSet[ei] = TRUE;
     repl[ei] = sign;
 
-    atoms->atom[index[nsa*ei]].q = q;
+    atoms[index[nsa*ei]].q_ = q;
     for (i = 1; i < nsa; i++)
     {
-        atoms->atom[index[nsa*ei+i]].q = 0;
+        atoms[index[nsa*ei+i]].q_ = 0;
     }
 
     /* Mark all solvent molecules within rmin as unavailable for substitution */
@@ -138,14 +138,16 @@ static char *aname(const char *mname)
 }
 
 static void sort_ions(int nsa, int nw, const int repl[], const int index[],
-                      t_atoms *atoms, rvec x[],
+                      std::vector<AtomInfo> *atoms, 
+                      gmx::ArrayRef<Residue> resinfo,
+                      rvec x[],
                       const char *p_name, const char *n_name)
 {
     int    i, j, k, r, np, nn, starta, startr, npi, nni;
     rvec  *xt;
     char **pptr = nullptr, **nptr = nullptr, **paptr = nullptr, **naptr = nullptr;
 
-    snew(xt, atoms->nr);
+    snew(xt, atoms->size());
 
     /* Put all the solvent in front and count the added ions */
     np = 0;
@@ -175,7 +177,7 @@ static void sort_ions(int nsa, int nw, const int repl[], const int index[],
     {
         /* Put the positive and negative ions at the end */
         starta = index[nsa*(nw - np - nn)];
-        startr = atoms->atom[starta].resind;
+        startr = atoms->at(starta).resind_;
 
         if (np)
         {
@@ -201,9 +203,9 @@ static void sort_ions(int nsa, int nw, const int repl[], const int index[],
                 j = starta+npi;
                 k = startr+npi;
                 copy_rvec(x[index[nsa*i]], xt[j]);
-                atoms->atomname[j]     = paptr;
-                atoms->atom[j].resind  = k;
-                atoms->resinfo[k].name = pptr;
+                atoms->at(j).atomname     = paptr;
+                atoms->at(j).resind_  = k;
+                resinfo[k].name_ = pptr;
                 npi++;
             }
             else if (r < 0)
@@ -211,23 +213,22 @@ static void sort_ions(int nsa, int nw, const int repl[], const int index[],
                 j = starta+np+nni;
                 k = startr+np+nni;
                 copy_rvec(x[index[nsa*i]], xt[j]);
-                atoms->atomname[j]     = naptr;
-                atoms->atom[j].resind  = k;
-                atoms->resinfo[k].name = nptr;
+                atoms->at(j).atomname     = naptr;
+                atoms->at(j).resind_  = k;
+                resinfo[k].name_ = nptr;
                 nni++;
             }
         }
-        for (i = index[nsa*nw-1]+1; i < atoms->nr; i++)
+        for (i = index[nsa*nw-1]+1; i < gmx::index(atoms->size()); i++)
         {
             j                  = i-(nsa-1)*(np+nn);
-            atoms->atomname[j] = atoms->atomname[i];
-            atoms->atom[j]     = atoms->atom[i];
+            atoms->at(j) = atoms->at(i);
             copy_rvec(x[i], xt[j]);
         }
-        atoms->nr -= (nsa-1)*(np+nn);
+        atoms->resize(atoms->size() - (nsa-1)*(np+nn));
 
         /* Copy the new positions back */
-        for (i = index[0]; i < atoms->nr; i++)
+        for (i = index[0]; i < gmx::index(atoms->size()); i++)
         {
             copy_rvec(xt[i], x[i]);
         }
@@ -387,7 +388,6 @@ int gmx_genion(int argc, char *argv[])
     rvec              *x, *v;
     real               vol;
     matrix             box;
-    t_atoms            atoms;
     t_pbc              pbc;
     int               *repl, ePBC;
     int               *index;
@@ -422,13 +422,14 @@ int gmx_genion(int argc, char *argv[])
 
     /* Read atom positions and charges */
     read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, &x, &v, box, FALSE);
-    atoms = top.atoms;
+    std::vector<AtomInfo> atoms(top.atoms.begin(), top.atoms.end());
+    std::vector<Residue> resinfo(top.resinfo.begin(), top.resinfo.end());
 
     /* Compute total charge */
     double qtot = 0;
-    for (i = 0; (i < atoms.nr); i++)
+    for (i = 0; (i < gmx::index(atoms.size())); i++)
     {
-        qtot += atoms.atom[i].q;
+        qtot += atoms[i].q_;
     }
     iqtot = gmx::roundToInt(qtot);
 
@@ -478,7 +479,7 @@ int gmx_genion(int argc, char *argv[])
         printf("Will try to add %d %s ions and %d %s ions.\n",
                p_num, p_name, n_num, n_name);
         printf("Select a continuous group of solvent molecules\n");
-        get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nwa, &index, &grpname);
+        get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &nwa, &index, &grpname);
         for (i = 1; i < nwa; i++)
         {
             if (index[i] != index[i-1]+1)
@@ -490,8 +491,8 @@ int gmx_genion(int argc, char *argv[])
         }
         nsa = 1;
         while ((nsa < nwa) &&
-               (atoms.atom[index[nsa]].resind ==
-                atoms.atom[index[nsa-1]].resind))
+               (atoms[index[nsa]].resind_ ==
+                atoms[index[nsa-1]].resind_))
         {
             nsa++;
         }
@@ -515,8 +516,7 @@ int gmx_genion(int argc, char *argv[])
         snew(bSet, nw);
         snew(repl, nw);
 
-        snew(v, atoms.nr);
-        snew(atoms.pdbinfo, atoms.nr);
+        snew(v, atoms.size());
 
         set_pbc(&pbc, ePBC, box);
 
@@ -534,24 +534,22 @@ int gmx_genion(int argc, char *argv[])
         while (p_num-- > 0)
         {
             insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                       1, p_q, p_name, &atoms, rmin, &rng);
+                       1, p_q, p_name, atoms, rmin, &rng);
         }
         while (n_num-- > 0)
         {
             insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                       -1, n_q, n_name, &atoms, rmin, &rng);
+                       -1, n_q, n_name, atoms, rmin, &rng);
         }
         fprintf(stderr, "\n");
 
         if (nw)
         {
-            sort_ions(nsa, nw, repl, index, &atoms, x, p_name, n_name);
+            sort_ions(nsa, nw, repl, index, &atoms, resinfo, x, p_name, n_name);
         }
 
-        sfree(atoms.pdbinfo);
-        atoms.pdbinfo = nullptr;
     }
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, nullptr, ePBC, box);
+    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, atoms, resinfo, gmx::EmptyArrayRef(), x, nullptr, ePBC, box);
 
     return 0;
 }

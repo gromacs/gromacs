@@ -148,11 +148,11 @@ struct t_corr {
         {
             if (bMass)
             {
-                const t_atoms *atoms = &top->atoms;
-                snew(mass, atoms->nr);
-                for (int i = 0; (i < atoms->nr); i++)
+                gmx::ArrayRef<const AtomInfo> atoms = top->atoms;
+                snew(mass, atoms.size());
+                for (int i = 0; (i < atoms.size()); i++)
                 {
-                    mass[i] = atoms->atom[i].m;
+                    mass[i] = atoms[i].m_;
                 }
             }
         }
@@ -324,7 +324,10 @@ static real calc1_norm(t_corr *curr, int nx, const int index[], int nx0, rvec xc
 }
 
 /* calculate the com of molecules in x and put it into xa */
-static void calc_mol_com(int nmol, const int *molindex, const t_block *mols, const t_atoms *atoms,
+static void calc_mol_com(int nmol,
+                         const int *molindex,
+                         const t_block *mols,
+                         gmx::ArrayRef<const AtomInfo> atoms,
                          rvec *x, rvec *xa)
 {
     int  m, mol, i, d;
@@ -338,7 +341,7 @@ static void calc_mol_com(int nmol, const int *molindex, const t_block *mols, con
         mtot = 0;
         for (i = mols->index[mol]; i < mols->index[mol+1]; i++)
         {
-            mass = atoms->atom[i].m;
+            mass = atoms[i].m_;
             for (d = 0; d < DIM; d++)
             {
                 xm[d] += mass*x[i][d];
@@ -481,7 +484,8 @@ static void prep_data(gmx_bool bMol, int gnx, const int index[],
    atoms = atom data (for mass)
    com(output) = center of mass  */
 static void calc_com(gmx_bool bMol, int gnx, int index[],
-                     rvec xcur[], rvec xprev[], matrix box, const t_atoms *atoms,
+                     rvec xcur[], rvec xprev[], matrix box,
+                     gmx::ArrayRef<const AtomInfo> atoms,
                      rvec com)
 {
     int    i, m, ind;
@@ -505,7 +509,7 @@ static void calc_com(gmx_bool bMol, int gnx, int index[],
         }
 
 
-        mass = atoms->atom[ind].m;
+        mass = atoms[ind].m_;
         for (m = 0; m < DIM; m++)
         {
             sx[m] += mass*xcur[ind][m];
@@ -553,14 +557,15 @@ static void printmol(t_corr *curr, const char *fn,
     gmx_stats_t lsq1;
     int         i, j;
     real        a, b, D, Dav, D2av, VarD, sqrtD, sqrtD_max, scale;
-    t_pdbinfo  *pdbinfo = nullptr;
+    std::vector<PdbEntry> pdb;
     const int  *mol2a   = nullptr;
 
     out = xvgropen(fn, "Diffusion Coefficients / Molecule", "Molecule", "D", oenv);
 
     if (fn_pdb)
     {
-        pdbinfo = top->atoms.pdbinfo;
+        pdb = std::vector<PdbEntry>(top->pdb.begin(), top->pdb.end());
+        GMX_RELEASE_ASSERT(allAtomsHavePdbInfo(pdb), "Need to have pdb information");
         mol2a   = top->mols.index;
     }
 
@@ -588,7 +593,7 @@ static void printmol(t_corr *curr, const char *fn,
         Dav  += D;
         D2av += gmx::square(D);
         fprintf(out, "%10d  %10g\n", i, D);
-        if (pdbinfo)
+        if (allAtomsHavePdbInfo(pdb))
         {
             sqrtD = std::sqrt(D);
             if (sqrtD > sqrtD_max)
@@ -597,7 +602,7 @@ static void printmol(t_corr *curr, const char *fn,
             }
             for (j = mol2a[molindex[i]]; j < mol2a[molindex[i]+1]; j++)
             {
-                pdbinfo[j].bfac = sqrtD;
+                pdb[j].bfac_ = sqrtD;
             }
         }
     }
@@ -622,12 +627,12 @@ static void printmol(t_corr *curr, const char *fn,
         {
             scale *= 10;
         }
-        GMX_RELEASE_ASSERT(pdbinfo != nullptr, "Internal error - pdbinfo not set for PDB input");
-        for (i = 0; i < top->atoms.nr; i++)
+        GMX_RELEASE_ASSERT(allAtomsHavePdbInfo(pdb), "Internal error - pdbinfo not set for PDB input");
+        for (auto it = pdb.begin(); it != pdb.end(); it++)
         {
-            pdbinfo[i].bfac *= scale;
+            it->bfac_ *= scale;
         }
-        write_sto_conf(fn_pdb, "molecular MSD", &top->atoms, x, nullptr, ePBC, box);
+        write_sto_conf(fn_pdb, "molecular MSD", top->atoms, top->resinfo, pdb, x, nullptr, ePBC, box);
     }
 }
 
@@ -656,9 +661,9 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
 #ifdef DEBUG
     fprintf(stderr, "Read %d atoms for first frame\n", natoms);
 #endif
-    if ((gnx_com != nullptr) && natoms < top->atoms.nr)
+    if ((gnx_com != nullptr) && natoms < gmx::index(top->atoms.size()))
     {
-        fprintf(stderr, "WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n", natoms, top->atoms.nr);
+        fprintf(stderr, "WARNING: The trajectory only contains part of the system (%d of %lu atoms) and therefore the COM motion of only this part of the system will be removed\n", natoms, top->atoms.size());
     }
 
     snew(x[prev], natoms);
@@ -785,7 +790,7 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         // data becomes overwritten by the molecule data.
         if (bMol)
         {
-            calc_mol_com(gnx[0], index[0], &top->mols, &top->atoms, x[cur], xa[cur]);
+            calc_mol_com(gnx[0], index[0], &top->mols, top->atoms, x[cur], xa[cur]);
         }
 
         /* for the first frame, the previous frame is a copy of the first frame */
@@ -805,7 +810,7 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         if (gnx_com)
         {
             calc_com(bMol, gnx_com[0], index_com[0], xa[cur], xa[prev], box,
-                     &top->atoms, com);
+                     top->atoms, com);
         }
 
         /* loop over all groups in index file */
@@ -882,7 +887,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
     int                    *gnx;   /* the selected groups' sizes */
     int                   **index; /* selected groups' indices */
     char                  **grpname;
-    int                     i, i0, i1, j, N, nat_trx;
+    int                     i, i0, i1, j, N;
     real                   *DD, *SigmaD, a, a2, b, r, chi2;
     rvec                   *x = nullptr;
     matrix                  box;
@@ -895,7 +900,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
     snew(grpname, nrgrp);
 
     fprintf(stderr, "\nSelect a group to calculate mean squared displacement for:\n");
-    get_index(&top->atoms, ndx_file, nrgrp, gnx, index, grpname);
+    get_index(top->atoms, top->resinfo, ndx_file, nrgrp, gnx, index, grpname);
 
     if (bRmCOMM)
     {
@@ -904,7 +909,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
         snew(grpname_com, 1);
 
         fprintf(stderr, "\nNow select a group for center of mass removal:\n");
-        get_index(&top->atoms, ndx_file, 1, gnx_com, index_com, grpname_com);
+        get_index(top->atoms, top->resinfo, ndx_file, 1, gnx_com, index_com, grpname_com);
     }
 
     if (mol_file)
@@ -916,8 +921,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
                                            mol_file == nullptr ? 0 : gnx[0],
                                            bTen, bMW, dt, top, beginfit, endfit);
 
-    nat_trx =
-        corr_loop(msd.get(), trx_file, top, ePBC, mol_file ? gnx[0] != 0 : false, gnx, index,
+    corr_loop(msd.get(), trx_file, top, ePBC, mol_file ? gnx[0] != 0 : false, gnx, index,
                   (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
                   bTen, gnx_com, index_com, dt, t_pdb,
                   pdb_file ? &x : nullptr, box, oenv);
@@ -942,14 +946,8 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
             fprintf(stderr, "\nNo frame found need time tpdb = %g ps\n"
                     "Can not write %s\n\n", t_pdb, pdb_file);
         }
-        i             = top->atoms.nr;
-        top->atoms.nr = nat_trx;
-        if (pdb_file && top->atoms.pdbinfo == nullptr)
-        {
-            snew(top->atoms.pdbinfo, top->atoms.nr);
-        }
+        i             = top->atoms.size();
         printmol(msd.get(), mol_file, pdb_file, index[0], top, x, ePBC, box, oenv);
-        top->atoms.nr = i;
     }
 
     DD     = nullptr;

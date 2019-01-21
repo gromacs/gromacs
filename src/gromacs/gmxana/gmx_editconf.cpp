@@ -40,6 +40,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <numeric>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -68,21 +69,23 @@
 #include "gromacs/utility/strdb.h"
 
 
-static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, AtomProperties *aps)
+static real calc_mass(gmx::ArrayRef<AtomInfo> atoms,
+                      gmx::ArrayRef<const Residue> resinfo,
+                      gmx_bool bGetMass, AtomProperties *aps)
 {
     real tmass;
     int  i;
 
     tmass = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms.size()); i++)
     {
         if (bGetMass)
         {
             setAtomProperty(aps, epropMass,
-                            *atoms->resinfo[atoms->atom[i].resind].name,
-                            *atoms->atomname[i], &(atoms->atom[i].m));
+                            *resinfo[atoms[i].resind_].name_,
+                            *atoms[i].atomname, &(atoms[i].m_));
         }
-        tmass += atoms->atom[i].m;
+        tmass += atoms[i].m_;
     }
 
     return tmass;
@@ -217,17 +220,21 @@ static void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac
 
 }
 
-static void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
+static void set_pdb_conf_bfac(gmx::ArrayRef<const AtomInfo> atoms,
+                              gmx::ArrayRef<const Residue> resinfo,
+                              gmx::ArrayRef<PdbEntry> pdb,
+                              int n_bfac,
                               double *bfac, int *bfac_nr, gmx_bool peratom)
 {
     real     bfac_min, bfac_max;
     int      i, n;
     gmx_bool found;
 
-    if (n_bfac > atoms->nres)
+    if (n_bfac > resinfo.size())
     {
         peratom = TRUE;
     }
+    GMX_RELEASE_ASSERT(atoms.size() == pdb.size(), "Need to have same size for atom and pdb arrays");
 
     bfac_max = -1e10;
     bfac_min = 1e10;
@@ -270,23 +277,24 @@ static void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
         bfac_min *= 10;
     }
 
-    for (i = 0; (i < natoms); i++)
+    for (auto it = pdb.begin(); it != pdb.end(); it++)
     {
-        atoms->pdbinfo[i].bfac = 0;
+        it->bfac_ = 0;
     }
 
     if (!peratom)
     {
-        fprintf(stderr, "Will attach %d B-factors to %d residues\n", n_bfac,
-                nres);
+        fprintf(stderr, "Will attach %d B-factors to %zu residues\n", n_bfac,
+                resinfo.size());
         for (i = 0; (i < n_bfac); i++)
         {
             found = FALSE;
-            for (n = 0; (n < natoms); n++)
+            for (n = 0; (n < atoms.size()); n++)
             {
-                if (bfac_nr[i] == atoms->resinfo[atoms->atom[n].resind].nr)
+                if (bfac_nr[i] == resinfo[atoms[n].resind_].nr_)
                 {
-                    atoms->pdbinfo[n].bfac = bfac[i];
+                    pdb[n].bfac_ = bfac[i];
+                    pdb[n].isSet_ = true;
                     found                  = TRUE;
                 }
             }
@@ -298,16 +306,16 @@ static void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     }
     else
     {
-        fprintf(stderr, "Will attach %d B-factors to %d atoms\n", n_bfac,
-                natoms);
+        fprintf(stderr, "Will attach %d B-factors to %zu atoms\n", n_bfac,
+                atoms.size());
         for (i = 0; (i < n_bfac); i++)
         {
-            atoms->pdbinfo[bfac_nr[i] - 1].bfac = bfac[i];
+            pdb[bfac_nr[i] - 1].bfac_ = bfac[i];
         }
     }
 }
 
-static void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
+static void pdb_legend(FILE *out, int natoms, int nres, gmx::ArrayRef<const PdbEntry> pdb, rvec x[])
 {
     real bfac_min, bfac_max, xmin, ymin, zmin;
     int  i;
@@ -323,8 +331,8 @@ static void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[]
         xmin     = std::min(xmin, x[i][XX]);
         ymin     = std::min(ymin, x[i][YY]);
         zmin     = std::min(zmin, x[i][ZZ]);
-        bfac_min = std::min(bfac_min, atoms->pdbinfo[i].bfac);
-        bfac_max = std::max(bfac_max, atoms->pdbinfo[i].bfac);
+        bfac_min = std::min(bfac_min, pdb[i].bfac_);
+        bfac_max = std::max(bfac_max, pdb[i].bfac_);
     }
     fprintf(stderr, "B-factors range from %g to %g\n", bfac_min, bfac_max);
     for (i = 1; (i < 12); i++)
@@ -339,31 +347,28 @@ static void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[]
 
 static void visualize_images(const char *fn, int ePBC, matrix box)
 {
-    t_atoms atoms;
+    std::vector<AtomInfo> atoms;
+    std::vector<Residue> resinfo;
     rvec   *img;
     char   *c, *ala;
     int     nat, i;
 
     nat = NTRICIMG + 1;
-    init_t_atoms(&atoms, nat, FALSE);
-    atoms.nr = nat;
     snew(img, nat);
     /* FIXME: Constness should not be cast away */
     c   = const_cast<char*>("C");
     ala = const_cast<char*>("ALA");
     for (i = 0; i < nat; i++)
     {
-        atoms.atomname[i]        = &c;
-        atoms.atom[i].resind     = i;
-        atoms.resinfo[i].name    = &ala;
-        atoms.resinfo[i].nr      = i + 1;
-        atoms.resinfo[i].chainid = 'A' + i / NCUCVERT;
+        atoms.push_back(AtomInfo());
+        atoms.back().atomname = &c;
+        atoms.back().resind_ = i;
+        resinfo.push_back(Residue(&ala, i + 1, ' ', -1, 'A' + i / NCUCVERT, nullptr));
     }
     calc_triclinic_images(box, img + 1);
 
-    write_sto_conf(fn, "Images", &atoms, img, nullptr, ePBC, box);
+    write_sto_conf(fn, "Images", atoms, resinfo, gmx::EmptyArrayRef(), img, nullptr, ePBC, box);
 
-    done_atom(&atoms);
     sfree(img);
 }
 
@@ -486,7 +491,9 @@ static void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix
            rotmatrix[2][0], rotmatrix[2][1], rotmatrix[2][2]);
 }
 
-static void renum_resnr(t_atoms *atoms, int isize, const int *index,
+static void renum_resnr(gmx::ArrayRef<const AtomInfo> atoms,
+                        gmx::ArrayRef<Residue> resinfo,
+                        int isize, const int *index,
                         int resnr_start)
 {
     int i, resind_prev, resind;
@@ -494,10 +501,10 @@ static void renum_resnr(t_atoms *atoms, int isize, const int *index,
     resind_prev = -1;
     for (i = 0; i < isize; i++)
     {
-        resind = atoms->atom[index == nullptr ? i : index[i]].resind;
+        resind = atoms[index == nullptr ? i : index[i]].resind_;
         if (resind != resind_prev)
         {
-            atoms->resinfo[resind].nr = resnr_start;
+            resinfo[resind].nr_ = resnr_start;
             resnr_start++;
         }
         resind_prev = resind;
@@ -794,27 +801,22 @@ int gmx_editconf(int argc, char *argv[])
                   " when using the -mead option\n");
     }
 
-    t_topology *top_tmp;
-    snew(top_tmp, 1);
+    t_topology *top_tmp = new t_topology;
     read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
-    t_atoms  &atoms = top_tmp->atoms;
-    natom = atoms.nr;
-    if (atoms.pdbinfo == nullptr)
+    std::vector<AtomInfo> atoms(top_tmp->atoms.begin(), top_tmp->atoms.end());
+    std::vector<Residue> resinfo(top_tmp->resinfo.begin(), top_tmp->resinfo.end());
+    std::vector<PdbEntry> pdb(top_tmp->pdb.begin(), top_tmp->pdb.end());
+    natom = atoms.size();
+    if (!allAtomsHavePdbInfo(pdb) || atoms.size() != pdb.size())
     {
-        snew(atoms.pdbinfo, atoms.nr);
+        pdb.resize(atoms.size());
     }
-    atoms.havePdbInfo = TRUE;
-
-    if (fn2ftp(infile) == efPDB)
-    {
-        get_pdb_atomnumber(&atoms, aps.get());
-    }
-    printf("Read %d atoms\n", atoms.nr);
+    printf("Read %lu atoms\n", atoms.size());
 
     /* Get the element numbers if available in a pdb file */
     if (fn2ftp(infile) == efPDB)
     {
-        get_pdb_atomnumber(&atoms, aps.get());
+        get_pdb_atomnumber(atoms, pdb, aps.get());
     }
 
     if (ePBC != epbcNONE)
@@ -831,27 +833,26 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bMead || bGrasp)
     {
-        if (atoms.nr != top->atoms.nr)
+        if (atoms.size() != top->atoms.size())
         {
-            gmx_fatal(FARGS, "Atom numbers don't match (%d vs. %d)", atoms.nr, top->atoms.nr);
+            gmx_fatal(FARGS, "Atom numbers don't match (%lu vs. %lu)", atoms.size(), top->atoms.size());
         }
-        snew(atoms.pdbinfo, top->atoms.nr);
         ntype = top->idef.atnr;
-        for (i = 0; (i < atoms.nr); i++)
+        for (i = 0; (i < gmx::index(atoms.size())); i++)
         {
             /* Determine the Van der Waals radius from the force field */
             if (bReadVDW)
             {
                 if (!setAtomProperty(aps.get(), epropVDW,
-                                     *top->atoms.resinfo[top->atoms.atom[i].resind].name,
-                                     *top->atoms.atomname[i], &vdw))
+                                     *top->resinfo[top->atoms[i].resind_].name_,
+                                     *top->atoms[i].atomname, &vdw))
                 {
                     vdw = rvdw;
                 }
             }
             else
             {
-                itype = top->atoms.atom[i].type;
+                itype = top->atoms[i].type_;
                 c12   = top->idef.iparams[itype*ntype+itype].lj.c12;
                 c6    = top->idef.iparams[itype*ntype+itype].lj.c6;
                 if ((c6 != 0) && (c12 != 0))
@@ -877,13 +878,13 @@ int gmx_editconf(int argc, char *argv[])
 
             if (bMead)
             {
-                atoms.pdbinfo[i].occup = top->atoms.atom[i].q;
-                atoms.pdbinfo[i].bfac  = vdw;
+                pdb[i].occup_ = top->atoms[i].q_;
+                pdb[i].bfac_  = vdw;
             }
             else
             {
-                atoms.pdbinfo[i].occup = vdw;
-                atoms.pdbinfo[i].bfac  = top->atoms.atom[i].q;
+                pdb[i].occup_ = vdw;
+                pdb[i].bfac_  = top->atoms[i].q_;
             }
         }
     }
@@ -916,7 +917,7 @@ int gmx_editconf(int argc, char *argv[])
     /* remove pbc */
     if (bRMPBC)
     {
-        rm_gropbc(&atoms, x, box);
+        rm_gropbc(atoms, x, box);
     }
 
     if (bCalcGeom)
@@ -924,12 +925,12 @@ int gmx_editconf(int argc, char *argv[])
         if (bIndex)
         {
             fprintf(stderr, "\nSelect a group for determining the system size:\n");
-            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm),
+            get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm),
                       1, &ssize, &sindex, &sgrpname);
         }
         else
         {
-            ssize  = atoms.nr;
+            ssize  = atoms.size();
             sindex = nullptr;
         }
         diam = calc_geom(ssize, sindex, x, gc, rmin, rmax, bCalcDiam);
@@ -955,7 +956,7 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bRho || bOrient || bAlign)
     {
-        mass = calc_mass(&atoms, !fn2bTPX(infile), aps.get());
+        mass = calc_mass(atoms, resinfo, !fn2bTPX(infile), aps.get());
     }
 
     if (bOrient)
@@ -965,10 +966,10 @@ int gmx_editconf(int argc, char *argv[])
 
         /* Get a group for principal component analysis */
         fprintf(stderr, "\nSelect group for the determining the orientation\n");
-        get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
+        get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
 
         /* Orient the principal axes along the coordinate axes */
-        orient_princ(&atoms, isize, index, natom, x, bHaveV ? v : nullptr, nullptr);
+        orient_princ(atoms, isize, index, natom, x, bHaveV ? v : nullptr, nullptr);
         sfree(index);
         sfree(grpnames);
     }
@@ -995,7 +996,7 @@ int gmx_editconf(int argc, char *argv[])
             scale[XX] = scale[YY] = scale[ZZ] = std::cbrt(dens/rho);
             fprintf(stderr, "Scaling all box vectors by %g\n", scale[XX]);
         }
-        scale_conf(atoms.nr, x, box, scale);
+        scale_conf(atoms.size(), x, box, scale);
     }
 
     if (bAlign)
@@ -1003,12 +1004,12 @@ int gmx_editconf(int argc, char *argv[])
         if (bIndex)
         {
             fprintf(stderr, "\nSelect a group that you want to align:\n");
-            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm),
+            get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm),
                       1, &numAlignmentAtoms, &aindex, &agrpname);
         }
         else
         {
-            numAlignmentAtoms = atoms.nr;
+            numAlignmentAtoms = atoms.size();
             snew(aindex, numAlignmentAtoms);
             for (i = 0; i < numAlignmentAtoms; i++)
             {
@@ -1025,7 +1026,7 @@ int gmx_editconf(int argc, char *argv[])
         }
         /*now determine transform and rotate*/
         /*will this work?*/
-        principal_comp(numAlignmentAtoms, aindex, atoms.atom, x, trans, princd);
+        principal_comp(numAlignmentAtoms, aindex, atoms, x, trans, princd);
 
         unitv(targetvec, targetvec);
         printf("Using %g %g %g as principal axis\n", trans[0][2], trans[1][2], trans[2][2]);
@@ -1055,12 +1056,12 @@ int gmx_editconf(int argc, char *argv[])
         if (bIndex)
         {
             fprintf(stderr, "\nSelect a group that you want to translate:\n");
-            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm),
+            get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm),
                       1, &ssize, &sindex, &sgrpname);
         }
         else
         {
-            ssize  = atoms.nr;
+            ssize  = atoms.size();
             sindex = nullptr;
         }
         printf("Translating %d atoms (out of %d) by %g %g %g nm\n", ssize, natom,
@@ -1243,19 +1244,19 @@ int gmx_editconf(int argc, char *argv[])
     if (bIndex)
     {
         fprintf(stderr, "\nSelect a group for output:\n");
-        get_index(&atoms, opt2fn_null("-n", NFILE, fnm),
+        get_index(atoms, resinfo, opt2fn_null("-n", NFILE, fnm),
                   1, &isize, &index, &grpname);
 
         if (resnr_start >= 0)
         {
-            renum_resnr(&atoms, isize, index, resnr_start);
+            renum_resnr(atoms, resinfo, isize, index, resnr_start);
         }
 
         if (opt2parg_bSet("-label", NPA, pa))
         {
-            for (i = 0; (i < atoms.nr); i++)
+            for (i = 0; (i < gmx::index(atoms.size())); i++)
             {
-                atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
+                resinfo[atoms[i].resind_].chainid_ = label[0];
             }
         }
 
@@ -1267,19 +1268,20 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
+            write_pdbfile_indexed(out, *top_tmp->name, atoms, resinfo, pdb, x, ePBC, box, ' ', 1,
+                                  gmx::arrayRefFromArray(index, isize), conect, TRUE, FALSE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, *top_tmp->name, atoms, resinfo, pdb, x, bHaveV ? v : nullptr, ePBC, box, gmx::arrayRefFromArray(index, isize));
         }
     }
     else
     {
         if (resnr_start >= 0)
         {
-            renum_resnr(&atoms, atoms.nr, nullptr, resnr_start);
+            renum_resnr(atoms, resinfo, atoms.size(), nullptr, resnr_start);
         }
 
         if ((outftp == efPDB) || (outftp == efPQR))
@@ -1303,42 +1305,37 @@ int gmx_editconf(int argc, char *argv[])
             else if (opt2bSet("-bf", NFILE, fnm))
             {
                 read_bfac(opt2fn("-bf", NFILE, fnm), &n_bfac, &bfac, &bfac_nr);
-                set_pdb_conf_bfac(atoms.nr, atoms.nres, &atoms,
+                set_pdb_conf_bfac(atoms, resinfo, pdb,
                                   n_bfac, bfac, bfac_nr, peratom);
             }
             if (opt2parg_bSet("-label", NPA, pa))
             {
-                for (i = 0; (i < atoms.nr); i++)
+                for (i = 0; (i < gmx::index(atoms.size())); i++)
                 {
-                    atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
+                    resinfo[atoms[i].resind_].chainid_ = label[0];
                 }
             }
             /* Need to bypass the regular write_pdbfile because I don't want to change
              * all instances to include the boolean flag for writing out PQR files.
              */
-            int *index;
-            snew(index, atoms.nr);
-            for (int i = 0; i < atoms.nr; i++)
-            {
-                index[i] = i;
-            }
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
+            std::vector<int> index(atoms.size());
+            std::iota(index.begin(), index.end(), 0);
+            write_pdbfile_indexed(out, *top_tmp->name, atoms, resinfo, pdb, x, ePBC, box, ' ', -1, index, conect,
                                   TRUE, outftp == efPQR);
-            sfree(index);
             if (bLegend)
             {
-                pdb_legend(out, atoms.nr, atoms.nres, &atoms, x);
+                pdb_legend(out, atoms.size(), resinfo.size(), pdb, x);
             }
             if (visbox[0] > 0)
             {
-                visualize_box(out, bLegend ? atoms.nr+12 : atoms.nr,
-                              bLegend ? atoms.nres = 12 : atoms.nres, box, visbox);
+                visualize_box(out, bLegend ? atoms.size()+12 : atoms.size(),
+                              bLegend ? 12 : resinfo.size(), box, visbox);
             }
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
+            write_sto_conf(outfile, *top_tmp->name, atoms, resinfo, pdb, x, bHaveV ? v : nullptr, ePBC, box);
         }
     }
     do_view(oenv, outfile, nullptr);

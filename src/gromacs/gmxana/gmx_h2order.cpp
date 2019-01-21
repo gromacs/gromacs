@@ -134,7 +134,7 @@ static void calc_h2order(const char *fn, const int index[], int ngx, rvec **slDi
 
         if (bMicel)
         {
-            calc_xcm(x0, nmic, micel, top->atoms.atom, com, FALSE);
+            calc_xcm(x0, nmic, micel, top->atoms, com, FALSE);
         }
 
         for (i = 0; i < ngx/3; i++)
@@ -159,9 +159,9 @@ static void calc_h2order(const char *fn, const int index[], int ngx, rvec **slDi
             for (j = 0; j < DIM; j++)
             {
                 dipole[j] =
-                    x0[index[3*i]][j] * top->atoms.atom[index[3*i]].q +
-                    x0[index[3*i+1]][j] * top->atoms.atom[index[3*i+1]].q +
-                    x0[index[3*i+2]][j] * top->atoms.atom[index[3*i+2]].q;
+                    x0[index[3*i]][j] * top->atoms[index[3*i]].q_ +
+                    x0[index[3*i+1]][j] * top->atoms[index[3*i+1]].q_ +
+                    x0[index[3*i+2]][j] * top->atoms[index[3*i+2]].q_;
             }
 
             /* now we have a dipole vector. Might as well safe it. Then the

@@ -56,19 +56,12 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
-{
-    atoms2->atom[a2] = atoms1->atom[a1];
-    snew(atoms2->atomname[a2], 1);
-    *atoms2->atomname[a2] = gmx_strdup(*atoms1->atomname[a1]);
-}
-
-static int pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
+static int pdbasearch_atom(const char *name, int resind, gmx::ArrayRef<const AtomInfo> pdba,
                            const char *searchtype, bool bAllowMissing)
 {
     int  i;
 
-    for (i = 0; (i < pdba->nr) && (pdba->atom[i].resind != resind); i++)
+    for (i = 0; (i < pdba.size()) && (pdba[i].resind_ != resind); i++)
     {
         ;
     }
@@ -78,8 +71,8 @@ static int pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
 }
 
 static void hacksearch_atom(int *ii, int *jj, char *name,
-                            const int nab[], t_hack *ab[],
-                            int resind, t_atoms *pdba)
+                            gmx::ArrayRef<const int> nab, gmx::ArrayRef<std::vector<t_hack>> ab,
+                            int resind, gmx::ArrayRef<const AtomInfo> pdba)
 {
     int  i, j;
 
@@ -89,11 +82,11 @@ static void hacksearch_atom(int *ii, int *jj, char *name,
         name++;
         resind--;
     }
-    for (i = 0; (i < pdba->nr) && (pdba->atom[i].resind != resind); i++)
+    for (i = 0; (i < pdba.size()) && (pdba[i].resind_ != resind); i++)
     {
         ;
     }
-    for (; (i < pdba->nr) && (pdba->atom[i].resind == resind) && (*ii < 0); i++)
+    for (; (i < pdba.size()) && (pdba[i].resind_ == resind) && (*ii < 0); i++)
     {
         for (j = 0; (j < nab[i]) && (*ii < 0); j++)
         {
@@ -107,32 +100,34 @@ static void hacksearch_atom(int *ii, int *jj, char *name,
 
 }
 
-static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
+static std::vector<t_hackblock> get_hackblocks(gmx::ArrayRef<const Residue> resinfo,
+                                   int nah, gmx::ArrayRef<t_hackblock> ah,
                                    int nterpairs,
-                                   t_hackblock **ntdb, t_hackblock **ctdb,
+                                   gmx::ArrayRef<std::vector<t_hackblock>> ntdb,
+                                   gmx::ArrayRef<std::vector<t_hackblock>> ctdb,
                                    const int *rN, const int *rC)
 {
     int          i, rnr;
-    t_hackblock *hb, *ahptr;
+    std::vector<t_hackblock> hb, ahptr;
 
     /* make space */
-    snew(hb, pdba->nres);
+    hb.resize(resinfo.size());
     /* first the termini */
     for (i = 0; i < nterpairs; i++)
     {
-        if (ntdb[i] != nullptr)
+        if (!ntdb[i].empty())
         {
             copy_t_hackblock(ntdb[i], &hb[rN[i]]);
         }
-        if (ctdb[i] != nullptr)
+        if (!ctdb[i].empty())
         {
             merge_t_hackblock(ctdb[i], &hb[rC[i]]);
         }
     }
     /* then the whole hdb */
-    for (rnr = 0; rnr < pdba->nres; rnr++)
+    for (rnr = 0; rnr < resinfo.size(); rnr++)
     {
-        ahptr = search_h_db(nah, ah, *pdba->resinfo[rnr].rtp);
+        t_hackblock *ahptr = search_h_db(nah, ah, *resinfo[rnr].rtp_);
         if (ahptr)
         {
             if (hb[rnr].name == nullptr)
@@ -146,7 +141,7 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
 }
 
 static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
-                                  int *nabi, t_hack **abi, bool bN, bool bC)
+                                  int *nabi, std::vector<t_hack> *abi, bool bN, bool bC)
 {
     int      j, k, l;
     bool     bIgnore;
@@ -183,7 +178,7 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
                 strcmp(atomname, hbr->hack[j].oname) == 0) ) )
         {
             /* now expand all hacks for this atom */
-            srenew(*abi, *nabi + hbr->hack[j].nr);
+            abi->resize(*nabi + hbr->hack[j].nr);
             for (k = 0; k < hbr->hack[j].nr; k++)
             {
                 copy_t_hack(&hbr->hack[j], &(*abi)[*nabi + k]);
@@ -251,40 +246,41 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
     }
 }
 
-static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[],
-                              int nab[], t_hack *ab[],
+static void expand_hackblocks(gmx::ArrayRef<const AtomInfo> pdba, t_hackblock hb[],
+                              gmx::ArrayRef<int> nab, gmx::ArrayRef<std::vector<t_hack>> ab,
                               int nterpairs, const int *rN, const int *rC)
 {
-    int      i, j;
-    bool     bN, bC;
-
-    for (i = 0; i < pdba->nr; i++)
+    int i = 0;
+    for (const auto &a : pdba)
     {
-        bN = FALSE;
-        for (j = 0; j < nterpairs && !bN; j++)
+        bool bN = FALSE;
+        for (int j = 0; j < nterpairs && !bN; j++)
         {
-            bN = pdba->atom[i].resind == rN[j];
+            bN = a.resind_ == rN[j];
         }
-        bC = FALSE;
-        for (j = 0; j < nterpairs && !bC; j++)
+        bool bC = FALSE;
+        for (int j = 0; j < nterpairs && !bC; j++)
         {
-            bC = pdba->atom[i].resind == rC[j];
+            bC = a.resind_ == rC[j];
         }
 
         /* add hacks to this atom */
-        expand_hackblocks_one(&hb[pdba->atom[i].resind], *pdba->atomname[i],
+        expand_hackblocks_one(&hb[a.resind_], *a.atomname,
                               &nab[i], &ab[i], bN, bC);
+        i++;
     }
 }
 
-static int check_atoms_present(t_atoms *pdba, const int nab[], t_hack *ab[])
+static int check_atoms_present(gmx::ArrayRef<const AtomInfo> pdba,
+                               gmx::ArrayRef<const int> nab,
+                               gmx::ArrayRef<std::vector<t_hack>> ab)
 {
     int i, j, k, rnr, nadd;
 
     nadd = 0;
-    for (i = 0; i < pdba->nr; i++)
+    for (i = 0; i < pdba.size(); i++)
     {
-        rnr = pdba->atom[i].resind;
+        rnr = pdba[i].resind_;
         for (j = 0; j < nab[i]; j++)
         {
             if (ab[i][j].oname == nullptr)
@@ -319,7 +315,11 @@ static int check_atoms_present(t_atoms *pdba, const int nab[], t_hack *ab[])
     return nadd;
 }
 
-static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
+static void calc_all_pos(gmx::ArrayRef<const AtomInfo> pdba,
+                         gmx::ArrayRef<const Residue> resinfo,
+                         rvec x[],
+                         gmx::ArrayRef<const int> nab,
+                         gmx::ArrayRef<std::vector<t_hack>> ab,
                          bool bCheckMissing)
 {
     int      i, j, ii, jj, m, ia, d, rnr, l = 0;
@@ -330,9 +330,9 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
 
     jj = 0;
 
-    for (i = 0; i < pdba->nr; i++)
+    for (i = 0; i < pdba.size(); i++)
     {
-        rnr   = pdba->atom[i].resind;
+        rnr   = pdba[i].resind_;
         for (j = 0; j < nab[i]; j += ab[i][j].nr)
         {
             /* check if we're adding: */
@@ -361,9 +361,9 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
                                           ", rtp entry %s"
                                           " while adding hydrogens",
                                           ab[i][j].a[m],
-                                          *pdba->resinfo[rnr].name,
-                                          pdba->resinfo[rnr].nr,
-                                          *pdba->resinfo[rnr].rtp);
+                                          *resinfo[rnr].name_,
+                                          resinfo[rnr].nr_,
+                                          *resinfo[rnr].rtp_);
                             }
                         }
                     }
@@ -400,37 +400,36 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
     }
 }
 
-static void free_ab(int natoms, int *nab, t_hack **ab)
+static void free_ab(int natoms, gmx::ArrayRef<const int> nab, gmx::ArrayRef<std::vector<t_hack>> ab)
 {
     int i;
 
     for (i = 0; i < natoms; i++)
     {
-        free_t_hack(nab[i], &ab[i]);
+        free_t_hack(nab[i], ab[i]);
     }
-    sfree(nab);
-    sfree(ab);
 }
 
-static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
+static int add_h_low(std::vector<AtomInfo> *pdba,
+                     gmx::ArrayRef<const Residue> resRef,
+                     rvec *xptr[],
                      int nah, t_hackblock ah[],
                      int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
                      int *rN, int *rC, bool bCheckMissing,
-                     int **nabptr, t_hack ***abptr,
+                     std::vector<int> *nabptr, std::vector<std::vector<t_hack>> *abptr,
                      bool bUpdate_pdba, bool bKeep_old_pdba)
 {
-    t_atoms        *newpdba = nullptr, *pdba = nullptr;
     int             nadd;
     int             i, newi, j, natoms, nalreadypresent;
-    int            *nab = nullptr;
-    t_hack        **ab  = nullptr;
+    std::vector<int> nab;
+    std::vector<std::vector<t_hack>> ab;
     t_hackblock    *hb;
     rvec           *xn;
     bool            bKeep_ab;
 
     /* set flags for adding hydrogens (according to hdb) */
-    pdba   = *pdbaptr;
-    natoms = pdba->nr;
+    natoms = pdba->size();
+    gmx::ArrayRef<AtomInfo> pdbaRef = gmx::arrayRefFromArray(pdba->data(), pdba->size());
 
     if (nabptr && abptr)
     {
@@ -446,7 +445,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
         bKeep_ab = FALSE;
     }
 
-    if (nab && ab)
+    if (!nab.empty() && !ab.empty())
     {
         /* WOW, everything was already figured out */
         bUpdate_pdba = FALSE;
@@ -456,30 +455,25 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
         /* We'll have to do all the hard work */
         bUpdate_pdba = TRUE;
         /* first get all the hackblocks for each residue: */
-        hb = get_hackblocks(pdba, nah, ah, nterpairs, ntdb, ctdb, rN, rC);
+        hb = get_hackblocks(resRef, nah, ah, nterpairs, ntdb, ctdb, rN, rC);
 
         /* expand the hackblocks to atom level */
-        snew(nab, natoms);
-        snew(ab, natoms);
-        expand_hackblocks(pdba, hb, nab, ab, nterpairs, rN, rC);
-        free_t_hackblock(pdba->nres, &hb);
+        nab.resize(natoms);
+        ab.resize(natoms);
+        expand_hackblocks(pdbaRef, hb, nab, ab, nterpairs, rN, rC);
+        free_t_hackblock(resRef.size(), &hb);
     }
 
     /* Now calc the positions */
-    calc_all_pos(pdba, *xptr, nab, ab, bCheckMissing);
+    calc_all_pos(pdbaRef, resRef, *xptr, nab, ab, bCheckMissing);
 
+    std::vector<AtomInfo> newPdba;
+    std::vector<Residue> newRes;
     if (bUpdate_pdba)
     {
         /* we don't have to add atoms that are already present in pdba,
            so we will remove them from the ab (t_hack) */
-        nadd = check_atoms_present(pdba, nab, ab);
-
-        /* Copy old atoms, making space for new ones */
-        snew(newpdba, 1);
-        init_t_atoms(newpdba, natoms+nadd, FALSE);
-        newpdba->nres    = pdba->nres;
-        sfree(newpdba->resinfo);
-        newpdba->resinfo = pdba->resinfo;
+        nadd = check_atoms_present(pdbaRef, nab, ab);
     }
     else
     {
@@ -509,15 +503,10 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                 /*gmx_fatal(FARGS,"Not enough space for adding atoms");*/
                 nadd += 10;
                 srenew(xn, natoms+nadd);
-                if (bUpdate_pdba)
-                {
-                    srenew(newpdba->atom, natoms+nadd);
-                    srenew(newpdba->atomname, natoms+nadd);
-                }
             }
             if (bUpdate_pdba)
             {
-                copy_atom(pdba, i, newpdba, newi);
+                newPdba.push_back(pdbaRef[i]);
             }
             copy_rvec((*xptr)[i], xn[newi]);
             /* process the hacks for this atom */
@@ -534,18 +523,16 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                         srenew(xn, natoms+nadd);
                         if (bUpdate_pdba)
                         {
-                            srenew(newpdba->atom, natoms+nadd);
-                            srenew(newpdba->atomname, natoms+nadd);
                         }
                     }
                     if (bUpdate_pdba)
                     {
-                        newpdba->atom[newi].resind = pdba->atom[i].resind;
+                        newPdba.back().resind_ = pdbaRef[i].resind_;
                     }
                 }
                 if (ab[i][j].nname != nullptr &&
                     (ab[i][j].oname == nullptr ||
-                     strcmp(ab[i][j].oname, *newpdba->atomname[newi]) == 0))
+                     strcmp(ab[i][j].oname, *newPdba.back().atomname) == 0))
                 {
                     /* add or replace */
                     if (ab[i][j].oname == nullptr && ab[i][j].bAlreadyPresent)
@@ -554,7 +541,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                         nalreadypresent++;
                         if (bUpdate_pdba)
                         {
-                            copy_atom(pdba, i+nalreadypresent, newpdba, newi);
+                            newPdba.push_back(pdbaRef[i+nalreadypresent]);
                         }
                         copy_rvec((*xptr)[i+nalreadypresent], xn[newi]);
                     }
@@ -566,17 +553,12 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                             {
                                 fprintf(debug, "Replacing %d '%s' with (old name '%s') %s\n",
                                         newi,
-                                        (newpdba->atomname[newi] && *newpdba->atomname[newi]) ? *newpdba->atomname[newi] : "",
+                                        (newPdba.back().atomname && *newPdba.back().atomname) ? *newPdba.back().atomname : "",
                                         ab[i][j].oname ? ab[i][j].oname : "",
                                         ab[i][j].nname);
                             }
-                            snew(newpdba->atomname[newi], 1);
-                            *newpdba->atomname[newi] = gmx_strdup(ab[i][j].nname);
-                            if (ab[i][j].oname != nullptr && ab[i][j].atom) /* replace */
-                            {                                               /*          newpdba->atom[newi].m    = ab[i][j].atom->m; */
-/*        newpdba->atom[newi].q    = ab[i][j].atom->q; */
-/*        newpdba->atom[newi].type = ab[i][j].atom->type; */
-                            }
+                            snew(newPdba.back().atomname, 1);
+                            *newPdba.back().atomname = gmx_strdup(ab[i][j].nname);
                         }
                         if (ab[i][j].bXSet)
                         {
@@ -585,18 +567,14 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                     }
                     if (bUpdate_pdba && debug)
                     {
-                        fprintf(debug, " %s %g %g", *newpdba->atomname[newi],
-                                newpdba->atom[newi].m, newpdba->atom[newi].q);
+                        fprintf(debug, " %s %g %g", *newPdba.back().atomname,
+                                newPdba.back().m_, newPdba.back().q_);
                     }
                 }
             }
             newi++;
             i += nalreadypresent;
         }
-    }
-    if (bUpdate_pdba)
-    {
-        newpdba->nr = newi;
     }
 
     if (bKeep_ab)
@@ -620,12 +598,8 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                 /* sfree(*(pdba->atomname[i])); */
                 /* sfree(pdba->atomname[i]); */
             }
-            sfree(pdba->atomname);
-            sfree(pdba->atom);
-            sfree(pdba->pdbinfo);
-            sfree(pdba);
         }
-        *pdbaptr = newpdba;
+        *pdba = newPdba;
     }
 
     sfree(*xptr);
@@ -634,11 +608,13 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
     return newi;
 }
 
-int add_h(t_atoms **pdbaptr, rvec *xptr[],
+int add_h(std::vector<AtomInfo> *pdba,
+          gmx::ArrayRef<const Residue> resRef,
+          rvec *xptr[],
           int nah, t_hackblock ah[],
           int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
           int *rN, int *rC, bool bAllowMissing,
-          int **nabptr, t_hack ***abptr,
+          std::vector<int> *nabptr, std::vector<std::vector<t_hack>> *abptr, 
           bool bUpdate_pdba, bool bKeep_old_pdba)
 {
     int nold, nnew, niter;
@@ -651,7 +627,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
     do
     {
         nold = nnew;
-        nnew = add_h_low(pdbaptr, xptr, nah, ah, nterpairs, ntdb, ctdb, rN, rC, FALSE,
+        nnew = add_h_low(pdba, resRef, xptr, nah, ah, nterpairs, ntdb, ctdb, rN, rC, FALSE,
                          nabptr, abptr, bUpdate_pdba, bKeep_old_pdba);
         niter++;
         if (niter > 100)
@@ -664,7 +640,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
     if (!bAllowMissing)
     {
         /* Call add_h_low once more, now only for the missing atoms check */
-        add_h_low(pdbaptr, xptr, nah, ah, nterpairs, ntdb, ctdb, rN, rC, TRUE,
+        add_h_low(pdba, resRef, xptr, nah, ah, nterpairs, ntdb, ctdb, rN, rC, TRUE,
                   nabptr, abptr, bUpdate_pdba, bKeep_old_pdba);
     }
 

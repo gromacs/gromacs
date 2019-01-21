@@ -71,7 +71,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 
 void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         int nrtp, t_restp rtp[],
-                        int nres, t_resinfo *resinfo,
+                        gmx::ArrayRef<Residue> resinfo,
                         int nterpairs,
                         t_hackblock **ntdb, t_hackblock **ctdb,
                         const int *rn, const int *rc,
@@ -81,7 +81,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
  */
 
 void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
-                              t_atoms *pdba, rvec *x,
+                              AtomResiduePdb *pdba, rvec *x,
                               bool bVerbose);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
  * If renaming involves atoms added wrt to the rtp database,
@@ -99,13 +99,13 @@ void print_top_mols(FILE *out,
                     int nmol, t_mols *mols);
 
 void write_top(FILE *out, const char *pr, const char *molname,
-               t_atoms *at, bool bRTPresname,
+               const AtomResiduePdb &system, bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
                gpp_atomtype_t atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
-             t_atoms *atoms, rvec **x,
+             AtomResiduePdb *system, rvec **x,
              gpp_atomtype_t atype, struct t_symtab *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
@@ -119,6 +119,6 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              bool bRenumRes, bool bRTPresname);
 /* Create a topology ! */
 
-void print_sums(t_atoms *atoms, bool bSystem);
+void print_sums(const AtomResiduePdb &system, bool bSystem);
 
 #endif

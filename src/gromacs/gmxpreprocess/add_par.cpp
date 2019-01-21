@@ -219,7 +219,7 @@ void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
 
 int search_jtype(t_restp *rtp, char *name, bool bNterm)
 {
-    int    niter, iter, j, jmax;
+    int    niter, iter, jmax;
     size_t k, kmax, minstrlen;
     char  *rtpname, searchname[12];
 
@@ -246,9 +246,10 @@ int search_jtype(t_restp *rtp, char *name, bool bNterm)
             /* Try without the hydrogen number in the N-terminus */
             searchname[1] = '\0';
         }
-        for (j = 0; (j < rtp->natom); j++)
+        int j = 0;
+        for (const auto &a : rtp->atom)
         {
-            rtpname = *(rtp->atomname[j]);
+            rtpname = *(a.atomname);
             if (gmx_strcasecmp(searchname, rtpname) == 0)
             {
                 jmax = j;
@@ -271,6 +272,7 @@ int search_jtype(t_restp *rtp, char *name, bool bNterm)
                     jmax = j;
                 }
             }
+            j++;
         }
     }
     if (jmax == -1)
@@ -282,7 +284,7 @@ int search_jtype(t_restp *rtp, char *name, bool bNterm)
     {
         gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s, "
                   "it looks a bit like %s",
-                  searchname, rtp->resname, *(rtp->atomname[jmax]));
+                  searchname, rtp->resname, *(rtp->atom[jmax].atomname));
     }
     return jmax;
 }

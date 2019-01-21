@@ -214,7 +214,7 @@ int gmx_densmap(int argc, char *argv[])
     snew(gnx, ngrps);
     snew(grpname, ngrps);
     snew(ind, ngrps);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, gnx, ind, grpname);
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), ngrps, gnx, ind, grpname);
     anagrp = ngrps - 1;
     nindex = gnx[anagrp];
     index  = ind[anagrp];
@@ -334,7 +334,7 @@ int gmx_densmap(int argc, char *argv[])
                     for (j = 0; j < gnx[i]; j++)
                     {
                         k = ind[i][j];
-                        m = top.atoms.atom[k].m;
+                        m = top.atoms[k].m_;
                         for (l = 0; l < DIM; l++)
                         {
                             xcom[i][l] += m*x[k][l];

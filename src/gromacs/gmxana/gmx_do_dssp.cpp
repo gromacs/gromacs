@@ -223,7 +223,7 @@ static int strip_dssp(FILE *tapeout, int nres,
     return nr;
 }
 
-static gmx_bool *bPhobics(t_atoms *atoms)
+static gmx_bool *bPhobics(gmx::ArrayRef<const Residue> resinfo)
 {
     int         j, i, nb;
     char      **cb;
@@ -234,7 +234,7 @@ static gmx_bool *bPhobics(t_atoms *atoms)
 
 
     nb = get_lines("phbres.dat", &cb);
-    snew(bb, atoms->nres);
+    snew(bb, resinfo.size());
 
     n_surf = get_lines(surffn, &surf_lines);
     snew(surf_res, n_surf);
@@ -245,11 +245,11 @@ static gmx_bool *bPhobics(t_atoms *atoms)
     }
 
 
-    for (i = 0, j = 0; (i < atoms->nres); i++)
+    for (i = 0, j = 0; (i < resinfo.size()); i++)
     {
-        if (-1 != search_str(n_surf, surf_res, *atoms->resinfo[i].name) )
+        if (-1 != search_str(n_surf, surf_res, *resinfo[i].name_) )
         {
-            bb[j++] = (-1 != search_str(nb, cb, *atoms->resinfo[i].name));
+            bb[j++] = (-1 != search_str(nb, cb, *resinfo[i].name_));
         }
     }
 
@@ -267,7 +267,7 @@ static gmx_bool *bPhobics(t_atoms *atoms)
     return bb;
 }
 
-static void check_oo(t_atoms *atoms)
+static void check_oo(gmx::ArrayRef<AtomInfo> atoms)
 {
     char *OOO;
 
@@ -275,24 +275,24 @@ static void check_oo(t_atoms *atoms)
 
     OOO = gmx_strdup("O");
 
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms.size()); i++)
     {
-        if (std::strcmp(*(atoms->atomname[i]), "OXT") == 0)
+        if (std::strcmp(*(atoms[i].atomname), "OXT") == 0)
         {
-            *atoms->atomname[i] = OOO;
+            *atoms[i].atomname = OOO;
         }
-        else if (std::strcmp(*(atoms->atomname[i]), "O1") == 0)
+        else if (std::strcmp(*(atoms[i].atomname), "O1") == 0)
         {
-            *atoms->atomname[i] = OOO;
+            *atoms[i].atomname = OOO;
         }
-        else if (std::strcmp(*(atoms->atomname[i]), "OC1") == 0)
+        else if (std::strcmp(*(atoms[i].atomname), "OC1") == 0)
         {
-            *atoms->atomname[i] = OOO;
+            *atoms[i].atomname = OOO;
         }
     }
 }
 
-static void norm_acc(t_atoms *atoms, int nres,
+static void norm_acc(gmx::ArrayRef<const Residue> resinfo,
                      const real av_area[], real norm_av_area[])
 {
     int     i, n, n_surf;
@@ -310,9 +310,9 @@ static void norm_acc(t_atoms *atoms, int nres,
         sscanf(surf_lines[i], "%s %lf", surf_res[i], &surf[i]);
     }
 
-    for (i = 0; (i < nres); i++)
+    for (i = 0; (i < resinfo.size()); i++)
     {
-        n = search_str(n_surf, surf_res, *atoms->resinfo[i].name);
+        n = search_str(n_surf, surf_res, *resinfo[i].name_);
         if (n != -1)
         {
             norm_av_area[i] = av_area[i] / surf[n];
@@ -320,7 +320,7 @@ static void norm_acc(t_atoms *atoms, int nres,
         else
         {
             fprintf(stderr, "Residue %s not found in surface database (%s)\n",
-                    *atoms->resinfo[i].name, surffn);
+                    *resinfo[i].name_, surffn);
         }
     }
 }
@@ -549,7 +549,6 @@ int gmx_do_dssp(int argc, char *argv[])
     const char        *leg[] = { "Phobic", "Phylic" };
     t_topology         top;
     int                ePBC;
-    t_atoms           *atoms;
     t_matrix           mat;
     int                nres, nr0, naccr, nres_plus_separators;
     gmx_bool          *bPhbres, bDoAccSurf;
@@ -595,18 +594,19 @@ int gmx_do_dssp(int argc, char *argv[])
     bDoAccSurf = ((fnArea != nullptr) || (fnTArea != nullptr) || (fnAArea != nullptr));
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, FALSE);
-    atoms = &(top.atoms);
+    std::vector<AtomInfo> atoms(top.atoms.begin(), top.atoms.end());
+    gmx::ArrayRef<const Residue> resinfo = top.resinfo;
     check_oo(atoms);
-    bPhbres = bPhobics(atoms);
+    bPhbres = bPhobics(resinfo);
 
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpnm);
+    get_index(atoms, resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpnm);
     nres = 0;
     nr0  = -1;
     for (i = 0; (i < gnx); i++)
     {
-        if (atoms->atom[index[i]].resind != nr0)
+        if (atoms[index[i]].resind_ != nr0)
         {
-            nr0 = atoms->atom[index[i]].resind;
+            nr0 = atoms[index[i]].resind_;
             nres++;
         }
     }
@@ -691,7 +691,7 @@ int gmx_do_dssp(int argc, char *argv[])
     mat.nmap = readcmap(opt2fn("-map", NFILE, fnm), &(mat.map));
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
-    if (natoms > atoms->nr)
+    if (natoms > gmx::index(atoms.size()))
     {
         gmx_fatal(FARGS, "\nTrajectory does not match topology!");
     }
@@ -700,9 +700,9 @@ int gmx_do_dssp(int argc, char *argv[])
         gmx_fatal(FARGS, "\nTrajectory does not match selected group!");
     }
 
-    snew(average_area, atoms->nres);
-    snew(av_area, atoms->nres);
-    snew(norm_av_area, atoms->nres);
+    snew(average_area, resinfo.size());
+    snew(av_area, resinfo.size());
+    snew(norm_av_area, resinfo.size());
     accr  = nullptr;
     naccr = 0;
 
@@ -716,12 +716,13 @@ int gmx_do_dssp(int argc, char *argv[])
             srenew(accr, naccr);
             for (i = naccr-10; i < naccr; i++)
             {
-                snew(accr[i], 2*atoms->nres-1);
+                snew(accr[i], 2*resinfo.size()-1);
             }
         }
         gmx_rmpbc(gpbc, natoms, box, x);
         tapein = gmx_ffopen(pdbfile, "w");
-        write_pdbfile_indexed(tapein, nullptr, atoms, x, ePBC, box, ' ', -1, gnx, index, nullptr, TRUE, FALSE);
+        write_pdbfile_indexed(tapein, nullptr, atoms, resinfo, top.pdb, x, ePBC, box, ' ', -1,
+                              gmx::arrayRefFromArray(index, gnx), nullptr, TRUE, FALSE);
         gmx_ffclose(tapein);
         /* strip_dssp returns the number of lines found in the dssp file, i.e.
          * the number of residues plus the separator lines */
@@ -793,12 +794,12 @@ int gmx_do_dssp(int argc, char *argv[])
     {
         write_sas_mat(fnArea, accr, nframe, nres_plus_separators, &mat);
 
-        for (i = 0; i < atoms->nres; i++)
+        for (i = 0; i < resinfo.size(); i++)
         {
             av_area[i] = (average_area[i] / static_cast<real>(nframe));
         }
 
-        norm_acc(atoms, nres, av_area, norm_av_area);
+        norm_acc(resinfo, av_area, norm_av_area);
 
         if (fnAArea)
         {

@@ -38,11 +38,12 @@
 #ifndef GMX_GMXPREPROCESS_PGUTIL_H
 #define GMX_GMXPREPROCESS_PGUTIL_H
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct t_atom;
-struct t_atoms;
+class AtomInfo;
+class Residue;
 
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
@@ -51,7 +52,7 @@ struct t_atoms;
  * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
  */
 int search_atom(const char *type, int start,
-                t_atoms *atoms,
+                gmx::ArrayRef<const AtomInfo> atoms,
                 const char *bondtype, bool bAllowMissing);
 
 /* Similar to search_atom, but this routine searches for the specified
@@ -59,11 +60,12 @@ int search_atom(const char *type, int start,
  */
 int
 search_res_atom(const char *type, int resind,
-                t_atoms *atoms,
+                gmx::ArrayRef<const AtomInfo> atoms,
+                gmx::ArrayRef<const Residue> resinfo,
                 const char *bondtype, bool bAllowMissing);
 
 
-void set_at(t_atom *at, real m, real q, int type, int resind);
+void set_at(AtomInfo *at, real m, real q, int type, int resind);
 
 
 #endif

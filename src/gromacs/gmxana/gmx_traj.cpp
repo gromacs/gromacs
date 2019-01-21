@@ -174,26 +174,22 @@ static void write_trx_x(t_trxstatus *status, const t_trxframe *fr, real *mass, g
                         int ngrps, int isize[], int **index)
 {
     static rvec    *xav   = nullptr;
-    static t_atoms *atoms = nullptr;
     t_trxframe      fr_av;
     int             i;
 
     if (bCom)
     {
+        std::vector<AtomInfo> atoms;
         if (xav == nullptr)
         {
             snew(xav, ngrps);
-            snew(atoms, 1);
-            *atoms = *fr->atoms;
-            snew(atoms->atom, ngrps);
-            atoms->nr = ngrps;
             /* Note that atom and residue names will be the ones
              * of the first atom in each group.
              */
             for (i = 0; i < ngrps; i++)
             {
-                atoms->atom[i]     = fr->atoms->atom[index[i][0]];
-                atoms->atomname[i] = fr->atoms->atomname[index[i][0]];
+                AtomInfo newAtom = fr->atoms[index[i][0]];
+                atoms.push_back(newAtom);
             }
         }
         average_data(fr->x, xav, mass, ngrps, isize, index);
@@ -205,7 +201,7 @@ static void write_trx_x(t_trxstatus *status, const t_trxframe *fr, real *mass, g
     }
     else
     {
-        write_trxframe_indexed(status, fr, isize[0], index[0], nullptr);
+        write_trxframe_indexed(status, fr, gmx::arrayRefFromArray(index[0], isize[0]), nullptr);
     }
 }
 
@@ -406,7 +402,11 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
 }
 
 static void write_pdb_bfac(const char *fname, const char *xname,
-                           const char *title, t_atoms *atoms, int ePBC, matrix box,
+                           const char *title,
+                           gmx::ArrayRef<const AtomInfo> atoms,
+                           gmx::ArrayRef<const Residue> resinfo,
+                           gmx::ArrayRef<const PdbEntry> pdb,
+                           int ePBC, matrix box,
                            int isize, int *index, int nfr_x, rvec *x,
                            int nfr_v, rvec *sum,
                            const gmx_bool bDim[], real scale_factor,
@@ -491,15 +491,23 @@ static void write_pdb_bfac(const char *fname, const char *xname,
         }
 
         printf("Maximum %s is %g on atom %d %s, res. %s %d\n",
-               title, std::sqrt(max), maxi+1, *(atoms->atomname[maxi]),
-               *(atoms->resinfo[atoms->atom[maxi].resind].name),
-               atoms->resinfo[atoms->atom[maxi].resind].nr);
+               title, std::sqrt(max), maxi+1, *(atoms[maxi].atomname),
+               *(resinfo[atoms[maxi].resind_].name_),
+               resinfo[atoms[maxi].resind_].nr_);
 
-        if (atoms->pdbinfo == nullptr)
+        std::vector<PdbEntry> usepdb;
+        if (!allAtomsHavePdbInfo(pdb) || atoms.size() != pdb.size())
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            usepdb.resize(atoms.size());
+            for (auto it = usepdb.begin(); it != usepdb.end(); it++)
+            {
+                it->isSet_ = true;
+            }
         }
-        atoms->havePdbInfo = TRUE;
+        else
+        {
+            usepdb = std::vector<PdbEntry>(pdb.begin(), pdb.end());
+        }
 
         if (onedim == -1)
         {
@@ -513,17 +521,18 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                         len2 += gmx::square(sum[index[i]][m]);
                     }
                 }
-                atoms->pdbinfo[index[i]].bfac = std::sqrt(len2)*scale;
+                usepdb[index[i]].bfac_ = std::sqrt(len2)*scale;
             }
         }
         else
         {
             for (i = 0; i < isize; i++)
             {
-                atoms->pdbinfo[index[i]].bfac = sum[index[i]][onedim]*scale;
+                usepdb[index[i]].bfac_ = sum[index[i]][onedim]*scale;
             }
         }
-        write_sto_conf_indexed(fname, title, atoms, x, nullptr, ePBC, box, isize, index);
+        write_sto_conf_indexed(fname, title, atoms, resinfo, usepdb,
+                               x, nullptr, ePBC, box, gmx::arrayRefFromArray(index, isize));
     }
 }
 
@@ -763,7 +772,7 @@ int gmx_traj(int argc, char *argv[])
     snew(grpname, ngroups);
     snew(isize0, ngroups);
     snew(index0, ngroups);
-    get_index(&(top.atoms), indexfn, ngroups, isize0, index0, grpname);
+    get_index(top.atoms, top.resinfo, indexfn, ngroups, isize0, index0, grpname);
 
     if (bMol)
     {
@@ -794,10 +803,10 @@ int gmx_traj(int argc, char *argv[])
     }
     if (bCom)
     {
-        snew(mass, top.atoms.nr);
-        for (i = 0; i < top.atoms.nr; i++)
+        snew(mass, top.atoms.size());
+        for (i = 0; i < gmx::index(top.atoms.size()); i++)
         {
-            mass[i] = top.atoms.atom[i].m;
+            mass[i] = top.atoms[i].m_;
         }
     }
     else
@@ -962,7 +971,7 @@ int gmx_traj(int argc, char *argv[])
             t_trxframe frout = fr;
             if (!frout.bAtoms)
             {
-                frout.atoms  = &top.atoms;
+                frout.atoms  = top.atoms;
                 frout.bAtoms = TRUE;
             }
             frout.bV = FALSE;
@@ -1110,14 +1119,16 @@ int gmx_traj(int argc, char *argv[])
     if (bCV)
     {
         write_pdb_bfac(opt2fn("-cv", NFILE, fnm),
-                       opt2fn("-av", NFILE, fnm), "average velocity", &(top.atoms),
+                       opt2fn("-av", NFILE, fnm), "average velocity", top.atoms,
+                       top.resinfo, top.pdb,
                        ePBC, topbox, isize[0], index[0], nr_xfr, sumx,
                        nr_vfr, sumv, bDim, scale, oenv);
     }
     if (bCF)
     {
         write_pdb_bfac(opt2fn("-cf", NFILE, fnm),
-                       opt2fn("-af", NFILE, fnm), "average force", &(top.atoms),
+                       opt2fn("-af", NFILE, fnm), "average force", top.atoms,
+                       top.resinfo, top.pdb,
                        ePBC, topbox, isize[0], index[0], nr_xfr, sumx,
                        nr_ffr, sumf, bDim, scale, oenv);
     }

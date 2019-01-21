@@ -121,7 +121,7 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     }
     hack->oname = nullptr;
     hack->nname = gmx_strdup(hn);
-    hack->atom  = nullptr;
+    hack->atom.clear();
     hack->cgnr  = NOTSET;
     hack->bXSet = FALSE;
     for (i = 0; i < DIM; i++)
@@ -167,7 +167,7 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
 
         if (sscanf(line+n, "%d", &nab) == 1)
         {
-            snew(aah[nah].hack, nab);
+            aah[nah].hack.resize(nab);
             aah[nah].nhack = nab;
             for (i = 0; (i < nab); i++)
             {
@@ -214,7 +214,7 @@ int read_h_db(const char *ffdir, t_hackblock **ah)
     return nah;
 }
 
-t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
+t_hackblock *search_h_db(int nh, gmx::ArrayRef<t_hackblock> ah, const char *key)
 {
     t_hackblock ahkey, *result;
 
@@ -223,9 +223,9 @@ t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
         return nullptr;
     }
 
-    ahkey.name = key;
+    ahkey.name = gmx_strdup(key);
 
-    result = static_cast<t_hackblock *>(bsearch(&ahkey, ah, nh, static_cast<size_t>(sizeof(ah[0])), compaddh));
+    result = static_cast<t_hackblock *>(bsearch(&ahkey, ah.data(), nh, static_cast<size_t>(sizeof(ah[0])), compaddh));
 
     return result;
 }

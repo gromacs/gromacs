@@ -342,17 +342,17 @@ int gmx_dos(int argc, char *argv[])
     read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
 
     /* Handle index groups */
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
 
     V     = det(box);
     tmass = 0;
     for (i = 0; i < grpNatoms; i++)
     {
-        tmass += top.atoms.atom[index[i]].m;
+        tmass += top.atoms[index[i]].m_;
     }
 
     Natom = grpNatoms;
-    Nmol  = calcMoleculesInIndexGroup(&top.mols, top.atoms.nr, index, grpNatoms);
+    Nmol  = calcMoleculesInIndexGroup(&top.mols, top.atoms.size(), index, grpNatoms);
     gnx   = Natom*DIM;
 
     /* Correlation stuff */
@@ -443,7 +443,7 @@ int gmx_dos(int argc, char *argv[])
     }
     for (i = 0; (i < gnx); i += DIM)
     {
-        mi = top.atoms.atom[index[i/DIM]].m;
+        mi = top.atoms[index[i/DIM]].m_;
         for (j = 0; (j < nframes/2); j++)
         {
             c1j            = (c1[i+XX][j] + c1[i+YY][j] + c1[i+ZZ][j]);

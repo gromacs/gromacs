@@ -84,7 +84,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
         {
             gmx_fatal(FARGS, "Atom index (%d) is larger than the number of atoms in the trajecory (%d)", index[a]+1, natoms);
         }
-        w_rls[a]  = (bMW ? top->atoms.atom[index[a]].m : 1.0);
+        w_rls[a]  = (bMW ? top->atoms[index[a]].m_ : 1.0);
         tot_mass += w_rls[a];
     }
     gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
@@ -249,11 +249,11 @@ int gmx_rotmat(int argc, char *argv[])
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x_ref, nullptr, box, bMW);
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.size());
 
-    gmx_rmpbc(gpbc, top.atoms.nr, box, x_ref);
+    gmx_rmpbc(gpbc, top.atoms.size(), box, x_ref);
 
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
     GMX_RELEASE_ASSERT(reffit[0] != nullptr, "Options inconsistency; reffit[0] is NULL");
     if (reffit[0][0] != 'n')
@@ -271,7 +271,7 @@ int gmx_rotmat(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Atom index (%d) is larger than the number of atoms in the trajecory (%d)", index[i]+1, natoms);
         }
-        w_rls[index[i]] = (bMW ? top.atoms.atom[index[i]].m : 1.0);
+        w_rls[index[i]] = (bMW ? top.atoms[index[i]].m_ : 1.0);
     }
 
     if (reffit[0][0] == 'n')

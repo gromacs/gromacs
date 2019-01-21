@@ -64,7 +64,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-static void norm_princ(const t_atoms *atoms, int isize, int *index, int natoms,
+static void norm_princ(gmx::ArrayRef<const AtomInfo> atoms, int isize, int *index, int natoms,
                        rvec *x)
 {
     int  i, m;
@@ -360,8 +360,8 @@ int gmx_rms(int argc, char *argv[])
 
     bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp,
                          nullptr, box, TRUE);
-    snew(w_rls, top.atoms.nr);
-    snew(w_rms, top.atoms.nr);
+    snew(w_rls, top.atoms.size());
+    snew(w_rms, top.atoms.size());
 
     if (!bTop && bBond)
     {
@@ -375,7 +375,7 @@ int gmx_rms(int argc, char *argv[])
     {
         fprintf(stderr, "Select group for %s fit\n", bFit ? "least squares"
                 : "translational");
-        get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &ifit,
+        get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &ifit,
                   &ind_fit, &gn_fit);
     }
     else
@@ -395,13 +395,13 @@ int gmx_rms(int argc, char *argv[])
         {
             if (bMassWeighted)
             {
-                w_rls[ind_fit[i]] = top.atoms.atom[ind_fit[i]].m;
+                w_rls[ind_fit[i]] = top.atoms[ind_fit[i]].m_;
             }
             else
             {
                 w_rls[ind_fit[i]] = 1;
             }
-            bMass = bMass || (top.atoms.atom[ind_fit[i]].m != 0);
+            bMass = bMass || (top.atoms[ind_fit[i]].m_ != 0);
         }
         if (!bMass)
         {
@@ -424,7 +424,7 @@ int gmx_rms(int argc, char *argv[])
 
     fprintf(stderr, "Select group%s for %s calculation\n",
             (nrms > 1) ? "s" : "", whatname[ewhat]);
-    get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm),
               nrms, irms, ind_rms, gn_rms);
 
     if (bNorm)
@@ -452,13 +452,13 @@ int gmx_rms(int argc, char *argv[])
         {
             if (bMassWeighted)
             {
-                w_rms[ind_rms[j][i]] = top.atoms.atom[ind_rms[j][i]].m;
+                w_rms[ind_rms[j][i]] = top.atoms[ind_rms[j][i]].m_;
             }
             else
             {
                 w_rms[ind_rms[j][i]] = 1.0;
             }
-            bMass = bMass || (top.atoms.atom[ind_rms[j][i]].m != 0);
+            bMass = bMass || (top.atoms[ind_rms[j][i]].m_ != 0);
         }
         if (!bMass)
         {
@@ -472,18 +472,18 @@ int gmx_rms(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
-        gmx_rmpbc(gpbc, top.atoms.nr, box, xp);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.size());
+        gmx_rmpbc(gpbc, top.atoms.size(), box, xp);
     }
     if (bReset)
     {
-        reset_x(ifit, ind_fit, top.atoms.nr, nullptr, xp, w_rls);
+        reset_x(ifit, ind_fit, top.atoms.size(), nullptr, xp, w_rls);
     }
     if (bMirror)
     {
         /* generate reference structure mirror image: */
-        snew(xm, top.atoms.nr);
-        for (i = 0; i < top.atoms.nr; i++)
+        snew(xm, top.atoms.size());
+        for (i = 0; i < gmx::index(top.atoms.size()); i++)
         {
             copy_rvec(xp[i], xm[i]);
             xm[i][XX] = -xm[i][XX];
@@ -491,18 +491,18 @@ int gmx_rms(int argc, char *argv[])
     }
     if (ewhat == ewRhoSc)
     {
-        norm_princ(&top.atoms, ifit, ind_fit, top.atoms.nr, xp);
+        norm_princ(top.atoms, ifit, ind_fit, top.atoms.size(), xp);
     }
 
     /* read first frame */
     natoms_trx = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
-    if (natoms_trx != top.atoms.nr)
+    if (natoms_trx != gmx::index(top.atoms.size()))
     {
         fprintf(stderr,
-                "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
-                top.atoms.nr, natoms_trx);
+                "\nWARNING: topology has %lu atoms, whereas trajectory has %d\n",
+                top.atoms.size(), natoms_trx);
     }
-    natoms = std::min(top.atoms.nr, natoms_trx);
+    natoms = std::min(gmx::index(top.atoms.size()), gmx::index(natoms_trx));
     if (bMat || bBond || bPrev)
     {
         snew(mat_x, NFRAME);
@@ -626,7 +626,7 @@ int gmx_rms(int argc, char *argv[])
         }
         if (ewhat == ewRhoSc)
         {
-            norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
+            norm_princ(top.atoms, ifit, ind_fit, natoms, x);
         }
 
         if (bFit)
@@ -757,7 +757,7 @@ int gmx_rms(int argc, char *argv[])
             }
             if (ewhat == ewRhoSc)
             {
-                norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
+                norm_princ(top.atoms, ifit, ind_fit, natoms, x);
             }
 
             if (bFit)

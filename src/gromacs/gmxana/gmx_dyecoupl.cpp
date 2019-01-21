@@ -166,10 +166,10 @@ int gmx_dyecoupl(int argc, char *argv[])
     }
 
     printf("Select group with donor atom pairs defining the transition moment\n");
-    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
+    get_index(gmx::EmptyArrayRef(), gmx::EmptyArrayRef(), ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
 
     printf("Select group with acceptor atom pairs defining the transition moment\n");
-    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
+    get_index(gmx::EmptyArrayRef(), gmx::EmptyArrayRef(), ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
 
     /*check if groups are identical*/
     grident = TRUE;

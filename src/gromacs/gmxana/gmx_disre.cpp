@@ -358,7 +358,7 @@ static gmx_bool is_core(int i, int isize, const int index[])
 
 static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
                        t_iparams ip[], t_dr_result *dr,
-                       int isize, int index[], t_atoms *atoms)
+                       int isize, int index[], AtomResiduePdb *system)
 {
     int         i, j, nra;
     t_dr_stats *drs;
@@ -387,12 +387,12 @@ static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
         drs[i].viol   = std::max(0.0, static_cast<double>(drs[i].r-drs[i].up1));
         drs[i].violT3 = std::max(0.0, static_cast<double>(drs[i].rT3-drs[i].up1));
         drs[i].violT6 = std::max(0.0, static_cast<double>(drs[i].rT6-drs[i].up1));
-        if (atoms)
+        if (system)
         {
             int j1 = disres->iatoms[j+1];
             int j2 = disres->iatoms[j+2];
-            atoms->pdbinfo[j1].bfac += drs[i].violT3*5;
-            atoms->pdbinfo[j2].bfac += drs[i].violT3*5;
+            system->pdb[j1].bfac_ += drs[i].violT3*5;
+            system->pdb[j2].bfac_ += drs[i].violT3*5;
         }
     }
     dump_viol(log, ndr, drs, FALSE);
@@ -519,15 +519,16 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
     a_offset = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        const t_atoms &atoms = mtop->moltype[molb.type].atoms;
+        gmx::ArrayRef<const AtomInfo> atoms = mtop->moltype[molb.type].atoms;
+        gmx::ArrayRef<const Residue> resinfo = mtop->moltype[molb.type].resinfo;
         for (mol = 0; mol < molb.nmol; mol++)
         {
-            for (a = 0; a < atoms.nr; a++)
+            for (a = 0; a < atoms.size(); a++)
             {
-                resnr[a_offset + a] = n_res + atoms.atom[a].resind;
+                resnr[a_offset + a] = n_res + atoms[a].resind_;
             }
-            n_res    += atoms.nres;
-            a_offset += atoms.nr;
+            n_res    += resinfo.size();
+            a_offset += atoms.size();
         }
     }
 
@@ -718,7 +719,7 @@ int gmx_disre(int argc, char *argv[])
     gmx::TopologyInformation topInfo;
     topInfo.fillFromInputFile(ftp2fn(efTPR, NFILE, fnm));
     int ntopatoms = topInfo.mtop()->natoms;
-    AtomsDataPtr atoms;
+    AtomResiduePdbDataPtr system;
     bPDB = opt2bSet("-q", NFILE, fnm);
     if (bPDB)
     {
@@ -731,13 +732,17 @@ int gmx_disre(int argc, char *argv[])
             ind_fit[kkk] = kkk;
         }
 
-        atoms = topInfo.copyAtoms();
+        system = topInfo.copySystem();
 
-        if (atoms->pdbinfo == nullptr)
+        if (!allAtomsHavePdbInfo(system->pdb))
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            system->pdb.resize(system->atoms.size());
+            for (auto it = system->pdb.begin(); it != system->pdb.end(); it++)
+            {
+                it->isSet_ = true;
+            }
         }
-        atoms->havePdbInfo = TRUE;
+
     }
 
     gmx_mtop_generate_local_top(*topInfo.mtop(), &top, ir->efep != efepNO);
@@ -850,14 +855,14 @@ int gmx_disre(int argc, char *argv[])
         }
         if (bPDB)
         {
-            reset_x(atoms->nr, ind_fit, atoms->nr, nullptr, x, w_rls);
-            do_fit(atoms->nr, w_rls, x, x);
+            reset_x(system->atoms.size(), ind_fit, system->atoms.size(), nullptr, x, w_rls);
+            do_fit(system->atoms.size(), w_rls, x, x);
             if (j == 0)
             {
                 /* Store the first frame of the trajectory as 'characteristic'
                  * for colouring with violations.
                  */
-                for (kkk = 0; (kkk < atoms->nr); kkk++)
+                for (kkk = 0; (kkk < gmx::index(system->atoms.size())); kkk++)
                 {
                     copy_rvec(x[kkk], xav[kkk]);
                 }
@@ -898,12 +903,12 @@ int gmx_disre(int argc, char *argv[])
     {
         dump_stats(fplog, j, fcd.disres.nres, &(top.idef.il[F_DISRES]),
                    top.idef.iparams, &dr, isize, index,
-                   bPDB ? atoms.get() : nullptr);
+                   bPDB ? system.get() : nullptr);
         if (bPDB)
         {
             write_sto_conf(opt2fn("-q", NFILE, fnm),
                            "Coloured by average violation in Angstrom",
-                           atoms.get(), xav, nullptr, ir->ePBC, box);
+                           system->atoms, system->resinfo, system->pdb, xav, nullptr, ir->ePBC, box);
         }
         dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres,
                           j, &top.idef, topInfo.mtop(), max_dr, nlevels, bThird);

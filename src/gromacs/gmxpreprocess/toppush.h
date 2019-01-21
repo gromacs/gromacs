@@ -75,24 +75,24 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
 
 void push_atom(struct t_symtab *symtab,
                t_block         *cgs,
-               t_atoms         *at,
+               AtomResiduePdb  *system,
                gpp_atomtype_t   atype,
                char            *line,
                int             *lastcg,
                warninp_t        wi);
 
 void push_bond(directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype_t atype, char *line,
+               const AtomResiduePdb &system, gpp_atomtype_t atype, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
                warninp_t wi);
 
 void push_cmap(directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype_t atype, char *line,
+               const AtomResiduePdb &system, gpp_atomtype_t atype, char *line,
                warninp_t wi);
 
 void push_vsitesn(directive d, t_params bond[],
-                  t_atoms *at, char *line,
+                  AtomResiduePdb *system, char *line,
                   warninp_t wi);
 
 void push_mol(int nrmols, t_molinfo mols[], char *pline,

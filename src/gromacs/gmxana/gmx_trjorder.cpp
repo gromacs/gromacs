@@ -162,7 +162,7 @@ int gmx_trjorder(int argc, char *argv[])
     snew(grpname, 2);
     snew(index, 2);
     snew(isize, 2);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), bZ ? 1 : 2,
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), bZ ? 1 : 2,
               isize, index, grpname);
 
     if (!bZ)
@@ -179,7 +179,7 @@ int gmx_trjorder(int argc, char *argv[])
     }
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > gmx::index(top.atoms.size()))
     {
         gmx_fatal(FARGS, "Number of atoms in the run input file is larger than in the trjactory");
     }
@@ -230,10 +230,10 @@ int gmx_trjorder(int argc, char *argv[])
     if (!bNShell || opt2bSet("-o", NFILE, fnm))
     {
         bPDBout = (fn2ftp(opt2fn("-o", NFILE, fnm)) == efPDB);
-        if (bPDBout && !top.atoms.pdbinfo)
+        if (bPDBout && (!allAtomsHavePdbInfo(top.pdb) || top.atoms.size() != top.pdb.size()))
         {
             fprintf(stderr, "Creating pdbfino records\n");
-            snew(top.atoms.pdbinfo, top.atoms.nr);
+            top.pdb.resize(top.atoms.size());
         }
         out = open_trx(opt2fn("-o", NFILE, fnm), "w");
     }
@@ -253,7 +253,7 @@ int gmx_trjorder(int argc, char *argv[])
                 for (j = 0; j < na; j++)
                 {
                     sa       = ind_sol[i*na+j];
-                    mass     = top.atoms.atom[sa].m;
+                    mass     = top.atoms[sa].m_;
                     totmass += mass;
                     for (d = 0; d < DIM; d++)
                     {
@@ -287,7 +287,7 @@ int gmx_trjorder(int argc, char *argv[])
             clear_rvec(xcom);
             for (i = 0; i < isize_ref; i++)
             {
-                mass     = top.atoms.atom[ind_ref[i]].m;
+                mass     = top.atoms[ind_ref[i]].m_;
                 totmass += mass;
                 for (j = 0; j < DIM; j++)
                 {
@@ -358,11 +358,13 @@ int gmx_trjorder(int argc, char *argv[])
                 {
                     for (j = 0; (j < na); j++)
                     {
-                        top.atoms.pdbinfo[order[i].i+j].bfac = std::sqrt(order[i].d2);
+                        top.pdb[order[i].i+j].bfac_ = std::sqrt(order[i].d2);
+                        top.pdb[order[i].i+j].isSet_ = true;
                     }
                 }
             }
-            write_trx(out, natoms, swi, &top.atoms, 0, t, box, x, nullptr, nullptr);
+            write_trx(out, gmx::arrayRefFromArray(swi, natoms),
+                      top.atoms, top.resinfo, top.pdb, 0, t, box, x, nullptr, nullptr);
         }
     }
     while (read_next_x(oenv, status, &t, x, box));

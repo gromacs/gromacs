@@ -44,8 +44,8 @@
 struct gmx_mtop_t;
 
 void convert_params(int atnr, t_params nbtypes[],
-                    t_molinfo *mi,
-                    t_molinfo *intermolecular_interactions,
+                    gmx::ArrayRef<t_molinfo> mi,
+                    gmx::ArrayRef<t_molinfo> intermolecular_interactions,
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop);
 

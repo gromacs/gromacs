@@ -44,7 +44,6 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
-struct t_atoms;
 struct t_block;
 struct t_inputrec;
 class t_state;

@@ -41,7 +41,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 
-void set_histp(t_atoms *pdba, rvec *x, real angle, real distance);
+void set_histp(AtomResiduePdb *pdba, rvec *x, real angle, real distance);
 /* calculate HIStidine protonation state */
 
 #endif

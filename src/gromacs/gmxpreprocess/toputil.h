@@ -68,7 +68,7 @@ void done_mi(t_molinfo *mi);
 void print_blocka(FILE *out, const char *szName, const char *szIndex,
                   const char *szA, t_blocka *block);
 
-void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, gpp_atomtype_t atype, const AtomResiduePdb &system, int *cgnr,
                  bool bRTPresname);
 
 void print_bondeds(FILE *out, int natoms, directive d,

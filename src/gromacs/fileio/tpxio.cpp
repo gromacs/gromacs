@@ -2168,25 +2168,24 @@ atomicnumber_to_element(int atomicnumber)
 }
 
 
-static void do_atom(t_fileio *fio, t_atom *atom, gmx_bool bRead)
+static void do_atom(t_fileio *fio, AtomInfo *atom, gmx_bool bRead)
 {
-    gmx_fio_do_real(fio, atom->m);
-    gmx_fio_do_real(fio, atom->q);
-    gmx_fio_do_real(fio, atom->mB);
-    gmx_fio_do_real(fio, atom->qB);
-    gmx_fio_do_ushort(fio, atom->type);
-    gmx_fio_do_ushort(fio, atom->typeB);
-    gmx_fio_do_int(fio, atom->ptype);
-    gmx_fio_do_int(fio, atom->resind);
-    gmx_fio_do_int(fio, atom->atomnumber);
+    gmx_fio_do_real(fio, atom->m_);
+    gmx_fio_do_real(fio, atom->q_);
+    gmx_fio_do_real(fio, atom->mB_);
+    gmx_fio_do_real(fio, atom->qB_);
+    gmx_fio_do_ushort(fio, atom->type_);
+    gmx_fio_do_ushort(fio, atom->typeB_);
+    gmx_fio_do_int(fio, atom->ptype_);
+    gmx_fio_do_int(fio, atom->resind_);
+    gmx_fio_do_int(fio, atom->atomnumber_);
     if (bRead)
     {
         /* Set element string from atomic number if present.
          * This routine returns an empty string if the name is not found.
          */
-        std::strncpy(atom->elem, atomicnumber_to_element(atom->atomnumber), 4);
+        atom->elem_ = atomicnumber_to_element(atom->atomnumber_);
         /* avoid warnings about potentially unterminated string */
-        atom->elem[3] = '\0';
     }
 }
 
@@ -2230,67 +2229,69 @@ static void do_strstr(t_fileio *fio, int nstr, char ***nm, gmx_bool bRead,
     }
 }
 
-static void do_resinfo(t_fileio *fio, int n, t_resinfo *ri, gmx_bool bRead,
+static void do_resinfo(t_fileio *fio, gmx::ArrayRef<Residue> ri, gmx_bool bRead,
                        t_symtab *symtab, int file_version)
 {
-    int  j;
-
-    for (j = 0; (j < n); j++)
+    for (auto it = ri.begin(); it != ri.end(); it++)
     {
-        do_symstr(fio, &(ri[j].name), bRead, symtab);
+        do_symstr(fio, &(it->name_), bRead, symtab);
         if (file_version >= 63)
         {
-            gmx_fio_do_int(fio, ri[j].nr);
-            gmx_fio_do_uchar(fio, ri[j].ic);
+            gmx_fio_do_int(fio, it->nr_);
+            gmx_fio_do_uchar(fio, it->ic_);
         }
         else
         {
-            ri[j].nr = j + 1;
-            ri[j].ic = ' ';
+            it->nr_ = std::distance(ri.begin(), it) + 1;
+            it->ic_ = ' ';
         }
     }
 }
 
-static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *symtab,
-                     int file_version)
+static void do_atoms(t_fileio *fio,
+                     std::vector<AtomInfo> *atoms,
+                     std::vector<Residue> *resinfo,
+                     gmx_bool bRead, t_symtab *symtab)
 {
-    int i;
-
-    gmx_fio_do_int(fio, atoms->nr);
-    gmx_fio_do_int(fio, atoms->nres);
+    int natom = atoms->size();
+    int nres = resinfo->size();
+    gmx_fio_do_int(fio, natom);
+    gmx_fio_do_int(fio, nres);
     if (bRead)
     {
         /* Since we have always written all t_atom properties in the tpr file
          * (at least for all backward compatible versions), we don't store
          * but simple set the booleans here.
          */
-        atoms->haveMass    = TRUE;
-        atoms->haveCharge  = TRUE;
-        atoms->haveType    = TRUE;
-        atoms->haveBState  = TRUE;
-        atoms->havePdbInfo = FALSE;
-
-        snew(atoms->atom, atoms->nr);
-        snew(atoms->atomname, atoms->nr);
-        snew(atoms->atomtype, atoms->nr);
-        snew(atoms->atomtypeB, atoms->nr);
-        snew(atoms->resinfo, atoms->nres);
-        atoms->pdbinfo = nullptr;
+        atoms->resize(natom);
+        resinfo->resize(nres);
     }
     else
     {
-        GMX_RELEASE_ASSERT(atoms->haveMass && atoms->haveCharge && atoms->haveType && atoms->haveBState, "Mass, charge, atomtype and B-state parameters should be present in t_atoms when writing a tpr file");
+        GMX_RELEASE_ASSERT(allAtomsHaveMass(*atoms) &&
+                           allAtomsHaveCharge(*atoms) &&
+                           allAtomsHaveType(*atoms) &&
+                           allAtomsHaveBstate(*atoms),
+                           "Mass, charge, atomtype and B-state parameters should be present in t_atoms when writing a tpr file");
     }
-    for (i = 0; (i < atoms->nr); i++)
+    for (auto it = atoms->begin(); it != atoms->end(); it++)
     {
-        do_atom(fio, &atoms->atom[i], bRead);
+        do_atom(fio, &(*it), bRead);
     }
-    do_strstr(fio, atoms->nr, atoms->atomname, bRead, symtab);
-    do_strstr(fio, atoms->nr, atoms->atomtype, bRead, symtab);
-    do_strstr(fio, atoms->nr, atoms->atomtypeB, bRead, symtab);
-
-    do_resinfo(fio, atoms->nres, atoms->resinfo, bRead, symtab, file_version);
+    for (auto it = atoms->begin(); it != atoms->end(); it++)
+    {
+        do_symstr(fio, &it->atomname, bRead, symtab);
+    }
+    for (auto it = atoms->begin(); it != atoms->end(); it++)
+    {
+        do_symstr(fio, &it->atomtype, bRead, symtab);
+    }
+    for (auto it = atoms->begin(); it != atoms->end(); it++)
+    {
+        do_symstr(fio, &it->atomtypeB, bRead, symtab);
+    }
 }
+
 
 static void do_groups(t_fileio *fio, gmx_groups_t *groups,
                       gmx_bool bRead, t_symtab *symtab)
@@ -2430,7 +2431,8 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
 {
     do_symstr(fio, &(molt->name), bRead, symtab);
 
-    do_atoms(fio, &molt->atoms, bRead, symtab, file_version);
+    do_atoms(fio, &molt->atoms, &molt->resinfo, bRead, symtab);
+    do_resinfo(fio, molt->resinfo, bRead, symtab, file_version);
 
     do_ilists(fio, &molt->ilist, bRead, file_version);
 
@@ -2532,7 +2534,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     }
     for (gmx_molblock_t &molblock : mtop->molblock)
     {
-        int numAtomsPerMolecule = (bRead ? 0 : mtop->moltype[molblock.type].atoms.nr);
+        int numAtomsPerMolecule = (bRead ? 0 : mtop->moltype[molblock.type].atoms.size());
         do_molblock(fio, &molblock, numAtomsPerMolecule, bRead);
     }
     gmx_fio_do_int(fio, mtop->natoms);

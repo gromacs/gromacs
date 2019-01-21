@@ -314,10 +314,9 @@ static void do_demux(gmx::ArrayRef<const std::string> inFiles,
     t_trxstatus **fp_in, **fp_out;
     gmx_bool      bCont, *bSet;
     real          t, first_time = 0;
-    t_trxframe   *trx;
+    t_trxframe   *trx = new t_trxframe[inFiles.size()];
 
     snew(fp_in, inFiles.size());
-    snew(trx, inFiles.size());
     snew(bSet, inFiles.size());
     natoms = -1;
     t      = -1;
@@ -383,7 +382,8 @@ static void do_demux(gmx::ArrayRef<const std::string> inFiles,
             {
                 if (index)
                 {
-                    write_trxframe_indexed(fp_out[j], &trx[i], isize, index, nullptr);
+                    write_trxframe_indexed(fp_out[j], &trx[i],
+                                           gmx::arrayRefFromArray(index, isize), nullptr);
                 }
                 else
                 {
@@ -669,7 +669,6 @@ int gmx_trjcat(int argc, char *argv[])
             {
                 trxout = open_trx(out_file, "w");
             }
-            std::memset(&frout, 0, sizeof(frout));
         }
         else
         {
@@ -902,7 +901,8 @@ int gmx_trjcat(int argc, char *argv[])
 
                         if (bIndex)
                         {
-                            write_trxframe_indexed(trxout, &frout, isize, index,
+                            write_trxframe_indexed(trxout, &frout,
+                                                   gmx::arrayRefFromArray(index, isize),
                                                    nullptr);
                         }
                         else

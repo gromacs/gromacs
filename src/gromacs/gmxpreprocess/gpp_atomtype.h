@@ -76,13 +76,13 @@ void done_atomtype(gpp_atomtype_t at);
 /* Free the memory in the structure */
 
 int set_atomtype(int nt, gpp_atomtype_t at, struct t_symtab *tab,
-                 t_atom *a, const char *name, t_param *nb,
+                 const AtomInfo &a, const char *name, t_param *nb,
                  int bondatomtype, int atomnumber);
 /* Set the values of an existing atom type nt. Returns nt on success or
    NOTSET on error. */
 
 int add_atomtype(gpp_atomtype_t at, struct t_symtab *tab,
-                 t_atom *a, const char *name, t_param *nb,
+                 const AtomInfo &a, const char *name, t_param *nb,
                  int bondatomtype, int atomnumber);
 /* Add a complete new atom type to an existing atomtype structure. Returns
    the number of the atom type. */

@@ -183,7 +183,7 @@ int gmx_vanhove(int argc, char *argv[])
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, boxtop,
                   FALSE);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
     nalloc = 0;
     time   = nullptr;

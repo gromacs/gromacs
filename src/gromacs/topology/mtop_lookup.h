@@ -45,11 +45,10 @@
 #ifndef GMX_TOPOLOGY_MTOP_LOOKUP_H
 #define GMX_TOPOLOGY_MTOP_LOOKUP_H
 
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
-
-struct t_atom;
 
 // TODO All of the functions taking a const gmx_mtop * are deprecated
 // and should be replaced by versions taking const gmx_mtop & when
@@ -149,7 +148,7 @@ mtopGetMoleculeIndex(const gmx_mtop_t *mtop,
  * \param[in]     globalAtomIndex      The global atom index to look up
  * \param[in,out] moleculeBlock        The molecule block index in \p mtop
  */
-static inline const t_atom &
+static inline const AtomInfo &
 mtopGetAtomParameters(const gmx_mtop_t  *mtop,
                       int                globalAtomIndex,
                       int               *moleculeBlock)
@@ -158,7 +157,7 @@ mtopGetAtomParameters(const gmx_mtop_t  *mtop,
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
                          nullptr, &atomIndexInMolecule);
     const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
-    return moltype.atoms.atom[atomIndexInMolecule];
+    return moltype.atoms[atomIndexInMolecule];
 }
 
 /*! \brief Returns the mass of an atom based on global atom index
@@ -179,8 +178,8 @@ mtopGetAtomMass(const gmx_mtop_t  *mtop,
                 int                globalAtomIndex,
                 int               *moleculeBlock)
 {
-    const t_atom &atom = mtopGetAtomParameters(mtop, globalAtomIndex, moleculeBlock);
-    return atom.m;
+    const AtomInfo &atom = mtopGetAtomParameters(mtop, globalAtomIndex, moleculeBlock);
+    return atom.m_;
 }
 
 /*! \brief Look up the atom and residue name and residue number and index of a global atom index
@@ -217,31 +216,32 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
                          &moleculeIndex, &atomIndexInMolecule);
 
     const gmx_molblock_t       &molb    = mtop->molblock[*moleculeBlock];
-    const t_atoms              &atoms   = mtop->moltype[molb.type].atoms;
+    gmx::ArrayRef<const AtomInfo> atoms   = mtop->moltype[molb.type].atoms;
+    gmx::ArrayRef<const Residue> resinfo = mtop->moltype[molb.type].resinfo;
     const MoleculeBlockIndices &indices = mtop->moleculeBlockIndices[*moleculeBlock];
     if (atomName != nullptr)
     {
-        *atomName = *(atoms.atomname[atomIndexInMolecule]);
+        *atomName = *(atoms[atomIndexInMolecule].atomname);
     }
     if (residueNumber != nullptr)
     {
-        if (atoms.nres > mtop->maxres_renum)
+        if (resinfo.size() > mtop->maxres_renum)
         {
-            *residueNumber = atoms.resinfo[atoms.atom[atomIndexInMolecule].resind].nr;
+            *residueNumber = resinfo[atoms[atomIndexInMolecule].resind_].nr_;
         }
         else
         {
             /* Single residue molecule, keep counting */
-            *residueNumber = indices.residueNumberStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
+            *residueNumber = indices.residueNumberStart + moleculeIndex*resinfo.size() + atoms[atomIndexInMolecule].resind_;
         }
     }
     if (residueName != nullptr)
     {
-        *residueName = *(atoms.resinfo[atoms.atom[atomIndexInMolecule].resind].name);
+        *residueName = *(resinfo[atoms[atomIndexInMolecule].resind_].name_);
     }
     if (globalResidueIndex != nullptr)
     {
-        *globalResidueIndex = indices.globalResidueStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
+        *globalResidueIndex = indices.globalResidueStart + moleculeIndex*resinfo.size() + atoms[atomIndexInMolecule].resind_;
     }
 }
 
@@ -271,7 +271,7 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  &mtop,
  * \param[in]     globalAtomIndex      The global atom index to look up
  * \param[in,out] moleculeBlock        The molecule block index in \p mtop
  */
-static inline const t_resinfo &
+static inline const Residue &
 mtopGetResidueInfo(const gmx_mtop_t  *mtop,
                    int                globalAtomIndex,
                    int               *moleculeBlock)
@@ -280,8 +280,8 @@ mtopGetResidueInfo(const gmx_mtop_t  *mtop,
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
                          nullptr, &atomIndexInMolecule);
     const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
-    const int            resind  = moltype.atoms.atom[atomIndexInMolecule].resind;
-    return moltype.atoms.resinfo[resind];
+    const int            resind  = moltype.atoms[atomIndexInMolecule].resind_;
+    return moltype.resinfo[resind];
 }
 
 /*! \brief Returns PDB information for an atom based on global atom index
@@ -296,7 +296,7 @@ mtopGetResidueInfo(const gmx_mtop_t  *mtop,
  * \param[in]     globalAtomIndex      The global atom index to look up
  * \param[in,out] moleculeBlock        The molecule block index in \p mtop
  */
-static inline const t_pdbinfo &
+static inline const PdbEntry &
 mtopGetAtomPdbInfo(const gmx_mtop_t  *mtop,
                    int                globalAtomIndex,
                    int               *moleculeBlock)
@@ -305,8 +305,9 @@ mtopGetAtomPdbInfo(const gmx_mtop_t  *mtop,
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
                          nullptr, &atomIndexInMolecule);
     const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
-    GMX_ASSERT(moltype.atoms.havePdbInfo, "PDB information not present when requested");
-    return moltype.atoms.pdbinfo[atomIndexInMolecule];
+    GMX_ASSERT(moltype.atoms.size() == moltype.pdb.size(), "Not the same number of atom and odb entries");
+    GMX_ASSERT(allAtomsHavePdbInfo(moltype.pdb), "PDB information not present when requested");
+    return moltype.pdb[atomIndexInMolecule];
 }
 
 #endif

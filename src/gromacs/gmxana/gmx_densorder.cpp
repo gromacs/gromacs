@@ -69,7 +69,7 @@ enum {
     methSEL, methBISECT, methFUNCFIT, methNR
 };
 
-static void center_coords(const t_atoms *atoms, matrix box, rvec x0[], int axis)
+static void center_coords(gmx::ArrayRef<const AtomInfo> atoms, matrix box, rvec x0[], int axis)
 {
     int  i, m;
     real tmass, mm;
@@ -77,9 +77,9 @@ static void center_coords(const t_atoms *atoms, matrix box, rvec x0[], int axis)
 
     tmass = 0;
     clear_rvec(com);
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms.size()); i++)
     {
-        mm     = atoms->atom[i].m;
+        mm     = atoms[i].m_;
         tmass += mm;
         for (m = 0; (m < DIM); m++)
         {
@@ -94,7 +94,7 @@ static void center_coords(const t_atoms *atoms, matrix box, rvec x0[], int axis)
     rvec_sub(box_center, com, shift);
     shift[axis] -= box_center[axis];
 
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; (i < atoms.size()); i++)
     {
         rvec_dec(x0[i], shift);
     }
@@ -171,7 +171,7 @@ static void density_in_time (const char *fn, int **index, const int gnx[], real 
     /****Start trajectory processing***/
 
     /*Initialize Densdevel and PBC-remove*/
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.size());
 
     *Densdevel = nullptr;
 
@@ -180,7 +180,7 @@ static void density_in_time (const char *fn, int **index, const int gnx[], real 
         bbww[XX] = box[ax1][ax1]/ *xslices;
         bbww[YY] = box[ax2][ax2]/ *yslices;
         bbww[ZZ] = box[axis][axis]/ *zslices;
-        gmx_rmpbc(gpbc, top->atoms.nr, box, x0);
+        gmx_rmpbc(gpbc, top->atoms.size(), box, x0);
         /*Reset Densslice every nsttblock steps*/
         /* The first conditional is for clang to understand that this branch is
          * always taken the first time. */
@@ -207,7 +207,7 @@ static void density_in_time (const char *fn, int **index, const int gnx[], real 
 
         if (bCenter)
         {
-            center_coords(&top->atoms, box, x0, axis);
+            center_coords(top->atoms, box, x0, axis);
         }
 
 
@@ -246,7 +246,7 @@ static void density_in_time (const char *fn, int **index, const int gnx[], real 
             slicex = static_cast<int>(x/bbww[XX]) % *xslices;
             slicey = static_cast<int>(y/bbww[YY]) % *yslices;
             slicez = static_cast<int>(z/bbww[ZZ]) % *zslices;
-            Densslice[slicex][slicey][slicez] += (top->atoms.atom[index[0][j]].m*dscale);
+            Densslice[slicex][slicey][slicez] += (top->atoms[index[0][j]].m_*dscale);
         }
 
         framenr++;
@@ -752,7 +752,7 @@ int gmx_densorder(int argc, char *argv[])
 /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname);
+    get_index(top->atoms, top->resinfo,  ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname);
 
     density_in_time(ftp2fn(efTRX, NFILE, fnm), index, ngx, binw, binwz, nsttblock, &Densmap, &xslices, &yslices, &zslices, &tblock, top, ePBC, axis, bCenter, b1d, oenv);
 

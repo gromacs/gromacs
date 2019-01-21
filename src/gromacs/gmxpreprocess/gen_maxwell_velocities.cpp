@@ -56,17 +56,16 @@ static void low_mspeed(real tempi,
     int                                     i, m, nrdf;
     real                                    boltz, sd;
     real                                    ekin, temp, mass, scal;
-    gmx_mtop_atomloop_all_t                 aloop;
-    const t_atom                           *atom;
+    const AtomInfo                          *atom;
     gmx::TabulatedNormalDistribution<real>  normalDist;
 
     boltz = BOLTZ*tempi;
     ekin  = 0.0;
     nrdf  = 0;
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
+    LoopOverAllAtoms aloop(*mtop);
+    while (aloop.nextAtom(&i, &atom))
     {
-        mass = atom->m;
+        mass = atom->m_;
         if (mass > 0)
         {
             rng->restart(i, 0);

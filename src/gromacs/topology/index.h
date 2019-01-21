@@ -42,7 +42,8 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct t_atoms;
+class AtomInfo;
+class Residue;
 struct t_blocka;
 
 void check_index(const char *gname, int n, int index[],
@@ -72,7 +73,9 @@ void rd_index(const char *statfile, int ngrps, int isize[],
  * the dimension of the isize and grpnames arrays are ngrps.
  */
 
-void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
+void get_index(gmx::ArrayRef<const AtomInfo> atoms,
+               gmx::ArrayRef<const Residue> resinfo,
+               const char *fnm, int ngrps,
                int isize[], int *index[], char *grpnames[]);
 /* Does the same as rd_index, but if the fnm pointer is NULL it
  * will not read from fnm, but it will make default index groups
@@ -103,7 +106,9 @@ void write_index(const char *outf, struct t_blocka *b, char **gnames, gmx_bool b
 void add_grp(struct t_blocka *b, char ***gnames, gmx::ArrayRef<const int> a, const std::string &name);
 /* Ads group a with name name to block b and namelist gnames */
 
-void analyse(const t_atoms *atoms, struct t_blocka *gb, char ***gn,
+void analyse(gmx::ArrayRef<const AtomInfo> atoms,
+             gmx::ArrayRef<const Residue> resinfo,
+             struct t_blocka *gb, char ***gn,
              gmx_bool bASK, gmx_bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.

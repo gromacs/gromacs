@@ -42,6 +42,7 @@
 
 #include "gromacs/math/veccompare.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
@@ -94,11 +95,6 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
 
 void done_frame(t_trxframe *frame)
 {
-    if (frame->atoms)
-    {
-        done_atom(frame->atoms);
-        sfree(frame->atoms);
-    }
     sfree(frame->x);
     sfree(frame->v);
     sfree(frame->f);

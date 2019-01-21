@@ -38,13 +38,20 @@
 
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
+#include <vector>
 
-struct t_atoms;
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
+
+struct AtomInfo;
+struct Residue;
 struct t_symtab;
 
 void gmx_espresso_read_conf(const char *infile,
-                            t_symtab *symtab, char **name, t_atoms *atoms,
+                            t_symtab *symtab,
+                            char **name,
+                            std::vector<AtomInfo> *atoms,
+                            std::vector<Residue> *resinfo,
                             rvec x[], rvec *v, matrix box);
 /* If name is not nullptr, gmx_strdup the title string into
  * it. Reading a title from espresso format is not , so this will
@@ -52,8 +59,12 @@ void gmx_espresso_read_conf(const char *infile,
 
 int get_espresso_coordnum(const char *infile);
 
-void write_espresso_conf_indexed(FILE *out, const char *title,
-                                 const t_atoms *atoms, int nx, const int *index,
-                                 const rvec *x, const rvec *v, const matrix box);
+void write_espresso_conf_indexed(FILE *out,
+                                 const char *title,
+                                 gmx::ArrayRef<const AtomInfo> atoms,
+                                 gmx::ArrayRef<const int> index,
+                                 const rvec *x,
+                                 const rvec *v,
+                                 const matrix box);
 
 #endif

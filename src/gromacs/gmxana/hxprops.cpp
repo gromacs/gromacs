@@ -208,7 +208,7 @@ real ca_phi(int gnx, const int index[], rvec x[])
     return (phitot/(gnx-4.0));
 }
 
-real dip(int nbb, int const bbind[], const rvec x[], const t_atom atom[])
+real dip(int nbb, int const bbind[], const rvec x[], gmx::ArrayRef<const AtomInfo> atoms)
 {
     int  i, m, ai;
     rvec dipje;
@@ -218,7 +218,7 @@ real dip(int nbb, int const bbind[], const rvec x[], const t_atom atom[])
     for (i = 0; (i < nbb); i++)
     {
         ai = bbind[i];
-        q  = atom[ai].q;
+        q  = atoms[ai].q_;
         for (m = 0; (m < DIM); m++)
         {
             dipje[m] += x[ai][m]*q;
@@ -332,8 +332,8 @@ static void set_ahcity(int nbb, t_bb bb[])
 
 t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
               int *nall, int **index,
-              char ***atomname, t_atom atom[],
-              t_resinfo *resinfo)
+              gmx::ArrayRef<const AtomInfo> atoms,
+              gmx::ArrayRef<const Residue> resinfo)
 {
     static const char * bb_nm[] = { "N", "H", "CA", "C", "O", "HN" };
 #define NBB asize(bb_nm)
@@ -345,11 +345,11 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     rd_index(fn, 1, &gnx, index, &grpname);
     *nall = gnx;
     fprintf(stderr, "Checking group %s\n", grpname);
-    r0 = r1 = atom[(*index)[0]].resind;
+    r0 = r1 = atoms[(*index)[0]].resind_;
     for (i = 1; (i < gnx); i++)
     {
-        r0 = std::min(r0, atom[(*index)[i]].resind);
-        r1 = std::max(r1, atom[(*index)[i]].resind);
+        r0 = std::min(r0, atoms[(*index)[i]].resind_);
+        r1 = std::max(r1, atoms[(*index)[i]].resind_);
     }
     rnr = r1-r0+1;
     fprintf(stderr, "There are %d residues\n", rnr);
@@ -363,22 +363,22 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     {
         ai = (*index)[i];
         // Create an index into the residue index for the topology.
-        int resindex = atom[ai].resind;
+        int resindex = atoms[ai].resind_;
         // Create an index into the residues present in the selected
         // index group.
         int bbindex  = resindex -r0;
-        if (std::strcmp(*(resinfo[resindex].name), "PRO") == 0)
+        if (std::strcmp(*(resinfo[resindex].name_), "PRO") == 0)
         {
             // For PRO in a peptide, there is no H bound to backbone
             // N, so use CD instead.
-            if (std::strcmp(*(atomname[ai]), "CD") == 0)
+            if (std::strcmp(*atoms[ai].atomname, "CD") == 0)
             {
                 bb[bbindex].H = ai;
             }
         }
         for (k = 0; (k < NBB); k++)
         {
-            if (std::strcmp(bb_nm[k], *(atomname[ai])) == 0)
+            if (std::strcmp(bb_nm[k], *(atoms[ai].atomname)) == 0)
             {
                 break;
             }
@@ -454,8 +454,8 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     /* Set the labels */
     for (i = 0; (i < rnr); i++)
     {
-        int resindex = atom[bb[i].CA].resind;
-        sprintf(bb[i].label, "%s%d", *(resinfo[resindex].name), resinfo[resindex].nr);
+        int resindex = atoms[bb[i].CA].resind_;
+        sprintf(bb[i].label, "%s%d", *(resinfo[resindex].name_), resinfo[resindex].nr_);
     }
 
     *nres = rnr;

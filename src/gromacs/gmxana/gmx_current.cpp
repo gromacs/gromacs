@@ -92,13 +92,12 @@ static void index_atom2mol(int *n, int *index, t_block *mols)
     *n = nmol;
 }
 
-static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
+static gmx_bool precalc(const t_topology &top,
+                        gmx::ArrayRef<AtomInfo> atoms,
+                        real mass2[], real qmol[])
 {
 
-    real     mtot;
-    real     qtot;
     real     qall;
-    int      i, j, k, l;
     int      ai, ci;
     gmx_bool bNEU;
     ai   = 0;
@@ -107,23 +106,23 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
 
 
 
-    for (i = 0; i < top.mols.nr; i++)
+    for (int i = 0; i < top.mols.nr; i++)
     {
-        k    = top.mols.index[i];
-        l    = top.mols.index[i+1];
-        mtot = 0.0;
-        qtot = 0.0;
+        int k    = top.mols.index[i];
+        int l    = top.mols.index[i+1];
+        real mtot = 0.0;
+        real qtot = 0.0;
 
-        for (j = k; j < l; j++)
+        for (int j = k; j < l; j++)
         {
-            mtot += top.atoms.atom[j].m;
-            qtot += top.atoms.atom[j].q;
+            mtot += atoms[j].m_;
+            qtot += atoms[j].q_;
         }
 
-        for (j = k; j < l; j++)
+        for (int j = k; j < l; j++)
         {
-            top.atoms.atom[j].q -= top.atoms.atom[j].m*qtot/mtot;
-            mass2[j]             = top.atoms.atom[j].m/mtot;
+            atoms[j].q_ -= atoms[j].m_*qtot/mtot;
+            mass2[j]             = atoms[j].m_/mtot;
             qmol[j]              = qtot;
         }
 
@@ -186,7 +185,7 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
     }
 }
 
-static void calc_mj(t_topology top, int ePBC, matrix box, gmx_bool bNoJump, int isize, const int index0[], \
+static void calc_mj(const t_topology &top, int ePBC, matrix box, gmx_bool bNoJump, int isize, const int index0[], \
                     rvec fr[], rvec mj, real mass2[], real qmol[])
 {
 
@@ -347,7 +346,8 @@ static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], i
 
 static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        FILE *fmjdsp, gmx_bool bNoJump, gmx_bool bACF, gmx_bool bINT,
-                       int ePBC, t_topology top, t_trxframe fr, real temp,
+                       int ePBC, const t_topology &top, gmx::ArrayRef<const AtomInfo> atoms,
+                       t_trxframe fr, real temp,
                        real bfit, real efit, real bvit, real evit,
                        t_trxstatus *status, int isize, int nmols, int nshift,
                        const int *index0, int indexm[], real mass2[],
@@ -505,7 +505,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         for (i = 0; i < isize; i++)
         {
             j = index0[i];
-            svmul(top.atoms.atom[j].q, fr.x[j], fr.x[j]);
+            svmul(atoms[j].q_, fr.x[j], fr.x[j]);
             rvec_inc(mu[nfr], fr.x[j]);
         }
 
@@ -893,16 +893,17 @@ int gmx_current(int argc, char *argv[])
     indexfn = ftp2fn_null(efNDX, NFILE, fnm);
     snew(grpname, 1);
 
-    get_index(&(top.atoms), indexfn, 1, &isize, &index0, grpname);
+    get_index(top.atoms, top.resinfo, indexfn, 1, &isize, &index0, grpname);
 
     flags = flags | TRX_READ_X | TRX_READ_V;
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
 
-    snew(mass2, top.atoms.nr);
-    snew(qmol, top.atoms.nr);
+    snew(mass2, top.atoms.size());
+    snew(qmol, top.atoms.size());
 
-    precalc(top, mass2, qmol);
+    std::vector<AtomInfo> atoms(top.atoms.begin(), top.atoms.end());
+    precalc(top, atoms, mass2, qmol);
 
 
     snew(indexm, isize);
@@ -958,7 +959,7 @@ int gmx_current(int argc, char *argv[])
     /* System information is read and prepared, dielectric() processes the frames
      * and calculates the requested quantities */
 
-    dielectric(fmj, fmd, outf, fcur, mcor, fmjdsp, bNoJump, bACF, bINT, ePBC, top, fr,
+    dielectric(fmj, fmd, outf, fcur, mcor, fmjdsp, bNoJump, bACF, bINT, ePBC, top, atoms, fr,
                temp, bfit, efit, bvit, evit, status, isize, nmols, nshift,
                index0, indexm, mass2, qmol, eps_rf, oenv);
 

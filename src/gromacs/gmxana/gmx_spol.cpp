@@ -73,7 +73,7 @@ static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc
     for (m = 0; (m < nrefat); m++)
     {
         ai   = index[m];
-        mass = top->atoms.atom[ai].m;
+        mass = top->atoms[ai].m_;
         for (j = 0; (j < DIM); j++)
         {
             xref[j] += mass*x[ai][j];
@@ -91,7 +91,7 @@ static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc
             for (m = 0; (m < nrefat); m++)
             {
                 ai   = index[m];
-                mass = top->atoms.atom[ai].m/mtot;
+                mass = top->atoms[ai].m_/mtot;
                 pbc_dx(pbc, x[ai], xref, dx);
                 rvec_add(xref, dx, xtest);
                 for (j = 0; (j < DIM); j++)
@@ -150,8 +150,6 @@ static void spol_atom2molindex(int *n, int *index, const t_block *mols)
 
 int gmx_spol(int argc, char *argv[])
 {
-    t_topology  *top;
-    t_atom      *atom;
     t_trxstatus *status;
     int          nrefat, natoms, nf, ntot;
     real         t;
@@ -220,7 +218,7 @@ int gmx_spol(int argc, char *argv[])
         return 0;
     }
 
-    snew(top, 1);
+    t_topology *top = new t_topology;
     // TODO: Only ePBC is used, not the full inputrec.
     t_inputrec  irInstance;
     t_inputrec *ir = &irInstance;
@@ -232,7 +230,7 @@ int gmx_spol(int argc, char *argv[])
     snew(grpname, 2);
     snew(index, 2);
     snew(isize, 2);
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpname);
+    get_index(top->atoms, top->resinfo, ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpname);
 
     if (bCom)
     {
@@ -272,7 +270,7 @@ int gmx_spol(int argc, char *argv[])
     sdinp = 0;
 
     molindex = top->mols.index;
-    atom     = top->atoms.atom;
+    gmx::ArrayRef<const AtomInfo> atoms     = top->atoms;
 
     gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms);
 
@@ -314,12 +312,12 @@ int gmx_spol(int argc, char *argv[])
                 qav = 0;
                 for (a = a0; a < a1; a++)
                 {
-                    qav += atom[a].q;
+                    qav += atoms[a].q_;
                 }
                 qav /= (a1 - a0);
                 for (a = a0; a < a1; a++)
                 {
-                    q = atom[a].q - qav;
+                    q = atoms[a].q_ - qav;
                     for (d = 0; d < DIM; d++)
                     {
                         dip[d] += q*x[a][d];

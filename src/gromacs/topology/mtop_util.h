@@ -43,11 +43,13 @@
 
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
 struct gmx_localtop_t;
-struct t_atom;
-struct t_atoms;
+struct AtomInfo;
+struct Residue;
+struct PdbEntry;
 struct t_block;
 struct t_symtab;
 enum struct GmxQmmmMode;
@@ -86,75 +88,95 @@ int gmx_mtop_nres(const gmx_mtop_t *mtop);
 /* Removes the charge groups, i.e. makes single atom charge groups, in mtop */
 void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
 
-/* Abstract type for atom loop over all atoms */
-typedef struct gmx_mtop_atomloop_all *gmx_mtop_atomloop_all_t;
-
-/* Initialize an atom loop over all atoms in the system.
- * The order of the atoms will be as in the state struct.
- * Only use this when you really need to loop over all atoms,
- * i.e. when you use groups which might differ per molecule,
- * otherwise use gmx_mtop_atomloop_block.
+/*! \brief
+ * Object that allows looping over all atoms in an mtop.
  */
-gmx_mtop_atomloop_all_t
-gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop);
+class LoopOverAllAtoms
+{
+    public:
+        //! Default constructor.
+        explicit LoopOverAllAtoms(const gmx_mtop_t &mtop);
+        //! Default destructor.
+        ~LoopOverAllAtoms();
 
-/* Loop to the next atom.
- * When not at the end:
- *   returns TRUE and at_global,
- *   writes the global atom number in *at_global
- *   and sets the pointer atom to the t_atom struct of that atom.
- * When at the end, destroys aloop and returns FALSE.
- * Use as:
- * gmx_mtop_atomloop_all_t aloop;
- * aloop = gmx_mtop_atomloop_all_init(mtop)
- * while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
- *     ...
- * }
+        /*! \brief
+         * Loop to next atoms.
+         *
+         * When not at the end:
+         *   returns TRUE and \p globalAtom,
+         *   writes the global atom number in *\p globalAtom
+         *   and sets the pointer atom to the AtomInfo struct of that atom.
+         * When at the end, returns FALSE and resets the loop.
+         * Use as:
+         * LoopOverAllAtom aloop(mtop);
+         * while (aloop.nextAtom(&globalAtom, &atom)) {
+         *     ...
+         * }
+         *
+         * \param[out] globalAtom Global atom number in the loop.
+         * \param[out] atom The currently handled AtomInfo structure.
+         */
+        bool nextAtom(int *globalAtom, const AtomInfo **atom);
+        /*! \brief
+         * Obtain the name, residue number and residue name for the current atom
+         * being processed in the atom loop.
+         *
+         * \param[out] atomName Name of the current loop atom.
+         * \param[out] residueNumber Residue the current atom is in.
+         * \param[out] residueName Name of the residue the atom is in.
+         */
+        void currentAtomNames(char **atomName, int *residueNumber, char **residueName);
+        /*! \brief
+         * Obtain the \p moleculeType and \p atomNumberInMol for the current atom.
+         *
+         * \param[out] moleculeType Type of molecule the current atom is in.
+         * \param[out] atomNumberInMol Position of the current atom in the molecule.
+         */
+        void currentMoleculeType(const gmx_moltype_t **moleculeType, int *atomNumberInMol);
+
+    private:
+        //! Implementation pointer.
+        class Impl;
+
+        gmx::PrivateImplPointer<Impl> impl_;
+};
+
+/*! \brief
+ *
+ * Object for atom loop over atoms in molecule block.
  */
-gmx_bool
-gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
-                           int *at_global, const t_atom **atom);
+class LoopOverAllAtomsInBlock
+{
+    public:
+        //! Default constructor.
+        explicit LoopOverAllAtomsInBlock(const gmx_mtop_t &mtop);
+        //! Default destructor.
+        ~LoopOverAllAtomsInBlock();
 
-/* Return the atomname, the residue number and residue name
- * of the current atom in the loop.
- */
-void
-gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
-                            char **atomname, int *resnr, char **resname);
+        /*! \brief
+         * Loop to the next atom.
+         * When not at the end:
+         *   returns TRUE
+         *   sets the pointer atom to the AtomInfo struct of that atom
+         *   and return the number of molecules corresponding to this atom.
+         * When at the end, returns FALSE and resets the loop object.
+         * Use as:
+         * LoopOverAllAtomsInBlock aloop;
+         * while (aloop.nextAtom(&atom,&numberOfMolecules)) {
+         *     ...
+         * }
+         *
+         * \param[out] atom Current atom being looped over.
+         * \param[out] numberOfMolecules How many molecules correspond to the atom.
+         */
+        bool nextAtom(const AtomInfo **atom, int *numberOfMolecules);
 
-/* Return the a pointer to the moltype struct of the current atom
- * in the loop and the atom number in the molecule.
- */
-void
-gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t aloop,
-                              const gmx_moltype_t **moltype, int *at_mol);
+    private:
+        //! Implementation pointer.
+        class Impl;
 
-
-/* Abstract type for atom loop over atoms in all molecule blocks */
-typedef struct gmx_mtop_atomloop_block *gmx_mtop_atomloop_block_t;
-
-/* Initialize an atom loop over atoms in all molecule blocks the system.
- */
-gmx_mtop_atomloop_block_t
-gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop);
-
-/* Loop to the next atom.
- * When not at the end:
- *   returns TRUE
- *   sets the pointer atom to the t_atom struct of that atom
- *   and return the number of molecules corresponding to this atom.
- * When at the end, destroys aloop and returns FALSE.
- * Use as:
- * gmx_mtop_atomloop_block_t aloop;
- * aloop = gmx_mtop_atomloop_block_init(mtop)
- * while (gmx_mtop_atomloop_block_next(aloop,&atom,&nmol)) {
- *     ...
- * }
- */
-gmx_bool
-gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                             const t_atom **atom, int *nmol);
-
+        gmx::PrivateImplPointer<Impl> impl_;
+};
 
 /* Abstract type for ilist loop over all ilists */
 typedef struct gmx_mtop_ilistloop *gmx_mtop_ilistloop_t;
@@ -211,11 +233,12 @@ gmx_mtop_ftype_count(const gmx_mtop_t &mtop, int ftype);
 t_block
 gmx_mtop_global_cgs(const gmx_mtop_t *mtop);
 
-
-/* Returns a single t_atoms struct for the whole system */
-t_atoms
-gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
-
+/*! \brief
+ * Returns a single combined structure with AtomInfo, Residue and possibly PdbEntry
+ * vector for the whole system.
+ */
+AtomResiduePdb
+gmx_mtop_global_atoms(const gmx_mtop_t &mtop);
 
 /*! \brief
  * Populate a 'local' topology for the whole system.
@@ -264,20 +287,24 @@ gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop);
  */
 std::vector<int> get_atom_index(const gmx_mtop_t *mtop);
 
-/*! \brief Converts a t_atoms struct to an mtop struct
+/*! \brief Combines AtomInfo, Residue and PdbEntry vectors to an mtop struct
  *
- * All pointers contained in \p atoms will be copied into \p mtop.
+ * All entries contained in \p atoms, \p resinfo and \p pdb will be copied into \p mtop.
  * Note that this will produce one moleculetype encompassing the whole system.
  *
  * \param[in]  symtab  The symbol table
  * \param[in]  name    Pointer to the name for the topology
  * \param[in]  atoms   The atoms to convert
+ * \param[in]  resinfo Residues to add.
+ * \param[in]  pdb     PDB information or empty.
  * \param[out] mtop    The molecular topology output containing atoms.
  */
 void
 convertAtomsToMtop(t_symtab    *symtab,
                    char       **name,
-                   t_atoms     *atoms,
+                   gmx::ArrayRef<const AtomInfo> atoms,
+                   gmx::ArrayRef<const Residue> resinfo,
+                   gmx::ArrayRef<const PdbEntry> pdb,
                    gmx_mtop_t  *mtop);
 
 #endif

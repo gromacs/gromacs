@@ -1753,15 +1753,15 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
                 }
             }
         }
-        const t_atom &atom = mtopGetAtomParameters(mtop, ii, &molb);
+        const AtomInfo &atom = mtopGetAtomParameters(mtop, ii, &molb);
         real          m;
         if (ir->efep == efepNO)
         {
-            m = atom.m;
+            m = atom.m_;
         }
         else
         {
-            m = (1 - lambda)*atom.m + lambda*atom.mB;
+            m = (1 - lambda)*atom.m_ + lambda*atom.mB_;
         }
         real w;
         if (pg->params.nweight > 0)

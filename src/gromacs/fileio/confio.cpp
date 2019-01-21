@@ -61,10 +61,16 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-void write_sto_conf_indexed(const char *outfile, const char *title,
-                            const t_atoms *atoms,
-                            const rvec x[], const rvec *v, int ePBC, const matrix box,
-                            int nindex, int index[])
+void write_sto_conf_indexed(const char *outfile,
+                            const char *title,
+                            gmx::ArrayRef<const AtomInfo> atoms,
+                            gmx::ArrayRef<const Residue> resinfo,
+                            gmx::ArrayRef<const PdbEntry> pdb,
+                            const rvec x[],
+                            const rvec *v,
+                            int ePBC,
+                            const matrix box,
+                            gmx::ArrayRef<const int> index)
 {
     FILE       *out;
     int         ftp;
@@ -75,14 +81,15 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
     {
         case efGRO:
             out = gmx_fio_fopen(outfile, "w");
-            write_hconf_indexed_p(out, title, atoms, nindex, index, x, v, box);
+            write_hconf_indexed_p(out, title, atoms, resinfo, index, x, v, box);
             gmx_fio_fclose(out);
             break;
         case efG96:
             clear_trxframe(&fr, TRUE);
-            fr.natoms = atoms->nr;
+            fr.natoms = atoms.size();
             fr.bAtoms = TRUE;
-            fr.atoms  = const_cast<t_atoms *>(atoms);
+            fr.atoms  = std::vector<AtomInfo>(atoms.begin(), atoms.end());
+            fr.resinfo = std::vector<Residue>(resinfo.begin(), resinfo.end());
             fr.bX     = TRUE;
             fr.x      = const_cast<rvec *>(x);
             if (v)
@@ -93,7 +100,7 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             fr.bBox = TRUE;
             copy_mat(box, fr.box);
             out = gmx_fio_fopen(outfile, "w");
-            write_g96_conf(out, title, &fr, nindex, index);
+            write_g96_conf(out, title, &fr, index);
             gmx_fio_fclose(out);
             break;
         case efPDB:
@@ -101,12 +108,12 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
         case efENT:
         case efPQR:
             out = gmx_fio_fopen(outfile, "w");
-            write_pdbfile_indexed(out, title, atoms, x, ePBC, box, ' ', -1, nindex, index, nullptr, TRUE, ftp == efPQR);
+            write_pdbfile_indexed(out, title, atoms, resinfo, pdb, x, ePBC, box, ' ', -1, index, nullptr, TRUE, ftp == efPQR);
             gmx_fio_fclose(out);
             break;
         case efESP:
             out = gmx_fio_fopen(outfile, "w");
-            write_espresso_conf_indexed(out, title, atoms, nindex, index, x, v, box);
+            write_espresso_conf_indexed(out, title, atoms, index, x, v, box);
             gmx_fio_fclose(out);
             break;
         case efTPR:
@@ -116,8 +123,15 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
     }
 }
 
-void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms,
-                    const rvec x[], const rvec *v, int ePBC, const matrix box)
+void write_sto_conf(const char *outfile,
+                    const char *title,
+                    gmx::ArrayRef<const AtomInfo> atoms,
+                    gmx::ArrayRef<const Residue> resinfo,
+                    gmx::ArrayRef<const PdbEntry> pdb,
+                    const rvec x[],
+                    const rvec *v,
+                    int ePBC,
+                    const matrix box)
 {
     FILE       *out;
     int         ftp;
@@ -127,13 +141,14 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
     switch (ftp)
     {
         case efGRO:
-            write_conf_p(outfile, title, atoms, x, v, box);
+            write_conf_p(outfile, title, atoms, resinfo, x, v, box);
             break;
         case efG96:
             clear_trxframe(&fr, TRUE);
-            fr.natoms = atoms->nr;
+            fr.natoms = atoms.size();
             fr.bAtoms = TRUE;
-            fr.atoms  = const_cast<t_atoms *>(atoms); // TODO check
+            fr.atoms  = std::vector<AtomInfo>(atoms.begin(), atoms.end());
+            fr.resinfo = std::vector<Residue>(resinfo.begin(), resinfo.end());
             fr.bX     = TRUE;
             fr.x      = const_cast<rvec *>(x);
             if (v)
@@ -144,19 +159,19 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
             fr.bBox = TRUE;
             copy_mat(box, fr.box);
             out = gmx_fio_fopen(outfile, "w");
-            write_g96_conf(out, title, &fr, -1, nullptr);
+            write_g96_conf(out, title, &fr, gmx::EmptyArrayRef());
             gmx_fio_fclose(out);
             break;
         case efPDB:
         case efBRK:
         case efENT:
             out = gmx_fio_fopen(outfile, "w");
-            write_pdbfile(out, title, atoms, x, ePBC, box, ' ', -1, nullptr, TRUE);
+            write_pdbfile(out, title, atoms, resinfo, pdb,  x, ePBC, box, ' ', -1, nullptr, TRUE);
             gmx_fio_fclose(out);
             break;
         case efESP:
             out = gmx_fio_fopen(outfile, "w");
-            write_espresso_conf_indexed(out, title, atoms, atoms->nr, nullptr, x, v, box);
+            write_espresso_conf_indexed(out, title, atoms, gmx::EmptyArrayRef(), x, v, box);
             gmx_fio_fclose(out);
             break;
         case efTPR:
@@ -172,7 +187,6 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
 {
     int     ftp;
     FILE   *out;
-    t_atoms atoms;
 
     ftp = fn2ftp(outfile);
     switch (ftp)
@@ -186,11 +200,10 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
             /* This is a brute force approach which requires a lot of memory.
              * We should implement mtop versions of all writing routines.
              */
-            atoms = gmx_mtop_global_atoms(mtop);
+            AtomResiduePdb system = gmx_mtop_global_atoms(*mtop);
 
-            write_sto_conf(outfile, title, &atoms, x, v, ePBC, box);
+            write_sto_conf(outfile, title, system.atoms, system.resinfo, system.pdb, x, v, ePBC, box);
 
-            done_atom(&atoms);
             break;
     }
 }
@@ -213,7 +226,6 @@ static void get_stx_coordnum(const char *infile, int *natoms)
         {
             in        = gmx_fio_fopen(infile, "r");
             fr.natoms = -1;
-            fr.atoms  = nullptr;
             fr.x      = nullptr;
             fr.v      = nullptr;
             fr.f      = nullptr;
@@ -238,7 +250,9 @@ static void get_stx_coordnum(const char *infile, int *natoms)
 }
 
 // TODO molecule index handling is suspected of being broken here
-static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
+static void tpx_make_chain_identifiers(gmx::ArrayRef<AtomInfo> atoms,
+                                       gmx::ArrayRef<Residue> resinfo,
+                                       t_block *mols)
 {
     /* We always assign a new chain number, but save the chain id characters
      * for larger molecules.
@@ -281,8 +295,8 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
         }
         for (int a = a0; a < a1; a++)
         {
-            atoms->resinfo[atoms->atom[a].resind].chainnum = chainnum;
-            atoms->resinfo[atoms->atom[a].resind].chainid  = c;
+            resinfo[atoms[a].resind_].chainnum_ = chainnum;
+            resinfo[atoms[a].resind_].chainid_  = c;
         }
         chainnum++;
     }
@@ -290,30 +304,28 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     /* Blank out the chain id if there was only one chain */
     if (chainid == 'B')
     {
-        for (int r = 0; r < atoms->nres; r++)
+        for (auto &r : resinfo)
         {
-            atoms->resinfo[r].chainid = ' ';
+            r.chainid_ = ' ';
         }
     }
 }
 
 static void read_stx_conf(const char *infile,
-                          t_symtab *symtab, char **name, t_atoms *atoms,
-                          rvec x[], rvec *v, int *ePBC, matrix box)
+                          t_symtab *symtab,
+                          char **name,
+                          std::vector<AtomInfo> *atoms,
+                          std::vector<Residue> *resinfo,
+                          std::vector<PdbEntry> *pdb,
+                          rvec x[],
+                          rvec *v,
+                          int *ePBC,
+                          matrix box)
 {
     FILE       *in;
     t_trxframe  fr;
     int         ftp;
     char        g96_line[STRLEN+1];
-
-    if (atoms->nr == 0)
-    {
-        fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile);
-    }
-    else if (atoms->atom == nullptr)
-    {
-        gmx_mem("Uninitialized array atom");
-    }
 
     if (ePBC)
     {
@@ -324,11 +336,9 @@ static void read_stx_conf(const char *infile,
     switch (ftp)
     {
         case efGRO:
-            gmx_gro_read_conf(infile, symtab, name, atoms, x, v, box);
+            gmx_gro_read_conf(infile, symtab, name, atoms, resinfo, x, v, box);
             break;
         case efG96:
-            fr.natoms = atoms->nr;
-            fr.atoms  = atoms;
             fr.x      = x;
             fr.v      = v;
             fr.f      = nullptr;
@@ -340,10 +350,10 @@ static void read_stx_conf(const char *infile,
         case efPDB:
         case efBRK:
         case efENT:
-            gmx_pdb_read_conf(infile, symtab, name, atoms, x, ePBC, box);
+            gmx_pdb_read_conf(infile, symtab, name, atoms, resinfo, pdb, x, ePBC, box);
             break;
         case efESP:
-            gmx_espresso_read_conf(infile, symtab, name, atoms, x, v, box);
+            gmx_espresso_read_conf(infile, symtab, name, atoms, resinfo, x, v, box);
             break;
         default:
             gmx_incons("Not supported in read_stx_conf");
@@ -351,14 +361,18 @@ static void read_stx_conf(const char *infile,
 }
 
 void readConfAndAtoms(const char *infile,
-                      t_symtab *symtab, char **name, t_atoms *atoms,
+                      t_symtab *symtab,
+                      char **name,
+                      std::vector<AtomInfo> *atoms,
+                      std::vector<Residue> *resinfo,
+                      std::vector<PdbEntry> *pdb,
                       int *ePBC,
-                      rvec **x, rvec **v, matrix box)
+                      rvec **x,
+                      rvec **v,
+                      matrix box)
 {
     int natoms;
     get_stx_coordnum(infile, &natoms);
-
-    init_t_atoms(atoms, natoms, (fn2ftp(infile) == efPDB));
 
     bool xIsNull = false;
     if (x == nullptr)
@@ -372,7 +386,7 @@ void readConfAndAtoms(const char *infile,
         snew(*v, natoms);
     }
     read_stx_conf(infile,
-                  symtab, name, atoms,
+                  symtab, name, atoms, resinfo, pdb,
                   *x, (v == nullptr) ? nullptr : *v, ePBC, box);
     if (xIsNull)
     {
@@ -419,13 +433,15 @@ void readConfAndTopology(const char *infile,
     {
         t_symtab   symtab;
         char      *name;
-        t_atoms    atoms;
+        std::vector<AtomInfo> atoms;
+        std::vector<Residue> resinfo;
+        std::vector<PdbEntry> pdb;
 
         open_symtab(&symtab);
 
-        readConfAndAtoms(infile, &symtab, &name, &atoms, ePBC, x, v, box);
+        readConfAndAtoms(infile, &symtab, &name, &atoms, &resinfo, &pdb, ePBC, x, v, box);
 
-        convertAtomsToMtop(&symtab, put_symtab(&symtab, name), &atoms, mtop);
+        convertAtomsToMtop(&symtab, put_symtab(&symtab, name), atoms, resinfo, pdb, mtop);
         sfree(name);
     }
 }
@@ -440,13 +456,13 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
 
     *top = gmx_mtop_t_to_t_topology(&mtop, true);
 
-    tpx_make_chain_identifiers(&top->atoms, &top->mols);
+    tpx_make_chain_identifiers(top->atoms, top->resinfo, &top->mols);
 
-    if (requireMasses && !top->atoms.haveMass)
+    if (requireMasses && !allAtomsHaveMass(top->atoms))
     {
-        atomsSetMassesBasedOnNames(&top->atoms, TRUE);
+        atomsSetMassesBasedOnNames(top->atoms, top->resinfo, TRUE);
 
-        if (!top->atoms.haveMass)
+        if (!allAtomsHaveMass(top->atoms))
         {
             gmx_fatal(FARGS, "Masses were requested, but for some atom(s) masses could not be found in the database. Use a tpr file as input, if possible, or add these atoms to the mass database.");
         }
