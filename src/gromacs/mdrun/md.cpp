@@ -153,23 +153,22 @@ void gmx::Integrator::do_md()
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
     t_inputrec             *ir   = inputrec;
-    gmx_mdoutf             *outf = nullptr;
     int64_t                 step, step_rel;
-    double                  t, t0, lam0[efptNR];
+    double                  t = ir->init_t, t0 = ir->init_t, lam0[efptNR];
     gmx_bool                bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool                bNS, bNStList, bSimAnn, bStopCM,
+    gmx_bool                bNS, bNStList, bStopCM,
                             bFirstStep, bInitStep, bLastStep = FALSE;
     gmx_bool                bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool                do_ene, do_log, do_verbose;
     gmx_bool                bMasterState;
     int                     force_flags, cglo_flags;
-    tensor                  force_vir, shake_vir, total_vir, tmp_vir, pres;
+    tensor                  force_vir = {{0}}, shake_vir = {{0}}, total_vir = {{0}},
+                            tmp_vir   = {{0}}, pres = {{0}};
     int                     i, m;
     rvec                    mu_tot;
     matrix                  parrinellorahmanMu, M;
     gmx_repl_ex_t           repl_ex = nullptr;
     gmx_localtop_t          top;
-    t_mdebin               *mdebin   = nullptr;
     gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
     gmx_global_stat_t       gstat;
@@ -247,13 +246,18 @@ void gmx::Integrator::do_md()
                         oenv, mdrunOptions.continuationOptions.appendFiles);
     }
 
+    initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
     Update upd(ir, deform);
-    /* Initial values */
-    init_md(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
-            &t, &t0, state_global, lam0,
-            nrnb, top_global, &upd,
-            nfile, fnm, &outf, &mdebin,
-            force_vir, shake_vir, total_vir, pres, mu_tot, &bSimAnn, wcycle);
+    bool   doSimulatedAnnealing = initSimulatedAnnealing(ir, &upd);
+    if (!mdrunOptions.continuationOptions.appendFiles)
+    {
+        pleaseCiteCouplingAlgorithms(fplog, *ir);
+    }
+    init_nrnb(nrnb);
+    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr,
+                                   outputProvider, ir, top_global, oenv, wcycle);
+    t_mdebin   *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(outf),
+                                     top_global, ir, mdoutf_get_fp_dhdl(outf));
 
     /* Energy terms and groups */
     snew(enerd, 1);
@@ -721,7 +725,7 @@ void gmx::Integrator::do_md()
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep &&
                      do_per_step(step, replExParams.exchangeInterval));
 
-        if (bSimAnn)
+        if (doSimulatedAnnealing)
         {
             update_annealing_target_temp(ir, t, &upd);
         }

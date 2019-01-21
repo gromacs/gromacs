@@ -66,6 +66,7 @@
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #define NTROTTERPARTS 3
@@ -1617,6 +1618,26 @@ void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
     }
 }
 
+// TODO If we keep simulated annealing, make a proper module that
+// does not rely on changing inputrec.
+bool initSimulatedAnnealing(t_inputrec  *ir,
+                            gmx::Update *upd)
+{
+    bool doSimulatedAnnealing = false;
+    for (int i = 0; i < ir->opts.ngtc; i++)
+    {
+        /* set bSimAnn if any group is being annealed */
+        if (ir->opts.annealing[i] != eannNO)
+        {
+            doSimulatedAnnealing = true;
+        }
+    }
+    if (doSimulatedAnnealing)
+    {
+        update_annealing_target_temp(ir, ir->init_t, upd);
+    }
+    return doSimulatedAnnealing;
+}
 
 /* set target temperatures if we are annealing */
 void update_annealing_target_temp(t_inputrec *ir, real t, gmx::Update *upd)
@@ -1680,4 +1701,25 @@ void update_annealing_target_temp(t_inputrec *ir, real t, gmx::Update *upd)
     }
 
     update_temperature_constants(upd->sd(), ir);
+}
+
+void pleaseCiteCouplingAlgorithms(FILE             *fplog,
+                                  const t_inputrec &ir)
+{
+    if (EI_DYNAMICS(ir.eI))
+    {
+        if (ir.etc == etcBERENDSEN)
+        {
+            please_cite(fplog, "Berendsen84a");
+        }
+        if (ir.etc == etcVRESCALE)
+        {
+            please_cite(fplog, "Bussi2007a");
+        }
+        // TODO this is actually an integrator, not a coupling algorithm
+        if (ir.eI == eiSD1)
+        {
+            please_cite(fplog, "Goga2012");
+        }
+    }
 }

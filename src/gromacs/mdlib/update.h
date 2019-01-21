@@ -263,6 +263,10 @@ void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
                         int start, int end, rvec v[]);
 /* Rescale the velocities with the scaling factor in ekind */
 
+//! Initialize simulated annealing.
+bool initSimulatedAnnealing(t_inputrec  *ir,
+                            gmx::Update *upd);
+
 // TODO: This is the only function in update.h altering the inputrec
 void update_annealing_target_temp(t_inputrec *ir, real t, gmx::Update *upd);
 /* Set reference temp for simulated annealing at time t*/
@@ -293,4 +297,8 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
                       int start, int nr_atoms,
                       rvec x[], const unsigned short cFREEZE[],
                       t_nrnb *nrnb);
+
+void pleaseCiteCouplingAlgorithms(FILE             *fplog,
+                                  const t_inputrec &ir);
+
 #endif

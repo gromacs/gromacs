@@ -349,18 +349,15 @@ static void init_em(FILE *fplog,
                     const char *title,
                     const t_commrec *cr,
                     const gmx_multisim_t *ms,
-                    gmx::IMDOutputProvider *outputProvider,
                     t_inputrec *ir,
                     const MdrunOptions &mdrunOptions,
                     t_state *state_global, gmx_mtop_t *top_global,
                     em_state_t *ems, gmx_localtop_t *top,
-                    t_nrnb *nrnb, rvec mu_tot,
-                    t_forcerec *fr, gmx_enerdata_t **enerd,
+                    t_nrnb *nrnb,
+                    t_forcerec *fr,
                     t_graph **graph, gmx::MDAtoms *mdAtoms, gmx_global_stat_t *gstat,
                     gmx_vsite_t *vsite, gmx::Constraints *constr, gmx_shellfc_t **shellfc,
-                    int nfile, const t_filenm fnm[],
-                    gmx_mdoutf_t *outf, t_mdebin **mdebin,
-                    gmx_wallcycle_t wcycle)
+                    int nfile, const t_filenm fnm[])
 {
     real dvdl_constr;
 
@@ -474,19 +471,6 @@ static void init_em(FILE *fplog,
         *gstat = nullptr;
     }
 
-    *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, nullptr, wcycle);
-
-    snew(*enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
-                  *enerd);
-
-    if (mdebin != nullptr)
-    {
-        /* Init bin for energy stuff */
-        *mdebin = init_mdebin(mdoutf_get_fp_ene(*outf), top_global, ir, nullptr);
-    }
-
-    clear_rvec(mu_tot);
     calc_shifts(ems->s.box, fr->shift_vec);
 }
 
@@ -1084,13 +1068,11 @@ Integrator::do_cg()
     real               a, b, c, beta = 0.0;
     real               epot_repl = 0;
     real               pnorm;
-    t_mdebin          *mdebin;
     gmx_bool           converged, foundlower;
-    rvec               mu_tot;
+    rvec               mu_tot = {0};
     gmx_bool           do_log = FALSE, do_ene = FALSE, do_x, do_f;
     tensor             vir, pres;
     int                number_steps, neval = 0, nstcg = inputrec->nstcgsteep;
-    gmx_mdoutf_t       outf;
     int                m, step, nminstep;
     auto               mdatoms = mdAtoms->mdatoms();
 
@@ -1125,11 +1107,15 @@ Integrator::do_cg()
     em_state_t *s_c   = &s3;
 
     /* Init em and store the local state in s_min */
-    init_em(fplog, mdlog, CG, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, mdlog, CG, cr, ms, inputrec, mdrunOptions,
             state_global, top_global, s_min, &top,
-            nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
+            nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
-            nfile, fnm, &outf, &mdebin, wcycle);
+            nfile, fnm);
+    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
+    snew(enerd, 1);
+    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    t_mdebin *mdebin = init_mdebin(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1713,13 +1699,11 @@ Integrator::do_lbfgs()
     real               a, b, c, maxdelta, delta;
     real               diag, Epot0;
     real               dgdx, dgdg, sq, yr, beta;
-    t_mdebin          *mdebin;
     gmx_bool           converged;
-    rvec               mu_tot;
+    rvec               mu_tot = {0};
     gmx_bool           do_log, do_ene, do_x, do_f, foundlower, *frozen;
     tensor             vir, pres;
     int                start, end, number_steps;
-    gmx_mdoutf_t       outf;
     int                i, k, m, n, gf, step;
     int                mdof_flags;
     auto               mdatoms = mdAtoms->mdatoms();
@@ -1765,11 +1749,15 @@ Integrator::do_lbfgs()
     neval = 0;
 
     /* Init em */
-    init_em(fplog, mdlog, LBFGS, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, mdlog, LBFGS, cr, ms, inputrec, mdrunOptions,
             state_global, top_global, &ems, &top,
-            nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
+            nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
-            nfile, fnm, &outf, &mdebin, wcycle);
+            nfile, fnm);
+    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
+    snew(enerd, 1);
+    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    t_mdebin *mdebin = init_mdebin(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
     start = 0;
     end   = mdatoms->homenr;
@@ -2435,11 +2423,9 @@ Integrator::do_steep()
     t_graph          *graph;
     real              stepsize;
     real              ustep;
-    gmx_mdoutf_t      outf;
-    t_mdebin         *mdebin;
     gmx_bool          bDone, bAbort, do_x, do_f;
     tensor            vir, pres;
-    rvec              mu_tot;
+    rvec              mu_tot = {0};
     int               nsteps;
     int               count          = 0;
     int               steps_accepted = 0;
@@ -2457,11 +2443,15 @@ Integrator::do_steep()
     em_state_t *s_try = &s1;
 
     /* Init em and store the local state in s_try */
-    init_em(fplog, mdlog, SD, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, mdlog, SD, cr, ms, inputrec, mdrunOptions,
             state_global, top_global, s_try, &top,
-            nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
+            nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
-            nfile, fnm, &outf, &mdebin, wcycle);
+            nfile, fnm);
+    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
+    snew(enerd, 1);
+    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    t_mdebin *mdebin = init_mdebin(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
@@ -2672,14 +2662,13 @@ void
 Integrator::do_nm()
 {
     const char          *NM = "Normal Mode Analysis";
-    gmx_mdoutf_t         outf;
     int                  nnodes, node;
     gmx_localtop_t       top;
     gmx_enerdata_t      *enerd;
     gmx_global_stat_t    gstat;
     t_graph             *graph;
     tensor               vir, pres;
-    rvec                 mu_tot;
+    rvec                 mu_tot = {0};
     rvec                *dfdx;
     gmx_bool             bSparse; /* use sparse matrix storage format */
     size_t               sz;
@@ -2709,11 +2698,14 @@ Integrator::do_nm()
     em_state_t     state_work {};
 
     /* Init em and store the local state in state_minimum */
-    init_em(fplog, mdlog, NM, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, mdlog, NM, cr, ms, inputrec, mdrunOptions,
             state_global, top_global, &state_work, &top,
-            nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
+            nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, &shellfc,
-            nfile, fnm, &outf, nullptr, wcycle);
+            nfile, fnm);
+    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
+    snew(enerd, 1);
+    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
 
     std::vector<int>       atom_index = get_atom_index(top_global);
     std::vector<gmx::RVec> fneg(atom_index.size(), {0, 0, 0});

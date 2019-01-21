@@ -142,7 +142,6 @@ using gmx::SimulationSignaller;
 void gmx::Integrator::do_mimic()
 {
     t_inputrec              *ir   = inputrec;
-    gmx_mdoutf              *outf = nullptr;
     int64_t                  step, step_rel;
     double                   t, lam0[efptNR];
     bool                     isLastStep               = false;
@@ -151,7 +150,6 @@ void gmx::Integrator::do_mimic()
     tensor                   force_vir, shake_vir, total_vir, pres;
     rvec                     mu_tot;
     gmx_localtop_t           top;
-    t_mdebin                *mdebin   = nullptr;
     gmx_enerdata_t          *enerd;
     PaddedVector<gmx::RVec>  f {};
     gmx_global_stat_t        gstat;
@@ -228,10 +226,12 @@ void gmx::Integrator::do_mimic()
     groups                                   = &top_global->groups;
     top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
 
-    /* Initial values */
-    init_rerun(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
-               state_global, lam0, nrnb, top_global,
-               nfile, fnm, &outf, &mdebin, wcycle);
+    initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
+    init_nrnb(nrnb);
+
+    gmx_mdoutf *outf   = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
+    t_mdebin   *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(outf),
+                                     top_global, ir, mdoutf_get_fp_dhdl(outf), true);
 
     /* Energy terms and groups */
     snew(enerd, 1);
