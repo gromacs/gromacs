@@ -1,10 +1,10 @@
 GROMACS 2018.5 release notes
 ----------------------------
 
-This version was released on TODO, 2018. These release notes document
+This version was released on January 21, 2019. These release notes document
 the changes that have taken place in GROMACS since version 2018.4, to fix known
-issues. It also incorporates all fixes made in version TODO and
-earlier, which you can find described in the :ref:`release-notes`.
+issues. A complete list of fixes and there descritpion can be found in
+the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -39,12 +39,29 @@ cause a slight loss of accuracy in inhomogeneous systems.
 :issue: `2808`
 
 Fix acceleration with ``cos-acceleration``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""
 
 A factor of 2 was missing from the acceleration value, leading to incorrect
 results when e.g. calculating viscosities.
 
 :issue: `2572`
+
+Fix checkpoint restart of tpr with infinite step count
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An issue was introduced that caused :ref:`mdrun <gmx mdrun>` to refuse to start
+when using infinite step counts. Now :ref:`mdrun <gmx mdrun>` properly accepts
+those files again.
+
+:issue:`2757`
+
+Fix energy history file reading
+"""""""""""""""""""""""""""""""
+
+A check was missing when reading energy files from a simulation that was stopped
+before the first value had been written to the file.
+
+:issue:`2781`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
