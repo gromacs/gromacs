@@ -1,0 +1,19 @@
+GROMACS 2018.6 release notes
+----------------------------
+
+This version was released on TODO, 2019. These release notes document
+the changes that have taken place in GROMACS since version 2018.5, to fix known
+issues. It also incorporates all fixes made in version TODO and
+earlier, which you can find described in the :ref:`release-notes`.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes to improve portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Miscellaneous
+^^^^^^^^^^^^^
