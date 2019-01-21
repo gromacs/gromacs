@@ -2871,49 +2871,59 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, const t_commrec *cr,
     }
 }
 
-extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayRef<real> lambda, double *lam0)
+void initialize_lambdas(FILE               *fplog,
+                        const t_inputrec   &ir,
+                        bool                isMaster,
+                        int                *fep_state,
+                        gmx::ArrayRef<real> lambda,
+                        double             *lam0)
 {
-    /* this function works, but could probably use a logic rewrite to keep all the different
-       types of efep straight. */
+    /* TODO: Clean up initialization of fep_state and lambda in
+       t_state.  This function works, but could probably use a logic
+       rewrite to keep all the different types of efep straight. */
 
-    if ((ir->efep == efepNO) && (!ir->bSimTemp))
+    if ((ir.efep == efepNO) && (!ir.bSimTemp))
     {
         return;
     }
 
-    t_lambda *fep = ir->fepvals;
-    *fep_state    = fep->init_fep_state; /* this might overwrite the checkpoint
-                                            if checkpoint is set -- a kludge is in for now
-                                            to prevent this.*/
+    const t_lambda *fep = ir.fepvals;
+    if (isMaster)
+    {
+        *fep_state = fep->init_fep_state; /* this might overwrite the checkpoint
+                                             if checkpoint is set -- a kludge is in for now
+                                             to prevent this.*/
+    }
 
     for (int i = 0; i < efptNR; i++)
     {
+        double thisLambda;
         /* overwrite lambda state with init_lambda for now for backwards compatibility */
-        if (fep->init_lambda >= 0) /* if it's -1, it was never initializd */
+        if (fep->init_lambda >= 0) /* if it's -1, it was never initialized */
         {
-            lambda[i] = fep->init_lambda;
-            if (lam0)
-            {
-                lam0[i] = lambda[i];
-            }
+            thisLambda = fep->init_lambda;
         }
         else
         {
-            lambda[i] = fep->all_lambda[i][*fep_state];
-            if (lam0)
-            {
-                lam0[i] = lambda[i];
-            }
+            thisLambda = fep->all_lambda[i][fep->init_fep_state];
+        }
+        if (isMaster)
+        {
+            lambda[i] = thisLambda;
+        }
+        if (lam0 != nullptr)
+        {
+            lam0[i] = thisLambda;
         }
     }
-    if (ir->bSimTemp)
+    if (ir.bSimTemp)
     {
         /* need to rescale control temperatures to match current state */
-        for (int i = 0; i < ir->opts.ngtc; i++)
+        for (int i = 0; i < ir.opts.ngtc; i++)
         {
-            if (ir->opts.ref_t[i] > 0)
+            if (ir.opts.ref_t[i] > 0)
             {
-                ir->opts.ref_t[i] = ir->simtempvals->temperatures[*fep_state];
+                ir.opts.ref_t[i] = ir.simtempvals->temperatures[fep->init_fep_state];
             }
         }
     }
@@ -2929,7 +2939,6 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx:
         fprintf(fplog, "]\n");
     }
 }
-
 
 void init_md(FILE *fplog,
              const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
@@ -2961,21 +2970,7 @@ void init_md(FILE *fplog,
         }
     }
 
-    /* Initialize lambda variables */
-    /* TODO: Clean up initialization of fep_state and lambda in t_state.
-     * We currently need to call initialize_lambdas on non-master ranks
-     * to initialize lam0.
-     */
-    if (MASTER(cr))
-    {
-        initialize_lambdas(fplog, ir, &globalState->fep_state, globalState->lambda, lam0);
-    }
-    else
-    {
-        int                      tmpFepState;
-        std::array<real, efptNR> tmpLambda;
-        initialize_lambdas(fplog, ir, &tmpFepState, tmpLambda, lam0);
-    }
+    initialize_lambdas(fplog, *ir, MASTER(cr), &globalState->fep_state, globalState->lambda, lam0);
 
     if (*bSimAnn)
     {
@@ -3025,21 +3020,7 @@ void init_rerun(FILE *fplog,
                 gmx_mdoutf_t *outf, t_mdebin **mdebin,
                 gmx_wallcycle_t wcycle)
 {
-    /* Initialize lambda variables */
-    /* TODO: Clean up initialization of fep_state and lambda in t_state.
-     * We currently need to call initialize_lambdas on non-master ranks
-     * to initialize lam0.
-     */
-    if (MASTER(cr))
-    {
-        initialize_lambdas(fplog, ir, &globalState->fep_state, globalState->lambda, lam0);
-    }
-    else
-    {
-        int                      tmpFepState;
-        std::array<real, efptNR> tmpLambda;
-        initialize_lambdas(fplog, ir, &tmpFepState, tmpLambda, lam0);
-    }
+    initialize_lambdas(fplog, *ir, MASTER(cr), &globalState->fep_state, globalState->lambda, lam0);
 
     init_nrnb(nrnb);
 
