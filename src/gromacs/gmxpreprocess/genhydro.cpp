@@ -60,18 +60,15 @@
 #include "hackblock.h"
 #include "resall.h"
 
-static void copy_atom(const t_atoms *atoms1, int a1, t_atoms *atoms2, int a2, t_symtab *symtab)
-{
-    atoms2->atom[a2]     = atoms1->atom[a1];
-    atoms2->atomname[a2] = put_symtab(symtab, *atoms1->atomname[a1]);
-}
-
-static int pdbasearch_atom(const char *name, int resind, const t_atoms *pdba,
-                           const char *searchtype, bool bAllowMissing)
+static int pdbasearch_atom(const char                   *name,
+                           int                           resind,
+                           gmx::ArrayRef<const AtomInfo> pdba,
+                           const char                   *searchtype,
+                           bool                          bAllowMissing)
 {
     int  i;
 
-    for (i = 0; (i < pdba->nr) && (pdba->atom[i].resind != resind); i++)
+    for (i = 0; (i < pdba.ssize()) && (pdba[i].resind_ != resind); i++)
     {
         ;
     }
@@ -82,7 +79,7 @@ static int pdbasearch_atom(const char *name, int resind, const t_atoms *pdba,
 
 static void hacksearch_atom(int *ii, int *jj, const char *name,
                             gmx::ArrayRef < const std::vector < MoleculePatch>> patches,
-                            int resind, const t_atoms *pdba)
+                            int resind, gmx::ArrayRef<const AtomInfo> pdba)
 {
     int  i;
 
@@ -92,11 +89,11 @@ static void hacksearch_atom(int *ii, int *jj, const char *name,
         name++;
         resind--;
     }
-    for (i = 0; (i < pdba->nr) && (pdba->atom[i].resind != resind); i++)
+    for (i = 0; (i < pdba.ssize()) && (pdba[i].resind_ != resind); i++)
     {
         ;
     }
-    for (; (i < pdba->nr) && (pdba->atom[i].resind == resind) && (*ii < 0); i++)
+    for (; (i < pdba.ssize()) && (pdba[i].resind_ == resind) && (*ii < 0); i++)
     {
         int j = 0;
         for (const auto &patch : patches[i])
@@ -113,7 +110,7 @@ static void hacksearch_atom(int *ii, int *jj, const char *name,
 }
 
 static std::vector<MoleculePatchDatabase>
-getMoleculePatchDatabases(const t_atoms                         *pdba,
+getMoleculePatchDatabases(gmx::ArrayRef<const Residue>           resinfo,
                           gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
                           int                                    nterpairs,
                           gmx::ArrayRef<MoleculePatchDatabase *> ntdb,
@@ -121,7 +118,7 @@ getMoleculePatchDatabases(const t_atoms                         *pdba,
                           gmx::ArrayRef<const int>               rN,
                           gmx::ArrayRef<const int>               rC)
 {
-    std::vector<MoleculePatchDatabase> modBlock(pdba->nres);
+    std::vector<MoleculePatchDatabase> modBlock(resinfo.size());
     /* make space */
     /* first the termini */
     for (int i = 0; i < nterpairs; i++)
@@ -136,9 +133,9 @@ getMoleculePatchDatabases(const t_atoms                         *pdba,
         }
     }
     /* then the whole hdb */
-    for (int rnr = 0; rnr < pdba->nres; rnr++)
+    for (int rnr = 0; rnr < resinfo.ssize(); rnr++)
     {
-        auto ahptr = search_h_db(globalPatches, *pdba->resinfo[rnr].rtp);
+        auto ahptr = search_h_db(globalPatches, *resinfo[rnr].rtp_);
         if (ahptr != globalPatches.end())
         {
             if (globalPatches[rnr].name.empty())
@@ -252,39 +249,41 @@ static void expand_hackblocks_one(const MoleculePatchDatabase &newPatch,
     }
 }
 
-static void expand_hackblocks(const t_atoms                                *pdba,
+static void expand_hackblocks(gmx::ArrayRef<const AtomInfo>                 pdba,
                               gmx::ArrayRef<const MoleculePatchDatabase>    hb,
                               gmx::ArrayRef < std::vector < MoleculePatch>> patches,
                               int                                           nterpairs,
                               gmx::ArrayRef<const int>                      rN,
                               gmx::ArrayRef<const int>                      rC)
 {
-    for (int i = 0; i < pdba->nr; i++)
+    int i = 0;
+    for (const auto &atom : pdba)
     {
         bool bN = false;
         for (int j = 0; j < nterpairs && !bN; j++)
         {
-            bN = pdba->atom[i].resind == rN[j];
+            bN = atom.resind_ == rN[j];
         }
         bool bC = false;
         for (int j = 0; j < nterpairs && !bC; j++)
         {
-            bC = pdba->atom[i].resind == rC[j];
+            bC = atom.resind_ == rC[j];
         }
 
         /* add hacks to this atom */
-        expand_hackblocks_one(hb[pdba->atom[i].resind], *pdba->atomname[i],
+        expand_hackblocks_one(hb[pdba[i].resind_], *pdba[i].atomname,
                               &patches[i], bN, bC);
+        i++;
     }
 }
 
-static int check_atoms_present(const t_atoms                                *pdba,
+static int check_atoms_present(gmx::ArrayRef<const AtomInfo>                 pdba,
                                gmx::ArrayRef < std::vector < MoleculePatch>> patches)
 {
     int nadd = 0;
-    for (int i = 0; i < pdba->nr; i++)
+    for (int i = 0; i < pdba.ssize(); i++)
     {
-        int rnr = pdba->atom[i].resind;
+        int rnr = pdba[i].resind_;
         for (auto patch = patches[i].begin();
              patch != patches[i].end();
              patch++)
@@ -329,7 +328,8 @@ static int check_atoms_present(const t_atoms                                *pdb
     return nadd;
 }
 
-static void calc_all_pos(const t_atoms                                *pdba,
+static void calc_all_pos(gmx::ArrayRef<const AtomInfo>                 pdba,
+                         gmx::ArrayRef<const Residue>                  resinfo,
                          gmx::ArrayRef<const gmx::RVec>                x,
                          gmx::ArrayRef < std::vector < MoleculePatch>> patches,
                          bool                                          bCheckMissing)
@@ -341,9 +341,9 @@ static void calc_all_pos(const t_atoms                                *pdba,
 
     int      jj = 0;
 
-    for (int i = 0; i < pdba->nr; i++)
+    for (int i = 0; i < pdba.ssize(); i++)
     {
-        int rnr   = pdba->atom[i].resind;
+        int rnr   = pdba[i].resind_;
         for (auto patch = patches[i].begin(); patch != patches[i].end();
              patch += patch->nr)
         {
@@ -376,9 +376,9 @@ static void calc_all_pos(const t_atoms                                *pdba,
                                           ", rtp entry %s"
                                           " while adding hydrogens",
                                           patch->a[m].c_str(),
-                                          *pdba->resinfo[rnr].name,
-                                          pdba->resinfo[rnr].nr,
-                                          *pdba->resinfo[rnr].rtp);
+                                          *resinfo[rnr].name_,
+                                          resinfo[rnr].nr_,
+                                          *resinfo[rnr].rtp_);
                             }
                         }
                     }
@@ -416,8 +416,8 @@ static void calc_all_pos(const t_atoms                                *pdba,
     }
 }
 
-static int add_h_low(t_atoms                            **initialAtoms,
-                     t_atoms                            **modifiedAtoms,
+static int add_h_low(std::vector<AtomInfo>               *pdba,
+                     gmx::ArrayRef<const Residue>         resRef,
                      std::vector<gmx::RVec>              *xptr,
                      gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
                      t_symtab                            *symtab,
@@ -433,38 +433,31 @@ static int add_h_low(t_atoms                            **initialAtoms,
     std::vector < std::vector < MoleculePatch>> patches;
     std::vector<gmx::RVec> xn;
 
-    t_atoms               *pdba = *initialAtoms;
-
     /* set flags for adding hydrogens (according to hdb) */
-    natoms = pdba->nr;
+    natoms = pdba->size();
+    gmx::ArrayRef<AtomInfo> pdbaRef = gmx::arrayRefFromArray(pdba->data(), pdba->size());
 
     {
         /* We'll have to do all the hard work */
         /* first get all the hackblocks for each residue: */
         std::vector<MoleculePatchDatabase> hb =
-            getMoleculePatchDatabases(pdba, globalPatches, nterpairs, ntdb, ctdb, rN, rC);
+            getMoleculePatchDatabases(resRef, globalPatches, nterpairs, ntdb, ctdb, rN, rC);
 
         /* expand the hackblocks to atom level */
         patches.resize(natoms);
-        expand_hackblocks(pdba, hb, patches, nterpairs, rN, rC);
+        expand_hackblocks(pdbaRef, hb, patches, nterpairs, rN, rC);
     }
 
     /* Now calc the positions */
-    calc_all_pos(pdba, *xptr, patches, bCheckMissing);
+    calc_all_pos(pdbaRef, resRef, *xptr, patches, bCheckMissing);
+    std::vector<AtomInfo> newPdba;
+    std::vector<Residue>  newRes;
 
     /* we don't have to add atoms that are already present in initialAtoms,
        so we will remove them from the patches (MoleculePatch) */
-    nadd = check_atoms_present(pdba, patches);
+    nadd = check_atoms_present(pdbaRef, patches);
 
     /* Copy old atoms, making space for new ones */
-    if (nadd > 0)
-    {
-        srenew(*modifiedAtoms, 1);
-        init_t_atoms(*modifiedAtoms, natoms+nadd, FALSE);
-        (*modifiedAtoms)->nres    = pdba->nres;
-        srenew((*modifiedAtoms)->resinfo, pdba->nres);
-        std::copy(pdba->resinfo, pdba->resinfo + pdba->nres, (*modifiedAtoms)->resinfo);
-    }
     if (nadd == 0)
     {
         return natoms;
@@ -482,10 +475,8 @@ static int add_h_low(t_atoms                            **initialAtoms,
                 /*gmx_fatal(FARGS,"Not enough space for adding atoms");*/
                 nadd += 10;
                 xn.resize(natoms+nadd);
-                srenew((*modifiedAtoms)->atom, natoms+nadd);
-                srenew((*modifiedAtoms)->atomname, natoms+nadd);
             }
-            copy_atom(pdba, i, (*modifiedAtoms), newi, symtab);
+            newPdba.push_back(pdbaRef[i]);
             copy_rvec((*xptr)[i], xn[newi]);
             /* process the hacks for this atom */
             nalreadypresent = 0;
@@ -501,21 +492,19 @@ static int add_h_low(t_atoms                            **initialAtoms,
                         /* gmx_fatal(FARGS,"Not enough space for adding atoms");*/
                         nadd += 10;
                         xn.resize(natoms+nadd);
-                        srenew((*modifiedAtoms)->atom, natoms+nadd);
-                        srenew((*modifiedAtoms)->atomname, natoms+nadd);
                     }
-                    (*modifiedAtoms)->atom[newi].resind = pdba->atom[i].resind;
+                    newPdba.back().resind_ = pdbaRef[i].resind_;
                 }
                 if (!patch->nname.empty() &&
                     (patch->oname.empty() ||
-                     patch->oname == *(*modifiedAtoms)->atomname[newi]))
+                     patch->oname == *newPdba.back().atomname))
                 {
                     /* add or replace */
                     if (patch->type() == MoleculePatchType::Add && patch->bAlreadyPresent)
                     {
                         /* This atom is already present, copy it from the input. */
                         nalreadypresent++;
-                        copy_atom(pdba, i+nalreadypresent, (*modifiedAtoms), newi, symtab);
+                        newPdba.push_back(pdbaRef[i+nalreadypresent]);
                         copy_rvec((*xptr)[i+nalreadypresent], xn[newi]);
                     }
                     else
@@ -524,13 +513,13 @@ static int add_h_low(t_atoms                            **initialAtoms,
                         {
                             fprintf(debug, "Replacing %d '%s' with (old name '%s') %s\n",
                                     newi,
-                                    ((*modifiedAtoms)->atomname[newi] &&
-                                     *(*modifiedAtoms)->atomname[newi]) ?
-                                    *(*modifiedAtoms)->atomname[newi] : "",
+                                    (newPdba.back().atomname &&
+                                     *newPdba.back().atomname) ?
+                                    *newPdba.back().atomname : "",
                                     patch->oname.empty() ? "" : patch->oname.c_str(),
                                     patch->nname.c_str());
                         }
-                        (*modifiedAtoms)->atomname[newi] = put_symtab(symtab, patch->nname.c_str());
+                        newPdba.back().atomname = put_symtab(symtab, patch->nname.c_str());
                         if (patch->bXSet)
                         {
                             copy_rvec(patch->newx, xn[newi]);
@@ -538,8 +527,8 @@ static int add_h_low(t_atoms                            **initialAtoms,
                     }
                     if (debug)
                     {
-                        fprintf(debug, " %s %g %g", *(*modifiedAtoms)->atomname[newi],
-                                (*modifiedAtoms)->atom[newi].m, (*modifiedAtoms)->atom[newi].q);
+                        fprintf(debug, " %s %g %g", *newPdba.back().atomname,
+                                newPdba.back().m_, newPdba.back().q_);
                     }
                 }
             }
@@ -547,18 +536,15 @@ static int add_h_low(t_atoms                            **initialAtoms,
             i += nalreadypresent;
         }
     }
-    (*modifiedAtoms)->nr = newi;
-
-    done_atom(pdba);
-    *initialAtoms = *modifiedAtoms;
+    *pdba = newPdba;
 
     *xptr = xn;
 
     return newi;
 }
 
-int add_h(t_atoms                                   **initialAtoms,
-          t_atoms                                   **localAtoms,
+int add_h(std::vector<AtomInfo>                      *pdba,
+          gmx::ArrayRef<const Residue>                resRef,
           std::vector<gmx::RVec>                     *xptr,
           gmx::ArrayRef<MoleculePatchDatabase>        globalPatches,
           t_symtab                                   *symtab,
@@ -579,7 +565,7 @@ int add_h(t_atoms                                   **initialAtoms,
     do
     {
         nold = nnew;
-        nnew = add_h_low(initialAtoms, localAtoms, xptr, globalPatches, symtab, nterpairs, ntdb, ctdb, rN, rC, FALSE);
+        nnew = add_h_low(pdba, resRef, xptr, globalPatches, symtab, nterpairs, ntdb, ctdb, rN, rC, FALSE);
         niter++;
         if (niter > 100)
         {
@@ -591,7 +577,7 @@ int add_h(t_atoms                                   **initialAtoms,
     if (!bAllowMissing)
     {
         /* Call add_h_low once more, now only for the missing atoms check */
-        add_h_low(initialAtoms, localAtoms, xptr, globalPatches, symtab, nterpairs, ntdb, ctdb, rN, rC, TRUE);
+        add_h_low(pdba, resRef, xptr, globalPatches, symtab, nterpairs, ntdb, ctdb, rN, rC, TRUE);
     }
 
     return nnew;

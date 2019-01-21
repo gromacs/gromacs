@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2005, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -164,7 +164,10 @@ static const char *const esp_prop[espNR] = {
 };
 
 void gmx_espresso_read_conf(const char *infile,
-                            t_symtab *symtab, char **name, t_atoms *atoms,
+                            t_symtab *symtab,
+                            char **name,
+                            std::vector<AtomInfo> *atoms,
+                            std::vector<Residue> *resinfo,
                             rvec x[], rvec *v, matrix box)
 {
     FILE     *fp;
@@ -181,12 +184,6 @@ void gmx_espresso_read_conf(const char *infile,
     }
 
     clear_mat(box);
-
-    atoms->haveMass    = FALSE;
-    atoms->haveCharge  = FALSE;
-    atoms->haveType    = FALSE;
-    atoms->haveBState  = FALSE;
-    atoms->havePdbInfo = FALSE;
 
     fp = gmx_fio_fopen(infile, "r");
 
@@ -210,10 +207,6 @@ void gmx_espresso_read_conf(const char *infile,
                     {
                         bFoundProp    = TRUE;
                         prop[nprop++] = p;
-                        if (p == espQ)
-                        {
-                            atoms->haveCharge = TRUE;
-                        }
 
                         if (debug)
                         {
@@ -246,6 +239,13 @@ void gmx_espresso_read_conf(const char *infile,
                 {
                     level--;
                 }
+                AtomInfo newAtom;
+                AtomInfo prevAtom;
+                if (i != 0)
+                {
+                    prevAtom = atoms->at(i-1);
+                }
+
                 if (level == 2)
                 {
                     for (p = 0; p < nprop; p++)
@@ -266,12 +266,14 @@ void gmx_espresso_read_conf(const char *infile,
                                 break;
                             case espTYPE:
                                 r                   = get_espresso_word(fp, word);
-                                atoms->atom[i].type = std::strtol(word, nullptr, 10);
+                                newAtom.type_       = std::strtol(word, nullptr, 10);
+                                newAtom.haveType_   = true;
                                 break;
                             case espQ:
                                 r = get_espresso_word(fp, word);
                                 sscanf(word, "%lf", &d);
-                                atoms->atom[i].q = d;
+                                newAtom.q_          = d;
+                                newAtom.haveCharge_ = true;
                                 break;
                             case espV:
                                 for (m = 0; m < 3; m++)
@@ -291,64 +293,59 @@ void gmx_espresso_read_conf(const char *infile,
                             case espMOLECULE:
                                 r     = get_espresso_word(fp, word);
                                 molnr = std::strtol(word, nullptr, 10);
+
                                 if (i == 0 ||
-                                    atoms->resinfo[atoms->atom[i-1].resind].nr != molnr)
+                                    resinfo->at(prevAtom.resind_).nr_ != molnr)
                                 {
-                                    atoms->atom[i].resind =
-                                        (i == 0 ? 0 : atoms->atom[i-1].resind+1);
-                                    atoms->resinfo[atoms->atom[i].resind].nr       = molnr;
-                                    atoms->resinfo[atoms->atom[i].resind].ic       = ' ';
-                                    atoms->resinfo[atoms->atom[i].resind].chainid  = ' ';
-                                    atoms->resinfo[atoms->atom[i].resind].chainnum = molnr; /* Not sure if this is right? */
+                                    newAtom.resind_ =
+                                        (i == 0 ? 0 : prevAtom.resind_+1);
+                                    resinfo->push_back(
+                                            Residue(nullptr, molnr, ' ', molnr, ' ', nullptr));
                                 }
                                 else
                                 {
-                                    atoms->atom[i].resind = atoms->atom[i-1].resind;
+                                    newAtom.resind_ = prevAtom.resind_;
                                 }
                                 break;
                         }
                     }
                     /* Generate an atom name from the particle type */
-                    sprintf(buf, "T%hu", atoms->atom[i].type);
-                    atoms->atomname[i] = put_symtab(symtab, buf);
+                    sprintf(buf, "T%hu", newAtom.type_);
+                    newAtom.atomname = put_symtab(symtab, buf);
                     if (bMol)
                     {
-                        if (i == 0 || atoms->atom[i].resind != atoms->atom[i-1].resind)
+                        if (i == 0 || newAtom.resind_ != prevAtom.resind_)
                         {
-                            atoms->resinfo[atoms->atom[i].resind].name =
+                            (*resinfo)[newAtom.resind_].name_ =
                                 put_symtab(symtab, "MOL");
                         }
                     }
                     else
                     {
                         /* Residue number is the atom number */
-                        atoms->atom[i].resind = i;
+                        newAtom.resind_ = i;
                         /* Generate an residue name from the particle type */
-                        if (atoms->atom[i].type < 26)
+                        if (newAtom.type_ < 26)
                         {
-                            sprintf(buf, "T%c", 'A'+atoms->atom[i].type);
+                            sprintf(buf, "T%c", 'A'+newAtom.type_);
                         }
                         else
                         {
                             sprintf(buf, "T%c%c",
-                                    'A'+atoms->atom[i].type/26, 'A'+atoms->atom[i].type%26);
+                                    'A'+newAtom.type_/26, 'A'+newAtom.type_%26);
                         }
-                        t_atoms_set_resinfo(atoms, i, symtab, buf, i, ' ', 0, ' ');
+                        resinfo->push_back(Residue(put_symtab(symtab, buf), i, ' ', 0, ' ', nullptr));
                     }
 
                     if (r == 3)
                     {
                         level--;
                     }
+                    atoms->push_back(newAtom);
                     i++;
                 }
             }
-            atoms->nres = atoms->nr;
 
-            if (i != atoms->nr)
-            {
-                gmx_fatal(FARGS, "Internal inconsistency in Espresso routines, read %d atoms, expected %d atoms", i, atoms->nr);
-            }
         }
         else if (level == 1 && std::strcmp(word, "variable") == 0 && !bFoundVariable)
         {
@@ -442,12 +439,14 @@ int get_espresso_coordnum(const char *infile)
     return natoms;
 }
 
-void write_espresso_conf_indexed(FILE *out, const char *title,
-                                 const t_atoms *atoms, int nx, const int *index,
-                                 const rvec *x, const rvec *v, const matrix box)
+void write_espresso_conf_indexed(FILE                         *out,
+                                 const char                   *title,
+                                 gmx::ArrayRef<const AtomInfo> atoms,
+                                 gmx::ArrayRef<const int>      index,
+                                 const rvec                   *x,
+                                 const rvec                   *v,
+                                 const matrix                  box)
 {
-    int i, j;
-
     fprintf(out, "# %s\n", title);
     if (TRICLINIC(box))
     {
@@ -456,9 +455,11 @@ void write_espresso_conf_indexed(FILE *out, const char *title,
     fprintf(out, "{variable {box_l %f %f %f}}\n", box[0][0], box[1][1], box[2][2]);
 
     fprintf(out, "{particles {id pos type q%s}\n", v ? " v" : "");
-    for (i = 0; i < nx; i++)
+
+    for (int i = 0; i < atoms.size(); i++)
     {
-        if (index)
+        int j;
+        if (!index.empty())
         {
             j = index[i];
         }
@@ -468,7 +469,7 @@ void write_espresso_conf_indexed(FILE *out, const char *title,
         }
         fprintf(out, "\t{%d %f %f %f %hu %g",
                 j, x[j][XX], x[j][YY], x[j][ZZ],
-                atoms->atom[j].type, atoms->atom[j].q);
+                atoms[j].type_, atoms[j].q_);
         if (v)
         {
             fprintf(out, " %f %f %f", v[j][XX], v[j][YY], v[j][ZZ]);

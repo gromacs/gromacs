@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,7 +151,6 @@ int gmx_polystat(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    t_topology       *top;
     gmx_output_env_t *oenv;
     int               ePBC;
     int               isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
@@ -185,12 +184,12 @@ int gmx_polystat(int argc, char *argv[])
         return 0;
     }
 
-    snew(top, 1);
+    t_topology *top = new t_topology;
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                         nullptr, box, &natoms, nullptr, nullptr, top);
 
     fprintf(stderr, "Select a group of polymer mainchain atoms:\n");
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm),
+    get_index(top->atoms, top->resinfo, ftp2fn_null(efNDX, NFILE, fnm),
               1, &isize, &index, &grpname);
 
     snew(molind, top->mols.nr+1);
@@ -209,7 +208,7 @@ int gmx_polystat(int argc, char *argv[])
         }
     }
     molind[nmol] = i;
-    nat_min      = top->atoms.nr;
+    nat_min      = top->atoms.size();
     nat_max      = 0;
     for (mol = 0; mol < nmol; mol++)
     {
@@ -341,7 +340,7 @@ int gmx_polystat(int argc, char *argv[])
                 a = index[i];
                 if (bMW)
                 {
-                    m = top->atoms.atom[a].m;
+                    m = top->atoms[a].m_;
                 }
                 else
                 {

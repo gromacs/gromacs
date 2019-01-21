@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,6 @@ static int read_g96_pos(char line[], t_symtab *symtab,
                         FILE *fp, const char *infile,
                         t_trxframe *fr)
 {
-    t_atoms   *atoms;
     gmx_bool   bEnd;
     int        nwanted, natoms, atnr, resnr = 0, oldres, newres, shift;
     char       anm[STRLEN], resnm[STRLEN];
@@ -66,19 +65,15 @@ static int read_g96_pos(char line[], t_symtab *symtab,
 
     nwanted = fr->natoms;
 
-    if (fr->atoms != nullptr)
+    if (!fr->atoms.empty())
     {
         GMX_RELEASE_ASSERT(symtab != nullptr, "Reading a conformation from a g96 format with atom data requires a valid symbol table");
     }
-    atoms = fr->atoms;
-    if (atoms != nullptr)
-    {
-        atoms->haveMass    = FALSE;
-        atoms->haveCharge  = FALSE;
-        atoms->haveType    = FALSE;
-        atoms->haveBState  = FALSE;
-        atoms->havePdbInfo = FALSE;
-    }
+    std::vector<AtomInfo> atoms   = fr->atoms;
+    std::vector<Residue>  resinfo = fr->resinfo;
+
+    atoms.clear();
+    resinfo.clear();
 
     natoms = 0;
 
@@ -111,8 +106,9 @@ static int read_g96_pos(char line[], t_symtab *symtab,
                               "Found more coordinates (%d) in %s than expected %d\n",
                               natoms, infile, nwanted);
                 }
-                if (atoms)
+                if (!fr->atoms.empty())
                 {
+                    AtomInfo newAtom;
                     if (fr->bAtoms &&
                         (sscanf(line, "%5d%c%5s%c%5s%7d", &resnr, &c1, resnm, &c2, anm, &atnr)
                          != 6))
@@ -128,27 +124,20 @@ static int read_g96_pos(char line[], t_symtab *symtab,
                         }
                         strncpy(anm, "???", sizeof(anm)-1);
                     }
-                    atoms->atomname[natoms] = put_symtab(symtab, anm);
+                    newAtom.atomname = put_symtab(symtab, anm);
                     if (resnr != oldres)
                     {
                         oldres = resnr;
                         newres++;
-                        if (newres >= atoms->nr)
-                        {
-                            gmx_fatal(FARGS, "More residues than atoms in %s (natoms = %d)",
-                                      infile, atoms->nr);
-                        }
-                        atoms->atom[natoms].resind = newres;
-                        if (newres+1 > atoms->nres)
-                        {
-                            atoms->nres = newres+1;
-                        }
-                        t_atoms_set_resinfo(atoms, natoms, symtab, resnm, resnr, ' ', 0, ' ');
+                        newAtom.resind_ = newres;
+                        resinfo.push_back(
+                                Residue(put_symtab(symtab, resnm), resnr, ' ', 0, ' ', nullptr));
                     }
                     else
                     {
-                        atoms->atom[natoms].resind = newres;
+                        newAtom.resind_ = newres;
                     }
+                    atoms.push_back(newAtom);
                 }
                 if (fr->x)
                 {
@@ -351,16 +340,16 @@ int read_g96_conf(FILE *fp, const char *infile, char **name, t_trxframe *fr,
 }
 
 void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
-                    int nindex, const int *index)
+                    gmx::ArrayRef<const int> index)
 {
-    t_atoms *atoms;
     int      nout, i, a;
 
-    atoms = fr->atoms;
+    gmx::ArrayRef<const AtomInfo> atoms   = fr->atoms;
+    gmx::ArrayRef<const Residue>  resinfo = fr->resinfo;
 
-    if (index)
+    if (!index.empty())
     {
-        nout = nindex;
+        nout = index.size();
     }
     else
     {
@@ -380,7 +369,7 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
             fprintf(out, "POSITION\n");
             for (i = 0; i < nout; i++)
             {
-                if (index)
+                if (!index.empty())
                 {
                     a = index[i];
                 }
@@ -389,9 +378,9 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
                     a = i;
                 }
                 fprintf(out, "%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-                        (atoms->resinfo[atoms->atom[a].resind].nr) % 100000,
-                        *atoms->resinfo[atoms->atom[a].resind].name,
-                        *atoms->atomname[a], (i+1) % 10000000,
+                        (resinfo[atoms[a].resind_].nr_) % 100000,
+                        *resinfo[atoms[a].resind_].name_,
+                        *atoms[a].atomname, (i+1) % 10000000,
                         fr->x[a][XX], fr->x[a][YY], fr->x[a][ZZ]);
             }
         }
@@ -400,7 +389,7 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
             fprintf(out, "POSITIONRED\n");
             for (i = 0; i < nout; i++)
             {
-                if (index)
+                if (!index.empty())
                 {
                     a = index[i];
                 }
@@ -421,7 +410,7 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
             fprintf(out, "VELOCITY\n");
             for (i = 0; i < nout; i++)
             {
-                if (index)
+                if (!index.empty())
                 {
                     a = index[i];
                 }
@@ -430,9 +419,9 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
                     a = i;
                 }
                 fprintf(out, "%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-                        (atoms->resinfo[atoms->atom[a].resind].nr) % 100000,
-                        *atoms->resinfo[atoms->atom[a].resind].name,
-                        *atoms->atomname[a], (i+1) % 10000000,
+                        (resinfo[atoms[a].resind_].nr_) % 100000,
+                        *resinfo[atoms[a].resind_].name_,
+                        *atoms[a].atomname, (i+1) % 10000000,
                         fr->v[a][XX], fr->v[a][YY], fr->v[a][ZZ]);
             }
         }
@@ -441,7 +430,7 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
             fprintf(out, "VELOCITYRED\n");
             for (i = 0; i < nout; i++)
             {
-                if (index)
+                if (!index.empty())
                 {
                     a = index[i];
                 }

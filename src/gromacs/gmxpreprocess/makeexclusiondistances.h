@@ -37,10 +37,11 @@
 
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 class AtomProperties;
-struct t_atoms;
+struct AtomInfo;
 
 /*! \brief Allocate and fill an array of inter-atomic half distances
  *
@@ -49,7 +50,7 @@ struct t_atoms;
  * insert-molecules for deciding whether molecules clash. The return
  * pointer should be freed by the caller. */
 std::vector<real>
-makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
+makeExclusionDistances(gmx::ArrayRef<const AtomInfo> a, AtomProperties *aps,
                        real defaultDistance, real scaleFactor);
 
 #endif

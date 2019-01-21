@@ -111,7 +111,6 @@ int gmx_genrestr(int argc, char *argv[])
 #define npargs asize(pa)
 
     gmx_output_env_t *oenv;
-    t_atoms          *atoms = nullptr;
     int               i, j, k;
     FILE             *out;
     int               igrp;
@@ -156,24 +155,28 @@ int gmx_genrestr(int argc, char *argv[])
         gmx_fatal(FARGS, "disre_dist should be >= 0");
     }
 
-    const char *title = "";
+    const char                   *title = "";
+    gmx::ArrayRef<const AtomInfo> atoms;
+    gmx::ArrayRef<const Residue>  resinfo;
+    std::vector<PdbEntry>         pdb;
     if (xfn != nullptr)
     {
         fprintf(stderr, "\nReading structure file\n");
-        t_topology *top = nullptr;
-        snew(top, 1);
+        t_topology *top = new t_topology;
         read_tps_conf(xfn, top, nullptr, &x, &v, box, FALSE);
-        title = *top->name;
-        atoms = &top->atoms;
-        if (atoms->pdbinfo == nullptr)
+        title   = *top->name;
+        atoms   = top->atoms;
+        resinfo = top->resinfo;
+        pdb     = std::vector<PdbEntry>(top->pdb.begin(), top->pdb.end());
+        if (!allAtomsHavePdbInfo(pdb) || gmx::ssize(pdb) != atoms.ssize())
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            pdb.resize(atoms.size());
         }
     }
 
     if (bFreeze)
     {
-        if (!atoms || !atoms->pdbinfo)
+        if (atoms.empty() || !allAtomsHavePdbInfo(pdb))
         {
             gmx_fatal(FARGS, "No B-factors in input file %s, use a pdb file next time.",
                       xfn);
@@ -181,9 +184,10 @@ int gmx_genrestr(int argc, char *argv[])
 
         out = opt2FILE("-of", NFILE, fnm, "w");
         fprintf(out, "[ freeze ]\n");
-        for (i = 0; (i < atoms->nr); i++)
+        int i = 0;
+        for (const auto &p : pdb)
         {
-            if (atoms->pdbinfo[i].bfac <= freeze_level)
+            if (p.bfac_ <= freeze_level)
             {
                 fprintf(out, "%d\n", i+1);
             }
@@ -194,7 +198,7 @@ int gmx_genrestr(int argc, char *argv[])
     {
         printf("Select group to generate %s matrix from\n",
                bConstr ? "constraint" : "distance restraint");
-        get_index(atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
+        get_index(atoms, resinfo, nfn, 1, &igrp, &ind_grp, &gn_grp);
 
         out = ftp2FILE(efITP, NFILE, fnm, "w");
         if (bConstr)
@@ -246,7 +250,7 @@ int gmx_genrestr(int argc, char *argv[])
     else
     {
         printf("Select group to position restrain\n");
-        get_index(atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
+        get_index(atoms, resinfo, nfn, 1, &igrp, &ind_grp, &gn_grp);
 
         out = ftp2FILE(efITP, NFILE, fnm, "w");
         fprintf(out, "; position restraints for %s of %s\n\n", gn_grp, title);

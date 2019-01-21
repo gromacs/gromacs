@@ -228,11 +228,12 @@ void gmx_tng_close(gmx_tng_trajectory_t *gmx_tng)
 }
 
 #if GMX_USE_TNG
-static void addTngMoleculeFromTopology(gmx_tng_trajectory_t gmx_tng,
-                                       const char          *moleculeName,
-                                       const t_atoms       *atoms,
-                                       int64_t              numMolecules,
-                                       tng_molecule_t      *tngMol)
+static void addTngMoleculeFromTopology(gmx_tng_trajectory_t          gmx_tng,
+                                       const char                   *moleculeName,
+                                       gmx::ArrayRef<const AtomInfo> atoms,
+                                       gmx::ArrayRef<const Residue>  resinfo,
+                                       int64_t                       numMolecules,
+                                       tng_molecule_t               *tngMol)
 {
     tng_trajectory_t tng      = gmx_tng->tng;
     tng_chain_t      tngChain = nullptr;
@@ -243,21 +244,21 @@ static void addTngMoleculeFromTopology(gmx_tng_trajectory_t gmx_tng,
         gmx_file("Cannot add molecule to TNG molecular system.");
     }
 
-    for (int atomIndex = 0; atomIndex < atoms->nr; atomIndex++)
+    int atomIndex = 0;
+    for (const auto &at : atoms)
     {
-        const t_atom *at = &atoms->atom[atomIndex];
         /* FIXME: Currently the TNG API can only add atoms belonging to a
          * residue and chain. Wait for TNG 2.0*/
-        if (atoms->nres > 0)
+        if (!resinfo.empty())
         {
-            const t_resinfo *resInfo        = &atoms->resinfo[at->resind];
-            char             chainName[2]   = {resInfo->chainid, 0};
-            tng_atom_t       tngAtom        = nullptr;
-            t_atom          *prevAtom;
+            const Residue        *resInfo        = &resinfo[at.resind_];
+            char                  chainName[2]   = {resInfo->chainid_, 0};
+            tng_atom_t            tngAtom        = nullptr;
+            const AtomInfo       *prevAtom;
 
             if (atomIndex > 0)
             {
-                prevAtom = &atoms->atom[atomIndex - 1];
+                prevAtom = &atoms[atomIndex - 1];
             }
             else
             {
@@ -266,21 +267,21 @@ static void addTngMoleculeFromTopology(gmx_tng_trajectory_t gmx_tng,
 
             /* If this is the first atom or if the residue changed add the
              * residue to the TNG molecular system. */
-            if (!prevAtom || resInfo != &atoms->resinfo[prevAtom->resind])
+            if (!prevAtom || resInfo != &resinfo[prevAtom->resind_])
             {
                 /* If this is the first atom or if the chain changed add
                  * the chain to the TNG molecular system. */
-                if (!prevAtom || resInfo->chainid !=
-                    atoms->resinfo[prevAtom->resind].chainid)
+                if (!prevAtom || resInfo->chainid_ !=
+                    resinfo[prevAtom->resind_].chainid_)
                 {
                     tng_molecule_chain_add(tng, *tngMol, chainName,
                                            &tngChain);
                 }
                 /* FIXME: When TNG supports both residue index and residue
                  * number the latter should be used. Wait for TNG 2.0*/
-                tng_chain_residue_add(tng, tngChain, *resInfo->name, &tngRes);
+                tng_chain_residue_add(tng, tngChain, *resInfo->name_, &tngRes);
             }
-            tng_residue_atom_add(tng, tngRes, *(atoms->atomname[atomIndex]), *(atoms->atomtype[atomIndex]), &tngAtom);
+            tng_residue_atom_add(tng, tngRes, *(at.atomname), *(at.atomtype), &tngAtom);
         }
     }
     tng_molecule_cnt_set(tng, *tngMol, numMolecules);
@@ -322,7 +323,8 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t  gmx_tng,
          * current molecule. */
         addTngMoleculeFromTopology(gmx_tng,
                                    *(molType->name),
-                                   &molType->atoms,
+                                   molType->atoms,
+                                   molType->resinfo,
                                    molBlock.nmol,
                                    &tngMol);
 
@@ -353,15 +355,15 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t  gmx_tng,
         }
         /* First copy atom charges and masses, first atom by atom and then copy the memory for the molecule instances.
          * FIXME: Atom B state data should also be written to TNG (v 2.0?) */
-        for (int atomCounter = 0; atomCounter < molType->atoms.nr; atomCounter++)
+        for (const auto &atom : molType->atoms)
         {
-            atomCharges.push_back(molType->atoms.atom[atomCounter].q);
-            atomMasses.push_back(molType->atoms.atom[atomCounter].m);
+            atomCharges.push_back(atom.q_);
+            atomMasses.push_back(atom.m_);
         }
         for (int molCounter = 1; molCounter < molBlock.nmol; molCounter++)
         {
-            std::copy_n(atomCharges.end() - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomCharges));
-            std::copy_n(atomMasses.end()  - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomMasses));
+            std::copy_n(atomCharges.end() - molType->atoms.size(), molType->atoms.size(), std::back_inserter(atomCharges));
+            std::copy_n(atomMasses.end()  - molType->atoms.size(), molType->atoms.size(), std::back_inserter(atomMasses));
         }
     }
     /* Write the TNG data blocks. */
@@ -581,12 +583,12 @@ static gmx_bool all_atoms_selected(const gmx_mtop_t *mtop,
     int i = 0;
     for (const gmx_molblock_t &molBlock : mtop->molblock)
     {
-        const gmx_moltype_t &molType = mtop->moltype[molBlock.type];
-        const t_atoms       &atoms   = molType.atoms;
+        const gmx_moltype_t          &molType = mtop->moltype[molBlock.type];
+        gmx::ArrayRef<const AtomInfo> atoms   = molType.atoms;
 
         for (int j = 0; j < molBlock.nmol; j++)
         {
-            for (int atomIndex = 0; atomIndex < atoms.nr; atomIndex++, i++)
+            for (int atomIndex = 0; atomIndex < atoms.size(); atomIndex++, i++)
             {
                 if (getGroupType(mtop->groups, gtype, i) != 0)
                 {
@@ -608,9 +610,6 @@ static gmx_bool all_atoms_selected(const gmx_mtop_t *mtop,
 static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                                  const gmx_mtop_t     *mtop)
 {
-    const t_atoms           *atoms;
-    const t_atom            *at;
-    const t_resinfo         *resInfo;
     int                      nameIndex;
     int                      atom_offset = 0;
     tng_molecule_t           mol, iterMol;
@@ -652,14 +651,15 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
     int i = 0;
     for (const gmx_molblock_t &molBlock :  mtop->molblock)
     {
-        const gmx_moltype_t &molType = mtop->moltype[molBlock.type];
+        const gmx_moltype_t          &molType = mtop->moltype[molBlock.type];
 
-        atoms = &molType.atoms;
+        gmx::ArrayRef<const AtomInfo> atoms   = molType.atoms;
+        gmx::ArrayRef<const Residue>  resinfo = molType.resinfo;
 
         for (int j = 0; j < molBlock.nmol; j++)
         {
             bool bAtomsAdded = FALSE;
-            for (int atomIndex = 0; atomIndex < atoms->nr; atomIndex++, i++)
+            for (int atomIndex = 0; atomIndex < atoms.size(); atomIndex++, i++)
             {
                 char *res_name;
                 int   res_id;
@@ -668,14 +668,14 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                 {
                     continue;
                 }
-                at = &atoms->atom[atomIndex];
-                if (atoms->nres > 0)
+                const AtomInfo &at = atoms[atomIndex];
+                if (!resinfo.empty())
                 {
-                    resInfo = &atoms->resinfo[at->resind];
+                    const Residue &resInfo = resinfo[at.resind_];
                     /* FIXME: When TNG supports both residue index and residue
                      * number the latter should be used. */
-                    res_name = *resInfo->name;
-                    res_id   = at->resind + 1;
+                    res_name = *resInfo.name_;
+                    res_id   = at.resind_ + 1;
                 }
                 else
                 {
@@ -689,8 +689,8 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                      * original residue IDs - otherwise there might be conflicts. */
                     tng_chain_residue_add(tng, chain, res_name, &res);
                 }
-                tng_residue_atom_w_id_add(tng, res, *(atoms->atomname[atomIndex]),
-                                          *(atoms->atomtype[atomIndex]),
+                tng_residue_atom_w_id_add(tng, res, *(atoms[atomIndex].atomname),
+                                          *(atoms[atomIndex].atomtype),
                                           atom_offset + atomIndex, &atom);
                 bAtomsAdded = TRUE;
             }
@@ -739,7 +739,7 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                     }
                 }
             }
-            atom_offset += atoms->nr;
+            atom_offset += atoms.size();
         }
     }
     tng_molecule_existing_add(tng, &mol);

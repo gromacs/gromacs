@@ -46,7 +46,7 @@
 
 enum class Directive : int;
 class PreprocessingAtomTypes;
-struct t_atoms;
+struct AtomResiduePdb;
 struct t_blocka;
 struct t_excls;
 struct MoleculeInformation;
@@ -66,7 +66,7 @@ void add_param_to_list(InteractionTypeParameters *list, const FFParameter &b);
 void print_blocka(FILE *out, const char *szName, const char *szIndex,
                   const char *szA, t_blocka *block);
 
-void print_atoms(FILE *out, PreprocessingAtomTypes *atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, PreprocessingAtomTypes *atype, const AtomResiduePdb &system, int *cgnr,
                  bool bRTPresname);
 
 void print_bondeds(FILE *out, int natoms, Directive d,

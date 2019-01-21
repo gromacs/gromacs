@@ -50,7 +50,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
 
-struct t_atom;
+struct AtomInfo;
 struct t_symtab;
 /*! \brief
  * Used for reading .rtp/.tdb
@@ -117,7 +117,7 @@ struct PreprocessResidue
     //! The base file name this rtp entry was read from.
     std::string                               filebase;
     //! Atom data.
-    std::vector<t_atom>                       atom;
+    std::vector<AtomInfo>                     atom;
     //! Atom names.
     std::vector<char **>                      atomname;
     //! Charge group numbers.
@@ -159,7 +159,7 @@ struct MoleculePatch
     //! New name for entry.
     std::string                nname;
     //! New atom data.
-    std::vector<t_atom>        atom;
+    std::vector<AtomInfo>      atom;
     //! Chargegroup number.
     int                        cgnr = NOTSET;
     //! Type of attachement.

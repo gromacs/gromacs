@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -345,7 +345,7 @@ extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, const i
         for (i = 0; i < isize; i++)
         {
             pos[i].t =
-                return_atom_type (*(top->atoms.atomname[index[i]]), gsf);
+                return_atom_type (*(top->atoms[index[i]].atomname), gsf);
         }
     }
     for (i = 0; i < isize; i++)
@@ -482,7 +482,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
              ng == 1 ? "" : "s");
     if (fnTPS)
     {
-        get_index (&top.atoms, fnNDX, ng, isize, index, grpname);
+        get_index(top.atoms, top.resinfo, fnNDX, ng, isize, index, grpname);
     }
     else
     {

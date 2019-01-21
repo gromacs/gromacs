@@ -218,7 +218,9 @@ void do_pp2shifts(FILE *fp, int nframes,
 gmx_bool has_dihedral(int Dih, t_dlist *dl);
 
 t_dlist *mk_dlist(FILE *log,
-                  const t_atoms *atoms, int *nlist,
+                  gmx::ArrayRef<const AtomInfo> atoms,
+                  gmx::ArrayRef<const Residue> resinfo,
+                  int *nlist,
                   gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
                   int maxchi, int r0, ResidueType *rt);
 

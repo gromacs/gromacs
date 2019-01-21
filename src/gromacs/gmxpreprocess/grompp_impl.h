@@ -250,8 +250,8 @@ struct MoleculeInformation
     bool                                         excl_set = false;
     //! Has the mol been processed.
     bool                                         bProcessed = false;
-    //! Atoms in the moelcule.
-    t_atoms                                      atoms;
+    //! Atoms, Residues and PDB information in the moelcule.
+    AtomResiduePdb                               system;
     //! Charge groups in the molecule
     t_block                                      cgs;
     //! Molecules separated in datastructure.

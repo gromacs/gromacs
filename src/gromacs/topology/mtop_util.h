@@ -43,10 +43,13 @@
 
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/gmxassert.h"
 
 struct gmx_localtop_t;
-struct t_atom;
-struct t_atoms;
+struct AtomInfo;
+struct Residue;
+struct PdbEntry;
 struct t_block;
 struct t_symtab;
 enum struct GmxQmmmMode;
@@ -95,8 +98,10 @@ class AtomProxy
         AtomProxy(const AtomIterator* it) : it_(it) {}
         //! Access current global atom number.
         int globalAtomNumber() const;
-        //! Access current t_atom struct.
-        const t_atom &atom() const;
+        //! Access current AtomInfo struct.
+        const AtomInfo &atom() const;
+        //! Access to current Residue struct.
+        const Residue  &resinfo() const;
         //! Access current name of the atom.
         const char *atomName() const;
         //! Access current name of the residue the atom is in.
@@ -150,19 +155,21 @@ class AtomIterator
 
     private:
         //! Global topology.
-        const gmx_mtop_t *mtop_;
+        const gmx_mtop_t             *mtop_;
         //! Current molecule block.
-        size_t            mblock_;
+        size_t                        mblock_;
         //! The atoms of the current molecule.
-        const t_atoms    *atoms_;
+        gmx::ArrayRef<const AtomInfo> atoms_;
+        //! The residues of the current molecule.
+        gmx::ArrayRef<const Residue>  resinfo_;
         //! The current molecule.
-        int               currentMolecule_;
+        int                           currentMolecule_;
         //! Current highest number for residues.
-        int               highestResidueNumber_;
+        int                           highestResidueNumber_;
         //! Current local atom number.
-        int               localAtomNumber_;
+        int                           localAtomNumber_;
         //! Global current atom number.
-        int               globalAtomNumber_;
+        int                           globalAtomNumber_;
 
         friend class AtomProxy;
 };
@@ -184,29 +191,6 @@ class AtomRange
 
 /* Abstract type for atom loop over atoms in all molecule blocks */
 typedef struct gmx_mtop_atomloop_block *gmx_mtop_atomloop_block_t;
-
-/* Initialize an atom loop over atoms in all molecule blocks the system.
- */
-gmx_mtop_atomloop_block_t
-gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop);
-
-/* Loop to the next atom.
- * When not at the end:
- *   returns TRUE
- *   sets the pointer atom to the t_atom struct of that atom
- *   and return the number of molecules corresponding to this atom.
- * When at the end, destroys aloop and returns FALSE.
- * Use as:
- * gmx_mtop_atomloop_block_t aloop;
- * aloop = gmx_mtop_atomloop_block_init(mtop)
- * while (gmx_mtop_atomloop_block_next(aloop,&atom,&nmol)) {
- *     ...
- * }
- */
-gmx_bool
-gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                             const t_atom **atom, int *nmol);
-
 
 /* Abstract type for ilist loop over all ilists */
 typedef struct gmx_mtop_ilistloop *gmx_mtop_ilistloop_t;
@@ -263,11 +247,12 @@ gmx_mtop_ftype_count(const gmx_mtop_t &mtop, int ftype);
 t_block
 gmx_mtop_global_cgs(const gmx_mtop_t *mtop);
 
-
-/* Returns a single t_atoms struct for the whole system */
-t_atoms
-gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
-
+/*! \brief
+ * Returns a single combined structure with AtomInfo, Residue and possibly PdbEntry
+ * vector for the whole system.
+ */
+AtomResiduePdb
+gmx_mtop_global_atoms(const gmx_mtop_t &mtop);
 
 /*! \brief
  * Populate a 'local' topology for the whole system.
@@ -316,20 +301,24 @@ gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop);
  */
 std::vector<int> get_atom_index(const gmx_mtop_t *mtop);
 
-/*! \brief Converts a t_atoms struct to an mtop struct
+/*! \brief Combines AtomInfo, Residue and PdbEntry vectors to an mtop struct
  *
- * All pointers contained in \p atoms will be copied into \p mtop.
+ * All entries contained in \p atoms, \p resinfo and \p pdb will be copied into \p mtop.
  * Note that this will produce one moleculetype encompassing the whole system.
  *
  * \param[in]  symtab  The symbol table
  * \param[in]  name    Pointer to the name for the topology
  * \param[in]  atoms   The atoms to convert
+ * \param[in]  resinfo Residues to add.
+ * \param[in]  pdb     PDB information or empty.
  * \param[out] mtop    The molecular topology output containing atoms.
  */
 void
-convertAtomsToMtop(t_symtab    *symtab,
-                   char       **name,
-                   t_atoms     *atoms,
-                   gmx_mtop_t  *mtop);
+convertAtomsToMtop(t_symtab                     *symtab,
+                   char                        **name,
+                   gmx::ArrayRef<const AtomInfo> atoms,
+                   gmx::ArrayRef<const Residue>  resinfo,
+                   gmx::ArrayRef<const PdbEntry> pdb,
+                   gmx_mtop_t                   *mtop);
 
 #endif

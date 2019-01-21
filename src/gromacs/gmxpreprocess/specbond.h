@@ -43,7 +43,7 @@
 
 #include "gromacs/math/vectypes.h"
 
-struct t_atoms;
+struct AtomResiduePdb;
 struct SpecialBond;
 
 struct DisulfideBond
@@ -52,10 +52,10 @@ struct DisulfideBond
     std::string firstAtom, secondAtom;
 };
 
-std::vector<DisulfideBond> makeDisulfideBonds(t_atoms *pdba,
-                                              rvec     x[],
-                                              bool     bInteractive,
-                                              bool     bVerbose);
+std::vector<DisulfideBond> makeDisulfideBonds(AtomResiduePdb *pdba,
+                                              rvec            x[],
+                                              bool            bInteractive,
+                                              bool            bVerbose);
 
 std::vector<SpecialBond> generateSpecialBonds();
 

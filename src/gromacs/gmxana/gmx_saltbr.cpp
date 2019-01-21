@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,9 @@ typedef struct {
     real  q;
 } t_charge;
 
-static t_charge *mk_charge(const t_atoms *atoms, const t_block *cgs, int *nncg)
+static t_charge *mk_charge(gmx::ArrayRef<const AtomInfo> atoms,
+                           gmx::ArrayRef<const Residue> resinfo,
+                           const t_block *cgs, int *nncg)
 {
     t_charge *cg = nullptr;
     char      buf[32];
@@ -73,7 +75,7 @@ static t_charge *mk_charge(const t_atoms *atoms, const t_block *cgs, int *nncg)
         qq = 0.0;
         for (j = cgs->index[i]; (j < cgs->index[i+1]); j++)
         {
-            qq += atoms->atom[j].q;
+            qq += atoms[j].q_;
         }
         if (std::abs(qq) > 1.0e-5)
         {
@@ -81,10 +83,10 @@ static t_charge *mk_charge(const t_atoms *atoms, const t_block *cgs, int *nncg)
             cg[ncg].q  = qq;
             cg[ncg].cg = i;
             anr        = cgs->index[i];
-            resnr      = atoms->atom[anr].resind;
+            resnr      = atoms[anr].resind_;
             sprintf(buf, "%s%d-%d",
-                    *(atoms->resinfo[resnr].name),
-                    atoms->resinfo[resnr].nr,
+                    *(resinfo[resnr].name_),
+                    resinfo[resnr].nr_,
                     anr+1);
             cg[ncg].label = gmx_strdup(buf);
             ncg++;
@@ -188,7 +190,7 @@ int gmx_saltbr(int argc, char *argv[])
     }
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
-    cg  = mk_charge(&top->atoms, &(top->cgs), &ncg);
+    cg  = mk_charge(top->atoms, top->resinfo,  &(top->cgs), &ncg);
     snew(cgdist, ncg);
     snew(nWithin, ncg);
     for (i = 0; (i < ncg); i++)

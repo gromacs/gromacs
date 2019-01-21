@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -175,14 +175,14 @@ int gmx_helix(int argc, char *argv[])
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
 
-    if (natoms != top->atoms.nr)
+    if (natoms != gmx::index(top->atoms.size()))
     {
-        gmx_fatal(FARGS, "Sorry can only run when the number of atoms in the run input file (%d) is equal to the number in the trajectory (%d)",
-                  top->atoms.nr, natoms);
+        gmx_fatal(FARGS, "Sorry can only run when the number of atoms in the run input file (%lu) is equal to the number in the trajectory (%d)",
+                  top->atoms.size(), natoms);
     }
 
     bb = mkbbind(ftp2fn(efNDX, NFILE, fnm), &nres, &nbb, r0, &nall, &allindex,
-                 top->atoms.atomname, top->atoms.atom, top->atoms.resinfo);
+                 top->atoms, top->resinfo);
     snew(bbindex, natoms);
     snew(caindex, nres);
 
@@ -205,7 +205,7 @@ int gmx_helix(int argc, char *argv[])
     }
 
     /* Read reference frame from tpx file to compute helix length */
-    snew(xref, top->atoms.nr);
+    snew(xref, top->atoms.size());
     read_tpx(ftp2fn(efTPR, NFILE, fnm),
              nullptr, nullptr, nullptr, xref, nullptr, nullptr);
     calc_hxprops(nres, bb, xref);
@@ -243,7 +243,7 @@ int gmx_helix(int argc, char *argv[])
             if (teller == 1)
             {
                 write_sto_conf(opt2fn("-cz", NFILE, fnm), "Helix fitted to Z-Axis",
-                               &(top->atoms), x, nullptr, ePBC, box);
+                               top->atoms, top->resinfo, top->pdb, x, nullptr, ePBC, box);
             }
 
             xf[efhRAD].val   = radius(xf[efhRAD].fp2, nca, caindex, x);
@@ -251,7 +251,7 @@ int gmx_helix(int argc, char *argv[])
             xf[efhRISE].val  = rise(nca, caindex, x);
             xf[efhLEN].val   = ahx_len(nca, caindex, x);
             xf[efhCD222].val = ellipticity(nres, bb);
-            xf[efhDIP].val   = dip(nbb, bbindex, x, top->atoms.atom);
+            xf[efhDIP].val   = dip(nbb, bbindex, x, top->atoms);
             xf[efhRMS].val   = rms;
             xf[efhCPHI].val  = ca_phi(nca, caindex, x);
             xf[efhPPRMS].val = pprms(xf[efhPPRMS].fp2, nres, bb);

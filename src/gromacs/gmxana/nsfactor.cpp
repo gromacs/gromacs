@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,19 +154,19 @@ gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefa
     int            i, j;
     /* Try to assing scattering length from nsfactor.dat */
     snew(gsans, 1);
-    snew(gsans->slength, top->atoms.nr);
+    snew(gsans->slength, top->atoms.size());
     /* copy topology data */
     gsans->top = top;
-    for (i = 0; i < top->atoms.nr; i++)
+    for (i = 0; i < gmx::index(top->atoms.size()); i++)
     {
         for (j = 0; j < gnsf->nratoms; j++)
         {
-            if (top->atoms.atom[i].atomnumber == gnsf->p[j])
+            if (top->atoms[i].atomnumber_ == gnsf->p[j])
             {
                 /* we need special case for H and D */
-                if (top->atoms.atom[i].atomnumber == 1)
+                if (top->atoms[i].atomnumber_ == 1)
                 {
-                    if (top->atoms.atom[i].m == 1.008000)
+                    if (top->atoms[i].m_ == 1.008000)
                     {
                         gsans->slength[i] = gnsf->slength[0];
                     }

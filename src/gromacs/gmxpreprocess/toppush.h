@@ -46,7 +46,8 @@
 enum class Directive : int;
 class PreprocessingAtomTypes;
 struct gpp_bond_atomtype;
-struct t_atoms;
+struct AtomResiduePdb;
+struct AtomInfo;
 struct t_block;
 struct MoleculeInformation;
 struct t_nbparam;
@@ -85,17 +86,17 @@ void push_nbt(Directive d, t_nbparam **nbt, PreprocessingAtomTypes *atype,
               char *plines, int nb_funct,
               warninp *wi);
 
-void push_atom(struct t_symtab           *symtab,
-               t_block                   *cgs,
-               t_atoms                   *at,
-               PreprocessingAtomTypes    *atype,
-               char                      *line,
-               int                       *lastcg,
-               warninp                   *wi);
+void push_atom(struct t_symtab        *symtab,
+               t_block                *cgs,
+               AtomResiduePdb         *at,
+               PreprocessingAtomTypes *atype,
+               char                   *line,
+               int                    *lastcg,
+               warninp                *wi);
 
 void push_bond(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
                gmx::ArrayRef<InteractionTypeParameters> bond,
-               t_atoms *at, PreprocessingAtomTypes *atype, char *line,
+               const AtomResiduePdb &system, PreprocessingAtomTypes *atype, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
                warninp *wi);
@@ -103,11 +104,11 @@ void push_bond(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
 void push_cmap(Directive d,
                gmx::ArrayRef<InteractionTypeParameters> bondtype,
                gmx::ArrayRef<InteractionTypeParameters> bond,
-               t_atoms *at, PreprocessingAtomTypes *atype, char *line,
+               const AtomResiduePdb &system, PreprocessingAtomTypes *atype, char *line,
                warninp *wi);
 
 void push_vsitesn(Directive d, gmx::ArrayRef<InteractionTypeParameters> bond,
-                  t_atoms *at, char *line,
+                  AtomResiduePdb *system, char *line,
                   warninp *wi);
 
 void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char *pline,

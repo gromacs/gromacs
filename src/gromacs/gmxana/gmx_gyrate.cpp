@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
+static real calc_gyro(rvec x[], int gnx, int index[], gmx::ArrayRef<const AtomInfo> atom, real tm,
                       rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)
 {
     int    i, ii, m;
@@ -86,11 +86,11 @@ static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
         ii = index[i];
         if (bQ)
         {
-            m0 = std::abs(atom[ii].q);
+            m0 = std::abs(atom[ii].q_);
         }
         else
         {
-            m0 = atom[ii].m;
+            m0 = atom[ii].m_;
         }
         for (m = 0; (m < DIM); m++)
         {
@@ -109,7 +109,7 @@ static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
 }
 
 static void calc_gyro_z(rvec x[], matrix box,
-                        int gnx, const int index[], t_atom atom[],
+                        int gnx, const int index[], gmx::ArrayRef<const AtomInfo> atom,
                         int nz, real time, FILE *out)
 {
     static dvec   *inertia = nullptr;
@@ -148,7 +148,7 @@ static void calc_gyro_z(rvec x[], matrix box,
             {
                 zi = 0;
             }
-            w               = atom[ii].m*(1 + std::cos(M_PI*(zf - zi)));
+            w               = atom[ii].m_*(1 + std::cos(M_PI*(zf - zi)));
             inertia[zi][0] += w*gmx::square(x[ii][YY]);
             inertia[zi][1] += w*gmx::square(x[ii][XX]);
             inertia[zi][2] -= w*x[ii][XX]*x[ii][YY];
@@ -267,7 +267,7 @@ int gmx_gyrate(int argc, char *argv[])
     }
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, TRUE);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
+    get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
     if (nmol > gnx || gnx % nmol != 0)
     {
@@ -327,15 +327,15 @@ int gmx_gyrate(int argc, char *argv[])
         clear_rvec(d1);
         for (mol = 0; mol < nmol; mol++)
         {
-            tm    = sub_xcm(nz == 0 ? x_s : x, nam, index+mol*nam, top.atoms.atom, xcm, bQ);
+            tm    = sub_xcm(nz == 0 ? x_s : x, nam, index+mol*nam, top.atoms, xcm, bQ);
             if (nz == 0)
             {
-                gyro += calc_gyro(x_s, nam, index+mol*nam, top.atoms.atom,
+                gyro += calc_gyro(x_s, nam, index+mol*nam, top.atoms,
                                   tm, gvec1, d1, bQ, bRot, bMOI, trans);
             }
             else
             {
-                calc_gyro_z(x, box, nam, index+mol*nam, top.atoms.atom, nz, t, out);
+                calc_gyro_z(x, box, nam, index+mol*nam, top.atoms, nz, t, out);
             }
             rvec_inc(gvec, gvec1);
             rvec_inc(d, d1);

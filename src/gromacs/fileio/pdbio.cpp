@@ -43,6 +43,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <numeric>
 #include <string>
 
 #include "gromacs/fileio/gmxfio.h"
@@ -302,9 +303,12 @@ gmx_fprintf_pqr_atomline(FILE *            fp,
 }
 
 void write_pdbfile_indexed(FILE *out, const char *title,
-                           const t_atoms *atoms, const rvec x[],
+                           gmx::ArrayRef<const AtomInfo> atoms,
+                           gmx::ArrayRef<const Residue> resinfo,
+                           gmx::ArrayRef<const PdbEntry> pdb,
+                           const rvec x[],
                            int ePBC, const matrix box, char chainid,
-                           int model_nr, int nindex, const int index[],
+                           int model_nr, gmx::ArrayRef<const int> index,
                            gmx_conect conect, gmx_bool bTerSepChains,
                            bool usePqrFormat)
 {
@@ -320,16 +324,17 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     {
         gmx_write_pdb_box(out, ePBC, box);
     }
-    if (atoms->havePdbInfo)
+    bool havePdbInfo = allAtomsHavePdbInfo(pdb);
+    if (havePdbInfo)
     {
         /* Check whether any occupancies are set, in that case leave it as is,
          * otherwise set them all to one
          */
         bOccup = TRUE;
-        for (int ii = 0; (ii < nindex) && bOccup; ii++)
+        for (auto it = index.begin(); it != index.end() && bOccup; it++)
         {
-            int i      = index[ii];
-            bOccup = bOccup && (atoms->pdbinfo[i].occup == 0.0);
+            int i      = *it;
+            bOccup = bOccup && (pdb[i].occup_ == 0.0);
         }
     }
     else
@@ -344,13 +349,13 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     std::string lastRestype;
 
     ResidueType rt;
-    for (int ii = 0; ii < nindex; ii++)
+    for (const auto ii : index)
     {
-        int i             = index[ii];
-        int resind        = atoms->atom[i].resind;
-        int chainnum      = atoms->resinfo[resind].chainnum;
+        int i             = ii;
+        int resind        = atoms[i].resind_;
+        int chainnum      = resinfo[resind].chainnum_;
         lastRestype = prevRestype;
-        prevRestype = rt.typeNameForIndexedResidue(*atoms->resinfo[resind].name);
+        prevRestype = rt.typeNameForIndexedResidue(*resinfo[resind].name_);
 
         /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
         if (bTerSepChains && ii > 0 && chainnum != lastchainnum)
@@ -365,13 +370,13 @@ void write_pdbfile_indexed(FILE *out, const char *title,
             lastchainnum    = chainnum;
         }
 
-        std::string resnm = *atoms->resinfo[resind].name;
-        std::string nm    = *atoms->atomname[i];
+        std::string resnm = *resinfo[resind].name_;
+        std::string nm    = *atoms[i].atomname;
 
         /* rename HG12 to 2HG1, etc. */
         nm    = xlate_atomname_gmx2pdb(nm);
-        int           resnr = atoms->resinfo[resind].nr;
-        unsigned char resic = atoms->resinfo[resind].ic;
+        int           resnr = resinfo[resind].nr_;
+        unsigned char resic = resinfo[resind].ic_;
         unsigned char ch;
         if (chainid != ' ')
         {
@@ -379,7 +384,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         }
         else
         {
-            ch = atoms->resinfo[resind].chainid;
+            ch = resinfo[resind].chainid_;
 
             if (ch == 0)
             {
@@ -390,23 +395,19 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         {
             resnr = resnr % 10000;
         }
-        t_pdbinfo pdbinfo;
-        if (atoms->pdbinfo != nullptr)
+        PdbEntry pdbinfo;
+        if (havePdbInfo)
         {
-            pdbinfo = atoms->pdbinfo[i];
+            pdbinfo = pdb[i];
         }
-        else
-        {
-            gmx_pdbinfo_init_default(&pdbinfo);
-        }
-        type   = static_cast<enum PDB_record>(pdbinfo.type);
-        altloc = pdbinfo.altloc;
+        type   = static_cast<enum PDB_record>(pdbinfo.type_);
+        altloc = pdbinfo.altloc_;
         if (!isalnum(altloc))
         {
             altloc = ' ';
         }
-        occup = bOccup ? 1.0 : pdbinfo.occup;
-        bfac  = pdbinfo.bfac;
+        occup = bOccup ? 1.0 : pdbinfo.occup_;
+        bfac  = pdbinfo.bfac_;
         if (!usePqrFormat)
         {
             gmx_fprintf_pdb_atomline(out,
@@ -421,16 +422,16 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                                      10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ],
                                      occup,
                                      bfac,
-                                     atoms->atom[i].elem);
+                                     atoms[i].elem_.c_str());
 
-            if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
+            if (havePdbInfo && pdb[i].haveAnisotropic_)
             {
                 fprintf(out, "ANISOU%5d  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
                         (i+1)%100000, nm.c_str(), resnm.c_str(), ch, resnr,
                         (resic == '\0') ? ' ' : resic,
-                        atoms->pdbinfo[i].uij[0], atoms->pdbinfo[i].uij[1],
-                        atoms->pdbinfo[i].uij[2], atoms->pdbinfo[i].uij[3],
-                        atoms->pdbinfo[i].uij[4], atoms->pdbinfo[i].uij[5]);
+                        pdb[i].uij_[0], pdb[i].uij_[1],
+                        pdb[i].uij_[2], pdb[i].uij_[3],
+                        pdb[i].uij_[4], pdb[i].uij_[5]);
             }
         }
         else
@@ -461,19 +462,18 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     }
 }
 
-void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rvec x[],
+void write_pdbfile(FILE *out,
+                   const char *title,
+                   gmx::ArrayRef<const AtomInfo> atoms,
+                   gmx::ArrayRef<const Residue> resinfo,
+                   gmx::ArrayRef<const PdbEntry> pdb,
+                   const rvec x[],
                    int ePBC, const matrix box, char chainid, int model_nr, gmx_conect conect, gmx_bool bTerSepChains)
 {
-    int i, *index;
-
-    snew(index, atoms->nr);
-    for (i = 0; i < atoms->nr; i++)
-    {
-        index[i] = i;
-    }
-    write_pdbfile_indexed(out, title, atoms, x, ePBC, box, chainid, model_nr,
-                          atoms->nr, index, conect, bTerSepChains, false);
-    sfree(index);
+    std::vector<int> index(atoms.size());
+    std::iota(index.begin(), index.end(), 0);
+    write_pdbfile_indexed(out, title, atoms, resinfo, pdb, x, ePBC, box, chainid, model_nr,
+                          index, conect, bTerSepChains, false);
 }
 
 static int line2type(const char *line)
@@ -498,7 +498,9 @@ static int line2type(const char *line)
     return k;
 }
 
-static void read_anisou(char line[], int natom, t_atoms *atoms)
+static void read_anisou(char                          line[],
+                        gmx::ArrayRef<const AtomInfo> atoms,
+                        std::vector<PdbEntry>        *pdb)
 {
     int  i, j, k, atomnr;
     char nc = '\0';
@@ -524,10 +526,10 @@ static void read_anisou(char line[], int natom, t_atoms *atoms)
 
     /* Search backwards for number and name only */
     atomnr = std::strtol(anr, nullptr, 10);
-    for (i = natom-1; (i >= 0); i--)
+    for (i = atoms.size()-1; (i >= 0); i--)
     {
-        if ((std::strcmp(anm, *(atoms->atomname[i])) == 0) &&
-            (atomnr == atoms->pdbinfo[i].atomnr))
+        if ((std::strcmp(anm, *(atoms[i].atomname)) == 0) &&
+            (atomnr == (*pdb)[i].atomnr_))
         {
             break;
         }
@@ -540,40 +542,41 @@ static void read_anisou(char line[], int natom, t_atoms *atoms)
     else
     {
         if (sscanf(line+29, "%d%d%d%d%d%d",
-                   &atoms->pdbinfo[i].uij[U11], &atoms->pdbinfo[i].uij[U22],
-                   &atoms->pdbinfo[i].uij[U33], &atoms->pdbinfo[i].uij[U12],
-                   &atoms->pdbinfo[i].uij[U13], &atoms->pdbinfo[i].uij[U23])
+                   &(*pdb)[i].uij_[U11], &(*pdb)[i].uij_[U22],
+                   &(*pdb)[i].uij_[U33], &(*pdb)[i].uij_[U12],
+                   &(*pdb)[i].uij_[U13], &(*pdb)[i].uij_[U23])
             == 6)
         {
-            atoms->pdbinfo[i].bAnisotropic = TRUE;
+            (*pdb)[i].haveAnisotropic_ = TRUE;
         }
         else
         {
             fprintf(stderr, "Invalid ANISOU record for atom %d\n", i);
-            atoms->pdbinfo[i].bAnisotropic = FALSE;
+            (*pdb)[i].haveAnisotropic_ = FALSE;
         }
     }
 }
 
-void get_pdb_atomnumber(const t_atoms *atoms, AtomProperties *aps)
+void get_pdb_atomnumber(gmx::ArrayRef<AtomInfo>       atoms,
+                        gmx::ArrayRef<const PdbEntry> pdb,
+                        AtomProperties               *aps)
 {
-    int    i, atomnumber, len;
+    int    atomnumber;
     size_t k;
-    char   anm[6], anm_copy[6];
     char   nc = '\0';
     real   eval;
 
-    if (!atoms->pdbinfo)
+    if (allAtomsHavePdbInfo(pdb))
     {
         gmx_incons("Trying to deduce atomnumbers when no pdb information is present");
     }
-    for (i = 0; (i < atoms->nr); i++)
+    GMX_RELEASE_ASSERT(atoms.size() == pdb.size(), "Arrays for atom and pdb entries need to be of equal size");
+    for (int i = 0; (i < atoms.ssize()); i++)
     {
-        std::strcpy(anm, atoms->pdbinfo[i].atomnm);
-        std::strcpy(anm_copy, atoms->pdbinfo[i].atomnm);
-        bool atomNumberSet = false;
-        len        = strlen(anm);
-        if ((anm[0] != ' ') && ((len <= 2) || !std::isdigit(anm[2])))
+        std::string anm           = pdb[i].atomnm_;
+        std::string anm_copy      = anm;
+        bool        atomNumberSet = false;
+        if ((anm[0] != ' ') && ((anm.length() <= 2) || !std::isdigit(anm[2])))
         {
             anm_copy[2] = nc;
             if (aps->setAtomProperty(epropElement, "???", anm_copy, &eval))
@@ -594,7 +597,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, AtomProperties *aps)
         if (!atomNumberSet)
         {
             k = 0;
-            while ((k < std::strlen(anm)) && (std::isspace(anm[k]) || std::isdigit(anm[k])))
+            while ((k < anm.length()) && (std::isspace(anm[k]) || std::isdigit(anm[k])))
             {
                 k++;
             }
@@ -609,24 +612,29 @@ void get_pdb_atomnumber(const t_atoms *atoms, AtomProperties *aps)
         std::string buf;
         if (atomNumberSet)
         {
-            atoms->atom[i].atomnumber = atomnumber;
-            buf = aps->elementFromAtomNumber(atomnumber);
+            atoms[i].atomnumber_ = atomnumber;
+            buf                  = aps->elementFromAtomNumber(atomnumber);
             if (debug)
             {
                 fprintf(debug, "Atomnumber for atom '%s' is %d\n",
-                        anm, atomnumber);
+                        anm.c_str(), atomnumber);
             }
         }
-        buf.resize(3);
-        std::strncpy(atoms->atom[i].elem, buf.c_str(), 4);
+        else
+        {
+            buf = "";
+        }
+        atoms[i].elem_ = buf;
     }
 }
 
 static int read_atom(t_symtab *symtab,
                      const char line[], int type, int natom,
-                     t_atoms *atoms, rvec x[], int chainnum, gmx_bool bChange)
+                     std::vector<AtomInfo> *atoms,
+                     std::vector<Residue> *resinfo,
+                     std::vector<PdbEntry> *pdb,
+                     rvec x[], int chainnum, gmx_bool bChange)
 {
-    t_atom       *atomn;
     int           j, k;
     char          nc = '\0';
     char          anr[12], anm[12], anm_copy[12], altloc, resnm[12], rnr[12], elem[3];
@@ -634,12 +642,6 @@ static int read_atom(t_symtab *symtab,
     unsigned char resic;
     char          chainid;
     int           resnr, atomnumber;
-
-    if (natom >= atoms->nr)
-    {
-        gmx_fatal(FARGS, "\nFound more atoms (%d) in pdb file than expected (%d)",
-                  natom+1, atoms->nr);
-    }
 
     /* Skip over type */
     j = 6;
@@ -723,51 +725,45 @@ static int read_atom(t_symtab *symtab,
     elem[k] = nc;
     trim(elem);
 
-    if (atoms->atom)
+    AtomInfo        newAtom;
+    const AtomInfo &prevAtom = atoms->back();
+
+    if ((natom == 0) ||
+        resinfo->at(prevAtom.resind_).nr_ != resnr ||
+        resinfo->at(prevAtom.resind_).ic_ != resic ||
+        (strcmp(*resinfo->at(prevAtom.resind_).name_, resnm) != 0))
     {
-        atomn = &(atoms->atom[natom]);
-        if ((natom == 0) ||
-            atoms->resinfo[atoms->atom[natom-1].resind].nr != resnr ||
-            atoms->resinfo[atoms->atom[natom-1].resind].ic != resic ||
-            (strcmp(*atoms->resinfo[atoms->atom[natom-1].resind].name, resnm) != 0))
+        if (natom == 0)
         {
-            if (natom == 0)
-            {
-                atomn->resind = 0;
-            }
-            else
-            {
-                atomn->resind = atoms->atom[natom-1].resind + 1;
-            }
-            atoms->nres = atomn->resind + 1;
-            t_atoms_set_resinfo(atoms, natom, symtab, resnm, resnr, resic, chainnum, chainid);
+            newAtom.resind_ = 0;
         }
         else
         {
-            atomn->resind = atoms->atom[natom-1].resind;
+            newAtom.resind_ = prevAtom.resind_ + 1;
         }
-        if (bChange)
-        {
-            xlate_atomname_pdb2gmx(anm);
-        }
-        atoms->atomname[natom] = put_symtab(symtab, anm);
-        atomn->m               = 0.0;
-        atomn->q               = 0.0;
-        atomn->atomnumber      = atomnumber;
-        strncpy(atomn->elem, elem, 4);
+        resinfo->push_back(Residue(put_symtab(symtab, resnm), resnr, resic, chainnum, chainid, nullptr));
     }
+    else
+    {
+        newAtom.resind_ = prevAtom.resind_;
+    }
+    if (bChange)
+    {
+        xlate_atomname_pdb2gmx(anm);
+    }
+    newAtom.atomname         = put_symtab(symtab, anm);
+    newAtom.m_               = 0.0;
+    newAtom.q_               = 0.0;
+    newAtom.atomnumber_      = atomnumber;
+    newAtom.elem_            = elem;
+
     x[natom][XX] = strtod(xc, nullptr)*0.1;
     x[natom][YY] = strtod(yc, nullptr)*0.1;
     x[natom][ZZ] = strtod(zc, nullptr)*0.1;
-    if (atoms->pdbinfo)
-    {
-        atoms->pdbinfo[natom].type   = type;
-        atoms->pdbinfo[natom].atomnr = strtol(anr, nullptr, 10);
-        atoms->pdbinfo[natom].altloc = altloc;
-        strcpy(atoms->pdbinfo[natom].atomnm, anm_copy);
-        atoms->pdbinfo[natom].bfac  = strtod(bfac, nullptr);
-        atoms->pdbinfo[natom].occup = strtod(occup, nullptr);
-    }
+    pdb->push_back(PdbEntry(type, strtol(anr, nullptr, 10),
+                            altloc, anm_copy,
+                            strtod(occup, nullptr),
+                            strtod(bfac, nullptr)));
     natom++;
 
     return natom;
@@ -890,7 +886,10 @@ void gmx_conect_add(gmx_conect conect, int ai, int aj)
 }
 
 int read_pdbfile(FILE *in, char *title, int *model_nr,
-                 t_atoms *atoms, t_symtab *symtab, rvec x[], int *ePBC,
+                 std::vector<AtomInfo> *atoms,
+                 std::vector<Residue> *resinfo,
+                 std::vector<PdbEntry> *pdb,
+                 t_symtab *symtab, rvec x[], int *ePBC,
                  matrix box, gmx_bool bChange, gmx_conect conect)
 {
     gmx_conect_t *gc = conect;
@@ -912,12 +911,6 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
         clear_mat(box);
     }
 
-    atoms->haveMass    = FALSE;
-    atoms->haveCharge  = FALSE;
-    atoms->haveType    = FALSE;
-    atoms->haveBState  = FALSE;
-    atoms->havePdbInfo = (atoms->pdbinfo != nullptr);
-
     bCOMPND  = FALSE;
     title[0] = '\0';
     natom    = 0;
@@ -930,13 +923,13 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
         {
             case epdbATOM:
             case epdbHETATM:
-                natom = read_atom(symtab, line, line_type, natom, atoms, x, chainnum, bChange);
+                natom = read_atom(symtab, line, line_type, natom, atoms, resinfo, pdb, x, chainnum, bChange);
                 break;
 
             case epdbANISOU:
-                if (atoms->havePdbInfo)
+                if (allAtomsHavePdbInfo(*pdb))
                 {
-                    read_anisou(line, natom, atoms);
+                    read_anisou(line, *atoms, pdb);
                 }
                 break;
 
@@ -1066,12 +1059,15 @@ void get_pdb_coordnum(FILE *in, int *natoms)
 }
 
 void gmx_pdb_read_conf(const char *infile,
-                       t_symtab *symtab, char **name, t_atoms *atoms,
+                       t_symtab *symtab, char **name,
+                       std::vector<AtomInfo> *atoms,
+                       std::vector<Residue> *resinfo,
+                       std::vector<PdbEntry> *pdb,
                        rvec x[], int *ePBC, matrix box)
 {
     FILE *in = gmx_fio_fopen(infile, "r");
     char  title[STRLEN];
-    read_pdbfile(in, title, nullptr, atoms, symtab, x, ePBC, box, TRUE, nullptr);
+    read_pdbfile(in, title, nullptr, atoms, resinfo, pdb, symtab, x, ePBC, box, TRUE, nullptr);
     if (name != nullptr)
     {
         *name = gmx_strdup(title);

@@ -40,9 +40,11 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct t_atoms;
+struct AtomResiduePdb;
 struct InteractionTypeParameters;
 
-void make_shake (gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, int nshake);
+void make_shake (gmx::ArrayRef<InteractionTypeParameters> plist,
+                 const AtomResiduePdb                    &system,
+                 int                                      nshake);
 
 #endif

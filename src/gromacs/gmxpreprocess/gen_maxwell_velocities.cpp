@@ -63,9 +63,9 @@ static void low_mspeed(real tempi,
     nrdf  = 0;
     for (const AtomProxy atomP : AtomRange(*mtop))
     {
-        const t_atom &local = atomP.atom();
-        int           i     = atomP.globalAtomNumber();
-        real          mass  = local.m;
+        const AtomInfo &local = atomP.atom();
+        int             i     = atomP.globalAtomNumber();
+        real            mass  = local.m_;
         if (mass > 0)
         {
             rng->restart(i, 0);

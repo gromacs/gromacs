@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,6 @@ int gmx_nmtraj(int argc, char *argv[])
     t_trxstatus      *out;
     t_topology        top;
     int               ePBC;
-    t_atoms          *atoms;
     rvec             *xtop, *xref, *xav, *xout;
     int               nvec, *eignr = nullptr;
     rvec            **eigvec = nullptr;
@@ -183,9 +182,9 @@ int gmx_nmtraj(int argc, char *argv[])
         phases[i] = 0;
     }
 
-    atoms = &top.atoms;
+    gmx::ArrayRef<const AtomInfo> atoms = top.atoms;
 
-    if (atoms->nr != natoms)
+    if (atoms.size() != natoms)
     {
         gmx_fatal(FARGS, "Different number of atoms in topology and eigenvectors.\n");
     }
@@ -228,7 +227,7 @@ int gmx_nmtraj(int argc, char *argv[])
     {
         for (i = 0; (i < natoms); i++)
         {
-            invsqrtm[i] = gmx::invsqrt(atoms->atom[i].m);
+            invsqrtm[i] = gmx::invsqrt(atoms[i].m_);
         }
     }
     else
@@ -273,7 +272,7 @@ int gmx_nmtraj(int argc, char *argv[])
             Ekin = 0;
             for (k = 0; k < natoms; k++)
             {
-                m = atoms->atom[k].m;
+                m = atoms[k].m_;
                 for (d = 0; d < DIM; d++)
                 {
                     vel   = omega*this_eigvec[k][d];
@@ -322,7 +321,7 @@ int gmx_nmtraj(int argc, char *argv[])
                 }
             }
         }
-        write_trx(out, natoms, dummy, atoms, i, static_cast<real>(i)/nframes, box, xout, nullptr, nullptr);
+        write_trx(out, gmx::arrayRefFromArray(dummy, natoms), atoms, top.resinfo, top.pdb, i, static_cast<real>(i)/nframes, box, xout, nullptr, nullptr);
     }
 
     fprintf(stderr, "\n");

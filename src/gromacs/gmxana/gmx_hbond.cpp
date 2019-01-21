@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -572,14 +572,15 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
     }
 }
 
-static char *mkatomname(const t_atoms *atoms, int i)
+static char *mkatomname(gmx::ArrayRef<const AtomInfo> atoms,
+                        gmx::ArrayRef<const Residue> resinfo, int i)
 {
     static char buf[32];
     int         rnr;
 
-    rnr = atoms->atom[i].resind;
+    rnr = atoms[i].resind_;
     sprintf(buf, "%4s%d%-4s",
-            *atoms->resinfo[rnr].name, atoms->resinfo[rnr].nr, *atoms->atomname[i]);
+            *resinfo[rnr].name_, resinfo[rnr].nr_, *atoms[i].atomname);
 
     return buf;
 }
@@ -637,8 +638,8 @@ static void search_acceptors(const t_topology *top, int isize,
         {
             n = index[i];
             if ((bContact ||
-                 (((*top->atoms.atomname[n])[0] == 'O') ||
-                  (bNitAcc && ((*top->atoms.atomname[n])[0] == 'N')))) &&
+                 (((*top->atoms[n].atomname)[0] == 'O') ||
+                  (bNitAcc && ((*top->atoms[n].atomname)[0] == 'N')))) &&
                 ISINGRP(datable[n]))
             {
                 datable[n] |= c_acceptorMask;
@@ -646,8 +647,8 @@ static void search_acceptors(const t_topology *top, int isize,
             }
         }
     }
-    snew(a->aptr, top->atoms.nr);
-    for (i = 0; (i < top->atoms.nr); i++)
+    snew(a->aptr, top->atoms.size());
+    for (i = 0; (i < gmx::index(top->atoms.size())); i++)
     {
         a->aptr[i] = NOTSET;
     }
@@ -737,8 +738,8 @@ static void search_donors(const t_topology *top, int isize, const int *index,
 
     if (!ddd->dptr)
     {
-        snew(ddd->dptr, top->atoms.nr);
-        for (i = 0; (i < top->atoms.nr); i++)
+        snew(ddd->dptr, top->atoms.size());
+        for (i = 0; (i < gmx::index(top->atoms.size())); i++)
         {
             ddd->dptr[i] = NOTSET;
         }
@@ -804,9 +805,9 @@ static void search_donors(const t_topology *top, int isize, const int *index,
                     {
                         nr1 = interaction->iatoms[i+1+j];
                         nr2 = interaction->iatoms[i+2-j];
-                        if ((*top->atoms.atomname[nr1][0] == 'H') &&
-                            ((*top->atoms.atomname[nr2][0] == 'O') ||
-                             (*top->atoms.atomname[nr2][0] == 'N')) &&
+                        if ((*top->atoms[nr1].atomname[0] == 'H') &&
+                            ((*top->atoms[nr2].atomname[0] == 'O') ||
+                             (*top->atoms[nr2].atomname[0] == 'N')) &&
                             ISINGRP(datable[nr1]) && ISINGRP(datable[nr2]))
                         {
                             datable[nr2] |= c_donorMask;
@@ -2227,7 +2228,7 @@ static void analyse_donor_properties(FILE *fp, t_hbdata *hb, int nframes, real t
 static void dump_hbmap(t_hbdata *hb,
                        int nfile, t_filenm fnm[], gmx_bool bTwo,
                        gmx_bool bContact, const int isize[], int *index[], char *grpnames[],
-                       const t_atoms *atoms)
+                       gmx::ArrayRef<const AtomInfo> atoms, gmx::ArrayRef<const Residue> resinfo)
 {
     FILE    *fp, *fplog;
     int      ddd, hhh, aaa, i, j, k, m, grp;
@@ -2303,8 +2304,8 @@ static void dump_hbmap(t_hbdata *hb,
             {
                 if (hb->hbmap[i][k] && ISHB(hb->hbmap[i][k]->history[m]))
                 {
-                    sprintf(ds, "%s", mkatomname(atoms, ddd));
-                    sprintf(as, "%s", mkatomname(atoms, aaa));
+                    sprintf(ds, "%s", mkatomname(atoms, resinfo, ddd));
+                    sprintf(as, "%s", mkatomname(atoms, resinfo, aaa));
                     if (bContact)
                     {
                         fprintf(fp, " %6d %6d\n", ddd+1, aaa+1);
@@ -2316,7 +2317,7 @@ static void dump_hbmap(t_hbdata *hb,
                     else
                     {
                         hhh = hb->d.hydro[i][m];
-                        sprintf(hs, "%s", mkatomname(atoms, hhh));
+                        sprintf(hs, "%s", mkatomname(atoms, resinfo, hhh));
                         fprintf(fp, " %6d %6d %6d\n", ddd+1, hhh+1, aaa+1);
                         if (fplog)
                         {
@@ -2593,13 +2594,13 @@ int gmx_hbond(int argc, char *argv[])
     snew(index, grNR);
     snew(isize, grNR);
     /* Make Donor-Acceptor table */
-    snew(datable, top.atoms.nr);
+    snew(datable, top.atoms.size());
 
     if (bSelected)
     {
         /* analyze selected hydrogen bonds */
         printf("Select group with selected atoms:\n");
-        get_index(&(top.atoms), opt2fn("-sel", NFILE, fnm),
+        get_index(top.atoms, top.resinfo, opt2fn("-sel", NFILE, fnm),
                   1, &nsel, index, grpnames);
         if (nsel % 3)
         {
@@ -2617,8 +2618,8 @@ int gmx_hbond(int argc, char *argv[])
             add_dh (&hb->d, dd, hh, i, datable);
             add_acc(&hb->a, aa, i);
             /* Should this be here ? */
-            snew(hb->d.dptr, top.atoms.nr);
-            snew(hb->a.aptr, top.atoms.nr);
+            snew(hb->d.dptr, top.atoms.size());
+            snew(hb->a.aptr, top.atoms.size());
             add_hbond(hb, dd, aa, hh, gr0, gr0, 0, bMerge, 0, bContact);
         }
         printf("Analyzing %d selected hydrogen bonds from '%s'\n",
@@ -2628,7 +2629,7 @@ int gmx_hbond(int argc, char *argv[])
     {
         /* analyze all hydrogen bonds: get group(s) */
         printf("Specify 2 groups to analyze:\n");
-        get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
+        get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm),
                   2, isize, index, grpnames);
 
         /* check if we have two identical or two non-overlapping groups */
@@ -2642,7 +2643,7 @@ int gmx_hbond(int argc, char *argv[])
             printf("Checking for overlap in atoms between %s and %s\n",
                    grpnames[0], grpnames[1]);
 
-            gen_datable(index[0], isize[0], datable, top.atoms.nr);
+            gen_datable(index[0], isize[0], datable, top.atoms.size());
 
             for (i = 0; i < isize[1]; i++)
             {
@@ -2669,13 +2670,13 @@ int gmx_hbond(int argc, char *argv[])
     sfree(datable);
 
     /* search donors and acceptors in groups */
-    snew(datable, top.atoms.nr);
+    snew(datable, top.atoms.size());
     for (i = 0; (i < grNR); i++)
     {
         if ( ((i == gr0) && !bSelected ) ||
              ((i == gr1) && bTwo ))
         {
-            gen_datable(index[i], isize[i], datable, top.atoms.nr);
+            gen_datable(index[i], isize[i], datable, top.atoms.size());
             if (bContact)
             {
                 search_acceptors(&top, isize[i], index[i], &hb->a, i,
@@ -2690,7 +2691,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             if (bTwo)
             {
-                clear_datable_grp(datable, top.atoms.nr);
+                clear_datable_grp(datable, top.atoms.size());
             }
         }
     }
@@ -2744,7 +2745,7 @@ int gmx_hbond(int argc, char *argv[])
         do
         {
             printf("Select atom for shell (1 atom):\n");
-            get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
+            get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm),
                       1, &shisz, &shidx, &shgrpnm);
             if (shisz != 1)
             {
@@ -2759,10 +2760,10 @@ int gmx_hbond(int argc, char *argv[])
 
     /* Analyze trajectory */
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > gmx::index(top.atoms.size()))
     {
-        gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
-                  top.atoms.nr, natoms);
+        gmx_fatal(FARGS, "Topology (%lu atoms) does not match trajectory (%d atoms)",
+                  top.atoms.size(), natoms);
     }
 
     bBox  = (ir->ePBC != epbcNONE);
@@ -3014,7 +3015,7 @@ int gmx_hbond(int argc, char *argv[])
                                                                     {
                                                                         gmx_fatal(FARGS, "Invalid acceptor %d", j);
                                                                     }
-                                                                    resdist = std::abs(top.atoms.atom[i].resind-top.atoms.atom[j].resind);
+                                                                    resdist = std::abs(top.atoms[i].resind_-top.atoms[j].resind_);
                                                                     if (resdist >= max_hx)
                                                                     {
                                                                         resdist = max_hx-1;
@@ -3198,7 +3199,7 @@ int gmx_hbond(int argc, char *argv[])
 
             if (opt2bSet("-hbn", NFILE, fnm))
             {
-                dump_hbmap(hb, NFILE, fnm, bTwo, bContact, isize, index, grpnames, &top.atoms);
+                dump_hbmap(hb, NFILE, fnm, bTwo, bContact, isize, index, grpnames, top.atoms, top.resinfo);
             }
 
             /* Moved the call to merge_hb() to a line BEFORE dump_hbmap

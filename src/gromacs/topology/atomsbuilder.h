@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,11 +45,13 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
-struct t_atoms;
-struct t_resinfo;
+struct AtomInfo;
+struct Residue;
+struct PdbEntry;
 struct t_symtab;
 
 namespace gmx
@@ -58,31 +60,41 @@ namespace gmx
 class AtomsBuilder
 {
     public:
-        AtomsBuilder(t_atoms *atoms, t_symtab *symtab);
+        AtomsBuilder(std::vector<AtomInfo> *atoms,
+                     std::vector<Residue>  *resinfo,
+                     std::vector<PdbEntry> *pdb,
+                     t_symtab              *symtab);
         ~AtomsBuilder();
 
-        void reserve(int atomCount, int residueCount);
         void clearAtoms();
 
         int currentAtomCount() const;
 
         void setNextResidueNumber(int number);
-        void addAtom(const t_atoms &atoms, int i);
-        void startResidue(const t_resinfo &resinfo);
-        void finishResidue(const t_resinfo &resinfo);
+        void addAtom(const AtomInfo &atom, const PdbEntry &pdb);
+        void startResidue(const Residue &resinfo);
+        void finishResidue(const Residue &resinfo);
         void discardCurrentResidue();
 
-        void mergeAtoms(const t_atoms &atoms);
+        void mergeAtoms(gmx::ArrayRef<const AtomInfo> atoms,
+                        gmx::ArrayRef<const Residue>  resinfo,
+                        gmx::ArrayRef<const PdbEntry> pdb);
+
+        gmx::ArrayRef<const AtomInfo> atoms() const { return atoms_; }
+        gmx::ArrayRef<const Residue> resinfo() const { return resinfo_; }
+        gmx::ArrayRef<const PdbEntry> pdb() const { return pdb_; }
 
     private:
         char **symtabString(char **source);
 
-        t_atoms  *atoms_;
-        t_symtab *symtab_;
-        int       nrAlloc_;
-        int       nresAlloc_;
-        int       currentResidueIndex_;
-        int       nextResidueNumber_;
+        std::vector<AtomInfo> atoms_;
+        std::vector<Residue>  resinfo_;
+        std::vector<PdbEntry> pdb_;
+        t_symtab             *symtab_;
+        int                   nrAlloc_;
+        int                   nresAlloc_;
+        int                   currentResidueIndex_;
+        int                   nextResidueNumber_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AtomsBuilder);
 };
@@ -90,18 +102,20 @@ class AtomsBuilder
 class AtomsRemover
 {
     public:
-        explicit AtomsRemover(const t_atoms &atoms);
+        explicit AtomsRemover(int size);
         ~AtomsRemover();
 
-        void refreshAtomCount(const t_atoms &atoms);
+        void refreshAtomCount(gmx::ArrayRef<const AtomInfo> atoms);
 
         void markAll();
-        void markResidue(const t_atoms &atoms, int atomIndex, bool bStatus);
+        void markResidue(gmx::ArrayRef<const AtomInfo> atoms, int atomIndex, bool bStatus);
         bool isMarked(int atomIndex) const { return removed_[atomIndex] != 0; }
 
         void removeMarkedElements(std::vector<RVec> *container) const;
         void removeMarkedElements(std::vector<real> *container) const;
-        void removeMarkedAtoms(t_atoms *atoms) const;
+        void removeMarkedAtoms(std::vector<AtomInfo> *atoms,
+                               std::vector<Residue>  *resinfo,
+                               std::vector<PdbEntry> *pdb) const;
 
     private:
         std::vector<char> removed_;

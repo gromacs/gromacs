@@ -58,7 +58,7 @@
 struct AtomTypeData
 {
     //! Explicit constructor.
-    explicit AtomTypeData(const t_atom      &a,
+    explicit AtomTypeData(const AtomInfo    &a,
                           char             **name,
                           const FFParameter &nb,
                           const int          bondAtomType,
@@ -69,7 +69,7 @@ struct AtomTypeData
     {
     }
     //! Actual atom data.
-    t_atom       atom_;
+    AtomInfo     atom_;
     //! Atom name.
     char       **name_;
     //! Nonbonded data.
@@ -122,27 +122,27 @@ const char *PreprocessingAtomTypes::atomNameFromType(int nt) const
 
 real PreprocessingAtomTypes::atomMassAFromType(int nt) const
 {
-    return isSet(nt) ? impl_->types[nt].atom_.m : NOTSET;
+    return isSet(nt) ? impl_->types[nt].atom_.m_ : NOTSET;
 }
 
 real PreprocessingAtomTypes::atomMassBFromType(int nt) const
 {
-    return isSet(nt) ? impl_->types[nt].atom_.mB : NOTSET;
+    return isSet(nt) ? impl_->types[nt].atom_.mB_ : NOTSET;
 }
 
 real PreprocessingAtomTypes::atomChargeAFromType(int nt) const
 {
-    return isSet(nt) ? impl_->types[nt].atom_.q : NOTSET;
+    return isSet(nt) ? impl_->types[nt].atom_.q_ : NOTSET;
 }
 
 real PreprocessingAtomTypes::atomChargeBFromType(int nt) const
 {
-    return isSet(nt) ? impl_->types[nt].atom_.qB : NOTSET;
+    return isSet(nt) ? impl_->types[nt].atom_.qB_ : NOTSET;
 }
 
 int PreprocessingAtomTypes::atomPTypeFromType(int nt) const
 {
-    return isSet(nt) ? impl_->types[nt].atom_.ptype : NOTSET;
+    return isSet(nt) ? impl_->types[nt].atom_.ptype_ : NOTSET;
 }
 
 int PreprocessingAtomTypes::bondAtomParameterFromType(int nt) const
@@ -187,7 +187,7 @@ PreprocessingAtomTypes::~PreprocessingAtomTypes()
 {}
 
 int PreprocessingAtomTypes::addType(t_symtab          *tab,
-                                    const t_atom      &a,
+                                    const AtomInfo    &a,
                                     const char        *name,
                                     const FFParameter &nb,
                                     int                bondAtomType,
@@ -214,7 +214,7 @@ int PreprocessingAtomTypes::addType(t_symtab          *tab,
 
 int PreprocessingAtomTypes::setType(int                nt,
                                     t_symtab          *tab,
-                                    const t_atom      &a,
+                                    const AtomInfo    &a,
                                     const char        *name,
                                     const FFParameter &nb,
                                     int                bondAtomType,
@@ -242,7 +242,7 @@ void PreprocessingAtomTypes::printTypes(FILE * out)
     for (auto &entry : impl_->types)
     {
         fprintf(out, "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n",
-                *(entry.name_), entry.atom_.m, entry.atom_.q, "A",
+                *(entry.name_), entry.atom_.m_, entry.atom_.q_, "A",
                 entry.nb_.c0(), entry.nb_.c1());
     }
 
@@ -347,15 +347,15 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionTypeParamete
     nat = 0;
     for (const gmx_moltype_t &moltype : mtop->moltype)
     {
-        const t_atoms *atoms = &moltype.atoms;
-        for (int i = 0; (i < atoms->nr); i++)
+        for (auto molAtom : moltype.atoms)
         {
-            atoms->atom[i].type =
-                search_atomtypes(this, &nat, typelist, atoms->atom[i].type,
+            molAtom.type_ =
+                search_atomtypes(this, &nat, typelist, molAtom.type_,
                                  plist[ftype].param, ftype);
-            atoms->atom[i].typeB =
-                search_atomtypes(this, &nat, typelist, atoms->atom[i].typeB,
+            molAtom.typeB_ =
+                search_atomtypes(this, &nat, typelist, molAtom.typeB_,
                                  plist[ftype].param, ftype);
+            molAtom.haveType_ = true;
         }
     }
 

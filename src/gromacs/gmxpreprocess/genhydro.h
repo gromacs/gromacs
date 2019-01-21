@@ -41,15 +41,16 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
-struct t_atoms;
+struct AtomInfo;
+struct Residue;
 struct t_symtab;
 struct MoleculePatchDatabase;
 
 /*! \brief
  * Generate hydrogen atoms and N and C terminal patches.
  *
- * \param[inout] initialAtoms The input atoms data structure to be modified.
- * \param[inout] localAtoms The extra atoms for reassigning the new entries.
+ * \param[inout] pdb The input atoms data structure to be modified.
+ * \param[inout] resinfo Residues of initial System.
  * \param[inout] xptr Coordinates to be updated with those for new atoms.
  * \param[inout] globalPatches The atom modifications to use.
  * \param[inout] symtab Global symbol table for atom names.
@@ -61,8 +62,8 @@ struct MoleculePatchDatabase;
  * \param[in] bMissing If routine should continue if atoms are not found.
  * \returns New total number of atoms.
  */
-int add_h(t_atoms                                   **initialAtoms,
-          t_atoms                                   **localAtoms,
+int add_h(std::vector<AtomInfo>                      *pdb,
+          gmx::ArrayRef<const Residue>                resinfo,
           std::vector<gmx::RVec>                     *xptr,
           gmx::ArrayRef<MoleculePatchDatabase>        globalPatches,
           t_symtab                                   *symtab,

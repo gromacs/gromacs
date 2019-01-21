@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,10 +166,10 @@ int gmx_dyecoupl(int argc, char *argv[])
     }
 
     printf("Select group with donor atom pairs defining the transition moment\n");
-    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
+    get_index(gmx::EmptyArrayRef(), gmx::EmptyArrayRef(), ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
 
     printf("Select group with acceptor atom pairs defining the transition moment\n");
-    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
+    get_index(gmx::EmptyArrayRef(), gmx::EmptyArrayRef(), ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
 
     /*check if groups are identical*/
     grident = TRUE;

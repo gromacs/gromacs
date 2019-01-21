@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,7 +89,6 @@ int gmx_nmens(int argc, char *argv[])
     t_trxstatus        *out;
     t_topology          top;
     int                 ePBC;
-    t_atoms            *atoms;
     rvec               *xtop, *xref, *xav, *xout1, *xout2;
     gmx_bool            bDMR, bDMA, bFit;
     int                 nvec, *eignr = nullptr;
@@ -131,10 +130,10 @@ int gmx_nmens(int argc, char *argv[])
                       &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, bDMA);
-    atoms = &top.atoms;
+    gmx::ArrayRef<const AtomInfo> atoms = top.atoms;
 
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n", natoms);
-    get_index(atoms, indexfile, 1, &i, &index, &grpname);
+    get_index(atoms, top.resinfo, indexfile, 1, &i, &index, &grpname);
     if (i != natoms)
     {
         gmx_fatal(FARGS, "you selected a group with %d elements instead of %d",
@@ -147,7 +146,7 @@ int gmx_nmens(int argc, char *argv[])
     {
         for (i = 0; (i < natoms); i++)
         {
-            invsqrtm[i] = gmx::invsqrt(atoms->atom[index[i]].m);
+            invsqrtm[i] = gmx::invsqrt(atoms[index[i]].m_);
         }
     }
     else
@@ -226,7 +225,7 @@ int gmx_nmens(int argc, char *argv[])
     jran = dist(rng);
 
     snew(xout1, natoms);
-    snew(xout2, atoms->nr);
+    snew(xout2, atoms.size());
     out  = open_trx(ftp2fn(efTRO, NFILE, fnm), "w");
 
     for (s = 0; s < nstruct; s++)
@@ -268,7 +267,7 @@ int gmx_nmens(int argc, char *argv[])
             copy_rvec(xout1[i], xout2[index[i]]);
         }
         t = s+1;
-        write_trx(out, natoms, index, atoms, 0, t, box, xout2, nullptr, nullptr);
+        write_trx(out, gmx::arrayRefFromArray(index, natoms), atoms, top.resinfo, top.pdb, 0, t, box, xout2, nullptr, nullptr);
         fprintf(stderr, "\rGenerated %d structures", s+1);
         fflush(stderr);
     }

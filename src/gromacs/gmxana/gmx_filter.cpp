@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,8 +143,8 @@ int gmx_filter(int argc, char *argv[])
                              &xtop, nullptr, topbox, TRUE);
         if (bTop)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
-            gmx_rmpbc(gpbc, top.atoms.nr, topbox, xtop);
+            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.size());
+            gmx_rmpbc(gpbc, top.atoms.size(), topbox, xtop);
         }
     }
 
@@ -152,15 +152,15 @@ int gmx_filter(int argc, char *argv[])
     if (bFit)
     {
         fprintf(stderr, "Select group for least squares fit\n");
-        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+        get_index(top.atoms, top.resinfo, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
         /* Set the weight */
-        snew(w_rls, top.atoms.nr);
+        snew(w_rls, top.atoms.size());
         for (i = 0; i < isize; i++)
         {
-            w_rls[index[i]] = top.atoms.atom[index[i]].m;
+            w_rls[index[i]] = top.atoms[index[i]].m_;
         }
-        calc_xcm(xtop, isize, index, top.atoms.atom, xcmtop, FALSE);
-        for (j = 0; j < top.atoms.nr; j++)
+        calc_xcm(xtop, isize, index, top.atoms, xcmtop, FALSE);
+        for (j = 0; j < gmx::index(top.atoms.size()); j++)
         {
             rvec_dec(xtop[j], xcmtop);
         }
@@ -263,7 +263,7 @@ int gmx_filter(int argc, char *argv[])
         }
         if (bFit)
         {
-            calc_xcm(xn, isize, index, top.atoms.atom, xcm, FALSE);
+            calc_xcm(xn, isize, index, top.atoms, xcm, FALSE);
             for (j = 0; j < nat; j++)
             {
                 rvec_dec(xn[j], xcm);
@@ -301,7 +301,13 @@ int gmx_filter(int argc, char *argv[])
             }
             if (outl && (bLowAll || fr % nf == nf - 1))
             {
-                write_trx(outl, nat, ind, topfile ? &(top.atoms) : nullptr,
+                gmx::ArrayRef<const AtomInfo> newAtom    = top.atoms;
+                gmx::ArrayRef<const Residue>  newResInfo = top.resinfo;
+                gmx::ArrayRef<const PdbEntry> newPdb     = top.pdb;
+                write_trx(outl, gmx::arrayRefFromArray(ind, nat),
+                          topfile ? newAtom : gmx::EmptyArrayRef(),
+                          topfile ? newResInfo : gmx::EmptyArrayRef(), topfile ? newPdb :
+                          gmx::EmptyArrayRef(),
                           0, t[nf - 1], bFit ? topbox : boxf, xf, nullptr, nullptr);
             }
             if (outh)
@@ -328,7 +334,13 @@ int gmx_filter(int argc, char *argv[])
                         boxf[j][d] = topbox[j][d] + box[nf - 1][j][d] - boxf[j][d];
                     }
                 }
-                write_trx(outh, nat, ind, topfile ? &(top.atoms) : nullptr,
+                gmx::ArrayRef<const AtomInfo> newAtom    = top.atoms;
+                gmx::ArrayRef<const Residue>  newResInfo = top.resinfo;
+                gmx::ArrayRef<const PdbEntry> newPdb     = top.pdb;
+                write_trx(outh, gmx::arrayRefFromArray(ind, nat),
+                          topfile ? newAtom : gmx::EmptyArrayRef(),
+                          topfile ? newResInfo : gmx::EmptyArrayRef(),
+                          topfile ? newPdb : gmx::EmptyArrayRef(),
                           0, t[nf - 1], bFit ? topbox : boxf, xf, nullptr, nullptr);
             }
         }

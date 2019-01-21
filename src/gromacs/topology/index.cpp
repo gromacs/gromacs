@@ -44,6 +44,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <numeric>
 
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
@@ -197,22 +198,23 @@ static void p_status(gmx::ArrayRef<const std::string> restype,
  * \param[in] bMatch whether to return matching atoms or those that don't.
  * \returns Vector of atoms that match.
  */
-static std::vector<int> mk_aid(const t_atoms                   *atoms,
+static std::vector<int> mk_aid(gmx::ArrayRef<const AtomInfo>    atoms,
                                gmx::ArrayRef<const std::string> restype,
                                const std::string               &typestring,
                                bool                             bMatch)
 {
     std::vector<int> a;
-    for (int i = 0; (i < atoms->nr); i++)
+    int              i = 0;
+    for (auto it = atoms.begin(); it != atoms.end(); it++)
     {
-        bool res = gmx_strcasecmp(restype[atoms->atom[i].resind].c_str(), typestring.c_str()) == 0;
+        bool res = gmx_strcasecmp(restype[it->resind_].c_str(), typestring.c_str()) == 0;
         if (!bMatch)
         {
             res = !res;
         }
         if (res)
         {
-            a.push_back(i);
+            a.push_back(i++);
         }
     }
 
@@ -225,32 +227,34 @@ typedef struct {
     char    *gname;
 } restp_t;
 
-static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *atoms,
+static void analyse_other(gmx::ArrayRef<const std::string> restype,
+                          gmx::ArrayRef<const AtomInfo> atoms,
+                          gmx::ArrayRef<const Residue> resinfo,
                           t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
-    restp_t *restp = nullptr;
-    char   **attp  = nullptr;
-    char    *rname, *aname;
-    int      i, resind, natp, nrestp = 0;
+    restp_t                 *restp = nullptr;
+    char                   **attp  = nullptr;
+    char                    *rname, *aname;
+    int                      resind, natp, nrestp = 0;
 
-    for (i = 0; (i < atoms->nres); i++)
-    {
-        if (gmx_strcasecmp(restype[i].c_str(), "Protein") && gmx_strcasecmp(restype[i].c_str(), "DNA") && gmx_strcasecmp(restype[i].c_str(), "RNA") && gmx_strcasecmp(restype[i].c_str(), "Water"))
-        {
-            break;
-        }
-    }
-    if (i < atoms->nres)
+    std::vector<std::string> compare;
+    compare = {"Protein", "DNA", "RNA", "Water"};
+
+    auto found = std::find_first_of(restype.begin(), restype.end(),
+                                    compare.begin(), compare.end(),
+                                    [](const std::string &type, const std::string &comp)
+                                    { return (gmx_strcasecmp(type.c_str(), comp.c_str()) != 0); });
+    if (found != restype.end())
     {
         /* we have others */
         if (bVerb)
         {
             printf("Analysing residues not classified as Protein/DNA/RNA/Water and splitting into groups...\n");
         }
-        for (int k = 0; (k < atoms->nr); k++)
+        for (const auto &atom : atoms)
         {
-            resind = atoms->atom[k].resind;
-            rname  = *atoms->resinfo[resind].name;
+            resind = atom.resind_;
+            rname  = *resinfo[resind].name_;
             if (gmx_strcasecmp(restype[resind].c_str(), "Protein") && gmx_strcasecmp(restype[resind].c_str(), "DNA") &&
                 gmx_strcasecmp(restype[resind].c_str(), "RNA") && gmx_strcasecmp(restype[resind].c_str(), "Water"))
             {
@@ -276,14 +280,16 @@ static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *ato
         for (int i = 0; (i < nrestp); i++)
         {
             std::vector<int> aid;
-            for (int j = 0; (j < atoms->nr); j++)
+            int              j = 0;
+            for (const auto &atom : atoms)
             {
-                rname = *atoms->resinfo[atoms->atom[j].resind].name;
+                rname = *resinfo[atom.resind_].name_;
                 if ((strcmp(restp[i].rname, rname) == 0 && !restp[i].bNeg) ||
                     (strcmp(restp[i].rname, rname) != 0 &&  restp[i].bNeg))
                 {
                     aid.push_back(j);
                 }
+                j++;
             }
             add_grp(gb, gn, aid, restp[i].gname);
             if (bASK)
@@ -295,7 +301,7 @@ static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *ato
                     natp = 0;
                     for (size_t k = 0; (k < aid.size()); k++)
                     {
-                        aname = *atoms->atomname[aid[k]];
+                        aname = *atoms[aid[k]].atomname;
                         int l;
                         for (l = 0; (l < natp); l++)
                         {
@@ -317,7 +323,7 @@ static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *ato
                             std::vector<int> aaid;
                             for (size_t k = 0; (k < aid.size()); k++)
                             {
-                                aname = *atoms->atomname[aid[k]];
+                                aname = *atoms[aid[k]].atomname;
                                 if (strcmp(aname, attp[l]) == 0)
                                 {
                                     aaid.push_back(aid[k]);
@@ -364,7 +370,9 @@ typedef struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performa
     int compareto;
 } t_gmx_help_make_index_group;
 
-static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms *atoms,
+static void analyse_prot(gmx::ArrayRef<const std::string> restype,
+                         gmx::ArrayRef<const AtomInfo> atoms,
+                         gmx::ArrayRef<const Residue> resinfo,
                          t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     /* lists of atomnames to be used in constructing index groups: */
@@ -409,9 +417,9 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
 
     /* calculate the number of protein residues */
     npres = 0;
-    for (i = 0; (i < atoms->nres); i++)
+    for (const auto &type : restype)
     {
-        if (0 == gmx_strcasecmp(restype[i].c_str(), "Protein"))
+        if (0 == gmx_strcasecmp(type.c_str(), "Protein"))
         {
             npres++;
         }
@@ -419,15 +427,15 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
     /* find matching or complement atoms */
     for (i = 0; (i < num_index_groups); i++)
     {
-        for (n = 0; (n < atoms->nr); n++)
+        for (const auto &atom : atoms)
         {
-            if (0 == gmx_strcasecmp(restype[atoms->atom[n].resind].c_str(), "Protein"))
+            if (0 == gmx_strcasecmp(restype[atom.resind_].c_str(), "Protein"))
             {
                 match = FALSE;
                 for (j = 0; (j < constructing_data[i].num_defining_atomnames); j++)
                 {
                     /* skip digits at beginning of atomname, e.g. 1H */
-                    atnm = *atoms->atomname[n];
+                    atnm = *atom.atomname;
                     while (isdigit(atnm[0]))
                     {
                         atnm++;
@@ -471,15 +479,16 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
             {
                 int resind;
                 aid.clear();
-                for (n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr)); )
+                for (int n = 0; ((atoms[n].resind_ < npres) && (n < atoms.ssize())); )
                 {
-                    resind = atoms->atom[n].resind;
-                    for (; ((atoms->atom[n].resind == resind) && (n < atoms->nr)); n++)
+                    resind = atoms[n].resind_;
+                    for (; ((atoms[n].resind_ == resind) && (n < atoms.ssize())); n++)
                     {
                         match = FALSE;
-                        for (j = 0; (j < constructing_data[i].num_defining_atomnames); j++)
+                        for (int j = 0; (j < constructing_data[i].num_defining_atomnames); j++)
                         {
-                            if (0 == gmx_strcasecmp(constructing_data[i].defining_atomnames[j], *atoms->atomname[n]))
+                            if (0 == gmx_strcasecmp(constructing_data[i].defining_atomnames[j],
+                                                    *atoms[n].atomname))
                             {
                                 match = TRUE;
                             }
@@ -492,10 +501,9 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
                     /* copy the residuename to the tail of the groupname */
                     if (!aid.empty())
                     {
-                        t_resinfo *ri;
-                        ri = &atoms->resinfo[resind];
+                        const Residue &ri = resinfo[resind];
                         sprintf(ndx_name, "%s_%s%d%c",
-                                constructing_data[i].group_name, *ri->name, ri->nr, ri->ic == ' ' ? '\0' : ri->ic);
+                                constructing_data[i].group_name, *ri.name_, ri.nr_, ri.ic_ == ' ' ? '\0' : ri.ic_);
                         add_grp(gb, gn, aid, ndx_name);
                         aid.clear();
                     }
@@ -507,19 +515,19 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
         {
             /* Make swap sidechain C=O index */
             aid.clear();
-            for (int n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr)); )
+            for (int n = 0; ((atoms[n].resind_ < npres) && (n < atoms.ssize())); )
             {
-                int resind = atoms->atom[n].resind;
+                int resind = atoms[n].resind_;
                 int hold   = -1;
-                for (; ((atoms->atom[n].resind == resind) && (n < atoms->nr)); n++)
+                for (; ((atoms[n].resind_ == resind) && (n < atoms.ssize())); n++)
                 {
-                    if (strcmp("CA", *atoms->atomname[n]) == 0)
+                    if (strcmp("CA", *atoms[n].atomname) == 0)
                     {
                         aid.push_back(n);
                         hold = aid.size();
                         aid.resize(aid.size() + 3);
                     }
-                    else if (strcmp("C", *atoms->atomname[n]) == 0)
+                    else if (strcmp("C", *atoms[n].atomname) == 0)
                     {
                         if (hold == -1)
                         {
@@ -527,7 +535,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
                         }
                         aid[hold] = n;
                     }
-                    else if (strcmp("O", *atoms->atomname[n]) == 0)
+                    else if (strcmp("O", *atoms[n].atomname) == 0)
                     {
                         if (hold == -1)
                         {
@@ -535,7 +543,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
                         }
                         aid[hold+1] = n;
                     }
-                    else if (strcmp("O1", *atoms->atomname[n]) == 0)
+                    else if (strcmp("O1", *atoms[n].atomname) == 0)
                     {
                         if (hold == -1)
                         {
@@ -559,7 +567,9 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
 }
 
 
-void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
+void analyse(gmx::ArrayRef<const AtomInfo> atoms,
+             gmx::ArrayRef<const Residue> resinfo,
+             t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     char             *resnm;
     int               i;
@@ -571,11 +581,8 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
         printf("Analysing residue names:\n");
     }
     /* Create system group, every single atom */
-    std::vector<int> aid(atoms->nr);
-    for (i = 0; i < atoms->nr; i++)
-    {
-        aid[i] = i;
-    }
+    std::vector<int> aid(atoms.size());
+    std::iota(aid.begin(), aid.end(), 0);
     add_grp(gb, gn, aid, "System");
 
     /* For every residue, get a pointer to the residue type name */
@@ -583,30 +590,28 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 
     std::vector<std::string> restype;
     std::vector<std::string> previousTypename;
-    if (atoms->nres > 0)
+    if (!resinfo.empty())
     {
         int i = 0;
 
-        resnm = *atoms->resinfo[i].name;
+        resnm = *resinfo[i].name_;
         restype.emplace_back(rt.typeNameForIndexedResidue(resnm));
         previousTypename.push_back(restype[i]);
 
-        for (i = 1; i < atoms->nres; i++)
+        for (auto it = resinfo.begin() + 1; it != resinfo.end(); it++)
         {
-            resnm = *atoms->resinfo[i].name;
+            resnm = *resinfo[i].name_;
             restype.emplace_back(rt.typeNameForIndexedResidue(resnm));
 
             /* Note that this does not lead to a N*N loop, but N*K, where
              * K is the number of residue _types_, which is small and independent of N.
              */
-            bool found = false;
-            for (size_t k = 0; k < previousTypename.size() && !found; k++)
+            auto found = std::find_if(previousTypename.begin(), previousTypename.end(),
+                                      [&restype](const std::string &name)
+                                      { return strcmp(restype.back().c_str(), name.c_str()) == 0; });
+            if (found != previousTypename.end())
             {
-                found = strcmp(restype[i].c_str(), previousTypename[k].c_str()) == 0;
-            }
-            if (!found)
-            {
-                previousTypename.push_back(restype[i]);
+                previousTypename.push_back(restype.back());
             }
         }
     }
@@ -625,11 +630,11 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
         if (!gmx_strcasecmp(previousTypename[k].c_str(), "Protein") && !aid.empty())
         {
             /* PROTEIN */
-            analyse_prot(restype, atoms, gb, gn, bASK, bVerb);
+            analyse_prot(restype, atoms, resinfo, gb, gn, bASK, bVerb);
 
             /* Create a Non-Protein group */
             aid = mk_aid(atoms, restype, "Protein", FALSE);
-            if ((!aid.empty()) && (gmx::ssize(aid) < atoms->nr))
+            if ((!aid.empty()) && ((aid.size()) < atoms.size()))
             {
                 add_grp(gb, gn, aid, "non-Protein");
             }
@@ -643,7 +648,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 
             /* Solvent, create a negated group too */
             aid = mk_aid(atoms, restype, "Water", FALSE);
-            if ((!aid.empty()) && (gmx::ssize(aid) < atoms->nr))
+            if ((!aid.empty()) && ((aid.size()) < atoms.size()))
             {
                 add_grp(gb, gn, aid, "non-Water");
             }
@@ -652,7 +657,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
         {
             /* Other groups */
             add_grp(gb, gn, aid, previousTypename[k]);
-            analyse_other(restype, atoms, gb, gn, bASK, bVerb);
+            analyse_other(restype, atoms, resinfo, gb, gn, bASK, bVerb);
         }
     }
 
@@ -978,7 +983,9 @@ void rd_index(const char *statfile, int ngrps, int isize[],
     sfree(grps);
 }
 
-void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
+void get_index(gmx::ArrayRef<const AtomInfo> atoms,
+               gmx::ArrayRef<const Residue> resinfo,
+               const char *fnm, int ngrps,
                int isize[], int *index[], char *grpnames[])
 {
     char    ***gnames;
@@ -991,11 +998,11 @@ void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
     {
         grps = init_index(fnm, gnames);
     }
-    else if (atoms)
+    else if (!atoms.empty())
     {
         snew(grps, 1);
         snew(grps->index, 1);
-        analyse(atoms, grps, gnames, FALSE, FALSE);
+        analyse(atoms, resinfo, grps, gnames, FALSE, FALSE);
     }
     else
     {

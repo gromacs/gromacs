@@ -326,7 +326,8 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
 
 static void dist_plot(const char *fn, const char *afile, const char *dfile,
                       const char *nfile, const char *rfile, const char *xfile,
-                      real rcut, gmx_bool bMat, const t_atoms *atoms,
+                      real rcut, gmx_bool bMat, gmx::ArrayRef<const AtomInfo> atoms,
+                      gmx::ArrayRef<const Residue> resinfo,
                       int ng, int *index[], int gnx[], char *grpn[], gmx_bool bSplit,
                       gmx_bool bMin, int nres, int *residue, gmx_bool bPBC, int ePBC,
                       gmx_bool bGroup, gmx_bool bEachResEachTime, gmx_bool bPrintResName,
@@ -418,7 +419,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
 
             for (j = 0; j < nres; j++)
             {
-                fprintf(respertime, "%s%d ", *(atoms->resinfo[atoms->atom[index[0][residue[j]]].resind].name), atoms->atom[index[0][residue[j]]].resind);
+                fprintf(respertime, "%s%d ", *(resinfo[atoms[index[0][residue[j]]].resind_].name_), atoms[index[0][residue[j]]].resind_);
             }
             fprintf(respertime, "\n");
         }
@@ -533,7 +534,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
         {
             oindex[0] = bMin ? min1 : max1;
             oindex[1] = bMin ? min2 : max2;
-            write_trx(trxout, 2, oindex, atoms, i, t, box, x0, nullptr, nullptr);
+            write_trx(trxout, gmx::arrayRefFromArray(oindex, 2), atoms, resinfo, gmx::EmptyArrayRef(), i, t, box, x0, nullptr, nullptr);
         }
         bFirst = FALSE;
         /*dmin should be minimum distance for residue and group*/
@@ -606,36 +607,37 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
     sfree(leg);
 }
 
-static int find_residues(const t_atoms *atoms, int n, const int index[], int **resindex)
+static int find_residues(gmx::ArrayRef<const AtomInfo> atoms, int nres, int n, const int index[], int **resindex)
 {
     int  i;
-    int  nres      = 0, resnr, presnr = 0;
+    int  resnr, presnr = 0;
     bool presFound = false;
     int *residx;
+    int  foundres = 0;
 
     /* build index of first atom numbers for each residue */
-    snew(residx, atoms->nres+1);
+    snew(residx, nres+1);
     for (i = 0; i < n; i++)
     {
-        resnr = atoms->atom[index[i]].resind;
+        resnr = atoms[index[i]].resind_;
         if (!presFound || resnr != presnr)
         {
             residx[nres] = i;
-            nres++;
+            foundres++;
             presnr    = resnr;
             presFound = true;
         }
     }
     if (debug)
     {
-        printf("Found %d residues out of %d (%d/%d atoms)\n",
-               nres, atoms->nres, atoms->nr, n);
+        printf("Found %d residues out of %d (%zu/%d atoms)\n",
+               foundres, nres, atoms.size(), n);
     }
     srenew(residx, nres+1);
     /* mark end of last residue */
     residx[nres] = n;
     *resindex    = residx;
-    return nres;
+    return foundres;
 }
 
 static void dump_res(FILE *out, int nres, int *resindex, int index[])
@@ -770,17 +772,21 @@ int gmx_mindist(int argc, char *argv[])
     snew(gnx, ng);
     snew(index, ng);
     snew(grpname, ng);
+    gmx::ArrayRef<const AtomInfo> atoms;
+    gmx::ArrayRef<const Residue>  resinfo;
 
     if (tpsfnm || resfnm || !ndxfnm)
     {
-        snew(top, 1);
+        top  = new t_topology;
         bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
         if (bPI && !bTop)
         {
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");
         }
+        atoms   = top->atoms;
+        resinfo = top->resinfo;
     }
-    get_index(top ? &(top->atoms) : nullptr, ndxfnm, ng, gnx, index, grpname);
+    get_index(atoms, resinfo, ndxfnm, ng, gnx, index, grpname);
 
     if (bMat && (ng == 1))
     {
@@ -803,7 +809,7 @@ int gmx_mindist(int argc, char *argv[])
     if (resfnm)
     {
         GMX_RELEASE_ASSERT(top != nullptr, "top pointer cannot be NULL when finding residues");
-        nres = find_residues(&(top->atoms), gnx[0], index[0], &residues);
+        nres = find_residues(atoms, resinfo.size(), gnx[0], index[0], &residues);
 
         if (debug)
         {
@@ -822,7 +828,7 @@ int gmx_mindist(int argc, char *argv[])
     else
     {
         dist_plot(trxfnm, atmfnm, distfnm, numfnm, resfnm, oxfnm,
-                  rcutoff, bMat, top ? &(top->atoms) : nullptr,
+                  rcutoff, bMat, atoms, resinfo,
                   ng, index, gnx, grpname, bSplit, !bMax, nres, residues, bPBC, ePBC,
                   bGroup, bEachResEachTime, bPrintResName, oenv);
     }

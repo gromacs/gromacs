@@ -286,14 +286,14 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     snew(grpname, ng);
     snew(index, ng);
     snew(isize, ng);
-    get_index(&top.atoms, fnNDX, ng, isize, index, grpname);
+    get_index(top.atoms, top.resinfo, fnNDX, ng, isize, index, grpname);
 
     /* Analyze trajectory */
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > gmx::index(top.atoms.size()))
     {
-        gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
-                  top.atoms.nr, natoms);
+        gmx_fatal(FARGS, "Topology (%lu atoms) does not match trajectory (%d atoms)",
+                  top.atoms.size(), natoms);
     }
     check_index(nullptr, ng, index[0], nullptr, natoms);
 

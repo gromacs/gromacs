@@ -177,7 +177,7 @@ static void rvec2sprvec(rvec dipcart, rvec dipsp)
 
 static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                    const int mindex[], rvec x[], rvec mu[],
-                   int ePBC, const matrix box, const t_atom *atom, const int *nAtom)
+                   int ePBC, const matrix box, gmx::ArrayRef<const AtomInfo> atom, const int *nAtom)
 {
     static rvec *xcm[2] = { nullptr, nullptr};
     int          gi, gj, j0, j1, i, j, k, n, grp0, grp1;
@@ -208,7 +208,7 @@ static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                 qtot = 0;
                 for (j = j0; j < j1; j++)
                 {
-                    q     = std::abs(atom[j].q);
+                    q     = std::abs(atom[j].q_);
                     qtot += q;
                     for (k = 0; k < DIM; k++)
                     {
@@ -440,7 +440,7 @@ static gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, const ivec iMu, rvec 
     return bCont;
 }
 
-static void neutralize_mols(int n, const int *index, const t_block *mols, t_atom *atom)
+static void neutralize_mols(int n, const int *index, const t_block *mols, gmx::ArrayRef<AtomInfo> atom)
 {
     double mtot, qtot;
     int    ncharged, m, a0, a1, a;
@@ -454,8 +454,8 @@ static void neutralize_mols(int n, const int *index, const t_block *mols, t_atom
         qtot = 0;
         for (a = a0; a < a1; a++)
         {
-            mtot += atom[a].m;
-            qtot += atom[a].q;
+            mtot += atom[a].m_;
+            qtot += atom[a].q_;
         }
         /* This check is only for the count print */
         if (std::abs(qtot) > 0.01)
@@ -467,7 +467,7 @@ static void neutralize_mols(int n, const int *index, const t_block *mols, t_atom
             /* Remove the net charge at the center of mass */
             for (a = a0; a < a1; a++)
             {
-                atom[a].q -= qtot*atom[a].m/mtot;
+                atom[a].q_ -= qtot*atom[a].m_/mtot;
             }
         }
     }
@@ -479,7 +479,7 @@ static void neutralize_mols(int n, const int *index, const t_block *mols, t_atom
     }
 }
 
-static void mol_dip(int k0, int k1, rvec x[], const t_atom atom[], rvec mu)
+static void mol_dip(int k0, int k1, rvec x[], gmx::ArrayRef<const AtomInfo> atom, rvec mu)
 {
     int  k, m;
     real q;
@@ -487,7 +487,7 @@ static void mol_dip(int k0, int k1, rvec x[], const t_atom atom[], rvec mu)
     clear_rvec(mu);
     for (k = k0; (k < k1); k++)
     {
-        q  = e2d(atom[k].q);
+        q  = e2d(atom[k].q_);
         for (m = 0; (m < DIM); m++)
         {
             mu[m] += q*x[k][m];
@@ -495,7 +495,7 @@ static void mol_dip(int k0, int k1, rvec x[], const t_atom atom[], rvec mu)
     }
 }
 
-static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
+static void mol_quad(int k0, int k1, rvec x[], gmx::ArrayRef<const AtomInfo> atom, rvec quad)
 {
     int      i, k, m, n, niter;
     real     q, r2, mass, masstot;
@@ -518,7 +518,7 @@ static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
     masstot = 0.0;
     for (k = k0; (k < k1); k++)
     {
-        mass     = atom[k].m;
+        mass     = atom[k].m_;
         masstot += mass;
         for (i = 0; (i < DIM); i++)
         {
@@ -543,7 +543,7 @@ static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
     }
     for (k = k0; (k < k1); k++)         /* loop over atoms in a molecule */
     {
-        q  = (atom[k].q)*100.0;
+        q  = (atom[k].q_)*100.0;
         rvec_sub(x[k], com, r);
         r2 = iprod(r, r);
         for (m = 0; (m < DIM); m++)
@@ -779,32 +779,32 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
     };
 #define NLEGADIP asize(leg_adip)
 
-    FILE          *outdd, *outmtot, *outaver, *outeps, *caver = nullptr;
-    FILE          *dip3d = nullptr, *adip = nullptr;
-    rvec          *x, *dipole = nullptr, mu_t, quad, *dipsp = nullptr;
-    t_gkrbin      *gkrbin = nullptr;
-    gmx_enxnm_t   *enm    = nullptr;
-    t_enxframe    *fr;
-    int            nframes = 1000, nre, timecheck = 0, ncolour = 0;
-    ener_file_t    fmu     = nullptr;
-    int            i, n, m, natom = 0, gnx_tot, teller, tel3;
-    t_trxstatus   *status;
-    int           *dipole_bin, ndipbin, ibin, iVol, idim = -1;
-    unsigned long  mode;
-    real           rcut = 0, t, t0, t1, dt, dd, rms_cos;
-    rvec           dipaxis;
-    matrix         box;
-    gmx_bool       bCorr, bTotal, bCont;
-    double         M_diff = 0, epsilon, invtel, vol_aver;
-    double         mu_ave, mu_mol, M2_ave = 0, M_ave2 = 0, M_av[DIM], M_av2[DIM];
-    double         M[3], M2[3], M4[3], Gk = 0, g_k = 0;
-    gmx_stats_t   *Qlsq, mulsq, muframelsq = nullptr;
-    ivec           iMu;
-    real         **muall        = nullptr;
-    rvec          *slab_dipoles = nullptr;
-    const t_atom  *atom         = nullptr;
-    const t_block *mols         = nullptr;
-    gmx_rmpbc_t    gpbc         = nullptr;
+    FILE                 *outdd, *outmtot, *outaver, *outeps, *caver = nullptr;
+    FILE                 *dip3d = nullptr, *adip = nullptr;
+    rvec                 *x, *dipole = nullptr, mu_t, quad, *dipsp = nullptr;
+    t_gkrbin             *gkrbin = nullptr;
+    gmx_enxnm_t          *enm    = nullptr;
+    t_enxframe           *fr;
+    int                   nframes = 1000, nre, timecheck = 0, ncolour = 0;
+    ener_file_t           fmu     = nullptr;
+    int                   i, n, m, natom = 0, gnx_tot, teller, tel3;
+    t_trxstatus          *status;
+    int                  *dipole_bin, ndipbin, ibin, iVol, idim = -1;
+    unsigned long         mode;
+    real                  rcut = 0, t, t0, t1, dt, dd, rms_cos;
+    rvec                  dipaxis;
+    matrix                box;
+    gmx_bool              bCorr, bTotal, bCont;
+    double                M_diff = 0, epsilon, invtel, vol_aver;
+    double                mu_ave, mu_mol, M2_ave = 0, M_ave2 = 0, M_av[DIM], M_av2[DIM];
+    double                M[3], M2[3], M4[3], Gk = 0, g_k = 0;
+    gmx_stats_t          *Qlsq, mulsq, muframelsq = nullptr;
+    ivec                  iMu;
+    real                **muall        = nullptr;
+    rvec                 *slab_dipoles = nullptr;
+    std::vector<AtomInfo> atom;
+    const t_block        *mols         = nullptr;
+    gmx_rmpbc_t           gpbc         = nullptr;
 
     gnx_tot = gnx[0];
     if (ncos > 1)
@@ -850,7 +850,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
     }
     else
     {
-        atom = top->atoms.atom;
+        atom = std::vector<AtomInfo>(top->atoms.begin(), top->atoms.end());
         mols = &(top->mols);
     }
     if ((iVol == -1) && bMU)
@@ -1610,7 +1610,6 @@ int gmx_dipoles(int argc, char *argv[])
 #define NFILE asize(fnm)
     int               npargs;
     t_pargs          *ppa;
-    t_topology       *top;
     int               ePBC;
     int               k, natoms;
     matrix            box;
@@ -1667,19 +1666,19 @@ int gmx_dipoles(int argc, char *argv[])
         }
     }
 
-    snew(top, 1);
+    t_topology *top = new t_topology;
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box,
                         &natoms, nullptr, nullptr, top);
 
     snew(gnx, ncos);
     snew(grpname, ncos);
     snew(grpindex, ncos);
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm),
+    get_index(top->atoms, top->resinfo, ftp2fn_null(efNDX, NFILE, fnm),
               ncos, gnx, grpindex, grpname);
     for (k = 0; (k < ncos); k++)
     {
         dipole_atom2molindex(&gnx[k], grpindex[k], &(top->mols));
-        neutralize_mols(gnx[k], grpindex[k], &(top->mols), top->atoms.atom);
+        neutralize_mols(gnx[k], grpindex[k], &(top->mols), top->atoms);
     }
     nFF[0] = nFA;
     nFF[1] = nFB;

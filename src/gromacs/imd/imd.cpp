@@ -405,14 +405,16 @@ static int imd_recv_mdcomm(IMDSocket *socket, int32_t nforces, int32_t *forcendx
 void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, const t_state *state,
                             const gmx_mtop_t *sys, int nfile, const t_filenm fnm[])
 {
-    t_atoms IMDatoms;
+    AtomResiduePdb IMDatoms;
 
 
     if (bIMD)
     {
-        IMDatoms = gmx_mtop_global_atoms(sys);
-        write_sto_conf_indexed(opt2fn("-imd", nfile, fnm), "IMDgroup", &IMDatoms,
-                               state->x.rvec_array(), state->v.rvec_array(), ir->ePBC, state->box, ir->imd->nat, ir->imd->ind);
+        gmx::ArrayRef<int> ind = gmx::arrayRefFromArray(ir->imd->ind, ir->imd->nat);
+        IMDatoms = gmx_mtop_global_atoms(*sys);
+        write_sto_conf_indexed(opt2fn("-imd", nfile, fnm), "IMDgroup", IMDatoms.atoms,
+                               IMDatoms.resinfo, IMDatoms.pdb,
+                               state->x.rvec_array(), state->v.rvec_array(), ir->ePBC, state->box, ind);
     }
 }
 

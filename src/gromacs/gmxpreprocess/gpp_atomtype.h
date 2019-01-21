@@ -45,7 +45,7 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
-struct t_atom;
+struct AtomInfo;
 struct t_atomtypes;
 class FFParameter;
 struct InteractionTypeParameters;
@@ -179,7 +179,7 @@ class PreprocessingAtomTypes
          */
         int setType(int                nt,
                     t_symtab          *tab,
-                    const t_atom      &a,
+                    const AtomInfo    &a,
                     const char        *name,
                     const FFParameter &nb,
                     int                bondAtomType,
@@ -196,12 +196,12 @@ class PreprocessingAtomTypes
          * \param[in] atomNumber Atomic number of the entry.
          * \returns Number of entries in database.
          */
-        int addType(t_symtab          *tab,
-                    const t_atom      &a,
-                    const char        *name,
-                    const FFParameter &nb,
-                    int                bondAtomType,
-                    int                atomNumber);
+        int addType(t_symtab           *tab,
+                    const AtomInfo     &a,
+                    const char         *name,
+                    const FFParameter  &nb,
+                    int                 bondAtomType,
+                    int                 atomNumber);
 
         /*! \brief
          * Renumber existing atom type entries.

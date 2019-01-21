@@ -294,7 +294,8 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
         fr->time      = 0;
         fr->lambda    = 0;
         fr->fep_state = 0;
-        fr->atoms     = nullptr;
+        fr->atoms.clear();
+        fr->resinfo.clear();
         fr->prec      = 0;
         fr->x         = nullptr;
         fr->v         = nullptr;
@@ -311,12 +312,12 @@ void set_trxframe_ePBC(t_trxframe *fr, int ePBC)
     fr->ePBC = ePBC;
 }
 
-int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
-                           const int *ind, gmx_conect gc)
+int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr,
+                           gmx::ArrayRef<const int> ind, gmx_conect gc)
 {
     char  title[STRLEN];
     rvec *xout = nullptr, *vout = nullptr, *fout = nullptr;
-    int   i, ftp = -1;
+    int   ftp  = -1;
     real  prec;
 
     if (fr->bPrec)
@@ -361,24 +362,24 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
         case efTNG:
             if (fr->bV)
             {
-                snew(vout, nind);
-                for (i = 0; i < nind; i++)
+                snew(vout, ind.size());
+                for (int i = 0; i < ind.size(); i++)
                 {
                     copy_rvec(fr->v[ind[i]], vout[i]);
                 }
             }
             if (fr->bF)
             {
-                snew(fout, nind);
-                for (i = 0; i < nind; i++)
+                snew(fout, ind.size());
+                for (int i = 0; i < ind.size(); i++)
                 {
                     copy_rvec(fr->f[ind[i]], fout[i]);
                 }
             }
             if (fr->bX)
             {
-                snew(xout, nind);
-                for (i = 0; i < nind; i++)
+                snew(xout, ind.size());
+                for (int i = 0; i < ind.size(); i++)
                 {
                     copy_rvec(fr->x[ind[i]], xout[i]);
                 }
@@ -387,8 +388,8 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
         case efXTC:
             if (fr->bX)
             {
-                snew(xout, nind);
-                for (i = 0; i < nind; i++)
+                snew(xout, ind.size());
+                for (int i = 0; i < ind.size(); i++)
                 {
                     copy_rvec(fr->x[ind[i]], xout[i]);
                 }
@@ -401,14 +402,14 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
     switch (ftp)
     {
         case efTNG:
-            gmx_write_tng_from_trxframe(status->tng, fr, nind);
+            gmx_write_tng_from_trxframe(status->tng, fr, ind.size());
             break;
         case efXTC:
-            write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec);
+            write_xtc(status->fio, ind.size(), fr->step, fr->time, fr->box, xout, prec);
             break;
         case efTRR:
             gmx_trr_write_frame(status->fio, nframes_read(status),
-                                fr->time, fr->step, fr->box, nind, xout, vout, fout);
+                                fr->time, fr->step, fr->box, ind.size(), xout, vout, fout);
             break;
         case efGRO:
         case efPDB:
@@ -422,18 +423,19 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
             sprintf(title, "frame t= %.3f", fr->time);
             if (ftp == efGRO)
             {
-                write_hconf_indexed_p(gmx_fio_getfp(status->fio), title, fr->atoms, nind, ind,
+                write_hconf_indexed_p(gmx_fio_getfp(status->fio), title, fr->atoms, fr->resinfo, ind,
                                       fr->x, fr->bV ? fr->v : nullptr, fr->box);
             }
             else
             {
-                write_pdbfile_indexed(gmx_fio_getfp(status->fio), title, fr->atoms,
-                                      fr->x, -1, fr->box, ' ', fr->step, nind, ind, gc, TRUE, FALSE);
+                write_pdbfile_indexed(gmx_fio_getfp(status->fio), title, fr->atoms, fr->resinfo,
+                                      fr->pdb,
+                                      fr->x, -1, fr->box, ' ', fr->step, ind, gc, TRUE, FALSE);
             }
             break;
         case efG96:
             sprintf(title, "frame t= %.3f", fr->time);
-            write_g96_conf(gmx_fio_getfp(status->fio), title, fr, nind, ind);
+            write_g96_conf(gmx_fio_getfp(status->fio), title, fr, ind);
             break;
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe_indexed can not write %s",
@@ -586,17 +588,19 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             if (gmx_fio_getftp(status->fio) == efGRO)
             {
                 write_hconf_p(gmx_fio_getfp(status->fio), title, fr->atoms,
+                              fr->resinfo,
                               fr->x, fr->bV ? fr->v : nullptr, fr->box);
             }
             else
             {
                 write_pdbfile(gmx_fio_getfp(status->fio), title,
-                              fr->atoms, fr->x, fr->bPBC ? fr->ePBC : -1, fr->box,
+                              fr->atoms, fr->resinfo, fr->pdb,
+                              fr->x, fr->bPBC ? fr->ePBC : -1, fr->box,
                               ' ', fr->step, gc, TRUE);
             }
             break;
         case efG96:
-            write_g96_conf(gmx_fio_getfp(status->fio), title, fr, -1, nullptr);
+            write_g96_conf(gmx_fio_getfp(status->fio), title, fr, gmx::EmptyArrayRef());
             break;
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe can not write %s",
@@ -606,27 +610,33 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
     return 0;
 }
 
-int write_trx(t_trxstatus *status, int nind, const int *ind, const t_atoms *atoms,
+int write_trx(t_trxstatus *status,
+              gmx::ArrayRef<const int> ind,
+              gmx::ArrayRef<const AtomInfo> atoms,
+              gmx::ArrayRef<const Residue> resinfo,
+              gmx::ArrayRef<const PdbEntry> pdb,
               int step, real time, matrix box, rvec x[], rvec *v,
               gmx_conect gc)
 {
     t_trxframe fr;
 
     clear_trxframe(&fr, TRUE);
-    fr.bStep  = TRUE;
-    fr.step   = step;
-    fr.bTime  = TRUE;
-    fr.time   = time;
-    fr.bAtoms = atoms != nullptr;
-    fr.atoms  = const_cast<t_atoms *>(atoms);
-    fr.bX     = TRUE;
-    fr.x      = x;
-    fr.bV     = v != nullptr;
-    fr.v      = v;
-    fr.bBox   = TRUE;
+    fr.bStep   = TRUE;
+    fr.step    = step;
+    fr.bTime   = TRUE;
+    fr.time    = time;
+    fr.bAtoms  = !atoms.empty();
+    fr.atoms   = std::vector<AtomInfo>(atoms.begin(), atoms.end());
+    fr.resinfo = std::vector<Residue>(resinfo.begin(), resinfo.end());
+    fr.pdb     = std::vector<PdbEntry>(pdb.begin(), pdb.end());
+    fr.bX      = TRUE;
+    fr.x       = x;
+    fr.bV      = v != nullptr;
+    fr.v       = v;
+    fr.bBox    = TRUE;
     copy_mat(box, fr.box);
 
-    return write_trxframe_indexed(status, &fr, nind, ind, gc);
+    return write_trxframe_indexed(status, &fr, ind, gc);
 }
 
 void close_trx(t_trxstatus *status)
@@ -728,23 +738,22 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
 
 static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
 {
-    t_atoms   atoms;
     t_symtab *symtab;
     matrix    boxpdb;
     // Initiate model_nr to -1 rather than NOTSET.
     // It is not worthwhile introducing extra variables in the
     // read_pdbfile call to verify that a model_nr was read.
-    int       ePBC, model_nr = -1, na;
-    char      title[STRLEN], *time, *step;
-    double    dbl;
+    int                   ePBC, model_nr = -1, na;
+    char                  title[STRLEN], *time, *step;
+    double                dbl;
 
-    atoms.nr      = fr->natoms;
-    atoms.atom    = nullptr;
-    atoms.pdbinfo = nullptr;
+    std::vector<AtomInfo> atoms;
+    std::vector<Residue>  resinfo;
+    std::vector<PdbEntry> pdb;
     /* the other pointers in atoms should not be accessed if these are NULL */
     snew(symtab, 1);
     open_symtab(symtab);
-    na       = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, nullptr);
+    na       = read_pdbfile(fp, title, &model_nr, &atoms, &resinfo, &pdb, symtab, fr->x, &ePBC, boxpdb, TRUE, nullptr);
     free_symtab(symtab);
     sfree(symtab);
     set_trxframe_ePBC(fr, ePBC);
@@ -1089,7 +1098,7 @@ int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status, const char 
 
     read_first_frame(oenv, status, fn, &fr, TRX_NEED_X);
 
-    snew((*status)->xframe, 1);
+    (*status)->xframe    = new t_trxframe;
     (*(*status)->xframe) = fr;
     *t                   = (*status)->xframe->time;
     *x                   = (*status)->xframe->x;
@@ -1124,9 +1133,8 @@ void rewind_trj(t_trxstatus *status)
 t_topology *read_top(const char *fn, int *ePBC)
 {
     int         epbc, natoms;
-    t_topology *top;
+    t_topology *top = new t_topology;
 
-    snew(top, 1);
     epbc = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
     if (ePBC)
     {

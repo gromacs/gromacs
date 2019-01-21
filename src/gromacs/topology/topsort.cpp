@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -175,13 +175,13 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
     /* Check perturbed charges for 1-4 interactions */
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        const t_atom             *atom = mtop->moltype[molb.type].atoms.atom;
-        const InteractionList    &il   = mtop->moltype[molb.type].ilist[F_LJ14];
-        gmx::ArrayRef<const int>  ia   = il.iatoms;
+        gmx::ArrayRef<const AtomInfo> atom = mtop->moltype[molb.type].atoms;
+        const InteractionList        &il   = mtop->moltype[molb.type].ilist[F_LJ14];
+        gmx::ArrayRef<const int>      ia   = il.iatoms;
         for (int i = 0; i < il.size(); i += 3)
         {
-            if (atom[ia[i+1]].q != atom[ia[i+1]].qB ||
-                atom[ia[i+2]].q != atom[ia[i+2]].qB)
+            if (atom[ia[i+1]].q_ != atom[ia[i+1]].qB_ ||
+                atom[ia[i+2]].q_ != atom[ia[i+2]].qB_)
             {
                 bPert = TRUE;
             }

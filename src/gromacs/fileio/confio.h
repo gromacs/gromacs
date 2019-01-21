@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,24 +38,31 @@
 #define GMX_FILEIO_CONFIO_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 /* For reading coordinate files it is assumed that enough memory
  * has been allocated beforehand.
  */
 struct gmx_mtop_t;
-struct t_atoms;
+struct AtomInfo;
+struct Residue;
+struct PdbEntry;
 struct t_symtab;
 struct t_topology;
 
 void write_sto_conf_indexed(const char *outfile, const char *title,
-                            const t_atoms *atoms,
+                            gmx::ArrayRef<const AtomInfo> atoms,
+                            gmx::ArrayRef<const Residue> resinfo,
+                            gmx::ArrayRef<const PdbEntry> pdb,
                             const rvec x[], const rvec *v, int ePBC, const matrix box,
-                            int nindex, int index[]);
+                            gmx::ArrayRef<const int> index);
 /* like write_sto_conf, but indexed */
 
 void write_sto_conf(const char *outfile, const char *title,
-                    const t_atoms *atoms,
+                    gmx::ArrayRef<const AtomInfo> atoms,
+                    gmx::ArrayRef<const Residue> resinfo,
+                    gmx::ArrayRef<const PdbEntry> pdb,
                     const rvec x[], const rvec *v, int ePBC, const matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL)
  * to an STO (.gro or .pdb) file */
@@ -90,14 +97,20 @@ void readConfAndTopology(const char *infile,
  * \param[in]     infile        Input file name
  * \param[out]    symtab        The symbol table
  * \param[out]    name          The title of the molecule, e.g. from pdb TITLE record
- * \param[out]    atoms         The global t_atoms struct
+ * \param[out]    atoms         The global vector of AtomInfo entries
+ * \param[out]    resinfo       The global vector of Residue entries
+ * \param[out]    pdb           The global vector of PdbEntry fields
  * \param[out]    ePBC          Enum reporting the type of PBC
  * \param[in,out] x             Coordinates will be stored when *x!=NULL
  * \param[in,out] v             Velocities will be stored when *v!=NULL
  * \param[out]    box           Box dimensions
  */
 void readConfAndAtoms(const char *infile,
-                      t_symtab *symtab, char **name, t_atoms *atoms,
+                      t_symtab *symtab,
+                      char **name,
+                      std::vector<AtomInfo> *atoms,
+                      std::vector<Residue> *resinfo,
+                      std::vector<PdbEntry> *pdb,
                       int *ePBC,
                       rvec **x, rvec **v, matrix box);
 

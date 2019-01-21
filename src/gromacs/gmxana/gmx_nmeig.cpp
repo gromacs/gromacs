@@ -148,7 +148,7 @@ nma_full_hessian(real                    *hess,
                 for (int k = 0; (k < atom_index.ssize()); k++)
                 {
                     size_t ak = atom_index[k];
-                    mass_fac = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
+                    mass_fac = gmx::invsqrt(top->atoms[ai].m_*top->atoms[ak].m_);
                     for (size_t l = 0; (l < DIM); l++)
                     {
                         hess[(i*DIM+j)*ndim+k*DIM+l] *= mass_fac;
@@ -173,7 +173,7 @@ nma_full_hessian(real                    *hess,
             for (int j = 0; j < atom_index.ssize(); j++)
             {
                 size_t aj = atom_index[j];
-                mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
+                mass_fac = gmx::invsqrt(top->atoms[aj].m_);
                 for (size_t k = 0; (k < DIM); k++)
                 {
                     eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
@@ -220,7 +220,7 @@ nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
                     col       = sparse_hessian->data[row][k].col;
                     katom     = col/3;
                     size_t ak = atom_index[katom];
-                    mass_fac  = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
+                    mass_fac  = gmx::invsqrt(top->atoms[ai].m_*top->atoms[ak].m_);
                     sparse_hessian->data[row][k].value *= mass_fac;
                 }
             }
@@ -239,7 +239,7 @@ nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
             for (int j = 0; j < atom_index.ssize(); j++)
             {
                 size_t aj = atom_index[j];
-                mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
+                mass_fac = gmx::invsqrt(top->atoms[aj].m_);
                 for (k = 0; (k < DIM); k++)
                 {
                     eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
@@ -345,20 +345,20 @@ static void analyzeThermochemistry(FILE                    *fp,
 
     rvec                   xcm;
     double                 tmass = calc_xcm(top_x, index.size(),
-                                            index.data(), top.atoms.atom, xcm, FALSE);
+                                            index.data(), top.atoms, xcm, FALSE);
     double                 Strans = calcTranslationalEntropy(tmass, T, P);
     std::vector<gmx::RVec> x_com;
-    x_com.resize(top.atoms.nr);
-    for (int i = 0; i < top.atoms.nr; i++)
+    x_com.resize(top.atoms.size());
+    for (int i = 0; i < gmx::index(top.atoms.size()); i++)
     {
         copy_rvec(top_x[i], x_com[i]);
     }
     (void) sub_xcm(as_rvec_array(x_com.data()), index.size(), index.data(),
-                   top.atoms.atom, xcm, FALSE);
+                   top.atoms, xcm, FALSE);
 
     rvec   inertia;
     matrix trans;
-    principal_comp(index.size(), index.data(), top.atoms.atom,
+    principal_comp(index.size(), index.data(), top.atoms,
                    as_rvec_array(x_com.data()), trans, inertia);
     bool   linear       = (inertia[XX]/inertia[YY] < linear_toler &&
                            inertia[XX]/inertia[ZZ] < linear_toler);
@@ -392,7 +392,7 @@ static void analyzeThermochemistry(FILE                    *fp,
     auto   eFreq  = gmx::arrayRefFromArray(eigfreq, nFreq);
     double Svib   = calcQuasiHarmonicEntropy(eFreq, T, linear, scale_factor);
 
-    double Srot   = calcRotationalEntropy(T, top.atoms.nr,
+    double Srot   = calcRotationalEntropy(T, top.atoms.size(),
                                           linear, theta, sigma_r);
     fprintf(fp, "Translational entropy %g J/mol K\n", Strans);
     fprintf(fp, "Rotational entropy    %g J/mol K\n", Srot);

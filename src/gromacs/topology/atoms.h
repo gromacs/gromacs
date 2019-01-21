@@ -37,8 +37,11 @@
 #ifndef GMX_TOPOLOGY_ATOMS_H
 #define GMX_TOPOLOGY_ATOMS_H
 
+#include <vector>
+#include <algorithm>
 #include <stdio.h>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -62,72 +65,203 @@ enum PDB_record {
     epdbCONECT, epdbNR
 };
 
-typedef struct t_atom
+/*! \brief
+ * Data structure describing a single residue.
+ */
+struct Residue
 {
-    real           m, q;        /* Mass and charge                      */
-    real           mB, qB;      /* Mass and charge for Free Energy calc */
-    unsigned short type;        /* Atom type                            */
-    unsigned short typeB;       /* Atom type for Free Energy calc       */
-    int            ptype;       /* Particle type                        */
-    int            resind;      /* Index into resinfo (in t_atoms)      */
-    int            atomnumber;  /* Atomic Number or 0                   */
-    char           elem[4];     /* Element name                         */
-} t_atom;
+    public:
 
-typedef struct t_resinfo
-{
-    char          **name;       /* Pointer to the residue name          */
-    int             nr;         /* Residue number                       */
-    unsigned char   ic;         /* Code for insertion of residues       */
-    int             chainnum;   /* Iincremented at TER or new chain id  */
-    char            chainid;    /* Chain identifier written/read to pdb */
-    char          **rtp;        /* rtp building block name (optional)   */
-} t_resinfo;
+        //! Constructor to explicitly initialize all fields.
+        explicit Residue(char **name, int nr, unsigned char ic, int chainnum,
+                         char chainid, const char **rtp) :
+            name_(name), nr_(nr), ic_(ic), chainnum_(chainnum), chainid_(chainid), rtp_(rtp) {}
+        Residue() {}
 
-typedef struct t_pdbinfo
+        //! Residue name in SymbolTable.
+        char           **name_ = nullptr;
+        //! Residue number.
+        int              nr_ = -1;
+        //! Code for insertion of residues.
+        unsigned char    ic_ = ' ';
+        //! Chain number, incremented at TER or new chain id.
+        int              chainnum_ = -1;
+        //! Chain identifier written/read to pdb.
+        char             chainid_ = ' ';
+        //! Optional rtp building block name.
+        const char     **rtp_ = nullptr;
+};
+
+/*! \brief
+ * Data structure describing a single PDB entry.
+ */
+struct PdbEntry
 {
-    int      type;              /* PDB record name                      */
-    int      atomnr;            /* PDB atom number                      */
-    char     altloc;            /* Alternate location indicator         */
-    char     atomnm[6];         /* True atom name including leading spaces */
-    real     occup;             /* Occupancy                            */
-    real     bfac;              /* B-factor                             */
-    gmx_bool bAnisotropic;      /* (an)isotropic switch                 */
-    int      uij[6];            /* Anisotropic B-factor                 */
-} t_pdbinfo;
+    //! Constructor to initialize all fields.
+    explicit PdbEntry(int type, int atomnr, char altloc, std::string atomnm, real occup,
+                      real bfac) :
+        type_(type), atomnr_(atomnr), altloc_(altloc), atomnm_(atomnm), occup_(occup), bfac_(bfac),
+        haveAnisotropic_(false), isSet_(true) {}
+    //! Constructor for setting empty object that wont be used.
+    explicit PdbEntry() :
+        type_(-1), atomnr_(-1), altloc_(' '), occup_(0.0), bfac_(0.0), haveAnisotropic_(false),
+        uij_({0}
+             ), isSet_(false) {}
+
+    //! PDB record name.
+    int                   type_;
+    //! PDB atom number.
+    int                   atomnr_;
+    //! Alternate location indicator.
+    char                  altloc_;
+    //! True atom name including leading spaces.
+    std::string           atomnm_;
+    //! Occupancy. Can be fudged to contain other entries for special file formats.
+    real                  occup_;
+    //! B-factor. Can be fudged to contain other entries for special file formats.
+    real                  bfac_;
+    //! (an)isotropic switch.
+    bool                  haveAnisotropic_;
+    //! Anisotropic B-factor
+    std::vector<int>      uij_;
+    //! Has the information been set?
+    bool                  isSet_;
+};
+
+/*! \brief
+ * Structure for atomic data.
+ *
+ * Bundles together names and atom entries.
+ * Blabla add more info here.
+ */
+struct AtomInfo
+{
+    //! Atom mass.
+    real           m_ = 0.0;
+    //! Atom charge.
+    real           q_ = 0.0;
+    //! Atom mass for free energy calculation.
+    real           mB_ = 0.0;
+    //! Atom charge for free energy calculation.
+    real           qB_ = 0.0;
+    //! Atom type.
+    unsigned short type_ = 0;
+    //! Atom type for free energy calculation.
+    unsigned short typeB_ = 0;
+    //! Particle type.
+    int            ptype_ = -1;
+    //! Index into ResidueInformation.
+    int            resind_ = -1;
+    //! Atomic number or zero.
+    int            atomnumber_ = 0;
+    //! Element name.
+    std::string    elem_;
+    //! Has the atom charge been set?
+    bool           haveCharge_ = false;
+    //! Has the atom mass been set?
+    bool           haveMass_ = false;
+    //! Has the atom type been set?
+    bool           haveType_ = false;
+    //! Have the B state parameters been set?
+    bool           haveBstate_ = false;
+
+    //! Atom name for entry.
+    char **atomname = nullptr;
+    //! Atom type for entry.
+    char **atomtype = nullptr;
+    //! Atom B state type for entry.
+    char **atomtypeB = nullptr;
+
+    //! Mass available
+    bool haveMass() const { return haveMass_; }
+    //! Charge available
+    bool haveCharge() const { return haveCharge_; }
+    //! Atomname is set.
+    bool haveAtomname() const { return atomname != nullptr; }
+    //! Atom type available
+    bool haveType() const { return atomtype != nullptr && haveType_; }
+    //! B-state parameters available
+    bool haveBState() const { return atomtypeB != nullptr && haveMass() && haveCharge() && haveType(); }
+};
+
+//! Convenience function to check if all entries have mass.
+inline bool allAtomsHaveMass(gmx::ArrayRef<const AtomInfo> atoms)
+{
+    if (atoms.empty())
+    {
+        return false;
+    }
+    return std::all_of(atoms.begin(), atoms.end(),
+                       [](AtomInfo atom)
+                       {return atom.haveMass(); });
+}
+
+//! Convenience function to check if all entries have charge.
+inline bool allAtomsHaveCharge(gmx::ArrayRef<const AtomInfo> atoms)
+{
+    if (atoms.empty())
+    {
+        return false;
+    }
+    return std::all_of(atoms.begin(), atoms.end(),
+                       [](AtomInfo atom)
+                       {return atom.haveCharge(); });
+}
+
+//! Convenience function to check if all entries have atomnames set.
+inline bool allAtomsHaveAtomname(gmx::ArrayRef<const AtomInfo> atoms)
+{
+    if (atoms.empty())
+    {
+        return false;
+    }
+    return std::all_of(atoms.begin(), atoms.end(),
+                       [](AtomInfo atom)
+                       {return atom.haveAtomname(); });
+}
+
+
+//! Convenience function to check if all entries have a type.
+inline bool allAtomsHaveType(gmx::ArrayRef<const AtomInfo> atoms)
+{
+    if (atoms.empty())
+    {
+        return false;
+    }
+    return std::all_of(atoms.begin(), atoms.end(),
+                       [](AtomInfo atom)
+                       {return atom.haveType(); });
+}
+
+//! Convenience function to check if all entries have B state.
+inline bool allAtomsHaveBstate(gmx::ArrayRef<const AtomInfo> atoms)
+{
+    if (atoms.empty())
+    {
+        return false;
+    }
+    return std::all_of(atoms.begin(), atoms.end(),
+                       [](AtomInfo atom)
+                       {return atom.haveBState(); });
+}
+
+//! Convenience function to check if all entries have PDB information.
+inline bool allAtomsHavePdbInfo(gmx::ArrayRef<const PdbEntry> pdb)
+{
+    if (pdb.empty())
+    {
+        return false;
+    }
+    return std::all_of(pdb.begin(), pdb.end(),
+                       [](PdbEntry entry)
+                       {return entry.isSet_; });
+}
 
 typedef struct t_grps
 {
     int   nr;                   /* Number of different groups           */
     int  *nm_ind;               /* Index in the group names             */
 } t_grps;
-
-typedef struct t_atoms
-{
-    int          nr;            /* Nr of atoms                          */
-    t_atom      *atom;          /* Array of atoms (dim: nr)             */
-                                /* The following entries will not       */
-                                /* always be used (nres==0)             */
-    char      ***atomname;      /* Array of pointers to atom name       */
-                                /* use: (*(atomname[i]))                */
-    char      ***atomtype;      /* Array of pointers to atom types      */
-                                /* use: (*(atomtype[i]))                */
-    char      ***atomtypeB;     /* Array of pointers to B atom types    */
-                                /* use: (*(atomtypeB[i]))               */
-    int          nres;          /* The number of resinfo entries        */
-    t_resinfo   *resinfo;       /* Array of residue names and numbers   */
-    t_pdbinfo   *pdbinfo;       /* PDB Information, such as aniso. Bfac */
-
-    /* Flags that tell if properties are set for all nr atoms.
-     * For B-state parameters, both haveBState and the mass/charge/type
-     * flag should be TRUE.
-     */
-    gmx_bool     haveMass;      /* Mass available                       */
-    gmx_bool     haveCharge;    /* Charge available                     */
-    gmx_bool     haveType;      /* Atom type available                  */
-    gmx_bool     haveBState;    /* B-state parameters available         */
-    gmx_bool     havePdbInfo;   /* pdbinfo available                    */
-} t_atoms;
 
 typedef struct t_atomtypes
 {
@@ -137,60 +271,68 @@ typedef struct t_atomtypes
 
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))
 
-void init_atom(t_atoms *at);
 void init_atomtypes(t_atomtypes *at);
-void done_atom(t_atoms *at);
-void done_and_delete_atoms(t_atoms *atoms);
 void done_atomtypes(t_atomtypes *at);
 
-void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
-/* allocate memory for the arrays, set nr to natoms and nres to 0
- * set pdbinfo to NULL or allocate memory for it */
+void printAtoms(FILE                         *fp,
+                int                           indent,
+                const char                   *title,
+                gmx::ArrayRef<const AtomInfo> atoms,
+                gmx_bool                      bShownumbers);
 
-void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo);
+void printResidues(FILE                        *fp,
+                   int                          indent,
+                   const char                  *title,
+                   gmx::ArrayRef<const Residue> resinfo,
+                   gmx_bool                     bShowNumbers);
 
-t_atoms *copy_t_atoms(const t_atoms *src);
-/* copy an atoms struct from src to a new one */
+void pr_atomtypes(FILE              *fp,
+                  int                indent,
+                  const char        *title,
+                  const t_atomtypes *atomtypes,
+                  gmx_bool           bShowNumbers);
 
-void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra);
-/* allocate extra space for more atoms and or residues */
+void compareAtomInfo(FILE                         *fp,
+                     gmx::ArrayRef<const AtomInfo> a1,
+                     gmx::ArrayRef<const AtomInfo> a2,
+                     real                          ftol,
+                     real                          abstol);
 
-void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, struct t_symtab *symtab,
-                         const char *resname, int resnr, unsigned char ic,
-                         int chainnum, char chainid);
-/* Set the residue name, number, insertion code and chain identifier
- * of atom index atom_ind.
- */
+void compareAtomFEPData(FILE                         *fp,
+                        gmx::ArrayRef<const AtomInfo> atoms,
+                        real                          ftol,
+                        real                          abstol);
 
-void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
-              gmx_bool bShownumbers);
-void pr_atomtypes(FILE *fp, int indent, const char *title,
-                  const t_atomtypes *atomtypes, gmx_bool bShowNumbers);
-
-/*! \brief Compare information in the t_atoms data structure.
+/*! \brief
+ * Set mass for each atom using the atom and residue names using a database
  *
- * \param[in] fp Pointer to file to write to.
- * \param[in] a1 Pointer to first data structure to compare.
- * \param[in] a2 Pointer to second data structure or nullptr.
- * \param[in] relativeTolerance Relative floating point comparison tolerance.
- * \param[in] absoluteTolerance Absolute floating point comparison tolerance.
- */
-void compareAtoms(FILE          *fp,
-                  const t_atoms *a1,
-                  const t_atoms *a2,
-                  real           relativeTolerance,
-                  real           absoluteTolerance);
-
-/*! \brief Set mass for each atom using the atom and residue names using a database
+ * If all atoms already have masses, nothing is done.
+ * If \p printMissingMasses is true, prints details for first 10 missing entries.
  *
- * If atoms->haveMass = TRUE does nothing.
- * If printMissingMasss = TRUE, prints details for first 10 missing masses
- * to stderr.
+ * \param[in] atoms The atom information.
+ * \param[in] resinfo The residue information.
+ * \param[in] printMissingMasses Whever we will print messages about missing masses or not.
  */
-void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses);
+void atomsSetMassesBasedOnNames(gmx::ArrayRef<AtomInfo>      atoms,
+                                gmx::ArrayRef<const Residue> resinfo,
+                                bool                         printMissingMasses);
 
-//! Deleter for t_atoms, needed until it has a proper destructor.
-using AtomsDataPtr = gmx::unique_cptr<t_atoms, done_and_delete_atoms>;
+/*! \brief
+ * Convenience struct that contains all information for atoms.
+ */
+struct AtomResiduePdb {
+    //! The normal atoms information.
+    std::vector<AtomInfo> atoms;
+    //! The separate residue information.
+    std::vector<Residue>  resinfo;
+    //! The optional pdb information.
+    std::vector<PdbEntry> pdb;
+};
+
+//! Convenience type to get new handle to AtomInfo.
+using AtomsDataPtr = std::unique_ptr < std::vector < AtomInfo>>;
+//! Convenience type to get new handle to all atom information.
+using AtomResiduePdbDataPtr = std::unique_ptr<AtomResiduePdb>;
 
 
 #endif

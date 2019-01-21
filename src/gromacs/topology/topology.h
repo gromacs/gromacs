@@ -72,11 +72,20 @@ struct gmx_moltype_t
     /*! \brief Default copy constructor */
     gmx_moltype_t(const gmx_moltype_t &) = default;
 
-    char              **name;   /**< Name of the molecule type            */
-    t_atoms             atoms;  /**< The atoms in this molecule           */
-    InteractionLists    ilist;  /**< Interaction list with local indices  */
-    t_block             cgs;    /**< The charge groups                    */
-    t_blocka            excls;  /**< The exclusions                       */
+    //! Name of molecule type.
+    char                **name;
+    //! Atoms in this molecule.
+    std::vector<AtomInfo> atoms;
+    //! Residues corresponding to atoms in this molecule.
+    std::vector<Residue>  resinfo;
+    //! Pdb entries for atoms, or empty.
+    std::vector<PdbEntry> pdb;
+    //! Interaction list with local indices.
+    InteractionLists      ilist;
+    //! The charge groups.
+    t_block               cgs;
+    //! The exclusions.
+    t_blocka              excls;
 };
 
 /*! \brief Block of molecules of the same type, used in gmx_mtop_t */
@@ -196,18 +205,20 @@ struct gmx_localtop_t
 };
 
 /* The old topology struct, completely written out, used in analysis tools */
-typedef struct t_topology
+struct t_topology
 {
-    char          **name;                        /* Name of the topology                 */
-    t_idef          idef;                        /* The interaction function definition  */
-    t_atoms         atoms;                       /* The atoms                            */
-    t_atomtypes     atomtypes;                   /* Atomtype properties                  */
-    t_block         cgs;                         /* The charge groups                    */
-    t_block         mols;                        /* The molecules                        */
-    gmx_bool        bIntermolecularInteractions; /* Inter.mol. int. ?   */
-    t_blocka        excls;                       /* The exclusions                       */
-    t_symtab        symtab;                      /* The symbol table                     */
-} t_topology;
+    char                **name = nullptr;              /* Name of the topology                 */
+    t_idef                idef;                        /* The interaction function definition  */
+    std::vector<AtomInfo> atoms;                       /* The atoms                            */
+    std::vector<Residue>  resinfo;                     /* Residues corresponding to atoms */
+    std::vector<PdbEntry> pdb;                         /* Pdb information or empty */
+    t_atomtypes           atomtypes;                   /* Atomtype properties                  */
+    t_block               cgs;                         /* The charge groups                    */
+    t_block               mols;                        /* The molecules                        */
+    gmx_bool              bIntermolecularInteractions; /* Inter.mol. int. ?   */
+    t_blocka              excls;                       /* The exclusions                       */
+    t_symtab              symtab;                      /* The symbol table                     */
+};
 
 void init_top(t_topology *top);
 void done_gmx_groups_t(gmx_groups_t *g);

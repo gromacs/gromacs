@@ -43,7 +43,8 @@
 #include "gromacs/utility/real.h"
 
 class PreprocessingAtomTypes;
-struct t_atoms;
+struct AtomResiduePdb;
+struct AtomInfo;
 struct InteractionTypeParameters;
 struct PreprocessResidue;
 struct t_symtab;
@@ -51,12 +52,15 @@ struct t_symtab;
 /* stuff for pdb2gmx */
 
 void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtomTypes *atype,
-               t_atoms *at, t_symtab *symtab, std::vector<gmx::RVec> *x,
+               AtomResiduePdb *at, t_symtab *symtab, std::vector<gmx::RVec> *x,
                gmx::ArrayRef<InteractionTypeParameters> plist, int *dummy_type[], int *cgnr[],
                real mHmult, bool bVSiteAromatics,
                const char *ffdir);
 
-void do_h_mass(InteractionTypeParameters *psb, int vsite_type[], t_atoms *at, real mHmult,
-               bool bDeuterate);
+void do_h_mass(InteractionTypeParameters *psb,
+               int                        vsite_type[],
+               gmx::ArrayRef<AtomInfo>    at,
+               real                       mHmult,
+               bool                       bDeuterate);
 
 #endif

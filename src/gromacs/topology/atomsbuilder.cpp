@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -57,14 +58,15 @@ namespace gmx
  * AtomsBuilder
  */
 
-AtomsBuilder::AtomsBuilder(t_atoms *atoms, t_symtab *symtab)
-    : atoms_(atoms), symtab_(symtab),
-      nrAlloc_(atoms->nr), nresAlloc_(atoms->nres),
-      currentResidueIndex_(atoms->nres), nextResidueNumber_(-1)
+AtomsBuilder::AtomsBuilder(std::vector<AtomInfo> *atoms,
+                           std::vector<Residue>  *resinfo,
+                           std::vector<PdbEntry> *pdb, t_symtab *symtab)
+    : atoms_(*atoms), resinfo_(*resinfo), pdb_(*pdb), symtab_(symtab),
+      currentResidueIndex_(resinfo->size()), nextResidueNumber_(-1)
 {
-    if (atoms->nres > 0)
+    if (!resinfo->empty())
     {
-        nextResidueNumber_ = atoms->resinfo[atoms->nres - 1].nr + 1;
+        nextResidueNumber_ = resinfo->back().nr_ + 1;
     }
 }
 
@@ -81,30 +83,17 @@ char **AtomsBuilder::symtabString(char **source)
     return source;
 }
 
-void AtomsBuilder::reserve(int atomCount, int residueCount)
-{
-    srenew(atoms_->atom,     atomCount);
-    srenew(atoms_->atomname, atomCount);
-    srenew(atoms_->resinfo,  residueCount);
-    if (atoms_->pdbinfo != nullptr)
-    {
-        srenew(atoms_->pdbinfo, atomCount);
-    }
-    nrAlloc_   = atomCount;
-    nresAlloc_ = residueCount;
-}
-
 void AtomsBuilder::clearAtoms()
 {
-    atoms_->nr           = 0;
-    atoms_->nres         = 0;
+    atoms_.clear();
+    resinfo_.clear();
     currentResidueIndex_ = 0;
     nextResidueNumber_   = -1;
 }
 
 int AtomsBuilder::currentAtomCount() const
 {
-    return atoms_->nr;
+    return atoms_.size();
 }
 
 void AtomsBuilder::setNextResidueNumber(int number)
@@ -112,87 +101,78 @@ void AtomsBuilder::setNextResidueNumber(int number)
     nextResidueNumber_ = number;
 }
 
-void AtomsBuilder::addAtom(const t_atoms &atoms, int i)
+void AtomsBuilder::addAtom(const AtomInfo &atom, const PdbEntry &pdb)
 {
-    const int index = atoms_->nr;
-    atoms_->atom[index]        = atoms.atom[i];
-    atoms_->atomname[index]    = symtabString(atoms.atomname[i]);
-    atoms_->atom[index].resind = currentResidueIndex_;
-    if (atoms_->pdbinfo != nullptr)
+    atoms_.push_back(atom);
+    atoms_.back().resind_ = currentResidueIndex_;
+    if (allAtomsHavePdbInfo(pdb_))
     {
-        if (atoms.pdbinfo != nullptr)
+        if (pdb.isSet_)
         {
-            atoms_->pdbinfo[index]  = atoms.pdbinfo[i];
+            pdb_.push_back(pdb);
         }
         else
         {
-            gmx_pdbinfo_init_default(&atoms_->pdbinfo[index]);
+            pdb_.push_back(PdbEntry());
         }
     }
-    ++atoms_->nr;
 }
 
-void AtomsBuilder::startResidue(const t_resinfo &resinfo)
+void AtomsBuilder::startResidue(const Residue &resinfo)
 {
     if (nextResidueNumber_ == -1)
     {
-        nextResidueNumber_ = resinfo.nr;
+        nextResidueNumber_ = resinfo.nr_;
     }
-    const int index = atoms_->nres;
-    atoms_->resinfo[index]      = resinfo;
-    atoms_->resinfo[index].nr   = nextResidueNumber_;
-    atoms_->resinfo[index].name = symtabString(resinfo.name);
+    const int index = resinfo_.size();
+    resinfo_.push_back(resinfo);
+    resinfo_.back().nr_ = nextResidueNumber_;
     ++nextResidueNumber_;
     currentResidueIndex_      = index;
-    ++atoms_->nres;
 }
 
-void AtomsBuilder::finishResidue(const t_resinfo &resinfo)
+void AtomsBuilder::finishResidue(const Residue &resinfo)
 {
     if (nextResidueNumber_ == -1)
     {
-        nextResidueNumber_ = resinfo.nr;
+        nextResidueNumber_ = resinfo.nr_;
     }
     const int index = currentResidueIndex_;
-    atoms_->resinfo[index]      = resinfo;
-    atoms_->resinfo[index].nr   = nextResidueNumber_;
-    atoms_->resinfo[index].name = symtabString(resinfo.name);
+    resinfo_[index]       = resinfo;
+    resinfo_[index].nr_   = nextResidueNumber_;
+    resinfo_[index].name_ = symtabString(resinfo.name_);
     ++nextResidueNumber_;
     currentResidueIndex_      = index + 1;
-    if (index >= atoms_->nres)
-    {
-        ++atoms_->nres;
-    }
 }
 
 void AtomsBuilder::discardCurrentResidue()
 {
-    int index = atoms_->nr - 1;
-    while (index > 0 && atoms_->atom[index - 1].resind == currentResidueIndex_)
+    int index = atoms_.size() - 1;
+    while (index > 0 && atoms_.back().resind_ == currentResidueIndex_)
     {
-        --index;
+        atoms_.erase(atoms_.end() -1);
     }
-    atoms_->nr   = index;
-    atoms_->nres = currentResidueIndex_;
 }
 
-void AtomsBuilder::mergeAtoms(const t_atoms &atoms)
+void AtomsBuilder::mergeAtoms(gmx::ArrayRef<const AtomInfo> atoms,
+                              gmx::ArrayRef<const Residue>  resinfo,
+                              gmx::ArrayRef<const PdbEntry> pdb)
 {
-    if (atoms_->nr + atoms.nr > nrAlloc_
-        || atoms_->nres + atoms.nres > nresAlloc_)
-    {
-        reserve(atoms_->nr + atoms.nr, atoms_->nres + atoms.nres);
-    }
     int prevResInd = -1;
-    for (int i = 0; i < atoms.nr; ++i)
+    if (!pdb.empty() && (atoms.size() != pdb.size()))
     {
-        const int resind = atoms.atom[i].resind;
+        GMX_THROW(InternalError("Size of atom and pdb entries are not the same"));
+    }
+
+    for (int i = 0; i < atoms.size(); ++i)
+    {
+        const int resind = atoms[i].resind_;
         if (resind != prevResInd)
         {
-            startResidue(atoms.resinfo[resind]);
+            startResidue(resinfo[resind]);
             prevResInd = resind;
         }
-        addAtom(atoms, i);
+        addAtom(atoms[i], pdb[i]);
     }
 }
 
@@ -200,8 +180,8 @@ void AtomsBuilder::mergeAtoms(const t_atoms &atoms)
  * AtomsRemover
  */
 
-AtomsRemover::AtomsRemover(const t_atoms &atoms)
-    : removed_(atoms.nr, 0)
+AtomsRemover::AtomsRemover(int size)
+    : removed_(size, 0)
 {
 }
 
@@ -209,9 +189,9 @@ AtomsRemover::~AtomsRemover()
 {
 }
 
-void AtomsRemover::refreshAtomCount(const t_atoms &atoms)
+void AtomsRemover::refreshAtomCount(gmx::ArrayRef<const AtomInfo> atoms)
 {
-    removed_.resize(atoms.nr, 0);
+    removed_.resize(atoms.size(), 0);
 }
 
 void AtomsRemover::markAll()
@@ -219,14 +199,14 @@ void AtomsRemover::markAll()
     std::fill(removed_.begin(), removed_.end(), 1);
 }
 
-void AtomsRemover::markResidue(const t_atoms &atoms, int atomIndex, bool bStatus)
+void AtomsRemover::markResidue(gmx::ArrayRef<const AtomInfo> atoms, int atomIndex, bool bStatus)
 {
-    const int resind = atoms.atom[atomIndex].resind;
-    while (atomIndex > 0 && resind == atoms.atom[atomIndex - 1].resind)
+    const int resind = atoms[atomIndex].resind_;
+    while (atomIndex > 0 && resind == atoms[atomIndex - 1].resind_)
     {
         --atomIndex;
     }
-    while (atomIndex < atoms.nr && resind == atoms.atom[atomIndex].resind)
+    while (atomIndex < atoms.size() && resind == atoms[atomIndex].resind_)
     {
         removed_[atomIndex] = (bStatus ? 1 : 0);
         ++atomIndex;
@@ -265,27 +245,38 @@ void AtomsRemover::removeMarkedElements(std::vector<real> *container) const
     container->resize(j);
 }
 
-void AtomsRemover::removeMarkedAtoms(t_atoms *atoms) const
+void AtomsRemover::removeMarkedAtoms(std::vector<AtomInfo> *atoms,
+                                     std::vector<Residue>  *resinfo,
+                                     std::vector<PdbEntry> *pdb) const
 {
-    const int    originalAtomCount = atoms->nr;
-    AtomsBuilder builder(atoms, nullptr);
-    if (atoms->nr > 0)
+    const int    originalAtomCount = atoms->size();
+    AtomsBuilder builder(atoms, resinfo, pdb, nullptr);
+    if (atoms->size() > 0)
     {
-        builder.setNextResidueNumber(atoms->resinfo[0].nr);
+        builder.setNextResidueNumber(resinfo->at(0).nr_);
     }
     builder.clearAtoms();
+    if (!pdb->empty() && (atoms->size() != pdb->size()))
+    {
+        GMX_THROW(InternalError("Size of atom and pdb entries are not the same"));
+    }
     int          prevResInd = -1;
     for (int i = 0; i < originalAtomCount; ++i)
     {
         if (!removed_[i])
         {
-            const int resind = atoms->atom[i].resind;
+            const int resind = atoms->at(i).resind_;
             if (resind != prevResInd)
             {
-                builder.startResidue(atoms->resinfo[resind]);
+                builder.startResidue(resinfo->at(resind));
                 prevResInd = resind;
             }
-            builder.addAtom(*atoms, i);
+            PdbEntry newPdb;
+            if (!pdb->empty())
+            {
+                newPdb = pdb->at(i);
+            }
+            builder.addAtom(atoms->at(i), newPdb);
         }
     }
 }

@@ -62,7 +62,7 @@ namespace gmx
 TopologyInformation::TopologyInformation()
     : hasLoadedMtop_(false),
       expandedTopology_(nullptr),
-      atoms_ (nullptr),
+      system_ (nullptr),
       bTop_(false), ePBC_(-1)
 {
 }
@@ -94,10 +94,10 @@ void TopologyInformation::fillFromInputFile(const std::string &filename)
     // take care of themselves.
     for (gmx_moltype_t &moltype : mtop_->moltype)
     {
-        if (!moltype.atoms.haveMass)
+        if (!allAtomsHaveMass(moltype.atoms))
         {
             // Try to read masses from database, be silent about missing masses
-            atomsSetMassesBasedOnNames(&moltype.atoms, FALSE);
+            atomsSetMassesBasedOnNames(moltype.atoms, moltype.resinfo, FALSE);
         }
     }
 }
@@ -118,40 +118,36 @@ namespace
 {
 
 //! Helps implement lazy initialization.
-AtomsDataPtr makeAtoms(const TopologyInformation &top_)
+AtomResiduePdbDataPtr makeSystem(const TopologyInformation &top_)
 {
-    AtomsDataPtr atoms(new t_atoms);
+    AtomResiduePdbDataPtr system(new AtomResiduePdb);
     if (top_.hasTopology())
     {
-        *atoms = gmx_mtop_global_atoms(top_.mtop());
+        *system = gmx_mtop_global_atoms(*top_.mtop());
     }
-    else
-    {
-        init_atom(atoms.get());
-    }
-    return atoms;
+    return system;
 }
 
 }   // namespace
 
-const t_atoms *TopologyInformation::atoms() const
+gmx::ArrayRef<const AtomInfo> TopologyInformation::atoms() const
 {
     // Do lazy initialization
-    if (atoms_ == nullptr)
+    if (system_ == nullptr)
     {
-        atoms_ = makeAtoms(*this);
+        system_ = makeSystem(*this);
     }
 
-    return atoms_.get();
+    return system_->atoms;
 }
 
-AtomsDataPtr TopologyInformation::copyAtoms() const
+AtomResiduePdbDataPtr TopologyInformation::copySystem() const
 {
     // Note that we do not return atoms_, so that regardless of
     // whether the user has already used it, or will use it in the
     // future, any transformation operations on the data structure
     // returned here cannot have unintended effects.
-    return makeAtoms(*this);
+    return makeSystem(*this);
 }
 
 ArrayRef<const RVec>

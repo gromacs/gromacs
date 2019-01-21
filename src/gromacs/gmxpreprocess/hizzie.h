@@ -41,10 +41,10 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-struct t_atoms;
+struct AtomResiduePdb;
 struct t_symtab;
 
-void set_histp(t_atoms *pdba, rvec *x, t_symtab *symtab, real angle, real distance);
+void set_histp(AtomResiduePdb *pdba, rvec *x, real angle, real distance);
 /* calculate HIStidine protonation state */
 
 #endif

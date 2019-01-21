@@ -45,6 +45,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/atomsbuilder.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/topology/idef.h"
@@ -62,14 +63,14 @@ static int gmx_mtop_maxresnr(const gmx_mtop_t *mtop, int maxres_renum)
 
     for (const gmx_moltype_t &moltype : mtop->moltype)
     {
-        const t_atoms &atoms = moltype.atoms;
-        if (atoms.nres > maxres_renum)
+        gmx::ArrayRef<const Residue> resinfo = moltype.resinfo;
+        if (resinfo.ssize() > maxres_renum)
         {
-            for (int r = 0; r < atoms.nres; r++)
+            for (const auto &r : resinfo)
             {
-                if (atoms.resinfo[r].nr > maxresnr)
+                if (r.nr_ > maxresnr)
                 {
-                    maxresnr = atoms.resinfo[r].nr;
+                    maxresnr = r.nr_;
                 }
             }
         }
@@ -90,9 +91,9 @@ static void buildMolblockIndices(gmx_mtop_t *mtop)
     {
         const gmx_molblock_t &molb         = mtop->molblock[mb];
         MoleculeBlockIndices &indices      = mtop->moleculeBlockIndices[mb];
-        const int             numResPerMol = mtop->moltype[molb.type].atoms.nres;
+        const int             numResPerMol = mtop->moltype[molb.type].resinfo.size();
 
-        indices.numAtomsPerMolecule   = mtop->moltype[molb.type].atoms.nr;
+        indices.numAtomsPerMolecule   = mtop->moltype[molb.type].atoms.size();
         indices.globalAtomStart       = atomIndex;
         indices.globalResidueStart    = residueIndex;
         atomIndex                    += molb.nmol*indices.numAtomsPerMolecule;
@@ -152,17 +153,17 @@ void gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[]
     }
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        const t_atoms &atoms = mtop->moltype[molb.type].atoms;
-        for (int i = 0; i < atoms.nr; ++i)
+        gmx::ArrayRef<const AtomInfo> atoms = mtop->moltype[molb.type].atoms;
+        for (const auto &a : atoms)
         {
             int tpi;
             if (state == 0)
             {
-                tpi = atoms.atom[i].type;
+                tpi = a.type_;
             }
             else
             {
-                tpi = atoms.atom[i].typeB;
+                tpi = a.typeB_;
             }
             typecount[tpi] += molb.nmol;
         }
@@ -195,7 +196,7 @@ int gmx_mtop_nres(const gmx_mtop_t *mtop)
     int nres = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        nres += molb.nmol*mtop->moltype[molb.type].atoms.nres;
+        nres += molb.nmol*mtop->moltype[molb.type].resinfo.size();
     }
     return nres;
 }
@@ -205,9 +206,9 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     for (gmx_moltype_t &molt : mtop->moltype)
     {
         t_block &cgs = molt.cgs;
-        if (cgs.nr < molt.atoms.nr)
+        if (cgs.nr < static_cast<int>(molt.atoms.size()))
         {
-            cgs.nr = molt.atoms.nr;
+            cgs.nr = molt.atoms.size();
             srenew(cgs.index, cgs.nr + 1);
             for (int i = 0; i < cgs.nr + 1; i++)
             {
@@ -219,7 +220,8 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
 
 AtomIterator::AtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber)
     : mtop_(&mtop), mblock_(0),
-      atoms_(&mtop.moltype[mtop.molblock[0].type].atoms),
+      atoms_(mtop.moltype[mtop.molblock[0].type].atoms),
+      resinfo_(mtop.moltype[mtop.molblock[0].type].resinfo),
       currentMolecule_(0), highestResidueNumber_(mtop.maxresnr),
       localAtomNumber_(0), globalAtomNumber_(globalAtomNumber)
 {
@@ -232,12 +234,12 @@ AtomIterator &AtomIterator::operator++()
     localAtomNumber_++;
     globalAtomNumber_++;
 
-    if (localAtomNumber_ >= atoms_->nr)
+    if (localAtomNumber_ >= atoms_.ssize())
     {
-        if (atoms_->nres <= mtop_->maxresnr)
+        if (resinfo_.ssize() <= mtop_->maxresnr)
         {
             /* Single residue molecule, increase the count with one */
-            highestResidueNumber_ += atoms_->nres;
+            highestResidueNumber_ += resinfo_.ssize();
         }
         currentMolecule_++;
         localAtomNumber_ = 0;
@@ -248,7 +250,8 @@ AtomIterator &AtomIterator::operator++()
             {
                 return *this;
             }
-            atoms_           = &mtop_->moltype[mtop_->molblock[mblock_].type].atoms;
+            atoms_           = mtop_->moltype[mtop_->molblock[mblock_].type].atoms;
+            resinfo_         = mtop_->moltype[mtop_->molblock[mblock_].type].resinfo;
             currentMolecule_ = 0;
         }
     }
@@ -272,9 +275,14 @@ bool AtomIterator::operator!=(const AtomIterator &o) const
     return !(*this == o);
 }
 
-const t_atom &AtomProxy::atom() const
+const AtomInfo &AtomProxy::atom() const
 {
-    return it_->atoms_->atom[it_->localAtomNumber_];
+    return it_->atoms_[it_->localAtomNumber_];
+}
+
+const Residue &AtomProxy::resinfo() const
+{
+    return it_->resinfo_[residueNumber()];
 }
 
 int AtomProxy::globalAtomNumber() const
@@ -284,25 +292,24 @@ int AtomProxy::globalAtomNumber() const
 
 const char *AtomProxy::atomName() const
 {
-    return *(it_->atoms_->atomname[it_->localAtomNumber_]);
+    return *(it_->atoms_[it_->localAtomNumber_].atomname);
 }
 
 const char *AtomProxy::residueName() const
 {
-    int residueIndexInMolecule = it_->atoms_->atom[it_->localAtomNumber_].resind;
-    return *(it_->atoms_->resinfo[residueIndexInMolecule].name);
+    return *(resinfo().name_);
 }
 
 int AtomProxy::residueNumber() const
 {
-    int residueIndexInMolecule = it_->atoms_->atom[it_->localAtomNumber_].resind;
-    if (it_->atoms_->nres <= it_->mtop_->maxres_renum)
+    int residueIndexInMolecule = it_->atoms_[it_->localAtomNumber_].resind_;
+    if (it_->resinfo_.ssize() <= it_->mtop_->maxres_renum)
     {
         return it_->highestResidueNumber_ + 1 + residueIndexInMolecule;
     }
     else
     {
-        return it_->atoms_->resinfo[residueIndexInMolecule].nr;
+        return it_->resinfo_[residueIndexInMolecule].nr_;
     }
 }
 
@@ -318,10 +325,10 @@ int AtomProxy::atomNumberInMol() const
 
 typedef struct gmx_mtop_atomloop_block
 {
-    const gmx_mtop_t *mtop;
-    size_t            mblock;
-    const t_atoms    *atoms;
-    int               at_local;
+    const gmx_mtop_t             *mtop;
+    size_t                        mblock;
+    gmx::ArrayRef<const AtomInfo> atoms;
+    int                           at_local;
 } t_gmx_mtop_atomloop_block;
 
 gmx_mtop_atomloop_block_t
@@ -333,7 +340,7 @@ gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop)
 
     aloop->mtop      = mtop;
     aloop->mblock    = 0;
-    aloop->atoms     = &mtop->moltype[mtop->molblock[aloop->mblock].type].atoms;
+    aloop->atoms     = mtop->moltype[mtop->molblock[aloop->mblock].type].atoms;
     aloop->at_local  = -1;
 
     return aloop;
@@ -345,7 +352,7 @@ static void gmx_mtop_atomloop_block_destroy(gmx_mtop_atomloop_block_t aloop)
 }
 
 gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                                      const t_atom **atom, int *nmol)
+                                      AtomInfo *atom, int *nmol)
 {
     if (aloop == nullptr)
     {
@@ -354,7 +361,7 @@ gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
 
     aloop->at_local++;
 
-    if (aloop->at_local >= aloop->atoms->nr)
+    if (aloop->at_local >= gmx::ssize(aloop->atoms))
     {
         aloop->mblock++;
         if (aloop->mblock >= aloop->mtop->molblock.size())
@@ -362,11 +369,11 @@ gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
             gmx_mtop_atomloop_block_destroy(aloop);
             return FALSE;
         }
-        aloop->atoms    = &aloop->mtop->moltype[aloop->mtop->molblock[aloop->mblock].type].atoms;
+        aloop->atoms    = aloop->mtop->moltype[aloop->mtop->molblock[aloop->mblock].type].atoms;
         aloop->at_local = 0;
     }
 
-    *atom = &aloop->atoms->atom[aloop->at_local];
+    *atom = aloop->atoms[aloop->at_local];
     *nmol = aloop->mtop->molblock[aloop->mblock].nmol;
 
     return TRUE;
@@ -558,124 +565,28 @@ t_block gmx_mtop_global_cgs(const gmx_mtop_t *mtop)
     return cgs_gl;
 }
 
-static void atomcat(t_atoms *dest, const t_atoms *src, int copies,
-                    int maxres_renum, int *maxresnr)
+AtomResiduePdb
+gmx_mtop_global_atoms(const gmx_mtop_t &mtop)
 {
-    int i, j, l, size;
-    int srcnr  = src->nr;
-    int destnr = dest->nr;
+    AtomResiduePdb    system;
 
-    if (dest->nr == 0)
-    {
-        dest->haveMass    = src->haveMass;
-        dest->haveType    = src->haveType;
-        dest->haveCharge  = src->haveCharge;
-        dest->haveBState  = src->haveBState;
-        dest->havePdbInfo = src->havePdbInfo;
-    }
-    else
-    {
-        dest->haveMass    = dest->haveMass    && src->haveMass;
-        dest->haveType    = dest->haveType    && src->haveType;
-        dest->haveCharge  = dest->haveCharge  && src->haveCharge;
-        dest->haveBState  = dest->haveBState  && src->haveBState;
-        dest->havePdbInfo = dest->havePdbInfo && src->havePdbInfo;
-    }
+    t_symtab          symtab;
+    open_symtab(&symtab);
+    gmx::AtomsBuilder builder(&system.atoms, &system.resinfo, &system.pdb, &symtab);
 
-    if (srcnr)
+    for (const gmx_molblock_t &molb : mtop.molblock)
     {
-        size = destnr+copies*srcnr;
-        srenew(dest->atom, size);
-        srenew(dest->atomname, size);
-        if (dest->haveType)
+        for (int i = 0; i < molb.nmol; i++)
         {
-            srenew(dest->atomtype, size);
-            if (dest->haveBState)
-            {
-                srenew(dest->atomtypeB, size);
-            }
-        }
-        if (dest->havePdbInfo)
-        {
-            srenew(dest->pdbinfo, size);
+            builder.mergeAtoms(mtop.moltype[molb.type].atoms,
+                               mtop.moltype[molb.type].resinfo,
+                               mtop.moltype[molb.type].pdb);
         }
     }
-    if (src->nres)
-    {
-        size = dest->nres+copies*src->nres;
-        srenew(dest->resinfo, size);
-    }
-
-    /* residue information */
-    for (l = dest->nres, j = 0; (j < copies); j++, l += src->nres)
-    {
-        memcpy(reinterpret_cast<char *>(&(dest->resinfo[l])), reinterpret_cast<char *>(&(src->resinfo[0])),
-               static_cast<size_t>(src->nres*sizeof(src->resinfo[0])));
-    }
-
-    for (l = destnr, j = 0; (j < copies); j++, l += srcnr)
-    {
-        memcpy(reinterpret_cast<char *>(&(dest->atom[l])), reinterpret_cast<char *>(&(src->atom[0])),
-               static_cast<size_t>(srcnr*sizeof(src->atom[0])));
-        memcpy(reinterpret_cast<char *>(&(dest->atomname[l])), reinterpret_cast<char *>(&(src->atomname[0])),
-               static_cast<size_t>(srcnr*sizeof(src->atomname[0])));
-        if (dest->haveType)
-        {
-            memcpy(reinterpret_cast<char *>(&(dest->atomtype[l])), reinterpret_cast<char *>(&(src->atomtype[0])),
-                   static_cast<size_t>(srcnr*sizeof(src->atomtype[0])));
-            if (dest->haveBState)
-            {
-                memcpy(reinterpret_cast<char *>(&(dest->atomtypeB[l])), reinterpret_cast<char *>(&(src->atomtypeB[0])),
-                       static_cast<size_t>(srcnr*sizeof(src->atomtypeB[0])));
-            }
-        }
-        if (dest->havePdbInfo)
-        {
-            memcpy(reinterpret_cast<char *>(&(dest->pdbinfo[l])), reinterpret_cast<char *>(&(src->pdbinfo[0])),
-                   static_cast<size_t>(srcnr*sizeof(src->pdbinfo[0])));
-        }
-    }
-
-    /* Increment residue indices */
-    for (l = destnr, j = 0; (j < copies); j++)
-    {
-        for (i = 0; (i < srcnr); i++, l++)
-        {
-            dest->atom[l].resind = dest->nres+j*src->nres+src->atom[i].resind;
-        }
-    }
-
-    if (src->nres <= maxres_renum)
-    {
-        /* Single residue molecule, continue counting residues */
-        for (j = 0; (j < copies); j++)
-        {
-            for (l = 0; l < src->nres; l++)
-            {
-                (*maxresnr)++;
-                dest->resinfo[dest->nres+j*src->nres+l].nr = *maxresnr;
-            }
-        }
-    }
-
-    dest->nres += copies*src->nres;
-    dest->nr   += copies*src->nr;
-}
-
-t_atoms gmx_mtop_global_atoms(const gmx_mtop_t *mtop)
-{
-    t_atoms         atoms;
-
-    init_t_atoms(&atoms, 0, FALSE);
-
-    int maxresnr = mtop->maxresnr;
-    for (const gmx_molblock_t &molb : mtop->molblock)
-    {
-        atomcat(&atoms, &mtop->moltype[molb.type].atoms, molb.nmol,
-                mtop->maxres_renum, &maxresnr);
-    }
-
-    return atoms;
+    system.atoms   = std::vector<AtomInfo>(builder.atoms().begin(), builder.atoms().end());
+    system.resinfo = std::vector<Residue>(builder.resinfo().begin(), builder.resinfo().end());
+    system.pdb     = std::vector<PdbEntry>(builder.pdb().begin(), builder.pdb().end());
+    return system;
 }
 
 /*
@@ -913,7 +824,7 @@ static void copyIdefFromMtop(const gmx_mtop_t &mtop,
     {
         const gmx_moltype_t &molt = mtop.moltype[molb.type];
 
-        int                  srcnr  = molt.atoms.nr;
+        int                  srcnr  = molt.atoms.size();
         int                  destnr = natoms;
 
         int                  nposre_old   = idef->il[F_POSRES].nr;
@@ -969,10 +880,10 @@ static void copyIdefFromMtop(const gmx_mtop_t &mtop,
         std::vector<real>          qB(mtop.natoms);
         for (const AtomProxy atomP : AtomRange(mtop))
         {
-            const t_atom &local = atomP.atom();
-            int           index = atomP.globalAtomNumber();
-            qA[index] = local.q;
-            qB[index] = local.qB;
+            const AtomInfo &local = atomP.atom();
+            int             index = atomP.globalAtomNumber();
+            qA[index] = local.q_;
+            qB[index] = local.qB_;
         }
         gmx_sort_ilist_fe(idef, qA.data(), qB.data());
     }
@@ -1041,7 +952,7 @@ static void copyExclsFromMtop(const gmx_mtop_t &mtop,
     {
         const gmx_moltype_t &molt = mtop.moltype[molb.type];
 
-        int                  srcnr  = molt.atoms.nr;
+        int                  srcnr  = molt.atoms.size();
         int                  destnr = natoms;
 
         blockacat(excls, &molt.excls, molb.nmol, destnr, srcnr);
@@ -1149,7 +1060,7 @@ static void fillMoleculeIndices(const gmx_mtop_t  &mtop,
     index[globalMolIndex] = globalAtomIndex;
     for (const gmx_molblock_t &molb : mtop.molblock)
     {
-        int numAtomsPerMolecule = mtop.moltype[molb.type].atoms.nr;
+        int numAtomsPerMolecule = mtop.moltype[molb.type].atoms.size();
         for (int mol = 0; mol < molb.nmol; mol++)
         {
             globalAtomIndex       += numAtomsPerMolecule;
@@ -1165,7 +1076,7 @@ gmx::RangePartitioning gmx_mtop_molecules(const gmx_mtop_t &mtop)
 
     for (const gmx_molblock_t &molb : mtop.molblock)
     {
-        int numAtomsPerMolecule = mtop.moltype[molb.type].atoms.nr;
+        int numAtomsPerMolecule = mtop.moltype[molb.type].atoms.size();
         for (int mol = 0; mol < molb.nmol; mol++)
         {
             mols.appendBlock(numAtomsPerMolecule);
@@ -1202,8 +1113,11 @@ static void gen_t_topology(const gmx_mtop_t &mtop,
     copyCgsFromMtop(mtop, &top->cgs);
     copyExclsFromMtop(mtop, &top->excls);
 
+    AtomResiduePdb system = gmx_mtop_global_atoms(mtop);
     top->name                        = mtop.name;
-    top->atoms                       = gmx_mtop_global_atoms(&mtop);
+    top->atoms                       = std::move(system.atoms);
+    top->resinfo                     = std::move(system.resinfo);
+    top->pdb = std::move(system.pdb);
     top->mols                        = gmx_mtop_molecules_t_block(mtop);
     top->bIntermolecularInteractions = mtop.bIntermolecularInteractions;
     top->symtab                      = mtop.symtab;
@@ -1231,9 +1145,9 @@ std::vector<int> get_atom_index(const gmx_mtop_t *mtop)
     std::vector<int>             atom_index;
     for (const AtomProxy atomP : AtomRange(*mtop))
     {
-        const t_atom &local = atomP.atom();
-        int           index = atomP.globalAtomNumber();
-        if (local.ptype == eptAtom)
+        const AtomInfo &local = atomP.atom();
+        int             index = atomP.globalAtomNumber();
+        if (local.ptype_ == eptAtom)
         {
             atom_index.push_back(index);
         }
@@ -1241,10 +1155,12 @@ std::vector<int> get_atom_index(const gmx_mtop_t *mtop)
     return atom_index;
 }
 
-void convertAtomsToMtop(t_symtab    *symtab,
-                        char       **name,
-                        t_atoms     *atoms,
-                        gmx_mtop_t  *mtop)
+void convertAtomsToMtop(t_symtab                     *symtab,
+                        char                        **name,
+                        gmx::ArrayRef<const AtomInfo> atoms,
+                        gmx::ArrayRef<const Residue>  resinfo,
+                        gmx::ArrayRef<const PdbEntry> pdb,
+                        gmx_mtop_t                   *mtop)
 {
     mtop->symtab                 = *symtab;
 
@@ -1252,7 +1168,9 @@ void convertAtomsToMtop(t_symtab    *symtab,
 
     mtop->moltype.clear();
     mtop->moltype.resize(1);
-    mtop->moltype.back().atoms   = *atoms;
+    mtop->moltype.back().atoms   = std::vector<AtomInfo>(atoms.begin(), atoms.end());
+    mtop->moltype.back().resinfo = std::vector<Residue>(resinfo.begin(), resinfo.end());
+    mtop->moltype.back().pdb     = std::vector<PdbEntry>(pdb.begin(), pdb.end());
 
     mtop->molblock.resize(1);
     mtop->molblock[0].type       = 0;
@@ -1260,7 +1178,7 @@ void convertAtomsToMtop(t_symtab    *symtab,
 
     mtop->bIntermolecularInteractions = FALSE;
 
-    mtop->natoms                 = atoms->nr;
+    mtop->natoms                 = atoms.size();
 
     mtop->haveMoleculeIndices    = false;
 

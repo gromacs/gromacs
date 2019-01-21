@@ -42,10 +42,10 @@
 
 class PreprocessingAtomTypes;
 struct gmx_moltype_t;
-struct t_atoms;
+struct AtomInfo;
 struct InteractionTypeParameters;
 
-int set_vsites(bool bVerbose, t_atoms *atoms,  PreprocessingAtomTypes *atype,
+int set_vsites(bool bVerbose, gmx::ArrayRef<const AtomInfo> atoms,  PreprocessingAtomTypes *atype,
                gmx::ArrayRef<InteractionTypeParameters> plist);
 /* set parameters for virtual sites, return number of virtual sites */
 

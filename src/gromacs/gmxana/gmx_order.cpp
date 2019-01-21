@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -286,14 +286,14 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     snew(grpname, ng);
     snew(index, ng);
     snew(isize, ng);
-    get_index(&top.atoms, fnNDX, ng, isize, index, grpname);
+    get_index(top.atoms, top.resinfo, fnNDX, ng, isize, index, grpname);
 
     /* Analyze trajectory */
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > gmx::index(top.atoms.size()))
     {
-        gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
-                  top.atoms.nr, natoms);
+        gmx_fatal(FARGS, "Topology (%lu atoms) does not match trajectory (%d atoms)",
+                  top.atoms.size(), natoms);
     }
     check_index(nullptr, ng, index[0], nullptr, natoms);
 
@@ -357,7 +357,7 @@ static void print_types(const int index[], int a[], int ngrps,
     for (i = 0; i < ngrps; i++)
     {
         fprintf(stderr, "Groupname: %s First atomname: %s First atomnr %d\n",
-                groups[i], *(top->atoms.atomname[a[index[i]]]), a[index[i]]);
+                groups[i], *(top->atoms[a[index[i]]].atomname), a[index[i]]);
     }
     fprintf(stderr, "\n");
 }
@@ -436,7 +436,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
     {
         use_unitvector = TRUE;
         fprintf(stderr, "Select an index group to calculate the radial membrane normal\n");
-        get_index(&top->atoms, radfn, 1, &comsize, &comidx, &grpname);
+        get_index(top->atoms, top->resinfo, radfn, 1, &comsize, &comidx, &grpname);
     }
     if (distcalc)
     {
@@ -445,7 +445,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
             sfree(grpname);
         }
         fprintf(stderr, "Select an index group to use as distance reference\n");
-        get_index(&top->atoms, radfn, 1, &distsize, &distidx, &grpname);
+        get_index(top->atoms, top->resinfo, radfn, 1, &distsize, &distidx, &grpname);
         bSliced = FALSE; /*force slices off*/
     }
 
@@ -838,7 +838,6 @@ static void write_bfactors(t_filenm  *fnm, int nfile, const int *index, const in
           first frame of trajectory*/
     t_trxstatus *status;
     t_trxframe   fr, frout;
-    t_atoms      useatoms;
     int          i, j, ctr, nout;
 
     ngrps -= 2;  /*we don't have an order parameter for the first or
@@ -854,16 +853,12 @@ static void write_bfactors(t_filenm  *fnm, int nfile, const int *index, const in
     frout.x      = nullptr;
     snew(frout.x, nout);
 
-    init_t_atoms(&useatoms, nout, TRUE);
-    useatoms.nr = nout;
-
+    std::vector<PdbEntry> usepdb;
+    std::vector<AtomInfo> useatoms(nout);
     /*initialize PDBinfo*/
-    for (i = 0; i < useatoms.nr; ++i)
+    for (i = 0; i < nout; ++i)
     {
-        useatoms.pdbinfo[i].type         = 0;
-        useatoms.pdbinfo[i].occup        = 0.0;
-        useatoms.pdbinfo[i].bfac         = 0.0;
-        useatoms.pdbinfo[i].bAnisotropic = FALSE;
+        usepdb.push_back(PdbEntry(0, -1, ' ', "", 0.0, 0.0));
     }
 
     for (j = 0, ctr = 0; j < nslices; j++)
@@ -871,23 +866,19 @@ static void write_bfactors(t_filenm  *fnm, int nfile, const int *index, const in
         for (i = 0; i < ngrps; i++, ctr++)
         {
             /*iterate along each chain*/
-            useatoms.pdbinfo[ctr].bfac = order[j][i+1];
+            usepdb[ctr].bfac_ = order[j][i+1];
             if (distvals)
             {
-                useatoms.pdbinfo[ctr].occup = distvals[j][i+1];
+                usepdb[ctr].occup_ = distvals[j][i+1];
             }
             copy_rvec(fr.x[a[index[i+1]+j]], frout.x[ctr]);
-            useatoms.atomname[ctr] = top->atoms.atomname[a[index[i+1]+j]];
-            useatoms.atom[ctr]     = top->atoms.atom[a[index[i+1]+j]];
-            useatoms.nres          = std::max(useatoms.nres, useatoms.atom[ctr].resind+1);
-            useatoms.resinfo[useatoms.atom[ctr].resind] = top->atoms.resinfo[useatoms.atom[ctr].resind]; /*copy resinfo*/
+            useatoms[ctr] = top->atoms[a[index[i+1]+j]];
         }
     }
 
-    write_sto_conf(opt2fn("-ob", nfile, fnm), "Order parameters", &useatoms, frout.x, nullptr, frout.ePBC, frout.box);
+    write_sto_conf(opt2fn("-ob", nfile, fnm), "Order parameters", useatoms, top->resinfo, usepdb, frout.x, nullptr, frout.ePBC, frout.box);
 
     sfree(frout.x);
-    done_atom(&useatoms);
 }
 
 int gmx_order(int argc, char *argv[])
