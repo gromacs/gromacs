@@ -136,7 +136,20 @@ void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
                    const matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr);
 
-void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayRef<real> lambda, double *lam0);
+/*! \brief Fills fep_state, lambda, and lam0 if needed
+ *
+ * If FEP or simulated tempering is in use:
+ *
+ *    fills non-null lam0 with the initial lambda values, and
+ *    on master rank fills fep_state and lambda.
+ *
+ * Reports the initial lambda state to the log file. */
+void initialize_lambdas(FILE               *fplog,
+                        const t_inputrec   &ir,
+                        bool                isMaster,
+                        int                *fep_state,
+                        gmx::ArrayRef<real> lambda,
+                        double             *lam0);
 
 void do_constrain_first(FILE *log, gmx::Constraints *constr,
                         const t_inputrec *inputrec, const t_mdatoms *md,
