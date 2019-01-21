@@ -369,13 +369,8 @@ static void init_em(FILE *fplog,
         fprintf(fplog, "Initiating %s\n", title);
     }
 
-    if (MASTER(cr))
-    {
-        state_global->ngtc = 0;
-
-        /* Initialize lambda variables */
-        initialize_lambdas(fplog, ir, &(state_global->fep_state), state_global->lambda, nullptr);
-    }
+    state_global->ngtc = 0;
+    initialize_lambdas(fplog, *ir, MASTER(cr), &(state_global->fep_state), state_global->lambda, nullptr);
 
     init_nrnb(nrnb);
 
