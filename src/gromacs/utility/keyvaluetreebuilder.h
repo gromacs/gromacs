@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,9 +56,9 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
-#include "gromacs/utility/variant.h"
 
 namespace gmx
 {
@@ -92,7 +92,7 @@ class KeyValueTreeBuilder
         template <typename T>
         static KeyValueTreeValue createValue(const T &value)
         {
-            return KeyValueTreeValue(Variant::create<T>(value));
+            return KeyValueTreeValue(Any::create<T>(value));
         }
         /*! \brief
          * Helper function for other builders to create default-constructed
@@ -101,7 +101,7 @@ class KeyValueTreeBuilder
         template <typename T>
         static KeyValueTreeValue createValue()
         {
-            return KeyValueTreeValue(Variant::create<T>(T()));
+            return KeyValueTreeValue(Any::create<T>(T()));
         }
 
         KeyValueTreeObject root_;
@@ -131,10 +131,10 @@ class KeyValueTreeValueBuilder
         template <typename T>
         void setValue(const T &value)
         {
-            value_ = Variant::create<T>(value);
+            value_ = Any::create<T>(value);
         }
-        //! Assigns a Variant value to the built value.
-        void setVariantValue(Variant &&value)
+        //! Assigns a Any value to the built value.
+        void setAnyValue(Any &&value)
         {
             value_ = std::move(value);
         }
@@ -161,7 +161,7 @@ class KeyValueTreeValueBuilder
         KeyValueTreeValue build() { return KeyValueTreeValue(std::move(value_)); }
 
     private:
-        Variant value_;
+        Any value_;
 };
 
 class KeyValueTreeArrayBuilderBase
@@ -173,11 +173,11 @@ class KeyValueTreeArrayBuilderBase
         {
         }
 
-        //! Appends a raw Variant value to the array.
-        KeyValueTreeValue &addRawValue(Variant &&value)
+        //! Appends a raw Any value to the array.
+        KeyValueTreeValue &addRawValue(Any &&value)
         {
             KeyValueTreeValueBuilder builder;
-            builder.setVariantValue(std::move(value));
+            builder.setAnyValue(std::move(value));
             array_->values_.push_back(builder.build());
             return array_->values_.back();
         }
@@ -285,8 +285,8 @@ class KeyValueTreeObjectBuilder
         {
             addProperty(key, std::move(value));
         }
-        //! Adds a property with given key from a Variant value.
-        void addRawValue(const std::string &key, Variant &&value)
+        //! Adds a property with given key from a Any value.
+        void addRawValue(const std::string &key, Any &&value)
         {
             addProperty(key, KeyValueTreeValue(std::move(value)));
         }
@@ -439,13 +439,13 @@ inline KeyValueTreeObjectBuilder KeyValueTreeBuilder::rootObject()
 
 inline KeyValueTreeObjectBuilder KeyValueTreeValueBuilder::createObject()
 {
-    value_ = Variant::create<KeyValueTreeObject>(KeyValueTreeObject());
+    value_ = Any::create<KeyValueTreeObject>(KeyValueTreeObject());
     return KeyValueTreeObjectBuilder(&value_.castRef<KeyValueTreeObject>());
 }
 
 inline KeyValueTreeArrayBuilder KeyValueTreeValueBuilder::createArray()
 {
-    value_ = Variant::create<KeyValueTreeArray>(KeyValueTreeArray());
+    value_ = Any::create<KeyValueTreeArray>(KeyValueTreeArray());
     return KeyValueTreeArrayBuilder(&value_.castRef<KeyValueTreeArray>());
 }
 

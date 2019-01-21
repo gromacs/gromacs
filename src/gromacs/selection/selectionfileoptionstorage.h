@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,14 +71,14 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         OptionInfo &optionInfo() override { return info_; }
         std::string typeString() const override { return "file"; }
         int valueCount() const override { return 0; }
-        std::vector<Variant> defaultValues() const override { return {}; }
+        std::vector<Any> defaultValues() const override { return {}; }
         std::vector<std::string> defaultValuesAsStrings() const override { return {}; }
-        std::vector<Variant>
-        normalizeValues(const std::vector<Variant> &values) const override { return values; }
+        std::vector<Any>
+        normalizeValues(const std::vector<Any> &values) const override { return values; }
 
     private:
         void clearSet() override;
-        void convertValue(const Variant &value) override;
+        void convertValue(const Any &value) override;
         void processSet() override;
         void processAll() override {}
 

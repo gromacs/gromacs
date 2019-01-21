@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,8 +77,8 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         OptionInfo &optionInfo() override { return info_; }
         std::string typeString() const override { return "selection"; }
         std::string formatSingleValue(const Selection &value) const override;
-        std::vector<Variant>
-        normalizeValues(const std::vector<Variant> &values) const override;
+        std::vector<Any>
+        normalizeValues(const std::vector<Any> &values) const override;
 
         /*! \brief
          * Adds selections to the storage.
@@ -128,7 +128,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         void setSelectionFlag(SelectionFlag flag, bool bSet);
 
     private:
-        void convertValue(const Variant &value) override;
+        void convertValue(const Any &value) override;
         void processSetValues(ValueList *values) override;
         void processAll() override;
 

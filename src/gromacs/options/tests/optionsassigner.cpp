@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,9 +57,9 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/variant.h"
 
 #include "testutils/testasserts.h"
 
@@ -654,7 +654,7 @@ TEST(OptionsAssignerDoubleTest, StoresValueFromFloat)
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue(gmx::Variant::create<float>(2.7)));
+    ASSERT_NO_THROW(assigner.appendValue(gmx::Any::create<float>(2.7)));
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());

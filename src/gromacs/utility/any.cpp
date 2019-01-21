@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,14 +34,14 @@
  */
 /*! \internal \file
  * \brief
- * Implements functionality from variant.h.
+ * Implements functionality from any.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
 #include "gmxpre.h"
 
-#include "variant.h"
+#include "any.h"
 
 #include <string>
 
@@ -52,7 +52,7 @@ namespace gmx
 {
 
 //! \cond libapi
-std::string simpleValueToString(const Variant &value)
+std::string simpleValueToString(const Any &value)
 {
     if (value.isType<bool>())
     {
