@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,19 +46,19 @@
 #include <map>
 #include <typeindex>
 
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/variant.h"
 
 namespace gmx
 {
 
 /*! \libinternal \brief
- * Helper for converting from Variant to a given type.
+ * Helper for converting from Any to a given type.
  *
  * \tparam OutType  Type this converter converts to.
  *
  * Default-constructed converter only supports identity mapping from the a
- * Variant holding `OutType`.  To add support for additional input types,
+ * Any holding `OutType`.  To add support for additional input types,
  * provide conversion functions with addConverter().  To use a non-identity
  * mapping for an `OutType` -> `OutType` conversion, provide an alternative
  * conversion from `OutType` with addConverter().
@@ -71,13 +71,13 @@ class OptionValueConverterSimple
 {
     public:
         /*! \brief
-         * Converts a Variant value to the output type.
+         * Converts a Any value to the output type.
          *
          * \returns  Converted value.
-         * \throws InvalidInputError If the input Variant has a type that is
+         * \throws InvalidInputError If the input Any has a type that is
          *     not recognized by any conversion.
          */
-        OutType convert(const Variant &value) const
+        OutType convert(const Any &value) const
         {
             std::type_index type(value.type());
             auto            iter = converters_.find(type);
@@ -102,7 +102,7 @@ class OptionValueConverterSimple
         void addConverter(std::function<OutType(const InType &)> func)
         {
             converters_[std::type_index(typeid(InType))] =
-                [func] (const Variant &value)
+                [func] (const Any &value)
                 {
                     return func(value.cast<InType>());
                 };
@@ -116,14 +116,14 @@ class OptionValueConverterSimple
         void addCastConversion()
         {
             converters_[std::type_index(typeid(InType))] =
-                [] (const Variant &value)
+                [] (const Any &value)
                 {
                     return static_cast<OutType>(value.cast<InType>());
                 };
         }
 
     private:
-        typedef std::function<OutType(const Variant &value)> ConversionFunction;
+        typedef std::function<OutType(const Any &value)> ConversionFunction;
 
         std::map<std::type_index, ConversionFunction> converters_;
 };

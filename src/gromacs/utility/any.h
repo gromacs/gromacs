@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,14 +34,14 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::Variant.
+ * Declares gmx::Any.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_utility
  */
-#ifndef GMX_UTILITY_VARIANT_H
-#define GMX_UTILITY_VARIANT_H
+#ifndef GMX_UTILITY_ANY_H
+#define GMX_UTILITY_ANY_H
 
 #include <memory>
 #include <string>
@@ -59,11 +59,11 @@ namespace gmx
 /*! \libinternal \brief
  * Represents a dynamically typed value of an arbitrary type.
  *
- * To create a variant, either initialize it as empty, or with the create()
+ * To create a any, either initialize it as empty, or with the create()
  * method (or the equivalent constructor, if the type parameter can be deduced
  * and is clear to the reader from the context).
  *
- * To query the type of the contents in the variant, use isEmpty(), type(), and
+ * To query the type of the contents in the any, use isEmpty(), type(), and
  * isType().
  *
  * To access the value, you need to know the type as a compile-time constant
@@ -76,11 +76,11 @@ namespace gmx
  *
  * \ingroup module_utility
  */
-class Variant
+class Any
 {
     public:
         /*! \brief
-         * Creates a variant that holds the given value.
+         * Creates a any that holds the given value.
          *
          * \throws std::bad_alloc if out of memory.
          *
@@ -88,9 +88,9 @@ class Variant
          * contrary to the templated constructor.
          */
         template <typename T>
-        static Variant create(const T &value) { return Variant(value); }
+        static Any create(const T &value) { return Any(value); }
         /*! \brief
-         * Creates a variant that holds the given value.
+         * Creates a any that holds the given value.
          *
          * \throws std::bad_alloc if out of memory.
          *
@@ -98,40 +98,40 @@ class Variant
          * method avoids copying when move-construction is possible.
          */
         template <typename T>
-        static Variant create(T &&value) { return Variant(std::forward<T>(value)); }
+        static Any create(T &&value) { return Any(std::forward<T>(value)); }
 
-        //! Creates an empty variant value.
-        Variant() {}
+        //! Creates an empty any value.
+        Any() {}
         /*! \brief
-         * Creates a variant that holds the given value.
+         * Creates a any that holds the given value.
          *
          * \throws std::bad_alloc if out of memory.
          */
-        template <typename T, typename = typename std::enable_if<!std::is_same<T, Variant>::value>::type>
-        explicit Variant(T &&value)
+        template <typename T, typename = typename std::enable_if<!std::is_same<T, Any>::value>::type>
+        explicit Any(T &&value)
             : content_(new Content<typename std::decay<T>::type>(std::forward<T>(value)))
         {
         }
         /*! \brief
-         * Creates a deep copy of a variant.
+         * Creates a deep copy of a any.
          *
          * \throws std::bad_alloc if out of memory.
          */
-        Variant(const Variant &other) : content_(other.cloneContent()) {}
-        //! Move-constructs a variant.
-        Variant(Variant &&other) noexcept : content_(std::move(other.content_)) {}
+        Any(const Any &other) : content_(other.cloneContent()) {}
+        //! Move-constructs a any.
+        Any(Any &&other) noexcept : content_(std::move(other.content_)) {}
         /*! \brief
-         * Assigns the variant.
+         * Assigns the any.
          *
          * \throws std::bad_alloc if out of memory.
          */
-        Variant &operator=(const Variant &other)
+        Any &operator=(const Any &other)
         {
             content_ = other.cloneContent();
             return *this;
         }
-        //! Move-assigns the variant.
-        Variant &operator=(Variant &&other) noexcept
+        //! Move-assigns the any.
+        Any &operator=(Any &&other) noexcept
         {
             content_ = std::move(other.content_);
             return *this;
@@ -168,9 +168,9 @@ class Variant
         /*! \brief
          * Gets the value when the type is known.
          *
-         * \tparam T  Type to get (which must match what the variant stores).
+         * \tparam T  Type to get (which must match what the any stores).
          *
-         * Asserts if the variant is empty or does not contain the requested type.
+         * Asserts if the any is empty or does not contain the requested type.
          */
         template <typename T>
         const T &cast() const
@@ -197,9 +197,9 @@ class Variant
         /*! \brief
          * Gets the value when the type is known as a modifiable reference.
          *
-         * \tparam T  Type to get (which must match what the variant stores).
+         * \tparam T  Type to get (which must match what the any stores).
          *
-         * Asserts if the variant is empty or does not contain the requested type.
+         * Asserts if the any is empty or does not contain the requested type.
          */
         template <typename T>
         T &castRef()
@@ -242,14 +242,14 @@ class Variant
 
 //! \cond libapi
 /*! \brief
- * Converts a Variant value to a string.
+ * Converts a Any value to a string.
  *
  * As the name suggests, only some types of "simple" values (such as int) are
  * supported.  Asserts for unsupported types.
  *
  * \ingroup module_utility
  */
-std::string simpleValueToString(const Variant &value);
+std::string simpleValueToString(const Any &value);
 //! \endcond
 
 } // namespace gmx

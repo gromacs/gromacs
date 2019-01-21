@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,7 @@ class TreeAssignHelper
                     assigner_.startOption(prop.key().c_str());
                     try
                     {
-                        assigner_.appendValue(prop.value().asVariant());
+                        assigner_.appendValue(prop.value().asAny());
                     }
                     catch (UserInputError &ex)
                     {
@@ -136,7 +136,7 @@ class TreeAssignHelper
                 assigner_.startOption(key.c_str());
                 for (const KeyValueTreeValue &value : array.values())
                 {
-                    assigner_.appendValue(value.asVariant());
+                    assigner_.appendValue(value.asAny());
                 }
                 assigner_.finishOption();
             }
@@ -250,7 +250,7 @@ class TreeAdjustHelper : private OptionsVisitor
             const std::string &name = option.name();
             if (currentSourceObject_ == nullptr || !currentSourceObject_->keyExists(name))
             {
-                std::vector<Variant> values = option.defaultValues();
+                std::vector<Any> values = option.defaultValues();
                 if (values.size() == 1)
                 {
                     currentObjectBuilder_.addRawValue(name, std::move(values[0]));
@@ -258,7 +258,7 @@ class TreeAdjustHelper : private OptionsVisitor
                 else if (values.size() > 1)
                 {
                     auto arrayBuilder = currentObjectBuilder_.addArray(name);
-                    for (Variant &value : values)
+                    for (Any &value : values)
                     {
                         arrayBuilder.addRawValue(std::move(value));
                     }
@@ -268,19 +268,19 @@ class TreeAdjustHelper : private OptionsVisitor
             {
                 const KeyValueTreeValue &value = (*currentSourceObject_)[name];
                 GMX_RELEASE_ASSERT(!value.isObject(), "Value objects not supported in this context");
-                std::vector<Variant>     values;
+                std::vector<Any>         values;
                 if (value.isArray())
                 {
                     for (const auto &arrayValue : value.asArray().values())
                     {
                         GMX_RELEASE_ASSERT(!value.isObject() && !value.isArray(),
                                            "Complex values not supported in this context");
-                        values.push_back(arrayValue.asVariant());
+                        values.push_back(arrayValue.asAny());
                     }
                 }
                 else
                 {
-                    values.push_back(value.asVariant());
+                    values.push_back(value.asAny());
                 }
                 values = option.normalizeValues(values);
                 if (values.empty())
