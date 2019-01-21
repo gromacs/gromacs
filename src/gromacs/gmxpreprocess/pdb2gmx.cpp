@@ -103,7 +103,7 @@ static const char *res2bb_notermini(const char *name,
     int i;
 
     i = 0;
-    while (i < nrr && gmx_strcasecmp(name, rr[i].gmx) != 0)
+    while (i < nrr && !gmx::compareStringsCaseInsensitve(name, rr[i].gmx))
     {
         i++;
     }
@@ -403,7 +403,7 @@ static void rename_pdbres(t_atoms *pdba, const char *oldnm, const char *newnm,
     for (i = 0; (i < pdba->nres); i++)
     {
         resnm = *pdba->resinfo[i].name;
-        if ((bFullCompare && (gmx_strcasecmp(resnm, oldnm) == 0)) ||
+        if ((bFullCompare && (gmx::compareStringsCaseInsensitve(resnm, oldnm))) ||
             (!bFullCompare && strstr(resnm, oldnm) != nullptr))
         {
             /* Rename the residue name (not the rtp name) */
@@ -422,7 +422,7 @@ static void rename_bb(t_atoms *pdba, const char *oldnm, const char *newnm,
     {
         /* We have not set the rtp name yes, use the residue name */
         bbnm = *pdba->resinfo[i].name;
-        if ((bFullCompare && (gmx_strcasecmp(bbnm, oldnm) == 0)) ||
+        if ((bFullCompare && (gmx::compareStringsCaseInsensitve(bbnm, oldnm))) ||
             (!bFullCompare && strstr(bbnm, oldnm) != nullptr))
         {
             /* Change the rtp builing block name */
@@ -719,7 +719,7 @@ static void sort_pdbatoms(t_restp restp[],
         atomnm = *pdba->atomname[i];
         rptr   = &restp[pdba->atom[i].resind];
         int j = std::find_if(rptr->atomname, rptr->atomname+rptr->natom,
-                             [&atomnm](char** it){return gmx_strcasecmp(atomnm, *it) == 0; })
+                             [&atomnm](char** it){return gmx::compareStringsCaseInsensitve(atomnm, *it); })
             - rptr->atomname;
         if (j == rptr->natom)
         {
@@ -894,7 +894,7 @@ checkResidueTypeSanity(t_atoms     *pdba,
         for (int i = r0 + 1; i < r1; i++)
         {
             restype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
-            if (gmx_strcasecmp(restype.c_str(), restype0.c_str()))
+            if (!gmx::compareStringsCaseInsensitve(restype, restype0))
             {
                 allResiduesHaveSameType = false;
                 residueString           = gmx::formatString("%s%d", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
@@ -949,12 +949,14 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
     for (i = r0; i < r1 && *r_start == -1; i++)
     {
         p_startrestype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
-        if (!gmx_strcasecmp(p_startrestype.c_str(), "Protein") || !gmx_strcasecmp(p_startrestype.c_str(), "DNA") || !gmx_strcasecmp(p_startrestype.c_str(), "RNA") )
+        if (gmx::compareStringsCaseInsensitve(p_startrestype, "Protein") ||
+            gmx::compareStringsCaseInsensitve(p_startrestype, "DNA") ||
+            gmx::compareStringsCaseInsensitve(p_startrestype, "RNA") )
         {
             printf("Identified residue %s%d as a starting terminus.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
             *r_start = i;
         }
-        else if (!gmx_strcasecmp(p_startrestype.c_str(), "Ion"))
+        else if (gmx::compareStringsCaseInsensitve(p_startrestype, "Ion"))
         {
             if (ionNotes < 5)
             {
@@ -1003,11 +1005,11 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
         for (int i = *r_start; i < r1; i++)
         {
             std::string p_restype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
-            if (!gmx_strcasecmp(p_restype.c_str(), p_startrestype.c_str()) && endWarnings == 0)
+            if (!gmx::compareStringsCaseInsensitve(p_restype, p_startrestype) && endWarnings == 0)
             {
                 *r_end = i;
             }
-            else if (!gmx_strcasecmp(p_startrestype.c_str(), "Ion"))
+            else if (gmx::compareStringsCaseInsensitve(p_startrestype, "Ion"))
             {
                 if (ionNotes < 5)
                 {
@@ -1780,7 +1782,7 @@ int pdb2gmx::run()
         this_chainid       = ri->chainid;
         this_chainnumber   = ri->chainnum;
 
-        bWat_ = gmx_strcasecmp(*ri->name, watres) == 0;
+        bWat_ = gmx::compareStringsCaseInsensitve(*ri->name, watres);
 
         if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat_ != bPrevWat_))
         {

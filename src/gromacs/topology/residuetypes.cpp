@@ -113,7 +113,7 @@ residueEntryByResidueName(gmx::ArrayRef<const ResidueTypeEntry> entries, const s
 {
     return std::find_if(entries.begin(), entries.end(),
                         [&residueName](const ResidueTypeEntry &old)
-                        { return gmx_strcasecmp(old.residueName.c_str(), residueName.c_str()) == 0; });
+                        { return gmx::compareStringsCaseInsensitve(residueName, old.residueName); });
 }
 
 bool ResidueType::nameIndexedInResidueTypes(const std::string &residueName)
@@ -128,7 +128,7 @@ void ResidueType::addResidue(const std::string &residueName, const std::string &
 
     if (found != temp.end())
     {
-        if (gmx_strcasecmp(found->residueType.c_str(), residueType.c_str()))
+        if (!gmx::compareStringsCaseInsensitve(found->residueType, residueType))
         {
             fprintf(stderr, "Warning: Residue '%s' already present with type '%s' in database, ignoring new type '%s'.\n",
                     residueName.c_str(), found->residueType.c_str(), residueType.c_str());
@@ -145,7 +145,7 @@ bool ResidueType::namedResidueHasType(const std::string &residueName, const std:
     gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
     auto found = residueEntryByResidueName(temp, residueName);
     return  ((found != temp.end()) &&
-             (gmx_strcasecmp(residueType.c_str(), found->residueType.c_str()) == 0));
+             gmx::compareStringsCaseInsensitve(residueType, found->residueType));
 }
 
 int ResidueType::numberOfEntries() const
