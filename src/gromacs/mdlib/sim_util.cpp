@@ -112,7 +112,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/sysinfo.h"
@@ -2934,97 +2933,5 @@ void initialize_lambdas(FILE               *fplog,
             fprintf(fplog, "%10.4f ", l);
         }
         fprintf(fplog, "]\n");
-    }
-}
-
-void init_md(FILE *fplog,
-             const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
-             t_inputrec *ir, const gmx_output_env_t *oenv,
-             const MdrunOptions &mdrunOptions,
-             double *t, double *t0,
-             t_state *globalState, double *lam0,
-             t_nrnb *nrnb, gmx_mtop_t *mtop,
-             gmx::Update *upd,
-             int nfile, const t_filenm fnm[],
-             gmx_mdoutf_t *outf, t_mdebin **mdebin,
-             tensor force_vir, tensor shake_vir,
-             tensor total_vir, tensor pres, rvec mu_tot,
-             gmx_bool *bSimAnn,
-             gmx_wallcycle_t wcycle)
-{
-    int  i;
-
-    /* Initial values */
-    *t = *t0       = ir->init_t;
-
-    *bSimAnn = FALSE;
-    for (i = 0; i < ir->opts.ngtc; i++)
-    {
-        /* set bSimAnn if any group is being annealed */
-        if (ir->opts.annealing[i] != eannNO)
-        {
-            *bSimAnn = TRUE;
-        }
-    }
-
-    initialize_lambdas(fplog, *ir, MASTER(cr), &globalState->fep_state, globalState->lambda, lam0);
-
-    if (*bSimAnn)
-    {
-        update_annealing_target_temp(ir, ir->init_t, upd);
-    }
-
-    if (EI_DYNAMICS(ir->eI) && !mdrunOptions.continuationOptions.appendFiles)
-    {
-        if (ir->etc == etcBERENDSEN)
-        {
-            please_cite(fplog, "Berendsen84a");
-        }
-        if (ir->etc == etcVRESCALE)
-        {
-            please_cite(fplog, "Bussi2007a");
-        }
-        if (ir->eI == eiSD1)
-        {
-            please_cite(fplog, "Goga2012");
-        }
-    }
-    init_nrnb(nrnb);
-
-    if (nfile != -1)
-    {
-        *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, mtop, oenv, wcycle);
-
-        *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
-                              mtop, ir, mdoutf_get_fp_dhdl(*outf));
-    }
-
-    /* Initiate variables */
-    clear_mat(force_vir);
-    clear_mat(shake_vir);
-    clear_rvec(mu_tot);
-    clear_mat(total_vir);
-    clear_mat(pres);
-}
-
-void init_rerun(FILE *fplog,
-                const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
-                t_inputrec *ir, const gmx_output_env_t *oenv,
-                const MdrunOptions &mdrunOptions,
-                t_state *globalState, double *lam0,
-                t_nrnb *nrnb, gmx_mtop_t *mtop,
-                int nfile, const t_filenm fnm[],
-                gmx_mdoutf_t *outf, t_mdebin **mdebin,
-                gmx_wallcycle_t wcycle)
-{
-    initialize_lambdas(fplog, *ir, MASTER(cr), &globalState->fep_state, globalState->lambda, lam0);
-
-    init_nrnb(nrnb);
-
-    if (nfile != -1)
-    {
-        *outf   = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, mtop, oenv, wcycle);
-        *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
-                              mtop, ir, mdoutf_get_fp_dhdl(*outf), true);
     }
 }
