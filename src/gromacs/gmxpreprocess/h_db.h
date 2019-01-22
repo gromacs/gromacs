@@ -40,6 +40,10 @@
 
 #include <cstdio>
 
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
+
 struct t_hack;
 struct t_hackblock;
 
@@ -48,18 +52,16 @@ struct t_hackblock;
 void read_ab(char *line, const char *fn, t_hack *ab);
 /* Read one add block */
 
-int read_h_db(const char *ffdir, t_hackblock **ah);
+int read_h_db(const char *ffdir, std::vector<t_hackblock> *ah);
 /* Read the database from hdb file(s) in ffdir or current dir */
 
-void print_ab(FILE *out, t_hack *ab, char *nname);
+void print_ab(FILE *out, const t_hack &ab, char *nname);
 /* print one add block */
 
-void print_h_db(FILE *out, int nh, t_hackblock ah[]);
+void print_h_db(FILE *out, int nh, gmx::ArrayRef<const t_hackblock> ah);
 /* Print the database to file */
 
-int compaddh(const void *a, const void *b);
-
-t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key);
+const t_hackblock *search_h_db(gmx::ArrayRef<const t_hackblock> ah, char *key);
 /* Search for an entry in the database */
 
 #endif

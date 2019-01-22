@@ -40,7 +40,10 @@
 
 #include <cstdio>
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gpp_atomtype;
 struct t_atoms;
@@ -74,18 +77,18 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
  * in ffdir.
  */
 
-void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
-                        int nrtp, t_restp rtp[],
+void get_hackblocks_rtp(std::vector<t_hackblock> *hb, std::vector<t_restp> *restp,
+                        gmx::ArrayRef<t_restp> rtp,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
-                        t_hackblock **ntdb, t_hackblock **ctdb,
+                        std::vector<t_hackblock *> ntdb, std::vector<t_hackblock *> ctdb,
                         const int *rn, const int *rc,
                         bool bAllowMissing);
 /* Get the database entries for the nres residues in resinfo
  * and store them in restp and hb.
  */
 
-void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
+void match_atomnames_with_rtp(gmx::ArrayRef<t_restp> restp, gmx::ArrayRef<t_hackblock> hb,
                               t_atoms *pdba, rvec *x,
                               bool bVerbose);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
@@ -112,8 +115,8 @@ void write_top(FILE *out, const char *pr, const char *molname,
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms, rvec **x,
              gpp_atomtype *atype, t_symtab *tab,
-             int nrtp, t_restp rtp[],
-             t_restp *restp, t_hackblock *hb,
+             gmx::ArrayRef<t_restp> rtp,
+             gmx::ArrayRef<t_restp> restp, gmx::ArrayRef<t_hackblock> hb,
              bool bAllowMissing,
              bool bVsites, bool bVsiteAromatics,
              const char *ffdir,

@@ -424,7 +424,7 @@ int gmx_x2top(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
     real               kb                            = 4e5, kt = 400, kp = 5;
-    t_restp            rtp_header_settings           = { nullptr };
+    t_restp            rtp_header_settings;
     bool               bRemoveDihedralIfWithImproper = FALSE;
     bool               bGenerateHH14Interactions     = TRUE;
     bool               bKeepAllGeneratedDihedrals    = FALSE;
@@ -539,7 +539,7 @@ int gmx_x2top(int argc, char *argv[])
     init_nnb(&nnb, atoms->nr, 4);
     gen_nnb(&nnb, plist);
     print_nnb(&nnb, "NNB");
-    gen_pad(&nnb, atoms, &rtp_header_settings, plist, excls, nullptr, TRUE);
+    gen_pad(&nnb, *atoms, gmx::arrayRefFromArray(&rtp_header_settings, 1), plist, excls, gmx::EmptyArrayRef(), TRUE);
     done_nnb(&nnb);
 
     if (!bPairs)

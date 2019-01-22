@@ -51,7 +51,7 @@ struct t_atoms;
  * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
  */
 int search_atom(const char *type, int start,
-                t_atoms *atoms,
+                const t_atoms &atoms,
                 const char *bondtype, bool bAllowMissing);
 
 /* Similar to search_atom, but this routine searches for the specified
@@ -59,7 +59,7 @@ int search_atom(const char *type, int start,
  */
 int
 search_res_atom(const char *type, int resind,
-                t_atoms *atoms,
+                const t_atoms &atoms,
                 const char *bondtype, bool bAllowMissing);
 
 

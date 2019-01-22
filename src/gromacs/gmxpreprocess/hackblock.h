@@ -40,7 +40,10 @@
 
 #include <cstdio>
 
+#include <vector>
+
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
 
 struct t_atom;
 
@@ -59,41 +62,43 @@ extern const int   btsNiatoms[ebtsNR];
 /* BONDEDS */
 struct t_rbonded
 {
-    char  *a[MAXATOMLIST]; /* atom names */
-    char  *s;              /* optional define string which gets copied from
-                              .rtp/.tdb to .top and will be parsed by cpp
-                              during grompp */
-    bool     match;        /* boolean to mark that the entry has been found */
-    char*   &ai() { return a[0]; }
-    char*   &aj() { return a[1]; }
-    char*   &ak() { return a[2]; }
-    char*   &al() { return a[3]; }
-    char*   &am() { return a[4]; }
+    char  *a[MAXATOMLIST] = {nullptr}; /* atom names */
+    char  *s              = nullptr;   /* optional define string which gets copied from
+                                          .rtp/.tdb to .top and will be parsed by cpp
+                                          during grompp */
+    bool     match;                    /* boolean to mark that the entry has been found */
+    const char*   ai() const { return a[0]; }
+    const char*   aj() const { return a[1]; }
+    const char*   ak() const { return a[2]; }
+    const char*   al() const { return a[3]; }
+    const char*   am() const { return a[4]; }
 };
 
 struct t_rbondeds
 {
-    int        type;     /* The type of bonded interaction */
-    int        nb;       /* number of bondeds */
-    t_rbonded *b;        /* bondeds */
+    int                    type; /* The type of bonded interaction */
+    std::vector<t_rbonded> b;    /* bondeds */
+    int                    nb() const { return b.size(); }
 };
 
 /* RESIDUES (rtp) */
 struct t_restp
 {
-    char         *resname;
+    char                *resname = nullptr;
     /* The base file name this rtp entry was read from */
-    char         *filebase;
+    char                *filebase = nullptr;
     /* atom data */
-    int           natom;
-    t_atom       *atom;
-    char       ***atomname;
-    int          *cgnr;
+    std::vector<t_atom>  atom;
+    std::vector<char **> atomname;
+    std::vector<int>     cgnr;
+
+    int                  natom() const { return atom.size(); }
+
     /* Bonded interaction setup */
-    bool          bKeepAllGeneratedDihedrals;
-    int           nrexcl;
-    bool          bGenerateHH14Interactions;
-    bool          bRemoveDihedralIfWithImproper;
+    bool          bKeepAllGeneratedDihedrals    = false;
+    int           nrexcl                        = -1;
+    bool          bGenerateHH14Interactions     = false;
+    bool          bRemoveDihedralIfWithImproper = false;
     /* list of bonded interactions to add */
     t_rbondeds    rb[ebtsNR];
 };
@@ -101,50 +106,52 @@ struct t_restp
 /* Block to hack residues */
 struct t_hack
 {
-    int      nr;      /* Number of atoms to hack    */
-    char    *oname;   /* Old name                   */
-    char    *nname;   /* New name                   */
+    char    *oname = nullptr;                        /* Old name                   */
+    char    *nname = nullptr;                        /* New name                   */
     /* the type of hack depends on the setting of oname and nname:
      * if oname==NULL                we're adding, must have tp>0 also!
      * if oname!=NULL && nname==NULL we're deleting
      * if oname!=NULL && nname!=NULL we're replacing
      */
-    t_atom     *atom; /* New atom data              */
-    int         cgnr; /* chargegroup number. if not read will be NOTSET */
-    int         tp;   /* Type of attachment (1..11) */
-    int         nctl; /* How many control atoms there are */
-    char       *a[4]; /* Control atoms i,j,k,l	  */
-    bool        bAlreadyPresent;
-    bool        bXSet;
-    rvec        newx; /* calculated new position    */
-    int         newi; /* new atom index number (after additions) */
-    char*      &ai() { return a[0]; }
-    char*      &aj() { return a[1]; }
-    char*      &ak() { return a[2]; }
-    char*      &al() { return a[3]; }
+    std::vector<t_atom> atom;                        /* New atom data              */
+    int                 cgnr            = -1;        /* chargegroup number. if not read will be NOTSET */
+    int                 tp              = 0;         /* Type of attachment (1..11) */
+    int                 nctl            = -1;        /* How many control atoms there are */
+    char               *a[4]            = {nullptr}; /* Control atoms i,j,k,l	  */
+    bool                bAlreadyPresent = false;
+    bool                bXSet           = false;
+    bool                bIsReadNew      = false; /* Hack to set nr of atoms to add if read from new */
+    int                 newNumber       = -1;
+    rvec                newx;      /* calculated new position    */
+    int                 newi = -1; /* new atom index number (after additions) */
+    int                 nr() const { if (bIsReadNew) return newNumber; else return atom.size(); }
+    const char*              ai() const { return a[0]; }
+    const char*              aj() const { return a[1]; }
+    const char*              ak() const { return a[2]; }
+    const char*              al() const { return a[3]; }
 };
 
 struct t_hackblock
 {
-    char      *name;     /* Name of hack block (residue or terminus) */
-    char      *filebase; /* The base file name this entry was read from */
-    int        nhack;    /* Number of atoms to hack                  */
-    int        maxhack;  /* used for efficient srenew-ing            */
-    t_hack    *hack;     /* Hack list                                */
+    char               *name     = nullptr; /* Name of hack block (residue or terminus) */
+    char               *filebase = nullptr; /* The base file name this entry was read from */
+    std::vector<t_hack> hack;               /* Hack list                                */
     /* list of bonded interactions to add */
-    t_rbondeds rb[ebtsNR];
+    t_rbondeds          rb[ebtsNR];
+
+    int                 nhack() const { return hack.size(); }
 };
 
-void free_t_restp(int nrtp, t_restp **rtp);
-void free_t_hack(int nh, t_hack **h);
-void free_t_hackblock(int nhb, t_hackblock **hb);
+void free_t_restp(gmx::ArrayRef<t_restp> rtp);
+void free_t_hack(gmx::ArrayRef<t_hack> h);
+void free_t_hackblock(gmx::ArrayRef<t_hackblock> hb);
 /* free the whole datastructure */
 
 void clear_t_hackblock(t_hackblock *hb);
 void clear_t_hack(t_hack *hack);
 /* reset struct */
 
-bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],
+bool merge_t_bondeds(gmx::ArrayRef<const t_rbondeds> s, gmx::ArrayRef<t_rbondeds> d,
                      bool bMin, bool bPlus);
 /* add s[].b[] to d[].b[]
  * If bMin==TRUE, don't copy bondeds with atoms starting with '-'
@@ -152,18 +159,18 @@ bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],
  * Returns if bonds were removed at the termini.
  */
 
-void copy_t_restp(t_restp *s, t_restp *d);
-void copy_t_hack(t_hack *s, t_hack *d);
-void copy_t_hackblock(t_hackblock *s, t_hackblock *d);
+void copy_t_restp(const t_restp &s, t_restp *d);
+void copy_t_hack(const t_hack &s, t_hack *d);
+void copy_t_hackblock(const t_hackblock &s, t_hackblock *d);
 /* make copy of whole datastructure */
 
-void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d);
+void merge_hacks_lo(gmx::ArrayRef<const t_hack> s, std::vector<t_hack> *d);
 /* add s[] to *d[] */
 
-void merge_hacks(t_hackblock *s, t_hackblock *d);
+void merge_hacks(const t_hackblock &s, t_hackblock *d);
 /* add s->hacks[] to d->hacks[] */
 
-void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
+void merge_t_hackblock(const t_hackblock &s, t_hackblock *d);
 /* add s->hacks[] and s->rb[] to d*/
 
 void dump_hb(FILE *out, int nres, t_hackblock hb[]);
