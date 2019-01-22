@@ -37,11 +37,11 @@
  * Implements test of bonded force routines
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_listed-forces
+ * \ingroup module_listed_forces
  */
 #include "gmxpre.h"
 
-#include "gromacs/listed-forces/bonded.h"
+#include "gromacs/listed_forces/bonded.h"
 
 #include <cmath>
 
@@ -49,7 +49,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/listed-forces/listed-forces.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"

@@ -217,7 +217,7 @@ Added a runtime check for number of threads in bonded code
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Replaced a debug assertion on the number of OpenMP threads not being
 larger than GMX_OPENMP_MAX_THREADS by fatal error.
-But since the listed-forces reduction is actually not required with
+But since the listed_forces reduction is actually not required with
 listed forces, these are now conditional and mdrun can run with more
 than GMX_OPENMP_MAX_THREADS threads.
 

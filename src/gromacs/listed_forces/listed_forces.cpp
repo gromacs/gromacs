@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,11 +39,11 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
- * \ingroup module_listed-forces
+ * \ingroup module_listed_forces
  */
 #include "gmxpre.h"
 
-#include "listed-forces.h"
+#include "listed_forces.h"
 
 #include <cassert>
 
@@ -52,11 +52,11 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/listed-forces/disre.h"
-#include "gromacs/listed-forces/orires.h"
-#include "gromacs/listed-forces/pairs.h"
-#include "gromacs/listed-forces/position-restraints.h"
+#include "gromacs/listed_forces/bonded.h"
+#include "gromacs/listed_forces/disre.h"
+#include "gromacs/listed_forces/orires.h"
+#include "gromacs/listed_forces/pairs.h"
+#include "gromacs/listed_forces/position-restraints.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,32 +32,40 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal
- * \file
+/*! \libinternal \file
  *
- * \brief This file declares inline utility functionality.
+ * \brief This file declares functions for "pair" interactions
+ * (i.e. listed non-bonded interactions, e.g. 1-4 interactions)
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- *
- * \ingroup module_listed-forces
+ * \inlibraryapi
+ * \ingroup module_listed_forces
  */
-#ifndef GMX_LISTED_FORCES_UTILITIES_H
-#define GMX_LISTED_FORCES_UTILITIES_H
+#ifndef GMX_LISTED_FORCES_PAIRS_H
+#define GMX_LISTED_FORCES_PAIRS_H
 
+#include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-/*! \brief Return whether this is an interaction that actually
- * calculates a potential and works on multiple atoms (not e.g. a
- * connection or a position restraint).
+struct gmx_grppairener_t;
+struct t_forcerec;
+struct t_graph;
+struct t_pbc;
+
+/*! \brief Calculate VdW/charge listed pair interactions (usually 1-4
+ * interactions).
  *
- * \todo This function could go away when idef is not a big bucket of
- * everything. */
-static bool
-ftype_is_bonded_potential(int ftype)
-{
-    return
-        ((interaction_function[ftype].flags & IF_BOND) != 0u) &&
-        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);
-}
+ * global_atom_index is only passed for printing error messages.
+ */
+void
+do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
+         const rvec x[], rvec4 f[], rvec fshift[],
+         const struct t_pbc *pbc, const struct t_graph *g,
+         const real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
+         gmx_bool computeForcesOnly, gmx_grppairener_t *grppener,
+         int *global_atom_index);
 
 #endif
