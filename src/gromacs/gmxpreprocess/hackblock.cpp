@@ -53,118 +53,44 @@
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
 const int   btsNiatoms[ebtsNR] = { 2,       3,        4,           4,           2,             5 };
 
-static void free_t_bonded(t_rbonded *rb)
+void free_t_restp(gmx::ArrayRef<t_restp> rtp)
 {
-    int i;
-
-    for (i = 0; i < MAXATOMLIST; i++)
+    for (auto it = rtp.begin(); it != rtp.end(); it++)
     {
-        sfree(rb->a[i]);
-    }
-    sfree(rb->s);
-}
-
-static void free_t_bondeds(t_rbondeds *rbs)
-{
-    int i;
-
-    for (i = 0; i < rbs->nb; i++)
-    {
-        free_t_bonded(&rbs->b[i]);
-    }
-    sfree(rbs->b);
-    rbs->b  = nullptr;
-    rbs->nb = 0;
-}
-
-void free_t_restp(int nrtp, t_restp **rtp)
-{
-    int i, j;
-
-    for (i = 0; i < nrtp; i++)
-    {
-        sfree((*rtp)[i].resname);
-        sfree((*rtp)[i].atom);
-        for (j = 0; j < (*rtp)[i].natom; j++)
+        for (int j = 0; j < it->natom(); j++)
         {
-            sfree(*(*rtp)[i].atomname[j]);
-            sfree((*rtp)[i].atomname[j]);
+            sfree(*it->atomname[j]);
+            sfree(it->atomname[j]);
         }
-        sfree((*rtp)[i].atomname);
-        sfree((*rtp)[i].cgnr);
-        for (j = 0; j < ebtsNR; j++)
-        {
-            free_t_bondeds(&(*rtp)[i].rb[j]);
-        }
+        it->atom.clear();
+        it->atomname.clear();
+        it->cgnr.clear();
     }
-    sfree(*rtp);
-}
-
-void free_t_hack(int nh, t_hack **h)
-{
-    int i, j;
-
-    for (i = 0; i < nh; i++)
-    {
-        sfree((*h)[i].oname);
-        sfree((*h)[i].nname);
-        sfree((*h)[i].atom);
-        for (j = 0; j < 4; j++)
-        {
-            sfree((*h)[i].a[j]);
-        }
-    }
-    sfree(*h);
-    *h = nullptr;
-}
-
-void free_t_hackblock(int nhb, t_hackblock **hb)
-{
-    int i, j;
-
-    for (i = 0; i < nhb; i++)
-    {
-        sfree((*hb)[i].name);
-        free_t_hack((*hb)[i].nhack, &(*hb)[i].hack);
-        for (j = 0; j < ebtsNR; j++)
-        {
-            free_t_bondeds(&(*hb)[i].rb[j]);
-        }
-    }
-    sfree(*hb);
 }
 
 void clear_t_hackblock(t_hackblock *hb)
 {
-    int i;
-
-    hb->name    = nullptr;
-    hb->nhack   = 0;
-    hb->maxhack = 0;
-    hb->hack    = nullptr;
-    for (i = 0; i < ebtsNR; i++)
+    hb->name.clear();
+    hb->hack.clear();
+    for (int i = 0; i < ebtsNR; i++)
     {
-        hb->rb[i].nb = 0;
-        hb->rb[i].b  = nullptr;
+        hb->rb[i].b.clear();
     }
 }
 
 void clear_t_hack(t_hack *hack)
 {
-    int i;
-
-    hack->nr    = 0;
-    hack->oname = nullptr;
-    hack->nname = nullptr;
-    hack->atom  = nullptr;
+    hack->oname.clear();
+    hack->nname.clear();
+    hack->atom.clear();
     hack->cgnr  = NOTSET;
     hack->tp    = 0;
     hack->nctl  = 0;
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
     {
-        hack->a[i]  = nullptr;
+        hack->a[i].clear();
     }
-    for (i = 0; i < DIM; i++)
+    for (int i = 0; i < DIM; i++)
     {
         hack->newx[i] = NOTSET;
     }
@@ -172,27 +98,25 @@ void clear_t_hack(t_hack *hack)
 
 #define safe_strdup(str) (((str) != NULL) ? gmx_strdup(str) : NULL)
 
-static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
+static void copy_t_rbonded(const t_rbonded &s, t_rbonded *d)
 {
-    int i;
-
-    for (i = 0; i < MAXATOMLIST; i++)
+    for (int i = 0; i < MAXATOMLIST; i++)
     {
-        d->a[i] = safe_strdup(s->a[i]);
+        d->a[i] = s.a[i];
     }
-    d->s     = safe_strdup(s->s);
-    d->match = s->match;
+    d->s     = s.s;
+    d->match = s.match;
 }
 
-static bool contains_char(t_rbonded *s, char c)
+
+static bool contains_char(const t_rbonded &s, char c)
 {
-    int      i;
     bool     bRet;
 
     bRet = FALSE;
-    for (i = 0; i < MAXATOMLIST; i++)
+    for (int i = 0; i < MAXATOMLIST; i++)
     {
-        if (s->a[i] && s->a[i][0] == c)
+        if (!s.a[i].empty() && s.a[i][0] == c)
         {
             bRet = TRUE;
         }
@@ -202,26 +126,27 @@ static bool contains_char(t_rbonded *s, char c)
 }
 
 static int
-rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
+rbonded_find_atoms_in_list(const t_rbonded               &b,
+                           gmx::ArrayRef<const t_rbonded> blist,
+                           int                            natoms)
 {
-    int      i, k;
     int      foundPos = -1;
     bool     atomsMatch;
 
-    for (i = 0; i < nlist && foundPos < 0; i++)
+    for (int i = 0; i < blist.size() && foundPos < 0; i++)
     {
         atomsMatch = TRUE;
-        for (k = 0; k < natoms && atomsMatch; k++)
+        for (int k = 0; k < natoms && atomsMatch; k++)
         {
-            atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[k]) == 0);
+            atomsMatch = atomsMatch && (b.a[k] ==  blist[i].a[k]);
         }
         /* Try reverse if forward match did not work */
         if (!atomsMatch)
         {
             atomsMatch = TRUE;
-            for (k = 0; k < natoms && atomsMatch; k++)
+            for (int k = 0; k < natoms && atomsMatch; k++)
             {
-                atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[natoms-1-k]) == 0);
+                atomsMatch = atomsMatch && (b.a[k] == blist[i].a[natoms-1-k]);
             }
         }
         if (atomsMatch)
@@ -233,7 +158,7 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
              * Since we only have the unparsed string here we can only detect
              * EXACT matches (including identical whitespace).
              */
-            if (!strcmp(b->s, blist[i].s))
+            if (b.s == blist[i].s)
             {
                 gmx_warning("Duplicate line found in or between hackblock and rtp entries");
             }
@@ -242,17 +167,18 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
     return foundPos;
 }
 
-bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], bool bMin, bool bPlus)
+bool merge_t_bondeds(const std::array<t_rbondeds, ebtsNR> &s,
+                     std::array<t_rbondeds, ebtsNR> *d,
+                     bool bMin, bool bPlus)
 {
-    int      i, j;
     bool     bBondsRemoved;
     int      nbHackblockStart;
     int      index;
 
     bBondsRemoved = FALSE;
-    for (i = 0; i < ebtsNR; i++)
+    for (int i = 0; i < ebtsNR; i++)
     {
-        if (s[i].nb > 0)
+        if (s[i].nb() > 0)
         {
             /* Record how many bonds we have in the destination when we start.
              *
@@ -269,17 +195,16 @@ bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], bool bMin, bool bPlus)
              * it is a hackblock entry meant to override the main rtp, and then
              * we don't add the main rtp one.
              */
-            nbHackblockStart = d[i].nb;
+            nbHackblockStart = d->at(i).nb();
 
             /* make space */
-            srenew(d[i].b, d[i].nb + s[i].nb);
-            for (j = 0; j < s[i].nb; j++)
+            for (int j = 0; j < s[i].nb(); j++)
             {
                 /* Check if this bonded string already exists before adding.
                  * We are merging from the main RTP to the hackblocks, so this
                  * will mean the hackblocks overwrite the man RTP, as intended.
                  */
-                index = rbonded_find_atoms_in_list(&s[i].b[j], d[i].b, d[i].nb, btsNiatoms[i]);
+                index = rbonded_find_atoms_in_list(s[i].b[j], d->at(i).b, btsNiatoms[i]);
                 /* - If we did not find this interaction at all, the index will be -1,
                  *   and then we should definitely add it to the merged hackblock and rtp.
                  *
@@ -298,11 +223,11 @@ bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], bool bMin, bool bPlus)
                  */
                 if (index < 0 || index >= nbHackblockStart)
                 {
-                    if (!(bMin && contains_char(&s[i].b[j], '-'))
-                        && !(bPlus && contains_char(&s[i].b[j], '+')))
+                    if (!(bMin && contains_char(s[i].b[j], '-'))
+                        && !(bPlus && contains_char(s[i].b[j], '+')))
                     {
-                        copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
-                        d[i].nb++;
+                        d->at(i).b.emplace_back();
+                        copy_t_rbonded(s[i].b[j], &d->at(i).b.back());
                     }
                     else if (i == ebtsBONDS)
                     {
@@ -321,98 +246,79 @@ bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], bool bMin, bool bPlus)
     return bBondsRemoved;
 }
 
-void copy_t_restp(t_restp *s, t_restp *d)
+void copy_t_restp(const t_restp *s, t_restp *d)
 {
-    int i;
-
-    *d         = *s;
-    d->resname = safe_strdup(s->resname);
-    snew(d->atom, s->natom);
-    for (i = 0; i < s->natom; i++)
+    *d = *s;
+    d->atom.clear();
+    for (const auto &a : s->atom)
     {
-        d->atom[i] = s->atom[i];
+        d->atom.push_back(a);
     }
-    snew(d->atomname, s->natom);
-    for (i = 0; i < s->natom; i++)
+    d->atomname.clear();
+    for (const auto &anm : s->atomname)
     {
-        snew(d->atomname[i], 1);
-        *d->atomname[i] = safe_strdup(*s->atomname[i]);
+        char **tmp = nullptr;
+        snew(tmp, 1);
+        *tmp = safe_strdup(*anm);
+        d->atomname.push_back(tmp);
     }
-    snew(d->cgnr, s->natom);
-    for (i = 0; i < s->natom; i++)
+    d->cgnr.clear();
+    for (const auto &c : s->cgnr)
     {
-        d->cgnr[i] = s->cgnr[i];
+        d->cgnr.push_back(c);
     }
-    for (i = 0; i < ebtsNR; i++)
+    for (int i = 0; i < ebtsNR; i++)
     {
         d->rb[i].type = s->rb[i].type;
-        d->rb[i].nb   = 0;
-        d->rb[i].b    = nullptr;
     }
-    merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
+    merge_t_bondeds(s->rb, &d->rb, FALSE, FALSE);
 }
 
-void copy_t_hack(t_hack *s, t_hack *d)
+void copy_t_hack(const t_hack &s, t_hack *d)
 {
-    int i;
-
-    *d       = *s;
-    d->oname = safe_strdup(s->oname);
-    d->nname = safe_strdup(s->nname);
-    if (s->atom)
+    *d       = s;
+    d->oname = s.oname;
+    d->nname = s.nname;
+    d->atom.clear();
+    for (const auto &a : s.atom)
     {
-        snew(d->atom, 1);
-        *(d->atom) = *(s->atom);
+        d->atom.push_back(a);
     }
-    else
+    for (int i = 0; i < 4; i++)
     {
-        d->atom = nullptr;
+        d->a[i] = s.a[i];
     }
-    for (i = 0; i < 4; i++)
-    {
-        d->a[i] = safe_strdup(s->a[i]);
-    }
-    copy_rvec(s->newx, d->newx);
+    copy_rvec(s.newx, d->newx);
 }
 
-void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d)
+void merge_hacks_lo(gmx::ArrayRef<const t_hack> s, std::vector<t_hack> *d)
 {
-    int i;
-
-    if (ns)
+    for (const auto &h : s)
     {
-        srenew(*d, *nd + ns);
-        for (i = 0; i < ns; i++)
-        {
-            copy_t_hack(&s[i], &(*d)[*nd + i]);
-        }
-        (*nd) += ns;
+        d->push_back(t_hack());
+        copy_t_hack(h, &d->back());
     }
 }
 
-void merge_hacks(t_hackblock *s, t_hackblock *d)
+void merge_hacks(const t_hackblock &s, t_hackblock *d)
 {
-    merge_hacks_lo(s->nhack, s->hack, &d->nhack, &d->hack);
+    merge_hacks_lo(s.hack, &d->hack);
 }
 
-void merge_t_hackblock(t_hackblock *s, t_hackblock *d)
+void merge_t_hackblock(const t_hackblock &s, t_hackblock *d)
 {
     merge_hacks(s, d);
-    merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
+    merge_t_bondeds(s.rb, &d->rb, FALSE, FALSE);
 }
 
-void copy_t_hackblock(t_hackblock *s, t_hackblock *d)
+void copy_t_hackblock(const t_hackblock &s, t_hackblock *d)
 {
-    int i;
-
-    *d       = *s;
-    d->name  = safe_strdup(s->name);
-    d->nhack = 0;
-    d->hack  = nullptr;
-    for (i = 0; i < ebtsNR; i++)
+    *d       = s;
+    d->name  = s.name;
+    d->hack.clear();
+    for (int i = 0; i < ebtsNR; i++)
     {
-        d->rb[i].nb = 0;
-        d->rb[i].b  = nullptr;
+        d->rb[i].b.clear();
     }
     merge_t_hackblock(s, d);
 }
@@ -421,40 +327,39 @@ void copy_t_hackblock(t_hackblock *s, t_hackblock *d)
 
 void dump_hb(FILE *out, int nres, t_hackblock hb[])
 {
-    int i, j, k, l;
-
 #define SS(s) (s) ? (s) : "-"
 #define SA(s) (s) ? "+" : ""
     fprintf(out, "t_hackblock\n");
-    for (i = 0; i < nres; i++)
+    for (int i = 0; i < nres; i++)
     {
-        fprintf(out, "%3d %4s %2d %2d\n",
-                i, SS(hb[i].name), hb[i].nhack, hb[i].maxhack);
-        if (hb[i].nhack)
+        fprintf(out, "%3d %4s %2d\n",
+                i, SS(hb[i].name.c_str()), hb[i].nhack());
+        if (hb[i].nhack())
         {
-            for (j = 0; j < hb[i].nhack; j++)
+            for (int j = 0; j < hb[i].nhack(); j++)
             {
                 fprintf(out, "%d: %d %4s %4s %1s %2d %d %4s %4s %4s %4s\n",
-                        j, hb[i].hack[j].nr,
-                        SS(hb[i].hack[j].oname), SS(hb[i].hack[j].nname),
-                        SA(hb[i].hack[j].atom), hb[i].hack[j].tp, hb[i].hack[j].cgnr,
+                        j, hb[i].hack[j].nr(),
+                        SS(hb[i].hack[j].oname.c_str()), SS(hb[i].hack[j].nname.c_str()),
+                        SA(hb[i].hack[j].atom.data()), hb[i].hack[j].tp, hb[i].hack[j].cgnr,
                         SS(hb[i].hack[j].ai()), SS(hb[i].hack[j].aj()),
                         SS(hb[i].hack[j].ak()), SS(hb[i].hack[j].al()) );
             }
         }
-        for (j = 0; j < ebtsNR; j++)
+        for (int j = 0; j < ebtsNR; j++)
         {
-            if (hb[i].rb[j].nb)
+            if (hb[i].rb[j].nb())
             {
-                fprintf(out, " %c %d:", btsNames[j][0], hb[i].rb[j].nb);
-                for (k = 0; k < hb[i].rb[j].nb; k++)
+                fprintf(out, " %c %d:", btsNames[j][0], hb[i].rb[j].nb());
+                int k;
+                for (k = 0; k < hb[i].rb[j].nb(); k++)
                 {
                     fprintf(out, " [");
-                    for (l = 0; l < btsNiatoms[j]; l++)
+                    for (int l = 0; l < btsNiatoms[j]; l++)
                     {
-                        fprintf(out, " %s", hb[i].rb[j].b[k].a[l]);
+                        fprintf(out, " %s", hb[i].rb[j].b[k].a[l].c_str());
                     }
-                    fprintf(out, " %s]", SS(hb[i].rb[j].b[k].s));
+                    fprintf(out, " %s]", SS(hb[i].rb[j].b[k].s.c_str()));
                 }
                 fprintf(out, " Entry matched: %s\n", yesno_names[hb[i].rb[j].b[k].match]);
             }

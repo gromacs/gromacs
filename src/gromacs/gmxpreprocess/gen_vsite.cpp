@@ -539,13 +539,12 @@ static void print_bonds(FILE *fp, int o2n[],
     fprintf(fp, "\n");
 }
 
-static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
+static int get_atype(int atom, t_atoms *at, gmx::ArrayRef<t_restp> rtp,
                      ResidueType *rt)
 {
     int      type;
     bool     bNterm;
     int      j;
-    t_restp *rtpp;
 
     if (at->atom[atom].m != 0.0f)
     {
@@ -554,10 +553,10 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     else
     {
         /* get type from rtp */
-        rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), nrtp, rtp);
+        RestPIt rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), rtp);
         bNterm = rt->namedResidueHasType(*(at->resinfo[at->atom[atom].resind].name), "Protein") &&
             (at->atom[atom].resind == 0);
-        j    = search_jtype(rtpp, *(at->atomname[atom]), bNterm);
+        j    = search_jtype(*rtpp, *(at->atomname[atom]), bNterm);
         type = rtpp->atom[j].type;
     }
     return type;
@@ -577,13 +576,12 @@ static int vsite_nm2type(const char *name, gpp_atomtype *atype)
     return tp;
 }
 
-static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
+static real get_amass(int atom, t_atoms *at, gmx::ArrayRef<t_restp> rtp,
                       ResidueType *rt)
 {
     real     mass;
     bool     bNterm;
     int      j;
-    t_restp *rtpp;
 
     if (at->atom[atom].m != 0.0f)
     {
@@ -592,10 +590,10 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     else
     {
         /* get mass from rtp */
-        rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), nrtp, rtp);
+        RestPIt rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), rtp);
         bNterm = rt->namedResidueHasType(*(at->resinfo[at->atom[atom].resind].name), "Protein") &&
             (at->atom[atom].resind == 0);
-        j    = search_jtype(rtpp, *(at->atomname[atom]), bNterm);
+        j    = search_jtype(*rtpp, *(at->atomname[atom]), bNterm);
         mass = rtpp->atom[j].m;
     }
     return mass;
@@ -1539,7 +1537,7 @@ static bool is_vsite(int vsite_type)
 
 static char atomnamesuffix[] = "1234";
 
-void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
+void do_vsites(gmx::ArrayRef<t_restp> rtp, gpp_atomtype *atype,
                t_atoms *at, t_symtab *symtab, rvec *x[],
                t_params plist[], int *vsite_type[], int *cgnr[],
                real mHmult, bool bVsiteAromatics,
@@ -1782,7 +1780,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
             count_bonds(i, &plist[F_BONDS], at->atomname,
                         &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
             /* get Heavy atom type */
-            tpHeavy = get_atype(Heavy, at, nrtp, rtp, &rt);
+            tpHeavy = get_atype(Heavy, at, rtp, &rt);
             strcpy(tpname, get_atomtype_name(tpHeavy, atype));
 
             bWARNING       = FALSE;
@@ -1889,7 +1887,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
                     }
                     /* get dummy mass type from first char of heavy atom type (N or C) */
 
-                    strcpy(nexttpname, get_atomtype_name(get_atype(heavies[0], at, nrtp, rtp, &rt), atype));
+                    strcpy(nexttpname, get_atomtype_name(get_atype(heavies[0], at, rtp, &rt), atype));
                     ch = get_dummymass_name(vsiteconflist, nvsiteconf, tpname, nexttpname);
 
                     if (ch == nullptr)
@@ -1939,10 +1937,10 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
                     /* get atom masses, and set Heavy and Hatoms mass to zero */
                     for (j = 0; j < nrHatoms; j++)
                     {
-                        mHtot                += get_amass(Hatoms[j], at, nrtp, rtp, &rt);
+                        mHtot                += get_amass(Hatoms[j], at, rtp, &rt);
                         at->atom[Hatoms[j]].m = at->atom[Hatoms[j]].mB = 0;
                     }
-                    mtot              = mHtot + get_amass(Heavy, at, nrtp, rtp, &rt);
+                    mtot              = mHtot + get_amass(Heavy, at, rtp, &rt);
                     at->atom[Heavy].m = at->atom[Heavy].mB = 0;
                     if (mHmult != 1.0)
                     {

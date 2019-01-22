@@ -40,17 +40,22 @@
 
 #include <cstdio>
 
+#include "gromacs/utility/arrayref.h"
+
 struct gpp_atomtype;
 struct t_restp;
 struct t_symtab;
 
-char *search_rtp(const char *key, int nrtp, t_restp rtp[]);
+std::string search_rtp(const char *key, gmx::ArrayRef<t_restp> rtp);
 /* Search for an entry in the rtp database, returns the rtp residue name.
  * A mismatch of one character is allowed, if there is only one nearly
  * matching entry in the database, a warning will be generated.
  */
 
-t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[]);
+//! Convenience typedef.
+using RestPIt = gmx::ArrayRef<t_restp>::const_iterator;
+
+RestPIt get_restp(const char *rtpname, gmx::ArrayRef<t_restp> rtp);
 /* Return the entry in the rtp database with rtp name rtpname.
  * Generates a fatal error when rtpname is not found.
  */
@@ -58,12 +63,12 @@ t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[]);
 gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab);
 /* read atom type database(s) */
 
-void read_resall(const char *resdb, int *nrtp, t_restp **rtp,
+void read_resall(const char *resdb, std::vector<t_restp> *rtp,
                  gpp_atomtype *atype, t_symtab *tab,
                  bool bAllowOverrideRTP);
 /* read rtp database, append to the existing database */
 
-void print_resall(FILE *out, int nrtp, t_restp rtp[],
+void print_resall(FILE *out, gmx::ArrayRef<t_restp> rtp,
                   gpp_atomtype *atype);
 /* write rtp database */
 
