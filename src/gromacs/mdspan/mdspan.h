@@ -84,13 +84,15 @@
  * \author David Hollman <dshollm@sandia.gov>
  * \author Christian Blau <cblau@gwdg.de>
  * \inlibraryapi
- * \ingroup mdspan
+ * \ingroup module_mdspan
  */
 #ifndef MDSPAN_MDSPAN_H
 #define MDSPAN_MDSPAN_H
 
 #include <array>
 #include <type_traits>
+
+#include "gromacs/math/vectypes.h"
 
 #include "accessor_policy.h"
 #include "extents.h"
@@ -226,8 +228,8 @@ class basic_mdspan
          * \param[in] k dimension to query for static extent
          * \returns static extent along specified dimension
          */
-        constexpr index_type static_extent( size_t k ) const noexcept
-        { return map_.extents().static_extent( k ); }
+        static constexpr index_type static_extent( size_t k ) noexcept
+        { return extents_type::static_extent(k); }
 
         /*! \brief Return the extent.
          * \param[in] k dimension to query for extent
@@ -260,6 +262,26 @@ class basic_mdspan
         constexpr accessor_type accessor() const noexcept { return acc_; }
         //! Return pointer to underlying data
         constexpr pointer data() const noexcept { return ptr_; }
+        /*! \brief Bracket operator for N-by-three views to construct a BasicVector.
+         * \note Conversion to BasicVector requires non-pointer value_type
+         *
+         * Allows a Nx3 basic_mdspan to act like a C-style matrix.
+         *
+         * Enabled only when the second rank is statically fixed to three.
+         * Staticly asserting that rank is two rather than quietly disabling use.
+         * \param[in] i one-dimensional index
+         * \returns reference to element stored at position i
+         * \tparam IndexType integral value that allows this operator to function for both, size_t and int
+         */
+        template <class IndexType,
+                  bool IsMatrix = static_extent(1) == DIM >
+        constexpr typename std::enable_if<std::is_integral<IndexType>::value &&IsMatrix, BasicVector<value_type> >::type
+        operator[](const IndexType &i) const noexcept
+        {
+            static_assert(rank() == 2,
+                          "Bracket operator conversion to BasicVector only allowed for two-dimensional basic_spans.");
+            return {this->operator()(i, 0), this->operator()(i, 1), this->operator()(i, 2)};
+        }
     private:
         //! The memory access model
         accessor_type acc_;
