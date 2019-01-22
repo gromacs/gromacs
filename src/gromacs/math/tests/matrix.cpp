@@ -161,6 +161,25 @@ TEST_F(MatrixTest, constviewConvertsToRvec)
     EXPECT_EQ(yVec[ZZ], testNumber_ - 1);
 }
 
+TEST_F(MatrixTest, clear)
+{
+    clear_mat(matrix_);
+    for (const auto &x : matrix_)
+    {
+        EXPECT_EQ(0, x);
+    }
+}
+
+TEST_F(MatrixTest, mmul_ur0)
+{
+    Matrix3x3 result;
+    mmul_ur0(matrix_, matrix_, result);
+    for (const auto &x : matrix_)
+    {
+        EXPECT_EQ(0, x);
+    }
+}
+
 } // namespace
 
 } // namespace test
