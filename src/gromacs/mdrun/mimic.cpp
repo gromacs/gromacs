@@ -366,11 +366,11 @@ void gmx::Integrator::do_mimic()
     walltime_accounting_set_valid_finish(walltime_accounting);
 
     DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   =
-        (DOMAINDECOMP(cr) ?
+        (havePPDomainDecomposition(cr) ?
          DdOpenBalanceRegionBeforeForceComputation::yes :
          DdOpenBalanceRegionBeforeForceComputation::no);
     DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  =
-        (DOMAINDECOMP(cr) ?
+        (havePPDomainDecomposition(cr) ?
          DdCloseBalanceRegionAfterForceComputation::yes :
          DdCloseBalanceRegionAfterForceComputation::no);
 
