@@ -472,8 +472,8 @@ void gmx::Integrator::do_rerun()
     // we don't do counter resetting in rerun - finish will always be valid
     walltime_accounting_set_valid_finish(walltime_accounting);
 
-    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
-    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
+    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (havePPDomainDecomposition(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
+    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (havePPDomainDecomposition(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
 
     step     = ir->init_step;
     step_rel = 0;

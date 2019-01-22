@@ -874,10 +874,10 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0),
-             DOMAINDECOMP(cr) ?
+             havePPDomainDecomposition(cr) ?
              DdOpenBalanceRegionBeforeForceComputation::yes :
              DdOpenBalanceRegionBeforeForceComputation::no,
-             DOMAINDECOMP(cr) ?
+             havePPDomainDecomposition(cr) ?
              DdCloseBalanceRegionAfterForceComputation::yes :
              DdCloseBalanceRegionAfterForceComputation::no);
 
