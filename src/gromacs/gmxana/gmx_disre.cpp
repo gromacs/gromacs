@@ -53,7 +53,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed_forces/disre.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"

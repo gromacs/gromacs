@@ -39,7 +39,7 @@
  * interactions.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_listed-forces
+ * \ingroup module_listed_forces
  */
 #include "gmxpre.h"
 
@@ -55,7 +55,7 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/listed-forces/gpubonded.h"
+#include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/ifunc.h"

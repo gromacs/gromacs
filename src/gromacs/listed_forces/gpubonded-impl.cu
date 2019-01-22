@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
  * \author Szilárd Páll <pall.szilard@gmail.com>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
- * \ingroup module_listed-forces
+ * \ingroup module_listed_forces
  */
 
 #include "gmxpre.h"
@@ -52,7 +52,7 @@
 #include "gromacs/gpu_utils/gpu_vec.cuh"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/listed-forces/gpubonded.h"
+#include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"

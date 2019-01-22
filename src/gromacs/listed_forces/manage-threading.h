@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,31 +34,42 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- *
- * \brief This file defines functions needed internally by the module.
+/*! \libinternal \file
+ * \brief Declares functions for managing threading of listed forces
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_listed-forces
+ * \inlibraryapi
+ * \ingroup module_listed_forces
  */
-#include "gmxpre.h"
+#ifndef GMX_LISTED_FORCES_MANAGE_THREADING_H
+#define GMX_LISTED_FORCES_MANAGE_THREADING_H
 
-#include "listed-internal.h"
+#include <cstdio>
 
-#include <cstdlib>
+struct bonded_threading_t;
+struct t_idef;
 
-int glatnr(const int *global_atom_index, int i)
-{
-    int atnr;
+/*! \brief Divide the listed interactions over the threads and GPU
+ *
+ * Uses fr->nthreads for the number of threads, and sets up the
+ * thread-force buffer reduction.
+ * This should be called each time the bonded setup changes;
+ * i.e. at start-up without domain decomposition and at DD.
+ */
+void setup_bonded_threading(bonded_threading_t *bt,
+                            int                 numAtoms,
+                            bool                useGpuForBondes,
+                            const t_idef       &idef);
 
-    if (global_atom_index == nullptr)
-    {
-        atnr = i + 1;
-    }
-    else
-    {
-        atnr = global_atom_index[i] + 1;
-    }
+//! Destructor.
+void tear_down_bonded_threading(bonded_threading_t *bt);
 
-    return atnr;
-}
+/*! \brief Initialize the bonded threading data structures
+ *
+ * Allocates and initializes a bonded threading data structure.
+ * A pointer to this struct is returned as \p *bb_ptr.
+ */
+void init_bonded_threading(FILE *fplog, int nenergrp,
+                           bonded_threading_t **bt_ptr);
+
+#endif
