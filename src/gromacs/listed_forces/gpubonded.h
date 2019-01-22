@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,57 +32,90 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief Declares GPU implementation class for CUDA bonded
- * interactions.
+/*! \libinternal \file
  *
- * This header file is needed to include from both the device-side
- * kernels file, and the host-side management code.
+ * \brief This file contains declarations of high-level functions used
+ * by mdrun to compute energies and forces for listed interactions.
  *
- * \author Berk Hess <hess@kth.se>
- * \author Szilárd Páll <pall.szilard@gmail.com>
+ * Clients of libgromacs that want to evaluate listed interactions
+ * should call functions declared here.
+ *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
- * \ingroup module_listed-forces
+ * \inlibraryapi
+ * \ingroup module_listed_forces
  */
-#ifndef GMX_LISTED_FORCES_GPUBONDED_IMPL_H
-#define GMX_LISTED_FORCES_GPUBONDED_IMPL_H
+#ifndef GMX_LISTED_FORCES_GPUBONDED_H
+#define GMX_LISTED_FORCES_GPUBONDED_H
 
-#include "gromacs/gpu_utils/gpu_vec.cuh"
-#include "gromacs/gpu_utils/gputraits.cuh"
-#include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/listed-forces/gpubonded.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
 
+struct gmx_enerdata_t;
 struct gmx_ffparams_t;
+struct gmx_mtop_t;
 struct t_forcerec;
+struct t_idef;
+struct t_inputrec;
 
 namespace gmx
 {
 
-/*! \internal \brief Version of InteractionList that supports pinning */
-struct HostInteractionList
-{
-    /*! \brief Returns the total number of elements in iatoms */
-    int size() const
-    {
-        return iatoms.size();
-    }
+/*! \brief The number on bonded function types supported on GPUs */
+constexpr int c_numFtypesOnGpu = 8;
 
-    //! List of interactions, see \c HostInteractionLists
-    HostVector<int> iatoms = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
+/*! \brief List of all bonded function types supported on GPUs
+ *
+ * \note This list should be in sync with the actual GPU code.
+ * \note Perturbed interactions are not supported on GPUs.
+ * \note The function types in the list are ordered on increasing value.
+ * \note Currently bonded are only supported with CUDA, not with OpenCL.
+ */
+constexpr std::array<int, c_numFtypesOnGpu> ftypesOnGpu =
+{
+    F_BONDS,
+    F_ANGLES,
+    F_UREY_BRADLEY,
+    F_PDIHS,
+    F_RBDIHS,
+    F_IDIHS,
+    F_PIDIHS,
+    F_LJ14
 };
 
-/*! \internal \brief Implements GPU bondeds */
-class GpuBonded::Impl
+/*! \brief Checks whether the GROMACS build allows to compute bonded interactions on a GPU.
+ *
+ * \param[out] error  If non-null, the diagnostic message when bondeds cannot run on a GPU.
+ *
+ * \returns true when this build can run bonded interactions on a GPU, false otherwise.
+ *
+ * \throws std::bad_alloc when out of memory.
+ */
+bool buildSupportsGpuBondeds(std::string *error);
+
+/*! \brief Checks whether the input system allows to compute bonded interactions on a GPU.
+ *
+ * \param[in]  ir     Input system.
+ * \param[in]  mtop   Complete system topology to search for supported interactions.
+ * \param[out] error  If non-null, the error message if the input is not supported on GPU.
+ *
+ * \returns true if PME can run on GPU with this input, false otherwise.
+ */
+bool inputSupportsGpuBondeds(const t_inputrec &ir,
+                             const gmx_mtop_t &mtop,
+                             std::string      *error);
+
+class GpuBonded
 {
     public:
-        //! Constructor
-        Impl(const gmx_ffparams_t &ffparams,
-             void                 *streamPtr);
-        /*! \brief Destructor, non-default needed for freeing
-         * device-side buffers */
-        ~Impl();
+        //! Construct the manager with constant data and the stream to use.
+        GpuBonded(const gmx_ffparams_t &ffparams,
+                  void                 *streamPtr);
+        //! Destructor
+        ~GpuBonded();
+
         /*! \brief Update lists of interactions from idef suitable for the GPU,
          * using the data structures prepared for PP work.
          *
@@ -95,49 +128,25 @@ class GpuBonded::Impl
                                                     void                *xqDevice,
                                                     void                *forceDevice,
                                                     void                *fshiftDevice);
-
-        /*! \brief Launches bonded kernels on a GPU */
-        template <bool calcVir, bool calcEner>
-        void
-        launchKernels(const t_forcerec *fr,
-                      const matrix      box);
         /*! \brief Returns whether there are bonded interactions
          * assigned to the GPU */
         bool haveInteractions() const;
+        /*! \brief Launches bonded kernels on a GPU */
+        void launchKernels(const t_forcerec *fr,
+                           int               forceFlags,
+                           const matrix      box);
         /*! \brief Launches the transfer of computed bonded energies. */
         void launchEnergyTransfer();
         /*! \brief Waits on the energy transfer, and accumulates bonded energies to \c enerd. */
         void accumulateEnergyTerms(gmx_enerdata_t *enerd);
         /*! \brief Clears the device side energy buffer */
         void clearEnergies();
+
     private:
-        /*! \brief The interaction lists
-         *
-         * \todo This is potentially several pinned allocations, which
-         * could contribute to exhausting such pages. */
-        std::array<HostInteractionList, F_NRE> iLists;
-        //! Tells whether there are any interaction in iLists.
-        bool                                   haveInteractions_;
-        //! Interaction lists on the device.
-        t_ilist                                iListsDevice[F_NRE];
-
-        //! Bonded parameters for device-side use.
-        t_iparams            *forceparamsDevice = nullptr;
-        //! Position-charge vector on the device.
-        const float4         *xqDevice = nullptr;
-        //! Force vector on the device.
-        fvec                 *forceDevice = nullptr;
-        //! Shift force vector on the device.
-        fvec                 *fshiftDevice = nullptr;
-        //! \brief Host-side virial buffer
-        HostVector <float>    vtot = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
-        //! \brief Device-side total virial
-        float                *vtotDevice   = nullptr;
-
-        //! \brief Bonded GPU stream, not owned by this module
-        CommandStream         stream;
+        class Impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
-}   // namespace gmx
+} // namespace gmx
 
 #endif

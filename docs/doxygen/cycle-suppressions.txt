@@ -7,7 +7,7 @@ domdec -> ewald
 domdec -> mdlib
 domdec -> pulling
 fileio -> gmxlib
-gmxlib -> listed-forces
+gmxlib -> listed_forces
 mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
@@ -15,4 +15,4 @@ mdlib -> pulling
 mdlib -> awh
 simd -> hardware
 gpu_utils -> hardware
-listed-forces -> mdlib
+listed_forces -> mdlib

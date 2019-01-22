@@ -38,7 +38,7 @@
  * internally by the module.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_listed-forces
+ * \ingroup module_listed_forces
  */
 #ifndef GMX_LISTED_FORCES_LISTED_INTERNAL_H
 #define GMX_LISTED_FORCES_LISTED_INTERNAL_H
