@@ -911,7 +911,7 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
     bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
     if (stepWithCurrentList > 0 &&
         stepWithCurrentList < inputrec->nstlist - 1 &&
-        (stepIsEven || DOMAINDECOMP(cr)))
+        (stepIsEven || havePPDomainDecomposition(cr)))
     {
         Nbnxm::gpu_launch_kernel_pruneonly(nbv->gpu_nbv,
                                            stepIsEven ? Nbnxm::InteractionLocality::Local : Nbnxm::InteractionLocality::NonLocal,
@@ -1189,7 +1189,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         // bonded work not split into separate local and non-local, so with DD
         // we can only launch the kernel after non-local coordinates have been received.
-        if (ppForceWorkload->haveGpuBondedWork && !DOMAINDECOMP(cr))
+        if (ppForceWorkload->haveGpuBondedWork && !havePPDomainDecomposition(cr))
         {
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_BONDED);
             fr->gpuBonded->launchKernels(fr, flags, box);
@@ -1215,7 +1215,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     /* Communicate coordinates and sum dipole if necessary +
        do non-local pair search */
-    if (DOMAINDECOMP(cr))
+    if (havePPDomainDecomposition(cr))
     {
         nbnxn_pairlist_set_t &pairlistSet = nbv->grp[Nbnxm::InteractionLocality::NonLocal].nbl_lists;
 
@@ -1287,7 +1287,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         /* launch D2H copy-back F */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        if (DOMAINDECOMP(cr))
+        if (havePPDomainDecomposition(cr))
         {
             Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
                                       flags, Nbnxm::AtomLocality::NonLocal, ppForceWorkload->haveGpuBondedWork);
@@ -1430,7 +1430,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (!bUseOrEmulGPU)
     {
-        if (DOMAINDECOMP(cr))
+        if (havePPDomainDecomposition(cr))
         {
             do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
                          step, nrnb, wcycle);
@@ -1485,7 +1485,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     if (bUseOrEmulGPU)
     {
         /* wait for non-local forces (or calculate in emulation mode) */
-        if (DOMAINDECOMP(cr))
+        if (havePPDomainDecomposition(cr))
         {
             if (bUseGPU)
             {
@@ -1514,7 +1514,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
     }
 
-    if (DOMAINDECOMP(cr))
+    if (havePPDomainDecomposition(cr))
     {
         /* We are done with the CPU compute.
          * We will now communicate the non-local forces.
