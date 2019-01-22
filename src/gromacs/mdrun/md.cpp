@@ -657,8 +657,8 @@ void gmx::Integrator::do_md()
                 ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
                 mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
 
-    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
-    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
+    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (havePPDomainDecomposition(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
+    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (havePPDomainDecomposition(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
 
     step     = ir->init_step;
     step_rel = 0;
