@@ -57,6 +57,11 @@
 
 /* UTILITIES */
 
+void set_p_string(t_param *p, const std::string &s)
+{
+    set_p_string(p, s.c_str());
+}
+
 void set_p_string(t_param *p, const char *s)
 {
     if (s)
