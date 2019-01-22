@@ -85,18 +85,18 @@
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
 
-static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
+static int missing_atoms(const t_restp &rp, int resind, t_atoms *at, int i0, int i)
 {
-    int      j, k, nmiss;
+    int      nmiss;
     char    *name;
     bool     bFound;
 
     nmiss = 0;
-    for (j = 0; j < rp->natom; j++)
+    for (int j = 0; j < rp.natom(); j++)
     {
-        name   = *(rp->atomname[j]);
+        name   = *(rp.atomname[j]);
         bFound = FALSE;
-        for (k = i0; k < i; k++)
+        for (int k = i0; k < i; k++)
         {
             bFound = (bFound || (gmx_strcasecmp(*(at->atomname[k]), name) == 0));
         }
@@ -110,7 +110,7 @@ static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
             {
                 fprintf(stderr, "         You might need to add atom %s to the hydrogen database of building block %s\n"
                         "         in the file %s.hdb (see the manual)\n",
-                        name, *(at->resinfo[resind].rtp), rp->filebase);
+                        name, *(at->resinfo[resind].rtp), rp.filebase.c_str());
             }
             fprintf(stderr, "\n");
         }
@@ -442,7 +442,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 }
 
 static int name2type(t_atoms *at, int **cgnr,
-                     t_restp restp[], ResidueType *rt)
+                     gmx::ArrayRef<t_restp> restp, ResidueType *rt)
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
     char       *name;
@@ -471,7 +471,7 @@ static int name2type(t_atoms *at, int **cgnr,
             bNterm = bProt && (resind == 0);
             if (resind > 0)
             {
-                nmissat += missing_atoms(&restp[prevresind], prevresind, at, i0, i);
+                nmissat += missing_atoms(restp[prevresind], prevresind, at, i0, i);
             }
             i0 = i;
         }
@@ -508,7 +508,7 @@ static int name2type(t_atoms *at, int **cgnr,
         at->atom[i].qB    = at->atom[i].q;
         at->atom[i].mB    = at->atom[i].m;
     }
-    nmissat += missing_atoms(&restp[resind], resind, at, i0, i);
+    nmissat += missing_atoms(restp[resind], resind, at, i0, i);
 
     return nmissat;
 }
@@ -714,7 +714,7 @@ void write_top(FILE *out, const char *pr, const char *molname,
 
 
 
-static void do_ssbonds(t_params *ps, t_atoms *atoms,
+static void do_ssbonds(t_params *ps, const t_atoms &atoms,
                        int nssbonds, t_ssbond *ssbonds, bool bAllowMissing)
 {
     int     i, ri, rj;
@@ -737,12 +737,11 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
     }
 }
 
-static void at2bonds(t_params *psb, t_hackblock *hb,
-                     t_atoms *atoms,
+static void at2bonds(t_params *psb, gmx::ArrayRef<t_hackblock> hb,
+                     const t_atoms &atoms,
                      rvec x[],
                      real long_bond_dist, real short_bond_dist)
 {
-    int         resind, i, j, k;
     int         ai, aj;
     real        dist2, long_bond_dist2, short_bond_dist2;
     const char *ptr;
@@ -760,11 +759,11 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
     }
 
     fprintf(stderr, "Making bonds...\n");
-    i = 0;
-    for (resind = 0; (resind < atoms->nres) && (i < atoms->nr); resind++)
+    int i = 0;
+    for (int resind = 0; (resind < atoms.nres) && (i < atoms.nr); resind++)
     {
         /* add bonds from list of bonded interactions */
-        for (j = 0; j < hb[resind].rb[ebtsBONDS].nb; j++)
+        for (int j = 0; j < hb[resind].rb[ebtsBONDS].nb(); j++)
         {
             /* Unfortunately we can not issue errors or warnings
              * for missing atoms in bonds, as the hydrogens and terminal atoms
@@ -788,17 +787,17 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                     fprintf(stderr, "Warning: Short Bond (%d-%d = %g nm)\n",
                             ai+1, aj+1, std::sqrt(dist2));
                 }
-                add_param(psb, ai, aj, nullptr, hb[resind].rb[ebtsBONDS].b[j].s);
+                add_param(psb, ai, aj, nullptr, hb[resind].rb[ebtsBONDS].b[j].s.c_str());
             }
         }
         /* add bonds from list of hacks (each added atom gets a bond) */
-        while ( (i < atoms->nr) && (atoms->atom[i].resind == resind) )
+        while ( (i < atoms.nr) && (atoms.atom[i].resind == resind) )
         {
-            for (j = 0; j < hb[resind].nhack; j++)
+            for (int j = 0; j < hb[resind].nhack(); j++)
             {
                 if ( ( hb[resind].hack[j].tp > 0 ||
-                       hb[resind].hack[j].oname == nullptr ) &&
-                     strcmp(hb[resind].hack[j].a[0], *(atoms->atomname[i])) == 0)
+                       hb[resind].hack[j].oname.empty() ) &&
+                     strcmp(hb[resind].hack[j].a[0].c_str(), *(atoms.atomname[i])) == 0)
                 {
                     switch (hb[resind].hack[j].tp)
                     {
@@ -808,7 +807,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                             add_param(psb, i+2, i+3, nullptr, nullptr); /* OA-H */
                             break;
                         default:
-                            for (k = 0; (k < hb[resind].hack[j].nr); k++)
+                            for (int k = 0; (k < hb[resind].hack[j].nr()); k++)
                             {
                                 add_param(psb, i, i+k+1, nullptr, nullptr);
                             }
@@ -922,101 +921,87 @@ static void check_restp_type(const char *name, int t1, int t2)
     }
 }
 
-static void check_restp_types(t_restp *r0, t_restp *r1)
+static void check_restp_types(const t_restp &r0, const t_restp &r1)
 {
     int i;
 
-    check_restp_type("all dihedrals", static_cast<int>(r0->bKeepAllGeneratedDihedrals), static_cast<int>(r1->bKeepAllGeneratedDihedrals));
-    check_restp_type("nrexcl", r0->nrexcl, r1->nrexcl);
-    check_restp_type("HH14", static_cast<int>(r0->bGenerateHH14Interactions), static_cast<int>(r1->bGenerateHH14Interactions));
-    check_restp_type("remove dihedrals", static_cast<int>(r0->bRemoveDihedralIfWithImproper), static_cast<int>(r1->bRemoveDihedralIfWithImproper));
+    check_restp_type("all dihedrals", static_cast<int>(r0.bKeepAllGeneratedDihedrals), static_cast<int>(r1.bKeepAllGeneratedDihedrals));
+    check_restp_type("nrexcl", r0.nrexcl, r1.nrexcl);
+    check_restp_type("HH14", static_cast<int>(r0.bGenerateHH14Interactions), static_cast<int>(r1.bGenerateHH14Interactions));
+    check_restp_type("remove dihedrals", static_cast<int>(r0.bRemoveDihedralIfWithImproper), static_cast<int>(r1.bRemoveDihedralIfWithImproper));
 
     for (i = 0; i < ebtsNR; i++)
     {
-        check_restp_type(btsNames[i], r0->rb[i].type, r1->rb[i].type);
+        check_restp_type(btsNames[i], r0.rb[i].type, r1.rb[i].type);
     }
 }
 
-static void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
+static void add_atom_to_restp(t_restp *restp, int at_start, const t_hack &hack)
 {
     char        buf[STRLEN];
-    int         k;
     const char *Hnum = "123456";
 
-    strcpy(buf, hack->nname);
+    strcpy(buf, hack.nname.c_str());
     buf[strlen(buf)+1] = '\0';
-    if (hack->nr > 1)
+    if (hack.nr() > 1)
     {
         buf[strlen(buf)] = '-';
     }
-    /* make space */
-    restp->natom += hack->nr;
-    srenew(restp->atom,     restp->natom);
-    srenew(restp->atomname, restp->natom);
-    srenew(restp->cgnr,     restp->natom);
-    /* shift the rest */
-    for (k = restp->natom-1; k > at_start+hack->nr; k--)
-    {
-        restp->atom[k] =
-            restp->atom    [k - hack->nr];
-        restp->atomname[k] =
-            restp->atomname[k - hack->nr];
-        restp->cgnr[k] =
-            restp->cgnr    [k - hack->nr];
-    }
     /* now add them */
-    for (k = 0; k < hack->nr; k++)
+    for (int k = 0; k < hack.nr(); k++)
     {
         /* set counter in atomname */
-        if (hack->nr > 1)
+        if (hack.nr() > 1)
         {
             buf[strlen(buf)-1] = Hnum[k];
         }
-        snew( restp->atomname[at_start+1+k], 1);
-        restp->atom     [at_start+1+k] = *hack->atom;
-        *restp->atomname[at_start+1+k] = gmx_strdup(buf);
-        if (hack->cgnr != NOTSET)
+        restp->atom.insert(restp->atom.begin() + at_start + 1 + k, hack.atom.back());
+        char **tmp = nullptr;
+        snew (tmp, 1);
+        *tmp = gmx_strdup(buf);
+        restp->atomname.insert(restp->atomname.begin() + at_start + 1 + k, tmp);
+        if (hack.cgnr != NOTSET)
         {
-            restp->cgnr   [at_start+1+k] = hack->cgnr;
+            restp->cgnr.insert(restp->cgnr.begin() + at_start + 1 + k, hack.cgnr);
         }
         else
         {
-            restp->cgnr   [at_start+1+k] = restp->cgnr[at_start];
+            restp->cgnr.insert(restp->cgnr.begin() +at_start + 1 + k, restp->cgnr[at_start]);
         }
     }
 }
 
-void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
-                        int nrtp, t_restp rtp[],
+void get_hackblocks_rtp(std::vector<t_hackblock> *hb, std::vector<t_restp> *restp,
+                        gmx::ArrayRef<t_restp> rtp,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
-                        t_hackblock **ntdb, t_hackblock **ctdb,
+                        std::vector<t_hackblock *> ntdb, std::vector<t_hackblock *> ctdb,
                         const int *rn, const int *rc,
                         bool bAllowMissing)
 {
-    int         i, j, k, l;
+    int         i, j, l;
     char       *key;
     t_restp    *res;
     int         tern, terc;
     bool        bRM;
 
-    snew(*hb, nres);
-    snew(*restp, nres);
+    hb->resize(nres);
+    restp->clear();
     /* first the termini */
-    for (i = 0; i < nterpairs; i++)
+    for (int i = 0; i < nterpairs; i++)
     {
         if (rn[i] >= 0 && ntdb[i] != nullptr)
         {
-            copy_t_hackblock(ntdb[i], &(*hb)[rn[i]]);
+            copy_t_hackblock(*ntdb[i], &(*hb)[rn[i]]);
         }
         if (rc[i] >= 0 && ctdb[i] != nullptr)
         {
-            merge_t_hackblock(ctdb[i], &(*hb)[rc[i]]);
+            merge_t_hackblock(*ctdb[i], &(*hb)[rc[i]]);
         }
     }
 
     /* then the whole rtp */
-    for (i = 0; i < nres; i++)
+    for (int i = 0; i < nres; i++)
     {
         /* Here we allow a mismatch of one character when looking for the rtp entry.
          * For such a mismatch there should be only one mismatching name.
@@ -1027,15 +1012,16 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
          */
         key = *resinfo[i].rtp;
         snew(resinfo[i].rtp, 1);
-        *resinfo[i].rtp = search_rtp(key, nrtp, rtp);
-        res             = get_restp(*resinfo[i].rtp, nrtp, rtp);
-        copy_t_restp(res, &(*restp)[i]);
+        *resinfo[i].rtp = gmx_strdup(search_rtp(key, rtp).c_str());
+        res             = get_restp(*resinfo[i].rtp, rtp);
+        restp->push_back(t_restp());
+        copy_t_restp(res, &restp->back());
 
         /* Check that we do not have different bonded types in one molecule */
-        check_restp_types(&(*restp)[0], &(*restp)[i]);
+        check_restp_types(restp->front(), restp->back());
 
         tern = -1;
-        for (j = 0; j < nterpairs && tern == -1; j++)
+        for (int j = 0; j < nterpairs && tern == -1; j++)
         {
             if (i == rn[j])
             {
@@ -1043,14 +1029,14 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
             }
         }
         terc = -1;
-        for (j = 0; j < nterpairs && terc == -1; j++)
+        for (int j = 0; j < nterpairs && terc == -1; j++)
         {
             if (i == rc[j])
             {
                 terc = j;
             }
         }
-        bRM = merge_t_bondeds(res->rb, (*hb)[i].rb, tern >= 0, terc >= 0);
+        bRM = merge_t_bondeds(res->rb, &hb->at(i).rb, tern >= 0, terc >= 0);
 
         if (bRM && ((tern >= 0 && ntdb[tern] == nullptr) ||
                     (terc >= 0 && ctdb[terc] == nullptr)))
@@ -1065,8 +1051,8 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                 gmx_fatal(FARGS, "%s", errString);
             }
         }
-        else if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
-                         (terc >= 0 && ctdb[terc]->nhack == 0)))
+        else if (bRM && ((tern >= 0 && ntdb[tern]->nhack() == 0) ||
+                         (terc >= 0 && ctdb[terc]->nhack() == 0)))
         {
             const char *errString = "There is a dangling bond at at least one of the terminal ends. Fix your coordinate file, add a new terminal database entry (.tdb), or select the proper existing terminal entry.";
             if (bAllowMissing)
@@ -1086,22 +1072,22 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
        we'll do this on one big dirty loop, so it won't make easy reading! */
     for (i = 0; i < nres; i++)
     {
-        for (j = 0; j < (*hb)[i].nhack; j++)
+        for (j = 0; j < hb->at(i).nhack(); j++)
         {
-            if ( (*hb)[i].hack[j].nr)
+            if ( hb->at(i).hack[j].nr() != 0)
             {
                 /* find atom in restp */
-                for (l = 0; l < (*restp)[i].natom; l++)
+                for (l = 0; l < restp->at(i).natom(); l++)
                 {
-                    if ( ( (*hb)[i].hack[j].oname == nullptr &&
-                           strcmp((*hb)[i].hack[j].a[0], *(*restp)[i].atomname[l]) == 0 ) ||
-                         ( (*hb)[i].hack[j].oname != nullptr &&
-                           strcmp((*hb)[i].hack[j].oname, *(*restp)[i].atomname[l]) == 0 ) )
+                    if ( ( hb->at(i).hack[j].oname.empty() &&
+                           strcmp(hb->at(i).hack[j].a[0].c_str(), *restp->at(i).atomname[l]) == 0 ) ||
+                         ( !hb->at(i).hack[j].oname.empty() &&
+                           strcmp(hb->at(i).hack[j].oname.c_str(), *restp->at(i).atomname[l]) == 0 ) )
                     {
                         break;
                     }
                 }
-                if (l == (*restp)[i].natom)
+                if (l == restp->at(i).natom())
                 {
                     /* If we are doing an atom rename only, we don't need
                      * to generate a fatal error if the old name is not found
@@ -1110,49 +1096,43 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                     /* Deleting can happen also only on the input atoms,
                      * not necessarily always on the rtp entry.
                      */
-                    if (!((*hb)[i].hack[j].oname != nullptr &&
-                          (*hb)[i].hack[j].nname != nullptr) &&
-                        !((*hb)[i].hack[j].oname != nullptr &&
-                          (*hb)[i].hack[j].nname == nullptr))
+                    if (!(!hb->at(i).hack[j].oname.empty() &&
+                          !hb->at(i).hack[j].nname.empty()) &&
+                        !(!hb->at(i).hack[j].oname.empty()&&
+                          hb->at(i).hack[j].nname.empty()))
                     {
                         gmx_fatal(FARGS,
                                   "atom %s not found in buiding block %d%s "
                                   "while combining tdb and rtp",
-                                  (*hb)[i].hack[j].oname != nullptr ?
-                                  (*hb)[i].hack[j].oname : (*hb)[i].hack[j].a[0],
+                                  hb->at(i).hack[j].oname.empty()?
+                                  hb->at(i).hack[j].oname.c_str() : hb->at(i).hack[j].a[0].c_str(),
                                   i+1, *resinfo[i].rtp);
                     }
                 }
                 else
                 {
-                    if ( (*hb)[i].hack[j].oname == nullptr)
+                    if ( hb->at(i).hack[j].oname.empty())
                     {
                         /* we're adding: */
-                        add_atom_to_restp(&(*restp)[i], l, &(*hb)[i].hack[j]);
+                        add_atom_to_restp(&restp->at(i), l, hb->at(i).hack[j]);
                     }
                     else
                     {
                         /* oname != NULL */
-                        if ( (*hb)[i].hack[j].nname == nullptr)
+                        if ( (*hb)[i].hack[j].nname.empty())
                         {   /* we're deleting */
-                            /* shift the rest */
-                            (*restp)[i].natom--;
-                            for (k = l; k < (*restp)[i].natom; k++)
-                            {
-                                (*restp)[i].atom    [k] = (*restp)[i].atom    [k+1];
-                                (*restp)[i].atomname[k] = (*restp)[i].atomname[k+1];
-                                (*restp)[i].cgnr    [k] = (*restp)[i].cgnr    [k+1];
-                            }
-                            /* give back space */
-                            srenew((*restp)[i].atom,     (*restp)[i].natom);
-                            srenew((*restp)[i].atomname, (*restp)[i].natom);
-                            srenew((*restp)[i].cgnr,     (*restp)[i].natom);
+                            (*restp)[i].atom.erase((*restp)[i].atom.begin() + l);
+                            (*restp)[i].atomname.erase((*restp)[i].atomname.begin() + l);
+                            (*restp)[i].cgnr.erase((*restp)[i].cgnr.begin() + l);
+
                         }
                         else /* nname != NULL */
                         {    /* we're replacing */
-                            snew( (*restp)[i].atomname[l], 1);
-                            (*restp)[i].atom[l]      =       *(*hb)[i].hack[j].atom;
-                            *(*restp)[i].atomname[l] = gmx_strdup((*hb)[i].hack[j].nname);
+                            char **tmp = (*restp)[i].atomname[l];
+                            srenew(tmp, 1);
+                            *tmp                     = gmx_strdup((*hb)[i].hack[j].nname.c_str());
+                            (*restp)[i].atom[l]      =       (*hb)[i].hack[j].atom.back();
+                            (*restp)[i].atomname[l]  = tmp;
                             if ( (*hb)[i].hack[j].cgnr != NOTSET)
                             {
                                 (*restp)[i].cgnr   [l] = (*hb)[i].hack[j].cgnr;
@@ -1165,14 +1145,14 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
     }
 }
 
-static bool atomname_cmp_nr(const char *anm, t_hack *hack, int *nr)
+static bool atomname_cmp_nr(const char *anm, const t_hack &hack, int *nr)
 {
 
-    if (hack->nr == 1)
+    if (hack.nr() == 1)
     {
         *nr = 0;
 
-        return (gmx_strcasecmp(anm, hack->nname) == 0);
+        return gmx::equalCaseInsensitive(anm, hack.nname);
     }
     else
     {
@@ -1184,54 +1164,49 @@ static bool atomname_cmp_nr(const char *anm, t_hack *hack, int *nr)
         {
             *nr = 0;
         }
-        if (*nr <= 0 || *nr > hack->nr)
+        if (*nr <= 0 || *nr > hack.nr())
         {
             return FALSE;
         }
         else
         {
-            return (strlen(anm) == strlen(hack->nname) + 1 &&
-                    gmx_strncasecmp(anm, hack->nname, strlen(hack->nname)) == 0);
+            return gmx::equalCaseInsensitive(anm, hack.nname);
         }
     }
 }
 
 static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
-                                          t_restp *rptr, t_hackblock *hbr,
+                                          t_restp *rptr, const t_hackblock &hbr,
                                           bool bVerbose)
 {
     int      resnr;
-    int      j, k;
-    char    *oldnm, *newnm;
+    char    *oldnm;
     int      anmnr;
-    char    *start_at, buf[STRLEN];
-    int      start_nr;
-    bool     bReplaceReplace, bFoundInAdd;
-    bool     bDeleted;
+    char     buf[STRLEN];
 
     oldnm = *pdba->atomname[atind];
     resnr = pdba->resinfo[pdba->atom[atind].resind].nr;
 
-    bDeleted = FALSE;
-    for (j = 0; j < hbr->nhack; j++)
+    bool bDeleted = false;
+    for (int j = 0; j < hbr.nhack(); j++)
     {
-        if (hbr->hack[j].oname != nullptr && hbr->hack[j].nname != nullptr &&
-            gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)
+        if (!hbr.hack[j].oname.empty() && !hbr.hack[j].nname.empty() &&
+            gmx::equalCaseInsensitive(oldnm, hbr.hack[j].oname) ) 
         {
             /* This is a replace entry. */
             /* Check if we are not replacing a replaced atom. */
-            bReplaceReplace = FALSE;
-            for (k = 0; k < hbr->nhack; k++)
+            bool bReplaceReplace = false;
+            for (int k = 0; k < hbr.nhack(); k++)
             {
                 if (k != j &&
-                    hbr->hack[k].oname != nullptr && hbr->hack[k].nname != nullptr &&
-                    gmx_strcasecmp(hbr->hack[k].nname, hbr->hack[j].oname) == 0)
+                    !hbr.hack[k].oname.empty() && !hbr.hack[k].nname.empty() &&
+                    gmx::equalCaseInsensitive(hbr.hack[k].nname, hbr.hack[j].oname))
                 {
                     /* The replace in hack[j] replaces an atom that
                      * was already replaced in hack[k], we do not want
                      * second or higher level replaces at this stage.
                      */
-                    bReplaceReplace = TRUE;
+                    bReplaceReplace = true;
                 }
             }
             if (bReplaceReplace)
@@ -1241,15 +1216,16 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
             }
 
             /* This atom still has the old name, rename it */
-            newnm = hbr->hack[j].nname;
-            for (k = 0; k < rptr->natom; k++)
+            const char *newnm = hbr.hack[j].nname.c_str();
+            int k;
+            for (k = 0; k < rptr->natom(); k++)
             {
                 if (gmx_strcasecmp(newnm, *rptr->atomname[k]) == 0)
                 {
                     break;
                 }
             }
-            if (k == rptr->natom)
+            if (k == rptr->natom())
             {
                 /* The new name is not present in the rtp.
                  * We need to apply the replace also to the rtp entry.
@@ -1258,38 +1234,40 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                 /* We need to find the add hack that can add this atom
                  * to find out after which atom it should be added.
                  */
-                bFoundInAdd = FALSE;
-                for (k = 0; k < hbr->nhack; k++)
+                bool bFoundInAdd = false;
+                for (int k = 0; k < hbr.nhack(); k++)
                 {
-                    if (hbr->hack[k].oname == nullptr &&
-                        hbr->hack[k].nname != nullptr &&
-                        atomname_cmp_nr(newnm, &hbr->hack[k], &anmnr))
+                    if (hbr.hack[k].oname.empty() &&
+                        !hbr.hack[k].nname.empty() &&
+                        atomname_cmp_nr(newnm, hbr.hack[k], &anmnr))
                     {
+                        const char *start_at = nullptr;
                         if (anmnr <= 1)
                         {
-                            start_at = hbr->hack[k].a[0];
+                            start_at = hbr.hack[k].a[0].c_str();
                         }
                         else
                         {
-                            sprintf(buf, "%s%d", hbr->hack[k].nname, anmnr-1);
+                            sprintf(buf, "%s%d", hbr.hack[k].nname.c_str(), anmnr-1);
                             start_at = buf;
                         }
-                        for (start_nr = 0; start_nr < rptr->natom; start_nr++)
+                        int start_nr;
+                        for (start_nr = 0; start_nr < rptr->natom(); start_nr++)
                         {
                             if (gmx_strcasecmp(start_at, (*rptr->atomname[start_nr])) == 0)
                             {
                                 break;
                             }
                         }
-                        if (start_nr == rptr->natom)
+                        if (start_nr == rptr->natom())
                         {
                             gmx_fatal(FARGS, "Could not find atom '%s' in residue building block '%s' to add atom '%s' to",
-                                      start_at, rptr->resname, newnm);
+                                      start_at, rptr->resname.c_str(), newnm);
                         }
                         /* We can add the atom after atom start_nr */
-                        add_atom_to_restp(rptr, start_nr, &hbr->hack[j]);
+                        add_atom_to_restp(rptr, start_nr, hbr.hack[j]);
 
-                        bFoundInAdd = TRUE;
+                        bFoundInAdd = true;
                     }
                 }
 
@@ -1297,34 +1275,35 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                 {
                     gmx_fatal(FARGS, "Could not find an 'add' entry for atom named '%s' corresponding to the 'replace' entry from atom name '%s' to '%s' for tdb or hdb database of residue type '%s'",
                               newnm,
-                              hbr->hack[j].oname, hbr->hack[j].nname,
-                              rptr->resname);
+                              hbr.hack[j].oname.c_str(), hbr.hack[j].nname.c_str(),
+                              rptr->resname.c_str());
                 }
             }
 
             if (bVerbose)
             {
                 printf("Renaming atom '%s' in residue '%s' %d to '%s'\n",
-                       oldnm, rptr->resname, resnr, newnm);
+                       oldnm, rptr->resname.c_str(), resnr, newnm);
             }
             /* Rename the atom in pdba */
             snew(pdba->atomname[atind], 1);
             *pdba->atomname[atind] = gmx_strdup(newnm);
         }
-        else if (hbr->hack[j].oname != nullptr && hbr->hack[j].nname == nullptr &&
-                 gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)
+        else if (!hbr.hack[j].oname.empty() && hbr.hack[j].nname.empty() &&
+                 gmx::equalCaseInsensitive(oldnm, hbr.hack[j].oname))
         {
             /* This is a delete entry, check if this atom is present
              * in the rtp entry of this residue.
              */
-            for (k = 0; k < rptr->natom; k++)
+            int k;
+            for (k = 0; k < rptr->natom(); k++)
             {
                 if (gmx_strcasecmp(oldnm, *rptr->atomname[k]) == 0)
                 {
                     break;
                 }
             }
-            if (k == rptr->natom)
+            if (k == rptr->natom())
             {
                 /* This atom is not present in the rtp entry,
                  * delete is now from the input pdba.
@@ -1332,20 +1311,20 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                 if (bVerbose)
                 {
                     printf("Deleting atom '%s' in residue '%s' %d\n",
-                           oldnm, rptr->resname, resnr);
+                           oldnm, rptr->resname.c_str(), resnr);
                 }
                 /* We should free the atom name,
                  * but it might be used multiple times in the symtab.
                  * sfree(pdba->atomname[atind]);
                  */
-                for (k = atind+1; k < pdba->nr; k++)
+                for (int k = atind+1; k < pdba->nr; k++)
                 {
                     pdba->atom[k-1]     = pdba->atom[k];
                     pdba->atomname[k-1] = pdba->atomname[k];
                     copy_rvec(x[k], x[k-1]);
                 }
                 pdba->nr--;
-                bDeleted = TRUE;
+                bDeleted = true;
             }
         }
     }
@@ -1353,30 +1332,29 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
     return bDeleted;
 }
 
-void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
+void match_atomnames_with_rtp(gmx::ArrayRef<t_restp> restp, gmx::ArrayRef<t_hackblock> hb,
                               t_atoms *pdba, rvec *x,
                               bool bVerbose)
 {
     int          i, j;
     char        *oldnm;
-    t_restp     *rptr;
 
     for (i = 0; i < pdba->nr; i++)
     {
         oldnm = *pdba->atomname[i];
-        rptr  = &restp[pdba->atom[i].resind];
-        for (j = 0; (j < rptr->natom); j++)
+        t_restp *rptr  = &restp[pdba->atom[i].resind];
+        for (j = 0; (j < rptr->natom()); j++)
         {
             if (gmx_strcasecmp(oldnm, *(rptr->atomname[j])) == 0)
             {
                 break;
             }
         }
-        if (j == rptr->natom)
+        if (j == rptr->natom())
         {
             /* Not found yet, check if we have to rename this atom */
             if (match_atomnames_with_rtp_atom(pdba, x, i,
-                                              rptr, &(hb[pdba->atom[i].resind]),
+                                              rptr, hb[pdba->atom[i].resind],
                                               bVerbose))
             {
                 /* We deleted this atom, decrease the atom counter by 1. */
@@ -1387,13 +1365,12 @@ void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
+static void gen_cmap(t_params *psb, gmx::ArrayRef<t_restp> restp, const t_atoms &atoms)
 {
-    int         residx, i, j, k;
+    int         residx;
     const char *ptr;
-    const char *pname;
-    t_resinfo  *resinfo = atoms->resinfo;
-    int         nres    = atoms->nres;
+    const t_resinfo  *resinfo = atoms.resinfo;
+    int         nres    = atoms.nres;
     bool        bAddCMAP;
     int         cmap_atomid[NUM_CMAP_ATOMS];
     int         cmap_chainnum = -1, this_residue_index;
@@ -1408,7 +1385,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
     }
 
     fprintf(stderr, "Making cmap torsions...\n");
-    i = 0;
+    int i = 0;
     /* Most cmap entries use the N atom from the next residue, so the last
      * residue should not have its CMAP entry in that case, but for things like
      * dipeptides we sometimes define a complete CMAP entry inside a residue,
@@ -1417,18 +1394,18 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
     for (residx = 0; residx < nres; residx++)
     {
         /* Add CMAP terms from the list of CMAP interactions */
-        for (j = 0; j < restp[residx].rb[ebtsCMAP].nb; j++)
+        for (int j = 0; j < restp[residx].rb[ebtsCMAP].nb(); j++)
         {
             bAddCMAP = TRUE;
             /* Loop over atoms in a candidate CMAP interaction and
              * check that they exist, are from the same chain and are
              * from residues labelled as protein. */
-            for (k = 0; k < NUM_CMAP_ATOMS && bAddCMAP; k++)
+            for (int k = 0; k < NUM_CMAP_ATOMS && bAddCMAP; k++)
             {
                 /* Assign the pointer to the name of the next reference atom.
                  * This can use -/+ labels to refer to previous/next residue.
                  */
-                pname = restp[residx].rb[ebtsCMAP].b[j].a[k];
+                const char *pname = restp[residx].rb[ebtsCMAP].b[j].a[k].c_str();
                 /* Skip this CMAP entry if it refers to residues before the
                  * first or after the last residue.
                  */
@@ -1449,7 +1426,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
                      * into the atom array. */
                     break;
                 }
-                this_residue_index = atoms->atom[cmap_atomid[k]].resind;
+                this_residue_index = atoms.atom[cmap_atomid[k]].resind;
                 if (0 == k)
                 {
                     cmap_chainnum = resinfo[this_residue_index].chainnum;
@@ -1477,13 +1454,13 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
 
             if (bAddCMAP)
             {
-                add_cmap_param(psb, cmap_atomid[0], cmap_atomid[1], cmap_atomid[2], cmap_atomid[3], cmap_atomid[4], restp[residx].rb[ebtsCMAP].b[j].s);
+                add_cmap_param(psb, cmap_atomid[0], cmap_atomid[1], cmap_atomid[2], cmap_atomid[3], cmap_atomid[4], restp[residx].rb[ebtsCMAP].b[j].s.c_str());
             }
         }
 
         if (residx < nres-1)
         {
-            while (atoms->atom[i].resind < residx+1)
+            while (atoms.atom[i].resind < residx+1)
             {
                 i++;
             }
@@ -1506,8 +1483,8 @@ scrub_charge_groups(int *cgnr, int natoms)
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms, rvec **x, gpp_atomtype *atype, t_symtab *tab,
-             int nrtp, t_restp rtp[],
-             t_restp *restp, t_hackblock *hb,
+             gmx::ArrayRef<t_restp> rtp,
+             gmx::ArrayRef<t_restp> restp, gmx::ArrayRef<t_hackblock> hb,
              bool bAllowMissing,
              bool bVsites, bool bVsiteAromatics,
              const char *ffdir,
@@ -1534,12 +1511,12 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
 
     /* Make bonds */
     at2bonds(&(plist[F_BONDS]), hb,
-             atoms, *x,
+             *atoms, *x,
              long_bond_dist, short_bond_dist);
 
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]),
-               atoms, nssbonds, ssbonds,
+               *atoms, nssbonds, ssbonds,
                bAllowMissing);
 
     nmissat = name2type(atoms, &cgnr, restp, &rt);
@@ -1574,7 +1551,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
         }
         /* determine which atoms will be vsites and add dummy masses
            also renumber atom numbers in plist[0..F_NRE]! */
-        do_vsites(nrtp, rtp, atype, atoms, tab, x, plist,
+        do_vsites(rtp, atype, atoms, tab, x, plist,
                   &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir);
     }
 
@@ -1584,13 +1561,13 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     init_nnb(&nnb, atoms->nr, 4);
     gen_nnb(&nnb, plist);
     print_nnb(&nnb, "NNB");
-    gen_pad(&nnb, atoms, restp, plist, excls, hb, bAllowMissing);
+    gen_pad(&nnb, *atoms, restp, plist, excls, hb, bAllowMissing);
     done_nnb(&nnb);
 
     /* Make CMAP */
     if (bCmap)
     {
-        gen_cmap(&(plist[F_CMAP]), restp, atoms);
+        gen_cmap(&(plist[F_CMAP]), restp, *atoms);
         if (plist[F_CMAP].nr > 0)
         {
             fprintf(stderr, "There are %4d cmap torsion pairs\n",
@@ -1653,8 +1630,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     }
 
     /* cleaning up */
-    free_t_hackblock(atoms->nres, &hb);
-    free_t_restp(atoms->nres, &restp);
+    free_t_restp(restp);
 
     /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
     sfree(cgnr);
