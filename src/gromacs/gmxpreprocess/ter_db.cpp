@@ -93,7 +93,7 @@ static int find_kw(char *keyw)
 #define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
 
 static void read_atom(char *line, bool bAdd,
-                      char **nname, t_atom *a, gpp_atomtype *atype, int *cgnr)
+                      std::string *nname, t_atom *a, gpp_atomtype *atype, int *cgnr)
 {
     int    nr, i;
     char   buf[5][30];
@@ -124,11 +124,11 @@ static void read_atom(char *line, bool bAdd,
     {
         if (nr == 4)
         {
-            *nname = gmx_strdup(buf[i++]);
+            nname->assign(buf[i++]);
         }
         else
         {
-            *nname = nullptr;
+            nname->clear();
         }
     }
     a->type = get_atomtype_type(buf[i++], atype);
@@ -146,98 +146,97 @@ static void read_atom(char *line, bool bAdd,
     }
 }
 
-static void print_atom(FILE *out, t_atom *a, gpp_atomtype *atype)
+static void print_atom(FILE *out, const t_atom &a, gpp_atomtype *atype)
 {
     fprintf(out, "\t%s\t%g\t%g\n",
-            get_atomtype_name(a->type, atype), a->m, a->q);
+            get_atomtype_name(a.type, atype), a.m, a.q);
 }
 
-static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
+static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const t_hackblock> tb,
                          gpp_atomtype *atype)
 {
     FILE *out;
-    int   i, j, k, bt, nrepl, nadd, ndel;
     char  buf[STRLEN];
 
     sprintf(buf, "%s-%c.tdb", ff, C);
     out = gmx_fio_fopen(buf, "w");
 
-    for (i = 0; (i < nb); i++)
+    for (int i = 0; (i < gmx::index(tb.size())); i++)
     {
-        fprintf(out, "[ %s ]\n", tb[i].name);
+        fprintf(out, "[ %s ]\n", tb[i].name.c_str());
 
         /* first count: */
-        nrepl = 0;
-        nadd  = 0;
-        ndel  = 0;
-        for (j = 0; j < tb[i].nhack; j++)
+        int nrepl = 0;
+        int nadd  = 0;
+        int ndel  = 0;
+        for (int j = 0; j < tb[i].nhack(); j++)
         {
-            if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname != nullptr)
+            if (!tb[i].hack[j].oname.empty() && !tb[i].hack[j].nname.empty())
             {
                 nrepl++;
             }
-            else if (tb[i].hack[j].oname == nullptr && tb[i].hack[j].nname != nullptr)
+            else if (tb[i].hack[j].oname.empty() && !tb[i].hack[j].nname.empty())
             {
                 nadd++;
             }
-            else if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname == nullptr)
+            else if (!tb[i].hack[j].oname.empty() && tb[i].hack[j].nname.empty())
             {
                 ndel++;
             }
-            else if (tb[i].hack[j].oname == nullptr && tb[i].hack[j].nname == nullptr)
+            else if (tb[i].hack[j].oname.empty() && tb[i].hack[j].nname.empty())
             {
-                gmx_fatal(FARGS, "invalid hack (%s) in termini database", tb[i].name);
+                gmx_fatal(FARGS, "invalid hack (%s) in termini database", tb[i].name.c_str());
             }
         }
         if (nrepl)
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwRepl-ebtsNR-1]);
-            for (j = 0; j < tb[i].nhack; j++)
+            for (int j = 0; j < tb[i].nhack(); j++)
             {
-                if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname != nullptr)
+                if (!tb[i].hack[j].oname.empty() && !tb[i].hack[j].nname.empty())
                 {
-                    fprintf(out, "%s\t", tb[i].hack[j].oname);
-                    print_atom(out, tb[i].hack[j].atom, atype);
+                    fprintf(out, "%s\t", tb[i].hack[j].oname.c_str());
+                    print_atom(out, tb[i].hack[j].atom.back(), atype);
                 }
             }
         }
         if (nadd)
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwAdd-ebtsNR-1]);
-            for (j = 0; j < tb[i].nhack; j++)
+            for (int j = 0; j < tb[i].nhack(); j++)
             {
-                if (tb[i].hack[j].oname == nullptr && tb[i].hack[j].nname != nullptr)
+                if (tb[i].hack[j].oname.empty() && !tb[i].hack[j].nname.empty())
                 {
-                    print_ab(out, &(tb[i].hack[j]), tb[i].hack[j].nname);
-                    print_atom(out, tb[i].hack[j].atom, atype);
+                    print_ab(out, (tb[i].hack[j]), tb[i].hack[j].nname.c_str());
+                    print_atom(out, tb[i].hack[j].atom.back(), atype);
                 }
             }
         }
         if (ndel)
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwDel-ebtsNR-1]);
-            for (j = 0; j < tb[i].nhack; j++)
+            for (int j = 0; j < tb[i].nhack(); j++)
             {
-                if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname == nullptr)
+                if (!tb[i].hack[j].oname.empty() && tb[i].hack[j].nname.empty())
                 {
-                    fprintf(out, "%s\n", tb[i].hack[j].oname);
+                    fprintf(out, "%s\n", tb[i].hack[j].oname.c_str());
                 }
             }
         }
-        for (bt = 0; bt < ebtsNR; bt++)
+        for (int bt = 0; bt < ebtsNR; bt++)
         {
-            if (tb[i].rb[bt].nb)
+            if (tb[i].rb[bt].nb())
             {
                 fprintf(out, "[ %s ]\n", btsNames[bt]);
-                for (j = 0; j < tb[i].rb[bt].nb; j++)
+                for (int j = 0; j < tb[i].rb[bt].nb(); j++)
                 {
-                    for (k = 0; k < btsNiatoms[bt]; k++)
+                    for (int k = 0; k < btsNiatoms[bt]; k++)
                     {
-                        fprintf(out, "%s%s", k ? "\t" : "", tb[i].rb[bt].b[j].a[k]);
+                        fprintf(out, "%s%s", k ? "\t" : "", tb[i].rb[bt].b[j].a[k].c_str());
                     }
-                    if (tb[i].rb[bt].b[j].s)
+                    if (!tb[i].rb[bt].b[j].s.empty())
                     {
-                        fprintf(out, "\t%s", tb[i].rb[bt].b[j].s);
+                        fprintf(out, "\t%s", tb[i].rb[bt].b[j].s.c_str());
                     }
                     fprintf(out, "\n");
                 }
@@ -248,15 +247,14 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
     gmx_fio_fclose(out);
 }
 
-static void read_ter_db_file(const char *fn,
-                             int *ntbptr, t_hackblock **tbptr,
-                             gpp_atomtype *atype)
+static void read_ter_db_file(const char               *fn,
+                             std::vector<t_hackblock> *tbptr,
+                             gpp_atomtype             *atype)
 {
     char         filebase[STRLEN], *ptr;
     FILE        *in;
     char         header[STRLEN], buf[STRLEN], line[STRLEN];
-    t_hackblock *tb;
-    int          i, j, n, ni, kwnr, nb, maxnb, nh;
+    int          ni, kwnr;
 
     fflib_filename_base(fn, filebase, STRLEN);
     /* Remove the C/N termini extension */
@@ -268,9 +266,7 @@ static void read_ter_db_file(const char *fn,
 
     in = fflib_open(fn);
 
-    tb    = *tbptr;
-    nb    = *ntbptr - 1;
-    maxnb = 0;
+    std::vector<t_hackblock> tb    = *tbptr;
     kwnr  = NOTSET;
     get_a_line(in, line, STRLEN);
     while (!feof(in))
@@ -282,21 +278,16 @@ static void read_ter_db_file(const char *fn,
 
             if (kwnr == NOTSET)
             {
-                nb++;
                 /* here starts a new block */
-                if (nb >= maxnb)
-                {
-                    maxnb = nb + 100;
-                    srenew(tb, maxnb);
-                }
-                clear_t_hackblock(&tb[nb]);
-                tb[nb].name     = gmx_strdup(header);
-                tb[nb].filebase = gmx_strdup(filebase);
+                tb.push_back(t_hackblock());
+                clear_t_hackblock(&tb.back());
+                tb.back().name     = header;
+                tb.back().filebase = filebase;
             }
         }
         else
         {
-            if (nb < 0)
+            if (gmx::index(tb.size()) < 0)
             {
                 gmx_fatal(FARGS, "reading termini database: "
                           "directive expected before line:\n%s\n"
@@ -307,21 +298,15 @@ static void read_ter_db_file(const char *fn,
             {
                 /* this is a hack: add/rename/delete atoms */
                 /* make space for hacks */
-                if (tb[nb].nhack >= tb[nb].maxhack)
+                tb.back().hack.push_back(t_hack());
+                clear_t_hack(&(tb.back().hack.back()));
+                for (int i = 0; i < 4; i++)
                 {
-                    tb[nb].maxhack += 10;
-                    srenew(tb[nb].hack, tb[nb].maxhack);
+                    tb.back().hack.back().a[i].clear();
                 }
-                nh = tb[nb].nhack;
-                clear_t_hack(&(tb[nb].hack[nh]));
-                for (i = 0; i < 4; i++)
-                {
-                    tb[nb].hack[nh].a[i] = nullptr;
-                }
-                tb[nb].nhack++;
 
                 /* get data */
-                n = 0;
+                int n = 0;
                 if (kwnr == ekwRepl || kwnr == ekwDel)
                 {
                     if (sscanf(line, "%s%n", buf, &n) != 1)
@@ -329,13 +314,18 @@ static void read_ter_db_file(const char *fn,
                         gmx_fatal(FARGS, "Reading Termini Database '%s': "
                                   "expected atom name on line\n%s", fn, line);
                     }
-                    tb[nb].hack[nh].oname = gmx_strdup(buf);
-                    /* we only replace or delete one atom at a time */
-                    tb[nb].hack[nh].nr = 1;
+                    tb.back().hack.back().oname = buf;
+                    /* If deleting,  we need to set the value and flag
+                     * for the code to know that it should do the actual removing */
+                    if (kwnr == ekwDel)
+                    {
+                        tb.back().hack.back().bIsNewOrDelete = true;
+                        tb.back().hack.back().nrAddRemove = 1;
+                    }
                 }
                 else if (kwnr == ekwAdd)
                 {
-                    read_ab(line, fn, &(tb[nb].hack[nh]));
+                    read_ab(line, fn, &(tb.back().hack.back()));
                     get_a_line(in, line, STRLEN);
                 }
                 else
@@ -345,15 +335,15 @@ static void read_ter_db_file(const char *fn,
                 }
                 if (kwnr == ekwRepl || kwnr == ekwAdd)
                 {
-                    snew(tb[nb].hack[nh].atom, 1);
+                    tb.back().hack.back().atom.push_back(t_atom());
                     read_atom(line+n, kwnr == ekwAdd,
-                              &tb[nb].hack[nh].nname, tb[nb].hack[nh].atom, atype,
-                              &tb[nb].hack[nh].cgnr);
-                    if (tb[nb].hack[nh].nname == nullptr)
+                              &tb.back().hack.back().nname, &tb.back().hack.back().atom.back(), atype,
+                              &tb.back().hack.back().cgnr);
+                    if (tb.back().hack.back().nname.empty())
                     {
-                        if (tb[nb].hack[nh].oname != nullptr)
+                        if (!tb.back().hack.back().oname.empty())
                         {
-                            tb[nb].hack[nh].nname = gmx_strdup(tb[nb].hack[nh].oname);
+                            tb.back().hack.back().nname = tb.back().hack.back().oname;
                         }
                         else
                         {
@@ -365,13 +355,14 @@ static void read_ter_db_file(const char *fn,
             else if (kwnr >= 0 && kwnr < ebtsNR)
             {
                 /* this is bonded data: bonds, angles, dihedrals or impropers */
-                srenew(tb[nb].rb[kwnr].b, tb[nb].rb[kwnr].nb+1);
-                n = 0;
+                tb.back().rb[kwnr].b.push_back(t_rbonded());
+                int n = 0;
+                int j;
                 for (j = 0; j < btsNiatoms[kwnr]; j++)
                 {
                     if (sscanf(line+n, "%s%n", buf, &ni) == 1)
                     {
-                        tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = gmx_strdup(buf);
+                        tb.back().rb[kwnr].b.back().a[j] = buf;
                     }
                     else
                     {
@@ -381,12 +372,11 @@ static void read_ter_db_file(const char *fn,
                 }
                 for (; j < MAXATOMLIST; j++)
                 {
-                    tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = nullptr;
+                    tb.back().rb[kwnr].b.back().a[j].clear();
                 }
                 strcpy(buf, "");
                 sscanf(line+n, "%s", buf);
-                tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = gmx_strdup(buf);
-                tb[nb].rb[kwnr].nb++;
+                tb.back().rb[kwnr].b.back().s = buf;
             }
             else
             {
@@ -396,20 +386,16 @@ static void read_ter_db_file(const char *fn,
         }
         get_a_line(in, line, STRLEN);
     }
-    nb++;
-    srenew(tb, nb);
 
     gmx_ffclose(in);
 
-    *ntbptr = nb;
     *tbptr  = tb;
 }
 
 int read_ter_db(const char *ffdir, char ter,
-                t_hackblock **tbptr, gpp_atomtype *atype)
+                std::vector<t_hackblock> *tbptr, gpp_atomtype *atype)
 {
     char   ext[STRLEN];
-    int    ntb;
 
     sprintf(ext, ".%c.tdb", ter);
 
@@ -417,24 +403,22 @@ int read_ter_db(const char *ffdir, char ter,
      * Do not generate an error when none are found.
      */
     std::vector<std::string> tdbf  = fflib_search_file_end(ffdir, ext, FALSE);
-    ntb    = 0;
-    *tbptr = nullptr;
+    tbptr->clear();
     for (const auto &filename : tdbf)
     {
-        read_ter_db_file(filename.c_str(), &ntb, tbptr, atype);
+        read_ter_db_file(filename.c_str(), tbptr, atype);
     }
 
     if (debug)
     {
-        print_ter_db("new", ter, ntb, *tbptr, atype);
+        print_ter_db("new", ter, gmx::arrayRefFromArray(tbptr->data(), tbptr->size()), atype);
     }
 
-    return ntb;
+    return tbptr->size();
 }
 
-t_hackblock **filter_ter(int nb, t_hackblock tb[],
-                         const char *resname,
-                         int *nret)
+std::vector<t_hackblock *> filter_ter(gmx::ArrayRef<t_hackblock> tb,
+                                      const char                *resname)
 {
     // TODO Four years later, no force fields have ever used this, so decide status of this feature
     /* Since some force fields (e.g. OPLS) needs different
@@ -458,26 +442,19 @@ t_hackblock **filter_ter(int nb, t_hackblock tb[],
      * Remember to free the list when you are done with it...
      */
 
-    int             i, j, n, none_idx;
-    bool            found;
-    char           *s;
-    t_hackblock   **list;
+    int                        none_idx;
+    std::vector<t_hackblock *> list;
 
-    n    = 0;
-    list = nullptr;
-
-    for (i = 0; i < nb; i++)
+    for (int i = 0; i < tb.size(); i++)
     {
-        s     = tb[i].name;
-        found = FALSE;
+        const char *s     = tb[i].name.c_str();
+        bool        found = false;
         do
         {
             if (gmx_strncasecmp(resname, s, 3) == 0)
             {
                 found = TRUE;
-                srenew(list, n+1);
-                list[n] = &(tb[i]);
-                n++;
+                list.push_back(&(tb[i]));
             }
             else
             {
@@ -499,10 +476,10 @@ t_hackblock **filter_ter(int nb, t_hackblock tb[],
      * to be the default, so we put it last in the list we return.
      */
     none_idx = -1;
-    for (i = 0; i < nb; i++)
+    for (int i = 0; i < tb.size(); i++)
     {
-        s = tb[i].name;
-        if (!gmx_strcasecmp("None", s))
+        const char *s = tb[i].name.c_str();
+        if (gmx::equalCaseInsensitive("None", tb[i].name))
         {
             none_idx = i;
         }
@@ -510,7 +487,7 @@ t_hackblock **filter_ter(int nb, t_hackblock tb[],
         {
             /* Time to see if there's a generic terminus that matches.
                Is there a hyphen? */
-            char *c = strchr(s, '-');
+            const char *c = strchr(s, '-');
 
             /* A conjunction hyphen normally indicates a residue-specific
                terminus, which is named like "GLY-COOH". A generic terminus
@@ -528,47 +505,43 @@ t_hackblock **filter_ter(int nb, t_hackblock tb[],
                 /* Check that we haven't already added a residue-specific version
                  * of this terminus.
                  */
-                for (j = 0; j < n && strstr((*list[j]).name, s) == nullptr; j++)
+                int j;
+                for (j = 0; j < gmx::index(list.size()) && strstr((*list[j]).name.c_str(), s) == nullptr; j++)
                 {
                     ;
                 }
-                if (j == n)
+                if (j == gmx::index(list.size()))
                 {
-                    srenew(list, n+1);
-                    list[n] = &(tb[i]);
-                    n++;
+                    list.push_back(&(tb[i]));
                 }
             }
         }
     }
     if (none_idx >= 0)
     {
-        srenew(list, n+1);
-        list[n] = &(tb[none_idx]);
-        n++;
+        list.push_back(&(tb[none_idx]));
     }
 
-    *nret = n;
     return list;
 }
 
 
-t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title)
+t_hackblock *choose_ter(gmx::ArrayRef<t_hackblock *> tb, const char *title)
 {
-    int i, sel, ret;
+    int sel, ret;
 
     printf("%s\n", title);
-    for (i = 0; (i < nb); i++)
+    for (int i = 0; (i < tb.size()); i++)
     {
-        bool bIsZwitterion = (0 == gmx_wcmatch("*ZWITTERION*", (*tb[i]).name));
-        printf("%2d: %s%s\n", i, (*tb[i]).name,
+        bool bIsZwitterion = (0 == gmx_wcmatch("*ZWITTERION*", (*tb[i]).name.c_str()));
+        printf("%2d: %s%s\n", i, (*tb[i]).name.c_str(),
                bIsZwitterion ? " (only use with zwitterions containing exactly one residue)" : "");
     }
     do
     {
         ret = fscanf(stdin, "%d", &sel);
     }
-    while ((ret != 1) || (sel < 0) || (sel >= nb));
+    while ((ret != 1) || (sel < 0) || (sel >= tb.size()));
 
     return tb[sel];
 }
