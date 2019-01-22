@@ -143,6 +143,24 @@ TEST_F(MatrixTest, staticMultiDimArrayExtent)
     EXPECT_EQ(matrix_.extent(1), DIM);
 }
 
+TEST_F(MatrixTest, viewConvertsToRvec)
+{
+    Matrix3x3::view_type view = matrix_;
+    RVec                 xVec = view[XX];
+    EXPECT_EQ(xVec[XX], testNumber_ - 1);
+    EXPECT_EQ(xVec[YY], testNumber_ - 1);
+    EXPECT_EQ(xVec[ZZ], testNumber_ - 1);
+}
+
+TEST_F(MatrixTest, constviewConvertsToRvec)
+{
+    Matrix3x3::const_view_type const_view = matrix_;
+    RVec yVec = const_view[YY];
+    EXPECT_EQ(yVec[XX], testNumber_ - 1);
+    EXPECT_EQ(yVec[YY], testNumber_ - 1);
+    EXPECT_EQ(yVec[ZZ], testNumber_ - 1);
+}
+
 } // namespace
 
 } // namespace test

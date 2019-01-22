@@ -84,13 +84,15 @@
  * \author David Hollman <dshollm@sandia.gov>
  * \author Christian Blau <cblau@gwdg.de>
  * \inlibraryapi
- * \ingroup mdspan
+ * \ingroup module_mdspan
  */
 #ifndef MDSPAN_MDSPAN_H
 #define MDSPAN_MDSPAN_H
 
 #include <array>
 #include <type_traits>
+
+#include "gromacs/math/vectypes.h"
 
 #include "accessor_policy.h"
 #include "extents.h"
@@ -226,8 +228,8 @@ class basic_mdspan
          * \param[in] k dimension to query for static extent
          * \returns static extent along specified dimension
          */
-        constexpr index_type static_extent( size_t k ) const noexcept
-        { return map_.extents().static_extent( k ); }
+        static constexpr index_type static_extent( size_t k ) noexcept
+        { return Extents::static_extent( k ); }
 
         /*! \brief Return the extent.
          * \param[in] k dimension to query for extent
@@ -260,6 +262,23 @@ class basic_mdspan
         constexpr accessor_type accessor() const noexcept { return acc_; }
         //! Return pointer to underlying data
         constexpr pointer data() const noexcept { return ptr_; }
+        /*! \brief Bracket operator for three-by-three views on reals to construct RVec.
+         * Allows a 3x3 on reals mdspan to act like matrix
+         * Enabled only when rank==2, both ranks are static and their extents three and the view is on type real.
+         * \param[in] i one-dimensional index
+         * \returns reference to element stored at position i
+         */
+        template <class IndexType,
+                  bool IsMatrix = std::is_same<value_type, real>::value &&
+                      extents_type::rank() == 2 &&
+                      basic_mdspan::static_extent(0) == DIM &&
+                      basic_mdspan::static_extent(1) == DIM
+                  >
+        constexpr typename std::enable_if<std::is_integral<IndexType>::value &&IsMatrix, RVec>::type
+        operator[](const IndexType &i) const noexcept
+        {
+            return {this->operator()(i, 0), this->operator()(i, 1), this->operator()(i, 2)};
+        }
     private:
         //! The memory access model
         accessor_type acc_;
