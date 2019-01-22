@@ -39,17 +39,18 @@
 #define GMX_GMXPREPROCESS_GENHYDRO_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 
 struct t_atoms;
 struct t_hack;
 struct t_hackblock;
 
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
-          int nah, t_hackblock ah[],
+          gmx::ArrayRef<t_hackblock> ah,
           int nterpairs,
-          t_hackblock **ntdb, t_hackblock **ctdb,
+          gmx::ArrayRef<t_hackblock *> ntdb, gmx::ArrayRef<t_hackblock *> ctdb,
           int *rN, int *rC, bool bMissing,
-          int **nabptr, t_hack ***abptr,
+          std::vector < std::vector < t_hack>> *abptr,
           bool bUpdate_pdba, bool bKeep_old_pdba);
 /* Generate hydrogen atoms and N and C terminal patches.
  * int nterpairs is the number of termini pairs in the molecule

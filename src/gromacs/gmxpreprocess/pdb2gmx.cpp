@@ -586,7 +586,7 @@ static int read_pdball(const char *inf, bool bOutput, const char *outf, char **t
     rename_pdbres(atoms, "WAT", watres, false, symtab);
 
     rename_atoms("xlateat.dat", nullptr,
-                 atoms, symtab, nullptr, true,
+                 atoms, symtab, gmx::EmptyArrayRef(), true,
                  rt, true, bVerbose);
 
     if (natom == 0)
@@ -698,7 +698,7 @@ static bool pdbicomp(const t_pdbindex &a, const t_pdbindex &b)
     return d < 0;
 }
 
-static void sort_pdbatoms(t_restp restp[],
+static void sort_pdbatoms(gmx::ArrayRef<t_restp> restp,
                           int natoms, t_atoms **pdbaptr, rvec **x,
                           t_blocka *block, char ***gnames)
 {
@@ -718,10 +718,10 @@ static void sort_pdbatoms(t_restp restp[],
     {
         atomnm = *pdba->atomname[i];
         rptr   = &restp[pdba->atom[i].resind];
-        int j = std::find_if(rptr->atomname, rptr->atomname+rptr->natom,
+        int j = std::find_if(rptr->atomname.begin(), rptr->atomname.end(),
                              [&atomnm](char** it){return gmx_strcasecmp(atomnm, *it) == 0; })
-            - rptr->atomname;
-        if (j == rptr->natom)
+            - rptr->atomname.begin();
+        if (j == rptr->natom())
         {
             char buf[STRLEN];
 
@@ -731,7 +731,7 @@ static void sort_pdbatoms(t_restp restp[],
                     *pdba->resinfo[pdba->atom[i].resind].name,
                     pdba->resinfo[pdba->atom[i].resind].nr,
                     rptr->resname,
-                    rptr->natom,
+                    rptr->natom(),
                     is_hydrogen(atomnm) ?
                     "\nFor a hydrogen, this can be a different protonation state, or it\n"
                     "might have had a different number in the PDB file and was rebuilt\n"
@@ -1190,19 +1190,19 @@ typedef struct {
     int  *chainstart;
 } t_pdbchain;
 
-typedef struct {
-    char          chainid;
-    int           chainnum;
-    bool          bAllWat;
-    int           nterpairs;
-    int          *chainstart;
-    t_hackblock **ntdb;
-    t_hackblock **ctdb;
-    int          *r_start;
-    int          *r_end;
-    t_atoms      *pdba;
-    rvec         *x;
-} t_chain;
+struct t_chain {
+    char                       chainid;
+    int                        chainnum;
+    bool                       bAllWat;
+    int                        nterpairs;
+    int                       *chainstart;
+    std::vector<t_hackblock *> ntdb;
+    std::vector<t_hackblock *> ctdb;
+    int                       *r_start;
+    int                       *r_end;
+    t_atoms                   *pdba;
+    rvec                      *x;
+};
 
 // TODO make all enums into scoped enums
 /* enum for vsites */
@@ -1619,8 +1619,6 @@ int pdb2gmx::run()
     char         select[STRLEN];
     int          nssbonds;
     t_ssbond    *ssbonds;
-    t_hackblock *hb_chain;
-    t_restp     *restp_chain;
 
     int          this_atomnum;
     int          prev_atomnum;
@@ -1890,9 +1888,8 @@ int pdb2gmx::run()
         printf("Moved all the water blocks to the end\n");
     }
 
-    t_atoms *pdba;
-    t_chain *chains;
-    snew(chains, numChains);
+    t_atoms             *pdba;
+    std::vector<t_chain> chains(numChains);
     /* copy pdb data and x for all chains */
     for (int i = 0; (i < numChains); i++)
     {
@@ -1902,8 +1899,6 @@ int pdb2gmx::run()
         chains[i].bAllWat    = pdb_ch[si].bAllWat;
         chains[i].nterpairs  = pdb_ch[si].nterpairs;
         chains[i].chainstart = pdb_ch[si].chainstart;
-        snew(chains[i].ntdb, pdb_ch[si].nterpairs);
-        snew(chains[i].ctdb, pdb_ch[si].nterpairs);
         snew(chains[i].r_start, pdb_ch[si].nterpairs);
         snew(chains[i].r_end, pdb_ch[si].nterpairs);
 
@@ -1967,41 +1962,39 @@ int pdb2gmx::run()
     /* read residue database */
     printf("Reading residue database... (%s)\n", forcefield_);
     std::vector<std::string> rtpf  = fflib_search_file_end(ffdir_, ".rtp", true);
-    int                      nrtp  = 0;
-    t_restp                 *restp = nullptr;
+    std::vector<t_restp>     restp;
     for (const auto &filename : rtpf)
     {
-        read_resall(filename.c_str(), &nrtp, &restp, atype, &symtab, false);
+        read_resall(filename.c_str(), &restp, atype, &symtab, false);
     }
     if (bNewRTP_)
     {
         /* Not correct with multiple rtp input files with different bonded types */
         FILE *fp = gmx_fio_fopen("new.rtp", "w");
-        print_resall(fp, nrtp, restp, atype);
+        print_resall(fp, restp, atype);
         gmx_fio_fclose(fp);
     }
 
     /* read hydrogen database */
-    t_hackblock       *ah;
-    int                nah = read_h_db(ffdir_, &ah);
+    std::vector<t_hackblock>       ah;
+    read_h_db(ffdir_, &ah);
 
     /* Read Termini database... */
-    int                ntdblist;
-    t_hackblock       *ntdb;
-    t_hackblock       *ctdb;
-    t_hackblock      **tdblist;
-    int                nNtdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
-    int                nCtdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
+    int                        ntdblist;
+    std::vector<t_hackblock>   ntdb;
+    std::vector<t_hackblock>   ctdb;
+    std::vector<t_hackblock *> tdblist;
+    int                        nNtdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
+    int                        nCtdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
 
-    FILE              *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
+    FILE                      *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
 
     print_top_header(top_file, topologyFile_.c_str(), FALSE, ffdir_, mHmult_);
 
-    t_chain *cc;
     rvec    *x;
     for (int chain = 0; (chain < numChains); chain++)
     {
-        cc = &(chains[chain]);
+        t_chain *cc = &(chains[chain]);
 
         /* set pdba, natom and nres to the current chain */
         pdba     = cc->pdba;
@@ -2064,14 +2057,13 @@ int pdb2gmx::run()
             /* First the N terminus */
             if (nNtdb > 0)
             {
-                tdblist = filter_ter(nNtdb, ntdb,
+                tdblist = filter_ter(ntdb,
                                      *pdba->resinfo[cc->r_start[i]].name,
                                      &ntdblist);
                 if (ntdblist == 0)
                 {
                     printf("No suitable end (N or 5') terminus found in database - assuming this residue\n"
                            "is already in a terminus-specific form and skipping terminus selection.\n");
-                    cc->ntdb[i] = nullptr;
                 }
                 else
                 {
@@ -2080,36 +2072,30 @@ int pdb2gmx::run()
                         sprintf(select, "Select start terminus type for %s-%d",
                                 *pdba->resinfo[cc->r_start[i]].name,
                                 pdba->resinfo[cc->r_start[i]].nr);
-                        cc->ntdb[i] = choose_ter(ntdblist, tdblist, select);
+                        cc->ntdb.push_back(choose_ter(tdblist, select));
                     }
                     else
                     {
-                        cc->ntdb[i] = tdblist[0];
+                        cc->ntdb.push_back(tdblist[0]);
                     }
 
                     printf("Start terminus %s-%d: %s\n",
                            *pdba->resinfo[cc->r_start[i]].name,
                            pdba->resinfo[cc->r_start[i]].nr,
-                           (cc->ntdb[i])->name);
-                    sfree(tdblist);
+                           (cc->ntdb.back())->name);
                 }
-            }
-            else
-            {
-                cc->ntdb[i] = nullptr;
             }
 
             /* And the C terminus */
             if (nCtdb > 0)
             {
-                tdblist = filter_ter(nCtdb, ctdb,
+                tdblist = filter_ter(ctdb,
                                      *pdba->resinfo[cc->r_end[i]].name,
                                      &ntdblist);
                 if (ntdblist == 0)
                 {
                     printf("No suitable end (C or 3') terminus found in database - assuming this residue\n"
                            "is already in a terminus-specific form and skipping terminus selection.\n");
-                    cc->ctdb[i] = nullptr;
                 }
                 else
                 {
@@ -2118,28 +2104,24 @@ int pdb2gmx::run()
                         sprintf(select, "Select end terminus type for %s-%d",
                                 *pdba->resinfo[cc->r_end[i]].name,
                                 pdba->resinfo[cc->r_end[i]].nr);
-                        cc->ctdb[i] = choose_ter(ntdblist, tdblist, select);
+                        cc->ctdb.push_back(choose_ter(tdblist, select));
                     }
                     else
                     {
-                        cc->ctdb[i] = tdblist[0];
+                        cc->ctdb.push_back(tdblist[0]);
                     }
                     printf("End terminus %s-%d: %s\n",
                            *pdba->resinfo[cc->r_end[i]].name,
                            pdba->resinfo[cc->r_end[i]].nr,
-                           (cc->ctdb[i])->name);
-                    sfree(tdblist);
+                           (cc->ctdb.back())->name);
                 }
             }
-            else
-            {
-                cc->ctdb[i] = nullptr;
-            }
         }
-
+        std::vector<t_hackblock> hb_chain;
+        std::vector<t_restp>     restp_chain;
         /* lookup hackblocks and rtp for all residues */
         get_hackblocks_rtp(&hb_chain, &restp_chain,
-                           nrtp, restp, pdba->nres, pdba->resinfo,
+                           restp, pdba->nres, pdba->resinfo,
                            cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end,
                            bAllowMissing_);
         /* ideally, now we would not need the rtp itself anymore, but do
@@ -2186,9 +2168,9 @@ int pdb2gmx::run()
 
         /* Generate Hydrogen atoms (and termini) in the sequence */
         printf("Generating any missing hydrogen atoms and/or adding termini.\n");
-        add_h(&pdba, &x, nah, ah,
+        add_h(&pdba, &x, ah,
               cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing_,
-              nullptr, nullptr, true, false);
+              nullptr, true, false);
         printf("Now there are %d residues with %d atoms\n",
                pdba->nres, pdba->nr);
 
@@ -2302,7 +2284,7 @@ int pdb2gmx::run()
         }
 
         pdb2top(top_file2, posre_fn.c_str(), molname.c_str(), pdba, &x, atype, &symtab,
-                nrtp, restp,
+                restp,
                 restp_chain, hb_chain,
                 bAllowMissing_,
                 bVsites_, bVsiteAromatics_, ffdir_,
