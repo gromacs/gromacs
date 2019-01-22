@@ -38,11 +38,21 @@
 #ifndef GMX_GMXPREPROCESS_PGUTIL_H
 #define GMX_GMXPREPROCESS_PGUTIL_H
 
+#include <string>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct t_atom;
 struct t_atoms;
+
+/*! \brief 
+ * Convenience overlaod.
+ */
+int search_atom(const std::string &type, int start,
+                const t_atoms &atoms,
+                const std::string &bondtype, bool bAllowMissing);
+
 
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
@@ -51,15 +61,24 @@ struct t_atoms;
  * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
  */
 int search_atom(const char *type, int start,
-                t_atoms *atoms,
+                const t_atoms &atoms,
                 const char *bondtype, bool bAllowMissing);
+
+/*! \brief
+ * Convenience overlaod.
+ */
+int
+search_res_atom(const std::string &type, int resind,
+                const t_atoms &atoms,
+                const std::string &bondtype, bool bAllowMissing);
+
 
 /* Similar to search_atom, but this routine searches for the specified
  * atom in residue resind.
  */
 int
 search_res_atom(const char *type, int resind,
-                t_atoms *atoms,
+                const t_atoms &atoms,
                 const char *bondtype, bool bAllowMissing);
 
 
