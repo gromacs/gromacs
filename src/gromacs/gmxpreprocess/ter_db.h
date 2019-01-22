@@ -38,19 +38,21 @@
 #ifndef GMX_GMXPREPROCESS_TER_DB_H
 #define GMX_GMXPREPROCESS_TER_DB_H
 
+#include "gromacs/utility/arrayref.h"
+
 struct gpp_atomtype;
 struct t_hackblock;
 
 int read_ter_db(const char *ffdir, char ter,
-                t_hackblock **tbptr, gpp_atomtype *atype);
+                std::vector<t_hackblock> *tbptr, gpp_atomtype *atype);
 /* Read database for N&C terminal hacking */
 
-t_hackblock **filter_ter(int nb, t_hackblock tb[],
-                         const char *resname,
-                         int *nret);
+std::vector<t_hackblock *>filter_ter(gmx::ArrayRef<t_hackblock> tb,
+                                     const char                *resname,
+                                     int                       *nret);
 /* Return a list of pointers to blocks that match residue name */
 
-t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title);
+t_hackblock *choose_ter(gmx::ArrayRef<t_hackblock *> tb, const char *title);
 /* Interactively select one.. */
 
 #endif

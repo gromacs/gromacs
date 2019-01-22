@@ -44,10 +44,12 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/notset.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -66,7 +68,7 @@
 const int ncontrol[] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 };
 #define maxcontrol asize(ncontrol)
 
-int compaddh(const void *a, const void *b)
+static int compaddh(const void *a, const void *b)
 {
     const t_hackblock *ah, *bh;
 
@@ -75,14 +77,13 @@ int compaddh(const void *a, const void *b)
     return gmx_strcasecmp(ah->name, bh->name);
 }
 
-void print_ab(FILE *out, t_hack *hack, char *nname)
-{
-    int i;
 
-    fprintf(out, "%d\t%d\t%s", hack->nr, hack->tp, nname);
-    for (i = 0; (i < hack->nctl); i++)
+void print_ab(FILE *out, const t_hack &hack, char *nname)
+{
+    fprintf(out, "%d\t%d\t%s", hack.nr(), hack.tp, nname);
+    for (int i = 0; (i < hack.nctl); i++)
     {
-        fprintf(out, "\t%s", hack->a[i]);
+        fprintf(out, "\t%s", hack.a[i]);
     }
     fprintf(out, "\n");
 }
@@ -100,7 +101,6 @@ void read_ab(char *line, const char *fn, t_hack *hack)
         gmx_fatal(FARGS, "wrong format in input file %s on line\n%s\n", fn, line);
     }
 
-    hack->nr = nh;
     hack->tp = tp;
     if ((tp < 1) || (tp >= maxcontrol))
     {
@@ -122,7 +122,7 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     }
     hack->oname = nullptr;
     hack->nname = gmx_strdup(hn);
-    hack->atom  = nullptr;
+    hack->atom.clear();
     hack->cgnr  = NOTSET;
     hack->bXSet = FALSE;
     for (i = 0; i < DIM; i++)
@@ -131,12 +131,12 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     }
 }
 
-static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
+static void read_h_db_file(const char *hfn, std::vector<t_hackblock> *ah)
 {
-    FILE        *in;
-    char         filebase[STRLEN], line[STRLEN], buf[STRLEN];
-    int          i, n, nab, nah;
-    t_hackblock *aah;
+    FILE                    *in;
+    char                     filebase[STRLEN], line[STRLEN], buf[STRLEN];
+    int                      n, nab;
+    std::vector<t_hackblock> aah;
 
     fflib_filename_base(hfn, filebase, STRLEN);
     /* Currently filebase is read and set, but not used.
@@ -146,7 +146,6 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
 
     in = fflib_open(hfn);
 
-    nah = *nahptr;
     aah = *ah;
     while (fgets2(line, STRLEN-1, in))
     {
@@ -157,76 +156,73 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
         }
         if (sscanf(line, "%s%n", buf, &n) != 1)
         {
-            fprintf(stderr, "Error in hdb file: nah = %d\nline = '%s'\n",
-                    nah, line);
+            fprintf(stderr, "Error in hdb file: nah = %lu\nline = '%s'\n",
+                    aah.size(), line);
             break;
         }
-        srenew(aah, nah+1);
-        clear_t_hackblock(&aah[nah]);
-        aah[nah].name     = gmx_strdup(buf);
-        aah[nah].filebase = gmx_strdup(filebase);
+        aah.push_back(t_hackblock());
+        clear_t_hackblock(&aah.back());
+        aah.back().name     = gmx_strdup(buf);
+        aah.back().filebase = gmx_strdup(filebase);
 
         if (sscanf(line+n, "%d", &nab) == 1)
         {
-            snew(aah[nah].hack, nab);
-            aah[nah].nhack = nab;
-            for (i = 0; (i < nab); i++)
+            aah.back().hack.resize(nab);
+            for (int i = 0; (i < nab); i++)
             {
                 if (feof(in))
                 {
                     gmx_fatal(FARGS, "Expected %d lines of hydrogens, found only %d "
                               "while reading Hydrogen Database %s residue %s",
-                              nab, i-1, aah[nah].name, hfn);
+                              nab, i-1, aah.back().name, hfn);
                 }
                 if (nullptr == fgets(buf, STRLEN, in))
                 {
                     gmx_fatal(FARGS, "Error reading from file %s", hfn);
                 }
-                read_ab(buf, hfn, &(aah[nah].hack[i]));
+                read_ab(buf, hfn, &aah.back().hack[i]);
             }
         }
-        nah++;
     }
     gmx_ffclose(in);
 
-    if (nah > 0)
+    if (aah.size() > 0)
     {
         /* Sort the list (necessary to be able to use bsearch */
-        qsort(aah, nah, static_cast<size_t>(sizeof(**ah)), compaddh);
+        std::sort(aah.begin(), aah.end(),
+                  [](const t_hackblock &h1, const t_hackblock &h2)
+                  { return gmx_strcasecmp(h1.name, h2.name) < 0; });
     }
 
-    *nahptr = nah;
     *ah     = aah;
 }
 
-int read_h_db(const char *ffdir, t_hackblock **ah)
+int read_h_db(const char *ffdir, std::vector<t_hackblock> *ah)
 {
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.
      */
 
     std::vector<std::string> hdbf = fflib_search_file_end(ffdir, ".hdb", FALSE);
-    int nah                       = 0;
-    *ah   = nullptr;
     for (const auto &filename : hdbf)
     {
-        read_h_db_file(filename.c_str(), &nah, ah);
+        read_h_db_file(filename.c_str(), ah);
     }
-    return nah;
+    return ah->size();
 }
 
-t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
+t_hackblock *search_h_db(gmx::ArrayRef<const t_hackblock> ah, char *key)
 {
     t_hackblock ahkey, *result;
 
-    if (nh <= 0)
+    if (ah.size() <= 0)
     {
         return nullptr;
     }
 
     ahkey.name = key;
 
-    result = static_cast<t_hackblock *>(bsearch(&ahkey, ah, nh, static_cast<size_t>(sizeof(ah[0])), compaddh));
+    result = static_cast<t_hackblock *>(bsearch(&ahkey, ah.data(), ah.size(), static_cast<size_t>(sizeof(ah[0])), compaddh));
 
     return result;
 }

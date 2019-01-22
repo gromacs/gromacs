@@ -110,72 +110,56 @@ gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab)
     return at;
 }
 
-static void print_resatoms(FILE *out, gpp_atomtype *atype, t_restp *rtp)
+static void print_resatoms(FILE *out, gpp_atomtype *atype, const t_restp &rtp)
 {
-    int   j, tp;
-    char *tpnm;
-
     /* fprintf(out,"%5s\n",rtp->resname);
        fprintf(out,"%5d\n",rtp->natom); */
-    fprintf(out, "[ %s ]\n", rtp->resname);
+    fprintf(out, "[ %s ]\n", rtp.resname);
     fprintf(out, " [ atoms ]\n");
 
-    for (j = 0; (j < rtp->natom); j++)
+    for (int j = 0; (j < rtp.natom()); j++)
     {
-        tp   = rtp->atom[j].type;
-        tpnm = get_atomtype_name(tp, atype);
+        int         tp   = rtp.atom[j].type;
+        const char* tpnm = get_atomtype_name(tp, atype);
         if (tpnm == nullptr)
         {
             gmx_fatal(FARGS, "Incorrect atomtype (%d)", tp);
         }
         fprintf(out, "%6s  %6s  %8.3f  %6d\n",
-                *(rtp->atomname[j]), tpnm, rtp->atom[j].q, rtp->cgnr[j]);
+                *(rtp.atomname[j]), tpnm, rtp.atom[j].q, rtp.cgnr[j]);
     }
 }
 
 static bool read_atoms(FILE *in, char *line,
                        t_restp *r0, t_symtab *tab, gpp_atomtype *atype)
 {
-    int    i, j, cg, maxentries;
     char   buf[256], buf1[256];
-    double q;
 
     /* Read Atoms */
-    maxentries   = 0;
-    r0->atom     =     nullptr;
-    r0->atomname = nullptr;
-    r0->cgnr     =     nullptr;
-    i            = 0;
+    r0->atom.clear();
+    r0->atomname.clear();
+    r0->cgnr.clear();
     while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == nullptr))
     {
+        int    cg;
+        double q;
         if (sscanf(line, "%s%s%lf%d", buf, buf1, &q, &cg) != 4)
         {
             return FALSE;
         }
-        if (i >= maxentries)
-        {
-            maxentries += 100;
-            srenew(r0->atom,     maxentries);
-            srenew(r0->atomname, maxentries);
-            srenew(r0->cgnr,     maxentries);
-        }
-        r0->atomname[i] = put_symtab(tab, buf);
-        r0->atom[i].q   = q;
-        r0->cgnr[i]     = cg;
-        j               = get_atomtype_type(buf1, atype);
+        r0->atomname.push_back(put_symtab(tab, buf));
+        r0->atom.push_back(t_atom());
+        r0->atom.back().q   = q;
+        r0->cgnr.push_back(cg);
+        int j               = get_atomtype_type(buf1, atype);
         if (j == NOTSET)
         {
             gmx_fatal(FARGS, "Atom type %s (residue %s) not found in atomtype "
                       "database", buf1, r0->resname);
         }
-        r0->atom[i].type = j;
-        r0->atom[i].m    = get_atomtype_massA(j, atype);
-        i++;
+        r0->atom.back().type = j;
+        r0->atom.back().m    = get_atomtype_massA(j, atype);
     }
-    r0->natom = i;
-    srenew(r0->atom, i);
-    srenew(r0->atomname, i);
-    srenew(r0->cgnr, i);
 
     return TRUE;
 }
@@ -183,22 +167,18 @@ static bool read_atoms(FILE *in, char *line,
 static bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
 {
     char str[STRLEN];
-    int  j, n, ni, maxrb;
 
-    maxrb = rtp->rb[bt].nb;
     while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == nullptr))
     {
-        if (rtp->rb[bt].nb >= maxrb)
-        {
-            maxrb += 100;
-            srenew(rtp->rb[bt].b, maxrb);
-        }
-        n = 0;
+        int n = 0;
+        int j;
+        int ni;
+        rtp->rb[bt].b.push_back(t_rbonded());
         for (j = 0; j < btsNiatoms[bt]; j++)
         {
             if (sscanf(line+n, "%s%n", str, &ni) == 1)
             {
-                rtp->rb[bt].b[rtp->rb[bt].nb].a[j] = gmx_strdup(str);
+                rtp->rb[bt].b.back().a[j] = gmx_strdup(str);
             }
             else
             {
@@ -208,51 +188,44 @@ static bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
         }
         for (; j < MAXATOMLIST; j++)
         {
-            rtp->rb[bt].b[rtp->rb[bt].nb].a[j] = nullptr;
+            rtp->rb[bt].b.back().a[j] = nullptr;
         }
         while (isspace(line[n]))
         {
             n++;
         }
         rtrim(line+n);
-        rtp->rb[bt].b[rtp->rb[bt].nb].s = gmx_strdup(line+n);
-        rtp->rb[bt].nb++;
+        rtp->rb[bt].b.back().s = gmx_strdup(line+n);
     }
-    /* give back unused memory */
-    srenew(rtp->rb[bt].b, rtp->rb[bt].nb);
 
     return TRUE;
 }
 
-static void print_resbondeds(FILE *out, int bt, t_restp *rtp)
+static void print_resbondeds(FILE *out, int bt, const t_restp &rtp)
 {
-    int i, j;
-
-    if (rtp->rb[bt].nb)
+    if (rtp.rb[bt].nb())
     {
         fprintf(out, " [ %s ]\n", btsNames[bt]);
 
-        for (i = 0; i < rtp->rb[bt].nb; i++)
+        for (int i = 0; i < rtp.rb[bt].nb(); i++)
         {
-            for (j = 0; j < btsNiatoms[bt]; j++)
+            for (int j = 0; j < btsNiatoms[bt]; j++)
             {
-                fprintf(out, "%6s ", rtp->rb[bt].b[i].a[j]);
+                fprintf(out, "%6s ", rtp.rb[bt].b[i].a[j]);
             }
-            if (rtp->rb[bt].b[i].s[0])
+            if (rtp.rb[bt].b[i].s[0])
             {
-                fprintf(out, "    %s", rtp->rb[bt].b[i].s);
+                fprintf(out, "    %s", rtp.rb[bt].b[i].s);
             }
             fprintf(out, "\n");
         }
     }
 }
 
-static void check_rtp(int nrtp, t_restp rtp[], const char *libfn)
+static void check_rtp(gmx::ArrayRef<const t_restp> rtp, const char *libfn)
 {
-    int i;
-
     /* check for double entries, assuming list is already sorted */
-    for (i = 1; (i < nrtp); i++)
+    for (int i = 1; (i < rtp.size()); i++)
     {
         if (gmx_strcasecmp(rtp[i-1].resname, rtp[i].resname) == 0)
         {
@@ -264,9 +237,7 @@ static void check_rtp(int nrtp, t_restp rtp[], const char *libfn)
 
 static int get_bt(char* header)
 {
-    int i;
-
-    for (i = 0; i < ebtsNR; i++)
+    for (int i = 0; i < ebtsNR; i++)
     {
         if (gmx_strcasecmp(btsNames[i], header) == 0)
         {
@@ -278,11 +249,12 @@ static int get_bt(char* header)
 
 static void clear_t_restp(t_restp *rrtp)
 {
-    memset(rrtp, 0, sizeof(t_restp));
+    rrtp->~t_restp();
 }
 
+
 /* print all the ebtsNR type numbers */
-static void print_resall_header(FILE *out, t_restp rtp[])
+static void print_resall_header(FILE *out, gmx::ArrayRef<const t_restp> rtp)
 {
     fprintf(out, "[ bondedtypes ]\n");
     fprintf(out, "; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  remove_dih\n");
@@ -297,62 +269,58 @@ static void print_resall_header(FILE *out, t_restp rtp[])
             static_cast<int>(rtp[0].bRemoveDihedralIfWithImproper));
 }
 
-void print_resall(FILE *out, int nrtp, t_restp rtp[],
+void print_resall(FILE *out, gmx::ArrayRef<t_restp> rtp,
                   gpp_atomtype *atype)
 {
-    int i, bt;
-
-    if (nrtp == 0)
+    if (rtp.empty())
     {
         return;
     }
 
     print_resall_header(out, rtp);
 
-    for (i = 0; i < nrtp; i++)
+    for (int i = 0; i < rtp.size(); i++)
     {
-        if (rtp[i].natom > 0)
+        if (rtp[i].natom() > 0)
         {
-            print_resatoms(out, atype, &rtp[i]);
-            for (bt = 0; bt < ebtsNR; bt++)
+            print_resatoms(out, atype, rtp[i]);
+            for (int bt = 0; bt < ebtsNR; bt++)
             {
-                print_resbondeds(out, bt, &rtp[i]);
+                print_resbondeds(out, bt, rtp[i]);
             }
         }
     }
 }
 
-void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
+void read_resall(const char *rrdb, std::vector<t_restp> *rtp,
                  gpp_atomtype *atype, t_symtab *tab,
                  bool bAllowOverrideRTP)
 {
     FILE         *in;
     char          filebase[STRLEN], line[STRLEN], header[STRLEN];
-    int           i, nrtp, maxrtp, bt, nparam;
+    int           bt, nparam;
     int           dum1, dum2, dum3;
-    t_restp      *rrtp, *header_settings;
     bool          bNextResidue, bError;
-    int           firstrtp;
 
     fflib_filename_base(rrdb, filebase, STRLEN);
 
     in = fflib_open(rrdb);
 
-    snew(header_settings, 1);
+    t_restp header_settings;
 
     /* these bonded parameters will overwritten be when  *
      * there is a [ bondedtypes ] entry in the .rtp file */
-    header_settings->rb[ebtsBONDS].type  = 1; /* normal bonds     */
-    header_settings->rb[ebtsANGLES].type = 1; /* normal angles    */
-    header_settings->rb[ebtsPDIHS].type  = 1; /* normal dihedrals */
-    header_settings->rb[ebtsIDIHS].type  = 2; /* normal impropers */
-    header_settings->rb[ebtsEXCLS].type  = 1; /* normal exclusions */
-    header_settings->rb[ebtsCMAP].type   = 1; /* normal cmap torsions */
+    header_settings.rb[ebtsBONDS].type  = 1; /* normal bonds     */
+    header_settings.rb[ebtsANGLES].type = 1; /* normal angles    */
+    header_settings.rb[ebtsPDIHS].type  = 1; /* normal dihedrals */
+    header_settings.rb[ebtsIDIHS].type  = 2; /* normal impropers */
+    header_settings.rb[ebtsEXCLS].type  = 1; /* normal exclusions */
+    header_settings.rb[ebtsCMAP].type   = 1; /* normal cmap torsions */
 
-    header_settings->bKeepAllGeneratedDihedrals    = FALSE;
-    header_settings->nrexcl                        = 3;
-    header_settings->bGenerateHH14Interactions     = TRUE;
-    header_settings->bRemoveDihedralIfWithImproper = TRUE;
+    header_settings.bKeepAllGeneratedDihedrals    = FALSE;
+    header_settings.nrexcl                        = 3;
+    header_settings.bGenerateHH14Interactions     = TRUE;
+    header_settings.bRemoveDihedralIfWithImproper = TRUE;
 
     /* Column 5 & 6 aren't really bonded types, but we include
      * them here to avoid introducing a new section:
@@ -380,35 +348,35 @@ void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
     {
         get_a_line(in, line, STRLEN);
         if ((nparam = sscanf(line, "%d %d %d %d %d %d %d %d",
-                             &header_settings->rb[ebtsBONDS].type, &header_settings->rb[ebtsANGLES].type,
-                             &header_settings->rb[ebtsPDIHS].type, &header_settings->rb[ebtsIDIHS].type,
-                             &dum1, &header_settings->nrexcl, &dum2, &dum3)) < 4)
+                             &header_settings.rb[ebtsBONDS].type, &header_settings.rb[ebtsANGLES].type,
+                             &header_settings.rb[ebtsPDIHS].type, &header_settings.rb[ebtsIDIHS].type,
+                             &dum1, &header_settings.nrexcl, &dum2, &dum3)) < 4)
         {
             gmx_fatal(FARGS, "need 4 to 8 parameters in the header of .rtp file %s at line:\n%s\n", rrdb, line);
         }
-        header_settings->bKeepAllGeneratedDihedrals    = (dum1 != 0);
-        header_settings->bGenerateHH14Interactions     = (dum2 != 0);
-        header_settings->bRemoveDihedralIfWithImproper = (dum3 != 0);
+        header_settings.bKeepAllGeneratedDihedrals    = (dum1 != 0);
+        header_settings.bGenerateHH14Interactions     = (dum2 != 0);
+        header_settings.bRemoveDihedralIfWithImproper = (dum3 != 0);
         get_a_line(in, line, STRLEN);
         if (nparam < 5)
         {
             fprintf(stderr, "Using default: not generating all possible dihedrals\n");
-            header_settings->bKeepAllGeneratedDihedrals = FALSE;
+            header_settings.bKeepAllGeneratedDihedrals = FALSE;
         }
         if (nparam < 6)
         {
             fprintf(stderr, "Using default: excluding 3 bonded neighbors\n");
-            header_settings->nrexcl = 3;
+            header_settings.nrexcl = 3;
         }
         if (nparam < 7)
         {
             fprintf(stderr, "Using default: generating 1,4 H--H interactions\n");
-            header_settings->bGenerateHH14Interactions = TRUE;
+            header_settings.bGenerateHH14Interactions = TRUE;
         }
         if (nparam < 8)
         {
             fprintf(stderr, "Using default: removing proper dihedrals found on the same bond as a proper dihedral\n");
-            header_settings->bRemoveDihedralIfWithImproper = TRUE;
+            header_settings.bRemoveDihedralIfWithImproper = TRUE;
         }
     }
     else
@@ -416,28 +384,20 @@ void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
         fprintf(stderr,
                 "Reading .rtp file without '[ bondedtypes ]' directive,\n"
                 "Will proceed as if the entry was:\n");
-        print_resall_header(stderr, header_settings);
+        print_resall_header(stderr, gmx::arrayRefFromArray(&header_settings, 1));
     }
     /* We don't know the current size of rrtp, but simply realloc immediately */
-    nrtp   = *nrtpptr;
-    rrtp   = *rtp;
-    maxrtp = nrtp;
+    std::vector<t_restp> rrtp   = *rtp;
     while (!feof(in))
     {
-        if (nrtp >= maxrtp)
-        {
-            maxrtp += 100;
-            srenew(rrtp, maxrtp);
-        }
-
         /* Initialise rtp entry structure */
-        rrtp[nrtp] = *header_settings;
+        rrtp.push_back(header_settings);
         if (!get_header(line, header))
         {
             gmx_fatal(FARGS, "in .rtp file at line:\n%s\n", line);
         }
-        rrtp[nrtp].resname  = gmx_strdup(header);
-        rrtp[nrtp].filebase = gmx_strdup(filebase);
+        rrtp.back().resname  = gmx_strdup(header);
+        rrtp.back().filebase = gmx_strdup(filebase);
 
         get_a_line(in, line, STRLEN);
         bError       = FALSE;
@@ -454,12 +414,12 @@ void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
                 if (bt != NOTSET)
                 {
                     /* header is an bonded directive */
-                    bError = !read_bondeds(bt, in, line, &rrtp[nrtp]);
+                    bError = !read_bondeds(bt, in, line, &rrtp.back());
                 }
                 else if (gmx_strncasecmp("atoms", header, 5) == 0)
                 {
                     /* header is the atoms directive */
-                    bError = !read_atoms(in, line, &(rrtp[nrtp]), tab, atype);
+                    bError = !read_atoms(in, line, &(rrtp.back()), tab, atype);
                 }
                 else
                 {
@@ -470,21 +430,21 @@ void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
             if (bError)
             {
                 gmx_fatal(FARGS, "in .rtp file in residue %s at line:\n%s\n",
-                          rrtp[nrtp].resname, line);
+                          rrtp.back().resname, line);
             }
         }
         while ((feof(in) == 0) && !bNextResidue);
 
-        if (rrtp[nrtp].natom == 0)
+        if (rrtp.back().atom.empty())
         {
             gmx_fatal(FARGS, "No atoms found in .rtp file in residue %s\n",
-                      rrtp[nrtp].resname);
+                      rrtp.back().resname);
         }
 
-        firstrtp = -1;
-        for (i = 0; i < nrtp; i++)
+        int firstrtp = -1;
+        for (int i = 0; i < gmx::index(rrtp.size() - 1); i++)
         {
-            if (gmx_strcasecmp(rrtp[i].resname, rrtp[nrtp].resname) == 0)
+            if (gmx_strcasecmp(rrtp[i].resname, rrtp.back().resname) == 0)
             {
                 firstrtp = i;
             }
@@ -492,43 +452,40 @@ void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
 
         if (firstrtp == -1)
         {
-            nrtp++;
-            fprintf(stderr, "\rResidue %d", nrtp);
+            fprintf(stderr, "\rResidue %lu", rrtp.size());
             fflush(stderr);
         }
         else
         {
-            if (firstrtp >= *nrtpptr)
+            if (firstrtp >= gmx::index(rtp->size()))
             {
                 gmx_fatal(FARGS, "Found a second entry for '%s' in '%s'",
-                          rrtp[nrtp].resname, rrdb);
+                          rrtp.back().resname, rrdb);
             }
             if (bAllowOverrideRTP)
             {
                 fprintf(stderr, "\n");
                 fprintf(stderr, "Found another rtp entry for '%s' in '%s', ignoring this entry and keeping the one from '%s.rtp'\n",
-                        rrtp[nrtp].resname, rrdb, rrtp[firstrtp].filebase);
+                        rrtp.back().resname, rrdb, rrtp[firstrtp].filebase);
                 /* We should free all the data for this entry.
                  * The current code gives a lot of dangling pointers.
                  */
-                clear_t_restp(&rrtp[nrtp]);
+                clear_t_restp(&rrtp.back());
+                rrtp.erase(rrtp.end() - 1);
             }
             else
             {
-                gmx_fatal(FARGS, "Found rtp entries for '%s' in both '%s' and '%s'. If you want the first definition to override the second one, set the -rtpo option of pdb2gmx.", rrtp[nrtp].resname, rrtp[firstrtp].filebase, rrdb);
+                gmx_fatal(FARGS, "Found rtp entries for '%s' in both '%s' and '%s'. If you want the first definition to override the second one, set the -rtpo option of pdb2gmx.", rrtp.back().resname, rrtp[firstrtp].filebase, rrdb);
             }
         }
     }
     gmx_ffclose(in);
-    /* give back unused memory */
-    srenew(rrtp, nrtp);
 
     fprintf(stderr, "\nSorting it all out...\n");
-    std::sort(rrtp, rrtp+nrtp, [](const t_restp &a, const t_restp &b) {return gmx_strcasecmp(a.resname, b.resname) < 0; });
+    std::sort(rrtp.begin(), rrtp.end(), [](const t_restp &a, const t_restp &b) {return gmx_strcasecmp(a.resname, b.resname) < 0; });
 
-    check_rtp(nrtp, rrtp, rrdb);
+    check_rtp(rrtp, rrdb);
 
-    *nrtpptr = nrtp;
     *rtp     = rrtp;
 }
 
@@ -566,16 +523,16 @@ static int neq_str_sign(const char *a1, const char *a2)
     }
 }
 
-char *search_rtp(const char *key, int nrtp, t_restp rtp[])
+char *search_rtp(const char *key, gmx::ArrayRef<t_restp> rtp)
 {
-    int  i, n, nbest, best, besti;
+    int  nbest, best, besti;
     char bestbuf[STRLEN];
 
     nbest =  0;
     besti = -1;
     /* We want to match at least one character */
     best  =  1;
-    for (i = 0; (i < nrtp); i++)
+    for (int i = 0; (i < rtp.size()); i++)
     {
         if (gmx_strcasecmp(key, rtp[i].resname) == 0)
         {
@@ -586,7 +543,7 @@ char *search_rtp(const char *key, int nrtp, t_restp rtp[])
         else
         {
             /* Allow a mismatch of at most a sign character (with warning) */
-            n = neq_str_sign(key, rtp[i].resname);
+            int n = neq_str_sign(key, rtp[i].resname);
             if (n >= best &&
                 n+1 >= static_cast<int>(strlen(key)) &&
                 n+1 >= static_cast<int>(strlen(rtp[i].resname)))
@@ -631,16 +588,16 @@ char *search_rtp(const char *key, int nrtp, t_restp rtp[])
     return rtp[besti].resname;
 }
 
-t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[])
+t_restp *get_restp(const char *rtpname, gmx::ArrayRef<t_restp> rtp)
 {
     int  i;
 
     i = 0;
-    while (i < nrtp && gmx_strcasecmp(rtpname, rtp[i].resname) != 0)
+    while (i < rtp.size() && gmx_strcasecmp(rtpname, rtp[i].resname) != 0)
     {
         i++;
     }
-    if (i >= nrtp)
+    if (i >= rtp.size())
     {
         /* This should never happen, since search_rtp should have been called
          * before calling get_restp.
