@@ -568,7 +568,7 @@ behavior.
 
     ::
 
-      On host tcbl14 2 GPUs user-selected for this run.
+      On host tcbl14 2 GPUs selected for this run.
       Mapping of GPU IDs to the 4 GPU tasks in the 4 ranks on this node:
       PP:0,PP:0,PP:0,PME:1
 

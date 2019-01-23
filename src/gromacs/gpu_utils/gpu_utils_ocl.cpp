@@ -276,7 +276,7 @@ static int checkGpu(size_t                   deviceId,
     std::string errorMessage;
     if (!isDeviceSane(deviceInfo, &errorMessage))
     {
-        gmx_warning((formatString("While sanity checking device #%zu, ", deviceId) + errorMessage).c_str());
+        gmx_warning("While sanity checking device #%zu, %s", deviceId, errorMessage.c_str());
         return egpuInsane;
     }
 
