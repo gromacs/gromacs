@@ -1005,7 +1005,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
         for (int i = *r_start; i < r1; i++)
         {
             std::string p_restype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
-            if (!gmx::equalCaseInsensitive(p_restype, p_startrestype) && endWarnings == 0)
+            if (gmx::equalCaseInsensitive(p_restype, p_startrestype) && endWarnings == 0)
             {
                 *r_end = i;
             }
