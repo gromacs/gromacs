@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -377,6 +377,7 @@ if (SPHINX_FOUND)
         release-notes/2019/major/deprecated-functionality.rst
         release-notes/2019/major/portability.rst
         release-notes/2019/major/miscellaneous.rst
+        release-notes/2018/2018.6.rst
         release-notes/2018/2018.5.rst
         release-notes/2018/2018.4.rst
         release-notes/2018/2018.3.rst
