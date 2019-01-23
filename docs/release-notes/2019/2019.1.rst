@@ -10,6 +10,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix error with 2D/3D dynamic load balancing
+-------------------------------------------
+
+With 2D or 3D domain decomposition with dynamics load balancing,
+mdrun would exit with the error "The domain decomposition grid
+as shifted too much .." when a cell size was limited.
+
+:issue: `2830`
+
 Fix segmentation fault in mdrun with domain decomposition
 ---------------------------------------------------------
 
