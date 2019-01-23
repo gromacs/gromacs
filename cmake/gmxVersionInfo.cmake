@@ -259,8 +259,8 @@ endif()
 # from Zenodo for the manual and source code
 # Has to be done by hand before every final release
 # Use force to override anything given as a cmake command line input
-set(GMX_MANUAL_DOI "10.5281/zenodo.2424486" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
-set(GMX_SOURCE_DOI "10.5281/zenodo.2424363" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
+set(GMX_MANUAL_DOI "" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
+set(GMX_SOURCE_DOI "" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
 
 #####################################################################
 # git version info management

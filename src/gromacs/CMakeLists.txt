@@ -228,6 +228,17 @@ if (GMX_USE_OPENCL)
             message(FATAL_ERROR "Did not find required external clFFT library, consider setting clFFT_ROOT_DIR")
         endif()
 
+        if(MSVC)
+            message(FATAL_ERROR
+"An OpenCL build was requested with Visual Studio compiler, but GROMACS
+requires clFFT, which was not found on your system. GROMACS does bundle
+clFFT to help with building for OpenCL, but that clFFT has not yet been
+ported to the more recent versions of that compiler that GROMACS itself
+requires. Thus for now, OpenCL is not available with MSVC and the internal
+build of clFFT in GROMACS 2019. Either change compiler, try installing
+a clFFT package, or use the latest GROMACS 2018 point release.")
+        endif()
+
         # Fall back on the internal version
         set (_clFFT_dir ../external/clFFT/src)
         add_subdirectory(${_clFFT_dir} clFFT-build)

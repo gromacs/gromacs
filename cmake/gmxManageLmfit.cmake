@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016,2018, by the GROMACS development team, led by
+# Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -74,9 +74,9 @@ function(gmx_manage_lmfit)
         set(HAVE_LMFIT 1 CACHE INTERNAL "Is lmfit found?")
     elseif(GMX_USE_LMFIT STREQUAL "EXTERNAL")
         # Find an external lmfit library.
-        find_package(Lmfit ${GMX_LMFIT_MINIMUM_REQUIRED_VERSION})
-        if(NOT LMFIT_FOUND)
-            message(FATAL_ERROR "External lmfit could not be found, please adjust your pkg-config path to include the lmfit.pc file")
+        find_package(Lmfit ${GMX_LMFIT_REQUIRED_VERSION})
+        if(NOT LMFIT_FOUND OR LMFIT_VERSION VERSION_LESS GMX_LMFIT_REQUIRED_VERSION)
+            message(FATAL_ERROR "External lmfit >= ${GMX_LMFIT_REQUIRED_VERSION} could not be found, please adjust your pkg-config path to include the lmfit.pc file")
         endif()
 
         set(HAVE_LMFIT 1 CACHE INTERNAL "Is lmfit found?")
