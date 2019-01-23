@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,6 @@ size_t countUniqueGpuIdsUsed(const GpuTaskAssignments &gpuTaskAssignmentOnRanksO
 
 void
 reportGpuUsage(const MDLogger                &mdlog,
-               bool                           userSetGpuIds,
                const GpuTaskAssignments      &gpuTaskAssignmentOnRanksOfThisNode,
                size_t                         numGpuTasksOnThisNode,
                size_t                         numRanks,
@@ -127,10 +126,9 @@ reportGpuUsage(const MDLogger                &mdlog,
             gmx_gethostname(host, STRLEN);
             output += gmx::formatString("On host %s ", host);
         }
-        output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
+        output += gmx::formatString("%zu GPU%s selected for this run.\n"
                                     "Mapping of GPU IDs to the %zu GPU task%s in the %zu rank%s on this node:\n  %s\n",
                                     numGpusInUse, bPluralGpus ? "s" : "",
-                                    userSetGpuIds ? "user-" : "auto-",
                                     numGpuTasksOnThisNode,
                                     (numGpuTasksOnThisNode > 1) ? "s" : "",
                                     numRanks,

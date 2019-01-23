@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -308,7 +308,7 @@ runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
         gmx_exit_on_fatal_error(ExitType_Abort, 1);
     }
 
-    reportGpuUsage(mdlog, !userGpuTaskAssignment.empty(), taskAssignmentOnRanksOfThisNode,
+    reportGpuUsage(mdlog, taskAssignmentOnRanksOfThisNode,
                    numGpuTasksOnThisNode, physicalNodeComm.size_, cr->nnodes > 1,
                    useGpuForBonded, pmeRunMode);
 

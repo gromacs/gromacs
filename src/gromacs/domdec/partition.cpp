@@ -879,7 +879,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
 
     for (int d = dd->ndim - 1; d >= 0; d--)
     {
-        const DDCellsizesWithDlb &cellsizes = comm->cellsizesWithDlb[d];
+        const DDCellsizesWithDlb *cellsizes = (isDlbOn(dd->comm) ? &comm->cellsizesWithDlb[d] : nullptr);
         const int                 dim       = dd->dim[d];
         /* Check if we participate in the communication in this dimension */
         if (d == dd->ndim-1 ||
@@ -888,7 +888,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
             load = &comm->load[d];
             if (isDlbOn(dd->comm))
             {
-                cell_frac = cellsizes.fracUpper - cellsizes.fracLower;
+                cell_frac = cellsizes->fracUpper - cellsizes->fracLower;
             }
             int pos = 0;
             if (d == dd->ndim-1)
@@ -901,8 +901,8 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                     sbuf[pos++] = cell_frac;
                     if (d > 0)
                     {
-                        sbuf[pos++] = cellsizes.fracLowerMax;
-                        sbuf[pos++] = cellsizes.fracUpperMin;
+                        sbuf[pos++] = cellsizes->fracLowerMax;
+                        sbuf[pos++] = cellsizes->fracUpperMin;
                     }
                 }
                 if (bSepPME)
@@ -922,8 +922,8 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                     sbuf[pos++] = comm->load[d+1].flags;
                     if (d > 0)
                     {
-                        sbuf[pos++] = cellsizes.fracLowerMax;
-                        sbuf[pos++] = cellsizes.fracUpperMin;
+                        sbuf[pos++] = cellsizes->fracLowerMax;
+                        sbuf[pos++] = cellsizes->fracUpperMin;
                     }
                 }
                 if (bSepPME)
@@ -948,7 +948,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
 
                 if (isDlbOn(comm))
                 {
-                    rowMaster = cellsizes.rowMaster.get();
+                    rowMaster = cellsizes->rowMaster.get();
                 }
                 load->sum      = 0;
                 load->max      = 0;
