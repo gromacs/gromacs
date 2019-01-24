@@ -812,6 +812,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
 
+    const bool useGpuXBufOps = (bUseGPU && (GMX_GPU == GMX_GPU_CUDA));
+
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
@@ -984,12 +986,39 @@ static void do_force_cutsVERLET(FILE *fplog,
                                &top->excls, step, nrnb);
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
         wallcycle_stop(wcycle, ewcNS);
+
+        /* Initial call with bNS=true only perfoms setup */
+        // TODO should this branch on useGpuXBufOps instead?
+        if (bUseGPU)
+        {
+            nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                     Nbnxm::AtomLocality::Local,
+                                                     false,
+                                                     nbv->nbat.get(),
+                                                     nbv->gpu_nbv,
+                                                     Nbnxm::InteractionLocality::Local);
+        }
+
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxm::AtomLocality::Local,
-                                        FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                        nbv->nbat.get(), wcycle);
+        if (useGpuXBufOps)
+        {
+            nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                Nbnxm::AtomLocality::Local,
+                                                false,
+                                                nbv->nbat.get(),
+                                                nbv->gpu_nbv,
+                                                pme_gpu_get_device_x(fr->pmedata),
+                                                Nbnxm::InteractionLocality::Local, // TODO Should be removed, but currently stream selection requires it
+                                                as_rvec_array(x.unpaddedArrayRef().data()));
+        }
+        else
+        {
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxm::AtomLocality::Local,
+                                            FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
+                                            nbv->nbat.get(), wcycle);
+        }
     }
 
     if (bUseGPU)
@@ -998,11 +1027,15 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
-        wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
-                                  Nbnxm::AtomLocality::Local,
-                                  ppForceWorkload->haveGpuBondedWork);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        // with X buffer ops offloaded to the GPU on all but the search steps
+        if (bNS || !useGpuXBufOps)
+        {
+            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
+                                      Nbnxm::AtomLocality::Local,
+                                      ppForceWorkload->haveGpuBondedWork);
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        }
 
         // bonded work not split into separate local and non-local, so with DD
         // we can only launch the kernel after non-local coordinates have been received.
@@ -1043,26 +1076,54 @@ static void do_force_cutsVERLET(FILE *fplog,
                                    &top->excls, step, nrnb);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             wallcycle_stop(wcycle, ewcNS);
+
+            if (bUseGPU)
+            {
+
+                /* Initial call with bNS=true only perfoms setup */
+                nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                         Nbnxm::AtomLocality::NonLocal,
+                                                         false,
+                                                         nbv->nbat.get(),
+                                                         nbv->gpu_nbv,
+                                                         Nbnxm::InteractionLocality::NonLocal);
+            }
         }
         else
         {
             dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxm::AtomLocality::NonLocal,
-                                            FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                            nbv->nbat.get(), wcycle);
+            if (useGpuXBufOps)
+            {
+                nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                    Nbnxm::AtomLocality::NonLocal,
+                                                    false,
+                                                    nbv->nbat.get(),
+                                                    nbv->gpu_nbv,
+                                                    pme_gpu_get_device_x(fr->pmedata),
+                                                    Nbnxm::InteractionLocality::NonLocal, // TODO remove when stream selection does not require it
+                                                    as_rvec_array(x.unpaddedArrayRef().data()));
+            }
+            else
+            {
+                nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxm::AtomLocality::NonLocal,
+                                                false, as_rvec_array(x.unpaddedArrayRef().data()),
+                                                nbv->nbat.get(), wcycle);
+            }
         }
 
         if (bUseGPU)
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
-            /* launch non-local nonbonded tasks on GPU */
-            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
-                                      Nbnxm::AtomLocality::NonLocal,
-                                      ppForceWorkload->haveGpuBondedWork);
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            if (bNS || !useGpuXBufOps)
+            {
+                wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+                Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
+                                          Nbnxm::AtomLocality::NonLocal,
+                                          ppForceWorkload->haveGpuBondedWork);
+                wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            }
 
             if (ppForceWorkload->haveGpuBondedWork)
             {
@@ -1071,6 +1132,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                 wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
             }
 
+            /* launch non-local nonbonded tasks on GPU */
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
                          step, nrnb, wcycle);
