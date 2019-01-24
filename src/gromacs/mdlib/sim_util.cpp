@@ -899,7 +899,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
                                      gmx_wallcycle_t   wcycle)
 {
     pme_gpu_launch_complex_transforms(pmedata, wcycle);
-    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set);
+    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set, true);
 }
 
 /*! \brief
@@ -1636,7 +1636,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (!alternateGpuWait && useGpuPme)
     {
-        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceWithVirial, enerd);
+        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceWithVirial, enerd, true);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */
