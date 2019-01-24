@@ -34,7 +34,7 @@
 
 import os.path
 
-build_options = ['gcc-4.8', 'cmake-3.4.3']
+build_options = ['gcc-5', 'cmake-3.9.6']
 extra_projects = [Project.REGRESSIONTESTS]
 
 def run_build(context, cmake_opts):
