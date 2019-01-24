@@ -35,10 +35,7 @@
 /*! \internal \file
  * \brief Tests for gmx::Regex
  *
- * These tests ensure that basic regex operations work. We have
- * two different underlying implementations, so we need to prove
- * to ourselves that these work the same on the range of operations
- * we try to use.
+ * These tests ensure that basic regex operations work.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_utility
@@ -61,11 +58,6 @@ namespace
 
 TEST(RegexBasicTest, BasicMatchesWorkWhenSupported)
 {
-    if (!Regex::isSupported())
-    {
-        return;
-    }
-
     EXPECT_TRUE(regexMatch("dog", Regex("dog")));
     EXPECT_TRUE(regexMatch("dog", Regex("^dog")));
     EXPECT_TRUE(regexMatch("dog", Regex("dog$")));
@@ -83,11 +75,6 @@ TEST(RegexBasicTest, BasicMatchesWorkWhenSupported)
 
 TEST(RegexBasicTest, MatchesForCharacterClassesWorkWhenSupported)
 {
-    if (!Regex::isSupported())
-    {
-        return;
-    }
-
     EXPECT_TRUE(regexMatch("Dog", Regex("[[:alpha:]]+")));
     EXPECT_TRUE(regexMatch("dog", Regex("[[:lower:]]+")));
     EXPECT_TRUE(regexMatch("DOG", Regex("[[:upper:]]+")));
