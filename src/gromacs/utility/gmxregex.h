@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,19 +75,11 @@ bool regexMatch(const std::string &str, const Regex &regex);
 //! \endcond
 
 /*! \libinternal \brief
- * Represents a regular expression.
+ * Represents a regular expression compatible with std::regex
  *
  * This class provides a simple interface for regular expression construction.
  * regexMatch() is used to match the regular expression against a string.
  * POSIX extended regular expression syntax is used.
- *
- * Currently, isSupported() will return true if either
- *
- *  -# POSIX regular expression header <regex.h> is available, or
- *  -# C++11 header \<regex> is available (e.g., new enough MSVC has this).
- *
- * In other cases, isSupported() returns false and calling other
- * constructors than the default constructor throws an exception.
  *
  * \see regexMatch()
  *
@@ -97,13 +89,6 @@ bool regexMatch(const std::string &str, const Regex &regex);
 class Regex
 {
     public:
-        /*! \brief
-         * Returns true if regular expression support has been compiled in.
-         *
-         * Does not throw.
-         */
-        static bool isSupported();
-
         /*! \brief
          * Constructs a regular expression that matches nothing.
          *

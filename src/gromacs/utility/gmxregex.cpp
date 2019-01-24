@@ -43,15 +43,7 @@
 
 #include "gmxregex.h"
 
-#include "config.h"
-
-#if HAVE_POSIX_REGEX
-#    include <sys/types.h>
-// old Mac needs sys/types.h before regex.h
-#    include <regex.h>
-#else
-#    include <regex>
-#endif
+#include <regex>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -59,55 +51,6 @@
 namespace gmx
 {
 
-// static
-bool Regex::isSupported() //TODO: Remove
-{
-    return true;
-}
-
-#if HAVE_POSIX_REGEX
-class Regex::Impl
-{
-    public:
-        explicit Impl(const char *value)
-        {
-            compile(value);
-        }
-        explicit Impl(const std::string &value)
-        {
-            compile(value.c_str());
-        }
-        ~Impl()
-        {
-            regfree(&regex_);
-        }
-
-        bool match(const char *value) const
-        {
-            int rc = regexec(&regex_, value, 0, nullptr, 0);
-            if (rc != 0 && rc != REG_NOMATCH)
-            {
-                // TODO: Handle errors.
-            }
-            return (rc == 0);
-        }
-
-    private:
-        void compile(const char *value)
-        {
-            std::string buf(formatString("^%s$", value));
-            int         rc = regcomp(&regex_, buf.c_str(), REG_EXTENDED | REG_NOSUB);
-            if (rc != 0)
-            {
-                // TODO: Better error messages.
-                GMX_THROW(InvalidInputError(formatString(
-                                                    "Error in regular expression \"%s\"", value)));
-            }
-        }
-
-        regex_t                 regex_;
-};
-#else
 class Regex::Impl
 {
     public:
@@ -148,7 +91,6 @@ class Regex::Impl
     private:
         std::regex              regex_;
 };
-#endif
 
 Regex::Regex()
     : impl_(nullptr)

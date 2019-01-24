@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -498,18 +498,6 @@ TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
                          sc_.parseFromString("resname ~ \"R[A\"");
                          sc_.compile();
                      }, gmx::InvalidInputError);
-}
-
-TEST_F(SelectionCollectionTest, HandlesUnsupportedRegularExpressions)
-{
-    if (!gmx::Regex::isSupported())
-    {
-        ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-        EXPECT_THROW_GMX({
-                             sc_.parseFromString("resname \"R[AD]\"");
-                             sc_.compile();
-                         }, gmx::InvalidInputError);
-    }
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
@@ -1370,10 +1358,7 @@ TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
         "resname \"R[BD]\"",
         "resname ~ \"R[BD]\""
     };
-    if (gmx::Regex::isSupported())
-    {
-        runTest("simple.gro", selections);
-    }
+    runTest("simple.gro", selections);
 }
 
 
