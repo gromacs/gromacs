@@ -138,9 +138,8 @@ cl_R Slater_3S_1S(cl_R r, cl_R xi, cl_R xj)
 }
 
 #else
-#include "/Users/spoel/Liquids/ALEXANDRIA/MATHEMATICA/new-Coulomb_1S_3S.cpp"
 
-double QSlater_1S_3S(double r, double xi, double xj)
+double Slater_1S_3S(double r, double xi, double xj)
 {
     double S, rxi, rxj;
 
