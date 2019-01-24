@@ -1064,6 +1064,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
 
+    const bool useGpuXBufOps = (bUseGPU && (GMX_GPU == GMX_GPU_CUDA));
+
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
@@ -1259,11 +1261,37 @@ static void do_force_cutsVERLET(FILE *fplog,
                                     eintLocal);
         }
         wallcycle_stop(wcycle, ewcNS);
+
+        /* Inital call with bNS=true only perfoms setup */
+        if (bUseGPU)
+        {
+            nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                     eatLocal,
+                                                     false,
+                                                     nbv->nbat,
+                                                     nbv->gpu_nbv,
+                                                     eintLocal);
+        }
+
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                        nbv->nbat, wcycle);
+        if (useGpuXBufOps)
+        {
+            nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                eatLocal,
+                                                false,
+                                                nbv->nbat,
+                                                nbv->gpu_nbv,
+                                                pme_gpu_get_device_x(fr->pmedata),
+                                                eintLocal,
+                                                as_rvec_array(x.unpaddedArrayRef().data()));
+        }
+        else
+        {
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
+                                            nbv->nbat, wcycle);
+        }
     }
 
     if (bUseGPU)
@@ -1275,9 +1303,13 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
-        wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatLocal, ppForceWorkload->haveGpuBondedWork);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        // with X buffer ops offloaded to the GPU on all but the search steps
+        if (bNS || !useGpuXBufOps)
+        {
+            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatLocal, ppForceWorkload->haveGpuBondedWork);
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        }
 
         // bonded work not split into separate local and non-local, so with DD
         // we can only launch the kernel after non-local coordinates have been received.
@@ -1337,23 +1369,51 @@ static void do_force_cutsVERLET(FILE *fplog,
                                         eintNonlocal);
             }
             wallcycle_stop(wcycle, ewcNS);
+
+            if (bUseGPU)
+            {
+
+                /* Inital call with bNS=true only perfoms setup */
+                nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                         eatNonlocal,
+                                                         false,
+                                                         nbv->nbat,
+                                                         nbv->gpu_nbv,
+                                                         eintNonlocal);
+            }
         }
         else
         {
             dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                            nbv->nbat, wcycle);
+            if (useGpuXBufOps)
+            {
+                nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                    eatNonlocal,
+                                                    false,
+                                                    nbv->nbat,
+                                                    nbv->gpu_nbv,
+                                                    pme_gpu_get_device_x(fr->pmedata),
+                                                    eintNonlocal,
+                                                    as_rvec_array(x.unpaddedArrayRef().data()));
+            }
+            else
+            {
+                nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
+                                                nbv->nbat, wcycle);
+            }
         }
 
         if (bUseGPU)
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
-            /* launch non-local nonbonded tasks on GPU */
-            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            if (bNS || !useGpuXBufOps)
+            {
+                wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+                nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
+                wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            }
 
             if (ppForceWorkload->haveGpuBondedWork)
             {
@@ -1362,6 +1422,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                 wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
             }
 
+            /* launch non-local nonbonded tasks on GPU */
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
                          step, nrnb, wcycle);
