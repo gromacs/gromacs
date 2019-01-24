@@ -15,20 +15,20 @@
 # newer infrastructure in CI, unless it's either easy or of
 # high impact.)
 
-# Test older gcc
+# Test oldest supported gcc
 # Test oldest supported CUDA
-# Test oldest supported cmake
 # Test oldest supported Ubuntu
 # Test MPI with CUDA
 # Test MPI with gcc
 # Test MPMD PME with library MPI
-gcc-4.8 gpuhw=nvidia cuda-7.0 cmake-3.9.6 mpi npme=1 nranks=2 openmp
+gcc-5 gpuhw=nvidia cuda-7.0 cmake-3.10.0 mpi npme=1 nranks=2 openmp
 
+# Test oldest supported cmake
 # Test non-default use of mdrun -gpu_id
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
 # Test SIMD implementation of pair search for GPU code-path
-gcc-7 gpuhw=nvidia gpu_id=1 cuda-10.0 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256
+gcc-7 gpuhw=nvidia gpu_id=1 cuda-10.0 thread-mpi openmp cmake-3.9.6 release-with-assert simd=avx2_256
 
 # Test with libcxx
 # Test with ThreadSanitizer + OpenMP + SIMD
