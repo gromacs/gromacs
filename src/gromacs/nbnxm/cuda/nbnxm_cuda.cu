@@ -860,4 +860,103 @@ bool nbnxn_gpu_x_to_nbat_x(int                              ncxy,
     return true;
 }
 
+/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format. */
+void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
+                               gmx_nbnxn_gpu_t               *gpu_nbv,
+                               const AtomLocality             locality,
+                               void                          *fPmeDevicePtr,
+                               int                            a0,
+                               int                            a1,
+                               rvec                          *f)
+{
+
+
+    cu_atomdata_t       *adat    = gpu_nbv->atdat;
+    cudaStream_t         stream  = gpu_nbv->stream[0];
+
+    bool                 bDoTime = gpu_nbv->bDoTime;
+    cu_timers_t         *t       = gpu_nbv->timers;
+
+    bool                 addPmeF = (fPmeDevicePtr != nullptr);
+
+    //TODO (AG) enable copyForce=false (and zero device buffer)
+    //when all bonded forces are done on GPU
+    bool        copyForce = true;
+
+    if (copyForce)
+    {
+        if (bDoTime)
+        {
+            t->xf[locality].nb_h2d.openTimingRegion(stream);
+        }
+
+        // FIXME: use copyToDeviceBuffer wrapper
+        // There still exist issues with host buffer not being pinned
+        //copyToDeviceBuffer(&gpu_nbv->frvec, f, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
+        cudaMemcpyAsync(gpu_nbv->frvec, f, a1*sizeof(rvec), cudaMemcpyHostToDevice, stream);
+
+
+
+        if (bDoTime)
+        {
+            t->xf[locality].nb_h2d.closeTimingRegion(stream);
+        }
+
+    }
+
+    /* ensure that PME GPU force calculations have completed */
+    cudaDeviceSynchronize();
+
+    /* launch kernel */
+    const int          threadsPerBlock = 128;
+
+    KernelLaunchConfig config;
+    config.blockSize[0]     = threadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = (((a1-a0)+1)+threadsPerBlock-1)/threadsPerBlock;
+    config.gridSize[1]      = 1;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
+    config.stream           = stream;
+
+    auto             kernelFn                = nbnxn_gpu_add_nbat_f_to_f_kernel;
+    const float     *fPtr                    = (float*) adat->f;
+    const rvec      *fPmePtr                 = (rvec*) fPmeDevicePtr;
+    rvec            *frvec                   = gpu_nbv->frvec;
+    const int       *cell                    = gpu_nbv->cell;
+    const int        stride                  = nbat->fstride;
+
+    const auto       kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
+                                                              &fPtr,
+                                                              &fPmePtr,
+                                                              &frvec,
+                                                              &cell,
+                                                              &a0,
+                                                              &a1,
+                                                              &stride,
+                                                              &addPmeF);
+
+    launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
+
+    if (bDoTime)
+    {
+        t->xf[locality].nb_h2d.openTimingRegion(stream);
+    }
+
+    // FIXME: use copyToDeviceBuffer wrapper
+    // There still exist issues with host buffer not being pinned
+    //copyFromDeviceBuffer(f, &gpu_nbv->frvec, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
+    cudaMemcpyAsync(f, gpu_nbv->frvec, a1*sizeof(rvec), cudaMemcpyDeviceToHost, stream);
+
+    if (bDoTime)
+    {
+        t->xf[locality].nb_h2d.closeTimingRegion(stream);
+    }
+
+
+    cudaStreamSynchronize(stream);
+    return;
+}
+
 } // namespace Nbnxm

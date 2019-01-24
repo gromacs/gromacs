@@ -243,6 +243,23 @@ bool nbnxn_gpu_x_to_nbat_x(int                gmx_unused  ncxy,
                            Nbnxm::InteractionLocality gmx_unused iloc,
                            rvec               gmx_unused *x) CUDA_FUNC_TERM_WITH_RETURN(false)
 
+/*! \brief Initialization for F buffer operations on GPU */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
+                                    gmx_nbnxn_gpu_t         gmx_unused *gpu_nbv,
+                                    int                     gmx_unused  natoms_nonlocal,
+                                    int                     gmx_unused  a1) CUDA_FUNC_TERM
+
+/*! \brief F buffer operations on GPU: adds nb format force to rvec format. */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t       gmx_unused *nbat,
+                               gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
+                               Nbnxm::AtomLocality          gmx_unused  locality,
+                               void                         gmx_unused *fPmeDevicePtr,
+                               int                          gmx_unused  a0,
+                               int                          gmx_unused  a1,
+                               rvec                         gmx_unused *f) CUDA_FUNC_TERM
+
 } // namespace Nbnxm
 
 #endif

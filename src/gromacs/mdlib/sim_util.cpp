@@ -622,12 +622,15 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
  *
  * \param[in]  pmedata        The PME structure
  * \param[in]  wcycle         The wallcycle structure
+ * \param[in]  DeviceHostCopy Specifies whether the device->host copy should occur
  */
 static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
-                                     gmx_wallcycle_t   wcycle)
+                                     gmx_wallcycle_t   wcycle,
+                                     PmeDeviceHostCopy DeviceHostCopy)
 {
     pme_gpu_launch_complex_transforms(pmedata, wcycle);
-    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set);
+
+    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set, DeviceHostCopy);
 }
 
 /*! \brief
@@ -1105,13 +1108,25 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
+    bool useGpuNonbondedPmeReduction = false;
+
     if (useGpuPme)
     {
         // In PME GPU and mixed mode we launch FFT / gather after the
         // X copy/transform to allow overlap as well as after the GPU NB
         // launch to avoid FFT launch overhead hijacking the CPU and delaying
         // the nonbonded kernel.
-        launchPmeGpuFftAndGather(fr->pmedata, wcycle);
+
+        // If copyPmeForceBack is false, then PME force does not need to be
+        // copied back to host since it will be added directly on GPU in F buffer ops.
+
+        useGpuNonbondedPmeReduction = (GMX_GPU == GMX_GPU_CUDA);
+
+        PmeDeviceHostCopy copyPmeForceBack = (useGpuNonbondedPmeReduction &&
+                                              !bNS && thisRankHasDuty(cr, DUTY_PME)) ?
+            PmeDeviceHostCopy::DeviceHostCopyFalse : PmeDeviceHostCopy::DeviceHostCopyTrue;
+
+        launchPmeGpuFftAndGather(fr->pmedata, wcycle, copyPmeForceBack);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1404,6 +1419,13 @@ static void do_force_cutsVERLET(FILE *fplog,
     // With both nonbonded and PME offloaded a GPU on the same rank, we use
     // an alternating wait/reduction scheme.
     bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
+
+    if (useGpuNonbondedPmeReduction && bUseGPU && thisRankHasDuty(cr, DUTY_PME))
+    {
+        //we will be perfoming F buffer ops on GPU
+        alternateGpuWait = false;
+    }
+
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &force, &forceOut.forceWithVirial, fr->fshift, enerd,
@@ -1412,7 +1434,13 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (!alternateGpuWait && useGpuPme)
     {
-        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial, enerd);
+
+        // If bSumForces is false, then PME force does not need to be
+        // added here since it will be added directly on GPU in F buffer ops.
+        bool bSumForces = (!useGpuNonbondedPmeReduction || bNS
+                           || !thisRankHasDuty(cr, DUTY_PME));
+
+        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial, enerd, bSumForces);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */
@@ -1467,10 +1495,15 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (bUseGPU)
     {
-        /* now clear the GPU outputs while we finish the step on the CPU */
+
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
+
+        if (!useGpuNonbondedPmeReduction)
+        {
+            /* now clear the GPU outputs while we finish the step on the CPU */
+            Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
+        }
 
         if (nbv->pairlistSets().isDynamicPruningStepGpu(step))
         {
@@ -1500,8 +1533,53 @@ static void do_force_cutsVERLET(FILE *fplog,
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
-        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                      forceOut.f, wcycle);
+
+
+        if (bNS || !thisRankHasDuty(cr, DUTY_PME))
+        {
+            nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
+                                          forceOut.f, wcycle);
+
+
+            nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbv->nbs.get(),
+                                                    Nbnxm::AtomLocality::Local,
+                                                    nbv->nbat.get(),
+                                                    nbv->gpu_nbv,
+                                                    wcycle);
+
+        }
+        else
+        {
+
+            // TODO move condition to nbnxn_atomdata
+            if (useGpuNonbondedPmeReduction)
+            {
+                nbnxn_atomdata_add_nbat_f_to_f_gpu(nbv->nbs.get(),
+                                                   Nbnxm::AtomLocality::Local,
+                                                   nbv->nbat.get(),
+                                                   nbv->gpu_nbv,
+                                                   pme_gpu_get_device_f(fr->pmedata),
+                                                   forceOut.f,
+                                                   wcycle);
+            }
+            else
+            {
+                nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
+                                              forceOut.f, wcycle);
+            }
+        }
+
+
+        // TODO move this and other end-of-step tasks should be moved
+        // These are intended to run concurrently with the update rather
+        // than becoming and implicit dependency to the update itself.
+        if (useGpuNonbondedPmeReduction)
+        {
+            /* now clear the GPU outputs while we finish the step on the CPU */
+            Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
+        }
+
+
     }
     if (DOMAINDECOMP(cr))
     {

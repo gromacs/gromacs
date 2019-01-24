@@ -1207,7 +1207,8 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
 
 void pme_gpu_gather(PmeGpu                *pmeGpu,
                     PmeForceOutputHandling forceTreatment,
-                    const float           *h_grid
+                    const float           *h_grid,
+                    PmeDeviceHostCopy      DeviceHostCopy
                     )
 {
     /* Copying the input CPU forces for reduction */
@@ -1269,7 +1270,10 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
     launchGpuKernel(kernelPtr, config, timingEvent, "PME gather", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
-    pme_gpu_copy_output_forces(pmeGpu);
+    if (DeviceHostCopy == PmeDeviceHostCopy::DeviceHostCopyTrue)
+    {
+        pme_gpu_copy_output_forces(pmeGpu);
+    }
 }
 
 void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *pmeGpu)
@@ -1277,6 +1281,19 @@ void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *pmeGpu)
     if (pmeGpu && pmeGpu->kernelParams)
     {
         return pmeGpu->kernelParams->atoms.d_coordinates;
+    }
+    else
+    {
+        return nullptr;
+    }
+
+}
+
+void * pme_gpu_get_kernelparam_forces(const PmeGpu *pmeGpu)
+{
+    if (pmeGpu && pmeGpu->kernelParams)
+    {
+        return pmeGpu->kernelParams->atoms.d_forces;
     }
     else
     {
