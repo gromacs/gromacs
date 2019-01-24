@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -365,6 +365,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_complex_transforms(gmx_pme_t       *GPU_F
  * \param[in]  forceTreatment    Tells how data should be treated. The gathering kernel either stores
  *                               the output reciprocal forces into the host array, or copies its contents to the GPU first
  *                               and accumulates. The reduction is non-atomic.
+ * \param[in]  DeviceHostCopy    Specifies whether the device->host copy should occur.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t        *GPU_FUNC_ARGUMENT(pme),
                                               gmx_wallcycle          *GPU_FUNC_ARGUMENT(wcycle),
@@ -433,4 +434,7 @@ pme_gpu_wait_and_reduce(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
 GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme),
                                                    gmx_wallcycle   *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
 
+
+/*! \brief Get pointer to device copy of coordinate data. */
+GPU_FUNC_QUALIFIER void *pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(NULL)
 #endif

@@ -39,6 +39,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -98,6 +99,28 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
                                      rvec                *x,
                                      nbnxn_atomdata_t    *nbat,
                                      gmx_wallcycle       *wcycle);
+
+/* GPU version of the above */
+/*! \brief Outer body of function to perform initialization for X buffer operations on GPU.
+ * Called on the NS step and performs (re-)allocations and memory copies. !*/
+void nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
+                                              int                   locality,
+                                              bool                  FillLocal,
+                                              nbnxn_atomdata_t     *nbat,
+                                              gmx_nbnxn_gpu_t      *gpu_nbv,
+                                              int                   iloc);
+
+/*! \brief Outer body of X buffer operations on GPU: performs conversion from rvec to nb format.
+ * returns true if GPU buffer ops are completed. !*/
+gmx_bool nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
+                                             int                   locality,
+                                             bool                  FillLocal,
+                                             nbnxn_atomdata_t     *nbat,
+                                             gmx_nbnxn_gpu_t      *gpu_nbv,
+                                             void                 *xPmeDevicePtr,
+                                             int                   iloc,
+                                             rvec                 *x);
+
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
