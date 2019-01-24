@@ -184,12 +184,7 @@ struct Integrator
      * based on the .mdp integrator field. */
     void run(unsigned int ei, bool doRerun);
     //! We only intend to construct such objects with an initializer list.
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
-    // Aspects of the C++11 spec changed after GCC 4.8.5, and
-    // compilation of the initializer list construction in runner.cpp
-    // fails in GCC 4.8.5.
     Integrator() = delete;
-#endif
 };
 
 }      // namespace gmx

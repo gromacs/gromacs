@@ -15,14 +15,13 @@
 # newer infrastructure in CI, unless it's either easy or of
 # high impact.)
 
-# Test older gcc
+# Test oldest supported gcc
 # Test oldest supported CUDA
-# Test oldest supported cmake
 # Test oldest supported Ubuntu
 # Test MPI with CUDA
 # Test MPI with gcc
 # Test MPMD PME with library MPI
-gcc-4.8 gpuhw=nvidia cuda-7.0 cmake-3.9.6 mpi npme=1 nranks=2 openmp
+gcc-5 gpuhw=nvidia cuda-8.0 cmake-3.10.0 mpi npme=1 nranks=2 openmp
 
 # Test non-default use of mdrun -gpu_id
 # Test newest gcc supported by newest CUDA at time of release
@@ -69,11 +68,12 @@ msvc-2017 openmp release-with-assert
 # Test hwloc support
 icc-19 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release hwloc
 
+# Test oldest supported cmake
 # Test NVIDIA OpenCL
 # Test external clFFT (for build speed)
 # Test MPI + OpenCL
 # Test AVX2_256 SIMD
-gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 mpi simd=avx2_256
+gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 cmake-3.9.6 mpi simd=avx2_256
 
 # Test AMD OpenCL
 # Test external clFFT (for build speed)

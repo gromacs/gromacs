@@ -270,8 +270,8 @@ check_solvent_cg(const gmx_moltype_t    *molt,
     gmx_bool              perturbed;
     gmx_bool              has_vdw[4];
     gmx_bool              match;
-    real                  tmp_charge[4]  = { 0.0 }; /* init to zero to make gcc4.8 happy */
-    int                   tmp_vdwtype[4] = { 0 };   /* init to zero to make gcc4.8 happy */
+    real                  tmp_charge[4];
+    int                   tmp_vdwtype[4];
     int                   tjA;
     gmx_bool              qm;
     solvent_parameters_t *solvent_parameters;
