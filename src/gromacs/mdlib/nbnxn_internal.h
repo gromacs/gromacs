@@ -134,9 +134,6 @@ template<int packSize> static inline int atom_to_x_index(int a)
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
 
 
-template <class T>
-using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
-
 
 /* Bounding box for a nbnxn atom cluster */
 typedef struct {
