@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,10 +35,7 @@
 /*! \internal \file
  * \brief Tests for gmx::Regex
  *
- * These tests ensure that basic regex operations work. We have
- * two different underlying implementations, so we need to prove
- * to ourselves that these work the same on the range of operations
- * we try to use.
+ * These tests ensure that basic regex operations work.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_utility
@@ -61,11 +58,6 @@ namespace
 
 TEST(RegexBasicTest, BasicMatchesWorkWhenSupported)
 {
-    if (!Regex::isSupported())
-    {
-        return;
-    }
-
     EXPECT_TRUE(regexMatch("dog", Regex("dog")));
     EXPECT_TRUE(regexMatch("dog", Regex("^dog")));
     EXPECT_TRUE(regexMatch("dog", Regex("dog$")));
@@ -83,11 +75,6 @@ TEST(RegexBasicTest, BasicMatchesWorkWhenSupported)
 
 TEST(RegexBasicTest, MatchesForCharacterClassesWorkWhenSupported)
 {
-    if (!Regex::isSupported())
-    {
-        return;
-    }
-
     EXPECT_TRUE(regexMatch("Dog", Regex("[[:alpha:]]+")));
     EXPECT_TRUE(regexMatch("dog", Regex("[[:lower:]]+")));
     EXPECT_TRUE(regexMatch("DOG", Regex("[[:upper:]]+")));
