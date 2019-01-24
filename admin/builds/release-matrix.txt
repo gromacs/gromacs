@@ -20,10 +20,9 @@
 # minimal assertions, as we intend the code to be built and used
 # by end users).
 
-# Test oldest supported gcc at time of release
 # Test mpi support
 # Test mdrun-only build
-gcc-4.8 mpi mdrun-only release cmake-3.9.6
+gcc-6 mpi mdrun-only release cmake-3.9.6
 
 # Test static linking with gcc
 # Test newest gcc at time of release
@@ -38,6 +37,7 @@ icc-19 double release
 # Test newest supported clang version
 clang-5 static double release cmake-3.10.0
 
+# Test oldest supported gcc at time of release
 # Test with GPU support
 # Test with newest CUDA at time of release
 gcc-5 gpuhw=nvidia cuda-10.0 release
