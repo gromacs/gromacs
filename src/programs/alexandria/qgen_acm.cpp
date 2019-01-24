@@ -67,10 +67,6 @@ void QgenAcm::setInfo(const Poldata            &pd,
     bHaveShell_                = haveShell;
     eQGEN_                     = eQGEN_OK;
     hardnessFactor_            = 1;
-    if (haveShell)
-    {
-        hardnessFactor_ = 1;
-    }
     chieq_                     = 0;
     Jcs_                       = 0;
     Jss_                       = 0;
