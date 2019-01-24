@@ -45,6 +45,7 @@
 
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -56,6 +57,8 @@ enum class GpuTaskCompletion;
 
 namespace Nbnxm
 {
+
+class GridSet;
 
 /*! \brief
  * Launch asynchronously the xq buffer host to device copy.
@@ -212,6 +215,25 @@ void gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
 int gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
+
+/*! \brief Initialization for X buffer operations on GPU.
+ * Called on the NS step and performs (re-)allocations and memory copies. !*/
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused &gridSet,
+                                gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
+                                Nbnxm::AtomLocality gmx_unused locality) CUDA_FUNC_TERM
+
+/*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_x_to_nbat_x(const Nbnxm::GridSet gmx_unused &gridSet,
+                           int                gmx_unused  g,
+                           bool               gmx_unused  FillLocal,
+                           gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
+                           void               gmx_unused *xPmeDevicePtr,
+                           int                gmx_unused  na_round_max,
+                           Nbnxm::AtomLocality gmx_unused locality,
+                           const rvec         gmx_unused *x) CUDA_FUNC_TERM
 
 } // namespace Nbnxm
 

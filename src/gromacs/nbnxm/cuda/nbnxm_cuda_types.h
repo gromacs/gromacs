@@ -214,6 +214,10 @@ struct gmx_nbnxn_cuda_t
     const gmx_device_info_t                                        *dev_info;       /**< CUDA device information                              */
     bool                                                            bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
     cu_atomdata_t                                                  *atdat;          /**< atom data                                            */
+    rvec                                                           *xrvec;          /**< coordinates in rvec format                           */
+    int                                                            *abufops;        /**< x buf ops input buffer index mapping                 */
+    gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               nabufops;       /**< x buf ops num of atoms (local and non-local)         */
+    gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               cxybufops;      /**< x buf ops cell index mapping (local and non-local)   */
     cu_nbparam_t                                                   *nbparam;        /**< parameters required for the non-bonded calc.         */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, cu_plist_t *> plist;          /**< pair-list data structures (local and non-local)      */
     nb_staging_t                                                    nbst;           /**< staging area where fshift/energies get downloaded    */

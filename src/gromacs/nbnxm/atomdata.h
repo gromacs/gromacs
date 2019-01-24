@@ -44,6 +44,7 @@
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
 
+#include "gpu_types.h"
 #include "locality.h"
 
 namespace gmx
@@ -311,7 +312,10 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet &gridSet,
                                      Nbnxm::AtomLocality   locality,
                                      gmx_bool              FillLocal,
                                      const rvec           *x,
-                                     nbnxn_atomdata_t     *nbat);
+                                     nbnxn_atomdata_t     *nbat,
+                                     bool                  useGpu,
+                                     gmx_nbnxn_gpu_t      *gpu_nbv,
+                                     void                 *xPmeDevicePtr);
 
 //! Add the computed forces to \p f, an internal reduction might be performed as well
 void reduceForces(nbnxn_atomdata_t     *nbat,

@@ -1003,7 +1003,10 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
                                      const Nbnxm::AtomLocality locality,
                                      gmx_bool                  FillLocal,
                                      const rvec               *x,
-                                     nbnxn_atomdata_t         *nbat)
+                                     nbnxn_atomdata_t         *nbat,
+                                     bool                      useGpu,
+                                     gmx_nbnxn_gpu_t          *gpu_nbv,
+                                     void                     *xPmeDevicePtr)
 {
     int gridBegin = 0;
     int gridEnd   = 0;
@@ -1031,7 +1034,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
         nbat->natoms_local = gridSet.grids()[0].atomIndexEnd();
     }
 
-    const int nth = gmx_omp_nthreads_get(emntPairsearch);
+    const int nth = useGpu ? 1 : gmx_omp_nthreads_get(emntPairsearch);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
@@ -1041,6 +1044,9 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
             for (int g = gridBegin; g < gridEnd; g++)
             {
                 const Nbnxm::Grid  &grid       = gridSet.grids()[g];
+
+                int                 maxAtomsInColumn = 0;
+
                 const int           numCellsXY = grid.numColumns();
 
                 const int           cxy0 = (numCellsXY* th      + nth - 1)/nth;
@@ -1064,9 +1070,29 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
                          */
                         na_fill = na;
                     }
-                    copy_rvec_to_nbat_real(gridSet.atomIndices().data() + ash,
-                                           na, na_fill, x,
-                                           nbat->XFormat, nbat->x().data(), ash);
+                    if (useGpu)
+                    {
+                        // All columns will be processed in a single GPU kernel (below).
+                        // We need to determine the maximum number of atoms in a column
+                        maxAtomsInColumn = std::max(maxAtomsInColumn, na);
+                    }
+                    else
+                    {
+                        copy_rvec_to_nbat_real(gridSet.atomIndices().data() + ash,
+                                               na, na_fill, x,
+                                               nbat->XFormat, nbat->x().data(), ash);
+                    }
+                }
+                if (useGpu)
+                {
+                    nbnxn_gpu_x_to_nbat_x(gridSet,
+                                          g,
+                                          FillLocal,
+                                          gpu_nbv,
+                                          xPmeDevicePtr,
+                                          maxAtomsInColumn,
+                                          locality,
+                                          x);
                 }
             }
         }

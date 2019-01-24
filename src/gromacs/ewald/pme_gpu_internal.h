@@ -443,6 +443,8 @@ GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *GPU_FUNC_ARGUMENT(
                                        const float           *GPU_FUNC_ARGUMENT(h_grid)
                                        ) GPU_FUNC_TERM
 
+/*! \brief Return pointer to device copy of coordinate data. */
+GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr)
 
 /* The inlined convenience PME GPU status getters */
 

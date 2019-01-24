@@ -244,7 +244,13 @@ struct nonbonded_verlet_t
         void setCoordinates(Nbnxm::AtomLocality             locality,
                             bool                            fillLocal,
                             gmx::ArrayRef<const gmx::RVec>  x,
+                            bool                            useGpu,
+                            void                           *xPmeDevicePtr,
                             gmx_wallcycle                  *wcycle);
+
+        //! Init for GPU version of setup coordinates in Nbnxm, for the given locality
+        void atomdata_init_copy_x_to_nbat_x_gpu(Nbnxm::AtomLocality        locality);
+
 
         //! Returns a reference to the pairlist sets
         const PairlistSets &pairlistSets() const

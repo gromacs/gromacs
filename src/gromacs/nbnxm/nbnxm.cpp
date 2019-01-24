@@ -135,15 +135,15 @@ void nonbonded_verlet_t::setAtomProperties(const t_mdatoms          &mdatoms,
 void nonbonded_verlet_t::setCoordinates(const Nbnxm::AtomLocality       locality,
                                         const bool                      fillLocal,
                                         gmx::ArrayRef<const gmx::RVec>  x,
+                                        bool                            useGpu,
+                                        void                           *xPmeDevicePtr,
                                         gmx_wallcycle                  *wcycle)
 {
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-
     nbnxn_atomdata_copy_x_to_nbat_x(pairSearch_->gridSet(), locality, fillLocal,
                                     as_rvec_array(x.data()),
-                                    nbat.get());
-
+                                    nbat.get(), useGpu, gpu_nbv, xPmeDevicePtr);
     wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }
@@ -183,4 +183,14 @@ void nonbonded_verlet_t::changePairlistRadii(real rlistOuter,
     pairlistSets_->changePairlistRadii(rlistOuter, rlistInner);
 }
 
+void
+nonbonded_verlet_t::atomdata_init_copy_x_to_nbat_x_gpu(const Nbnxm::AtomLocality        locality)
+{
+
+    nbnxn_gpu_init_x_to_nbat_x(pairSearch_->gridSet(),
+                               gpu_nbv,
+                               locality);
+
+
+}
 /*! \endcond */

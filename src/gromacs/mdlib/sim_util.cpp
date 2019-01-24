@@ -120,6 +120,12 @@
 // PME-first ordering would suffice).
 static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GPU_WAIT") != nullptr);
 
+// environment variable to enable GPU buffer ops, to alow incremental and optional
+// introduction of this functionality.
+// TODO eventially tie this in with other existing GPU flags.
+static const bool c_enableGpuBufOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
+
+
 
 static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {
@@ -868,6 +874,8 @@ void do_force(FILE                                     *fplog,
         ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
 
+    const bool useGpuXBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA));
+
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
@@ -1036,11 +1044,17 @@ void do_force(FILE                                     *fplog,
                                &top->excls, step, nrnb);
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
         wallcycle_stop(wcycle, ewcNS);
+
+        if (useGpuXBufOps)
+        {
+            nbv->atomdata_init_copy_x_to_nbat_x_gpu( Nbnxm::AtomLocality::Local);
+        }
+
     }
     else
     {
         nbv->setCoordinates(Nbnxm::AtomLocality::Local, false,
-                            x.unpaddedArrayRef(), wcycle);
+                            x.unpaddedArrayRef(), useGpuXBufOps, pme_gpu_get_device_x(fr->pmedata), wcycle);
     }
 
     if (bUseGPU)
@@ -1051,10 +1065,14 @@ void do_force(FILE                                     *fplog,
 
         wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat.get());
-        Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
-                                  Nbnxm::AtomLocality::Local,
-                                  ppForceWorkload->haveGpuBondedWork);
+        if (bNS || !useGpuXBufOps)
+        {
+            Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
+                                      Nbnxm::AtomLocality::Local,
+                                      ppForceWorkload->haveGpuBondedWork);
+        }
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        // with X buffer ops offloaded to the GPU on all but the search steps
 
         // bonded work not split into separate local and non-local, so with DD
         // we can only launch the kernel after non-local coordinates have been received.
@@ -1096,25 +1114,34 @@ void do_force(FILE                                     *fplog,
                                    &top->excls, step, nrnb);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             wallcycle_stop(wcycle, ewcNS);
+
+            if (useGpuXBufOps)
+            {
+
+                nbv->atomdata_init_copy_x_to_nbat_x_gpu( Nbnxm::AtomLocality::NonLocal);
+            }
         }
         else
         {
             dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
             nbv->setCoordinates(Nbnxm::AtomLocality::NonLocal, false,
-                                x.unpaddedArrayRef(), wcycle);
+                                x.unpaddedArrayRef(), useGpuXBufOps, pme_gpu_get_device_x(fr->pmedata), wcycle);
+
         }
 
         if (bUseGPU)
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
-            /* launch non-local nonbonded tasks on GPU */
-            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
-                                      Nbnxm::AtomLocality::NonLocal,
-                                      ppForceWorkload->haveGpuBondedWork);
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            if (bNS || !useGpuXBufOps)
+            {
+                wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+                Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
+                                          Nbnxm::AtomLocality::NonLocal,
+                                          ppForceWorkload->haveGpuBondedWork);
+                wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            }
 
             if (ppForceWorkload->haveGpuBondedWork)
             {
@@ -1123,6 +1150,7 @@ void do_force(FILE                                     *fplog,
                 wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
             }
 
+            /* launch non-local nonbonded tasks on GPU */
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::NonLocal, enbvClearFNo,
                          step, nrnb, wcycle);
