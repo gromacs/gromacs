@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -467,6 +467,9 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3Overlapping)
         mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
     }
 
+#ifdef __INTEL_COMPILER  //Bug in (at least) 19u1 and 18u5 (03424712)
+    #pragma novector
+#endif
     for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
     {
         // Subtract values from _reference_ memory (we will then test with mem0_, and compare)
