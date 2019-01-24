@@ -857,4 +857,120 @@ rvec *gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
     return reinterpret_cast<rvec *>(nb->atdat->fshift);
 }
 
+/* Initialization for X buffer operations on GPU. */
+/* TODO  Remove explicit pinning from host arrays from here and manage in a more natural way*/
+void nbnxn_gpu_init_x_to_nbat_x(int                              ncxy,
+                                gmx_nbnxn_gpu_t                 *gpu_nbv,
+                                const int                       *a,
+                                int                              a_nalloc,
+                                const int                       *na_all,
+                                const int                       *cxy_ind,
+                                int                              natoms_nonlocal,
+                                const Nbnxm::AtomLocality        locality,
+                                const Nbnxm::InteractionLocality iloc)
+{
+    cudaError_t   stat;
+    cudaStream_t  stream  = gpu_nbv->stream[iloc];
+
+    bool          bDoTime = gpu_nbv->bDoTime;
+
+    if (iloc == Nbnxm::InteractionLocality::Local)
+    {
+
+        if (gpu_nbv->xrvec)
+        {
+            freeDeviceBuffer(&gpu_nbv->xrvec);
+        }
+        allocateDeviceBuffer(&gpu_nbv->xrvec, natoms_nonlocal, nullptr);
+
+        gpu_nbv->bGpuBufferOps = false;
+
+
+        if (gpu_nbv->abufops)
+        {
+            freeDeviceBuffer(&gpu_nbv->abufops);
+        }
+        allocateDeviceBuffer(&gpu_nbv->abufops, a_nalloc, nullptr);
+
+        if (a_nalloc > 0)
+        {
+            // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+            stat = cudaHostRegister((void*) a, a_nalloc*sizeof(int), cudaHostRegisterDefault);
+            CU_RET_ERR(stat, "cudaHostRegister failed on a");
+
+            if (bDoTime)
+            {
+                gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
+            }
+
+            copyToDeviceBuffer(&gpu_nbv->abufops, a, 0, a_nalloc, stream, GpuApiCallBehavior::Async, nullptr);
+
+            if (bDoTime)
+            {
+                gpu_nbv->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
+            }
+
+            stat = cudaHostUnregister((void*) a);
+            CU_RET_ERR(stat, "cudaHostUnRegister failed on a");
+        }
+    }
+
+
+    if (gpu_nbv->nabufops[locality])
+    {
+        freeDeviceBuffer(&gpu_nbv->nabufops[locality]);
+
+    }
+    allocateDeviceBuffer(&gpu_nbv->nabufops[locality], ncxy, nullptr);
+
+    if (gpu_nbv->cxybufops[locality])
+    {
+        freeDeviceBuffer(&gpu_nbv->cxybufops[locality]);
+    }
+    allocateDeviceBuffer(&gpu_nbv->cxybufops[locality], ncxy, nullptr);
+
+    if (ncxy > 0)
+    {
+        // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+        stat = cudaHostRegister((void*) na_all, ncxy*sizeof(int), cudaHostRegisterDefault);
+        CU_RET_ERR(stat, "cudaHostRegister failed on na_all");
+
+        if (bDoTime)
+        {
+            gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
+        }
+
+        copyToDeviceBuffer(&gpu_nbv->nabufops[locality], na_all, 0, ncxy, stream, GpuApiCallBehavior::Async, nullptr);
+
+        if (bDoTime)
+        {
+            gpu_nbv->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
+        }
+
+        stat = cudaHostUnregister((void*) na_all);
+        CU_RET_ERR(stat, "cudaHostUnRegister failed on na_all");
+
+        // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+        stat = cudaHostRegister((void*) cxy_ind, ncxy*sizeof(int), cudaHostRegisterDefault);
+        CU_RET_ERR(stat, "cudaHostRegister failed on cxy_ind");
+
+        if (bDoTime)
+        {
+            gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
+        }
+
+        copyToDeviceBuffer(&gpu_nbv->cxybufops[locality], cxy_ind, 0, ncxy, stream, GpuApiCallBehavior::Async, nullptr);
+
+        if (bDoTime)
+        {
+            gpu_nbv->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
+        }
+
+        stat = cudaHostUnregister((void*) cxy_ind);
+        CU_RET_ERR(stat, "cudaHostUnRegister failed on cxy_ind");
+    }
+
+    return;
+}
+
 } // namespace Nbnxm

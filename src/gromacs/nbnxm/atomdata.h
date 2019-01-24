@@ -44,6 +44,9 @@
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
 
+// TODO This include file can go away once we push the branch on
+// useGpuXBufOps into atomdata.cpp
+#include "gpu_types.h"
 #include "locality.h"
 
 namespace gmx
@@ -295,6 +298,28 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
                                      rvec                *x,
                                      nbnxn_atomdata_t    *nbat,
                                      gmx_wallcycle       *wcycle);
+
+/*! \brief Outer body of function to perform initialization for X buffer operations on GPU.
+ * Called on the NS step and performs (re-)allocations and memory copies.
+ *
+ * GPU version of nbnxn_atomdata_copy_x_to_nbat_x */
+void nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(const nbnxn_search        *nbs,
+                                              Nbnxm::AtomLocality        locality,
+                                              bool                       FillLocal,
+                                              nbnxn_atomdata_t          *nbat,
+                                              gmx_nbnxn_gpu_t           *gpu_nbv,
+                                              Nbnxm::InteractionLocality iloc);
+
+/*! \brief Outer body of X buffer operations on GPU: performs conversion from rvec to nb format.
+ */
+void nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search        *nbs,
+                                         Nbnxm::AtomLocality        locality,
+                                         bool                       FillLocal,
+                                         nbnxn_atomdata_t          *nbat,
+                                         gmx_nbnxn_gpu_t           *gpu_nbv,
+                                         void                      *xPmeDevicePtr,
+                                         Nbnxm::InteractionLocality iloc,
+                                         rvec                      *x);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
