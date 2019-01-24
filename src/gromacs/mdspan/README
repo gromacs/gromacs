@@ -10,6 +10,7 @@ This work orginated from "Kokkos" and is distributed under the BSD license as
 stated in COPYING.
 
 The following modifications were carried out:
+* Add extensions.h with further mdspan functionality from the GROMACS team
 * reformatted code with uncrustify
 * added GROMACS header to all files
 * added doxygen comments to all files
