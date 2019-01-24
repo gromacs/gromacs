@@ -129,6 +129,23 @@ void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
                                     rvec                   *f,
                                     gmx_wallcycle          *wcycle);
 
+
+/*! \brief Outer body of function to perform initialization for F buffer operations on GPU. */
+void nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbnxn_search           *nbs,
+                                             int                     locality,
+                                             const nbnxn_atomdata_t *nbat,
+                                             gmx_nbnxn_gpu_t        *gpu_nbv,
+                                             gmx_wallcycle          *wcycle);
+
+/*! \brief Outer body of F buffer operations on GPU: adds nb format force to rvec format copy. */
+void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search           *nbs,
+                                        int                     locality,
+                                        const nbnxn_atomdata_t *nbat,
+                                        gmx_nbnxn_gpu_t        *gpu_nbv,
+                                        void                   *fPmeDevicePtr,
+                                        rvec                   *f,
+                                        gmx_wallcycle          *wcycle);
+
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift);

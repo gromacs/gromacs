@@ -110,3 +110,48 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int         ncxy,
     }
 
 }
+
+/* CUDA kernel to add part of the force array(s) from nbnxn_atomdata_t to f */
+__global__ void
+nbnxn_gpu_add_nbat_f_to_f_kernel(const real* fnb, const rvec* pme_f,
+                                 rvec* f, const int* cell,
+                                 const int a0, const int a1,
+                                 const int stride, const bool addPmeF)
+{
+
+    /* map particle-level parallelism to 1D CUDA thread and block index */
+    int a = a0+blockIdx.x*blockDim.x+threadIdx.x;
+
+    /* perform addition for each particle*/
+    if (a < a1)
+    {
+
+        int   i = cell[a]*stride;
+
+        float f0, f1, f2;
+
+        f0 = f[a][XX];
+        f1 = f[a][YY];
+        f2 = f[a][ZZ];
+
+        f0 += fnb[i];
+        f1 += fnb[i+1];
+        f2 += fnb[i+2];
+
+        if (addPmeF)
+        {
+            f0 += pme_f[a][XX];
+            f1 += pme_f[a][YY];
+            f2 += pme_f[a][ZZ];
+        }
+
+        f[a][XX] = f0;
+        f[a][YY] = f1;
+        f[a][ZZ] = f2;
+
+
+
+    }
+
+    return;
+}
