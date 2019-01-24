@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -437,12 +437,19 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu    *GPU_FUNC_ARGUMENT(pmeGpu)
  * \param[in]     forceTreatment   Tells how data in h_forces should be treated.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
  * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
+ * \param[in]     bCopyBack        Specifies whether the device->host copy should occur.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *GPU_FUNC_ARGUMENT(pmeGpu),
                                        PmeForceOutputHandling GPU_FUNC_ARGUMENT(forceTreatment),
-                                       const float           *GPU_FUNC_ARGUMENT(h_grid)
+                                       const float           *GPU_FUNC_ARGUMENT(h_grid),
+                                       bool                   GPU_FUNC_ARGUMENT(bCopyBack)
                                        ) GPU_FUNC_TERM
 
+/*! \brief Return pointer to device copy of coordinate data. */
+GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(NULL)
+
+/*! \brief Return pointer to device copy of coordinate data. */
+GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_forces(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(NULL)
 
 /* The inlined convenience PME GPU status getters */
 
