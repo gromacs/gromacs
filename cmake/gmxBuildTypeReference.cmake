@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,8 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Reference")
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
     set(GMX_THREAD_MPI OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
 
-    if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR NOT "${CMAKE_C_COMPILER_VERSION}" MATCHES "4.8")
+    if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_VERSION}" VERSION_GREATER_EQUAL "6")
         message(WARNING "Reference values for regressiontests should use GROMACS compiled with "
-            "gcc 4.8, but your configuration is using ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION}.")
+            "gcc 5.x, but your configuration is using ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION}.")
     endif()
 endif()

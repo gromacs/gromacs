@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016, by the GROMACS development team, led by
+# Copyright (c) 2016,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
 
 import os.path
 
-build_options = ['gcc-4.8', 'cmake-3.4.3']
+build_options = ['gcc-5', 'cmake-3.9.6']
 extra_projects = [Project.REGRESSIONTESTS]
 
 def run_build(context, cmake_opts):
