@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -213,7 +213,14 @@ struct gmx_nbnxn_cuda_t
 {
     const gmx_device_info_t  *dev_info;       /**< CUDA device information                              */
     bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
+    bool                      bGpuBufferOps;  /**< true if doing buffer ops on GPU                      */
     cu_atomdata_t            *atdat;          /**< atom data                                            */
+    rvec                     *xrvec;          /**< coordinates in rvec format                           */
+    rvec                     *frvec;          /**< force in rvec format                                 */
+    int                      *abufops;        /**< x buf ops input buffer index mapping                 */
+    int                      *nabufops[2];    /**< x buf ops num of atoms (local and non-local)         */
+    int                      *cxybufops[2];   /**< x buf ops cell index mapping (local and non-local)   */
+    int                      *cell;           /**< f buf ops cell index mapping                         */
     cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */
     cu_plist_t               *plist[2];       /**< pair-list data structures (local and non-local)      */
     nb_staging_t              nbst;           /**< staging area where fshift/energies get downloaded    */
