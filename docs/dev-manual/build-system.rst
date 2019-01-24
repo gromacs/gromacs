@@ -69,19 +69,19 @@ testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
   be useful for the tools.
 
 **TSAN**
-  Builds |Gromacs| for use with ThreadSanitzer in gcc >= 4.8 and clang
-  >= 3.4 (http://clang.llvm.org/docs/ThreadSanitizer.html) to detect
+  Builds |Gromacs| for use with ThreadSanitzer in gcc and clang
+  (http://clang.llvm.org/docs/ThreadSanitizer.html) to detect
   data races. This disables the use of atomics in ThreadMPI,
   preferring the mutex-based implementation.
 
 **ASAN**
-  Builds |Gromacs| for use with AddressSanitzer in gcc >= 4.8 and
-  clang >= 3.4 (http://clang.llvm.org/docs/AddressSanitizer.html) to
+  Builds |Gromacs| for use with AddressSanitzer in gcc and
+  clang (http://clang.llvm.org/docs/AddressSanitizer.html) to
   detect many kinds of memory mis-use. By default, AddressSanitizer
   includes LeakSanitizer.
 
 **MSAN**
-  Builds |Gromacs| for use with AddressSanitzer in clang >= 3.4
+  Builds |Gromacs| for use with AddressSanitzer in clang
   (http://clang.llvm.org/docs/MemorySanitizer.html) to detect
   reads of unitialized memory. This functionality requires that
   dependencies of the |Gromacs| build have been built in a compatible
