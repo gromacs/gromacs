@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,6 +105,15 @@ enum class PmeForceOutputHandling
     ReduceWithInput, /**< Gather adds its output to the buffer.
                         On GPU, that means additional H2D copy before the kernel launch. */
 };
+
+
+//! Specifies whether the device->host copy should occur.
+enum class PmeDeviceHostCopy
+{
+    DeviceHostCopyTrue,  /**< Device to host copy should occur*/
+    DeviceHostCopyFalse, /**< Device to host copy shouldn't occur */
+};
+
 
 /*! \brief Return the smallest allowed PME grid size for \p pmeOrder */
 int minimalPmeGridSize(int pmeOrder);
@@ -357,6 +366,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t      *GPU_FUNC_ARGUMENT(
 GPU_FUNC_QUALIFIER void pme_gpu_launch_complex_transforms(gmx_pme_t       *GPU_FUNC_ARGUMENT(pme),
                                                           gmx_wallcycle   *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
 
+
 /*! \brief
  * Launches last stage of PME on GPU - force gathering and D2H force transfer.
  *
@@ -365,10 +375,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_complex_transforms(gmx_pme_t       *GPU_F
  * \param[in]  forceTreatment    Tells how data should be treated. The gathering kernel either stores
  *                               the output reciprocal forces into the host array, or copies its contents to the GPU first
  *                               and accumulates. The reduction is non-atomic.
+ * \param[in]  DeviceHostCopy    Specifies whether the device->host copy should occur.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t        *GPU_FUNC_ARGUMENT(pme),
                                               gmx_wallcycle          *GPU_FUNC_ARGUMENT(wcycle),
-                                              PmeForceOutputHandling  GPU_FUNC_ARGUMENT(forceTreatment)) GPU_FUNC_TERM
+                                              PmeForceOutputHandling  GPU_FUNC_ARGUMENT(forceTreatment),
+                                              PmeDeviceHostCopy       GPU_FUNC_ARGUMENT(DeviceHostCopy)) GPU_FUNC_TERM
 
 /*! \brief
  * Attempts to complete PME GPU tasks.
@@ -409,13 +421,15 @@ pme_gpu_try_finish_task(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
  * \param[in]  wcycle          The wallclock counter.
  * \param[out] forceWithVirial The output force and virial
  * \param[out] enerd           The output energies
+ * \param[in]  bSumForces       Boolean flag to specify if forces should be summed.
  */
 GPU_FUNC_QUALIFIER void
 pme_gpu_wait_and_reduce(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
                         int                   GPU_FUNC_ARGUMENT(flags),
                         gmx_wallcycle        *GPU_FUNC_ARGUMENT(wcycle),
                         gmx::ForceWithVirial *GPU_FUNC_ARGUMENT(forceWithVirial),
-                        gmx_enerdata_t       *GPU_FUNC_ARGUMENT(enerd)) GPU_FUNC_TERM
+                        gmx_enerdata_t       *GPU_FUNC_ARGUMENT(enerd),
+                        bool                  GPU_FUNC_ARGUMENT(bSumForces)) GPU_FUNC_TERM
 
 /*! \brief
  * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
@@ -432,5 +446,12 @@ pme_gpu_wait_and_reduce(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme),
                                                    gmx_wallcycle   *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
+
+
+/*! \brief Get pointer to device copy of coordinate data. */
+GPU_FUNC_QUALIFIER void *pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(NULL)
+
+/*! \brief Get pointer to device copy of force data. */
+GPU_FUNC_QUALIFIER void *pme_gpu_get_device_f(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(NULL)
 
 #endif
