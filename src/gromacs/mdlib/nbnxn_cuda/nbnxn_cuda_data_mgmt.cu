@@ -52,7 +52,9 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_gpu.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -865,4 +867,120 @@ rvec *nbnxn_gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
     assert(nb);
 
     return reinterpret_cast<rvec *>(nb->atdat->fshift);
+}
+
+/* Initialization for X buffer operations on GPU. */
+/* TODO  Remove explicit pinning from host arrays from here and manage in a more natural way*/
+void nbnxn_gpu_init_x_to_nbat_x(int                 ncxy,
+                                const nbnxn_search *nbs,
+                                gmx_nbnxn_gpu_t    *gpu_nbv,
+                                const int          *a,
+                                int                 a_nalloc,
+                                const int          *na_all,
+                                const int          *cxy_ind,
+                                int                 iloc)
+{
+    cudaError_t   stat;
+    cudaStream_t  stream  = gpu_nbv->stream[iloc];
+
+    bool          bDoTime = gpu_nbv->bDoTime;
+    cu_timers_t  *t       = gpu_nbv->timers;
+
+    if (LOCAL_I(iloc))
+    {
+
+        if (gpu_nbv->xrvec)
+        {
+            freeDeviceBuffer(&gpu_nbv->xrvec);
+        }
+        allocateDeviceBuffer(&gpu_nbv->xrvec, nbs->natoms_nonlocal, nullptr);
+
+        gpu_nbv->bGpuBufferOps = false;
+
+
+        if (gpu_nbv->abufops)
+        {
+            freeDeviceBuffer(&gpu_nbv->abufops);
+        }
+        allocateDeviceBuffer(&gpu_nbv->abufops, a_nalloc, nullptr);
+
+        if (a_nalloc > 0)
+        {
+            // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+            stat = cudaHostRegister((void*) a, a_nalloc*sizeof(int), cudaHostRegisterDefault);
+            CU_RET_ERR(stat, "cudaHostRegister failed on a");
+
+            if (bDoTime)
+            {
+                t->nb_h2d[iloc].openTimingRegion(stream);
+            }
+
+            copyToDeviceBuffer(&gpu_nbv->abufops, a, 0, a_nalloc, stream, GpuApiCallBehavior::Async, nullptr);
+
+            if (bDoTime)
+            {
+                t->nb_h2d[iloc].closeTimingRegion(stream);
+            }
+
+            stat = cudaHostUnregister((void*) a);
+            CU_RET_ERR(stat, "cudaHostUnRegister failed on a");
+        }
+    }
+
+
+    if (gpu_nbv->nabufops[iloc])
+    {
+        freeDeviceBuffer(&gpu_nbv->nabufops[iloc]);
+
+    }
+    allocateDeviceBuffer(&gpu_nbv->nabufops[iloc], ncxy, nullptr);
+
+    if (gpu_nbv->cxybufops[iloc])
+    {
+        freeDeviceBuffer(&gpu_nbv->cxybufops[iloc]);
+    }
+    allocateDeviceBuffer(&gpu_nbv->cxybufops[iloc], ncxy, nullptr);
+
+    if (ncxy > 0)
+    {
+        // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+        stat = cudaHostRegister((void*) na_all, ncxy*sizeof(int), cudaHostRegisterDefault);
+        CU_RET_ERR(stat, "cudaHostRegister failed on na_all");
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].openTimingRegion(stream);
+        }
+
+        copyToDeviceBuffer(&gpu_nbv->nabufops[iloc], na_all, 0, ncxy, stream, GpuApiCallBehavior::Async, nullptr);
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
+
+        stat = cudaHostUnregister((void*) na_all);
+        CU_RET_ERR(stat, "cudaHostUnRegister failed on na_all");
+
+        // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+        stat = cudaHostRegister((void*) cxy_ind, ncxy*sizeof(int), cudaHostRegisterDefault);
+        CU_RET_ERR(stat, "cudaHostRegister failed on cxy_ind");
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].openTimingRegion(stream);
+        }
+
+        copyToDeviceBuffer(&gpu_nbv->cxybufops[iloc], cxy_ind, 0, ncxy, stream, GpuApiCallBehavior::Async, nullptr);
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
+
+        stat = cudaHostUnregister((void*) cxy_ind);
+        CU_RET_ERR(stat, "cudaHostUnRegister failed on cxy_ind");
+    }
+
+    return;
 }
