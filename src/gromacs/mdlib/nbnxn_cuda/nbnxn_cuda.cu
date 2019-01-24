@@ -59,7 +59,9 @@
 #include "gromacs/mdlib/nbnxn_gpu_common.h"
 #include "gromacs/mdlib/nbnxn_gpu_common_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_buffer_ops_kernels.cuh"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -311,20 +313,25 @@ void nbnxn_gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
         adat_len    = adat->natoms - adat->natoms_local;
     }
 
-    /* beginning of timed HtoD section */
-    if (bDoTime)
-    {
-        t->nb_h2d[iloc].openTimingRegion(stream);
-    }
-
     /* HtoD x, q */
-    cu_copy_H2D_async(adat->xq + adat_begin,
-                      static_cast<const void *>(nbatom->x().data() + adat_begin * 4),
-                      adat_len * sizeof(*adat->xq), stream);
-
-    if (bDoTime)
+    if (!nb->bGpuBufferOps) //otherwise nbat conversion will be done on GPU
     {
-        t->nb_h2d[iloc].closeTimingRegion(stream);
+
+
+        /* beginning of timed HtoD section */
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].openTimingRegion(stream);
+        }
+
+        cu_copy_H2D_async(adat->xq + adat_begin, static_cast<const void *>(nbatom->x().data() + adat_begin * 4),
+                          adat_len * sizeof(*adat->xq), stream);
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
+
     }
 
     /* When we get here all misc operations issued in the local stream as well as
@@ -710,4 +717,399 @@ void nbnxn_cuda_set_cacheconfig()
             CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
         }
     }
+}
+
+/* Initialization for X buffer operations on GPU. */
+/* TODO  Remove explicit pinning from host arrays from here and manage in a more natural way*/
+void nbnxn_gpu_init_x_to_nbat_x(int                 ncxy,
+                                const nbnxn_search *nbs,
+                                gmx_nbnxn_gpu_t    *gpu_nbv,
+                                const int          *a,
+                                int                 a_nalloc,
+                                const int          *na_all,
+                                const int          *cxy_ind,
+                                int                 iloc)
+{
+    cudaError_t   stat;
+    cudaStream_t  stream  = gpu_nbv->stream[iloc];
+
+    bool          bDoTime = gpu_nbv->bDoTime;
+    cu_timers_t  *t       = gpu_nbv->timers;
+
+    if (LOCAL_I(iloc))
+    {
+
+        if (gpu_nbv->xrvec)
+        {
+            freeDeviceBuffer(&gpu_nbv->xrvec);
+        }
+        allocateDeviceBuffer(&gpu_nbv->xrvec, nbs->natoms_nonlocal, nullptr);
+
+        gpu_nbv->bGpuBufferOps = false;
+
+
+        if (gpu_nbv->abufops)
+        {
+            freeDeviceBuffer(&gpu_nbv->abufops);
+        }
+        allocateDeviceBuffer(&gpu_nbv->abufops, a_nalloc, nullptr);
+
+        if (a_nalloc > 0)
+        {
+            // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+            stat = cudaHostRegister((void*) a, a_nalloc*sizeof(int), cudaHostRegisterDefault);
+            CU_RET_ERR(stat, "cudaHostRegister failed on a");
+
+            if (bDoTime)
+            {
+                t->nb_h2d[iloc].openTimingRegion(stream);
+            }
+
+            copyToDeviceBuffer(&gpu_nbv->abufops, a, 0, a_nalloc, stream, GpuApiCallBehavior::Async, nullptr);
+
+            if (bDoTime)
+            {
+                t->nb_h2d[iloc].closeTimingRegion(stream);
+            }
+
+            stat = cudaHostUnregister((void*) a);
+            CU_RET_ERR(stat, "cudaHostUnRegister failed on a");
+        }
+    }
+
+
+    if (gpu_nbv->nabufops[iloc])
+    {
+        freeDeviceBuffer(&gpu_nbv->nabufops[iloc]);
+
+    }
+    allocateDeviceBuffer(&gpu_nbv->nabufops[iloc], ncxy, nullptr);
+
+    if (gpu_nbv->cxybufops[iloc])
+    {
+        freeDeviceBuffer(&gpu_nbv->cxybufops[iloc]);
+    }
+    allocateDeviceBuffer(&gpu_nbv->cxybufops[iloc], ncxy, nullptr);
+
+    if (ncxy > 0)
+    {
+        // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+        stat = cudaHostRegister((void*) na_all, ncxy*sizeof(int), cudaHostRegisterDefault);
+        CU_RET_ERR(stat, "cudaHostRegister failed on na_all");
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].openTimingRegion(stream);
+        }
+
+        copyToDeviceBuffer(&gpu_nbv->nabufops[iloc], na_all, 0, ncxy, stream, GpuApiCallBehavior::Async, nullptr);
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
+
+        stat = cudaHostUnregister((void*) na_all);
+        CU_RET_ERR(stat, "cudaHostUnRegister failed on na_all");
+
+        // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+        stat = cudaHostRegister((void*) cxy_ind, ncxy*sizeof(int), cudaHostRegisterDefault);
+        CU_RET_ERR(stat, "cudaHostRegister failed on cxy_ind");
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].openTimingRegion(stream);
+        }
+
+        copyToDeviceBuffer(&gpu_nbv->cxybufops[iloc], cxy_ind, 0, ncxy, stream, GpuApiCallBehavior::Async, nullptr);
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
+
+        stat = cudaHostUnregister((void*) cxy_ind);
+        CU_RET_ERR(stat, "cudaHostUnRegister failed on cxy_ind");
+    }
+
+    return;
+}
+
+/* X buffer operations on GPU: performs conversion from rvec to nb format. */
+bool nbnxn_gpu_x_to_nbat_x(int                   ncxy,
+                           int                   g,
+                           bool                  FillLocal,
+                           const nbnxn_search   *nbs,
+                           gmx_nbnxn_gpu_t      *gpu_nbv,
+                           void                 *xPmeDevicePtr,
+                           const int            *na_all,
+                           const int            *cxy_ind,
+                           int                   cell0,
+                           int                   na_sc,
+                           int                   iloc,
+                           rvec                 *x)
+{
+
+
+    /* CUDA kernel launch-related stuff */
+    dim3           dim_block, dim_grid;
+
+    cu_atomdata_t *adat    = gpu_nbv->atdat;
+    cudaStream_t   stream  = gpu_nbv->stream[iloc];
+
+    bool           bDoTime = gpu_nbv->bDoTime;
+    cu_timers_t   *t       = gpu_nbv->timers;
+
+
+    gpu_nbv->bGpuBufferOps = true;
+
+    int na_round_max = 0;
+    for (int cxy = 0; cxy < ncxy; cxy++)
+    {
+        int na = na_all[cxy];
+        int na_round;
+        if (g == 0 && FillLocal)
+        {
+            na_round =
+                (cxy_ind[cxy+1] - cxy_ind[cxy])*na_sc;
+        }
+        else
+        {
+            /* We fill only the real particle locations.
+             * We assume the filling entries at the end have been
+             * properly set before during pair-list generation.
+             */
+            na_round = na;
+        }
+
+
+        if (na_round > na_round_max)
+        {
+            na_round_max = na_round;
+        }
+
+    }
+
+
+    if (nbs == nullptr) // empty domain
+    {
+        gpu_nbv->bGpuBufferOps = false;
+        return false;
+    }
+
+    int nCopyAtoms;
+    int copyAtomStart;
+    if (LOCAL_I(iloc)) //local stream
+    {
+        nCopyAtoms    = nbs->natoms_local;
+        copyAtomStart = 0;
+    }
+    else //non-local stream
+    {
+        nCopyAtoms    = nbs->natoms_nonlocal-nbs->natoms_local;
+        copyAtomStart = nbs->natoms_local;
+    }
+
+    const rvec *x_d;
+    bool        copyCoord = (xPmeDevicePtr == nullptr);
+
+    // copy X-coordinate data to device
+    if (copyCoord)
+    {
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].openTimingRegion(stream);
+        }
+
+        //FIXME: use copyToDeviceBuffer wrapper when multi-GPU pinning issue with x has been resolved
+        // auto devicePtr = &gpu_nbv->xrvec[copyAtomStart][0];
+        // copyToDeviceBuffer(&devicePtr, &x[copyAtomStart][0], 0, nCopyAtoms,
+        //                    stream, GpuApiCallBehavior::Async, nullptr);
+        cudaError_t stat = cudaMemcpyAsync(&gpu_nbv->xrvec[copyAtomStart][0], &x[copyAtomStart][0],
+                                           nCopyAtoms*sizeof(rvec), cudaMemcpyHostToDevice, stream);
+        CU_RET_ERR(stat, "cudaMemcpy failed on gpu_nbv->xrvec");
+
+
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
+
+        x_d = gpu_nbv->xrvec;
+    }
+    else //coordinates have already been copied by PME stream
+    {
+        x_d = (rvec*) xPmeDevicePtr;
+    }
+
+    /* launch kernel on GPU */
+    const int          threadsPerBlock = 128;
+
+    KernelLaunchConfig config;
+    config.blockSize[0]     = threadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = ((na_round_max+1)+threadsPerBlock-1)/threadsPerBlock;
+    config.gridSize[1]      = ncxy;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
+    config.stream           = stream;
+
+    auto       kernelFn     = nbnxn_gpu_x_to_nbat_x_kernel;
+    float     *xqPtr        = &(adat->xq->x);
+    const int *abufops      = gpu_nbv->abufops;
+    const int *nabufopsPtr  = gpu_nbv->nabufops[iloc];
+    const int *cxybufopsPtr = gpu_nbv->cxybufops[iloc];
+    const auto kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
+                                                        &ncxy,
+                                                        &xqPtr,
+                                                        &g,
+                                                        &FillLocal,
+                                                        &x_d,
+                                                        &abufops,
+                                                        &nabufopsPtr,
+                                                        &cxybufopsPtr,
+                                                        &cell0,
+                                                        &na_sc);
+    launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
+
+    return true;
+}
+
+
+
+void nbnxn_gpu_init_add_nbat_f_to_f(const int                *cell,
+                                    const nbnxn_search       *nbs,
+                                    gmx_nbnxn_gpu_t          *gpu_nbv,
+                                    int                       a1)
+{
+
+
+    cudaStream_t         stream  = gpu_nbv->stream[0];
+
+    if (gpu_nbv->frvec)
+    {
+        freeDeviceBuffer(&gpu_nbv->frvec);
+    }
+    allocateDeviceBuffer(&gpu_nbv->frvec, nbs->natoms_nonlocal, nullptr);
+
+    if (a1 > 0)
+    {
+
+
+        if (gpu_nbv->cell)
+        {
+            freeDeviceBuffer(&gpu_nbv->cell);
+
+        }
+        allocateDeviceBuffer(&gpu_nbv->cell, a1, nullptr);
+
+        // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+        cudaError_t stat = cudaHostRegister((void*) cell, a1*sizeof(int), cudaHostRegisterDefault);
+        CU_RET_ERR(stat, "cudaHostRegister failed on cell");
+
+        copyToDeviceBuffer(&gpu_nbv->cell, cell, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
+
+        stat = cudaHostUnregister((void*) cell);
+        CU_RET_ERR(stat, "cudaHostUnRegister failed on cell");
+
+    }
+
+    return;
+}
+
+
+void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
+                               gmx_nbnxn_gpu_t               *gpu_nbv,
+                               void                          *fPmeDevicePtr,
+                               int                            a0,
+                               int                            a1,
+                               rvec                          *f)
+{
+
+
+    cu_atomdata_t       *adat    = gpu_nbv->atdat;
+    cudaStream_t         stream  = gpu_nbv->stream[0];
+
+    bool                 bDoTime = gpu_nbv->bDoTime;
+    cu_timers_t         *t       = gpu_nbv->timers;
+
+    bool                 addPmeF = (fPmeDevicePtr != nullptr);
+
+    //TODO (AG) enable copyForce=false (and zero device buffer)
+    //when all bonded forces are done on GPU
+    bool        copyForce = true;
+
+    if (copyForce)
+    {
+        if (bDoTime)
+        {
+            t->nb_h2d[0].openTimingRegion(stream);
+        }
+
+        //FIXME: use copyToDeviceBuffer wrapper when multi-GPU pinning issue with f has been resolved
+        //copyToDeviceBuffer(&gpu_nbv->frvec, f, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
+        cudaMemcpyAsync(gpu_nbv->frvec, f, a1*sizeof(rvec), cudaMemcpyHostToDevice, stream);
+
+
+
+        if (bDoTime)
+        {
+            t->nb_h2d[0].closeTimingRegion(stream);
+        }
+
+    }
+
+    /* ensure that PME GPU force calculations have completed */
+    cudaDeviceSynchronize();
+
+    /* launch kernel */
+    const int          threadsPerBlock = 128;
+
+    KernelLaunchConfig config;
+    config.blockSize[0]     = threadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = (((a1-a0)+1)+threadsPerBlock-1)/threadsPerBlock;
+    config.gridSize[1]      = 1;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
+    config.stream           = stream;
+
+    auto             kernelFn                = nbnxn_gpu_add_nbat_f_to_f_kernel;
+    const float     *fPtr                    = (float*) adat->f;
+    const rvec      *fPmePtr                 = (rvec*) fPmeDevicePtr;
+    rvec            *frvec                   = gpu_nbv->frvec;
+    const int       *cell                    = gpu_nbv->cell;
+    const int        stride                  = nbat->fstride;
+
+    const auto       kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
+                                                              &fPtr,
+                                                              &fPmePtr,
+                                                              &frvec,
+                                                              &cell,
+                                                              &a0,
+                                                              &a1,
+                                                              &stride,
+                                                              &addPmeF);
+
+    launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
+
+    if (bDoTime)
+    {
+        t->nb_d2h[0].openTimingRegion(stream);
+    }
+
+    //FIXME: use copyToDeviceBuffer wrapper when multi-GPU pinning issue with f has been resolved
+    //copyFromDeviceBuffer(f, &gpu_nbv->frvec, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
+    cudaMemcpyAsync(f, gpu_nbv->frvec, a1*sizeof(rvec), cudaMemcpyDeviceToHost, stream);
+
+    if (bDoTime)
+    {
+        t->nb_d2h[0].closeTimingRegion(stream);
+    }
+
+
+    cudaStreamSynchronize(stream);
+    return;
 }
