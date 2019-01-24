@@ -467,6 +467,9 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3Overlapping)
         mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
     }
 
+#ifdef __INTEL_COMPILER  //Bug in (at least) 19u1 and 18u5 (03424712)
+    #pragma novector
+#endif    
     for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
     {
         // Subtract values from _reference_ memory (we will then test with mem0_, and compare)
