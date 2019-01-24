@@ -146,7 +146,7 @@ class AtomIterator
         //! Dereference operator. Returns proxy.
         AtomProxy operator*() const { return {this}; }
         //! Member of pointer operator.
-        ProxyPtr<AtomProxy> operator->() const { return {this}; };
+        ProxyPtr<AtomProxy> operator->() const { return {this}; }
 
     private:
         //! Global topology.

@@ -192,7 +192,7 @@ typedef struct {
     int numJClusterGroups() const
     {
         return cj4_ind_end - cj4_ind_start;
-    };
+    }
 
     int sci;            /* i-super-cluster       */
     int shift;          /* Shift vector index plus possible flags */
