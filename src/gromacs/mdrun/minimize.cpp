@@ -742,12 +742,7 @@ class EnergyEvaluator
 {
     public:
         //! We only intend to construct such objects with an initializer list.
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
-        // Aspects of the C++11 spec changed after GCC 4.8.5, and
-        // compilation of the initializer list construction in
-        // runner.cpp fails in GCC 4.8.5.
         EnergyEvaluator() = delete;
-#endif
         /*! \brief Evaluates an energy on the state in \c ems.
          *
          * \todo In practice, the same objects mu_tot, vir, and pres

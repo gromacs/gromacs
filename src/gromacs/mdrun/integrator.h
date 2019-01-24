@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -184,12 +184,7 @@ struct Integrator
      * based on the .mdp integrator field. */
     void run(unsigned int ei, bool doRerun);
     //! We only intend to construct such objects with an initializer list.
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
-    // Aspects of the C++11 spec changed after GCC 4.8.5, and
-    // compilation of the initializer list construction in runner.cpp
-    // fails in GCC 4.8.5.
     Integrator() = delete;
-#endif
 };
 
 }      // namespace gmx

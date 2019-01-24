@@ -67,8 +67,10 @@ if(CUDA_HOST_COMPILER_CHANGED)
     set(CUDA_HOST_COMPILER_OPTIONS "")
 
     if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "GNU")
-        # Some versions of gcc-4.8 and gcc-4.9 produce errors (in particular on OS X)
-        # if we do not use -D__STRICT_ANSI__. It is harmless, so we might as well add it for all versions.
+        # Some versions of gcc-4.8 and gcc-4.9 have produced errors
+        # (in particular on OS X) if we do not use
+        # -D__STRICT_ANSI__. It is harmless, so we might as well add
+        # it for all versions.
         list(APPEND CUDA_HOST_COMPILER_OPTIONS "-D__STRICT_ANSI__")
     endif()
 
