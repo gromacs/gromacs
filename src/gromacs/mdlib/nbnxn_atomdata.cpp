@@ -68,6 +68,8 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "nbnxn_gpu.h"
+
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 
@@ -1083,6 +1085,108 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
 
     wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+}
+
+
+/* GPU version of the above. Operates on data already present on GPU */
+
+void nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
+                                              int                   locality,
+                                              bool                  FillLocal,
+                                              nbnxn_atomdata_t     *nbat,
+                                              gmx_nbnxn_gpu_t      *gpu_nbv,
+                                              int                   iloc)
+{
+    int g0 = 0, g1 = 0;
+
+    switch (locality)
+    {
+        case eatAll:
+            g0 = 0;
+            g1 = nbs->grid.size();
+            break;
+        case eatLocal:
+            g0 = 0;
+            g1 = 1;
+            break;
+        case eatNonlocal:
+            g0 = 1;
+            g1 = nbs->grid.size();
+            break;
+    }
+
+    if (FillLocal)
+    {
+        nbat->natoms_local = nbs->grid[0].nc*nbs->grid[0].na_sc;
+    }
+
+    for (int g = g0; g < g1; g++)
+    {
+
+        const nbnxn_grid_t &grid       = nbs->grid[g];
+
+        nbnxn_gpu_init_x_to_nbat_x(grid.numCells[XX]*grid.numCells[YY],
+                                   nbs, gpu_nbv,
+                                   nbs->a.data(), nbs->a.size(),
+                                   grid.cxy_na.data(),
+                                   grid.cxy_ind.data(),
+                                   iloc);
+
+    }
+
+}
+
+bool nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
+                                         int                   locality,
+                                         bool                  FillLocal,
+                                         nbnxn_atomdata_t     *nbat,
+                                         gmx_nbnxn_gpu_t      *gpu_nbv,
+                                         void                 *xPmeDevicePtr,
+                                         int                   iloc,
+                                         rvec                 *x)
+{
+    int g0 = 0, g1 = 0;
+
+    switch (locality)
+    {
+        case eatAll:
+            g0 = 0;
+            g1 = nbs->grid.size();
+            break;
+        case eatLocal:
+            g0 = 0;
+            g1 = 1;
+            break;
+        case eatNonlocal:
+            g0 = 1;
+            g1 = nbs->grid.size();
+            break;
+    }
+
+    if (FillLocal)
+    {
+        nbat->natoms_local = nbs->grid[0].nc*nbs->grid[0].na_sc;
+    }
+
+    bool gpuBufferOpsCompleted = false;
+
+    for (int g = g0; g < g1; g++)
+    {
+
+        const nbnxn_grid_t &grid       = nbs->grid[g];
+
+        gpuBufferOpsCompleted = nbnxn_gpu_x_to_nbat_x(grid.numCells[XX]*grid.numCells[YY],
+                                                      g, FillLocal, nbs, gpu_nbv, xPmeDevicePtr,
+                                                      grid.cxy_na.data(),
+                                                      grid.cxy_ind.data(),
+                                                      grid.cell0, grid.na_sc,
+                                                      iloc, x);
+
+    }
+
+    return gpuBufferOpsCompleted;
+
+
 }
 
 static void

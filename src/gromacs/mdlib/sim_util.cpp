@@ -1259,11 +1259,37 @@ static void do_force_cutsVERLET(FILE *fplog,
                                     eintLocal);
         }
         wallcycle_stop(wcycle, ewcNS);
+
+        /* Inital call with bNS=true only perfoms setup */
+        if (bUseGPU)
+        {
+            nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                     eatLocal,
+                                                     false,
+                                                     nbv->nbat,
+                                                     nbv->gpu_nbv,
+                                                     eintLocal);
+        }
+
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                        nbv->nbat, wcycle);
+        if (bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
+        {
+            nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                eatLocal,
+                                                false,
+                                                nbv->nbat,
+                                                nbv->gpu_nbv,
+                                                pme_gpu_get_device_x(fr->pmedata),
+                                                eintLocal,
+                                                as_rvec_array(x.unpaddedArrayRef().data()));
+        }
+        else
+        {
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
+                                            nbv->nbat, wcycle);
+        }
     }
 
     if (bUseGPU)
@@ -1337,13 +1363,39 @@ static void do_force_cutsVERLET(FILE *fplog,
                                         eintNonlocal);
             }
             wallcycle_stop(wcycle, ewcNS);
+
+            if (bUseGPU)
+            {
+
+                /* Inital call with bNS=true only perfoms setup */
+                nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                         eatNonlocal,
+                                                         false,
+                                                         nbv->nbat,
+                                                         nbv->gpu_nbv,
+                                                         eintNonlocal);
+            }
         }
         else
         {
             dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                            nbv->nbat, wcycle);
+            if (bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
+            {
+                nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
+                                                    eatNonlocal,
+                                                    false,
+                                                    nbv->nbat,
+                                                    nbv->gpu_nbv,
+                                                    pme_gpu_get_device_x(fr->pmedata),
+                                                    eintNonlocal,
+                                                    as_rvec_array(x.unpaddedArrayRef().data()));
+            }
+            else
+            {
+                nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
+                                                nbv->nbat, wcycle);
+            }
         }
 
         if (bUseGPU)
