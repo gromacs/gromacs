@@ -237,4 +237,23 @@ gmx_bool nbnxn_gpu_x_to_nbat_x(int                gmx_unused  ncxy,
                                int                gmx_unused  na_sc,
                                int                gmx_unused  iloc,
                                rvec               gmx_unused *x) GPU_FUNC_TERM_WITH_RETURN(false)
+
+
+/*! \brief Initialization for F buffer operations on GPU */
+GPU_FUNC_QUALIFIER
+void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
+                                    const nbnxn_search      gmx_unused *nbs,
+                                    gmx_nbnxn_gpu_t         gmx_unused *gpu_nbv,
+                                    int                     gmx_unused  a1) GPU_FUNC_TERM
+
+/*! \brief F buffer operations on GPU: adds nb format force to rvec format. */
+GPU_FUNC_QUALIFIER
+void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t       gmx_unused *nbat,
+                               gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
+                               void                         gmx_unused *fPmeDevicePtr,
+                               int                          gmx_unused  a0,
+                               int                          gmx_unused  a1,
+                               rvec                         gmx_unused *f) GPU_FUNC_TERM
+
+
 #endif
