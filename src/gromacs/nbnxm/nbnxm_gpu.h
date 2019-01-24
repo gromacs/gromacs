@@ -213,6 +213,36 @@ void gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
 GPU_FUNC_QUALIFIER
 int gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
 
+/*! \brief Initialization for X buffer operations on GPU.
+ * Called on the NS step and performs (re-)allocations and memory copies. !*/
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_init_x_to_nbat_x(int                gmx_unused  ncxy,
+                                gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
+                                const int          gmx_unused *a,
+                                int                gmx_unused  a_nalloc,
+                                const int          gmx_unused *na_all,
+                                const int          gmx_unused *cxy_ind,
+                                int                gmx_unused  natoms_nonlocal,
+                                Nbnxm::AtomLocality gmx_unused locality,
+                                Nbnxm::InteractionLocality gmx_unused iloc) CUDA_FUNC_TERM
+
+/*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
+ * returns true if GPU buffer ops are completed. !*/
+CUDA_FUNC_QUALIFIER
+bool nbnxn_gpu_x_to_nbat_x(int                gmx_unused  ncxy,
+                           int                gmx_unused  g,
+                           bool               gmx_unused  FillLocal,
+                           int                gmx_unused nCopyAtoms,
+                           int                gmx_unused copyAtomStart,
+                           gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
+                           void               gmx_unused *xPmeDevicePtr,
+                           int                gmx_unused  cell0,
+                           int                gmx_unused  na_sc,
+                           int                gmx_unused  na_round_max,
+                           Nbnxm::AtomLocality gmx_unused locality,
+                           Nbnxm::InteractionLocality gmx_unused iloc,
+                           rvec               gmx_unused *x) CUDA_FUNC_TERM_WITH_RETURN(false)
+
 } // namespace Nbnxm
 
 #endif

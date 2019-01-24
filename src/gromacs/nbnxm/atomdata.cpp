@@ -1080,6 +1080,136 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search       *nbs,
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }
 
+
+/* GPU version of the above. Operates on data already present on GPU */
+
+void nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(const nbnxn_search              *nbs,
+                                              const Nbnxm::AtomLocality        locality,
+                                              bool                             FillLocal,
+                                              nbnxn_atomdata_t                *nbat,
+                                              gmx_nbnxn_gpu_t                 *gpu_nbv,
+                                              const Nbnxm::InteractionLocality iloc)
+{
+    int g0 = 0, g1 = 0;
+
+    switch (locality)
+    {
+        case Nbnxm::AtomLocality::All:
+        case Nbnxm::AtomLocality::Count:
+            g0 = 0;
+            g1 = nbs->grid.size();
+            break;
+        case Nbnxm::AtomLocality::Local:
+            g0 = 0;
+            g1 = 1;
+            break;
+        case Nbnxm::AtomLocality::NonLocal:
+            g0 = 1;
+            g1 = nbs->grid.size();
+            break;
+    }
+
+    if (FillLocal)
+    {
+        const Nbnxm::Grid &grid = nbs->grid[0];
+        nbat->natoms_local = grid.atomIndexEnd();
+    }
+
+    for (int g = g0; g < g1; g++)
+    {
+
+        const Nbnxm::Grid &grid = nbs->grid[g];
+
+        nbnxn_gpu_init_x_to_nbat_x(grid.numColumns(),
+                                   gpu_nbv,
+                                   nbs->a.data(), nbs->a.size(),
+                                   grid.cxy_na().data(),
+                                   grid.cxy_ind().data(),
+                                   nbs->natoms_nonlocal,
+                                   locality,
+                                   iloc);
+
+    }
+
+}
+
+void nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search              *nbs,
+                                         const Nbnxm::AtomLocality        locality,
+                                         bool                             FillLocal,
+                                         nbnxn_atomdata_t                *nbat,
+                                         gmx_nbnxn_gpu_t                 *gpu_nbv,
+                                         void                            *xPmeDevicePtr,
+                                         const Nbnxm::InteractionLocality iloc,
+                                         rvec                            *x)
+{
+    int g0            = 0, g1 = 0;
+    int nCopyAtoms    = 0;
+    int copyAtomStart = 0;
+
+    switch (locality)
+    {
+        case Nbnxm::AtomLocality::All:
+        case Nbnxm::AtomLocality::Count:
+            g0 = 0;
+            g1 = nbs->grid.size();
+            // TODO what nCopyAtoms goes here? does it even make sense?
+            break;
+        case Nbnxm::AtomLocality::Local:
+            g0         = 0;
+            g1         = 1;
+            nCopyAtoms = nbs->natoms_local;
+            break;
+        case Nbnxm::AtomLocality::NonLocal:
+            g0            = 1;
+            g1            = nbs->grid.size();
+            nCopyAtoms    = nbs->natoms_nonlocal-nbs->natoms_local;
+            copyAtomStart = nbs->natoms_local;
+            break;
+    }
+
+    if (FillLocal)
+    {
+        const Nbnxm::Grid &grid = nbs->grid[0];
+        nbat->natoms_local = grid.atomIndexEnd();
+    }
+
+    for (int g = g0; g < g1; g++)
+    {
+
+        const Nbnxm::Grid &grid = nbs->grid[g];
+
+        // TODO what is the proper name for this thing?
+        int na_round_max = 0;
+        for (int cxy = 0; cxy < grid.numColumns(); cxy++)
+        {
+            int na = grid.cxy_na()[cxy];
+            int na_round;
+            if (g == 0 && FillLocal)
+            {
+                na_round = grid.numCellsInColumn(cxy);
+            }
+            else
+            {
+                /* We fill only the real particle locations.
+                 * We assume the filling entries at the end have been
+                 * properly set before during pair-list generation.
+                 */
+                na_round = na;
+            }
+
+            na_round_max = std::max(na_round_max, na_round);
+        }
+
+        nbnxn_gpu_x_to_nbat_x(grid.numColumns(),
+                              g, FillLocal,
+                              nCopyAtoms, copyAtomStart,
+                              gpu_nbv, xPmeDevicePtr,
+                              grid.cellOffset(), grid.numAtomsPerCell(),
+                              na_round_max,
+                              locality, iloc, x);
+    }
+}
+
 static void
 nbnxn_atomdata_clear_reals(gmx::ArrayRef<real> dest,
                            int i0, int i1)
