@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -412,7 +412,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
             {
                 std::copy(std::begin(forces), std::end(forces), std::begin(output.forces_));
             }
-            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid));
+            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid), true);
             std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;
