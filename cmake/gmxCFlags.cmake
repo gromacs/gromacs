@@ -203,15 +203,6 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd161 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd14
                 GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd3180" GMXC_CXXFLAGS)
             endif()
             if (GMX_COMPILER_WARNINGS)
-                if (GMX_GPU)
-# Suppress warnings from CUDA headers
-# 7:   unrecognized token
-# 82:  storage class is not first
-# The below are also required for math_functions.h / math_functions.hpp at least until CUDA 8.0-RC
-# 193: zero used for undefined preprocessing identifer
-# 3346:dynamic exception specifiers are deprecated
-                    GMX_TEST_CXXFLAG(CXXFLAGS_WARN_OLD_GPU "-wd7 -wd82 -wd193 -wd3346" GMXC_CXXFLAGS)
-                endif()
 #All but the following warnings are identical for the C-compiler (see above)
 # 304: access control not specified
 # 383: value copied to temporary, reference to temporary used

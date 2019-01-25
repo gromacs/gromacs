@@ -11,11 +11,9 @@ Most |Gromacs| files compile as C++14, but some files remain that compile as C99
 C++ has a lot of features, but to keep the source code maintainable and easy to read, 
 we will avoid using some of them in |Gromacs| code. The basic principle is to keep things 
 as simple as possible.
-For compatiblity, certain work-arounds are required because not all compilers support 
-these standards fully.
 
 * MSVC supports only a subset of C99 and work-arounds are required in those cases.
-* We should be able to use virtually all C++11 features outside of OpenCL kernels
+* We should be able to use virtually all C++14 features outside of OpenCL kernels
   (which compile as C), and for consistency also in CUDA kernels.
 
 C++ Standard Library
