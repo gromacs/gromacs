@@ -42,8 +42,10 @@
 
 #include "gromacs/utility/arrayref.h"
 
+#include "gromacs/utility/arrayref.h"
+
 enum class Directive : int;
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct t_atoms;
 struct t_blocka;
 struct t_excls;
@@ -74,7 +76,7 @@ void done_plist(gmx::ArrayRef<SystemParameters> plist);
 void print_blocka(FILE *out, const char *szName, const char *szIndex,
                   const char *szA, t_blocka *block);
 
-void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, PreprocessingAtomType *atype, t_atoms *at, int *cgnr,
                  bool bRTPresname);
 
 void print_bondeds(FILE *out, int natoms, Directive d,

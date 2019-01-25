@@ -673,7 +673,7 @@ void print_top_mols(FILE *out,
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
                int bts[], gmx::ArrayRef<const SystemParameters> plist, t_excls excls[],
-               gpp_atomtype *atype, int *cgnr, int nrexcl)
+               PreprocessingAtomType *atype, int *cgnr, int nrexcl)
 /* NOTE: nrexcl is not the size of *excl! */
 {
     if (at && atype && cgnr)
@@ -1465,7 +1465,7 @@ scrub_charge_groups(int *cgnr, int natoms)
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms,
-             std::vector<gmx::RVec> *x, gpp_atomtype *atype, t_symtab *tab,
+             std::vector<gmx::RVec> *x, PreprocessingAtomType *atype, t_symtab *tab,
              gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
              gmx::ArrayRef<PreprocessResidue> usedPpResidues,
              gmx::ArrayRef<MoleculePatchDatabase> globalPatches,

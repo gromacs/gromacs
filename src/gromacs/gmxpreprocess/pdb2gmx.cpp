@@ -54,6 +54,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/conformation_utilities.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/genhydro.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -1912,7 +1913,8 @@ int pdb2gmx::run()
     check_occupancy(&pdba_all, inputConfFile_.c_str(), bVerbose_);
 
     /* Read atomtypes... */
-    gpp_atomtype *atype = read_atype(ffdir_, &symtab);
+    PreprocessingAtomType atype;
+    read_atype(ffdir_, &symtab, &atype);
 
     /* read residue database */
     printf("Reading residue database... (%s)\n", forcefield_);
@@ -1920,13 +1922,13 @@ int pdb2gmx::run()
     std::vector<PreprocessResidue> rtpFFDB;
     for (const auto &filename : rtpf)
     {
-        readResidueDatabase(filename, &rtpFFDB, atype, &symtab, false);
+        readResidueDatabase(filename, &rtpFFDB, &atype, &symtab, false);
     }
     if (bNewRTP_)
     {
         /* Not correct with multiple rtp input files with different bonded types */
         FILE *fp = gmx_fio_fopen("new.rtp", "w");
-        print_resall(fp, rtpFFDB, atype);
+        print_resall(fp, rtpFFDB, &atype);
         gmx_fio_fclose(fp);
     }
 
@@ -1938,8 +1940,8 @@ int pdb2gmx::run()
     std::vector<MoleculePatchDatabase>                  ntdb;
     std::vector<MoleculePatchDatabase>                  ctdb;
     std::vector<MoleculePatchDatabase *>                tdblist;
-    int                                                 nNtdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
-    int                                                 nCtdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
+    int                                                 nNtdb = read_ter_db(ffdir_, 'n', &ntdb, &atype);
+    int                                                 nCtdb = read_ter_db(ffdir_, 'c', &ctdb, &atype);
 
     FILE                                               *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
 
@@ -2249,7 +2251,7 @@ int pdb2gmx::run()
             top_file2 = top_file;
         }
 
-        pdb2top(top_file2, posre_fn.c_str(), molname.c_str(), pdba, &x, atype, &symtab,
+        pdb2top(top_file2, posre_fn.c_str(), molname.c_str(), pdba, &x, &atype, &symtab,
                 rtpFFDB,
                 restp_chain, hb_chain,
                 bAllowMissing_,
@@ -2272,7 +2274,6 @@ int pdb2gmx::run()
         cc->pdba = pdba;
         cc->x    = x;
     }
-    done_atomtype(atype);
 
     if (watermodel_ == nullptr)
     {
