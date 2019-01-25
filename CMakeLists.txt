@@ -176,15 +176,8 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
-# Decide on GPU settings based on user-settings and GPU/CUDA
-# detection. VS2017 requires CUDA 9.0, for the other arch/compilers
-# rest we require CUDA 8.0 or later (including for clang-CUDA)
-# because that is the earliest version that supports gcc 5.x
-if(MSVC)
-    set(REQUIRED_CUDA_VERSION 9.0)
-else()
-    set(REQUIRED_CUDA_VERSION 8.0)
-endif()
+# The earliest version of the CUDA toolkit that supports c++14 is 9.0
+set(REQUIRED_CUDA_VERSION 9.0)
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.0)
 
 # OpenCL required version: 1.2 or newer
