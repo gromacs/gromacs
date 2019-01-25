@@ -44,7 +44,7 @@
 #include "gromacs/utility/real.h"
 
 enum class Directive : int;
-struct gpp_atomtype;
+class PreprocessingAtomTypes;
 struct gpp_bond_atomtype;
 struct t_atoms;
 struct t_block;
@@ -61,41 +61,41 @@ struct ExclusionBlock;
 } // namespace gmx
 
 void generate_nbparams(int comb, int funct, InteractionTypeParameters *plist,
-                       gpp_atomtype *atype,
+                       PreprocessingAtomTypes *atype,
                        warninp *wi);
 
-void push_at (struct t_symtab *symtab, gpp_atomtype *at,
+void push_at (struct t_symtab *symtab, PreprocessingAtomTypes *at,
               gpp_bond_atomtype *bat, char *line, int nb_funct,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp *wi);
 
 void push_bt(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral,
-             gpp_atomtype *at, gpp_bond_atomtype *bat, char *line,
+             PreprocessingAtomTypes *at, gpp_bond_atomtype *bat, char *line,
              warninp *wi);
 
 void push_dihedraltype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt,
                        gpp_bond_atomtype *bat, char *line,
                        warninp *wi);
 
-void push_cmaptype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral, gpp_atomtype *at,
+void push_cmaptype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral, PreprocessingAtomTypes *at,
                    gpp_bond_atomtype *bat, char *line,
                    warninp *wi);
 
-void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
+void push_nbt(Directive d, t_nbparam **nbt, PreprocessingAtomTypes *atype,
               char *plines, int nb_funct,
               warninp *wi);
 
-void push_atom(struct t_symtab *symtab,
-               t_block         *cgs,
-               t_atoms         *at,
-               gpp_atomtype    *atype,
-               char            *line,
-               int             *lastcg,
-               warninp         *wi);
+void push_atom(struct t_symtab           *symtab,
+               t_block                   *cgs,
+               t_atoms                   *at,
+               PreprocessingAtomTypes    *atype,
+               char                      *line,
+               int                       *lastcg,
+               warninp                   *wi);
 
 void push_bond(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
                gmx::ArrayRef<InteractionTypeParameters> bond,
-               t_atoms *at, gpp_atomtype *atype, char *line,
+               t_atoms *at, PreprocessingAtomTypes *atype, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
                warninp *wi);
@@ -103,7 +103,7 @@ void push_bond(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
 void push_cmap(Directive d,
                gmx::ArrayRef<InteractionTypeParameters> bondtype,
                gmx::ArrayRef<InteractionTypeParameters> bond,
-               t_atoms *at, gpp_atomtype *atype, char *line,
+               t_atoms *at, PreprocessingAtomTypes *atype, char *line,
                warninp *wi);
 
 void push_vsitesn(Directive d, gmx::ArrayRef<InteractionTypeParameters> bond,
@@ -123,7 +123,7 @@ int copy_nbparams(t_nbparam **param, int ftype, InteractionTypeParameters *plist
 
 void free_nbparam(t_nbparam **param, int nr);
 
-int add_atomtype_decoupled(struct t_symtab *symtab, gpp_atomtype *at,
+int add_atomtype_decoupled(struct t_symtab *symtab, PreprocessingAtomTypes *at,
                            t_nbparam ***nbparam, t_nbparam ***pair);
 /* Add an atom type with all parameters set to zero (no interactions).
  * Returns the atom type number.

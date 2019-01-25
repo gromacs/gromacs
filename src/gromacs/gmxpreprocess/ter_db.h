@@ -42,7 +42,7 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomTypes;
 struct MoleculePatchDatabase;
 
 /*! \brief
@@ -55,7 +55,7 @@ struct MoleculePatchDatabase;
  * \returns Number of entries entered into database.
  */
 int read_ter_db(const char *ffdir, char ter,
-                std::vector<MoleculePatchDatabase> *tbptr, gpp_atomtype *atype);
+                std::vector<MoleculePatchDatabase> *tbptr, PreprocessingAtomTypes *atype);
 
 /*! \brief
  * Return entries for modification blocks that match a residue name.
