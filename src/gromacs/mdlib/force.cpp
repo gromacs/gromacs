@@ -44,6 +44,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
@@ -138,28 +139,29 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t *ewc_t)
     }
 }
 
-void do_force_lowlevel(t_forcerec           *fr,
-                       const t_inputrec     *ir,
-                       const t_idef         *idef,
-                       const t_commrec      *cr,
-                       const gmx_multisim_t *ms,
-                       t_nrnb               *nrnb,
-                       gmx_wallcycle_t       wcycle,
-                       const t_mdatoms      *md,
-                       rvec                  x[],
-                       history_t            *hist,
-                       rvec                 *forceForUseWithShiftForces,
-                       gmx::ForceWithVirial *forceWithVirial,
-                       gmx_enerdata_t       *enerd,
-                       t_fcdata             *fcd,
-                       matrix                box,
-                       t_lambda             *fepvals,
-                       real                 *lambda,
-                       const t_graph        *graph,
-                       const t_blocka       *excl,
-                       rvec                  mu_tot[],
-                       int                   flags,
-                       float                *cycles_pme)
+void do_force_lowlevel(t_forcerec                   *fr,
+                       const t_inputrec             *ir,
+                       const t_idef                 *idef,
+                       const t_commrec              *cr,
+                       const gmx_multisim_t         *ms,
+                       t_nrnb                       *nrnb,
+                       gmx_wallcycle_t               wcycle,
+                       const t_mdatoms              *md,
+                       rvec                          x[],
+                       history_t                    *hist,
+                       rvec                         *forceForUseWithShiftForces,
+                       gmx::ForceWithVirial         *forceWithVirial,
+                       gmx_enerdata_t               *enerd,
+                       t_fcdata                     *fcd,
+                       matrix                        box,
+                       t_lambda                     *fepvals,
+                       real                         *lambda,
+                       const t_graph                *graph,
+                       const t_blocka               *excl,
+                       rvec                          mu_tot[],
+                       int                           flags,
+                       float                        *cycles_pme,
+                       const DDBalanceRegionHandler &ddBalanceRegionHandler)
 {
     int         i, j;
     int         donb_flags;
@@ -460,10 +462,7 @@ void do_force_lowlevel(t_forcerec           *fr,
                      * balancing region here, because PME does global
                      * communication that acts as a global barrier.
                      */
-                    if (DOMAINDECOMP(cr))
-                    {
-                        ddCloseBalanceRegionCpu(cr->dd);
-                    }
+                    ddBalanceRegionHandler.closeAfterForceComputationCpu();
 
                     wallcycle_start(wcycle, ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
