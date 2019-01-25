@@ -38,13 +38,15 @@
 #ifndef GMX_GMXPREPROCESS_VSITE_PARM_H
 #define GMX_GMXPREPROCESS_VSITE_PARM_H
 
-struct gpp_atomtype;
+#include "gromacs/utility/arrayref.h"
+
+class PreprocessingAtomType;
 struct gmx_moltype_t;
 struct t_atoms;
 struct t_params;
 
-int set_vsites(bool bVerbose, t_atoms *atoms,  gpp_atomtype *atype,
-               t_params plist[]);
+int set_vsites(bool bVerbose, t_atoms *atoms,  PreprocessingAtomType *atype,
+               gmx::ArrayRef<t_params> plist);
 /* set parameters for virtual sites, return number of virtual sites */
 
 void set_vsites_ptype(bool bVerbose,  gmx_moltype_t *molt);
@@ -54,6 +56,6 @@ void set_vsites_ptype(bool bVerbose,  gmx_moltype_t *molt);
  *
  * Throw away all obsolete bonds, angles and dihedrals.
  * Throw away all constraints. */
-void clean_vsite_bondeds(t_params *ps, int natoms, bool bRmVSiteBds);
+void clean_vsite_bondeds(gmx::ArrayRef<t_params> ps, int natoms, bool bRmVSiteBds);
 
 #endif

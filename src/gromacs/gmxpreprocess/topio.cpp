@@ -84,17 +84,15 @@
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */
 
-static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
+static void gen_pairs(const t_params &nbs, t_params *pairs, real fudge, int comb)
 {
-    int     i, j, ntp, nrfp, nrfpA, nrfpB, nnn;
     real    scaling;
-    ntp       = nbs->nr;
-    nnn       = static_cast<int>(std::sqrt(static_cast<double>(ntp)));
+    int     ntp       = nbs.nr();
+    int     nnn       = static_cast<int>(std::sqrt(static_cast<double>(ntp)));
     GMX_ASSERT(nnn * nnn == ntp, "Number of pairs of generated non-bonded parameters should be a perfect square");
-    nrfp      = NRFP(F_LJ);
-    nrfpA     = interaction_function[F_LJ14].nrfpA;
-    nrfpB     = interaction_function[F_LJ14].nrfpB;
-    pairs->nr = ntp;
+    int     nrfp      = NRFP(F_LJ);
+    int     nrfpA     = interaction_function[F_LJ14].nrfpA;
+    int     nrfpB     = interaction_function[F_LJ14].nrfpB;
 
     if ((nrfp  != nrfpA) || (nrfpA != nrfpB))
     {
@@ -102,17 +100,18 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
     }
 
     fprintf(stderr, "Generating 1-4 interactions: fudge = %g\n", fudge);
-    snew(pairs->param, pairs->nr);
-    for (i = 0; (i < ntp); i++)
+    int i = 0;
+    for (const auto &p : nbs.param)
     {
+        pairs->param.push_back(t_param());
         /* Copy param.a */
-        pairs->param[i].a[0] = i / nnn;
-        pairs->param[i].a[1] = i % nnn;
+        pairs->param.back().a[0] = i / nnn;
+        pairs->param.back().a[1] = i % nnn;
         /* Copy normal and FEP parameters and multiply by fudge factor */
 
 
 
-        for (j = 0; (j < nrfp); j++)
+        for (int j = 0; (j < nrfp); j++)
         {
             /* If we are using sigma/epsilon values, only the epsilon values
              * should be scaled, but not sigma.
@@ -127,13 +126,14 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
                 scaling = fudge;
             }
 
-            pairs->param[i].c[j]      = scaling*nbs->param[i].c[j];
+            pairs->param.back().c[j]      = scaling*p.c[j];
             /* NOTE: this should be cleat to the compiler, but some gcc 5.2 versions
              *  issue false positive warnings for the pairs->param.c[] indexing below.
              */
-            assert(2*nrfp <= MAXFORCEPARAM);
-            pairs->param[i].c[nrfp+j] = scaling*nbs->param[i].c[j];
+            GMX_RELEASE_ASSERT(2*nrfp <= MAXFORCEPARAM, "Number of parameters can not be hogher than maximum number");
+            pairs->param.back().c[nrfp+j] = scaling*p.c[j];
         }
+        i++;
     }
 }
 
@@ -350,7 +350,7 @@ static char ** cpp_opts(const char *define, const char *include,
 
 
 static void make_atoms_sys(const std::vector<gmx_molblock_t> &molblock,
-                           const t_molinfo                   *molinfo,
+                           gmx::ArrayRef<const t_molinfo>     molinfo,
                            t_atoms                           *atoms)
 {
     atoms->nr   = 0;
@@ -376,11 +376,11 @@ static void make_atoms_sys(const std::vector<gmx_molblock_t> &molblock,
 static char **read_topol(const char *infile, const char *outfile,
                          const char *define, const char *include,
                          t_symtab    *symtab,
-                         gpp_atomtype *atype,
+                         PreprocessingAtomType *atype,
                          int         *nrmols,
-                         t_molinfo   **molinfo,
-                         t_molinfo   **intermolecular_interactions,
-                         t_params    plist[],
+                         std::vector<t_molinfo> *molinfo,
+                         std::vector<t_molinfo> *intermolecular_interactions,
+                         gmx::ArrayRef<t_params> plist,
                          int         *combination_rule,
                          double      *reppow,
                          t_gromppopts *opts,
@@ -452,7 +452,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
     *reppow  = 12.0;      /* Default value for repulsion power     */
 
-    *intermolecular_interactions = nullptr;
+    intermolecular_interactions->clear();
 
     /* Init the number of CMAP torsion angles  and grid spacing */
     plist[F_CMAP].grid_spacing = 0;
@@ -572,15 +572,15 @@ static char **read_topol(const char *infile, const char *outfile,
 
                         if (d == Directive::d_intermolecular_interactions)
                         {
-                            if (*intermolecular_interactions == nullptr)
+                            if (intermolecular_interactions->empty())
                             {
                                 /* We (mis)use the moleculetype processing
                                  * to process the intermolecular interactions
                                  * by making a "molecule" of the size of the system.
                                  */
-                                snew(*intermolecular_interactions, 1);
-                                init_molinfo(*intermolecular_interactions);
-                                mi0 = *intermolecular_interactions;
+                                intermolecular_interactions->push_back(t_molinfo());
+                                init_molinfo(&intermolecular_interactions->back());
+                                mi0 = &intermolecular_interactions->back();
                                 make_atoms_sys(*molblock, *molinfo,
                                                &mi0->atoms);
                             }
@@ -703,7 +703,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                     dcatt = add_atomtype_decoupled(symtab, atype,
                                                                    &nbparam, bGenPairs ? &pair : nullptr);
                                 }
-                                ntype  = get_atomtype_ntypes(atype);
+                                ntype  = atype->nr();
                                 ncombs = (ntype*(ntype+1))/2;
                                 generate_nbparams(*combination_rule, nb_funct, &(plist[nb_funct]), atype, wi);
                                 ncopy = copy_nbparams(nbparam, nb_funct, &(plist[nb_funct]),
@@ -712,7 +712,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                 free_nbparam(nbparam, ntype);
                                 if (bGenPairs)
                                 {
-                                    gen_pairs(&(plist[nb_funct]), &(plist[F_LJ14]), fudgeLJ, *combination_rule);
+                                    gen_pairs((plist[nb_funct]), &(plist[F_LJ14]), fudgeLJ, *combination_rule);
                                     ncopy = copy_nbparams(pair, nb_funct, &(plist[F_LJ14]),
                                                           ntype);
                                     fprintf(stderr, "Generated %d of the %d 1-4 parameter combinations\n", ncombs-ncopy, ncombs);
@@ -723,7 +723,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                 bReadMolType = TRUE;
                             }
 
-                            push_molt(symtab, &nmol, molinfo, pline, wi);
+                            push_molt(symtab, molinfo, pline, wi);
                             srenew(exclusionBlocks, nmol);
                             exclusionBlocks[nmol-1].nr      = 0;
                             mi0                             = &((*molinfo)[nmol-1]);
@@ -791,7 +791,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             int      whichmol;
                             bool     bCouple;
 
-                            push_mol(nmol, *molinfo, pline, &whichmol, &nrcopies, wi);
+                            push_mol(*molinfo, pline, &whichmol, &nrcopies, wi);
                             mi0 = &((*molinfo)[whichmol]);
                             molblock->resize(molblock->size() + 1);
                             molblock->back().type = whichmol;
@@ -932,7 +932,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
     done_bond_atomtype(&batype);
 
-    if (*intermolecular_interactions != nullptr)
+    if (!intermolecular_interactions->empty())
     {
         sfree(mi0->atoms.atom);
     }
@@ -942,24 +942,24 @@ static char **read_topol(const char *infile, const char *outfile,
     return title;
 }
 
-char **do_top(bool                          bVerbose,
-              const char                   *topfile,
-              const char                   *topppfile,
-              t_gromppopts                 *opts,
-              bool                          bZero,
-              t_symtab                     *symtab,
-              t_params                      plist[],
-              int                          *combination_rule,
-              double                       *repulsion_power,
-              real                         *fudgeQQ,
-              gpp_atomtype                 *atype,
-              int                          *nrmols,
-              t_molinfo                   **molinfo,
-              t_molinfo                   **intermolecular_interactions,
-              const t_inputrec             *ir,
-              std::vector<gmx_molblock_t>  *molblock,
-              bool                         *ffParametrizedWithHBondConstraints,
-              warninp                      *wi)
+char **do_top(bool                                   bVerbose,
+              const char                            *topfile,
+              const char                            *topppfile,
+              t_gromppopts                          *opts,
+              bool                                   bZero,
+              t_symtab                              *symtab,
+              gmx::ArrayRef<t_params>                plist,
+              int                                   *combination_rule,
+              double                                *repulsion_power,
+              real                                  *fudgeQQ,
+              PreprocessingAtomType                 *atype,
+              int                                   *nrmols,
+              std::vector<t_molinfo>                *molinfo,
+              std::vector<t_molinfo>                *intermolecular_interactions,
+              const t_inputrec                      *ir,
+              std::vector<gmx_molblock_t>           *molblock,
+              bool                                  *ffParametrizedWithHBondConstraints,
+              warninp                               *wi)
 {
     /* Tmpfile might contain a long path */
     const char *tmpfile;

@@ -192,19 +192,17 @@ static int match_str(const char *atom, const char *template_string)
 }
 
 int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
-            gpp_atomtype *atype, int *nbonds, t_params *bonds)
+            PreprocessingAtomType *atype, int *nbonds, t_params *bonds)
 {
     int      cur = 0;
 #define prev (1-cur)
-    int      i, j, k, m, n, nresolved, nb, maxbond, ai, aj, best, im, nqual[2][ematchNR];
+    int      nresolved, nb, maxbond, nqual[2][ematchNR];
     int     *bbb, *n_mask, *m_mask, **match;
-    char    *aname_i, *aname_m, *aname_n, *type;
-    double   qq, mm;
-    t_param *param;
+    char    *aname_i, *aname_n;
+    t_param  param;
 
-    snew(param, 1);
     maxbond = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         maxbond = std::max(maxbond, nbonds[i]);
     }
@@ -216,20 +214,20 @@ int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
     snew(n_mask, maxbond);
     snew(m_mask, maxbond);
     snew(match, maxbond);
-    for (i = 0; (i < maxbond); i++)
+    for (int i = 0; (i < maxbond); i++)
     {
         snew(match[i], maxbond);
     }
 
     nresolved = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         aname_i = *atoms->atomname[i];
         nb      = 0;
-        for (j = 0; (j < bonds->nr); j++)
+        for (int j = 0; (j < bonds->nr()); j++)
         {
-            ai = bonds->param[j].ai();
-            aj = bonds->param[j].aj();
+            int ai = bonds->param[j].ai();
+            int aj = bonds->param[j].aj();
             if (ai == i)
             {
                 bbb[nb++] = aj;
@@ -247,52 +245,52 @@ int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
         if (debug)
         {
             fprintf(debug, "%4s has bonds to", aname_i);
-            for (j = 0; (j < nb); j++)
+            for (int j = 0; (j < nb); j++)
             {
                 fprintf(debug, " %4s", *atoms->atomname[bbb[j]]);
             }
             fprintf(debug, "\n");
         }
-        best = -1;
-        for (k = 0; (k < ematchNR); k++)
+        int best = -1;
+        for (int k = 0; (k < ematchNR); k++)
         {
             nqual[prev][k] = 0;
         }
 
         /* First check for names */
-        for (k = 0; (k < nnm); k++)
+        for (int k = 0; (k < nnm); k++)
         {
             if (nm2t[k].nbonds == nb)
             {
-                im = match_str(*atoms->atomname[i], nm2t[k].elem);
+                int im = match_str(*atoms->atomname[i], nm2t[k].elem);
                 if (im > ematchWild)
                 {
-                    for (j = 0; (j < ematchNR); j++)
+                    for (int j = 0; (j < ematchNR); j++)
                     {
                         nqual[cur][j] = 0;
                     }
 
                     /* Fill a matrix with matching quality */
-                    for (m = 0; (m < nb); m++)
+                    for (int m = 0; (m < nb); m++)
                     {
-                        aname_m = *atoms->atomname[bbb[m]];
-                        for (n = 0; (n < nb); n++)
+                        const char *aname_m = *atoms->atomname[bbb[m]];
+                        for (int n = 0; (n < nb); n++)
                         {
                             aname_n     = nm2t[k].bond[n];
                             match[m][n] = match_str(aname_m, aname_n);
                         }
                     }
                     /* Now pick the best matches */
-                    for (m = 0; (m < nb); m++)
+                    for (int m = 0; (m < nb); m++)
                     {
                         n_mask[m] = 0;
                         m_mask[m] = 0;
                     }
-                    for (j = ematchNR-1; (j > 0); j--)
+                    for (int j = ematchNR-1; (j > 0); j--)
                     {
-                        for (m = 0; (m < nb); m++)
+                        for (int m = 0; (m < nb); m++)
                         {
-                            for (n = 0; (n < nb); n++)
+                            for (int n = 0; (n < nb); n++)
                             {
                                 if ((n_mask[n] == 0) &&
                                     (m_mask[m] == 0) &&
@@ -327,19 +325,20 @@ int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
         }
         if (best != -1)
         {
-            int  atomnr = 0;
-            real alpha  = 0;
+            int         atomnr = 0;
+            real        alpha  = 0;
 
-            qq   = nm2t[best].q;
-            mm   = nm2t[best].m;
-            type = nm2t[best].type;
+            double      qq   = nm2t[best].q;
+            double      mm   = nm2t[best].m;
+            const char *type = nm2t[best].type;
 
-            if ((k = get_atomtype_type(type, atype)) == NOTSET)
+            int         k;
+            if ((k = atype->atomTypeFromString(type)) == NOTSET)
             {
                 atoms->atom[i].qB = alpha;
                 atoms->atom[i].m  = atoms->atom[i].mB = mm;
-                k                 = add_atomtype(atype, tab, &(atoms->atom[i]), type, param,
-                                                 atoms->atom[i].type, atomnr);
+                k                 = atype->addType(tab, &(atoms->atom[i]), type, &param,
+                                                   atoms->atom[i].type, atomnr);
             }
             atoms->atom[i].type  = k;
             atoms->atom[i].typeB = k;
@@ -358,7 +357,6 @@ int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
     sfree(bbb);
     sfree(n_mask);
     sfree(m_mask);
-    sfree(param);
 
     return nresolved;
 }

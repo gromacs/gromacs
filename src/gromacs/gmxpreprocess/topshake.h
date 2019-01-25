@@ -38,9 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_TOPSHAKE_H
 #define GMX_GMXPREPROCESS_TOPSHAKE_H
 
+#include "gromacs/utility/arrayref.h"
+
 struct t_atoms;
 struct t_params;
 
-void make_shake (t_params plist[], t_atoms *atoms, int nshake);
+void make_shake (gmx::ArrayRef<t_params> plist, t_atoms *atoms, int nshake);
 
 #endif

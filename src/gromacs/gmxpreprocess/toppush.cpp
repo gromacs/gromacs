@@ -66,18 +66,17 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype,
+void generate_nbparams(int comb, int ftype, t_params *plist, PreprocessingAtomType *atype,
                        warninp *wi)
 {
-    int   i, j, k = -1, nf;
+    int   k = -1;
     int   nr, nrfp;
     real  c, bi, bj, ci, cj, ci0, ci1, ci2, cj0, cj1, cj2;
 
     /* Lean mean shortcuts */
-    nr   = get_atomtype_ntypes(atype);
+    nr   = atype->nr();
     nrfp = NRFP(ftype);
-    snew(plist->param, nr*nr);
-    plist->nr = nr*nr;
+    plist->param.resize(nr*nr);
 
     /* Fill the matrix with force parameters */
     switch (ftype)
@@ -87,14 +86,14 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype
             {
                 case eCOMB_GEOMETRIC:
                     /* Gromos rules */
-                    for (i = k = 0; (i < nr); i++)
+                    for (int i = k = 0; (i < nr); i++)
                     {
-                        for (j = 0; (j < nr); j++, k++)
+                        for (int j = 0; (j < nr); j++, k++)
                         {
-                            for (nf = 0; (nf < nrfp); nf++)
+                            for (int nf = 0; (nf < nrfp); nf++)
                             {
-                                ci = get_atomtype_nbparam(i, nf, atype);
-                                cj = get_atomtype_nbparam(j, nf, atype);
+                                ci = atype->atomParameter(i, nf);
+                                cj = atype->atomParameter(j, nf);
                                 c  = std::sqrt(ci * cj);
                                 plist->param[k].c[nf]      = c;
                             }
@@ -104,14 +103,14 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype
 
                 case eCOMB_ARITHMETIC:
                     /* c0 and c1 are sigma and epsilon */
-                    for (i = k = 0; (i < nr); i++)
+                    for (int i = k = 0; (i < nr); i++)
                     {
-                        for (j = 0; (j < nr); j++, k++)
+                        for (int j = 0; (j < nr); j++, k++)
                         {
-                            ci0                  = get_atomtype_nbparam(i, 0, atype);
-                            cj0                  = get_atomtype_nbparam(j, 0, atype);
-                            ci1                  = get_atomtype_nbparam(i, 1, atype);
-                            cj1                  = get_atomtype_nbparam(j, 1, atype);
+                            ci0                  = atype->atomParameter(i, 0);
+                            cj0                  = atype->atomParameter(j, 0);
+                            ci1                  = atype->atomParameter(i, 1);
+                            cj1                  = atype->atomParameter(j, 1);
                             plist->param[k].c[0] = (fabs(ci0) + fabs(cj0))*0.5;
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
@@ -127,14 +126,14 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype
                     break;
                 case eCOMB_GEOM_SIG_EPS:
                     /* c0 and c1 are sigma and epsilon */
-                    for (i = k = 0; (i < nr); i++)
+                    for (int i = k = 0; (i < nr); i++)
                     {
-                        for (j = 0; (j < nr); j++, k++)
+                        for (int j = 0; (j < nr); j++, k++)
                         {
-                            ci0                  = get_atomtype_nbparam(i, 0, atype);
-                            cj0                  = get_atomtype_nbparam(j, 0, atype);
-                            ci1                  = get_atomtype_nbparam(i, 1, atype);
-                            cj1                  = get_atomtype_nbparam(j, 1, atype);
+                            ci0                  = atype->atomParameter(i, 0);
+                            cj0                  = atype->atomParameter(j, 0);
+                            ci1                  = atype->atomParameter(i, 1);
+                            cj1                  = atype->atomParameter(j, 1);
                             plist->param[k].c[0] = std::sqrt(std::fabs(ci0*cj0));
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
@@ -152,7 +151,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype
                     auto message = gmx::formatString("No such combination rule %d", comb);
                     warning_error_and_exit(wi, message, FARGS);
             }
-            if (plist->nr != k)
+            if (plist->nr() != k)
             {
                 gmx_incons("Topology processing, generate nb parameters");
             }
@@ -160,16 +159,16 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype
 
         case F_BHAM:
             /* Buckingham rules */
-            for (i = k = 0; (i < nr); i++)
+            for (int i = k = 0; (i < nr); i++)
             {
-                for (j = 0; (j < nr); j++, k++)
+                for (int j = 0; (j < nr); j++, k++)
                 {
-                    ci0                  = get_atomtype_nbparam(i, 0, atype);
-                    cj0                  = get_atomtype_nbparam(j, 0, atype);
-                    ci2                  = get_atomtype_nbparam(i, 2, atype);
-                    cj2                  = get_atomtype_nbparam(j, 2, atype);
-                    bi                   = get_atomtype_nbparam(i, 1, atype);
-                    bj                   = get_atomtype_nbparam(j, 1, atype);
+                    ci0                  = atype->atomParameter(i, 0);
+                    cj0                  = atype->atomParameter(j, 0);
+                    ci2                  = atype->atomParameter(i, 2);
+                    cj2                  = atype->atomParameter(j, 2);
+                    bi                   = atype->atomParameter(i, 1);
+                    bj                   = atype->atomParameter(j, 1);
                     plist->param[k].c[0] = std::sqrt(ci0 * cj0);
                     if ((bi == 0) || (bj == 0))
                     {
@@ -201,11 +200,11 @@ struct t_nbparam
     real     c[4];
 };
 
-static void realloc_nb_params(gpp_atomtype *at,
+static void realloc_nb_params(PreprocessingAtomType *at,
                               t_nbparam ***nbparam, t_nbparam ***pair)
 {
     /* Add space in the non-bonded parameters matrix */
-    int atnr = get_atomtype_ntypes(at);
+    int atnr = at->nr();
     srenew(*nbparam, atnr);
     snew((*nbparam)[atnr-1], atnr);
     if (pair)
@@ -270,7 +269,7 @@ static void copy_B_from_A(int ftype, double *c)
     }
 }
 
-void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
+void push_at (t_symtab *symtab, PreprocessingAtomType *at, gpp_bond_atomtype *bat,
               char *line, int nb_funct,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp *wi)
@@ -294,13 +293,12 @@ void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
     double     c[MAXFORCEPARAM];
     char       tmpfield[12][100]; /* Max 12 fields of width 100 */
     t_atom    *atom;
-    t_param   *param;
+    t_param    param;
     int        atomnr;
     bool       have_atomic_number;
     bool       have_bonded_type;
 
     snew(atom, 1);
-    snew(param, 1);
 
     /* First assign input line to temporary array */
     nfields = sscanf(line, "%s%s%s%s%s%s%s%s%s%s%s%s",
@@ -499,7 +497,7 @@ void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
             auto message = gmx::formatString("Invalid function type %d in push_at", nb_funct);
             warning_error_and_exit(wi, message, FARGS);
     }
-    for (j = nfp0; (j < MAXFORCEPARAM); j++)
+    for (int j = nfp0; (j < MAXFORCEPARAM); j++)
     {
         c[j] = 0.0;
     }
@@ -538,7 +536,7 @@ void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
     atom->ptype = pt;
     for (i = 0; (i < MAXFORCEPARAM); i++)
     {
-        param->c[i] = c[i];
+        param.c[i] = c[i];
     }
 
     if ((batype_nr = get_bond_atomtype_type(btype, bat)) == NOTSET)
@@ -547,19 +545,19 @@ void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
     }
     batype_nr = get_bond_atomtype_type(btype, bat);
 
-    if ((nr = get_atomtype_type(type, at)) != NOTSET)
+    if ((nr = at->atomTypeFromString(type)) != NOTSET)
     {
         auto message = gmx::formatString("Overriding atomtype %s", type);
         warning(wi, message);
-        if ((nr = set_atomtype(nr, at, symtab, atom, type, param, batype_nr,
-                               atomnr)) == NOTSET)
+        if ((nr = at->setType(nr, symtab, atom, type, &param, batype_nr,
+                              atomnr)) == NOTSET)
         {
             auto message = gmx::formatString("Replacing atomtype %s failed", type);
             warning_error_and_exit(wi, message, FARGS);
         }
     }
-    else if ((add_atomtype(at, symtab, atom, type, param,
-                           batype_nr, atomnr)) == NOTSET)
+    else if ((at->addType(symtab, atom, type, &param,
+                          batype_nr, atomnr)) == NOTSET)
     {
         auto message = gmx::formatString("Adding atomtype %s failed", type);
         warning_error_and_exit(wi, message, FARGS);
@@ -570,7 +568,6 @@ void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
         realloc_nb_params(at, nbparam, pair);
     }
     sfree(atom);
-    sfree(param);
 }
 
 //! Return whether the contents of \c a and \c b are the same, considering also reversed order.
@@ -589,7 +586,7 @@ static void push_bondtype(t_params     *       bt,
                           const char *         line,
                           warninp             *wi)
 {
-    int      nr   = bt->nr;
+    int      nr   = bt->nr();
     int      nrfp = NRFP(ftype);
 
     /* If bAllowRepeat is TRUE, we allow multiple entries as long as they
@@ -623,12 +620,12 @@ static void push_bondtype(t_params     *       bt,
     bool haveErrored = false;
     for (int i = 0; (i < nr); i++)
     {
-        gmx::ArrayRef<const int> bParams(b->a, b->a + nral);
-        gmx::ArrayRef<const int> testParams(bt->param[i].a, bt->param[i].a + nral);
+        gmx::ArrayRef<const int> bParams(b->a);
+        gmx::ArrayRef<const int> testParams(bt->param[i].a);
         if (equalEitherForwardOrBackward(bParams, testParams))
         {
             GMX_ASSERT(nrfp <= MAXFORCEPARAM, "This is ensured in other places, but we need this assert to keep the clang analyzer happy");
-            const bool identicalParameters = std::equal(bt->param[i].c, bt->param[i].c + nrfp, b->c);
+            const bool identicalParameters = std::equal(bt->param[i].c.begin(), bt->param[i].c.end(), b->c.begin());
 
             if (!bAllowRepeat || identicalParameters)
             {
@@ -689,12 +686,14 @@ static void push_bondtype(t_params     *       bt,
     if (addBondType)
     {
         /* alloc */
-        pr_alloc (2, bt);
+        bt->param.push_back(t_param());
 
         /* fill the arrays up and down */
-        memcpy(bt->param[bt->nr].c,  b->c, sizeof(b->c));
-        memcpy(bt->param[bt->nr].a,  b->a, sizeof(b->a));
-        memcpy(bt->param[bt->nr+1].c, b->c, sizeof(b->c));
+        bt->param.back().c = b->c;
+        bt->param.back().a = b->a;
+
+        bt->param.push_back(t_param());
+        bt->param.back().c =  b->c;
 
         /* The definitions of linear angles depend on the order of atoms,
          * that means that for atoms i-j-k, with certain parameter a, the
@@ -702,21 +701,19 @@ static void push_bondtype(t_params     *       bt,
          */
         if (ftype == F_LINEAR_ANGLES)
         {
-            bt->param[bt->nr+1].c[0] = 1-bt->param[bt->nr+1].c[0];
-            bt->param[bt->nr+1].c[2] = 1-bt->param[bt->nr+1].c[2];
+            bt->param.back().c[0] = 1-bt->param.back().c[0];
+            bt->param.back().c[2] = 1-bt->param.back().c[2];
         }
 
         for (int j = 0; (j < nral); j++)
         {
-            bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
+            bt->param.back().a[j] = b->a[nral-1-j];
         }
-
-        bt->nr += 2;
     }
 }
 
-void push_bt(Directive d, t_params bt[], int nral,
-             gpp_atomtype *at,
+void push_bt(Directive d, gmx::ArrayRef<t_params> bt, int nral,
+             PreprocessingAtomType *at,
              gpp_bond_atomtype *bat, char *line,
              warninp *wi)
 {
@@ -796,7 +793,7 @@ void push_bt(Directive d, t_params bt[], int nral,
     }
     for (i = 0; (i < nral); i++)
     {
-        if (at && ((p.a[i] = get_atomtype_type(alc[i], at)) == NOTSET))
+        if (at && ((p.a[i] = at->atomTypeFromString(alc[i])) == NOTSET))
         {
             auto message = gmx::formatString("Unknown atomtype %s\n", alc[i]);
             warning_error_and_exit(wi, message, FARGS);
@@ -815,7 +812,7 @@ void push_bt(Directive d, t_params bt[], int nral,
 }
 
 
-void push_dihedraltype(Directive d, t_params bt[],
+void push_dihedraltype(Directive d, gmx::ArrayRef<t_params> bt,
                        gpp_bond_atomtype *bat, char *line,
                        warninp *wi)
 {
@@ -984,7 +981,7 @@ void push_dihedraltype(Directive d, t_params bt[],
 }
 
 
-void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
+void push_nbt(Directive d, t_nbparam **nbt, PreprocessingAtomType *atype,
               char *pline, int nb_funct,
               warninp *wi)
 {
@@ -1072,12 +1069,12 @@ void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
     }
 
     /* Put the parameters in the matrix */
-    if ((ai = get_atomtype_type (a0, atype)) == NOTSET)
+    if ((ai = atype->atomTypeFromString(a0)) == NOTSET)
     {
         auto message = gmx::formatString("Atomtype %s not found", a0);
         warning_error_and_exit(wi, message, FARGS);
     }
-    if ((aj = get_atomtype_type (a1, atype)) == NOTSET)
+    if ((aj = atype->atomTypeFromString(a1)) == NOTSET)
     {
         auto message = gmx::formatString("Atomtype %s not found", a1);
         warning_error_and_exit(wi, message, FARGS);
@@ -1111,13 +1108,13 @@ void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
 }
 
 void
-push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
+push_cmaptype(Directive d, gmx::ArrayRef<t_params> bt, int nral, PreprocessingAtomType *at,
               gpp_bond_atomtype *bat, char *line,
               warninp *wi)
 {
     const char  *formal = "%s%s%s%s%s%s%s%s%n";
 
-    int          i, ft, ftype, nn, nrfp, nrfpA, nrfpB;
+    int          ft, ftype, nn, nrfp, nrfpA, nrfpB;
     int          start, nchar_consumed;
     int          nxcmap, nycmap, ncmap, read_cmap, sl, nct;
     char         s[20], alc[MAXATOMLIST+2][20];
@@ -1155,13 +1152,9 @@ push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
     nrfpB  = strtol(alc[7], nullptr, 10)*strtol(alc[7], nullptr, 10);
     nrfp   = nrfpA+nrfpB;
 
-    /* Allocate memory for the CMAP grid */
-    bt[F_CMAP].ncmap += nrfp;
-    srenew(bt[F_CMAP].cmap, bt[F_CMAP].ncmap);
-
     /* Read in CMAP parameters */
     sl = 0;
-    for (i = 0; i < ncmap; i++)
+    for (int i = 0; i < ncmap; i++)
     {
         while (isspace(*(line+start+sl)))
         {
@@ -1169,7 +1162,7 @@ push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
         }
         nn  = sscanf(line+start+sl, " %s ", s);
         sl += strlen(s);
-        bt[F_CMAP].cmap[i+(bt[F_CMAP].ncmap)-nrfp] = strtod(s, nullptr);
+        bt[F_CMAP].cmap.push_back(strtod(s, nullptr));
 
         if (nn == 1)
         {
@@ -1186,7 +1179,7 @@ push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
     /* Check do that we got the number of parameters we expected */
     if (read_cmap == nrfpA)
     {
-        for (i = 0; i < ncmap; i++)
+        for (int i = 0; i < ncmap; i++)
         {
             bt[F_CMAP].cmap[i+ncmap] = bt[F_CMAP].cmap[i];
         }
@@ -1216,9 +1209,8 @@ push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
     nct                     = (nral+1) * bt[F_CMAP].nc;
 
     /* Allocate memory for the cmap_types information */
-    srenew(bt[F_CMAP].cmap_types, nct);
 
-    for (i = 0; (i < nral); i++)
+    for (int i = 0; (i < nral); i++)
     {
         if (at && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
         {
@@ -1232,21 +1224,21 @@ push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
         }
 
         /* Assign a grid number to each cmap_type */
-        bt[F_CMAP].cmap_types[bt[F_CMAP].nct++] = get_bond_atomtype_type(alc[i], bat);
+        bt[F_CMAP].cmap_types.push_back(get_bond_atomtype_type(alc[i], bat));
     }
 
     /* Assign a type number to this cmap */
-    bt[F_CMAP].cmap_types[bt[F_CMAP].nct++] = bt[F_CMAP].nc-1; /* Since we inremented earlier, we need to subtrac here, to get the types right (****) */
+    bt[F_CMAP].cmap_types.push_back(bt[F_CMAP].nc-1); /* Since we inremented earlier, we need to subtrac here, to get the types right (****) */
 
     /* Check for the correct number of atoms (again) */
-    if (bt[F_CMAP].nct != nct)
+    if (bt[F_CMAP].nct() != nct)
     {
         auto message = gmx::formatString("Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].nc);
         warning_error(wi, message);
     }
 
     /* Is this correct?? */
-    for (i = 0; i < MAXFORCEPARAM; i++)
+    for (int i = 0; i < MAXFORCEPARAM; i++)
     {
         p.c[i] = NOTSET;
     }
@@ -1358,7 +1350,7 @@ static void push_cg(t_block *block, int *lastindex, int index, int a)
 }
 
 void push_atom(t_symtab *symtab, t_block *cgs,
-               t_atoms *at, gpp_atomtype *atype, char *line, int *lastcg,
+               t_atoms *at, PreprocessingAtomType *atype, char *line, int *lastcg,
                warninp *wi)
 {
     int           nr, ptype;
@@ -1379,16 +1371,16 @@ void push_atom(t_symtab *symtab, t_block *cgs,
         return;
     }
     sscanf(id, "%d", &atomnr);
-    if ((type  = get_atomtype_type(ctype, atype)) == NOTSET)
+    if ((type  = atype->atomTypeFromString(ctype)) == NOTSET)
     {
         auto message = gmx::formatString("Atomtype %s not found", ctype);
         warning_error_and_exit(wi, message, FARGS);
     }
-    ptype = get_atomtype_ptype(type, atype);
+    ptype = atype->atomParameterFromType(type);
 
     /* Set default from type */
-    q0    = get_atomtype_qA(type, atype);
-    m0    = get_atomtype_massA(type, atype);
+    q0    = atype->atomChargeAFromType(type);
+    m0    = atype->atomMassAFromType(type);
     typeB = type;
     qB    = q0;
     mB    = m0;
@@ -1406,13 +1398,13 @@ void push_atom(t_symtab *symtab, t_block *cgs,
             m0 = mB = m;
             if (nscan > 2)
             {
-                if ((typeB = get_atomtype_type(ctypeB, atype)) == NOTSET)
+                if ((typeB = atype->atomTypeFromString(ctypeB)) == NOTSET)
                 {
                     auto message = gmx::formatString("Atomtype %s not found", ctypeB);
                     warning_error_and_exit(wi, message, FARGS);
                 }
-                qB = get_atomtype_qA(typeB, atype);
-                mB = get_atomtype_massA(typeB, atype);
+                qB = atype->atomChargeAFromType(typeB);
+                mB = atype->atomMassAFromType(typeB);
                 if (nscan > 3)
                 {
                     qB = qb;
@@ -1431,18 +1423,17 @@ void push_atom(t_symtab *symtab, t_block *cgs,
 
     push_cg(cgs, lastcg, cgnumber, nr);
 
-    push_atom_now(symtab, at, atomnr, get_atomtype_atomnumber(type, atype),
+    push_atom_now(symtab, at, atomnr, atype->atomNumberFromType(type),
                   type, ctype, ptype, resnumberic,
                   resname, name, m0, q0, typeB,
                   typeB == type ? ctype : ctypeB, mB, qB, wi);
 }
 
-void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
+void push_molt(t_symtab *symtab, std::vector<t_molinfo> *mol, char *line,
                warninp *wi)
 {
     char       type[STRLEN];
-    int        nrexcl, i;
-    t_molinfo *newmol;
+    int        nrexcl;
 
     if ((sscanf(line, "%s%d", type, &nrexcl)) != 2)
     {
@@ -1450,20 +1441,17 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
     }
 
     /* Test if this moleculetype overwrites another */
-    i    = 0;
-    while (i < *nmol)
+    for (const auto &m : *mol)
     {
-        if (strcmp(*((*mol)[i].name), type) == 0)
+        if (strcmp(*m.name, type) == 0)
         {
             auto message = gmx::formatString("moleculetype %s is redefined", type);
             warning_error_and_exit(wi, message, FARGS);
         }
-        i++;
     }
 
-    (*nmol)++;
-    srenew(*mol, *nmol);
-    newmol = &((*mol)[*nmol-1]);
+    mol->push_back(t_molinfo());
+    t_molinfo *newmol = &mol->back();
     init_molinfo(newmol);
 
     /* Fill in the values */
@@ -1472,13 +1460,13 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
     newmol->excl_set = FALSE;
 }
 
-static bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
+static bool default_nb_params(int ftype, gmx::ArrayRef<t_params> bt, t_atoms *at,
                               t_param *p, int c_start, bool bB, bool bGenPairs)
 {
     int          i, j, ti, tj, ntype;
     bool         bFound;
     t_param     *pi    = nullptr;
-    int          nr    = bt[ftype].nr;
+    int          nr    = bt[ftype].nr();
     int          nral  = NRAL(ftype);
     int          nrfp  = interaction_function[ftype].nrfpA;
     int          nrfpB = interaction_function[ftype].nrfpB;
@@ -1567,13 +1555,13 @@ static bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
     return bFound;
 }
 
-static bool default_cmap_params(t_params bondtype[],
-                                t_atoms *at, gpp_atomtype *atype,
+static bool default_cmap_params(gmx::ArrayRef<t_params> bondtype,
+                                t_atoms *at, PreprocessingAtomType *atype,
                                 t_param *p, bool bB,
                                 int *cmap_type, int *nparam_def,
                                 warninp *wi)
 {
-    int        i, nparam_found;
+    int        nparam_found;
     int        ct;
     bool       bFound = FALSE;
 
@@ -1581,7 +1569,8 @@ static bool default_cmap_params(t_params bondtype[],
     ct           = 0;
 
     /* Match the current cmap angle against the list of cmap_types */
-    for (i = 0; i < bondtype[F_CMAP].nct && !bFound; i += 6)
+    for (auto it = bondtype[F_CMAP].cmap_types.begin();
+         (it != bondtype[F_CMAP].cmap_types.end()) && !bFound; it++)
     {
         if (bB)
         {
@@ -1590,15 +1579,15 @@ static bool default_cmap_params(t_params bondtype[],
         else
         {
             if (
-                (get_atomtype_batype(at->atom[p->a[0]].type, atype) == bondtype[F_CMAP].cmap_types[i])   &&
-                (get_atomtype_batype(at->atom[p->a[1]].type, atype) == bondtype[F_CMAP].cmap_types[i+1]) &&
-                (get_atomtype_batype(at->atom[p->a[2]].type, atype) == bondtype[F_CMAP].cmap_types[i+2]) &&
-                (get_atomtype_batype(at->atom[p->a[3]].type, atype) == bondtype[F_CMAP].cmap_types[i+3]) &&
-                (get_atomtype_batype(at->atom[p->a[4]].type, atype) == bondtype[F_CMAP].cmap_types[i+4]))
+                (atype->bondAtomParameterFromType(at->atom[p->a[0]].type) == *it++) &&
+                (atype->bondAtomParameterFromType(at->atom[p->a[1]].type) == *it++) &&
+                (atype->bondAtomParameterFromType(at->atom[p->a[2]].type) == *it++) &&
+                (atype->bondAtomParameterFromType(at->atom[p->a[3]].type) == *it++) &&
+                (atype->bondAtomParameterFromType(at->atom[p->a[4]].type) == *it++))
             {
                 /* Found cmap torsion */
                 bFound       = TRUE;
-                ct           = bondtype[F_CMAP].cmap_types[i+5];
+                ct           = *it;
                 nparam_found = 1;
             }
         }
@@ -1623,12 +1612,12 @@ static bool default_cmap_params(t_params bondtype[],
  */
 static int natom_match(t_param *pi,
                        int type_i, int type_j, int type_k, int type_l,
-                       const gpp_atomtype* atype)
+                       const PreprocessingAtomType* atype)
 {
-    if ((pi->ai() == -1 || get_atomtype_batype(type_i, atype) == pi->ai()) &&
-        (pi->aj() == -1 || get_atomtype_batype(type_j, atype) == pi->aj()) &&
-        (pi->ak() == -1 || get_atomtype_batype(type_k, atype) == pi->ak()) &&
-        (pi->al() == -1 || get_atomtype_batype(type_l, atype) == pi->al()))
+    if ((pi->ai() == -1 || atype->bondAtomParameterFromType(type_i) == pi->ai()) &&
+        (pi->aj() == -1 || atype->bondAtomParameterFromType(type_j) == pi->aj()) &&
+        (pi->ak() == -1 || atype->bondAtomParameterFromType(type_k) == pi->ak()) &&
+        (pi->al() == -1 || atype->bondAtomParameterFromType(type_l) == pi->al()))
     {
         return
             (pi->ai() == -1 ? 0 : 1) +
@@ -1642,8 +1631,8 @@ static int natom_match(t_param *pi,
     }
 }
 
-static bool default_params(int ftype, t_params bt[],
-                           t_atoms *at, gpp_atomtype *atype,
+static bool default_params(int ftype, gmx::ArrayRef<t_params> bt,
+                           t_atoms *at, PreprocessingAtomType *atype,
                            t_param *p, bool bB,
                            t_param **param_def,
                            int *nparam_def)
@@ -1652,7 +1641,7 @@ static bool default_params(int ftype, t_params bt[],
     bool         bFound, bSame;
     t_param     *pi    = nullptr;
     t_param     *pj    = nullptr;
-    int          nr    = bt[ftype].nr;
+    int          nr    = bt[ftype].nr();
     int          nral  = NRAL(ftype);
     int          nrfpA = interaction_function[ftype].nrfpA;
     int          nrfpB = interaction_function[ftype].nrfpB;
@@ -1732,7 +1721,7 @@ static bool default_params(int ftype, t_params bt[],
             if (bB)
             {
                 for (j = 0; ((j < nral) &&
-                             (get_atomtype_batype(at->atom[p->a[j]].typeB, atype) == pi->a[j])); j++)
+                             (atype->bondAtomParameterFromType(at->atom[p->a[j]].typeB) == pi->a[j])); j++)
                 {
                     ;
                 }
@@ -1740,7 +1729,7 @@ static bool default_params(int ftype, t_params bt[],
             else
             {
                 for (j = 0; ((j < nral) &&
-                             (get_atomtype_batype(at->atom[p->a[j]].type, atype) == pi->a[j])); j++)
+                             (atype->bondAtomParameterFromType(at->atom[p->a[j]].type) == pi->a[j])); j++)
                 {
                     ;
                 }
@@ -1761,8 +1750,8 @@ static bool default_params(int ftype, t_params bt[],
 
 
 
-void push_bond(Directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype *atype, char *line,
+void push_bond(Directive d, gmx::ArrayRef<t_params> bondtype, gmx::ArrayRef<t_params> bond,
+               t_atoms *at, PreprocessingAtomType *atype, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
                warninp *wi)
@@ -2169,8 +2158,8 @@ void push_bond(Directive d, t_params bondtype[], t_params bond[],
     }
 }
 
-void push_cmap(Directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype *atype, char *line,
+void push_cmap(Directive d, gmx::ArrayRef<t_params> bondtype, gmx::ArrayRef<t_params> bond,
+               t_atoms *at, PreprocessingAtomType *atype, char *line,
                warninp *wi)
 {
     const char *aaformat[MAXATOMLIST+1] =
@@ -2262,7 +2251,7 @@ void push_cmap(Directive d, t_params bondtype[], t_params bond[],
 
 
 
-void push_vsitesn(Directive d, t_params bond[],
+void push_vsitesn(Directive d, gmx::ArrayRef<t_params> bond,
                   t_atoms *at, char *line,
                   warninp *wi)
 {
@@ -2371,7 +2360,7 @@ void push_vsitesn(Directive d, t_params bond[],
     sfree(weight);
 }
 
-void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
+void push_mol(gmx::ArrayRef<t_molinfo> mols, char *pline, int *whichmol,
               int *nrcopies,
               warninp *wi)
 {
@@ -2393,18 +2382,20 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
     int nrci    = 0;
     int matchci = -1;
     int matchcs = -1;
-    for (int i = 0; i < nrmols; i++)
+    int i       = 0;
+    for (const auto &m : mols)
     {
-        if (strcmp(type, *(mols[i].name)) == 0)
+        if (strcmp(type, *(m.name)) == 0)
         {
             nrcs++;
             matchcs = i;
         }
-        if (gmx_strcasecmp(type, *(mols[i].name)) == 0)
+        if (gmx_strcasecmp(type, *(m.name)) == 0)
         {
             nrci++;
             matchci = i;
         }
+        i++;
     }
 
     if (nrcs == 1)
@@ -2484,7 +2475,7 @@ void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp *wi)
     while (n == 1);
 }
 
-int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype *at,
+int add_atomtype_decoupled(t_symtab *symtab, PreprocessingAtomType *at,
                            t_nbparam ***nbparam, t_nbparam ***pair)
 {
     t_atom  atom;
@@ -2503,7 +2494,7 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype *at,
         param.c[i] = 0.0;
     }
 
-    nr = add_atomtype(at, symtab, &atom, "decoupled", &param, -1, 0);
+    nr = at->addType(symtab, &atom, "decoupled", &param, -1, 0);
 
     /* Add space in the non-bonded parameters matrix */
     realloc_nb_params(at, nbparam, pair);
@@ -2514,17 +2505,9 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype *at,
 static void convert_pairs_to_pairsQ(t_params *plist,
                                     real fudgeQQ, t_atoms *atoms)
 {
-    t_param *paramp1, *paramp2, *paramnew;
-    int      i, j, p1nr, p2nr, p2newnr;
-
-    /* Add the pair list to the pairQ list */
-    p1nr    = plist[F_LJ14].nr;
-    p2nr    = plist[F_LJC14_Q].nr;
-    p2newnr = p1nr + p2nr;
-    snew(paramnew, p2newnr);
-
-    paramp1             = plist[F_LJ14].param;
-    paramp2             = plist[F_LJC14_Q].param;
+    std::vector<t_param>   paramnew;
+    gmx::ArrayRef<t_param> paramp1 = plist[F_LJ14].param;
+    gmx::ArrayRef<t_param> paramp2 = plist[F_LJC14_Q].param;
 
     /* Fill in the new F_LJC14_Q array with the old one. NOTE:
        it may be possible to just ADD the converted F_LJ14 array
@@ -2532,48 +2515,26 @@ static void convert_pairs_to_pairsQ(t_params *plist,
        a new sized memory structure, better just to deep copy it all.
      */
 
-    for (i = 0; i < p2nr; i++)
+    for (const auto &p : paramp2)
     {
-        /* Copy over parameters */
-        for (j = 0; j < 5; j++) /* entries are 0-4 for F_LJC14_Q */
-        {
-            paramnew[i].c[j] = paramp2[i].c[j];
-        }
-
-        /* copy over atoms */
-        for (j = 0; j < 2; j++)
-        {
-            paramnew[i].a[j] = paramp2[i].a[j];
-        }
+        paramnew.push_back(p);
     }
 
-    for (i = p2nr; i < p2newnr; i++)
+    for (const auto &p : paramp1)
     {
-        j             = i-p2nr;
-
-        /* Copy over parameters */
-        paramnew[i].c[0] = fudgeQQ;
-        paramnew[i].c[1] = atoms->atom[paramp1[j].a[0]].q;
-        paramnew[i].c[2] = atoms->atom[paramp1[j].a[1]].q;
-        paramnew[i].c[3] = paramp1[j].c[0];
-        paramnew[i].c[4] = paramp1[j].c[1];
-
-        /* copy over atoms */
-        paramnew[i].a[0] = paramp1[j].a[0];
-        paramnew[i].a[1] = paramp1[j].a[1];
+        paramnew.push_back(p);
+        paramnew.back().c[0] = fudgeQQ;
+        paramnew.back().c[1] = atoms->atom[p.a[0]].q;
+        paramnew.back().c[2] = atoms->atom[p.a[1]].q;
+        paramnew.back().c[3] = p.c[0];
+        paramnew.back().c[4] = p.c[1];
     }
-
-    /* free the old pairlists */
-    sfree(plist[F_LJC14_Q].param);
-    sfree(plist[F_LJ14].param);
 
     /* now assign the new data to the F_LJC14_Q structure */
     plist[F_LJC14_Q].param   = paramnew;
-    plist[F_LJC14_Q].nr      = p2newnr;
 
     /* Empty the LJ14 pairlist */
-    plist[F_LJ14].nr    = 0;
-    plist[F_LJ14].param = nullptr;
+    plist[F_LJ14].param.clear();
 }
 
 static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, warninp *wi)
@@ -2587,8 +2548,8 @@ static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, war
     n    = mol->atoms.nr;
     atom = mol->atoms.atom;
 
-    ntype = static_cast<int>(std::sqrt(static_cast<double>(nbp->nr)));
-    GMX_ASSERT(ntype * ntype == nbp->nr, "Number of pairs of generated non-bonded parameters should be a perfect square");
+    ntype = static_cast<int>(std::sqrt(static_cast<double>(nbp->nr())));
+    GMX_ASSERT(ntype * ntype == nbp->nr(), "Number of pairs of generated non-bonded parameters should be a perfect square");
 
     for (i = 0; i < MAXATOMLIST; i++)
     {

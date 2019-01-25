@@ -38,6 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_GROMPP_IMPL_H
 #define GMX_GMXPREPROCESS_GROMPP_IMPL_H
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -48,42 +49,45 @@
 
 struct t_param
 {
-    int        a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
+    std::array<int, MAXATOMLIST>    a = {-1};     /* The atom list (eg. bonds: particle	*/
     /* i = a[0] (ai), j = a[1] (aj))	*/
-    real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
-    char       s[MAXSLEN];       /* A string (instead of parameters),    *
-                                  * read from the .rtp file in pdb2gmx   */
-    const int &ai() const { return a[0]; }
-    int       &ai() { return a[0]; }
-    const int &aj() const { return a[1]; }
-    int       &aj() { return a[1]; }
-    const int &ak() const { return a[2]; }
-    int       &ak() { return a[2]; }
-    const int &al() const { return a[3]; }
-    int       &al() { return a[3]; }
-    const int &am() const { return a[4]; }
-    int       &am() { return a[4]; }
+    std::array<real, MAXFORCEPARAM> c = {NOTSET}; /* Force parameters (eg. b0 = c[0])	*/
+    std::string                     s;            /* A string (instead of parameters),    *
+                                                   * read from the .rtp file in pdb2gmx   */
+    const int                      &ai() const { return a[0]; }
+    int                            &ai() { return a[0]; }
+    const int                      &aj() const { return a[1]; }
+    int                            &aj() { return a[1]; }
+    const int                      &ak() const { return a[2]; }
+    int                            &ak() { return a[2]; }
+    const int                      &al() const { return a[3]; }
+    int                            &al() { return a[3]; }
+    const int                      &am() const { return a[4]; }
+    int                            &am() { return a[4]; }
 
-    real      &c0() { return c[0]; }
-    real      &c1() { return c[1]; }
-    real      &c2() { return c[2]; }
+    const real                     &c0() const { return c[0]; }
+    real                           &c0() { return c[0]; }
+    const real                     &c1() const { return c[1]; }
+    real                           &c1() { return c[1]; }
+    const real                     &c2() const { return c[2]; }
+    real                           &c2() { return c[2]; }
 };
 
 struct t_params
-{                       // NOLINT (clang-analyzer-optin.performance.Padding)
-    int          nr;    /* The number of bonds in this record   */
-    int          maxnr; /* The amount of elements in the array  */
-    t_param     *param; /* Array of parameters (dim: nr or nr*nr) */
+{                                                            // NOLINT (clang-analyzer-optin.performance.Padding)
+    int                  nr() const { return param.size(); } /* The number of bonds in this record   */
+    int                  maxnr;                              /* The amount of elements in the array  */
+    std::vector<t_param> param;                              /* Array of parameters (dim: nr or nr*nr) */
 
     /* CMAP tmp data, there are probably better places for this */
-    int         grid_spacing; /* Cmap grid spacing */
-    int         nc;           /* Number of cmap angles */
+    int               grid_spacing = 0;                         /* Cmap grid spacing */
+    int               nc           = 0;                         /* Number of cmap angles */
 
-    real       *cmap;         /* Temporary storage of the raw cmap grid data */
-    int         ncmap;        /* Number of allocated elements in cmap grid*/
+    std::vector<real> cmap;                                     /* Temporary storage of the raw cmap grid data */
+    int               ncmap() const { return cmap.size(); }     /* Number of allocated elements in cmap grid*/
 
-    int        *cmap_types;   /* Store the five atomtypes followed by a number that identifies the type */
-    int         nct;          /* Number of allocated elements in cmap_types */
+    std::vector<int>  cmap_types;                               /* Store the five atomtypes followed by a number that identifies the type */
+    int               nct() const { return cmap_types.size(); } /* Number of allocated elements in cmap_types */
 };
 
 struct t_excls

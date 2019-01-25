@@ -51,7 +51,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
 void gen_pad(t_nextnb *nnb, const t_atoms &atoms, gmx::ArrayRef<t_restp> rtp,
-             t_params plist[], t_excls excls[], gmx::ArrayRef<t_hackblock> hb,
+             gmx::ArrayRef<t_params> plist, t_excls excls[], gmx::ArrayRef<t_hackblock> hb,
              bool bAllowMissing);
 
 #endif

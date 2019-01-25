@@ -177,13 +177,12 @@ static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
     return cgnr;
 }
 
-static gpp_atomtype *set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
-                                   int *nbonds, int nnm, t_nm2type nm2t[])
+static void set_atom_types(PreprocessingAtomType *atype,
+                           t_symtab *tab, t_atoms *atoms, t_params *bonds,
+                           int *nbonds, int nnm, t_nm2type nm2t[])
 {
-    gpp_atomtype  *atype;
     int            nresolved;
 
-    atype = init_atomtype();
     snew(atoms->atomtype, atoms->nr);
     nresolved = nm2type(nnm, nm2t, tab, atoms, atype, nbonds, bonds);
     if (nresolved != atoms->nr)
@@ -193,23 +192,20 @@ static gpp_atomtype *set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bond
     }
 
     fprintf(stderr, "There are %d different atom types in your sample\n",
-            get_atomtype_ntypes(atype));
-
-    return atype;
+            atype->nr());
 }
 
 static void lo_set_force_const(t_params *plist, real c[], int nrfp, bool bRound,
                                bool bDih, bool bParam)
 {
-    int    i, j;
     double cc;
     char   buf[32];
 
-    for (i = 0; (i < plist->nr); i++)
+    for (int i = 0; (i < plist->nr()); i++)
     {
         if (!bParam)
         {
-            for (j = 0; j < nrfp; j++)
+            for (int j = 0; j < nrfp; j++)
             {
                 c[j] = NOTSET;
             }
@@ -239,7 +235,7 @@ static void lo_set_force_const(t_params *plist, real c[], int nrfp, bool bRound,
             }
         }
         GMX_ASSERT(nrfp <= MAXFORCEPARAM/2, "Only 6 parameters may be used for an interaction");
-        for (j = 0; (j < nrfp); j++)
+        for (int j = 0; (j < nrfp); j++)
         {
             plist->param[i].c[j]      = c[j];
             plist->param[i].c[nrfp+j] = c[j];
@@ -266,41 +262,39 @@ static void set_force_const(t_params plist[], real kb, real kt, real kp, bool bR
 static void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], bool bPBC,
                              matrix box)
 {
-    int    i, ai, aj, ak, al, t1, t2, t3;
+    int    t1, t2, t3;
     rvec   r_ij, r_kj, r_kl, m, n;
-    real   th, costh, ph;
+    real   costh;
     t_pbc  pbc;
 
     if (bPBC)
     {
         set_pbc(&pbc, epbcXYZ, box);
     }
-    for (i = 0; (i < ang->nr); i++)
+    for (int i = 0; (i < ang->nr()); i++)
     {
-        ai = ang->param[i].ai();
-        aj = ang->param[i].aj();
-        ak = ang->param[i].ak();
-        th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
-                                r_ij, r_kj, &costh, &t1, &t2);
+        int  ai = ang->param[i].ai();
+        int  aj = ang->param[i].aj();
+        int  ak = ang->param[i].ak();
+        real th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
+                                     r_ij, r_kj, &costh, &t1, &t2);
         ang->param[i].c0() = th;
     }
-    for (i = 0; (i < dih->nr); i++)
+    for (int i = 0; (i < dih->nr()); i++)
     {
-        ai = dih->param[i].ai();
-        aj = dih->param[i].aj();
-        ak = dih->param[i].ak();
-        al = dih->param[i].al();
-        ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
-                               r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+        int  ai = dih->param[i].ai();
+        int  aj = dih->param[i].aj();
+        int  ak = dih->param[i].ak();
+        int  al = dih->param[i].al();
+        real ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
+                                    r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
         dih->param[i].c0() = ph;
     }
 }
 
 static void dump_hybridization(FILE *fp, t_atoms *atoms, int nbonds[])
 {
-    int i;
-
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         fprintf(fp, "Atom %5s has %1d bonds\n", *atoms->atomname[i], nbonds[i]);
     }
@@ -309,21 +303,19 @@ static void dump_hybridization(FILE *fp, t_atoms *atoms, int nbonds[])
 static void print_pl(FILE *fp, t_params plist[], int ftp, const char *name,
                      char ***atomname)
 {
-    int i, j, nral, nrfp;
-
-    if (plist[ftp].nr > 0)
+    if (plist[ftp].nr() > 0)
     {
         fprintf(fp, "\n");
         fprintf(fp, "[ %s ]\n", name);
-        nral = interaction_function[ftp].nratoms;
-        nrfp = interaction_function[ftp].nrfpA;
-        for (i = 0; (i < plist[ftp].nr); i++)
+        int nral = interaction_function[ftp].nratoms;
+        int nrfp = interaction_function[ftp].nrfpA;
+        for (int i = 0; (i < plist[ftp].nr()); i++)
         {
-            for (j = 0; (j < nral); j++)
+            for (int j = 0; (j < nral); j++)
             {
                 fprintf(fp, "  %5s", *atomname[plist[ftp].param[i].a[j]]);
             }
-            for (j = 0; (j < nrfp); j++)
+            for (int j = 0; (j < nrfp); j++)
             {
                 if (plist[ftp].param[i].c[j] != NOTSET)
                 {
@@ -336,11 +328,11 @@ static void print_pl(FILE *fp, t_params plist[], int ftp, const char *name,
 }
 
 static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
-                      t_params plist[], gpp_atomtype *atype, int cgnr[])
+                      t_params plist[], PreprocessingAtomType *atype, int cgnr[])
 {
-    FILE *fp;
-    int   i, tp;
-    char *tpnm;
+    FILE       *fp;
+    int         i, tp;
+    const char *tpnm;
 
     fp = gmx_fio_fopen(filenm, "w");
     fprintf(fp, "; %s\n", title);
@@ -351,7 +343,7 @@ static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
     for (i = 0; (i < atoms->nr); i++)
     {
         tp = atoms->atom[i].type;
-        if ((tpnm = get_atomtype_name(tp, atype)) == nullptr)
+        if ((tpnm = atype->atomNameFromType(tp)) == nullptr)
         {
             gmx_fatal(FARGS, "tp = %d, i = %d in print_rtp", tp, i);
         }
@@ -399,7 +391,6 @@ int gmx_x2top(int argc, char *argv[])
     FILE              *fp;
     t_params           plist[F_NRE];
     t_excls           *excls;
-    gpp_atomtype      *atype;
     t_nextnb           nnb;
     t_nm2type         *nm2t;
     t_mols             mymol;
@@ -531,7 +522,8 @@ int gmx_x2top(int argc, char *argv[])
     mk_bonds(nnm, nm2t, atoms, x, &(plist[F_BONDS]), nbonds, bPBC, box);
 
     open_symtab(&symtab);
-    atype = set_atom_type(&symtab, atoms, &(plist[F_BONDS]), nbonds, nnm, nm2t);
+    PreprocessingAtomType atype;
+    set_atom_types(&atype, &symtab, atoms, &(plist[F_BONDS]), nbonds, nnm, nm2t);
 
     /* Make Angles and Dihedrals */
     snew(excls, atoms->nr);
@@ -544,15 +536,15 @@ int gmx_x2top(int argc, char *argv[])
 
     if (!bPairs)
     {
-        plist[F_LJ14].nr = 0;
+        plist[F_LJ14].param.clear();
     }
     fprintf(stderr,
             "There are %4d %s dihedrals, %4d impropers, %4d angles\n"
             "          %4d pairs,     %4d bonds and  %4d atoms\n",
-            plist[F_PDIHS].nr,
+            plist[F_PDIHS].nr(),
             bOPLS ? "Ryckaert-Bellemans" : "proper",
-            plist[F_IDIHS].nr, plist[F_ANGLES].nr,
-            plist[F_LJ14].nr, plist[F_BONDS].nr, atoms->nr);
+            plist[F_IDIHS].nr(), plist[F_ANGLES].nr(),
+            plist[F_LJ14].nr(), plist[F_BONDS].nr(), atoms->nr);
 
     calc_angles_dihs(&plist[F_ANGLES], &plist[F_PDIHS], x, bPBC, box);
 
@@ -571,7 +563,7 @@ int gmx_x2top(int argc, char *argv[])
         fp = ftp2FILE(efTOP, NFILE, fnm, "w");
         print_top_header(fp, ftp2fn(efTOP, NFILE, fnm), TRUE, ffdir, 1.0);
 
-        write_top(fp, nullptr, mymol.name, atoms, FALSE, bts, plist, excls, atype,
+        write_top(fp, nullptr, mymol.name, atoms, FALSE, bts, plist, excls, &atype,
                   cgnr, rtp_header_settings.nrexcl);
         print_top_mols(fp, mymol.name, ffdir, nullptr, 0, nullptr, 1, &mymol);
 
@@ -580,7 +572,7 @@ int gmx_x2top(int argc, char *argv[])
     if (bRTP)
     {
         print_rtp(ftp2fn(efRTP, NFILE, fnm), "Generated by x2top",
-                  atoms, plist, atype, cgnr);
+                  atoms, plist, &atype, cgnr);
     }
 
     if (debug)
