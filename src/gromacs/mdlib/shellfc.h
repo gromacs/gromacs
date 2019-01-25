@@ -39,11 +39,11 @@
 
 #include <cstdio>
 
-#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
+class DDBalanceRegionHandling;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_groups_t;
@@ -102,8 +102,7 @@ void relax_shell_flexcon(FILE                                     *log,
                          double                                    t,
                          rvec                                      mu_tot,
                          const gmx_vsite_t                        *vsite,
-                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
+                         const DDBalanceRegionHandling            &ddBalanceRegionHandling);
 
 /* Print some final output */
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, int64_t numSteps);

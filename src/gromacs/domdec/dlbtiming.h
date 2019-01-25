@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,22 +45,43 @@
 #ifndef GMX_DOMDEC_DLBTIMING_H
 #define GMX_DOMDEC_DLBTIMING_H
 
+#include "gromacs/mdtypes/commrec.h"
+
 struct BalanceRegion;
 struct gmx_domdec_t;
 struct t_nrnb;
 
-/*! \brief Tells if we should open the balancing region */
-enum class DdOpenBalanceRegionBeforeForceComputation
+/*! \libinternal
+ * \brief Tells whether the DD load balancing regions needs to be opened and closed
+ *
+ * \todo Consider putting the region open/close functions as methods in this class.
+ */
+class DDBalanceRegionHandling
 {
-    no,  //!< Do not open a balancing region
-    yes  //!< Open the balancing region before update or after pair-search
-};
+    public:
+        //! Constructor, pass a pointer to t_commrec or nullptr when not using domain decomposition
+        DDBalanceRegionHandling(const t_commrec *cr)
+        {
+            useBalancingRegion_ = (cr != nullptr &&
+                                   cr->dd != nullptr &&
+                                   cr->nnodes - cr->npmenodes > 1);
+        }
 
-/*! \brief Tells if we should close the balancing region after the force computation has completed */
-enum class DdCloseBalanceRegionAfterForceComputation
-{
-    no,  //!< Do not close a balancing region
-    yes  //!< Close the balancing region after computation completed
+        //! Returns whether the region needs to be opened before the force computation
+        bool openBeforeForceComputation() const
+        {
+            return useBalancingRegion_;
+        }
+
+        //! Returns whether the region needs to be closed after the force computation
+        bool closeAfterForceComputation() const
+        {
+            return useBalancingRegion_;
+        }
+
+    private:
+        //! Tells whether the balancing region should be active
+        bool useBalancingRegion_;
 };
 
 /*! \brief Tells if we should open the balancing region */

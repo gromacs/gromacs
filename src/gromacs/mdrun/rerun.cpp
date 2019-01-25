@@ -55,6 +55,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/collect.h"
+#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -472,8 +473,7 @@ void gmx::Integrator::do_rerun()
     // we don't do counter resetting in rerun - finish will always be valid
     walltime_accounting_set_valid_finish(walltime_accounting);
 
-    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
-    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
+    const DDBalanceRegionHandling ddBalanceRegionHandling(cr);
 
     step     = ir->init_step;
     step_rel = 0;
@@ -558,7 +558,7 @@ void gmx::Integrator::do_rerun()
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, ppForceWorkload, t, mu_tot,
                                 vsite,
-                                ddOpenBalanceRegion, ddCloseBalanceRegion);
+                                ddBalanceRegionHandling);
         }
         else
         {
@@ -576,7 +576,7 @@ void gmx::Integrator::do_rerun()
                      state->lambda, graph,
                      fr, ppForceWorkload, vsite, mu_tot, t, ed,
                      GMX_FORCE_NS | force_flags,
-                     ddOpenBalanceRegion, ddCloseBalanceRegion);
+                     ddBalanceRegionHandling);
         }
 
         /* Now we have the energies and forces corresponding to the
