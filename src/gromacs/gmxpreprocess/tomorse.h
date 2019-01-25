@@ -40,9 +40,9 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gpp_atomtype;
+struct PreprocessingAtomTypes;
 struct MoleculeInformation;
 
-void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, gpp_atomtype *atype);
+void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAtomTypes *atype);
 
 #endif

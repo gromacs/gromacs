@@ -45,7 +45,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomTypes;
 struct t_atoms;
 struct t_excls;
 struct MoleculePatchDatabase;
@@ -114,13 +114,13 @@ void print_top_mols(FILE *out,
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
                int bts[], gmx::ArrayRef<const InteractionTypeParameters> plist, t_excls excls[],
-               gpp_atomtype *atype, int *cgnr, int nrexcl);
+               PreprocessingAtomTypes *atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms,
              std::vector<gmx::RVec> *x,
-             gpp_atomtype *atype, t_symtab *tab,
+             PreprocessingAtomTypes *atype, t_symtab *tab,
              gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
              gmx::ArrayRef<PreprocessResidue> usedPpResidues,
              gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
