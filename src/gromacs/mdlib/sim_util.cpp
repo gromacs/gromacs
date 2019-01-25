@@ -946,8 +946,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 double t,
                                 gmx_edsam *ed,
                                 const int flags,
-                                DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                                DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+                                const DDBalanceRegionHandler &ddBalanceRegionHandler)
 {
     int                 cg1, i, j;
     double              mu[2*DIM];
@@ -978,10 +977,9 @@ static void do_force_cutsVERLET(FILE *fplog,
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
      */
-    if (bNS &&
-        ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
+    if (bNS)
     {
-        ddOpenBalanceRegionCpu(cr->dd, DdAllowBalanceRegionReopen::yes);
+        ddBalanceRegionHandler.openBeforeForceComputationCpu(DdAllowBalanceRegionReopen::yes);
     }
 
     cycles_wait_gpu = 0;
@@ -1181,10 +1179,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (bUseGPU)
     {
-        if (DOMAINDECOMP(cr))
-        {
-            ddOpenBalanceRegionGpu(cr->dd);
-        }
+        ddBalanceRegionHandler.openBeforeForceComputationGpu();
 
         wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
@@ -1315,7 +1310,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (PAR(cr))
         {
             gmx_sumd(2*DIM, mu, cr);
-            ddReopenBalanceRegionCpu(cr->dd);
+
+            ddBalanceRegionHandler.reopenRegionCpu();
         }
 
         for (i = 0; i < 2; i++)
@@ -1475,7 +1471,8 @@ static void do_force_cutsVERLET(FILE *fplog,
                       cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.unpaddedArrayRef().data()), hist, f, &forceWithVirial, enerd, fcd,
                       box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
-                      flags, &cycles_pme);
+                      flags,
+                      &cycles_pme, ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1524,10 +1521,8 @@ static void do_force_cutsVERLET(FILE *fplog,
          * If we use a GPU this will overlap with GPU work, so in that case
          * we do not close the DD force balancing region here.
          */
-        if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
-        {
-            ddCloseBalanceRegionCpu(cr->dd);
-        }
+        ddBalanceRegionHandler.closeAfterForceComputationCpu();
+
         if (bDoForces)
         {
             dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
@@ -1564,7 +1559,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                     fr->fshift);
         float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
-        if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
+        if (ddBalanceRegionHandler.useBalancingRegion())
         {
             DdBalanceRegionWaitedForGpu waitedForGpu = DdBalanceRegionWaitedForGpu::yes;
             if (bDoForces && cycles_tmp <= gpuWaitApiOverheadMargin)
@@ -1577,7 +1572,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                  */
                 waitedForGpu = DdBalanceRegionWaitedForGpu::no;
             }
-            ddCloseBalanceRegionGpu(cr->dd, cycles_wait_gpu, waitedForGpu);
+            ddBalanceRegionHandler.closeAfterForceComputationGpu(cycles_wait_gpu, waitedForGpu);
         }
     }
 
@@ -1714,8 +1709,7 @@ static void do_force_cutsGROUP(FILE *fplog,
                                double t,
                                gmx_edsam *ed,
                                int flags,
-                               DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+                               const DDBalanceRegionHandler &ddBalanceRegionHandler)
 {
     int        cg0, cg1, i, j;
     double     mu[2*DIM];
@@ -1818,10 +1812,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
         /* No GPU support, no move_x overlap, so reopen the balance region here */
-        if (ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
-        {
-            ddReopenBalanceRegionCpu(cr->dd);
-        }
+        ddBalanceRegionHandler.reopenRegionCpu();
     }
 
     if (inputrecNeedMutot(inputrec))
@@ -1831,7 +1822,8 @@ static void do_force_cutsGROUP(FILE *fplog,
             if (PAR(cr))
             {
                 gmx_sumd(2*DIM, mu, cr);
-                ddReopenBalanceRegionCpu(cr->dd);
+
+                ddBalanceRegionHandler.reopenRegionCpu();
             }
             for (i = 0; i < 2; i++)
             {
@@ -1937,7 +1929,7 @@ static void do_force_cutsGROUP(FILE *fplog,
                       box, inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
                       flags,
-                      &cycles_pme);
+                      &cycles_pme, ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1945,10 +1937,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     {
         dd_force_flop_stop(cr->dd, nrnb);
 
-        if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
-        {
-            ddCloseBalanceRegionCpu(cr->dd);
-        }
+        ddBalanceRegionHandler.closeAfterForceComputationCpu();
     }
 
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
@@ -2051,8 +2040,7 @@ void do_force(FILE                                     *fplog,
               double                                    t,
               gmx_edsam                                *ed,
               int                                       flags,
-              DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-              DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+              const DDBalanceRegionHandler            &ddBalanceRegionHandler)
 {
     /* modify force flag if not doing nonbonded */
     if (!fr->bNonbonded)
@@ -2078,8 +2066,7 @@ void do_force(FILE                                     *fplog,
                                 vsite, mu_tot,
                                 t, ed,
                                 flags,
-                                ddOpenBalanceRegion,
-                                ddCloseBalanceRegion);
+                                ddBalanceRegionHandler);
             break;
         case ecutsGROUP:
             do_force_cutsGROUP(fplog, cr, ms, inputrec,
@@ -2094,8 +2081,7 @@ void do_force(FILE                                     *fplog,
                                fr, vsite, mu_tot,
                                t, ed,
                                flags,
-                               ddOpenBalanceRegion,
-                               ddCloseBalanceRegion);
+                               ddBalanceRegionHandler);
             break;
         default:
             gmx_incons("Invalid cut-off scheme passed!");
@@ -2107,10 +2093,7 @@ void do_force(FILE                                     *fplog,
      * virial calculation and COM pulling, is not thus not included in
      * the balance timing, which is ok as most tasks do communication.
      */
-    if (ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
-    {
-        ddOpenBalanceRegionCpu(cr->dd, DdAllowBalanceRegionReopen::no);
-    }
+    ddBalanceRegionHandler.openBeforeForceComputationCpu(DdAllowBalanceRegionReopen::no);
 }
 
 
