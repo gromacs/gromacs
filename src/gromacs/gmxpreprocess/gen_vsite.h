@@ -42,7 +42,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomTypes;
 struct t_atoms;
 struct InteractionTypeParameters;
 struct PreprocessResidue;
@@ -50,7 +50,7 @@ struct t_symtab;
 
 /* stuff for pdb2gmx */
 
-void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *atype,
+void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtomTypes *atype,
                t_atoms *at, t_symtab *symtab, std::vector<gmx::RVec> *x,
                gmx::ArrayRef<InteractionTypeParameters> plist, int *dummy_type[], int *cgnr[],
                real mHmult, bool bVSiteAromatics,

@@ -66,15 +66,18 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-void generate_nbparams(int comb, int ftype, InteractionTypeParameters *plist, gpp_atomtype *atype,
-                       warninp *wi)
+void generate_nbparams(int                         comb,
+                       int                         ftype,
+                       InteractionTypeParameters  *plist,
+                       PreprocessingAtomTypes     *atypes,
+                       warninp                    *wi)
 {
-    int   i, j, k = -1, nf;
+    int   k = -1;
     int   nr, nrfp;
     real  c, bi, bj, ci, cj, ci0, ci1, ci2, cj0, cj1, cj2;
 
     /* Lean mean shortcuts */
-    nr   = get_atomtype_ntypes(atype);
+    nr   = atypes->size();
     nrfp = NRFP(ftype);
     snew(plist->param, nr*nr);
     plist->nr = nr*nr;
@@ -87,14 +90,14 @@ void generate_nbparams(int comb, int ftype, InteractionTypeParameters *plist, gp
             {
                 case eCOMB_GEOMETRIC:
                     /* Gromos rules */
-                    for (i = k = 0; (i < nr); i++)
+                    for (int i = k = 0; (i < nr); i++)
                     {
-                        for (j = 0; (j < nr); j++, k++)
+                        for (int j = 0; (j < nr); j++, k++)
                         {
-                            for (nf = 0; (nf < nrfp); nf++)
+                            for (int nf = 0; (nf < nrfp); nf++)
                             {
-                                ci = get_atomtype_nbparam(i, nf, atype);
-                                cj = get_atomtype_nbparam(j, nf, atype);
+                                ci = atypes->atomNonBondedParamFromAtomType(i, nf);
+                                cj = atypes->atomNonBondedParamFromAtomType(j, nf);
                                 c  = std::sqrt(ci * cj);
                                 plist->param[k].c[nf]      = c;
                             }
@@ -104,14 +107,14 @@ void generate_nbparams(int comb, int ftype, InteractionTypeParameters *plist, gp
 
                 case eCOMB_ARITHMETIC:
                     /* c0 and c1 are sigma and epsilon */
-                    for (i = k = 0; (i < nr); i++)
+                    for (int i = k = 0; (i < nr); i++)
                     {
-                        for (j = 0; (j < nr); j++, k++)
+                        for (int j = 0; (j < nr); j++, k++)
                         {
-                            ci0                  = get_atomtype_nbparam(i, 0, atype);
-                            cj0                  = get_atomtype_nbparam(j, 0, atype);
-                            ci1                  = get_atomtype_nbparam(i, 1, atype);
-                            cj1                  = get_atomtype_nbparam(j, 1, atype);
+                            ci0                  = atypes->atomNonBondedParamFromAtomType(i, 0);
+                            cj0                  = atypes->atomNonBondedParamFromAtomType(j, 0);
+                            ci1                  = atypes->atomNonBondedParamFromAtomType(i, 1);
+                            cj1                  = atypes->atomNonBondedParamFromAtomType(j, 1);
                             plist->param[k].c[0] = (fabs(ci0) + fabs(cj0))*0.5;
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
@@ -127,14 +130,14 @@ void generate_nbparams(int comb, int ftype, InteractionTypeParameters *plist, gp
                     break;
                 case eCOMB_GEOM_SIG_EPS:
                     /* c0 and c1 are sigma and epsilon */
-                    for (i = k = 0; (i < nr); i++)
+                    for (int i = k = 0; (i < nr); i++)
                     {
-                        for (j = 0; (j < nr); j++, k++)
+                        for (int j = 0; (j < nr); j++, k++)
                         {
-                            ci0                  = get_atomtype_nbparam(i, 0, atype);
-                            cj0                  = get_atomtype_nbparam(j, 0, atype);
-                            ci1                  = get_atomtype_nbparam(i, 1, atype);
-                            cj1                  = get_atomtype_nbparam(j, 1, atype);
+                            ci0                  = atypes->atomNonBondedParamFromAtomType(i, 0);
+                            cj0                  = atypes->atomNonBondedParamFromAtomType(j, 0);
+                            ci1                  = atypes->atomNonBondedParamFromAtomType(i, 1);
+                            cj1                  = atypes->atomNonBondedParamFromAtomType(j, 1);
                             plist->param[k].c[0] = std::sqrt(std::fabs(ci0*cj0));
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
@@ -160,16 +163,16 @@ void generate_nbparams(int comb, int ftype, InteractionTypeParameters *plist, gp
 
         case F_BHAM:
             /* Buckingham rules */
-            for (i = k = 0; (i < nr); i++)
+            for (int i = k = 0; (i < nr); i++)
             {
-                for (j = 0; (j < nr); j++, k++)
+                for (int j = 0; (j < nr); j++, k++)
                 {
-                    ci0                  = get_atomtype_nbparam(i, 0, atype);
-                    cj0                  = get_atomtype_nbparam(j, 0, atype);
-                    ci2                  = get_atomtype_nbparam(i, 2, atype);
-                    cj2                  = get_atomtype_nbparam(j, 2, atype);
-                    bi                   = get_atomtype_nbparam(i, 1, atype);
-                    bj                   = get_atomtype_nbparam(j, 1, atype);
+                    ci0                  = atypes->atomNonBondedParamFromAtomType(i, 0);
+                    cj0                  = atypes->atomNonBondedParamFromAtomType(j, 0);
+                    ci2                  = atypes->atomNonBondedParamFromAtomType(i, 2);
+                    cj2                  = atypes->atomNonBondedParamFromAtomType(j, 2);
+                    bi                   = atypes->atomNonBondedParamFromAtomType(i, 1);
+                    bj                   = atypes->atomNonBondedParamFromAtomType(j, 1);
                     plist->param[k].c[0] = std::sqrt(ci0 * cj0);
                     if ((bi == 0) || (bj == 0))
                     {
@@ -201,11 +204,11 @@ struct t_nbparam
     real     c[4];
 };
 
-static void realloc_nb_params(gpp_atomtype *at,
+static void realloc_nb_params(PreprocessingAtomTypes *atypes,
                               t_nbparam ***nbparam, t_nbparam ***pair)
 {
     /* Add space in the non-bonded parameters matrix */
-    int atnr = get_atomtype_ntypes(at);
+    int atnr = atypes->size();
     srenew(*nbparam, atnr);
     snew((*nbparam)[atnr-1], atnr);
     if (pair)
@@ -270,7 +273,7 @@ static void copy_B_from_A(int ftype, double *c)
     }
 }
 
-void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
+void push_at (t_symtab *symtab, PreprocessingAtomTypes *at, gpp_bond_atomtype *bat,
               char *line, int nb_funct,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp *wi)
@@ -499,7 +502,7 @@ void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
             auto message = gmx::formatString("Invalid function type %d in push_at", nb_funct);
             warning_error_and_exit(wi, message, FARGS);
     }
-    for (j = nfp0; (j < MAXFORCEPARAM); j++)
+    for (int j = nfp0; (j < MAXFORCEPARAM); j++)
     {
         c[j] = 0.0;
     }
@@ -547,19 +550,19 @@ void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
     }
     batype_nr = get_bond_atomtype_type(btype, bat);
 
-    if ((nr = get_atomtype_type(type, at)) != NOTSET)
+    if ((nr = at->atomTypeFromName(type)) != NOTSET)
     {
         auto message = gmx::formatString("Overriding atomtype %s", type);
         warning(wi, message);
-        if ((nr = set_atomtype(nr, at, symtab, atom, type, param, batype_nr,
-                               atomnr)) == NOTSET)
+        if ((nr = at->setType(nr, symtab, *atom, type, param, batype_nr,
+                              atomnr)) == NOTSET)
         {
             auto message = gmx::formatString("Replacing atomtype %s failed", type);
             warning_error_and_exit(wi, message, FARGS);
         }
     }
-    else if ((add_atomtype(at, symtab, atom, type, param,
-                           batype_nr, atomnr)) == NOTSET)
+    else if ((at->addType(symtab, *atom, type, param,
+                          batype_nr, atomnr)) == NOTSET)
     {
         auto message = gmx::formatString("Adding atomtype %s failed", type);
         warning_error_and_exit(wi, message, FARGS);
@@ -715,10 +718,13 @@ static void push_bondtype(InteractionTypeParameters     *       bt,
     }
 }
 
-void push_bt(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral,
-             gpp_atomtype *at,
-             gpp_bond_atomtype *bat, char *line,
-             warninp *wi)
+void push_bt(Directive                                 d,
+             gmx::ArrayRef<InteractionTypeParameters>  bt,
+             int                                       nral,
+             PreprocessingAtomTypes                   *at,
+             gpp_bond_atomtype                        *bat,
+             char                                     *line,
+             warninp                                  *wi)
 {
     const char *formal[MAXATOMLIST+1] = {
         "%s",
@@ -796,7 +802,7 @@ void push_bt(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral,
     }
     for (i = 0; (i < nral); i++)
     {
-        if (at && ((p.a[i] = get_atomtype_type(alc[i], at)) == NOTSET))
+        if ((at != nullptr) && ((p.a[i] = at->atomTypeFromName(alc[i])) == NOTSET))
         {
             auto message = gmx::formatString("Unknown atomtype %s\n", alc[i]);
             warning_error_and_exit(wi, message, FARGS);
@@ -984,7 +990,7 @@ void push_dihedraltype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt,
 }
 
 
-void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
+void push_nbt(Directive d, t_nbparam **nbt, PreprocessingAtomTypes *atypes,
               char *pline, int nb_funct,
               warninp *wi)
 {
@@ -1072,12 +1078,12 @@ void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
     }
 
     /* Put the parameters in the matrix */
-    if ((ai = get_atomtype_type (a0, atype)) == NOTSET)
+    if ((ai = atypes->atomTypeFromName(a0)) == NOTSET)
     {
         auto message = gmx::formatString("Atomtype %s not found", a0);
         warning_error_and_exit(wi, message, FARGS);
     }
-    if ((aj = get_atomtype_type (a1, atype)) == NOTSET)
+    if ((aj = atypes->atomTypeFromName(a1)) == NOTSET)
     {
         auto message = gmx::formatString("Atomtype %s not found", a1);
         warning_error_and_exit(wi, message, FARGS);
@@ -1111,13 +1117,17 @@ void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
 }
 
 void
-push_cmaptype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral, gpp_atomtype *at,
-              gpp_bond_atomtype *bat, char *line,
-              warninp *wi)
+push_cmaptype(Directive                                 d,
+              gmx::ArrayRef<InteractionTypeParameters>  bt,
+              int                                       nral,
+              PreprocessingAtomTypes                   *at,
+              gpp_bond_atomtype                        *bat,
+              char                                     *line,
+              warninp                                  *wi)
 {
     const char  *formal = "%s%s%s%s%s%s%s%s%n";
 
-    int          i, ft, ftype, nn, nrfp, nrfpA, nrfpB;
+    int          ft, ftype, nn, nrfp, nrfpA, nrfpB;
     int          start, nchar_consumed;
     int          nxcmap, nycmap, ncmap, read_cmap, sl, nct;
     char         s[20], alc[MAXATOMLIST+2][20];
@@ -1157,7 +1167,7 @@ push_cmaptype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral
 
     /* Read in CMAP parameters */
     sl = 0;
-    for (i = 0; i < ncmap; i++)
+    for (int i = 0; i < ncmap; i++)
     {
         while (isspace(*(line+start+sl)))
         {
@@ -1182,7 +1192,7 @@ push_cmaptype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral
     /* Check do that we got the number of parameters we expected */
     if (read_cmap == nrfpA)
     {
-        for (i = 0; i < ncmap; i++)
+        for (int i = 0; i < ncmap; i++)
         {
             bt[F_CMAP].cmap.emplace_back(bt[F_CMAP].cmap[i]);
         }
@@ -1211,7 +1221,7 @@ push_cmaptype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral
     bt[F_CMAP].cmapAngles++;              /* Since we are incrementing here, we need to subtract later, see (*****) */
     nct                     = (nral+1) * bt[F_CMAP].cmapAngles;
 
-    for (i = 0; (i < nral); i++)
+    for (int i = 0; (i < nral); i++)
     {
         if (at && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
         {
@@ -1239,7 +1249,7 @@ push_cmaptype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral
     }
 
     /* Is this correct?? */
-    for (i = 0; i < MAXFORCEPARAM; i++)
+    for (int i = 0; i < MAXFORCEPARAM; i++)
     {
         p.c[i] = NOTSET;
     }
@@ -1351,7 +1361,7 @@ static void push_cg(t_block *block, int *lastindex, int index, int a)
 }
 
 void push_atom(t_symtab *symtab, t_block *cgs,
-               t_atoms *at, gpp_atomtype *atype, char *line, int *lastcg,
+               t_atoms *at, PreprocessingAtomTypes *atypes, char *line, int *lastcg,
                warninp *wi)
 {
     int           nr, ptype;
@@ -1372,16 +1382,16 @@ void push_atom(t_symtab *symtab, t_block *cgs,
         return;
     }
     sscanf(id, "%d", &atomnr);
-    if ((type  = get_atomtype_type(ctype, atype)) == NOTSET)
+    if ((type  = atypes->atomTypeFromName(ctype)) == NOTSET)
     {
         auto message = gmx::formatString("Atomtype %s not found", ctype);
         warning_error_and_exit(wi, message, FARGS);
     }
-    ptype = get_atomtype_ptype(type, atype);
+    ptype = atypes->atomParticleTypeFromAtomType(type);
 
     /* Set default from type */
-    q0    = get_atomtype_qA(type, atype);
-    m0    = get_atomtype_massA(type, atype);
+    q0    = atypes->atomChargeAFromAtomType(type);
+    m0    = atypes->atomMassAFromAtomType(type);
     typeB = type;
     qB    = q0;
     mB    = m0;
@@ -1399,13 +1409,13 @@ void push_atom(t_symtab *symtab, t_block *cgs,
             m0 = mB = m;
             if (nscan > 2)
             {
-                if ((typeB = get_atomtype_type(ctypeB, atype)) == NOTSET)
+                if ((typeB = atypes->atomTypeFromName(ctypeB)) == NOTSET)
                 {
                     auto message = gmx::formatString("Atomtype %s not found", ctypeB);
                     warning_error_and_exit(wi, message, FARGS);
                 }
-                qB = get_atomtype_qA(typeB, atype);
-                mB = get_atomtype_massA(typeB, atype);
+                qB = atypes->atomChargeAFromAtomType(typeB);
+                mB = atypes->atomMassAFromAtomType(typeB);
                 if (nscan > 3)
                 {
                     qB = qb;
@@ -1424,7 +1434,7 @@ void push_atom(t_symtab *symtab, t_block *cgs,
 
     push_cg(cgs, lastcg, cgnumber, nr);
 
-    push_atom_now(symtab, at, atomnr, get_atomtype_atomnumber(type, atype),
+    push_atom_now(symtab, at, atomnr, atypes->atomNumberFromAtomType(type),
                   type, ctype, ptype, resnumberic,
                   resname, name, m0, q0, typeB,
                   typeB == type ? ctype : ctypeB, mB, qB, wi);
@@ -1558,20 +1568,20 @@ static bool default_nb_params(int ftype, gmx::ArrayRef<InteractionTypeParameters
 }
 
 static bool default_cmap_params(gmx::ArrayRef<InteractionTypeParameters> bondtype,
-                                t_atoms *at, gpp_atomtype *atype,
+                                t_atoms *at, PreprocessingAtomTypes *atypes,
                                 t_param *p, bool bB,
                                 int *cmap_type, int *nparam_def,
                                 warninp *wi)
 {
-    int        i, nparam_found;
+    int        nparam_found;
     int        ct;
-    bool       bFound = FALSE;
+    bool       bFound = false;
 
     nparam_found = 0;
     ct           = 0;
 
     /* Match the current cmap angle against the list of cmap_types */
-    for (i = 0; i < bondtype[F_CMAP].nct() && !bFound; i += 6)
+    for (int i = 0; i < bondtype[F_CMAP].nct() && !bFound; i += 6)
     {
         if (bB)
         {
@@ -1580,14 +1590,14 @@ static bool default_cmap_params(gmx::ArrayRef<InteractionTypeParameters> bondtyp
         else
         {
             if (
-                (get_atomtype_batype(at->atom[p->a[0]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i])   &&
-                (get_atomtype_batype(at->atom[p->a[1]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i+1]) &&
-                (get_atomtype_batype(at->atom[p->a[2]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i+2]) &&
-                (get_atomtype_batype(at->atom[p->a[3]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i+3]) &&
-                (get_atomtype_batype(at->atom[p->a[4]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i+4]))
+                (atypes->bondAtomTypeFromAtomType(at->atom[p->a[0]].type) == bondtype[F_CMAP].cmapAtomTypes[i])   &&
+                (atypes->bondAtomTypeFromAtomType(at->atom[p->a[1]].type) == bondtype[F_CMAP].cmapAtomTypes[i+1]) &&
+                (atypes->bondAtomTypeFromAtomType(at->atom[p->a[2]].type) == bondtype[F_CMAP].cmapAtomTypes[i+2]) &&
+                (atypes->bondAtomTypeFromAtomType(at->atom[p->a[3]].type) == bondtype[F_CMAP].cmapAtomTypes[i+3]) &&
+                (atypes->bondAtomTypeFromAtomType(at->atom[p->a[4]].type) == bondtype[F_CMAP].cmapAtomTypes[i+4]))
             {
                 /* Found cmap torsion */
-                bFound       = TRUE;
+                bFound       = true;
                 ct           = bondtype[F_CMAP].cmapAtomTypes[i+5];
                 nparam_found = 1;
             }
@@ -1613,12 +1623,12 @@ static bool default_cmap_params(gmx::ArrayRef<InteractionTypeParameters> bondtyp
  */
 static int natom_match(t_param *pi,
                        int type_i, int type_j, int type_k, int type_l,
-                       const gpp_atomtype* atype)
+                       const PreprocessingAtomTypes* atypes)
 {
-    if ((pi->ai() == -1 || get_atomtype_batype(type_i, atype) == pi->ai()) &&
-        (pi->aj() == -1 || get_atomtype_batype(type_j, atype) == pi->aj()) &&
-        (pi->ak() == -1 || get_atomtype_batype(type_k, atype) == pi->ak()) &&
-        (pi->al() == -1 || get_atomtype_batype(type_l, atype) == pi->al()))
+    if ((pi->ai() == -1 || atypes->bondAtomTypeFromAtomType(type_i) == pi->ai()) &&
+        (pi->aj() == -1 || atypes->bondAtomTypeFromAtomType(type_j) == pi->aj()) &&
+        (pi->ak() == -1 || atypes->bondAtomTypeFromAtomType(type_k) == pi->ak()) &&
+        (pi->al() == -1 || atypes->bondAtomTypeFromAtomType(type_l) == pi->al()))
     {
         return
             (pi->ai() == -1 ? 0 : 1) +
@@ -1633,7 +1643,7 @@ static int natom_match(t_param *pi,
 }
 
 static bool defaultInteractionTypeParameters(int ftype, gmx::ArrayRef<InteractionTypeParameters> bt,
-                                             t_atoms *at, gpp_atomtype *atype,
+                                             t_atoms *at, PreprocessingAtomTypes *atypes,
                                              t_param *p, bool bB,
                                              t_param **param_def,
                                              int *nparam_def)
@@ -1672,11 +1682,11 @@ static bool defaultInteractionTypeParameters(int ftype, gmx::ArrayRef<Interactio
             pt = &(bt[ftype].param[t]);
             if (bB)
             {
-                nmatch = natom_match(pt, at->atom[p->ai()].typeB, at->atom[p->aj()].typeB, at->atom[p->ak()].typeB, at->atom[p->al()].typeB, atype);
+                nmatch = natom_match(pt, at->atom[p->ai()].typeB, at->atom[p->aj()].typeB, at->atom[p->ak()].typeB, at->atom[p->al()].typeB, atypes);
             }
             else
             {
-                nmatch = natom_match(pt, at->atom[p->ai()].type, at->atom[p->aj()].type, at->atom[p->ak()].type, at->atom[p->al()].type, atype);
+                nmatch = natom_match(pt, at->atom[p->ai()].type, at->atom[p->aj()].type, at->atom[p->ak()].type, at->atom[p->al()].type, atypes);
             }
             if (nmatch > nmatch_max)
             {
@@ -1722,7 +1732,7 @@ static bool defaultInteractionTypeParameters(int ftype, gmx::ArrayRef<Interactio
             if (bB)
             {
                 for (j = 0; ((j < nral) &&
-                             (get_atomtype_batype(at->atom[p->a[j]].typeB, atype) == pi->a[j])); j++)
+                             (atypes->bondAtomTypeFromAtomType(at->atom[p->a[j]].typeB) == pi->a[j])); j++)
                 {
                     ;
                 }
@@ -1730,7 +1740,7 @@ static bool defaultInteractionTypeParameters(int ftype, gmx::ArrayRef<Interactio
             else
             {
                 for (j = 0; ((j < nral) &&
-                             (get_atomtype_batype(at->atom[p->a[j]].type, atype) == pi->a[j])); j++)
+                             (atypes->bondAtomTypeFromAtomType(at->atom[p->a[j]].type) == pi->a[j])); j++)
                 {
                     ;
                 }
@@ -1753,7 +1763,7 @@ static bool defaultInteractionTypeParameters(int ftype, gmx::ArrayRef<Interactio
 
 void push_bond(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
                gmx::ArrayRef<InteractionTypeParameters> bond,
-               t_atoms *at, gpp_atomtype *atype, char *line,
+               t_atoms *at, PreprocessingAtomTypes *atypes, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
                warninp *wi)
@@ -1898,7 +1908,7 @@ void push_bond(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
 
     if (bBonded)
     {
-        bFoundA = defaultInteractionTypeParameters(ftype, bondtype, at, atype, &param, FALSE, &param_defA, &nparam_defA);
+        bFoundA = defaultInteractionTypeParameters(ftype, bondtype, at, atypes, &param, FALSE, &param_defA, &nparam_defA);
         if (bFoundA)
         {
             /* Copy the A-state and B-state default parameters. */
@@ -1908,7 +1918,7 @@ void push_bond(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
                 param.c[j] = param_defA->c[j];
             }
         }
-        bFoundB = defaultInteractionTypeParameters(ftype, bondtype, at, atype, &param, TRUE, &param_defB, &nparam_defB);
+        bFoundB = defaultInteractionTypeParameters(ftype, bondtype, at, atypes, &param, TRUE, &param_defB, &nparam_defB);
         if (bFoundB)
         {
             /* Copy only the B-state default parameters */
@@ -2162,7 +2172,7 @@ void push_bond(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
 
 void push_cmap(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
                gmx::ArrayRef<InteractionTypeParameters> bond,
-               t_atoms *at, gpp_atomtype *atype, char *line,
+               t_atoms *at, PreprocessingAtomTypes *atypes, char *line,
                warninp *wi)
 {
     const char *aaformat[MAXATOMLIST+1] =
@@ -2234,7 +2244,7 @@ void push_cmap(Directive d, gmx::ArrayRef<InteractionTypeParameters> bondtype,
     }
 
     /* Get the cmap type for this cmap angle */
-    bFound = default_cmap_params(bondtype, at, atype, &param, FALSE, &cmap_type, &ncmap_params, wi);
+    bFound = default_cmap_params(bondtype, at, atypes, &param, FALSE, &cmap_type, &ncmap_params, wi);
 
     /* We want exactly one parameter (the cmap type in state A (currently no state B) back */
     if (bFound && ncmap_params == 1)
@@ -2476,7 +2486,7 @@ void push_excl(char *line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp *wi)
     while (n == 1);
 }
 
-int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype *at,
+int add_atomtype_decoupled(t_symtab *symtab, PreprocessingAtomTypes *at,
                            t_nbparam ***nbparam, t_nbparam ***pair)
 {
     t_atom  atom;
@@ -2495,7 +2505,7 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype *at,
         param.c[i] = 0.0;
     }
 
-    nr = add_atomtype(at, symtab, &atom, "decoupled", &param, -1, 0);
+    nr = at->addType(symtab, atom, "decoupled", &param, -1, 0);
 
     /* Add space in the non-bonded parameters matrix */
     realloc_nb_params(at, nbparam, pair);
