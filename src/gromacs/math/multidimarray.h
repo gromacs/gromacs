@@ -50,20 +50,6 @@
 namespace gmx
 {
 
-namespace detail
-{
-/*! \libinternal \brief
- * Determine static array size at compile time.
- * Statically evaluates the product of static array extents.
- * \tparam Extents Extents of an multidimensional array as in module_mdspan
- * \returns the product of the static extents
- */
-template <typename Extents>
-constexpr typename Extents::index_type staticExtentsProduct(size_t const i = 0)
-{
-    return (i < Extents::rank()) ? Extents::static_extent(i) * staticExtentsProduct<Extents>(i + 1) : 1;
-}
-}   // namespace detail
 /*! \libinternal \brief
  * Multidimensional array that manages its own memory.
  *
@@ -129,45 +115,20 @@ class MultiDimArray
             resize(dynamicExtent ...);
         }
         /*! \brief
-         * Construction with fixed sized array for storage if MultiDimArray size
-         * is static and layout policy allows compile time determination of the
-         * container size.
-         *
-         * Exampe use is MultiDimArray<std::array<float, 9>, extents<3,3>>
-         * \tparam StaticSizeAndLayout Template parameter for activation via SFINAE.
-         */
-        template <bool StaticSizeAndLayoutRight = Extents::rank_dynamic() == 0 &&
-                      std::is_same<LayoutPolicy, layout_right>::value,
-                  typename std::enable_if<StaticSizeAndLayoutRight, int>::type = 0>
-        constexpr MultiDimArray() noexcept : view_(data_.data())
-        {
-            // \todo replace staticExtentsProduct by the required_span_size
-            // of the LayoutPolicy, once required_span_size is a constexpr
-            // with C++14
-            // using tuple_size allows constexpr for this constructor (data_.size() is not available then)
-            static_assert(std::tuple_size<TContainer>() ==
-                          detail::staticExtentsProduct<Extents>(),
-                          "Non-resizable container type size must match static MultiDimArray size.");
-        }
-        /*! \brief
          * Construction from fixed sized arrays if the array size is static and
          * layout policy allows compile time determination of the container size.
          *
          * Enables the expected initialization
          * MultiDimArray<std::array<float, 9>, extents<3,3>> arr = {{1,2...}}
-         * \tparam StaticSizeAndLayout Template parameter for activation via SFINAE.
+         * \tparam T Template parameter for activation via SFINAE.
          */
-        template <bool StaticSizeAndLayoutRight = Extents::rank_dynamic() == 0 &&
-                      std::is_same<LayoutPolicy, layout_right>::value,
-                  typename std::enable_if<StaticSizeAndLayoutRight, int>::type = 0>
-        constexpr MultiDimArray(const TContainer &data) noexcept : data_(data), view_(data_.data())
+        // Assumes that any non-resizable container has a std::tuple_size<T> specialization.
+        // Required because std::vector::size isn't constexpr and is_constexpr doesn't exist.
+        template <typename T = TContainer, typename = typename std::tuple_size<T>::type >
+        constexpr MultiDimArray(const TContainer &data = {}
+                                ) noexcept : data_(data), view_(data_.data())
         {
-            // \todo replace staticExtentsProduct by the required_span_size
-            // of the LayoutPolicy, once required_span_size is a constexpr
-            // with C++14
-            // using tuple_size allows constexpr for this constructor (data_.size() is not available then)
-            static_assert(std::tuple_size<TContainer>() ==
-                          detail::staticExtentsProduct<Extents>(),
+            static_assert(TContainer().size() == typename view_type::mapping_type().required_span_size(),
                           "Non-resizable container type size must match static MultiDimArray size.");
         }
         //! Copy constructor
