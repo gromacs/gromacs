@@ -61,11 +61,7 @@ TestStruct::TestStruct() : b(0) {}
             message(FATAL_ERROR "No known version of xlC can compile the normal C++11 code in GROMACS, highest version checked is 16.1.0")
         endif()
     endif()
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        if(WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.5.0")
-            message(WARNING "Using Clang on Windows requires Clang 3.5.0")
-        endif()
-    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI")
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI")
         message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC, ICC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
     endif()
 

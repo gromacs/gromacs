@@ -41,13 +41,11 @@ clang-7 no-hwloc tsan libcxx-7 openmp cmake-3.12.1 simd=avx2_256
 # Test fftpack fallback
 gcc-8 double x11 no-tng fftpack simd=sse4.1
 
-# Test older clang
-# Test clang in double precision
+# Test oldest supported clang (while avoiding AVX codegen issues in it)
 # Test without OpenMP
 # Test thread-MPI
-# Test AVX_128_FMA SIMD + Double (Important for Simd4N=Simd4 and sizeof(SimdInt32)!=4*GMX_SIMD_REAL_WIDTH)
 # Test with TNG support
-clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.11.4 tng
+clang-3.6 simd=sse2 thread-mpi no-openmp fftpack cmake-3.11.4 tng
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
