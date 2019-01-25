@@ -107,7 +107,7 @@ static void set_ljparams(int comb, double reppow, double v, double w,
  */
 static int
 assign_param(t_functype ftype, t_iparams *newparam,
-             real old[MAXFORCEPARAM], int comb, double reppow)
+             gmx::ArrayRef<const real> old, int comb, double reppow)
 {
     int      i, j;
     bool     all_param_zero = TRUE;
@@ -447,7 +447,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
 }
 
 static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
-                        real forceparams[MAXFORCEPARAM], int comb, real reppow,
+                        gmx::ArrayRef<const real> forceparams, int comb, real reppow,
                         int start, bool bAppend)
 {
     t_iparams newparam;
@@ -488,7 +488,7 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
 }
 
 static void append_interaction(InteractionList *ilist,
-                               int type, int nral, const int a[MAXATOMLIST])
+                               int type, int nral, gmx::ArrayRef<const int> a)
 {
     ilist->iatoms.push_back(type);
     for (int i = 0; (i < nral); i++)

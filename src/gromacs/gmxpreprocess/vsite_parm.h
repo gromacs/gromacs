@@ -40,12 +40,12 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct gmx_moltype_t;
 struct t_atoms;
 struct SystemParameters;
 
-int set_vsites(bool bVerbose, t_atoms *atoms,  gpp_atomtype *atype,
+int set_vsites(bool bVerbose, t_atoms *atoms,  PreprocessingAtomType *atype,
                gmx::ArrayRef<SystemParameters> plist);
 /* set parameters for virtual sites, return number of virtual sites */
 

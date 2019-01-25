@@ -47,7 +47,7 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct PreprocessResidue;
 struct t_symtab;
 
@@ -79,9 +79,10 @@ getDatabaseEntry(const std::string &rtpname, gmx::ArrayRef<const PreprocessResid
  *
  * \param[in] ffdir Force field directory.
  * \param[in] tab Symbol table for names.
+ * \param[in] atype Atom type information.
  * \returns Atom type database.
  */
-gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab);
+void read_atype(const char *ffdir, t_symtab *tab, PreprocessingAtomType *at);
 
 /*! \brief
  * Read in database, append to exisiting.
@@ -94,7 +95,7 @@ gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab);
  */
 void readResidueDatabase(const std::string              &resdb,
                          std::vector<PreprocessResidue> *rtpDBEntry,
-                         gpp_atomtype                   *atype,
+                         PreprocessingAtomType          *atype,
                          t_symtab                       *tab,
                          bool                            bAllowOverrideRTP);
 
@@ -106,6 +107,6 @@ void readResidueDatabase(const std::string              &resdb,
  * \param[in] atype Atom type information.
  */
 void print_resall(FILE *out, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
-                  gpp_atomtype *atype);
+                  PreprocessingAtomType *atype);
 
 #endif
