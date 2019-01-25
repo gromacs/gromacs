@@ -95,7 +95,7 @@ static int find_kw(char *keyw)
 #define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
 
 static void read_atom(char *line, bool bAdd,
-                      std::string *nname, t_atom *a, gpp_atomtype *atype, int *cgnr)
+                      std::string *nname, t_atom *a, PreprocessingAtomTypes *atype, int *cgnr)
 {
     int    nr, i;
     char   buf[5][30];
@@ -133,7 +133,7 @@ static void read_atom(char *line, bool bAdd,
             *nname = "";
         }
     }
-    a->type = get_atomtype_type(buf[i++], atype);
+    a->type = atype->atomTypeFromString(buf[i++]);
     sscanf(buf[i++], "%lf", &m);
     a->m = m;
     sscanf(buf[i++], "%lf", &q);
@@ -148,14 +148,14 @@ static void read_atom(char *line, bool bAdd,
     }
 }
 
-static void print_atom(FILE *out, const t_atom *a, gpp_atomtype *atype)
+static void print_atom(FILE *out, const t_atom &a, PreprocessingAtomTypes *atype)
 {
     fprintf(out, "\t%s\t%g\t%g\n",
-            get_atomtype_name(a->type, atype), a->m, a->q);
+            atype->atomNameFromType(a.type), a.m, a.q);
 }
 
 static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const MoleculePatchDatabase> tb,
-                         gpp_atomtype *atype)
+                         PreprocessingAtomTypes *atype)
 {
     std::string buf = gmx::formatString("%s-%c.tdb", ff, C);
     FILE       *out = gmx_fio_fopen(buf.c_str(), "w");
@@ -174,7 +174,7 @@ static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const MoleculePat
                 if (hack.type() == MoleculePatchType::Replace)
                 {
                     fprintf(out, "%s\t", hack.oname.c_str());
-                    print_atom(out, &hack.atom.back(), atype);
+                    print_atom(out, hack.atom.back(), atype);
                 }
             }
         }
@@ -188,7 +188,7 @@ static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const MoleculePat
                 if (hack.type() == MoleculePatchType::Add)
                 {
                     print_ab(out, hack, hack.nname.c_str());
-                    print_atom(out, &hack.atom.back(), atype);
+                    print_atom(out, hack.atom.back(), atype);
                 }
             }
         }
@@ -229,9 +229,9 @@ static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const MoleculePat
     gmx_fio_fclose(out);
 }
 
-static void read_ter_db_file(const char                                        *fn,
-                             std::vector<MoleculePatchDatabase>                *tbptr,
-                             gpp_atomtype                                      *atype)
+static void read_ter_db_file(const char                                         *fn,
+                             std::vector<MoleculePatchDatabase>                 *tbptr,
+                             PreprocessingAtomTypes                             *atype)
 {
     char         filebase[STRLEN];
     char         header[STRLEN], buf[STRLEN], line[STRLEN];
@@ -359,7 +359,7 @@ static void read_ter_db_file(const char                                        *
 }
 
 int read_ter_db(const char *ffdir, char ter,
-                std::vector<MoleculePatchDatabase> *tbptr, gpp_atomtype *atype)
+                std::vector<MoleculePatchDatabase> *tbptr, PreprocessingAtomTypes *atype)
 {
     std::string ext = gmx::formatString(".%c.tdb", ter);
 

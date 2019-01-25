@@ -99,7 +99,7 @@ static t_2morse *read_dissociation_energies(int *n2morse)
     return t2m;
 }
 
-static int nequal(char *a1, char *a2)
+static int nequal(const char *a1, const char *a2)
 {
     int i;
 
@@ -122,7 +122,7 @@ static int nequal(char *a1, char *a2)
     return i;
 }
 
-static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
+static real search_e_diss(int n2m, t_2morse t2m[], const char *ai, const char *aj)
 {
     int  i;
     int  ibest = -1;
@@ -187,7 +187,7 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
     }
 }
 
-void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, gpp_atomtype *atype)
+void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAtomTypes *atype)
 {
     int       n2m;
     t_2morse *t2m;
@@ -226,8 +226,8 @@ void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, gpp_atomtype *at
                     int  nj   = mol.plist[bb].param[j].aj();
                     real edis =
                         search_e_diss(n2m, t2m,
-                                      get_atomtype_name(mol.atoms.atom[ni].type, atype),
-                                      get_atomtype_name(mol.atoms.atom[nj].type, atype));
+                                      atype->atomNameFromType(mol.atoms.atom[ni].type),
+                                      atype->atomNameFromType(mol.atoms.atom[nj].type));
                     if (edis != 0)
                     {
                         bRemoveHarm[j] = true;
