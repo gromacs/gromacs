@@ -562,11 +562,11 @@ static int get_atype(int atom, t_atoms *at, gmx::ArrayRef<t_restp> rtp,
     return type;
 }
 
-static int vsite_nm2type(const char *name, gpp_atomtype *atype)
+static int vsite_nm2type(const char *name, PreprocessingAtomType *atype)
 {
     int tp;
 
-    tp = get_atomtype_type(name, atype);
+    tp = atype->atomTypeFromString(name);
     if (tp == NOTSET)
     {
         gmx_fatal(FARGS, "Dummy mass type (%s) not found in atom type database",
@@ -865,7 +865,7 @@ static void calc_vsite3_param(real xd, real yd, real xi, real yi, real xj, real 
 }
 
 
-static int gen_vsites_trp(gpp_atomtype *atype, rvec *newx[],
+static int gen_vsites_trp(PreprocessingAtomType *atype, rvec *newx[],
                           t_atom *newatom[], char ***newatomname[],
                           int *o2n[], int *newvsite_type[], int *newcgnr[],
                           t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
@@ -1137,7 +1137,7 @@ static int gen_vsites_trp(gpp_atomtype *atype, rvec *newx[],
 }
 
 
-static int gen_vsites_tyr(gpp_atomtype *atype, rvec *newx[],
+static int gen_vsites_tyr(PreprocessingAtomType *atype, rvec *newx[],
                           t_atom *newatom[], char ***newatomname[],
                           int *o2n[], int *newvsite_type[], int *newcgnr[],
                           t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
@@ -1537,7 +1537,7 @@ static bool is_vsite(int vsite_type)
 
 static char atomnamesuffix[] = "1234";
 
-void do_vsites(gmx::ArrayRef<t_restp> rtp, gpp_atomtype *atype,
+void do_vsites(gmx::ArrayRef<t_restp> rtp, PreprocessingAtomType *atype,
                t_atoms *at, t_symtab *symtab, rvec *x[],
                t_params plist[], int *vsite_type[], int *cgnr[],
                real mHmult, bool bVsiteAromatics,
@@ -1781,7 +1781,7 @@ void do_vsites(gmx::ArrayRef<t_restp> rtp, gpp_atomtype *atype,
                         &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
             /* get Heavy atom type */
             tpHeavy = get_atype(Heavy, at, rtp, &rt);
-            strcpy(tpname, get_atomtype_name(tpHeavy, atype));
+            strcpy(tpname, atype->atomNameFromType(tpHeavy));
 
             bWARNING       = FALSE;
             bAddVsiteParam = TRUE;
@@ -1887,7 +1887,7 @@ void do_vsites(gmx::ArrayRef<t_restp> rtp, gpp_atomtype *atype,
                     }
                     /* get dummy mass type from first char of heavy atom type (N or C) */
 
-                    strcpy(nexttpname, get_atomtype_name(get_atype(heavies[0], at, rtp, &rt), atype));
+                    strcpy(nexttpname, atype->atomNameFromType(get_atype(heavies[0], at, rtp, &rt)));
                     ch = get_dummymass_name(vsiteconflist, nvsiteconf, tpname, nexttpname);
 
                     if (ch == nullptr)

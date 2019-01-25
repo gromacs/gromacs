@@ -44,7 +44,7 @@
 
 struct gmx_molblock_t;
 struct gmx_mtop_t;
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct t_gromppopts;
 struct t_inputrec;
 struct t_molinfo;
@@ -57,24 +57,24 @@ typedef warninp *warninp_t;
 double check_mol(const gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */
 
-char **do_top(bool                          bVerbose,
-              const char                   *topfile,
-              const char                   *topppfile,
-              t_gromppopts                 *opts,
-              bool                          bZero,
-              t_symtab                     *symtab,
-              t_params                      plist[],
-              int                          *combination_rule,
-              double                       *repulsion_power,
-              real                         *fudgeQQ,
-              gpp_atomtype                 *atype,
-              int                          *nrmols,
-              t_molinfo                   **molinfo,
-              t_molinfo                   **intermolecular_interactions,
-              const t_inputrec             *ir,
-              std::vector<gmx_molblock_t>  *molblock,
-              bool                         *ffParametrizedWithHBondConstraints,
-              warninp_t                     wi);
+char **do_top(bool                                   bVerbose,
+              const char                            *topfile,
+              const char                            *topppfile,
+              t_gromppopts                          *opts,
+              bool                                   bZero,
+              t_symtab                              *symtab,
+              t_params                               plist[],
+              int                                   *combination_rule,
+              double                                *repulsion_power,
+              real                                  *fudgeQQ,
+              PreprocessingAtomType                 *atype,
+              int                                   *nrmols,
+              t_molinfo                            **molinfo,
+              t_molinfo                            **intermolecular_interactions,
+              const t_inputrec                      *ir,
+              std::vector<gmx_molblock_t>           *molblock,
+              bool                                  *ffParametrizedWithHBondConstraints,
+              warninp_t                              wi);
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
 void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t wi, GmxQmmmMode qmmmMode);

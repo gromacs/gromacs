@@ -40,11 +40,11 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct t_hackblock;
 
 int read_ter_db(const char *ffdir, char ter,
-                std::vector<t_hackblock> *tbptr, gpp_atomtype *atype);
+                std::vector<t_hackblock> *tbptr, PreprocessingAtomType *atype);
 /* Read database for N&C terminal hacking */
 
 std::vector<t_hackblock *>filter_ter(gmx::ArrayRef<t_hackblock> tb,

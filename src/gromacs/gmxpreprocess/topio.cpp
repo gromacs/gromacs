@@ -376,7 +376,7 @@ static void make_atoms_sys(const std::vector<gmx_molblock_t> &molblock,
 static char **read_topol(const char *infile, const char *outfile,
                          const char *define, const char *include,
                          t_symtab    *symtab,
-                         gpp_atomtype *atype,
+                         PreprocessingAtomType *atype,
                          int         *nrmols,
                          t_molinfo   **molinfo,
                          t_molinfo   **intermolecular_interactions,
@@ -703,7 +703,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                     dcatt = add_atomtype_decoupled(symtab, atype,
                                                                    &nbparam, bGenPairs ? &pair : nullptr);
                                 }
-                                ntype  = get_atomtype_ntypes(atype);
+                                ntype  = atype->nr();
                                 ncombs = (ntype*(ntype+1))/2;
                                 generate_nbparams(*combination_rule, nb_funct, &(plist[nb_funct]), atype, wi);
                                 ncopy = copy_nbparams(nbparam, nb_funct, &(plist[nb_funct]),
@@ -942,24 +942,24 @@ static char **read_topol(const char *infile, const char *outfile,
     return title;
 }
 
-char **do_top(bool                          bVerbose,
-              const char                   *topfile,
-              const char                   *topppfile,
-              t_gromppopts                 *opts,
-              bool                          bZero,
-              t_symtab                     *symtab,
-              t_params                      plist[],
-              int                          *combination_rule,
-              double                       *repulsion_power,
-              real                         *fudgeQQ,
-              gpp_atomtype                 *atype,
-              int                          *nrmols,
-              t_molinfo                   **molinfo,
-              t_molinfo                   **intermolecular_interactions,
-              const t_inputrec             *ir,
-              std::vector<gmx_molblock_t>  *molblock,
-              bool                         *ffParametrizedWithHBondConstraints,
-              warninp                      *wi)
+char **do_top(bool                                   bVerbose,
+              const char                            *topfile,
+              const char                            *topppfile,
+              t_gromppopts                          *opts,
+              bool                                   bZero,
+              t_symtab                              *symtab,
+              t_params                               plist[],
+              int                                   *combination_rule,
+              double                                *repulsion_power,
+              real                                  *fudgeQQ,
+              PreprocessingAtomType                 *atype,
+              int                                   *nrmols,
+              t_molinfo                            **molinfo,
+              t_molinfo                            **intermolecular_interactions,
+              const t_inputrec                      *ir,
+              std::vector<gmx_molblock_t>           *molblock,
+              bool                                  *ffParametrizedWithHBondConstraints,
+              warninp                               *wi)
 {
     /* Tmpfile might contain a long path */
     const char *tmpfile;

@@ -45,7 +45,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct t_atoms;
 struct t_excls;
 struct t_hackblock;
@@ -109,12 +109,12 @@ void print_top_mols(FILE *out,
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
-               gpp_atomtype *atype, int *cgnr, int nrexcl);
+               PreprocessingAtomType *atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms, rvec **x,
-             gpp_atomtype *atype, t_symtab *tab,
+             PreprocessingAtomType *atype, t_symtab *tab,
              gmx::ArrayRef<t_restp> rtp,
              gmx::ArrayRef<t_restp> restp, gmx::ArrayRef<t_hackblock> hb,
              bool bAllowMissing,

@@ -208,7 +208,7 @@ void done_mi(t_molinfo *mi)
 
 /* PRINTING STRUCTURES */
 
-static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
+static void print_bt(FILE *out, Directive d, PreprocessingAtomType *at,
                      int ftype, int fsubtype, t_params plist[],
                      bool bFullDih)
 {
@@ -334,14 +334,14 @@ static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
         {
             for (j = 0; (j < nral); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[j], at));
+                fprintf (out, "%5s ", at->atomNameFromType(bt->param[i].a[j]));
             }
         }
         else
         {
             for (j = 0; (j < 2); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[dihp[f][j]], at));
+                fprintf (out, "%5s ", at->atomNameFromType(bt->param[i].a[dihp[f][j]]));
             }
         }
         fprintf (out, "%5d ", bSwapParity ? -f-1 : f+1);
@@ -436,14 +436,14 @@ static double get_residue_charge(const t_atoms *atoms, int at)
     return q;
 }
 
-void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, PreprocessingAtomType *atype, t_atoms *at, int *cgnr,
                  bool bRTPresname)
 {
-    int         i, ri;
-    int         tpA, tpB;
-    const char *as;
-    char       *tpnmA, *tpnmB;
-    double      qres, qtot;
+    int               i, ri;
+    int               tpA, tpB;
+    const char       *as;
+    const char       *tpnmA, *tpnmB;
+    double            qres, qtot;
 
     as = dir2str(Directive::d_atoms);
     fprintf(out, "[ %s ]\n", as);
@@ -477,7 +477,7 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
                 fprintf(out, "\n");
             }
             tpA = at->atom[i].type;
-            if ((tpnmA = get_atomtype_name(tpA, atype)) == nullptr)
+            if ((tpnmA = atype->atomNameFromType(tpA)) == nullptr)
             {
                 gmx_fatal(FARGS, "tpA = %d, i= %d in print_atoms", tpA, i);
             }
@@ -496,7 +496,7 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
             if (PERTURBED(at->atom[i]))
             {
                 tpB = at->atom[i].typeB;
-                if ((tpnmB = get_atomtype_name(tpB, atype)) == nullptr)
+                if ((tpnmB = atype->atomNameFromType(tpB)) == nullptr)
                 {
                     gmx_fatal(FARGS, "tpB = %d, i= %d in print_atoms", tpB, i);
                 }
@@ -531,13 +531,12 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
 void print_bondeds(FILE *out, int natoms, Directive d,
                    int ftype, int fsubtype, t_params plist[])
 {
-    t_symtab       stab;
-    gpp_atomtype  *atype;
-    t_param       *param;
-    t_atom        *a;
-    int            i;
+    t_symtab              stab;
+    t_param              *param;
+    t_atom               *a;
+    int                   i;
 
-    atype = init_atomtype();
+    PreprocessingAtomType atype;
     snew(a, 1);
     snew(param, 1);
     open_symtab(&stab);
@@ -545,12 +544,11 @@ void print_bondeds(FILE *out, int natoms, Directive d,
     {
         char buf[12];
         sprintf(buf, "%4d", (i+1));
-        add_atomtype(atype, &stab, a, buf, param, 0, 0);
+        atype.addType(&stab, a, buf, param, 0, 0);
     }
-    print_bt(out, d, atype, ftype, fsubtype, plist, TRUE);
+    print_bt(out, d, &atype, ftype, fsubtype, plist, TRUE);
 
     done_symtab(&stab);
     sfree(a);
     sfree(param);
-    done_atomtype(atype);
 }

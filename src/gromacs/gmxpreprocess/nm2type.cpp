@@ -192,7 +192,7 @@ static int match_str(const char *atom, const char *template_string)
 }
 
 int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
-            gpp_atomtype *atype, int *nbonds, t_params *bonds)
+            PreprocessingAtomType *atype, int *nbonds, t_params *bonds)
 {
     int      cur = 0;
 #define prev (1-cur)
@@ -334,12 +334,12 @@ int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
             mm   = nm2t[best].m;
             type = nm2t[best].type;
 
-            if ((k = get_atomtype_type(type, atype)) == NOTSET)
+            if ((k = atype->atomTypeFromString(type)) == NOTSET)
             {
                 atoms->atom[i].qB = alpha;
                 atoms->atom[i].m  = atoms->atom[i].mB = mm;
-                k                 = add_atomtype(atype, tab, &(atoms->atom[i]), type, param,
-                                                 atoms->atom[i].type, atomnr);
+                k                 = atype->addType(tab, &(atoms->atom[i]), type, param,
+                                                   atoms->atom[i].type, atomnr);
             }
             atoms->atom[i].type  = k;
             atoms->atom[i].typeB = k;

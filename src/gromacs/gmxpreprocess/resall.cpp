@@ -60,18 +60,16 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab)
+void read_atype(const char *ffdir, t_symtab *tab, PreprocessingAtomType *at)
 {
     FILE                    *in;
     char                     buf[STRLEN], name[STRLEN];
     double                   m;
     int                      nratt = 0;
-    gpp_atomtype            *at;
     t_atom                  *a;
     t_param                 *nb;
 
     std::vector<std::string> files = fflib_search_file_end(ffdir, ".atp", TRUE);
-    at    = init_atomtype();
     snew(a, 1);
     snew(nb, 1);
 
@@ -94,7 +92,7 @@ gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab)
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
                 a->m = m;
-                add_atomtype(at, tab, a, name, nb, 0, 0);
+                at->addType(tab, a, name, nb, 0, 0);
                 fprintf(stderr, "\rAtomtype %d", ++nratt);
                 fflush(stderr);
             }
@@ -106,11 +104,9 @@ gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab)
         gmx_ffclose(in);
     }
     fprintf(stderr, "\n");
-
-    return at;
 }
 
-static void print_resatoms(FILE *out, gpp_atomtype *atype, const t_restp &rtp)
+static void print_resatoms(FILE *out, PreprocessingAtomType *atype, const t_restp &rtp)
 {
     /* fprintf(out,"%5s\n",rtp->resname);
        fprintf(out,"%5d\n",rtp->natom); */
@@ -120,7 +116,7 @@ static void print_resatoms(FILE *out, gpp_atomtype *atype, const t_restp &rtp)
     for (int j = 0; (j < rtp.natom()); j++)
     {
         int         tp   = rtp.atom[j].type;
-        const char* tpnm = get_atomtype_name(tp, atype);
+        const char* tpnm = atype->atomNameFromType(tp);
         if (tpnm == nullptr)
         {
             gmx_fatal(FARGS, "Incorrect atomtype (%d)", tp);
@@ -131,7 +127,7 @@ static void print_resatoms(FILE *out, gpp_atomtype *atype, const t_restp &rtp)
 }
 
 static bool read_atoms(FILE *in, char *line,
-                       t_restp *r0, t_symtab *tab, gpp_atomtype *atype)
+                       t_restp *r0, t_symtab *tab, PreprocessingAtomType *atype)
 {
     char   buf[256], buf1[256];
 
@@ -151,14 +147,14 @@ static bool read_atoms(FILE *in, char *line,
         r0->atom.push_back(t_atom());
         r0->atom.back().q   = q;
         r0->cgnr.push_back(cg);
-        int j               = get_atomtype_type(buf1, atype);
+        int j               = atype->atomTypeFromString(buf1);
         if (j == NOTSET)
         {
             gmx_fatal(FARGS, "Atom type %s (residue %s) not found in atomtype "
                       "database", buf1, r0->resname.c_str());
         }
         r0->atom.back().type = j;
-        r0->atom.back().m    = get_atomtype_massA(j, atype);
+        r0->atom.back().m    = atype->atomMassAFromType(j);
     }
 
     return TRUE;
@@ -270,7 +266,7 @@ static void print_resall_header(FILE *out, gmx::ArrayRef<const t_restp> rtp)
 }
 
 void print_resall(FILE *out, gmx::ArrayRef<t_restp> rtp,
-                  gpp_atomtype *atype)
+                  PreprocessingAtomType *atype)
 {
     if (rtp.empty())
     {
@@ -293,7 +289,7 @@ void print_resall(FILE *out, gmx::ArrayRef<t_restp> rtp,
 }
 
 void read_resall(const char *rrdb, std::vector<t_restp> *rtp,
-                 gpp_atomtype *atype, t_symtab *tab,
+                 PreprocessingAtomType *atype, t_symtab *tab,
                  bool bAllowOverrideRTP)
 {
     FILE         *in;

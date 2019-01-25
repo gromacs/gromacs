@@ -38,12 +38,12 @@
 #ifndef GMX_GMXPREPROCESS_VSITE_PARM_H
 #define GMX_GMXPREPROCESS_VSITE_PARM_H
 
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct gmx_moltype_t;
 struct t_atoms;
 struct t_params;
 
-int set_vsites(bool bVerbose, t_atoms *atoms,  gpp_atomtype *atype,
+int set_vsites(bool bVerbose, t_atoms *atoms,  PreprocessingAtomType *atype,
                t_params plist[]);
 /* set parameters for virtual sites, return number of virtual sites */
 

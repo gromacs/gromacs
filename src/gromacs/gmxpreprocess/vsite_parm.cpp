@@ -392,11 +392,9 @@ static real get_angle(int nrang, t_mybonded angles[],
     return angle;
 }
 
-static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype *atype)
+static const char *get_atomtype_name_AB(t_atom *atom, PreprocessingAtomType *atype)
 {
-    char *name;
-
-    name = get_atomtype_name(atom->type, atype);
+    const char *name = atype->atomNameFromType(atom->type);
 
     /* When using the decoupling option, atom types are changed
      * to decoupled for the non-bonded interactions, but the virtual
@@ -410,13 +408,13 @@ static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype *atype)
      */
     if (strcmp(name, "decoupled") == 0)
     {
-        name = get_atomtype_name(atom->typeB, atype);
+        name = atype->atomNameFromType(atom->typeB);
     }
 
     return name;
 }
 
-static bool calc_vsite3_param(gpp_atomtype *atype,
+static bool calc_vsite3_param(PreprocessingAtomType *atype,
                               t_param *param, t_atoms *at,
                               int nrbond, t_mybonded *bonds,
                               int nrang,  t_mybonded *angles )
@@ -554,7 +552,7 @@ static bool calc_vsite3fad_param(t_param *param,
     return bError;
 }
 
-static bool calc_vsite3out_param(gpp_atomtype *atype,
+static bool calc_vsite3out_param(PreprocessingAtomType *atype,
                                  t_param *param, t_atoms *at,
                                  int nrbond, t_mybonded *bonds,
                                  int nrang,  t_mybonded *angles)
@@ -766,7 +764,7 @@ calc_vsite4fdn_param(t_param *param,
 
 
 
-int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
+int set_vsites(bool bVerbose, t_atoms *atoms, PreprocessingAtomType *atype,
                t_params plist[])
 {
     int             i, j, ftype;

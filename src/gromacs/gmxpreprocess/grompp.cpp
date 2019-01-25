@@ -495,7 +495,7 @@ static void
 new_status(const char *topfile, const char *topppfile, const char *confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
            bool bGenVel, bool bVerbose, t_state *state,
-           gpp_atomtype *atype, gmx_mtop_t *sys,
+           PreprocessingAtomType *atype, gmx_mtop_t *sys,
            int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
            t_params plist[],
            int *comb, double *reppow, real *fudgeQQ,
@@ -1001,7 +1001,7 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
     read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
 }
 
-static void set_wall_atomtype(gpp_atomtype *at, t_gromppopts *opts,
+static void set_wall_atomtype(PreprocessingAtomType *at, t_gromppopts *opts,
                               t_inputrec *ir, warninp *wi)
 {
     int  i;
@@ -1013,7 +1013,7 @@ static void set_wall_atomtype(gpp_atomtype *at, t_gromppopts *opts,
     }
     for (i = 0; i < ir->nwall; i++)
     {
-        ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i], at);
+        ir->wall_atomtype[i] = at->atomTypeFromString(opts->wall_atomtype[i]);
         if (ir->wall_atomtype[i] == NOTSET)
         {
             sprintf(warn_buf, "Specified wall atom type %s is not defined", opts->wall_atomtype[i]);
@@ -1681,7 +1681,6 @@ int gmx_grompp(int argc, char *argv[])
     t_gromppopts          *opts;
     int                    nmi;
     t_molinfo             *mi, *intermolecular_interactions;
-    gpp_atomtype          *atype;
     int                    nvsite, comb;
     t_params              *plist;
     real                   fudgeQQ;
@@ -1790,8 +1789,8 @@ int gmx_grompp(int argc, char *argv[])
 
     snew(plist, F_NRE);
     init_plist(plist);
-    gmx_mtop_t sys;
-    atype = init_atomtype();
+    gmx_mtop_t            sys;
+    PreprocessingAtomType atype;
     if (debug)
     {
         pr_symtab(debug, 0, "Just opened", &sys.symtab);
@@ -1806,7 +1805,7 @@ int gmx_grompp(int argc, char *argv[])
     t_state state;
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
                opts, ir, bZero, bGenVel, bVerbose, &state,
-               atype, &sys, &nmi, &mi, &intermolecular_interactions,
+               &atype, &sys, &nmi, &mi, &intermolecular_interactions,
                plist, &comb, &reppow, &fudgeQQ,
                opts->bMorse,
                wi);
@@ -1821,7 +1820,7 @@ int gmx_grompp(int argc, char *argv[])
     for (size_t mt = 0; mt < sys.moltype.size(); mt++)
     {
         nvsite +=
-            set_vsites(bVerbose, &sys.moltype[mt].atoms, atype, mi[mt].plist);
+            set_vsites(bVerbose, &sys.moltype[mt].atoms, &atype, mi[mt].plist);
     }
     /* now throw away all obsolete bonds, angles and dihedrals: */
     /* note: constraints are ALWAYS removed */
@@ -1865,9 +1864,9 @@ int gmx_grompp(int argc, char *argv[])
 
     /* If we are doing QM/MM, check that we got the atom numbers */
     have_atomnumber = TRUE;
-    for (i = 0; i < get_atomtype_ntypes(atype); i++)
+    for (int i = 0; i < atype.nr(); i++)
     {
-        have_atomnumber = have_atomnumber && (get_atomtype_atomnumber(i, atype) >= 0);
+        have_atomnumber = have_atomnumber && (atype.atomNumberFromType(i) >= 0);
     }
     if (!have_atomnumber && ir->bQMMM)
     {
@@ -1950,11 +1949,10 @@ int gmx_grompp(int argc, char *argv[])
         setup_cmap(plist[F_CMAP].grid_spacing, plist[F_CMAP].nc, plist[F_CMAP].cmap, &sys.ffparams.cmap_grid);
     }
 
-    set_wall_atomtype(atype, opts, ir, wi);
+    set_wall_atomtype(&atype, opts, ir, wi);
     if (bRenum)
     {
-        renum_atype(plist, &sys, ir->wall_atomtype, atype, bVerbose);
-        get_atomtype_ntypes(atype);
+        atype.renumberTypes(plist, &sys, ir->wall_atomtype, bVerbose);
     }
 
     if (ir->implicit_solvent)
@@ -1963,7 +1961,7 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* PELA: Copy the atomtype data to the topology atomtype list */
-    copy_atomtype_atomtypes(atype, &(sys.atomtypes));
+    atype.copyTot_atomtypes(&(sys.atomtypes));
 
     if (debug)
     {
@@ -1975,7 +1973,7 @@ int gmx_grompp(int argc, char *argv[])
         fprintf(stderr, "converting bonded parameters...\n");
     }
 
-    ntype = get_atomtype_ntypes(atype);
+    ntype = atype.nr();
     convert_params(ntype, plist, mi, intermolecular_interactions,
                    comb, reppow, fudgeQQ, &sys);
 
@@ -2322,7 +2320,6 @@ int gmx_grompp(int argc, char *argv[])
         done_plist(mi[i].plist);
     }
     sfree(mi);
-    done_atomtype(atype);
     done_inputrec_strings();
     output_env_done(oenv);
 

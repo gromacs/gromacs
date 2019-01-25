@@ -93,7 +93,7 @@ static int find_kw(char *keyw)
 #define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
 
 static void read_atom(char *line, bool bAdd,
-                      std::string *nname, t_atom *a, gpp_atomtype *atype, int *cgnr)
+                      std::string *nname, t_atom *a, PreprocessingAtomType *atype, int *cgnr)
 {
     int    nr, i;
     char   buf[5][30];
@@ -131,7 +131,7 @@ static void read_atom(char *line, bool bAdd,
             nname->clear();
         }
     }
-    a->type = get_atomtype_type(buf[i++], atype);
+    a->type = atype->atomTypeFromString(buf[i++]);
     sscanf(buf[i++], "%lf", &m);
     a->m = m;
     sscanf(buf[i++], "%lf", &q);
@@ -146,14 +146,14 @@ static void read_atom(char *line, bool bAdd,
     }
 }
 
-static void print_atom(FILE *out, const t_atom &a, gpp_atomtype *atype)
+static void print_atom(FILE *out, const t_atom &a, PreprocessingAtomType *atype)
 {
     fprintf(out, "\t%s\t%g\t%g\n",
-            get_atomtype_name(a.type, atype), a.m, a.q);
+            atype->atomNameFromType(a.type), a.m, a.q);
 }
 
 static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const t_hackblock> tb,
-                         gpp_atomtype *atype)
+                         PreprocessingAtomType *atype)
 {
     FILE *out;
     char  buf[STRLEN];
@@ -247,9 +247,9 @@ static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const t_hackblock
     gmx_fio_fclose(out);
 }
 
-static void read_ter_db_file(const char               *fn,
-                             std::vector<t_hackblock> *tbptr,
-                             gpp_atomtype             *atype)
+static void read_ter_db_file(const char                        *fn,
+                             std::vector<t_hackblock>          *tbptr,
+                             PreprocessingAtomType             *atype)
 {
     char         filebase[STRLEN], *ptr;
     FILE        *in;
@@ -393,7 +393,7 @@ static void read_ter_db_file(const char               *fn,
 }
 
 int read_ter_db(const char *ffdir, char ter,
-                std::vector<t_hackblock> *tbptr, gpp_atomtype *atype)
+                std::vector<t_hackblock> *tbptr, PreprocessingAtomType *atype)
 {
     char   ext[STRLEN];
 
