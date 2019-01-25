@@ -75,7 +75,7 @@ TEST(MtopTest, RangeBasedLoop)
     gmx_mtop_t mtop;
     createBasicTop(&mtop);
     int        count = 0;
-    for (const AtomProxy &atomP : AtomRange(mtop))
+    for (const AtomProxy atomP : AtomRange(mtop))
     {
         EXPECT_EQ(atomP.globalAtomNumber(), count);
         ++count;

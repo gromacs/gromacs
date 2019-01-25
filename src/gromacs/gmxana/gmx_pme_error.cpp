@@ -810,7 +810,7 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
         snew(*x, mtop->natoms);
         nq = 0;
 
-        for (const AtomProxy &atomP : AtomRange(*mtop))
+        for (const AtomProxy atomP : AtomRange(*mtop))
         {
             const t_atom &local = atomP.atom();
             int           i     = atomP.globalAtomNumber();
