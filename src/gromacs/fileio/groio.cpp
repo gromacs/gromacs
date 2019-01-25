@@ -516,7 +516,7 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
 
     const char         *format = get_hconf_format(v != nullptr);
 
-    for (const AtomProxy &atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(*mtop))
     {
         int         i             = atomP.globalAtomNumber();
         int         residueNumber = atomP.residueNumber();

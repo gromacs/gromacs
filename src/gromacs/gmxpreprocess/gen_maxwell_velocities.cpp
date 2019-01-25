@@ -61,7 +61,7 @@ static void low_mspeed(real tempi,
     boltz = BOLTZ*tempi;
     ekin  = 0.0;
     nrdf  = 0;
-    for (const AtomProxy &atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(*mtop))
     {
         const t_atom &local = atomP.atom();
         int           i     = atomP.globalAtomNumber();

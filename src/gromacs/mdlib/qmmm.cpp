@@ -358,7 +358,7 @@ std::vector<int> qmmmAtomIndices(const t_inputrec &ir, const gmx_mtop_t &mtop)
     std::vector<int>    qmmmAtoms;
     for (int i = 0; i < numQmmmGroups; i++)
     {
-        for (const AtomProxy &atomP : AtomRange(mtop))
+        for (const AtomProxy atomP : AtomRange(mtop))
         {
             int index = atomP.globalAtomNumber();
             if (getGroupType(groups, egcQMMM, index) == i)

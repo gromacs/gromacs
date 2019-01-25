@@ -967,7 +967,7 @@ static void copyIdefFromMtop(const gmx_mtop_t &mtop,
     {
         std::vector<real>          qA(mtop.natoms);
         std::vector<real>          qB(mtop.natoms);
-        for (const AtomProxy &atomP : AtomRange(mtop))
+        for (const AtomProxy atomP : AtomRange(mtop))
         {
             const t_atom &local = atomP.atom();
             int           index = atomP.globalAtomNumber();
@@ -1231,7 +1231,7 @@ std::vector<int> get_atom_index(const gmx_mtop_t *mtop)
 {
 
     std::vector<int>             atom_index;
-    for (const AtomProxy &atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(*mtop))
     {
         const t_atom &local = atomP.atom();
         int           index = atomP.globalAtomNumber();

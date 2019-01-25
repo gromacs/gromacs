@@ -364,7 +364,7 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp *wi)
 
 static void check_vel(gmx_mtop_t *mtop, rvec v[])
 {
-    for (const AtomProxy &atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(*mtop))
     {
         const t_atom &local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
@@ -384,7 +384,7 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
     int                        nshells = 0;
     char                       warn_buf[STRLEN];
 
-    for (const AtomProxy &atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(*mtop))
     {
         const t_atom &local = atomP.atom();
         if (local.ptype == eptShell ||
@@ -668,7 +668,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         real                   *mass;
 
         snew(mass, state->natoms);
-        for (const AtomProxy &atomP : AtomRange(*sys))
+        for (const AtomProxy atomP : AtomRange(*sys))
         {
             const t_atom &local = atomP.atom();
             int           i     = atomP.globalAtomNumber();
@@ -1236,7 +1236,7 @@ static real calc_temp(const gmx_mtop_t *mtop,
                       rvec             *v)
 {
     double                     sum_mv2 = 0;
-    for (const AtomProxy &atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(*mtop))
     {
         const t_atom &local = atomP.atom();
         int           i     = atomP.globalAtomNumber();

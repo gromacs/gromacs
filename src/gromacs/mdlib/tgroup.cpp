@@ -61,7 +61,7 @@ static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
     if (ngacc > 0)
     {
         const gmx_groups_t    &groups = mtop->groups;
-        for (const AtomProxy &atomP : AtomRange(*mtop))
+        for (const AtomProxy atomP : AtomRange(*mtop))
         {
             const t_atom &local = atomP.atom();
             int           i     = atomP.globalAtomNumber();

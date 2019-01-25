@@ -221,7 +221,7 @@ void init_orires(FILE                 *fplog,
     rvec                        com   = { 0, 0, 0 };
     double                      mtot  = 0.0;
     int                         j     = 0;
-    for (const AtomProxy &atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(*mtop))
     {
         const t_atom &local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
