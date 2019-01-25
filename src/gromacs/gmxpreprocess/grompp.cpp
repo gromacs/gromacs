@@ -140,33 +140,30 @@ static int rm_interactions(int ifunc, gmx::ArrayRef<MoleculeInformation> mols)
 }
 
 static int check_atom_names(const char *fn1, const char *fn2,
-                            gmx_mtop_t *mtop, const t_atoms *at)
+                            const gmx_mtop_t &mtop, const t_atoms &conf)
 {
-    int      m, i, j, nmismatch;
-    t_atoms *tat;
 #define MAXMISMATCH 20
 
-    if (mtop->natoms != at->nr)
+    if (mtop.natoms != conf.nr)
     {
         gmx_incons("comparing atom names");
     }
-
-    nmismatch = 0;
-    i         = 0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
+    int nmismatch = 0;
+    int i         = 0;
+    for (const gmx_molblock_t &molb : mtop.molblock)
     {
-        tat = &mtop->moltype[molb.type].atoms;
-        for (m = 0; m < molb.nmol; m++)
+        const t_atoms &tat = mtop.moltype[molb.type].atoms;
+        for (int m = 0; m < molb.nmol; m++)
         {
-            for (j = 0; j < tat->nr; j++)
+            for (int j = 0; j < tat.nr; j++)
             {
-                if (strcmp( *(tat->atomname[j]), *(at->atomname[i]) ) != 0)
+                if (strcmp( *(tat.atomname[j]), *(conf.atomname[i]) ) != 0)
                 {
                     if (nmismatch < MAXMISMATCH)
                     {
                         fprintf(stderr,
                                 "Warning: atom name %d in %s and %s does not match (%s - %s)\n",
-                                i+1, fn1, fn2, *(tat->atomname[j]), *(at->atomname[i]));
+                                i+1, fn1, fn2, *(tat.atomname[j]), *(conf.atomname[i]));
                     }
                     else if (nmismatch == MAXMISMATCH)
                     {
@@ -506,7 +503,7 @@ static void
 new_status(const char *topfile, const char *topppfile, const char *confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
            bool bGenVel, bool bVerbose, t_state *state,
-           gpp_atomtype *atype, gmx_mtop_t *sys,
+           PreprocessingAtomType *atype, gmx_mtop_t *sys,
            std::vector<MoleculeInformation> *mi,
            std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
            gmx::ArrayRef<InteractionTypeParameters> plist,
@@ -515,7 +512,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
            warninp *wi)
 {
     std::vector<gmx_molblock_t>      molblock;
-    int                              i, nrmols, nmismatch;
+    int                              i, nmismatch;
     bool                             ffParametrizedWithHBondConstraints;
     char                             buf[STRLEN];
     char                             warn_buf[STRLEN];
@@ -523,7 +520,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     /* TOPOLOGY processing */
     sys->name = do_top(bVerbose, topfile, topppfile, opts, bZero, &(sys->symtab),
                        plist, comb, reppow, fudgeQQ,
-                       atype, &nrmols, mi, intermolecular_interactions,
+                       atype, mi, intermolecular_interactions,
                        ir,
                        &molblock,
                        &ffParametrizedWithHBondConstraints,
@@ -606,50 +603,52 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "processing coordinates...\n");
     }
 
-    t_topology *conftop;
-    rvec       *x = nullptr;
-    rvec       *v = nullptr;
-    snew(conftop, 1);
-    read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
-    state->natoms = conftop->atoms.nr;
-    if (state->natoms != sys->natoms)
     {
-        gmx_fatal(FARGS, "number of coordinates in coordinate file (%s, %d)\n"
-                  "             does not match topology (%s, %d)",
-                  confin, state->natoms, topfile, sys->natoms);
-    }
-    /* It would be nice to get rid of the copies below, but we don't know
-     * a priori if the number of atoms in confin matches what we expect.
-     */
-    state->flags |= (1 << estX);
-    if (v != nullptr)
-    {
-        state->flags |= (1 << estV);
-    }
-    state_change_natoms(state, state->natoms);
-    std::copy(x, x+state->natoms, state->x.data());
-    sfree(x);
-    if (v != nullptr)
-    {
-        std::copy(v, v+state->natoms, state->v.data());
-        sfree(v);
-    }
-    /* This call fixes the box shape for runs with pressure scaling */
-    set_box_rel(ir, state);
+        rvec       *x = nullptr;
+        rvec       *v = nullptr;
+        t_atoms     conf;
+        t_symtab    confsymtab;
+        open_symtab(&confsymtab);
+        readConfAndAtoms(confin, &confsymtab, nullptr, &conf, nullptr, &x, &v, state->box);
+        state->natoms = conf.nr;
+        if (state->natoms != sys->natoms)
+        {
+            gmx_fatal(FARGS, "number of coordinates in coordinate file (%s, %d)\n"
+                      "             does not match topology (%s, %d)",
+                      confin, state->natoms, topfile, sys->natoms);
+        }
+        /* It would be nice to get rid of the copies below, but we don't know
+         * a priori if the number of atoms in confin matches what we expect.
+         */
+        state->flags |= (1 << estX);
+        if (v != nullptr)
+        {
+            state->flags |= (1 << estV);
+        }
+        state_change_natoms(state, state->natoms);
+        std::copy(x, x+state->natoms, state->x.data());
+        sfree(x);
+        if (v != nullptr)
+        {
+            std::copy(v, v+state->natoms, state->v.data());
+            sfree(v);
+        }
+        /* This call fixes the box shape for runs with pressure scaling */
+        set_box_rel(ir, state);
 
-    nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
-    done_top(conftop);
-    sfree(conftop);
+        nmismatch = check_atom_names(topfile, confin, *sys, conf);
 
-    if (nmismatch)
-    {
-        sprintf(buf, "%d non-matching atom name%s\n"
-                "atom names from %s will be used\n"
-                "atom names from %s will be ignored\n",
-                nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
-        warning(wi, buf);
+        if (nmismatch)
+        {
+            sprintf(buf, "%d non-matching atom name%s\n"
+                    "atom names from %s will be used\n"
+                    "atom names from %s will be ignored\n",
+                    nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
+            warning(wi, buf);
+        }
+        done_atom(&conf);
+        done_symtab(&confsymtab);
     }
-
     /* If using the group scheme, make sure charge groups are made whole to avoid errors
      * in calculating charge group size later on
      */
@@ -1011,7 +1010,7 @@ static void gen_posres(gmx_mtop_t *mtop,
     read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
 }
 
-static void set_wall_atomtype(gpp_atomtype *at, t_gromppopts *opts,
+static void set_wall_atomtype(PreprocessingAtomType *at, t_gromppopts *opts,
                               t_inputrec *ir, warninp *wi)
 {
     int  i;
@@ -1023,7 +1022,7 @@ static void set_wall_atomtype(gpp_atomtype *at, t_gromppopts *opts,
     }
     for (i = 0; i < ir->nwall; i++)
     {
-        ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i], at);
+        ir->wall_atomtype[i] = at->atomTypeFromString(opts->wall_atomtype[i]);
         if (ir->wall_atomtype[i] == NOTSET)
         {
             sprintf(warn_buf, "Specified wall atom type %s is not defined", opts->wall_atomtype[i]);
@@ -1692,7 +1691,6 @@ int gmx_grompp(int argc, char *argv[])
     t_gromppopts                        *opts;
     std::vector<MoleculeInformation>     mi;
     std::unique_ptr<MoleculeInformation> intermolecular_interactions;
-    gpp_atomtype                        *atype;
     int                                  nvsite, comb;
     real                                 fudgeQQ;
     double                               reppow;
@@ -1800,8 +1798,8 @@ int gmx_grompp(int argc, char *argv[])
 
     std::array<InteractionTypeParameters, F_NRE> plist;
     init_plist(plist);
-    gmx_mtop_t sys;
-    atype = init_atomtype();
+    gmx_mtop_t                                   sys;
+    PreprocessingAtomType                        atype;
     if (debug)
     {
         pr_symtab(debug, 0, "Just opened", &sys.symtab);
@@ -1816,7 +1814,7 @@ int gmx_grompp(int argc, char *argv[])
     t_state state;
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
                opts, ir, bZero, bGenVel, bVerbose, &state,
-               atype, &sys, &mi, &intermolecular_interactions,
+               &atype, &sys, &mi, &intermolecular_interactions,
                plist, &comb, &reppow, &fudgeQQ,
                opts->bMorse,
                wi);
@@ -1831,7 +1829,7 @@ int gmx_grompp(int argc, char *argv[])
     for (size_t mt = 0; mt < sys.moltype.size(); mt++)
     {
         nvsite +=
-            set_vsites(bVerbose, &sys.moltype[mt].atoms, atype, mi[mt].plist);
+            set_vsites(bVerbose, &sys.moltype[mt].atoms, &atype, mi[mt].plist);
     }
     /* now throw away all obsolete bonds, angles and dihedrals: */
     /* note: constraints are ALWAYS removed */
@@ -1875,9 +1873,9 @@ int gmx_grompp(int argc, char *argv[])
 
     /* If we are doing QM/MM, check that we got the atom numbers */
     have_atomnumber = TRUE;
-    for (i = 0; i < get_atomtype_ntypes(atype); i++)
+    for (int i = 0; i < atype.nr(); i++)
     {
-        have_atomnumber = have_atomnumber && (get_atomtype_atomnumber(i, atype) >= 0);
+        have_atomnumber = have_atomnumber && (atype.atomNumberFromType(i) >= 0);
     }
     if (!have_atomnumber && ir->bQMMM)
     {
@@ -1960,11 +1958,10 @@ int gmx_grompp(int argc, char *argv[])
         setup_cmap(plist[F_CMAP].cmakeGridSpacing, plist[F_CMAP].cmapAngles, plist[F_CMAP].cmap, &sys.ffparams.cmap_grid);
     }
 
-    set_wall_atomtype(atype, opts, ir, wi);
+    set_wall_atomtype(&atype, opts, ir, wi);
     if (bRenum)
     {
-        renum_atype(plist, &sys, ir->wall_atomtype, atype, bVerbose);
-        get_atomtype_ntypes(atype);
+        atype.renumberTypes(plist, &sys, ir->wall_atomtype, bVerbose);
     }
 
     if (ir->implicit_solvent)
@@ -1973,7 +1970,7 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* PELA: Copy the atomtype data to the topology atomtype list */
-    copy_atomtype_atomtypes(atype, &(sys.atomtypes));
+    atype.copyTot_atomtypes(&(sys.atomtypes));
 
     if (debug)
     {
@@ -1985,7 +1982,7 @@ int gmx_grompp(int argc, char *argv[])
         fprintf(stderr, "converting bonded parameters...\n");
     }
 
-    ntype = get_atomtype_ntypes(atype);
+    ntype = atype.nr();
     convertInteractionTypeParameters(ntype, plist, mi, intermolecular_interactions.get(),
                                      comb, reppow, fudgeQQ, &sys);
 
@@ -2329,7 +2326,6 @@ int gmx_grompp(int argc, char *argv[])
         // fullCleanUp can't be called.
         mol.partialCleanUp();
     }
-    done_atomtype(atype);
     done_inputrec_strings();
     output_env_done(oenv);
 

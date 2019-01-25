@@ -46,7 +46,7 @@
 
 struct gmx_molblock_t;
 struct gmx_mtop_t;
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct t_gromppopts;
 struct t_inputrec;
 struct MoleculeInformation;
@@ -69,8 +69,7 @@ char **do_top(bool                                                        bVerbo
               int                                                        *combination_rule,
               double                                                     *repulsion_power,
               real                                                       *fudgeQQ,
-              gpp_atomtype                                               *atype,
-              int                                                        *nrmols,
+              PreprocessingAtomType                                      *atype,
               std::vector<MoleculeInformation>                           *molinfo,
               std::unique_ptr<MoleculeInformation>                       *intermolecular_interactions,
               const t_inputrec                                           *ir,

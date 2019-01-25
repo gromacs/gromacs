@@ -83,7 +83,7 @@ static void copy_bond (InteractionTypeParameters *pr, int to, int from)
 
 static int count_hydrogens (char ***atomname, int nra, const int a[])
 {
-    int  i, nh;
+    int  nh;
 
     if (!atomname)
     {
@@ -92,7 +92,7 @@ static int count_hydrogens (char ***atomname, int nra, const int a[])
     }
 
     nh = 0;
-    for (i = 0; (i < nra); i++)
+    for (int i = 0; (i < nra); i++)
     {
         if (toupper(**(atomname[a[i]])) == 'H')
         {
@@ -105,13 +105,10 @@ static int count_hydrogens (char ***atomname, int nra, const int a[])
 
 void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, int nshake)
 {
-    char                           ***info = atoms->atomname;
-    InteractionTypeParameters        *pr;
-    InteractionTypeParameters        *bonds;
-    t_param                           p, *bond, *ang;
-    real                              b_ij, b_jk;
-    int                               i, j, ftype, ftype_a;
-    bool                              bFound;
+    char                  ***info = atoms->atomname;
+    t_param                  p;
+    real                     b_ij, b_jk;
+    int                      i, j;
 
     if (nshake != eshNONE)
     {
@@ -138,27 +135,25 @@ void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, 
             /* Add all the angles with hydrogens to the shake list
              * and remove them from the bond list
              */
-            for (ftype = 0; (ftype < F_NRE); ftype++)
+            for (int ftype = 0; (ftype < F_NRE); ftype++)
             {
                 if (interaction_function[ftype].flags & IF_BTYPE)
                 {
-                    bonds = &(plist[ftype]);
+                    InteractionTypeParameters *bonds = &(plist[ftype]);
 
-                    for (ftype_a = 0; (bonds->nr > 0 && ftype_a < F_NRE); ftype_a++)
+                    for (int ftype_a = 0; (bonds->nr > 0 && ftype_a < F_NRE); ftype_a++)
                     {
                         if (interaction_function[ftype_a].flags & IF_ATYPE)
                         {
-                            pr = &(plist[ftype_a]);
+                            InteractionTypeParameters *pr = &(plist[ftype_a]);
 
-                            for (i = 0; (i < pr->nr); )
+                            for (int i = 0; (i < pr->nr); )
                             {
-                                int numhydrogens;
-
-                                ang = &(pr->param[i]);
+                                t_param *ang = &(pr->param[i]);
 #ifdef DEBUG
                                 printf("Angle: %d-%d-%d\n", ang->ai(), ang->aj(), ang->ak());
 #endif
-                                numhydrogens = count_hydrogens(info, 3, ang->a);
+                                int numhydrogens = count_hydrogens(info, 3, ang->a);
                                 if ((nshake == eshALLANGLES) ||
                                     (numhydrogens > 1) ||
                                     (numhydrogens == 1 && toupper(**(info[ang->a[1]])) == 'O'))
@@ -171,11 +166,11 @@ void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, 
                                     p.aj() = ang->ak();
 
                                     /* Calculate length of constraint */
-                                    bFound = FALSE;
+                                    bool bFound = false;
                                     b_ij   = b_jk = 0.0;
-                                    for (j = 0; !bFound && (j < bonds->nr); j++)
+                                    for (int j = 0; !bFound && (j < bonds->nr); j++)
                                     {
-                                        bond = &(bonds->param[j]);
+                                        t_param *bond = &(bonds->param[j]);
                                         if (((bond->ai() == ang->ai()) &&
                                              (bond->aj() == ang->aj())) ||
                                             ((bond->ai() == ang->aj()) &&
@@ -222,11 +217,11 @@ void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, 
         /* Add all the bonds with hydrogens to the shake list
          * and remove them from the bond list
          */
-        for (ftype = 0; (ftype < F_NRE); ftype++)
+        for (int ftype = 0; (ftype < F_NRE); ftype++)
         {
             if (interaction_function[ftype].flags & IF_BTYPE)
             {
-                pr = &(plist[ftype]);
+                InteractionTypeParameters *pr = &(plist[ftype]);
                 j  = 0;
                 for (i = 0; i < pr->nr; i++)
                 {
