@@ -109,11 +109,10 @@ static int
 assign_param(t_functype ftype, t_iparams *newparam,
              real old[MAXFORCEPARAM], int comb, double reppow)
 {
-    int      i, j;
-    bool     all_param_zero = TRUE;
+    bool     all_param_zero = true;
 
     /* Set to zero */
-    for (j = 0; (j < MAXFORCEPARAM); j++)
+    for (int j = 0; (j < MAXFORCEPARAM); j++)
     {
         newparam->generic.buf[j] = 0.0;
         /* If all parameters are zero we might not add some interaction types (selected below).
@@ -194,7 +193,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             break;
         case F_QUARTIC_ANGLES:
             newparam->qangle.theta = old[0];
-            for (i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++)
             {
                 newparam->qangle.c[i] = old[i+1];
             }
@@ -365,14 +364,14 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->dihres.kfacB  = old[5];
             break;
         case F_RBDIHS:
-            for (i = 0; (i < NR_RBDIHS); i++)
+            for (int i = 0; (i < NR_RBDIHS); i++)
             {
                 newparam->rbdihs.rbcA[i] = old[i];
                 newparam->rbdihs.rbcB[i] = old[NR_RBDIHS+i];
             }
             break;
         case F_CBTDIHS:
-            for (i = 0; (i < NR_CBTDIHS); i++)
+            for (int i = 0; (i < NR_CBTDIHS); i++)
             {
                 newparam->cbtdihs.cbtcA[i] = old[i];
             }

@@ -42,8 +42,10 @@
 
 #include "gromacs/utility/arrayref.h"
 
+#include "gromacs/utility/arrayref.h"
+
 enum class Directive : int;
-struct gpp_atomtype;
+class PreprocessingAtomTypes;
 struct t_atoms;
 struct t_blocka;
 struct t_excls;
@@ -59,7 +61,7 @@ void pr_alloc (int extra, InteractionTypeParameters *pr);
 
 void set_p_string(t_param *p, const char *s);
 
-void cp_param(t_param *dest, t_param *src);
+void cp_param(t_param *dest, const t_param *src);
 
 void add_param_to_list(InteractionTypeParameters *list, t_param *b);
 
@@ -74,7 +76,7 @@ void done_plist(gmx::ArrayRef<InteractionTypeParameters> plist);
 void print_blocka(FILE *out, const char *szName, const char *szIndex,
                   const char *szA, t_blocka *block);
 
-void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, PreprocessingAtomTypes *atype, t_atoms *at, int *cgnr,
                  bool bRTPresname);
 
 void print_bondeds(FILE *out, int natoms, Directive d,

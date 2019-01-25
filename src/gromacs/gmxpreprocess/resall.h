@@ -47,7 +47,7 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomTypes;
 struct PreprocessResidue;
 struct t_symtab;
 
@@ -81,22 +81,22 @@ getDatabaseEntry(const std::string &rtpname, gmx::ArrayRef<const PreprocessResid
  * \param[in] tab Symbol table for names.
  * \returns Atom type database.
  */
-gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab);
+PreprocessingAtomTypes read_atype(const char *ffdir, t_symtab *tab);
 
 /*! \brief
  * Read in database, append to exisiting.
  *
  * \param[in] resdb Name of database file.
  * \param[inout] rtpDBEntry Database to populate.
- * \param[in] atype Atomtype information.
+ * \param[inout] atype Atomtype information.
  * \param[inout] tab Symbol table for names.
  * \param[in] bAllowOverrideRTP If entries can be overwritten in the database.
  */
-void readResidueDatabase(const std::string              &resdb,
-                         std::vector<PreprocessResidue> *rtpDBEntry,
-                         gpp_atomtype                   *atype,
-                         t_symtab                       *tab,
-                         bool                            bAllowOverrideRTP);
+void readResidueDatabase(const std::string               &resdb,
+                         std::vector<PreprocessResidue>  *rtpDBEntry,
+                         PreprocessingAtomTypes          *atype,
+                         t_symtab                        *tab,
+                         bool                             bAllowOverrideRTP);
 
 /*! \brief
  * Print out database.
@@ -106,6 +106,6 @@ void readResidueDatabase(const std::string              &resdb,
  * \param[in] atype Atom type information.
  */
 void print_resall(FILE *out, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
-                  gpp_atomtype *atype);
+                  const PreprocessingAtomTypes &atype);
 
 #endif

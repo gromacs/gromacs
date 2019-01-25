@@ -372,11 +372,9 @@ static real get_angle(int nrang, t_mybonded angles[],
     return angle;
 }
 
-static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype *atype)
+static const char *get_atomtype_name_AB(t_atom *atom, PreprocessingAtomTypes *atypes)
 {
-    char *name;
-
-    name = get_atomtype_name(atom->type, atype);
+    const char* name = atypes->atomNameFromAtomType(atom->type);
 
     /* When using the decoupling option, atom types are changed
      * to decoupled for the non-bonded interactions, but the virtual
@@ -390,13 +388,13 @@ static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype *atype)
      */
     if (strcmp(name, "decoupled") == 0)
     {
-        name = get_atomtype_name(atom->typeB, atype);
+        name = atypes->atomNameFromAtomType(atom->typeB);
     }
 
     return name;
 }
 
-static bool calc_vsite3_param(gpp_atomtype *atype,
+static bool calc_vsite3_param(PreprocessingAtomTypes *atypes,
                               t_param *param, t_atoms *at,
                               int nrbond, t_mybonded *bonds,
                               int nrang,  t_mybonded *angles )
@@ -411,10 +409,10 @@ static bool calc_vsite3_param(gpp_atomtype *atype,
     /* check if this is part of a NH3 , NH2-umbrella or CH3 group,
      * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
     bXH3 =
-        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MNH", 3) == 0) &&
-          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MNH", 3) == 0) ) ||
-        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MCH3", 4) == 0) &&
-          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MCH3", 4) == 0) );
+        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MNH", 3) == 0) &&
+          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MNH", 3) == 0) ) ||
+        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MCH3", 4) == 0) &&
+          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MCH3", 4) == 0) );
 
     bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
     bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
@@ -534,7 +532,7 @@ static bool calc_vsite3fad_param(t_param *param,
     return bError;
 }
 
-static bool calc_vsite3out_param(gpp_atomtype *atype,
+static bool calc_vsite3out_param(PreprocessingAtomTypes *atypes,
                                  t_param *param, t_atoms *at,
                                  int nrbond, t_mybonded *bonds,
                                  int nrang,  t_mybonded *angles)
@@ -551,10 +549,10 @@ static bool calc_vsite3out_param(gpp_atomtype *atype,
     /* check if this is part of a NH2-umbrella, NH3 or CH3 group,
      * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
     bXH3 =
-        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MNH", 3) == 0) &&
-          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MNH", 3) == 0) ) ||
-        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MCH3", 4) == 0) &&
-          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MCH3", 4) == 0) );
+        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MNH", 3) == 0) &&
+          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MNH", 3) == 0) ) ||
+        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MCH3", 4) == 0) &&
+          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MCH3", 4) == 0) );
 
     /* check if construction parity must be swapped */
     bSwapParity = ( param->c1() == -1 );
@@ -746,7 +744,7 @@ calc_vsite4fdn_param(t_param *param,
 
 
 
-int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
+int set_vsites(bool bVerbose, t_atoms *atoms, PreprocessingAtomTypes *atypes,
                gmx::ArrayRef<InteractionTypeParameters> plist)
 {
     int             i, j, ftype;
@@ -817,7 +815,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
                     {
                         case F_VSITE3:
                             bERROR =
-                                calc_vsite3_param(atype, &(plist[ftype].param[i]), atoms,
+                                calc_vsite3_param(atypes, &(plist[ftype].param[i]), atoms,
                                                   nrbond, bonds, nrang, angles);
                             break;
                         case F_VSITE3FD:
@@ -832,7 +830,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
                             break;
                         case F_VSITE3OUT:
                             bERROR =
-                                calc_vsite3out_param(atype, &(plist[ftype].param[i]), atoms,
+                                calc_vsite3out_param(atypes, &(plist[ftype].param[i]), atoms,
                                                      nrbond, bonds, nrang, angles);
                             break;
                         case F_VSITE4FD:
