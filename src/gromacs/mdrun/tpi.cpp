@@ -53,6 +53,7 @@
 #include <cfenv>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
@@ -653,8 +654,7 @@ Integrator::do_tpi()
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
                      (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0) |
                      (bStateChanged ? GMX_FORCE_STATECHANGED : 0),
-                     DdOpenBalanceRegionBeforeForceComputation::no,
-                     DdCloseBalanceRegionAfterForceComputation::no);
+                     DDBalanceRegionHandler(nullptr));
             std::feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
             std::feupdateenv(&floatingPointEnvironment);
 

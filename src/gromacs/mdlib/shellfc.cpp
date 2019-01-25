@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1007,8 +1007,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
                          double                                    t,
                          rvec                                      mu_tot,
                          const gmx_vsite_t                        *vsite,
-                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+                         const DDBalanceRegionHandler             &ddBalanceRegionHandler)
 {
     int           nshell;
     t_shell      *shell;
@@ -1148,7 +1147,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
              state->lambda, graph,
              fr, ppForceWorkload, vsite, mu_tot, t, nullptr,
              (bDoNS ? GMX_FORCE_NS : 0) | shellfc_flags,
-             ddOpenBalanceRegion, ddCloseBalanceRegion);
+             ddBalanceRegionHandler);
 
     sf_dir = 0;
     if (nflexcon)
@@ -1258,7 +1257,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
                  md, enerd, fcd, state->lambda, graph,
                  fr, ppForceWorkload, vsite, mu_tot, t, nullptr,
                  shellfc_flags,
-                 ddOpenBalanceRegion, ddCloseBalanceRegion);
+                 ddBalanceRegionHandler);
         sum_epot(&(enerd->grpp), enerd->term);
         if (gmx_debug_at)
         {
