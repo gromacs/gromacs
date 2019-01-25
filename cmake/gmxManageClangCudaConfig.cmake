@@ -35,8 +35,8 @@
 function (gmx_test_clang_cuda_support)
 
     if ((NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR
-        (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.9"))
-        message(FATAL_ERROR "clang 3.9 or later required with GMX_CLANG_CUDA=ON!")
+        (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6))
+        message(FATAL_ERROR "clang 6 or later required with GMX_CLANG_CUDA=ON!")
     endif()
 
     # NOTE: we'd ideally like to use a compile check here, but the link-stage
@@ -46,12 +46,6 @@ function (gmx_test_clang_cuda_support)
     # SET(CMAKE_REQUIRED_LIBRARIES ${LIBS})
     # CHECK_CXX_SOURCE_COMPILES("int main() { int c; cudaGetDeviceCount(&c); return 0; }" _CLANG_CUDA_COMPILES)
 endfunction ()
-
-
-if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0" AND
-    NOT CUDA_VERSION VERSION_LESS "8.0")
-    message(FATAL_ERROR "clang ${CMAKE_CXX_COMPILER_VERSION} for CUDA is only compatible with CUDA version <=8.0")
-endif()
 
 if (GMX_CUDA_TARGET_COMPUTE)
     message(WARNING "Values passed in GMX_CUDA_TARGET_COMPUTE will be ignored; clang will by default include PTX in the binary.")
@@ -72,13 +66,9 @@ else()
     endif()
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_50")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_52")
-    if (NOT CUDA_VERSION VERSION_LESS 8.0)
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_60")
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_61")
-    endif()
-    if (NOT CUDA_VERSION VERSION_LESS 9.0)
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_70")
-    endif()
+    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_60")
+    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_61")
+    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_70")
     # Enable this when clang (8.0 ?) introduces sm_75 support
     #if (NOT CUDA_VERSION VERSION_LESS 10.0)
     #    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_75")
