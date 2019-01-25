@@ -46,6 +46,27 @@ macro(gmx_test_compiler_problems)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
 
+    # Error if compiler doesn't support required C++14 features. Relaxed constexpr is currently only required
+    # feature. It is also one of the last implemented C++14 features in all supported compilers.
+    if(NOT "cxx_relaxed_constexpr" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+        if(CMAKE_COMPILER_IS_GNUCXX)
+            set(cxx_required_version "GCC version 5")
+        elseif(MSVC)
+            set(cxx_required_version "Visual Studio 2017")
+        elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            set(cxx_required_version "Clang 3.6") # For feature complete C++14 only 3.4 is needed.
+                                                  # But prior version have bugs (e.g. debug symbol support)
+        elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            set(cxx_required_version "Intel Compiler 2017")
+        endif()
+        if (cxx_required_version)
+            message(FATAL_ERROR "${cxx_required_version} or later required. "
+                                "Earlier versions don't have full C++14 support.")
+        else()
+            message(FATAL_ERROR "The compiler doesn't have sufficient C++14 support.")
+        endif()
+    endif()
+
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
         check_cxx_source_compiles(
 "// Test in-class array initalizers used with constructor initializer lists
