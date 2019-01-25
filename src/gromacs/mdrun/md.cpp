@@ -55,6 +55,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/collect.h"
+#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -657,8 +658,7 @@ void gmx::Integrator::do_md()
                 ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
                 mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
 
-    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
-    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
+    const DDBalanceRegionHandling ddBalanceRegionHandling(cr);
 
     step     = ir->init_step;
     step_rel = 0;
@@ -852,7 +852,7 @@ void gmx::Integrator::do_md()
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, ppForceWorkload, t, mu_tot,
                                 vsite,
-                                ddOpenBalanceRegion, ddCloseBalanceRegion);
+                                ddBalanceRegionHandling);
         }
         else
         {
@@ -881,7 +881,7 @@ void gmx::Integrator::do_md()
                      state->lambda, graph,
                      fr, ppForceWorkload, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
-                     ddOpenBalanceRegion, ddCloseBalanceRegion);
+                     ddBalanceRegionHandling);
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint)

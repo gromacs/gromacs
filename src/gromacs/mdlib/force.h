@@ -37,12 +37,12 @@
 #ifndef GMX_MDLIB_FORCE_H
 #define GMX_MDLIB_FORCE_H
 
-#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
+class DDBalanceRegionHandling;
 struct gmx_edsam;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
@@ -121,8 +121,7 @@ void do_force(FILE                                     *log,
               double                                    t,
               gmx_edsam                                *ed,
               int                                       flags,
-              DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-              DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
+              const DDBalanceRegionHandling            &ddBalanceRegionHandling);
 
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
@@ -165,7 +164,8 @@ void do_force_lowlevel(t_forcerec   *fr,
                        const t_blocka *excl,
                        rvec         mu_tot[2],
                        int          flags,
-                       float        *cycles_pme);
+                       float        *cycles_pme,
+                       const DDBalanceRegionHandling &ddBalanceRegionHandling);
 /* Call all the force routines */
 
 #endif
