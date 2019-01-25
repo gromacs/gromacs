@@ -55,6 +55,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/collect.h"
+#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/partition.h"
@@ -852,12 +853,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0),
-             DOMAINDECOMP(cr) ?
-             DdOpenBalanceRegionBeforeForceComputation::yes :
-             DdOpenBalanceRegionBeforeForceComputation::no,
-             DOMAINDECOMP(cr) ?
-             DdCloseBalanceRegionAfterForceComputation::yes :
-             DdCloseBalanceRegionAfterForceComputation::no);
+             DDBalanceRegionHandler(cr));
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
@@ -2880,8 +2876,7 @@ Integrator::do_nm()
                                         t,
                                         mu_tot,
                                         vsite,
-                                        DdOpenBalanceRegionBeforeForceComputation::no,
-                                        DdCloseBalanceRegionAfterForceComputation::no);
+                                        DDBalanceRegionHandler(nullptr));
                     bNS = false;
                     step++;
                 }

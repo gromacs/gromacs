@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,11 +83,10 @@ static BalanceRegion *getBalanceRegion(const gmx_domdec_t *dd)
     return region;
 }
 
-void ddOpenBalanceRegionCpu(const gmx_domdec_t                    *dd,
-                            DdAllowBalanceRegionReopen gmx_unused  allowReopen)
+void DDBalanceRegionHandler::openRegionCpuImpl(DdAllowBalanceRegionReopen gmx_unused allowReopen) const
 {
-    BalanceRegion *reg = getBalanceRegion(dd);
-    if (dd->comm->bRecordLoad)
+    BalanceRegion *reg = getBalanceRegion(dd_);
+    if (dd_->comm->bRecordLoad)
     {
         GMX_ASSERT(allowReopen == DdAllowBalanceRegionReopen::yes || !reg->isOpen, "Should not open an already opened region");
 
@@ -98,14 +97,12 @@ void ddOpenBalanceRegionCpu(const gmx_domdec_t                    *dd,
     }
 }
 
-void ddOpenBalanceRegionGpu(const gmx_domdec_t *dd)
+void DDBalanceRegionHandler::openRegionGpuImpl() const
 {
-    BalanceRegion *reg = getBalanceRegion(dd);
-    if (reg->isOpen)
-    {
-        GMX_ASSERT(!reg->isOpenOnGpu, "Can not re-open a GPU balance region");
-        reg->isOpenOnGpu = true;
-    }
+    BalanceRegion *reg = getBalanceRegion(dd_);
+    GMX_ASSERT(reg->isOpen, "Can only open a GPU region inside an open CPU region");
+    GMX_ASSERT(!reg->isOpenOnGpu, "Can not re-open a GPU balance region");
+    reg->isOpenOnGpu = true;
 }
 
 void ddReopenBalanceRegionCpu(const gmx_domdec_t *dd)
@@ -118,9 +115,9 @@ void ddReopenBalanceRegionCpu(const gmx_domdec_t *dd)
     }
 }
 
-void ddCloseBalanceRegionCpu(const gmx_domdec_t *dd)
+void DDBalanceRegionHandler::closeRegionCpuImpl() const
 {
-    BalanceRegion *reg = getBalanceRegion(dd);
+    BalanceRegion *reg = getBalanceRegion(dd_);
     if (reg->isOpen && reg->isOpenOnCpu)
     {
         GMX_ASSERT(reg->isOpenOnCpu, "Can only close an open region");
@@ -136,17 +133,16 @@ void ddCloseBalanceRegionCpu(const gmx_domdec_t *dd)
         {
             /* We can close the region */
             float cyclesCpu   = cycles - reg->cyclesOpenCpu;
-            dd_cycles_add(dd, cyclesCpu, ddCyclF);
+            dd_cycles_add(dd_, cyclesCpu, ddCyclF);
             reg->isOpen       = false;
         }
     }
 }
 
-void ddCloseBalanceRegionGpu(const gmx_domdec_t          *dd,
-                             float                        waitGpuCyclesInCpuRegion,
-                             DdBalanceRegionWaitedForGpu  waitedForGpu)
+void DDBalanceRegionHandler::closeRegionGpuImpl(float                       waitGpuCyclesInCpuRegion,
+                                                DdBalanceRegionWaitedForGpu waitedForGpu) const
 {
-    BalanceRegion *reg = getBalanceRegion(dd);
+    BalanceRegion *reg = getBalanceRegion(dd_);
     if (reg->isOpen)
     {
         GMX_ASSERT(reg->isOpenOnGpu, "Can not close a non-open GPU balance region");
@@ -163,10 +159,10 @@ void ddCloseBalanceRegionGpu(const gmx_domdec_t          *dd,
         }
 
         float cyclesCpu = reg->cyclesLastCpu - reg->cyclesOpenCpu;
-        dd_cycles_add(dd, cyclesCpu + waitGpuCyclesEstimate, ddCyclF);
+        dd_cycles_add(dd_, cyclesCpu + waitGpuCyclesEstimate, ddCyclF);
 
         /* Register the total GPU wait time, to redistribute with GPU sharing */
-        dd_cycles_add(dd, waitGpuCyclesInCpuRegion + waitGpuCyclesEstimate, ddCyclWaitGPU);
+        dd_cycles_add(dd_, waitGpuCyclesInCpuRegion + waitGpuCyclesEstimate, ddCyclWaitGPU);
 
         /* Close the region */
         reg->isOpenOnGpu = false;
