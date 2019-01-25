@@ -342,13 +342,11 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
 
 static void add_b(t_params *bonds, int *nrf, sortable *s)
 {
-    int i;
-    int ai, aj;
-
-    for (i = 0; (i < bonds->nr); i++)
+    int i = 0;
+    for (const auto &b : bonds->param)
     {
-        ai = bonds->param[i].ai();
-        aj = bonds->param[i].aj();
+        int ai = b.ai();
+        int aj = b.aj();
         if ((ai < 0) || (aj < 0))
         {
             gmx_fatal(FARGS, "Impossible atom numbers in bond %d: ai=%d, aj=%d",
@@ -359,6 +357,7 @@ static void add_b(t_params *bonds, int *nrf, sortable *s)
         s[(*nrf)++].aj = aj;
         s[(*nrf)].aj   = ai;
         s[(*nrf)++].ai = aj;
+        i++;
     }
 }
 
@@ -373,7 +372,7 @@ void gen_nnb(t_nextnb *nnb, t_params plist[])
         if (IS_CHEMBOND(i))
         {
             /* we need every bond twice (bidirectional) */
-            nrbonds += 2*plist[i].nr;
+            nrbonds += 2*plist[i].nr();
         }
     }
 

@@ -36,6 +36,10 @@
 #ifndef GMX_TOPOLOGY_EXCLUSIONBLOCKS_H
 #define GMX_TOPOLOGY_EXCLUSIONBLOCKS_H
 
+#include <vector>
+
+#include "gromacs/utility/exceptions.h"
+
 struct t_blocka;
 
 namespace gmx
@@ -44,11 +48,36 @@ namespace gmx
 // TODO This should be replaced by a vector of vector<int>
 struct ExclusionBlocks
 {
-    int       nr;   /* The number of entries in the list */
-    int       nra2; /* The total number of entries in a */
-    int      *nra;  /* The number of entries in each a array (dim nr) */
-    int     **a;    /* The atom numbers (dim nr) the length of each element */
+    std::vector<std::vector<int>> a;    /* The atom numbers (dim nr) the length of each element */
     /* i is nra[i] */
+    //! Get number of elements.
+    int nr() const { return a.size(); }
+    /*! \brief
+     * Get number of entries in a valid object.
+     *
+     * \param[in] i Which object to check for.
+     * \returns The number of entries.
+     * \throws When trying to access an invalid object.
+     */
+    int nra(int i) const 
+    {
+        if (a.empty())
+        {
+            GMX_THROW(InternalError("Can not access element in empty object"));
+        }
+        else if (i >= nr())
+        {
+            GMX_THROW(InternalError("Can not access element beyond size of object"));
+        }
+        else if (i < 0)
+        {
+            GMX_THROW(InternalError("Can not access element before first"));
+        }
+        else
+        {
+            return a[i].size();
+        }
+    }
 };
 
 //! Initialize the content of the pre-allocated blocks.

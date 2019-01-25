@@ -42,8 +42,10 @@
 
 #include <string>
 
+#include "gromacs/utility/arrayref.h"
+
 enum class Directive : int;
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct t_atoms;
 struct t_blocka;
 struct t_excls;
@@ -55,8 +57,6 @@ struct t_params;
 
 int name2index(char *str, char ***typenames, int ntypes);
 
-void pr_alloc (int extra, t_params *pr);
-
 void set_p_string(t_param *p, const std::string &s);
 
 void set_p_string(t_param *p, const char *s);
@@ -67,8 +67,8 @@ void add_param_to_list(t_params *list, t_param *b);
 
 /* INITIATE */
 
-void init_plist(t_params plist[]);
-void done_plist(t_params *plist);
+void init_plist(gmx::ArrayRef<t_params> plist);
+void done_plist(gmx::ArrayRef<t_params> plist);
 
 void init_molinfo(t_molinfo *mol);
 
@@ -80,11 +80,11 @@ void done_mi(t_molinfo *mi);
 void print_blocka(FILE *out, const char *szName, const char *szIndex,
                   const char *szA, t_blocka *block);
 
-void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, PreprocessingAtomType *atype, t_atoms *at, int *cgnr,
                  bool bRTPresname);
 
 void print_bondeds(FILE *out, int natoms, Directive d,
-                   int ftype, int fsubtype, t_params plist[]);
+                   int ftype, int fsubtype, gmx::ArrayRef<const t_params> plist);
 
 void print_excl(FILE *out, int natoms, t_excls excls[]);
 

@@ -104,48 +104,43 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
-static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
+static int rm_interactions(int ifunc, gmx::ArrayRef<t_molinfo> mols)
 {
-    int  i, n;
-
-    n = 0;
+    int n = 0;
     /* For all the molecule types */
-    for (i = 0; i < nrmols; i++)
+    for (auto it = mols.begin(); it != mols.end(); it++)
     {
-        n += mols[i].plist[ifunc].nr;
-        mols[i].plist[ifunc].nr = 0;
+        n += it->plist[ifunc].nr();
+        it->plist[ifunc].param.clear();
     }
     return n;
 }
 
 static int check_atom_names(const char *fn1, const char *fn2,
-                            gmx_mtop_t *mtop, const t_atoms *at)
+                            const gmx_mtop_t &mtop, const t_atoms &conf)
 {
-    int      m, i, j, nmismatch;
-    t_atoms *tat;
 #define MAXMISMATCH 20
 
-    if (mtop->natoms != at->nr)
+    if (mtop.natoms != conf.nr)
     {
         gmx_incons("comparing atom names");
     }
-
-    nmismatch = 0;
-    i         = 0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
+    int nmismatch = 0;
+    int i         = 0;
+    for (const gmx_molblock_t &molb : mtop.molblock)
     {
-        tat = &mtop->moltype[molb.type].atoms;
-        for (m = 0; m < molb.nmol; m++)
+        const t_atoms &tat = mtop.moltype[molb.type].atoms;
+        for (int m = 0; m < molb.nmol; m++)
         {
-            for (j = 0; j < tat->nr; j++)
+            for (int j = 0; j < tat.nr; j++)
             {
-                if (strcmp( *(tat->atomname[j]), *(at->atomname[i]) ) != 0)
+                if (strcmp( *(tat.atomname[j]), *(conf.atomname[i]) ) != 0)
                 {
                     if (nmismatch < MAXMISMATCH)
                     {
                         fprintf(stderr,
                                 "Warning: atom name %d in %s and %s does not match (%s - %s)\n",
-                                i+1, fn1, fn2, *(tat->atomname[j]), *(at->atomname[i]));
+                                i+1, fn1, fn2, *(tat.atomname[j]), *(conf.atomname[i]));
                     }
                     else if (nmismatch == MAXMISMATCH)
                     {
@@ -406,12 +401,12 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
 
 /* TODO Decide whether this function can be consolidated with
  * gmx_mtop_ftype_count */
-static int nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
+static int nint_ftype(gmx_mtop_t *mtop, gmx::ArrayRef<const t_molinfo> mi, int ftype)
 {
     int nint = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        nint += molb.nmol*mi[molb.type].plist[ftype].nr;
+        nint += molb.nmol*mi[molb.type].plist[ftype].nr();
     }
 
     return nint;
@@ -421,73 +416,58 @@ static int nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
  * in the order of use in the molblocks,
  * unused molecule types are deleted.
  */
-static void renumber_moltypes(gmx_mtop_t *sys,
-                              int *nmolinfo, t_molinfo **molinfo)
+static void renumber_moltypes(gmx_mtop_t             *sys,
+                              std::vector<t_molinfo> *molinfo)
 {
-    int       *order, norder;
-    t_molinfo *minew;
-
-    snew(order, *nmolinfo);
-    norder = 0;
+    std::vector<int> order;
     for (gmx_molblock_t &molblock : sys->molblock)
     {
-        int i;
-        for (i = 0; i < norder; i++)
+        auto found = std::find_if(order.begin(), order.end(),
+                [&molblock](const int &o)
+                { return o == molblock.type; });
+        /* This type did not occur yet, add it */
+        int pos = std::distance(order.begin(), found);
+        if (found == order.end())
         {
-            if (order[i] == molblock.type)
-            {
-                break;
-            }
+            order.push_back(molblock.type);
         }
-        if (i == norder)
-        {
-            /* This type did not occur yet, add it */
-            order[norder] = molblock.type;
-            /* Renumber the moltype in the topology */
-            norder++;
-        }
-        molblock.type = i;
+        /* Renumber the moltype in the topology */
+        molblock.type = pos;
     }
 
     /* We still need to reorder the molinfo structs */
-    snew(minew, norder);
-    for (int mi = 0; mi < *nmolinfo; mi++)
+    std::vector<t_molinfo> minew;
+    for (auto it = molinfo->begin(); it != molinfo->end(); it++)
     {
-        int i;
-        for (i = 0; i < norder; i++)
+        int mi = std::distance(molinfo->begin(), it);
+        auto found = std::find_if(order.begin(), order.end(),
+                [&mi](const int &o)
+                { return o == mi; });
+        if (found == order.end())
         {
-            if (order[i] == mi)
-            {
-                break;
-            }
-        }
-        if (i == norder)
-        {
-            done_mi(&(*molinfo)[mi]);
+            done_mi(&(*it));
         }
         else
         {
-            minew[i] = (*molinfo)[mi];
+            minew.push_back(*it);
         }
     }
-    sfree(order);
-    sfree(*molinfo);
 
-    *nmolinfo = norder;
     *molinfo  = minew;
 }
 
-static void molinfo2mtop(int nmi, t_molinfo *mi, gmx_mtop_t *mtop)
+static void molinfo2mtop(gmx::ArrayRef<const t_molinfo> mi, gmx_mtop_t *mtop)
 {
-    mtop->moltype.resize(nmi);
-    for (int m = 0; m < nmi; m++)
+    mtop->moltype.clear();
+    for (const auto &m : mi)
     {
-        gmx_moltype_t &molt = mtop->moltype[m];
-        molt.name           = mi[m].name;
-        molt.atoms          = mi[m].atoms;
+        mtop->moltype.push_back(gmx_moltype_t());
+        gmx_moltype_t &molt = mtop->moltype.back();
+        molt.name           = m.name;
+        molt.atoms          = m.atoms;
         /* ilists are copied later */
-        molt.cgs            = mi[m].cgs;
-        molt.excls          = mi[m].excls;
+        molt.cgs            = m.cgs;
+        molt.excls          = m.excls;
     }
 }
 
@@ -495,16 +475,16 @@ static void
 new_status(const char *topfile, const char *topppfile, const char *confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
            bool bGenVel, bool bVerbose, t_state *state,
-           gpp_atomtype *atype, gmx_mtop_t *sys,
-           int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
-           t_params plist[],
+           PreprocessingAtomType *atype, gmx_mtop_t *sys,
+           std::vector<t_molinfo> *mi, std::vector<t_molinfo> *intermolecular_interactions,
+           gmx::ArrayRef<t_params> plist,
            int *comb, double *reppow, real *fudgeQQ,
            gmx_bool bMorse,
            warninp *wi)
 {
-    t_molinfo                  *molinfo = nullptr;
+    std::vector<t_molinfo>      molinfo;
     std::vector<gmx_molblock_t> molblock;
-    int                         i, nrmols, nmismatch;
+    int                         i,nmismatch;
     bool                        ffParametrizedWithHBondConstraints;
     char                        buf[STRLEN];
     char                        warn_buf[STRLEN];
@@ -512,7 +492,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     /* TOPOLOGY processing */
     sys->name = do_top(bVerbose, topfile, topppfile, opts, bZero, &(sys->symtab),
                        plist, comb, reppow, fudgeQQ,
-                       atype, &nrmols, &molinfo, intermolecular_interactions,
+                       atype, &molinfo, intermolecular_interactions,
                        ir,
                        &molblock,
                        &ffParametrizedWithHBondConstraints,
@@ -541,16 +521,16 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         gmx_fatal(FARGS, "No molecules were defined in the system");
     }
 
-    renumber_moltypes(sys, &nrmols, &molinfo);
+    renumber_moltypes(sys, &molinfo);
 
     if (bMorse)
     {
-        convert_harmonics(nrmols, molinfo, atype);
+        convert_harmonics(molinfo, atype);
     }
 
     if (ir->eDisre == edrNone)
     {
-        i = rm_interactions(F_DISRES, nrmols, molinfo);
+        i = rm_interactions(F_DISRES, molinfo);
         if (i > 0)
         {
             set_warning_line(wi, "unknown", -1);
@@ -560,7 +540,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     }
     if (!opts->bOrire)
     {
-        i = rm_interactions(F_ORIRES, nrmols, molinfo);
+        i = rm_interactions(F_ORIRES, molinfo);
         if (i > 0)
         {
             set_warning_line(wi, "unknown", -1);
@@ -570,7 +550,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     }
 
     /* Copy structures from msys to sys */
-    molinfo2mtop(nrmols, molinfo, sys);
+    molinfo2mtop(molinfo, sys);
 
     gmx_mtop_finalize(sys);
 
@@ -595,50 +575,52 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "processing coordinates...\n");
     }
 
-    t_topology *conftop;
-    rvec       *x = nullptr;
-    rvec       *v = nullptr;
-    snew(conftop, 1);
-    read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
-    state->natoms = conftop->atoms.nr;
-    if (state->natoms != sys->natoms)
     {
-        gmx_fatal(FARGS, "number of coordinates in coordinate file (%s, %d)\n"
-                  "             does not match topology (%s, %d)",
-                  confin, state->natoms, topfile, sys->natoms);
-    }
-    /* It would be nice to get rid of the copies below, but we don't know
-     * a priori if the number of atoms in confin matches what we expect.
-     */
-    state->flags |= (1 << estX);
-    if (v != nullptr)
-    {
-        state->flags |= (1 << estV);
-    }
-    state_change_natoms(state, state->natoms);
-    std::copy(x, x+state->natoms, state->x.data());
-    sfree(x);
-    if (v != nullptr)
-    {
-        std::copy(v, v+state->natoms, state->v.data());
-        sfree(v);
-    }
-    /* This call fixes the box shape for runs with pressure scaling */
-    set_box_rel(ir, state);
+        rvec       *x = nullptr;
+        rvec       *v = nullptr;
+        t_atoms conf;
+        t_symtab confsymtab;
+        open_symtab(&confsymtab);
+        readConfAndAtoms(confin, &confsymtab, nullptr, &conf, nullptr, &x, &v, state->box);
+        state->natoms = conf.nr;
+        if (state->natoms != sys->natoms)
+        {
+            gmx_fatal(FARGS, "number of coordinates in coordinate file (%s, %d)\n"
+                      "             does not match topology (%s, %d)",
+                      confin, state->natoms, topfile, sys->natoms);
+        }
+        /* It would be nice to get rid of the copies below, but we don't know
+         * a priori if the number of atoms in confin matches what we expect.
+         */
+        state->flags |= (1 << estX);
+        if (v != nullptr)
+        {
+            state->flags |= (1 << estV);
+        }
+        state_change_natoms(state, state->natoms);
+        std::copy(x, x+state->natoms, state->x.data());
+        sfree(x);
+        if (v != nullptr)
+        {
+            std::copy(v, v+state->natoms, state->v.data());
+            sfree(v);
+        }
+        /* This call fixes the box shape for runs with pressure scaling */
+        set_box_rel(ir, state);
 
-    nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
-    done_top(conftop);
-    sfree(conftop);
+        nmismatch = check_atom_names(topfile, confin, *sys, conf);
 
-    if (nmismatch)
-    {
-        sprintf(buf, "%d non-matching atom name%s\n"
-                "atom names from %s will be used\n"
-                "atom names from %s will be ignored\n",
-                nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
-        warning(wi, buf);
+        if (nmismatch)
+        {
+            sprintf(buf, "%d non-matching atom name%s\n"
+                    "atom names from %s will be used\n"
+                    "atom names from %s will be ignored\n",
+                    nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
+            warning(wi, buf);
+        }
+        done_atom(&conf);
+        done_symtab(&confsymtab);
     }
-
     /* If using the group scheme, make sure charge groups are made whole to avoid errors
      * in calculating charge group size later on
      */
@@ -687,7 +669,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         sfree(mass);
     }
 
-    *nmi = nrmols;
     *mi  = molinfo;
 }
 
@@ -811,7 +792,7 @@ static void cont_status(const char *slog, const char *ener,
     }
 }
 
-static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
+static void read_posres(gmx_mtop_t *mtop, gmx::ArrayRef<t_molinfo> molinfo, gmx_bool bTopB,
                         const char *fn,
                         int rc_scaling, int ePBC,
                         rvec com,
@@ -863,10 +844,10 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
         nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.nr;
         pr       = &(molinfo[molb.type].plist[F_POSRES]);
         prfb     = &(molinfo[molb.type].plist[F_FBPOSRES]);
-        if (pr->nr > 0 || prfb->nr > 0)
+        if (pr->nr() > 0 || prfb->nr() > 0)
         {
             atom = mtop->moltype[molb.type].atoms.atom;
-            for (i = 0; (i < pr->nr); i++)
+            for (i = 0; (i < pr->nr()); i++)
             {
                 ai = pr->param[i].ai();
                 if (ai >= natoms)
@@ -886,7 +867,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                 }
             }
             /* Same for flat-bottomed posres, but do not count an atom twice for COM */
-            for (i = 0; (i < prfb->nr); i++)
+            for (i = 0; (i < prfb->nr()); i++)
             {
                 ai = prfb->param[i].ai();
                 if (ai >= natoms)
@@ -988,7 +969,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     sfree(hadAtom);
 }
 
-static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
+static void gen_posres(gmx_mtop_t *mtop, gmx::ArrayRef<t_molinfo> mi,
                        const char *fnA, const char *fnB,
                        int rc_scaling, int ePBC,
                        rvec com, rvec comB,
@@ -1001,7 +982,7 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
     read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
 }
 
-static void set_wall_atomtype(gpp_atomtype *at, t_gromppopts *opts,
+static void set_wall_atomtype(PreprocessingAtomType *at, t_gromppopts *opts,
                               t_inputrec *ir, warninp *wi)
 {
     int  i;
@@ -1013,7 +994,7 @@ static void set_wall_atomtype(gpp_atomtype *at, t_gromppopts *opts,
     }
     for (i = 0; i < ir->nwall; i++)
     {
-        ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i], at);
+        ir->wall_atomtype[i] = at->atomTypeFromString(opts->wall_atomtype[i]);
         if (ir->wall_atomtype[i] == NOTSET)
         {
             sprintf(warn_buf, "Specified wall atom type %s is not defined", opts->wall_atomtype[i]);
@@ -1101,10 +1082,10 @@ interpolate1d( double           xmin,
 
 
 static void
-setup_cmap (int                    grid_spacing,
-            int                    nc,
-            const real *           grid,
-            gmx_cmap_t       *     cmap_grid)
+setup_cmap (int                       grid_spacing,
+            int                       nc,
+            gmx::ArrayRef<const real> grid,
+            gmx_cmap_t          *     cmap_grid)
 {
     int                 i, j, k, ii, jj, kk, idx;
     int                 offset;
@@ -1192,7 +1173,7 @@ static void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
 }
 
 
-static int count_constraints(const gmx_mtop_t *mtop, t_molinfo *mi, warninp *wi)
+static int count_constraints(const gmx_mtop_t *mtop, gmx::ArrayRef<t_molinfo> mi, warninp *wi)
 {
     int             count, count_mol, i;
     t_params       *plist;
@@ -1208,11 +1189,11 @@ static int count_constraints(const gmx_mtop_t *mtop, t_molinfo *mi, warninp *wi)
         {
             if (i == F_SETTLE)
             {
-                count_mol += 3*plist[i].nr;
+                count_mol += 3*plist[i].nr();
             }
             else if (interaction_function[i].flags & IF_CONSTRAINT)
             {
-                count_mol += plist[i].nr;
+                count_mol += plist[i].nr();
             }
         }
 
@@ -1679,11 +1660,9 @@ int gmx_grompp(int argc, char *argv[])
         "this option."
     };
     t_gromppopts          *opts;
-    int                    nmi;
-    t_molinfo             *mi, *intermolecular_interactions;
-    gpp_atomtype          *atype;
+    std::vector<t_molinfo> mi;
+    std::vector<t_molinfo> intermolecular_interactions;
     int                    nvsite, comb;
-    t_params              *plist;
     real                   fudgeQQ;
     double                 reppow;
     const char            *mdparin;
@@ -1788,10 +1767,10 @@ int gmx_grompp(int argc, char *argv[])
         warning_error(wi, warn_buf);
     }
 
-    snew(plist, F_NRE);
+    std::vector<t_params> plist(F_NRE);
     init_plist(plist);
-    gmx_mtop_t sys;
-    atype = init_atomtype();
+    gmx_mtop_t            sys;
+    PreprocessingAtomType atype;
     if (debug)
     {
         pr_symtab(debug, 0, "Just opened", &sys.symtab);
@@ -1806,7 +1785,7 @@ int gmx_grompp(int argc, char *argv[])
     t_state state;
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
                opts, ir, bZero, bGenVel, bVerbose, &state,
-               atype, &sys, &nmi, &mi, &intermolecular_interactions,
+               &atype, &sys, &mi, &intermolecular_interactions,
                plist, &comb, &reppow, &fudgeQQ,
                opts->bMorse,
                wi);
@@ -1821,7 +1800,7 @@ int gmx_grompp(int argc, char *argv[])
     for (size_t mt = 0; mt < sys.moltype.size(); mt++)
     {
         nvsite +=
-            set_vsites(bVerbose, &sys.moltype[mt].atoms, atype, mi[mt].plist);
+            set_vsites(bVerbose, &sys.moltype[mt].atoms, &atype, mi[mt].plist);
     }
     /* now throw away all obsolete bonds, angles and dihedrals: */
     /* note: constraints are ALWAYS removed */
@@ -1865,9 +1844,9 @@ int gmx_grompp(int argc, char *argv[])
 
     /* If we are doing QM/MM, check that we got the atom numbers */
     have_atomnumber = TRUE;
-    for (i = 0; i < get_atomtype_ntypes(atype); i++)
+    for (int i = 0; i < atype.nr(); i++)
     {
-        have_atomnumber = have_atomnumber && (get_atomtype_atomnumber(i, atype) >= 0);
+        have_atomnumber = have_atomnumber && (atype.atomNumberFromType(i) >= 0);
     }
     if (!have_atomnumber && ir->bQMMM)
     {
@@ -1944,17 +1923,16 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
-    if (plist[F_CMAP].ncmap > 0)
+    if (plist[F_CMAP].ncmap() > 0)
     {
         init_cmap_grid(&sys.ffparams.cmap_grid, plist[F_CMAP].nc, plist[F_CMAP].grid_spacing);
         setup_cmap(plist[F_CMAP].grid_spacing, plist[F_CMAP].nc, plist[F_CMAP].cmap, &sys.ffparams.cmap_grid);
     }
 
-    set_wall_atomtype(atype, opts, ir, wi);
+    set_wall_atomtype(&atype, opts, ir, wi);
     if (bRenum)
     {
-        renum_atype(plist, &sys, ir->wall_atomtype, atype, bVerbose);
-        get_atomtype_ntypes(atype);
+        atype.renumberTypes(plist, &sys, ir->wall_atomtype, bVerbose);
     }
 
     if (ir->implicit_solvent)
@@ -1963,7 +1941,7 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* PELA: Copy the atomtype data to the topology atomtype list */
-    copy_atomtype_atomtypes(atype, &(sys.atomtypes));
+    atype.copyTot_atomtypes(&(sys.atomtypes));
 
     if (debug)
     {
@@ -1975,7 +1953,7 @@ int gmx_grompp(int argc, char *argv[])
         fprintf(stderr, "converting bonded parameters...\n");
     }
 
-    ntype = get_atomtype_ntypes(atype);
+    ntype = atype.nr();
     convert_params(ntype, plist, mi, intermolecular_interactions,
                    comb, reppow, fudgeQQ, &sys);
 
@@ -2312,17 +2290,13 @@ int gmx_grompp(int argc, char *argv[])
     sfree(opts->define);
     sfree(opts->include);
     sfree(opts);
-    done_plist(plist);
-    sfree(plist);
-    for (int i = 0; i < nmi; i++)
+    for (auto it = mi.begin(); it != mi.end(); it++)
     {
         // Some of the contents of molinfo have been stolen, so
         // done_mi can't be called.
-        done_block(&mi[i].mols);
-        done_plist(mi[i].plist);
+        done_block(&it->mols);
+        done_plist(it->plist);
     }
-    sfree(mi);
-    done_atomtype(atype);
     done_inputrec_strings();
     output_env_done(oenv);
 

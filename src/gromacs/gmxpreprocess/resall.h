@@ -42,7 +42,7 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomType;
 struct t_restp;
 struct t_symtab;
 
@@ -60,16 +60,16 @@ RestPIt get_restp(const char *rtpname, gmx::ArrayRef<t_restp> rtp);
  * Generates a fatal error when rtpname is not found.
  */
 
-gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab);
+void read_atype(const char *ffdir, t_symtab *tab, PreprocessingAtomType *at);
 /* read atom type database(s) */
 
 void read_resall(const char *resdb, std::vector<t_restp> *rtp,
-                 gpp_atomtype *atype, t_symtab *tab,
+                 PreprocessingAtomType *atype, t_symtab *tab,
                  bool bAllowOverrideRTP);
 /* read rtp database, append to the existing database */
 
 void print_resall(FILE *out, gmx::ArrayRef<t_restp> rtp,
-                  gpp_atomtype *atype);
+                  PreprocessingAtomType *atype);
 /* write rtp database */
 
 #endif

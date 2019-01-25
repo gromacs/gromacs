@@ -50,63 +50,38 @@ namespace gmx
 
 void initExclusionBlocks(ExclusionBlocks *b2, int natom)
 {
-    int i;
-
-    b2->nr = natom;
-    snew(b2->nra, b2->nr);
-    snew(b2->a, b2->nr);
-    for (i = 0; (i < b2->nr); i++)
-    {
-        b2->a[i] = nullptr;
-    }
+    b2->a.resize(natom);
 }
 
 void doneExclusionBlocks(ExclusionBlocks *b2)
 {
-    int i;
-
-    if (b2->nr)
-    {
-        for (i = 0; (i < b2->nr); i++)
-        {
-            sfree(b2->a[i]);
-        }
-        sfree(b2->a);
-        sfree(b2->nra);
-        b2->nr = 0;
-    }
+    b2->a.clear();
 }
 
 void blockaToExclusionBlocks(t_blocka *b, ExclusionBlocks *b2)
 {
-    int     i;
-    int     j, a;
-
-    for (i = 0; (i < b->nr); i++)
+    for (int i = 0; (i < b->nr); i++)
     {
-        for (j = b->index[i]; (j < b->index[i+1]); j++)
+        for (int j = b->index[i]; (j < b->index[i+1]); j++)
         {
-            a = b->a[j];
-            srenew(b2->a[i], ++b2->nra[i]);
-            b2->a[i][b2->nra[i]-1] = a;
+            int a = b->a[j];
+            b2->a[i].push_back(a);
         }
     }
 }
 
 void exclusionBlocksToBlocka(ExclusionBlocks *b2, t_blocka *b)
 {
-    int     i, nra;
-    int     j;
-
-    nra = 0;
-    for (i = 0; (i < b2->nr); i++)
+    int nra = 0;
+    int i;
+    for (i = 0; (i < b2->nr()); i++)
     {
         b->index[i] = nra;
-        for (j = 0; (j < b2->nra[i]); j++)
+        for (int j = 0; (j < b2->nra(i)); j++)
         {
             b->a[nra+j] = b2->a[i][j];
         }
-        nra += b2->nra[i];
+        nra += b2->nra(i);
     }
     /* terminate list */
     b->index[i] = nra;
@@ -114,15 +89,11 @@ void exclusionBlocksToBlocka(ExclusionBlocks *b2, t_blocka *b)
 
 void mergeExclusions(t_blocka *excl, ExclusionBlocks *b2)
 {
-    int     i, k;
-    int     j;
-    int     nra;
-
-    if (!b2->nr)
+    if (b2->a.empty())
     {
         return;
     }
-    GMX_RELEASE_ASSERT(b2->nr == excl->nr, "Cannot merge exclusions for "
+    GMX_RELEASE_ASSERT(b2->nr() == excl->nr, "Cannot merge exclusions for "
                        "blocks that do not describe the same number "
                        "of particles");
 
@@ -130,24 +101,28 @@ void mergeExclusions(t_blocka *excl, ExclusionBlocks *b2)
     blockaToExclusionBlocks(excl, b2);
 
     /* Count and sort the exclusions */
-    nra = 0;
-    for (i = 0; (i < b2->nr); i++)
+    int nra = 0;
+    for (int i = 0; (i < b2->nr()); i++)
     {
-        if (b2->nra[i] > 0)
+        if (b2->nra(i) > 0)
         {
             /* remove double entries */
-            std::sort(b2->a[i], b2->a[i]+b2->nra[i]);
-            k = 1;
-            for (j = 1; (j < b2->nra[i]); j++)
+            std::sort(b2->a[i].begin(), b2->a[i].end());
+            for (auto it = b2->a[i].begin() + 1;
+                    it != b2->a[i].end(); )
             {
-                if (b2->a[i][j] != b2->a[i][k-1])
+                auto prev = it;
+                prev--;
+                if (it == prev)
                 {
-                    b2->a[i][k] = b2->a[i][j];
-                    k++;
+                    it = b2->a[i].erase(it);
+                }
+                else
+                {
+                    ++it;
                 }
             }
-            b2->nra[i] = k;
-            nra       += b2->nra[i];
+            nra       += b2->nra(i);
         }
     }
     excl->nra = nra;
