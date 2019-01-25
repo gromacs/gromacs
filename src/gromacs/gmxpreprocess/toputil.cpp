@@ -131,7 +131,7 @@ void done_plist(gmx::ArrayRef<InteractionTypeParameters> plist)
     }
 }
 
-void cp_param(t_param *dest, t_param *src)
+void cp_param(t_param *dest, const t_param *src)
 {
     int j;
 
@@ -148,17 +148,15 @@ void cp_param(t_param *dest, t_param *src)
 
 void add_param_to_list(InteractionTypeParameters *list, t_param *b)
 {
-    int j;
-
     /* allocate one position extra */
     pr_alloc (1, list);
 
     /* fill the arrays */
-    for (j = 0; (j < MAXFORCEPARAM); j++)
+    for (int j = 0; (j < MAXFORCEPARAM); j++)
     {
         list->param[list->nr].c[j]   = b->c[j];
     }
-    for (j = 0; (j < MAXATOMLIST); j++)
+    for (int j = 0; (j < MAXATOMLIST); j++)
     {
         list->param[list->nr].a[j]   = b->a[j];
     }
@@ -169,7 +167,7 @@ void add_param_to_list(InteractionTypeParameters *list, t_param *b)
 
 /* PRINTING STRUCTURES */
 
-static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
+static void print_bt(FILE *out, Directive d, PreprocessingAtomTypes *at,
                      int ftype, int fsubtype, gmx::ArrayRef<const InteractionTypeParameters> plist,
                      bool bFullDih)
 {
@@ -177,17 +175,17 @@ static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
      * all four atoms to determine the type.
      */
     const int                        dihp[2][2] = { { 1, 2 }, { 0, 3 } };
-    int                              i, j, f, nral, nrfp;
-    bool                             bDih = FALSE, bSwapParity;
+    int                              nral, nrfp;
+    bool                             bDih = false, bSwapParity;
 
     const InteractionTypeParameters *bt = &(plist[ftype]);
 
-    if (!bt->nr)
+    if (bt->nr == 0)
     {
         return;
     }
 
-    f = 0;
+    int f = 0;
     switch (ftype)
     {
         case F_G96ANGLES:
@@ -266,42 +264,42 @@ static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
     if (!bDih)
     {
         fprintf (out, "%3s  %4s", "ai", "aj");
-        for (j = 2; (j < nral); j++)
+        for (int j = 2; (j < nral); j++)
         {
             fprintf (out, "  %3c%c", 'a', 'i'+j);
         }
     }
     else
     {
-        for (j = 0; (j < 2); j++)
+        for (int j = 0; (j < 2); j++)
         {
             fprintf (out, "%3c%c", 'a', 'i'+dihp[f][j]);
         }
     }
 
     fprintf (out, " funct");
-    for (j = 0; (j < nrfp); j++)
+    for (int j = 0; (j < nrfp); j++)
     {
         fprintf (out, " %12c%1d", 'c', j);
     }
     fprintf (out, "\n");
 
     /* print bondtypes */
-    for (i = 0; (i < bt->nr); i++)
+    for (int i = 0; (i < bt->nr); i++)
     {
         bSwapParity = (bt->param[i].c0() == NOTSET) && (bt->param[i].c1() == -1);
         if (!bDih)
         {
-            for (j = 0; (j < nral); j++)
+            for (int j = 0; (j < nral); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[j], at));
+                fprintf (out, "%5s ", at->atomNameFromType(bt->param[i].a[j]));
             }
         }
         else
         {
-            for (j = 0; (j < 2); j++)
+            for (int j = 0; (j < 2); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[dihp[f][j]], at));
+                fprintf (out, "%5s ", at->atomNameFromType(bt->param[i].a[dihp[f][j]]));
             }
         }
         fprintf (out, "%5d ", bSwapParity ? -f-1 : f+1);
@@ -312,7 +310,7 @@ static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
         }
         else
         {
-            for (j = 0; (j < nrfp && (bt->param[i].c[j] != NOTSET)); j++)
+            for (int j = 0; (j < nrfp && (bt->param[i].c[j] != NOTSET)); j++)
             {
                 fprintf (out, "%13.6e ", bt->param[i].c[j]);
             }
@@ -396,14 +394,14 @@ static double get_residue_charge(const t_atoms *atoms, int at)
     return q;
 }
 
-void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, PreprocessingAtomTypes *atype, t_atoms *at, int *cgnr,
                  bool bRTPresname)
 {
-    int         i, ri;
-    int         tpA, tpB;
-    const char *as;
-    char       *tpnmA, *tpnmB;
-    double      qres, qtot;
+    int               i, ri;
+    int               tpA, tpB;
+    const char       *as;
+    const char       *tpnmA, *tpnmB;
+    double            qres, qtot;
 
     as = dir2str(Directive::d_atoms);
     fprintf(out, "[ %s ]\n", as);
@@ -437,7 +435,7 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
                 fprintf(out, "\n");
             }
             tpA = at->atom[i].type;
-            if ((tpnmA = get_atomtype_name(tpA, atype)) == nullptr)
+            if ((tpnmA = atype->atomNameFromType(tpA)) == nullptr)
             {
                 gmx_fatal(FARGS, "tpA = %d, i= %d in print_atoms", tpA, i);
             }
@@ -456,7 +454,7 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
             if (PERTURBED(at->atom[i]))
             {
                 tpB = at->atom[i].typeB;
-                if ((tpnmB = get_atomtype_name(tpB, atype)) == nullptr)
+                if ((tpnmB = atype->atomNameFromType(tpB)) == nullptr)
                 {
                     gmx_fatal(FARGS, "tpB = %d, i= %d in print_atoms", tpB, i);
                 }
@@ -491,26 +489,23 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
 void print_bondeds(FILE *out, int natoms, Directive d,
                    int ftype, int fsubtype, gmx::ArrayRef<const InteractionTypeParameters> plist)
 {
-    t_symtab       stab;
-    gpp_atomtype  *atype;
-    t_param       *param;
-    t_atom        *a;
-    int            i;
+    t_symtab               stab;
+    t_param               *param;
+    t_atom                *a;
 
-    atype = init_atomtype();
+    PreprocessingAtomTypes atype;
     snew(a, 1);
     snew(param, 1);
     open_symtab(&stab);
-    for (i = 0; (i < natoms); i++)
+    for (int i = 0; (i < natoms); i++)
     {
         char buf[12];
         sprintf(buf, "%4d", (i+1));
-        add_atomtype(atype, &stab, a, buf, param, 0, 0);
+        atype.addType(&stab, *a, buf, param, 0, 0);
     }
-    print_bt(out, d, atype, ftype, fsubtype, plist, TRUE);
+    print_bt(out, d, &atype, ftype, fsubtype, plist, TRUE);
 
     done_symtab(&stab);
     sfree(a);
     sfree(param);
-    done_atomtype(atype);
 }
