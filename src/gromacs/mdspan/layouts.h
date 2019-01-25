@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,11 +166,10 @@ class layout_right
             public:
                 /*! \brief Return the size of the underlying one-dimensional
                  * data structure, so that the mapping is always valid.
-                 * \todo add constexpr when C++14 is required
                  *
                  * \returns number of span elements
                  */
-                index_type required_span_size() const noexcept
+                constexpr index_type required_span_size() const noexcept
                 {
                     index_type size = 1;
                     for (size_t r = 0; r < m_extents.rank(); r++)
@@ -185,11 +184,10 @@ class layout_right
                  * \tparam Indices type of the indices to be mapped
                  * \param[in] indices the indices to be mapped
                  * \returns One-dimensional integer index.
-                 * \todo C++14 activation of constexpr
                  */
                 template<class ... Indices >
                 typename std::enable_if<sizeof ... (Indices) == Extents::rank(), index_type>::type
-                operator()( Indices ... indices ) const noexcept
+                constexpr operator()( Indices ... indices ) const noexcept
                 { return offset( 0, 0, indices ... ); }
 
                 //! Report that this mapping is always unique.
@@ -208,9 +206,8 @@ class layout_right
                 /*!\brief Return the stride of dimension r.
                  * \param[in] R rank of the stride to be queried.
                  * \returns the stride along dimension r.
-                 * \todo C++14 activation of constexpr
                  */
-                index_type stride(const size_t R) const noexcept
+                constexpr index_type stride(const size_t R) const noexcept
                 {
                     ptrdiff_t stride = 1;
                     for (size_t r = m_extents.rank()-1; r > R; r--)
