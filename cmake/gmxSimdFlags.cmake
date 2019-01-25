@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -75,11 +75,6 @@ macro(find_power_vsx_toolchain_flags TOOLCHAIN_C_FLAGS_VARIABLE TOOLCHAIN_CXX_FL
         else()
             # Don't add arch-specific flags for unknown architectures.
         endif()
-        # Altivec was originally single-only, and it took a while for compilers
-        # to support the double-precision features in VSX.
-        if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
-            message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
-        endif()
     endif()
     if(${CMAKE_CXX_COMPILER_ID} MATCHES "XL" OR ${CMAKE_C_COMPILER_ID} MATCHES "XL")
         if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "13.1.5" OR CMAKE_C_COMPILER_VERSION VERSION_LESS "13.1.5")
@@ -132,30 +127,6 @@ endfunction()
 # AVX, but using only 128-bit instructions and FMA (AMD XOP processors)
 function(gmx_find_simd_avx_128_fma_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
     find_x86_toolchain_flags(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
-
-    # We don't have the full compiler version string yet (BUILD_C_COMPILER),
-    # so we can't distinguish vanilla from Apple clang versions, but catering for a few rare AMD
-    # hackintoshes is not worth the effort.
-    if (APPLE AND (CMAKE_C_COMPILER_ID STREQUAL "Clang" OR
-                CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
-        message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA SIMD.")
-    endif()
-
-    # clang <=3.2 contains a bug that causes incorrect code to be generated for the
-    # vfmaddps instruction and therefore the bug is triggered with AVX_128_FMA.
-    # (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
-    # We can work around this by not using the integrated assembler (except on OS X
-    # which has an outdated assembler that does not support AVX instructions).
-    if (CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.3")
-        # we assume that we have an external assembler that supports AVX
-        message(STATUS "Clang ${CMAKE_C_COMPILER_VERSION} detected, enabling FMA bug workaround")
-        set(TOOLCHAIN_C_FLAGS "${TOOLCHAIN_C_FLAGS} -no-integrated-as")
-    endif()
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
-        # we assume that we have an external assembler that supports AVX
-        message(STATUS "Clang ${CMAKE_CXX_COMPILER_VERSION} detected, enabling FMA bug workaround")
-        set(TOOLCHAIN_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS} -no-integrated-as")
-    endif()
 
     # AVX128/FMA on AMD is a bit complicated. We need to do detection in three stages:
     # 1) Find the flags required for generic AVX support

@@ -116,7 +116,7 @@ compiler versions are
 
 * GNU (gcc) 5.1
 * Intel (icc) 17.0.1
-* LLVM (clang) 3.3
+* LLVM (clang) 3.6
 * Microsoft (MSVC) 2017 (C++14 is used)
 
 Other compilers may work (Cray, Pathscale, older clang) but do
@@ -1259,10 +1259,11 @@ it works because we have tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code repository
 is currently tested on x86 with a number of gcc versions ranging from 5.1
-through 7, versions 16 and 18 of the Intel compiler, and Clang
-versions 3.4 through 5. For this, we use a variety of GNU/Linux
+through 8.1, version 19 of the Intel compiler, and Clang
+versions 3.6 through 7. For this, we use a variety of GNU/Linux
 flavors and versions as well as recent versions of Windows. Under
 Windows, we test both MSVC 2017 and version 16 of the Intel compiler.
+Other compiler, library, and OS versions are tested less frequently.
 For details, you can
 have a look at the `continuous integration server used by GROMACS`_,
 which runs Jenkins_.
