@@ -66,7 +66,7 @@ function(gmx_manage_lmfit)
         # would not convey the right information.
         add_library(lmfit INTERFACE)
         target_sources(lmfit INTERFACE $<TARGET_OBJECTS:lmfit_objlib>)
-        target_include_directories(lmfit INTERFACE $<BUILD_INTERFACE:${BUNDLED_LMFIT_DIR}>)
+        target_include_directories(lmfit SYSTEM INTERFACE $<BUILD_INTERFACE:${BUNDLED_LMFIT_DIR}>)
         # Add the lmfit interface library to the libgromacs Export name, even though
         # we will not be installing any content.
         install(TARGETS lmfit EXPORT libgromacs)
