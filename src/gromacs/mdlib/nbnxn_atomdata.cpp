@@ -378,7 +378,7 @@ nbnxn_atomdata_t::SimdMasks::SimdMasks()
 #endif
     }
 
-    if (!GMX_SIMD_HAVE_LOGICAL && !GMX_SIMD_HAVE_INT32_LOGICAL)
+    if (!GMX_SIMD_HAVE_LOGICAL && !GMX_SIMD_HAVE_INT32_LOGICAL) // NOLINT(misc-redundant-expression)
     {
         // If the SIMD implementation has no bitwise logical operation support
         // whatsoever we cannot use the normal masking. Instead,

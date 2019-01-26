@@ -143,7 +143,7 @@ nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_4xn;
  * The minor index of the array goes over both the LJ combination rules,
  * which is only supported by plain cut-off, and the LJ switch/PME functions.
  */
-p_nbk_func_noener nbnxn_kernel_noener_simd_4xn[coulktNR][vdwktNR] =
+static p_nbk_func_noener nbnxn_kernel_noener_simd_4xn[coulktNR][vdwktNR] =
 {
     {
         nbnxn_kernel_ElecRF_VdwLJCombGeom_F_4xn,
@@ -187,7 +187,7 @@ p_nbk_func_noener nbnxn_kernel_noener_simd_4xn[coulktNR][vdwktNR] =
     },
 };
 
-p_nbk_func_ener nbnxn_kernel_ener_simd_4xn[coulktNR][vdwktNR] =
+static p_nbk_func_ener nbnxn_kernel_ener_simd_4xn[coulktNR][vdwktNR] =
 {
     {
         nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_4xn,
@@ -231,7 +231,7 @@ p_nbk_func_ener nbnxn_kernel_ener_simd_4xn[coulktNR][vdwktNR] =
     },
 };
 
-p_nbk_func_ener nbnxn_kernel_energrp_simd_4xn[coulktNR][vdwktNR] =
+static p_nbk_func_ener nbnxn_kernel_energrp_simd_4xn[coulktNR][vdwktNR] =
 {
     {
         nbnxn_kernel_ElecRF_VdwLJCombGeom_VgrpF_4xn,
