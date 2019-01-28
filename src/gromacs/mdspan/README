@@ -24,3 +24,4 @@ The following modifications were carried out:
 * Updated the mdspan test to a typed test
 * added test for basic accessor policy
 * added test for mdspan declaration
+* added bracket operator [] to basic_mdspan for slicing

@@ -32,50 +32,60 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
- * \file
- * \brief GROMACS extensions to mdspan.
+/*! \internal \file
+ * \brief
+ * Tests gromacs extensions to mdspan proposal
  *
  * \author Christian Blau <cblau@gwdg.de>
  * \ingroup module_mdspan
  */
+#include "gmxpre.h"
 
-#ifndef GMX_MDSPAN_EXTENSIONS_H_
-#define GMX_MDSPAN_EXTENSIONS_H_
+#include "gromacs/mdspan/extensions.h"
 
-#include "extents.h"
+#include <string>
+#include <vector>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include "gromacs/mdspan/mdspan.h"
+
+#include "testutils/testasserts.h"
 
 namespace gmx
 {
 
-/*! \brief
- * Free begin function addressing memory of a contiguously laid out basic_mdspan.
- *
- * \note Changing the elements that basic_mdspan views does not change
- *       the view itself, so a single begin that takes a const view suffices.
- */
-template <class BasicMdspan>
-constexpr typename std::enable_if<BasicMdspan::is_always_contiguous(),
-                                  typename BasicMdspan::pointer>::type
-begin(const BasicMdspan &basicMdspan)
+TEST(MdSpanExtension, SlicingAllStatic)
 {
-    return basicMdspan.data();
+    std::array<int, 2*3>              data = {1, 2, 3, 4, 5, 6};
+    basic_mdspan<int, extents<3, 2> > span {
+        data.data()
+    };
+    EXPECT_EQ(span[0][0], 1);
+    EXPECT_EQ(span[0][1], 2);
+
+    EXPECT_EQ(span[1][0], 3);
+    EXPECT_EQ(span[1][1], 4);
+
+    EXPECT_EQ(span[2][0], 5);
+    EXPECT_EQ(span[2][1], 6);
 }
 
-/*! \brief
- * Free end function addressing memory of a contiguously laid out basic_mdspan.
- *
- * \note Changing the elements that basic_mdspan views does not change
- *       the view itself, so a single end that takes a const view suffices.
- */
-template <class BasicMdspan>
-constexpr typename std::enable_if<BasicMdspan::is_always_contiguous(),
-                                  typename BasicMdspan::pointer>::type
-end(const BasicMdspan &basicMdspan)
+TEST(MdSpanExtension, SlicingDynamic)
 {
-    return basicMdspan.data() + basicMdspan.mapping().required_span_size();
+    std::array<int, 2 * 3> data = {1, 2, 3, 4, 5, 6};
+    basic_mdspan < int, extents < dynamic_extent, dynamic_extent>> span {
+        data.data(), 3, 2
+    };
+    EXPECT_EQ(span[0][0], 1);
+    EXPECT_EQ(span[0][1], 2);
+
+    EXPECT_EQ(span[1][0], 3);
+    EXPECT_EQ(span[1][1], 4);
+
+    EXPECT_EQ(span[2][0], 5);
+    EXPECT_EQ(span[2][1], 6);
 }
 
-}      // namespace gmx
-
-#endif // GMX_MDSPAN_EXTENSIONS_H_
+} // namespace gmx
