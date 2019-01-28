@@ -167,6 +167,18 @@ def do_build(context):
         if context.opts.mdrun_only:
             cmake_opts['GMX_BUILD_MDRUN_ONLY'] = 'ON'
 
+    # The build configuration has constructed the environment of the
+    # context so that a particular c++ standard library can be used,
+    # which may come from a different installation of gcc. Here, we
+    # tell CMake how to react to this.
+    if context.env.gcc_exe is not None:
+        cmake_opts['GMX_GPLUSPLUS_PATH'] = context.env.gcc_exe
+        # TODO are these needed?
+        # gcc_exe_dirname = os.path.dirname(self.gcc_exe)
+        # gcc_toolchain_path = os.path.join(gcc_exe_dirname, '..')
+        # format_for_linker_flags="-Wl,-rpath,{gcctoolchain}/lib64 -L{gcctoolchain}/lib64"
+        # cmake_opts['CMAKE_CXX_LINK_FLAGS'] = format_for_linker_flags.format(gcctoolchain=gcc_toolchain_path)
+
     context.env.set_env_var('GMX_NO_TERM', '1')
 
     context.run_cmake(cmake_opts)
