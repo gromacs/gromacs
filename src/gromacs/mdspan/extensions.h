@@ -43,7 +43,7 @@
 #ifndef GMX_MDSPAN_EXTENSIONS_H_
 #define GMX_MDSPAN_EXTENSIONS_H_
 
-#include "gromacs/mdspan/mdspan.h"
+#include "extents.h"
 
 namespace gmx
 {
@@ -75,6 +75,73 @@ end(const BasicMdspan &basicMdspan)
 {
     return basicMdspan.data() + basicMdspan.mapping().required_span_size();
 }
+
+/*! \internal \brief
+ * Drop front extent from multidimensional extents.
+ * \tparam Extents mdspan
+ * \tparam ExtentsAreDynamic type enabling compile time dropping of front extent
+ *                           if extents after dropping the front one are purely static
+ */
+template<class Extents, typename ExtentsAreDynamic = void>
+struct frontExtentDropper;
+
+/*! \internal \brief Specialisation for dynamic extents after dropping the front extent.
+ *
+ * Keeps track of the dynamic extents that are only known during run time that
+ * prevents this functionality to be constexpr as preferred for the static extents.
+ *
+ * Drops the first dimension of the template parameter extents, by matching
+ * template parameters accordingly.
+ *
+ * \tparam E0      The first extent - to be dropped
+ * \tparam Extents The leftover extents.
+ */
+template <ptrdiff_t E0, ptrdiff_t... Extents>
+struct frontExtentDropper<extents<E0, Extents...>,
+                          typename std::enable_if<extents<Extents...>::rank_dynamic() != 0>::type>
+{
+    //! The type of the extents with the first one dropped.
+    using extents_type = extents<Extents...>;
+
+    /*! \brief returns extents where the first extent is dropped,
+     * maintaining the information about the dynamic extents.
+     */
+    static extents_type dropFirstExtent(const extents<E0, Extents...> fullExtents)
+    {
+        std::array<ptrdiff_t, extents_type::rank_dynamic()> dynamicExtents;
+        size_t currentDynamicExtent = 0;
+        for (size_t r = 0; r < extents_type::rank(); ++r)
+        {
+            // dropped the first extent of fullExtents in the result
+            if (fullExtents.static_extent(r + 1) == dynamic_extent)
+            {
+                dynamicExtents[currentDynamicExtent] = fullExtents.extent(r + 1);
+                ++currentDynamicExtent;
+            }
+        }
+        return {dynamicExtents};
+    }
+};
+
+/*! \internal \brief Specialisation for purely static extents after dropping the front extent.
+ *
+ * Allows compile time evaluation of extents.
+ *
+ * Drops the first dimension of the template parameter extents, by matching
+ * template parameters accordingly.
+ *
+ * \tparam E0      The first extent - to be dropped
+ * \tparam Extents The leftover extents.
+ */
+template <ptrdiff_t E0, ptrdiff_t... Extents>
+struct frontExtentDropper<extents<E0, Extents...>, typename std::enable_if<extents<Extents...>::rank_dynamic() == 0>::type>
+{
+    using extents_type = extents<Extents...>;
+    static constexpr extents_type dropFirstExtent(const extents<E0, Extents...> /*extents*/)
+    {
+        return {};
+    }
+};
 
 }      // namespace gmx
 
