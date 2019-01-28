@@ -50,6 +50,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+find_package(LibStdCpp)
+
 # Set up common version variables, as well as general information about
 # the build tree (whether the build is from a source package or from a git
 # repository).  Also declares a few functions that will be used for generating
