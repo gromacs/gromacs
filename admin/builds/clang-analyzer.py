@@ -49,6 +49,7 @@ def do_build(context):
             'GMX_FFT_LIBRARY': 'fftpack',
             'GMX_CLANG_ANALYZER' : 'ON'
         }
+    context.env.append_to_env_var('CXXFLAGS', '-stdlib=libc++')
 
     context.run_cmake(cmake_opts)
     context.build_target(target=None)
