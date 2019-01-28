@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,53 +34,4 @@
 
 # Sources that should always be built
 file(GLOB NONBONDED_SOURCES *.cpp)
-if(NOT GMX_CLANG_ANALYZER)
-file(GLOB NONBONDED_C_SOURCES nb_kernel_c/*.cpp)
-endif()
-
-if("${GMX_SIMD_ACTIVE}" STREQUAL "SSE2" AND NOT GMX_DOUBLE)
-    file(GLOB NONBONDED_SSE2_SINGLE_SOURCES nb_kernel_sse2_single/*.cpp)
-endif()
-
-if("${GMX_SIMD_ACTIVE}" STREQUAL "SSE4.1" AND NOT GMX_DOUBLE)
-    file(GLOB NONBONDED_SSE4_1_SINGLE_SOURCES nb_kernel_sse4_1_single/*.cpp)
-endif()
-
-if("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_128_FMA" AND NOT GMX_DOUBLE)
-    file(GLOB NONBONDED_AVX_128_FMA_SINGLE_SOURCES nb_kernel_avx_128_fma_single/*.cpp)
-endif()
-
-if((("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_256")
-    OR ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX2_128")
-    OR ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX2_256")
-    OR ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512")
-    OR ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
-        AND NOT GMX_DOUBLE)
-    file(GLOB NONBONDED_AVX_256_SINGLE_SOURCES nb_kernel_avx_256_single/*.cpp)
-endif()
-
-if("${GMX_SIMD_ACTIVE}" STREQUAL "SSE2" AND GMX_DOUBLE)
-    file(GLOB NONBONDED_SSE2_DOUBLE_SOURCES nb_kernel_sse2_double/*.cpp)
-endif()
-
-if("${GMX_SIMD_ACTIVE}" STREQUAL "SSE4.1" AND GMX_DOUBLE)
-    file(GLOB NONBONDED_SSE4_1_DOUBLE_SOURCES nb_kernel_sse4_1_double/*.cpp)
-endif()
-
-if("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_128_FMA" AND GMX_DOUBLE)
-    file(GLOB NONBONDED_AVX_128_FMA_DOUBLE_SOURCES nb_kernel_avx_128_fma_double/*.cpp)
-endif()
-
-if((("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_256")
-            OR ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX2_128")
-            OR ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX2_256")
-            OR ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512")
-            OR ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
-        AND GMX_DOUBLE)
-    file(GLOB NONBONDED_AVX_256_DOUBLE_SOURCES nb_kernel_avx_256_double/*.cpp)
-endif()
-
-# These sources will be used in the parent directory's CMakeLists.txt
-set(NONBONDED_KERNEL_SOURCES ${NONBONDED_C_SOURCES} ${NONBONDED_SSE2_SINGLE_SOURCES} ${NONBONDED_SSE4_1_SINGLE_SOURCES} ${NONBONDED_AVX_128_FMA_SINGLE_SOURCES} ${NONBONDED_AVX_256_SINGLE_SOURCES} ${NONBONDED_SSE2_DOUBLE_SOURCES} ${NONBONDED_SSE4_1_DOUBLE_SOURCES} ${NONBONDED_AVX_128_FMA_DOUBLE_SOURCES} ${NONBONDED_AVX_256_DOUBLE_SOURCES} ${NONBONDED_SPARC64_HPC_ACE_DOUBLE_SOURCES})
-target_sources(libgromacs_generated PRIVATE ${NONBONDED_KERNEL_SOURCES})
 set(NONBONDED_SOURCES "${NONBONDED_SOURCES}" PARENT_SCOPE)

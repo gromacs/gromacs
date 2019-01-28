@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,17 +44,6 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/real.h"
 
-/*! \def gmx_inline
- * \brief
- * Keyword to use in C code instead of C99 `inline`.
- *
- * Some of the C compilers we support do not recognize the C99 keyword
- * `inline`.  This macro should be used in C code and in shared C/C++ headers
- * to indicate a function is inlined.
- * C++ code should use plain `inline`, as that is already in C++98.
- */
-#define gmx_inline inline
-
 struct t_blocka;
 
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
@@ -87,89 +76,5 @@ typedef void
                  t_mdatoms       *         gmx_restrict mdatoms,
                  nb_kernel_data_t *        gmx_restrict kernel_data,
                  t_nrnb *                  gmx_restrict nrnb);
-
-
-/* Structure with a kernel pointer and settings. This cannot be abstract
- * since we define the kernel list statically for each architecture in a header,
- * and use it to set up the kernel hash functions to find kernels.
- *
- * The electrostatics/vdw names should be obvious and correspond to the
- * forms of the interactions calculated in this function, and the interaction
- * modifiers describe switch/shift and similar alterations. Geometry refers
- * to whether this kernel calculates interactions between single particles or
- * waters (groups of 3/4 atoms) for better performance. Finally, the VF string
- * selects whether the kernel calculates only potential, only force, or both
- *
- * The allowed values for kernel interactions are described by the
- * enumerated types gmx_nbkernel_elec and gmx_nbkernel_vdw (see types/enums.h).
- * Note that these are deliberately NOT identical to the interactions the
- * user can set, since some user-specified interactions will be tabulated, and
- * Lennard-Jones and Buckingham use different kernels while their setting in
- * the input is decided by nonbonded parameter formats rather than mdp options.
- *
- * The interaction modifiers are described by the eintmod enum type, while
- * the kernel geometry is decided from the neighborlist geometry, which is
- * described by the enum gmx_nblist_kernel_geometry (again, see types/enums.h).
- * The
- *
- * Note that any particular implementation of kernels might not support all of
- * these strings. In fact, some might not be supported by any architecture yet.
- * The whole point of using strings and hashes is that we do not have to define a
- * unique set of strings in a single place. Thus, as long as you implement a
- * corresponding kernel, you could in theory provide any string you want.
- */
-typedef struct nb_kernel_info
-{
-    nb_kernel_t *   kernelptr;
-    const char *    kernelname;
-    const char *    architecture;     /* e.g. "C", "SSE", "AVX_256", etc. */
-
-    const char *    electrostatics;
-    const char *    electrostatics_modifier;
-    const char *    vdw;
-    const char *    vdw_modifier;
-    const char *    geometry;
-    const char *    other;  /* Any extra info you want/need to select a kernel */
-    const char *    vf;     /* "PotentialAndForce", "Potential", or "Force" */
-}
-nb_kernel_info_t;
-
-
-void
-nb_kernel_list_add_kernels(nb_kernel_info_t *   new_kernelinfo,
-                           int                  new_size);
-
-int
-nb_kernel_list_hash_init();
-
-/* Return a function pointer to the nonbonded kernel pointer with
- * settings according to the text strings provided. GROMACS does not guarantee
- * the existence of accelerated kernels for any combination, so the return value
- * can be NULL.
- * In that case, you can try a different/lower-level acceleration, and
- * eventually you need to prepare to fall back to generic kernels or change
- * your settings and try again.
- *
- * The names of the text strings are obviously meant to reflect settings in
- * GROMACS, but inside this routine they are merely used as a set of text
- * strings not defined here. The routine will simply compare the arguments with
- * the contents of the corresponding strings in the nb_kernel_list_t structure.
- *
- * This function does not check whether the kernel in question can run on the
- * present architecture since that would require a slow cpuid call for every
- * single invocation.
- */
-nb_kernel_t *
-nb_kernel_list_findkernel(FILE *              log,
-                          const char *        architecture,
-                          const char *        electrostatics,
-                          const char *        electrostatics_modifier,
-                          const char *        vdw,
-                          const char *        vdw_modifier,
-                          const char *        geometry,
-                          const char *        other,
-                          const char *        vf);
-
-
 
 #endif /* _nb_kernel_h_ */
