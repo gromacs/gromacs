@@ -133,22 +133,15 @@ these are often shipped by your OS distribution's binutils package.
 
 C++14 support requires adequate support in both the compiler and the
 C++ library. The gcc and MSVC compilers include their own standard
-libraries and require no further configuration. For configuration of
-other compilers, read on.
+libraries and require no further configuration. If your vendor's
+compiler also manages the standard library library via compiler flags,
+these will be honored. For configuration of other compilers, read on.
 
 On Linux, both the Intel and clang compiler use the libstdc++ which
 comes with gcc as the default C++ library. For |Gromacs|, we require
 the compiler to support libstc++ version 5.1 or higher. To select a
-particular libstdc++ library, use:
-
-* For Intel: ``-DCMAKE_CXX_FLAGS=-gcc-name=/path/to/gcc/binary``
-  or make sure that the correct gcc version is first in path (e.g. by
-  loading the gcc module). It can also be useful to add
-  ``-DCMAKE_CXX_LINK_FLAGS="-Wl,-rpath,/path/to/gcc/lib64
-  -L/path/to/gcc/lib64"`` to ensure linking works correctly.
-* For clang:
-  ``-DCMAKE_CXX_FLAGS=--gcc-toolchain=/path/to/gcc/folder``. This
-  folder should contain ``include/c++``.
+particular libstdc++ library, provide the path to g++ with
+``-DGMX_GPLUSPLUS_PATH=/path/to/g++``.
 
 On Windows with the Intel compiler, the MSVC standard library is used,
 and at least MSVC 2017 is required. Load the enviroment variables with
