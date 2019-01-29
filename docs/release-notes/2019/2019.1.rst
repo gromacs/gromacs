@@ -73,6 +73,13 @@ it would only write fixed-width columns.
 :issue:`2824`
 :issue:`2037`
 
+Fix using index file groups when .tpr file not supplied
+---------------------------------------------------------
+
+Selections that use groups from a supplied index file can
+again be used even when a .tpr file is not supplied.
+
+:issue:`2847`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
