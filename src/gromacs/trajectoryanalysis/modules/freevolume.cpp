@@ -235,7 +235,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     cutoff_               = 0;
     int            nnovdw = 0;
     AtomProperties aps;
-    auto           atoms  = top.copyAtoms();
+    auto           atoms  = makeAtomsData(top);
 
     // Compute total mass
     mtot_ = 0;

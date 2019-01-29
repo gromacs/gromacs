@@ -516,7 +516,7 @@ int InsertMolecules::run()
     {
         xOutput.resize(topInfo_.mtop()->natoms);
     }
-    auto          atomsSolute = topInfo_.copyAtoms();
+    auto          atomsSolute = makeAtomsData(topInfo_);
     std::set<int> removableAtoms;
     if (replaceSel_.isValid())
     {
@@ -554,7 +554,7 @@ int InsertMolecules::run()
     fprintf(stderr, "Reading molecule configuration\n");
     TopologyInformation      topInfoForInsertedMolecule;
     topInfoForInsertedMolecule.fillFromInputFile(insertConfFile_);
-    auto                     atomsInserted = topInfoForInsertedMolecule.atoms();
+    auto                     atomsInserted = makeAtomsData(topInfoForInsertedMolecule);
     std::vector<RVec>        xInserted     = copyOf(topInfoForInsertedMolecule.x());
 
     if (topInfoForInsertedMolecule.mtop()->natoms == 0)

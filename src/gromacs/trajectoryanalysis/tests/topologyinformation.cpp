@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,15 +69,7 @@ TEST(TopologyInformation, CantWorkWithoutReadingAFile)
     TopologyInformation topInfo;
     EXPECT_FALSE(topInfo.hasTopology());
     EXPECT_FALSE(topInfo.hasFullTopology());
-    ASSERT_TRUE(topInfo.mtop());
-    EXPECT_EQ(0, topInfo.mtop()->natoms);
-    EXPECT_FALSE(topInfo.expandedTopology());
-    auto atoms1 = topInfo.copyAtoms();
-    EXPECT_TRUE(atoms1);
-    auto atoms2 = topInfo.copyAtoms();
-    ASSERT_TRUE(atoms2);
-    EXPECT_NE(atoms1.get(), atoms2.get());
-    EXPECT_EQ(0, atoms1->nr);
+    EXPECT_EQ(topInfo.mtop(), nullptr);
     EXPECT_EQ(-1, topInfo.ePBC());
     EXPECT_THROW(topInfo.x().size(), gmx::APIError);
     EXPECT_THROW(topInfo.v().size(), gmx::APIError);
@@ -104,17 +96,7 @@ void runCommonTests(const TopologyInformation &topInfo, const int numAtoms)
     ASSERT_TRUE(topInfo.mtop());
     EXPECT_EQ(numAtoms, topInfo.mtop()->natoms);
     // TODO Dump mtop to refdata when that is possible
-    ASSERT_TRUE(topInfo.expandedTopology());
-    auto atoms1 = topInfo.copyAtoms();
-    EXPECT_TRUE(atoms1);
-    auto atoms2 = topInfo.copyAtoms();
-    EXPECT_TRUE(atoms2);
-    // Must be different pointer to a deep copy.
-    EXPECT_NE(atoms1.get(), atoms2.get());
-    auto atoms = topInfo.atoms();
-    // Must be a pointer to a different instance.
-    EXPECT_NE(atoms1.get(), atoms);
-    EXPECT_NE(atoms2.get(), atoms);
+    auto atoms = makeAtomsData(topInfo);
     EXPECT_EQ(numAtoms, topInfo.x().size());
     EXPECT_EQ(numAtoms, topInfo.v().size());
     matrix box {{
@@ -143,7 +125,7 @@ TEST(TopologyInformation, WorksWithGroFile)
     EXPECT_EQ(-1, topInfo.ePBC());
 
     // Check the per-atom data
-    auto atoms = topInfo.copyAtoms();
+    auto atoms = makeAtomsData(topInfo);
     ASSERT_EQ(numAtoms, atoms->nr);
     EXPECT_TRUE(atoms->haveMass);
     // TODO atommass.dat assumes united atom CA, which is probably not expected behaviour
@@ -176,7 +158,7 @@ TEST(TopologyInformation, WorksWithPdbFile)
     EXPECT_EQ(0, topInfo.ePBC());
 
     // Check the per-atom data
-    auto atoms = topInfo.copyAtoms();
+    auto atoms = makeAtomsData(topInfo);
     ASSERT_EQ(numAtoms, atoms->nr);
     EXPECT_TRUE(atoms->haveMass);
     // TODO atommass.dat assumes united atom CA, which is probably not expected behaviour
@@ -228,7 +210,7 @@ TEST(TopologyInformation, WorksWithTprFromPdbFile)
     EXPECT_EQ(0, topInfo.ePBC());
 
     // Check the per-atom data
-    auto atoms = topInfo.copyAtoms();
+    auto atoms = makeAtomsData(topInfo);
     ASSERT_EQ(numAtoms, atoms->nr);
     EXPECT_TRUE(atoms->haveMass);
     EXPECT_FLOAT_EQ(12.011, atoms->atom[26].m);
@@ -248,6 +230,41 @@ TEST(TopologyInformation, WorksWithTprFromPdbFile)
     EXPECT_EQ(0, atoms->resinfo[4].chainnum);
     // In particular, chain ID does not get recorded in the .tpr file
     EXPECT_EQ(0, atoms->resinfo[4].chainid);
+}
+
+TEST(MakeAtomsData, WorksWhenMadeFromTopologyInformationWithoutReadingAFile)
+{
+    TopologyInformation topInfo;
+    auto                atoms = makeAtomsData(topInfo);
+    ASSERT_NE(atoms, nullptr);
+    EXPECT_EQ(0, atoms->nr);
+}
+
+TEST(MakeAtomsData, WorksWhenMadeFromTopologyInformationFromGroFile)
+{
+    TopologyInformation topInfo;
+    topInfo.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.gro"));
+    ASSERT_NE(topInfo.mtop(), nullptr);
+    auto                atoms = makeAtomsData(topInfo);
+    ASSERT_NE(atoms, nullptr);
+    EXPECT_EQ(atoms->nr, topInfo.mtop()->natoms);
+}
+
+TEST(MakeExpandedTopology, WorksWhenMadeFromTopologyInformationWithoutReadingAFile)
+{
+    TopologyInformation topInfo;
+    auto                expandedTop = makeExpandedTopology(topInfo);
+    ASSERT_NE(expandedTop, nullptr);
+    EXPECT_EQ(0, expandedTop->idef.atnr);
+}
+
+TEST(MakeExpandedTopology, WorksWhenMadeFromTopologyInformationFromGroFile)
+{
+    TopologyInformation topInfo;
+    topInfo.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.gro"));
+    ASSERT_NE(topInfo.mtop(), nullptr);
+    auto expandedTop = makeExpandedTopology(topInfo);
+    ASSERT_NE(expandedTop, nullptr);
 }
 
 } // namespace

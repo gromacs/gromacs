@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,9 +53,6 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/classhelpers.h"
 
-//! Forward declaration
-typedef struct gmx_rmpbc *gmx_rmpbc_t;
-
 namespace gmx
 {
 
@@ -81,25 +78,13 @@ class TrajectoryAnalysisRunnerCommon;
  *
  * Methods in this class do not throw if not explicitly stated.
  *
- * The main data content is constant once loaded, but some content is
- * constructed only when required (e.g. atoms_ and
- * expandedTopology_). Their data members are mutable, so that the
- * lazy construction idiom works properly. Some clients wish to modify
- * the t_atoms, so there is an efficient mechanism for them to get a
- * copy they can modify without disturbing this class. (The
- * implementation releases the cached lazily constructed atoms_, but
- * from the point of view of the caller, that is a copy.) The getters
- * and copy functions are const for callers, which correctly expresses
- * that the topology information is not being changed, merely copied
- * and presented in a different form.
- *
  * \ingroup module_trajectoryanalysis
  */
 class TopologyInformation
 {
     public:
         //! Returns true if a topology file was loaded.
-        bool hasTopology() const { return hasLoadedMtop_; }
+        bool hasTopology() const { return mtop_ != nullptr; }
         //! Returns true if a full topology file was loaded.
         bool hasFullTopology() const { return bTop_; }
         /*! \brief Builder function to fill the contents of
@@ -122,17 +107,12 @@ class TopologyInformation
          * \todo This should throw upon error but currently does
          * not. */
         void fillFromInputFile(const std::string &filename);
-        /*! \brief Returns the loaded topology, or nullptr if not loaded. */
+        /*! \brief Returns the loaded topology, or nullptr if not loaded.
+         *
+         * \todo This should return a const pointer, but several
+         * clients currently change the gmx_mtop_t while preparing
+         * their output. */
         gmx_mtop_t *mtop() const { return mtop_.get(); }
-        //! Returns the loaded topology fully expanded, or nullptr if no topology is available.
-        const gmx_localtop_t *expandedTopology() const;
-        /*! \brief Returns a read-only handle to the fully expanded
-         * atom data arrays, which might be valid but empty if no
-         * topology is available. */
-        const t_atoms *atoms() const;
-        /*! \brief Copies the fully expanded atom data arrays, which
-         * might be valid but empty if no topology is available. */
-        AtomsDataPtr copyAtoms() const;
         //! Returns the ePBC field from the topology.
         int ePBC() const { return ePBC_; }
         /*! \brief
@@ -170,13 +150,7 @@ class TopologyInformation
 
     private:
         //! The topology structure, or nullptr if no topology loaded.
-        std::unique_ptr<gmx_mtop_t> mtop_;
-        //! Whether a topology has been loaded.
-        bool hasLoadedMtop_;
-        //! The fully expanded topology structure, nullptr if not yet constructed.
-        mutable ExpandedTopologyPtr      expandedTopology_;
-        //! The fully expanded atoms data structure, nullptr if not yet constructed.
-        mutable AtomsDataPtr             atoms_;
+        std::unique_ptr<gmx_mtop_t>      mtop_;
         //! true if full tpx file was loaded, false otherwise.
         bool                             bTop_;
         //! Position coordinates from the topology (can be nullptr).
@@ -197,8 +171,19 @@ class TopologyInformation
         friend class TrajectoryAnalysisRunnerCommon;
 };
 
-//! Convenience overload useful for implementing legacy tools.
-gmx_rmpbc_t gmx_rmpbc_init(const gmx::TopologyInformation &topInfo);
+/*! \brief Makes a valid t_atoms data structure.
+ *
+ * Builds the fully expanded atom data arrays if a topology is
+ * available in \c top, but otherwise returns a valid but empty array
+ * of atom data. */
+AtomsDataPtr makeAtomsData(const TopologyInformation &top);
+
+/*! \brief Makes a valid gmx_localtop_t data structure.
+ *
+ * Builds the fully expanded local topology if a molecular topology is
+ * available in \c top, but otherwise returns a valid but empty
+ * topology. */
+ExpandedTopologyPtr makeExpandedTopology(const TopologyInformation &top);
 
 } // namespace gmx
 

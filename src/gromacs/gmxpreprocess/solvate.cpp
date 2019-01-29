@@ -648,7 +648,7 @@ static void add_solv(const char *filename,
 {
     gmx::TopologyInformation topInfoSolvent;
     topInfoSolvent.fillFromInputFile(gmx::findLibraryFile(filename));
-    auto                     atomsSolvent = topInfoSolvent.copyAtoms();
+    auto                     atomsSolvent = makeAtomsData(topInfoSolvent);
     std::vector<RVec>        xSolvent, vSolvent;
     matrix                   boxSolvent = {{ 0 }};
     if (topInfoSolvent.hasTopology())
@@ -975,7 +975,8 @@ int gmx_solvate(int argc, char *argv[])
 
     gmx::TopologyInformation topInfo;
     std::vector<RVec>        x, v;
-    matrix                   box = {{ 0 }};
+    matrix                   box           = {{ 0 }};
+    auto                     atoms         = makeAtomsData(topInfo);
     if (bProt)
     {
         /* Generate a solute configuration */
@@ -1000,10 +1001,9 @@ int gmx_solvate(int argc, char *argv[])
         }
         else
         {
-            firstSolventResidueIndex = topInfo.atoms()->nres;
+            firstSolventResidueIndex = atoms->nres;
         }
     }
-    auto atoms         = topInfo.copyAtoms();
     int  ePBCForOutput = topInfo.ePBC();
     if (bBox)
     {

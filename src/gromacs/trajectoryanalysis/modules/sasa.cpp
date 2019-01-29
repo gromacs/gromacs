@@ -504,7 +504,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
                    const TopologyInformation        &top)
 {
     mtop_  = top.mtop();
-    atoms_ = top.copyAtoms();
+    atoms_ = makeAtomsData(top);
 
     //bITP   = opt2bSet("-i", nfile, fnm);
     const bool bResAt =

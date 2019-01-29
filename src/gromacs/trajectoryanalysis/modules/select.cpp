@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -312,6 +312,8 @@ class Select : public TrajectoryAnalysisModule
 
         //! The input topology.
         const TopologyInformation          *top_;
+        //! Per-atom data corresponding to the input.
+        AtomsDataPtr                        atoms_;
         std::vector<int>                    totsize_;
         AnalysisData                        sdata_;
         AnalysisData                        cdata_;
@@ -325,6 +327,7 @@ Select::Select()
     : bTotNorm_(false), bFracNorm_(false), bResInd_(false),
       bCumulativeLifetimes_(true), resNumberType_(ResidueNumbering_ByNumber),
       pdbAtoms_(PdbAtomsSelection_All), top_(nullptr),
+      atoms_(),
       occupancyModule_(new AnalysisDataAverageModule()),
       lifetimeModule_(new AnalysisDataLifetimeModule())
 {
@@ -595,7 +598,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         lifetimeModule_->addModule(plot);
     }
 
-    top_ = &top;
+    top_   = &top;
+    atoms_ = makeAtomsData(top);
 }
 
 
@@ -638,7 +642,8 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
             const SelectionPosition &p = sel[g].position(i);
             if (sel[g].type() == INDEX_RES && !bResInd_)
             {
-                idh.setPoint(1, top_->atoms()->resinfo[p.mappedId()].nr);
+                GMX_RELEASE_ASSERT(atoms_, "Selection by residue index requires supplying a topology file");
+                idh.setPoint(1, atoms_->resinfo[p.mappedId()].nr);
             }
             else
             {
@@ -679,15 +684,14 @@ Select::writeOutput()
     {
         GMX_RELEASE_ASSERT(top_->hasTopology(),
                            "Topology should have been loaded or an error given earlier");
-        auto atoms = top_->copyAtoms();
-        if (!atoms->havePdbInfo)
+        if (!atoms_->havePdbInfo)
         {
-            snew(atoms->pdbinfo, atoms->nr);
-            atoms->havePdbInfo = TRUE;
+            snew(atoms_->pdbinfo, atoms_->nr);
+            atoms_->havePdbInfo = TRUE;
         }
-        for (int i = 0; i < atoms->nr; ++i)
+        for (int i = 0; i < atoms_->nr; ++i)
         {
-            atoms->pdbinfo[i].occup = 0.0;
+            atoms_->pdbinfo[i].occup = 0.0;
         }
         for (size_t g = 0; g < sel_.size(); ++g)
         {
@@ -698,7 +702,7 @@ Select::writeOutput()
                 ArrayRef<const int>::const_iterator ai;
                 for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
                 {
-                    atoms->pdbinfo[*ai].occup += occupancyModule_->average(g, i);
+                    atoms_->pdbinfo[*ai].occup += occupancyModule_->average(g, i);
                 }
             }
         }
@@ -707,7 +711,7 @@ Select::writeOutput()
         t_trxframe        fr;
         clear_trxframe(&fr, TRUE);
         fr.bAtoms = TRUE;
-        fr.atoms  = atoms.get();
+        fr.atoms  = atoms_.get();
         fr.bX     = TRUE;
         fr.bBox   = TRUE;
         fr.x      = as_rvec_array(x.data());
@@ -741,9 +745,9 @@ Select::writeOutput()
             case PdbAtomsSelection_Selected:
             {
                 std::vector<int> indices;
-                for (int i = 0; i < atoms->nr; ++i)
+                for (int i = 0; i < atoms_->nr; ++i)
                 {
-                    if (atoms->pdbinfo[i].occup > 0.0)
+                    if (atoms_->pdbinfo[i].occup > 0.0)
                     {
                         indices.push_back(i);
                     }

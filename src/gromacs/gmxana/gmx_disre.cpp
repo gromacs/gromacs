@@ -731,7 +731,7 @@ int gmx_disre(int argc, char *argv[])
             ind_fit[kkk] = kkk;
         }
 
-        atoms = topInfo.copyAtoms();
+        atoms = makeAtomsData(topInfo);
 
         if (atoms->pdbinfo == nullptr)
         {

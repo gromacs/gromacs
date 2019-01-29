@@ -59,10 +59,7 @@ namespace gmx
 {
 
 TopologyInformation::TopologyInformation()
-    : mtop_(compat::make_unique<gmx_mtop_t>()),
-      hasLoadedMtop_(false),
-      expandedTopology_(nullptr),
-      atoms_ (nullptr),
+    : mtop_(),
       bTop_(false), ePBC_(-1)
 {
 }
@@ -89,7 +86,6 @@ void TopologyInformation::fillFromInputFile(const std::string &filename)
     vtop_.assign(v, v + mtop_->natoms);
     sfree(x);
     sfree(v);
-    hasLoadedMtop_ = true;
     // TODO: Only load this here if the tool actually needs it; selections
     // take care of themselves.
     for (gmx_moltype_t &moltype : mtop_->moltype)
@@ -100,58 +96,6 @@ void TopologyInformation::fillFromInputFile(const std::string &filename)
             atomsSetMassesBasedOnNames(&moltype.atoms, FALSE);
         }
     }
-}
-
-const gmx_localtop_t *TopologyInformation::expandedTopology() const
-{
-    // Do lazy initialization
-    if (expandedTopology_ == nullptr && hasTopology())
-    {
-        expandedTopology_ = gmx::compat::make_unique<gmx_localtop_t>();
-        gmx_mtop_generate_local_top(*mtop_, expandedTopology_.get(), false);
-    }
-
-    return expandedTopology_.get();
-}
-
-namespace
-{
-
-//! Helps implement lazy initialization.
-AtomsDataPtr makeAtoms(const TopologyInformation &top_)
-{
-    AtomsDataPtr atoms(new t_atoms);
-    if (top_.hasTopology())
-    {
-        *atoms = gmx_mtop_global_atoms(top_.mtop());
-    }
-    else
-    {
-        init_atom(atoms.get());
-    }
-    return atoms;
-}
-
-}   // namespace
-
-const t_atoms *TopologyInformation::atoms() const
-{
-    // Do lazy initialization
-    if (atoms_ == nullptr)
-    {
-        atoms_ = makeAtoms(*this);
-    }
-
-    return atoms_.get();
-}
-
-AtomsDataPtr TopologyInformation::copyAtoms() const
-{
-    // Note that we do not return atoms_, so that regardless of
-    // whether the user has already used it, or will use it in the
-    // future, any transformation operations on the data structure
-    // returned here cannot have unintended effects.
-    return makeAtoms(*this);
 }
 
 ArrayRef<const RVec>
@@ -191,11 +135,28 @@ TopologyInformation::name() const
     return nullptr;
 }
 
-gmx_rmpbc_t gmx_rmpbc_init(const gmx::TopologyInformation &topInfo)
+AtomsDataPtr makeAtomsData(const TopologyInformation &top)
 {
-    GMX_RELEASE_ASSERT(topInfo.hasTopology(), "Cannot remove PBC without a topology");
+    AtomsDataPtr atoms(new t_atoms);
+    if (top.hasTopology())
+    {
+        *atoms = gmx_mtop_global_atoms(top.mtop());
+    }
+    else
+    {
+        init_atom(atoms.get());
+    }
+    return atoms;
+}
 
-    return gmx_rmpbc_init(&topInfo.expandedTopology()->idef, topInfo.ePBC(), topInfo.mtop()->natoms);
+ExpandedTopologyPtr makeExpandedTopology(const TopologyInformation &top)
+{
+    ExpandedTopologyPtr expandedTopology = compat::make_unique<gmx_localtop_t>();
+    if (top.hasTopology())
+    {
+        gmx_mtop_generate_local_top(*top.mtop(), expandedTopology.get(), false);
+    }
+    return expandedTopology;
 }
 
 } // namespace gmx
