@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1290,7 +1290,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
 
         /* launch local nonbonded work on GPU */
-        wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
@@ -1352,7 +1352,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
             /* launch non-local nonbonded tasks on GPU */
-            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
