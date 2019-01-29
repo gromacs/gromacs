@@ -280,7 +280,7 @@ endif()
 # source files, and issue warnings about that. Remove the use of
 # -Wno-missing-prototypes here and above when the group scheme is
 # removed.
-if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
 endif()
 if (HAS_NO_MSVC_UNUSED)
