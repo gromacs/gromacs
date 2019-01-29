@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,8 +59,7 @@ namespace gmx
 {
 
 TopologyInformation::TopologyInformation()
-    : mtop_(compat::make_unique<gmx_mtop_t>()),
-      hasLoadedMtop_(false),
+    : hasLoadedMtop_(false),
       expandedTopology_(nullptr),
       atoms_ (nullptr),
       bTop_(false), ePBC_(-1)
