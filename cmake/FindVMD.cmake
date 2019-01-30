@@ -59,9 +59,9 @@ find_library(VMDXYZPLUGIN NAME "xyzplugin.so"
 
 if (VMDXYZPLUGIN)
     try_run(TESTVMD TESTVMD_COMPILED ${CMAKE_BINARY_DIR}
-        "${CMAKE_SOURCE_DIR}/cmake/TestVMD.c"
+        "${CMAKE_SOURCE_DIR}/cmake/TestVMD.cpp"
         CMAKE_FLAGS "-DLINK_LIBRARIES=${CMAKE_DL_LIBS}"
-            "-DINCLUDE_DIRECTORIES=${CMAKE_SOURCE_DIR}/src/gmxlib"
+            "-DINCLUDE_DIRECTORIES=${CMAKE_SOURCE_DIR}/src/external/vmd_molfile"
         COMPILE_DEFINITIONS "-DGMX_USE_PLUGINS"
         RUN_OUTPUT_VARIABLE TESTVMD_OUTPUT ARGS ${VMDXYZPLUGIN})
 endif()

@@ -46,7 +46,7 @@ MACRO(GMX_TEST_PIPES VARIABLE)
         MESSAGE(STATUS "Checking for pipe support")
 
         TRY_COMPILE(HAVE_PIPES "${CMAKE_BINARY_DIR}"
-                    "${CMAKE_SOURCE_DIR}/cmake/TestPipes.c")
+                    "${CMAKE_SOURCE_DIR}/cmake/TestPipes.cpp")
 
     ENDIF()
 ENDMACRO(GMX_TEST_PIPES VARIABLE)

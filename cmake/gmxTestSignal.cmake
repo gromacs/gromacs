@@ -45,7 +45,7 @@ MACRO(GMX_TEST_SIGUSR1 VARIABLE)
         MESSAGE(STATUS "Checking for SIGUSR1")
 
         TRY_COMPILE(HAVE_${VARIABLE} "${CMAKE_BINARY_DIR}"
-                    "${CMAKE_SOURCE_DIR}/cmake/TestSIGUSR1.c")
+                    "${CMAKE_SOURCE_DIR}/cmake/TestSIGUSR1.cpp")
 
 	IF(HAVE_${VARIABLE})
             MESSAGE(STATUS "Checking for SIGUSR1 - found")

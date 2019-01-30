@@ -16,11 +16,6 @@ Algorithmically based on Fortran-77 FFTPACK by Paul N. Swarztrauber (Version 4, 
 #define MAXFAC 13    /* maximum number of factors in factorization of n */
 #define NSPECIAL 4   /* number of factors for which we have special-case routines */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 /* ----------------------------------------------------------------------
    passf2, passf3, passf4, passf5, passf. Complex FFT passes fwd and bwd.
 ---------------------------------------------------------------------- */
@@ -1198,26 +1193,6 @@ void fftpack_cfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int if
   } /* cfftf1 */
 
 
-void fftpack_cfftf(int n, Treal c[], Treal wsave[])
-  {
-    int iw1, iw2;
-    if (n == 1) return;
-    iw1 = 2*n;
-    iw2 = iw1 + 2*n;
-    fftpack_cfftf1(n, c, wsave, wsave+iw1, (int*)(wsave+iw2), -1);
-  } /* cfftf */
-
-
-void fftpack_cfftb(int n, Treal c[], Treal wsave[])
-  {
-    int iw1, iw2;
-    if (n == 1) return;
-    iw1 = 2*n;
-    iw2 = iw1 + 2*n;
-    fftpack_cfftf1(n, c, wsave, wsave+iw1, (int*)(wsave+iw2), +1);
-  } /* cfftb */
-
-
 static void factorize(int n, int ifac[MAXFAC+2], const int ntryh[NSPECIAL])
   /* Factorize n in factors in ntryh and rest. On exit,
 ifac[0] contains n and ifac[1] contains number of factors,
@@ -1296,16 +1271,6 @@ void fftpack_cffti1(int n, Treal wa[], int ifac[MAXFAC+2])
       l1 = l2;
     }
   } /* cffti1 */
-
-
-void fftpack_cffti(int n, Treal wsave[])
- {
-    int iw1, iw2;
-    if (n == 1) return;
-    iw1 = 2*n;
-    iw2 = iw1 + 2*n;
-    fftpack_cffti1(n, wsave+iw1, (int*)(wsave+iw2));
-  } /* cffti */
 
   /* ----------------------------------------------------------------------
 rfftf1, rfftb1, rfftf, rfftb, rffti1, rffti. Treal FFTs.
@@ -1428,20 +1393,6 @@ void fftpack_rfftb1(int n, Treal c[], Treal ch[], const Treal wa[], const int if
   } /* rfftb1 */
 
 
-void fftpack_rfftf(int n, Treal r[], Treal wsave[])
-  {
-    if (n == 1) return;
-    fftpack_rfftf1(n, r, wsave, wsave+n, (int*)(wsave+2*n));
-  } /* rfftf */
-
-
-void fftpack_rfftb(int n, Treal r[], Treal wsave[])
-  {
-    if (n == 1) return;
-    fftpack_rfftb1(n, r, wsave, wsave+n, (int*)(wsave+2*n));
-  } /* rfftb */
-
-
 void fftpack_rffti1(int n, Treal wa[], int ifac[MAXFAC+2])
   {
     static const Treal twopi = 6.28318530717959;
@@ -1484,12 +1435,4 @@ void fftpack_rffti1(int n, Treal wa[], int ifac[MAXFAC+2])
   } /* rffti1 */
 
 
-void fftpack_rffti(int n, Treal wsave[])
-  {
-    if (n == 1) return;
-    fftpack_rffti1(n, wsave+n, (int*)(wsave+2*n));
-  } /* rffti */
 
-#ifdef __cplusplus
-}
-#endif

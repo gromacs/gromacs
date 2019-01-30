@@ -47,7 +47,7 @@ MACRO(GMX_TEST_XDR VARIABLE)
 
 	# First check without any special flags
         TRY_COMPILE(XDR_COMPILE_OK "${CMAKE_BINARY_DIR}"
-                    "${CMAKE_SOURCE_DIR}/cmake/TestXDR.c")
+                    "${CMAKE_SOURCE_DIR}/cmake/TestXDR.cpp")
 
         if(XDR_COMPILE_OK)
 	    MESSAGE(STATUS "Checking for system XDR support - present")

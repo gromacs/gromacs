@@ -1,5 +1,5 @@
 #include "molfile_plugin.h"
-#include "vmddlopen.c"
+#include "vmddlopen.cpp"
 #include "stdio.h"
 
 static int register_cb(void *v, vmdplugin_t *p) {
@@ -10,7 +10,7 @@ static int register_cb(void *v, vmdplugin_t *p) {
 typedef int (*initfunc)(void);
 typedef int (*regfunc)(void *, vmdplugin_register_cb);
 
-/*run: gcc TestVMD.c -DGMX_USE_PLUGINS -Wall -ldl src/gmxlib/vmddlopen.c -I src/gmxlib && ./a.out .../xyzplugin.so ; echo $?*/
+/*run: gcc TestVMD.cpp -DGMX_USE_PLUGINS -Wall -ldl -I../src/external/vmd_molfile  -lm && ./a.out .../xyzplugin.so ; echo $?*/
 int main(int argc, char** argv)
 {
     void *handle, *ifunc, *registerfunc;

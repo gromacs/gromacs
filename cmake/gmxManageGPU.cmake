@@ -223,7 +223,7 @@ macro(gmx_gpu_setup)
             # check the generated CUDA API version against the one present in cuda_runtime_api.h
             try_compile(_get_cuda_version_compile_res
                 ${CMAKE_BINARY_DIR}
-                ${CMAKE_SOURCE_DIR}/cmake/TestCUDAVersion.c
+                ${CMAKE_SOURCE_DIR}/cmake/TestCUDAVersion.cpp
                 COMPILE_DEFINITIONS "-DGMX_CUDA_VERSION=${GMX_CUDA_VERSION}"
                 CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${CUDA_TOOLKIT_INCLUDE}"
                 OUTPUT_VARIABLE _get_cuda_version_compile_out)

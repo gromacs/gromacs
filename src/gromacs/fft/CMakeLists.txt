@@ -42,7 +42,7 @@ gmx_add_libgromacs_sources(
 if (GMX_FFT_FFTPACK)
     gmx_add_libgromacs_sources(
         fft_fftpack.cpp
-        ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.c)
+        ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.cpp)
 endif()
 if (GMX_FFT_FFTW3 OR GMX_FFT_ARMPL_FFTW3)
     gmx_add_libgromacs_sources(fft_fftw3.cpp)

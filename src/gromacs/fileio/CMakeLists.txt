@@ -35,7 +35,7 @@
 file(GLOB FILEIO_SOURCES *.cpp)
 
 if(GMX_USE_PLUGINS)
-  set(FILEIO_SOURCES ${FILEIO_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)
+  set(FILEIO_SOURCES ${FILEIO_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.cpp)
 else()
   list(REMOVE_ITEM FILEIO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vmdio.cpp)
 endif()

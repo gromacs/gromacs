@@ -43,7 +43,7 @@ if(GMX_MPI)
 
   # Test the CMAKE_C_COMPILER for being an MPI (wrapper) compiler
   TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
-    "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
+    "${CMAKE_SOURCE_DIR}/cmake/TestMPI.cpp"
     COMPILE_DEFINITIONS )
 
   # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
