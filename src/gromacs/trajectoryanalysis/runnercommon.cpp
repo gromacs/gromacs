@@ -93,7 +93,7 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         gmx_mtop_t *getTopology(bool required) override
         {
             initTopology(required);
-            return topInfo_.mtop_.get();
+            return topInfo_.mtop();
         }
         int getAtomCount() override
         {
@@ -182,17 +182,9 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     // Load the topology if requested.
     if (!topfile_.empty())
     {
-        topInfo_.fillFromInputFile(topfile_);
-        if (hasTrajectory()
-            && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
-        {
-            topInfo_.xtop_.clear();
-        }
-        if (hasTrajectory()
-            && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopV))
-        {
-            topInfo_.vtop_.clear();
-        }
+        TrajectoryAnalysisSettings *settingsToHonorWhileFilling
+            = hasTrajectory() ? &settings_ : nullptr;
+        topInfo_.fillFromInputFile(topfile_, settingsToHonorWhileFilling);
     }
 }
 
@@ -243,21 +235,20 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         fr->natoms = topInfo_.mtop()->natoms;
         fr->bX     = TRUE;
         snew(fr->x, fr->natoms);
-        memcpy(fr->x, topInfo_.xtop_.data(),
-               sizeof(*fr->x) * fr->natoms);
+        std::copy(std::begin(topInfo_.x()), std::end(topInfo_.x()), reinterpret_cast<RVec *>(fr->x));
         if (frflags & (TRX_NEED_V))
         {
-            if (topInfo_.vtop_.empty())
+            auto topInfoV = topInfo_.v();
+            if (topInfoV.empty())
             {
                 GMX_THROW(InvalidInputError("Velocities were required, but could not be read from the topology file"));
             }
             fr->bV = TRUE;
             snew(fr->v, fr->natoms);
-            memcpy(fr->v, topInfo_.vtop_.data(),
-                   sizeof(*fr->v) * fr->natoms);
+            std::copy(std::begin(topInfoV), std::end(topInfoV), reinterpret_cast<RVec *>(fr->v));
         }
         fr->bBox   = TRUE;
-        copy_mat(topInfo_.boxtop_, fr->box);
+        topInfo_.getBox(fr->box);
     }
 
     set_trxframe_ePBC(fr, topInfo_.ePBC());

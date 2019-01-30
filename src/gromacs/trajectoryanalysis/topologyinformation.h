@@ -60,6 +60,7 @@ template<typename T> class ArrayRef;
 
 class TopologyInformation;
 class TrajectoryAnalysisRunnerCommon;
+class TrajectoryAnalysisSettings;
 
 /*! \libinternal
  * \brief Topology information available to a trajectory analysis module.
@@ -87,8 +88,7 @@ class TopologyInformation
         bool hasTopology() const { return mtop_ != nullptr; }
         //! Returns true if a full topology file was loaded.
         bool hasFullTopology() const { return bTop_; }
-        /*! \brief Builder function to fill the contents of
-         * TopologyInformation in \c topInfo from \c filename.
+        /*! \brief Builder function to fill the contents.
          *
          * Different tools require, might need, would benefit from, or
          * do not need topology information. This functions implements
@@ -104,9 +104,16 @@ class TopologyInformation
          * After reading, this object can return many kinds of primary
          * and derived data structures to its caller.
          *
+         * \param[in] filename         File from which to read topology information.
+         * \param[in] settingsToHonor  If not nullptr, allows the caller to propagate its settings
+         *                             to influence what data will later be available, because
+         *                             e.g. in some cases the coordinates in \c filename should
+         *                             never be available for use.
+         *
          * \todo This should throw upon error but currently does
          * not. */
-        void fillFromInputFile(const std::string &filename);
+        void fillFromInputFile(const std::string                &filename,
+                               const TrajectoryAnalysisSettings *settingsToHonor = nullptr);
         /*! \brief Returns the loaded topology, or nullptr if not loaded.
          *
          * \todo This should return a const pointer, but several
@@ -118,8 +125,9 @@ class TopologyInformation
         /*! \brief
          * Gets the configuration positions from the topology file.
          *
-         * If TrajectoryAnalysisSettings::efUseTopX has not been specified,
-         * this method should not be called.
+         * If TrajectoryAnalysisSettings::efUseTopX has not been
+         * specified in the settings passed to fillFromInputFile, this
+         * method should not be called.
          *
          * \throws  APIError if topology position coordinates are not available
          */
@@ -127,7 +135,8 @@ class TopologyInformation
         /*! \brief
          * Gets the configuration velocities from the topology file.
          *
-         * If TrajectoryAnalysisSettings::efUseTopV has not been specified,
+         * If TrajectoryAnalysisSettings::efUseTopV has not been
+         * specified in the settings passed to fillFromInputFile,
          * this method should not be called.
          *
          * \throws  APIError if topology velocity coordinates are not available
@@ -164,11 +173,6 @@ class TopologyInformation
 
         // TODO This type is probably movable if we need that.
         GMX_DISALLOW_COPY_AND_ASSIGN(TopologyInformation);
-
-        /*! \brief
-         * Needed to initialize the data.
-         */
-        friend class TrajectoryAnalysisRunnerCommon;
 };
 
 /*! \brief Makes a valid t_atoms data structure.

@@ -49,6 +49,7 @@
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -69,7 +70,8 @@ TopologyInformation::~TopologyInformation()
 {
 }
 
-void TopologyInformation::fillFromInputFile(const std::string &filename)
+void TopologyInformation::fillFromInputFile(const std::string                &filename,
+                                            const TrajectoryAnalysisSettings *settingsToHonor)
 {
     mtop_ = gmx::compat::make_unique<gmx_mtop_t>();
     // TODO When filename is not a .tpr, then using readConfAndAtoms
@@ -82,8 +84,16 @@ void TopologyInformation::fillFromInputFile(const std::string &filename)
     readConfAndTopology(filename.c_str(), &bTop_, mtop_.get(),
                         &ePBC_, &x, &v,
                         boxtop_);
-    xtop_.assign(x, x + mtop_->natoms);
-    vtop_.assign(v, v + mtop_->natoms);
+    if (settingsToHonor == nullptr ||
+        settingsToHonor->hasFlag(TrajectoryAnalysisSettings::efUseTopX))
+    {
+        xtop_.assign(x, x + mtop_->natoms);
+    }
+    if (settingsToHonor == nullptr ||
+        settingsToHonor->hasFlag(TrajectoryAnalysisSettings::efUseTopV))
+    {
+        vtop_.assign(v, v + mtop_->natoms);
+    }
     sfree(x);
     sfree(v);
     // TODO: Only load this here if the tool actually needs it; selections
