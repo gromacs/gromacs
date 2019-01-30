@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -59,9 +59,9 @@ find_library(VMDXYZPLUGIN NAME "xyzplugin.so"
 
 if (VMDXYZPLUGIN)
     try_run(TESTVMD TESTVMD_COMPILED ${CMAKE_BINARY_DIR}
-        "${CMAKE_SOURCE_DIR}/cmake/TestVMD.c"
+        "${CMAKE_SOURCE_DIR}/cmake/TestVMD.cpp"
         CMAKE_FLAGS "-DLINK_LIBRARIES=${CMAKE_DL_LIBS}"
-            "-DINCLUDE_DIRECTORIES=${CMAKE_SOURCE_DIR}/src/gmxlib"
+            "-DINCLUDE_DIRECTORIES=${CMAKE_SOURCE_DIR}/src/external/vmd_molfile"
         COMPILE_DEFINITIONS "-DGMX_USE_PLUGINS"
         RUN_OUTPUT_VARIABLE TESTVMD_OUTPUT ARGS ${VMDXYZPLUGIN})
 endif()

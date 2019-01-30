@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2011,2014, by the GROMACS development team, led by
+# Copyright (c) 2009,2011,2014,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@ MACRO(GMX_TEST_SIGUSR1 VARIABLE)
         MESSAGE(STATUS "Checking for SIGUSR1")
 
         TRY_COMPILE(HAVE_${VARIABLE} "${CMAKE_BINARY_DIR}"
-                    "${CMAKE_SOURCE_DIR}/cmake/TestSIGUSR1.c")
+                    "${CMAKE_SOURCE_DIR}/cmake/TestSIGUSR1.cpp")
 
 	IF(HAVE_${VARIABLE})
             MESSAGE(STATUS "Checking for SIGUSR1 - found")
