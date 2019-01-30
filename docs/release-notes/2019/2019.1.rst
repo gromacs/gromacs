@@ -17,17 +17,17 @@ With 2D or 3D domain decomposition with dynamics load balancing,
 mdrun would exit with the error "The domain decomposition grid
 as shifted too much .." when a cell size was limited.
 
-:issue: `2830`
+:issue:`2830`
 
 Fix segmentation fault in mdrun with domain decomposition
 ---------------------------------------------------------
 
-:issue: `2813`
+:issue:`2813`
 
 Fix possible division by zero in enforced-rotation code
 -------------------------------------------------------
 
-:issue: `1431`
+:issue:`1431`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -39,8 +39,8 @@ This only works for writing .xtc files. The code and documentation now
 works correctly with .gro files, which was changed in 2016 release series so that
 it would only write fixed-width columns.
 
-:issue: `2824`
-:issue: `2037`
+:issue:`2824`
+:issue:`2037`
 
 
 Fixes that affect portability
@@ -54,7 +54,7 @@ but the version of clFFT bundled within GROMACS cannot be built
 because only MSVC 2010 is supported by clFFT at this time. A
 configure-time fatal error is now issued in this case.
 
-:issue: `2500`
+:issue:`2500`
 
 Miscellaneous
 ^^^^^^^^^^^^^
