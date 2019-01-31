@@ -38,10 +38,7 @@
 #include <unistd.h>
 #endif
 
-extern "C"
-{
 #include "md5sum.h"
-}
 
 // size for clGetDeviceInfo queries
 #define SIZE 256

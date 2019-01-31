@@ -27,3 +27,6 @@ The version of this file from the git repo has been omitted.
 The file src/include/clFFT.version.h is copied from src/include/clFFT.version.h.in,
 substituting the version number placeholders with version 2.14.0
 (as in the original build script), and defining a static build option.
+
+To compile everything as C++ the src/library/md5sum.c is renamed to cpp and
+the extern "C" is removed from src/library/fft_binary_lookup.cpp.
