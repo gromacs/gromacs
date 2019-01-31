@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,7 +118,7 @@ void calculate_force_switch_F(const  cu_nbparam_t nbparam,
 
     *F_invr  +=
         -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
-        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+        c12*(repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
 }
 
 /*! Apply force switch, force-only version. */
@@ -150,7 +150,7 @@ void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
 
     *F_invr  +=
         -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
-        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+        c12*(repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
     *E_lj    +=
         c6*(disp_shift_F2 + disp_shift_F3*r_switch)*r_switch*r_switch*r_switch -
         c12*(repu_shift_F2 + repu_shift_F3*r_switch)*r_switch*r_switch*r_switch;
