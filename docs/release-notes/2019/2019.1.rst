@@ -19,6 +19,20 @@ as shifted too much .." when a cell size was limited.
 
 :issue: `2830`
 
+Fix incorrect LJ repulsion force switching on GPUs
+--------------------------------------------------
+
+When using a CUDA or OpenCL GPU, the coefficient for the second order
+term for the LJ repulsion in the force and energy switching function,
+called 'A' in the manual, had the wrong sign. Note that the dispersion
+force switching was correct. Although the error this introduces in
+the force is very small, the effect on the pressure could lead to
+deformation of CHARMM membran systems, where LJ force switching is
+regularly applied.
+
+:issue: `2845`
+
+
 Fix segmentation fault in mdrun with domain decomposition
 ---------------------------------------------------------
 
