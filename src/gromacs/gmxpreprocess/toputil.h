@@ -40,6 +40,8 @@
 
 #include <cstdio>
 
+#include <string>
+
 enum class Directive : int;
 struct gpp_atomtype;
 struct t_atoms;
@@ -55,7 +57,7 @@ int name2index(char *str, char ***typenames, int ntypes);
 
 void pr_alloc (int extra, t_params *pr);
 
-void set_p_string(t_param *p, const char *s);
+void set_p_string(t_param *p, const std::string &s);
 
 void cp_param(t_param *dest, t_param *src);
 

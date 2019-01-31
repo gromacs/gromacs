@@ -57,19 +57,19 @@
 
 /* UTILITIES */
 
-void set_p_string(t_param *p, const char *s)
+void set_p_string(t_param *p, const std::string &s)
 {
-    if (s)
+    if (!s.empty())
     {
-        if (strlen(s) < sizeof(p->s)-1)
+        if (s.length() < sizeof(p->s)-1)
         {
-            strncpy(p->s, s, sizeof(p->s));
+            strncpy(p->s, s.c_str(), sizeof(p->s));
         }
         else
         {
             gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %zu,"
                       " or shorten your definition of bonds like %s to at most %d",
-                      strlen(s)+1, s, MAXSLEN-1);
+                      s.length()+1, s.c_str(), MAXSLEN-1);
         }
     }
     else
