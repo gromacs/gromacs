@@ -48,7 +48,6 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/nm2type.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
@@ -68,6 +67,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "hackblock.h"
 
 #define MARGIN_FAC 1.1
 
@@ -539,7 +540,7 @@ int gmx_x2top(int argc, char *argv[])
     init_nnb(&nnb, atoms->nr, 4);
     gen_nnb(&nnb, plist);
     print_nnb(&nnb, "NNB");
-    gen_pad(&nnb, atoms, &rtp_header_settings, plist, excls, nullptr, TRUE);
+    gen_pad(&nnb, atoms, &rtp_header_settings, plist, excls, gmx::EmptyArrayRef(), TRUE);
     done_nnb(&nnb);
 
     if (!bPairs)

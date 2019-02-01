@@ -39,28 +39,32 @@
 #define GMX_GMXPREPROCESS_GENHYDRO_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 
 struct t_atoms;
 struct t_hack;
-struct t_hackblock;
+struct AtomModificationBlock;
 
-int add_h(t_atoms **pdbaptr, rvec *xptr[],
-          int nah, t_hackblock ah[],
-          int nterpairs,
-          t_hackblock **ntdb, t_hackblock **ctdb,
-          int *rN, int *rC, bool bMissing,
-          int **nabptr, t_hack ***abptr,
-          bool bUpdate_pdba, bool bKeep_old_pdba);
-/* Generate hydrogen atoms and N and C terminal patches.
- * int nterpairs is the number of termini pairs in the molecule
- * ntdb[i] and ctdb[i] may be NULL, no replacement will be done then.
- * rN[i] is the residue number of the N-terminus of chain i,
- * rC[i] is the residue number of the C-terminus of chain i
- * if bMissing==TRUE, continue when atoms are not found
- * if nabptr && abptrb, the hack array will be returned in them to be used
- * a second time
- * if bUpdate_pdba, hydrogens are added to *pdbaptr, else it is unchanged
- * return the New total number of atoms
+/*! \brief
+ * Generate hydrogen atoms and N and C terminal patches.
+ *
+ * \param[inout] pdbaptr The atoms data structure to be modified.
+ * \param[inout] xptr Coordinates to be updated with those for new atoms.
+ * \param[inout] ah The atom modifications to use.
+ * \param[in] nterpairs Number of termini pairs in the molecule.
+ * \param[in] ntdb Entries for N-terminus in each chain, each entry can be valid or nullptr.
+ * \param[in] ctdb Entries for C-terminus in each cahin, each entry can be valid or nullptr.
+ * \param[in] rN Residue number of the N-terminus of each chain.
+ * \param[in] rC Residue number of the C-terminus of each chain.
+ * \param[in] bMissing If routine should continue if atoms are not found.
+ * \param[in] bUpdate_pdba If hydrogens should be added or \p pdbaptr should stay unchanged.
+ * \param[in] bKeep_old_pdba If the data from the original \p pdbaptr should be kept or free'd.
+ * \returns New total number of atoms.
  */
-
+int add_h(t_atoms **pdbaptr, rvec *xptr[],
+          gmx::ArrayRef<AtomModificationBlock> ah,
+          int nterpairs,
+          const std::vector<AtomModificationBlock *>& ntdb, const std::vector<AtomModificationBlock *>& ctdb,
+          int *rN, int *rC, bool bMissing,
+          bool bUpdate_pdba, bool bKeep_old_pdba);
 #endif
