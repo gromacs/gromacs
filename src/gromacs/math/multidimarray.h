@@ -180,7 +180,10 @@ class MultiDimArray
         {
             using std::swap;
             swap(data_, o.data_);
-            swap(view_, o.view_);
+            // swap(view_, o.view_) also swaps the pointer to the data and thus does not work
+            // instead, restore the view as class invariant after the data swapping operation
+            o.view_ = view_type(o.data_.data(), view_.extents());
+            view_   = view_type(data_.data(), o.view_.extents());
         }
         /*! \brief
          * Resize the dynamic extents of the array if any and set container size

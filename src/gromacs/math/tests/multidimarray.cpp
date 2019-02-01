@@ -200,20 +200,24 @@ TEST_F(MultiDimArrayTest, canCopyAssignDynamic)
 TEST_F(MultiDimArrayTest, canSwapStatic)
 {
     static_array_type other;
+    staticArray_(0, 0) = testNumber_;
     other.swap(staticArray_);
-    for (const auto &x : other)
+    EXPECT_EQ(testNumber_, other(0, 0));
+    for (auto x = begin(other) + 1; x != end(other); ++x)
     {
-        EXPECT_EQ(testNumber_ - 1, x);
+        EXPECT_EQ(testNumber_ - 1, *x);
     }
 }
 
 TEST_F(MultiDimArrayTest, canSwapDynamic)
 {
     dynamic_array_type other;
+    dynamicArray_(0, 0) = testNumber_;
     other.swap(dynamicArray_);
-    for (const auto &x : other)
+    EXPECT_EQ(testNumber_, other(0, 0));
+    for (auto x = begin(other) + 1; x != end(other); ++x)
     {
-        EXPECT_EQ(testNumber_ - 1, x);
+        EXPECT_EQ(testNumber_ - 1, *x);
     }
 }
 
