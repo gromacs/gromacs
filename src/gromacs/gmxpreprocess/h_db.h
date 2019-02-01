@@ -44,12 +44,12 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct t_hack;
+struct HackBlock;
 struct AtomModificationBlock;
 
 /* functions for the h-database */
 
-void read_ab(char *line, const char *fn, t_hack *ab);
+void read_ab(char *line, const char *fn, HackBlock *ab);
 /* Read one add block */
 
 /*! \brief
@@ -61,7 +61,7 @@ void read_ab(char *line, const char *fn, t_hack *ab);
  */
 int read_h_db(const char *ffdir, std::vector<AtomModificationBlock> *amb);
 
-void print_ab(FILE *out, const t_hack &ab, const char *nname);
+void print_ab(FILE *out, const HackBlock &ab, const char *nname);
 /* print one add block */
 
 /*! \brief
