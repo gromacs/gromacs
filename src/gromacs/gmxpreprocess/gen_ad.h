@@ -38,9 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_GEN_AD_H
 #define GMX_GMXPREPROCESS_GEN_AD_H
 
+#include "gromacs/utility/arrayref.h"
+
 struct t_atoms;
 struct t_excls;
-struct t_hackblock;
+struct AtomModificationBlock;
 struct t_nextnb;
 struct t_params;
 struct t_restp;
@@ -49,7 +51,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
-             t_params plist[], t_excls excls[], t_hackblock hb[],
+             t_params plist[], t_excls excls[], gmx::ArrayRef<AtomModificationBlock> amb,
              bool bAllowMissing);
 
 #endif
