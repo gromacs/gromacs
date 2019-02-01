@@ -46,6 +46,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
 
@@ -105,30 +106,62 @@ struct t_restp
     t_rbondeds    rb[ebtsNR];
 };
 
-/* Block to hack residues */
-struct t_hack
+enum class HackType
 {
-    int      nr;      /* Number of atoms to hack    */
-    char    *oname;   /* Old name                   */
-    char    *nname;   /* New name                   */
-    /* the type of hack depends on the setting of oname and nname:
-     * if oname==NULL                we're adding, must have tp>0 also!
-     * if oname!=NULL && nname==NULL we're deleting
-     * if oname!=NULL && nname!=NULL we're replacing
+    Add,
+    Delete,
+    Replace
+};
+
+/*! \internal \brief
+ * Block to modify individual residues
+ */
+struct HackBlock
+{
+    //! Number of new are deleted atoms. NOT always equal to atom.size()!
+    int                        nr;
+    //! Old name for entry.
+    std::string                oname;
+    //! New name for entry.
+    std::string                nname;
+    //! New atom data.
+    std::vector<t_atom>        atom;
+    //! Chargegroup number.
+    int                        cgnr = NOTSET;
+    //! Type of attachement.
+    int                        tp = 0;
+    //! Number of control atoms.
+    int                        nctl = 0;
+    //! Name of control atoms.
+    std::array<std::string, 4> a;
+    //! Is an atom to be hacked already present?
+    bool                       bAlreadyPresent = false;
+    //! Are coordinates for a new atom already set?
+    bool                       bXSet = false;
+    //! New position for hacked atom.
+    rvec                       newx = {NOTSET};
+    //! New atom index number after additions.
+    int                        newi = -1;
+
+    /*! \brief
+     * Get type of hack.
+     *
+     * This depends on the setting of oname and nname
+     * for legacy reasons. If oname is empty, we are adding,
+     * if oname is set and nname is empty, an atom is deleted,
+     * if both are set replacement is going on. If both are unset,
+     * an error is thrown.
      */
-    t_atom     *atom; /* New atom data              */
-    int         cgnr; /* chargegroup number. if not read will be NOTSET */
-    int         tp;   /* Type of attachment (1..11) */
-    int         nctl; /* How many control atoms there are */
-    char       *a[4]; /* Control atoms i,j,k,l	  */
-    bool        bAlreadyPresent;
-    bool        bXSet;
-    rvec        newx; /* calculated new position    */
-    int         newi; /* new atom index number (after additions) */
-    const char* ai() const { return a[0]; }
-    const char* aj() const { return a[1]; }
-    const char* ak() const { return a[2]; }
-    const char* al() const { return a[3]; }
+    HackType type() const;
+
+    //! Control atom i name.
+    const char* ai() const { return a[0].c_str(); }
+    //! Control atom j name.
+    const char* aj() const { return a[1].c_str(); }
+    //! Control atom k name.
+    const char* ak() const { return a[2].c_str(); }
+    //! Control atom l name.
+    const char* al() const { return a[3].c_str(); }
 };
 /*! \internal \brief
  * A set of modifications to apply to atoms.
@@ -139,18 +172,15 @@ struct AtomModificationBlock
     std::string                    name;
     //! File that entry was read from.
     std::string                    filebase;
-    //! Number of atoms to modify
-    int                            nhack = 0;
-    //! Max number to modify.
-    int                            maxhack = 0;
     //! List of changes to atoms.
-    t_hack                        *hack = nullptr;
+    std::vector<HackBlock>         hack;
     //! List of bonded interactions to add.
     std::array<t_rbondeds, ebtsNR> rb;
+    //! Number of atoms to modify
+    int                            nhack() const { return hack.size(); }
 };
 
 void free_t_restp(int nrtp, t_restp **rtp);
-void free_t_hack(int nh, t_hack **h);
 
 /*! \internal \brief
  * Clear up memory.
@@ -160,8 +190,14 @@ void free_t_hack(int nh, t_hack **h);
  */
 void freeModificationBlock(gmx::ArrayRef<AtomModificationBlock> amb);
 
+/*! \internal \brief
+ * Reset modification block.
+ *
+ * \param[inout] amb Block to reset.
+ * \todo Remove once constructor/destructor takes care of all of this.
+ */
 void clearModificationBlock(AtomModificationBlock *amb);
-void clear_t_hack(t_hack *hack);
+
 /* reset struct */
 
 /*! \internal \brief
@@ -175,14 +211,9 @@ void clear_t_hack(t_hack *hack);
  */
 bool merge_t_bondeds(gmx::ArrayRef<const t_rbondeds> s, gmx::ArrayRef<t_rbondeds> d,
                      bool bMin, bool bPlus);
-/* add s[].b[] to d[].b[]
- * If bMin==TRUE, don't copy bondeds with atoms starting with '-'
- * If bPlus==TRUE, don't copy bondeds with atoms starting with '+'
- * Returns if bonds were removed at the termini.
- */
 
 void copy_t_restp(t_restp *s, t_restp *d);
-void copy_t_hack(const t_hack *s, t_hack *d);
+
 /*! \internal \brief
  * Copy all information from datastructure.
  *
@@ -190,16 +221,6 @@ void copy_t_hack(const t_hack *s, t_hack *d);
  * \param[inout] d Destination to copy to.
  */
 void copyModificationBlocks(const AtomModificationBlock &s, AtomModificationBlock *d);
-
-/*! \internal \brief
- * Add information in \p s to \p d.
- *
- * \param[in] ns Number of source elements to add
- * \param[in] s Source information to add.
- * \param[in] nd Counter for destination elements.
- * \param[inout] d Destination to add information to.
- */
-void merge_hacks_lo(int ns, const t_hack *s, int *nd, t_hack **d);
 
 /*! \internal \brief
  * Add the individual modifications in \p s to \p d.
