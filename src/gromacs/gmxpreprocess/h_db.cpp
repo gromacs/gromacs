@@ -49,6 +49,7 @@
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -69,20 +70,20 @@
 const int ncontrol[] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 };
 #define maxcontrol asize(ncontrol)
 
-void print_ab(FILE *out, const t_hack &hack, const char *nname)
+void print_ab(FILE *out, const HackBlock &hack, const char *nname)
 {
     fprintf(out, "%d\t%d\t%s", hack.nr, hack.tp, nname);
     for (int i = 0; (i < hack.nctl); i++)
     {
-        fprintf(out, "\t%s", hack.a[i]);
+        fprintf(out, "\t%s", hack.a[i].c_str());
     }
     fprintf(out, "\n");
 }
 
 
-void read_ab(char *line, const char *fn, t_hack *hack)
+void read_ab(char *line, const char *fn, HackBlock *hack)
 {
-    int  i, nh, tp, ns;
+    int  nh, tp, ns;
     char a[4][12];
     char hn[32];
 
@@ -104,20 +105,16 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     {
         gmx_fatal(FARGS, "Error in hdb file %s:\nWrong number of control atoms (%d instead of %d) on line:\n%s\n", fn, hack->nctl, ncontrol[hack->tp], line);
     }
-    for (i = 0; (i < hack->nctl); i++)
+    for (int i = 0; (i < hack->nctl); i++)
     {
-        hack->a[i] = gmx_strdup(a[i]);
+        hack->a[i] = a[i];
     }
-    for (; i < 4; i++)
-    {
-        hack->a[i] = nullptr;
-    }
-    hack->oname = nullptr;
-    hack->nname = gmx_strdup(hn);
-    hack->atom  = nullptr;
+    hack->oname.clear();
+    hack->nname = hn;
+    hack->atom.clear();
     hack->cgnr  = NOTSET;
-    hack->bXSet = FALSE;
-    for (i = 0; i < DIM; i++)
+    hack->bXSet = false;
+    for (int i = 0; i < DIM; i++)
     {
         hack->newx[i] = NOTSET;
     }
@@ -159,8 +156,6 @@ static void read_h_db_file(const char *hfn, std::vector<AtomModificationBlock> *
         int nab;
         if (sscanf(line+n, "%d", &nab) == 1)
         {
-            snew(block->hack, nab);
-            block->nhack = nab;
             for (int i = 0; (i < nab); i++)
             {
                 if (feof(in))
@@ -173,7 +168,8 @@ static void read_h_db_file(const char *hfn, std::vector<AtomModificationBlock> *
                 {
                     gmx_fatal(FARGS, "Error reading from file %s", hfn);
                 }
-                read_ab(buf, hfn, &block->hack[i]);
+                block->hack.emplace_back(HackBlock());
+                read_ab(buf, hfn, &block->hack.back());
             }
         }
     }

@@ -42,7 +42,6 @@
 #include "gromacs/utility/arrayref.h"
 
 struct t_atoms;
-struct t_hack;
 struct AtomModificationBlock;
 
 /*! \brief

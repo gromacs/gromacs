@@ -793,21 +793,21 @@ static void at2bonds(t_params *psb, gmx::ArrayRef<AtomModificationBlock> amb,
         /* add bonds from list of hacks (each added atom gets a bond) */
         while ( (i < atoms->nr) && (atoms->atom[i].resind == resind) )
         {
-            for (int j = 0; j < amb[resind].nhack; j++)
+            for (const auto &h : amb[resind].hack)
             {
-                if ( ( amb[resind].hack[j].tp > 0 ||
-                       amb[resind].hack[j].oname == nullptr ) &&
-                     strcmp(amb[resind].hack[j].a[0], *(atoms->atomname[i])) == 0)
+                if ( ( h.tp > 0 ||
+                       h.type() == HackType::Add ) &&
+                     h.a[0] == *(atoms->atomname[i]))
                 {
-                    switch (amb[resind].hack[j].tp)
+                    switch (h.tp)
                     {
-                        case 9:                                         /* COOH terminus */
+                        case 9 :                                        /* COOH terminus */
                             add_param(psb, i, i+1, nullptr, nullptr);   /* C-O  */
                             add_param(psb, i, i+2, nullptr, nullptr);   /* C-OA */
                             add_param(psb, i+2, i+3, nullptr, nullptr); /* OA-H */
                             break;
                         default:
-                            for (int k = 0; (k < amb[resind].hack[j].nr); k++)
+                            for (int k = 0; (k < h.nr); k++)
                             {
                                 add_param(psb, i, i+k+1, nullptr, nullptr);
                             }
@@ -936,17 +936,15 @@ static void check_restp_types(t_restp *r0, t_restp *r1)
     }
 }
 
-static void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
+static void add_atom_to_restp(t_restp *restp, int at_start, const HackBlock *hack)
 {
-    char        buf[STRLEN];
     int         k;
     const char *Hnum = "123456";
 
-    strcpy(buf, hack->nname);
-    buf[strlen(buf)+1] = '\0';
+    std::string buf = hack->nname;
     if (hack->nr > 1)
     {
-        buf[strlen(buf)] = '-';
+        buf.append("-");
     }
     /* make space */
     restp->natom += hack->nr;
@@ -969,11 +967,11 @@ static void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
         /* set counter in atomname */
         if (hack->nr > 1)
         {
-            buf[strlen(buf)-1] = Hnum[k];
+            buf.append(gmx::intToString(Hnum[k]));
         }
         snew( restp->atomname[at_start+1+k], 1);
-        restp->atom     [at_start+1+k] = *hack->atom;
-        *restp->atomname[at_start+1+k] = gmx_strdup(buf);
+        restp->atom     [at_start+1+k] = hack->atom.back();
+        *restp->atomname[at_start+1+k] = gmx_strdup(buf.c_str());
         if (hack->cgnr != NOTSET)
         {
             restp->cgnr   [at_start+1+k] = hack->cgnr;
@@ -1063,8 +1061,8 @@ void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp
                 gmx_fatal(FARGS, "%s", errString);
             }
         }
-        else if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
-                         (terc >= 0 && ctdb[terc]->nhack == 0)))
+        else if (bRM && ((tern >= 0 && ntdb[tern]->nhack() == 0) ||
+                         (terc >= 0 && ctdb[terc]->nhack() == 0)))
         {
             const char *errString = "There is a dangling bond at at least one of the terminal ends. Fix your coordinate file, add a new terminal database entry (.tdb), or select the proper existing terminal entry.";
             if (bAllowMissing)
@@ -1078,29 +1076,29 @@ void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp
         }
     }
 
-    /* now perform t_hack's on t_restp's,
+    /* Apply modifications to t_restp entries
        i.e. add's and deletes from termini database will be
        added to/removed from residue topology
        we'll do this on one big dirty loop, so it won't make easy reading! */
-    for (int i = 0; i < nres; i++)
+    for (auto it = amb->begin(); it != amb->end(); it++)
     {
-        for (int j = 0; j < amb->at(i).nhack; j++)
+        const int pos = std::distance(amb->begin(), it);
+        for (auto jt = it->hack.begin(); jt != it->hack.end(); jt++)
         {
-            if (amb->at(i).hack[j].nr)
+            if (jt->nr != 0)
             {
                 /* find atom in restp */
                 int l;
-                for (l = 0; l < (*restp)[i].natom; l++)
+                for (l = 0; l < (*restp)[pos].natom; l++)
                 {
-                    if ( ( amb->at(i).hack[j].oname == nullptr &&
-                           strcmp(amb->at(i).hack[j].a[0], *(*restp)[i].atomname[l]) == 0 ) ||
-                         ( amb->at(i).hack[j].oname != nullptr &&
-                           strcmp(amb->at(i).hack[j].oname, *(*restp)[i].atomname[l]) == 0 ) )
+                    if ( ( jt->oname.empty() &&
+                           jt->a[0] == *(*restp)[pos].atomname[l]) ||
+                         jt->oname == *(*restp)[pos].atomname[l])
                     {
                         break;
                     }
                 }
-                if (l == (*restp)[i].natom)
+                if (l == (*restp)[pos].natom)
                 {
                     /* If we are doing an atom rename only, we don't need
                      * to generate a fatal error if the old name is not found
@@ -1109,53 +1107,56 @@ void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp
                     /* Deleting can happen also only on the input atoms,
                      * not necessarily always on the rtp entry.
                      */
-                    if (!(amb->at(i).hack[j].oname != nullptr &&
-                          amb->at(i).hack[j].nname != nullptr) &&
-                        !(amb->at(i).hack[j].oname != nullptr &&
-                          amb->at(i).hack[j].nname == nullptr))
+                    if (!(!jt->oname.empty() &&
+                          !jt->nname.empty()) &&
+                        !(!jt->oname.empty() &&
+                          jt->nname.empty()))
                     {
                         gmx_fatal(FARGS,
                                   "atom %s not found in buiding block %d%s "
                                   "while combining tdb and rtp",
-                                  amb->at(i).hack[j].oname != nullptr ?
-                                  amb->at(i).hack[j].oname : amb->at(i).hack[j].a[0],
-                                  i+1, *resinfo[i].rtp);
+                                  jt->oname.empty() ?
+                                  jt->a[0].c_str() : jt->oname.c_str(),
+                                  pos+1, *resinfo[pos].rtp);
                     }
                 }
                 else
                 {
-                    if (amb->at(i).hack[j].oname == nullptr)
+                    switch (jt->type())
                     {
-                        /* we're adding: */
-                        add_atom_to_restp(&(*restp)[i], l, &amb->at(i).hack[j]);
-                    }
-                    else
-                    {
-                        /* oname != NULL */
-                        if (amb->at(i).hack[j].nname == nullptr)
+                        case HackType::Add:
+                        {
+                            /* we're adding: */
+                            add_atom_to_restp(&(*restp)[pos], l, &(*jt));
+                            break;
+                        }
+                        case HackType::Delete:
                         {   /* we're deleting */
                             /* shift the rest */
-                            (*restp)[i].natom--;
-                            for (int k = l; k < (*restp)[i].natom; k++)
+                            (*restp)[pos].natom--;
+                            for (int k = l; k < (*restp)[pos].natom; k++)
                             {
-                                (*restp)[i].atom    [k] = (*restp)[i].atom    [k+1];
-                                (*restp)[i].atomname[k] = (*restp)[i].atomname[k+1];
-                                (*restp)[i].cgnr    [k] = (*restp)[i].cgnr    [k+1];
+                                (*restp)[pos].atom    [k] = (*restp)[pos].atom    [k+1];
+                                (*restp)[pos].atomname[k] = (*restp)[pos].atomname[k+1];
+                                (*restp)[pos].cgnr    [k] = (*restp)[pos].cgnr    [k+1];
                             }
                             /* give back space */
-                            srenew((*restp)[i].atom,     (*restp)[i].natom);
-                            srenew((*restp)[i].atomname, (*restp)[i].natom);
-                            srenew((*restp)[i].cgnr,     (*restp)[i].natom);
+                            srenew((*restp)[pos].atom,     (*restp)[pos].natom);
+                            srenew((*restp)[pos].atomname, (*restp)[pos].natom);
+                            srenew((*restp)[pos].cgnr,     (*restp)[pos].natom);
+                            break;
                         }
-                        else /* nname != NULL */
-                        {    /* we're replacing */
-                            snew( (*restp)[i].atomname[l], 1);
-                            (*restp)[i].atom[l]      =       *amb->at(i).hack[j].atom;
-                            *(*restp)[i].atomname[l] = gmx_strdup(amb->at(i).hack[j].nname);
-                            if (amb->at(i).hack[j].cgnr != NOTSET)
+                        case HackType::Replace:
+                        {
+                            /* we're replacing */
+                            snew( (*restp)[pos].atomname[l], 1);
+                            (*restp)[pos].atom[l]      =       jt->atom.back();
+                            *(*restp)[pos].atomname[l] = gmx_strdup(jt->nname.c_str());
+                            if (jt->cgnr != NOTSET)
                             {
-                                (*restp)[i].cgnr   [l] = amb->at(i).hack[j].cgnr;
+                                (*restp)[pos].cgnr   [l] = jt->cgnr;
                             }
+                            break;
                         }
                     }
                 }
@@ -1164,14 +1165,14 @@ void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp
     }
 }
 
-static bool atomname_cmp_nr(const char *anm, const t_hack *hack, int *nr)
+static bool atomname_cmp_nr(const char *anm, const HackBlock *hack, int *nr)
 {
 
     if (hack->nr == 1)
     {
         *nr = 0;
 
-        return (gmx_strcasecmp(anm, hack->nname) == 0);
+        return (gmx::equalCaseInsensitive(anm, hack->nname));
     }
     else
     {
@@ -1189,8 +1190,10 @@ static bool atomname_cmp_nr(const char *anm, const t_hack *hack, int *nr)
         }
         else
         {
-            return (strlen(anm) == strlen(hack->nname) + 1 &&
-                    gmx_strncasecmp(anm, hack->nname, strlen(hack->nname)) == 0);
+            std::string tmp = anm;
+            tmp.erase(tmp.end() - 1);
+            return (tmp.length() == hack->nname.length() &&
+                    gmx::equalCaseInsensitive(tmp, hack->nname));
         }
     }
 }
@@ -1200,34 +1203,33 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                                           bool bVerbose)
 {
     int      resnr;
-    char    *oldnm, *newnm;
+    char    *oldnm;
     int      anmnr;
-    char    *start_at, buf[STRLEN];
     bool     bDeleted;
 
     oldnm = *pdba->atomname[atind];
     resnr = pdba->resinfo[pdba->atom[atind].resind].nr;
 
     bDeleted = FALSE;
-    for (int j = 0; j < hbr.nhack; j++)
+    for (auto jt1 = hbr.hack.begin(); jt1 != hbr.hack.end(); jt1++)
     {
-        if (hbr.hack[j].oname != nullptr && hbr.hack[j].nname != nullptr &&
-            gmx_strcasecmp(oldnm, hbr.hack[j].oname) == 0)
+        if (jt1->type() == HackType::Replace &&
+            gmx::equalCaseInsensitive(oldnm, jt1->oname))
         {
             /* This is a replace entry. */
             /* Check if we are not replacing a replaced atom. */
             bool bReplaceReplace = false;
-            for (int k = 0; k < hbr.nhack; k++)
+            for (auto jt2 = hbr.hack.begin(); jt2 != hbr.hack.end(); jt2++)
             {
-                if (j != k &&
-                    hbr.hack[k].oname != nullptr && hbr.hack[k].nname != nullptr &&
-                    gmx_strcasecmp(hbr.hack[k].nname, hbr.hack[j].oname) == 0)
+                if (jt1 != jt2 &&
+                    jt2->type() == HackType::Replace &&
+                    gmx::equalCaseInsensitive(jt2->nname, jt1->oname))
                 {
                     /* The replace in hack[j] replaces an atom that
                      * was already replaced in hack[k], we do not want
                      * second or higher level replaces at this stage.
                      */
-                    bReplaceReplace = TRUE;
+                    bReplaceReplace = true;
                 }
             }
             if (bReplaceReplace)
@@ -1237,11 +1239,11 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
             }
 
             /* This atom still has the old name, rename it */
-            newnm = hbr.hack[j].nname;
-            int k;
+            std::string newnm = jt1->nname;
+            int         k;
             for (k = 0; k < rptr->natom; k++)
             {
-                if (gmx_strcasecmp(newnm, *rptr->atomname[k]) == 0)
+                if (gmx::equalCaseInsensitive(newnm, *rptr->atomname[k]))
                 {
                     break;
                 }
@@ -1256,11 +1258,11 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                  * to find out after which atom it should be added.
                  */
                 bool bFoundInAdd = false;
-                for (int k = 0; k < hbr.nhack; k++)
+                for (auto jt2 = hbr.hack.begin(); jt2 != hbr.hack.end(); jt2++)
                 {
-                    if (hbr.hack[k].oname == nullptr &&
-                        hbr.hack[k].nname != nullptr &&
-                        atomname_cmp_nr(newnm, &hbr.hack[k], &anmnr))
+                    std::string start_at;
+                    if (jt2->type() == HackType::Add &&
+                        atomname_cmp_nr(newnm.c_str(), &(*jt2), &anmnr))
                     {
                         if (anmnr <= 1)
                         {
@@ -1268,13 +1270,12 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                         }
                         else
                         {
-                            sprintf(buf, "%s%d", hbr.hack[k].nname, anmnr-1);
-                            start_at = buf;
+                            start_at = gmx::formatString("%s%d", hbr.hack[k].nname.c_str(), anmnr-1);
                         }
                         int start_nr;
                         for (start_nr = 0; start_nr < rptr->natom; start_nr++)
                         {
-                            if (gmx_strcasecmp(start_at, (*rptr->atomname[start_nr])) == 0)
+                            if (gmx::equalCaseInsensitive(start_at, (*rptr->atomname[start_nr])))
                             {
                                 break;
                             }
@@ -1282,20 +1283,20 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                         if (start_nr == rptr->natom)
                         {
                             gmx_fatal(FARGS, "Could not find atom '%s' in residue building block '%s' to add atom '%s' to",
-                                      start_at, rptr->resname, newnm);
+                                      start_at.c_str(), rptr->resname, newnm.c_str());
                         }
                         /* We can add the atom after atom start_nr */
-                        add_atom_to_restp(rptr, start_nr, &hbr.hack[j]);
+                        add_atom_to_restp(rptr, start_nr, &(*jt1));
 
-                        bFoundInAdd = TRUE;
+                        bFoundInAdd = true;
                     }
                 }
 
                 if (!bFoundInAdd)
                 {
                     gmx_fatal(FARGS, "Could not find an 'add' entry for atom named '%s' corresponding to the 'replace' entry from atom name '%s' to '%s' for tdb or hdb database of residue type '%s'",
-                              newnm,
-                              hbr.hack[j].oname, hbr.hack[j].nname,
+                              newnm.c_str(),
+                              jt1->oname.c_str(), jt1->nname.c_str(),
                               rptr->resname);
                 }
             }
@@ -1303,14 +1304,14 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
             if (bVerbose)
             {
                 printf("Renaming atom '%s' in residue '%s' %d to '%s'\n",
-                       oldnm, rptr->resname, resnr, newnm);
+                       oldnm, rptr->resname, resnr, newnm.c_str());
             }
             /* Rename the atom in pdba */
             snew(pdba->atomname[atind], 1);
-            *pdba->atomname[atind] = gmx_strdup(newnm);
+            *pdba->atomname[atind] = gmx_strdup(newnm.c_str());
         }
-        else if (hbr.hack[j].oname != nullptr && hbr.hack[j].nname == nullptr &&
-                 gmx_strcasecmp(oldnm, hbr.hack[j].oname) == 0)
+        else if (jt1->type() == HackType::Delete &&
+                 gmx::equalCaseInsensitive(oldnm, jt1->oname))
         {
             /* This is a delete entry, check if this atom is present
              * in the rtp entry of this residue.
@@ -1344,7 +1345,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                     copy_rvec(x[k], x[k-1]);
                 }
                 pdba->nr--;
-                bDeleted = TRUE;
+                bDeleted = true;
             }
         }
     }
