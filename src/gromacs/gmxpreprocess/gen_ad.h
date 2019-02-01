@@ -42,7 +42,7 @@
 
 struct t_atoms;
 struct t_excls;
-struct AtomModificationBlock;
+struct MoleculePatchDatabase;
 struct t_nextnb;
 struct t_params;
 struct t_restp;
@@ -51,7 +51,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
-             t_params plist[], t_excls excls[], gmx::ArrayRef<AtomModificationBlock> amb,
+             t_params plist[], t_excls excls[], gmx::ArrayRef<MoleculePatchDatabase> amb,
              bool bAllowMissing);
 
 #endif
