@@ -95,7 +95,7 @@ static int find_kw(char *keyw)
 #define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
 
 static void read_atom(char *line, bool bAdd,
-                      char **nname, t_atom *a, gpp_atomtype *atype, int *cgnr)
+                      std::string *nname, t_atom *a, gpp_atomtype *atype, int *cgnr)
 {
     int    nr, i;
     char   buf[5][30];
@@ -126,11 +126,11 @@ static void read_atom(char *line, bool bAdd,
     {
         if (nr == 4)
         {
-            *nname = gmx_strdup(buf[i++]);
+            *nname = buf[i++];
         }
         else
         {
-            *nname = nullptr;
+            *nname = "";
         }
     }
     a->type = get_atomtype_type(buf[i++], atype);
@@ -148,7 +148,7 @@ static void read_atom(char *line, bool bAdd,
     }
 }
 
-static void print_atom(FILE *out, t_atom *a, gpp_atomtype *atype)
+static void print_atom(FILE *out, const t_atom *a, gpp_atomtype *atype)
 {
     fprintf(out, "\t%s\t%g\t%g\n",
             get_atomtype_name(a->type, atype), a->m, a->q);
@@ -168,57 +168,63 @@ static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const AtomModific
         int nrepl = 0;
         int nadd  = 0;
         int ndel  = 0;
-        for (int j = 0; j < e.nhack; j++)
+        for (const auto &h : e.hack)
         {
-            if (e.hack[j].oname != nullptr && e.hack[j].nname != nullptr)
+            switch (h.type())
             {
-                nrepl++;
-            }
-            else if (e.hack[j].oname == nullptr && e.hack[j].nname != nullptr)
-            {
-                nadd++;
-            }
-            else if (e.hack[j].oname != nullptr && e.hack[j].nname == nullptr)
-            {
-                ndel++;
-            }
-            else if (e.hack[j].oname == nullptr && e.hack[j].nname == nullptr)
-            {
-                gmx_fatal(FARGS, "invalid hack (%s) in termini database", e.name.c_str());
+                case HackType::Replace :
+                    {
+                        nrepl++;
+                        break;
+                    }
+                case HackType::Add:
+                {
+                    nadd++;
+                    break;
+                }
+                case HackType::Delete:
+                {
+                    ndel++;
+                    break;
+                }
+                default:
+                {
+                    gmx_fatal(FARGS, "invalid hack (%s) in termini database", e.name.c_str());
+                }
             }
         }
-        if (nrepl)
+        if (nrepl > 0)
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwRepl-ebtsNR-1]);
-            for (int j = 0; j < e.nhack; j++)
+            for (const auto &h : e.hack)
             {
-                if (e.hack[j].oname != nullptr && e.hack[j].nname != nullptr)
+                if (h.type() == HackType::Replace)
                 {
-                    fprintf(out, "%s\t", e.hack[j].oname);
-                    print_atom(out, e.hack[j].atom, atype);
+                    fprintf(out, "%s\t", h.oname.c_str());
+                    print_atom(out, &h.atom.back(), atype);
                 }
             }
         }
-        if (nadd)
+        if (nadd > 0)
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwAdd-ebtsNR-1]);
-            for (int j = 0; j < e.nhack; j++)
+            for (const auto &h : e.hack)
             {
-                if (e.hack[j].oname == nullptr && e.hack[j].nname != nullptr)
+                if (h.type() == HackType::Add)
                 {
-                    print_ab(out, e.hack[j], e.hack[j].nname);
-                    print_atom(out, e.hack[j].atom, atype);
+                    print_ab(out, h, h.nname.c_str());
+                    print_atom(out, &h.atom.back(), atype);
                 }
             }
         }
-        if (ndel)
+        if (ndel > 0)
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwDel-ebtsNR-1]);
-            for (int j = 0; j < e.nhack; j++)
+            for (const auto &h : e.hack)
             {
-                if (e.hack[j].oname != nullptr && e.hack[j].nname == nullptr)
+                if (h.type() == HackType::Delete)
                 {
-                    fprintf(out, "%s\n", e.hack[j].oname);
+                    fprintf(out, "%s\n", h.oname.c_str());
                 }
             }
         }
@@ -295,18 +301,8 @@ static void read_ter_db_file(const char                         *fn,
             {
                 /* this is a hack: add/rename/delete atoms */
                 /* make space for hacks */
-                if (block->nhack >= block->maxhack)
-                {
-                    block->maxhack += 10;
-                    srenew(block->hack, block->maxhack);
-                }
-                int nh = block->nhack;
-                clear_t_hack(&block->hack[nh]);
-                for (int i = 0; i < 4; i++)
-                {
-                    block->hack[nh].a[i] = nullptr;
-                }
-                block->nhack++;
+                block->hack.emplace_back(HackBlock());
+                HackBlock *hack = &block->hack.back();
 
                 /* get data */
                 int n = 0;
@@ -317,13 +313,13 @@ static void read_ter_db_file(const char                         *fn,
                         gmx_fatal(FARGS, "Reading Termini Database '%s': "
                                   "expected atom name on line\n%s", fn, line);
                     }
-                    block->hack[nh].oname = gmx_strdup(buf);
+                    hack->oname = buf;
                     /* we only replace or delete one atom at a time */
-                    block->hack[nh].nr = 1;
+                    hack->nr = 1;
                 }
                 else if (kwnr == ekwAdd)
                 {
-                    read_ab(line, fn, &block->hack[nh]);
+                    read_ab(line, fn, hack);
                     get_a_line(in, line, STRLEN);
                 }
                 else
@@ -333,15 +329,15 @@ static void read_ter_db_file(const char                         *fn,
                 }
                 if (kwnr == ekwRepl || kwnr == ekwAdd)
                 {
-                    snew(block->hack[nh].atom, 1);
+                    hack->atom.push_back(t_atom());
                     read_atom(line+n, kwnr == ekwAdd,
-                              &block->hack[nh].nname, block->hack[nh].atom, atype,
-                              &block->hack[nh].cgnr);
-                    if (block->hack[nh].nname == nullptr)
+                              &hack->nname, &hack->atom.back(), atype,
+                              &hack->cgnr);
+                    if (hack->nname.empty())
                     {
-                        if (block->hack[nh].oname != nullptr)
+                        if (!hack->oname.empty())
                         {
-                            block->hack[nh].nname = gmx_strdup(block->hack[nh].oname);
+                            hack->nname = hack->oname;
                         }
                         else
                         {
