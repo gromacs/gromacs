@@ -102,14 +102,12 @@ void free_t_restp(int nrtp, t_restp **rtp)
 
 void free_t_hack(int nh, t_hack **h)
 {
-    int i, j;
-
-    for (i = 0; i < nh; i++)
+    for (int i = 0; i < nh; i++)
     {
         sfree((*h)[i].oname);
         sfree((*h)[i].nname);
         sfree((*h)[i].atom);
-        for (j = 0; j < 4; j++)
+        for (int j = 0; j < 4; j++)
         {
             sfree((*h)[i].a[j]);
         }
@@ -118,34 +116,28 @@ void free_t_hack(int nh, t_hack **h)
     *h = nullptr;
 }
 
-void free_t_hackblock(int nhb, t_hackblock **hb)
+void freeModificationBlock(gmx::ArrayRef<AtomModificationBlock> amb)
 {
-    int i, j;
-
-    for (i = 0; i < nhb; i++)
+    for (auto it = amb.begin(); it != amb.end(); it++)
     {
-        sfree((*hb)[i].name);
-        free_t_hack((*hb)[i].nhack, &(*hb)[i].hack);
-        for (j = 0; j < ebtsNR; j++)
+        free_t_hack(it->nhack, &it->hack);
+        for (int j = 0; j < ebtsNR; j++)
         {
-            free_t_bondeds(&(*hb)[i].rb[j]);
+            free_t_bondeds(&it->rb[j]);
         }
     }
-    sfree(*hb);
 }
 
-void clear_t_hackblock(t_hackblock *hb)
+void clearModificationBlock(AtomModificationBlock *amb)
 {
-    int i;
-
-    hb->name    = nullptr;
-    hb->nhack   = 0;
-    hb->maxhack = 0;
-    hb->hack    = nullptr;
-    for (i = 0; i < ebtsNR; i++)
+    amb->name.clear();
+    amb->nhack   = 0;
+    amb->maxhack = 0;
+    amb->hack    = nullptr;
+    for (int i = 0; i < ebtsNR; i++)
     {
-        hb->rb[i].nb = 0;
-        hb->rb[i].b  = nullptr;
+        amb->rb[i].nb = 0;
+        amb->rb[i].b  = nullptr;
     }
 }
 
@@ -242,7 +234,10 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
     return foundPos;
 }
 
-bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], bool bMin, bool bPlus)
+bool merge_t_bondeds(gmx::ArrayRef<const t_rbondeds> s,
+                     gmx::ArrayRef<t_rbondeds>       d,
+                     bool                            bMin,
+                     bool                            bPlus)
 {
     int      i, j;
     bool     bBondsRemoved;
@@ -352,7 +347,7 @@ void copy_t_restp(t_restp *s, t_restp *d)
     merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
 }
 
-void copy_t_hack(t_hack *s, t_hack *d)
+void copy_t_hack(const t_hack *s, t_hack *d)
 {
     int i;
 
@@ -375,14 +370,12 @@ void copy_t_hack(t_hack *s, t_hack *d)
     copy_rvec(s->newx, d->newx);
 }
 
-void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d)
+void merge_hacks_lo(int ns, const t_hack *s, int *nd, t_hack **d)
 {
-    int i;
-
     if (ns)
     {
         srenew(*d, *nd + ns);
-        for (i = 0; i < ns; i++)
+        for (int i = 0; i < ns; i++)
         {
             copy_t_hack(&s[i], &(*d)[*nd + i]);
         }
@@ -390,73 +383,73 @@ void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d)
     }
 }
 
-void merge_hacks(t_hackblock *s, t_hackblock *d)
+void mergeAtomModifications(const AtomModificationBlock &s, AtomModificationBlock *d)
 {
-    merge_hacks_lo(s->nhack, s->hack, &d->nhack, &d->hack);
+    merge_hacks_lo(s.nhack, s.hack, &d->nhack, &d->hack);
 }
 
-void merge_t_hackblock(t_hackblock *s, t_hackblock *d)
+void mergeAtomAndBondModifications(const AtomModificationBlock &s, AtomModificationBlock *d)
 {
-    merge_hacks(s, d);
-    merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
+    mergeAtomModifications(s, d);
+    merge_t_bondeds(s.rb, d->rb, FALSE, FALSE);
 }
 
-void copy_t_hackblock(t_hackblock *s, t_hackblock *d)
+void copyModificationBlocks(const AtomModificationBlock &s, AtomModificationBlock *d)
 {
-    int i;
-
-    *d       = *s;
-    d->name  = safe_strdup(s->name);
+    *d       = s;
+    d->name  = s.name;
     d->nhack = 0;
     d->hack  = nullptr;
-    for (i = 0; i < ebtsNR; i++)
+    for (int i = 0; i < ebtsNR; i++)
     {
         d->rb[i].nb = 0;
         d->rb[i].b  = nullptr;
     }
-    merge_t_hackblock(s, d);
+    mergeAtomAndBondModifications(s, d);
 }
 
 #undef safe_strdup
 
-void dump_hb(FILE *out, int nres, t_hackblock hb[])
+void dumpModificationBlocks(FILE *out, gmx::ArrayRef<const AtomModificationBlock> amb)
 {
-    int i, j, k, l;
-
-#define SS(s) (s) ? (s) : "-"
-#define SA(s) (s) ? "+" : ""
-    fprintf(out, "t_hackblock\n");
-    for (i = 0; i < nres; i++)
+#define SS(s) (s.empty()) ? "-" : (s.c_str())
+#define SA(s) (s.empty()) ? ""  : "+"
+#define SSC(s) (s) ? (s) : "-"
+#define SAC(s) (s) ? "+" : ""
+    fprintf(out, "AtomModificationBlock\n");
+    int pos = 0;
+    for (const auto &e : amb)
     {
-        fprintf(out, "%3d %4s %2d %2d\n",
-                i, SS(hb[i].name), hb[i].nhack, hb[i].maxhack);
-        if (hb[i].nhack)
+        fprintf(out, "%3d %4s %2d\n",
+                pos, SS(e.name), e.nhack);
+        if (e.nhack)
         {
-            for (j = 0; j < hb[i].nhack; j++)
+            for (int j = 0; j < e.nhack; j++)
             {
                 fprintf(out, "%d: %d %4s %4s %1s %2d %d %4s %4s %4s %4s\n",
-                        j, hb[i].hack[j].nr,
-                        SS(hb[i].hack[j].oname), SS(hb[i].hack[j].nname),
-                        SA(hb[i].hack[j].atom), hb[i].hack[j].tp, hb[i].hack[j].cgnr,
-                        SS(hb[i].hack[j].ai()), SS(hb[i].hack[j].aj()),
-                        SS(hb[i].hack[j].ak()), SS(hb[i].hack[j].al()) );
+                        j, e.hack[j].nr,
+                        SSC(e.hack[j].oname), SSC(e.hack[j].nname),
+                        SAC(e.hack[j].atom), e.hack[j].tp, e.hack[j].cgnr,
+                        SSC(e.hack[j].ai()), SSC(e.hack[j].aj()),
+                        SSC(e.hack[j].ak()), SSC(e.hack[j].al()) );
             }
         }
-        for (j = 0; j < ebtsNR; j++)
+        for (int j = 0; j < ebtsNR; j++)
         {
-            if (hb[i].rb[j].nb)
+            if (e.rb[j].nb)
             {
-                fprintf(out, " %c %d:", btsNames[j][0], hb[i].rb[j].nb);
-                for (k = 0; k < hb[i].rb[j].nb; k++)
+                fprintf(out, " %c %d:", btsNames[j][0], e.rb[j].nb);
+                int k;
+                for (k = 0; k < e.rb[j].nb; k++)
                 {
                     fprintf(out, " [");
-                    for (l = 0; l < btsNiatoms[j]; l++)
+                    for (int l = 0; l < btsNiatoms[j]; l++)
                     {
-                        fprintf(out, " %s", hb[i].rb[j].b[k].a[l]);
+                        fprintf(out, " %s", e.rb[j].b[k].a[l]);
                     }
-                    fprintf(out, " %s]", SS(hb[i].rb[j].b[k].s));
+                    fprintf(out, " %s]", SSC(e.rb[j].b[k].s));
                 }
-                fprintf(out, " Entry matched: %s\n", yesno_names[hb[i].rb[j].b[k].match]);
+                fprintf(out, " Entry matched: %s\n", yesno_names[e.rb[j].b[k].match]);
             }
         }
         fprintf(out, "\n");
