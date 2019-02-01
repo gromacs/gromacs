@@ -46,12 +46,34 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
 const int   btsNiatoms[ebtsNR] = { 2,       3,        4,           4,           2,             5 };
+
+HackType HackBlock::type() const
+{
+    if (oname.empty() && !nname.empty())
+    {
+        return HackType::Add;
+    }
+    else if (!oname.empty() && nname.empty())
+    {
+        return HackType::Delete;
+    }
+    else if (!oname.empty() && !nname.empty())
+    {
+        return HackType::Replace;
+    }
+    else
+    {
+        GMX_THROW(gmx::InvalidInputError("Unknown type of atom modification"));
+    }
+}
 
 static void free_t_bonded(t_rbonded *rb)
 {
@@ -100,27 +122,11 @@ void free_t_restp(int nrtp, t_restp **rtp)
     sfree(*rtp);
 }
 
-void free_t_hack(int nh, t_hack **h)
-{
-    for (int i = 0; i < nh; i++)
-    {
-        sfree((*h)[i].oname);
-        sfree((*h)[i].nname);
-        sfree((*h)[i].atom);
-        for (int j = 0; j < 4; j++)
-        {
-            sfree((*h)[i].a[j]);
-        }
-    }
-    sfree(*h);
-    *h = nullptr;
-}
-
 void freeModificationBlock(gmx::ArrayRef<AtomModificationBlock> amb)
 {
     for (auto it = amb.begin(); it != amb.end(); it++)
     {
-        free_t_hack(it->nhack, &it->hack);
+        it->hack.clear();
         for (int j = 0; j < ebtsNR; j++)
         {
             free_t_bondeds(&it->rb[j]);
@@ -131,34 +137,11 @@ void freeModificationBlock(gmx::ArrayRef<AtomModificationBlock> amb)
 void clearModificationBlock(AtomModificationBlock *amb)
 {
     amb->name.clear();
-    amb->nhack   = 0;
-    amb->maxhack = 0;
-    amb->hack    = nullptr;
+    amb->hack.clear();
     for (int i = 0; i < ebtsNR; i++)
     {
         amb->rb[i].nb = 0;
         amb->rb[i].b  = nullptr;
-    }
-}
-
-void clear_t_hack(t_hack *hack)
-{
-    int i;
-
-    hack->nr    = 0;
-    hack->oname = nullptr;
-    hack->nname = nullptr;
-    hack->atom  = nullptr;
-    hack->cgnr  = NOTSET;
-    hack->tp    = 0;
-    hack->nctl  = 0;
-    for (i = 0; i < 4; i++)
-    {
-        hack->a[i]  = nullptr;
-    }
-    for (i = 0; i < DIM; i++)
-    {
-        hack->newx[i] = NOTSET;
     }
 }
 
@@ -347,45 +330,13 @@ void copy_t_restp(t_restp *s, t_restp *d)
     merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
 }
 
-void copy_t_hack(const t_hack *s, t_hack *d)
-{
-    int i;
-
-    *d       = *s;
-    d->oname = safe_strdup(s->oname);
-    d->nname = safe_strdup(s->nname);
-    if (s->atom)
-    {
-        snew(d->atom, 1);
-        *(d->atom) = *(s->atom);
-    }
-    else
-    {
-        d->atom = nullptr;
-    }
-    for (i = 0; i < 4; i++)
-    {
-        d->a[i] = safe_strdup(s->a[i]);
-    }
-    copy_rvec(s->newx, d->newx);
-}
-
-void merge_hacks_lo(int ns, const t_hack *s, int *nd, t_hack **d)
-{
-    if (ns)
-    {
-        srenew(*d, *nd + ns);
-        for (int i = 0; i < ns; i++)
-        {
-            copy_t_hack(&s[i], &(*d)[*nd + i]);
-        }
-        (*nd) += ns;
-    }
-}
-
 void mergeAtomModifications(const AtomModificationBlock &s, AtomModificationBlock *d)
 {
-    merge_hacks_lo(s.nhack, s.hack, &d->nhack, &d->hack);
+    for (const auto &h : s.hack)
+    {
+        d->hack.push_back(h);
+        copy_rvec(h.newx, d->hack.back().newx);
+    }
 }
 
 void mergeAtomAndBondModifications(const AtomModificationBlock &s, AtomModificationBlock *d)
@@ -398,8 +349,7 @@ void copyModificationBlocks(const AtomModificationBlock &s, AtomModificationBloc
 {
     *d       = s;
     d->name  = s.name;
-    d->nhack = 0;
-    d->hack  = nullptr;
+    d->hack.clear();
     for (int i = 0; i < ebtsNR; i++)
     {
         d->rb[i].nb = 0;
@@ -415,24 +365,24 @@ void dumpModificationBlocks(FILE *out, gmx::ArrayRef<const AtomModificationBlock
 #define SS(s) (s.empty()) ? "-" : (s.c_str())
 #define SA(s) (s.empty()) ? ""  : "+"
 #define SSC(s) (s) ? (s) : "-"
-#define SAC(s) (s) ? "+" : ""
     fprintf(out, "AtomModificationBlock\n");
     int pos = 0;
     for (const auto &e : amb)
     {
         fprintf(out, "%3d %4s %2d\n",
-                pos, SS(e.name), e.nhack);
-        if (e.nhack)
+                pos, SS(e.name), e.nhack());
+        int j = 0;
+        for (const auto &h : e.hack)
         {
-            for (int j = 0; j < e.nhack; j++)
-            {
-                fprintf(out, "%d: %d %4s %4s %1s %2d %d %4s %4s %4s %4s\n",
-                        j, e.hack[j].nr,
-                        SSC(e.hack[j].oname), SSC(e.hack[j].nname),
-                        SAC(e.hack[j].atom), e.hack[j].tp, e.hack[j].cgnr,
-                        SSC(e.hack[j].ai()), SSC(e.hack[j].aj()),
-                        SSC(e.hack[j].ak()), SSC(e.hack[j].al()) );
-            }
+            /* Need to have atom string outside of the old macro */
+            const char *a = h.atom.empty() ? "" : "+";
+            fprintf(out, "%d: %d %4s %4s %1s %2d %d %4s %4s %4s %4s\n",
+                    j, h.nr,
+                    SS(h.oname), SS(h.nname),
+                    a, h.tp, h.cgnr,
+                    SSC(h.ai()), SSC(h.aj()),
+                    SSC(h.ak()), SSC(h.al()) );
+            j++;
         }
         for (int j = 0; j < ebtsNR; j++)
         {
@@ -456,4 +406,5 @@ void dumpModificationBlocks(FILE *out, gmx::ArrayRef<const AtomModificationBlock
     }
 #undef SS
 #undef SA
+#undef SSC
 }
