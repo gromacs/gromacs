@@ -58,7 +58,6 @@
 #include "gromacs/gmxpreprocess/genhydro.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/h_db.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/hizzie.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
@@ -84,6 +83,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "hackblock.h"
 
 #define RTP_MAXCHAR 5
 typedef struct {
@@ -1192,19 +1193,19 @@ typedef struct {
     int  *chainstart;
 } t_pdbchain;
 
-typedef struct {
-    char          chainid;
-    int           chainnum;
-    bool          bAllWat;
-    int           nterpairs;
-    int          *chainstart;
-    t_hackblock **ntdb;
-    t_hackblock **ctdb;
-    int          *r_start;
-    int          *r_end;
-    t_atoms      *pdba;
-    rvec         *x;
-} t_chain;
+struct t_chain {
+    char                                 chainid;
+    int                                  chainnum;
+    bool                                 bAllWat;
+    int                                  nterpairs;
+    int                                 *chainstart;
+    std::vector<AtomModificationBlock *> ntdb;
+    std::vector<AtomModificationBlock *> ctdb;
+    int                                 *r_start;
+    int                                 *r_end;
+    t_atoms                             *pdba;
+    rvec                                *x;
+};
 
 // TODO make all enums into scoped enums
 /* enum for vsites */
@@ -1621,7 +1622,6 @@ int pdb2gmx::run()
     char         select[STRLEN];
     int          nssbonds;
     t_ssbond    *ssbonds;
-    t_hackblock *hb_chain;
     t_restp     *restp_chain;
 
     int          this_atomnum;
@@ -1892,9 +1892,8 @@ int pdb2gmx::run()
         printf("Moved all the water blocks to the end\n");
     }
 
-    t_atoms *pdba;
-    t_chain *chains;
-    snew(chains, numChains);
+    t_atoms             *pdba;
+    std::vector<t_chain> chains(numChains);
     /* copy pdb data and x for all chains */
     for (int i = 0; (i < numChains); i++)
     {
@@ -1904,8 +1903,8 @@ int pdb2gmx::run()
         chains[i].bAllWat    = pdb_ch[si].bAllWat;
         chains[i].nterpairs  = pdb_ch[si].nterpairs;
         chains[i].chainstart = pdb_ch[si].chainstart;
-        snew(chains[i].ntdb, pdb_ch[si].nterpairs);
-        snew(chains[i].ctdb, pdb_ch[si].nterpairs);
+        chains[i].ntdb.clear();
+        chains[i].ctdb.clear();
         snew(chains[i].r_start, pdb_ch[si].nterpairs);
         snew(chains[i].r_end, pdb_ch[si].nterpairs);
 
@@ -1984,18 +1983,17 @@ int pdb2gmx::run()
     }
 
     /* read hydrogen database */
-    t_hackblock       *ah;
-    int                nah = read_h_db(ffdir_, &ah);
+    std::vector<AtomModificationBlock> ah;
+    read_h_db(ffdir_, &ah);
 
     /* Read Termini database... */
-    int                ntdblist;
-    t_hackblock       *ntdb;
-    t_hackblock       *ctdb;
-    t_hackblock      **tdblist;
-    int                nNtdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
-    int                nCtdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
+    std::vector<AtomModificationBlock>   ntdb;
+    std::vector<AtomModificationBlock>   ctdb;
+    std::vector<AtomModificationBlock *> tdblist;
+    int                                  nNtdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
+    int                                  nCtdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
 
-    FILE              *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
+    FILE                                *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
 
     print_top_header(top_file, topologyFile_.c_str(), FALSE, ffdir_, mHmult_);
 
@@ -2066,79 +2064,77 @@ int pdb2gmx::run()
             /* First the N terminus */
             if (nNtdb > 0)
             {
-                tdblist = filter_ter(nNtdb, ntdb,
-                                     *pdba->resinfo[cc->r_start[i]].name,
-                                     &ntdblist);
-                if (ntdblist == 0)
+                tdblist = filter_ter(ntdb,
+                                     *pdba->resinfo[cc->r_start[i]].name);
+                if (tdblist.empty())
                 {
                     printf("No suitable end (N or 5') terminus found in database - assuming this residue\n"
                            "is already in a terminus-specific form and skipping terminus selection.\n");
-                    cc->ntdb[i] = nullptr;
+                    cc->ntdb.push_back(nullptr);
                 }
                 else
                 {
-                    if (bTerMan_ && ntdblist > 1)
+                    if (bTerMan_ && !tdblist.empty())
                     {
                         sprintf(select, "Select start terminus type for %s-%d",
                                 *pdba->resinfo[cc->r_start[i]].name,
                                 pdba->resinfo[cc->r_start[i]].nr);
-                        cc->ntdb[i] = choose_ter(ntdblist, tdblist, select);
+                        cc->ntdb.push_back(choose_ter(tdblist, select));
                     }
                     else
                     {
-                        cc->ntdb[i] = tdblist[0];
+                        cc->ntdb.push_back(tdblist[0]);
                     }
 
                     printf("Start terminus %s-%d: %s\n",
                            *pdba->resinfo[cc->r_start[i]].name,
                            pdba->resinfo[cc->r_start[i]].nr,
-                           (cc->ntdb[i])->name);
-                    sfree(tdblist);
+                           (cc->ntdb[i])->name.c_str());
+                    tdblist.clear();
                 }
             }
             else
             {
-                cc->ntdb[i] = nullptr;
+                cc->ntdb.push_back(nullptr);
             }
 
             /* And the C terminus */
             if (nCtdb > 0)
             {
-                tdblist = filter_ter(nCtdb, ctdb,
-                                     *pdba->resinfo[cc->r_end[i]].name,
-                                     &ntdblist);
-                if (ntdblist == 0)
+                tdblist = filter_ter(ctdb,
+                                     *pdba->resinfo[cc->r_end[i]].name);
+                if (tdblist.empty())
                 {
                     printf("No suitable end (C or 3') terminus found in database - assuming this residue\n"
                            "is already in a terminus-specific form and skipping terminus selection.\n");
-                    cc->ctdb[i] = nullptr;
+                    cc->ctdb.push_back(nullptr);
                 }
                 else
                 {
-                    if (bTerMan_ && ntdblist > 1)
+                    if (bTerMan_ && !tdblist.empty())
                     {
                         sprintf(select, "Select end terminus type for %s-%d",
                                 *pdba->resinfo[cc->r_end[i]].name,
                                 pdba->resinfo[cc->r_end[i]].nr);
-                        cc->ctdb[i] = choose_ter(ntdblist, tdblist, select);
+                        cc->ctdb.push_back(choose_ter(tdblist, select));
                     }
                     else
                     {
-                        cc->ctdb[i] = tdblist[0];
+                        cc->ctdb.push_back(tdblist[0]);
                     }
                     printf("End terminus %s-%d: %s\n",
                            *pdba->resinfo[cc->r_end[i]].name,
                            pdba->resinfo[cc->r_end[i]].nr,
-                           (cc->ctdb[i])->name);
-                    sfree(tdblist);
+                           (cc->ctdb[i])->name.c_str());
+                    tdblist.clear();
                 }
             }
             else
             {
-                cc->ctdb[i] = nullptr;
+                cc->ctdb.push_back(nullptr);
             }
         }
-
+        std::vector<AtomModificationBlock> hb_chain;
         /* lookup hackblocks and rtp for all residues */
         get_hackblocks_rtp(&hb_chain, &restp_chain,
                            nrtp, restp, pdba->nres, pdba->resinfo,
@@ -2188,9 +2184,9 @@ int pdb2gmx::run()
 
         /* Generate Hydrogen atoms (and termini) in the sequence */
         printf("Generating any missing hydrogen atoms and/or adding termini.\n");
-        add_h(&pdba, &x, nah, ah,
+        add_h(&pdba, &x, ah,
               cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing_,
-              nullptr, nullptr, true, false);
+              true, false);
         printf("Now there are %d residues with %d atoms\n",
                pdba->nres, pdba->nr);
 
