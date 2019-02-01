@@ -44,42 +44,42 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct t_hack;
-struct AtomModificationBlock;
+struct MoleculePatch;
+struct MoleculePatchDatabase;
 
 /* functions for the h-database */
 
-void read_ab(char *line, const char *fn, t_hack *ab);
+void read_ab(char *line, const char *fn, MoleculePatch *ab);
 /* Read one add block */
 
 /*! \brief
  * Read the databse from hdb file(s).
  *
  * \param[in] ffdir Directory for files.
- * \param[inout] amb The database for atom modifications to populate.
+ * \param[inout] globalPatches The database for atom modifications to populate.
  * \returns The number of modifications stored.
  */
-int read_h_db(const char *ffdir, std::vector<AtomModificationBlock> *amb);
+int read_h_db(const char *ffdir, std::vector<MoleculePatchDatabase> *globalPatches);
 
-void print_ab(FILE *out, const t_hack &ab, const char *nname);
+void print_ab(FILE *out, const MoleculePatch &ab, const char *nname);
 /* print one add block */
 
 /*! \brief
  * Print database.
  *
  * \param[in] out File to print to.
- * \param[in] amb Database to print.
+ * \param[in] globalPatches Database to print.
  */
-void print_h_db(FILE *out, gmx::ArrayRef<const AtomModificationBlock> amb);
+void print_h_db(FILE *out, gmx::ArrayRef<const MoleculePatchDatabase> globalPatches);
 
 /*! \brief
  * Search for an entry.
  *
- * \param[in] amb Database to search.
+ * \param[in] globalPatches Database to search.
  * \param[in] key Name to search for.
  */
-gmx::ArrayRef<AtomModificationBlock>::iterator
-search_h_db(gmx::ArrayRef<AtomModificationBlock> amb, char *key);
+gmx::ArrayRef<MoleculePatchDatabase>::iterator
+search_h_db(gmx::ArrayRef<MoleculePatchDatabase> globalPatches, char *key);
 /* Search for an entry in the database */
 
 #endif
