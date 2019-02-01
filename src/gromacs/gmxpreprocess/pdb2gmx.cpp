@@ -1194,17 +1194,17 @@ typedef struct {
 } t_pdbchain;
 
 struct t_chain {
-    char                                 chainid;
-    int                                  chainnum;
-    bool                                 bAllWat;
-    int                                  nterpairs;
-    int                                 *chainstart;
-    std::vector<AtomModificationBlock *> ntdb;
-    std::vector<AtomModificationBlock *> ctdb;
-    int                                 *r_start;
-    int                                 *r_end;
-    t_atoms                             *pdba;
-    rvec                                *x;
+    char                                                chainid;
+    int                                                 chainnum;
+    bool                                                bAllWat;
+    int                                                 nterpairs;
+    int                                                *chainstart;
+    std::vector<MoleculePatchDatabase *>                ntdb;
+    std::vector<MoleculePatchDatabase *>                ctdb;
+    int                                                *r_start;
+    int                                                *r_end;
+    t_atoms                                            *pdba;
+    rvec                                               *x;
 };
 
 // TODO make all enums into scoped enums
@@ -1983,17 +1983,17 @@ int pdb2gmx::run()
     }
 
     /* read hydrogen database */
-    std::vector<AtomModificationBlock> ah;
+    std::vector<MoleculePatchDatabase> ah;
     read_h_db(ffdir_, &ah);
 
     /* Read Termini database... */
-    std::vector<AtomModificationBlock>   ntdb;
-    std::vector<AtomModificationBlock>   ctdb;
-    std::vector<AtomModificationBlock *> tdblist;
-    int                                  nNtdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
-    int                                  nCtdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
+    std::vector<MoleculePatchDatabase>                  ntdb;
+    std::vector<MoleculePatchDatabase>                  ctdb;
+    std::vector<MoleculePatchDatabase *>                tdblist;
+    int                                                 nNtdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
+    int                                                 nCtdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
 
-    FILE                                *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
+    FILE                                               *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
 
     print_top_header(top_file, topologyFile_.c_str(), FALSE, ffdir_, mHmult_);
 
@@ -2134,7 +2134,7 @@ int pdb2gmx::run()
                 cc->ctdb.push_back(nullptr);
             }
         }
-        std::vector<AtomModificationBlock> hb_chain;
+        std::vector<MoleculePatchDatabase> hb_chain;
         /* lookup hackblocks and rtp for all residues */
         get_hackblocks_rtp(&hb_chain, &restp_chain,
                            nrtp, restp, pdba->nres, pdba->resinfo,

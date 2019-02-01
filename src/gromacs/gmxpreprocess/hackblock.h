@@ -46,6 +46,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
 
@@ -109,72 +110,102 @@ struct t_restp
     t_rbondeds    rb[ebtsNR];
 };
 
-/* Block to hack residues */
-struct t_hack
+//! Declare different types of hacks for later check.
+enum class MoleculePatchType
 {
-    int      nr;      /* Number of atoms to hack    */
-    char    *oname;   /* Old name                   */
-    char    *nname;   /* New name                   */
-    /* the type of hack depends on the setting of oname and nname:
-     * if oname==NULL                we're adding, must have tp>0 also!
-     * if oname!=NULL && nname==NULL we're deleting
-     * if oname!=NULL && nname!=NULL we're replacing
+    //! Hack adds atom to structure/rtp.
+    Add,
+    //! Hack deletes atom.
+    Delete,
+    //! Hack replaces atom.
+    Replace
+};
+
+/*! \internal \brief
+ * Block to modify individual residues
+ */
+struct MoleculePatch
+{
+    //! Number of new are deleted atoms. NOT always equal to atom.size()!
+    int                        nr;
+    //! Old name for entry.
+    std::string                oname;
+    //! New name for entry.
+    std::string                nname;
+    //! New atom data.
+    std::vector<t_atom>        atom;
+    //! Chargegroup number.
+    int                        cgnr = NOTSET;
+    //! Type of attachement.
+    int                        tp = 0;
+    //! Number of control atoms.
+    int                        nctl = 0;
+    //! Name of control atoms.
+    std::array<std::string, 4> a;
+    //! Is an atom to be hacked already present?
+    bool                       bAlreadyPresent = false;
+    //! Are coordinates for a new atom already set?
+    bool                       bXSet = false;
+    //! New position for hacked atom.
+    rvec                       newx = {NOTSET};
+    //! New atom index number after additions.
+    int                        newi = -1;
+
+    /*! \brief
+     * Get type of hack.
+     *
+     * This depends on the setting of oname and nname
+     * for legacy reasons. If oname is empty, we are adding,
+     * if oname is set and nname is empty, an atom is deleted,
+     * if both are set replacement is going on. If both are unset,
+     * an error is thrown.
      */
-    t_atom     *atom; /* New atom data              */
-    int         cgnr; /* chargegroup number. if not read will be NOTSET */
-    int         tp;   /* Type of attachment (1..11) */
-    int         nctl; /* How many control atoms there are */
-    char       *a[4]; /* Control atoms i,j,k,l	  */
-    bool        bAlreadyPresent;
-    bool        bXSet;
-    rvec        newx; /* calculated new position    */
-    int         newi; /* new atom index number (after additions) */
-    const char* ai() const { return a[0]; }
-    const char* aj() const { return a[1]; }
-    const char* ak() const { return a[2]; }
-    const char* al() const { return a[3]; }
+    MoleculePatchType type() const;
+
+    //! Control atom i name.
+    const std::string &ai() const { return a[0]; }
+    //! Control atom j name.
+    const std::string &aj() const { return a[1]; }
+    //! Control atom k name.
+    const std::string &ak() const { return a[2]; }
+    //! Control atom l name.
+    const std::string &al() const { return a[3]; }
 };
 /*!\libinternal \brief
  * A set of modifications to apply to atoms.
  */
-struct AtomModificationBlock
+struct MoleculePatchDatabase
 {
     //! Name of block
-    std::string                    name;
+    std::string                                          name;
     //! File that entry was read from.
-    std::string                    filebase;
-    //! Number of atoms to modify
-    int                            nhack = 0;
-    //! Max number to modify.
-    int                            maxhack = 0;
+    std::string                                          filebase;
     //! List of changes to atoms.
-    t_hack                        *hack = nullptr;
+    std::vector<MoleculePatch>                           hack;
     //! List of bonded interactions to potentially add.
-    std::array<t_rbondeds, ebtsNR> rb;
+    std::array<t_rbondeds, ebtsNR>                       rb;
+    //! Number of atoms to modify
+    int                                                  nhack() const { return hack.size(); }
 };
 
 //! Free t_restp
 void free_t_restp(int nrtp, t_restp **rtp);
-//! Free t_hack
-void free_t_hack(int nh, t_hack **h);
 
 /*!\brief
  * Clear up memory.
  *
- * \param[in] amb Datastructure to clean.
+ * \param[in] globalPatches Datastructure to clean.
  * \todo Remove once the underlying data has been cleaned up.
  */
-void freeModificationBlock(gmx::ArrayRef<AtomModificationBlock> amb);
+void freeModificationBlock(gmx::ArrayRef<MoleculePatchDatabase> globalPatches);
 
 /*!\brief
- * Reset the datastructure to initial state.
- * \param[inout] amb Datastructure to reset.
- * \todo Remove once underlying data has been cleaned up.
+ * Reset modification block.
+ *
+ * \param[inout] globalPatches Block to reset.
+ * \todo Remove once constructor/destructor takes care of all of this.
  */
-void clearModificationBlock(AtomModificationBlock *amb);
-
-//! Reset t_hack
-void clear_t_hack(t_hack *hack);
+void clearModificationBlock(MoleculePatchDatabase *globalPatches);
 
 /*!\brief
  * Add bond information in \p s to \p d.
@@ -190,26 +221,13 @@ bool merge_t_bondeds(gmx::ArrayRef<const t_rbondeds> s, gmx::ArrayRef<t_rbondeds
 
 //! Copy t_restp.
 void copy_t_restp(t_restp *s, t_restp *d);
-//! Copy t_hack.
-void copy_t_hack(const t_hack *s, t_hack *d);
-
 /*!\brief
  * Copy all information from datastructure.
  *
  * \param[in] s Source information.
  * \param[inout] d Destination to copy to.
  */
-void copyModificationBlocks(const AtomModificationBlock &s, AtomModificationBlock *d);
-
-/*!\brief
- * Add information in \p s to \p d.
- *
- * \param[in] ns Number of source elements to add
- * \param[in] s Source information to add.
- * \param[in] nd Counter for destination elements.
- * \param[inout] d Destination to add information to.
- */
-void merge_hacks_lo(int ns, const t_hack *s, int *nd, t_hack **d);
+void copyModificationBlocks(const MoleculePatchDatabase &s, MoleculePatchDatabase *d);
 
 /*!\brief
  * Add the individual modifications in \p s to \p d.
@@ -217,9 +235,9 @@ void merge_hacks_lo(int ns, const t_hack *s, int *nd, t_hack **d);
  * \param[in] s Source information.
  * \param[inout] d Destination to copy to.
  */
-void mergeAtomModifications(const AtomModificationBlock &s, AtomModificationBlock *d);
+void mergeAtomModifications(const MoleculePatchDatabase &s, MoleculePatchDatabase *d);
 
 //! \copydoc mergeAtomModifications
-void mergeAtomAndBondModifications(const AtomModificationBlock &s, AtomModificationBlock *d);
+void mergeAtomAndBondModifications(const MoleculePatchDatabase &s, MoleculePatchDatabase *d);
 
 #endif
