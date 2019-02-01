@@ -44,12 +44,12 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct t_hack;
-struct AtomModificationBlock;
+struct ModificationInstruction;
+struct SystemModificationInstructions;
 
 /* functions for the h-database */
 
-void read_ab(char *line, const char *fn, t_hack *ab);
+void read_ab(char *line, const char *fn, ModificationInstruction *ab);
 /* Read one add block */
 
 /*! \brief
@@ -59,9 +59,9 @@ void read_ab(char *line, const char *fn, t_hack *ab);
  * \param[inout] amb The database for atom modifications to populate.
  * \returns The number of modifications stored.
  */
-int read_h_db(const char *ffdir, std::vector<AtomModificationBlock> *amb);
+int read_h_db(const char *ffdir, std::vector<SystemModificationInstructions> *amb);
 
-void print_ab(FILE *out, const t_hack &ab, const char *nname);
+void print_ab(FILE *out, const ModificationInstruction &ab, const char *nname);
 /* print one add block */
 
 /*! \brief
@@ -70,7 +70,7 @@ void print_ab(FILE *out, const t_hack &ab, const char *nname);
  * \param[in] out File to print to.
  * \param[in] amb Database to print.
  */
-void print_h_db(FILE *out, gmx::ArrayRef<const AtomModificationBlock> amb);
+void print_h_db(FILE *out, gmx::ArrayRef<const SystemModificationInstructions> amb);
 
 /*! \brief
  * Search for an entry.
@@ -78,8 +78,8 @@ void print_h_db(FILE *out, gmx::ArrayRef<const AtomModificationBlock> amb);
  * \param[in] amb Database to search.
  * \param[in] key Name to search for.
  */
-gmx::ArrayRef<AtomModificationBlock>::iterator
-search_h_db(gmx::ArrayRef<AtomModificationBlock> amb, char *key);
+gmx::ArrayRef<SystemModificationInstructions>::iterator
+search_h_db(gmx::ArrayRef<SystemModificationInstructions> amb, char *key);
 /* Search for an entry in the database */
 
 #endif

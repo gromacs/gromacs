@@ -42,15 +42,14 @@
 #include "gromacs/utility/arrayref.h"
 
 struct t_atoms;
-struct t_hack;
-struct AtomModificationBlock;
+struct SystemModificationInstructions;
 
 /*! \brief
  * Generate hydrogen atoms and N and C terminal patches.
  *
  * \param[inout] pdbaptr The atoms data structure to be modified.
  * \param[inout] xptr Coordinates to be updated with those for new atoms.
- * \param[inout] ah The atom modifications to use.
+ * \param[inout] globalModifications The atom modifications to use.
  * \param[in] nterpairs Number of termini pairs in the molecule.
  * \param[in] ntdb Entries for N-terminus in each chain, each entry can be valid or nullptr.
  * \param[in] ctdb Entries for C-terminus in each cahin, each entry can be valid or nullptr.
@@ -62,9 +61,10 @@ struct AtomModificationBlock;
  * \returns New total number of atoms.
  */
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
-          gmx::ArrayRef<AtomModificationBlock> ah,
+          gmx::ArrayRef<SystemModificationInstructions> globalModifications,
           int nterpairs,
-          const std::vector<AtomModificationBlock *> &ntdb, const std::vector<AtomModificationBlock *> &ctdb,
+          const std::vector<SystemModificationInstructions *> &ntdb,
+          const std::vector<SystemModificationInstructions *> &ctdb,
           int *rN, int *rC, bool bMissing,
           bool bUpdate_pdba, bool bKeep_old_pdba);
 #endif
