@@ -33,6 +33,9 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 cmake_minimum_required(VERSION 3.9.6)
+if(POLICY CMP0074) #3.12
+    cmake_policy(SET CMP0074 NEW)
+endif()
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
