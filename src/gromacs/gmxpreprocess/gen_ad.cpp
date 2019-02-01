@@ -464,7 +464,7 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
     sfree(index);
 }
 
-static int get_impropers(t_atoms *atoms, gmx::ArrayRef<AtomModificationBlock> amb, t_param **improper,
+static int get_impropers(t_atoms *atoms, gmx::ArrayRef<MoleculePatches> amb, t_param **improper,
                          bool bAllowMissing)
 {
     int           nimproper, start, ninc, nalloc;
@@ -573,7 +573,7 @@ static void get_atomnames_min(int n, char **anm,
     }
 }
 
-static void gen_excls(t_atoms *atoms, t_excls *excls, gmx::ArrayRef<AtomModificationBlock> amb,
+static void gen_excls(t_atoms *atoms, t_excls *excls, gmx::ArrayRef<MoleculePatches> amb,
                       bool bAllowMissing)
 {
     int astart = 0;
@@ -724,7 +724,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
-             t_params plist[], t_excls excls[], gmx::ArrayRef<AtomModificationBlock> amb,
+             t_params plist[], t_excls excls[], gmx::ArrayRef<MoleculePatches> amb,
              bool bAllowMissing)
 {
     t_param    *ang, *dih, *pai, *improper;

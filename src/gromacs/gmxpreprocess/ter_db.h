@@ -43,7 +43,7 @@
 #include "gromacs/utility/arrayref.h"
 
 struct gpp_atomtype;
-struct AtomModificationBlock;
+struct MoleculePatches;
 
 /*! \brief
  * Read database for N&C terminal modifications.
@@ -55,7 +55,7 @@ struct AtomModificationBlock;
  * \returns Number of entries entered into database.
  */
 int read_ter_db(const char *ffdir, char ter,
-                std::vector<AtomModificationBlock> *tbptr, gpp_atomtype *atype);
+                std::vector<MoleculePatches> *tbptr, gpp_atomtype *atype);
 
 /*! \brief
  * Return entries for modification blocks that match a residue name.
@@ -64,9 +64,9 @@ int read_ter_db(const char *ffdir, char ter,
  * \param[in] resname Residue name for terminus.
  * \returns A list of pointers to entries that match, or of nullptr for no matching entry.
  */
-std::vector<AtomModificationBlock *>
-filter_ter(gmx::ArrayRef<AtomModificationBlock> tb,
-           const char                          *resname);
+std::vector<MoleculePatches *>
+filter_ter(gmx::ArrayRef<MoleculePatches>                tb,
+           const char                                   *resname);
 
 /*! \brief
  * Interactively select one terminus.
@@ -75,6 +75,6 @@ filter_ter(gmx::ArrayRef<AtomModificationBlock> tb,
  * \param[in] title Name of entry.
  * \returns The modification block selected.
  */
-AtomModificationBlock *choose_ter(gmx::ArrayRef<AtomModificationBlock *> tb, const char *title);
+MoleculePatches *choose_ter(gmx::ArrayRef<MoleculePatches *> tb, const char *title);
 
 #endif

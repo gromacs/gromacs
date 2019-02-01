@@ -42,8 +42,7 @@
 #include "gromacs/utility/arrayref.h"
 
 struct t_atoms;
-struct t_hack;
-struct AtomModificationBlock;
+struct MoleculePatches;
 
 /*! \brief
  * Generate hydrogen atoms and N and C terminal patches.
@@ -62,9 +61,10 @@ struct AtomModificationBlock;
  * \returns New total number of atoms.
  */
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
-          gmx::ArrayRef<AtomModificationBlock> ah,
+          gmx::ArrayRef<MoleculePatches> globalPatches,
           int nterpairs,
-          const std::vector<AtomModificationBlock *> &ntdb, const std::vector<AtomModificationBlock *> &ctdb,
+          const std::vector<MoleculePatches *> &ntdb,
+          const std::vector<MoleculePatches *> &ctdb,
           int *rN, int *rC, bool bMissing,
           bool bUpdate_pdba, bool bKeep_old_pdba);
 #endif
