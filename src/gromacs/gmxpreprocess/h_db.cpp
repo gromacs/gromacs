@@ -49,6 +49,7 @@
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -69,20 +70,20 @@
 const int ncontrol[] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 };
 #define maxcontrol asize(ncontrol)
 
-void print_ab(FILE *out, const t_hack &hack, const char *nname)
+void print_ab(FILE *out, const Patch &hack, const char *nname)
 {
     fprintf(out, "%d\t%d\t%s", hack.nr, hack.tp, nname);
     for (int i = 0; (i < hack.nctl); i++)
     {
-        fprintf(out, "\t%s", hack.a[i]);
+        fprintf(out, "\t%s", hack.a[i].c_str());
     }
     fprintf(out, "\n");
 }
 
 
-void read_ab(char *line, const char *fn, t_hack *hack)
+void read_ab(char *line, const char *fn, Patch *hack)
 {
-    int  i, nh, tp, ns;
+    int  nh, tp, ns;
     char a[4][12];
     char hn[32];
 
@@ -104,26 +105,22 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     {
         gmx_fatal(FARGS, "Error in hdb file %s:\nWrong number of control atoms (%d instead of %d) on line:\n%s\n", fn, hack->nctl, ncontrol[hack->tp], line);
     }
-    for (i = 0; (i < hack->nctl); i++)
+    for (int i = 0; (i < hack->nctl); i++)
     {
-        hack->a[i] = gmx_strdup(a[i]);
+        hack->a[i] = a[i];
     }
-    for (; i < 4; i++)
-    {
-        hack->a[i] = nullptr;
-    }
-    hack->oname = nullptr;
-    hack->nname = gmx_strdup(hn);
-    hack->atom  = nullptr;
+    hack->oname.clear();
+    hack->nname = hn;
+    hack->atom.clear();
     hack->cgnr  = NOTSET;
-    hack->bXSet = FALSE;
-    for (i = 0; i < DIM; i++)
+    hack->bXSet = false;
+    for (int i = 0; i < DIM; i++)
     {
         hack->newx[i] = NOTSET;
     }
 }
 
-static void read_h_db_file(const char *hfn, std::vector<AtomModificationBlock> *amb)
+static void read_h_db_file(const char *hfn, std::vector<MoleculePatches> *amb)
 {
     char         filebase[STRLEN], line[STRLEN], buf[STRLEN];
 
@@ -150,8 +147,8 @@ static void read_h_db_file(const char *hfn, std::vector<AtomModificationBlock> *
                     size, line);
             break;
         }
-        amb->emplace_back(AtomModificationBlock());
-        AtomModificationBlock *block = &amb->back();
+        amb->emplace_back(MoleculePatches());
+        MoleculePatches *block = &amb->back();
         clearModificationBlock(block);
         block->name     = buf;
         block->filebase = filebase;
@@ -159,8 +156,6 @@ static void read_h_db_file(const char *hfn, std::vector<AtomModificationBlock> *
         int nab;
         if (sscanf(line+n, "%d", &nab) == 1)
         {
-            snew(block->hack, nab);
-            block->nhack = nab;
             for (int i = 0; (i < nab); i++)
             {
                 if (feof(in))
@@ -173,7 +168,8 @@ static void read_h_db_file(const char *hfn, std::vector<AtomModificationBlock> *
                 {
                     gmx_fatal(FARGS, "Error reading from file %s", hfn);
                 }
-                read_ab(buf, hfn, &block->hack[i]);
+                block->hack.emplace_back(Patch());
+                read_ab(buf, hfn, &block->hack.back());
             }
         }
     }
@@ -183,7 +179,7 @@ static void read_h_db_file(const char *hfn, std::vector<AtomModificationBlock> *
     {
         /* Sort the list for searching later */
         std::sort(amb->begin(), amb->end(),
-                  [](const AtomModificationBlock &a1, const AtomModificationBlock &a2)
+                  [](const MoleculePatches &a1, const MoleculePatches &a2)
                   { return std::lexicographical_compare(a1.name.begin(), a1.name.end(),
                                                         a2.name.begin(), a2.name.end(),
                                                         [](const char &c1, const char &c2)
@@ -191,7 +187,7 @@ static void read_h_db_file(const char *hfn, std::vector<AtomModificationBlock> *
     }
 }
 
-int read_h_db(const char *ffdir, std::vector<AtomModificationBlock> *amb)
+int read_h_db(const char *ffdir, std::vector<MoleculePatches> *amb)
 {
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.
@@ -206,10 +202,10 @@ int read_h_db(const char *ffdir, std::vector<AtomModificationBlock> *amb)
     return amb->size();
 }
 
-gmx::ArrayRef<AtomModificationBlock>::iterator
-search_h_db(gmx::ArrayRef<AtomModificationBlock> amb, char *key)
+gmx::ArrayRef<MoleculePatches>::iterator
+search_h_db(gmx::ArrayRef<MoleculePatches> amb, char *key)
 {
     return std::find_if(amb.begin(), amb.end(),
-                        [&key](const AtomModificationBlock &a)
+                        [&key](const MoleculePatches &a)
                         { return gmx::equalCaseInsensitive(key, a.name); });
 }

@@ -46,12 +46,34 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
 const int   btsNiatoms[ebtsNR] = { 2,       3,        4,           4,           2,             5 };
+
+PatchType Patch::type() const
+{
+    if (oname.empty() && !nname.empty())
+    {
+        return PatchType::Add;
+    }
+    else if (!oname.empty() && nname.empty())
+    {
+        return PatchType::Delete;
+    }
+    else if (!oname.empty() && !nname.empty())
+    {
+        return PatchType::Replace;
+    }
+    else
+    {
+        GMX_THROW(gmx::InvalidInputError("Unknown type of atom modification"));
+    }
+}
 
 static void free_t_bonded(t_rbonded *rb)
 {
@@ -100,27 +122,11 @@ void free_t_restp(int nrtp, t_restp **rtp)
     sfree(*rtp);
 }
 
-void free_t_hack(int nh, t_hack **h)
-{
-    for (int i = 0; i < nh; i++)
-    {
-        sfree((*h)[i].oname);
-        sfree((*h)[i].nname);
-        sfree((*h)[i].atom);
-        for (int j = 0; j < 4; j++)
-        {
-            sfree((*h)[i].a[j]);
-        }
-    }
-    sfree(*h);
-    *h = nullptr;
-}
-
-void freeModificationBlock(gmx::ArrayRef<AtomModificationBlock> amb)
+void freeModificationBlock(gmx::ArrayRef<MoleculePatches> amb)
 {
     for (auto it = amb.begin(); it != amb.end(); it++)
     {
-        free_t_hack(it->nhack, &it->hack);
+        it->hack.clear();
         for (int j = 0; j < ebtsNR; j++)
         {
             free_t_bondeds(&it->rb[j]);
@@ -128,37 +134,14 @@ void freeModificationBlock(gmx::ArrayRef<AtomModificationBlock> amb)
     }
 }
 
-void clearModificationBlock(AtomModificationBlock *amb)
+void clearModificationBlock(MoleculePatches *amb)
 {
     amb->name.clear();
-    amb->nhack   = 0;
-    amb->maxhack = 0;
-    amb->hack    = nullptr;
+    amb->hack.clear();
     for (int i = 0; i < ebtsNR; i++)
     {
         amb->rb[i].nb = 0;
         amb->rb[i].b  = nullptr;
-    }
-}
-
-void clear_t_hack(t_hack *hack)
-{
-    int i;
-
-    hack->nr    = 0;
-    hack->oname = nullptr;
-    hack->nname = nullptr;
-    hack->atom  = nullptr;
-    hack->cgnr  = NOTSET;
-    hack->tp    = 0;
-    hack->nctl  = 0;
-    for (i = 0; i < 4; i++)
-    {
-        hack->a[i]  = nullptr;
-    }
-    for (i = 0; i < DIM; i++)
-    {
-        hack->newx[i] = NOTSET;
     }
 }
 
@@ -347,59 +330,25 @@ void copy_t_restp(t_restp *s, t_restp *d)
     merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
 }
 
-void copy_t_hack(const t_hack *s, t_hack *d)
+void mergeAtomModifications(const MoleculePatches &s, MoleculePatches *d)
 {
-    int i;
-
-    *d       = *s;
-    d->oname = safe_strdup(s->oname);
-    d->nname = safe_strdup(s->nname);
-    if (s->atom)
+    for (const auto &h : s.hack)
     {
-        snew(d->atom, 1);
-        *(d->atom) = *(s->atom);
-    }
-    else
-    {
-        d->atom = nullptr;
-    }
-    for (i = 0; i < 4; i++)
-    {
-        d->a[i] = safe_strdup(s->a[i]);
-    }
-    copy_rvec(s->newx, d->newx);
-}
-
-void merge_hacks_lo(int ns, const t_hack *s, int *nd, t_hack **d)
-{
-    if (ns)
-    {
-        srenew(*d, *nd + ns);
-        for (int i = 0; i < ns; i++)
-        {
-            copy_t_hack(&s[i], &(*d)[*nd + i]);
-        }
-        (*nd) += ns;
+        d->hack.push_back(h);
     }
 }
 
-void mergeAtomModifications(const AtomModificationBlock &s, AtomModificationBlock *d)
-{
-    merge_hacks_lo(s.nhack, s.hack, &d->nhack, &d->hack);
-}
-
-void mergeAtomAndBondModifications(const AtomModificationBlock &s, AtomModificationBlock *d)
+void mergeAtomAndBondModifications(const MoleculePatches &s, MoleculePatches *d)
 {
     mergeAtomModifications(s, d);
     merge_t_bondeds(s.rb, d->rb, FALSE, FALSE);
 }
 
-void copyModificationBlocks(const AtomModificationBlock &s, AtomModificationBlock *d)
+void copyModificationBlocks(const MoleculePatches &s, MoleculePatches *d)
 {
     *d       = s;
     d->name  = s.name;
-    d->nhack = 0;
-    d->hack  = nullptr;
+    d->hack.clear();
     for (int i = 0; i < ebtsNR; i++)
     {
         d->rb[i].nb = 0;

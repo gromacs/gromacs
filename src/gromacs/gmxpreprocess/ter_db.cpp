@@ -95,7 +95,7 @@ static int find_kw(char *keyw)
 #define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
 
 static void read_atom(char *line, bool bAdd,
-                      char **nname, t_atom *a, gpp_atomtype *atype, int *cgnr)
+                      std::string *nname, t_atom *a, gpp_atomtype *atype, int *cgnr)
 {
     int    nr, i;
     char   buf[5][30];
@@ -126,11 +126,11 @@ static void read_atom(char *line, bool bAdd,
     {
         if (nr == 4)
         {
-            *nname = gmx_strdup(buf[i++]);
+            *nname = buf[i++];
         }
         else
         {
-            *nname = nullptr;
+            *nname = "";
         }
     }
     a->type = get_atomtype_type(buf[i++], atype);
@@ -148,13 +148,13 @@ static void read_atom(char *line, bool bAdd,
     }
 }
 
-static void print_atom(FILE *out, t_atom *a, gpp_atomtype *atype)
+static void print_atom(FILE *out, const t_atom *a, gpp_atomtype *atype)
 {
     fprintf(out, "\t%s\t%g\t%g\n",
             get_atomtype_name(a->type, atype), a->m, a->q);
 }
 
-static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const AtomModificationBlock> tb,
+static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const MoleculePatches> tb,
                          gpp_atomtype *atype)
 {
     std::string buf = gmx::formatString("%s-%c.tdb", ff, C);
@@ -164,61 +164,44 @@ static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const AtomModific
     {
         fprintf(out, "[ %s ]\n", modification.name.c_str());
 
-        /* first count: */
-        int nrepl = 0;
-        int nadd  = 0;
-        int ndel  = 0;
-        for (int j = 0; j < modification.nhack; j++)
-        {
-            if (modification.hack[j].oname != nullptr && modification.hack[j].nname != nullptr)
-            {
-                nrepl++;
-            }
-            else if (modification.hack[j].oname == nullptr && modification.hack[j].nname != nullptr)
-            {
-                nadd++;
-            }
-            else if (modification.hack[j].oname != nullptr && modification.hack[j].nname == nullptr)
-            {
-                ndel++;
-            }
-            else if (modification.hack[j].oname == nullptr && modification.hack[j].nname == nullptr)
-            {
-                gmx_fatal(FARGS, "invalid hack (%s) in termini database", modification.name.c_str());
-            }
-        }
-        if (nrepl)
+        if (std::any_of(modification.hack.begin(), modification.hack.end(),
+                        [](const auto &mod)
+                        { return mod.type() == PatchType::Replace; }))
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwRepl-ebtsNR-1]);
-            for (int j = 0; j < modification.nhack; j++)
+            for (const auto &hack : modification.hack)
             {
-                if (modification.hack[j].oname != nullptr && modification.hack[j].nname != nullptr)
+                if (hack.type() == PatchType::Replace)
                 {
-                    fprintf(out, "%s\t", modification.hack[j].oname);
-                    print_atom(out, modification.hack[j].atom, atype);
+                    fprintf(out, "%s\t", hack.oname.c_str());
+                    print_atom(out, &hack.atom.back(), atype);
                 }
             }
         }
-        if (nadd)
+        if (std::any_of(modification.hack.begin(), modification.hack.end(),
+                        [](const auto &mod)
+                        { return mod.type() == PatchType::Add; }))
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwAdd-ebtsNR-1]);
-            for (int j = 0; j < modification.nhack; j++)
+            for (const auto &hack : modification.hack)
             {
-                if (modification.hack[j].oname == nullptr && modification.hack[j].nname != nullptr)
+                if (hack.type() == PatchType::Add)
                 {
-                    print_ab(out, modification.hack[j], modification.hack[j].nname);
-                    print_atom(out, modification.hack[j].atom, atype);
+                    print_ab(out, hack, hack.nname.c_str());
+                    print_atom(out, &hack.atom.back(), atype);
                 }
             }
         }
-        if (ndel)
+        if (std::any_of(modification.hack.begin(), modification.hack.end(),
+                        [](const auto &mod)
+                        { return mod.type() == PatchType::Delete; }))
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwDel-ebtsNR-1]);
-            for (int j = 0; j < modification.nhack; j++)
+            for (const auto &hack : modification.hack)
             {
-                if (modification.hack[j].oname != nullptr && modification.hack[j].nname == nullptr)
+                if (hack.type() == PatchType::Delete)
                 {
-                    fprintf(out, "%s\n", modification.hack[j].oname);
+                    fprintf(out, "%s\n", hack.oname.c_str());
                 }
             }
         }
@@ -246,9 +229,9 @@ static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const AtomModific
     gmx_fio_fclose(out);
 }
 
-static void read_ter_db_file(const char                         *fn,
-                             std::vector<AtomModificationBlock> *tbptr,
-                             gpp_atomtype                       *atype)
+static void read_ter_db_file(const char                                  *fn,
+                             std::vector<MoleculePatches>                *tbptr,
+                             gpp_atomtype                                *atype)
 {
     char         filebase[STRLEN];
     char         header[STRLEN], buf[STRLEN], line[STRLEN];
@@ -261,11 +244,11 @@ static void read_ter_db_file(const char                         *fn,
         ptr[0] = '\0';
     }
 
-    FILE                  *in = fflib_open(fn);
+    FILE                           *in = fflib_open(fn);
 
-    int                    kwnr  = NOTSET;
+    int                             kwnr  = NOTSET;
     get_a_line(in, line, STRLEN);
-    AtomModificationBlock *block = nullptr;
+    MoleculePatches                *block = nullptr;
     while (!feof(in))
     {
         if (get_header(line, header))
@@ -275,7 +258,7 @@ static void read_ter_db_file(const char                         *fn,
 
             if (kwnr == NOTSET)
             {
-                tbptr->emplace_back(AtomModificationBlock());
+                tbptr->emplace_back(MoleculePatches());
                 block = &tbptr->back();
                 clearModificationBlock(block);
                 block->name     = header;
@@ -295,18 +278,8 @@ static void read_ter_db_file(const char                         *fn,
             {
                 /* this is a hack: add/rename/delete atoms */
                 /* make space for hacks */
-                if (block->nhack >= block->maxhack)
-                {
-                    block->maxhack += 10;
-                    srenew(block->hack, block->maxhack);
-                }
-                int nh = block->nhack;
-                clear_t_hack(&block->hack[nh]);
-                for (int i = 0; i < 4; i++)
-                {
-                    block->hack[nh].a[i] = nullptr;
-                }
-                block->nhack++;
+                block->hack.emplace_back(Patch());
+                Patch *hack = &block->hack.back();
 
                 /* get data */
                 int n = 0;
@@ -317,13 +290,13 @@ static void read_ter_db_file(const char                         *fn,
                         gmx_fatal(FARGS, "Reading Termini Database '%s': "
                                   "expected atom name on line\n%s", fn, line);
                     }
-                    block->hack[nh].oname = gmx_strdup(buf);
+                    hack->oname = buf;
                     /* we only replace or delete one atom at a time */
-                    block->hack[nh].nr = 1;
+                    hack->nr = 1;
                 }
                 else if (kwnr == ekwAdd)
                 {
-                    read_ab(line, fn, &block->hack[nh]);
+                    read_ab(line, fn, hack);
                     get_a_line(in, line, STRLEN);
                 }
                 else
@@ -333,15 +306,15 @@ static void read_ter_db_file(const char                         *fn,
                 }
                 if (kwnr == ekwRepl || kwnr == ekwAdd)
                 {
-                    snew(block->hack[nh].atom, 1);
+                    hack->atom.emplace_back();
                     read_atom(line+n, kwnr == ekwAdd,
-                              &block->hack[nh].nname, block->hack[nh].atom, atype,
-                              &block->hack[nh].cgnr);
-                    if (block->hack[nh].nname == nullptr)
+                              &hack->nname, &hack->atom.back(), atype,
+                              &hack->cgnr);
+                    if (hack->nname.empty())
                     {
-                        if (block->hack[nh].oname != nullptr)
+                        if (!hack->oname.empty())
                         {
-                            block->hack[nh].nname = gmx_strdup(block->hack[nh].oname);
+                            hack->nname = hack->oname;
                         }
                         else
                         {
@@ -391,7 +364,7 @@ static void read_ter_db_file(const char                         *fn,
 }
 
 int read_ter_db(const char *ffdir, char ter,
-                std::vector<AtomModificationBlock> *tbptr, gpp_atomtype *atype)
+                std::vector<MoleculePatches> *tbptr, gpp_atomtype *atype)
 {
     std::string ext = gmx::formatString(".%c.tdb", ter);
 
@@ -413,9 +386,9 @@ int read_ter_db(const char *ffdir, char ter,
     return tbptr->size();
 }
 
-std::vector<AtomModificationBlock *>
-filter_ter(gmx::ArrayRef<AtomModificationBlock> tb,
-           const char                          *resname)
+std::vector<MoleculePatches *>
+filter_ter(gmx::ArrayRef<MoleculePatches>                tb,
+           const char                                   *resname)
 {
     // TODO Four years later, no force fields have ever used this, so decide status of this feature
     /* Since some force fields (e.g. OPLS) needs different
@@ -440,7 +413,7 @@ filter_ter(gmx::ArrayRef<AtomModificationBlock> tb,
      */
 
     auto none_idx = tb.end();
-    std::vector<AtomModificationBlock *> list;
+    std::vector<MoleculePatches *> list;
 
     for (auto it = tb.begin(); it != tb.end(); it++)
     {
@@ -502,7 +475,7 @@ filter_ter(gmx::ArrayRef<AtomModificationBlock> tb,
                  * of this terminus.
                  */
                 auto found = std::find_if(list.begin(), list.end(),
-                                          [&s](const AtomModificationBlock *b)
+                                          [&s](const MoleculePatches *b)
                                           { return strstr(b->name.c_str(), s) != nullptr; });
                 if (found == list.end())
                 {
@@ -520,7 +493,7 @@ filter_ter(gmx::ArrayRef<AtomModificationBlock> tb,
 }
 
 
-AtomModificationBlock *choose_ter(gmx::ArrayRef<AtomModificationBlock *> tb, const char *title)
+MoleculePatches *choose_ter(gmx::ArrayRef<MoleculePatches *> tb, const char *title)
 {
     int sel, ret;
 
