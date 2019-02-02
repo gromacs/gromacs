@@ -47,7 +47,7 @@
 
 #include "gromacs/awh/correlationgrid.h"
 #include "gromacs/awh/pointstate.h"
-#include "gromacs/mdtypes/awh-params.h"
+#include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"

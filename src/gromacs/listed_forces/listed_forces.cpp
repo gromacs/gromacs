@@ -56,7 +56,7 @@
 #include "gromacs/listed_forces/disre.h"
 #include "gromacs/listed_forces/orires.h"
 #include "gromacs/listed_forces/pairs.h"
-#include "gromacs/listed_forces/position-restraints.h"
+#include "gromacs/listed_forces/position_restraints.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -74,7 +74,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "listed-internal.h"
+#include "listed_internal.h"
 #include "utilities.h"
 
 struct BondedInteractions

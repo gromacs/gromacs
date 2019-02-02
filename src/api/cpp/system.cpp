@@ -47,7 +47,7 @@
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 
-#include "system-impl.h"
+#include "system_impl.h"
 #include "workflow.h"
 
 namespace gmxapi

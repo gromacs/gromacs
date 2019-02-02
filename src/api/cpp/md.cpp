@@ -42,7 +42,7 @@
 #include "gmxapi/gmxapi.h"
 #include "gmxapi/md/mdmodule.h"
 
-#include "md-impl.h"
+#include "md_impl.h"
 
 namespace gmxapi
 {

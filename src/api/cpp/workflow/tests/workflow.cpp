@@ -36,7 +36,7 @@
 #include <memory>
 
 #include "api/cpp/workflow.h"
-#include "api/cpp/workflow-impl.h"
+#include "api/cpp/workflow_impl.h"
 #include "api/cpp/include/gmxapi/context.h"
 #include "api/cpp/include/gmxapi/status.h"
 #include "api/cpp/include/gmxapi/system.h"

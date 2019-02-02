@@ -34,7 +34,7 @@
 
 gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
     genconf.cpp
-    insert-molecules.cpp
+    insert_molecules.cpp
     readir.cpp
     solvate.cpp
     topdirs.cpp

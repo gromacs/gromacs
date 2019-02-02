@@ -67,7 +67,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/textwriter.h"
 
-#include "testutils/mpi-printer.h"
+#include "testutils/mpi_printer.h"
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"

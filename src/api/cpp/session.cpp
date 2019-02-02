@@ -56,7 +56,7 @@
 
 #include "createsession.h"
 #include "mdsignals.h"
-#include "session-impl.h"
+#include "session_impl.h"
 #include "sessionresources.h"
 
 namespace gmxapi

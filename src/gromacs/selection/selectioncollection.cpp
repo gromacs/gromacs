@@ -71,7 +71,7 @@
 #include "parser.h"
 #include "poscalc.h"
 #include "scanner.h"
-#include "selectioncollection-impl.h"
+#include "selectioncollection_impl.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"

@@ -51,7 +51,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/princ.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/gmxlib/conformation_utilities.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

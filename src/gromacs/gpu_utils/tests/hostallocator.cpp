@@ -381,4 +381,4 @@ TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
 } // namespace gmx
 
 // Includes tests common to all allocation policies.
-#include "gromacs/utility/tests/alignedallocator-impl.h"
+#include "gromacs/utility/tests/alignedallocator_impl.h"

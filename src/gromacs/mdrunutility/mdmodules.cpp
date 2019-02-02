@@ -38,7 +38,7 @@
 
 #include <memory>
 
-#include "gromacs/applied-forces/electricfield.h"
+#include "gromacs/applied_forces/electricfield.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"

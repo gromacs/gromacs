@@ -49,7 +49,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Must correspond to the Directive enum in grompp-impl.h */
+/* Must correspond to the Directive enum in grompp_impl.h */
 static gmx::EnumerationArray<Directive, const char *> directive_names
     = { {
             "defaults",
