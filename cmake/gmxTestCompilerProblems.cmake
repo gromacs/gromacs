@@ -46,27 +46,31 @@ macro(gmx_test_compiler_problems)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
 
-    # Error if compiler doesn't support required C++14 features. Relaxed constexpr is currently only required
-    # feature. It is also one of the last implemented C++14 features by all supported compilers.
-    if(NOT "cxx_relaxed_constexpr" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-        if(CMAKE_COMPILER_IS_GNUCXX)
+    # Error if compiler doesn't support required C++14 features.
+    # cmake feature detection is currently inconsistent: gitlab.kitware.com/cmake/cmake/issues/18869
+    # When we use C++17 we might want to switch to using feature test macros.
+    if(CMAKE_COMPILER_IS_GNUCXX)
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
             set(cxx_required_version "GCC version 5")
-        elseif(MSVC)
-            if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.15) # cmake reports no support because of bugs but
-                set(cxx_required_version "Visual Studio 2017") # we support it.
-            endif()
-        elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-            set(cxx_required_version "Clang 3.6") # For feature complete C++14 only 3.4 is needed.
-                                                  # But prior version have bugs (e.g. debug symbol support)
-        elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        endif()
+    elseif(MSVC)
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.15)
+            set(cxx_required_version "Visual Studio 2017")
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6) # For feature complete C++14 only 3.4 is needed.
+            set(cxx_required_version "Clang 3.6")        # But prior version have bugs (e.g. debug symbol support)
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 17)
             set(cxx_required_version "Intel Compiler 2017")
-        else()
-            message(FATAL_ERROR "The compiler doesn't have sufficient C++14 support.")
         endif()
-        if (cxx_required_version)
-            message(FATAL_ERROR "${cxx_required_version} or later required. "
-                                "Earlier versions don't have full C++14 support.")
-        endif()
+    else()
+        message(WARNING "You are using an unsupported compiler. Please make sure it fully supports C++14.")
+    endif()
+    if (cxx_required_version)
+        message(FATAL_ERROR "${cxx_required_version} or later required. "
+                            "Earlier versions don't have full C++14 support.")
     endif()
 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
