@@ -43,7 +43,7 @@
 
 #include <atomic>
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/utility/gmxassert.h"
@@ -164,7 +164,7 @@ Signal SignalManager::getSignal(std::string name,
         throw gmxapi::NotImplementedError("This signaller only handles stop signals.");
     }
 
-    auto   signalImpl = gmx::compat::make_unique<LogicalAND>(this, name);
+    auto   signalImpl = std::make_unique<LogicalAND>(this, name);
     auto   functor    = Signal(std::move(signalImpl));
     return functor;
 }

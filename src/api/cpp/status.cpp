@@ -35,7 +35,7 @@
 
 #include "gmxapi/status.h"
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
 
 namespace gmxapi
 {
@@ -82,17 +82,17 @@ class Status::Impl
 /// \endcond
 
 Status::Status() :
-    impl_ {gmx::compat::make_unique<Status::Impl>()}
+    impl_ {std::make_unique<Status::Impl>()}
 {}
 
 Status::Status(const Status &status)
 {
-    impl_ = gmx::compat::make_unique<Impl>(status.success());
+    impl_ = std::make_unique<Impl>(status.success());
 }
 
 Status &Status::operator=(const Status &status)
 {
-    this->impl_ = gmx::compat::make_unique<Impl>(status.success());
+    this->impl_ = std::make_unique<Impl>(status.success());
     return *this;
 }
 
@@ -100,14 +100,14 @@ Status &Status::operator=(Status &&) noexcept = default;
 
 Status &Status::operator=(bool success)
 {
-    this->impl_ = gmx::compat::make_unique<Impl>(success);
+    this->impl_ = std::make_unique<Impl>(success);
     return *this;
 }
 
 Status::Status(Status &&) noexcept = default;
 
 Status::Status(bool success) :
-    impl_ {gmx::compat::make_unique<Status::Impl>(success)}
+    impl_ {std::make_unique<Status::Impl>(success)}
 {}
 
 bool Status::success() const

@@ -44,8 +44,8 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"

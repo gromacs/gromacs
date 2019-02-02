@@ -53,7 +53,6 @@
 
 #include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
@@ -265,7 +264,7 @@ void gmx::Integrator::do_md()
                   enerd);
 
     /* Kinetic energy data */
-    std::unique_ptr<gmx_ekindata_t> eKinData = compat::make_unique<gmx_ekindata_t>();
+    std::unique_ptr<gmx_ekindata_t> eKinData = std::make_unique<gmx_ekindata_t>();
     gmx_ekindata_t                 *ekind    = eKinData.get();
     init_ekindata(fplog, top_global, &(ir->opts), ekind);
     /* Copy the cos acceleration to the groups struct */
@@ -301,7 +300,7 @@ void gmx::Integrator::do_md()
     {
         dd_init_local_top(*top_global, &top);
 
-        stateInstance = compat::make_unique<t_state>();
+        stateInstance = std::make_unique<t_state>();
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
 
@@ -382,11 +381,11 @@ void gmx::Integrator::do_md()
         }
         if (!observablesHistory->energyHistory)
         {
-            observablesHistory->energyHistory = compat::make_unique<energyhistory_t>();
+            observablesHistory->energyHistory = std::make_unique<energyhistory_t>();
         }
         if (!observablesHistory->pullHistory)
         {
-            observablesHistory->pullHistory = compat::make_unique<PullHistory>();
+            observablesHistory->pullHistory = std::make_unique<PullHistory>();
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
@@ -651,13 +650,13 @@ void gmx::Integrator::do_md()
                 MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstSignalComm,
                 mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
 
-    auto checkpointHandler = compat::make_unique<CheckpointHandler>(
+    auto checkpointHandler = std::make_unique<CheckpointHandler>(
                 compat::make_not_null<SimulationSignal*>(&signals[eglsCHKPT]),
                 simulationsShareState, ir->nstlist == 0, MASTER(cr),
                 mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
 
     const bool resetCountersIsLocal = true;
-    auto       resetHandler         = compat::make_unique<ResetHandler>(
+    auto       resetHandler         = std::make_unique<ResetHandler>(
                 compat::make_not_null<SimulationSignal*>(&signals[eglsRESETCOUNTERS]), !resetCountersIsLocal,
                 ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
                 mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);

@@ -20,10 +20,6 @@ HeaderFilterRegex: .*
 CheckOptions:
   - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
     value:         1
-  - key:           modernize-make-unique.MakeSmartPtrFunction
-    value:         gmx::compat::make_unique
-  - key:           modernize-make-unique.MakeSmartPtrFunctionHeader
-    value:         gromacs/compat/make_unique.h
   - key:           modernize-make-unique.IncludeStyle
     value:         google
   - key:           modernize-make-shared.IncludeStyle

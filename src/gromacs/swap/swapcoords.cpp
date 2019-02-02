@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,10 +47,10 @@
 #include <cstdlib>
 #include <ctime>
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
@@ -1559,7 +1559,7 @@ void init_swapcoords(
     {
         if (oh->swapHistory == nullptr)
         {
-            oh->swapHistory = gmx::compat::make_unique<swaphistory_t>(swaphistory_t {});
+            oh->swapHistory = std::make_unique<swaphistory_t>(swaphistory_t {});
         }
         swapstate = oh->swapHistory.get();
 

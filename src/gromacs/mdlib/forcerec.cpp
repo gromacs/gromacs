@@ -46,9 +46,9 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
@@ -2145,14 +2145,14 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
         }
     }
 
-    nbv->listParams = gmx::compat::make_unique<NbnxnListParameters>(ir->rlist);
+    nbv->listParams = std::make_unique<NbnxnListParameters>(ir->rlist);
     setupDynamicPairlistPruning(mdlog, ir, mtop, box, nbv->grp[0].kernel_type, fr->ic,
                                 nbv->listParams.get());
 
-    nbv->nbs = gmx::compat::make_unique<nbnxn_search>(DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
-                                                      DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
-                                                      bFEP_NonBonded,
-                                                      gmx_omp_nthreads_get(emntPairsearch));
+    nbv->nbs = std::make_unique<nbnxn_search>(DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
+                                              DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
+                                              bFEP_NonBonded,
+                                              gmx_omp_nthreads_get(emntPairsearch));
 
     for (int i = 0; i < nbv->ngrp; i++)
     {

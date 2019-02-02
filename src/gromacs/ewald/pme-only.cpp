@@ -71,7 +71,6 @@
 #include <numeric>
 #include <vector>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
@@ -132,7 +131,7 @@ struct gmx_pme_pp {
 /*! \brief Initialize the PME-only side of the PME <-> PP communication */
 static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(const t_commrec *cr)
 {
-    auto pme_pp = gmx::compat::make_unique<gmx_pme_pp>();
+    auto pme_pp = std::make_unique<gmx_pme_pp>();
 
 #if GMX_MPI
     int rank;

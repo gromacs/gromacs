@@ -54,7 +54,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/logging.h"

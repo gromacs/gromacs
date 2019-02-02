@@ -43,7 +43,8 @@
 
 #include "topologyinformation.h"
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -59,7 +60,7 @@ namespace gmx
 {
 
 TopologyInformation::TopologyInformation()
-    : mtop_(compat::make_unique<gmx_mtop_t>()),
+    : mtop_(std::make_unique<gmx_mtop_t>()),
       hasLoadedMtop_(false),
       expandedTopology_(nullptr),
       atoms_ (nullptr),
@@ -74,7 +75,7 @@ TopologyInformation::~TopologyInformation()
 
 void TopologyInformation::fillFromInputFile(const std::string &filename)
 {
-    mtop_ = gmx::compat::make_unique<gmx_mtop_t>();
+    mtop_ = std::make_unique<gmx_mtop_t>();
     // TODO When filename is not a .tpr, then using readConfAndAtoms
     // would be efficient for not doing multiple conversions for
     // makeAtomsData. However we'd also need to be able to copy the
@@ -107,7 +108,7 @@ const gmx_localtop_t *TopologyInformation::expandedTopology() const
     // Do lazy initialization
     if (expandedTopology_ == nullptr && hasTopology())
     {
-        expandedTopology_ = gmx::compat::make_unique<gmx_localtop_t>();
+        expandedTopology_ = std::make_unique<gmx_localtop_t>();
         gmx_mtop_generate_local_top(*mtop_, expandedTopology_.get(), false);
     }
 

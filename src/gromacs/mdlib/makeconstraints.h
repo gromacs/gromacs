@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,6 @@
 
 #include <memory>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pulling/pull.h"
@@ -112,7 +111,7 @@ std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t &mtop,
         // No work, so don't make a Constraints object.
         return nullptr;
     }
-    return compat::make_unique<Constraints::CreationHelper>
+    return std::make_unique<Constraints::CreationHelper>
                (mtop, ir, std::forward<Args>(args) ..., numConstraints, numSettles);
 }
 

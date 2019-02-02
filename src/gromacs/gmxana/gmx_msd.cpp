@@ -39,9 +39,10 @@
 #include <cmath>
 #include <cstring>
 
+#include <memory>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -907,9 +908,9 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
         index_atom2mol(&gnx[0], index[0], &top->mols);
     }
 
-    msd = gmx::compat::make_unique<t_corr>(nrgrp, type, axis, dim_factor,
-                                           mol_file == nullptr ? 0 : gnx[0],
-                                           bTen, bMW, dt, top, beginfit, endfit);
+    msd = std::make_unique<t_corr>(nrgrp, type, axis, dim_factor,
+                                   mol_file == nullptr ? 0 : gnx[0],
+                                   bTen, bMW, dt, top, beginfit, endfit);
 
     nat_trx =
         corr_loop(msd.get(), trx_file, top, ePBC, mol_file ? gnx[0] != 0 : false, gnx.data(), index,

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,8 +40,9 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
@@ -565,7 +566,7 @@ void initPullHistory(pull_t             *pull,
     /* If pull->coordForceHistory is already set we are starting from a checkpoint. Do not reset it. */
     if (observablesHistory->pullHistory == nullptr)
     {
-        observablesHistory->pullHistory           = gmx::compat::make_unique<PullHistory>();
+        observablesHistory->pullHistory           = std::make_unique<PullHistory>();
         pull->coordForceHistory                   = observablesHistory->pullHistory.get();
         pull->coordForceHistory->numValuesInXSum  = 0;
         pull->coordForceHistory->numValuesInFSum  = 0;

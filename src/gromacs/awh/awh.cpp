@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -421,8 +421,8 @@ prepareAwhModule(FILE                 *fplog,
         GMX_THROW(InvalidInputError("AWH biasing does not support shell particles."));
     }
 
-    auto awh = compat::make_unique<Awh>(fplog, inputRecord, commRecord, multiSimRecord, *inputRecord.awhParams,
-                                        biasInitFilename, pull_work);
+    auto awh = std::make_unique<Awh>(fplog, inputRecord, commRecord, multiSimRecord, *inputRecord.awhParams,
+                                     biasInitFilename, pull_work);
 
     if (startingFromCheckpoint)
     {

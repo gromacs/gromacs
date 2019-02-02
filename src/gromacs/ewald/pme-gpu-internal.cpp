@@ -52,9 +52,9 @@
 #include "config.h"
 
 #include <list>
+#include <memory>
 #include <string>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
@@ -578,7 +578,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu *pmeGpu)
         pmeGpu->archSpecific->fftSetup.resize(0);
         for (int i = 0; i < pmeGpu->common->ngrids; i++)
         {
-            pmeGpu->archSpecific->fftSetup.push_back(gmx::compat::make_unique<GpuParallel3dFft>(pmeGpu));
+            pmeGpu->archSpecific->fftSetup.push_back(std::make_unique<GpuParallel3dFft>(pmeGpu));
         }
     }
 }

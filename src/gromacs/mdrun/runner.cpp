@@ -54,9 +54,9 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/localatomsetmanager.h"
@@ -169,7 +169,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     // part of the interface to the client code, which is associated only with the
     // original thread. Handles to the same resources can be obtained by copy.
     {
-        newRunner.restraintManager_ = compat::make_unique<RestraintManager>(*restraintManager_);
+        newRunner.restraintManager_ = std::make_unique<RestraintManager>(*restraintManager_);
     }
 
     // Copy original cr pointer before master thread can pass the thread barrier
@@ -192,7 +192,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.replExParams        = replExParams;
     newRunner.pforce              = pforce;
     newRunner.ms                  = ms;
-    newRunner.stopHandlerBuilder_ = compat::make_unique<StopHandlerBuilder>(*stopHandlerBuilder_);
+    newRunner.stopHandlerBuilder_ = std::make_unique<StopHandlerBuilder>(*stopHandlerBuilder_);
 
     threadMpiMdrunnerAccessBarrier();
 
@@ -552,7 +552,7 @@ int Mdrunner::mdrunner()
     if (SIMMASTER(cr))
     {
         /* Only the master rank has the global state */
-        globalState = compat::make_unique<t_state>();
+        globalState = std::make_unique<t_state>();
 
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()), inputrec, globalState.get(), &mtop);
@@ -754,7 +754,7 @@ int Mdrunner::mdrunner()
     {
         if (!MASTER(cr))
         {
-            globalState = compat::make_unique<t_state>();
+            globalState = std::make_unique<t_state>();
         }
         broadcastStateWithoutDynamics(cr, globalState.get());
     }
@@ -1689,7 +1689,7 @@ void Mdrunner::BuilderImplementation::addReplicaExchange(const ReplicaExchangePa
 
 void Mdrunner::BuilderImplementation::addMultiSim(gmx_multisim_t* multisim)
 {
-    multisim_ = compat::make_unique<gmx_multisim_t*>(multisim);
+    multisim_ = std::make_unique<gmx_multisim_t*>(multisim);
 }
 
 Mdrunner Mdrunner::BuilderImplementation::build()
@@ -1766,7 +1766,7 @@ Mdrunner Mdrunner::BuilderImplementation::build()
         GMX_THROW(gmx::APIError("MdrunnerBuilder::addBondedTaskAssignment() is required before build()"));
     }
 
-    newRunner.restraintManager_ = compat::make_unique<gmx::RestraintManager>();
+    newRunner.restraintManager_ = std::make_unique<gmx::RestraintManager>();
 
     if (stopHandlerBuilder_)
     {
@@ -1774,7 +1774,7 @@ Mdrunner Mdrunner::BuilderImplementation::build()
     }
     else
     {
-        newRunner.stopHandlerBuilder_ = compat::make_unique<StopHandlerBuilder>();
+        newRunner.stopHandlerBuilder_ = std::make_unique<StopHandlerBuilder>();
     }
 
     return newRunner;
@@ -1823,7 +1823,7 @@ void Mdrunner::BuilderImplementation::addStopHandlerBuilder(std::unique_ptr<Stop
 }
 
 MdrunnerBuilder::MdrunnerBuilder(compat::not_null<SimulationContext*> context) :
-    impl_ {gmx::compat::make_unique<Mdrunner::BuilderImplementation>(context)}
+    impl_ {std::make_unique<Mdrunner::BuilderImplementation>(context)}
 {
 }
 
