@@ -10,7 +10,7 @@ and use the src/testutils/copy_xsl.sh script to copy it to relevant locations.
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-<xsl:import href="common-referencedata.xsl"/>
+<xsl:import href="common_referencedata.xsl"/>
 
 <xsl:template match="AnalysisData">
     <xsl:variable name="has-datasetspec"

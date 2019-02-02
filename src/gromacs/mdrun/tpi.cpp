@@ -59,7 +59,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/gmxlib/conformation_utilities.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"

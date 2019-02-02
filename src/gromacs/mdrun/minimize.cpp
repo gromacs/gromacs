@@ -65,7 +65,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
-#include "gromacs/listed_forces/manage-threading.h"
+#include "gromacs/listed_forces/manage_threading.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"

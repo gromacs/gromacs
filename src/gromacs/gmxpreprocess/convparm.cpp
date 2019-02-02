@@ -45,7 +45,7 @@
 
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"

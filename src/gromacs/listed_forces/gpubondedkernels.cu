@@ -69,7 +69,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "gpubonded-impl.h"
+#include "gpubonded_impl.h"
 
 #if defined(_MSVC)
 #include <limits>

@@ -6,7 +6,7 @@ cd `dirname $0`
 cd ../../
 
 for destdir in analysisdata selection trajectoryanalysis ; do
-    cp -f src/testutils/common-referencedata.xsl \
+    cp -f src/testutils/common_referencedata.xsl \
           src/gromacs/$destdir/tests/refdata/
 done
 

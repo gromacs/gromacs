@@ -46,7 +46,7 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/awh/read-params.h"
+#include "gromacs/awh/read_params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
@@ -60,7 +60,7 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"

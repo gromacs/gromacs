@@ -40,7 +40,7 @@
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "workflow-impl.h"
+#include "workflow_impl.h"
 
 namespace gmxapi
 {

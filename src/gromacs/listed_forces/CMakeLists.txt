@@ -35,19 +35,19 @@
 gmx_add_libgromacs_sources(
     bonded.cpp
     disre.cpp
-    gpubonded-impl.cpp
+    gpubonded_impl.cpp
     listed_forces.cpp
-    listed-internal.cpp
-    manage-threading.cpp
+    listed_internal.cpp
+    manage_threading.cpp
     orires.cpp
     pairs.cpp
-    position-restraints.cpp
+    position_restraints.cpp
     restcbt.cpp
     )
 
 if(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
-       gpubonded-impl.cu
+       gpubonded_impl.cu
        gpubondedkernels.cu
        )
 endif()
