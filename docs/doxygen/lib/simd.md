@@ -589,7 +589,7 @@ performance problem if the code does not correctly include
 `make check-source` checks the whole code for the use of symbols defined
 in `gromacs/simd/simd.h` and requires that files using those symbols
 do the correct include. Similar checking is done for higher-level
-SIMD-management headers, e.g. `gromacs/ewald/pme-simd.h`.
+SIMD-management headers, e.g. `gromacs/ewald/pme_simd.h`.
 
 
 The SIMD math library

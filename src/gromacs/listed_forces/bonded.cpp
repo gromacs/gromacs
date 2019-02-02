@@ -63,7 +63,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pbcutil/pbc-simd.h"
+#include "gromacs/pbcutil/pbc_simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
@@ -72,7 +72,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "listed-internal.h"
+#include "listed_internal.h"
 #include "restcbt.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace

@@ -52,5 +52,5 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   )
 
 gmx_add_mpi_unit_test(UtilityMpiUnitTests utility-mpi-test 4
-                  physicalnodecommunicator-mpi.cpp
+                  physicalnodecommunicator_mpi.cpp
                   )

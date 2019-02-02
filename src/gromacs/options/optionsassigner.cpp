@@ -51,7 +51,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "options-impl.h"
+#include "options_impl.h"
 
 namespace gmx
 {

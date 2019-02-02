@@ -42,7 +42,7 @@
 #include <cctype>
 #include <cmath>
 
-#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"

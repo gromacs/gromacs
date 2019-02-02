@@ -95,7 +95,7 @@ endfunction()
 
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
-add_subdirectory(applied-forces)
+add_subdirectory(applied_forces)
 add_subdirectory(listed_forces)
 add_subdirectory(commandline)
 add_subdirectory(domdec)
@@ -435,12 +435,12 @@ if(GMX_USE_OPENCL)
 
     # Install the PME source and headers
     file(GLOB OPENCL_INSTALLED_FILES
-        ewald/pme-spread.clh
-        ewald/pme-solve.clh
-        ewald/pme-gather.clh
-        ewald/pme-gpu-utils.clh
-        ewald/pme-program.cl
-        ewald/pme-gpu-types.h
+        ewald/pme_spread.clh
+        ewald/pme_solve.clh
+        ewald/pme_gather.clh
+        ewald/pme_gpu_utils.clh
+        ewald/pme_program.cl
+        ewald/pme_gpu_types.h
         )
     install(FILES ${OPENCL_INSTALLED_FILES}
         DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/ewald

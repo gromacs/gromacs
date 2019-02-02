@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,9 +45,9 @@
 
 #include "gromacs/math/vectypes.h" // for DIM
 
-#include "pme-gpu-constants.h"
-#include "pme-gpu-internal.h"      // for GridOrdering
-#include "pme-gpu-types.h"
+#include "pme_gpu_constants.h"
+#include "pme_gpu_internal.h"      // for GridOrdering
+#include "pme_gpu_types.h"
 
 /*! \brief \internal
  * A single structure encompassing all the PME data used in CUDA kernels.

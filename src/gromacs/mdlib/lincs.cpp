@@ -69,7 +69,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pbcutil/pbc-simd.h"
+#include "gromacs/pbcutil/pbc_simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"

@@ -41,7 +41,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/ewald/ewald-utils.h"
+#include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"

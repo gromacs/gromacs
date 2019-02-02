@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@
 #include <list>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/ewald/ewald-utils.h"
+#include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
@@ -115,15 +115,15 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
 
-#include "calculate-spline-moduli.h"
-#include "pme-gather.h"
-#include "pme-gpu-internal.h"
-#include "pme-grid.h"
-#include "pme-internal.h"
-#include "pme-redistribute.h"
-#include "pme-solve.h"
-#include "pme-spline-work.h"
-#include "pme-spread.h"
+#include "calculate_spline_moduli.h"
+#include "pme_gather.h"
+#include "pme_gpu_internal.h"
+#include "pme_grid.h"
+#include "pme_internal.h"
+#include "pme_redistribute.h"
+#include "pme_solve.h"
+#include "pme_spline_work.h"
+#include "pme_spread.h"
 
 /*! \brief Help build a descriptive message in \c error if there are
  * \c errorReasons why PME on GPU is not supported.
