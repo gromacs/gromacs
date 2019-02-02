@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="CROSS_BOND_BOND">
+    <FEP Name="No">
+      <Real Name="Epot ">33.78471</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">1.1920929e-07</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">-26.994379</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-2.6032636</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">79.059654</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">3.9382563</Real>
+          <Real Name="Y">-22.249876</Real>
+          <Real Name="Z">-29.815397</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-1.3349925</Real>
+          <Real Name="Y">22.249876</Real>
+          <Real Name="Z">-22.249876</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>

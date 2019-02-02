@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="QANGLES">
+    <FEP Name="No">
+      <Real Name="Epot ">40.852211</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">-3.8146973e-06</Real>
+        <Real Name="Y">-3.0517578e-05</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">-386.41693</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-436.15186</Real>
+          <Real Name="Y">470.83017</Real>
+          <Real Name="Z">-41.129028</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">860.16748</Real>
+          <Real Name="Y">-705.11731</Real>
+          <Real Name="Z">-195.41403</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-37.598736</Real>
+          <Real Name="Y">234.28711</Real>
+          <Real Name="Z">236.54306</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>

@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="G96BONDS">
+    <FEP Name="No">
+      <Real Name="Epot ">0.60729563</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">-1.1</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-0.034993753</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">1.799875</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0.073982954</Real>
+          <Real Name="Y">-0.64982003</Real>
+          <Real Name="Z">-0.050055027</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-0.038989201</Real>
+          <Real Name="Y">0.64982003</Real>
+          <Real Name="Z">-0.64982003</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>
