@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="FENEBONDS">
+    <FEP Name="No">
+      <Real Name="Epot ">0.19447033707800393</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">1.3333333333333335</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0.026671111851975328</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">-1.86675557037284</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-0.060965644731858733</Real>
+          <Real Name="Y">0.57157554799805677</Real>
+          <Real Name="Z">-0.038153310958550235</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">0.034294532879883405</Real>
+          <Real Name="Y">-0.57157554799805677</Real>
+          <Real Name="Z">0.57157554799805677</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>
