@@ -55,7 +55,7 @@ Quick and dirty cluster installation
 
 On a cluster where users are expected to be running across multiple
 nodes using MPI, make one installation similar to the above, and
-another using an MPI wrapper compiler and which is `building only
+another using ``-DGMX_MPI=on`` and which is `building only
 mdrun`_, because that is the only component of |Gromacs| that uses
 MPI. The latter will install a single simulation engine binary,
 i.e. ``mdrun_mpi`` when the default suffix is used. Hence it is safe
@@ -227,6 +227,11 @@ you will need to have
 * an MPI library installed that supports the MPI 1.3
   standard, and
 * wrapper compilers that will compile code using that library.
+
+To compile with MPI set your compiler to the normal (non-MPI) compiler
+and add ``-DGMX_MPI=on`` to the cmake options. It is possible to set
+the compiler to the MPI compiler wrapper but it is neither necessary
+nor recommended.
 
 The |Gromacs| team recommends OpenMPI_ version
 1.6 (or higher), MPICH_ version 1.4.1 (or
