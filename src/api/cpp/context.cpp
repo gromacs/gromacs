@@ -71,9 +71,9 @@
 #include "gmxapi/status.h"
 #include "gmxapi/version.h"
 
-#include "context-impl.h"
+#include "context_impl.h"
 #include "createsession.h"
-#include "session-impl.h"
+#include "session_impl.h"
 #include "workflow.h"
 
 namespace gmxapi

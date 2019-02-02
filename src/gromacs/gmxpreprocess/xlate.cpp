@@ -45,7 +45,7 @@
 #include <vector>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
