@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="UREY_BRADLEY">
+    <FEP Name="No">
+      <Real Name="Epot ">10942.213</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">6.1035156e-05</Real>
+        <Real Name="Y">-0.00024414062</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">-3802.1235</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">-1.005941</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-3070.0759</Real>
+          <Real Name="Y">-6498.5015</Real>
+          <Real Name="Z">-343.24872</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">6353.2686</Real>
+          <Real Name="Y">9731.9277</Real>
+          <Real Name="Z">3609.3293</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">518.93066</Real>
+          <Real Name="Y">-3233.4265</Real>
+          <Real Name="Z">-3265.0747</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>

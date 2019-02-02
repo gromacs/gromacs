@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="MORSE">
+    <FEP Name="No">
+      <Real Name="Epot ">1.1177968</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">17.874504</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-1.3342688</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">8.810873</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">1.4964232</Real>
+          <Real Name="Y">-2.7025745</Real>
+          <Real Name="Z">-23.982803</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-0.16215448</Real>
+          <Real Name="Y">2.7025745</Real>
+          <Real Name="Z">-2.7025745</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>

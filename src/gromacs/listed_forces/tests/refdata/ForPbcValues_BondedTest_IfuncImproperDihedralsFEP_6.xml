@@ -2,8 +2,8 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Lambda Name="0">
-    <Real Name="Epot ">24.674011002723397</Real>
-    <Real Name="dVdlambda ">34.406537564908731</Real>
+    <Real Name="Epot ">24.674007</Real>
+    <Real Name="dVdlambda ">14.941481</Real>
     <Sequence Name="ShiftForces">
       <Int Name="Length">45</Int>
       <Vector>
@@ -237,28 +237,28 @@
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">137.58648166927725</Real>
+        <Real Name="Z">-137.58646</Real>
       </Vector>
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">-479.73041017556898</Real>
+        <Real Name="Z">479.73029</Real>
       </Vector>
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">162.30392362805125</Real>
+        <Real Name="Z">-162.30386</Real>
       </Vector>
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">179.84000487824048</Real>
+        <Real Name="Z">-179.83997</Real>
       </Vector>
     </Sequence>
   </Lambda>
   <Lambda Name="0.5">
-    <Real Name="Epot ">30.0715223042769</Real>
-    <Real Name="dVdlambda ">6.8884945802298407</Real>
+    <Real Name="Epot ">30.071522</Real>
+    <Real Name="dVdlambda ">6.888494</Real>
     <Sequence Name="ShiftForces">
       <Int Name="Length">45</Int>
       <Vector>
@@ -492,28 +492,28 @@
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">-186.02838875700192</Real>
+        <Real Name="Z">-186.0284</Real>
       </Vector>
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">648.63549209155053</Real>
+        <Real Name="Z">648.63544</Real>
       </Vector>
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">-219.44843007209428</Real>
+        <Real Name="Z">-219.44838</Real>
       </Vector>
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">-243.1586732624543</Real>
+        <Real Name="Z">-243.15868</Real>
       </Vector>
     </Sequence>
   </Lambda>
   <Lambda Name="1">
-    <Real Name="Epot ">31.802439397507104</Real>
-    <Real Name="dVdlambda ">0.27510760724486971</Real>
+    <Real Name="Epot ">31.802435</Real>
+    <Real Name="dVdlambda ">0.27510643</Real>
     <Sequence Name="ShiftForces">
       <Int Name="Length">45</Int>
       <Vector>
@@ -747,22 +747,22 @@
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">-220.90274001345065</Real>
+        <Real Name="Z">-220.90269</Real>
       </Vector>
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">770.23382522633005</Real>
+        <Real Name="Z">770.23364</Real>
       </Vector>
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">-260.58796626948225</Real>
+        <Real Name="Z">-260.58786</Real>
       </Vector>
       <Vector>
         <Real Name="X">0</Real>
         <Real Name="Y">0</Real>
-        <Real Name="Z">-288.74311894339718</Real>
+        <Real Name="Z">-288.74307</Real>
       </Vector>
     </Sequence>
   </Lambda>
