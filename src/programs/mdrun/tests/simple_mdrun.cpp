@@ -51,7 +51,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"

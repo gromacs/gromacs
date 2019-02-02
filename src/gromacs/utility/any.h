@@ -50,7 +50,6 @@
 #include <typeinfo>
 #include <utility>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -226,7 +225,7 @@ class Any
                 explicit Content(T &&value) : value_(std::move(value)) {}
 
                 const std::type_info &typeInfo() const override { return typeid(T); }
-                std::unique_ptr<IContent> clone() const override { return compat::make_unique<Content>(value_); }
+                std::unique_ptr<IContent> clone() const override { return std::make_unique<Content>(value_); }
 
                 T value_;
         };

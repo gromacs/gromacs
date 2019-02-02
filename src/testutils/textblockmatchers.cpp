@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,8 @@
 
 #include "textblockmatchers.h"
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
+
 #include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textreader.h"
@@ -134,12 +135,12 @@ ITextBlockMatcherSettings::~ITextBlockMatcherSettings()
 
 TextBlockMatcherPointer ExactTextMatch::createMatcher() const
 {
-    return TextBlockMatcherPointer(compat::make_unique<ExactTextMatcher>());
+    return TextBlockMatcherPointer(std::make_unique<ExactTextMatcher>());
 }
 
 TextBlockMatcherPointer NoTextMatch::createMatcher() const
 {
-    return TextBlockMatcherPointer(compat::make_unique<NoTextMatcher>());
+    return TextBlockMatcherPointer(std::make_unique<NoTextMatcher>());
 }
 
 void FilteringExactTextMatch::addRegexToSkip(const std::string &lineToSkip)
@@ -149,7 +150,7 @@ void FilteringExactTextMatch::addRegexToSkip(const std::string &lineToSkip)
 
 TextBlockMatcherPointer FilteringExactTextMatch::createMatcher() const
 {
-    return TextBlockMatcherPointer(compat::make_unique<FilteringExactTextMatcher>(linesToSkip_));
+    return TextBlockMatcherPointer(std::make_unique<FilteringExactTextMatcher>(linesToSkip_));
 }
 
 } // namespace test

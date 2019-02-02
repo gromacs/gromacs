@@ -42,7 +42,6 @@
 #include <typeindex>
 #include <vector>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
@@ -325,7 +324,7 @@ class KeyValueTreeTransformerImpl
         {
             GMX_RELEASE_ASSERT(rootRule_ == nullptr,
                                "Cannot specify key match type after child rules");
-            rootRule_ = compat::make_unique<Rule>(keyMatchType);
+            rootRule_ = std::make_unique<Rule>(keyMatchType);
         }
 
         std::unique_ptr<Rule>             rootRule_;

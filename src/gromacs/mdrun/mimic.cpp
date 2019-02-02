@@ -52,7 +52,6 @@
 
 #include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
@@ -239,7 +238,7 @@ void gmx::Integrator::do_mimic()
                   enerd);
 
     /* Kinetic energy data */
-    std::unique_ptr<gmx_ekindata_t> eKinData = compat::make_unique<gmx_ekindata_t>();
+    std::unique_ptr<gmx_ekindata_t> eKinData = std::make_unique<gmx_ekindata_t>();
     gmx_ekindata_t                 *ekind    = eKinData.get();
     init_ekindata(fplog, top_global, &(ir->opts), ekind);
     /* Copy the cos acceleration to the groups struct */
@@ -270,7 +269,7 @@ void gmx::Integrator::do_mimic()
     {
         dd_init_local_top(*top_global, &top);
 
-        stateInstance = compat::make_unique<t_state>();
+        stateInstance = std::make_unique<t_state>();
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,9 +38,10 @@
 
 #include "config.h"
 
+#include <memory>
+
 #include <gmock/gmock.h>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
@@ -87,7 +88,7 @@ ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
 
 void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
 {
-    hwTop_ = gmx::compat::make_unique<HardwareTopology>(logicalProcessorCount);
+    hwTop_ = std::make_unique<HardwareTopology>(logicalProcessorCount);
 }
 
 } // namespace test

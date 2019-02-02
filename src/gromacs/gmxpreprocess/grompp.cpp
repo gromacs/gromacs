@@ -44,13 +44,13 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 #include <vector>
 
 #include <sys/types.h>
 
 #include "gromacs/awh/read-params.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"

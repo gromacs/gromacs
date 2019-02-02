@@ -45,9 +45,9 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
@@ -3604,7 +3604,7 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
         fprintf(stdout, "%s Initializing ...\n", RotStr);
     }
 
-    auto        enforcedRotation = gmx::compat::make_unique<gmx::EnforcedRotation>();
+    auto        enforcedRotation = std::make_unique<gmx::EnforcedRotation>();
     gmx_enfrot *er               = enforcedRotation->getLegacyEnfrot();
     // TODO When this module implements IMdpOptions, the ownership will become more clear.
     er->rot         = ir->rot;
@@ -3667,7 +3667,7 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
     {
         gmx_enfrotgrp *erg = &ergRef;
         erg->rotg       = &er->rot->grp[groupIndex];
-        erg->atomSet    = gmx::compat::make_unique<gmx::LocalAtomSet>(atomSets->add({erg->rotg->ind, erg->rotg->ind + erg->rotg->nat}));
+        erg->atomSet    = std::make_unique<gmx::LocalAtomSet>(atomSets->add({erg->rotg->ind, erg->rotg->ind + erg->rotg->nat}));
         erg->groupIndex = groupIndex;
 
         if (nullptr != fplog)

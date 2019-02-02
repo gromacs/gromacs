@@ -44,7 +44,8 @@
 
 #include "config.h"
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
+
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
 
@@ -205,7 +206,7 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD (
                 {return stopConditionTime->getSignal(bNS, step, fplog, walltime_accounting); });
     }
 
-    return compat::make_unique<StopHandler>(
+    return std::make_unique<StopHandler>(
             signal, simulationShareState, stopConditions_, neverUpdateNeighborList);
 }
 

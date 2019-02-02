@@ -44,11 +44,11 @@
 #include <ctime>
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -2445,7 +2445,7 @@ const char pdb2gmxInfo::shortDescription[] =
     "Convert coordinate files to topology and FF-compliant coordinate files";
 ICommandLineOptionsModulePointer pdb2gmxInfo::create()
 {
-    return compat::make_unique<pdb2gmx>();
+    return std::make_unique<pdb2gmx>();
 }
 
 } // namespace gmx

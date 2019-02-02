@@ -601,7 +601,7 @@ void OptionStorageTemplate<T>::setDefaultValueIfSet(const T &value)
         GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
     }
     setFlag(efOption_DefaultValueIfSetExists);
-    defaultValueIfSet_ = compat::make_unique<T>(value);
+    defaultValueIfSet_ = std::make_unique<T>(value);
 }
 
 } // namespace gmx
