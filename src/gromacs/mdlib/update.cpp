@@ -42,8 +42,8 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <memory>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
@@ -875,7 +875,7 @@ void update_temperature_constants(gmx_stochd_t *sd, const t_inputrec *ir)
 
 Update::Impl::Impl(const t_inputrec    *ir, BoxDeformation *boxDeformation)
 {
-    sd = gmx::compat::make_unique<gmx_stochd_t>(ir);
+    sd = std::make_unique<gmx_stochd_t>(ir);
     update_temperature_constants(sd.get(), ir);
     xp.resizeWithPadding(0);
     deform = boxDeformation;

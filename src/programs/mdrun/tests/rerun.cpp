@@ -52,7 +52,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
@@ -188,8 +187,8 @@ void executeRerunTest(TestFileManager        *fileManager,
         };
     // Build the manager that will present matching pairs of frames to compare
     FramePairManager<TrajectoryFrameReader, TrajectoryFrame>
-    trajectoryManager(compat::make_unique<TrajectoryFrameReader>(normalRunTrajectoryFileName),
-                      compat::make_unique<TrajectoryFrameReader>(rerunTrajectoryFileName));
+    trajectoryManager(std::make_unique<TrajectoryFrameReader>(normalRunTrajectoryFileName),
+                      std::make_unique<TrajectoryFrameReader>(rerunTrajectoryFileName));
     // Compare the trajectory frames.
     trajectoryManager.compareAllFramePairs(trajectoryComparator);
 }

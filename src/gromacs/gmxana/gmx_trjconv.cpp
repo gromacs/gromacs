@@ -41,10 +41,10 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -582,7 +582,7 @@ read_mtop_for_tng(const char *tps_file,
         efTNG == fn2ftp(output_file))
     {
         int temp_natoms = -1;
-        mtop = gmx::compat::make_unique<gmx_mtop_t>();
+        mtop = std::make_unique<gmx_mtop_t>();
         read_tpx(tps_file, nullptr, nullptr, &temp_natoms,
                  nullptr, nullptr, mtop.get());
     }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -241,7 +241,7 @@ const char ReportMethodsInfo::shortDescription[] =
     "and/or to the standard output.";
 ICommandLineOptionsModulePointer ReportMethodsInfo::create()
 {
-    return ICommandLineOptionsModulePointer(compat::make_unique<ReportMethods>());
+    return ICommandLineOptionsModulePointer(std::make_unique<ReportMethods>());
 }
 
 } // namespace gmx

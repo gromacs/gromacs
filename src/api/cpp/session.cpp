@@ -39,7 +39,7 @@
 
 #include "gmxapi/session.h"
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdrun/logging.h"
@@ -193,11 +193,11 @@ std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>  c
 {
     // We should be able to get a communicator (or subcommunicator) through the
     // Context.
-    return gmx::compat::make_unique<SessionImpl>(std::move(context),
-                                                 std::move(runnerBuilder),
-                                                 simulationContext,
-                                                 std::move(logFilehandle),
-                                                 multiSim);
+    return std::make_unique<SessionImpl>(std::move(context),
+                                         std::move(runnerBuilder),
+                                         simulationContext,
+                                         std::move(logFilehandle),
+                                         multiSim);
 }
 
 SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
@@ -206,7 +206,7 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
                          gmx::LogFilePtr               fplog,
                          gmx_multisim_t              * multiSim) :
     context_(std::move(context)),
-    mpiContextManager_(gmx::compat::make_unique<MpiContextManager>()),
+    mpiContextManager_(std::make_unique<MpiContextManager>()),
     simulationContext_(simulationContext),
     logFilePtr_(std::move(fplog)),
     multiSim_(multiSim)
@@ -219,12 +219,12 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
 
     // \todo Session objects can have logic specialized for the runtime environment.
 
-    auto stopHandlerBuilder = gmx::compat::make_unique<gmx::StopHandlerBuilder>();
-    signalManager_ = gmx::compat::make_unique<SignalManager>(stopHandlerBuilder.get());
+    auto stopHandlerBuilder = std::make_unique<gmx::StopHandlerBuilder>();
+    signalManager_ = std::make_unique<SignalManager>(stopHandlerBuilder.get());
     GMX_ASSERT(signalManager_, "SessionImpl invariant includes a valid SignalManager.");
 
     runnerBuilder.addStopHandlerBuilder(std::move(stopHandlerBuilder));
-    runner_ = gmx::compat::make_unique<gmx::Mdrunner>(runnerBuilder.build());
+    runner_ = std::make_unique<gmx::Mdrunner>(runnerBuilder.build());
     GMX_ASSERT(runner_, "SessionImpl invariant implies valid Mdrunner handle.");
 
     // For the libgromacs context, a session should explicitly reset global variables that could
@@ -324,7 +324,7 @@ gmxapi::SessionResources *SessionImpl::createResources(std::shared_ptr<gmxapi::M
     const auto                &name      = module->name();
     if (resources_.find(name) == resources_.end())
     {
-        auto resourcesInstance = gmx::compat::make_unique<SessionResources>(this, name);
+        auto resourcesInstance = std::make_unique<SessionResources>(this, name);
         resources_.emplace(std::make_pair(name, std::move(resourcesInstance)));
         resources = resources_.at(name).get();
         // To do: This should be more dynamic.

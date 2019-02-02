@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,6 @@
 #include <memory>
 
 #include "buildinfo.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
@@ -1465,7 +1464,7 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
                     {
                         if (deltaH == nullptr)
                         {
-                            enerhist->deltaHForeignLambdas = gmx::compat::make_unique<delta_h_history_t>();
+                            enerhist->deltaHForeignLambdas = std::make_unique<delta_h_history_t>();
                             deltaH = enerhist->deltaHForeignLambdas.get();
                         }
                         deltaH->dh.resize(numDeltaH);
@@ -2580,7 +2579,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
 
     if (headerContents->flags_enh && observablesHistory->energyHistory == nullptr)
     {
-        observablesHistory->energyHistory = gmx::compat::make_unique<energyhistory_t>();
+        observablesHistory->energyHistory = std::make_unique<energyhistory_t>();
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           headerContents->flags_enh, observablesHistory->energyHistory.get(), nullptr);
@@ -2593,7 +2592,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
     {
         if (observablesHistory->pullHistory == nullptr)
         {
-            observablesHistory->pullHistory = gmx::compat::make_unique<PullHistory>();
+            observablesHistory->pullHistory = std::make_unique<PullHistory>();
         }
         ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE,
                             headerContents->flagsPullHistory, observablesHistory->pullHistory.get(), StatePart::pullHistory, nullptr);
@@ -2616,7 +2615,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
 
     if (headerContents->nED > 0 && observablesHistory->edsamHistory == nullptr)
     {
-        observablesHistory->edsamHistory = gmx::compat::make_unique<edsamhistory_t>(edsamhistory_t {});
+        observablesHistory->edsamHistory = std::make_unique<edsamhistory_t>(edsamhistory_t {});
     }
     ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents->nED, observablesHistory->edsamHistory.get(), nullptr);
     if (ret)
@@ -2637,7 +2636,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
 
     if (headerContents->eSwapCoords != eswapNO && observablesHistory->swapHistory == nullptr)
     {
-        observablesHistory->swapHistory = gmx::compat::make_unique<swaphistory_t>(swaphistory_t {});
+        observablesHistory->swapHistory = std::make_unique<swaphistory_t>(swaphistory_t {});
     }
     ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents->eSwapCoords, observablesHistory->swapHistory.get(), nullptr);
     if (ret)

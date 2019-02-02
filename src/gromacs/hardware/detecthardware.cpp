@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,6 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -432,7 +431,7 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger            &mdlog,
     /* only initialize the hwinfo structure if it is not already initalized */
     if (n_hwinfo == 0)
     {
-        hwinfo_g = compat::make_unique<gmx_hw_info_t>();
+        hwinfo_g = std::make_unique<gmx_hw_info_t>();
 
         /* TODO: We should also do CPU hardware detection only once on each
          * physical node and broadcast it, instead of do it on every MPI rank. */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,8 @@
 
 #include "testhardwarecontexts.h"
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
+
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -109,7 +110,7 @@ static gmx_hw_info_t *hardwareInit()
 
 void PmeTestEnvironment::SetUp()
 {
-    hardwareContexts_.emplace_back(compat::make_unique<TestHardwareContext>(CodePath::CPU, "", nullptr));
+    hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(CodePath::CPU, "", nullptr));
 
     hardwareInfo_ = hardwareInit();
     if (!pme_gpu_supports_build(*hardwareInfo_, nullptr))
@@ -126,7 +127,7 @@ void PmeTestEnvironment::SetUp()
         char        stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
         std::string description = "(GPU " + std::string(stmp) + ") ";
-        hardwareContexts_.emplace_back(compat::make_unique<TestHardwareContext>
+        hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>
                                            (CodePath::GPU, description.c_str(),
                                            deviceInfo));
     }

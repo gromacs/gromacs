@@ -43,7 +43,8 @@
 #include <cmath>
 #include <cstring>
 
-#include "gromacs/compat/make_unique.h"
+#include <memory>
+
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/topio.h"
@@ -565,7 +566,7 @@ void convert_params(int atnr, t_params nbtypes[],
     if (intermolecular_interactions != nullptr)
     {
         /* Process the intermolecular interaction list */
-        mtop->intermolecular_ilist = gmx::compat::make_unique<InteractionLists>();
+        mtop->intermolecular_ilist = std::make_unique<InteractionLists>();
 
         for (i = 0; (i < F_NRE); i++)
         {

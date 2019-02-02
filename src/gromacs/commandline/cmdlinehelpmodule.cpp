@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,6 @@
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
@@ -568,12 +567,12 @@ HelpExportReStructuredText::HelpExportReStructuredText(
 
 void HelpExportReStructuredText::startModuleExport()
 {
-    indexFile_ = compat::make_unique<TextWriter>(
+    indexFile_ = std::make_unique<TextWriter>(
                 outputRedirector_->openTextOutputFile("fragments/byname.rst"));
     indexFile_->writeLine(formatString("* :doc:`%s </onlinehelp/%s>` - %s",
                                        binaryName_.c_str(), binaryName_.c_str(),
                                        RootHelpText::title));
-    manPagesFile_ = compat::make_unique<TextWriter>(
+    manPagesFile_ = std::make_unique<TextWriter>(
                 outputRedirector_->openTextOutputFile("conf-man.py"));
     manPagesFile_->writeLine("man_pages = [");
 }
@@ -635,9 +634,9 @@ void HelpExportReStructuredText::finishModuleExport()
 
 void HelpExportReStructuredText::startModuleGroupExport()
 {
-    indexFile_ = compat::make_unique<TextWriter>(
+    indexFile_ = std::make_unique<TextWriter>(
                 outputRedirector_->openTextOutputFile("fragments/bytopic.rst"));
-    manPagesFile_ = compat::make_unique<TextWriter>(
+    manPagesFile_ = std::make_unique<TextWriter>(
                 outputRedirector_->openTextOutputFile("fragments/bytopic-man.rst"));
 }
 

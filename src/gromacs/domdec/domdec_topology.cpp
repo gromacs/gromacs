@@ -51,9 +51,9 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 #include <string>
 
-#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
@@ -739,7 +739,7 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     {
         for (thread_work_t &th_work : rt.th_work)
         {
-            th_work.vsitePbc = gmx::compat::make_unique<VsitePbc>();
+            th_work.vsitePbc = std::make_unique<VsitePbc>();
         }
     }
 
