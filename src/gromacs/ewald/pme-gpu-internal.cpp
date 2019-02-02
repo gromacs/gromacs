@@ -78,11 +78,11 @@
 
 #include "pme-gpu-3dfft.h"
 #include "pme-gpu-constants.h"
-#include "pme-gpu-program-impl.h"
+#include "pme-gpu-program_impl.h"
 #include "pme-gpu-timings.h"
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
-#include "pme-gpu-types-host-impl.h"
+#include "pme-gpu-types-host_impl.h"
 #include "pme-gpu-utils.h"
 #include "pme-grid.h"
 #include "pme-internal.h"

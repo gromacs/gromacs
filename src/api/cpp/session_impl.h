@@ -59,7 +59,7 @@ namespace gmxapi
 // Forward declaration
 class MpiContextManager; // Locally defined in session.cpp
 class ContextImpl;       // locally defined in context.cpp
-class SignalManager;     // defined in mdsignals-impl.h
+class SignalManager;     // defined in mdsignals_impl.h
 
 /*!
  * \brief Implementation class for executing sessions.

@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/applied-forces/electricfield.h"
+#include "gromacs/applied_forces/electricfield.h"
 
 #include <gtest/gtest.h>
 

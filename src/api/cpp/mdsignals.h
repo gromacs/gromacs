@@ -53,7 +53,7 @@
 #include "gmxapi/session.h"
 #include "gmxapi/md/mdsignals.h"
 
-#include "session-impl.h"
+#include "session_impl.h"
 
 namespace gmxapi
 {

@@ -47,7 +47,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
 
-#include "options-impl.h"
+#include "options_impl.h"
 
 namespace gmx
 {

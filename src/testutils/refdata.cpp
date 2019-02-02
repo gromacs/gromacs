@@ -63,7 +63,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata-checkers.h"
-#include "testutils/refdata-impl.h"
+#include "testutils/refdata_impl.h"
 #include "testutils/refdata-xml.h"
 #include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"

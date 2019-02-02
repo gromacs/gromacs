@@ -48,7 +48,7 @@
 
 #include "gromacs/utility/exceptions.h"
 
-#include "testutils/refdata-impl.h"
+#include "testutils/refdata_impl.h"
 #include "testutils/testexceptions.h"
 
 namespace gmx

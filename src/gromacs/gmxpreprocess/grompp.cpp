@@ -48,7 +48,7 @@
 
 #include <sys/types.h>
 
-#include "gromacs/awh/read-params.h"
+#include "gromacs/awh/read_params.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/ewald/ewald-utils.h"
@@ -63,7 +63,7 @@
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/tomorse.h"

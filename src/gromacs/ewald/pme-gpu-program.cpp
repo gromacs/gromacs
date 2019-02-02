@@ -49,7 +49,7 @@
 
 #include "gromacs/compat/make_unique.h"
 
-#include "pme-gpu-program-impl.h"
+#include "pme-gpu-program_impl.h"
 
 PmeGpuProgram::PmeGpuProgram(const gmx_device_info_t *deviceInfo) :
     impl_(gmx::compat::make_unique<PmeGpuProgramImpl>(deviceInfo))

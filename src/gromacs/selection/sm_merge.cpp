@@ -49,7 +49,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "selmethod.h"
-#include "selmethod-impl.h"
+#include "selmethod_impl.h"
 
 /*! \internal \brief
  * Data structure for the merging selection modifiers.

@@ -48,7 +48,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "analysissettings-impl.h"
+#include "analysissettings_impl.h"
 
 namespace gmx
 {

@@ -43,7 +43,7 @@
  */
 #include "gmxpre.h"
 
-#include "pme-gpu-program-impl.h"
+#include "pme-gpu-program_impl.h"
 
 #include "pme-gpu-constants.h"
 #include "pme-gpu-internal.h"                    // for GridOrdering enum

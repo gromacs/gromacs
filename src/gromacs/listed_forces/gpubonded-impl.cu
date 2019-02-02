@@ -45,7 +45,7 @@
 
 #include "gmxpre.h"
 
-#include "gpubonded-impl.h"
+#include "gpubonded_impl.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"

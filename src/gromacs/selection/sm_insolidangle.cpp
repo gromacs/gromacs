@@ -132,7 +132,7 @@
 
 #include "selelem.h"
 #include "selmethod.h"
-#include "selmethod-impl.h"
+#include "selmethod_impl.h"
 
 using std::min;
 using std::max;

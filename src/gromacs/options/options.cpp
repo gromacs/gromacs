@@ -54,7 +54,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "options-impl.h"
+#include "options_impl.h"
 
 namespace gmx
 {

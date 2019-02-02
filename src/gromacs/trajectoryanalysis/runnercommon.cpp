@@ -71,7 +71,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "analysissettings-impl.h"
+#include "analysissettings_impl.h"
 
 namespace gmx
 {

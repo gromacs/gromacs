@@ -41,7 +41,7 @@
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 
-#include "restraintmdmodule-impl.h"
+#include "restraintmdmodule_impl.h"
 
 namespace gmx
 {

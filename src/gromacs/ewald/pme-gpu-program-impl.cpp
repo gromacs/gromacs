@@ -43,7 +43,7 @@
 
 #include "gmxpre.h"
 
-#include "pme-gpu-program-impl.h"
+#include "pme-gpu-program_impl.h"
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t * /*unused*/) :
     warpSize(0),

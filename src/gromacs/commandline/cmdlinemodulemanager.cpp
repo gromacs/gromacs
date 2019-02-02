@@ -66,7 +66,7 @@
 #include "gromacs/utility/sysinfo.h"
 
 #include "cmdlinehelpmodule.h"
-#include "cmdlinemodulemanager-impl.h"
+#include "cmdlinemodulemanager_impl.h"
 
 namespace gmx
 {

@@ -50,7 +50,7 @@
 #include "pme.cuh"
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
-#include "pme-gpu-types-host-impl.h"
+#include "pme-gpu-types-host_impl.h"
 
 static void handleCufftError(cufftResult_t status, const char *msg)
 {

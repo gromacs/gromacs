@@ -55,7 +55,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "testutils/refdata-impl.h"
+#include "testutils/refdata_impl.h"
 #include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"
 

@@ -44,7 +44,7 @@
 
 #include <string>
 
-#include "testutils/refdata-impl.h"
+#include "testutils/refdata_impl.h"
 
 namespace gmx
 {

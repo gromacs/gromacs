@@ -51,7 +51,7 @@
 #include "poscalc.h"
 #include "selelem.h"
 #include "selmethod.h"
-#include "selmethod-impl.h"
+#include "selmethod_impl.h"
 
 /*! \internal \brief
  * Data structure for position keyword evaluation.

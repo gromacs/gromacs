@@ -49,7 +49,7 @@
 
 #include "pme-gpu-constants.h"
 #include "pme-gpu-internal.h" // for GridOrdering enum
-#include "pme-gpu-program-impl.h"
+#include "pme-gpu-program_impl.h"
 #include "pme-gpu-types-host.h"
 #include "pme-grid.h"
 

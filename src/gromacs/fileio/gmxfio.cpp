@@ -62,7 +62,7 @@
 #include "gromacs/utility/mutex.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "gmxfio-impl.h"
+#include "gmxfio_impl.h"
 
 /* This is the new improved and thread safe version of gmxfio. */
 

@@ -289,7 +289,7 @@
 #include "keywords.h"
 #include "mempool.h"
 #include "poscalc.h"
-#include "selectioncollection-impl.h"
+#include "selectioncollection_impl.h"
 #include "selelem.h"
 #include "selmethod.h"
 

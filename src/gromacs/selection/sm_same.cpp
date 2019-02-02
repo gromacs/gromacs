@@ -52,7 +52,7 @@
 #include "parsetree.h"
 #include "selelem.h"
 #include "selmethod.h"
-#include "selmethod-impl.h"
+#include "selmethod_impl.h"
 
 /*! \internal
  * \brief

@@ -51,7 +51,7 @@
 #include "pme-gpu-3dfft.h"
 #include "pme-gpu-internal.h"
 #include "pme-gpu-types.h"
-#include "pme-gpu-types-host-impl.h"
+#include "pme-gpu-types-host_impl.h"
 
 //! Throws the exception on clFFT error
 static void handleClfftError(clfftStatus status, const char *msg)

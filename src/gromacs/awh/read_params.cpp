@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "read-params.h"
+#include "read_params.h"
 
 #include "gromacs/awh/awh.h"
 #include "gromacs/fileio/readinp.h"

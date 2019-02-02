@@ -46,7 +46,7 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/awh/read-params.h"
+#include "gromacs/awh/read_params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"

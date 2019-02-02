@@ -47,7 +47,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "gmxfio-impl.h"
+#include "gmxfio_impl.h"
 
 /* Enumerated for data types in files */
 enum {

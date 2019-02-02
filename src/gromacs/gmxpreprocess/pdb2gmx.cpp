@@ -56,7 +56,7 @@
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/genhydro.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/h_db.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/hizzie.h"

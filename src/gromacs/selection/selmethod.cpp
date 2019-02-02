@@ -51,7 +51,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "selmethod-impl.h"
+#include "selmethod_impl.h"
 #include "symrec.h"
 
 /*! \internal \brief

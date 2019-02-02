@@ -95,7 +95,7 @@ endfunction()
 
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
-add_subdirectory(applied-forces)
+add_subdirectory(applied_forces)
 add_subdirectory(listed_forces)
 add_subdirectory(commandline)
 add_subdirectory(domdec)

@@ -49,7 +49,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "selmethod.h"
-#include "selmethod-impl.h"
+#include "selmethod_impl.h"
 
 /*! \internal \brief
  * Data structure for the \p permute selection modifier.

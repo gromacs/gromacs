@@ -43,7 +43,7 @@
 
 #include "abstractsection.h"
 
-#include "options-impl.h"
+#include "options_impl.h"
 
 namespace gmx
 {
