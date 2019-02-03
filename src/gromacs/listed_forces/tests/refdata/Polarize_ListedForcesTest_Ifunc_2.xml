@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="POLARIZATION">
+    <FEP Name="No">
+      <Real Name="Epot ">117.28019586833446</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">926.23638559389656</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">13.025199172414171</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">-1186.74036904218</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-19.971972064368394</Real>
+          <Real Name="Y">115.77954819923707</Real>
+          <Real Name="Z">144.72443524904634</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">6.9467728919542244</Real>
+          <Real Name="Y">-115.77954819923707</Real>
+          <Real Name="Z">115.77954819923707</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>
