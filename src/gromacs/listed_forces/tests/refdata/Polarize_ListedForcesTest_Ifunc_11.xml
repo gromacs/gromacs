@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="ANHARM_POL">
+    <FEP Name="No">
+      <Real Name="Epot ">10827.481942307291</Real>
+      <Real Name="dVdlambda ">0</Real>
+      <Vector Name="Central shift forces">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+      <Sequence Name="Forces">
+        <Int Name="Length">4</Int>
+        <Vector>
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">85527.567362390473</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">1202.4530379358848</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">-109576.62812110817</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-1844.0698251282447</Real>
+          <Real Name="Y">10693.613119872665</Real>
+          <Real Name="Z">13355.447638845031</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">641.61678719235988</Real>
+          <Real Name="Y">-10693.613119872665</Real>
+          <Real Name="Z">10693.613119872665</Real>
+        </Vector>
+      </Sequence>
+    </FEP>
+  </FunctionType>
+</ReferenceData>
