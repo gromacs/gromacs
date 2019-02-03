@@ -54,6 +54,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
@@ -407,6 +408,85 @@ struct iListInput
         {
             return setRbDihedrals(rbc, rbc);
         }
+        /*! \brief Set parameters for Polarization
+         *
+         * \param[in] alpha Polarizability
+         * \return The structure itself.
+         */
+        iListInput setPolarization(real alpha)
+        {
+            ftype                  = F_POLARIZATION;
+            fep                    = false;
+            iparams.polarize.alpha = alpha;
+            return *this;
+        }
+        /*! \brief Set parameters for Anharmonic Polarization
+         *
+         * \param[in] alpha Polarizability (nm^3)
+         * \param[in] drcut The cut-off distance (nm) after which the
+         *                  fourth power kicks in
+         * \param[in] khyp  The force constant for the fourth power
+         * \return The structure itself.
+         */
+        iListInput setAnharmPolarization(real alpha,
+                                         real drcut,
+                                         real khyp)
+        {
+            ftype                         = F_ANHARM_POL;
+            fep                           = false;
+            iparams.anharm_polarize.alpha = alpha;
+            iparams.anharm_polarize.drcut = drcut;
+            iparams.anharm_polarize.khyp  = khyp;
+            return *this;
+        }
+        /*! \brief Set parameters for Thole Polarization
+         *
+         * \param[in] a      Thole factor
+         * \param[in] alpha1 Polarizability 1 (nm^3)
+         * \param[in] alpha2 Polarizability 2 (nm^3)
+         * \param[in] rfac   Distance factor
+         * \return The structure itself.
+         */
+        iListInput setTholePolarization(real a,
+                                        real alpha1,
+                                        real alpha2,
+                                        real rfac)
+        {
+            ftype                = F_THOLE_POL;
+            fep                  = false;
+            iparams.thole.a      = a;
+            iparams.thole.alpha1 = alpha1;
+            iparams.thole.alpha2 = alpha2;
+            iparams.thole.rfac   = rfac;
+            return *this;
+        }
+        /*! \brief Set parameters for Water Polarization
+         *
+         * \param[in] alpha_x Polarizability X (nm^3)
+         * \param[in] alpha_y Polarizability Y (nm^3)
+         * \param[in] alpha_z Polarizability Z (nm^3)
+         * \param[in] rOH     Oxygen-Hydrogen distance
+         * \param[in] rHH     Hydrogen-Hydrogen distance
+         * \param[in] rOH     Oxygen-Dummy distance
+         * \return The structure itself.
+         */
+        iListInput setWaterPolarization(real alpha_x,
+                                        real alpha_y,
+                                        real alpha_z,
+                                        real rOH,
+                                        real rHH,
+                                        real rOD)
+        {
+            ftype             = F_WATER_POL;
+            fep               = false;
+            iparams.wpol.al_x = alpha_x;
+            iparams.wpol.al_y = alpha_y;
+            iparams.wpol.al_z = alpha_z;
+            iparams.wpol.rOH  = rOH;
+            iparams.wpol.rHH  = rHH;
+            iparams.wpol.rOD  = rOD;
+            return *this;
+        }
 };
 
 /*! \brief Utility to fill iatoms struct
@@ -419,7 +499,8 @@ void fillIatoms(int ftype, std::vector<t_iatom> *iatoms)
     std::unordered_map<int, std::vector<int> > ia =
     { { 2, { 0, 0, 1, 0, 1, 2, 0, 2, 3 } },
       { 3, { 0, 0, 1, 2, 0, 1, 2, 3 } },
-      { 4, { 0, 0, 1, 2, 3 } }};
+      { 4, { 0, 0, 1, 2, 3 } },
+      { 5, { 0, 0, 1, 2, 3, 0 } } };
     EXPECT_TRUE(ftype >= 0 && ftype < F_NRE);
     int nral = interaction_function[ftype].nratoms;
     for (auto &i : ia[nral])
@@ -438,6 +519,7 @@ class ListedForcesTest : public ::testing::TestWithParam<std::tuple<iListInput, 
         iListInput                 input_;
         test::TestReferenceData    refData_;
         test::TestReferenceChecker checker_;
+        t_mdatoms                  mdatoms_ = {0};
         ListedForcesTest( ) :
             checker_(refData_.rootChecker())
         {
@@ -460,7 +542,9 @@ class ListedForcesTest : public ::testing::TestWithParam<std::tuple<iListInput, 
                           const real                  lambda)
         {
             SCOPED_TRACE(std::string("Testing PBC ") + epbc_names[epbc_]);
-            std::vector<int> ddgatindex = { 0, 1, 2, 3 };
+            std::vector<int>  ddgatindex = { 0, 1, 2, 3 };
+            std::vector<real> chargeA    = { 1.5, -2.0, 1.5, -1.0 };
+            mdatoms_.chargeA = chargeA.data();
             OutputQuantities output;
             output.energy = bondedFunction(input_.ftype) (iatoms.size(),
                                                           iatoms.data(),
@@ -470,7 +554,7 @@ class ListedForcesTest : public ::testing::TestWithParam<std::tuple<iListInput, 
                                                           &pbc_,
                                                           /* const struct t_graph *g */ nullptr,
                                                           lambda, &output.dvdlambda,
-                                                          /* const struct t_mdatoms *md */ nullptr,
+                                                          &mdatoms_,
                                                           /* struct t_fcdata *fcd */ nullptr,
                                                           ddgatindex.data());
             // Internal consistency test of both test input
@@ -559,6 +643,15 @@ std::vector<iListInput> c_InputDihs =
     { iListInput(3e-4, 1e-8).setRbDihedrals(rbc) }
 };
 
+//! Function types for testing polarization. Add new terms at the end.
+std::vector<iListInput> c_InputPols =
+{
+    { iListInput().setPolarization(0.12) },
+    { iListInput().setAnharmPolarization(0.0013, 0.02, 1235.6) },
+    { iListInput(7e-4, 1e-8).setTholePolarization(0.26, 0.07, 0.09, 1.6) },
+    { iListInput().setWaterPolarization(0.001, 0.0012, 0.0016, 0.095, 0.15, 0.02) },
+};
+
 //! Coordinates for testing
 std::vector<std::vector<gmx::RVec> > c_coordinatesForTests =
 {
@@ -575,6 +668,8 @@ INSTANTIATE_TEST_CASE_P(Bond, ListedForcesTest, ::testing::Combine(::testing::Va
 INSTANTIATE_TEST_CASE_P(Angle, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputAngles), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
 
 INSTANTIATE_TEST_CASE_P(Dihedral, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputDihs), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
+
+INSTANTIATE_TEST_CASE_P(Polarize, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputPols), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
 
 }  // namespace
 
