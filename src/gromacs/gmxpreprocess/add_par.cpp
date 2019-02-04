@@ -72,7 +72,7 @@ static void clear_force_param(int i0, real c[])
     }
 }
 
-void add_param(t_params *ps, int ai, int aj, const real *c, char *s)
+void add_param(t_params *ps, int ai, int aj, const real *c, const char *s)
 {
     int i;
 
@@ -100,7 +100,7 @@ void add_param(t_params *ps, int ai, int aj, const real *c, char *s)
 }
 
 void add_imp_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
-                   char *s)
+                   const char *s)
 {
     pr_alloc(1, ps);
     ps->param[ps->nr].ai() = ai;
@@ -116,7 +116,7 @@ void add_imp_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c
 }
 
 void add_dih_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
-                   real c2, char *s)
+                   real c2, const char *s)
 {
     pr_alloc(1, ps);
     ps->param[ps->nr].ai() = ai;
@@ -132,7 +132,7 @@ void add_dih_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c
     ps->nr++;
 }
 
-void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am, char *s)
+void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am, const char *s)
 {
     pr_alloc(1, ps);
     ps->param[ps->nr].ai() = ai;
@@ -218,9 +218,9 @@ void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
     ps->nr++;
 }
 
-int search_jtype(t_restp *rtp, char *name, bool bNterm)
+int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool bNterm)
 {
-    int    niter, iter, j, jmax;
+    int    niter, jmax;
     size_t k, kmax, minstrlen;
     char  *rtpname, searchname[12];
 
@@ -240,16 +240,16 @@ int search_jtype(t_restp *rtp, char *name, bool bNterm)
     }
     kmax = 0;
     jmax = -1;
-    for (iter = 0; (iter < niter && jmax == -1); iter++)
+    for (int iter = 0; (iter < niter && jmax == -1); iter++)
     {
         if (iter == 1)
         {
             /* Try without the hydrogen number in the N-terminus */
             searchname[1] = '\0';
         }
-        for (j = 0; (j < rtp->natom); j++)
+        for (int j = 0; (j < localPpResidue.natom()); j++)
         {
-            rtpname = *(rtp->atomname[j]);
+            rtpname = *(localPpResidue.atomname[j]);
             if (gmx_strcasecmp(searchname, rtpname) == 0)
             {
                 jmax = j;
@@ -277,13 +277,13 @@ int search_jtype(t_restp *rtp, char *name, bool bNterm)
     if (jmax == -1)
     {
         gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s",
-                  searchname, rtp->resname);
+                  searchname, localPpResidue.resname.c_str());
     }
     if (kmax != strlen(searchname))
     {
         gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s, "
                   "it looks a bit like %s",
-                  searchname, rtp->resname, *(rtp->atomname[jmax]));
+                  searchname, localPpResidue.resname.c_str(), *(localPpResidue.atomname[jmax]));
     }
     return jmax;
 }
