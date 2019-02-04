@@ -47,7 +47,6 @@
 #include "gromacs/gmxpreprocess/h_db.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
-#include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/ter_db.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
@@ -59,6 +58,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "hackblock.h"
+#include "resall.h"
 
 static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
 {
