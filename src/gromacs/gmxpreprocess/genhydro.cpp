@@ -426,7 +426,6 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
         /* expand the hackblocks to atom level */
         ab.resize(natoms);
         expand_hackblocks(pdba, hb, ab, nterpairs, rN, rC);
-        freeModificationBlock(hb);
     }
 
     /* Now calc the positions */
