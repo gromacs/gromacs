@@ -93,6 +93,7 @@
 #include <type_traits>
 
 #include "accessor_policy.h"
+#include "extensions.h"
 #include "extents.h"
 #include "layouts.h"
 
@@ -213,9 +214,43 @@ class basic_mdspan
          * \returns reference to element stored at position i
          */
         template<class IndexType>
-        constexpr typename std::enable_if<std::is_integral<IndexType>::value && 1 == extents_type::rank(), reference>::type
+        constexpr typename std::enable_if<std::is_integral<IndexType>::value &&
+                                          extents_type::rank() == 1, reference>::type
         operator[]( const IndexType &i ) const noexcept
         { return acc_.access( ptr_, map_(i) ); }
+        /*! \brief Bracket operator for multi-dimensional arrays.
+         * 
+         * \note Prefer operator() for better compile-time and run-time performance
+         * 
+         * Slices two- and higher-dimensional arrays along a given slice by 
+         * returning a new basic_mdspan that drops the first extent and indexes 
+         * the remaining extents
+         * 
+         * \note Currently only implemented for layout_right
+         * \note For layout_right this implementation has significant
+         *       performance benefits over implementing a more general slicing
+         *       operator with a strided layout
+         * \note Enabled only when rank() > 1
+         *
+         * \tparam IndexType integral tyoe for the index that enables indexing
+         *                   with, e.g., int or size_t
+         * \param[in] index  one-dimensional index of the slice to be indexed
+         * 
+         * \returns basic_mdspan that is sliced at the given index
+         */
+        template <class IndexType,
+                  typename sliced_mdspan_type =
+                      basic_mdspan<element_type,
+                                   decltype(extents_type().sliced_extents()),
+                                   LayoutPolicy,
+                                   AccessorPolicy >,
+                  typename = typename std::enable_if_t<std::is_integral<IndexType>::value && (extents_type::rank() > 1) &&
+                                                       std::is_same<LayoutPolicy, layout_right>::value> >
+        constexpr sliced_mdspan_type operator[](const IndexType index) const noexcept
+        {
+            return sliced_mdspan_type(ptr_ + index * stride(0),
+                                      extents().sliced_extents());
+        }
         //! Report the rank.
         static constexpr int rank() noexcept
         { return extents_type::rank(); }
