@@ -49,7 +49,7 @@ struct MoleculePatches;
  *
  * \param[inout] pdbaptr The atoms data structure to be modified.
  * \param[inout] xptr Coordinates to be updated with those for new atoms.
- * \param[inout] ah The atom modifications to use.
+ * \param[inout] globalPatches The atom modifications to use.
  * \param[in] nterpairs Number of termini pairs in the molecule.
  * \param[in] ntdb Entries for N-terminus in each chain, each entry can be valid or nullptr.
  * \param[in] ctdb Entries for C-terminus in each cahin, each entry can be valid or nullptr.

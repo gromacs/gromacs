@@ -263,7 +263,7 @@ static void cpparam(t_param *dest, t_param *src)
     }
 }
 
-static void set_p(t_param *p, const int ai[4], const real *c, char *s)
+static void set_p(t_param *p, const int ai[4], const real *c, const char *s)
 {
     int j;
 
@@ -481,13 +481,13 @@ static int get_impropers(t_atoms *atoms, gmx::ArrayRef<MoleculePatches> globalPa
     {
         for (int i = 0; (i < atoms->nres); i++)
         {
-            t_rbondeds *impropers = &globalPatches[i].rb[ebtsIDIHS];
-            for (int j = 0; (j < impropers->nb); j++)
+            PreprocessBondeds *impropers = &globalPatches[i].rb[ebtsIDIHS];
+            for (const auto &bondeds : impropers->b)
             {
                 bool bStop = false;
                 for (int k = 0; (k < 4) && !bStop; k++)
                 {
-                    ai[k] = search_atom(impropers->b[j].a[k], start,
+                    ai[k] = search_atom(bondeds.a[k].c_str(), start,
                                         atoms,
                                         "improper", bAllowMissing);
                     if (ai[k] == -1)
@@ -503,7 +503,7 @@ static int get_impropers(t_atoms *atoms, gmx::ArrayRef<MoleculePatches> globalPa
                         srenew(*improper, nalloc);
                     }
                     /* Not broken out */
-                    set_p(&((*improper)[nimproper]), ai, nullptr, impropers->b[j].s);
+                    set_p(&((*improper)[nimproper]), ai, nullptr, bondeds.s.c_str());
                     nimproper++;
                 }
             }
@@ -582,14 +582,14 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, gmx::ArrayRef<MoleculePatc
         int r = atoms->atom[a].resind;
         if (a == atoms->nr-1 || atoms->atom[a+1].resind != r)
         {
-            t_rbondeds *hbexcl = &globalPatches[r].rb[ebtsEXCLS];
+            PreprocessBondeds *hbexcl = &globalPatches[r].rb[ebtsEXCLS];
 
-            for (int e = 0; e < hbexcl->nb; e++)
+            for (const auto &bondeds : hbexcl->b)
             {
-                const char *anm = hbexcl->b[e].a[0];
+                const char *anm = bondeds.a[0].c_str();
                 int         i1  = search_atom(anm, astart, atoms,
                                               "exclusion", bAllowMissing);
-                anm = hbexcl->b[e].a[1];
+                anm = bondeds.a[1].c_str();
                 int i2  = search_atom(anm, astart, atoms,
                                       "exclusion", bAllowMissing);
                 if (i1 != -1 && i2 != -1)
@@ -759,9 +759,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
         {
             for (int j = 0; j < ebtsNR; j++)
             {
-                for (int k = 0; k < globalPatches[i].rb[j].nb; k++)
+                for (auto bondeds = globalPatches[i].rb[j].b.begin();
+                     bondeds != globalPatches[i].rb[j].b.end(); bondeds++)
                 {
-                    globalPatches[i].rb[j].b[k].match = false;
+                    bondeds->match = false;
                 }
             }
         }
@@ -810,23 +811,24 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                             {
                                 res += maxres-minres;
                                 get_atomnames_min(3, anm, res, atoms, ang[nang].a);
-                                t_rbondeds *hbang = &globalPatches[res].rb[ebtsANGLES];
-                                for (int l = 0; (l < hbang->nb); l++)
+                                PreprocessBondeds *hbang = &globalPatches[res].rb[ebtsANGLES];
+                                for (auto bondeds = hbang->b.begin();
+                                     bondeds != hbang->b.end(); bondeds++)
                                 {
-                                    if (strcmp(anm[1], hbang->b[l].aj()) == 0)
+                                    if (strcmp(anm[1], bondeds->aj()) == 0)
                                     {
                                         bool bFound = false;
                                         for (int m = 0; m < 3; m += 2)
                                         {
                                             bFound = (bFound ||
-                                                      ((strcmp(anm[m], hbang->b[l].ai()) == 0) &&
-                                                       (strcmp(anm[2-m], hbang->b[l].ak()) == 0)));
+                                                      ((strcmp(anm[m], bondeds->ai()) == 0) &&
+                                                       (strcmp(anm[2-m], bondeds->ak()) == 0)));
                                         }
                                         if (bFound)
                                         {
-                                            set_p_string(&(ang[nang]), hbang->b[l].s);
+                                            set_p_string(&(ang[nang]), bondeds->s.c_str());
                                             /* Mark that we found a match for this entry */
-                                            hbang->b[l].match = true;
+                                            bondeds->match = true;
                                         }
                                     }
                                 }
@@ -874,23 +876,24 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                                     {
                                         res += maxres-minres;
                                         get_atomnames_min(4, anm, res, atoms, dih[ndih].a);
-                                        t_rbondeds *hbdih = &globalPatches[res].rb[ebtsPDIHS];
-                                        for (int n = 0; (n < hbdih->nb); n++)
+                                        PreprocessBondeds *hbdih = &globalPatches[res].rb[ebtsPDIHS];
+                                        for (auto bondeds = hbdih->b.begin();
+                                             bondeds != hbdih->b.end(); bondeds++)
                                         {
                                             bool bFound = false;
                                             for (int m = 0; m < 2; m++)
                                             {
                                                 bFound = (bFound ||
-                                                          ((strcmp(anm[3*m],  hbdih->b[n].ai()) == 0) &&
-                                                           (strcmp(anm[1+m],  hbdih->b[n].aj()) == 0) &&
-                                                           (strcmp(anm[2-m],  hbdih->b[n].ak()) == 0) &&
-                                                           (strcmp(anm[3-3*m], hbdih->b[n].al()) == 0)));
+                                                          ((strcmp(anm[3*m],  bondeds->ai()) == 0) &&
+                                                           (strcmp(anm[1+m],  bondeds->aj()) == 0) &&
+                                                           (strcmp(anm[2-m],  bondeds->ak()) == 0) &&
+                                                           (strcmp(anm[3-3*m], bondeds->al()) == 0)));
                                             }
                                             if (bFound)
                                             {
-                                                set_p_string(&dih[ndih], hbdih->b[n].s);
+                                                set_p_string(&dih[ndih], bondeds->s.c_str());
                                                 /* Mark that we found a match for this entry */
-                                                hbdih->b[n].match = true;
+                                                bondeds->match = true;
 
                                                 /* Set the last parameter to be able to see
                                                    if the dihedral was in the rtp list.
@@ -985,10 +988,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
         for (int i = 0; i < atoms->nres; i++)
         {
             /* Add remaining angles from hackblock */
-            t_rbondeds *hbang = &globalPatches[i].rb[ebtsANGLES];
-            for (int j = 0; j < hbang->nb; j++)
+            PreprocessBondeds *hbang = &globalPatches[i].rb[ebtsANGLES];
+            for (auto bondeds = hbang->b.begin();
+                 bondeds != hbang->b.end(); bondeds++)
             {
-                if (hbang->b[j].match)
+                if (bondeds->match)
                 {
                     /* We already used this entry, continue to the next */
                     continue;
@@ -1002,7 +1006,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                 bool bFound = true;
                 for (int k = 0; k < 3 && bFound; k++)
                 {
-                    const char *p   = hbang->b[j].a[k];
+                    const char *p   = bondeds->a[k].c_str();
                     int         res = i;
                     if (p[0] == '-')
                     {
@@ -1022,18 +1026,19 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
 
                 if (bFound)
                 {
-                    set_p_string(&(ang[nang]), hbang->b[j].s);
-                    hbang->b[j].match = true;
+                    set_p_string(&(ang[nang]), bondeds->s.c_str());
+                    bondeds->match = true;
                     /* Incrementing nang means we save this angle */
                     nang++;
                 }
             }
 
             /* Add remaining dihedrals from hackblock */
-            t_rbondeds *hbdih = &globalPatches[i].rb[ebtsPDIHS];
-            for (int j = 0; j < hbdih->nb; j++)
+            PreprocessBondeds *hbdih = &globalPatches[i].rb[ebtsPDIHS];
+            for (auto bondeds = hbdih->b.begin();
+                 bondeds != hbdih->b.end(); bondeds++)
             {
-                if (hbdih->b[j].match)
+                if (bondeds->match)
                 {
                     /* We already used this entry, continue to the next */
                     continue;
@@ -1047,7 +1052,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
                 bool bFound = true;
                 for (int k = 0; k < 4 && bFound; k++)
                 {
-                    const char *p   = hbdih->b[j].a[k];
+                    const char *p   = bondeds->a[k].c_str();
                     int         res = i;
                     if (p[0] == '-')
                     {
@@ -1069,8 +1074,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
 
                 if (bFound)
                 {
-                    set_p_string(&(dih[ndih]), hbdih->b[j].s);
-                    hbdih->b[j].match = true;
+                    set_p_string(&(dih[ndih]), bondeds->s.c_str());
+                    bondeds->match = true;
                     /* Incrementing ndih means we save this dihedral */
                     ndih++;
                 }
