@@ -758,15 +758,15 @@ static void at2bonds(t_params *psb, gmx::ArrayRef<MoleculePatchDatabase> globalP
     for (int resind = 0; (resind < atoms->nres) && (i < atoms->nr); resind++)
     {
         /* add bonds from list of bonded interactions */
-        for (int j = 0; j < globalPatches[resind].rb[ebtsBONDS].nb; j++)
+        for (const auto &patch : globalPatches[resind].rb[ebtsBONDS].b)
         {
             /* Unfortunately we can not issue errors or warnings
              * for missing atoms in bonds, as the hydrogens and terminal atoms
              * have not been added yet.
              */
-            int ai = search_atom(globalPatches[resind].rb[ebtsBONDS].b[j].a[0], i, atoms,
+            int ai = search_atom(patch.ai().c_str(), i, atoms,
                                  ptr, TRUE);
-            int aj = search_atom(globalPatches[resind].rb[ebtsBONDS].b[j].a[1], i, atoms,
+            int aj = search_atom(patch.aj().c_str(), i, atoms,
                                  ptr, TRUE);
             if (ai != -1 && aj != -1)
             {
@@ -782,7 +782,7 @@ static void at2bonds(t_params *psb, gmx::ArrayRef<MoleculePatchDatabase> globalP
                     fprintf(stderr, "Warning: Short Bond (%d-%d = %g nm)\n",
                             ai+1, aj+1, std::sqrt(dist2));
                 }
-                add_param(psb, ai, aj, nullptr, globalPatches[resind].rb[ebtsBONDS].b[j].s);
+                add_param(psb, ai, aj, nullptr, patch.s.c_str());
             }
         }
         /* add bonds from list of hacks (each added atom gets a bond) */
@@ -1024,7 +1024,7 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
                 terc = j;
             }
         }
-        bRM = merge_t_bondeds(res->rb, globalPatches->at(i).rb, tern >= 0, terc >= 0);
+        bRM = mergeBondedInteractionList(res->rb, globalPatches->at(i).rb, tern >= 0, terc >= 0);
 
         if (bRM && ((tern >= 0 && ntdb[tern] == nullptr) ||
                     (terc >= 0 && ctdb[terc] == nullptr)))
@@ -1353,14 +1353,12 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue> usedPpResidues,
 #define NUM_CMAP_ATOMS 5
 static void gen_cmap(t_params *psb, gmx::ArrayRef<const PreprocessResidue> usedPpResidues, t_atoms *atoms)
 {
-    int         residx, i, j, k;
+    int         residx;
     const char *ptr;
-    const char *pname;
     t_resinfo  *resinfo = atoms->resinfo;
     int         nres    = atoms->nres;
-    bool        bAddCMAP;
     int         cmap_atomid[NUM_CMAP_ATOMS];
-    int         cmap_chainnum = -1, this_residue_index;
+    int         cmap_chainnum = -1;
 
     if (debug)
     {
@@ -1372,7 +1370,7 @@ static void gen_cmap(t_params *psb, gmx::ArrayRef<const PreprocessResidue> usedP
     }
 
     fprintf(stderr, "Making cmap torsions...\n");
-    i = 0;
+    int i = 0;
     /* Most cmap entries use the N atom from the next residue, so the last
      * residue should not have its CMAP entry in that case, but for things like
      * dipeptides we sometimes define a complete CMAP entry inside a residue,
@@ -1381,25 +1379,25 @@ static void gen_cmap(t_params *psb, gmx::ArrayRef<const PreprocessResidue> usedP
     for (residx = 0; residx < nres; residx++)
     {
         /* Add CMAP terms from the list of CMAP interactions */
-        for (j = 0; j < usedPpResidues[residx].rb[ebtsCMAP].nb; j++)
+        for (const auto &b : usedPpResidues[residx].rb[ebtsCMAP].b)
         {
-            bAddCMAP = TRUE;
+            bool bAddCMAP = true;
             /* Loop over atoms in a candidate CMAP interaction and
              * check that they exist, are from the same chain and are
              * from residues labelled as protein. */
-            for (k = 0; k < NUM_CMAP_ATOMS && bAddCMAP; k++)
+            for (int k = 0; k < NUM_CMAP_ATOMS && bAddCMAP; k++)
             {
                 /* Assign the pointer to the name of the next reference atom.
                  * This can use -/+ labels to refer to previous/next residue.
                  */
-                pname = usedPpResidues[residx].rb[ebtsCMAP].b[j].a[k];
+                const char *pname = b.a[k].c_str();
                 /* Skip this CMAP entry if it refers to residues before the
                  * first or after the last residue.
                  */
                 if (((strchr(pname, '-') != nullptr) && (residx == 0)) ||
                     ((strchr(pname, '+') != nullptr) && (residx == nres-1)))
                 {
-                    bAddCMAP = FALSE;
+                    bAddCMAP = false;
                     break;
                 }
 
@@ -1413,7 +1411,7 @@ static void gen_cmap(t_params *psb, gmx::ArrayRef<const PreprocessResidue> usedP
                      * into the atom array. */
                     break;
                 }
-                this_residue_index = atoms->atom[cmap_atomid[k]].resind;
+                int this_residue_index = atoms->atom[cmap_atomid[k]].resind;
                 if (0 == k)
                 {
                     cmap_chainnum = resinfo[this_residue_index].chainnum;
@@ -1441,7 +1439,7 @@ static void gen_cmap(t_params *psb, gmx::ArrayRef<const PreprocessResidue> usedP
 
             if (bAddCMAP)
             {
-                add_cmap_param(psb, cmap_atomid[0], cmap_atomid[1], cmap_atomid[2], cmap_atomid[3], cmap_atomid[4], usedPpResidues[residx].rb[ebtsCMAP].b[j].s);
+                add_cmap_param(psb, cmap_atomid[0], cmap_atomid[1], cmap_atomid[2], cmap_atomid[3], cmap_atomid[4], b.s.c_str());
             }
         }
 
@@ -1614,7 +1612,6 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     }
 
     /* cleaning up */
-    freeModificationBlock(globalPatches);
     freePreprocessResidue(usedPpResidues);
 
     /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
