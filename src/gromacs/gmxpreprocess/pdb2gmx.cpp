@@ -61,7 +61,6 @@
 #include "gromacs/gmxpreprocess/hizzie.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
-#include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/specbond.h"
 #include "gromacs/gmxpreprocess/ter_db.h"
 #include "gromacs/gmxpreprocess/toputil.h"
@@ -85,6 +84,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "hackblock.h"
+#include "resall.h"
 
 #define RTP_MAXCHAR 5
 typedef struct {
@@ -587,7 +587,7 @@ static int read_pdball(const char *inf, bool bOutput, const char *outf, char **t
     rename_pdbres(atoms, "WAT", watres, false, symtab);
 
     rename_atoms("xlateat.dat", nullptr,
-                 atoms, symtab, nullptr, true,
+                 atoms, symtab, gmx::EmptyArrayRef(), true,
                  rt, true, bVerbose);
 
     if (natom == 0)
@@ -699,13 +699,12 @@ static bool pdbicomp(const t_pdbindex &a, const t_pdbindex &b)
     return d < 0;
 }
 
-static void sort_pdbatoms(t_restp restp[],
+static void sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> restp,
                           int natoms, t_atoms **pdbaptr, rvec **x,
                           t_blocka *block, char ***gnames)
 {
     t_atoms     *pdba, *pdbnew;
     rvec       **xnew;
-    t_restp     *rptr;
     t_pdbindex  *pdbi;
     char        *atomnm;
 
@@ -718,11 +717,10 @@ static void sort_pdbatoms(t_restp restp[],
     for (int i = 0; i < natoms; i++)
     {
         atomnm = *pdba->atomname[i];
-        rptr   = &restp[pdba->atom[i].resind];
-        int j = std::find_if(rptr->atomname, rptr->atomname+rptr->natom,
-                             [&atomnm](char** it){return gmx::equalCaseInsensitive(atomnm, *it); })
-            - rptr->atomname;
-        if (j == rptr->natom)
+        const PreprocessResidue *rptr   = &restp[pdba->atom[i].resind];
+        auto                     found  = std::find_if(rptr->atomname.begin(), rptr->atomname.end(),
+                                                       [&atomnm](char** it){return gmx::equalCaseInsensitive(atomnm, *it); });
+        if (found == rptr->atomname.end())
         {
             char buf[STRLEN];
 
@@ -731,8 +729,8 @@ static void sort_pdbatoms(t_restp restp[],
                     "while sorting atoms.\n%s", atomnm,
                     *pdba->resinfo[pdba->atom[i].resind].name,
                     pdba->resinfo[pdba->atom[i].resind].nr,
-                    rptr->resname,
-                    rptr->natom,
+                    rptr->resname.c_str(),
+                    rptr->natom(),
                     is_hydrogen(atomnm) ?
                     "\nFor a hydrogen, this can be a different protonation state, or it\n"
                     "might have had a different number in the PDB file and was rebuilt\n"
@@ -744,7 +742,7 @@ static void sort_pdbatoms(t_restp restp[],
         }
         /* make shadow array to be sorted into indexgroup */
         pdbi[i].resnr  = pdba->atom[i].resind;
-        pdbi[i].j      = j;
+        pdbi[i].j      = std::distance(rptr->atomname.begin(), found);
         pdbi[i].index  = i;
         pdbi[i].anm1   = atomnm[1];
         pdbi[i].altloc = pdba->pdbinfo[i].altloc;
@@ -1622,7 +1620,6 @@ int pdb2gmx::run()
     char         select[STRLEN];
     int          nssbonds;
     t_ssbond    *ssbonds;
-    t_restp     *restp_chain;
 
     int          this_atomnum;
     int          prev_atomnum;
@@ -1967,18 +1964,17 @@ int pdb2gmx::run()
 
     /* read residue database */
     printf("Reading residue database... (%s)\n", forcefield_);
-    std::vector<std::string> rtpf  = fflib_search_file_end(ffdir_, ".rtp", true);
-    int                      nrtp  = 0;
-    t_restp                 *restp = nullptr;
+    std::vector<std::string>       rtpf  = fflib_search_file_end(ffdir_, ".rtp", true);
+    std::vector<PreprocessResidue> rtpFFDB;
     for (const auto &filename : rtpf)
     {
-        read_resall(filename.c_str(), &nrtp, &restp, atype, &symtab, false);
+        readResidueDatabase(filename, &rtpFFDB, atype, &symtab, false);
     }
     if (bNewRTP_)
     {
         /* Not correct with multiple rtp input files with different bonded types */
         FILE *fp = gmx_fio_fopen("new.rtp", "w");
-        print_resall(fp, nrtp, restp, atype);
+        print_resall(fp, rtpFFDB, atype);
         gmx_fio_fclose(fp);
     }
 
@@ -2134,10 +2130,11 @@ int pdb2gmx::run()
                 cc->ctdb.push_back(nullptr);
             }
         }
-        std::vector<MoleculePatches> hb_chain;
+        std::vector<MoleculePatches>       hb_chain;
         /* lookup hackblocks and rtp for all residues */
+        std::vector<PreprocessResidue>     restp_chain;
         get_hackblocks_rtp(&hb_chain, &restp_chain,
-                           nrtp, restp, pdba->nres, pdba->resinfo,
+                           rtpFFDB, pdba->nres, pdba->resinfo,
                            cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end,
                            bAllowMissing_);
         /* ideally, now we would not need the rtp itself anymore, but do
@@ -2300,7 +2297,7 @@ int pdb2gmx::run()
         }
 
         pdb2top(top_file2, posre_fn.c_str(), molname.c_str(), pdba, &x, atype, &symtab,
-                nrtp, restp,
+                rtpFFDB,
                 restp_chain, hb_chain,
                 bAllowMissing_,
                 bVsites_, bVsiteAromatics_, ffdir_,
