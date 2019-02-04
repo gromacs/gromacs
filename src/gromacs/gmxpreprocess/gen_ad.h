@@ -45,12 +45,12 @@ struct t_excls;
 struct AtomModificationBlock;
 struct t_nextnb;
 struct t_params;
-struct t_restp;
+struct PreprocessResidue;
 
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtp,
              t_params plist[], t_excls excls[], gmx::ArrayRef<AtomModificationBlock> amb,
              bool bAllowMissing);
 
