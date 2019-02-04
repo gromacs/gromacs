@@ -75,41 +75,6 @@ MoleculePatchType MoleculePatch::type() const
     }
 }
 
-PreprocessResidue::PreprocessResidue()
-{
-    for (int i = 0; i < ebtsNR; i++)
-    {
-        rb[i].nb   = 0;
-        rb[i].type = -1;
-        rb[i].b    = nullptr;
-    }
-}
-
-
-static void free_t_bonded(t_rbonded *rb)
-{
-    int i;
-
-    for (i = 0; i < MAXATOMLIST; i++)
-    {
-        sfree(rb->a[i]);
-    }
-    sfree(rb->s);
-}
-
-static void free_t_bondeds(t_rbondeds *rbs)
-{
-    int i;
-
-    for (i = 0; i < rbs->nb; i++)
-    {
-        free_t_bonded(&rbs->b[i]);
-    }
-    sfree(rbs->b);
-    rbs->b  = nullptr;
-    rbs->nb = 0;
-}
-
 void freePreprocessResidue(gmx::ArrayRef<PreprocessResidue> rtp)
 {
     for (auto it = rtp.begin(); it != rtp.end(); it++)
@@ -118,22 +83,6 @@ void freePreprocessResidue(gmx::ArrayRef<PreprocessResidue> rtp)
         {
             sfree(*(*jt));
             sfree(*jt);
-        }
-        for (int j = 0; j < ebtsNR; j++)
-        {
-            free_t_bondeds(&it->rb[j]);
-        }
-    }
-}
-
-void freeModificationBlock(gmx::ArrayRef<MoleculePatchDatabase> globalPatches)
-{
-    for (auto it = globalPatches.begin(); it != globalPatches.end(); it++)
-    {
-        it->hack.clear();
-        for (int j = 0; j < ebtsNR; j++)
-        {
-            free_t_bondeds(&it->rb[j]);
         }
     }
 }
@@ -144,36 +93,21 @@ void clearModificationBlock(MoleculePatchDatabase *globalPatches)
     globalPatches->hack.clear();
     for (int i = 0; i < ebtsNR; i++)
     {
-        globalPatches->rb[i].nb = 0;
-        globalPatches->rb[i].b  = nullptr;
+        globalPatches->rb[i].b.clear();
     }
 }
 
 #define safe_strdup(str) (((str) != NULL) ? gmx_strdup(str) : NULL)
 
-static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
+static bool contains_char(const SingleBond &s, char c)
 {
-    int i;
 
-    for (i = 0; i < MAXATOMLIST; i++)
+    bool bRet = false;
+    for (int i = 0; i < MAXATOMLIST; i++)
     {
-        d->a[i] = safe_strdup(s->a[i]);
-    }
-    d->s     = safe_strdup(s->s);
-    d->match = s->match;
-}
-
-static bool contains_char(t_rbonded *s, char c)
-{
-    int      i;
-    bool     bRet;
-
-    bRet = FALSE;
-    for (i = 0; i < MAXATOMLIST; i++)
-    {
-        if (s->a[i] && s->a[i][0] == c)
+        if (!s.a[i].empty() && s.a[i][0] == c)
         {
-            bRet = TRUE;
+            bRet = true;
         }
     }
 
@@ -181,38 +115,36 @@ static bool contains_char(t_rbonded *s, char c)
 }
 
 static int
-rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
+rbonded_find_atoms_in_list(const SingleBond &b, gmx::ArrayRef<const SingleBond> blist, int natoms)
 {
-    int      i, k;
     int      foundPos = -1;
-    bool     atomsMatch;
 
-    for (i = 0; i < nlist && foundPos < 0; i++)
+    for (auto it = blist.begin(); (it != blist.end()) && ( foundPos < 0); it++)
     {
-        atomsMatch = TRUE;
-        for (k = 0; k < natoms && atomsMatch; k++)
+        bool atomsMatch = true;
+        for (int k = 0; k < natoms && atomsMatch; k++)
         {
-            atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[k]) == 0);
+            atomsMatch = atomsMatch && (b.a[k] == it->a[k]);
         }
         /* Try reverse if forward match did not work */
         if (!atomsMatch)
         {
-            atomsMatch = TRUE;
-            for (k = 0; k < natoms && atomsMatch; k++)
+            atomsMatch = true;
+            for (int k = 0; k < natoms && atomsMatch; k++)
             {
-                atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[natoms-1-k]) == 0);
+                atomsMatch = atomsMatch && (b.a[k] == it->a[natoms-1-k]);
             }
         }
         if (atomsMatch)
         {
-            foundPos = i;
+            foundPos = std::distance(blist.begin(), it);
             /* If all the atoms AND all the parameters match, it is likely that
              * the user made a copy-and-paste mistake (since it would be much cheaper
              * to just bump the force constant 2x if you really want it twice).
              * Since we only have the unparsed string here we can only detect
              * EXACT matches (including identical whitespace).
              */
-            if (!strcmp(b->s, blist[i].s))
+            if (b.s != it->s)
             {
                 gmx_warning("Duplicate line found in or between hackblock and rtp entries");
             }
@@ -221,20 +153,15 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
     return foundPos;
 }
 
-bool merge_t_bondeds(gmx::ArrayRef<const t_rbondeds> s,
-                     gmx::ArrayRef<t_rbondeds>       d,
-                     bool                            bMin,
-                     bool                            bPlus)
+bool mergePreprocessBondeds(gmx::ArrayRef<const PreprocessBondeds> s,
+                            gmx::ArrayRef<PreprocessBondeds>       d,
+                            bool                                   bMin,
+                            bool                                   bPlus)
 {
-    int      i, j;
-    bool     bBondsRemoved;
-    int      nbHackblockStart;
-    int      index;
-
-    bBondsRemoved = FALSE;
-    for (i = 0; i < ebtsNR; i++)
+    bool bBondsRemoved = false;
+    for (int i = 0; i < ebtsNR; i++)
     {
-        if (s[i].nb > 0)
+        if (s[i].nb() > 0)
         {
             /* Record how many bonds we have in the destination when we start.
              *
@@ -251,17 +178,15 @@ bool merge_t_bondeds(gmx::ArrayRef<const t_rbondeds> s,
              * it is a hackblock entry meant to override the main rtp, and then
              * we don't add the main rtp one.
              */
-            nbHackblockStart = d[i].nb;
+            int nbHackblockStart = d[i].nb();
 
-            /* make space */
-            srenew(d[i].b, d[i].nb + s[i].nb);
-            for (j = 0; j < s[i].nb; j++)
+            for (const auto &b : s[i].b)
             {
                 /* Check if this bonded string already exists before adding.
                  * We are merging from the main RTP to the hackblocks, so this
                  * will mean the hackblocks overwrite the man RTP, as intended.
                  */
-                index = rbonded_find_atoms_in_list(&s[i].b[j], d[i].b, d[i].nb, btsNiatoms[i]);
+                int index = rbonded_find_atoms_in_list(b, d[i].b, btsNiatoms[i]);
                 /* - If we did not find this interaction at all, the index will be -1,
                  *   and then we should definitely add it to the merged hackblock and rtp.
                  *
@@ -280,15 +205,14 @@ bool merge_t_bondeds(gmx::ArrayRef<const t_rbondeds> s,
                  */
                 if (index < 0 || index >= nbHackblockStart)
                 {
-                    if (!(bMin && contains_char(&s[i].b[j], '-'))
-                        && !(bPlus && contains_char(&s[i].b[j], '+')))
+                    if (!(bMin && contains_char(b, '-'))
+                        && !(bPlus && contains_char(b, '+')))
                     {
-                        copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
-                        d[i].nb++;
+                        d[i].b.push_back(b);
                     }
                     else if (i == ebtsBONDS)
                     {
-                        bBondsRemoved = TRUE;
+                        bBondsRemoved = true;
                     }
                 }
                 else
@@ -327,10 +251,9 @@ void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d)
     for (int i = 0; i < ebtsNR; i++)
     {
         d->rb[i].type = s.rb[i].type;
-        d->rb[i].nb   = 0;
-        d->rb[i].b    = nullptr;
+        d->rb[i].b.clear();
     }
-    merge_t_bondeds(s.rb, d->rb, FALSE, FALSE);
+    mergePreprocessBondeds(s.rb, d->rb, FALSE, FALSE);
 }
 
 void mergeAtomModifications(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)
@@ -344,7 +267,7 @@ void mergeAtomModifications(const MoleculePatchDatabase &s, MoleculePatchDatabas
 void mergeAtomAndBondModifications(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)
 {
     mergeAtomModifications(s, d);
-    merge_t_bondeds(s.rb, d->rb, FALSE, FALSE);
+    mergePreprocessBondeds(s.rb, d->rb, FALSE, FALSE);
 }
 
 void copyModificationBlocks(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)
@@ -354,8 +277,7 @@ void copyModificationBlocks(const MoleculePatchDatabase &s, MoleculePatchDatabas
     d->hack.clear();
     for (int i = 0; i < ebtsNR; i++)
     {
-        d->rb[i].nb = 0;
-        d->rb[i].b  = nullptr;
+        d->rb[i].b.clear();
     }
     mergeAtomAndBondModifications(s, d);
 }
