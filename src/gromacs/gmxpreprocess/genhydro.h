@@ -63,7 +63,7 @@ struct AtomModificationBlock;
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
           gmx::ArrayRef<AtomModificationBlock> ah,
           int nterpairs,
-          const std::vector<AtomModificationBlock *>& ntdb, const std::vector<AtomModificationBlock *>& ctdb,
+          const std::vector<AtomModificationBlock *> &ntdb, const std::vector<AtomModificationBlock *> &ctdb,
           int *rN, int *rC, bool bMissing,
           bool bUpdate_pdba, bool bKeep_old_pdba);
 #endif

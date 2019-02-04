@@ -52,7 +52,7 @@ struct AtomModificationBlock;
 struct t_mols;
 struct t_params;
 struct t_resinfo;
-struct t_restp;
+struct PreprocessResidue;
 struct t_ssbond;
 struct t_symtab;
 
@@ -77,8 +77,9 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
  * in ffdir.
  */
 
-void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp,
-                        int nrtp, t_restp rtp[],
+void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb,
+                        std::vector<PreprocessResidue> *restp,
+                        gmx::ArrayRef<const PreprocessResidue> rtp,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
                         gmx::ArrayRef<AtomModificationBlock *> ntdb,
@@ -89,7 +90,8 @@ void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp
  * and store them in restp and hb.
  */
 
-void match_atomnames_with_rtp(t_restp restp[], gmx::ArrayRef<AtomModificationBlock> amb,
+void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue> restp,
+                              gmx::ArrayRef<AtomModificationBlock> amb,
                               t_atoms *pdba, rvec *x,
                               bool bVerbose);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
@@ -116,8 +118,9 @@ void write_top(FILE *out, const char *pr, const char *molname,
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms, rvec **x,
              gpp_atomtype *atype, t_symtab *tab,
-             int nrtp, t_restp rtp[],
-             t_restp *restp, gmx::ArrayRef<AtomModificationBlock> amb,
+             gmx::ArrayRef<const PreprocessResidue> rtp,
+             gmx::ArrayRef<PreprocessResidue> restp,
+             gmx::ArrayRef<AtomModificationBlock> amb,
              bool bAllowMissing,
              bool bVsites, bool bVsiteAromatics,
              const char *ffdir,

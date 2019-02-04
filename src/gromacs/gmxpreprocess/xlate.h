@@ -38,16 +38,18 @@
 #ifndef GMX_GMXPREPROCESS_XLATE_H
 #define GMX_GMXPREPROCESS_XLATE_H
 
+#include "gromacs/utility/arrayref.h"
+
 class ResidueType;
 struct t_atoms;
-struct t_restp;
+struct PreprocessResidue;
 struct t_symtab;
 
 /* If bResname is true renames atoms based on residue names,
  * otherwise renames atoms based on rtp entry names.
  */
 void rename_atoms(const char* xlfile, const char *ffdir,
-                  t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
+                  t_atoms *atoms, t_symtab *symtab, gmx::ArrayRef<const PreprocessResidue> restp,
                   bool bResname, ResidueType *rt, bool bReorderNum,
                   bool bVerbose);
 
