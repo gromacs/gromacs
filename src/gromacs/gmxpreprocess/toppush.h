@@ -49,7 +49,7 @@ struct t_molinfo;
 struct t_nbparam;
 struct t_param;
 struct t_params;
-struct t_restp;
+struct PreprocessResidue;
 struct warninp;
 
 namespace gmx
