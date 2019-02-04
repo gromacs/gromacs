@@ -166,22 +166,18 @@ static bool read_atoms(FILE *in, char *line,
 static bool read_bondeds(int bt, FILE *in, char *line, PreprocessResidue *rtp)
 {
     char str[STRLEN];
-    int  j, n, ni, maxrb;
 
-    maxrb = rtp->rb[bt].nb;
     while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == nullptr))
     {
-        if (rtp->rb[bt].nb >= maxrb)
-        {
-            maxrb += 100;
-            srenew(rtp->rb[bt].b, maxrb);
-        }
-        n = 0;
-        for (j = 0; j < btsNiatoms[bt]; j++)
+        int         n = 0;
+        int         ni;
+        rtp->rb[bt].b.emplace_back();
+        SingleBond *newBond = &rtp->rb[bt].b.back();
+        for (int j = 0; j < btsNiatoms[bt]; j++)
         {
             if (sscanf(line+n, "%s%n", str, &ni) == 1)
             {
-                rtp->rb[bt].b[rtp->rb[bt].nb].a[j] = gmx_strdup(str);
+                newBond->a[j]  = str;
             }
             else
             {
@@ -189,39 +185,32 @@ static bool read_bondeds(int bt, FILE *in, char *line, PreprocessResidue *rtp)
             }
             n += ni;
         }
-        for (; j < MAXATOMLIST; j++)
-        {
-            rtp->rb[bt].b[rtp->rb[bt].nb].a[j] = nullptr;
-        }
         while (isspace(line[n]))
         {
             n++;
         }
         rtrim(line+n);
-        rtp->rb[bt].b[rtp->rb[bt].nb].s = gmx_strdup(line+n);
-        rtp->rb[bt].nb++;
+        newBond->s = line+n;
     }
-    /* give back unused memory */
-    srenew(rtp->rb[bt].b, rtp->rb[bt].nb);
 
     return TRUE;
 }
 
 static void print_resbondeds(FILE *out, int bt, const PreprocessResidue &rtp)
 {
-    if (rtp.rb[bt].nb)
+    if (rtp.rb[bt].nb() > 0)
     {
         fprintf(out, " [ %s ]\n", btsNames[bt]);
 
-        for (int i = 0; i < rtp.rb[bt].nb; i++)
+        for (const auto &b : rtp.rb[bt].b)
         {
             for (int j = 0; j < btsNiatoms[bt]; j++)
             {
-                fprintf(out, "%6s ", rtp.rb[bt].b[i].a[j]);
+                fprintf(out, "%6s ", b.a[j].c_str());
             }
-            if (rtp.rb[bt].b[i].s[0])
+            if (!b.s.empty())
             {
-                fprintf(out, "    %s", rtp.rb[bt].b[i].s);
+                fprintf(out, "    %s", b.s.c_str());
             }
             fprintf(out, "\n");
         }

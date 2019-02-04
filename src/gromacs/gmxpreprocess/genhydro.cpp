@@ -426,7 +426,6 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
         /* expand the hackblocks to atom level */
         ab.resize(natoms);
         expand_hackblocks(pdba, hb, ab, nterpairs, rN, rC);
-        freeModificationBlock(hb);
     }
 
     /* Now calc the positions */
@@ -573,8 +572,8 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
           gmx::ArrayRef<AtomModificationBlock> amb,
           int nterpairs,
-          const std::vector<AtomModificationBlock *>& ntdb,
-          const std::vector<AtomModificationBlock *>& ctdb,
+          const std::vector<AtomModificationBlock *> &ntdb,
+          const std::vector<AtomModificationBlock *> &ctdb,
           int *rN, int *rC, bool bAllowMissing,
           bool bUpdate_pdba, bool bKeep_old_pdba)
 {
