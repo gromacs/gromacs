@@ -723,7 +723,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 }
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtp,
              t_params plist[], t_excls excls[], gmx::ArrayRef<AtomModificationBlock> amb,
              bool bAllowMissing)
 {

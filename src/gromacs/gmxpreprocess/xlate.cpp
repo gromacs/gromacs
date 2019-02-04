@@ -139,7 +139,7 @@ static void done_xlatom(int nxlate, t_xlate_atom *xlatom)
 }
 
 void rename_atoms(const char* xlfile, const char *ffdir,
-                  t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
+                  t_atoms *atoms, t_symtab *symtab, gmx::ArrayRef<const PreprocessResidue> restp,
                   bool bResname, ResidueType *rt, bool bReorderNum,
                   bool bVerbose)
 {
@@ -202,8 +202,8 @@ void rename_atoms(const char* xlfile, const char *ffdir,
         for (i = 0; (i < nxlate) && !bRenamed; i++)
         {
             /* Check if the base file name of the rtp and arn entry match */
-            if (restp == nullptr ||
-                gmx_strcasecmp(restp[resind].filebase, xlatom[i].filebase) == 0)
+            if (restp.empty() ||
+                gmx::equalCaseInsensitive(restp[resind].filebase, xlatom[i].filebase))
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == nullptr ||
