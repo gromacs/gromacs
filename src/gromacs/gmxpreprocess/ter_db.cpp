@@ -207,18 +207,18 @@ static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const MoleculePat
         }
         for (int bt = 0; bt < ebtsNR; bt++)
         {
-            if (modification.rb[bt].nb)
+            if (modification.rb[bt].nb() > 0)
             {
                 fprintf(out, "[ %s ]\n", btsNames[bt]);
-                for (int j = 0; j < modification.rb[bt].nb; j++)
+                for (const auto &b : modification.rb[bt].b)
                 {
                     for (int k = 0; k < btsNiatoms[bt]; k++)
                     {
-                        fprintf(out, "%s%s", k ? "\t" : "", modification.rb[bt].b[j].a[k]);
+                        fprintf(out, "%s%s", k ? "\t" : "", b.a[k].c_str());
                     }
-                    if (modification.rb[bt].b[j].s)
+                    if (!b.s.empty())
                     {
-                        fprintf(out, "\t%s", modification.rb[bt].b[j].s);
+                        fprintf(out, "\t%s", b.s.c_str());
                     }
                     fprintf(out, "\n");
                 }
@@ -326,15 +326,15 @@ static void read_ter_db_file(const char                                        *
             else if (kwnr >= 0 && kwnr < ebtsNR)
             {
                 /* this is bonded data: bonds, angles, dihedrals or impropers */
-                srenew(block->rb[kwnr].b, block->rb[kwnr].nb+1);
-                int n = 0;
-                int j;
-                for (j = 0; j < btsNiatoms[kwnr]; j++)
+                int         n = 0;
+                block->rb[kwnr].b.emplace_back();
+                SingleBond *newBond = &block->rb[kwnr].b.back();
+                for (int j = 0; j < btsNiatoms[kwnr]; j++)
                 {
                     int ni;
                     if (sscanf(line+n, "%s%n", buf, &ni) == 1)
                     {
-                        block->rb[kwnr].b[block->rb[kwnr].nb].a[j] = gmx_strdup(buf);
+                        newBond->a[j] = buf;
                     }
                     else
                     {
@@ -342,14 +342,9 @@ static void read_ter_db_file(const char                                        *
                     }
                     n += ni;
                 }
-                for (; j < MAXATOMLIST; j++)
-                {
-                    block->rb[kwnr].b[block->rb[kwnr].nb].a[j] = nullptr;
-                }
                 strcpy(buf, "");
                 sscanf(line+n, "%s", buf);
-                block->rb[kwnr].b[block->rb[kwnr].nb].s = gmx_strdup(buf);
-                block->rb[kwnr].nb++;
+                newBond->s = buf;
             }
             else
             {
