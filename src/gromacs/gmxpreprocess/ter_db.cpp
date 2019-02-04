@@ -51,7 +51,6 @@
 #include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/h_db.h"
 #include "gromacs/gmxpreprocess/notset.h"
-#include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -60,6 +59,7 @@
 #include "gromacs/utility/strdb.h"
 
 #include "hackblock.h"
+#include "resall.h"
 
 /* use bonded types definitions in hackblock.h */
 #define ekwRepl (ebtsNR+1)
