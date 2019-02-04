@@ -45,13 +45,13 @@ struct t_excls;
 struct MoleculePatches;
 struct t_nextnb;
 struct t_params;
-struct t_restp;
+struct PreprocessResidue;
 
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
-             t_params plist[], t_excls excls[], gmx::ArrayRef<MoleculePatches> amb,
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+             t_params plist[], t_excls excls[], gmx::ArrayRef<MoleculePatches> globalPatches,
              bool bAllowMissing);
 
 #endif
