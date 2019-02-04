@@ -51,7 +51,6 @@
 #include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
-#include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/vec.h"
@@ -61,6 +60,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "hackblock.h"
+#include "resall.h"
 
 #define DIHEDRAL_WAS_SET_IN_RTP 0
 static bool was_dihedral_set_in_rtp(const t_param *dih)
@@ -723,7 +723,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 }
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtp,
              t_params plist[], t_excls excls[], gmx::ArrayRef<AtomModificationBlock> amb,
              bool bAllowMissing)
 {
