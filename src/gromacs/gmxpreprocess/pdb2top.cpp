@@ -86,18 +86,14 @@
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
 
-static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
+static int missing_atoms(const PreprocessResidue *rp, int resind, t_atoms *at, int i0, int i)
 {
-    int      j, k, nmiss;
-    char    *name;
-    bool     bFound;
-
-    nmiss = 0;
-    for (j = 0; j < rp->natom; j++)
+    int nmiss = 0;
+    for (int j = 0; j < rp->natom(); j++)
     {
-        name   = *(rp->atomname[j]);
-        bFound = FALSE;
-        for (k = i0; k < i; k++)
+        const char *name   = *(rp->atomname[j]);
+        bool        bFound = false;
+        for (int k = i0; k < i; k++)
         {
             bFound = (bFound || (gmx_strcasecmp(*(at->atomname[k]), name) == 0));
         }
@@ -111,7 +107,7 @@ static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
             {
                 fprintf(stderr, "         You might need to add atom %s to the hydrogen database of building block %s\n"
                         "         in the file %s.hdb (see the manual)\n",
-                        name, *(at->resinfo[resind].rtp), rp->filebase);
+                        name, *(at->resinfo[resind].rtp), rp->filebase.c_str());
             }
             fprintf(stderr, "\n");
         }
@@ -443,7 +439,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 }
 
 static int name2type(t_atoms *at, int **cgnr,
-                     t_restp restp[], ResidueType *rt)
+                     gmx::ArrayRef<const PreprocessResidue> restp, ResidueType *rt)
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
     char       *name;
@@ -454,7 +450,7 @@ static int name2type(t_atoms *at, int **cgnr,
     nmissat = 0;
 
     resind = -1;
-    bNterm = FALSE;
+    bNterm = false;
     i0     = 0;
     snew(*cgnr, at->nr);
     qt     = 0;
@@ -466,9 +462,8 @@ static int name2type(t_atoms *at, int **cgnr,
         prevresind = resind;
         if (at->atom[i].resind != resind)
         {
-            bool bProt;
-            resind = at->atom[i].resind;
-            bProt  = rt->namedResidueHasType(*(at->resinfo[resind].name), "Protein");
+            int  resind = at->atom[i].resind;
+            bool bProt  = rt->namedResidueHasType(*(at->resinfo[resind].name), "Protein");
             bNterm = bProt && (resind == 0);
             if (resind > 0)
             {
@@ -481,7 +476,7 @@ static int name2type(t_atoms *at, int **cgnr,
             qt               = 0;
             prevcg           = cg;
             name             = *(at->atomname[i]);
-            j                = search_jtype(&restp[resind], name, bNterm);
+            j                = search_jtype(restp[resind], name, bNterm);
             at->atom[i].type = restp[resind].atom[j].type;
             at->atom[i].q    = restp[resind].atom[j].q;
             at->atom[i].m    = restp[resind].atom[j].m;
@@ -921,25 +916,22 @@ static void check_restp_type(const char *name, int t1, int t2)
     }
 }
 
-static void check_restp_types(t_restp *r0, t_restp *r1)
+static void check_restp_types(const PreprocessResidue &r0, const PreprocessResidue &r1)
 {
-    int i;
+    check_restp_type("all dihedrals", static_cast<int>(r0.bKeepAllGeneratedDihedrals), static_cast<int>(r1.bKeepAllGeneratedDihedrals));
+    check_restp_type("nrexcl", r0.nrexcl, r1.nrexcl);
+    check_restp_type("HH14", static_cast<int>(r0.bGenerateHH14Interactions), static_cast<int>(r1.bGenerateHH14Interactions));
+    check_restp_type("remove dihedrals", static_cast<int>(r0.bRemoveDihedralIfWithImproper), static_cast<int>(r1.bRemoveDihedralIfWithImproper));
 
-    check_restp_type("all dihedrals", static_cast<int>(r0->bKeepAllGeneratedDihedrals), static_cast<int>(r1->bKeepAllGeneratedDihedrals));
-    check_restp_type("nrexcl", r0->nrexcl, r1->nrexcl);
-    check_restp_type("HH14", static_cast<int>(r0->bGenerateHH14Interactions), static_cast<int>(r1->bGenerateHH14Interactions));
-    check_restp_type("remove dihedrals", static_cast<int>(r0->bRemoveDihedralIfWithImproper), static_cast<int>(r1->bRemoveDihedralIfWithImproper));
-
-    for (i = 0; i < ebtsNR; i++)
+    for (int i = 0; i < ebtsNR; i++)
     {
-        check_restp_type(btsNames[i], r0->rb[i].type, r1->rb[i].type);
+        check_restp_type(btsNames[i], r0.rb[i].type, r1.rb[i].type);
     }
 }
 
-static void add_atom_to_restp(t_restp *restp, int at_start, const HackBlock *hack)
+static void add_atom_to_restp(PreprocessResidue *restp, int at_start, const HackBlock *hack)
 {
     char        buf[STRLEN];
-    int         k;
     const char *Hnum = "123456";
 
     strcpy(buf, hack->nname.c_str());
@@ -948,45 +940,33 @@ static void add_atom_to_restp(t_restp *restp, int at_start, const HackBlock *hac
     {
         buf[strlen(buf)] = '-';
     }
-    /* make space */
-    restp->natom += hack->nr;
-    srenew(restp->atom,     restp->natom);
-    srenew(restp->atomname, restp->natom);
-    srenew(restp->cgnr,     restp->natom);
-    /* shift the rest */
-    for (k = restp->natom-1; k > at_start+hack->nr; k--)
-    {
-        restp->atom[k] =
-            restp->atom    [k - hack->nr];
-        restp->atomname[k] =
-            restp->atomname[k - hack->nr];
-        restp->cgnr[k] =
-            restp->cgnr    [k - hack->nr];
-    }
     /* now add them */
-    for (k = 0; k < hack->nr; k++)
+    for (int k = 0; k < hack->nr; k++)
     {
         /* set counter in atomname */
         if (hack->nr > 1)
         {
             buf[strlen(buf)-1] = Hnum[k];
         }
-        snew( restp->atomname[at_start+1+k], 1);
-        restp->atom     [at_start+1+k] = hack->atom.back();
-        *restp->atomname[at_start+1+k] = gmx_strdup(buf);
+        char **tmp;
+        snew(tmp, 1);
+        *tmp = gmx_strdup(buf);
+        restp->atomname.insert(restp->atomname.begin() + at_start + 1 + k, tmp);
+        restp->atom.insert(restp->atom.begin() + at_start + 1 + k, hack->atom.back());
         if (hack->cgnr != NOTSET)
         {
-            restp->cgnr   [at_start+1+k] = hack->cgnr;
+            restp->cgnr.insert(restp->cgnr.begin() + at_start + 1 + k, hack->cgnr);
         }
         else
         {
-            restp->cgnr   [at_start+1+k] = restp->cgnr[at_start];
+            restp->cgnr.insert(restp->cgnr.begin() + at_start + 1 + k, restp->cgnr[at_start]);
         }
     }
 }
 
-void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp,
-                        int nrtp, t_restp rtp[],
+void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb,
+                        std::vector<PreprocessResidue> *restp,
+                        gmx::ArrayRef<const PreprocessResidue> rtp,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
                         gmx::ArrayRef<AtomModificationBlock *> ntdb,
@@ -995,11 +975,10 @@ void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp
                         bool bAllowMissing)
 {
     char       *key;
-    t_restp    *res;
     bool        bRM;
 
     amb->resize(nres);
-    snew(*restp, nres);
+    restp->clear();
     /* first the termini */
     for (int i = 0; i < nterpairs; i++)
     {
@@ -1025,12 +1004,15 @@ void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp
          */
         key = *resinfo[i].rtp;
         snew(resinfo[i].rtp, 1);
-        *resinfo[i].rtp = search_rtp(key, nrtp, rtp);
-        res             = get_restp(*resinfo[i].rtp, nrtp, rtp);
-        copy_t_restp(res, &(*restp)[i]);
+        // TODO remove string duplication.
+        *resinfo[i].rtp = gmx_strdup(searchResidueDatabase(key, rtp).c_str());
+        auto               res             = getDatabaseEntry(*resinfo[i].rtp, rtp);
+        restp->push_back(PreprocessResidue());
+        PreprocessResidue *newentry = &restp->back();
+        copyPreprocessResidues(*res, newentry);
 
         /* Check that we do not have different bonded types in one molecule */
-        check_restp_types(&(*restp)[0], &(*restp)[i]);
+        check_restp_types(restp->front(), *newentry);
 
         int tern = -1;
         for (int j = 0; j < nterpairs && tern == -1; j++)
@@ -1084,24 +1066,24 @@ void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp
        we'll do this on one big dirty loop, so it won't make easy reading! */
     for (auto it = amb->begin(); it != amb->end(); it++)
     {
-        const int pos = std::distance(amb->begin(), it);
+        const int                      pos    = std::distance(amb->begin(), it);
+        PreprocessResidue             *posres = &restp->at(pos);
+        std::vector<char **>::iterator found;
         for (auto jt = it->hack.begin(); jt != it->hack.end(); jt++)
         {
             if (jt->nr != 0)
             {
                 /* find atom in restp */
-                int l;
-                for (l = 0; l < (*restp)[pos].natom; l++)
-                {
-                    if ( ( jt->oname.empty() &&
-                           strcmp(jt->a[0].c_str(), *(*restp)[pos].atomname[l]) == 0 ) ||
-                         ( !jt->oname.empty() &&
-                           strcmp(jt->oname.c_str(), *(*restp)[pos].atomname[l]) == 0 ) )
-                    {
-                        break;
-                    }
-                }
-                if (l == (*restp)[pos].natom)
+                found =
+                    std::find_if(posres->atomname.begin(),
+                                 posres->atomname.end(),
+                                 [&jt](char **name)
+                                 { return (jt->oname.empty() &&
+                                           jt->a[0] == *name) ||
+                                   (!jt->oname.empty() &&
+                                    jt->oname == *name); });
+
+                if (found == posres->atomname.end())
                 {
                     /* If we are doing an atom rename only, we don't need
                      * to generate a fatal error if the old name is not found
@@ -1125,39 +1107,33 @@ void get_hackblocks_rtp(std::vector<AtomModificationBlock> *amb, t_restp **restp
                 }
                 else
                 {
+                    int l = std::distance(posres->atomname.begin(), found);
                     switch (jt->type())
                     {
                         case HackType::Add:
                         {
                             /* we're adding: */
-                            add_atom_to_restp(&(*restp)[pos], l, &(*jt));
+                            add_atom_to_restp(posres, l, &(*jt));
                             break;
                         }
                         case HackType::Delete:
                         {   /* we're deleting */
-                            /* shift the rest */
-                            (*restp)[pos].natom--;
-                            for (int k = l; k < (*restp)[pos].natom; k++)
-                            {
-                                (*restp)[pos].atom    [k] = (*restp)[pos].atom    [k+1];
-                                (*restp)[pos].atomname[k] = (*restp)[pos].atomname[k+1];
-                                (*restp)[pos].cgnr    [k] = (*restp)[pos].cgnr    [k+1];
-                            }
-                            /* give back space */
-                            srenew((*restp)[pos].atom,     (*restp)[pos].natom);
-                            srenew((*restp)[pos].atomname, (*restp)[pos].natom);
-                            srenew((*restp)[pos].cgnr,     (*restp)[pos].natom);
+                            posres->atom.erase(posres->atom.begin() + l);
+                            posres->atomname.erase(posres->atomname.begin() + l);
+                            posres->cgnr.erase(posres->cgnr.begin() + l);
                             break;
                         }
                         case HackType::Replace:
                         {
                             /* we're replacing */
-                            snew( (*restp)[pos].atomname[l], 1);
-                            (*restp)[pos].atom[l]      =       jt->atom.back();
-                            *(*restp)[pos].atomname[l] = gmx_strdup(jt->nname.c_str());
+                            char **tmp = posres->atomname[l];
+                            srenew(tmp, 1);
+                            *tmp                 = gmx_strdup(jt->nname.c_str());
+                            posres->atom[l]      =       jt->atom.back();
+                            posres->atomname[l]  = tmp;
                             if (jt->cgnr != NOTSET)
                             {
-                                (*restp)[pos].cgnr   [l] = jt->cgnr;
+                                posres->cgnr[l] = jt->cgnr;
                             }
                             break;
                         }
@@ -1202,7 +1178,7 @@ static bool atomname_cmp_nr(const char *anm, const HackBlock *hack, int *nr)
 }
 
 static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
-                                          t_restp *rptr, const AtomModificationBlock &hbr,
+                                          PreprocessResidue *rptr, const AtomModificationBlock &hbr,
                                           bool bVerbose)
 {
     int      resnr;
@@ -1243,15 +1219,11 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
 
             /* This atom still has the old name, rename it */
             std::string newnm = jt1->nname.c_str();
-            int         k;
-            for (k = 0; k < rptr->natom; k++)
-            {
-                if (gmx::equalCaseInsensitive(newnm, *rptr->atomname[k]))
-                {
-                    break;
-                }
-            }
-            if (k == rptr->natom)
+            auto        found = std::find_if(rptr->atomname.begin(),
+                                             rptr->atomname.end(),
+                                             [&newnm](char** name)
+                                             { return gmx::equalCaseInsensitive(newnm, *name); });
+            if (found == rptr->atomname.end())
             {
                 /* The new name is not present in the rtp.
                  * We need to apply the replace also to the rtp entry.
@@ -1263,6 +1235,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                 bool bFoundInAdd = false;
                 for (auto jt2 = hbr.hack.begin(); jt2 != hbr.hack.end(); jt2++)
                 {
+                    int         k = std::distance(rptr->atomname.begin(), found);
                     std::string start_at;
                     if (jt2->type() == HackType::Add &&
                         atomname_cmp_nr(newnm.c_str(), &(*jt2), &anmnr))
@@ -1275,21 +1248,19 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                         {
                             start_at = gmx::formatString("%s%d", hbr.hack[k].nname.c_str(), anmnr-1);
                         }
-                        int start_nr;
-                        for (start_nr = 0; start_nr < rptr->natom; start_nr++)
-                        {
-                            if (gmx::equalCaseInsensitive(start_at, (*rptr->atomname[start_nr])))
-                            {
-                                break;
-                            }
-                        }
-                        if (start_nr == rptr->natom)
+                        auto found2 = std::find_if(rptr->atomname.begin(),
+                                                   rptr->atomname.end(),
+                                                   [&start_at](char **name)
+                                                   { return gmx::equalCaseInsensitive(start_at, *name); });
+                        if (found2 == rptr->atomname.end())
                         {
                             gmx_fatal(FARGS, "Could not find atom '%s' in residue building block '%s' to add atom '%s' to",
-                                      start_at.c_str(), rptr->resname, newnm.c_str());
+                                      start_at.c_str(), rptr->resname.c_str(), newnm.c_str());
                         }
                         /* We can add the atom after atom start_nr */
-                        add_atom_to_restp(rptr, start_nr, &(*jt1));
+                        add_atom_to_restp(rptr,
+                                          std::distance(rptr->atomname.begin(), found2),
+                                          &(*jt1));
 
                         bFoundInAdd = true;
                     }
@@ -1300,14 +1271,14 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                     gmx_fatal(FARGS, "Could not find an 'add' entry for atom named '%s' corresponding to the 'replace' entry from atom name '%s' to '%s' for tdb or hdb database of residue type '%s'",
                               newnm.c_str(),
                               jt1->oname.c_str(), jt1->nname.c_str(),
-                              rptr->resname);
+                              rptr->resname.c_str());
                 }
             }
 
             if (bVerbose)
             {
                 printf("Renaming atom '%s' in residue '%s' %d to '%s'\n",
-                       oldnm, rptr->resname, resnr, newnm.c_str());
+                       oldnm, rptr->resname.c_str(), resnr, newnm.c_str());
             }
             /* Rename the atom in pdba */
             snew(pdba->atomname[atind], 1);
@@ -1319,15 +1290,10 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
             /* This is a delete entry, check if this atom is present
              * in the rtp entry of this residue.
              */
-            int k;
-            for (k = 0; k < rptr->natom; k++)
-            {
-                if (gmx_strcasecmp(oldnm, *rptr->atomname[k]) == 0)
-                {
-                    break;
-                }
-            }
-            if (k == rptr->natom)
+            auto found3 = std::find_if(rptr->atomname.begin(), rptr->atomname.end(),
+                                       [&oldnm](char **name)
+                                       { return gmx::equalCaseInsensitive(oldnm, *name); });
+            if (found3 == rptr->atomname.end())
             {
                 /* This atom is not present in the rtp entry,
                  * delete is now from the input pdba.
@@ -1335,7 +1301,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                 if (bVerbose)
                 {
                     printf("Deleting atom '%s' in residue '%s' %d\n",
-                           oldnm, rptr->resname, resnr);
+                           oldnm, rptr->resname.c_str(), resnr);
                 }
                 /* We should free the atom name,
                  * but it might be used multiple times in the symtab.
@@ -1356,26 +1322,19 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
     return bDeleted;
 }
 
-void match_atomnames_with_rtp(t_restp restp[], gmx::ArrayRef<AtomModificationBlock> amb,
+void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue> restp,
+                              gmx::ArrayRef<AtomModificationBlock> amb,
                               t_atoms *pdba, rvec *x,
                               bool bVerbose)
 {
-    int          i, j;
-    char        *oldnm;
-    t_restp     *rptr;
-
-    for (i = 0; i < pdba->nr; i++)
+    for (int i = 0; i < pdba->nr; i++)
     {
-        oldnm = *pdba->atomname[i];
-        rptr  = &restp[pdba->atom[i].resind];
-        for (j = 0; (j < rptr->natom); j++)
-        {
-            if (gmx_strcasecmp(oldnm, *(rptr->atomname[j])) == 0)
-            {
-                break;
-            }
-        }
-        if (j == rptr->natom)
+        const char        *oldnm = *pdba->atomname[i];
+        PreprocessResidue *rptr  = &restp[pdba->atom[i].resind];
+        auto               found = std::find_if(rptr->atomname.begin(), rptr->atomname.end(),
+                                                [&oldnm](char **name)
+                                                { return gmx::equalCaseInsensitive(oldnm, *name); });
+        if (found == rptr->atomname.end())
         {
             /* Not found yet, check if we have to rename this atom */
             if (match_atomnames_with_rtp_atom(pdba, x, i,
@@ -1390,7 +1349,7 @@ void match_atomnames_with_rtp(t_restp restp[], gmx::ArrayRef<AtomModificationBlo
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
+static void gen_cmap(t_params *psb, gmx::ArrayRef<const PreprocessResidue> restp, t_atoms *atoms)
 {
     int         residx, i, j, k;
     const char *ptr;
@@ -1509,8 +1468,8 @@ scrub_charge_groups(int *cgnr, int natoms)
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms, rvec **x, gpp_atomtype *atype, t_symtab *tab,
-             int nrtp, t_restp rtp[],
-             t_restp *restp, gmx::ArrayRef<AtomModificationBlock> amb,
+             gmx::ArrayRef<const PreprocessResidue> rtp,
+             gmx::ArrayRef<PreprocessResidue> restp, gmx::ArrayRef<AtomModificationBlock> amb,
              bool bAllowMissing,
              bool bVsites, bool bVsiteAromatics,
              const char *ffdir,
@@ -1577,7 +1536,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
         }
         /* determine which atoms will be vsites and add dummy masses
            also renumber atom numbers in plist[0..F_NRE]! */
-        do_vsites(nrtp, rtp, atype, atoms, tab, x, plist,
+        do_vsites(rtp, atype, atoms, tab, x, plist,
                   &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir);
     }
 
@@ -1657,7 +1616,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
 
     /* cleaning up */
     freeModificationBlock(amb);
-    free_t_restp(atoms->nres, &restp);
+    freePreprocessResidue(restp);
 
     /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
     sfree(cgnr);
