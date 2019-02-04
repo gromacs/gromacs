@@ -187,10 +187,16 @@ struct extents_analyse<R, E0, StaticExtents...> {
     {
         return (r == R) ? E0 : next_extents_analyse::static_extent(r);
     }
+
+    //! Returns the extent with the first dimension sliced off
+    constexpr auto sliced_extents() const noexcept
+    {
+        return next;
+    }
 };
 
 /*! \libinternal \brief Enable querying extent of specific rank by splitting
- * a static extent off the variadic template arguments.
+ * a dynamic extent off the variadic template arguments.
  */
 template< int R, std::ptrdiff_t ... StaticExtents >
 struct extents_analyse<R, dynamic_extent, StaticExtents...> {
@@ -258,6 +264,12 @@ struct extents_analyse<R, dynamic_extent, StaticExtents...> {
     {
         return (r == R) ? dynamic_extent : next_extents_analyse::static_extent(r);
     }
+
+    //! Returns the extent with the first dimension sliced off
+    constexpr auto sliced_extents() const noexcept
+    {
+        return next;
+    }
 };
 
 /*! \libinternal \brief Specialisation for rank 0 extents analysis.
@@ -298,8 +310,13 @@ struct extents_analyse<0> {
     }
 
 };
-}   // namespace detail
 
+template< std::ptrdiff_t E0, std::ptrdiff_t ... StaticExtents >
+struct sliced_extents
+{
+    using type = extents<StaticExtents...>;
+};
+}   // namespace detail
 
 /*! \libinternal \brief Multidimensional extents with static and dynamic dimensions.
  *
@@ -388,7 +405,12 @@ class extents
          */
         constexpr index_type extent(std::size_t k) const noexcept
         { return impl.extent(rank()-k); }
+        //! Returns the extent with the first dimension sliced off
+        constexpr auto sliced_extents() const noexcept
+        { return typename detail::sliced_extents<StaticExtents...>::type(impl.sliced_extents()); }
+
     private:
+        extents(extents_analyse_t o) : impl(o) {}
         //! For copy assignment, extents are friends of extents.
         template< std::ptrdiff_t... > friend class extents;
         //! The implementation class.
