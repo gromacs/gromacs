@@ -75,6 +75,17 @@ MoleculePatchType MoleculePatch::type() const
     }
 }
 
+PreprocessResidue::PreprocessResidue()
+{
+    for (int i = 0; i < ebtsNR; i++)
+    {
+        rb[i].nb   = 0;
+        rb[i].type = -1;
+        rb[i].b    = nullptr;
+    }
+}
+
+
 static void free_t_bonded(t_rbonded *rb)
 {
     int i;
@@ -99,27 +110,20 @@ static void free_t_bondeds(t_rbondeds *rbs)
     rbs->nb = 0;
 }
 
-void free_t_restp(int nrtp, t_restp **rtp)
+void freePreprocessResidue(gmx::ArrayRef<PreprocessResidue> rtp)
 {
-    int i, j;
-
-    for (i = 0; i < nrtp; i++)
+    for (auto it = rtp.begin(); it != rtp.end(); it++)
     {
-        sfree((*rtp)[i].resname);
-        sfree((*rtp)[i].atom);
-        for (j = 0; j < (*rtp)[i].natom; j++)
+        for (auto jt = it->atomname.begin(); jt != it->atomname.end(); jt++)
         {
-            sfree(*(*rtp)[i].atomname[j]);
-            sfree((*rtp)[i].atomname[j]);
+            sfree(*(*jt));
+            sfree(*jt);
         }
-        sfree((*rtp)[i].atomname);
-        sfree((*rtp)[i].cgnr);
-        for (j = 0; j < ebtsNR; j++)
+        for (int j = 0; j < ebtsNR; j++)
         {
-            free_t_bondeds(&(*rtp)[i].rb[j]);
+            free_t_bondeds(&it->rb[j]);
         }
     }
-    sfree(*rtp);
 }
 
 void freeModificationBlock(gmx::ArrayRef<MoleculePatchDatabase> globalPatches)
@@ -299,35 +303,34 @@ bool merge_t_bondeds(gmx::ArrayRef<const t_rbondeds> s,
     return bBondsRemoved;
 }
 
-void copy_t_restp(t_restp *s, t_restp *d)
+void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d)
 {
-    int i;
-
-    *d         = *s;
-    d->resname = safe_strdup(s->resname);
-    snew(d->atom, s->natom);
-    for (i = 0; i < s->natom; i++)
+    *d         = s;
+    d->atom.clear();
+    for (const auto &a : s.atom)
     {
-        d->atom[i] = s->atom[i];
+        d->atom.push_back(a);
     }
-    snew(d->atomname, s->natom);
-    for (i = 0; i < s->natom; i++)
+    d->atomname.clear();
+    for (const auto &a : s.atomname)
     {
-        snew(d->atomname[i], 1);
-        *d->atomname[i] = safe_strdup(*s->atomname[i]);
+        char **tmp = nullptr;
+        snew(tmp, 1);
+        *tmp = safe_strdup(*a);
+        d->atomname.push_back(tmp);
     }
-    snew(d->cgnr, s->natom);
-    for (i = 0; i < s->natom; i++)
+    d->cgnr.clear();
+    for (const auto &c : s.cgnr)
     {
-        d->cgnr[i] = s->cgnr[i];
+        d->cgnr.push_back(c);
     }
-    for (i = 0; i < ebtsNR; i++)
+    for (int i = 0; i < ebtsNR; i++)
     {
-        d->rb[i].type = s->rb[i].type;
+        d->rb[i].type = s.rb[i].type;
         d->rb[i].nb   = 0;
         d->rb[i].b    = nullptr;
     }
-    merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
+    merge_t_bondeds(s.rb, d->rb, FALSE, FALSE);
 }
 
 void mergeAtomModifications(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)

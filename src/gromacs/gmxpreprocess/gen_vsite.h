@@ -39,17 +39,18 @@
 #define GMX_GMXPREPROCESS_GEN_VSITE_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct gpp_atomtype;
 struct t_atoms;
 struct t_params;
-struct t_restp;
+struct PreprocessResidue;
 struct t_symtab;
 
 /* stuff for pdb2gmx */
 
-void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype *atype,
+void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *atype,
                t_atoms *at, t_symtab *symtab, rvec *x[],
                t_params plist[], int *dummy_type[], int *cgnr[],
                real mHmult, bool bVSiteAromatics,
