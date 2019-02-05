@@ -1505,7 +1505,7 @@ void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
     {
         nbat->natoms_local = nbat->numAtoms();
     }
-    if (ddZone == static_cast<int>(nbs->grid.size()) - 1)
+    if (ddZone == gmx::ssize(nbs->grid) - 1)
     {
         /* We are done setting up all grids, we can resize the force buffers */
         nbat->resizeForceBuffers();

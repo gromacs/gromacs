@@ -1376,7 +1376,7 @@ void register_external_pull_potential(struct pull_t *pull,
     GMX_RELEASE_ASSERT(pull != nullptr, "register_external_pull_potential called before init_pull");
     GMX_RELEASE_ASSERT(provider != nullptr, "register_external_pull_potential called with NULL as provider name");
 
-    if (coord_index < 0 || coord_index >= static_cast<int>(pull->coord.size()))
+    if (coord_index < 0 || coord_index >= gmx::ssize(pull->coord))
     {
         gmx_fatal(FARGS, "Module '%s' attempted to register an external potential for pull coordinate %d which is out of the pull coordinate range %d - %zu\n",
                   provider, coord_index + 1, 1, pull->coord.size());
@@ -1453,7 +1453,7 @@ void apply_external_pull_coord_force(struct pull_t        *pull,
 {
     pull_coord_work_t *pcrd;
 
-    GMX_ASSERT(coord_index >= 0 && coord_index < static_cast<int>(pull->coord.size()), "apply_external_pull_coord_force called with coord_index out of range");
+    GMX_ASSERT(coord_index >= 0 && coord_index < gmx::ssize(pull->coord), "apply_external_pull_coord_force called with coord_index out of range");
 
     if (pull->comm.bParticipate)
     {

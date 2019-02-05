@@ -1436,7 +1436,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t *nbat,
                 int i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
 
                 nfptr = 0;
-                for (int out = 1; out < static_cast<gmx::index>(nbat->out.size()); out++)
+                for (int out = 1; out < gmx::ssize(nbat->out); out++)
                 {
                     if (bitmask_is_set(flags->flag[b], out))
                     {

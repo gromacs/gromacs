@@ -489,7 +489,7 @@ static void switch_to_stage1(pme_load_balancing_t *pme_lb)
      * maxRelativeSlowdownAccepted times the fastest setup.
      */
     pme_lb->start = pme_lb->lower_limit;
-    while (pme_lb->start + 1 < static_cast<int>(pme_lb->setup.size()) &&
+    while (pme_lb->start + 1 < gmx::ssize(pme_lb->setup) &&
            (pme_lb->setup[pme_lb->start].count == 0 ||
             pme_lb->setup[pme_lb->start].cycles >
             pme_lb->setup[pme_lb->fastest].cycles*maxRelativeSlowdownAccepted))
@@ -647,7 +647,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
         do
         {
-            if (pme_lb->cur+1 < static_cast<int>(pme_lb->setup.size()))
+            if (pme_lb->cur+1 < gmx::ssize(pme_lb->setup))
             {
                 /* We had already generated the next setup */
                 OK = TRUE;

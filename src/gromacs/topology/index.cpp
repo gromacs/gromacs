@@ -628,7 +628,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 
             /* Create a Non-Protein group */
             aid = mk_aid(atoms, restype, "Protein", FALSE);
-            if ((!aid.empty()) && (static_cast<int>(aid.size()) < atoms->nr))
+            if ((!aid.empty()) && (gmx::ssize(aid) < atoms->nr))
             {
                 add_grp(gb, gn, aid, "non-Protein");
             }
@@ -642,7 +642,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 
             /* Solvent, create a negated group too */
             aid = mk_aid(atoms, restype, "Water", FALSE);
-            if ((!aid.empty()) && (static_cast<int>(aid.size()) < atoms->nr))
+            if ((!aid.empty()) && (gmx::ssize(aid) < atoms->nr))
             {
                 add_grp(gb, gn, aid, "non-Water");
             }

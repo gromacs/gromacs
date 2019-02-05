@@ -633,7 +633,7 @@ AnalysisDataStorageFrameData::finishFrame(bool bMultipoint)
     status_ = eFinished;
     if (!bMultipoint)
     {
-        GMX_RELEASE_ASSERT(static_cast<int>(pointSets_.size()) == baseData().dataSetCount(),
+        GMX_RELEASE_ASSERT(ssize(pointSets_) == baseData().dataSetCount(),
                            "Point sets created for non-multipoint data");
         values_ = builder_->values_;
         builder_->clearValues();

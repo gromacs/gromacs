@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1099,7 +1099,7 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                 {
                     continue;
                 }
-                const int cellSize = static_cast<int>(search_.cells_[ci].size());
+                const int cellSize = ssize(search_.cells_[ci]);
                 for (; cai < cellSize; ++cai)
                 {
                     const int i = search_.cells_[ci][cai];

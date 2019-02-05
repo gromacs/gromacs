@@ -162,7 +162,7 @@ int ResidueType::indexFromResidueName(const std::string &residueName) const
 
 const std::string ResidueType::nameFromResidueIndex(int index) const
 {
-    if (index >= 0 && index < static_cast<int>(impl_->entry.size()))
+    if (index >= 0 && index < gmx::ssize(impl_->entry))
     {
         return impl_->entry[index].residueName;
     }
