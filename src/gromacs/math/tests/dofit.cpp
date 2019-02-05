@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,9 @@ namespace
 
 using gmx::RVec;
 using gmx::test::defaultRealTolerance;
+using gmx::findStructureSimilarity;
+using gmx::RMSD;
+using gmx::RhoMeasure;
 class StructureSimilarityTest : public ::testing::Test
 {
     protected:
@@ -70,32 +73,32 @@ class StructureSimilarityTest : public ::testing::Test
 
 TEST_F(StructureSimilarityTest, StructureComparedToSelfHasZeroRMSD)
 {
-    EXPECT_REAL_EQ_TOL(0., rmsdev(c_nAtoms, m_, x1_, x1_), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(0., findStructureSimilarity<RMSD>(c_nAtoms, m_, x1_, x1_), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, StructureComparedToSelfHasZeroRho)
 {
-    EXPECT_REAL_EQ_TOL(0., rhodev(c_nAtoms, m_, x1_, x1_), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(0., findStructureSimilarity<RhoMeasure>(c_nAtoms, m_, x1_, x1_), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRMSD)
 {
-    EXPECT_REAL_EQ_TOL(sqrt(2.0), rmsdev(c_nAtoms, m_, x1_, x2_), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(sqrt(2.0), findStructureSimilarity<RMSD>(c_nAtoms, m_, x1_, x2_), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRho)
 {
-    EXPECT_REAL_EQ_TOL(2., rhodev(c_nAtoms, m_, x1_, x2_), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(2., findStructureSimilarity<RhoMeasure>(c_nAtoms, m_, x1_, x2_), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRMSDWithIndex)
 {
-    EXPECT_REAL_EQ_TOL(sqrt(2.0), rmsdev_ind(index_.size(), index_.data(), m_, x1_, x2_), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(sqrt(2.0), findStructureSimilarity<RMSD>(index_.size(), m_, x1_, x2_, index_.data()), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRhoWidthIndex)
 {
-    EXPECT_REAL_EQ_TOL(2., rhodev_ind(index_.size(), index_.data(), m_, x1_, x2_), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(2., findStructureSimilarity<RhoMeasure>(index_.size(), m_, x1_, x2_, index_.data()), defaultRealTolerance());
 }
 
 } // namespace

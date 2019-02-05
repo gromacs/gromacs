@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -610,9 +610,13 @@ int gmx_rms(int argc, char *argv[])
     }
 
     /* start looping over frames: */
-    int tel_mat = 0;
-    int teller  = 0;
-    int frame   = 0;
+    int        tel_mat           = 0;
+    int        teller            = 0;
+    int        frame             = 0;
+    const auto similarityMeasure = (ewhat == ewRMSD) ?
+        gmx::findStructureSimilarity<gmx::RMSD> :
+        gmx::findStructureSimilarity<gmx::RhoMeasure>;
+
     do
     {
         if (bPBC)
@@ -676,14 +680,14 @@ int gmx_rms(int argc, char *argv[])
             for (j = 0; (j < nrms); j++)
             {
                 rls[j][teller] =
-                    calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xp);
+                    similarityMeasure(irms[j], w_rms, x, xp, ind_rms[j]);
             }
             if (bNorm)
             {
                 for (j = 0; (j < irms[0]); j++)
                 {
                     rlsnorm[j] +=
-                        calc_similar_ind(ewhat != ewRMSD, 1, &(ind_rms[0][j]), w_rms, x, xp);
+                        similarityMeasure(1, w_rms, x, xp, &(ind_rms[0][j]));
                 }
             }
 
@@ -698,7 +702,7 @@ int gmx_rms(int argc, char *argv[])
                 for (j = 0; j < nrms; j++)
                 {
                     rlsm[j][teller] =
-                        calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xm);
+                        similarityMeasure(irms[j], w_rms, x, xm, ind_rms[j]);
                 }
             }
             time[teller] = output_env_conv_time(oenv, t);
@@ -903,8 +907,8 @@ int gmx_rms(int argc, char *argv[])
                     if (bFile2 || (i < j))
                     {
                         rmsd_mat[i][j] =
-                            calc_similar_ind(ewhat != ewRMSD, irms[0], ind_rms_m,
-                                             w_rms_m, mat_x[i], mat_x2_j);
+                            similarityMeasure(irms[0], w_rms_m, mat_x[i],
+                                              mat_x2_j, ind_rms_m);
                         if (rmsd_mat[i][j] > rmsd_max)
                         {
                             rmsd_max = rmsd_mat[i][j];
