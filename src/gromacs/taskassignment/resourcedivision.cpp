@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -420,7 +420,7 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
 
     /* nonbondedOnGpu might be false e.g. because this simulation uses
      * the group scheme, or is a rerun with energy groups. */
-    ngpu = (nonbondedOnGpu ? static_cast<int>(gpuIdsToUse.size()) : 0);
+    ngpu = (nonbondedOnGpu ? gmx::ssize(gpuIdsToUse) : 0);
 
     if (inputrec->cutoff_scheme == ecutsGROUP)
     {

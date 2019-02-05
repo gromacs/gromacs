@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,7 +166,7 @@ AnalysisDataLifetimeModule::pointsAdded(const AnalysisDataPointSetRef &points)
     // This assumption is strictly not necessary, but this is how the
     // framework works currently, and makes the code below simpler.
     GMX_ASSERT(points.firstColumn() == 0
-               && points.lastColumn() == static_cast<int>(impl_->currentLifetimes_[dataSet].size()) - 1,
+               && points.lastColumn() == ssize(impl_->currentLifetimes_[dataSet]) - 1,
                "Point set should cover all columns");
     for (int i = 0; i < points.columnCount(); ++i)
     {

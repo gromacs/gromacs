@@ -603,7 +603,7 @@ std::string EnumOptionStorage::formatExtraDescription() const
 
 std::string EnumOptionStorage::formatSingleValue(const int &value) const
 {
-    if (value < 0 || value >= static_cast<int>(allowed_.size()))
+    if (value < 0 || value >= ssize(allowed_))
     {
         return std::string();
     }

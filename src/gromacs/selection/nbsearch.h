@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,7 +138,7 @@ class AnalysisNeighborhoodPositions
         AnalysisNeighborhoodPositions &
         exclusionIds(ArrayRef<const int> ids)
         {
-            GMX_ASSERT(static_cast<int>(ids.size()) == count_,
+            GMX_ASSERT(ssize(ids) == count_,
                        "Exclusion id array should match the number of positions");
             exclusionIds_ = ids.data();
             return *this;

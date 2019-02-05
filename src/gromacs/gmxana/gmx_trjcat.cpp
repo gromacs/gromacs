@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -553,7 +553,7 @@ int gmx_trjcat(int argc, char *argv[])
         gmx_fatal(FARGS, "No input files!" );
     }
 
-    if (bDeMux && static_cast<int>(inFiles.size()) != nset)
+    if (bDeMux && ssize(inFiles) != nset)
     {
         gmx_fatal(FARGS, "You have specified %td files and %d entries in the demux table", inFiles.size(), nset);
     }
@@ -582,14 +582,14 @@ int gmx_trjcat(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Don't know what to do with more than 1 output file if  not demultiplexing");
     }
-    else if (bDeMux && static_cast<int>(outFiles.size()) != nset && outFiles.size() != 1)
+    else if (bDeMux && ssize(outFiles) != nset && outFiles.size() != 1)
     {
         gmx_fatal(FARGS, "Number of output files should be 1 or %d (#input files), not %td", nset, outFiles.size());
     }
     if (bDeMux)
     {
         auto outFilesDemux = gmx::copyOf(outFiles);
-        if (static_cast<int>(outFilesDemux.size()) != nset)
+        if (gmx::ssize(outFilesDemux) != nset)
         {
             std::string name = outFilesDemux[0];
             outFilesDemux.resize(nset);

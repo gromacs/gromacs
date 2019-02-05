@@ -200,7 +200,7 @@ class AnglePositionIterator
         //! Returns the currently active selection.
         const Selection &currentSelection() const
         {
-            GMX_ASSERT(currentSelection_ < static_cast<int>(selections_.size()),
+            GMX_ASSERT(currentSelection_ < ssize(selections_),
                        "Accessing an invalid selection");
             return selections_[currentSelection_];
         }

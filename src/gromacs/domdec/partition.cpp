@@ -2112,7 +2112,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                     cg0 = cg1 - cd->ind[p-1].nrecv[zone];
                 }
 
-                const int numThreads = static_cast<int>(comm->dth.size());
+                const int numThreads = gmx::ssize(comm->dth);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
                 for (int th = 0; th < numThreads; th++)
                 {
