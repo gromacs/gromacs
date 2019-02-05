@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -214,8 +214,8 @@ double calcSchlitterEntropy(gmx::ArrayRef<const real> eigval,
     double evcorr = NANO*NANO*AMU;
     if (debug)
     {
-        fprintf(debug, "n = %d, kteh = %g evcorr = %g\n",
-                static_cast<int>(eigval.size()), kteh, evcorr);
+        fprintf(debug, "n = %ld, kteh = %g evcorr = %g\n",
+                ssize(eigval), kteh, evcorr);
     }
     double deter = 0;
     for (gmx::index i = nskip; i < eigval.size(); i++)

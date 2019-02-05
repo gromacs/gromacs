@@ -3261,7 +3261,7 @@ static void setBufferFlags(const NbnxnPairlistCpu &nbl,
                            gmx_bitmask_t          *gridj_flag,
                            const int               th)
 {
-    if (static_cast<gmx::index>(nbl.cj.size()) > ncj_old_j)
+    if (gmx::ssize(nbl.cj) > ncj_old_j)
     {
         int cbFirst = nbl.cj[ncj_old_j].cj >> gridj_flag_shift;
         int cbLast  = nbl.cj.back().cj >> gridj_flag_shift;
@@ -3945,7 +3945,7 @@ static void rebalanceSimpleLists(int                                  numLists,
 
             if (cjGlobal + src->ncjInUse > cjStart)
             {
-                for (gmx::index i = 0; i < static_cast<gmx::index>(src->ci.size()) && cjGlobal < cjEnd; i++)
+                for (gmx::index i = 0; i < gmx::ssize(src->ci) && cjGlobal < cjEnd; i++)
                 {
                     const nbnxn_ci_t *srcCi = &src->ci[i];
                     int               ncj   = srcCi->cj_ind_end - srcCi->cj_ind_start;

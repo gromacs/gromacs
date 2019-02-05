@@ -665,7 +665,7 @@ static bool do_em_step(const t_commrec *cr,
 
             /* OpenMP does not supported unsigned loop variables */
 #pragma omp for schedule(static) nowait
-            for (int i = 0; i < static_cast<int>(s2->cg_gl.size()); i++)
+            for (int i = 0; i < gmx::ssize(s2->cg_gl); i++)
             {
                 s2->cg_gl[i] = s1->cg_gl[i];
             }
@@ -2953,8 +2953,8 @@ Integrator::do_nm()
         if (bIsMaster && mdrunOptions.verbose)
         {
             fprintf(stderr, "\rFinished step %d out of %d",
-                    static_cast<int>(std::min(atom+nnodes, atom_index.size())),
-                    static_cast<int>(atom_index.size()));
+                    std::min<int>(atom+nnodes, atom_index.size()),
+                    ssize(atom_index));
             fflush(stderr);
         }
     }

@@ -410,7 +410,7 @@ class EnumIndexStore : public IOptionValueStore<int>
             }
         }
 
-        int valueCount() override { return static_cast<int>(intStore_.size()); }
+        int valueCount() override { return ssize(intStore_); }
         ArrayRef<int> values() override { return intStore_; }
         void clear() override
         {

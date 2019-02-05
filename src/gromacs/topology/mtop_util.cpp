@@ -412,9 +412,9 @@ gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t    iloop,
     }
 
     iloop->mblock++;
-    if (iloop->mblock >= static_cast<int>(iloop->mtop->molblock.size()))
+    if (iloop->mblock >= gmx::ssize(iloop->mtop->molblock))
     {
-        if (iloop->mblock == static_cast<int>(iloop->mtop->molblock.size()) &&
+        if (iloop->mblock == gmx::ssize(iloop->mtop->molblock) &&
             iloop->mtop->bIntermolecularInteractions)
         {
             *nmol      = 1;
