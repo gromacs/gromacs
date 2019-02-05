@@ -42,6 +42,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/math/multidimarray.h"
+#include "gromacs/mdspan/extensions.h"
 
 #include <string>
 #include <vector>
@@ -260,6 +261,58 @@ TEST_F(MultiDimArrayTest, staticMultiDimArrayFromArray)
     EXPECT_EQ(arr(2, 1), 8);
     EXPECT_EQ(arr(2, 2), 9);
 }
+
+TEST_F(MultiDimArrayTest, viewBegin)
+{
+    static_array_type::view_type view = staticArray_;
+    *begin(view) = testNumber_;
+    EXPECT_EQ(*begin(view), testNumber_);
+}
+
+TEST_F(MultiDimArrayTest, viewEnd)
+{
+    static_array_type::view_type view = staticArray_;
+    auto x = end(view);
+    --x;
+    view(2, 2) = testNumber_;
+    EXPECT_EQ(*x, testNumber_);
+}
+
+TEST_F(MultiDimArrayTest, constViewConstBegin)
+{
+    staticArray_(0, 0) = testNumber_;
+    const static_array_type::const_view_type view = staticArray_;
+    // must not compile: *begin(view) = testNumber_;
+    EXPECT_EQ(*begin(view), testNumber_);
+}
+
+TEST_F(MultiDimArrayTest, constViewConstEnd)
+{
+    staticArray_(2, 2) = testNumber_;
+    const static_array_type::const_view_type view = staticArray_;
+    auto x = end(view);
+    --x;
+    EXPECT_EQ(*x, testNumber_);
+}
+
+TEST_F(MultiDimArrayTest, implicitConversionToView)
+{
+    static_array_type::view_type view = staticArray_;
+    view(2, 2) = testNumber_;
+    EXPECT_EQ(testNumber_, view(2, 2));
+}
+
+TEST_F(MultiDimArrayTest, implicitConversionToConstView)
+{
+    static_array_type::const_view_type view = staticArray_;
+    // the following must not compile:
+    // view(2, 2) = testNumber_;
+    for (const auto &x : view)
+    {
+        EXPECT_EQ(testNumber_ - 1, x);
+    }
+}
+
 
 } // namespace
 
