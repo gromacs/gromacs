@@ -459,6 +459,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
         {
             add_grp(gb, gn, aid, constructing_data[i].group_name);
         }
+        aid.clear();
     }
 
     if (bASK)
