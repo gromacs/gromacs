@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,26 +71,24 @@
 struct gmx_ana_indexgrps_t
 {
     //! Initializes an empty set of groups.
-    explicit gmx_ana_indexgrps_t(int nr) : nr(nr), g(nullptr)
+    explicit gmx_ana_indexgrps_t(int nr)
+        : g(nr)
     {
         names.reserve(nr);
-        snew(g, nr);
     }
     ~gmx_ana_indexgrps_t()
     {
-        for (int i = 0; i < nr; ++i)
+        for (auto &indexGrp : g)
         {
-            gmx_ana_index_deinit(&g[i]);
+            gmx_ana_index_deinit(&indexGrp);
         }
-        sfree(g);
     }
 
-    /** Number of index groups. */
-    int                       nr;
+
     /** Array of index groups. */
-    gmx_ana_index_t          *g;
+    std::vector<gmx_ana_index_t> g;
     /** Group names. */
-    std::vector<std::string>  names;
+    std::vector<std::string>     names;
 };
 
 /*!
@@ -179,32 +177,6 @@ gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g)
     delete g;
 }
 
-/*!
- * \param[out] g     Index group structure.
- * \returns    true if \p g is empty, i.e., has 0 index groups.
- */
-bool
-gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g)
-{
-    return g->nr == 0;
-}
-
-/*!
- * \param[in]  g     Index groups structure.
- * \param[in]  n     Index group number to get.
- * \returns    Pointer to the \p n'th index group in \p g.
- *
- * The returned pointer should not be freed.
- */
-gmx_ana_index_t *
-gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n)
-{
-    if (n < 0 || n >= g->nr)
-    {
-        return nullptr;
-    }
-    return &g->g[n];
-}
 
 /*!
  * \param[out] dest     Output structure.
@@ -218,7 +190,7 @@ gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
                           gmx_ana_indexgrps_t *src, int n)
 {
     destName->clear();
-    if (n < 0 || n >= src->nr)
+    if (n < 0 || n >= gmx::index(src->g.size()))
     {
         dest->isize = 0;
         return false;
@@ -250,12 +222,12 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
     const char **names;
 
     destName->clear();
-    snew(names, src->nr);
-    for (int i = 0; i < src->nr; ++i)
+    snew(names, src->g.size());
+    for (size_t i = 0; i < src->g.size(); ++i)
     {
         names[i] = src->names[i].c_str();
     }
-    int n = find_group(const_cast<char *>(name), src->nr,
+    int n = find_group(const_cast<char *>(name), src->g.size(),
                        const_cast<char **>(names));
     sfree(names);
     if (n < 0)
@@ -276,7 +248,7 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
 void
 gmx_ana_indexgrps_print(gmx::TextWriter *writer, gmx_ana_indexgrps_t *g, int maxn)
 {
-    for (int i = 0; i < g->nr; ++i)
+    for (int i = 0; i < gmx::ssize(g->g); ++i)
     {
         writer->writeString(gmx::formatString(" Group %2d \"%s\" ",
                                               i, g->names[i].c_str()));
