@@ -612,7 +612,7 @@ SelectionCollection::setDebugLevel(int debugLevel)
 
 
 void
-SelectionCollection::setTopology(gmx_mtop_t *top, int natoms)
+SelectionCollection::setTopology(const gmx_mtop_t *top, int natoms)
 {
     GMX_RELEASE_ASSERT(natoms > 0 || top != nullptr,
                        "The number of atoms must be given if there is no topology");
@@ -942,5 +942,28 @@ SelectionCollection::printXvgrInfo(FILE *out) const
     }
     std::fprintf(out, "#\n");
 }
+
+std::unique_ptr<SelectionCollection>
+SelectionCollection::clone() const
+{
+    auto newCollection = std::make_unique<SelectionCollection>();
+
+    newCollection->setReferencePosType(impl_->rpost_.empty() ?
+                                       PositionCalculationCollection::typeEnumValues[0] :
+                                       impl_->rpost_.c_str());
+    newCollection->setOutputPosType(impl_->spost_.empty() ?
+                                    PositionCalculationCollection::typeEnumValues[0] :
+                                    impl_->spost_.c_str());
+
+    for (auto &selectionOption : impl_->sc_.sel)
+    {
+        newCollection->parseFromString(selectionOption->selectionText());
+    }
+    newCollection->setTopology(impl_->sc_.top, 0);
+    newCollection->setIndexGroups(impl_->grps_);
+    newCollection->compile();
+    return newCollection;
+}
+
 
 } // namespace gmx
