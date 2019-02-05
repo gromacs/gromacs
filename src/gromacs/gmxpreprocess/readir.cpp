@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1530,12 +1530,6 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     {
         expand->nstexpanded = fep->nstdhdl;
         /* if you don't specify nstexpanded when doing expanded ensemble free energy calcs, it is set to nstdhdl */
-    }
-    if ((expand->nstexpanded < 0) && ir->bSimTemp)
-    {
-        expand->nstexpanded = 2*static_cast<int>(ir->opts.tau_t[0]/ir->delta_t);
-        /* if you don't specify nstexpanded when doing expanded ensemble simulated tempering, it is set to
-           2*tau_t just to be careful so it's not to frequent  */
     }
 }
 
@@ -3685,6 +3679,16 @@ void do_index(const char* mdparin, const char *ndx,
         gmx_fatal(FARGS, "Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
     }
 
+    /* final check before going out of scope if simulated tempering variables
+     * need to be set to default values.
+     */
+    if ((ir->expandedvals->nstexpanded < 0) && ir->bSimTemp)
+    {
+        ir->expandedvals->nstexpanded = 2*static_cast<int>(ir->opts.tau_t[0]/ir->delta_t);
+        warning(wi, "the value for nstexpanded was not specified for expanded ensemble simulated "
+                "tempering. It is set to 2*tau_t (%3.8f) by default, but it is recommended to set "
+                "it to an explicit value!");
+    }
     for (i = 0; (i < grps->nr); i++)
     {
         sfree(gnames[i]);
