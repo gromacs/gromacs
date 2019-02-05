@@ -139,7 +139,7 @@ choose_ff_impl(const char *ffsel,
                char *ffdir, int ffdir_maxlen)
 {
     std::vector<gmx::DataFileInfo> ffdirs = fflib_enumerate_forcefields();
-    const int nff = static_cast<int>(ffdirs.size());
+    const int nff = ssize(ffdirs);
 
     /* Replace with unix path separators */
 #if DIR_SEPARATOR != '/'

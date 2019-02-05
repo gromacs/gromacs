@@ -936,7 +936,7 @@ static void add_posres(int mol, int a_mol, int numAtomsInMolecule,
 
     /* Get the position restraint coordinates from the molblock */
     a_molb = mol*numAtomsInMolecule + a_mol;
-    GMX_ASSERT(a_molb < static_cast<int>(molb->posres_xA.size()), "We need a sufficient number of position restraint coordinates");
+    GMX_ASSERT(a_molb < ssize(molb->posres_xA), "We need a sufficient number of position restraint coordinates");
     ip->posres.pos0A[XX] = molb->posres_xA[a_molb][XX];
     ip->posres.pos0A[YY] = molb->posres_xA[a_molb][YY];
     ip->posres.pos0A[ZZ] = molb->posres_xA[a_molb][ZZ];
@@ -980,7 +980,7 @@ static void add_fbposres(int mol, int a_mol, int numAtomsInMolecule,
 
     /* Get the position restraint coordinats from the molblock */
     a_molb = mol*numAtomsInMolecule + a_mol;
-    GMX_ASSERT(a_molb < static_cast<int>(molb->posres_xA.size()), "We need a sufficient number of position restraint coordinates");
+    GMX_ASSERT(a_molb < ssize(molb->posres_xA), "We need a sufficient number of position restraint coordinates");
     /* Take reference positions from A position of normal posres */
     ip->fbposres.pos0[XX] = molb->posres_xA[a_molb][XX];
     ip->fbposres.pos0[YY] = molb->posres_xA[a_molb][YY];
