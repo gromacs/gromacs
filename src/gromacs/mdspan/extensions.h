@@ -37,6 +37,7 @@
  * \brief GROMACS extensions to mdspan.
  *
  * \author Christian Blau <cblau@gwdg.de>
+ * \inlibraryapi
  * \ingroup module_mdspan
  */
 

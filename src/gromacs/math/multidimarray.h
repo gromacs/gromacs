@@ -107,6 +107,8 @@ class MultiDimArray
         using const_reference = typename TContainer::const_reference;
         //! the view used to access the data
         using view_type = basic_mdspan<value_type, Extents, LayoutPolicy>;
+        //! const view on the data
+        using const_view_type = basic_mdspan<const value_type, Extents, LayoutPolicy>;
         /*! \brief Iterator type for contiguous iteration over the stored data.
          * Used, e.g., in free begin and end functions
          */
@@ -253,6 +255,16 @@ class MultiDimArray
         constexpr typename view_type::index_type extent(int k) const noexcept
         {
             return view_.extent(k);
+        }
+        //! Conversion to multidimensional view on the data
+        constexpr view_type asView() noexcept
+        {
+            return view_;
+        }
+        //! Conversion to const multidimensional view on the data
+        constexpr const_view_type asConstView() const noexcept
+        {
+            return {data_.data(), view_.mapping()};
         }
     private:
         //! The contiguous data that is equipped with multidimensional indexing in this class
