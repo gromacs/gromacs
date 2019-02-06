@@ -66,7 +66,6 @@ gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab)
     FILE                    *in;
     char                     buf[STRLEN], name[STRLEN];
     double                   m;
-    int                      nratt = 0;
     gpp_atomtype            *at;
     t_atom                  *a;
     t_param                 *nb;
@@ -96,8 +95,6 @@ gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab)
             {
                 a->m = m;
                 add_atomtype(at, tab, a, name, nb, 0, 0);
-                fprintf(stderr, "\rAtomtype %d", ++nratt);
-                fflush(stderr);
             }
             else
             {
@@ -116,8 +113,6 @@ static void print_resatoms(FILE *out, gpp_atomtype *atype, t_restp *rtp)
     int   j, tp;
     char *tpnm;
 
-    /* fprintf(out,"%5s\n",rtp->resname);
-       fprintf(out,"%5d\n",rtp->natom); */
     fprintf(out, "[ %s ]\n", rtp->resname);
     fprintf(out, " [ atoms ]\n");
 
@@ -494,8 +489,6 @@ void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
         if (firstrtp == -1)
         {
             nrtp++;
-            fprintf(stderr, "\rResidue %d", nrtp);
-            fflush(stderr);
         }
         else
         {
