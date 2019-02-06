@@ -2646,7 +2646,7 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
     }
 
     snew(grps->nm_ind, groupsFromMdpFile.size()+1); /* +1 for possible rest group */
-    for (int i = 0; i != groupsFromMdpFile.size(); ++i)
+    for (int i = 0; i != groupsFromMdpFile.ssize(); ++i)
     {
         /* Lookup the group name in the block structure */
         gid = search_string(groupsFromMdpFile[i].c_str(), block->nr, gnames);

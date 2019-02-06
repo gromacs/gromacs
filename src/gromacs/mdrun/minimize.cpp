@@ -2952,7 +2952,7 @@ Integrator::do_nm()
         /* write progress */
         if (bIsMaster && mdrunOptions.verbose)
         {
-            fprintf(stderr, "\rFinished step %d out of %d",
+            fprintf(stderr, "\rFinished step %d out of %td",
                     std::min<int>(atom+nnodes, atom_index.size()),
                     ssize(atom_index));
             fflush(stderr);
