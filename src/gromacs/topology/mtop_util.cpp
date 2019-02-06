@@ -1086,7 +1086,7 @@ static void addMimicExclusions(t_blocka                      *excls,
     for (int k = 0; k < inter_excl.nr; ++k)
     {
         inter_excl.index[k] = prev_index;
-        for (long i = 0; i < ids.size(); i++)
+        for (long i = 0; i < ids.ssize(); i++)
         {
             if (k != ids[i])
             {

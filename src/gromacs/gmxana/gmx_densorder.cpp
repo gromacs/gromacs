@@ -775,7 +775,7 @@ int gmx_densorder(int argc, char *argv[])
         gmx::ArrayRef<const std::string> graphFiles = opt2fns("-og", NFILE, fnm);
         if (graphFiles.size() != 2)
         {
-            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", graphFiles.size());
+            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", graphFiles.ssize());
         }
         writesurftoxpms(surf1, surf2, tblock, xslices, yslices, zslices, binw, binwz, graphFiles, zslices);
     }
@@ -790,7 +790,7 @@ int gmx_densorder(int argc, char *argv[])
         gmx::ArrayRef<const std::string> rawFiles = opt2fns("-or", NFILE, fnm);
         if (rawFiles.size() != 2)
         {
-            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", rawFiles.size());
+            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", rawFiles.ssize());
         }
         writeraw(surf1, surf2, tblock, xslices, yslices, rawFiles, oenv);
     }
@@ -803,7 +803,7 @@ int gmx_densorder(int argc, char *argv[])
         if (spectra.size() != 2)
         {
             gmx_fatal(FARGS, "No or not correct number (2) of output-file-series: %td",
-                      spectra.size());
+                      spectra.ssize());
         }
         powerspectavg_intf(surf1, surf2, tblock, xslices, yslices, spectra);
     }

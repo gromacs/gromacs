@@ -77,7 +77,7 @@ namespace gmx
 
 void BiasState::getPmf(gmx::ArrayRef<float> pmf) const
 {
-    GMX_ASSERT(pmf.size() == index(points_.size()), "pmf should have the size of the bias grid");
+    GMX_ASSERT(pmf.size() == points_.size(), "pmf should have the size of the bias grid");
 
     /* The PMF is just the negative of the log of the sampled PMF histogram.
      * Points with zero target weight are ignored, they will mostly contain noise.
@@ -171,7 +171,7 @@ void sumPmf(gmx::ArrayRef<PointState>  pointState,
 
     /* Take log again to get (non-normalized) PMF */
     double normFac = 1.0/numSharedUpdate;
-    for (gmx::index i = 0; i < pointState.size(); i++)
+    for (gmx::index i = 0; i < pointState.ssize(); i++)
     {
         if (pointState[i].inTargetRegion())
         {
@@ -493,7 +493,7 @@ double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
         at steps when the reference value has been moved. E.g. if the ref. value
         is set every step to (coord dvalue +/- delta) would give zero force.
      */
-    for (gmx::index d = 0; d < biasForce.size(); d++)
+    for (gmx::index d = 0; d < biasForce.ssize(); d++)
     {
         /* Average of the current and new force */
         biasForce[d] = 0.5*(biasForce[d] + newForce[d]);
@@ -796,7 +796,7 @@ void labelCoveredPoints(const std::vector<bool> &visited,
                         int                      coverRadius,
                         gmx::ArrayRef<int>       covered)
 {
-    GMX_ASSERT(covered.size() >= numPoints, "covered should be at least as large as the grid");
+    GMX_ASSERT(covered.ssize() >= numPoints, "covered should be at least as large as the grid");
 
     bool haveFirstNotVisited = false;
     int  firstNotVisited     = -1;
