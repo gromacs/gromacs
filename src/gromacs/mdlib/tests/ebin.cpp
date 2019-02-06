@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/mdlib/ebin.h"
+#include "../ebin.h"
 
 #include <cstdio>
 

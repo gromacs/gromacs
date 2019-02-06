@@ -69,12 +69,13 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/ns.h"
@@ -1113,7 +1114,8 @@ Integrator::do_cg()
     gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     snew(enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
-    t_mdebin *mdebin = init_mdebin(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
+    gmx::EnergyOutput energyOutput;
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1147,13 +1149,14 @@ Integrator::do_cg()
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         matrix nullBox = {};
-        upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                   mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
-                   nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
+        energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step),
+                                         mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                         nullptr, nullptr, vir, pres, nullptr, mu_tot, *constr);
 
         print_ebin_header(fplog, step, step);
-        print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
-                   mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+        energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE,
+                                           fplog, step, step, eprNORMAL,
+                                           fcd, &(top_global->groups), &(inputrec->opts), nullptr);
     }
 
     /* Estimate/guess the initial stepsize */
@@ -1571,9 +1574,9 @@ Integrator::do_cg()
             }
             /* Store the new (lower) energies */
             matrix nullBox = {};
-            upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                       mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
-                       nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
+            energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step),
+                                             mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                             nullptr, nullptr, vir, pres, nullptr, mu_tot, *constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
@@ -1585,9 +1588,9 @@ Integrator::do_cg()
             {
                 print_ebin_header(fplog, step, step);
             }
-            print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
-                       do_log ? fplog : nullptr, step, step, eprNORMAL,
-                       mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
+                                               do_log ? fplog : nullptr, step, step, eprNORMAL,
+                                               fcd, &(top_global->groups), &(inputrec->opts), nullptr);
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
@@ -1634,9 +1637,9 @@ Integrator::do_cg()
         if (!do_ene || !do_log)
         {
             /* Write final energy file entries */
-            print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
-                       !do_log ? fplog : nullptr, step, step, eprNORMAL,
-                       mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
+                                               !do_log ? fplog : nullptr, step, step, eprNORMAL,
+                                               fcd, &(top_global->groups), &(inputrec->opts), nullptr);
         }
     }
 
@@ -1755,7 +1758,8 @@ Integrator::do_lbfgs()
     gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     snew(enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
-    t_mdebin *mdebin = init_mdebin(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
+    gmx::EnergyOutput energyOutput;
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
     start = 0;
     end   = mdatoms->homenr;
@@ -1826,13 +1830,14 @@ Integrator::do_lbfgs()
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         matrix nullBox = {};
-        upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                   mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
-                   nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
+        energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step),
+                                         mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                         nullptr, nullptr, vir, pres, nullptr, mu_tot, *constr);
 
         print_ebin_header(fplog, step, step);
-        print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
-                   mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+        energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE,
+                                           fplog, step, step, eprNORMAL,
+                                           fcd, &(top_global->groups), &(inputrec->opts), nullptr);
     }
 
     /* Set the initial step.
@@ -2313,18 +2318,23 @@ Integrator::do_lbfgs()
             }
             /* Store the new (lower) energies */
             matrix nullBox = {};
-            upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                       mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
-                       nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
+            energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step),
+                                             mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                             nullptr, nullptr, vir, pres, nullptr, mu_tot, *constr);
+
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
+
+            /* Prepare IMD energy record, if bIMD is TRUE. */
+            IMD_fill_energy_record(inputrec->bIMD, inputrec->imd, enerd, step, TRUE);
+
             if (do_log)
             {
                 print_ebin_header(fplog, step, step);
             }
-            print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
-                       do_log ? fplog : nullptr, step, step, eprNORMAL,
-                       mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
+                                               do_log ? fplog : nullptr, step, step, eprNORMAL,
+                                               fcd, &(top_global->groups), &(inputrec->opts), nullptr);
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
@@ -2370,9 +2380,9 @@ Integrator::do_lbfgs()
     }
     if (!do_ene || !do_log) /* Write final energy file entries */
     {
-        print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
-                   !do_log ? fplog : nullptr, step, step, eprNORMAL,
-                   mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+        energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
+                                           !do_log ? fplog : nullptr, step, step, eprNORMAL,
+                                           fcd, &(top_global->groups), &(inputrec->opts), nullptr);
     }
 
     /* Print some stuff... */
@@ -2449,7 +2459,8 @@ Integrator::do_steep()
     gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     snew(enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
-    t_mdebin *mdebin = init_mdebin(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
+    gmx::EnergyOutput energyOutput;
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
@@ -2538,18 +2549,20 @@ Integrator::do_steep()
             {
                 /* Store the new (lower) energies  */
                 matrix nullBox = {};
-                upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(count),
-                           mdatoms->tmass, enerd, nullptr, nullptr, nullptr,
-                           nullBox, nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
+                energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(count),
+                                                 mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                                 nullptr, nullptr, vir, pres, nullptr, mu_tot, *constr);
 
                 /* Prepare IMD energy record, if bIMD is TRUE. */
                 IMD_fill_energy_record(inputrec->bIMD, inputrec->imd, enerd, count, TRUE);
 
-                print_ebin(mdoutf_get_fp_ene(outf), TRUE,
-                           do_per_step(steps_accepted, inputrec->nstdisreout),
-                           do_per_step(steps_accepted, inputrec->nstorireout),
-                           fplog, count, count, eprNORMAL,
-                           mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+                const bool do_dr = do_per_step(steps_accepted, inputrec->nstdisreout);
+                const bool do_or = do_per_step(steps_accepted, inputrec->nstorireout);
+                energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE,
+                                                   do_dr, do_or,
+                                                   fplog, count, count, eprNORMAL,
+                                                   fcd, &(top_global->groups),
+                                                   &(inputrec->opts), nullptr);
                 fflush(fplog);
             }
         }

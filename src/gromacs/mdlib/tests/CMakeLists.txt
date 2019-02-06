@@ -36,7 +36,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
                   calc_verletbuf.cpp
                   constr.cpp
                   ebin.cpp
-                  mdebin.cpp
+                  energyoutput.cpp
                   settle.cpp
                   shake.cpp
                   simulationsignal.cpp
