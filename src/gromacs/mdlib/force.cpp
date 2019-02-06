@@ -767,7 +767,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
 
         double &enerpart_lambda = enerd->enerpart_lambda[i + 1];
 
-        for (gmx::index j = 0; j < lambda.size(); j++)
+        for (gmx::index j = 0; j < lambda.ssize(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
             const double dlam  = fepvals->all_lambda[j][i] - lambda[j];

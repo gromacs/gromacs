@@ -404,7 +404,7 @@ std::vector<int> qmmmAtomIndices(const t_inputrec &ir, const gmx_mtop_t &mtop)
 void removeQmmmAtomCharges(gmx_mtop_t *mtop, gmx::ArrayRef<const int> qmmmAtoms)
 {
     int molb = 0;
-    for (int i = 0; i < qmmmAtoms.size(); i++)
+    for (int i = 0; i < qmmmAtoms.ssize(); i++)
     {
         int     indexInMolecule;
         mtopGetMolblockIndex(mtop, qmmmAtoms[i], &molb, nullptr, &indexInMolecule);

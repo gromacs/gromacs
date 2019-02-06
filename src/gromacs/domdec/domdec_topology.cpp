@@ -1141,7 +1141,7 @@ static void combine_blocka(t_blocka                           *dest,
         dest->nalloc_a = over_alloc_large(dest->nra+na);
         srenew(dest->a, dest->nalloc_a);
     }
-    for (gmx::index s = 1; s < src.size(); s++)
+    for (gmx::index s = 1; s < src.ssize(); s++)
     {
         for (int i = dest->nr + 1; i < src[s].excl.nr + 1; i++)
         {
@@ -1168,7 +1168,7 @@ static void combine_idef(t_idef                             *dest,
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
         int n = 0;
-        for (gmx::index s = 1; s < src.size(); s++)
+        for (gmx::index s = 1; s < src.ssize(); s++)
         {
             n += src[s].idef.il[ftype].nr;
         }
@@ -1190,7 +1190,7 @@ static void combine_idef(t_idef                             *dest,
             const int  nral1 = 1 + NRAL(ftype);
             const int  ftv   = ftype - c_ftypeVsiteStart;
 
-            for (gmx::index s = 1; s < src.size(); s++)
+            for (gmx::index s = 1; s < src.ssize(); s++)
             {
                 const t_ilist &ils = src[s].idef.il[ftype];
 
@@ -1226,12 +1226,12 @@ static void combine_idef(t_idef                             *dest,
                 }
 
                 /* Set nposres to the number of original position restraints in dest */
-                for (gmx::index s = 1; s < src.size(); s++)
+                for (gmx::index s = 1; s < src.ssize(); s++)
                 {
                     nposres -= src[s].idef.il[ftype].nr/2;
                 }
 
-                for (gmx::index s = 1; s < src.size(); s++)
+                for (gmx::index s = 1; s < src.ssize(); s++)
                 {
                     const t_iparams *iparams_src = (ftype == F_POSRES ? src[s].idef.iparams_posres : src[s].idef.iparams_fbposres);
 
@@ -1788,7 +1788,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
         if (isExcludedAtom)
         {
-            if (n + intermolecularExclusionGroup.size() > lexcls->nalloc_a)
+            if (n + intermolecularExclusionGroup.ssize() > lexcls->nalloc_a)
             {
                 lexcls->nalloc_a =
                     over_alloc_large(n + intermolecularExclusionGroup.size());

@@ -251,7 +251,7 @@ static void make_cyl_refgrps(const t_commrec *cr,
             pdyna.dv.resize(localAtomIndices.size());
 
             /* loop over all atoms in the main ref group */
-            for (gmx::index indexInSet = 0; indexInSet < localAtomIndices.size(); indexInSet++)
+            for (gmx::index indexInSet = 0; indexInSet < localAtomIndices.ssize(); indexInSet++)
             {
                 int    atomIndex = localAtomIndices[indexInSet];
                 rvec   dx;
@@ -867,7 +867,7 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t &group,
     }
 
     auto localAtomIndices = group.atomSet.localIndex();
-    for (gmx::index indexInSet = 0; indexInSet < localAtomIndices.size(); indexInSet++)
+    for (gmx::index indexInSet = 0; indexInSet < localAtomIndices.ssize(); indexInSet++)
     {
         rvec dx;
         pbc_dx(&pbc, x[localAtomIndices[indexInSet]], x_pbc, dx);

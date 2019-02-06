@@ -134,7 +134,7 @@ void updateCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory
         }
     }
 
-    GMX_RELEASE_ASSERT(bufferIndex == blockDataBuffer.size(), "We should store exactly as many elements as the buffer size");
+    GMX_RELEASE_ASSERT(bufferIndex == blockDataBuffer.ssize(), "We should store exactly as many elements as the buffer size");
 }
 
 void CorrelationBlockData::restoreFromHistory(const CorrelationBlockDataHistory                  &blockHistory,
