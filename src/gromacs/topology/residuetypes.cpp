@@ -118,7 +118,9 @@ residueEntryByResidueName(gmx::ArrayRef<const ResidueTypeEntry> entries, const s
 
 bool ResidueType::nameIndexedInResidueTypes(const std::string &residueName)
 {
-    return residueEntryByResidueName(impl_->entry, residueName) != nullptr;
+    // Temp so we can compare the iterator
+    gmx::ArrayRef<const ResidueTypeEntry> entry(impl_->entry);
+    return residueEntryByResidueName(impl_->entry, residueName) != entry.end();
 }
 
 void ResidueType::addResidue(const std::string &residueName, const std::string &residueType)
