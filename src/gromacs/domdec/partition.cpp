@@ -456,7 +456,7 @@ static void restoreAtomGroups(gmx_domdec_t *dd,
     /* Copy back the global charge group indices from state
      * and rebuild the local charge group to atom index.
      */
-    for (gmx::index i = 0; i < atomGroupsState.size(); i++)
+    for (gmx::index i = 0; i < atomGroupsState.ssize(); i++)
     {
         const int atomGroupGlobal  = atomGroupsState[i];
         const int groupSize        = gcgs_index[atomGroupGlobal + 1] - gcgs_index[atomGroupGlobal];
@@ -2632,7 +2632,7 @@ orderVector(gmx::ArrayRef<const gmx_cgsort_t>  sort,
             gmx::ArrayRef<T>                   vectorToSort,
             std::vector<T>                    *workVector)
 {
-    if (gmx::index(workVector->size()) < sort.size())
+    if (gmx::index(workVector->size()) < sort.ssize())
     {
         workVector->resize(sort.size());
     }
@@ -2844,7 +2844,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
 
     /* Reorder the state */
     gmx::ArrayRef<const gmx_cgsort_t> cgsort = sort->sorted;
-    GMX_RELEASE_ASSERT(cgsort.size() == dd->ncg_home, "We should sort all the home atom groups");
+    GMX_RELEASE_ASSERT(cgsort.ssize() == dd->ncg_home, "We should sort all the home atom groups");
 
     if (state->flags & (1 << estX))
     {
@@ -2899,7 +2899,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     else
     {
         /* Copy the sorted ns cell indices back to the ns grid struct */
-        for (gmx::index i = 0; i < cgsort.size(); i++)
+        for (gmx::index i = 0; i < cgsort.ssize(); i++)
         {
             fr->ns->grid->cell_index[i] = cgsort[i].nsc;
         }

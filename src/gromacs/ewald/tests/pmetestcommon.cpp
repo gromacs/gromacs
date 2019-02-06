@@ -178,7 +178,7 @@ PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
                             )
 {
     const index     atomCount = coordinates.size();
-    GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
+    GMX_RELEASE_ASSERT(atomCount == charges.ssize(), "Mismatch in atom data");
     PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, gpuInfo, pmeGpuProgram, atomCount, box);
     pme_atomcomm_t *atc     = nullptr;
 
@@ -381,7 +381,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
 {
     pme_atomcomm_t *atc                     = &(pme->atc[0]);
     const index     atomCount               = atc->n;
-    GMX_RELEASE_ASSERT(forces.size() == atomCount, "Invalid force buffer size");
+    GMX_RELEASE_ASSERT(forces.ssize() == atomCount, "Invalid force buffer size");
     const bool      forceReductionWithInput = (inputTreatment == PmeForceOutputHandling::ReduceWithInput);
     const real      scale                   = 1.0;
     const size_t    threadIndex             = 0;
@@ -447,7 +447,7 @@ void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
     const index           atomCount   = atc->n;
     const index           pmeOrder    = pme->pme_order;
     const index           dimSize     = pmeOrder * atomCount;
-    GMX_RELEASE_ASSERT(dimSize == splineValues.size(), "Mismatch in spline data");
+    GMX_RELEASE_ASSERT(dimSize == splineValues.ssize(), "Mismatch in spline data");
     real                 *splineBuffer = pmeGetSplineDataInternal(pme, type, dimIndex);
 
     switch (mode)
@@ -472,7 +472,7 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
 {
     const pme_atomcomm_t       *atc         = &(pme->atc[0]);
     const index                 atomCount   = atc->n;
-    GMX_RELEASE_ASSERT(atomCount == gridLineIndices.size(), "Mismatch in gridline indices size");
+    GMX_RELEASE_ASSERT(atomCount == gridLineIndices.ssize(), "Mismatch in gridline indices size");
 
     IVec paddedGridSizeUnused, gridSize(0, 0, 0);
     pmeGetRealGridSizesInternal(pme, mode, gridSize, paddedGridSizeUnused);

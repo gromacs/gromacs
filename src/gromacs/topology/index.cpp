@@ -120,7 +120,7 @@ void add_grp(t_blocka *b, char ***gnames, gmx::ArrayRef<const int> a, const std:
     (*gnames)[b->nr] = gmx_strdup(name.c_str());
 
     srenew(b->a, b->nra+a.size());
-    for (int i = 0; (i < a.size()); i++)
+    for (int i = 0; (i < a.ssize()); i++)
     {
         b->a[b->nra++] = a[i];
     }
@@ -150,11 +150,11 @@ static bool grp_cmp(t_blocka *b, gmx::ArrayRef<const int> a, int index)
         gmx_fatal(FARGS, "no such index group %d in t_blocka (nr=%d)", index, b->nr);
     }
     /* compare sizes */
-    if (a.size() != b->index[index+1] - b->index[index])
+    if (a.ssize() != b->index[index+1] - b->index[index])
     {
         return FALSE;
     }
-    for (int i = 0; i < a.size(); i++)
+    for (int i = 0; i < a.ssize(); i++)
     {
         if (a[i] != b->a[b->index[index]+i])
         {
@@ -178,7 +178,7 @@ static void p_status(gmx::ArrayRef<const std::string> restype,
                    }
                    );
 
-    for (int i = 0; (i < typenames.size()); i++)
+    for (int i = 0; (i < typenames.ssize()); i++)
     {
         if (counter[i] > 0)
         {
