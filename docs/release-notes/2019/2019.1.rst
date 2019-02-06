@@ -38,6 +38,14 @@ Fix segmentation fault in mdrun with domain decomposition
 
 :issue:`2813`
 
+Fix segmentation fault with energy minimization with the group scheme
+---------------------------------------------------------------------
+
+Using energy minimization in combinations with the group cutoff scheme
+and domain decomposition could lead to a segmentation fault.
+
+:issue:`2813`
+
 Fix possible division by zero in enforced-rotation code
 -------------------------------------------------------
 

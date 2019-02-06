@@ -2710,8 +2710,11 @@ static void dd_sort_order(const gmx_domdec_t *dd,
 
     const int  movedValue = NSGRID_SIGNAL_MOVED_FAC*fr->ns->grid->ncells;
 
-    if (ncg_home_old >= 0)
+    if (ncg_home_old >= 0 && !sort->sorted.empty())
     {
+        GMX_RELEASE_ASSERT(sort->sorted.size() == static_cast<size_t>(ncg_home_old),
+                           "The sorting buffer should contain the old home charge group indices");
+
         std::vector<gmx_cgsort_t> &stationary = sort->stationary;
         std::vector<gmx_cgsort_t> &moved      = sort->moved;
 
@@ -3466,6 +3469,16 @@ void dd_partition_system(FILE                    *fplog,
         ncgindex_set = 0;
 
         wallcycle_sub_stop(wcycle, ewcsDD_GRID);
+    }
+    else
+    {
+        /* With the group scheme the sorting array is part of the DD state,
+         * but it just got out of sync, so mark as invalid by emptying it.
+         */
+        if (ir->cutoff_scheme == ecutsGROUP)
+        {
+            comm->sort->sorted.clear();
+        }
     }
 
     if (comm->useUpdateGroups)
