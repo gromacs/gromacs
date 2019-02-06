@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/mdlib/mdebin.h"
+#include "gromacs/mdlib/energyoutput.h"
 
 #include <cstdio>
 
@@ -65,16 +65,15 @@ void fcloseWrapper(FILE *fp)
     fclose(fp);
 }
 
-class MdebinTest : public ::testing::Test
+class EnergyOutputTest : public ::testing::Test
 {
     public:
         TestFileManager fileManager_;
 
-        // Objects needed to make t_mdebin
+        // Objects needed to make EnergyOutput
         t_inputrec   inputrec_;
         gmx_mtop_t   mtop_;
-        t_mdebin    *mdebin_;
-        unique_cptr<t_mdebin, done_mdebin> mdebinGuard_;
+        EnergyOutput energyOutput_;
 
         // Objects needed for default energy output behavior.
         t_mdatoms                    mdatoms_;
@@ -94,13 +93,12 @@ class MdebinTest : public ::testing::Test
         TestReferenceData                refData_;
         TestReferenceChecker             checker_;
 
-        MdebinTest() :
+        EnergyOutputTest() :
             logFilename_(fileManager_.getTemporaryFilePath(".log")),
             log_(std::fopen(logFilename_.c_str(), "w")), logFileGuard_(log_),
             checker_(refData_.rootChecker())
         {
-            mdebin_ = init_mdebin(nullptr, &mtop_, &inputrec_, nullptr, false);
-            mdebinGuard_.reset(mdebin_);
+            energyOutput_.prepare(nullptr, &mtop_, &inputrec_, nullptr, false);
             constraints_ = makeConstraints(mtop_, inputrec_, false, log_, mdatoms_, nullptr,
                                            nullptr, nullptr, nullptr, false);
         }
@@ -136,27 +134,27 @@ class MdebinTest : public ::testing::Test
 
 };
 
-TEST_F(MdebinTest, HandlesEmptyAverages)
+TEST_F(EnergyOutputTest, HandlesEmptyAverages)
 {
     ASSERT_NE(log_, nullptr);
 
     // Test printing values
-    print_ebin(nullptr, false, false, false, log_,
-               0, 0, eprNORMAL, mdebin_,
-               nullptr, nullptr, nullptr, nullptr);
+    energyOutput_.printStepToEnergyFile(nullptr, false, false, false, log_,
+                                        0, 0, eprNORMAL,
+                                        nullptr, nullptr, nullptr, nullptr);
     // Test printing averages
-    print_ebin(nullptr, false, false, false, log_,
-               0, 0, eprAVER, mdebin_,
-               nullptr, nullptr, nullptr, nullptr);
+    energyOutput_.printStepToEnergyFile(nullptr, false, false, false, log_,
+                                        0, 0, eprAVER,
+                                        nullptr, nullptr, nullptr, nullptr);
 
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);
 
-    checker_.checkInteger(mdebin_->ebin->nener, "Number of Energy Terms");
+    checker_.checkInteger(energyOutput_.numEnergyTerms(), "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 
-TEST_F(MdebinTest, HandlesSingleStep)
+TEST_F(EnergyOutputTest, HandlesSingleStep)
 {
     ASSERT_NE(log_, nullptr);
 
@@ -164,29 +162,29 @@ TEST_F(MdebinTest, HandlesSingleStep)
     real time      = 1.0;
     real testValue = 1.0;
     setStepData(testValue);
-    upd_mdebin(mdebin_, false, true, time, 0.0, &enerdata_,
-               nullptr, nullptr, nullptr, box_,
-               nullptr, nullptr, totalVirial_, pressure_,
-               nullptr, nullptr, constraints_.get());
+    energyOutput_.addDataAtEnergyStep(false, true, time, 0.0, &enerdata_,
+                                      nullptr, nullptr, nullptr, box_,
+                                      nullptr, nullptr, totalVirial_, pressure_,
+                                      nullptr, nullptr, *constraints_);
 
     // Test printing values
-    print_ebin(nullptr, false, false, false, log_,
-               0, 0, eprNORMAL, mdebin_,
-               nullptr, nullptr, nullptr, nullptr);
+    energyOutput_.printStepToEnergyFile(nullptr, false, false, false, log_,
+                                        0, 0, eprNORMAL,
+                                        nullptr, nullptr, nullptr, nullptr);
 
     // Test printing averages
-    print_ebin(nullptr, false, false, false, log_,
-               0, 0, eprAVER, mdebin_,
-               nullptr, nullptr, nullptr, nullptr);
+    energyOutput_.printStepToEnergyFile(nullptr, false, false, false, log_,
+                                        0, 0, eprAVER,
+                                        nullptr, nullptr, nullptr, nullptr);
 
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);
 
-    checker_.checkInteger(mdebin_->ebin->nener, "Number of Energy Terms");
+    checker_.checkInteger(energyOutput_.numEnergyTerms(), "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 
-TEST_F(MdebinTest, HandlesTwoSteps)
+TEST_F(EnergyOutputTest, HandlesTwoSteps)
 {
     ASSERT_NE(log_, nullptr);
 
@@ -194,38 +192,38 @@ TEST_F(MdebinTest, HandlesTwoSteps)
     real time      = 1.0;
     real testValue = 1.0;
     setStepData(testValue);
-    upd_mdebin(mdebin_, false, true, time, 0.0, &enerdata_,
-               nullptr, nullptr, nullptr, box_,
-               nullptr, nullptr, totalVirial_, pressure_,
-               nullptr, nullptr, constraints_.get());
+    energyOutput_.addDataAtEnergyStep(false, true, time, 0.0, &enerdata_,
+                                      nullptr, nullptr, nullptr, box_,
+                                      nullptr, nullptr, totalVirial_, pressure_,
+                                      nullptr, nullptr, *constraints_);
 
     // Test printing values
-    print_ebin(nullptr, false, false, false, log_,
-               0, 0, eprNORMAL, mdebin_,
-               nullptr, nullptr, nullptr, nullptr);
+    energyOutput_.printStepToEnergyFile(nullptr, false, false, false, log_,
+                                        0, 0, eprNORMAL,
+                                        nullptr, nullptr, nullptr, nullptr);
 
     // Add synthetic data for the second step
     time += 0.005;
     setStepData(testValue += 1.0);
-    upd_mdebin(mdebin_, false, true, time, 0.0, &enerdata_,
-               nullptr, nullptr, nullptr, box_,
-               nullptr, nullptr, totalVirial_, pressure_,
-               nullptr, nullptr, constraints_.get());
+    energyOutput_.addDataAtEnergyStep(false, true, time, 0.0, &enerdata_,
+                                      nullptr, nullptr, nullptr, box_,
+                                      nullptr, nullptr, totalVirial_, pressure_,
+                                      nullptr, nullptr, *constraints_);
 
     // Test printing values
-    print_ebin(nullptr, false, false, false, log_,
-               0, 0, eprNORMAL, mdebin_,
-               nullptr, nullptr, nullptr, nullptr);
+    energyOutput_.printStepToEnergyFile(nullptr, false, false, false, log_,
+                                        0, 0, eprNORMAL,
+                                        nullptr, nullptr, nullptr, nullptr);
 
     // Test printing averages
-    print_ebin(nullptr, false, false, false, log_,
-               0, 0, eprAVER, mdebin_,
-               nullptr, nullptr, nullptr, nullptr);
+    energyOutput_.printStepToEnergyFile(nullptr, false, false, false, log_,
+                                        0, 0, eprAVER,
+                                        nullptr, nullptr, nullptr, nullptr);
 
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);
 
-    checker_.checkInteger(mdebin_->ebin->nener, "Number of Energy Terms");
+    checker_.checkInteger(energyOutput_.numEnergyTerms(), "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 

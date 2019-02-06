@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "mdebin.h"
+#include "energyoutput.h"
 
 #include <cfloat>
 #include <cstdlib>
@@ -55,6 +55,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/mdebin_bar.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -101,6 +102,61 @@ const char *egrp_nm[egNR+1] = {
     "Coul-SR", "LJ-SR", "Buck-SR",
     "Coul-14", "LJ-14", nullptr
 };
+
+/* forward declaration */
+typedef struct t_mde_delta_h_coll t_mde_delta_h_coll;
+
+namespace gmx
+{
+
+namespace detail
+{
+
+/* This is the collection of energy averages collected during mdrun, and to
+   be written out to the .edr file. */
+struct t_mdebin
+{
+    double              delta_t;
+    t_ebin             *ebin;
+    int                 ie, iconrmsd, ib, ivol, idens, ipv, ienthalpy;
+    int                 isvir, ifvir, ipres, ivir, isurft, ipc, itemp, itc, itcb, iu, imu;
+    int                 ivcos, ivisc;
+    int                 nE, nEg, nEc, nTC, nTCP, nU, nNHC;
+    int                *igrp;
+    int                 mde_n, mdeb_n;
+    real               *tmp_r;
+    rvec               *tmp_v;
+    gmx_bool            bConstr;
+    gmx_bool            bConstrVir;
+    gmx_bool            bTricl;
+    gmx_bool            bDynBox;
+    gmx_bool            bNHC_trotter;
+    gmx_bool            bPrintNHChains;
+    gmx_bool            bMTTK;
+    gmx_bool            bMu; /* true if dipole is calculated */
+    gmx_bool            bDiagPres;
+    gmx_bool            bPres;
+    int                 f_nre;
+    int                 epc;
+    real                ref_p;
+    int                 etc;
+    int                 nCrmsd;
+    gmx_bool            bEner[F_NRE];
+    gmx_bool            bEInd[egNR];
+    char              **print_grpnms;
+
+    FILE               *fp_dhdl; /* the dhdl.xvg output file */
+    double             *dE;      /* energy components for dhdl.xvg output */
+    t_mde_delta_h_coll *dhc;     /* the delta U components (raw data + histogram) */
+    real               *temperatures;
+};
+
+}   // namespace detail
+
+using detail::t_mdebin;
+
+namespace
+{
 
 t_mdebin *init_mdebin(ener_file_t       fp_ene,
                       const gmx_mtop_t *mtop,
@@ -624,6 +680,9 @@ void done_mdebin(t_mdebin *mdebin)
     sfree(mdebin);
 }
 
+} // namespace
+} // namespace gmx
+
 /* print a lambda vector to a string
    fep = the inputrec's FEP input data
    i = the index of the lambda vector
@@ -683,9 +742,8 @@ static void print_lambda_vector(t_lambda *fep, int i,
     }
 }
 
-
-extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
-                       const gmx_output_env_t *oenv)
+FILE *open_dhdl(const char *filename, const t_inputrec *ir,
+                const gmx_output_env_t *oenv)
 {
     FILE       *fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
@@ -889,6 +947,11 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 
     return fp;
 }
+
+namespace gmx
+{
+namespace
+{
 
 void upd_mdebin(t_mdebin               *md,
                 gmx_bool                bDoDHDL,
@@ -1191,13 +1254,17 @@ void upd_mdebin(t_mdebin               *md,
     }
 }
 
+}   // namespace
 
-void upd_mdebin_step(t_mdebin *md)
+void EnergyOutput::recordNonEnergyStep()
 {
-    ebin_increase_count(md->ebin, FALSE);
+    ebin_increase_count(mdebin->ebin, false);
 }
 
-static void npr(FILE *log, int n, char c)
+namespace
+{
+
+void npr(FILE *log, int n, char c)
 {
     for (; (n > 0); n--)
     {
@@ -1205,7 +1272,7 @@ static void npr(FILE *log, int n, char c)
     }
 }
 
-static void pprint(FILE *log, const char *s, t_mdebin *md)
+void pprint(FILE *log, const char *s, t_mdebin *md)
 {
     char CHAR = '#';
     int  slen;
@@ -1226,6 +1293,8 @@ static void pprint(FILE *log, const char *s, t_mdebin *md)
     fprintf(log, "\n");
 }
 
+}   // namespace
+
 void print_ebin_header(FILE *log, int64_t steps, double time)
 {
     char buf[22];
@@ -1234,6 +1303,9 @@ void print_ebin_header(FILE *log, int64_t steps, double time)
             "   %12s   %12.5f\n\n",
             "Step", "Time", gmx_step_str(steps, buf), time);
 }
+
+namespace
+{
 
 // TODO It is too many responsibilities for this function to handle
 // both .edr and .log output for both per-time and time-average data.
@@ -1580,3 +1652,79 @@ void restore_energyhistory_from_state(t_mdebin              * mdebin,
         mde_delta_h_coll_restore_energyhistory(mdebin->dhc, enerhist->deltaHForeignLambdas.get());
     }
 }
+
+}   // namespace
+
+EnergyOutput::EnergyOutput()
+    : mdebin(nullptr)
+{
+}
+
+void EnergyOutput::prepare(ener_file        *fp_ene,
+                           const gmx_mtop_t *mtop,
+                           const t_inputrec *ir,
+                           FILE             *fp_dhdl,
+                           bool              isRerun)
+{
+    mdebin = init_mdebin(fp_ene, mtop, ir, fp_dhdl, isRerun);
+}
+
+EnergyOutput::~EnergyOutput()
+{
+    done_mdebin(mdebin);
+}
+
+t_ebin *EnergyOutput::getEbin()
+{
+    return mdebin->ebin;
+}
+
+void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
+                                       bool                    bSum,
+                                       double                  time,
+                                       real                    tmass,
+                                       gmx_enerdata_t         *enerd,
+                                       t_state                *state,
+                                       t_lambda               *fep,
+                                       t_expanded             *expand,
+                                       matrix                  box,
+                                       tensor                  svir,
+                                       tensor                  fvir,
+                                       tensor                  vir,
+                                       tensor                  pres,
+                                       gmx_ekindata_t         *ekind,
+                                       rvec                    mu_tot,
+                                       const gmx::Constraints &constr)
+{
+    upd_mdebin(mdebin, bDoDHDL, bSum, time, tmass, enerd, state, fep,
+               expand, box, svir, fvir, vir, pres, ekind, mu_tot, &constr);
+}
+
+void EnergyOutput::printStepToEnergyFile(ener_file *fp_ene, bool bEne, bool bDR, bool bOR,
+                                         FILE *log,
+                                         int64_t step, double time,
+                                         int mode,
+                                         t_fcdata *fcd,
+                                         gmx_groups_t *groups, t_grpopts *opts,
+                                         gmx::Awh *awh)
+{
+    print_ebin(fp_ene, bEne, bDR, bOR, log, step, time, mode,
+               mdebin, fcd, groups, opts, awh);
+}
+
+int EnergyOutput::numEnergyTerms() const
+{
+    return mdebin->ebin->nener;
+}
+
+void EnergyOutput::fillEnergyHistory(energyhistory_t *enerhist) const
+{
+    update_energyhistory(enerhist, mdebin);
+}
+
+void EnergyOutput::restoreFromEnergyHistory(const energyhistory_t &enerhist)
+{
+    restore_energyhistory_from_state(mdebin, &enerhist);
+}
+
+} // namespace gmx

@@ -75,13 +75,13 @@
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/expanded.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdsetup.h"
@@ -253,10 +253,9 @@ void gmx::Integrator::do_md()
         pleaseCiteCouplingAlgorithms(fplog, *ir);
     }
     init_nrnb(nrnb);
-    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr,
-                                   outputProvider, ir, top_global, oenv, wcycle);
-    t_mdebin   *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(outf),
-                                     top_global, ir, mdoutf_get_fp_dhdl(outf));
+    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
+    gmx::EnergyOutput energyOutput;
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, mdoutf_get_fp_dhdl(outf));
 
     /* Energy terms and groups */
     snew(enerd, 1);
@@ -278,7 +277,7 @@ void gmx::Integrator::do_md()
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
 
     {
-        double io = compute_io(ir, top_global->natoms, groups, mdebin->ebin->nener, 1);
+        double io = compute_io(ir, top_global->natoms, groups, energyOutput.numEnergyTerms(), 1);
         if ((io > 2000) && MASTER(cr))
         {
             fprintf(stderr,
@@ -353,7 +352,7 @@ void gmx::Integrator::do_md()
     {
         if (startingFromCheckpoint)
         {
-            /* Update mdebin with energy history if appending to output files */
+            /* Restore from energy history if appending to output files */
             if (continuationOptions.appendFiles)
             {
                 /* If no history is available (because a checkpoint is from before
@@ -361,7 +360,7 @@ void gmx::Integrator::do_md()
                  */
                 if (observablesHistory->energyHistory)
                 {
-                    restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
+                    energyOutput.restoreFromEnergyHistory(*observablesHistory->energyHistory);
                 }
             }
             else if (observablesHistory->energyHistory)
@@ -387,8 +386,8 @@ void gmx::Integrator::do_md()
         {
             observablesHistory->pullHistory = std::make_unique<PullHistory>();
         }
-        /* Set the initial energy history in state by updating once */
-        update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
+        /* Set the initial energy history */
+        energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
     }
 
     preparePrevStepPullCom(ir, mdatoms, state, state_global, cr, startingFromCheckpoint);
@@ -1057,7 +1056,7 @@ void gmx::Integrator::do_md()
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, observablesHistory,
                                  top_global, fr,
-                                 outf, mdebin, ekind, f,
+                                 outf, energyOutput, ekind, f,
                                  checkpointHandler->isCheckpointingStep(),
                                  bRerunMD, bLastStep,
                                  mdrunOptions.writeConfout,
@@ -1351,23 +1350,24 @@ void gmx::Integrator::do_md()
             }
             if (bCalcEner)
             {
-                upd_mdebin(mdebin, bDoDHDL, bCalcEnerStep,
-                           t, mdatoms->tmass, enerd, state,
-                           ir->fepvals, ir->expandedvals, lastbox,
-                           shake_vir, force_vir, total_vir, pres,
-                           ekind, mu_tot, constr);
+                energyOutput.addDataAtEnergyStep(bDoDHDL, bCalcEnerStep,
+                                                 t, mdatoms->tmass, enerd, state,
+                                                 ir->fepvals, ir->expandedvals, lastbox,
+                                                 shake_vir, force_vir, total_vir, pres,
+                                                 ekind, mu_tot, *constr);
             }
             else
             {
-                upd_mdebin_step(mdebin);
+                energyOutput.recordNonEnergyStep();
             }
 
             gmx_bool do_dr  = do_per_step(step, ir->nstdisreout);
             gmx_bool do_or  = do_per_step(step, ir->nstorireout);
 
-            print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : nullptr,
-                       step, t,
-                       eprNORMAL, mdebin, fcd, groups, &(ir->opts), awh.get());
+            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
+                                               do_log ? fplog : nullptr,
+                                               step, t,
+                                               eprNORMAL, fcd, groups, &(ir->opts), awh.get());
 
             if (ir->bPull)
             {
@@ -1501,11 +1501,11 @@ void gmx::Integrator::do_md()
     {
         if (ir->nstcalcenergy > 0)
         {
-            print_ebin(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE, fplog, step, t,
-                       eprAVER, mdebin, fcd, groups, &(ir->opts), awh.get());
+            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE,
+                                               fplog, step, t,
+                                               eprAVER, fcd, groups, &(ir->opts), awh.get());
         }
     }
-    done_mdebin(mdebin);
     done_mdoutf(outf);
 
     if (bPMETune)

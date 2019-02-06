@@ -74,13 +74,13 @@
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/expanded.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdsetup.h"
@@ -103,6 +103,7 @@
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -228,9 +229,9 @@ void gmx::Integrator::do_mimic()
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
     init_nrnb(nrnb);
 
-    gmx_mdoutf *outf   = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
-    t_mdebin   *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(outf),
-                                     top_global, ir, mdoutf_get_fp_dhdl(outf), true);
+    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
+    gmx::EnergyOutput energyOutput;
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, mdoutf_get_fp_dhdl(outf), true);
 
     /* Energy terms and groups */
     snew(enerd, 1);
@@ -252,7 +253,7 @@ void gmx::Integrator::do_mimic()
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
 
     {
-        double io = compute_io(ir, top_global->natoms, groups, mdebin->ebin->nener, 1);
+        double io = compute_io(ir, top_global->natoms, groups, energyOutput.numEnergyTerms(), 1);
         if ((io > 2000) && MASTER(cr))
         {
             fprintf(stderr,
@@ -480,7 +481,7 @@ void gmx::Integrator::do_mimic()
             do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                      ir, state, state_global, observablesHistory,
                                      top_global, fr,
-                                     outf, mdebin, ekind, f,
+                                     outf, energyOutput, ekind, f,
                                      isCheckpointingStep, doRerun, isLastStep,
                                      mdrunOptions.writeConfout,
                                      bSumEkinhOld);
@@ -571,11 +572,11 @@ void gmx::Integrator::do_mimic()
         if (MASTER(cr))
         {
             const bool bCalcEnerStep = true;
-            upd_mdebin(mdebin, doFreeEnergyPerturbation, bCalcEnerStep,
-                       t, mdatoms->tmass, enerd, state,
-                       ir->fepvals, ir->expandedvals, state->box,
-                       shake_vir, force_vir, total_vir, pres,
-                       ekind, mu_tot, constr);
+            energyOutput.addDataAtEnergyStep(doFreeEnergyPerturbation, bCalcEnerStep,
+                                             t, mdatoms->tmass, enerd, state,
+                                             ir->fepvals, ir->expandedvals, state->box,
+                                             shake_vir, force_vir, total_vir, pres,
+                                             ekind, mu_tot, *constr);
 
             const bool do_ene = true;
             const bool do_log = true;
@@ -583,9 +584,10 @@ void gmx::Integrator::do_mimic()
             const bool do_dr  = ir->nstdisreout != 0;
             const bool do_or  = ir->nstorireout != 0;
 
-            print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : nullptr,
-                       step, t,
-                       eprNORMAL, mdebin, fcd, groups, &(ir->opts), awh);
+            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
+                                               do_log ? fplog : nullptr,
+                                               step, t,
+                                               eprNORMAL, fcd, groups, &(ir->opts), awh);
 
             if (do_per_step(step, ir->nstlog))
             {
@@ -637,7 +639,6 @@ void gmx::Integrator::do_mimic()
         gmx_pme_send_finish(cr);
     }
 
-    done_mdebin(mdebin);
     done_mdoutf(outf);
 
     done_shellfc(fplog, shellfc, step_rel);
