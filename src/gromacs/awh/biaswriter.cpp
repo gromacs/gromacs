@@ -221,14 +221,14 @@ static void normalizeBlock(AwhEnergyBlock *block, const Bias &bias)
             break;
         case Normalization::FreeEnergy:
             /* Normalize free energy values by subtracting the minimum value */
-            for (gmx::index index = 0; index < data.size(); index++)
+            for (gmx::index index = 0; index < data.ssize(); index++)
             {
                 if (bias.state().points()[index].inTargetRegion() && data[index] < minValue)
                 {
                     minValue = data[index];
                 }
             }
-            for (gmx::index index = 0; index < data.size(); index++)
+            for (gmx::index index = 0; index < data.ssize(); index++)
             {
                 if (bias.state().points()[index].inTargetRegion())
                 {
@@ -263,7 +263,7 @@ void BiasWriter::transferMetaDataToWriter(gmx::index         metaDataIndex,
                                           const Bias        &bias)
 {
     gmx::ArrayRef<float> data = block_[getVarStartBlock(AwhOutputEntryType::MetaData)].data();
-    GMX_ASSERT(metaDataIndex < data.size(), "Attempt to transfer AWH meta data to block for index out of range");
+    GMX_ASSERT(metaDataIndex < data.ssize(), "Attempt to transfer AWH meta data to block for index out of range");
 
     /* Transfer the point data of this variable to the right block(s) */
     switch (metaDataType)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1297,7 +1297,7 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t     gmx_tng,
 
     tng_num_particles_get(tng, &nAtoms);
 
-    if (nAtoms == ind.size())
+    if (nAtoms == ind.ssize())
     {
         return;
     }
@@ -1307,7 +1307,7 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t     gmx_tng,
     {
         tng_molecule_num_atoms_get(tng, mol, &nAtoms);
         tng_molecule_cnt_get(tng, mol, &cnt);
-        if (nAtoms == ind.size())
+        if (nAtoms == ind.ssize())
         {
             stat = TNG_SUCCESS;
         }
@@ -1323,7 +1323,7 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t     gmx_tng,
         tng_molecule_name_set(tng, mol, name);
         tng_molecule_chain_add(tng, mol, "", &chain);
 
-        for (int i = 0; i < ind.size(); i++)
+        for (int i = 0; i < ind.ssize(); i++)
         {
             char        temp_name[256], temp_type[256];
 
