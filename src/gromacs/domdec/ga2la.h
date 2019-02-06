@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 
 #include <vector>
 
+#include "gromacs/compat/variant.h"
 #include "gromacs/domdec/hashedmap.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -75,10 +76,6 @@ class gmx_ga2la_t
          */
         gmx_ga2la_t(int numAtomsTotal,
                     int numAtomsLocal);
-        ~gmx_ga2la_t()
-        {
-            usingDirect_ ? data_.direct.~vector() : data_.hashed.~HashedMap();
-        }
 
         /*! \brief Inserts an entry, there should not already be an entry for \p a_gl
          *
@@ -89,40 +86,40 @@ class gmx_ga2la_t
                     const Entry &value)
         {
             GMX_ASSERT(a_gl >= 0, "Only global atom indices >= 0 are supported");
-            if (usingDirect_)
+            if (isDirect())
             {
-                GMX_ASSERT(data_.direct[a_gl].cell == -1, "The key to be inserted should not be present");
-                data_.direct[a_gl] = value;
+                GMX_ASSERT(direct()[a_gl].cell == -1, "The key to be inserted should not be present");
+                direct()[a_gl] = value;
             }
             else
             {
-                data_.hashed.insert(a_gl, value);
+                hashed().insert(a_gl, value);
             }
         }
 
         //! Delete the entry for global atom a_gl
         void erase(int a_gl)
         {
-            if (usingDirect_)
+            if (isDirect())
             {
-                data_.direct[a_gl].cell = -1;
+                direct()[a_gl].cell = -1;
             }
             else
             {
-                data_.hashed.erase(a_gl);
+                hashed().erase(a_gl);
             }
         }
 
         //! Returns a pointer to the entry when present, nullptr otherwise
         const Entry* find(int a_gl) const
         {
-            if (usingDirect_)
+            if (isDirect())
             {
-                return (data_.direct[a_gl].cell == -1) ? nullptr : &(data_.direct[a_gl]);
+                return (direct()[a_gl].cell == -1) ? nullptr : &(direct()[a_gl]);
             }
             else
             {
-                return (data_.hashed.find(a_gl));
+                return (hashed().find(a_gl));
             }
         }
 
@@ -139,14 +136,14 @@ class gmx_ga2la_t
          */
         Entry &at(int a_gl)
         {
-            if (usingDirect_)
+            if (isDirect())
             {
-                GMX_ASSERT(data_.direct[a_gl].cell >= 0, "a_gl should be present");
-                return data_.direct[a_gl];
+                GMX_ASSERT(direct()[a_gl].cell >= 0, "a_gl should be present");
+                return direct()[a_gl];
             }
             else
             {
-                Entry *search = data_.hashed.find(a_gl);
+                Entry *search = hashed().find(a_gl);
                 GMX_ASSERT(search, "a_gl should be present");
                 return *search;
             }
@@ -155,26 +152,23 @@ class gmx_ga2la_t
         //! Clear all the entries in the list.
         void clear()
         {
-            if (usingDirect_)
+            if (isDirect())
             {
-                for (Entry &entry : data_.direct) {entry.cell = -1; }
+                for (Entry &entry : direct()) {entry.cell = -1; }
             }
             else
             {
-                data_.hashed.clear();
+                hashed().clear();
             }
         }
 
     private:
-        union Data
-        {
-            std::vector<Entry>    direct;
-            gmx::HashedMap<Entry> hashed;
-            // constructor and destructor function in parent class
-            Data()  {}
-            ~Data() {}
-        } data_;
-        const bool usingDirect_;
+        bool isDirect() const { return gmx::compat::holds_alternative<std::vector<Entry> >(data_); }
+        std::vector<Entry> &direct() { return gmx::compat::get<std::vector<Entry> >(data_); }
+        const std::vector<Entry> &direct() const { return gmx::compat::get<std::vector<Entry> >(data_); }
+        gmx::HashedMap<Entry> &hashed() { return gmx::compat::get<gmx::HashedMap<Entry> >(data_); }
+        const gmx::HashedMap<Entry> &hashed() const { return gmx::compat::get<gmx::HashedMap<Entry> >(data_); }
+        gmx::compat::variant<std::vector<Entry>, gmx::HashedMap<Entry> > data_;
 };
 
 #endif

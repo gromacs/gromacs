@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,52 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Implements functions for mapping from global to local atom indices.
- *
- * \ingroup module_domdec
- *
- * \author Berk Hess <hess@kth.se>
- */
+#include "external/mpark/variant.hpp"
 
-#include "gmxpre.h"
-
-#include "ga2la.h"
-
-/*! \brief Returns whether to use a direct list only
- *
- * There are two methods implemented for finding the local atom number
- * belonging to a global atom number:
- * 1) a simple, direct array
- * 2) a hash table consisting of list of linked lists indexed with
- *    the global number modulo mod.
- * Memory requirements:
- * 1) numAtomsTotal*2 ints
- * 2) numAtomsLocal*(2+1-2(1-e^-1/2))*4 ints
- * where numAtomsLocal is the number of atoms in the home + communicated zones.
- * Method 1 is faster for low parallelization, 2 for high parallelization.
- * We switch to method 2 when it uses less than half the memory method 1.
- */
-static bool directListIsFaster(int numAtomsTotal,
-                               int numAtomsLocal)
+namespace gmx
 {
-    constexpr int c_numAtomsSmallRelativeToCache  = 1024;
-    constexpr int c_memoryRatioHashedVersusDirect = 9;
-
-    return (numAtomsTotal <= c_numAtomsSmallRelativeToCache ||
-            numAtomsTotal <= numAtomsLocal*c_memoryRatioHashedVersusDirect);
+namespace compat
+{
+using mpark::variant;
+using mpark::get;
+using mpark::holds_alternative;
 }
-
-gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal,
-                         int numAtomsLocal)
-{
-    if (directListIsFaster(numAtomsTotal, numAtomsLocal))
-    {
-        data_.emplace<std::vector<Entry> >(numAtomsTotal, Entry {-1, -1});
-    }
-    else
-    {
-        data_.emplace<gmx::HashedMap<Entry> >(numAtomsLocal);
-    }
 }
