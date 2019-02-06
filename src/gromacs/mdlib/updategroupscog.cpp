@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,13 +88,13 @@ void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>        globalAtomIndices,
     const int    localAtomBegin = cogIndices_.size();
     const size_t cogBegin       = cogs_.size();
 
-    GMX_RELEASE_ASSERT(globalAtomIndices.size() >= localAtomBegin,
+    GMX_RELEASE_ASSERT(globalAtomIndices.ssize() >= localAtomBegin,
                        "addCogs should only be called to add COGs to the list that is already present (which could be empty)");
 
     cogIndices_.reserve(globalAtomIndices.size());
 
     int moleculeBlock = 0;
-    for (int localAtom = localAtomBegin; localAtom < globalAtomIndices.size(); localAtom++)
+    for (int localAtom = localAtomBegin; localAtom < globalAtomIndices.ssize(); localAtom++)
     {
         const int   globalAtom = globalAtomIndices[localAtom];
         int         moleculeIndex;

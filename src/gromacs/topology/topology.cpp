@@ -567,7 +567,7 @@ static void compareMoltypes(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, gm
 {
     fprintf(fp, "comparing molecule types\n");
     cmp_int(fp, "moltype size", -1, mt1.size(), mt2.size());
-    for (int i = 0; i < std::min(mt1.size(), mt2.size()); i++)
+    for (int i = 0; i < std::min(mt1.ssize(), mt2.ssize()); i++)
     {
         cmp_str(fp, "Name", i, *mt1[i].name, *mt2[i].name);
         compareAtoms(fp, &mt1[i].atoms, &mt2[i].atoms, relativeTolerance, absoluteTolerance);
@@ -582,7 +582,7 @@ static void compareMoltypes(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, gm
 static void compareMoletypeAB(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, real relativeTolerance, real absoluteTolerance)
 {
     fprintf(fp, "comparing free energy molecule types\n");
-    for (int i = 0; i < mt1.size(); i++)
+    for (int i = 0; i < mt1.ssize(); i++)
     {
         compareAtoms(fp, &mt1[i].atoms, nullptr, relativeTolerance, absoluteTolerance);
     }

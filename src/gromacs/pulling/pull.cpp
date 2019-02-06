@@ -1079,7 +1079,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
         /* update the atom positions */
         auto localAtomIndices = pgrp->atomSet.localIndex();
         copy_dvec(dr, tmp);
-        for (gmx::index j = 0; j < localAtomIndices.size(); j++)
+        for (gmx::index j = 0; j < localAtomIndices.ssize(); j++)
         {
             ii = localAtomIndices[j];
             if (!pgrp->localWeights.empty())
