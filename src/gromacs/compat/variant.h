@@ -41,5 +41,8 @@ namespace compat
 using mpark::variant;
 using mpark::get;
 using mpark::holds_alternative;
+using mpark::visit;
+using mpark::in_place_t;
+using mpark::in_place_type_t;
 }
 }

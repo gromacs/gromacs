@@ -68,7 +68,48 @@ class gmx_ga2la_t
             int  la;   /**< The local atom index */
             int  cell; /**< The DD zone index for neighboring domains, zone+zone otherwise */
         };
-
+    private:
+        struct Direct
+        {
+            Direct(int n) : data_(n, Entry {-1, -1}
+                                  ) {}
+            void insert(int          a_gl,
+                        const Entry &value)
+            {
+                GMX_ASSERT(data_[a_gl].cell == -1, "The key to be inserted should not be present");
+                data_[a_gl] = value;
+            }
+            void erase(int a_gl)
+            {
+                data_[a_gl].cell = -1;
+            }
+            const Entry* find(int a_gl) const
+            {
+                return (data_[a_gl].cell == -1) ? nullptr : &(data_[a_gl]);
+            }
+            Entry &at(int a_gl)
+            {
+                GMX_ASSERT(data_[a_gl].cell >= 0, "a_gl should be present");
+                return data_[a_gl];
+            }
+            void clear()
+            {
+                for (Entry &entry : data_) {entry.cell = -1; }
+            }
+            private:
+                std::vector<Entry> data_;
+        };
+        struct Hashed : public gmx::HashedMap<Entry>
+        {
+            using HashedMap::HashedMap;
+            Entry &at(int a_gl)
+            {
+                Entry *search = find(a_gl);
+                GMX_ASSERT(search, "a_gl should be present");
+                return *search;
+            }
+        };
+    public:
         /*! \brief Constructor
          *
          * \param[in] numAtomsTotal  The total number of atoms in the system
@@ -85,42 +126,19 @@ class gmx_ga2la_t
         void insert(int          a_gl,
                     const Entry &value)
         {
-            GMX_ASSERT(a_gl >= 0, "Only global atom indices >= 0 are supported");
-            if (isDirect())
-            {
-                GMX_ASSERT(direct()[a_gl].cell == -1, "The key to be inserted should not be present");
-                direct()[a_gl] = value;
-            }
-            else
-            {
-                hashed().insert(a_gl, value);
-            }
+            gmx::compat::visit([&](auto &x) { x.insert(a_gl, value); }, data_);
         }
 
         //! Delete the entry for global atom a_gl
         void erase(int a_gl)
         {
-            if (isDirect())
-            {
-                direct()[a_gl].cell = -1;
-            }
-            else
-            {
-                hashed().erase(a_gl);
-            }
+            gmx::compat::visit([&](auto &x) { x.erase(a_gl); }, data_);
         }
 
         //! Returns a pointer to the entry when present, nullptr otherwise
         const Entry* find(int a_gl) const
         {
-            if (isDirect())
-            {
-                return (direct()[a_gl].cell == -1) ? nullptr : &(direct()[a_gl]);
-            }
-            else
-            {
-                return (hashed().find(a_gl));
-            }
+            return gmx::compat::visit([&](auto &x) { return x.find(a_gl); }, data_);
         }
 
         //! Returns the local atom index if it is a home atom, nullptr otherwise
@@ -136,39 +154,17 @@ class gmx_ga2la_t
          */
         Entry &at(int a_gl)
         {
-            if (isDirect())
-            {
-                GMX_ASSERT(direct()[a_gl].cell >= 0, "a_gl should be present");
-                return direct()[a_gl];
-            }
-            else
-            {
-                Entry *search = hashed().find(a_gl);
-                GMX_ASSERT(search, "a_gl should be present");
-                return *search;
-            }
+            return gmx::compat::visit([&](auto &x) -> Entry & { return x.at(a_gl); }, data_);
         }
 
         //! Clear all the entries in the list.
         void clear()
         {
-            if (isDirect())
-            {
-                for (Entry &entry : direct()) {entry.cell = -1; }
-            }
-            else
-            {
-                hashed().clear();
-            }
+            gmx::compat::visit([&](auto &x) { x.clear(); }, data_);
         }
 
     private:
-        bool isDirect() const { return gmx::compat::holds_alternative<std::vector<Entry> >(data_); }
-        std::vector<Entry> &direct() { return gmx::compat::get<std::vector<Entry> >(data_); }
-        const std::vector<Entry> &direct() const { return gmx::compat::get<std::vector<Entry> >(data_); }
-        gmx::HashedMap<Entry> &hashed() { return gmx::compat::get<gmx::HashedMap<Entry> >(data_); }
-        const gmx::HashedMap<Entry> &hashed() const { return gmx::compat::get<gmx::HashedMap<Entry> >(data_); }
-        gmx::compat::variant<std::vector<Entry>, gmx::HashedMap<Entry> > data_;
+        gmx::compat::variant<Direct, Hashed> data_;
 };
 
 #endif

@@ -71,13 +71,6 @@ static bool directListIsFaster(int numAtomsTotal,
 
 gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal,
                          int numAtomsLocal)
-{
-    if (directListIsFaster(numAtomsTotal, numAtomsLocal))
-    {
-        data_.emplace<std::vector<Entry> >(numAtomsTotal, Entry {-1, -1});
-    }
-    else
-    {
-        data_.emplace<gmx::HashedMap<Entry> >(numAtomsLocal);
-    }
-}
+    : data_(directListIsFaster(numAtomsTotal, numAtomsLocal) ?
+            decltype(data_)(gmx::compat::in_place_type_t<Direct>(), numAtomsTotal) :
+            decltype(data_)(gmx::compat::in_place_type_t<Hashed>(), numAtomsLocal)) {}
