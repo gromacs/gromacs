@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,28 +54,28 @@
 #include "gromacs/utility/smalloc.h"
 
 void
-do_md_trajectory_writing(FILE                    *fplog,
-                         t_commrec               *cr,
-                         int                      nfile,
-                         const t_filenm           fnm[],
-                         int64_t                  step,
-                         int64_t                  step_rel,
-                         double                   t,
-                         t_inputrec              *ir,
-                         t_state                 *state,
-                         t_state                 *state_global,
-                         ObservablesHistory      *observablesHistory,
-                         gmx_mtop_t              *top_global,
-                         t_forcerec              *fr,
-                         gmx_mdoutf_t             outf,
-                         t_mdebin                *mdebin,
-                         gmx_ekindata_t          *ekind,
-                         gmx::ArrayRef<gmx::RVec> f,
-                         gmx_bool                 bCPT,
-                         gmx_bool                 bRerunMD,
-                         gmx_bool                 bLastStep,
-                         gmx_bool                 bDoConfOut,
-                         gmx_bool                 bSumEkinhOld
+do_md_trajectory_writing(FILE                     *fplog,
+                         t_commrec                *cr,
+                         int                       nfile,
+                         const t_filenm            fnm[],
+                         int64_t                   step,
+                         int64_t                   step_rel,
+                         double                    t,
+                         t_inputrec               *ir,
+                         t_state                  *state,
+                         t_state                  *state_global,
+                         ObservablesHistory       *observablesHistory,
+                         gmx_mtop_t               *top_global,
+                         t_forcerec               *fr,
+                         gmx_mdoutf_t              outf,
+                         const gmx::EnergyOutput  &energyOutput,
+                         gmx_ekindata_t           *ekind,
+                         gmx::ArrayRef<gmx::RVec>  f,
+                         gmx_bool                  bCPT,
+                         gmx_bool                  bRerunMD,
+                         gmx_bool                  bLastStep,
+                         gmx_bool                  bDoConfOut,
+                         gmx_bool                  bSumEkinhOld
                          )
 {
     int   mdof_flags;
@@ -158,7 +158,7 @@ do_md_trajectory_writing(FILE                    *fplog,
                     state_global->ekinstate.bUpToDate = TRUE;
                 }
 
-                update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
+                energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,

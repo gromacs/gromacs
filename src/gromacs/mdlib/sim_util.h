@@ -38,13 +38,14 @@
 #define GMX_MDLIB_SIM_UTIL_H
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
 
+struct gmx_ekindata_t;
+struct gmx_enerdata_t;
 struct gmx_output_env_t;
 struct gmx_pme_t;
 struct MdrunOptions;
@@ -57,6 +58,7 @@ namespace gmx
 {
 class BoxDeformation;
 class Constraints;
+class EnergyOutput;
 class IMDOutputProvider;
 class MDLogger;
 class Update;
