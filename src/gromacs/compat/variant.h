@@ -36,10 +36,45 @@
 
 namespace gmx
 {
+namespace detail
+{
+template <class ... Fs>
+struct overload;
+
+template <class F0, class ... Frest>
+struct overload<F0, Frest...> : F0, overload<Frest...>
+{
+    overload(F0 f0, Frest... rest) : F0(f0), overload<Frest...>(rest ...) {}
+
+    using F0::operator();
+    using overload<Frest...>::operator();
+};
+
+template <class F0>
+struct overload<F0> : F0
+{
+    overload(F0 f0) : F0(f0) {}
+
+    using F0::operator();
+};
+}
+
+// Not sure where this should go. Only needed for variant but not proposed for future C++
+// because much simpler with C++17.
+
+//! Create overload set of functors
+template <class ... Fs>
+auto make_overload(Fs ... fs)
+{
+    return detail::overload<Fs...>(fs ...);
+}
+
 namespace compat
 {
 using mpark::variant;
 using mpark::get;
 using mpark::holds_alternative;
+using mpark::visit;
 }
+
 }
