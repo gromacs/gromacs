@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017, by the GROMACS development team, led by
+# Copyright (c) 2017,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -58,14 +58,19 @@ macro(find_power_vsx_toolchain_flags TOOLCHAIN_C_FLAGS_VARIABLE TOOLCHAIN_CXX_FL
         # VSX uses the same function API as Altivec/VMX, so make sure we tune for the current CPU and not VMX.
         # By putting these flags here rather than in the general compiler flags file we can safely assume
         # that we are at least on Power7 since that is when VSX appeared.
+
+        # NOTE:  Enabling instruction fusion on Power8/9 using -mpower8-fusion/-mpower9-fusion
+        #        seems to produce buggy code (see #2747, #2746, #2734).
+        #        Note that instruction fusion does have considerable performance benefits
+        #        (up to 8% measured with gcc 8) if the issue is resolved the flag can be re-enabled.
         gmx_run_cpu_detection(brand)
         if(CPU_DETECTION_BRAND MATCHES "POWER7")
             gmx_test_cflag(GNU_C_VSX_POWER7   "-mcpu=power7 -mtune=power7" ${TOOLCHAIN_C_FLAGS_VARIABLE})
             gmx_test_cflag(GNU_CXX_VSX_POWER7 "-mcpu=power7 -mtune=power7" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
         else()
             # Enable power8 vector extensions on all platforms except old Power7.
-            gmx_test_cflag(GNU_C_VSX_POWER8   "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" ${TOOLCHAIN_C_FLAGS_VARIABLE})
-            gmx_test_cflag(GNU_CXX_VSX_POWER8 "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
+            gmx_test_cflag(GNU_C_VSX_POWER8   "-mcpu=power8 -mpower8-vector -mdirect-move" ${TOOLCHAIN_C_FLAGS_VARIABLE})
+            gmx_test_cflag(GNU_CXX_VSX_POWER8 "-mcpu=power8 -mpower8-vector -mdirect-move" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
         endif()
         # Altivec was originally single-only, and it took a while for compilers
         # to support the double-precision features in VSX.
