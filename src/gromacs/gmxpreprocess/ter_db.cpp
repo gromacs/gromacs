@@ -537,7 +537,7 @@ AtomModificationBlock *choose_ter(gmx::ArrayRef<AtomModificationBlock *> tb, con
     {
         ret = fscanf(stdin, "%d", &sel);
     }
-    while ((ret != 1) || (sel < 0) || (sel >= tb.size()));
+    while ((ret != 1) || (sel < 0) || (sel >= tb.ssize()));
 
     return tb[sel];
 }
