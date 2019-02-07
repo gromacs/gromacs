@@ -32,12 +32,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief Declares interface to code that writes energy-like quantities.
+ *
+ * \ingroup module_mdlib
+ * \inlibraryapi
+ */
 #ifndef GMX_MDLIB_ENERGYOUTPUT_H
 #define GMX_MDLIB_ENERGYOUTPUT_H
 
 #include <cstdio>
 
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/utility/classhelpers.h"
 
 class energyhistory_t;
 struct ener_file;
@@ -60,7 +67,8 @@ class Awh;
 class Constraints;
 }
 
-extern const char *egrp_nm[egNR+1];
+//! Labels of nonbonded interaction energy fields.
+const char *egrp_nm[egNR+1];
 
 /* delta_h block type enum: the kinds of energies written out. */
 enum
@@ -76,13 +84,6 @@ enum
 namespace gmx
 {
 
-// TODO remove use of detail namespace when removing t_mdebin in
-// favour of an Impl class.
-namespace detail
-{
-struct t_mdebin;
-}
-
 /* The functions & data structures here determine the content for outputting
    the .edr file; the file format and actual writing is done with functions
    defined in enxio.h */
@@ -97,15 +98,14 @@ class EnergyOutput
          * modules that understand how to request output from
          * EnergyOutput.
          *
-         * \todo Refactor to separate a function to write the energy
-         * file header. Perhaps transform the remainder into a factory
-         * function.
+         * \todo Perhaps transform this into a factory function.
          */
-        void prepare(ener_file        *fp_ene,
-                     const gmx_mtop_t *mtop,
+        void prepare(const gmx_mtop_t *mtop,
                      const t_inputrec *ir,
                      FILE             *fp_dhdl,
                      bool              isRerun = false);
+        //! Write the header data to the energy file.
+        void writeEnergyFileHeader(ener_file *fp_ene);
         ~EnergyOutput();
         /*! \brief Update the averaging structures.
          *
@@ -114,7 +114,7 @@ class EnergyOutput
                                  bool                    bSum,
                                  double                  time,
                                  real                    tmass,
-                                 gmx_enerdata_t         *enerd,
+                                 const gmx_enerdata_t   &enerd,
                                  t_state                *state,
                                  t_lambda               *fep,
                                  t_expanded             *expand,
@@ -123,7 +123,7 @@ class EnergyOutput
                                  tensor                  fvir,
                                  tensor                  vir,
                                  tensor                  pres,
-                                 gmx_ekindata_t         *ekind,
+                                 const gmx_ekindata_t   *ekind,
                                  rvec                    mu_tot,
                                  const gmx::Constraints *constr);
         /*! \brief Updated the averaging structures
@@ -168,8 +168,9 @@ class EnergyOutput
         void restoreFromEnergyHistory(const energyhistory_t &enerhist);
 
     private:
-        // TODO transform this into an impl class.
-        detail::t_mdebin *mdebin = nullptr;
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

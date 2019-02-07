@@ -255,7 +255,8 @@ void gmx::Integrator::do_md()
     init_nrnb(nrnb);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, mdoutf_get_fp_dhdl(outf));
+    energyOutput.prepare(top_global, ir, mdoutf_get_fp_dhdl(outf));
+    energyOutput.writeEnergyFileHeader(mdoutf_get_fp_ene(outf));
 
     /* Energy terms and groups */
     snew(enerd, 1);
@@ -1351,7 +1352,7 @@ void gmx::Integrator::do_md()
             if (bCalcEner)
             {
                 energyOutput.addDataAtEnergyStep(bDoDHDL, bCalcEnerStep,
-                                                 t, mdatoms->tmass, enerd, state,
+                                                 t, mdatoms->tmass, *enerd, state,
                                                  ir->fepvals, ir->expandedvals, lastbox,
                                                  shake_vir, force_vir, total_vir, pres,
                                                  ekind, mu_tot, constr);

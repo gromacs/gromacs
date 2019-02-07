@@ -295,7 +295,7 @@ void gmx::Integrator::do_rerun()
     init_nrnb(nrnb);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, mdoutf_get_fp_dhdl(outf), true);
+    energyOutput.prepare(top_global, ir, mdoutf_get_fp_dhdl(outf), true);
 
     /* Energy terms and groups */
     snew(enerd, 1);
@@ -658,7 +658,7 @@ void gmx::Integrator::do_rerun()
         {
             const bool bCalcEnerStep = true;
             energyOutput.addDataAtEnergyStep(doFreeEnergyPerturbation, bCalcEnerStep,
-                                             t, mdatoms->tmass, enerd, state,
+                                             t, mdatoms->tmass, *enerd, state,
                                              ir->fepvals, ir->expandedvals, state->box,
                                              shake_vir, force_vir, total_vir, pres,
                                              ekind, mu_tot, constr);
