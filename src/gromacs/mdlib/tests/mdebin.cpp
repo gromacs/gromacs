@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,11 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdlib/makeconstraints.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/unique_cptr.h"
 
@@ -60,14 +65,24 @@ void fcloseWrapper(FILE *fp)
     fclose(fp);
 }
 
-class PrintEbin : public ::testing::Test
+class MdebinTest : public ::testing::Test
 {
     public:
-        t_ebin                         ebin_;
-        unique_cptr<t_ebin, done_ebin> ebinGuard_;
-        t_mdebin                       mdebin_;
+        TestFileManager fileManager_;
 
-        TestFileManager                fileManager_;
+        // Objects needed to make t_mdebin
+        t_inputrec   inputrec_;
+        gmx_mtop_t   mtop_;
+        t_mdebin    *mdebin_;
+        unique_cptr<t_mdebin, done_mdebin> mdebinGuard_;
+
+        // Objects needed for default energy output behavior.
+        t_mdatoms                    mdatoms_;
+        std::unique_ptr<Constraints> constraints_;
+        matrix box_ = {{10, 0, 0}, {0, 10, 0}, {0, 0, 10}};
+        gmx_enerdata_t               enerdata_;
+        tensor totalVirial_, pressure_;
+
         // TODO This will be more elegant (and run faster) when we
         // refactor the output routines to write to a stream
         // interface, which can already be handled in-memory when
@@ -79,78 +94,138 @@ class PrintEbin : public ::testing::Test
         TestReferenceData                refData_;
         TestReferenceChecker             checker_;
 
-        PrintEbin() : ebin_ {0}, ebinGuard_(&ebin_), mdebin_ {0},
-        logFilename_(fileManager_.getTemporaryFilePath(".log")),
-        log_(std::fopen(logFilename_.c_str(), "w")), logFileGuard_(log_),
-        checker_(refData_.rootChecker())
+        MdebinTest() :
+            logFilename_(fileManager_.getTemporaryFilePath(".log")),
+            log_(std::fopen(logFilename_.c_str(), "w")), logFileGuard_(log_),
+            checker_(refData_.rootChecker())
         {
-            mdebin_.ebin = &ebin_;
+            mdebin_ = init_mdebin(nullptr, &mtop_, &inputrec_, nullptr, false);
+            mdebinGuard_.reset(mdebin_);
+            constraints_ = makeConstraints(mtop_, inputrec_, false, log_, mdatoms_, nullptr,
+                                           nullptr, nullptr, nullptr, false);
         }
+        //! Helper function to generate synthetic data to output
+        void setStepData(real testValue)
+        {
+            enerdata_.term[F_LJ]      = (testValue += 0.1);
+            enerdata_.term[F_COUL_SR] = (testValue += 0.1);
+            enerdata_.term[F_EPOT]    = (testValue += 0.1);
+            enerdata_.term[F_EKIN]    = (testValue += 0.1);
+            enerdata_.term[F_ETOT]    = (testValue += 0.1);
+            enerdata_.term[F_TEMP]    = (testValue += 0.1);
+            enerdata_.term[F_PRES]    = (testValue += 0.1);
+            totalVirial_[XX][XX]      = (testValue += 0.1);
+            totalVirial_[XX][YY]      = 0.0;
+            totalVirial_[XX][ZZ]      = 0.0;
+            totalVirial_[YY][XX]      = 0.0;
+            totalVirial_[YY][YY]      = (testValue += 0.1);
+            totalVirial_[YY][ZZ]      = 0.0;
+            totalVirial_[ZZ][XX]      = 0.0;
+            totalVirial_[ZZ][YY]      = 0.0;
+            totalVirial_[ZZ][ZZ]      = (testValue += 0.1);
+            pressure_[XX][XX]         = (testValue += 0.1);
+            pressure_[XX][YY]         = 0.0;
+            pressure_[XX][ZZ]         = 0.0;
+            pressure_[YY][XX]         = 0.0;
+            pressure_[YY][YY]         = (testValue += 0.1);
+            pressure_[YY][ZZ]         = 0.0;
+            pressure_[ZZ][XX]         = 0.0;
+            pressure_[ZZ][YY]         = 0.0;
+            pressure_[ZZ][ZZ]         = (testValue += 0.1);
+        }
+
 };
 
-TEST_F(PrintEbin, print_ebin_HandlesEmptyAverages)
+TEST_F(MdebinTest, HandlesEmptyAverages)
 {
     ASSERT_NE(log_, nullptr);
 
-    // Test print_ebin
+    // Test printing values
     print_ebin(nullptr, false, false, false, log_,
-               0, 0, eprAVER,
-               &mdebin_, nullptr, nullptr, nullptr, nullptr);
+               0, 0, eprNORMAL, mdebin_,
+               nullptr, nullptr, nullptr, nullptr);
+    // Test printing averages
+    print_ebin(nullptr, false, false, false, log_,
+               0, 0, eprAVER, mdebin_,
+               nullptr, nullptr, nullptr, nullptr);
 
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);
 
+    checker_.checkInteger(mdebin_->ebin->nener, "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 
-// TODO Ideally we'd test for proper output of a normal t_mdebin, but
-// building one is a lot of work for limited value.
-
-TEST_F(PrintEbin, pr_ebin_HandlesAverages)
+TEST_F(MdebinTest, HandlesSingleStep)
 {
     ASSERT_NE(log_, nullptr);
 
-    // Set up the energy entries
-    const char *firstName[]      = {"first"};
-    const char *secondName[]     = {"second"};
-    int         first            = get_ebin_space(mdebin_.ebin, 1, firstName, nullptr);
-    int         second           = get_ebin_space(mdebin_.ebin, 1, secondName, nullptr);
+    // Add synthetic data for a single step
+    real time      = 1.0;
+    real testValue = 1.0;
+    setStepData(testValue);
+    upd_mdebin(mdebin_, false, true, time, 0.0, &enerdata_,
+               nullptr, nullptr, nullptr, box_,
+               nullptr, nullptr, totalVirial_, pressure_,
+               nullptr, nullptr, constraints_.get());
 
-    // Put some data into the energy entries
-    const real  timevalues[2][2] = { { 1.0, 10.0}, {2.0, 20.0} };
-    gmx_bool    bSum             = true;
-    for (const auto &values : timevalues)
-    {
-        add_ebin(mdebin_.ebin, first, 1, &values[0], bSum);
-        add_ebin(mdebin_.ebin, second, 1, &values[1], bSum);
-        ebin_increase_count(mdebin_.ebin, bSum);
-    }
+    // Test printing values
+    print_ebin(nullptr, false, false, false, log_,
+               0, 0, eprNORMAL, mdebin_,
+               nullptr, nullptr, nullptr, nullptr);
 
-    // Test pr_ebin
-    pr_ebin(log_, &ebin_, 0, 2, 5, eprAVER, true);
+    // Test printing averages
+    print_ebin(nullptr, false, false, false, log_,
+               0, 0, eprAVER, mdebin_,
+               nullptr, nullptr, nullptr, nullptr);
 
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);
 
+    checker_.checkInteger(mdebin_->ebin->nener, "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 
-TEST_F(PrintEbin, pr_ebin_HandlesEmptyAverages)
+TEST_F(MdebinTest, HandlesTwoSteps)
 {
     ASSERT_NE(log_, nullptr);
 
-    // Set up the energy entries
-    const char *firstName[]      = {"first"};
-    const char *secondName[]     = {"second"};
-    get_ebin_space(mdebin_.ebin, 1, firstName, nullptr);
-    get_ebin_space(mdebin_.ebin, 1, secondName, nullptr);
+    // Add synthetic data for the first step
+    real time      = 1.0;
+    real testValue = 1.0;
+    setStepData(testValue);
+    upd_mdebin(mdebin_, false, true, time, 0.0, &enerdata_,
+               nullptr, nullptr, nullptr, box_,
+               nullptr, nullptr, totalVirial_, pressure_,
+               nullptr, nullptr, constraints_.get());
 
-    // Test pr_ebin
-    pr_ebin(log_, &ebin_, 0, 2, 5, eprAVER, true);
+    // Test printing values
+    print_ebin(nullptr, false, false, false, log_,
+               0, 0, eprNORMAL, mdebin_,
+               nullptr, nullptr, nullptr, nullptr);
+
+    // Add synthetic data for the second step
+    time += 0.005;
+    setStepData(testValue += 1.0);
+    upd_mdebin(mdebin_, false, true, time, 0.0, &enerdata_,
+               nullptr, nullptr, nullptr, box_,
+               nullptr, nullptr, totalVirial_, pressure_,
+               nullptr, nullptr, constraints_.get());
+
+    // Test printing values
+    print_ebin(nullptr, false, false, false, log_,
+               0, 0, eprNORMAL, mdebin_,
+               nullptr, nullptr, nullptr, nullptr);
+
+    // Test printing averages
+    print_ebin(nullptr, false, false, false, log_,
+               0, 0, eprAVER, mdebin_,
+               nullptr, nullptr, nullptr, nullptr);
 
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);
 
+    checker_.checkInteger(mdebin_->ebin->nener, "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 
