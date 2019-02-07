@@ -82,16 +82,16 @@ class SelectionCollectionTest : public ::testing::Test
 
         void setAtomCount(int natoms)
         {
-            ASSERT_NO_THROW_GMX(sc_.setTopology(nullptr, natoms));
+            ASSERT_NO_THROW_GMX(sc_->setTopology(nullptr, natoms));
         }
         void loadTopology(const char *filename);
         void setTopology();
         void loadIndexGroups(const char *filename);
 
-        gmx::test::TopologyManager  topManager_;
-        gmx::SelectionCollection    sc_;
-        gmx::SelectionList          sel_;
-        gmx_ana_indexgrps_t        *grps_;
+        gmx::test::TopologyManager   topManager_;
+        gmx::SelectionCollection    *sc_;
+        gmx::SelectionList           sel_;
+        gmx_ana_indexgrps_t         *grps_;
 };
 
 int SelectionCollectionTest::s_debugLevel = 0;
@@ -110,9 +110,10 @@ SelectionCollectionTest::SelectionCollectionTest()
     : grps_(nullptr)
 {
     topManager_.requestFrame();
-    sc_.setDebugLevel(s_debugLevel);
-    sc_.setReferencePosType("atom");
-    sc_.setOutputPosType("atom");
+    sc_ = new gmx::SelectionCollection();
+    sc_->setDebugLevel(s_debugLevel);
+    sc_->setReferencePosType("atom");
+    sc_->setOutputPosType("atom");
 }
 
 SelectionCollectionTest::~SelectionCollectionTest()
@@ -121,6 +122,7 @@ SelectionCollectionTest::~SelectionCollectionTest()
     {
         gmx_ana_indexgrps_free(grps_);
     }
+    delete sc_;
 }
 
 void
@@ -133,7 +135,7 @@ SelectionCollectionTest::loadTopology(const char *filename)
 void
 SelectionCollectionTest::setTopology()
 {
-    ASSERT_NO_THROW_GMX(sc_.setTopology(topManager_.topology(), -1));
+    ASSERT_NO_THROW_GMX(sc_->setTopology(topManager_.topology(), -1));
 }
 
 void
@@ -144,7 +146,7 @@ SelectionCollectionTest::loadIndexGroups(const char *filename)
     std::string fullpath =
         gmx::test::TestFileManager::getInputFilePath(filename);
     gmx_ana_indexgrps_init(&grps_, nullptr, fullpath.c_str());
-    sc_.setIndexGroups(grps_);
+    sc_->setIndexGroups(grps_);
 }
 
 
@@ -173,7 +175,7 @@ void SelectionCollectionInteractiveTest::runTest(
 {
     helper_.setInputLines(inputLines);
     // TODO: Check something about the returned selections as well.
-    ASSERT_NO_THROW_GMX(sc_.parseInteractive(
+    ASSERT_NO_THROW_GMX(sc_->parseInteractive(
                                 count, &helper_.inputStream(),
                                 bInteractive ? &helper_.outputStream() : nullptr,
                                 "for test context"));
@@ -296,7 +298,7 @@ SelectionCollectionDataTest::runParser(
         SCOPED_TRACE(std::string("Parsing selection \"")
                      + selections[i] + "\"");
         gmx::SelectionList result;
-        ASSERT_NO_THROW_GMX(result = sc_.parseFromString(selections[i]));
+        ASSERT_NO_THROW_GMX(result = sc_->parseFromString(selections[i]));
         sel_.insert(sel_.end(), result.begin(), result.end());
         if (sel_.size() == count_)
         {
@@ -327,7 +329,7 @@ SelectionCollectionDataTest::runParser(
 void
 SelectionCollectionDataTest::runCompiler()
 {
-    ASSERT_NO_THROW_GMX(sc_.compile());
+    ASSERT_NO_THROW_GMX(sc_->compile());
     ASSERT_EQ(count_, sel_.size());
     checkCompiled();
 }
@@ -365,7 +367,7 @@ SelectionCollectionDataTest::runEvaluate()
     using gmx::test::TestReferenceChecker;
 
     ++framenr_;
-    ASSERT_NO_THROW_GMX(sc_.evaluate(topManager_.frame(), nullptr));
+    ASSERT_NO_THROW_GMX(sc_->evaluate(topManager_.frame(), nullptr));
     std::string          frame = gmx::formatString("Frame%d", framenr_);
     TestReferenceChecker compound(
             checker_.checkCompound("EvaluatedSelections", frame.c_str()));
@@ -384,7 +386,7 @@ SelectionCollectionDataTest::runEvaluate()
 void
 SelectionCollectionDataTest::runEvaluateFinal()
 {
-    ASSERT_NO_THROW_GMX(sc_.evaluateFinal(framenr_));
+    ASSERT_NO_THROW_GMX(sc_->evaluateFinal(framenr_));
     checkCompiled();
 }
 
@@ -420,38 +422,38 @@ SelectionCollectionDataTest::runTest(
 
 TEST_F(SelectionCollectionTest, HandlesNoSelections)
 {
-    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
-    EXPECT_NO_THROW_GMX(sc_.compile());
-    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
+    EXPECT_FALSE(sc_->requiredTopologyProperties().hasAny());
+    EXPECT_NO_THROW_GMX(sc_->compile());
+    EXPECT_FALSE(sc_->requiredTopologyProperties().hasAny());
 }
 
 TEST_F(SelectionCollectionTest, HandlesNoSelectionsWithDefaultPositionType)
 {
-    EXPECT_NO_THROW_GMX(sc_.setOutputPosType("res_com"));
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology);
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
-    EXPECT_NO_THROW_GMX(sc_.setOutputPosType("res_cog"));
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology);
-    EXPECT_FALSE(sc_.requiredTopologyProperties().needsMasses);
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("atom of atomnr 1 to 10"));
+    EXPECT_NO_THROW_GMX(sc_->setOutputPosType("res_com"));
+    EXPECT_TRUE(sc_->requiredTopologyProperties().needsTopology);
+    EXPECT_TRUE(sc_->requiredTopologyProperties().needsMasses);
+    EXPECT_NO_THROW_GMX(sc_->setOutputPosType("res_cog"));
+    EXPECT_TRUE(sc_->requiredTopologyProperties().needsTopology);
+    EXPECT_FALSE(sc_->requiredTopologyProperties().needsMasses);
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("atom of atomnr 1 to 10"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    ASSERT_NO_THROW_GMX(sc_.compile());
-    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
+    ASSERT_NO_THROW_GMX(sc_->compile());
+    EXPECT_FALSE(sc_->requiredTopologyProperties().hasAny());
 }
 
 TEST_F(SelectionCollectionTest, HandlesVelocityAndForceRequests)
 {
-    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("atomnr 1 to 10; none"));
-    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
+    ASSERT_NO_THROW_GMX(sel_ = sc_->parseFromString("atomnr 1 to 10; none"));
+    EXPECT_FALSE(sc_->requiredTopologyProperties().hasAny());
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
     ASSERT_EQ(2U, sel_.size());
     ASSERT_NO_THROW_GMX(sel_[0].setEvaluateVelocities(true));
     ASSERT_NO_THROW_GMX(sel_[1].setEvaluateVelocities(true));
     ASSERT_NO_THROW_GMX(sel_[0].setEvaluateForces(true));
     ASSERT_NO_THROW_GMX(sel_[1].setEvaluateForces(true));
-    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
-    ASSERT_NO_THROW_GMX(sc_.compile());
-    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
+    EXPECT_FALSE(sc_->requiredTopologyProperties().hasAny());
+    ASSERT_NO_THROW_GMX(sc_->compile());
+    EXPECT_FALSE(sc_->requiredTopologyProperties().hasAny());
     EXPECT_TRUE(sel_[0].hasVelocities());
     EXPECT_TRUE(sel_[1].hasVelocities());
     EXPECT_TRUE(sel_[0].hasForces());
@@ -460,21 +462,21 @@ TEST_F(SelectionCollectionTest, HandlesVelocityAndForceRequests)
 
 TEST_F(SelectionCollectionTest, HandlesForceRequestForCenterOfGeometry)
 {
-    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("res_cog of atomnr 1 to 10"));
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology);
+    ASSERT_NO_THROW_GMX(sel_ = sc_->parseFromString("res_cog of atomnr 1 to 10"));
+    EXPECT_TRUE(sc_->requiredTopologyProperties().needsTopology);
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_EQ(1U, sel_.size());
     ASSERT_NO_THROW_GMX(sel_[0].setEvaluateForces(true));
     // In principle, the code could know here that the masses are required, but
     // currently it only knows this after compilation.
-    ASSERT_NO_THROW_GMX(sc_.compile());
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
+    ASSERT_NO_THROW_GMX(sc_->compile());
+    EXPECT_TRUE(sc_->requiredTopologyProperties().needsMasses);
     EXPECT_TRUE(sel_[0].hasForces());
 }
 
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 {
-    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromFile(
+    ASSERT_NO_THROW_GMX(sel_ = sc_->parseFromFile(
                                     gmx::test::TestFileManager::getInputFilePath("selfile.dat")));
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel_.size());
@@ -484,7 +486,7 @@ TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 
 TEST_F(SelectionCollectionTest, HandlesAtypicalWhitespace)
 {
-    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("atomnr\n1\r\nto\t10;\vatomnr 3\f to 14\r"));
+    ASSERT_NO_THROW_GMX(sel_ = sc_->parseFromString("atomnr\n1\r\nto\t10;\vatomnr 3\f to 14\r"));
     ASSERT_EQ(2U, sel_.size());
     EXPECT_STREQ("atomnr 1 to 10", sel_[0].selectionText());
     // TODO: Get rid of the trailing whitespace.
@@ -495,26 +497,26 @@ TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
 {
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     EXPECT_THROW_GMX({
-                         sc_.parseFromString("resname ~ \"R[A\"");
-                         sc_.compile();
+                         sc_->parseFromString("resname ~ \"R[A\"");
+                         sc_->compile();
                      }, gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
 {
-    EXPECT_THROW_GMX(sc_.parseFromString("mindist from atomnr 1 cutoff"),
+    EXPECT_THROW_GMX(sc_->parseFromString("mindist from atomnr 1 cutoff"),
                      gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue2)
 {
-    EXPECT_THROW_GMX(sc_.parseFromString("within 1 of"),
+    EXPECT_THROW_GMX(sc_->parseFromString("within 1 of"),
                      gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
 {
-    EXPECT_THROW_GMX(sc_.parseFromString("within of atomnr 1"),
+    EXPECT_THROW_GMX(sc_->parseFromString("within of atomnr 1"),
                      gmx::InvalidInputError);
 }
 
@@ -522,157 +524,157 @@ TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
 
 TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser1)
 {
-    ASSERT_NO_THROW_GMX(sc_.setIndexGroups(nullptr));
-    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InconsistentInputError);
+    ASSERT_NO_THROW_GMX(sc_->setIndexGroups(nullptr));
+    EXPECT_THROW_GMX(sc_->parseFromString("group \"foo\""), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->parseFromString("4"), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser2)
 {
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
-    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->parseFromString("group \"foo\""), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->parseFromString("4"), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed1)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"foo\""));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("group \"foo\""));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW_GMX(sc_.setIndexGroups(nullptr), gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+    EXPECT_THROW_GMX(sc_->setIndexGroups(nullptr), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->compile(), gmx::APIError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed2)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("group 4; group \"foo\""));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("group 4; group \"foo\""));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
     EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+    EXPECT_THROW_GMX(sc_->compile(), gmx::APIError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReference)
 {
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
-    EXPECT_THROW_GMX(sc_.parseFromString("atomnr 1 to 3 and group \"GrpUnsorted\""),
+    EXPECT_THROW_GMX(sc_->parseFromString("atomnr 1 to 3 and group \"GrpUnsorted\""),
                      gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.parseFromString("group 2 or atomnr 2 to 5"),
+    EXPECT_THROW_GMX(sc_->parseFromString("group 2 or atomnr 2 to 5"),
                      gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.parseFromString("within 1 of group 2"),
+    EXPECT_THROW_GMX(sc_->parseFromString("within 1 of group 2"),
                      gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReferenceDelayed)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 1 to 3 and group \"GrpUnsorted\""));
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 1 to 3 and group 2"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("atomnr 1 to 3 and group \"GrpUnsorted\""));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("atomnr 1 to 3 and group 2"));
     EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
     // TODO: Add a separate check in the selection compiler for a safer API
     // (makes sense in the future if the compiler needs the information for
     // other purposes as well).
-    // EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+    // EXPECT_THROW_GMX(sc_->compile(), gmx::APIError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroup)
 {
-    ASSERT_NO_THROW_GMX(sc_.setTopology(nullptr, 5));
+    ASSERT_NO_THROW_GMX(sc_->setTopology(nullptr, 5));
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
-    EXPECT_THROW_GMX(sc_.parseFromString("group \"GrpB\""), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->parseFromString("group \"GrpB\""), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroupDelayed)
 {
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"GrpB\""));
-    EXPECT_THROW_GMX(sc_.setTopology(nullptr, 5), gmx::InconsistentInputError);
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("group \"GrpB\""));
+    EXPECT_THROW_GMX(sc_->setTopology(nullptr, 5), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroupDelayed2)
 {
-    ASSERT_NO_THROW_GMX(sc_.setTopology(nullptr, 5));
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"GrpB\""));
+    ASSERT_NO_THROW_GMX(sc_->setTopology(nullptr, 5));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("group \"GrpB\""));
     EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingMoleculeInfo)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("molindex 1 to 5"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("molindex 1 to 5"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW_GMX(sc_.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingAtomTypes)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("type CA"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("type CA"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW_GMX(sc_.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingPDBInfo)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("altloc A"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("altloc A"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW_GMX(sc_.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("all permute 1 1"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("all permute 1 1"));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW_GMX(sc_.compile(), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_->compile(), gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation2)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("all permute 3 2 1"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("all permute 3 2 1"));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW_GMX(sc_.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation3)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("x < 1.5 permute 3 2 1"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("x < 1.5 permute 3 2 1"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    ASSERT_NO_THROW_GMX(sc_.compile());
-    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
+    ASSERT_NO_THROW_GMX(sc_->compile());
+    EXPECT_THROW_GMX(sc_->evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 3 to 10"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("atomnr 3 to 10"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    ASSERT_NO_THROW_GMX(sc_.compile());
+    ASSERT_NO_THROW_GMX(sc_->compile());
     topManager_.frame()->natoms = 8;
-    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets2)
 {
     const int index[] = { 1, 2, 3, 9 };
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 3 4 7 10"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("atomnr 3 4 7 10"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    ASSERT_NO_THROW_GMX(sc_.compile());
+    ASSERT_NO_THROW_GMX(sc_->compile());
     topManager_.initFrameIndices(index);
-    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets3)
 {
     const int index[] = { 0, 1, 2, 3, 4, 5, 6, 9, 10, 11 };
     // Evaluating the positions will require atoms 1-3, 7-12.
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("whole_res_cog of atomnr 2 7 11"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("whole_res_cog of atomnr 2 7 11"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    ASSERT_NO_THROW_GMX(sc_.compile());
+    ASSERT_NO_THROW_GMX(sc_->compile());
     topManager_.initFrameIndices(index);
-    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets4)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("mindistance from atomnr 1 to 5 < 2"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("mindistance from atomnr 1 to 5 < 2"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    ASSERT_NO_THROW_GMX(sc_.compile());
+    ASSERT_NO_THROW_GMX(sc_->compile());
     topManager_.frame()->natoms = 10;
-    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_->evaluate(topManager_.frame(), nullptr), gmx::InconsistentInputError);
 }
 
 // TODO: Tests for more evaluation errors
@@ -736,8 +738,8 @@ TEST_F(SelectionCollectionInteractiveTest, HandlesStatusWithExistingSelections)
         "resname RA",
         ""
     };
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("foo = resname RA"));
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("resname RB"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("foo = resname RA"));
+    ASSERT_NO_THROW_GMX(sc_->parseFromString("resname RB"));
     runTest(-1, true, input);
 }
 
@@ -925,7 +927,7 @@ TEST_F(SelectionCollectionDataTest, HandlesMass)
         "mass > 5"
     };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
+    EXPECT_TRUE(sc_->requiredTopologyProperties().needsMasses);
     ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
     t_atoms &atoms = topManager_.atoms();
     for (int i = 0; i < atoms.nr; ++i)
