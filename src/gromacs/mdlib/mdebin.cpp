@@ -166,7 +166,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     groups = &mtop->groups;
 
-    bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
+    bBHAM = (mtop->ffparams.numTypes() > 0) && (mtop->ffparams.functype[0] == F_BHAM);
     b14   = (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
              gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0);
 
@@ -621,7 +621,6 @@ void done_mdebin(t_mdebin *mdebin)
     done_mde_delta_h_coll(mdebin->dhc);
     sfree(mdebin->dE);
     sfree(mdebin->temperatures);
-    sfree(mdebin->ebin);
     sfree(mdebin);
 }
 
@@ -1269,7 +1268,6 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
     char         buf[246];
     int          i, j, n, ni, nj, b;
     int          ndisre = 0;
-    real        *disre_rm3tav, *disre_rt;
 
     /* these are for the old-style blocks (1 subblock, only reals), because
        there can be only one per ID for these */
@@ -1300,14 +1298,12 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
             fr.nre          = (bEne) ? md->ebin->nener : 0;
             fr.ener         = md->ebin->e;
             ndisre          = bDR ? fcd->disres.npair : 0;
-            disre_rm3tav    = fcd->disres.rm3tav;
-            disre_rt        = fcd->disres.rt;
             /* Optional additional old-style (real-only) blocks. */
             for (i = 0; i < enxNR; i++)
             {
                 nr[i] = 0;
             }
-            if (fcd->orires.nr > 0 && bOR)
+            if (bOR && fcd->orires.nr > 0)
             {
                 diagonalize_orires_tensors(&(fcd->orires));
                 nr[enxOR]     = fcd->orires.nr;
@@ -1364,13 +1360,13 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 #if !GMX_DOUBLE
                     fr.block[db].sub[0].type = xdr_datatype_float;
                     fr.block[db].sub[1].type = xdr_datatype_float;
-                    fr.block[db].sub[0].fval = disre_rt;
-                    fr.block[db].sub[1].fval = disre_rm3tav;
+                    fr.block[db].sub[0].fval = fcd->disres.rt;
+                    fr.block[db].sub[1].fval = fcd->disres.rm3tav;
 #else
                     fr.block[db].sub[0].type = xdr_datatype_double;
                     fr.block[db].sub[1].type = xdr_datatype_double;
-                    fr.block[db].sub[0].dval = disre_rt;
-                    fr.block[db].sub[1].dval = disre_rm3tav;
+                    fr.block[db].sub[0].dval = fcd->disres.rt;
+                    fr.block[db].sub[1].dval = fcd->disres.rm3tav;
 #endif
                 }
                 /* here we can put new-style blocks */
@@ -1421,16 +1417,19 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
     if (log)
     {
-        for (i = 0; i < opts->ngtc; i++)
+        if (opts)
         {
-            if (opts->annealing[i] != eannNO)
+            for (i = 0; i < opts->ngtc; i++)
             {
-                fprintf(log, "Current ref_t for group %s: %8.1f\n",
-                        *(groups->grpname[groups->grps[egcTC].nm_ind[i]]),
-                        opts->ref_t[i]);
+                if (opts->annealing[i] != eannNO)
+                {
+                    fprintf(log, "Current ref_t for group %s: %8.1f\n",
+                            *(groups->grpname[groups->grps[egcTC].nm_ind[i]]),
+                            opts->ref_t[i]);
+                }
             }
         }
-        if (mode == eprNORMAL && fcd->orires.nr > 0)
+        if (mode == eprNORMAL && bOR && fcd->orires.nr > 0)
         {
             print_orires_log(log, &(fcd->orires));
         }
