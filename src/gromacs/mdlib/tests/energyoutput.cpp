@@ -98,7 +98,7 @@ class EnergyOutputTest : public ::testing::Test
             log_(std::fopen(logFilename_.c_str(), "w")), logFileGuard_(log_),
             checker_(refData_.rootChecker())
         {
-            energyOutput_.prepare(nullptr, &mtop_, &inputrec_, nullptr, false);
+            energyOutput_.prepare(&mtop_, &inputrec_, nullptr, false);
             constraints_ = makeConstraints(mtop_, inputrec_, false, log_, mdatoms_, nullptr,
                                            nullptr, nullptr, nullptr, false);
         }
@@ -162,7 +162,7 @@ TEST_F(EnergyOutputTest, HandlesSingleStep)
     real time      = 1.0;
     real testValue = 1.0;
     setStepData(testValue);
-    energyOutput_.addDataAtEnergyStep(false, true, time, 0.0, &enerdata_,
+    energyOutput_.addDataAtEnergyStep(false, true, time, 0.0, enerdata_,
                                       nullptr, nullptr, nullptr, box_,
                                       nullptr, nullptr, totalVirial_, pressure_,
                                       nullptr, nullptr, constraints_.get());
@@ -192,7 +192,7 @@ TEST_F(EnergyOutputTest, HandlesTwoSteps)
     real time      = 1.0;
     real testValue = 1.0;
     setStepData(testValue);
-    energyOutput_.addDataAtEnergyStep(false, true, time, 0.0, &enerdata_,
+    energyOutput_.addDataAtEnergyStep(false, true, time, 0.0, enerdata_,
                                       nullptr, nullptr, nullptr, box_,
                                       nullptr, nullptr, totalVirial_, pressure_,
                                       nullptr, nullptr, constraints_.get());
@@ -205,7 +205,7 @@ TEST_F(EnergyOutputTest, HandlesTwoSteps)
     // Add synthetic data for the second step
     time += 0.005;
     setStepData(testValue += 1.0);
-    energyOutput_.addDataAtEnergyStep(false, true, time, 0.0, &enerdata_,
+    energyOutput_.addDataAtEnergyStep(false, true, time, 0.0, enerdata_,
                                       nullptr, nullptr, nullptr, box_,
                                       nullptr, nullptr, totalVirial_, pressure_,
                                       nullptr, nullptr, constraints_.get());

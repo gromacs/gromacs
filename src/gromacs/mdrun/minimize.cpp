@@ -1115,7 +1115,7 @@ Integrator::do_cg()
     snew(enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
+    energyOutput.prepare(top_global, inputrec, nullptr);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1150,7 +1150,7 @@ Integrator::do_cg()
         /* Copy stuff to the energy bin for easy printing etc. */
         matrix nullBox = {};
         energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step),
-                                         mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                         mdatoms->tmass, *enerd, nullptr, nullptr, nullptr, nullBox,
                                          nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
@@ -1575,7 +1575,7 @@ Integrator::do_cg()
             /* Store the new (lower) energies */
             matrix nullBox = {};
             energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step),
-                                             mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                             mdatoms->tmass, *enerd, nullptr, nullptr, nullptr, nullBox,
                                              nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
@@ -1759,7 +1759,7 @@ Integrator::do_lbfgs()
     snew(enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
+    energyOutput.prepare(top_global, inputrec, nullptr);
 
     start = 0;
     end   = mdatoms->homenr;
@@ -1831,7 +1831,7 @@ Integrator::do_lbfgs()
         /* Copy stuff to the energy bin for easy printing etc. */
         matrix nullBox = {};
         energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step),
-                                         mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                         mdatoms->tmass, *enerd, nullptr, nullptr, nullptr, nullBox,
                                          nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
@@ -2319,7 +2319,7 @@ Integrator::do_lbfgs()
             /* Store the new (lower) energies */
             matrix nullBox = {};
             energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step),
-                                             mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                             mdatoms->tmass, *enerd, nullptr, nullptr, nullptr, nullBox,
                                              nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
@@ -2460,7 +2460,7 @@ Integrator::do_steep()
     snew(enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
+    energyOutput.prepare(top_global, inputrec, nullptr);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
@@ -2550,7 +2550,7 @@ Integrator::do_steep()
                 /* Store the new (lower) energies  */
                 matrix nullBox = {};
                 energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(count),
-                                                 mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
+                                                 mdatoms->tmass, *enerd, nullptr, nullptr, nullptr, nullBox,
                                                  nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
                 /* Prepare IMD energy record, if bIMD is TRUE. */
