@@ -181,6 +181,51 @@ void SelectionCollectionInteractiveTest::runTest(
 }
 
 
+// \brief Helper class for SelectionCollectionDataTest, which manages the SelectionCollection
+class SelectionCollectionTestHelper
+{
+    public:
+        SelectionCollectionTestHelper();
+        void setCollection(gmx::SelectionCollection *collection);
+        gmx::SelectionList parseFromString(const std::string &filename);
+        void evaluate(t_trxframe *fr, t_pbc *pbc);
+        void evaluateFinal(int nframes);
+        void compile();
+    private:
+        gmx::SelectionCollection *sc_;
+};
+
+SelectionCollectionTestHelper::SelectionCollectionTestHelper()
+    : sc_(nullptr)
+{}
+
+void SelectionCollectionTestHelper::setCollection(gmx::SelectionCollection *collection)
+{
+    sc_ = collection;
+}
+
+gmx::SelectionList
+SelectionCollectionTestHelper::parseFromString(const std::string &filename)
+{
+    return sc_->parseFromString(filename);
+}
+
+void SelectionCollectionTestHelper::compile()
+{
+    sc_->compile();
+}
+
+void SelectionCollectionTestHelper::evaluate(t_trxframe *fr, t_pbc *pbc)
+{
+    sc_->evaluate(fr, pbc);
+}
+
+void SelectionCollectionTestHelper::evaluateFinal(int nframes)
+{
+    sc_->evaluateFinal(nframes);
+}
+
+
 /********************************************************************
  * Test fixture for selection testing with reference data
  */
@@ -204,6 +249,7 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         SelectionCollectionDataTest()
             : checker_(data_.rootChecker()), count_(0), framenr_(0)
         {
+            helper_.setCollection(&sc_);
         }
 
         void setFlags(TestFlags flags) { flags_ = flags; }
@@ -229,6 +275,7 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         size_t                          count_;
         int                             framenr_;
         TestFlags                       flags_;
+        SelectionCollectionTestHelper   helper_;
 };
 
 
@@ -291,12 +338,12 @@ SelectionCollectionDataTest::runParser(
     TestReferenceChecker compound(checker_.checkCompound("ParsedSelections", "Parsed"));
     size_t               varcount = 0;
     count_ = 0;
-    for (gmx::index i = 0; i < selections.size(); ++i)
+    for (gmx::index i = 0; i < selections.ssize(); ++i)
     {
         SCOPED_TRACE(std::string("Parsing selection \"")
                      + selections[i] + "\"");
         gmx::SelectionList result;
-        ASSERT_NO_THROW_GMX(result = sc_.parseFromString(selections[i]));
+        ASSERT_NO_THROW_GMX(result = helper_.parseFromString(selections[i]));
         sel_.insert(sel_.end(), result.begin(), result.end());
         if (sel_.size() == count_)
         {
@@ -327,7 +374,7 @@ SelectionCollectionDataTest::runParser(
 void
 SelectionCollectionDataTest::runCompiler()
 {
-    ASSERT_NO_THROW_GMX(sc_.compile());
+    ASSERT_NO_THROW_GMX(helper_.compile());
     ASSERT_EQ(count_, sel_.size());
     checkCompiled();
 }
@@ -365,7 +412,7 @@ SelectionCollectionDataTest::runEvaluate()
     using gmx::test::TestReferenceChecker;
 
     ++framenr_;
-    ASSERT_NO_THROW_GMX(sc_.evaluate(topManager_.frame(), nullptr));
+    ASSERT_NO_THROW_GMX(helper_.evaluate(topManager_.frame(), nullptr));
     std::string          frame = gmx::formatString("Frame%d", framenr_);
     TestReferenceChecker compound(
             checker_.checkCompound("EvaluatedSelections", frame.c_str()));
@@ -384,7 +431,7 @@ SelectionCollectionDataTest::runEvaluate()
 void
 SelectionCollectionDataTest::runEvaluateFinal()
 {
-    ASSERT_NO_THROW_GMX(sc_.evaluateFinal(framenr_));
+    ASSERT_NO_THROW_GMX(helper_.evaluateFinal(framenr_));
     checkCompiled();
 }
 
