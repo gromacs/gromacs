@@ -142,6 +142,12 @@ TEST_F(MatrixTest, staticMultiDimArrayExtent)
     EXPECT_EQ(matrix_.extent(1), 3);
 }
 
+TEST_F(MatrixTest, constrainedView)
+{
+    Constraint3x3View<real> constrView(matrix_);
+    EXPECT_EQ(constrView(2, 1), 0);
+}
+
 } // namespace
 
 } // namespace test
