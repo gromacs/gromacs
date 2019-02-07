@@ -118,7 +118,7 @@ residueEntryByResidueName(gmx::ArrayRef<const ResidueTypeEntry> entries, const s
 
 bool ResidueType::nameIndexedInResidueTypes(const std::string &residueName)
 {
-    return residueEntryByResidueName(impl_->entry, residueName) != nullptr;
+    return residueEntryByResidueName(impl_->entry, residueName) != gmx::makeConstArrayRef(impl_->entry).end();
 }
 
 void ResidueType::addResidue(const std::string &residueName, const std::string &residueType)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,8 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
+
+#include "external/type_safe/strong_typedef.hpp"
 
 #include "gromacs/utility/gmxassert.h"
 
@@ -114,6 +116,13 @@ struct EmptyArrayRef {};
 template <typename T>
 class ArrayRef
 {
+    template<typename U>
+    struct Iterator : type_safe::strong_typedef<Iterator<U>, U*>,
+                      type_safe::strong_typedef_op::random_access_iterator<Iterator<U>, U>
+    {
+        using Base = type_safe::strong_typedef<Iterator<U>, U*>;
+        using Base::Base;
+    };
     public:
         //! Type of values stored in the reference.
         typedef T         value_type;
@@ -126,13 +135,13 @@ class ArrayRef
         //! Const pointer to an element.
         typedef const T  *const_pointer;
         //! Const iterator type to an element.
-        typedef const T  *const_iterator;
+        typedef Iterator<const T> const_iterator;
         //! Reference to an element.
         typedef T        &reference;
         //! Pointer to an element.
         typedef T        *pointer;
         //! Iterator type to an element.
-        typedef T        *iterator;
+        typedef Iterator<T> iterator;
         //! Standard reverse iterator.
         typedef std::reverse_iterator<iterator>       reverse_iterator;
         //! Standard reverse iterator.
@@ -214,9 +223,9 @@ class ArrayRef
             return {begin_+start, begin_+start+count};
         }
         //! Returns an iterator to the beginning of the reference.
-        iterator begin() const { return begin_; }
+        iterator begin() const { return iterator {begin_}; }
         //! Returns an iterator to the end of the reference.
-        iterator end() const { return end_; }
+        iterator end() const { return iterator {end_}; }
         //! Returns an iterator to the reverse beginning of the reference.
         reverse_iterator rbegin() const { return reverse_iterator(end()); }
         //! Returns an iterator to the reverse end of the reference.

@@ -392,7 +392,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
     switch (mode)
     {
         case CodePath::CPU:
-            atc->f = as_rvec_array(forces.begin());
+            atc->f = as_rvec_array(forces.data());
             if (atc->nthread == 1)
             {
                 // something which is normally done in serial spline computation (make_thread_local_ind())

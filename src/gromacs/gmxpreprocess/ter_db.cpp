@@ -451,7 +451,7 @@ filter_ter(gmx::ArrayRef<AtomModificationBlock> tb,
             if (gmx_strncasecmp(resname, s, 3) == 0)
             {
                 found = true;
-                list.push_back(it);
+                list.push_back(&*it);
             }
             else
             {
@@ -506,14 +506,14 @@ filter_ter(gmx::ArrayRef<AtomModificationBlock> tb,
                                           { return strstr(b->name.c_str(), s) != nullptr; });
                 if (found == list.end())
                 {
-                    list.push_back(it);
+                    list.push_back(&*it);
                 }
             }
         }
     }
     if (none_idx != tb.end())
     {
-        list.push_back(none_idx);
+        list.push_back(&*none_idx);
     }
 
     return list;
