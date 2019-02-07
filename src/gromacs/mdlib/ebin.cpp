@@ -70,6 +70,7 @@ void done_ebin(t_ebin *eb)
     sfree(eb->e);
     sfree(eb->e_sim);
     sfree(eb->enm);
+    sfree(eb);
 }
 
 int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *unit)
