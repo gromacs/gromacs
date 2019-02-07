@@ -245,6 +245,7 @@ if (SPHINX_FOUND)
         reference-manual/analysis/rmsd.rst
         reference-manual/analysis/covariance-analysis.rst
         reference-manual/analysis/dihedral-pca.rst
+        reference-manual/analysis/hydrogen-bonds.rst
         reference-manual/analysis/protein-related.rst
         reference-manual/analysis/interface-related.rst)
     # The image files have also been ordered by the respective
