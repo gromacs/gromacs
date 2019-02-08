@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -236,6 +236,13 @@ void gmx::Integrator::do_rerun()
                    "be available in a different form in a future version of GROMACS, "
                    "e.g. gmx rerun -f.");
 
+    if (ir->efep != efepNO && (mdAtoms->mdatoms()->nMassPerturbed > 0 ||
+                               (constr && constr->havePerturbedConstraints())))
+    {
+        gmx_fatal(FARGS, "Perturbed masses or constraints are not supported by rerun. "
+                  "Either make a .tpr without mass and constraint perturbation, "
+                  "or use GROMACS 2018.4, 2018.5 or later 2018 version.");
+    }
     if (ir->bExpanded)
     {
         gmx_fatal(FARGS, "Expanded ensemble not supported by rerun.");
