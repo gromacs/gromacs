@@ -256,6 +256,14 @@ a clFFT package, or use the latest GROMACS 2018 point release.")
     endif()
 endif()
 
+# Permit GROMACS code to include externally developed headers, such as
+# the functionality from the nonstd project that we use for
+# gmx::compat::optional. These are included as system headers so that
+# no warnings are issued from them.
+#
+# TODO Perhaps generalize this for all headers from src/external
+target_include_directories(libgromacs SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
 # we do it in the compilation command (after testing that the compiler

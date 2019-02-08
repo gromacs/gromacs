@@ -61,6 +61,15 @@ a release.
   of characters instead of using ``const std::string &``. See also |linkrefstringview|.
   Because null termination expected by some C APIs (e.g. fopen, fputs, fprintf)
   is not guaranteed, string_view should not be used in such cases.
+* Use ``optional<T>`` types in situations where there is exactly one,
+  reason (that is clear to all parties) for having no value of type T,
+  and where the lack of value is as natural as having any regular
+  value of T. Good examples include the return type of a function that
+  parses an integer value from a string, searching for a matching
+  element in a range, or providing an optional name for a residue
+  type. Prefer some other construct when the logic requires an
+  explanation of the reason why no regular value for T exists, ie.  do
+  not use ``optional<T>`` for error handling.
 * Don't use C-style casts; use ``const_cast``, ``static_cast`` or
   ``reinterpret_cast as appropriate``. See the point on RTTI for
   ``dynamic_cast``. For emphasizing type (e.g. intentional integer division)

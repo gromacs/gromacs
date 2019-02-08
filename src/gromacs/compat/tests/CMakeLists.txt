@@ -35,7 +35,12 @@
 if (GMX_BUILD_UNITTESTS)
     gmx_add_unit_test(CompatibilityHelpersTests compat-test
                      make_unique.cpp
+                     optional.cpp
                      pointers.cpp
                      string_view.cpp
                      )
+    check_cxx_compiler_flag("-Wno-unused-member-function" HAS_NO_UNUSED_MEMBER_FUNCTION)
+    if (HAS_NO_UNUSED_MEMBER_FUNCTION)
+        set_source_files_properties(optional.cpp PROPERTIES COMPILE_FLAGS -Wno-unused-member-function)
+    endif()
 endif()
