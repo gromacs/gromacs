@@ -526,8 +526,8 @@ const real cQuarticAngles[5] = { 1.1, 2.3, 4.6, 7.8, 9.2 };
 //! Function types for testing angles. Add new terms at the end.
 std::vector<iListInput> c_InputAngles =
 {
-    { iListInput(1e-3, 1e-8).setHarmonic(F_ANGLES, 100.0, 50.0) },
-    { iListInput(1e-3, 1e-8).setHarmonic(F_ANGLES, 100.15, 50.0, 95.0, 30.0) },
+    { iListInput(2e-3, 1e-8).setHarmonic(F_ANGLES, 100.0, 50.0) },
+    { iListInput(2e-3, 1e-8).setHarmonic(F_ANGLES, 100.15, 50.0, 95.0, 30.0) },
     { iListInput(8e-3, 1e-8).setHarmonic(F_G96ANGLES, 100.0, 50.0) },
     { iListInput(8e-3, 1e-8).setHarmonic(F_G96ANGLES, 100.0, 50.0, 95.0, 30.0) },
     { iListInput().setLinearAngle(50.0, 0.4) },
