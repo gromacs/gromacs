@@ -534,9 +534,9 @@ std::vector<iListInput> c_InputAngles =
     { iListInput().setLinearAngle(50.0, 0.4, 40.0, 0.6) },
     { iListInput(2e-6, 1e-8).setCrossBondBonds(0.8, 0.7, 45.0) },
     { iListInput(2e-6, 1e-8).setCrossBondAngles(0.8, 0.7, 0.3, 45.0) },
-    { iListInput(8e-3, 1e-8).setUreyBradley(950.0, 46.0, 0.3, 5.0) },
-    { iListInput(8e-3, 1e-8).setUreyBradley(100.0, 45.0, 0.3, 5.0, 90.0, 47.0, 0.32, 7.0) },
-    { iListInput(7e-4, 1e-8).setQuarticAngles(87.0, cQuarticAngles ) }
+    { iListInput(2e-2, 1e-8).setUreyBradley(950.0, 46.0, 0.3, 5.0) },
+    { iListInput(2e-2, 1e-8).setUreyBradley(100.0, 45.0, 0.3, 5.0, 90.0, 47.0, 0.32, 7.0) },
+    { iListInput(8e-4, 1e-8).setQuarticAngles(87.0, cQuarticAngles ) }
 };
 
 //! Constants for Ryckaert-Bellemans A
