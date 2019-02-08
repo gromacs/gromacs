@@ -196,7 +196,7 @@ void add_ebin_indexed(t_ebin *eb, int entryIndex, gmx::ArrayRef<bool> shouldUse,
 
     GMX_ASSERT(shouldUse.size() == ener.size(), "View sizes must match");
     GMX_ASSERT(entryIndex+std::count(shouldUse.begin(), shouldUse.end(), true) <= eb->nener,
-               gmx::formatString("Energies out of range: entryIndex=%d nener=%zu maxener=%d",
+               gmx::formatString("Energies out of range: entryIndex=%d nener=%td maxener=%d",
                                  entryIndex,
                                  std::count(shouldUse.begin(), shouldUse.end(), true),
                                  eb->nener).c_str());
