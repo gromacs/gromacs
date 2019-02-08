@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/trajectory/energyframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 /* This is a running averaging structure ('energy bin') for use during mdrun. */
@@ -70,16 +71,25 @@ int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *u
 /* Create space in the energy bin and register names.
  * The enm array must be static, because the contents are not copied,
  * but only the pointers.
- * Function returns an index number that must be used in subsequent
+ * Function returns an entryIndex number that must be used in subsequent
  * calls to add_ebin.
  */
 
-void add_ebin(t_ebin *eb, int index, int nener, const real ener[], gmx_bool bSum);
+void add_ebin(t_ebin *eb, int entryIndex, int nener, const real ener[], gmx_bool bSum);
 /* Add nener reals (eg. energies, box-lengths, pressures) to the
- * energy bin at position index.
+ * energy bin at position entryIndex.
  * If bSum is TRUE then the reals are also added to the sum
  * and sum of squares.
  */
+
+/*! \brief Add values from \c ener to \c eb if the matching entry in
+ * shouldUse is true.
+ *
+ * Caller must ensure that \c shouldUse and \c ener to have the same
+ * size, and that \c eb has enough room for the number of true
+ * entries in \c shouldUse. */
+void add_ebin_indexed(t_ebin *eb, int entryIndex, gmx::ArrayRef<bool> shouldUse,
+                      gmx::ArrayRef<const real> ener, gmx_bool bSum);
 
 void ebin_increase_count(t_ebin *eb, gmx_bool bSum);
 /* Increase the counters for the sums.
@@ -96,12 +106,12 @@ void reset_ebin_sums(t_ebin *eb);
  * used only when eprAVER or eprRMS is set. If bPrHead than the
  * header is printed.
  *
- * \c index and \c nener must be in [0, eb->nener), except that \c
+ * \c entryIndex and \c nener must be in [0, eb->nener), except that \c
  * nener -1 is interpreted as eb->nener.
  *
  * \todo Callers should be refactored pass eb->nener, rather than
  * us implement and rely on this special behaviour of -1. */
-void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
+void pr_ebin(FILE *fp, t_ebin *eb, int entryIndex, int nener, int nperline,
              int prmode, gmx_bool bPrHead);
 
 #endif
