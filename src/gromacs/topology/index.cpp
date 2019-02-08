@@ -588,13 +588,13 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
         int i = 0;
 
         resnm = *atoms->resinfo[i].name;
-        restype.emplace_back(rt.typeNameForIndexedResidue(resnm));
+        restype.emplace_back(rt.typeOfNamedDatabaseResidue(resnm));
         previousTypename.push_back(restype.back());
 
         for (i = 1; i < atoms->nres; i++)
         {
             resnm = *atoms->resinfo[i].name;
-            restype.emplace_back(rt.typeNameForIndexedResidue(resnm));
+            restype.emplace_back(rt.typeOfNamedDatabaseResidue(resnm));
 
             /* Note that this does not lead to a N*N loop, but N*K, where
              * K is the number of residue _types_, which is small and independent of N.

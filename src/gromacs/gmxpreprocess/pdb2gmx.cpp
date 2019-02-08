@@ -858,11 +858,11 @@ checkResidueTypeSanity(t_atoms     *pdba,
     {
         bool        allResiduesHaveSameType = true;
         std::string restype;
-        std::string restype0 = rt->typeNameForIndexedResidue(*pdba->resinfo[r0].name);
+        std::string restype0 = rt->typeOfNamedDatabaseResidue(*pdba->resinfo[r0].name);
 
         for (int i = r0 + 1; i < r1; i++)
         {
-            restype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
+            restype = rt->typeOfNamedDatabaseResidue(*pdba->resinfo[i].name);
             if (!gmx::equalCaseInsensitive(restype, restype0))
             {
                 allResiduesHaveSameType = false;
@@ -891,7 +891,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
                         ResidueType *rt)
 {
     int         i;
-    std::string p_startrestype;
+    gmx::compat::optional<std::string> startrestype;
 
     *r_start = -1;
     *r_end   = -1;
@@ -917,15 +917,19 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
     /* Find the starting terminus (typially N or 5') */
     for (i = r0; i < r1 && *r_start == -1; i++)
     {
-        p_startrestype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
-        if (gmx::equalCaseInsensitive(p_startrestype, "Protein") ||
-            gmx::equalCaseInsensitive(p_startrestype, "DNA") ||
-            gmx::equalCaseInsensitive(p_startrestype, "RNA") )
+        startrestype = rt->optionalTypeOfNamedDatabaseResidue(*pdba->resinfo[i].name);
+        if (!startrestype)
+        {
+            continue;
+        }
+        if (gmx::equalCaseInsensitive(*startrestype, "Protein") ||
+            gmx::equalCaseInsensitive(*startrestype, "DNA") ||
+            gmx::equalCaseInsensitive(*startrestype, "RNA") )
         {
             printf("Identified residue %s%d as a starting terminus.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
             *r_start = i;
         }
-        else if (gmx::equalCaseInsensitive(p_startrestype, "Ion"))
+        else if (gmx::equalCaseInsensitive(*startrestype, "Ion"))
         {
             if (ionNotes < 5)
             {
@@ -939,6 +943,7 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
         }
         else
         {
+            // Either no known residue type, or one not needing special handling
             if (startWarnings < 5)
             {
                 if (chainID == ' ')
@@ -973,12 +978,17 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
         /* Go through the rest of the residues, check that they are the same class, and identify the ending terminus. */
         for (int i = *r_start; i < r1; i++)
         {
-            std::string p_restype = rt->typeNameForIndexedResidue(*pdba->resinfo[i].name);
-            if (gmx::equalCaseInsensitive(p_restype, p_startrestype) && endWarnings == 0)
+            gmx::compat::optional<std::string> restype =
+                rt->optionalTypeOfNamedDatabaseResidue(*pdba->resinfo[i].name);
+            if (!restype)
+            {
+                continue;
+            }
+            if (gmx::equalCaseInsensitive(*restype, *startrestype) && endWarnings == 0)
             {
                 *r_end = i;
             }
-            else if (gmx::equalCaseInsensitive(p_startrestype, "Ion"))
+            else if (gmx::equalCaseInsensitive(*startrestype, "Ion"))
             {
                 if (ionNotes < 5)
                 {
@@ -992,8 +1002,10 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
             }
             else
             {
-                // This can only trigger if the chain ID is blank - otherwise the
-                // call to checkResidueTypeSanity() will have caught the problem.
+                // Either no known residue type, or one not needing special handling.
+                GMX_RELEASE_ASSERT(chainID == ' ', "Chain ID must be blank");
+                // Otherwise the call to checkResidueTypeSanity() will
+                // have caught the problem.
                 if (endWarnings < 5)
                 {
                     printf("\nWarning: Residue %s%d in chain has different type ('%s') from\n"
@@ -1003,8 +1015,8 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
                            "introduce a break, but that will be catastrophic if they should in fact be\n"
                            "linked. Please check your structure, and add %s to residuetypes.dat\n"
                            "if this was not correct.\n\n",
-                           *pdba->resinfo[i].name, pdba->resinfo[i].nr, p_restype.c_str(),
-                           *pdba->resinfo[*r_start].name, pdba->resinfo[*r_start].nr, p_startrestype.c_str(), *pdba->resinfo[i].name);
+                           *pdba->resinfo[i].name, pdba->resinfo[i].nr, restype->c_str(),
+                           *pdba->resinfo[*r_start].name, pdba->resinfo[*r_start].nr, startrestype->c_str(), *pdba->resinfo[i].name);
                 }
                 if (endWarnings == 4)
                 {
@@ -1646,17 +1658,12 @@ int pdb2gmx::run()
     for (const auto &rename : rtprename)
     {
         /* Only add names if the 'standard' gromacs/iupac base name was found */
-
-        /* TODO this should be changed with gmx::optional so that we only need
-         * to search rt once.
-         */
-        if (rt.nameIndexedInResidueTypes(rename.gmx))
+        if (auto restype = rt.optionalTypeOfNamedDatabaseResidue(rename.gmx))
         {
-            std::string restype = rt.typeNameForIndexedResidue(rename.gmx);
-            rt.addResidue(rename.main, restype);
-            rt.addResidue(rename.nter, restype);
-            rt.addResidue(rename.cter, restype);
-            rt.addResidue(rename.bter, restype);
+            rt.addResidue(rename.main, *restype);
+            rt.addResidue(rename.nter, *restype);
+            rt.addResidue(rename.cter, *restype);
+            rt.addResidue(rename.bter, *restype);
         }
     }
 
@@ -2146,7 +2153,7 @@ int pdb2gmx::run()
 
         int         k = (cc->nterpairs > 0 && cc->r_start[0] >= 0) ? cc->r_start[0] : 0;
 
-        std::string restype = rt.typeNameForIndexedResidue(*pdba->resinfo[k].name);
+        std::string restype = rt.typeOfNamedDatabaseResidue(*pdba->resinfo[k].name);
 
         std::string molname;
         std::string suffix;
