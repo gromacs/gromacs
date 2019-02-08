@@ -169,7 +169,7 @@ ArrayRef<const RVec> TrajectoryFrame::v() const
     }
     else
     {
-        return EmptyArrayRef();
+        return {};
     }
 }
 
@@ -182,7 +182,7 @@ ArrayRef<const RVec> TrajectoryFrame::f() const
     }
     else
     {
-        return EmptyArrayRef();
+        return {};
     }
 }
 

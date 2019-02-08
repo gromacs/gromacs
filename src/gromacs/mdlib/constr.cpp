@@ -711,7 +711,7 @@ ArrayRef<real> Constraints::rmsdData() const
     }
     else
     {
-        return EmptyArrayRef();
+        return {};
     }
 }
 

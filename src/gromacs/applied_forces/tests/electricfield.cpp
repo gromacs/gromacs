@@ -120,7 +120,7 @@ class ElectricFieldTest : public ::testing::Test
             matrix                         boxDummy = { {0, 0, 0}, {0, 0, 0}, {0, 0, 0} };
             gmx_enerdata_t                 enerdDummy;
 
-            gmx::ForceProviderInput        forceProviderInput(gmx::EmptyArrayRef {}, md, 0.0, boxDummy, *cr);
+            gmx::ForceProviderInput        forceProviderInput({}, md, 0.0, boxDummy, *cr);
             gmx::ForceProviderOutput       forceProviderOutput(&forceWithVirial, &enerdDummy);
             forceProviders.calculateForces(forceProviderInput, &forceProviderOutput);
             done_commrec(cr);
