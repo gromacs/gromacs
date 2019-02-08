@@ -662,7 +662,7 @@ int gmx_trjcat(int argc, char *argv[])
                 else
                 {
                     trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), -1, nullptr, gmx::EmptyArrayRef(), nullptr);
+                                                              inFilesEdited[0].c_str(), -1, nullptr, {}, nullptr);
                 }
             }
             else

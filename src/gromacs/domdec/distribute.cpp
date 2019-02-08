@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -267,15 +267,15 @@ static void dd_distribute_state(gmx_domdec_t *dd,
 
     if (state_local->flags & (1 << estX))
     {
-        distributeVec(dd, DDMASTER(dd) ? makeArrayRef(state->x) : gmx::EmptyArrayRef(), state_local->x);
+        distributeVec(dd, DDMASTER(dd) ? state->x : gmx::ArrayRef<const gmx::RVec>(), state_local->x);
     }
     if (state_local->flags & (1 << estV))
     {
-        distributeVec(dd, DDMASTER(dd) ? makeArrayRef(state->v) : gmx::EmptyArrayRef(), state_local->v);
+        distributeVec(dd, DDMASTER(dd) ? state->v : gmx::ArrayRef<const gmx::RVec>(), state_local->v);
     }
     if (state_local->flags & (1 << estCGP))
     {
-        distributeVec(dd, DDMASTER(dd) ? makeArrayRef(state->cg_p) : gmx::EmptyArrayRef(), state_local->cg_p);
+        distributeVec(dd, DDMASTER(dd) ? state->cg_p : gmx::ArrayRef<const gmx::RVec>(), state_local->cg_p);
     }
 }
 

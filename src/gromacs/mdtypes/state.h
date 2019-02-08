@@ -311,7 +311,7 @@ positionsFromStatePointer(const t_state *state)
     }
     else
     {
-        return gmx::EmptyArrayRef();
+        return {};
     }
 };
 

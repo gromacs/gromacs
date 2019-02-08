@@ -542,8 +542,8 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
             /* If bX=true, x was collected to state_global in the call above */
             if (!bX)
             {
-                gmx::ArrayRef<gmx::RVec> globalXRef = MASTER(cr) ? makeArrayRef(state_global->x) : gmx::EmptyArrayRef();
-                dd_collect_vec(cr->dd, &state->s, makeArrayRef(state->s.x), globalXRef);
+                auto globalXRef = MASTER(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>();
+                dd_collect_vec(cr->dd, &state->s, state->s.x, globalXRef);
             }
         }
         else

@@ -59,18 +59,6 @@
 namespace gmx
 {
 
-/*! \brief
- * Tag type to initialize empty array references.
- *
- * This type (together with appropriate constructors in ArrayRef)
- * allows initializing any array reference to an empty value
- * without explicitly specifying its type.  This is convenient when calling
- * a function that takes an array reference, where constructing an empty
- * reference explicitly would otherwise require specifying the full array
- * reference type, including the template parameter.
- */
-struct EmptyArrayRef {};
-
 /*! \brief STL-like interface to a C array of T (or part
  * of a std container of T).
  *
@@ -142,14 +130,6 @@ class ArrayRef
          * Constructs an empty reference.
          */
         ArrayRef() : begin_(nullptr), end_(nullptr) {}
-        /*! \brief
-         * Constructs an empty reference.
-         *
-         * This is provided for convenience, such that EmptyArrayRef can be
-         * used to initialize any ArrayRef, without specifying the template
-         * type.  It is not explicit to enable that usage.
-         */
-        ArrayRef(const EmptyArrayRef & /*unused*/) : begin_(nullptr), end_(nullptr) {}
         /*! \brief
          * Constructs a reference to a container or reference
          *

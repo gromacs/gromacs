@@ -615,7 +615,7 @@ static int make_reverse_ilist(const InteractionLists &ilist,
     low_make_reverse_ilist(ilist, atoms->atom, vsitePbc,
                            count,
                            bConstr, bSettle, bBCheck,
-                           gmx::EmptyArrayRef(), gmx::EmptyArrayRef(),
+                           {}, {},
                            bLinkToAllAtoms, FALSE);
 
     ril_mt->index.push_back(0);
@@ -705,7 +705,7 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         *nint +=
             make_reverse_ilist(*mtop->intermolecular_ilist,
                                &atoms_global,
-                               gmx::EmptyArrayRef(),
+                               {},
                                rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
                                &rt.ril_intermol);
     }
@@ -2285,7 +2285,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
         make_reverse_ilist(*mtop->intermolecular_ilist,
                            &atoms,
-                           gmx::EmptyArrayRef(),
+                           {},
                            FALSE, FALSE, FALSE, TRUE, &ril_intermol);
     }
 
@@ -2313,7 +2313,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
          * The constraints are discarded here.
          */
         reverse_ilist_t ril;
-        make_reverse_ilist(molt.ilist, &molt.atoms, gmx::EmptyArrayRef(),
+        make_reverse_ilist(molt.ilist, &molt.atoms, {},
                            FALSE, FALSE, FALSE, TRUE, &ril);
 
         cgi_mb = &cginfo_mb[mb];

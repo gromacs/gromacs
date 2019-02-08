@@ -117,7 +117,7 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t *dd)
     }
     else
     {
-        return gmx::EmptyArrayRef();
+        return {};
     }
 }
 
@@ -455,7 +455,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     else
     {
         // Currently unreachable
-        at2con_mt = gmx::EmptyArrayRef();
+        at2con_mt = {};
         ireq      = nullptr;
     }
 
