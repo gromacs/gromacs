@@ -623,7 +623,8 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
                               nbnxn_atomdata_t       *nbatom,
                               int                     flags,
                               int                     aloc,
-                              bool                    haveOtherWork)
+                              bool                    haveOtherWork,
+                              bool                    transferForces)
 {
     cudaError_t stat;
     int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -661,9 +662,14 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
         CU_RET_ERR(stat, "cudaStreamWaitEvent on nonlocal_done failed");
     }
 
-    /* DtoH f */
-    cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
-                      (adat_len)*sizeof(*adat->f), stream);
+    // TODO: move this conditional to the right place and consider the event sync placement
+    //if (transferForces)
+    {
+        /* DtoH f */
+        fprintf(stderr, "ALMA\n");
+        cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
+                          (adat_len)*sizeof(*adat->f), stream);
+    }
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
@@ -873,7 +879,8 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
                                void                          *fPmeDevicePtr,
                                int                            a0,
                                int                            a1,
-                               rvec                          *f)
+                               rvec                          *f,
+                               bool                           haveCpuForces)
 {
 
 
@@ -887,7 +894,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
 
     //TODO (AG) enable copyForce=false (and zero device buffer)
     //when all bonded forces are done on GPU
-    bool        copyForce = true;
+    bool        copyForce = haveCpuForces;
 
     if (copyForce)
     {
@@ -909,6 +916,11 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
         }
 
     }
+    else
+    {
+        cudaError_t stat = cudaMemsetAsync(gpu_nbv->frvec, 0, a1*sizeof(rvec), stream);
+        CU_RET_ERR(stat, "cudaMemsetAsync on frvec falied");
+    }
 
     /* ensure that PME GPU force calculations have completed */
     cudaDeviceSynchronize();
@@ -927,6 +939,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
     config.stream           = stream;
 
     auto             kernelFn                = nbnxn_gpu_add_nbat_f_to_f_kernel;
+    //auto             kernelFn                = haveCpuForces ? nbnxn_gpu_add_nbat_f_to_f_kernel<true,true> : nbnxn_gpu_add_nbat_f_to_f_kernel<true,false>;
     const float     *fPtr                    = (float*) adat->f;
     const rvec      *fPmePtr                 = (rvec*) fPmeDevicePtr;
     rvec            *frvec                   = gpu_nbv->frvec;
