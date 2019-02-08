@@ -95,7 +95,7 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int         ncxy,
         {
             if (i < na)
             {
-
+                // float3 x_src = *((float3 *)x[a[a0+i]]);
                 xnb[j0+4*i]   = x[a[a0+i]][XX];
                 xnb[j0+4*i+1] = x[a[a0+i]][YY];
                 xnb[j0+4*i+2] = x[a[a0+i]][ZZ];
@@ -112,6 +112,7 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int         ncxy,
 }
 
 /* CUDA kernel to add part of the force array(s) from nbnxn_atomdata_t to f */
+//template <bool addPmeForces, bool accumulateForces>
 __global__ void
 nbnxn_gpu_add_nbat_f_to_f_kernel(const real* fnb, const rvec* pme_f,
                                  rvec* f, const int* cell,
