@@ -46,6 +46,15 @@ and domain decomposition could lead to a segmentation fault.
 
 :issue:`2813`
 
+Prevent mdrun -rerun from writing incorrect free-energy output
+--------------------------------------------------------------
+
+Now mdrun -rerun exits with a fatal error when masses or constraints
+are perturbed. Their contributions to Hamiltonian differences and
+derivatives were incorrect set to zero in version 2019.
+
+:issue:`2849`
+
 Fix possible division by zero in enforced-rotation code
 -------------------------------------------------------
 
