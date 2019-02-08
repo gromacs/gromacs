@@ -759,6 +759,32 @@ static void checkPotentialEnergyValidity(int64_t               step,
     }
 }
 
+/*! \brief Return true if there are special forces computed this step.
+ * 
+ * The conditionals exactly correspond to those in computeSpecialForces().
+ */
+static bool 
+haveSpecialForces(const t_inputrec              *inputrec,
+                  ForceProviders                *forceProviders,
+                  int                            forceFlags,
+                  gmx_edsam                     *ed)
+{
+    const bool computeForces = (forceFlags & GMX_FORCE_FORCES) != 0;
+    
+    if ((computeForces && forceProviders->hasForceProvider()) ||         // forceProviders
+        (inputrec->bPull && pull_have_potential(inputrec->pull_work)) || // pull
+        inputrec->bRot ||                                                // enforced rotation
+        ed ||                                                            // flooding
+        (inputrec->bIMD && computeForces))                               // IMD
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 /*! \brief Compute forces and/or energies for special algorithms
  *
  * The intention is to collect all calls to algorithms that compute
@@ -1067,6 +1093,14 @@ static void do_force_cutsVERLET(FILE *fplog,
         ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
 
+    /* Check what PP force work there is. */
+    if (bNS)
+    {
+        ppForceWorkload->haveSpecialForces = haveSpecialForces(inputrec, fr->forceProviders, flags, ed);
+        // FIXME
+        ppForceWorkload->haveCpuBondedWork = false;
+    }
+
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
@@ -1272,6 +1306,15 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                      nbv->nbat,
                                                      nbv->gpu_nbv,
                                                      eintLocal);
+
+            if (thisRankHasDuty(cr, DUTY_PME))
+            {
+                nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbv->nbs.get(),
+                                                        eatLocal,
+                                                        nbv->nbat,
+                                                        nbv->gpu_nbv,
+                                                        wcycle);
+            }
         }
 
     }
@@ -1446,10 +1489,12 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (DOMAINDECOMP(cr))
         {
             nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                     flags, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
+                                     flags, eatNonlocal, ppForceWorkload->haveGpuBondedWork,
+                                     (!useGpuNonbondedPmeReduction || bNS));
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                 flags, eatLocal, ppForceWorkload->haveGpuBondedWork);
+                                 flags, eatLocal, ppForceWorkload->haveGpuBondedWork,
+                                 (!useGpuNonbondedPmeReduction || bNS));
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
         if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
@@ -1764,6 +1809,39 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcFORCE);
     }
 
+    /* Do the nonbonded GPU (or emulation) force buffer reduction
+     * on the non-alternating path. */
+    if (bUseOrEmulGPU && !alternateGpuWait)
+    {
+
+        if (bNS || !thisRankHasDuty(cr, DUTY_PME))
+        {
+            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
+                                           nbv->nbat, f, wcycle);
+        }
+        else
+        {
+
+            // TODO move condition to nbnxn_atomdata
+            if (useGpuNonbondedPmeReduction)
+            {
+                nbnxn_atomdata_add_nbat_f_to_f_gpu(nbv->nbs.get(),
+                                                   eatLocal,
+                                                   nbv->nbat,
+                                                   nbv->gpu_nbv,
+                                                   pme_gpu_get_device_f(fr->pmedata),
+                                                   f,
+                                                   (ppForceWorkload->haveSpecialForces || ppForceWorkload->haveCpuBondedWork),
+                                                   wcycle);
+            }
+            else
+            {
+                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
+                                               nbv->nbat, f, wcycle);
+            }
+        }
+    }
+
     if (useGpuPme)
     {
         pme_gpu_reinit_computation(fr->pmedata, wcycle);
@@ -1775,11 +1853,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
-        if (!useGpuNonbondedPmeReduction)
-        {
-            /* now clear the GPU outputs while we finish the step on the CPU */
-            nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
-        }
+        /* now clear the GPU outputs while we finish the step on the CPU */
+        nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
 
         /* Is dynamic pair-list pruning activated? */
         if (nbv->listParams->useDynamicPruning)
@@ -1806,58 +1881,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    /* Do the nonbonded GPU (or emulation) force buffer reduction
-     * on the non-alternating path. */
-    if (bUseOrEmulGPU && !alternateGpuWait)
-    {
 
 
-        if (bNS || !thisRankHasDuty(cr, DUTY_PME))
-        {
-            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
-                                           nbv->nbat, f, wcycle);
-
-
-            nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbv->nbs.get(),
-                                                    eatLocal,
-                                                    nbv->nbat,
-                                                    nbv->gpu_nbv,
-                                                    wcycle);
-
-        }
-        else
-        {
-
-            // TODO move condition to nbnxn_atomdata
-            if (useGpuNonbondedPmeReduction)
-            {
-                nbnxn_atomdata_add_nbat_f_to_f_gpu(nbv->nbs.get(),
-                                                   eatLocal,
-                                                   nbv->nbat,
-                                                   nbv->gpu_nbv,
-                                                   pme_gpu_get_device_f(fr->pmedata),
-                                                   f,
-                                                   wcycle);
-            }
-            else
-            {
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
-                                               nbv->nbat, f, wcycle);
-            }
-        }
-
-
-        // TODO move this and other end-of-step tasks should be moved
-        // These are intended to run concurrently with the update rather
-        // than becoming and implicit dependency to the update itself.
-        if (useGpuNonbondedPmeReduction)
-        {
-            /* now clear the GPU outputs while we finish the step on the CPU */
-            nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
-        }
-
-
-    }
     if (DOMAINDECOMP(cr))
     {
         dd_force_flop_stop(cr->dd, nrnb);

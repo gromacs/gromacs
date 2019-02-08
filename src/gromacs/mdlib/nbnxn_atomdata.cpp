@@ -1696,6 +1696,7 @@ void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search            *nbs,
                                         gmx_nbnxn_gpu_t         *gpu_nbv,
                                         void                    *fPmeDevicePtr,
                                         rvec                    *f,
+                                        bool                    haveCpuForces,
                                         gmx_wallcycle           *wcycle)
 {
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1733,7 +1734,8 @@ void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search            *nbs,
                               gpu_nbv,
                               fPmeDevicePtr,
                               a0, a0+na,
-                              f);
+                              f,
+                              haveCpuForces);
 
     wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);

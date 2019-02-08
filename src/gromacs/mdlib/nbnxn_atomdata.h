@@ -144,6 +144,7 @@ void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search           *nbs,
                                         gmx_nbnxn_gpu_t        *gpu_nbv,
                                         void                   *fPmeDevicePtr,
                                         rvec                   *f,
+                                        bool                    haveCpuForces,
                                         gmx_wallcycle          *wcycle);
 
 /* Add the fshift force stored in nbat to fshift */

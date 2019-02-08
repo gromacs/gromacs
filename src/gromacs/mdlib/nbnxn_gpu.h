@@ -136,7 +136,8 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               struct nbnxn_atomdata_t gmx_unused       *nbatom,
                               int                    gmx_unused         flags,
                               int                    gmx_unused         aloc,
-                              bool                   gmx_unused         haveOtherWork) GPU_FUNC_TERM
+                              bool                   gmx_unused         haveOtherWork,
+                              bool                   gmx_unused         transferForces) GPU_FUNC_TERM
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *
@@ -253,7 +254,8 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t       gmx_unused *nbat,
                                void                         gmx_unused *fPmeDevicePtr,
                                int                          gmx_unused  a0,
                                int                          gmx_unused  a1,
-                               rvec                         gmx_unused *f) GPU_FUNC_TERM
+                               rvec                         gmx_unused *f,
+                               bool                         gmx_unused haveCpuForces) GPU_FUNC_TERM
 
 
 #endif
