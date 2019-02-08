@@ -22,4 +22,4 @@ clang-3.9 no-openmp simd=ARM_NEON_ASIMD release-with-assert
 # Test AVX2_256 SIMD
 # Test icc with SIMD in mixed precision in release mode
 # Test icc with MPI
-icc-19 mpi release simd=avx2_256
+icc-19 mpi release simd=avx2_256 no-hwloc
