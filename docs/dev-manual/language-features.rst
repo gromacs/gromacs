@@ -57,6 +57,12 @@ a release.
 * Use ``not_null<T>`` pointers wherever possible to convey the
   semantics that a pointer to a valid is required, and a reference
   is inappropriate. See also |linkrefnotnull|.
+* Use ``optional<T>`` types in situations where there is exactly one,
+  clear (to all parties) reason for having no value of type T, and
+  where the lack of value is as natural as having any regular value
+  of T. Prefer some other construct when the logic requires an
+  explanation of the reason why no regular value for T exists, ie
+  do not use ``optional<T>`` for error handling.
 * Don't use C-style casts; use ``const_cast``, ``static_cast`` or
   ``reinterpret_cast as appropriate``. See the point on RTTI for
   ``dynamic_cast``. For emphasizing type (e.g. intentional integer division)

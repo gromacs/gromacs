@@ -37,6 +37,7 @@
 
 #include <string>
 
+#include "gromacs/compat/optional.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -92,13 +93,21 @@ class ResidueType
          */
         const std::string nameFromResidueIndex(int index) const;
         /*! \brief
-         * Get name of residue type for already defined residue.
-         *
+         * Return the residue type if a residue with that name exists, or "Other"
          *
          * \param[in] residueName Name of the residue to search for.
-         * \returns Type name or UndefineResidueName if not found.
+         * \returns The residue type of any matching residue, or "Other"
          */
-        const std::string typeNameForIndexedResidue(const std::string &residueName);
+        std::string
+        typeOfNamedDatabaseResidue(const std::string &residueName);
+        /*! \brief
+         * Return an optional residue type if a residue with that name exists
+         *
+         * \param[in] residueName Name of the residue to search for.
+         * \returns An optional containing the residue type of any matching residue
+         */
+        gmx::compat::optional<std::string>
+        optionalTypeOfNamedDatabaseResidue(const std::string &residueName);
 
     private:
         //! Implementation pointer.
