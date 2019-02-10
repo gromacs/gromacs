@@ -1885,7 +1885,7 @@ int gmx_trjconv(int argc, char *argv[])
                                             model_nr++;
                                         }
                                         write_pdbfile(out, title.c_str(), &useatoms, frout.x,
-                                                      frout.ePBC, frout.box, ' ', model_nr, gc, TRUE);
+                                                      frout.ePBC, frout.box, ' ', model_nr, gc);
                                         break;
                                     case efG96:
                                         const char *outputTitle = "";

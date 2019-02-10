@@ -1266,7 +1266,7 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
+            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, FALSE);
             gmx_ffclose(out);
         }
         else
@@ -1322,7 +1322,7 @@ int gmx_editconf(int argc, char *argv[])
                 index[i] = i;
             }
             write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
-                                  TRUE, outftp == efPQR);
+                                  outftp == efPQR);
             sfree(index);
             if (bLegend)
             {

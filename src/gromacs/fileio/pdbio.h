@@ -91,13 +91,13 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box);
 void write_pdbfile_indexed(FILE *out, const char *title, const t_atoms *atoms,
                            const rvec x[], int ePBC, const matrix box, char chain,
                            int model_nr, int nindex, const int index[],
-                           gmx_conect conect, gmx_bool bTerSepChains,
+                           gmx_conect conect,
                            bool usePqrFormat);
 /* REALLY low level */
 
 void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms,
                    const rvec x[], int ePBC, const matrix box, char chain,
-                   int model_nr, gmx_conect conect, gmx_bool bTerSepChains);
+                   int model_nr, gmx_conect conect);
 /* Low level pdb file writing routine.
  *
  *          ONLY FOR SPECIAL PURPOSES,

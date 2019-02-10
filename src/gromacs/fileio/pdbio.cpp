@@ -305,7 +305,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                            const t_atoms *atoms, const rvec x[],
                            int ePBC, const matrix box, char chainid,
                            int model_nr, int nindex, const int index[],
-                           gmx_conect conect, gmx_bool bTerSepChains,
+                           gmx_conect conect,
                            bool usePqrFormat)
 {
     gmx_conect_t   *gc = static_cast<gmx_conect_t *>(conect);
@@ -339,34 +339,13 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
     fprintf(out, "MODEL %8d\n", model_nr > 0 ? model_nr : 1);
 
-    int         lastchainnum      = -1;
-    std::string prevRestype;
-    std::string lastRestype;
-
     ResidueType rt;
     for (int ii = 0; ii < nindex; ii++)
     {
-        int i             = index[ii];
-        int resind        = atoms->atom[i].resind;
-        int chainnum      = atoms->resinfo[resind].chainnum;
-        lastRestype = prevRestype;
-        prevRestype = rt.typeNameForIndexedResidue(*atoms->resinfo[resind].name);
-
-        /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
-        if (bTerSepChains && ii > 0 && chainnum != lastchainnum)
-        {
-            /* Only add TER if the previous chain contained protein/DNA/RNA. */
-            if (rt.namedResidueHasType(lastRestype, "Protein") ||
-                rt.namedResidueHasType(lastRestype, "DNA") ||
-                rt.namedResidueHasType(lastRestype, "RNA"))
-            {
-                fprintf(out, "TER\n");
-            }
-            lastchainnum    = chainnum;
-        }
-
-        std::string resnm = *atoms->resinfo[resind].name;
-        std::string nm    = *atoms->atomname[i];
+        int         i             = index[ii];
+        int         resind        = atoms->atom[i].resind;
+        std::string resnm         = *atoms->resinfo[resind].name;
+        std::string nm            = *atoms->atomname[i];
 
         /* rename HG12 to 2HG1, etc. */
         nm    = xlate_atomname_gmx2pdb(nm);
@@ -462,7 +441,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 }
 
 void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rvec x[],
-                   int ePBC, const matrix box, char chainid, int model_nr, gmx_conect conect, gmx_bool bTerSepChains)
+                   int ePBC, const matrix box, char chainid, int model_nr, gmx_conect conect)
 {
     int i, *index;
 
@@ -472,7 +451,7 @@ void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rve
         index[i] = i;
     }
     write_pdbfile_indexed(out, title, atoms, x, ePBC, box, chainid, model_nr,
-                          atoms->nr, index, conect, bTerSepChains, false);
+                          atoms->nr, index, conect, false);
     sfree(index);
 }
 
