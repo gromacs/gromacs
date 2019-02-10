@@ -139,9 +139,6 @@
  * Similarly, gmxomp.h removes the need to use conditional compilation for code
  * that needs to include omp.h for OpenMP functions.
  *
- * The header gmxregex.h declares gmx::Regex and regexMatch() for basic regular
- * expression matching using an interface similar to C++11 std::regex.
- *
  * The header messagestringcollector.h declares a gmx::MessageStringCollector
  * class for composing messages with context information.
  *

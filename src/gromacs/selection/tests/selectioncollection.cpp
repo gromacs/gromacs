@@ -43,6 +43,8 @@
 
 #include "gromacs/selection/selectioncollection.h"
 
+#include <regex>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/options/basicoptions.h"
@@ -54,7 +56,6 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"
-#include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/interactivetest.h"
@@ -497,7 +498,7 @@ TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
     EXPECT_THROW_GMX({
                          sc_.parseFromString("resname ~ \"R[A\"");
                          sc_.compile();
-                     }, gmx::InvalidInputError);
+                     }, std::regex_error);
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
