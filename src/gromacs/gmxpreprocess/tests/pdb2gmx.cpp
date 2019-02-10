@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,29 +67,38 @@ using test::ConfMatch;
 using CommandLineOptionParams = std::tuple<std::string, std::string, std::string, std::string,
                                            std::string, std::string>;
 
+/*! \brief Strings containing regular expressions for lines to skip
+ * when matching.
+ *
+ * \todo It would be preferable to just scrub the content that actually
+ * varies, but we don't use enough regular expression support for that
+ * yet.
+ *
+ * Note that the "\n" are needed so these regular expressions match
+ * Windows line endings. */
+std::vector<std::string>   c_regexStringsToSkip =
+{
+    "^;[[:blank:]] *File '.*' was generated.*\n",
+    "^;[[:blank:]]*By user:.*\n",
+    "^;[[:blank:]]*On host:.*\n",
+    "^;[[:blank:]]*At date:.*\n",
+    "^;[[:blank:]]*:-\\).*\\(-:.*\n",
+    "^;[[:blank:]]*Executable:.*\n",
+    "^;[[:blank:]]*Data prefix:.*\n",
+    "^;[[:blank:]]*Working dir:.*\n",
+    "^;[[:blank:]]*pdb2gmx-test.*\n"
+};
+//! Compiled regular expressions for lines to skip when matching.
+FilteringExactTextMatch    c_textMatcher(c_regexStringsToSkip);
+
 class Pdb2gmxTest : public test::CommandLineTestBase,
                     public ::testing::WithParamInterface<CommandLineOptionParams>
 {
     public:
         Pdb2gmxTest()
         {
-            // TODO It would be preferable to just scrub the content
-            // that actually varies, but we don't have enough regular
-            // expression support for that yet.
-
-            // Note that the "\n" are needed so these regular
-            // expressions match Windows line endings.
-            textMatcher_.addRegexToSkip("^;[[:blank:]] *File '.*' was generated.*\n");
-            textMatcher_.addRegexToSkip("^;[[:blank:]]*By user:.*\n");
-            textMatcher_.addRegexToSkip("^;[[:blank:]]*On host:.*\n");
-            textMatcher_.addRegexToSkip("^;[[:blank:]]*At date:.*\n");
-            textMatcher_.addRegexToSkip("^;[[:blank:]]*:-\\).*\\(-:.*\n");
-            textMatcher_.addRegexToSkip("^;[[:blank:]]*Executable:.*\n");
-            textMatcher_.addRegexToSkip("^;[[:blank:]]*Data prefix:.*\n");
-            textMatcher_.addRegexToSkip("^;[[:blank:]]*Working dir:.*\n");
-            textMatcher_.addRegexToSkip("^;[[:blank:]]*pdb2gmx-test.*\n");
             setOutputFile("-o", "conf.gro", ConfMatch());
-            setOutputFile("-p", "topol.top", TextFileMatch(textMatcher_));
+            setOutputFile("-p", "topol.top", TextFileMatch(c_textMatcher));
         }
 
         void runTest(const CommandLine &args)
@@ -103,7 +112,6 @@ class Pdb2gmxTest : public test::CommandLineTestBase,
 
             checkOutputFiles();
         }
-        FilteringExactTextMatch textMatcher_;
 };
 
 TEST_P(Pdb2gmxTest, ProducesMatchingTopology)

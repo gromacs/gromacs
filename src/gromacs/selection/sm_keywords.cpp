@@ -45,7 +45,7 @@
 #include <cctype>
 #include <cstring>
 
-#include <memory>
+#include <regex>
 #include <string>
 
 #include "gromacs/selection/position.h"
@@ -53,7 +53,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -201,21 +200,30 @@ class StringKeywordMatchItem
                                const char                   *str)
             : str_(str)
         {
-            bool bRegExp = (matchType == gmx::eStringMatchType_RegularExpression);
+            useRegExp_ = (matchType == gmx::eStringMatchType_RegularExpression);
             if (matchType == gmx::eStringMatchType_Auto)
             {
                 for (size_t j = 0; j < std::strlen(str); ++j)
                 {
                     if (std::ispunct(str[j]) && str[j] != '?' && str[j] != '*')
                     {
-                        bRegExp = true;
+                        useRegExp_ = true;
                         break;
                     }
                 }
             }
-            if (bRegExp)
+            if (useRegExp_)
             {
-                regex_ = std::make_shared<gmx::Regex>(str);
+                try
+                {
+                    regex_.assign(str, std::regex::nosubs | std::regex::extended);
+                }
+                catch (const std::regex_error &ex)
+                {
+                    // TODO: Better error messages.
+                    GMX_THROW(gmx::InvalidInputError
+                                  (gmx::formatString("Error in regular expression \"%s\"", str)));
+                }
             }
         }
 
@@ -233,9 +241,9 @@ class StringKeywordMatchItem
             {
                 return str_ == value;
             }
-            else if (regex_)
+            else if (useRegExp_)
             {
-                return gmx::regexMatch(value, *regex_);
+                return std::regex_match(value, regex_);
             }
             else
             {
@@ -245,9 +253,11 @@ class StringKeywordMatchItem
 
     private:
         //! The raw string passed for the matcher.
-        std::string                     str_;
+        std::string str_;
+        //! Whether a regular expression match is used.
+        bool        useRegExp_;
         //! Regular expression compiled from \p str_, if applicable.
-        std::shared_ptr<gmx::Regex>     regex_;
+        std::regex  regex_;
 };
 
 /*! \internal \brief
