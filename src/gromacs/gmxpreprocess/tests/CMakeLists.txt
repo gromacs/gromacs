@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
+    editconf.cpp
     genconf.cpp
     insert_molecules.cpp
     readir.cpp
