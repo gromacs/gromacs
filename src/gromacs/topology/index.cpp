@@ -589,7 +589,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 
         resnm = *atoms->resinfo[i].name;
         restype.emplace_back(rt.typeNameForIndexedResidue(resnm));
-        previousTypename.push_back(restype[i]);
+        previousTypename.push_back(restype.back());
 
         for (i = 1; i < atoms->nres; i++)
         {
@@ -602,11 +602,11 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
             bool found = false;
             for (size_t k = 0; k < previousTypename.size() && !found; k++)
             {
-                found = strcmp(restype[i].c_str(), previousTypename[k].c_str()) == 0;
+                found = strcmp(restype.back().c_str(), previousTypename[k].c_str()) == 0;
             }
             if (!found)
             {
-                previousTypename.push_back(restype[i]);
+                previousTypename.push_back(restype.back());
             }
         }
     }
