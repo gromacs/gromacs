@@ -73,17 +73,18 @@ using CommandLineOptionParams = std::tuple<std::string, std::string, std::string
 //
 // Note that the "\n" are needed so these regular expressions match
 // Windows line endings.
-std::vector<std::string>   c_regexStringsToSkip = {{
-                                                       "^;[[:blank:]] *File '.*' was generated.*\n",
-                                                       "^;[[:blank:]]*By user:.*\n",
-                                                       "^;[[:blank:]]*On host:.*\n",
-                                                       "^;[[:blank:]]*At date:.*\n",
-                                                       "^;[[:blank:]]*:-\\).*\\(-:.*\n",
-                                                       "^;[[:blank:]]*Executable:.*\n",
-                                                       "^;[[:blank:]]*Data prefix:.*\n",
-                                                       "^;[[:blank:]]*Working dir:.*\n",
-                                                       "^;[[:blank:]]*pdb2gmx-test.*\n"
-                                                   }};
+std::vector<std::string>   c_regexStringsToSkip =
+{
+    "^;[[:blank:]] *File '.*' was generated.*\n",
+    "^;[[:blank:]]*By user:.*\n",
+    "^;[[:blank:]]*On host:.*\n",
+    "^;[[:blank:]]*At date:.*\n",
+    "^;[[:blank:]]*:-\\).*\\(-:.*\n",
+    "^;[[:blank:]]*Executable:.*\n",
+    "^;[[:blank:]]*Data prefix:.*\n",
+    "^;[[:blank:]]*Working dir:.*\n",
+    "^;[[:blank:]]*gmxpreprocess-test.*\n"
+};
 FilteringExactTextMatch    c_textMatcher(c_regexStringsToSkip);
 
 class Pdb2gmxTest : public test::CommandLineTestBase,
