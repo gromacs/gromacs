@@ -44,8 +44,8 @@
 #include "textblockmatchers.h"
 
 #include <memory>
+#include <regex>
 
-#include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
@@ -84,7 +84,14 @@ class FilteringExactTextMatcher : public ITextBlockMatcher
 {
     public:
         FilteringExactTextMatcher(const std::vector<std::string> &linesToSkip)
-            : linesToSkip_(linesToSkip) {}
+        {
+            // Prepare the regular expressions to filter out of the stream.
+            for (const auto &lineToSkip : linesToSkip)
+            {
+                regexesToSkip_.emplace_back(lineToSkip, std::regex::nosubs | std::regex::extended);
+            }
+        }
+
         void checkStream(TextInputStream      *stream,
                          TestReferenceChecker *checker) override
         {
@@ -92,18 +99,15 @@ class FilteringExactTextMatcher : public ITextBlockMatcher
             {
                 TextReader  reader(stream);
                 TextWriter  writer(&filteredStream);
+
                 // Filter the stream
                 std::string line;
                 while (reader.readLine(&line))
                 {
                     bool shouldSkip = false;
-                    for (const auto &lineToSkip : linesToSkip_)
+                    for (const auto &regexToSkip : regexesToSkip_)
                     {
-                        // TODO this is inefficient but we have no way
-                        // to store pre-compiled Regex in a container
-                        // right now.
-                        Regex regexOfLineToSkip(lineToSkip);
-                        if (regexMatch(line.c_str(), regexOfLineToSkip))
+                        if (std::regex_match(line.c_str(), regexToSkip))
                         {
                             shouldSkip = true;
                             break;
@@ -120,7 +124,7 @@ class FilteringExactTextMatcher : public ITextBlockMatcher
             checker->checkTextBlock(reader.readAll(), "Contents");
         }
 
-        std::vector<std::string> linesToSkip_;
+        std::vector<std::regex> regexesToSkip_;
 };
 
 }       // namespace
@@ -142,6 +146,10 @@ TextBlockMatcherPointer NoTextMatch::createMatcher() const
 {
     return TextBlockMatcherPointer(std::make_unique<NoTextMatcher>());
 }
+
+FilteringExactTextMatch::FilteringExactTextMatch(std::vector<std::string> linesToSkip)
+    : linesToSkip_(linesToSkip)
+{}
 
 void FilteringExactTextMatch::addRegexToSkip(const std::string &lineToSkip)
 {

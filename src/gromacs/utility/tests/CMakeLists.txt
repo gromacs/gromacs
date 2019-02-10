@@ -40,7 +40,6 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   enumerationhelpers.cpp
                   keyvaluetreeserializer.cpp
                   keyvaluetreetransform.cpp
-                  gmxregex.cpp
                   logger.cpp
                   mutex.cpp
                   path.cpp
