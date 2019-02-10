@@ -54,7 +54,6 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"
-#include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/interactivetest.h"
