@@ -891,11 +891,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
 
     bool                 addPmeF = (fPmeDevicePtr != nullptr);
 
-    //TODO (AG) enable copyForce=false (and zero device buffer)
-    //when all bonded forces are done on GPU
-    bool        copyForce = haveCpuForces;
-
-    if (copyForce)
+    if (haveCpuForces)
     {
         if (bDoTime)
         {
@@ -914,11 +910,6 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
             t->nb_h2d[0].closeTimingRegion(stream);
         }
 
-    }
-    else
-    {
-        cudaError_t stat = cudaMemsetAsync(gpu_nbv->frvec, 0, a1*sizeof(rvec), stream);
-        CU_RET_ERR(stat, "cudaMemsetAsync on frvec falied");
     }
 
     /* ensure that PME GPU force calculations have completed */
