@@ -937,8 +937,14 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
     config.sharedMemorySize = 0;
     config.stream           = stream;
 
-    auto             kernelFn                = nbnxn_gpu_add_nbat_f_to_f_kernel;
-    //auto             kernelFn                = haveCpuForces ? nbnxn_gpu_add_nbat_f_to_f_kernel<true,true> : nbnxn_gpu_add_nbat_f_to_f_kernel<true,false>;
+    auto kernelFn =
+        addPmeF ?
+        (haveCpuForces ?
+         nbnxn_gpu_add_nbat_f_to_f_kernel<true, true>  : nbnxn_gpu_add_nbat_f_to_f_kernel<true, false>) :
+        (haveCpuForces ?
+         nbnxn_gpu_add_nbat_f_to_f_kernel<false, true> : nbnxn_gpu_add_nbat_f_to_f_kernel<false, false>);
+
+
     const float     *fPtr                    = (float*) adat->f;
     const rvec      *fPmePtr                 = (rvec*) fPmeDevicePtr;
     rvec            *frvec                   = gpu_nbv->frvec;
@@ -952,8 +958,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
                                                               &cell,
                                                               &a0,
                                                               &a1,
-                                                              &stride,
-                                                              &addPmeF);
+                                                              &stride);
 
     launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
 
