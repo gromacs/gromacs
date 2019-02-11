@@ -35,16 +35,8 @@
 gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
     genconf.cpp
     insert_molecules.cpp
+    pdb2gmx.cpp
     readir.cpp
     solvate.cpp
     topdirs.cpp
     )
-
-# Currently these are too slow to run in Jenkins, so they are in their
-# own test binary with a different ctest label so that they do not run
-# by default.
-set(exename pdb2gmx-test)
-gmx_add_gtest_executable(${exename}
-    pdb2gmx.cpp
-    )
-gmx_register_gtest_test(Pdb2gmxTest ${exename} SLOW_TEST)

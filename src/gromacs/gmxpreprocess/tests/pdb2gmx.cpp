@@ -86,7 +86,7 @@ std::vector<std::string>   c_regexStringsToSkip =
     "^;[[:blank:]]*Executable:.*\n",
     "^;[[:blank:]]*Data prefix:.*\n",
     "^;[[:blank:]]*Working dir:.*\n",
-    "^;[[:blank:]]*pdb2gmx-test.*\n"
+    "^;[[:blank:]]*gmxpreprocess-test.*\n"
 };
 //! Compiled regular expressions for lines to skip when matching.
 FilteringExactTextMatch    c_textMatcher(c_regexStringsToSkip);
