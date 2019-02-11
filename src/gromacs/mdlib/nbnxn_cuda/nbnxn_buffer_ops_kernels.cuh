@@ -44,21 +44,22 @@
  *  \author Jon Vincent <jvincent@nvidia.com>
  */
 
+#include "gromacs/gpu_utils/vectype_ops.cuh"
 
-__global__ void nbnxn_gpu_x_to_nbat_x_kernel(int         ncxy,
-                                             float      *xnb,
-                                             int         g,
-                                             bool        FillLocal,
-                                             const rvec *x,
-                                             const int  *a,
-                                             const int  *na_all,
-                                             const int  *cxy_ind,
-                                             int         cell0,
-                                             int         na_sc)
+__global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                       ncxy,
+                                             float * __restrict__      xnb,
+                                             int                       g,
+                                             bool                      FillLocal,
+                                             const rvec * __restrict__ x,
+                                             const int * __restrict__  a,
+                                             const int * __restrict__  na_all,
+                                             const int * __restrict__  cxy_ind,
+                                             int                       cell0,
+                                             int                       na_sc)
 {
 
 
-    const float farAway = -1000000;
+    const float farAway = -1000000.0f;
 
     /* map cell-level parallelism to y component of CUDA block index */
     int cxy = blockIdx.y;
@@ -71,8 +72,7 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int         ncxy,
         int na_round;
         if (g == 0 && FillLocal)
         {
-            na_round =
-                (cxy_ind[cxy+1] - cxy_ind[cxy])*na_sc;
+            na_round = (cxy_ind[cxy+1] - cxy_ind[cxy])*na_sc;
         }
         else
         {
@@ -90,21 +90,19 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int         ncxy,
 
         j0 = a0*STRIDE_XYZQ;
 
+        // destination address where x shoud be stored in nbnxm layout
+        float3 *x_dest = (float3 *)&xnb[j0 + 4*i];
+
         /* perform conversion of each element */
         if (i < na_round)
         {
             if (i < na)
             {
-                // float3 x_src = *((float3 *)x[a[a0+i]]);
-                xnb[j0+4*i]   = x[a[a0+i]][XX];
-                xnb[j0+4*i+1] = x[a[a0+i]][YY];
-                xnb[j0+4*i+2] = x[a[a0+i]][ZZ];
+                *x_dest = *((float3 *)x[a[a0 + i]]);
             }
             else
             {
-                xnb[j0+4*i]   = farAway;
-                xnb[j0+4*i+1] = farAway;
-                xnb[j0+4*i+2] = farAway;
+                *x_dest = make_float3(farAway);
             }
         }
     }
@@ -112,47 +110,44 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int         ncxy,
 }
 
 /* CUDA kernel to add part of the force array(s) from nbnxn_atomdata_t to f */
-//template <bool addPmeForces, bool accumulateForces>
+template <bool addPmeForces, bool accumulateForces>
 __global__ void
-nbnxn_gpu_add_nbat_f_to_f_kernel(const real* fnb, const rvec* pme_f,
-                                 rvec* f, const int* cell,
-                                 const int a0, const int a1,
-                                 const int stride, const bool addPmeF)
+nbnxn_gpu_add_nbat_f_to_f_kernel(const real* __restrict__ fnb,
+                                 const rvec* __restrict__ pme_f,
+                                 rvec* __restrict__       f,
+                                 const int* __restrict__  cell,
+                                 const int                a0,
+                                 const int                a1,
+                                 const int                stride)
 {
 
     /* map particle-level parallelism to 1D CUDA thread and block index */
-    int a = a0+blockIdx.x*blockDim.x+threadIdx.x;
+    int a = a0 + blockIdx.x*blockDim.x+threadIdx.x;
 
     /* perform addition for each particle*/
     if (a < a1)
     {
+        int    i = cell[a]*stride;
 
-        int   i = cell[a]*stride;
+        float3 result;
 
-        float f0, f1, f2;
+        // load the nonbondeds
+        result = *((float3 *)&fnb[i]);
 
-        f0 = f[a][XX];
-        f1 = f[a][YY];
-        f2 = f[a][ZZ];
-
-        f0 += fnb[i];
-        f1 += fnb[i+1];
-        f2 += fnb[i+2];
-
-        if (addPmeF)
+        if (addPmeForces)
         {
-            f0 += pme_f[a][XX];
-            f1 += pme_f[a][YY];
-            f2 += pme_f[a][ZZ];
+            result += *(float3 *)&pme_f[a];
         }
 
-        f[a][XX] = f0;
-        f[a][YY] = f1;
-        f[a][ZZ] = f2;
-
-
+        float3 *output = (float3 *)(f[a]);
+        if (accumulateForces)
+        {
+            *output += result;
+        }
+        else
+        {
+            *output  = result;
+        }
 
     }
-
-    return;
 }
