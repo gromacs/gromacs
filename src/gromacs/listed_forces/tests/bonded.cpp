@@ -350,6 +350,7 @@ struct iListInput
          *
          * Free energy perturbation is turned on when A
          * and B parameters are different.
+         * \param[in] ft   Function type
          * \param[in] phiA Dihedral angle A
          * \param[in] cpA  Force constant A
          * \param[in] mult Multiplicity of the angle
@@ -357,9 +358,9 @@ struct iListInput
          * \param[in] cpB  Force constant B
          * \return The structure itself.
          */
-        iListInput setProperDihedrals(real phiA, real cpA, int mult, real phiB, real cpB)
+        iListInput setPDihedrals(int ft, real phiA, real cpA, int mult, real phiB, real cpB)
         {
-            ftype              = F_PDIHS;
+            ftype              = ft;
             iparams.pdihs.phiA = phiA;
             iparams.pdihs.cpA  = cpA;
             iparams.pdihs.phiB = phiB;
@@ -370,14 +371,15 @@ struct iListInput
         }
         /*! \brief Set parameters for proper dihedrals potential
          *
+         * \param[in] ft   Function type
          * \param[in] phiA Dihedral angle
          * \param[in] cpA  Force constant
          * \param[in] mult Multiplicity of the angle
          * \return The structure itself.
          */
-        iListInput setProperDihedrals(real phiA, real cpA, int mult)
+        iListInput setPDihedrals(int ft, real phiA, real cpA, int mult)
         {
-            return setProperDihedrals(phiA, cpA, mult, phiA, cpA);
+            return setPDihedrals(ft, phiA, cpA, mult, phiA, cpA);
         }
         /*! \brief Set parameters for Ryckaert-Bellemans dihedrals potential
          *
@@ -528,7 +530,6 @@ class ListedForcesTest : public ::testing::TestWithParam<std::tuple<iListInput, 
             clear_mat(box_);
             box_[0][0] = box_[1][1] = box_[2][2] = 1.5;
             set_pbc(&pbc_, epbc_, box_);
-
             // We need quite specific tolerances here since angle functions
             // etc. are not very precise and reproducible.
             test::FloatingPointTolerance tolerance(test::FloatingPointTolerance(input_.ftoler, 1.0e-6,
@@ -555,7 +556,7 @@ class ListedForcesTest : public ::testing::TestWithParam<std::tuple<iListInput, 
                                                           /* const struct t_graph *g */ nullptr,
                                                           lambda, &output.dvdlambda,
                                                           &mdatoms,
-                                                          /* struct t_fcdata *fcd */ nullptr,
+                                                          /* struct t_fcdata * */ nullptr,
                                                           ddgatindex.data());
             // Internal consistency test of both test input
             // and bonded functions.
@@ -635,8 +636,8 @@ const real rbc[NR_RBDIHS] = { -7.35, 13.6, 8.4, -16.7, 1.3, 12.4 };
 //! Function types for testing dihedrals. Add new terms at the end.
 std::vector<iListInput> c_InputDihs =
 {
-    { iListInput(1e-4, 1e-8).setProperDihedrals(-100.0, 10.0, 2, -80.0, 20.0) },
-    { iListInput(1e-4, 1e-8).setProperDihedrals(-105.0, 15.0, 2) },
+    { iListInput(1e-4, 1e-8).setPDihedrals(F_PDIHS, -100.0, 10.0, 2, -80.0, 20.0) },
+    { iListInput(1e-4, 1e-8).setPDihedrals(F_PDIHS, -105.0, 15.0, 2) },
     { iListInput(2e-4, 1e-8).setHarmonic(F_IDIHS, 100.0, 50.0) },
     { iListInput(2e-4, 1e-8).setHarmonic(F_IDIHS, 100.15, 50.0, 95.0, 30.0) },
     { iListInput(3e-4, 1e-8).setRbDihedrals(rbcA, rbcB) },
@@ -650,6 +651,17 @@ std::vector<iListInput> c_InputPols =
     { iListInput(1.7e-3, 1e-8).setAnharmPolarization(0.0013, 0.02, 1235.6) },
     { iListInput(1.4e-3, 1e-8).setTholePolarization(0.26, 0.07, 0.09, 1.6) },
     { iListInput().setWaterPolarization(0.001, 0.0012, 0.0016, 0.095, 0.15, 0.02) },
+};
+
+//! Function types for testing polarization. Add new terms at the end.
+std::vector<iListInput> c_InputRestraints =
+{
+    { iListInput(1e-4, 1e-8).setPDihedrals(F_ANGRES, -100.0, 10.0, 2, -80.0, 20.0) },
+    { iListInput(1e-4, 1e-8).setPDihedrals(F_ANGRES, -105.0, 15.0, 2) },
+    { iListInput(1e-4, 1e-8).setPDihedrals(F_ANGRESZ, -100.0, 10.0, 2, -80.0, 20.0) },
+    { iListInput(1e-4, 1e-8).setPDihedrals(F_ANGRESZ, -105.0, 15.0, 2) },
+    { iListInput(2e-3, 1e-8).setHarmonic(F_RESTRANGLES, 100.0, 50.0) },
+    { iListInput(2e-3, 1e-8).setHarmonic(F_RESTRANGLES, 100.0, 50.0, 110.0, 45.0) }
 };
 
 //! Coordinates for testing
@@ -670,6 +682,8 @@ INSTANTIATE_TEST_CASE_P(Angle, ListedForcesTest, ::testing::Combine(::testing::V
 INSTANTIATE_TEST_CASE_P(Dihedral, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputDihs), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
 
 INSTANTIATE_TEST_CASE_P(Polarize, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputPols), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
+
+INSTANTIATE_TEST_CASE_P(Restraints, ListedForcesTest, ::testing::Combine(::testing::ValuesIn(c_InputRestraints), ::testing::ValuesIn(c_coordinatesForTests), ::testing::ValuesIn(c_pbcForTests)));
 
 }  // namespace
 
