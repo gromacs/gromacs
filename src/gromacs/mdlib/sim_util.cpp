@@ -1093,6 +1093,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
 
+    const bool useGpuXBufOps = (bUseGPU && (GMX_GPU == GMX_GPU_CUDA));
+
     /* Check what PP force work there is. */
     if (bNS)
     {
@@ -1320,7 +1322,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
     else
     {
-        if (bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
+        if (useGpuXBufOps)
         {
             nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
                                                 eatLocal,
@@ -1347,9 +1349,13 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
-        wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatLocal, ppForceWorkload->haveGpuBondedWork);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        // with X buffer ops offloaded to the GPU on all but the search steps
+        if (bNS || !useGpuXBufOps)
+        {
+            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatLocal, ppForceWorkload->haveGpuBondedWork);
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        }
 
         // bonded work not split into separate local and non-local, so with DD
         // we can only launch the kernel after non-local coordinates have been received.
@@ -1438,7 +1444,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
-            if (bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
+            if (useGpuXBufOps)
             {
                 nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(),
                                                     eatNonlocal,
@@ -1460,10 +1466,12 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
-            /* launch non-local nonbonded tasks on GPU */
-            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            if (bNS || !useGpuXBufOps)
+            {
+                wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+                nbnxn_gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, eatNonlocal, ppForceWorkload->haveGpuBondedWork);
+                wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            }
 
             if (ppForceWorkload->haveGpuBondedWork)
             {
@@ -1472,6 +1480,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                 wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
             }
 
+            /* launch non-local nonbonded tasks on GPU */
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
                          step, nrnb, wcycle);
