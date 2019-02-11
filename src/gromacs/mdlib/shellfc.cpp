@@ -855,21 +855,6 @@ static real rms_force(const t_commrec *cr, gmx::ArrayRef<const gmx::RVec> force,
     return (ntot ? std::sqrt(buf[0]/ntot) : 0);
 }
 
-static void check_pbc(FILE *fp, gmx::ArrayRef<gmx::RVec> x, int shell)
-{
-    int m, now;
-
-    now = shell-4;
-    for (m = 0; (m < DIM); m++)
-    {
-        if (std::fabs(x[shell][m]-x[now][m]) > 0.3)
-        {
-            pr_rvecs(fp, 0, "SHELL-X", as_rvec_array(x.data())+now, 5);
-            break;
-        }
-    }
-}
-
 static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> x, gmx::ArrayRef<gmx::RVec> f, real ftol, int ns, t_shell s[])
 {
     int  i, shell;
@@ -886,7 +871,6 @@ static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> x, gmx::ArrayRef<gmx:
             fprintf(fp, "SHELL %5d, force %10.5f  %10.5f  %10.5f, |f| %10.5f\n",
                     shell, f[shell][XX], f[shell][YY], f[shell][ZZ], std::sqrt(ff2));
         }
-        check_pbc(fp, x, shell);
     }
 }
 
