@@ -40,11 +40,10 @@ gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
     topdirs.cpp
     )
 
-# Currently these are too slow to run in Jenkins, so they are in their
-# own test binary with a different ctest label so that they do not run
-# by default.
+# Currently these can be slow to run in Jenkins, so they are in their
+# own test binary.
 set(exename pdb2gmx-test)
 gmx_add_gtest_executable(${exename}
     pdb2gmx.cpp
     )
-gmx_register_gtest_test(Pdb2gmxTest ${exename} SLOW_TEST)
+gmx_register_gtest_test(Pdb2gmxTest ${exename})

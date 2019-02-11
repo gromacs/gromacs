@@ -111,7 +111,7 @@ function (gmx_register_gtest_test NAME EXENAME)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set(_labels GTest)
-        set(_timeout 30)
+        set(_timeout 60)
         if (ARG_INTEGRATION_TEST)
             list(APPEND _labels IntegrationTest)
             # Slow build configurations should have longer timeouts.
