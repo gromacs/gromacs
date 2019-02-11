@@ -86,7 +86,7 @@ std::vector<std::string>   c_regexStringsToSkip =
     "^;[[:blank:]]*Executable:.*\n",
     "^;[[:blank:]]*Data prefix:.*\n",
     "^;[[:blank:]]*Working dir:.*\n",
-    "^;[[:blank:]]*pdb2gmx-test.*\n"
+    "^;[[:blank:]]*pdb2gmx.*-test.*\n"
 };
 //! Compiled regular expressions for lines to skip when matching.
 FilteringExactTextMatch    c_textMatcher(c_regexStringsToSkip);
@@ -125,6 +125,10 @@ TEST_P(Pdb2gmxTest, ProducesMatchingTopology)
     runTest(CommandLine(cmdline));
 }
 
+// These tests are still rather slow when run with TSAN, so in the
+// CMakeLists.txt file we split them into separtae test binaries.
+
+#if OPLSAA
 INSTANTIATE_TEST_CASE_P(ForOplsaa, Pdb2gmxTest,
                             ::testing::Combine
                             (::testing::Values("oplsaa"),
@@ -134,7 +138,9 @@ INSTANTIATE_TEST_CASE_P(ForOplsaa, Pdb2gmxTest,
                                 ::testing::Values("no"),
                                 ::testing::Values("fragment1.pdb", "fragment2.pdb", "fragment3.pdb", "fragment4.pdb"))
                         );
+#endif
 
+#if GROMOS
 INSTANTIATE_TEST_CASE_P(ForGromos43a1, Pdb2gmxTest,
                             ::testing::Combine
                             (::testing::Values("gromos43a1"),
@@ -154,7 +160,9 @@ INSTANTIATE_TEST_CASE_P(ForGromos53a6, Pdb2gmxTest,
                                 ::testing::Values("no"),
                                 ::testing::Values("fragment1.pdb", "fragment2.pdb", "fragment3.pdb", "fragment4.pdb"))
                         );
+#endif
 
+#if AMBER
 INSTANTIATE_TEST_CASE_P(ForAmber99sb_ildn, Pdb2gmxTest,
                             ::testing::Combine
                             (::testing::Values("amber99sb-ildn"),
@@ -164,7 +172,9 @@ INSTANTIATE_TEST_CASE_P(ForAmber99sb_ildn, Pdb2gmxTest,
                                 ::testing::Values("no"),
                                 ::testing::Values("fragment1.pdb", "fragment2.pdb", "fragment3.pdb", "fragment4.pdb"))
                         );
+#endif
 
+#if CHARMM
 INSTANTIATE_TEST_CASE_P(ForCharmm27, Pdb2gmxTest,
                             ::testing::Combine
                             (::testing::Values("charmm27"),
@@ -185,6 +195,7 @@ INSTANTIATE_TEST_CASE_P(ChainSep, Pdb2gmxTest,
                                 ::testing::Values("all", "no"),
                                 ::testing::Values("chainTer.pdb"))
                         );
+#endif
 
 } // namespace
 } // namespace test
