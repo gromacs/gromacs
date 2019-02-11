@@ -39,6 +39,7 @@ gmx_add_unit_test(MathUnitTests math-test
                   invertmatrix.cpp
                   matrix.cpp
                   multidimarray.cpp
+                  multidimindexrange.cpp
                   paddedvector.cpp
                   vectypes.cpp
                   )
