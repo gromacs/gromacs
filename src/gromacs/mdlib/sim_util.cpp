@@ -1447,8 +1447,9 @@ static void do_force_cutsVERLET(FILE *fplog,
     /* Start the force cycle counter.
      * Note that a different counter is used for dynamic load balancing.
      */
-    wallcycle_start(wcycle, ewcFORCE);
 
+    wallcycle_start(wcycle, ewcFORCE);
+    wallcycle_sub_start(wcycle, ewcsCLEAR_FORCE_BUFFER);
     gmx::ArrayRef<gmx::RVec> forceRef = force.unpaddedArrayRef();
     if (bDoForces)
     {
@@ -1478,6 +1479,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         clear_pull_forces(inputrec->pull_work);
     }
+    wallcycle_sub_stop(wcycle, ewcsCLEAR_FORCE_BUFFER);
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
      * We do this before calling do_force_lowlevel, because in that
