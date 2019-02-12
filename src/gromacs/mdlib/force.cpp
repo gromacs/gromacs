@@ -165,14 +165,11 @@ void do_force_lowlevel(t_forcerec                   *fr,
     int         i, j;
     int         donb_flags;
     int         pme_flags;
-    t_pbc       pbc;
     real        dvdl_dum[efptNR], dvdl_nb[efptNR];
 
 #if GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
 #endif
-
-    set_pbc(&pbc, fr->ePBC, box);
 
     /* reset free energy components */
     for (i = 0; i < efptNR; i++)
@@ -320,19 +317,30 @@ void do_force_lowlevel(t_forcerec                   *fr,
             inc_nrnb(nrnb, eNR_SHIFTX, graph->nnodes);
         }
     }
-    /* Check whether we need to do listed interactions or correct for exclusions */
-    if (fr->bMolPBC &&
-        ((flags & GMX_FORCE_LISTED)
-         || EEL_RF(fr->ic->eeltype) || EEL_FULL(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)))
+
+    t_pbc      pbc;
+    const bool needPbcForGroupScheme =
+        (fr->cutoff_scheme == ecutsGROUP) &&
+        (EEL_RF(fr->ic->eeltype) || EEL_FULL(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype));
+    // TODO: if all listed forces are offloaded to the GPU, both PBC calls below could be skipped.
+    // TODO: after rebase add && haveCpuListedForces(*fr, idef, *fcd) to the condition
+    const bool needPbcForListedForces = (flags & GMX_FORCE_LISTED);
+    /* Check whether we need to do listed interactions or correct for exclusions (for the Group scheme) */
+    if (fr->bMolPBC == TRUE)
     {
-        /* TODO There are no electrostatics methods that require this
-           transformation, when using the Verlet scheme, so update the
-           above conditional. */
-        /* Since all atoms are in the rectangular or triclinic unit-cell,
-         * only single box vector shifts (2 in x) are required.
-         */
-        set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : nullptr,
-                   TRUE, box);
+        if (needPbcForListedForces || needPbcForGroupScheme)
+        {
+            /* Since all atoms are in the rectangular or triclinic unit-cell,
+             * only single box vector shifts (2 in x) are required.
+             */
+            set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : nullptr,
+                       TRUE, box);
+        }
+    }
+    else
+    {
+        // set up pbc for no PBC used
+        set_pbc(&pbc, epbcNONE, box);
     }
 
     do_force_listed(wcycle, box, ir->fepvals, cr, ms,
