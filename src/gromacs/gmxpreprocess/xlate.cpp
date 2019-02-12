@@ -145,7 +145,7 @@ void rename_atoms(const char* xlfile, const char *ffdir,
 {
     int           nxlate, a, i, resind;
     t_xlate_atom *xlatom;
-    char          c, *rnm, atombuf[32], *ptr0, *ptr1;
+    char          c, *rnm, atombuf[32];
     bool          bReorderedNum, bRenamed, bMatch;
     bool          bStartTerm, bEndTerm;
 
@@ -219,8 +219,8 @@ void rename_atoms(const char* xlfile, const char *ffdir,
                            rt->namedResidueHasType(rnm, "RNA")));
                 if (!bMatch)
                 {
-                    ptr0 = rnm;
-                    ptr1 = xlatom[i].res;
+                    const char *ptr0 = rnm;
+                    const char *ptr1 = xlatom[i].res;
                     while (ptr0[0] != '\0' && ptr1[0] != '\0' &&
                            (ptr0[0] == ptr1[0] || ptr1[0] == '?'))
                     {
@@ -235,7 +235,7 @@ void rename_atoms(const char* xlfile, const char *ffdir,
                     /* Don't free the old atomname,
                      * since it might be in the symtab.
                      */
-                    ptr0 = gmx_strdup(xlatom[i].replace);
+                    const char *ptr0 = xlatom[i].replace;
                     if (bVerbose)
                     {
                         printf("Renaming atom '%s' in residue %d %s to '%s'\n",
