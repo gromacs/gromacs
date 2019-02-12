@@ -116,7 +116,6 @@ std::vector<SpecialBond> generateSpecialBonds()
     fprintf(stderr, "%zu out of %d lines of %s converted successfully\n",
             specialBonds.size(), nlines, sbfile);
 
-
     return specialBonds;
 }
 
@@ -334,7 +333,6 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms *pdba,
         }
 
     }
-
 
     return bonds;
 }
