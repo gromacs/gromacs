@@ -130,7 +130,9 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* PBC stuff */
     int                         ePBC = 0;
-    //! Whether PBC must be considered for bonded interactions.
+    //! Tells whether atoms inside a molecule can be in different periodic images,
+    //  i.e. whether we need to take into account PBC when computing distances inside molecules.
+    //  This determines whether PBC must be considered for e.g. bonded interactions.
     gmx_bool                    bMolPBC     = FALSE;
     int                         rc_scaling  = 0;
     rvec                        posres_com  = { 0 };
