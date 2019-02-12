@@ -51,7 +51,7 @@ struct t_symtab;
 /* stuff for pdb2gmx */
 
 void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *atype,
-               t_atoms *at, t_symtab *symtab, rvec *x[],
+               t_atoms *at, t_symtab *symtab, std::vector<gmx::RVec> *x,
                t_params plist[], int *dummy_type[], int *cgnr[],
                real mHmult, bool bVSiteAromatics,
                const char *ffdir);
