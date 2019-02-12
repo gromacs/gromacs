@@ -1071,43 +1071,50 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcROT);
     }
 
-    /* Temporary solution until all routines take PaddedRVecVector */
-    rvec *const f = as_rvec_array(force.unpaddedArrayRef().data());
-
     /* Start the force cycle counter.
      * Note that a different counter is used for dynamic load balancing.
      */
     wallcycle_start(wcycle, ewcFORCE);
 
-    gmx::ArrayRef<gmx::RVec> forceRef = force.unpaddedArrayRef();
+    // Set up/clear the different force buffers
+    wallcycle_sub_start(wcycle, ewcsCLEAR_FORCE_BUFFER);
+
+    /* Temporary solution until all routines take PaddedRVecVector */
+    rvec *const f = as_rvec_array(force.unpaddedArrayRef().data());
     if (bDoForces)
     {
-        /* If we need to compute the virial, we might need a separate
-         * force buffer for algorithms for which the virial is calculated
-         * directly, such as PME.
-         */
-        if ((flags & GMX_FORCE_VIRIAL) && fr->haveDirectVirialContributions)
-        {
-            forceRef = *fr->forceBufferForDirectVirialContributions;
-
-            /* TODO: update comment
-             * We only compute forces on local atoms. Note that vsites can
-             * spread to non-local atoms, but that part of the buffer is
-             * cleared separately in the vsite spreading code.
-             */
-            clear_rvecs_omp(forceRef.size(), as_rvec_array(forceRef.data()));
-        }
         /* Clear the short- and long-range forces */
         clear_rvecs_omp(fr->natoms_force_constr, f);
     }
 
+    /* If we need to compute the virial, we might need a separate
+     * force buffer for algorithms for which the virial is calculated
+     * directly, such as PME. Otherwise, forceWithVirial uses the
+     * the same force (f in legacy calls) buffer as other algorithms.
+     */
+    const bool  useSeparateForceWithVirialBuffer = (bDoForces && ((flags & GMX_FORCE_VIRIAL) != 0 && fr->haveDirectVirialContributions));
+
+
     /* forceWithVirial uses the local atom range only */
-    gmx::ForceWithVirial forceWithVirial(forceRef, (flags & GMX_FORCE_VIRIAL) != 0);
+    gmx::ForceWithVirial forceWithVirial(useSeparateForceWithVirialBuffer ?
+                                         *fr->forceBufferForDirectVirialContributions : force.unpaddedArrayRef(),
+                                         (flags & GMX_FORCE_VIRIAL) != 0);
+
+    if (useSeparateForceWithVirialBuffer)
+    {
+        /* TODO: update comment
+         * We only compute forces on local atoms. Note that vsites can
+         * spread to non-local atoms, but that part of the buffer is
+         * cleared separately in the vsite spreading code.
+         */
+        clear_rvecs_omp(forceWithVirial.force_.size(), as_rvec_array(forceWithVirial.force_.data()));
+    }
 
     if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
     {
         clear_pull_forces(inputrec->pull_work);
     }
+    wallcycle_sub_stop(wcycle, ewcsCLEAR_FORCE_BUFFER);
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
      * We do this before calling do_force_lowlevel, because in that
@@ -1588,6 +1595,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         do_rotation(cr, enforcedRotation, box, as_rvec_array(x.unpaddedArrayRef().data()), t, step, bNS);
         wallcycle_stop(wcycle, ewcROT);
     }
+
 
     /* Temporary solution until all routines take PaddedRVecVector */
     rvec *f = as_rvec_array(force.unpaddedArrayRef().data());
