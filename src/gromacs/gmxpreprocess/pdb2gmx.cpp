@@ -86,56 +86,53 @@
 #include "hackblock.h"
 #include "resall.h"
 
-#define RTP_MAXCHAR 5
-typedef struct {
-    char gmx[RTP_MAXCHAR+2];
-    char main[RTP_MAXCHAR+2];
-    char nter[RTP_MAXCHAR+2];
-    char cter[RTP_MAXCHAR+2];
-    char bter[RTP_MAXCHAR+2];
-} rtprename_t;
+struct RtpRename{
+    RtpRename(const char *newGmx, const char *newMain,
+              const char *newNter, const char *newCter,
+              const char *newBter) :
+        gmx(newGmx), main(newMain), nter(newNter), cter(newCter), bter(newBter)
+    {}
+    std::string gmx;
+    std::string main;
+    std::string nter;
+    std::string cter;
+    std::string bter;
+};
 
-static const char *res2bb_notermini(const char *name,
-                                    int nrr, const rtprename_t *rr)
+static const char *res2bb_notermini(const std::string             &name,
+                                    gmx::ArrayRef<const RtpRename> rr)
 {
     /* NOTE: This function returns the main building block name,
      *       it does not take terminal renaming into account.
      */
-    int i;
-
-    i = 0;
-    while (i < nrr && !gmx::equalCaseInsensitive(name, rr[i].gmx))
-    {
-        i++;
-    }
-
-    return (i < nrr ? rr[i].main : name);
+    auto found = std::find_if(rr.begin(), rr.end(), [&name](const auto &rename)
+                              { return gmx::equalCaseInsensitive(name, rename.gmx); });
+    return found != rr.end() ? found->main.c_str() : name.c_str();
 }
 
 static const char *select_res(int nr, int resnr,
                               const char *name[], const char *expl[],
                               const char *title,
-                              int nrr, const rtprename_t *rr)
+                              gmx::ArrayRef<const RtpRename> rr)
 {
-    int sel = 0;
-
     printf("Which %s type do you want for residue %d\n", title, resnr+1);
-    for (sel = 0; (sel < nr); sel++)
+    for (int sel = 0; (sel < nr); sel++)
     {
         printf("%d. %s (%s)\n",
-               sel, expl[sel], res2bb_notermini(name[sel], nrr, rr));
+               sel, expl[sel], res2bb_notermini(name[sel], rr));
     }
     printf("\nType a number:"); fflush(stdout);
 
-    if (scanf("%d", &sel) != 1)
+    int userSelection;
+    if (scanf("%d", &userSelection) != 1)
     {
         gmx_fatal(FARGS, "Answer me for res %s %d!", title, resnr+1);
     }
 
-    return name[sel];
+    return name[userSelection];
 }
 
-static const char *get_asptp(int resnr, int nrr, const rtprename_t *rr)
+static const char *get_asptp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
     enum {
         easp, easpH, easpNR
@@ -146,10 +143,10 @@ static const char *get_asptp(int resnr, int nrr, const rtprename_t *rr)
         "Protonated (charge 0)"
     };
 
-    return select_res(easpNR, resnr, lh, expl, "ASPARTIC ACID", nrr, rr);
+    return select_res(easpNR, resnr, lh, expl, "ASPARTIC ACID", rr);
 }
 
-static const char *get_glutp(int resnr, int nrr, const rtprename_t *rr)
+static const char *get_glutp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
     enum {
         eglu, egluH, egluNR
@@ -160,10 +157,10 @@ static const char *get_glutp(int resnr, int nrr, const rtprename_t *rr)
         "Protonated (charge 0)"
     };
 
-    return select_res(egluNR, resnr, lh, expl, "GLUTAMIC ACID", nrr, rr);
+    return select_res(egluNR, resnr, lh, expl, "GLUTAMIC ACID", rr);
 }
 
-static const char *get_glntp(int resnr, int nrr, const rtprename_t *rr)
+static const char *get_glntp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
     enum {
         egln, eglnH, eglnNR
@@ -174,10 +171,10 @@ static const char *get_glntp(int resnr, int nrr, const rtprename_t *rr)
         "Protonated (charge +1)"
     };
 
-    return select_res(eglnNR, resnr, lh, expl, "GLUTAMINE", nrr, rr);
+    return select_res(eglnNR, resnr, lh, expl, "GLUTAMINE", rr);
 }
 
-static const char *get_lystp(int resnr, int nrr, const rtprename_t *rr)
+static const char *get_lystp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
     enum {
         elys, elysH, elysNR
@@ -188,10 +185,10 @@ static const char *get_lystp(int resnr, int nrr, const rtprename_t *rr)
         "Protonated (charge +1)"
     };
 
-    return select_res(elysNR, resnr, lh, expl, "LYSINE", nrr, rr);
+    return select_res(elysNR, resnr, lh, expl, "LYSINE", rr);
 }
 
-static const char *get_argtp(int resnr, int nrr, const rtprename_t *rr)
+static const char *get_argtp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
     enum {
         earg, eargH, eargNR
@@ -202,10 +199,10 @@ static const char *get_argtp(int resnr, int nrr, const rtprename_t *rr)
         "Protonated (charge +1)"
     };
 
-    return select_res(eargNR, resnr, lh, expl, "ARGININE", nrr, rr);
+    return select_res(eargNR, resnr, lh, expl, "ARGININE", rr);
 }
 
-static const char *get_histp(int resnr, int nrr, const rtprename_t *rr)
+static const char *get_histp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
     const char *expl[ehisNR] = {
         "H on ND1 only",
@@ -214,43 +211,31 @@ static const char *get_histp(int resnr, int nrr, const rtprename_t *rr)
         "Coupled to Heme"
     };
 
-    return select_res(ehisNR, resnr, hh, expl, "HISTIDINE", nrr, rr);
+    return select_res(ehisNR, resnr, hh, expl, "HISTIDINE", rr);
 }
 
 static void read_rtprename(const char *fname, FILE *fp,
-                           int *nrtprename, rtprename_t **rtprename)
+                           std::vector<RtpRename> *rtprename)
 {
     char         line[STRLEN], buf[STRLEN];
-    int          n;
-    rtprename_t *rr;
-    int          ncol, nc;
 
-    n  = *nrtprename;
-    rr = *rtprename;
-
-    ncol = 0;
+    int          ncol = 0;
     while (get_a_line(fp, line, STRLEN))
     {
-        srenew(rr, n+1);
         /* line is NULL-terminated and length<STRLEN, so final arg cannot overflow.
          * For other args, we read up to 6 chars (so we can detect if the length is > 5).
          * Note that the buffer length has been increased to 7 to allow this,
          * so we just need to make sure the strings have zero-length initially.
          */
-        rr[n].gmx[0]  = '\0';
-        rr[n].main[0] = '\0';
-        rr[n].nter[0] = '\0';
-        rr[n].cter[0] = '\0';
-        rr[n].bter[0] = '\0';
-        nc            = sscanf(line, "%6s %6s %6s %6s %6s %s",
-                               rr[n].gmx, rr[n].main, rr[n].nter, rr[n].cter, rr[n].bter, buf);
-        if (strlen(rr[n].gmx) > RTP_MAXCHAR || strlen(rr[n].main) > RTP_MAXCHAR ||
-            strlen(rr[n].nter) > RTP_MAXCHAR || strlen(rr[n].cter) > RTP_MAXCHAR || strlen(rr[n].bter) > RTP_MAXCHAR)
-        {
-            gmx_fatal(FARGS, "Residue renaming database '%s' has strings longer than %d chars in first 5 columns:\n%s",
-                      fname, RTP_MAXCHAR, line);
-        }
-
+        char gmx[STRLEN];
+        char main[STRLEN];
+        char nter[STRLEN];
+        char cter[STRLEN];
+        char bter[STRLEN];
+        int  nc            = sscanf(line, "%6s %6s %6s %6s %6s %s",
+                                    gmx, main, nter,
+                                    cter, bter, buf);
+        RtpRename newEntry(gmx, main, nter, cter, bter);
         if (ncol == 0)
         {
             if (nc != 2 && nc != 5)
@@ -267,89 +252,73 @@ static void read_rtprename(const char *fname, FILE *fp,
         if (nc == 2)
         {
             /* This file does not have special termini names, copy them from main */
-            strcpy(rr[n].nter, rr[n].main);
-            strcpy(rr[n].cter, rr[n].main);
-            strcpy(rr[n].bter, rr[n].main);
+            newEntry.nter = newEntry.main;
+            newEntry.cter = newEntry.main;
+            newEntry.bter = newEntry.main;
         }
-
-        n++;
+        rtprename->push_back(newEntry);
     }
-
-    *nrtprename = n;
-    *rtprename  = rr;
 }
 
-static char *search_resrename(int nrr, rtprename_t *rr,
-                              const char *name,
-                              bool bStart, bool bEnd,
-                              bool bCompareFFRTPname)
+static const char *search_resrename(gmx::ArrayRef<const RtpRename> rr,
+                                    const std::string &name,
+                                    bool bStart, bool bEnd,
+                                    bool bCompareFFRTPname)
 {
-    char *nn;
-    int   i;
+    auto found = std::find_if(rr.begin(), rr.end(), [&name, &bCompareFFRTPname](const auto &rename)
+                              { return ((!bCompareFFRTPname && (name == rename.gmx)) ||
+                                        (bCompareFFRTPname && (name == rename.main))); });
 
-    nn = nullptr;
-
-    i = 0;
-    while (i < nrr && ((!bCompareFFRTPname && strcmp(name, rr[i].gmx)  != 0) ||
-                       ( bCompareFFRTPname && strcmp(name, rr[i].main) != 0)))
-    {
-        i++;
-    }
-
+    std::string newName;
     /* If found in the database, rename this residue's rtp building block,
      * otherwise keep the old name.
      */
-    if (i < nrr)
+    if (found != rr.end())
     {
         if (bStart && bEnd)
         {
-            nn = rr[i].bter;
+            newName  = found->bter;
         }
         else if (bStart)
         {
-            nn = rr[i].nter;
+            newName = found->nter;
         }
         else if (bEnd)
         {
-            nn = rr[i].cter;
+            newName = found->cter;
         }
         else
         {
-            nn = rr[i].main;
+            newName = found->main;
         }
 
-        if (nn[0] == '-')
+        if (newName[0] == '-')
         {
-            gmx_fatal(FARGS, "In the chosen force field there is no residue type for '%s'%s", name, bStart ? ( bEnd ? " as a standalone (starting & ending) residue" : " as a starting terminus") : (bEnd ? " as an ending terminus" : ""));
+            gmx_fatal(FARGS, "In the chosen force field there is no residue type for '%s'%s", name.c_str(), bStart ? ( bEnd ? " as a standalone (starting & ending) residue" : " as a starting terminus") : (bEnd ? " as an ending terminus" : ""));
         }
     }
 
-    return nn;
+    return newName.c_str();
 }
 
 static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, const int *r_end,
-                          int nrr, rtprename_t *rr, t_symtab *symtab,
+                          gmx::ArrayRef<const RtpRename> rr, t_symtab *symtab,
                           bool bVerbose)
 {
-    int      r, j;
-    bool     bStart, bEnd;
-    char    *nn;
-    bool     bFFRTPTERRNM;
+    bool bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == nullptr);
 
-    bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == nullptr);
-
-    for (r = 0; r < pdba->nres; r++)
+    for (int r = 0; r < pdba->nres; r++)
     {
-        bStart = false;
-        bEnd   = false;
-        for (j = 0; j < nterpairs; j++)
+        bool bStart = false;
+        bool bEnd   = false;
+        for (int j = 0; j < nterpairs; j++)
         {
             if (r == r_start[j])
             {
                 bStart = true;
             }
         }
-        for (j = 0; j < nterpairs; j++)
+        for (int j = 0; j < nterpairs; j++)
         {
             if (r == r_end[j])
             {
@@ -357,27 +326,27 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, cons
             }
         }
 
-        nn = search_resrename(nrr, rr, *pdba->resinfo[r].rtp, bStart, bEnd, false);
+        std::string newName = search_resrename(rr, *pdba->resinfo[r].rtp, bStart, bEnd, false);
 
-        if (bFFRTPTERRNM && nn == nullptr && (bStart || bEnd))
+        if (bFFRTPTERRNM && newName.empty() && (bStart || bEnd))
         {
             /* This is a terminal residue, but the residue name,
              * currently stored in .rtp, is not a standard residue name,
              * but probably a force field specific rtp name.
              * Check if we need to rename it because it is terminal.
              */
-            nn = search_resrename(nrr, rr,
-                                  *pdba->resinfo[r].rtp, bStart, bEnd, true);
+            newName = search_resrename(rr,
+                                       *pdba->resinfo[r].rtp, bStart, bEnd, true);
         }
 
-        if (nn != nullptr && strcmp(*pdba->resinfo[r].rtp, nn) != 0)
+        if (!newName.empty() && newName != *pdba->resinfo[r].rtp)
         {
             if (bVerbose)
             {
                 printf("Changing rtp entry of residue %d %s to '%s'\n",
-                       pdba->resinfo[r].nr, *pdba->resinfo[r].name, nn);
+                       pdba->resinfo[r].nr, *pdba->resinfo[r].name, newName.c_str());
             }
-            pdba->resinfo[r].rtp = put_symtab(symtab, nn);
+            pdba->resinfo[r].rtp = put_symtab(symtab, newName.c_str());
         }
     }
 }
@@ -433,10 +402,10 @@ static void rename_bb(t_atoms *pdba, const char *oldnm, const char *newnm,
 }
 
 static void rename_bbint(t_atoms *pdba, const char *oldnm,
-                         const char *gettp(int, int, const rtprename_t *),
+                         const char *gettp(int, gmx::ArrayRef<const RtpRename>),
                          bool bFullCompare,
                          t_symtab *symtab,
-                         int nrr, const rtprename_t *rr)
+                         gmx::ArrayRef<const RtpRename> rr)
 {
     int         i;
     const char *ptr;
@@ -449,7 +418,7 @@ static void rename_bbint(t_atoms *pdba, const char *oldnm,
         if ((bFullCompare && (strcmp(bbnm, oldnm) == 0)) ||
             (!bFullCompare && strstr(bbnm, oldnm) != nullptr))
         {
-            ptr                  = gettp(i, nrr, rr);
+            ptr                  = gettp(i, rr);
             pdba->resinfo[i].rtp = put_symtab(symtab, ptr);
         }
     }
@@ -607,7 +576,7 @@ static void process_chain(t_atoms *pdba, rvec *x,
                           bool bLysMan, bool bAspMan, bool bGluMan,
                           bool bHisMan, bool bArgMan, bool bGlnMan,
                           real angle, real distance, t_symtab *symtab,
-                          int nrr, const rtprename_t *rr)
+                          gmx::ArrayRef<const RtpRename> rr)
 {
     /* Rename aromatics, lys, asp and histidine */
     if (bTyrU)
@@ -624,19 +593,19 @@ static void process_chain(t_atoms *pdba, rvec *x,
     }
     if (bLysMan)
     {
-        rename_bbint(pdba, "LYS", get_lystp, false, symtab, nrr, rr);
+        rename_bbint(pdba, "LYS", get_lystp, false, symtab, rr);
     }
     if (bArgMan)
     {
-        rename_bbint(pdba, "ARG", get_argtp, false, symtab, nrr, rr);
+        rename_bbint(pdba, "ARG", get_argtp, false, symtab, rr);
     }
     if (bGlnMan)
     {
-        rename_bbint(pdba, "GLN", get_glntp, false, symtab, nrr, rr);
+        rename_bbint(pdba, "GLN", get_glntp, false, symtab, rr);
     }
     if (bAspMan)
     {
-        rename_bbint(pdba, "ASP", get_asptp, false, symtab, nrr, rr);
+        rename_bbint(pdba, "ASP", get_asptp, false, symtab, rr);
     }
     else
     {
@@ -644,7 +613,7 @@ static void process_chain(t_atoms *pdba, rvec *x,
     }
     if (bGluMan)
     {
-        rename_bbint(pdba, "GLU", get_glutp, false, symtab, nrr, rr);
+        rename_bbint(pdba, "GLU", get_glutp, false, symtab, rr);
     }
     else
     {
@@ -657,7 +626,7 @@ static void process_chain(t_atoms *pdba, rvec *x,
     }
     else
     {
-        rename_bbint(pdba, "HIS", get_histp, true, symtab, nrr, rr);
+        rename_bbint(pdba, "HIS", get_histp, true, symtab, rr);
     }
 
     /* Initialize the rtp builing block names with the residue names
@@ -1668,32 +1637,31 @@ int pdb2gmx::run()
     /* Read residue renaming database(s), if present */
     std::vector<std::string> rrn = fflib_search_file_end(ffdir_, ".r2b", FALSE);
 
-    int                      nrtprename = 0;
-    rtprename_t             *rtprename  = nullptr;
+    std::vector<RtpRename>   rtprename;
     for (const auto &filename : rrn)
     {
         printf("going to rename %s\n", filename.c_str());
         FILE *fp = fflib_open(filename);
-        read_rtprename(filename.c_str(), fp, &nrtprename, &rtprename);
+        read_rtprename(filename.c_str(), fp, &rtprename);
         gmx_ffclose(fp);
     }
 
     /* Add all alternative names from the residue renaming database to the list
        of recognized amino/nucleic acids. */
-    for (int i = 0; i < nrtprename; i++)
+    for (const auto &rename : rtprename)
     {
         /* Only add names if the 'standard' gromacs/iupac base name was found */
 
         /* TODO this should be changed with gmx::optional so that we only need
          * to search rt once.
          */
-        if (rt.nameIndexedInResidueTypes(rtprename[i].gmx))
+        if (rt.nameIndexedInResidueTypes(rename.gmx))
         {
-            std::string restype = rt.typeNameForIndexedResidue(rtprename[i].gmx);
-            rt.addResidue(rtprename[i].main, restype);
-            rt.addResidue(rtprename[i].nter, restype);
-            rt.addResidue(rtprename[i].cter, restype);
-            rt.addResidue(rtprename[i].bter, restype);
+            std::string restype = rt.typeNameForIndexedResidue(rename.gmx);
+            rt.addResidue(rename.main, restype);
+            rt.addResidue(rename.nter, restype);
+            rt.addResidue(rename.cter, restype);
+            rt.addResidue(rename.bter, restype);
         }
     }
 
@@ -2017,7 +1985,7 @@ int pdb2gmx::run()
 
         process_chain(pdba, x, bUnA_, bUnA_, bUnA_, bLysMan_, bAspMan_, bGluMan_,
                       bHisMan_, bArgMan_, bGlnMan_, angle_, distance_, &symtab,
-                      nrtprename, rtprename);
+                      rtprename);
 
         cc->chainstart[cc->nterpairs] = pdba->nres;
         j = 0;
@@ -2042,9 +2010,9 @@ int pdb2gmx::run()
         /* Check for disulfides and other special bonds */
         ssbonds = makeDisulfideBonds(pdba, x, bCysMan_, bVerbose_);
 
-        if (nrtprename > 0)
+        if (!rtprename.empty())
         {
-            rename_resrtp(pdba, cc->nterpairs, cc->r_start, cc->r_end, nrtprename, rtprename,
+            rename_resrtp(pdba, cc->nterpairs, cc->r_start, cc->r_end, rtprename,
                           &symtab, bVerbose_);
         }
 
