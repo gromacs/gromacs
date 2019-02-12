@@ -639,15 +639,16 @@ static void print_top_system(FILE *out, const char *title)
 
 void print_top_mols(FILE *out,
                     const char *title, const char *ffdir, const char *water,
-                    int nincl, char **incls, int nmol, t_mols *mols)
+                    gmx::ArrayRef<const std::string> incls,
+                    gmx::ArrayRef<const t_mols> mols)
 {
 
-    if (nincl > 0)
+    if (!incls.empty())
     {
         fprintf(out, "; Include chain topologies\n");
-        for (int i = 0; i < nincl; i++)
+        for (const auto &incl : incls)
         {
-            fprintf(out, "#include \"%s\"\n", gmx::Path::getFilename(incls[i]).c_str());
+            fprintf(out, "#include \"%s\"\n", gmx::Path::getFilename(incl).c_str());
         }
         fprintf(out, "\n");
     }
@@ -658,13 +659,13 @@ void print_top_mols(FILE *out,
     }
     print_top_system(out, title);
 
-    if (nmol)
+    if (!mols.empty())
     {
         fprintf(out, "[ %s ]\n", dir2str(Directive::d_molecules));
         fprintf(out, "; %-15s %5s\n", "Compound", "#mols");
-        for (int i = 0; i < nmol; i++)
+        for (const auto &mol : mols)
         {
-            fprintf(out, "%-15s %5d\n", mols[i].name, mols[i].nr);
+            fprintf(out, "%-15s %5d\n", mol.name.c_str(), mol.nr);
         }
     }
 }
@@ -732,7 +733,7 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
 
 static void at2bonds(t_params *psb, gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
                      t_atoms *atoms,
-                     rvec x[],
+                     gmx::ArrayRef<const gmx::RVec> x,
                      real long_bond_dist, real short_bond_dist)
 {
     real        long_bond_dist2, short_bond_dist2;
@@ -927,6 +928,7 @@ static void check_restp_types(const PreprocessResidue &r0, const PreprocessResid
 }
 
 static void add_atom_to_restp(PreprocessResidue         *usedPpResidues,
+                              t_symtab                  *symtab,
                               int                        at_start,
                               const MoleculePatch       *patch)
 {
@@ -939,10 +941,8 @@ static void add_atom_to_restp(PreprocessResidue         *usedPpResidues,
         {
             buf.append(gmx::formatString("%d", k+1));
         }
-        char **tmp;
-        snew(tmp, 1);
-        *tmp = gmx_strdup(buf.c_str());
-        usedPpResidues->atomname.insert(usedPpResidues->atomname.begin() + at_start + 1 + k, tmp);
+        usedPpResidues->atomname.insert(usedPpResidues->atomname.begin() + at_start + 1 + k,
+                                        put_symtab(symtab, buf.c_str()));
         usedPpResidues->atom.insert(usedPpResidues->atom.begin() + at_start + 1 + k, patch->atom.back());
         if (patch->cgnr != NOTSET)
         {
@@ -960,9 +960,11 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
                         gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
+                        t_symtab *symtab,
                         gmx::ArrayRef<MoleculePatchDatabase *> ntdb,
                         gmx::ArrayRef<MoleculePatchDatabase *> ctdb,
-                        const int *rn, const int *rc,
+                        gmx::ArrayRef<const int> rn,
+                        gmx::ArrayRef<const int> rc,
                         bool bAllowMissing)
 {
     char       *key;
@@ -1000,7 +1002,7 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
         auto               res             = getDatabaseEntry(*resinfo[i].rtp, rtpFFDB);
         usedPpResidues->push_back(PreprocessResidue());
         PreprocessResidue *newentry = &usedPpResidues->back();
-        copyPreprocessResidues(*res, newentry);
+        copyPreprocessResidues(*res, newentry, symtab);
 
         /* Check that we do not have different bonded types in one molecule */
         check_restp_types(usedPpResidues->front(), *newentry);
@@ -1104,7 +1106,7 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
                         case MoleculePatchType::Add:
                         {
                             /* we're adding: */
-                            add_atom_to_restp(posres, l, &(*patch));
+                            add_atom_to_restp(posres, symtab, l, &(*patch));
                             break;
                         }
                         case MoleculePatchType::Delete:
@@ -1117,11 +1119,8 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
                         case MoleculePatchType::Replace:
                         {
                             /* we're replacing */
-                            char **tmp = posres->atomname[l];
-                            srenew(tmp, 1);
-                            *tmp                 = gmx_strdup(patch->nname.c_str());
-                            posres->atom[l]      =       patch->atom.back();
-                            posres->atomname[l]  = tmp;
+                            posres->atom[l]      = patch->atom.back();
+                            posres->atomname[l]  = put_symtab(symtab, patch->nname.c_str());
                             if (patch->cgnr != NOTSET)
                             {
                                 posres->cgnr[l] = patch->cgnr;
@@ -1169,7 +1168,8 @@ static bool atomname_cmp_nr(const char *anm, const MoleculePatch *patch, int *nr
 }
 
 static bool match_atomnames_with_rtp_atom(t_atoms                     *pdba,
-                                          rvec                        *x,
+                                          gmx::ArrayRef<gmx::RVec>     x,
+                                          t_symtab                    *symtab,
                                           int                          atind,
                                           PreprocessResidue           *localPpResidue,
                                           const MoleculePatchDatabase &singlePatch,
@@ -1258,7 +1258,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms                     *pdba,
                                       start_at.c_str(), localPpResidue->resname.c_str(), newnm.c_str());
                         }
                         /* We can add the atom after atom start_nr */
-                        add_atom_to_restp(localPpResidue,
+                        add_atom_to_restp(localPpResidue, symtab,
                                           std::distance(localPpResidue->atomname.begin(), found2),
                                           &(*patch));
 
@@ -1281,8 +1281,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms                     *pdba,
                        oldnm, localPpResidue->resname.c_str(), resnr, newnm.c_str());
             }
             /* Rename the atom in pdba */
-            snew(pdba->atomname[atind], 1);
-            *pdba->atomname[atind] = gmx_strdup(newnm.c_str());
+            pdba->atomname[atind] = put_symtab(symtab, newnm.c_str());
         }
         else if (patch->type() == MoleculePatchType::Delete &&
                  gmx::equalCaseInsensitive(oldnm, patch->oname))
@@ -1322,10 +1321,12 @@ static bool match_atomnames_with_rtp_atom(t_atoms                     *pdba,
     return bDeleted;
 }
 
-void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue> usedPpResidues,
+void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidues,
                               gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-                              t_atoms *pdba, rvec *x,
-                              bool bVerbose)
+                              t_atoms                             *pdba,
+                              t_symtab                            *symtab,
+                              gmx::ArrayRef<gmx::RVec>             x,
+                              bool                                 bVerbose)
 {
     for (int i = 0; i < pdba->nr; i++)
     {
@@ -1337,7 +1338,7 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue> usedPpResidues,
         if (found == localPpResidue->atomname.end())
         {
             /* Not found yet, check if we have to rename this atom */
-            if (match_atomnames_with_rtp_atom(pdba, x, i,
+            if (match_atomnames_with_rtp_atom(pdba, x, symtab, i,
                                               localPpResidue, globalPatches[pdba->atom[i].resind],
                                               bVerbose))
             {
@@ -1465,7 +1466,8 @@ scrub_charge_groups(int *cgnr, int natoms)
 
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
-             t_atoms *atoms, rvec **x, gpp_atomtype *atype, t_symtab *tab,
+             t_atoms *atoms,
+             std::vector<gmx::RVec> *x, gpp_atomtype *atype, t_symtab *tab,
              gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
              gmx::ArrayRef<PreprocessResidue> usedPpResidues,
              gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
@@ -1609,8 +1611,6 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
                   bts, plist, excls, atype, cgnr, usedPpResidues[0].nrexcl);
     }
 
-    /* cleaning up */
-    freePreprocessResidue(usedPpResidues);
 
     /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
     sfree(cgnr);

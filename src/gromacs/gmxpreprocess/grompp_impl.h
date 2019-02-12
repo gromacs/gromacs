@@ -107,8 +107,8 @@ struct t_molinfo
 
 struct t_mols
 {
-    char *name;
-    int   nr;
+    std::string name;
+    int         nr;
 };
 
 bool is_int(double x);
