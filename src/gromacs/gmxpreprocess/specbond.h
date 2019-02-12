@@ -38,22 +38,26 @@
 #ifndef GMX_GMXPREPROCESS_SPECBOND_H
 #define GMX_GMXPREPROCESS_SPECBOND_H
 
+#include <string>
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 
 struct t_atoms;
-struct t_specbond;
+struct SpecialBond;
 
-struct t_ssbond
+struct DisulfideBond
 {
-    int   res1, res2;
-    char *a1, *a2;
+    int         firstResidue = -1, secondResidue = -1;
+    std::string firstAtom, secondAtom;
 };
 
-int mk_specbonds(t_atoms *pdba, rvec x[], bool bInteractive,
-                 t_ssbond **specbonds, bool bVerbose);
+std::vector<DisulfideBond> makeDisulfideBonds(t_atoms *pdba,
+                                              rvec     x[],
+                                              bool     bInteractive,
+                                              bool     bVerbose);
 
-t_specbond *get_specbonds(int *nspecbond);
-void done_specbonds(int nsb, t_specbond sb[]);
+std::vector<SpecialBond> generateSpecialBonds();
 
 bool yesno();
 

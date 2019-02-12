@@ -53,7 +53,7 @@ struct t_mols;
 struct t_params;
 struct t_resinfo;
 struct PreprocessResidue;
-struct t_ssbond;
+struct DisulfideBond;
 struct t_symtab;
 
 /* this *MUST* correspond to array in pdb2top.c */
@@ -125,7 +125,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              bool bVsites, bool bVsiteAromatics,
              const char *ffdir,
              real mHmult,
-             int nssbonds, t_ssbond ssbonds[],
+             gmx::ArrayRef<const DisulfideBond> ssbonds,
              real long_bond_dist, real short_bond_dist,
              bool bDeuterate, bool bChargeGroups, bool bCmap,
              bool bRenumRes, bool bRTPresname);
