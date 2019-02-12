@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,7 +87,7 @@ static void atom_not_found(int fatal_errno, const char *file, int line,
 }
 
 int search_atom(const char *type, int start,
-                t_atoms *atoms,
+                const t_atoms *atoms,
                 const char *bondtype, bool bAllowMissing)
 {
     int             i, resind = -1;
@@ -153,7 +153,7 @@ int search_atom(const char *type, int start,
 
 int
 search_res_atom(const char *type, int resind,
-                t_atoms *atoms,
+                const t_atoms *atoms,
                 const char *bondtype, bool bAllowMissing)
 {
     int i;

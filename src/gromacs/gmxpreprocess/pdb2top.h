@@ -82,9 +82,11 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
                         gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
+                        t_symtab *symtab,
                         gmx::ArrayRef<MoleculePatchDatabase *> ntdb,
                         gmx::ArrayRef<MoleculePatchDatabase *> ctdb,
-                        const int *rn, const int *rc,
+                        gmx::ArrayRef<const int> rn,
+                        gmx::ArrayRef<const int> rc,
                         bool bAllowMissing);
 /* Get the database entries for the nres residues in resinfo
  * and store them in restp and hb.
@@ -92,7 +94,7 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
 
 void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue> usedPpResidues,
                               gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-                              t_atoms *pdba, rvec *x,
+                              t_atoms *pdba, t_symtab *symtab, gmx::ArrayRef<gmx::RVec> x,
                               bool bVerbose);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
  * If renaming involves atoms added wrt to the rtp database,
@@ -106,8 +108,8 @@ void print_top_header(FILE *out, const char *filename, bool bITP,
 
 void print_top_mols(FILE *out,
                     const char *title, const char *ffdir, const char *water,
-                    int nincl, char **incls,
-                    int nmol, t_mols *mols);
+                    gmx::ArrayRef<const std::string> incls,
+                    gmx::ArrayRef<const t_mols> mols);
 
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
@@ -116,7 +118,8 @@ void write_top(FILE *out, const char *pr, const char *molname,
 /* NOTE: nrexcl is not the size of *excl! */
 
 void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
-             t_atoms *atoms, rvec **x,
+             t_atoms *atoms,
+             std::vector<gmx::RVec> *x,
              gpp_atomtype *atype, t_symtab *tab,
              gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
              gmx::ArrayRef<PreprocessResidue> usedPpResidues,
