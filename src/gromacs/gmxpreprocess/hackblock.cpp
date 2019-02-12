@@ -45,6 +45,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -72,18 +73,6 @@ MoleculePatchType MoleculePatch::type() const
     else
     {
         GMX_THROW(gmx::InvalidInputError("Unknown type of atom modification"));
-    }
-}
-
-void freePreprocessResidue(gmx::ArrayRef<PreprocessResidue> rtp)
-{
-    for (auto it = rtp.begin(); it != rtp.end(); it++)
-    {
-        for (auto jt = it->atomname.begin(); jt != it->atomname.end(); jt++)
-        {
-            sfree(*(*jt));
-            sfree(*jt);
-        }
     }
 }
 
@@ -227,7 +216,7 @@ bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
     return bBondsRemoved;
 }
 
-void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d)
+void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d, t_symtab *symtab)
 {
     *d         = s;
     d->atom.clear();
@@ -238,10 +227,7 @@ void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d)
     d->atomname.clear();
     for (const auto &a : s.atomname)
     {
-        char **tmp = nullptr;
-        snew(tmp, 1);
-        *tmp = safe_strdup(*a);
-        d->atomname.push_back(tmp);
+        d->atomname.push_back(put_symtab(symtab, *a));
     }
     d->cgnr.clear();
     for (const auto &c : s.cgnr)
