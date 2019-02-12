@@ -303,9 +303,13 @@ static const char *search_resrename(gmx::ArrayRef<const RtpRename> rr,
     return newName.c_str();
 }
 
-static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, const int *r_end,
-                          gmx::ArrayRef<const RtpRename> rr, t_symtab *symtab,
-                          bool bVerbose)
+static void rename_resrtp(t_atoms                       *pdba,
+                          int                            nterpairs,
+                          gmx::ArrayRef<const int>       r_start,
+                          gmx::ArrayRef<const int>       r_end,
+                          gmx::ArrayRef<const RtpRename> rr,
+                          t_symtab                      *symtab,
+                          bool                           bVerbose)
 {
     bool bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == nullptr);
 
@@ -573,7 +577,7 @@ static int read_pdball(const char *inf, bool bOutput, const char *outf, char **t
     return natom;
 }
 
-static void process_chain(t_atoms *pdba, rvec *x,
+static void process_chain(t_atoms *pdba, gmx::ArrayRef<gmx::RVec> x,
                           bool bTrpU, bool bPheU, bool bTyrU,
                           bool bLysMan, bool bAspMan, bool bGluMan,
                           bool bHisMan, bool bArgMan, bool bGlnMan,
@@ -624,7 +628,7 @@ static void process_chain(t_atoms *pdba, rvec *x,
 
     if (!bHisMan)
     {
-        set_histp(pdba, x, angle, distance);
+        set_histp(pdba, gmx::as_rvec_array(x.data()), symtab, angle, distance);
     }
     else
     {
@@ -671,18 +675,19 @@ static bool pdbicomp(const t_pdbindex &a, const t_pdbindex &b)
 }
 
 static void sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> restp_chain,
-                          int natoms, t_atoms **pdbaptr, rvec **x,
+                          int natoms,
+                          t_atoms **pdbaptr,
+                          std::vector<gmx::RVec> *x,
                           t_blocka *block, char ***gnames)
 {
-    t_atoms     *pdba, *pdbnew;
-    rvec       **xnew;
-    t_pdbindex  *pdbi;
-    char        *atomnm;
+    t_atoms               *pdba, *pdbnew;
+    std::vector<gmx::RVec> xnew;
+    t_pdbindex            *pdbi;
+    char                  *atomnm;
 
     pdba   = *pdbaptr;
     natoms = pdba->nr;
     pdbnew = nullptr;
-    snew(xnew, 1);
     snew(pdbi, natoms);
 
     for (int i = 0; i < natoms; i++)
@@ -724,7 +729,6 @@ static void sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> restp_chain,
     std::vector<int> a(natoms);
     snew(pdbnew, 1);
     init_t_atoms(pdbnew, natoms, true);
-    snew(*xnew, natoms);
     pdbnew->nr   = pdba->nr;
     pdbnew->nres = pdba->nres;
     sfree(pdbnew->resinfo);
@@ -734,7 +738,7 @@ static void sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> restp_chain,
         pdbnew->atom[i]     = pdba->atom[pdbi[i].index];
         pdbnew->atomname[i] = pdba->atomname[pdbi[i].index];
         pdbnew->pdbinfo[i]  = pdba->pdbinfo[pdbi[i].index];
-        copy_rvec((*x)[pdbi[i].index], (*xnew)[i]);
+        xnew.push_back(x->at(pdbi[i].index));
         /* make indexgroup in block */
         a[i] = pdbi[i].index;
     }
@@ -743,16 +747,14 @@ static void sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> restp_chain,
     sfree(pdba->atom);
     sfree(pdba->pdbinfo);
     sfree(pdba);
-    sfree(*x);
     /* copy the sorted pdbnew back to pdba */
     *pdbaptr = pdbnew;
-    *x       = *xnew;
+    *x       = xnew;
     add_grp(block, gnames, a, "prot_sort");
-    sfree(xnew);
     sfree(pdbi);
 }
 
-static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], bool bVerbose)
+static int remove_duplicate_atoms(t_atoms *pdba, gmx::ArrayRef<gmx::RVec> x, bool bVerbose)
 {
     int        i, j, oldnatoms, ndel;
     t_resinfo *ri;
@@ -1152,28 +1154,28 @@ modify_chain_numbers(t_atoms *       pdba,
     }
 }
 
-typedef struct {
-    char  chainid;
-    char  chainnum;
-    int   start;
-    int   natom;
-    bool  bAllWat;
-    int   nterpairs;
-    int  *chainstart;
-} t_pdbchain;
+struct t_pdbchain {
+    char             chainid   = ' ';
+    char             chainnum  = ' ';
+    int              start     = -1;
+    int              natom     = -1;
+    bool             bAllWat   = false;
+    int              nterpairs = -1;
+    std::vector<int> chainstart;
+};
 
 struct t_chain {
-    char                                                chainid;
-    int                                                 chainnum;
-    bool                                                bAllWat;
-    int                                                 nterpairs;
-    int                                                *chainstart;
-    std::vector<MoleculePatchDatabase *>                ntdb;
-    std::vector<MoleculePatchDatabase *>                ctdb;
-    int                                                *r_start;
-    int                                                *r_end;
-    t_atoms                                            *pdba;
-    rvec                                               *x;
+    char                                 chainid   = ' ';
+    int                                  chainnum  = ' ';
+    bool                                 bAllWat   = false;
+    int                                  nterpairs = -1;
+    std::vector<int>                     chainstart;
+    std::vector<MoleculePatchDatabase *> ntdb;
+    std::vector<MoleculePatchDatabase *> ctdb;
+    std::vector<int>                     r_start;
+    std::vector<int>                     r_end;
+    t_atoms                             *pdba;
+    std::vector<gmx::RVec>               x;
 };
 
 // TODO make all enums into scoped enums
@@ -1215,12 +1217,13 @@ class pdb2gmx : public ICommandLineOptionsModule
             enumWater_(enWater_select),
             enumMerge_(enMerge_no),
             itp_file_(nullptr),
-            nincl_(0),
-            nmol_(0),
-            incls_(nullptr),
-            mols_(nullptr),
             mHmult_(0)
         {
+        }
+
+        ~pdb2gmx()
+        {
+            sfree(watermodel_);
         }
 
         // From ICommandLineOptionsModule
@@ -1236,64 +1239,62 @@ class pdb2gmx : public ICommandLineOptionsModule
         int run() override;
 
     private:
-        bool               bNewRTP_;
-        bool               bInter_;
-        bool               bCysMan_;
-        bool               bLysMan_;
-        bool               bAspMan_;
-        bool               bGluMan_;
-        bool               bHisMan_;
-        bool               bGlnMan_;
-        bool               bArgMan_;
-        bool               bTerMan_;
-        bool               bUnA_;
-        bool               bHeavyH_;
-        bool               bSort_;
-        bool               bAllowMissing_;
-        bool               bRemoveH_;
-        bool               bDeuterate_;
-        bool               bVerbose_;
-        bool               bChargeGroups_;
-        bool               bCmap_;
-        bool               bRenumRes_;
-        bool               bRTPresname_;
-        bool               bIndexSet_;
-        bool               bOutputSet_;
-        bool               bVsites_;
-        bool               bWat_;
-        bool               bPrevWat_;
-        bool               bITP_;
-        bool               bVsiteAromatics_;
-        real               angle_;
-        real               distance_;
-        real               posre_fc_;
-        real               long_bond_dist_;
-        real               short_bond_dist_;
+        bool                     bNewRTP_;
+        bool                     bInter_;
+        bool                     bCysMan_;
+        bool                     bLysMan_;
+        bool                     bAspMan_;
+        bool                     bGluMan_;
+        bool                     bHisMan_;
+        bool                     bGlnMan_;
+        bool                     bArgMan_;
+        bool                     bTerMan_;
+        bool                     bUnA_;
+        bool                     bHeavyH_;
+        bool                     bSort_;
+        bool                     bAllowMissing_;
+        bool                     bRemoveH_;
+        bool                     bDeuterate_;
+        bool                     bVerbose_;
+        bool                     bChargeGroups_;
+        bool                     bCmap_;
+        bool                     bRenumRes_;
+        bool                     bRTPresname_;
+        bool                     bIndexSet_;
+        bool                     bOutputSet_;
+        bool                     bVsites_;
+        bool                     bWat_;
+        bool                     bPrevWat_;
+        bool                     bITP_;
+        bool                     bVsiteAromatics_;
+        real                     angle_;
+        real                     distance_;
+        real                     posre_fc_;
+        real                     long_bond_dist_;
+        real                     short_bond_dist_;
 
-        std::string        indexOutputFile_;
-        std::string        outputFile_;
-        std::string        topologyFile_;
-        std::string        includeTopologyFile_;
-        std::string        outputConfFile_;
-        std::string        inputConfFile_;
-        std::string        outFile_;
-        std::string        ff_;
+        std::string              indexOutputFile_;
+        std::string              outputFile_;
+        std::string              topologyFile_;
+        std::string              includeTopologyFile_;
+        std::string              outputConfFile_;
+        std::string              inputConfFile_;
+        std::string              outFile_;
+        std::string              ff_;
 
-        ChainSepType       enumChainSep_;
-        VSitesType         enumVSites_;
-        WaterType          enumWater_;
-        MergeType          enumMerge_;
+        ChainSepType             enumChainSep_;
+        VSitesType               enumVSites_;
+        WaterType                enumWater_;
+        MergeType                enumMerge_;
 
-        FILE              *itp_file_;
-        char               forcefield_[STRLEN];
-        char               ffdir_[STRLEN];
-        char              *ffname_;
-        char              *watermodel_;
-        int                nincl_;
-        int                nmol_;
-        char             **incls_;
-        t_mols            *mols_;
-        real               mHmult_;
+        FILE                    *itp_file_;
+        char                     forcefield_[STRLEN];
+        char                     ffdir_[STRLEN];
+        char                    *ffname_;
+        char                    *watermodel_;
+        std::vector<std::string> incls_;
+        std::vector<t_mols>      mols_;
+        real                     mHmult_;
 };
 
 void pdb2gmx::initOptions(IOptionsContainer                 *options,
@@ -1717,13 +1718,11 @@ int pdb2gmx::run()
     /* Keep the compiler happy */
     prev_chainstart     = 0;
 
-    int         numChains = 0;
-    int         maxch     = 16;
-    t_pdbchain *pdb_ch;
-    snew(pdb_ch, maxch);
+    int                     numChains = 0;
+    std::vector<t_pdbchain> pdb_ch;
 
-    t_resinfo *ri;
-    bool       bMerged = false;
+    t_resinfo              *ri;
+    bool                    bMerged = false;
     for (int i = 0; (i < natom); i++)
     {
         ri = &pdba_all.resinfo[pdba_all.atom[i].resind];
@@ -1780,7 +1779,7 @@ int pdb2gmx::run()
                 pdb_ch[numChains-1].chainstart[pdb_ch[numChains-1].nterpairs] =
                     pdba_all.atom[i].resind - prev_chainstart;
                 pdb_ch[numChains-1].nterpairs++;
-                srenew(pdb_ch[numChains-1].chainstart, pdb_ch[numChains-1].nterpairs+1);
+                pdb_ch[numChains-1].chainstart.resize(pdb_ch[numChains-1].nterpairs+1);
                 nchainmerges++;
             }
             else
@@ -1805,38 +1804,33 @@ int pdb2gmx::run()
                                ri->chainid);
                     }
                 }
-                // TODO This is too convoluted. Use a std::vector
-                if (numChains == maxch)
-                {
-                    maxch += 16;
-                    srenew(pdb_ch, maxch);
-                }
-                pdb_ch[numChains].chainid  = ri->chainid;
-                pdb_ch[numChains].chainnum = ri->chainnum;
-                pdb_ch[numChains].start    = i;
-                pdb_ch[numChains].bAllWat  = bWat_;
+                t_pdbchain newChain;
+                newChain.chainid  = ri->chainid;
+                newChain.chainnum = ri->chainnum;
+                newChain.start    = i;
+                newChain.bAllWat  = bWat_;
                 if (bWat_)
                 {
-                    pdb_ch[numChains].nterpairs = 0;
+                    newChain.nterpairs = 0;
                 }
                 else
                 {
-                    pdb_ch[numChains].nterpairs = 1;
+                    newChain.nterpairs = 1;
                 }
-                snew(pdb_ch[numChains].chainstart, pdb_ch[numChains].nterpairs+1);
+                newChain.chainstart.resize(newChain.nterpairs+1);
                 /* modified [numChains] to [0] below */
-                pdb_ch[numChains].chainstart[0] = 0;
+                newChain.chainstart[0] = 0;
+                pdb_ch.push_back(newChain);
                 numChains++;
             }
         }
         bPrevWat_ = bWat_;
     }
-    pdb_ch[numChains-1].natom = natom-pdb_ch[numChains-1].start;
+    pdb_ch.back().natom = natom-pdb_ch.back().start;
 
     /* set all the water blocks at the end of the chain */
-    int *swap_index;
-    snew(swap_index, numChains);
-    int  j = 0;
+    std::vector<int> swap_index(numChains);
+    int              j = 0;
     for (int i = 0; i < numChains; i++)
     {
         if (!pdb_ch[i].bAllWat)
@@ -1871,20 +1865,18 @@ int pdb2gmx::run()
         chains[i].chainstart = pdb_ch[si].chainstart;
         chains[i].ntdb.clear();
         chains[i].ctdb.clear();
-        snew(chains[i].r_start, pdb_ch[si].nterpairs);
-        snew(chains[i].r_end, pdb_ch[si].nterpairs);
+        chains[i].r_start.resize(pdb_ch[si].nterpairs);
+        chains[i].r_end.resize(pdb_ch[si].nterpairs);
 
         snew(chains[i].pdba, 1);
         init_t_atoms(chains[i].pdba, pdb_ch[si].natom, true);
-        snew(chains[i].x, chains[i].pdba->nr);
         for (j = 0; j < chains[i].pdba->nr; j++)
         {
-            chains[i].pdba->atom[j] = pdba_all.atom[pdb_ch[si].start+j];
-            snew(chains[i].pdba->atomname[j], 1);
-            *chains[i].pdba->atomname[j] =
-                gmx_strdup(*pdba_all.atomname[pdb_ch[si].start+j]);
+            chains[i].pdba->atom[j]     = pdba_all.atom[pdb_ch[si].start+j];
+            chains[i].pdba->atomname[j] =
+                put_symtab(&symtab, *pdba_all.atomname[pdb_ch[si].start+j]);
             chains[i].pdba->pdbinfo[j] = pdba_all.pdbinfo[pdb_ch[si].start+j];
-            copy_rvec(pdbx[pdb_ch[si].start+j], chains[i].x[j]);
+            chains[i].x.push_back(pdbx[pdb_ch[si].start+j]);
         }
         /* Re-index the residues assuming that the indices are continuous */
         int k                = chains[i].pdba->atom[0].resind;
@@ -1897,9 +1889,8 @@ int pdb2gmx::run()
         srenew(chains[i].pdba->resinfo, nres);
         for (int j = 0; j < nres; j++)
         {
-            chains[i].pdba->resinfo[j] = pdba_all.resinfo[k+j];
-            snew(chains[i].pdba->resinfo[j].name, 1);
-            *chains[i].pdba->resinfo[j].name = gmx_strdup(*pdba_all.resinfo[k+j].name);
+            chains[i].pdba->resinfo[j]      = pdba_all.resinfo[k+j];
+            chains[i].pdba->resinfo[j].name = put_symtab(&symtab, *pdba_all.resinfo[k+j].name);
             /* make all chain identifiers equal to that of the chain */
             chains[i].pdba->resinfo[j].chainid = pdb_ch[si].chainid;
         }
@@ -1962,8 +1953,8 @@ int pdb2gmx::run()
 
     print_top_header(top_file, topologyFile_.c_str(), FALSE, ffdir_, mHmult_);
 
-    t_chain *cc;
-    rvec    *x;
+    t_chain               *cc;
+    std::vector<gmx::RVec> x;
     for (int chain = 0; (chain < numChains); chain++)
     {
         cc = &(chains[chain]);
@@ -2010,7 +2001,7 @@ int pdb2gmx::run()
         }
 
         /* Check for disulfides and other special bonds */
-        ssbonds = makeDisulfideBonds(pdba, x, bCysMan_, bVerbose_);
+        ssbonds = makeDisulfideBonds(pdba, gmx::as_rvec_array(x.data()), bCysMan_, bVerbose_);
 
         if (!rtprename.empty())
         {
@@ -2104,7 +2095,7 @@ int pdb2gmx::run()
         std::vector<PreprocessResidue>     restp_chain;
         get_hackblocks_rtp(&hb_chain, &restp_chain,
                            rtpFFDB, pdba->nres, pdba->resinfo,
-                           cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end,
+                           cc->nterpairs, &symtab, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end,
                            bAllowMissing_);
         /* ideally, now we would not need the rtp itself anymore, but do
            everything using the hb and restp arrays. Unfortunately, that
@@ -2114,13 +2105,12 @@ int pdb2gmx::run()
         rename_atoms(nullptr, ffdir_,
                      pdba, &symtab, restp_chain, false, &rt, false, bVerbose_);
 
-        match_atomnames_with_rtp(restp_chain, hb_chain, pdba, x, bVerbose_);
+        match_atomnames_with_rtp(restp_chain, hb_chain, pdba, &symtab, x, bVerbose_);
 
         if (bSort_)
         {
-            t_blocka  *block;
             char     **gnames;
-            block = new_blocka();
+            t_blocka  *block = new_blocka();
             snew(gnames, 1);
             sort_pdbatoms(restp_chain, natom, &pdba, &x, block, &gnames);
             remove_duplicate_atoms(pdba, x, bVerbose_);
@@ -2141,6 +2131,7 @@ int pdb2gmx::run()
             }
             sfree(gnames);
             done_blocka(block);
+            sfree(block);
         }
         else
         {
@@ -2150,7 +2141,7 @@ int pdb2gmx::run()
 
         /* Generate Hydrogen atoms (and termini) in the sequence */
         printf("Generating any missing hydrogen atoms and/or adding termini.\n");
-        add_h(&pdba, &x, ah,
+        add_h(&pdba, &x, ah, &symtab,
               cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing_,
               true, false);
         printf("Now there are %d residues with %d atoms\n",
@@ -2223,9 +2214,8 @@ int pdb2gmx::run()
             {
                 posre_fn = Path::concatenateBeforeExtension(posre_fn, "_pr");
             }
-            nincl_++;
-            srenew(incls_, nincl_);
-            incls_[nincl_-1] = gmx_strdup(itp_fn.c_str());
+            incls_.emplace_back();
+            incls_.back()    = itp_fn;
             itp_file_        = gmx_fio_fopen(itp_fn.c_str(), "w");
         }
         else
@@ -2233,18 +2223,17 @@ int pdb2gmx::run()
             bITP_ = false;
         }
 
-        srenew(mols_, nmol_+1);
+        mols_.emplace_back();
         if (cc->bAllWat)
         {
-            mols_[nmol_].name = gmx_strdup("SOL");
-            mols_[nmol_].nr   = pdba->nres;
+            mols_.back().name = "SOL";
+            mols_.back().nr   = pdba->nres;
         }
         else
         {
-            mols_[nmol_].name = gmx_strdup(molname.c_str());
-            mols_[nmol_].nr   = 1;
+            mols_.back().name = molname;
+            mols_.back().nr   = 1;
         }
-        nmol_++;
 
         if (bITP_)
         {
@@ -2316,7 +2305,7 @@ int pdb2gmx::run()
         }
     }
 
-    print_top_mols(top_file, title, ffdir_, watermodel_, nincl_, incls_, nmol_, mols_);
+    print_top_mols(top_file, title, ffdir_, watermodel_, incls_, mols_);
     gmx_fio_fclose(top_file);
 
     /* now merge all chains back together */
@@ -2334,10 +2323,9 @@ int pdb2gmx::run()
     {
         sfree(atoms->resinfo[i].name);
     }
-    sfree(atoms->resinfo);
     atoms->nres = nres;
-    snew(atoms->resinfo, nres);
-    snew(x, natom);
+    srenew(atoms->resinfo, nres);
+    x.clear();
     int k = 0;
     int l = 0;
     for (int i = 0; (i < numChains); i++)
@@ -2353,7 +2341,7 @@ int pdb2gmx::run()
             atoms->atom[k].resind += l; /* l is processed nr of residues */
             atoms->atomname[k]     = chains[i].pdba->atomname[j];
             atoms->resinfo[atoms->atom[k].resind].chainid = chains[i].chainid;
-            copy_rvec(chains[i].x[j], x[k]);
+            x.push_back(chains[i].x[j]);
             k++;
         }
         for (int j = 0; (j < chains[i].pdba->nres); j++)
@@ -2378,10 +2366,14 @@ int pdb2gmx::run()
     clear_rvec(box_space);
     if (box[0][0] == 0)
     {
-        make_new_box(atoms->nr, x, box, box_space, false);
+        make_new_box(atoms->nr, gmx::as_rvec_array(x.data()), box, box_space, false);
     }
-    write_sto_conf(outputConfFile_.c_str(), title, atoms, x, nullptr, ePBC, box);
+    write_sto_conf(outputConfFile_.c_str(), title, atoms, gmx::as_rvec_array(x.data()), nullptr, ePBC, box);
 
+    done_symtab(&symtab);
+    done_atom(&pdba_all);
+    done_atom(atoms);
+    sfree(atoms);
     printf("\t\t--------- PLEASE NOTE ------------\n");
     printf("You have successfully generated a topology from: %s.\n",
            inputConfFile_.c_str());
