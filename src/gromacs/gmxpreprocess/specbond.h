@@ -38,6 +38,9 @@
 #ifndef GMX_GMXPREPROCESS_SPECBOND_H
 #define GMX_GMXPREPROCESS_SPECBOND_H
 
+#include <string>
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 
 struct t_atoms;
@@ -45,15 +48,13 @@ struct t_specbond;
 
 struct t_ssbond
 {
-    int   res1, res2;
-    char *a1, *a2;
+    int         res1, res2;
+    std::string a1, a2;
 };
 
-int mk_specbonds(t_atoms *pdba, rvec x[], bool bInteractive,
-                 t_ssbond **specbonds, bool bVerbose);
+std::vector<t_ssbond> mk_specbonds(t_atoms *pdba, rvec x[], bool bInteractive, bool bVerbose);
 
-t_specbond *get_specbonds(int *nspecbond);
-void done_specbonds(int nsb, t_specbond sb[]);
+std::vector<t_specbond> get_specbonds();
 
 bool yesno();
 

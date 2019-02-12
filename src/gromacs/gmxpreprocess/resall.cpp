@@ -107,6 +107,8 @@ gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab)
         gmx_ffclose(in);
     }
     fprintf(stderr, "\n");
+    sfree(a);
+    sfree(nb);
 
     return at;
 }

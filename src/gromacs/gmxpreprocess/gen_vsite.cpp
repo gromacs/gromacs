@@ -864,10 +864,12 @@ static void calc_vsite3_param(real xd, real yd, real xi, real yi, real xj, real 
 }
 
 
-static int gen_vsites_trp(gpp_atomtype *atype, rvec *newx[],
+static int gen_vsites_trp(gpp_atomtype *atype,
+                          std::vector<gmx::RVec> *newx,
                           t_atom *newatom[], char ***newatomname[],
                           int *o2n[], int *newvsite_type[], int *newcgnr[],
-                          t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
+                          t_symtab *symtab, int *nadd,
+                          gmx::ArrayRef<const gmx::RVec> x, int *cgnr[],
                           t_atoms *at, int *vsite_type[], t_params plist[],
                           int nrfound, int *ats, int add_shift,
                           t_vsitetop *vsitetop, int nvsitetop)
@@ -1045,7 +1047,7 @@ static int gen_vsites_trp(gpp_atomtype *atype, rvec *newx[],
     {
         (*o2n)[j] = j+*nadd;
     }
-    srenew(*newx, at->nr+*nadd);
+    newx->resize(at->nr+*nadd);
     srenew(*newatom, at->nr+*nadd);
     srenew(*newatomname, at->nr+*nadd);
     srenew(*newvsite_type, at->nr+*nadd);
@@ -1136,10 +1138,12 @@ static int gen_vsites_trp(gpp_atomtype *atype, rvec *newx[],
 }
 
 
-static int gen_vsites_tyr(gpp_atomtype *atype, rvec *newx[],
+static int gen_vsites_tyr(gpp_atomtype *atype,
+                          std::vector<gmx::RVec> *newx,
                           t_atom *newatom[], char ***newatomname[],
                           int *o2n[], int *newvsite_type[], int *newcgnr[],
-                          t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
+                          t_symtab *symtab, int *nadd,
+                          gmx::ArrayRef<const gmx::RVec> x, int *cgnr[],
                           t_atoms *at, int *vsite_type[], t_params plist[],
                           int nrfound, int *ats, int add_shift,
                           t_vsitetop *vsitetop, int nvsitetop)
@@ -1242,7 +1246,7 @@ static int gen_vsites_tyr(gpp_atomtype *atype, rvec *newx[],
     {
         (*o2n)[j] = j+*nadd;
     }
-    srenew(*newx, at->nr+*nadd);
+    newx->resize(at->nr+*nadd);
     srenew(*newatom, at->nr+*nadd);
     srenew(*newatomname, at->nr+*nadd);
     srenew(*newvsite_type, at->nr+*nadd);
@@ -1537,7 +1541,8 @@ static bool is_vsite(int vsite_type)
 static char atomnamesuffix[] = "1234";
 
 void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *atype,
-               t_atoms *at, t_symtab *symtab, rvec *x[],
+               t_atoms *at, t_symtab *symtab,
+               std::vector<gmx::RVec> *x,
                t_params plist[], int *vsite_type[], int *cgnr[],
                real mHmult, bool bVsiteAromatics,
                const char *ffdir)
@@ -1549,11 +1554,9 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
     int               Hatoms[4], heavies[4];
     bool              bWARNING, bAddVsiteParam, bFirstWater;
     matrix            tmpmat;
-    bool             *bResProcessed;
     real              mHtot, mtot, fact, fact2;
     rvec              rpar, rperp, temp;
     char              name[10], tpname[32], nexttpname[32], *ch;
-    rvec             *newx;
     int              *o2n, *newvsite_type, *newcgnr, ats[MAXATOMSPERRESIDUE];
     t_atom           *newatom;
     t_params         *params;
@@ -1633,7 +1636,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
     /* we need a marker for which atoms should *not* be renumbered afterwards */
     add_shift = 10*at->nr;
     /* make arrays where masses can be inserted into */
-    snew(newx, at->nr);
+    std::vector<gmx::RVec> newx(at->nr);
     snew(newatom, at->nr);
     snew(newatomname, at->nr);
     snew(newvsite_type, at->nr);
@@ -1645,9 +1648,9 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
         o2n[i] = i;
     }
     /* make index to tell which residues were already processed */
-    snew(bResProcessed, at->nres);
+    std::vector<bool> bResProcessed(at->nres);
 
-    ResidueType rt;
+    ResidueType       rt;
 
     /* generate vsite constructions */
     /* loop over all atoms */
@@ -1920,7 +1923,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
                         o2n[j] = j+nadd;
                     }
 
-                    srenew(newx, at->nr+nadd);
+                    newx.resize(at->nr+nadd);
                     srenew(newatom, at->nr+nadd);
                     srenew(newatomname, at->nr+nadd);
                     srenew(newvsite_type, at->nr+nadd);
@@ -2092,7 +2095,6 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
     sfree(at->atomname);
     sfree(*vsite_type);
     sfree(*cgnr);
-    sfree(*x);
     /* put in the new ones */
     at->nr      += nadd;
     at->atom     = newatom;
@@ -2174,6 +2176,8 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
 
     /* clean up */
     sfree(o2n);
+    sfree(vsitetop);
+    sfree(vsiteconflist);
 
     /* tell the user what we did */
     fprintf(stderr, "Marked %d virtual sites\n", nvsite);

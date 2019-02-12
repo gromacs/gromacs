@@ -1135,6 +1135,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidu
 
     /* Remove all exclusions which are within nrexcl */
     clean_excls(nnb, rtpFFDB[0].nrexcl, excls);
+    for (int i = 0; i < 4; i++)
+    {
+        sfree(anm[i]);
+    }
+    sfree(anm);
 
     sfree(ang);
     sfree(dih);

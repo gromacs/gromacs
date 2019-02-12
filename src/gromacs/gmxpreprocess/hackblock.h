@@ -51,7 +51,7 @@
 #include "gromacs/utility/arrayref.h"
 
 struct t_atom;
-
+struct t_symtab;
 /*! \brief
  * Used for reading .rtp/.tdb
  * ebtsBONDS must be the first, new types can be added to the end
@@ -212,14 +212,6 @@ struct MoleculePatchDatabase
     int                                                  nhack() const { return hack.size(); }
 };
 
-/*! \brief
- * Clear up residue information.
- *
- * \param[in] rtp Residue information to clean up.
- * \todo Remove once all datastructures are proper C++.
- */
-void freePreprocessResidue(gmx::ArrayRef<PreprocessResidue> rtp);
-
 /*!\brief
  * Reset modification block.
  *
@@ -233,9 +225,10 @@ void clearModificationBlock(MoleculePatchDatabase *globalPatches);
  *
  * \param[in] s Source information.
  * \param[in] d Destination to copy to.
+ * \param[inout] symtab Symbol table for names.
  * \todo Remove once copy can be done directly.
  */
-void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d);
+void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d, t_symtab *symtab);
 
 /*! \brief
  * Add bond information in \p s to \p d.

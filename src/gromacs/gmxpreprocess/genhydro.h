@@ -42,6 +42,7 @@
 #include "gromacs/utility/arrayref.h"
 
 struct t_atoms;
+struct t_symtab;
 struct MoleculePatchDatabase;
 
 /*! \brief
@@ -50,6 +51,7 @@ struct MoleculePatchDatabase;
  * \param[inout] pdbaptr The atoms data structure to be modified.
  * \param[inout] xptr Coordinates to be updated with those for new atoms.
  * \param[inout] globalPatches The atom modifications to use.
+ * \param[inout] symtab Global symbol table for atom names.
  * \param[in] nterpairs Number of termini pairs in the molecule.
  * \param[in] ntdb Entries for N-terminus in each chain, each entry can be valid or nullptr.
  * \param[in] ctdb Entries for C-terminus in each cahin, each entry can be valid or nullptr.
@@ -60,11 +62,16 @@ struct MoleculePatchDatabase;
  * \param[in] bKeep_old_pdba If the data from the original \p pdbaptr should be kept or free'd.
  * \returns New total number of atoms.
  */
-int add_h(t_atoms **pdbaptr, rvec *xptr[],
-          gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-          int nterpairs,
+int add_h(t_atoms                                   **pdbaptr,
+          std::vector<gmx::RVec>                     *xptr,
+          gmx::ArrayRef<MoleculePatchDatabase>        globalPatches,
+          t_symtab                                   *symtab,
+          int                                         nterpairs,
           const std::vector<MoleculePatchDatabase *> &ntdb,
           const std::vector<MoleculePatchDatabase *> &ctdb,
-          int *rN, int *rC, bool bMissing,
-          bool bUpdate_pdba, bool bKeep_old_pdba);
+          gmx::ArrayRef<int>                          rN,
+          gmx::ArrayRef<int>                          rC,
+          bool                                        bMissing,
+          bool                                        bUpdate_pdba,
+          bool                                        bKeep_old_pdba);
 #endif
