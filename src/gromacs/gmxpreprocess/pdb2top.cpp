@@ -711,23 +711,20 @@ void write_top(FILE *out, const char *pr, const char *molname,
 
 
 static void do_ssbonds(t_params *ps, t_atoms *atoms,
-                       int nssbonds, t_ssbond *ssbonds, bool bAllowMissing)
+                       gmx::ArrayRef<const DisulfideBond> ssbonds, bool bAllowMissing)
 {
-    int     i, ri, rj;
-    int     ai, aj;
-
-    for (i = 0; (i < nssbonds); i++)
+    for (const auto &bond : ssbonds)
     {
-        ri = ssbonds[i].res1;
-        rj = ssbonds[i].res2;
-        ai = search_res_atom(ssbonds[i].a1, ri, atoms,
-                             "special bond", bAllowMissing);
-        aj = search_res_atom(ssbonds[i].a2, rj, atoms,
-                             "special bond", bAllowMissing);
+        int ri = bond.firstResidue;
+        int rj = bond.secondResidue;
+        int ai = search_res_atom(bond.firstAtom.c_str(), ri, atoms,
+                                 "special bond", bAllowMissing);
+        int aj = search_res_atom(bond.secondAtom.c_str(), rj, atoms,
+                                 "special bond", bAllowMissing);
         if ((ai == -1) || (aj == -1))
         {
             gmx_fatal(FARGS, "Trying to make impossible special bond (%s-%s)!",
-                      ssbonds[i].a1, ssbonds[i].a2);
+                      bond.firstAtom.c_str(), bond.secondAtom.c_str());
         }
         add_param(ps, ai, aj, nullptr, nullptr);
     }
@@ -1476,7 +1473,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              bool bVsites, bool bVsiteAromatics,
              const char *ffdir,
              real mHmult,
-             int nssbonds, t_ssbond *ssbonds,
+             gmx::ArrayRef<const DisulfideBond> ssbonds,
              real long_bond_dist, real short_bond_dist,
              bool bDeuterate, bool bChargeGroups, bool bCmap,
              bool bRenumRes, bool bRTPresname)
@@ -1499,7 +1496,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
 
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]),
-               atoms, nssbonds, ssbonds,
+               atoms, ssbonds,
                bAllowMissing);
 
     nmissat = name2type(atoms, &cgnr, usedPpResidues, &rt);

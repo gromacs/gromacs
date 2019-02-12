@@ -1617,24 +1617,23 @@ void pdb2gmx::optionsFinished()
 
 int pdb2gmx::run()
 {
-    char         select[STRLEN];
-    int          nssbonds;
-    t_ssbond    *ssbonds;
+    char                       select[STRLEN];
+    std::vector<DisulfideBond> ssbonds;
 
-    int          this_atomnum;
-    int          prev_atomnum;
-    const char  *prev_atomname;
-    const char  *this_atomname;
-    const char  *prev_resname;
-    const char  *this_resname;
-    int          prev_resnum;
-    int          this_resnum;
-    char         prev_chainid;
-    char         this_chainid;
-    int          prev_chainnumber;
-    int          this_chainnumber;
-    int          this_chainstart;
-    int          prev_chainstart;
+    int                        this_atomnum;
+    int                        prev_atomnum;
+    const char                *prev_atomname;
+    const char                *this_atomname;
+    const char                *prev_resname;
+    const char                *this_resname;
+    int                        prev_resnum;
+    int                        this_resnum;
+    char                       prev_chainid;
+    char                       this_chainid;
+    int                        prev_chainnumber;
+    int                        this_chainnumber;
+    int                        this_chainstart;
+    int                        prev_chainstart;
 
     printf("\nUsing the %s force field in directory %s\n\n",
            ffname_, ffdir_);
@@ -2041,7 +2040,7 @@ int pdb2gmx::run()
         }
 
         /* Check for disulfides and other special bonds */
-        nssbonds = mk_specbonds(pdba, x, bCysMan_, &ssbonds, bVerbose_);
+        ssbonds = makeDisulfideBonds(pdba, x, bCysMan_, bVerbose_);
 
         if (nrtprename > 0)
         {
@@ -2301,7 +2300,7 @@ int pdb2gmx::run()
                 restp_chain, hb_chain,
                 bAllowMissing_,
                 bVsites_, bVsiteAromatics_, ffdir_,
-                mHmult_, nssbonds, ssbonds,
+                mHmult_, ssbonds,
                 long_bond_dist_, short_bond_dist_, bDeuterate_, bChargeGroups_, bCmap_,
                 bRenumRes_, bRTPresname_);
 
