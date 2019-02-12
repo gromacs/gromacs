@@ -38,6 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_GROMPP_IMPL_H
 #define GMX_GMXPREPROCESS_GROMPP_IMPL_H
 
+#include <string>
+
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -107,8 +109,8 @@ struct t_molinfo
 
 struct t_mols
 {
-    char *name;
-    int   nr;
+    std::string name;
+    int         nr;
 };
 
 bool is_int(double x);
