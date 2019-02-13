@@ -20,6 +20,7 @@ lib*.pc
 .python-version
 .tox
 .cproject
+.vscode
 build
 _build
 CMakeLists.txt.user
