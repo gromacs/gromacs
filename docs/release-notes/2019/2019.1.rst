@@ -46,6 +46,17 @@ and domain decomposition could lead to a segmentation fault.
 
 :issue:`2813`
 
+Correct free-energy Delta H output with mass lambda's
+-----------------------------------------------------
+
+When separate lambda parameters were used for perturbed mass
+free-energy contributions, these contributions were double counted
+in the Delta H output used for BAR calculations. Note that dH/dlambda
+was always correct
+
+:issue:`2703`
+:issue:`2849`
+
 Prevent mdrun -rerun from writing incorrect free-energy output
 --------------------------------------------------------------
 
