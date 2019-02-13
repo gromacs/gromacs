@@ -187,14 +187,11 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
     }
 }
 
-void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype *atype)
+void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, gpp_atomtype *atype)
 {
     int       n2m;
     t_2morse *t2m;
 
-    int       i, j, k, last, ni, nj;
-    int       nrharm, nrmorse, bb;
-    real      edis, kb, b0, beta;
     bool     *bRemoveHarm;
 
     /* First get the data */
@@ -206,61 +203,63 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype *atype)
     }
 
     /* For all the molecule types */
-    for (i = 0; (i < nrmols); i++)
+    int i = 0;
+    for (auto &mol : mols)
     {
         /* Check how many morse and harmonic BONDSs there are, increase size of
          * morse with the number of harmonics
          */
-        nrmorse = mols[i].plist[F_MORSE].nr;
+        int nrmorse = mol.plist[F_MORSE].nr;
 
-        for (bb = 0; (bb < F_NRE); bb++)
+        for (int bb = 0; (bb < F_NRE); bb++)
         {
             if ((interaction_function[bb].flags & IF_BTYPE) && (bb != F_MORSE))
             {
-                nrharm  = mols[i].plist[bb].nr;
-                pr_alloc(nrharm, &(mols[i].plist[F_MORSE]));
+                int nrharm  = mol.plist[bb].nr;
+                pr_alloc(nrharm, &(mol.plist[F_MORSE]));
                 snew(bRemoveHarm, nrharm);
 
                 /* Now loop over the harmonics, trying to convert them */
-                for (j = 0; (j < nrharm); j++)
+                for (int j = 0; (j < nrharm); j++)
                 {
-                    ni   = mols[i].plist[bb].param[j].ai();
-                    nj   = mols[i].plist[bb].param[j].aj();
-                    edis =
+                    int  ni   = mol.plist[bb].param[j].ai();
+                    int  nj   = mol.plist[bb].param[j].aj();
+                    real edis =
                         search_e_diss(n2m, t2m,
-                                      get_atomtype_name(mols[i].atoms.atom[ni].type, atype),
-                                      get_atomtype_name(mols[i].atoms.atom[nj].type, atype));
+                                      get_atomtype_name(mol.atoms.atom[ni].type, atype),
+                                      get_atomtype_name(mol.atoms.atom[nj].type, atype));
                     if (edis != 0)
                     {
-                        bRemoveHarm[j] = TRUE;
-                        b0             = mols[i].plist[bb].param[j].c[0];
-                        kb             = mols[i].plist[bb].param[j].c[1];
-                        beta           = std::sqrt(kb/(2*edis));
-                        mols[i].plist[F_MORSE].param[nrmorse].a[0] = ni;
-                        mols[i].plist[F_MORSE].param[nrmorse].a[1] = nj;
-                        mols[i].plist[F_MORSE].param[nrmorse].c[0] = b0;
-                        mols[i].plist[F_MORSE].param[nrmorse].c[1] = edis;
-                        mols[i].plist[F_MORSE].param[nrmorse].c[2] = beta;
+                        bRemoveHarm[j] = true;
+                        real b0             = mol.plist[bb].param[j].c[0];
+                        real kb             = mol.plist[bb].param[j].c[1];
+                        real beta           = std::sqrt(kb/(2*edis));
+                        mol.plist[F_MORSE].param[nrmorse].a[0] = ni;
+                        mol.plist[F_MORSE].param[nrmorse].a[1] = nj;
+                        mol.plist[F_MORSE].param[nrmorse].c[0] = b0;
+                        mol.plist[F_MORSE].param[nrmorse].c[1] = edis;
+                        mol.plist[F_MORSE].param[nrmorse].c[2] = beta;
                         nrmorse++;
                     }
                 }
-                mols[i].plist[F_MORSE].nr = nrmorse;
+                mol.plist[F_MORSE].nr = nrmorse;
 
                 /* Now remove the harmonics */
-                for (j = last = 0; (j < nrharm); j++)
+                int last = 0;
+                for (int j = 0; (j < nrharm); j++)
                 {
                     if (!bRemoveHarm[j])
                     {
                         /* Copy it to the last position */
-                        for (k = 0; (k < MAXATOMLIST); k++)
+                        for (int k = 0; (k < MAXATOMLIST); k++)
                         {
-                            mols[i].plist[bb].param[last].a[k] =
-                                mols[i].plist[bb].param[j].a[k];
+                            mol.plist[bb].param[last].a[k] =
+                                mol.plist[bb].param[j].a[k];
                         }
-                        for (k = 0; (k < MAXFORCEPARAM); k++)
+                        for (int k = 0; (k < MAXFORCEPARAM); k++)
                         {
-                            mols[i].plist[bb].param[last].c[k] =
-                                mols[i].plist[bb].param[j].c[k];
+                            mol.plist[bb].param[last].c[k] =
+                                mol.plist[bb].param[j].c[k];
                         }
                         last++;
                     }
@@ -268,9 +267,10 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype *atype)
                 sfree(bRemoveHarm);
                 fprintf(stderr, "Converted %d out of %d %s to morse bonds for mol %d\n",
                         nrharm-last, nrharm, interaction_function[bb].name, i);
-                mols[i].plist[bb].nr = last;
+                mol.plist[bb].nr = last;
             }
         }
+        i++;
     }
     sfree(t2m);
 }

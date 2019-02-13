@@ -38,6 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_VSITE_PARM_H
 #define GMX_GMXPREPROCESS_VSITE_PARM_H
 
+#include <array>
+
 struct gpp_atomtype;
 struct gmx_moltype_t;
 struct t_atoms;

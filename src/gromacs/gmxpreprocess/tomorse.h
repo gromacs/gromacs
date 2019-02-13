@@ -38,9 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_TOMORSE_H
 #define GMX_GMXPREPROCESS_TOMORSE_H
 
-struct gpp_atomtype;
-struct t_molinfo;
+#include "gromacs/utility/arrayref.h"
 
-void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype *atype);
+struct gpp_atomtype;
+struct MoleculeInformation;
+
+void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, gpp_atomtype *atype);
 
 #endif
