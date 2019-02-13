@@ -9,6 +9,17 @@ earlier, which you can find described in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Correct free-energy Delta H output with mass lambda's
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When separate lambda parameters were used for perturbed mass
+free-energy contributions, these contributions were double counted
+in the Delta H output used for BAR calculations. Note that dH/dlambda
+was always correct
+
+:issue:`2703`
+:issue:`2849`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
