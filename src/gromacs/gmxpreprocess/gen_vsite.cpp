@@ -43,7 +43,9 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "gromacs/fileio/pdbio.h"
@@ -74,42 +76,109 @@
 #define OPENDIR     '[' /* starting sign for directive		*/
 #define CLOSEDIR    ']' /* ending sign for directive		*/
 
-struct t_vsiteconf
+/*! \libinternal \brief
+ * The configuration describing a virtual site.
+ */
+struct VirtualSiteConfiguration
 {
-    char       atomtype[MAXNAME];  /* Type for the XH3/XH2 atom */
-    bool       isplanar;           /* If true, the atomtype above and the three connected
-                                    * ones are in a planar geometry. The two next entries
-                                    * are undefined in that case
-                                    */
-    int    nhydrogens;             /* number of connected hydrogens */
-    char   nextheavytype[MAXNAME]; /* Type for the heavy atom bonded to XH2/XH3 */
-    char   dummymass[MAXNAME];     /* The type of MNH* or MCH3* dummy mass to use */
+    /*! \brief
+     *  Explicit constructor.
+     *
+     *  \param[in] type Atomtype for vsite configuration.
+     *  \param[in] planar Is the input conf planar.
+     *  \param[in] nhyd How many hydrogens are in the configuration.
+     *  \param[in] nextheavy Type of bonded heavy atom.
+     *  \param[in] dummy What kind of dummy is used in the vsite.
+     */
+    explicit VirtualSiteConfiguration(const std::string &type, bool planar,
+                                      int nhyd, const std::string &nextheavy, const std::string &dummy)
+        : atomtype(type), isplanar(planar), nhydrogens(nhyd), nextheavytype(nextheavy),
+          dummymass(dummy)
+    {}
+    //! Type for the XH3/XH2 atom.
+    std::string atomtype;
+    /*! \brief Is the configuration planar?
+     *
+     * If true, the atomtype above and the three connected
+     * ones are in a planar geometry. The two next entries
+     * are undefined in that case.
+     */
+    bool        isplanar = false;
+    //!cnumber of connected hydrogens.
+    int         nhydrogens;
+    //! Type for the heavy atom bonded to XH2/XH3.
+    std::string nextheavytype;
+    //! The type of MNH* or MCH3* dummy mass to use.
+    std::string dummymass;
 };
 
 
-/* Structure to represent average bond and angles values in vsite aromatic
+/*!\libinternal \brief
+ * Virtual site topology datastructure.
+ *
+ * Structure to represent average bond and angles values in vsite aromatic
  * residues. Note that these are NOT necessarily the bonds and angles from the
  * forcefield; many forcefields (like Amber, OPLS) have some inherent strain in
  * 5-rings (i.e. the sum of angles is !=540, but impropers keep it planar)
  */
-struct t_vsitetop
+struct VirtualSiteTopology
 {
-    char resname[MAXNAME];
-    int  nbonds;
-    int  nangles;
-    struct vsitetop_bond
+    /*! \brief
+     *  Explicit constructor
+     *
+     *  \param[in] name Residue name.
+     */
+    explicit VirtualSiteTopology(const std::string &name) : resname(name)
+    {}
+    //! Residue name.
+    std::string resname;
+    //! Helper struct for single bond in virtual site.
+    struct VirtualSiteBond
     {
-        char   atom1[MAXNAME];
-        char   atom2[MAXNAME];
-        float  value;
-    } *bond; /* list of bonds */
-    struct vsitetop_angle
+        /*! \brief
+         * Explicit constructor
+         *
+         * \param[in] a1 First atom name.
+         * \param[in] a2 Second atom name.
+         * \param[in] v Value for distance.
+         */
+        VirtualSiteBond(const std::string &a1, const std::string &a2, real v) :
+            atom1(a1), atom2(a2), value(v)
+        {}
+        //! Atom 1 in bond.
+        std::string atom1;
+        //! Atom 2 in bond.
+        std::string atom2;
+        //! Distance value between atoms.
+        float       value;
+    };
+    //! Container of all bonds in virtual site.
+    std::vector<VirtualSiteBond> bond;
+    //! Helper struct for single angle in virtual site.
+    struct VirtualSiteAngle
     {
-        char   atom1[MAXNAME];
-        char   atom2[MAXNAME];
-        char   atom3[MAXNAME];
-        float  value;
-    } *angle; /* list of angles */
+        /*! \brief
+         * Explicit constructor
+         *
+         * \param[in] a1 First atom name.
+         * \param[in] a2 Second atom name.
+         * \param[in] a3 Third atom name.
+         * \param[in] v Value for angle.
+         */
+        VirtualSiteAngle(const std::string &a1, const std::string &a2, const std::string &a3, real v) :
+            atom1(a1), atom2(a2), atom3(a3), value(v)
+        {}
+        //! Atom 1 in angle.
+        std::string atom1;
+        //! Atom 2 in angle.
+        std::string atom2;
+        //! Atom 3 in angle.
+        std::string atom3;
+        //! Value for angle.
+        float       value;
+    };
+    //! Container for all angles in virtual site.
+    std::vector<VirtualSiteAngle> angle;
 };
 
 
@@ -154,9 +223,9 @@ static int ddb_name2dir(char *name)
 }
 
 
-static void read_vsite_database(const char *ddbname,
-                                t_vsiteconf **pvsiteconflist, int *nvsiteconf,
-                                t_vsitetop **pvsitetoplist, int *nvsitetop)
+static void read_vsite_database(const char                            *ddbname,
+                                std::vector<VirtualSiteConfiguration> *vsiteconflist,
+                                std::vector<VirtualSiteTopology>      *vsitetoplist)
 {
     /* This routine is a quick hack to fix the problem with hardcoded atomtypes
      * and aromatic vsite parameters by reading them from a ff???.vsd file.
@@ -173,24 +242,14 @@ static void read_vsite_database(const char *ddbname,
 
     char         dirstr[STRLEN];
     char         pline[STRLEN];
-    int          i, n, k, nvsite, ntop, curdir;
-    t_vsiteconf *vsiteconflist;
-    t_vsitetop  *vsitetoplist;
+    int          n, curdir;
     char        *ch;
     char         s1[MAXNAME], s2[MAXNAME], s3[MAXNAME], s4[MAXNAME];
     std::string  s1String, s2String, s3String;
 
     gmx::FilePtr ddb = gmx::openLibraryFile(ddbname);
 
-    nvsite        = *nvsiteconf;
-    vsiteconflist = *pvsiteconflist;
-    ntop          = *nvsitetop;
-    vsitetoplist  = *pvsitetoplist;
-
     curdir = -1;
-
-    snew(vsiteconflist, 1);
-    snew(vsitetoplist, 1);
 
     while (fgets2(pline, STRLEN-2, ddb.get()) != nullptr)
     {
@@ -231,6 +290,9 @@ static void read_vsite_database(const char *ddbname,
             }
             else
             {
+                auto found = std::find_if(vsitetoplist->begin(), vsitetoplist->end(),
+                                          [&dirstr](const auto &entry)
+                                          { return gmx::equalCaseInsensitive(dirstr, entry.resname); });
                 switch (curdir)
                 {
                     case -1:
@@ -242,38 +304,23 @@ static void read_vsite_database(const char *ddbname,
                         s1String = s1;
                         s2String = s2;
                         s3String = s3;
-                        /* We resize the strings here to ensure that the copy operations
-                         * below always copy a null-terminated string.
-                         */
-                        s1String.resize(MAXNAME-1);
-                        s2String.resize(MAXNAME-1);
-                        s3String.resize(MAXNAME-1);
-                        if (n < 3 && !gmx_strcasecmp(s2String.c_str(), "planar"))
+                        if (n < 3 && gmx::equalCaseInsensitive(s2String, "planar"))
                         {
-                            srenew(vsiteconflist, nvsite+1);
-                            strncpy(vsiteconflist[nvsite].atomtype, s1String.c_str(), MAXNAME-1);
-                            vsiteconflist[nvsite].isplanar         = TRUE;
-                            vsiteconflist[nvsite].nextheavytype[0] = 0;
-                            vsiteconflist[nvsite].dummymass[0]     = 0;
-                            vsiteconflist[nvsite].nhydrogens       = 2;
-                            nvsite++;
+                            VirtualSiteConfiguration newVsiteConf(s1String, true, 2, "0", "0");
+                            vsiteconflist->push_back(newVsiteConf);
                         }
                         else if (n == 3)
                         {
-                            srenew(vsiteconflist, (nvsite+1));
-                            strncpy(vsiteconflist[nvsite].atomtype, s1String.c_str(), MAXNAME-1);
-                            vsiteconflist[nvsite].isplanar = FALSE;
-                            strncpy(vsiteconflist[nvsite].nextheavytype, s2String.c_str(), MAXNAME-1);
-                            strncpy(vsiteconflist[nvsite].dummymass, s3String.c_str(), MAXNAME-1);
+                            VirtualSiteConfiguration newVsiteConf(s1String, false, -1, s2String, s3String);
                             if (curdir == DDB_NH2)
                             {
-                                vsiteconflist[nvsite].nhydrogens = 2;
+                                newVsiteConf.nhydrogens = 2;
                             }
                             else
                             {
-                                vsiteconflist[nvsite].nhydrogens = 3;
+                                newVsiteConf.nhydrogens = 3;
                             }
-                            nvsite++;
+                            vsiteconflist->push_back(newVsiteConf);
                         }
                         else
                         {
@@ -286,51 +333,26 @@ static void read_vsite_database(const char *ddbname,
                     case DDB_HISA:
                     case DDB_HISB:
                     case DDB_HISH:
-                        i = 0;
-                        while ((i < ntop) && gmx_strcasecmp(dirstr, vsitetoplist[i].resname))
-                        {
-                            i++;
-                        }
                         /* Allocate a new topology entry if this is a new residue */
-                        if (i == ntop)
+                        if (found == vsitetoplist->end())
                         {
-                            srenew(vsitetoplist, ntop+1);
-                            ntop++; /* i still points to current vsite topology entry */
-                            std::string tmp(dirstr);
-                            // Resize to ensure copy of a null-terminated string.
-                            tmp.resize(MAXNAME-1);
-                            strncpy(vsitetoplist[i].resname, tmp.c_str(), MAXNAME-1);
-                            vsitetoplist[i].nbonds = vsitetoplist[i].nangles = 0;
-                            snew(vsitetoplist[i].bond, 1);
-                            snew(vsitetoplist[i].angle, 1);
+                            vsitetoplist->push_back(VirtualSiteTopology(dirstr));
                         }
                         n        = sscanf(pline, "%s%s%s%s", s1, s2, s3, s4);
                         s1String = s1;
                         s2String = s2;
                         s3String = s3;
-                        // Resize to ensure copy of a null-terminated string.
-                        s1String.resize(MAXNAME-1);
-                        s2String.resize(MAXNAME-1);
-                        s3String.resize(MAXNAME-1);
 
                         if (n == 3)
                         {
                             /* bond */
-                            k = vsitetoplist[i].nbonds++;
-                            srenew(vsitetoplist[i].bond, k+1);
-                            strncpy(vsitetoplist[i].bond[k].atom1, s1String.c_str(), MAXNAME-1);
-                            strncpy(vsitetoplist[i].bond[k].atom2, s2String.c_str(), MAXNAME-1);
-                            vsitetoplist[i].bond[k].value = strtod(s3, nullptr);
+                            vsitetoplist->back().bond.emplace_back(s1String, s2String, strtod(s3, nullptr));
                         }
                         else if (n == 4)
                         {
                             /* angle */
-                            k = vsitetoplist[i].nangles++;
-                            srenew(vsitetoplist[i].angle, k+1);
-                            strncpy(vsitetoplist[i].angle[k].atom1, s1String.c_str(), MAXNAME-1);
-                            strncpy(vsitetoplist[i].angle[k].atom2, s2String.c_str(), MAXNAME-1);
-                            strncpy(vsitetoplist[i].angle[k].atom3, s3String.c_str(), MAXNAME-1);
-                            vsitetoplist[i].angle[k].value = strtod(s4, nullptr);
+                            vsitetoplist->back().angle.emplace_back(s1String, s2String, s3String, strtod(s4, nullptr));
+                            /* angle */
                         }
                         else
                         {
@@ -343,27 +365,22 @@ static void read_vsite_database(const char *ddbname,
             }
         }
     }
-
-    *pvsiteconflist = vsiteconflist;
-    *pvsitetoplist  = vsitetoplist;
-    *nvsiteconf     = nvsite;
-    *nvsitetop      = ntop;
 }
 
-static int nitrogen_is_planar(t_vsiteconf vsiteconflist[], int nvsiteconf, char atomtype[])
+static int nitrogen_is_planar(gmx::ArrayRef<const VirtualSiteConfiguration> vsiteconflist,
+                              const std::string                            &atomtype)
 {
     /* Return 1 if atomtype exists in database list and is planar, 0 if not,
      * and -1 if not found.
      */
-    int      i, res;
-    bool     found = FALSE;
-    for (i = 0; i < nvsiteconf && !found; i++)
+    int      res;
+    auto     found = std::find_if(vsiteconflist.begin(), vsiteconflist.end(),
+                                  [&atomtype](const auto &entry)
+                                  { return (gmx::equalCaseInsensitive(entry.atomtype, atomtype) &&
+                                            entry.nhydrogens == 2); });
+    if (found != vsiteconflist.end())
     {
-        found = ((gmx_strcasecmp(vsiteconflist[i].atomtype, atomtype) == 0) && (vsiteconflist[i].nhydrogens == 2));
-    }
-    if (found)
-    {
-        res = static_cast<int>(vsiteconflist[i-1].isplanar);
+        res = static_cast<int>(found->isplanar);
     }
     else
     {
@@ -373,91 +390,79 @@ static int nitrogen_is_planar(t_vsiteconf vsiteconflist[], int nvsiteconf, char 
     return res;
 }
 
-static char *get_dummymass_name(t_vsiteconf vsiteconflist[], int nvsiteconf, char atom[], char nextheavy[])
+static const std::string get_dummymass_name(gmx::ArrayRef<const VirtualSiteConfiguration> vsiteconflist,
+                                            const std::string &atom, const std::string &nextheavy)
 {
     /* Return the dummy mass name if found, or NULL if not set in ddb database */
-    int      i;
-    bool     found = FALSE;
-    for (i = 0; i < nvsiteconf && !found; i++)
+    auto found = std::find_if(vsiteconflist.begin(), vsiteconflist.end(),
+                              [&atom, &nextheavy](const auto &entry)
+                              { return (gmx::equalCaseInsensitive(atom, entry.atomtype) &&
+                                        gmx::equalCaseInsensitive(nextheavy, entry.nextheavytype)); });
+    if (found != vsiteconflist.end())
     {
-        found = ((gmx_strcasecmp(vsiteconflist[i].atomtype, atom) == 0) &&
-                 (gmx_strcasecmp(vsiteconflist[i].nextheavytype, nextheavy) == 0));
-    }
-    if (found)
-    {
-        return vsiteconflist[i-1].dummymass;
+        return found->dummymass;
     }
     else
     {
-        return nullptr;
+        return "";
     }
 }
 
 
 
-static real get_ddb_bond(t_vsitetop *vsitetop, int nvsitetop,
-                         const char res[],
-                         const char atom1[], const char atom2[])
+static real get_ddb_bond(gmx::ArrayRef<const VirtualSiteTopology> vsitetop,
+                         const std::string                       &res,
+                         const std::string                       &atom1,
+                         const std::string                       &atom2)
 {
-    int i, j;
+    auto found = std::find_if(vsitetop.begin(), vsitetop.end(),
+                              [&res](const auto &entry)
+                              { return gmx::equalCaseInsensitive(res, entry.resname); });
 
-    i = 0;
-    while (i < nvsitetop && gmx_strcasecmp(res, vsitetop[i].resname))
+    if (found == vsitetop.end())
     {
-        i++;
+        gmx_fatal(FARGS, "No vsite information for residue %s found in vsite database.\n", res.c_str());
     }
-    if (i == nvsitetop)
+    auto foundBond = std::find_if(found->bond.begin(), found->bond.end(),
+                                  [&atom1, &atom2](const auto &entry)
+                                  { return ((atom1 == entry.atom1 && atom2 == entry.atom2) ||
+                                            (atom1 == entry.atom2 && atom2 == entry.atom1)); });
+    if (foundBond == found->bond.end())
     {
-        gmx_fatal(FARGS, "No vsite information for residue %s found in vsite database.\n", res);
-    }
-    j = 0;
-    while (j < vsitetop[i].nbonds &&
-           ( strcmp(atom1, vsitetop[i].bond[j].atom1) != 0 || strcmp(atom2, vsitetop[i].bond[j].atom2) != 0) &&
-           ( strcmp(atom2, vsitetop[i].bond[j].atom1) != 0 || strcmp(atom1, vsitetop[i].bond[j].atom2) != 0))
-    {
-        j++;
-    }
-    if (j == vsitetop[i].nbonds)
-    {
-        gmx_fatal(FARGS, "Couldnt find bond %s-%s for residue %s in vsite database.\n", atom1, atom2, res);
+        gmx_fatal(FARGS, "Couldnt find bond %s-%s for residue %s in vsite database.\n", atom1.c_str(), atom2.c_str(), res.c_str());
     }
 
-    return vsitetop[i].bond[j].value;
+    return foundBond->value;
 }
 
 
-static real get_ddb_angle(t_vsitetop *vsitetop, int nvsitetop,
-                          const char res[], const char atom1[],
-                          const char atom2[], const char atom3[])
+static real get_ddb_angle(gmx::ArrayRef<const VirtualSiteTopology> vsitetop,
+                          const std::string                       &res,
+                          const std::string                       &atom1,
+                          const std::string                       &atom2,
+                          const std::string                       &atom3)
 {
-    int i, j;
+    auto found = std::find_if(vsitetop.begin(), vsitetop.end(),
+                              [&res](const auto &entry)
+                              { return gmx::equalCaseInsensitive(res, entry.resname); });
 
-    i = 0;
-    while (i < nvsitetop && gmx_strcasecmp(res, vsitetop[i].resname))
+    if (found == vsitetop.end())
     {
-        i++;
+        gmx_fatal(FARGS, "No vsite information for residue %s found in vsite database.\n", res.c_str());
     }
-    if (i == nvsitetop)
+    auto foundAngle = std::find_if(found->angle.begin(), found->angle.end(),
+                                   [&atom1, &atom2, &atom3](const auto &entry)
+                                   { return ((atom1 == entry.atom1 && atom2 == entry.atom2 && atom3 == entry.atom3) ||
+                                             (atom1 == entry.atom3 && atom2 == entry.atom2 && atom3 == entry.atom1) ||
+                                             (atom1 == entry.atom2 && atom2 == entry.atom1 && atom3 == entry.atom3) ||
+                                             (atom1 == entry.atom3 && atom2 == entry.atom1 && atom3 == entry.atom2)); });
+
+    if (foundAngle == found->angle.end())
     {
-        gmx_fatal(FARGS, "No vsite information for residue %s found in vsite database.\n", res);
-    }
-    j = 0;
-    while (j < vsitetop[i].nangles &&
-           ( strcmp(atom1, vsitetop[i].angle[j].atom1) != 0 ||
-             strcmp(atom2, vsitetop[i].angle[j].atom2) != 0 ||
-             strcmp(atom3, vsitetop[i].angle[j].atom3) != 0) &&
-           ( strcmp(atom3, vsitetop[i].angle[j].atom1) != 0 ||
-             strcmp(atom2, vsitetop[i].angle[j].atom2) != 0 ||
-             strcmp(atom1, vsitetop[i].angle[j].atom3) != 0))
-    {
-        j++;
-    }
-    if (j == vsitetop[i].nangles)
-    {
-        gmx_fatal(FARGS, "Couldnt find angle %s-%s-%s for residue %s in vsite database.\n", atom1, atom2, atom3, res);
+        gmx_fatal(FARGS, "Couldnt find angle %s-%s-%s for residue %s in vsite database.\n", atom1.c_str(), atom2.c_str(), atom3.c_str(), res.c_str());
     }
 
-    return vsitetop[i].angle[j].value;
+    return foundAngle->value;
 }
 
 
@@ -806,7 +811,7 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
 }
 
 static int gen_vsites_phe(t_atoms *at, int *vsite_type[], t_params plist[],
-                          int nrfound, int *ats, t_vsitetop *vsitetop, int nvsitetop)
+                          int nrfound, int *ats, gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
 {
     real bond_cc, bond_ch;
     real xcom, mtot;
@@ -820,8 +825,8 @@ static int gen_vsites_phe(t_atoms *at, int *vsite_type[], t_params plist[],
     /* Aromatic rings have 6-fold symmetry, so we only need one bond length.
      * (angle is always 120 degrees).
      */
-    bond_cc = get_ddb_bond(vsitetop, nvsitetop, "PHE", "CD1", "CE1");
-    bond_ch = get_ddb_bond(vsitetop, nvsitetop, "PHE", "CD1", "HD1");
+    bond_cc = get_ddb_bond(vsitetop, "PHE", "CD1", "CE1");
+    bond_ch = get_ddb_bond(vsitetop, "PHE", "CD1", "HD1");
 
     x[atCG]  = -bond_cc+bond_cc*std::cos(ANGLE_6RING);
     x[atCD1] = -bond_cc;
@@ -870,7 +875,7 @@ static int gen_vsites_trp(gpp_atomtype *atype, rvec *newx[],
                           t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
                           t_atoms *at, int *vsite_type[], t_params plist[],
                           int nrfound, int *ats, int add_shift,
-                          t_vsitetop *vsitetop, int nvsitetop)
+                          gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
 {
 #define NMASS 2
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
@@ -907,39 +912,38 @@ static int gen_vsites_trp(gpp_atomtype *atype, rvec *newx[],
         gmx_incons("atom types in gen_vsites_trp");
     }
     /* Get geometry from database */
-    b_CD2_CE2 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CD2", "CE2");
-    b_NE1_CE2 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "NE1", "CE2");
-    b_CG_CD1  = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CG", "CD1");
-    b_CG_CD2  = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CG", "CD2");
-    b_CB_CG   = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CB", "CG");
-    b_CE2_CZ2 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CE2", "CZ2");
-    b_CD2_CE3 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CD2", "CE3");
-    b_CE3_CZ3 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CE3", "CZ3");
-    b_CZ2_CH2 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CZ2", "CH2");
+    b_CD2_CE2 = get_ddb_bond(vsitetop, "TRP", "CD2", "CE2");
+    b_NE1_CE2 = get_ddb_bond(vsitetop, "TRP", "NE1", "CE2");
+    b_CG_CD1  = get_ddb_bond(vsitetop, "TRP", "CG", "CD1");
+    b_CG_CD2  = get_ddb_bond(vsitetop, "TRP", "CG", "CD2");
+    b_CB_CG   = get_ddb_bond(vsitetop, "TRP", "CB", "CG");
+    b_CE2_CZ2 = get_ddb_bond(vsitetop, "TRP", "CE2", "CZ2");
+    b_CD2_CE3 = get_ddb_bond(vsitetop, "TRP", "CD2", "CE3");
+    b_CE3_CZ3 = get_ddb_bond(vsitetop, "TRP", "CE3", "CZ3");
+    b_CZ2_CH2 = get_ddb_bond(vsitetop, "TRP", "CZ2", "CH2");
 
-    b_CD1_HD1 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CD1", "HD1");
-    b_CZ2_HZ2 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CZ2", "HZ2");
-    b_NE1_HE1 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "NE1", "HE1");
-    b_CH2_HH2 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CH2", "HH2");
-    b_CE3_HE3 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CE3", "HE3");
-    b_CZ3_HZ3 = get_ddb_bond(vsitetop, nvsitetop, "TRP", "CZ3", "HZ3");
+    b_CD1_HD1 = get_ddb_bond(vsitetop, "TRP", "CD1", "HD1");
+    b_CZ2_HZ2 = get_ddb_bond(vsitetop, "TRP", "CZ2", "HZ2");
+    b_NE1_HE1 = get_ddb_bond(vsitetop, "TRP", "NE1", "HE1");
+    b_CH2_HH2 = get_ddb_bond(vsitetop, "TRP", "CH2", "HH2");
+    b_CE3_HE3 = get_ddb_bond(vsitetop, "TRP", "CE3", "HE3");
+    b_CZ3_HZ3 = get_ddb_bond(vsitetop, "TRP", "CZ3", "HZ3");
 
-    a_NE1_CE2_CD2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "NE1", "CE2", "CD2");
-    a_CE2_CD2_CG  = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CE2", "CD2", "CG");
-    a_CB_CG_CD2   = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CB", "CG", "CD2");
-    a_CD2_CG_CD1  = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CD2", "CG", "CD1");
-    /*a_CB_CG_CD1   = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CB", "CG", "CD1"); unused */
+    a_NE1_CE2_CD2 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "NE1", "CE2", "CD2");
+    a_CE2_CD2_CG  = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CE2", "CD2", "CG");
+    a_CB_CG_CD2   = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CB", "CG", "CD2");
+    a_CD2_CG_CD1  = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CD2", "CG", "CD1");
 
-    a_CE2_CD2_CE3 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CE2", "CD2", "CE3");
-    a_CD2_CE2_CZ2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CD2", "CE2", "CZ2");
-    a_CD2_CE3_CZ3 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CD2", "CE3", "CZ3");
-    a_CE3_CZ3_HZ3 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CE3", "CZ3", "HZ3");
-    a_CZ2_CH2_HH2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CZ2", "CH2", "HH2");
-    a_CE2_CZ2_HZ2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CE2", "CZ2", "HZ2");
-    a_CE2_CZ2_CH2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CE2", "CZ2", "CH2");
-    a_CG_CD1_HD1  = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CG", "CD1", "HD1");
-    a_HE1_NE1_CE2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "HE1", "NE1", "CE2");
-    a_CD2_CE3_HE3 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CD2", "CE3", "HE3");
+    a_CE2_CD2_CE3 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CE2", "CD2", "CE3");
+    a_CD2_CE2_CZ2 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CD2", "CE2", "CZ2");
+    a_CD2_CE3_CZ3 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CD2", "CE3", "CZ3");
+    a_CE3_CZ3_HZ3 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CE3", "CZ3", "HZ3");
+    a_CZ2_CH2_HH2 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CZ2", "CH2", "HH2");
+    a_CE2_CZ2_HZ2 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CE2", "CZ2", "HZ2");
+    a_CE2_CZ2_CH2 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CE2", "CZ2", "CH2");
+    a_CG_CD1_HD1  = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CG", "CD1", "HD1");
+    a_HE1_NE1_CE2 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "HE1", "NE1", "CE2");
+    a_CD2_CE3_HE3 = DEG2RAD*get_ddb_angle(vsitetop, "TRP", "CD2", "CE3", "HE3");
 
     /* Calculate local coordinates.
      * y-axis (x=0) is the bond CD2-CE2.
@@ -1142,7 +1146,7 @@ static int gen_vsites_tyr(gpp_atomtype *atype, rvec *newx[],
                           t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
                           t_atoms *at, int *vsite_type[], t_params plist[],
                           int nrfound, int *ats, int add_shift,
-                          t_vsitetop *vsitetop, int nvsitetop)
+                          gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
 {
     int  nvsite, i, i0, j, atM, tpM;
     real dCGCE, dCEOH, dCGM, tmp1, a, b;
@@ -1169,11 +1173,11 @@ static int gen_vsites_tyr(gpp_atomtype *atype, rvec *newx[],
     /* Aromatic rings have 6-fold symmetry, so we only need one bond length
      * for the ring part (angle is always 120 degrees).
      */
-    bond_cc   = get_ddb_bond(vsitetop, nvsitetop, "TYR", "CD1", "CE1");
-    bond_ch   = get_ddb_bond(vsitetop, nvsitetop, "TYR", "CD1", "HD1");
-    bond_co   = get_ddb_bond(vsitetop, nvsitetop, "TYR", "CZ", "OH");
-    bond_oh   = get_ddb_bond(vsitetop, nvsitetop, "TYR", "OH", "HH");
-    angle_coh = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TYR", "CZ", "OH", "HH");
+    bond_cc   = get_ddb_bond(vsitetop, "TYR", "CD1", "CE1");
+    bond_ch   = get_ddb_bond(vsitetop, "TYR", "CD1", "HD1");
+    bond_co   = get_ddb_bond(vsitetop, "TYR", "CZ", "OH");
+    bond_oh   = get_ddb_bond(vsitetop, "TYR", "OH", "HH");
+    angle_coh = DEG2RAD*get_ddb_angle(vsitetop, "TYR", "CZ", "OH", "HH");
 
     xi[atCG]  = -bond_cc+bond_cc*std::cos(ANGLE_6RING);
     xi[atCD1] = -bond_cc;
@@ -1285,7 +1289,7 @@ static int gen_vsites_tyr(gpp_atomtype *atype, rvec *newx[],
 }
 
 static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
-                          int nrfound, int *ats, t_vsitetop *vsitetop, int nvsitetop)
+                          int nrfound, int *ats, gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
 {
     int  nvsite, i;
     real a, b, alpha, dCGCE1, dCGNE2;
@@ -1336,35 +1340,35 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     }
 
     /* Get geometry from database */
-    b_CG_ND1      = get_ddb_bond(vsitetop, nvsitetop, resname, "CG", "ND1");
-    b_ND1_CE1     = get_ddb_bond(vsitetop, nvsitetop, resname, "ND1", "CE1");
-    b_CE1_NE2     = get_ddb_bond(vsitetop, nvsitetop, resname, "CE1", "NE2");
-    b_CG_CD2      = get_ddb_bond(vsitetop, nvsitetop, resname, "CG", "CD2");
-    b_CD2_NE2     = get_ddb_bond(vsitetop, nvsitetop, resname, "CD2", "NE2");
-    a_CG_ND1_CE1  = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "CG", "ND1", "CE1");
-    a_CG_CD2_NE2  = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "CG", "CD2", "NE2");
-    a_ND1_CE1_NE2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "ND1", "CE1", "NE2");
-    a_CE1_NE2_CD2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "CE1", "NE2", "CD2");
+    b_CG_ND1      = get_ddb_bond(vsitetop, resname, "CG", "ND1");
+    b_ND1_CE1     = get_ddb_bond(vsitetop, resname, "ND1", "CE1");
+    b_CE1_NE2     = get_ddb_bond(vsitetop, resname, "CE1", "NE2");
+    b_CG_CD2      = get_ddb_bond(vsitetop, resname, "CG", "CD2");
+    b_CD2_NE2     = get_ddb_bond(vsitetop, resname, "CD2", "NE2");
+    a_CG_ND1_CE1  = DEG2RAD*get_ddb_angle(vsitetop, resname, "CG", "ND1", "CE1");
+    a_CG_CD2_NE2  = DEG2RAD*get_ddb_angle(vsitetop, resname, "CG", "CD2", "NE2");
+    a_ND1_CE1_NE2 = DEG2RAD*get_ddb_angle(vsitetop, resname, "ND1", "CE1", "NE2");
+    a_CE1_NE2_CD2 = DEG2RAD*get_ddb_angle(vsitetop, resname, "CE1", "NE2", "CD2");
 
     if (ats[atHD1] != NOTSET)
     {
-        b_ND1_HD1     = get_ddb_bond(vsitetop, nvsitetop, resname, "ND1", "HD1");
-        a_CE1_ND1_HD1 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "CE1", "ND1", "HD1");
+        b_ND1_HD1     = get_ddb_bond(vsitetop, resname, "ND1", "HD1");
+        a_CE1_ND1_HD1 = DEG2RAD*get_ddb_angle(vsitetop, resname, "CE1", "ND1", "HD1");
     }
     if (ats[atHE2] != NOTSET)
     {
-        b_NE2_HE2     = get_ddb_bond(vsitetop, nvsitetop, resname, "NE2", "HE2");
-        a_CE1_NE2_HE2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "CE1", "NE2", "HE2");
+        b_NE2_HE2     = get_ddb_bond(vsitetop, resname, "NE2", "HE2");
+        a_CE1_NE2_HE2 = DEG2RAD*get_ddb_angle(vsitetop, resname, "CE1", "NE2", "HE2");
     }
     if (ats[atHD2] != NOTSET)
     {
-        b_CD2_HD2     = get_ddb_bond(vsitetop, nvsitetop, resname, "CD2", "HD2");
-        a_NE2_CD2_HD2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "NE2", "CD2", "HD2");
+        b_CD2_HD2     = get_ddb_bond(vsitetop, resname, "CD2", "HD2");
+        a_NE2_CD2_HD2 = DEG2RAD*get_ddb_angle(vsitetop, resname, "NE2", "CD2", "HD2");
     }
     if (ats[atHE1] != NOTSET)
     {
-        b_CE1_HE1     = get_ddb_bond(vsitetop, nvsitetop, resname, "CE1", "HE1");
-        a_NE2_CE1_HE1 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "NE2", "CE1", "HE1");
+        b_CE1_HE1     = get_ddb_bond(vsitetop, resname, "CE1", "HE1");
+        a_NE2_CE1_HE1 = DEG2RAD*get_ddb_angle(vsitetop, resname, "NE2", "CE1", "HE1");
     }
 
     /* constraints between CG, CE1 and NE1 */
@@ -1552,30 +1556,15 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
     bool             *bResProcessed;
     real              mHtot, mtot, fact, fact2;
     rvec              rpar, rperp, temp;
-    char              name[10], tpname[32], nexttpname[32], *ch;
+    char              tpname[32], nexttpname[32];
     rvec             *newx;
     int              *o2n, *newvsite_type, *newcgnr, ats[MAXATOMSPERRESIDUE];
     t_atom           *newatom;
     t_params         *params;
     char           ***newatomname;
     char             *resnm = nullptr;
-    int               nvsiteconf, nvsitetop, cmplength;
+    int               cmplength;
     bool              isN, planarN, bFound;
-
-    t_vsiteconf      *vsiteconflist;
-    /* pointer to a list of CH3/NH3/NH2 configuration entries.
-     * See comments in read_vsite_database. It isnt beautiful,
-     * but it had to be fixed, and I dont even want to try to
-     * maintain this part of the code...
-     */
-    t_vsitetop *vsitetop;
-    /* Pointer to a list of geometry (bond/angle) entries for
-     * residues like PHE, TRP, TYR, HIS, etc., where we need
-     * to know the geometry to construct vsite aromatics.
-     * Note that equilibrium geometry isnt necessarily the same
-     * as the individual bond and angle values given in the
-     * force field (rings can be strained).
-     */
 
     /* if bVsiteAromatics=TRUE do_vsites will specifically convert atoms in
        PHE, TRP, TYR and HIS to a construction of virtual sites */
@@ -1618,13 +1607,25 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
     }
 
     std::vector<std::string> db = fflib_search_file_end(ffdir, ".vsd", FALSE);
-    nvsiteconf    = 0;
-    vsiteconflist = nullptr;
-    nvsitetop     = 0;
-    vsitetop      = nullptr;
+
+    /* Container of CH3/NH3/NH2 configuration entries.
+     * See comments in read_vsite_database. It isnt beautiful,
+     * but it had to be fixed, and I dont even want to try to
+     * maintain this part of the code...
+     */
+    std::vector<VirtualSiteConfiguration> vsiteconflist;
+
+    /* Container of geometry (bond/angle) entries for
+     * residues like PHE, TRP, TYR, HIS, etc., where we need
+     * to know the geometry to construct vsite aromatics.
+     * Note that equilibrium geometry isnt necessarily the same
+     * as the individual bond and angle values given in the
+     * force field (rings can be strained).
+     */
+    std::vector<VirtualSiteTopology> vsitetop;
     for (const auto &filename : db)
     {
-        read_vsite_database(filename.c_str(), &vsiteconflist, &nvsiteconf, &vsitetop, &nvsitetop);
+        read_vsite_database(filename.c_str(), &vsiteconflist, &vsitetop);
     }
 
     bFirstWater = TRUE;
@@ -1729,7 +1730,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
                     {
                         fprintf(stderr, "PHE at %d\n", o2n[ats[0]]+1);
                     }
-                    nvsite += gen_vsites_phe(at, vsite_type, plist, nrfound, ats, vsitetop, nvsitetop);
+                    nvsite += gen_vsites_phe(at, vsite_type, plist, nrfound, ats, vsitetop);
                     break;
                 case resTRP:
                     if (debug)
@@ -1738,7 +1739,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
                     }
                     nvsite += gen_vsites_trp(atype, &newx, &newatom, &newatomname, &o2n,
                                              &newvsite_type, &newcgnr, symtab, &nadd, *x, cgnr,
-                                             at, vsite_type, plist, nrfound, ats, add_shift, vsitetop, nvsitetop);
+                                             at, vsite_type, plist, nrfound, ats, add_shift, vsitetop);
                     break;
                 case resTYR:
                     if (debug)
@@ -1747,14 +1748,14 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
                     }
                     nvsite += gen_vsites_tyr(atype, &newx, &newatom, &newatomname, &o2n,
                                              &newvsite_type, &newcgnr, symtab, &nadd, *x, cgnr,
-                                             at, vsite_type, plist, nrfound, ats, add_shift, vsitetop, nvsitetop);
+                                             at, vsite_type, plist, nrfound, ats, add_shift, vsitetop);
                     break;
                 case resHIS:
                     if (debug)
                     {
                         fprintf(stderr, "HIS at %d\n", o2n[ats[0]]+1);
                     }
-                    nvsite += gen_vsites_his(at, vsite_type, plist, nrfound, ats, vsitetop, nvsitetop);
+                    nvsite += gen_vsites_his(at, vsite_type, plist, nrfound, ats, vsitetop);
                     break;
                 case NOTSET:
                     /* this means this residue won't be processed */
@@ -1852,7 +1853,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
                 if ((nrHatoms == 2) && ((*at->atomname[Heavy])[0] == 'N'))
                 {
                     isN = TRUE;
-                    j   = nitrogen_is_planar(vsiteconflist, nvsiteconf, tpname);
+                    j   = nitrogen_is_planar(vsiteconflist, tpname);
                     if (j < 0)
                     {
                         gmx_fatal(FARGS, "No vsite database NH2 entry for type %s\n", tpname);
@@ -1887,9 +1888,9 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
                     /* get dummy mass type from first char of heavy atom type (N or C) */
 
                     strcpy(nexttpname, get_atomtype_name(get_atype(heavies[0], at, rtpFFDB, &rt), atype));
-                    ch = get_dummymass_name(vsiteconflist, nvsiteconf, tpname, nexttpname);
-
-                    if (ch == nullptr)
+                    std::string ch = get_dummymass_name(vsiteconflist, tpname, nexttpname);
+                    std::string name;
+                    if (ch.empty())
                     {
                         if (!db.empty())
                         {
@@ -1902,10 +1903,10 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
                     }
                     else
                     {
-                        strcpy(name, ch);
+                        name = ch;
                     }
 
-                    tpM = vsite_nm2type(name, atype);
+                    tpM = vsite_nm2type(name.c_str(), atype);
                     /* make space for 2 masses: shift all atoms starting with 'Heavy' */
 #define NMASS 2
                     i0  = Heavy;
@@ -1979,7 +1980,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
                         }
                         name[k+1]              = atomnamesuffix[j];
                         name[k+2]              = '\0';
-                        newatomname[ni0+j]     = put_symtab(symtab, name);
+                        newatomname[ni0+j]     = put_symtab(symtab, name.c_str());
                         newatom[ni0+j].m       = newatom[ni0+j].mB    = mtot/NMASS;
                         newatom[ni0+j].q       = newatom[ni0+j].qB    = 0.0;
                         newatom[ni0+j].type    = newatom[ni0+j].typeB = tpM;
