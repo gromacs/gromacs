@@ -133,7 +133,7 @@ struct PreprocessResidue
     //! List of bonded interactions to potentially add.
     std::array<BondedInteractionList, ebtsNR> rb;
     //! Get number of atoms in residue.
-    int                                       natom() const { return atom.size(); };
+    int                                       natom() const { return atom.size(); }
 };
 
 //! Declare different types of hacks for later check.
