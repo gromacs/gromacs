@@ -45,7 +45,7 @@ struct gpp_atomtype;
 struct t_atoms;
 struct t_blocka;
 struct t_excls;
-struct t_molinfo;
+struct MoleculeInformation;
 struct t_param;
 struct t_params;
 
@@ -66,10 +66,16 @@ void add_param_to_list(t_params *list, t_param *b);
 void init_plist(t_params plist[]);
 void done_plist(t_params *plist);
 
-void init_molinfo(t_molinfo *mol);
 
-/* FREE */
-void done_mi(t_molinfo *mi);
+/*! \brief
+ * We need this free method as long as the normal copy constructor for
+ * MoleculeInformation does not do a proper deep copy and only copies the
+ * pointers. So we can not clean up the memory in the destructor, but need to
+ * do it on our own when needed.
+ *
+ * \param[in] mi The datastructure to clean.
+ */
+void done_mi(MoleculeInformation *mi);
 
 /* PRINTING */
 
