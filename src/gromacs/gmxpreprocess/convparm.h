@@ -38,15 +38,16 @@
 #ifndef GMX_GMXPREPROCESS_CONVPARM_H
 #define GMX_GMXPREPROCESS_CONVPARM_H
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
-struct t_molinfo;
+struct MoleculeInformation;
 struct t_params;
 
 void convert_params(int atnr, t_params nbtypes[],
-                    t_molinfo *mi,
-                    t_molinfo *intermolecular_interactions,
+                    gmx::ArrayRef<const MoleculeInformation> mi,
+                    const MoleculeInformation *intermolecular_interactions,
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop);
 
