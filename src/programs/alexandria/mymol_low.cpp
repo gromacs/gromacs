@@ -1252,6 +1252,4 @@ void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix)
     rotmatrix[2][1] = bu[2]*au[1];
     rotmatrix[2][2] = bu[2]*au[2];
 }
-
-
 } // namespace alexandria

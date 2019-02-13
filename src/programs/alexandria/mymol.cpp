@@ -1963,6 +1963,10 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
 
 void MyMol::rotateDipole(rvec mu, rvec muReference)
 {
+    if (norm(mu) == 0 or norm(muReference) == 0)
+    {
+        return;
+    }
     matrix rotmatrix;
     rvec   tmpvec;
     calc_rotmatrix(mu, muReference, rotmatrix);

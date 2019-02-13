@@ -589,17 +589,12 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
         }
     }
     
-    if (ai->name() == "z_c3" && ai_chi > 8)
+    if (ai->name() == "z_c3" && (ai_chi < 5 or ai_chi > 8))
     {
         penalty += (ai_atn * penalty_);
     }
 
-    if (ai->name() == "z_ha" && ai_chi < 3.5)
-    {
-        penalty += (6 * penalty_);
-    }
-
-    if (ai->name() == "z_h1" && ai_chi > 3.5)
+    if (ai->name() == "z_h1" && ai_chi > 2.5)
     {
        penalty += (6 * penalty_);
     }
@@ -993,9 +988,9 @@ int alex_tune_eem(int argc, char *argv[])
                              opt.lot(),
                              tabfn,
                              opt.hwinfo(),
-                             opt.qcycle(),
+                             500, //opt.qcycle(),
                              opt.maxPot(),
-                             opt.qtol(),                          
+                             1e-6, //opt.qtol(),                          
                              opt2fn("-qhisto",    NFILE, fnm),
                              opt2fn("-dipcorr",   NFILE, fnm),
                              opt2fn("-mucorr",    NFILE, fnm),
