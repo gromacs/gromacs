@@ -47,6 +47,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 
 #include <unordered_set>
 #include <sys/types.h>
@@ -349,9 +350,9 @@ static char ** cpp_opts(const char *define, const char *include,
 }
 
 
-static void make_atoms_sys(const std::vector<gmx_molblock_t> &molblock,
-                           const t_molinfo                   *molinfo,
-                           t_atoms                           *atoms)
+static void make_atoms_sys(gmx::ArrayRef<const gmx_molblock_t>      molblock,
+                           gmx::ArrayRef<const MoleculeInformation> molinfo,
+                           t_atoms                                 *atoms)
 {
     atoms->nr   = 0;
     atoms->atom = nullptr;
@@ -378,8 +379,8 @@ static char **read_topol(const char *infile, const char *outfile,
                          t_symtab    *symtab,
                          gpp_atomtype *atype,
                          int         *nrmols,
-                         t_molinfo   **molinfo,
-                         t_molinfo   **intermolecular_interactions,
+                         std::vector<MoleculeInformation> *molinfo,
+                         std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
                          t_params    plist[],
                          int         *combination_rule,
                          double      *reppow,
@@ -392,32 +393,32 @@ static char **read_topol(const char *infile, const char *outfile,
                          bool        usingFullRangeElectrostatics,
                          warninp    *wi)
 {
-    FILE                 *out;
-    int                   i, sl, nb_funct;
-    char                 *pline = nullptr, **title = nullptr;
-    char                  line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
-    char                  genpairs[32];
-    char                 *dirstr, *dummy2;
-    int                   nrcopies, nmol, nscan, ncombs, ncopy;
-    double                fLJ, fQQ, fPOW;
-    t_molinfo            *mi0   = nullptr;
-    DirStack             *DS;
-    Directive             d, newd;
-    t_nbparam           **nbparam, **pair;
-    gmx::ExclusionBlocks *exclusionBlocks;
-    real                  fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
-    bool                  bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
-    double                qt = 0, qBt = 0; /* total charge */
-    gpp_bond_atomtype    *batype;
-    int                   lastcg = -1;
-    int                   dcatt  = -1, nmol_couple;
+    FILE                           *out;
+    int                             sl, nb_funct;
+    char                           *pline = nullptr, **title = nullptr;
+    char                            line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
+    char                            genpairs[32];
+    char                           *dirstr, *dummy2;
+    int                             nrcopies, nmol, nscan, ncombs, ncopy;
+    double                          fLJ, fQQ, fPOW;
+    MoleculeInformation            *mi0   = nullptr;
+    DirStack                       *DS;
+    Directive                       d, newd;
+    t_nbparam                     **nbparam, **pair;
+    gmx::ExclusionBlocks           *exclusionBlocks;
+    real                            fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
+    bool                            bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
+    double                          qt = 0, qBt = 0; /* total charge */
+    gpp_bond_atomtype              *batype;
+    int                             lastcg = -1;
+    int                             dcatt  = -1, nmol_couple;
     /* File handling variables */
-    int                   status;
-    bool                  done;
-    gmx_cpp_t             handle;
-    char                 *tmp_line = nullptr;
-    char                  warn_buf[STRLEN];
-    const char           *floating_point_arithmetic_tip =
+    int                             status;
+    bool                            done;
+    gmx_cpp_t                       handle;
+    char                           *tmp_line = nullptr;
+    char                            warn_buf[STRLEN];
+    const char                     *floating_point_arithmetic_tip =
         "Total charge should normally be an integer. See\n"
         "http://www.gromacs.org/Documentation/Floating_Point_Arithmetic\n"
         "for discussion on how close it should be to an integer.\n";
@@ -451,8 +452,6 @@ static char **read_topol(const char *infile, const char *outfile,
     nb_funct        = F_LJ;
 
     *reppow  = 12.0;      /* Default value for repulsion power     */
-
-    *intermolecular_interactions = nullptr;
 
     /* Init the number of CMAP torsion angles  and grid spacing */
     plist[F_CMAP].grid_spacing = 0;
@@ -578,9 +577,9 @@ static char **read_topol(const char *infile, const char *outfile,
                                  * to process the intermolecular interactions
                                  * by making a "molecule" of the size of the system.
                                  */
-                                snew(*intermolecular_interactions, 1);
-                                init_molinfo(*intermolecular_interactions);
-                                mi0 = *intermolecular_interactions;
+                                *intermolecular_interactions = std::make_unique<MoleculeInformation>( );
+                                mi0 = intermolecular_interactions->get();
+                                mi0->initMolInfo();
                                 make_atoms_sys(*molblock, *molinfo,
                                                &mi0->atoms);
                             }
@@ -723,10 +722,11 @@ static char **read_topol(const char *infile, const char *outfile,
                                 bReadMolType = TRUE;
                             }
 
-                            push_molt(symtab, &nmol, molinfo, pline, wi);
+                            push_molt(symtab, molinfo, pline, wi);
+                            nmol = molinfo->size();
                             srenew(exclusionBlocks, nmol);
                             exclusionBlocks[nmol-1].nr      = 0;
-                            mi0                             = &((*molinfo)[nmol-1]);
+                            mi0                             = &molinfo->back();
                             mi0->atoms.haveMass             = TRUE;
                             mi0->atoms.haveCharge           = TRUE;
                             mi0->atoms.haveType             = TRUE;
@@ -791,7 +791,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             int      whichmol;
                             bool     bCouple;
 
-                            push_mol(nmol, *molinfo, pline, &whichmol, &nrcopies, wi);
+                            push_mol(*molinfo, pline, &whichmol, &nrcopies, wi);
                             mi0 = &((*molinfo)[whichmol]);
                             molblock->resize(molblock->size() + 1);
                             molblock->back().type = whichmol;
@@ -924,7 +924,7 @@ static char **read_topol(const char *infile, const char *outfile,
     }
 
     DS_Done (&DS);
-    for (i = 0; i < nmol; i++)
+    for (int i = 0; i < gmx::index(molinfo->size()); i++)
     {
         gmx::doneExclusionBlocks(&(exclusionBlocks[i]));
     }
@@ -934,7 +934,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
     if (*intermolecular_interactions != nullptr)
     {
-        sfree(mi0->atoms.atom);
+        sfree(intermolecular_interactions->get()->atoms.atom);
     }
 
     *nrmols = nmol;
@@ -942,24 +942,24 @@ static char **read_topol(const char *infile, const char *outfile,
     return title;
 }
 
-char **do_top(bool                          bVerbose,
-              const char                   *topfile,
-              const char                   *topppfile,
-              t_gromppopts                 *opts,
-              bool                          bZero,
-              t_symtab                     *symtab,
-              t_params                      plist[],
-              int                          *combination_rule,
-              double                       *repulsion_power,
-              real                         *fudgeQQ,
-              gpp_atomtype                 *atype,
-              int                          *nrmols,
-              t_molinfo                   **molinfo,
-              t_molinfo                   **intermolecular_interactions,
-              const t_inputrec             *ir,
-              std::vector<gmx_molblock_t>  *molblock,
-              bool                         *ffParametrizedWithHBondConstraints,
-              warninp                      *wi)
+char **do_top(bool                                  bVerbose,
+              const char                           *topfile,
+              const char                           *topppfile,
+              t_gromppopts                         *opts,
+              bool                                  bZero,
+              t_symtab                             *symtab,
+              t_params                              plist[],
+              int                                  *combination_rule,
+              double                               *repulsion_power,
+              real                                 *fudgeQQ,
+              gpp_atomtype                         *atype,
+              int                                  *nrmols,
+              std::vector<MoleculeInformation>     *molinfo,
+              std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
+              const t_inputrec                     *ir,
+              std::vector<gmx_molblock_t>          *molblock,
+              bool                                 *ffParametrizedWithHBondConstraints,
+              warninp                              *wi)
 {
     /* Tmpfile might contain a long path */
     const char *tmpfile;
