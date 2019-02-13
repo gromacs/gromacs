@@ -78,7 +78,7 @@ void alexandria_poldata_eemprops_table(FILE                   *fp,
     for (auto ztp = ztypes.begin(); ztp < ztypes.end(); ztp++)
     {
         auto qDist  = pd.ztype2Eem(qdist,  ztp->c_str());
-        
+        auto nzeta  = qDist->getNzeta();
         if (qDist != pd.EndEemprops())
         {
             size_t      pos   = ztp->find("z_");
@@ -87,14 +87,13 @@ void alexandria_poldata_eemprops_table(FILE                   *fp,
             {
                 ztype = ztp->substr(pos+2);
             }
-
-            snprintf(longbuf, STRLEN, "%s & %0.2f (%0.2f) & %0.2f (%0.2f)",
+            snprintf(longbuf, STRLEN, "%s & %0.2f (%0.2f) & %0.2f (%0.2f) & %0.2f (%0.2f)",
                      ztype.c_str(),
                      qDist->getChi0(),
                      qDist->getChi0_sigma() + 0.005,
                      qDist->getJ0(),
                      qDist->getJ0_sigma() + 0.005,
-                     qDist->getZeta(1),
+                     qDist->getZeta(nzeta-1),
                      atof(gmx::splitString(qDist->getZeta_sigma()).back().c_str()) + 0.005);
             lt.printLine(longbuf);
         }
