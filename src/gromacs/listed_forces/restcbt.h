@@ -79,7 +79,7 @@
 
 void compute_factors_restangles(int type, const t_iparams forceparams[],
                                 rvec delta_ante,  rvec delta_post,
-                                real *prefactor, real *ratio_ante, real *ratio_post, real *v);
+                                double *prefactor, double *ratio_ante, double *ratio_post, real *v);
 
 
 /*! \brief Compute factors for restricted dihedral potentials.

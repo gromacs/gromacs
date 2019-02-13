@@ -2429,13 +2429,13 @@ real restrangles(int nbonds,
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                  int gmx_unused *global_atom_index)
 {
-    int  i, d, ai, aj, ak, type, m;
-    int  t1, t2;
-    real v, vtot;
-    ivec jt, dt_ij, dt_kj;
-    rvec f_i, f_j, f_k;
-    real prefactor, ratio_ante, ratio_post;
-    rvec delta_ante, delta_post, vec_temp;
+    int    i, d, ai, aj, ak, type, m;
+    int    t1, t2;
+    real   v, vtot;
+    ivec   jt, dt_ij, dt_kj;
+    rvec   f_i, f_j, f_k;
+    double prefactor, ratio_ante, ratio_post;
+    rvec   delta_ante, delta_post, vec_temp;
 
     vtot = 0.0;
     for (i = 0; (i < nbonds); )

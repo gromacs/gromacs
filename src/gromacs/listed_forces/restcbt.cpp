@@ -60,15 +60,15 @@
 
 void compute_factors_restangles(int type, const t_iparams forceparams[],
                                 rvec delta_ante,  rvec delta_post,
-                                real *prefactor, real *ratio_ante, real *ratio_post, real *v)
+                                double *prefactor, double *ratio_ante, double *ratio_post, real *v)
 {
-    real theta_equil, k_bending;
-    real cosine_theta_equil;
-    real c_ante, c_cros, c_post;
-    real norm;
-    real delta_cosine, cosine_theta;
-    real sine_theta_sq;
-    real term_theta_theta_equil;
+    double theta_equil, k_bending;
+    double cosine_theta_equil;
+    double c_ante, c_cros, c_post;
+    double norm;
+    double delta_cosine, cosine_theta;
+    double sine_theta_sq;
+    double term_theta_theta_equil;
 
     k_bending          = forceparams[type].harmonic.krA;
     theta_equil        =  forceparams[type].harmonic.rA*DEG2RAD;
