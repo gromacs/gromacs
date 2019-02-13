@@ -1437,12 +1437,13 @@ void push_atom(t_symtab *symtab, t_block *cgs,
                   typeB == type ? ctype : ctypeB, mB, qB, wi);
 }
 
-void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
-               warninp *wi)
+void push_molt(t_symtab                         *symtab,
+               std::vector<MoleculeInformation> *mol,
+               char                             *line,
+               warninp                          *wi)
 {
     char       type[STRLEN];
-    int        nrexcl, i;
-    t_molinfo *newmol;
+    int        nrexcl;
 
     if ((sscanf(line, "%s%d", type, &nrexcl)) != 2)
     {
@@ -1450,26 +1451,22 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
     }
 
     /* Test if this moleculetype overwrites another */
-    i    = 0;
-    while (i < *nmol)
+    const auto found = std::find_if(mol->begin(), mol->end(),
+                                    [&type](const auto &m)
+                                    { return strcmp(*(m.name), type) == 0; });
+    if (found != mol->end())
     {
-        if (strcmp(*((*mol)[i].name), type) == 0)
-        {
-            auto message = gmx::formatString("moleculetype %s is redefined", type);
-            warning_error_and_exit(wi, message, FARGS);
-        }
-        i++;
+        auto message = gmx::formatString("moleculetype %s is redefined", type);
+        warning_error_and_exit(wi, message, FARGS);
     }
 
-    (*nmol)++;
-    srenew(*mol, *nmol);
-    newmol = &((*mol)[*nmol-1]);
-    init_molinfo(newmol);
+    mol->emplace_back();
+    mol->back().initMolInfo();
 
     /* Fill in the values */
-    newmol->name     = put_symtab(symtab, type);
-    newmol->nrexcl   = nrexcl;
-    newmol->excl_set = FALSE;
+    mol->back().name     = put_symtab(symtab, type);
+    mol->back().nrexcl   = nrexcl;
+    mol->back().excl_set = false;
 }
 
 static bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
@@ -2371,7 +2368,7 @@ void push_vsitesn(Directive d, t_params bond[],
     sfree(weight);
 }
 
-void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
+void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char *pline, int *whichmol,
               int *nrcopies,
               warninp *wi)
 {
@@ -2393,18 +2390,20 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
     int nrci    = 0;
     int matchci = -1;
     int matchcs = -1;
-    for (int i = 0; i < nrmols; i++)
+    int i       = 0;
+    for (const auto &mol : mols)
     {
-        if (strcmp(type, *(mols[i].name)) == 0)
+        if (strcmp(type, *(mol.name)) == 0)
         {
             nrcs++;
             matchcs = i;
         }
-        if (gmx_strcasecmp(type, *(mols[i].name)) == 0)
+        if (gmx_strcasecmp(type, *(mol.name)) == 0)
         {
             nrci++;
             matchci = i;
         }
+        i++;
     }
 
     if (nrcs == 1)
@@ -2576,7 +2575,7 @@ static void convert_pairs_to_pairsQ(t_params *plist,
     plist[F_LJ14].param = nullptr;
 }
 
-static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, warninp *wi)
+static void generate_LJCpairsNB(MoleculeInformation *mol, int nb_funct, t_params *nbp, warninp *wi)
 {
     int       n, ntype, i, j, k;
     t_atom   *atom;
@@ -2696,7 +2695,7 @@ static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
     }
 }
 
-void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple, real fudgeQQ,
+void convert_moltype_couple(MoleculeInformation *mol, int atomtype_decouple, real fudgeQQ,
                             int couple_lam0, int couple_lam1,
                             bool bCoupleIntra, int nb_funct, t_params *nbp,
                             warninp *wi)
