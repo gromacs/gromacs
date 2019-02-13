@@ -497,7 +497,7 @@ static void append_interaction(InteractionList *ilist,
     }
 }
 
-static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
+static void enter_function(const t_params *p, t_functype ftype, int comb, real reppow,
                            gmx_ffparams_t *ffparams, InteractionList *il,
                            bool bNB, bool bAppend)
 {
@@ -520,7 +520,8 @@ static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
 }
 
 void convert_params(int atnr, t_params nbtypes[],
-                    t_molinfo *mi, t_molinfo *intermolecular_interactions,
+                    gmx::ArrayRef<const MoleculeInformation> mi,
+                    MoleculeInformation *intermolecular_interactions,
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop)
 {
@@ -528,7 +529,6 @@ void convert_params(int atnr, t_params nbtypes[],
     unsigned long   flags;
     gmx_ffparams_t *ffp;
     gmx_moltype_t  *molt;
-    t_params       *plist;
 
     ffp           = &mtop->ffparams;
     ffp->atnr     = atnr;
@@ -548,7 +548,7 @@ void convert_params(int atnr, t_params nbtypes[],
         {
             molt->ilist[i].iatoms.clear();
 
-            plist = mi[mt].plist;
+            const t_params *plist = mi[mt].plist;
 
             flags = interaction_function[i].flags;
             if ((i != F_LJ) && (i != F_BHAM) && ((flags & IF_BOND) ||
@@ -572,7 +572,7 @@ void convert_params(int atnr, t_params nbtypes[],
         {
             (*mtop->intermolecular_ilist)[i].iatoms.clear();
 
-            plist = intermolecular_interactions->plist;
+            const t_params *plist = intermolecular_interactions->plist;
 
             if (plist[i].nr > 0)
             {
