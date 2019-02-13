@@ -94,17 +94,32 @@ struct t_excls
     int           *e;       /* The excluded atoms                   */
 };
 
-struct t_molinfo
+
+/*! \brief
+ * Holds the molecule information during preprocessing.
+ */
+struct MoleculeInformation
 {
-    char            **name;
-    int               nrexcl;       /* Number of exclusions per atom	*/
-    bool              excl_set;     /* Have exclusions been generated?	*/
-    bool              bProcessed;   /* Has the mol been processed           */
-    t_atoms           atoms;        /* Atoms                                */
-    t_block           cgs;          /* Charge groups                        */
-    t_block           mols;         /* Molecules                            */
-    t_blocka          excls;        /* Exclusions                           */
-    t_params          plist[F_NRE]; /* Parameters in old style              */
+    MoleculeInformation();
+
+    //! Name of the molecule.
+    char            **name = nullptr;
+    //!Number of exclusions per atom.
+    int               nrexcl = 0;
+    //! Have exclusions been generated?.
+    bool              excl_set = false;
+    //! Has the mol been processed.
+    bool              bProcessed = false;
+    //! Atoms in the moelcule.
+    t_atoms           atoms;
+    //! Charge groups in the molecule
+    t_block           cgs;
+    //! Molecules separated in datastructure.
+    t_block           mols;
+    //! Exclusions in the molecule.
+    t_blocka          excls;
+    //! Parameters in old style.
+    t_params          plist[F_NRE];
 };
 
 struct t_mols

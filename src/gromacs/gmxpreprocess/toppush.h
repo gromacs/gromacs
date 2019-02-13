@@ -38,6 +38,9 @@
 #ifndef GMX_GMXPREPROCESS_TOPPUSH_H
 #define GMX_GMXPREPROCESS_TOPPUSH_H
 
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 enum class Directive : int;
@@ -45,7 +48,7 @@ struct gpp_atomtype;
 struct gpp_bond_atomtype;
 struct t_atoms;
 struct t_block;
-struct t_molinfo;
+struct MoleculeInformation;
 struct t_nbparam;
 struct t_param;
 struct t_params;
@@ -104,11 +107,11 @@ void push_vsitesn(Directive d, t_params bond[],
                   t_atoms *at, char *line,
                   warninp *wi);
 
-void push_mol(int nrmols, t_molinfo mols[], char *pline,
+void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char *pline,
               int *whichmol, int *nrcopies,
               warninp *wi);
 
-void push_molt(struct t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
+void push_molt(struct t_symtab *symtab, std::vector<MoleculeInformation> *mol, char *line,
                warninp *wi);
 
 void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp *wi);
@@ -123,7 +126,7 @@ int add_atomtype_decoupled(struct t_symtab *symtab, gpp_atomtype *at,
  * Returns the atom type number.
  */
 
-void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple,
+void convert_moltype_couple(MoleculeInformation *mol, int atomtype_decouple,
                             real fudgeQQ,
                             int couple_lam0, int couple_lam1,
                             bool bCoupleIntra,
