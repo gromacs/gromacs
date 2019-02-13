@@ -1,7 +1,7 @@
 GROMACS 2019.1 release notes
 ----------------------------
 
-This version was released on TODO, 2019. These release notes
+This version was released on February 15, 2019. These release notes
 document the changes that have taken place in GROMACS since the
 initial version 2019, to fix known issues. It also incorporates all
 fixes made in version 2018.5 and earlier, which you can find described
