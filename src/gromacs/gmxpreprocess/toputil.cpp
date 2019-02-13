@@ -178,29 +178,6 @@ void add_param_to_list(t_params *list, t_param *b)
     list->nr++;
 }
 
-
-void init_molinfo(t_molinfo *mol)
-{
-    mol->nrexcl     = 0;
-    mol->excl_set   = FALSE;
-    mol->bProcessed = FALSE;
-    init_plist(mol->plist);
-    init_block(&mol->cgs);
-    init_block(&mol->mols);
-    init_blocka(&mol->excls);
-    init_t_atoms(&mol->atoms, 0, FALSE);
-}
-
-/* FREEING MEMORY */
-
-void done_mi(t_molinfo *mi)
-{
-    done_atom (&(mi->atoms));
-    done_block(&(mi->cgs));
-    done_block(&(mi->mols));
-    done_plist(mi->plist);
-}
-
 /* PRINTING STRUCTURES */
 
 static void print_bt(FILE *out, Directive d, gpp_atomtype *at,

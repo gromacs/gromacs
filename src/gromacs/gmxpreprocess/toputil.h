@@ -45,7 +45,7 @@ struct gpp_atomtype;
 struct t_atoms;
 struct t_blocka;
 struct t_excls;
-struct t_molinfo;
+struct MoleculeInformation;
 struct t_param;
 struct t_params;
 
@@ -65,11 +65,6 @@ void add_param_to_list(t_params *list, t_param *b);
 
 void init_plist(t_params plist[]);
 void done_plist(t_params *plist);
-
-void init_molinfo(t_molinfo *mol);
-
-/* FREE */
-void done_mi(t_molinfo *mi);
 
 /* PRINTING */
 
