@@ -104,16 +104,37 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
-static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
+void MoleculeInformation::initMolInfo()
 {
-    int  i, n;
+    init_plist(plist);
+    init_block(&cgs);
+    init_block(&mols);
+    init_blocka(&excls);
+    init_t_atoms(&atoms, 0, FALSE);
+}
 
-    n = 0;
+void MoleculeInformation::partialCleanUp()
+{
+    done_block(&mols);
+    done_plist(plist);
+}
+
+void MoleculeInformation::fullCleanUp()
+{
+    done_atom (&atoms);
+    done_block(&cgs);
+    done_block(&mols);
+    done_plist(plist);
+}
+
+static int rm_interactions(int ifunc, gmx::ArrayRef<MoleculeInformation> mols)
+{
+    int n = 0;
     /* For all the molecule types */
-    for (i = 0; i < nrmols; i++)
+    for (auto &mol : mols)
     {
-        n += mols[i].plist[ifunc].nr;
-        mols[i].plist[ifunc].nr = 0;
+        n                  += mol.plist[ifunc].nr;
+        mol.plist[ifunc].nr = 0;
     }
     return n;
 }
@@ -406,7 +427,7 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
 
 /* TODO Decide whether this function can be consolidated with
  * gmx_mtop_ftype_count */
-static int nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
+static int nint_ftype(gmx_mtop_t *mtop, gmx::ArrayRef<const MoleculeInformation> mi, int ftype)
 {
     int nint = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
@@ -421,73 +442,63 @@ static int nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
  * in the order of use in the molblocks,
  * unused molecule types are deleted.
  */
-static void renumber_moltypes(gmx_mtop_t *sys,
-                              int *nmolinfo, t_molinfo **molinfo)
+static void renumber_moltypes(gmx_mtop_t                       *sys,
+                              std::vector<MoleculeInformation> *molinfo)
 {
-    int       *order, norder;
-    t_molinfo *minew;
 
-    snew(order, *nmolinfo);
-    norder = 0;
+    std::vector<int> order;
     for (gmx_molblock_t &molblock : sys->molblock)
     {
-        int i;
-        for (i = 0; i < norder; i++)
-        {
-            if (order[i] == molblock.type)
-            {
-                break;
-            }
-        }
-        if (i == norder)
+        const auto found = std::find_if(order.begin(), order.end(),
+                                        [&molblock](const auto &entry)
+                                        { return molblock.type == entry; });
+        if (found == order.end())
         {
             /* This type did not occur yet, add it */
-            order[norder] = molblock.type;
-            /* Renumber the moltype in the topology */
-            norder++;
-        }
-        molblock.type = i;
-    }
-
-    /* We still need to reorder the molinfo structs */
-    snew(minew, norder);
-    for (int mi = 0; mi < *nmolinfo; mi++)
-    {
-        int i;
-        for (i = 0; i < norder; i++)
-        {
-            if (order[i] == mi)
-            {
-                break;
-            }
-        }
-        if (i == norder)
-        {
-            done_mi(&(*molinfo)[mi]);
+            order.push_back(molblock.type);
+            molblock.type = order.size() - 1;
         }
         else
         {
-            minew[i] = (*molinfo)[mi];
+            molblock.type = std::distance(order.begin(), found);
         }
     }
-    sfree(order);
-    sfree(*molinfo);
 
-    *nmolinfo = norder;
+    /* We still need to reorder the molinfo structs */
+    std::vector<MoleculeInformation> minew(order.size());
+    int index = 0;
+    for (auto &mi : *molinfo)
+    {
+        const auto found = std::find(order.begin(), order.end(), index);
+        if (found != order.end())
+        {
+            int pos = std::distance(order.begin(), found);
+            minew[pos] = mi;
+        }
+        else
+        {
+            // Need to manually clean up memory ....
+            mi.fullCleanUp();
+        }
+        index++;
+    }
+
     *molinfo  = minew;
 }
 
-static void molinfo2mtop(int nmi, t_molinfo *mi, gmx_mtop_t *mtop)
+static void molinfo2mtop(gmx::ArrayRef<const MoleculeInformation> mi, gmx_mtop_t *mtop)
 {
-    mtop->moltype.resize(nmi);
-    for (int m = 0; m < nmi; m++)
+    mtop->moltype.resize(mi.size());
+    int pos = 0;
+    for (const auto &mol : mi)
     {
-        gmx_moltype_t &molt = mtop->moltype[m];
-        molt.name           = mi[m].name;
-        molt.atoms          = mi[m].atoms;
+        gmx_moltype_t &molt = mtop->moltype[pos];
+        molt.name           = mol.name;
+        molt.atoms          = mol.atoms;
         /* ilists are copied later */
-        molt.cgs            = mi[m].cgs;
-        molt.excls          = mi[m].excls;
+        molt.cgs            = mol.cgs;
+        molt.excls          = mol.excls;
+        pos++;
     }
 }
 
@@ -496,23 +507,23 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
            bool bGenVel, bool bVerbose, t_state *state,
            gpp_atomtype *atype, gmx_mtop_t *sys,
-           int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
+           std::vector<MoleculeInformation> *mi,
+           std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
            t_params plist[],
            int *comb, double *reppow, real *fudgeQQ,
            gmx_bool bMorse,
            warninp *wi)
 {
-    t_molinfo                  *molinfo = nullptr;
-    std::vector<gmx_molblock_t> molblock;
-    int                         i, nrmols, nmismatch;
-    bool                        ffParametrizedWithHBondConstraints;
-    char                        buf[STRLEN];
-    char                        warn_buf[STRLEN];
+    std::vector<gmx_molblock_t>      molblock;
+    int                              i, nrmols, nmismatch;
+    bool                             ffParametrizedWithHBondConstraints;
+    char                             buf[STRLEN];
+    char                             warn_buf[STRLEN];
 
     /* TOPOLOGY processing */
     sys->name = do_top(bVerbose, topfile, topppfile, opts, bZero, &(sys->symtab),
                        plist, comb, reppow, fudgeQQ,
-                       atype, &nrmols, &molinfo, intermolecular_interactions,
+                       atype, &nrmols, mi, intermolecular_interactions,
                        ir,
                        &molblock,
                        &ffParametrizedWithHBondConstraints,
@@ -534,23 +545,23 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             /* Add a new molblock to the topology */
             sys->molblock.push_back(molb);
         }
-        sys->natoms += molb.nmol*molinfo[sys->molblock.back().type].atoms.nr;
+        sys->natoms += molb.nmol*(*mi)[sys->molblock.back().type].atoms.nr;
     }
     if (sys->molblock.empty())
     {
         gmx_fatal(FARGS, "No molecules were defined in the system");
     }
 
-    renumber_moltypes(sys, &nrmols, &molinfo);
+    renumber_moltypes(sys, mi);
 
     if (bMorse)
     {
-        convert_harmonics(nrmols, molinfo, atype);
+        convert_harmonics(*mi, atype);
     }
 
     if (ir->eDisre == edrNone)
     {
-        i = rm_interactions(F_DISRES, nrmols, molinfo);
+        i = rm_interactions(F_DISRES, *mi);
         if (i > 0)
         {
             set_warning_line(wi, "unknown", -1);
@@ -560,7 +571,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     }
     if (!opts->bOrire)
     {
-        i = rm_interactions(F_ORIRES, nrmols, molinfo);
+        i = rm_interactions(F_ORIRES, *mi);
         if (i > 0)
         {
             set_warning_line(wi, "unknown", -1);
@@ -570,7 +581,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     }
 
     /* Copy structures from msys to sys */
-    molinfo2mtop(nrmols, molinfo, sys);
+    molinfo2mtop(*mi, sys);
 
     gmx_mtop_finalize(sys);
 
@@ -654,9 +665,9 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "double-checking input for internal consistency...\n");
     }
     {
-        bool bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
-                                          nint_ftype(sys, molinfo, F_CONSTRNC));
-        bool bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
+        bool bHasNormalConstraints = 0 < (nint_ftype(sys, *mi, F_CONSTR) +
+                                          nint_ftype(sys, *mi, F_CONSTRNC));
+        bool bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, *mi, F_SETTLE);
         double_check(ir, state->box,
                      bHasNormalConstraints,
                      bHasAnyConstraints,
@@ -686,9 +697,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         stop_cm(stdout, state->natoms, mass, state->x.rvec_array(), state->v.rvec_array());
         sfree(mass);
     }
-
-    *nmi = nrmols;
-    *mi  = molinfo;
 }
 
 static void copy_state(const char *slog, t_trxframe *fr,
@@ -811,7 +819,9 @@ static void cont_status(const char *slog, const char *ener,
     }
 }
 
-static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
+static void read_posres(gmx_mtop_t *mtop,
+                        gmx::ArrayRef<const MoleculeInformation> molinfo,
+                        gmx_bool bTopB,
                         const char *fn,
                         int rc_scaling, int ePBC,
                         rvec com,
@@ -826,7 +836,6 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     int                 natoms, npbcdim = 0;
     char                warn_buf[STRLEN];
     int                 a, i, ai, j, k, nat_molb;
-    t_params           *pr, *prfb;
     t_atom             *atom;
 
     snew(top, 1);
@@ -861,8 +870,8 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     for (gmx_molblock_t &molb : mtop->molblock)
     {
         nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.nr;
-        pr       = &(molinfo[molb.type].plist[F_POSRES]);
-        prfb     = &(molinfo[molb.type].plist[F_FBPOSRES]);
+        const t_params *pr   = &(molinfo[molb.type].plist[F_POSRES]);
+        const t_params *prfb = &(molinfo[molb.type].plist[F_FBPOSRES]);
         if (pr->nr > 0 || prfb->nr > 0)
         {
             atom = mtop->moltype[molb.type].atoms.atom;
@@ -988,13 +997,14 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     sfree(hadAtom);
 }
 
-static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
+static void gen_posres(gmx_mtop_t *mtop,
+                       gmx::ArrayRef<const MoleculeInformation> mi,
                        const char *fnA, const char *fnB,
                        int rc_scaling, int ePBC,
                        rvec com, rvec comB,
                        warninp *wi)
 {
-    read_posres  (mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
+    read_posres(mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
     /* It is safer to simply read the b-state posres rather than trying
      * to be smart and copy the positions.
      */
@@ -1022,7 +1032,7 @@ static void set_wall_atomtype(gpp_atomtype *at, t_gromppopts *opts,
     }
 }
 
-static int nrdf_internal(t_atoms *atoms)
+static int nrdf_internal(const t_atoms *atoms)
 {
     int i, nmass, nrdf;
 
@@ -1192,17 +1202,18 @@ static void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
 }
 
 
-static int count_constraints(const gmx_mtop_t *mtop, t_molinfo *mi, warninp *wi)
+static int count_constraints(const gmx_mtop_t                        *mtop,
+                             gmx::ArrayRef<const MoleculeInformation> mi,
+                             warninp                                 *wi)
 {
     int             count, count_mol, i;
-    t_params       *plist;
     char            buf[STRLEN];
 
     count = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         count_mol = 0;
-        plist     = mi[molb.type].plist;
+        const t_params *plist = mi[molb.type].plist;
 
         for (i = 0; i < F_NRE; i++)
         {
@@ -1580,7 +1591,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
 
 int gmx_grompp(int argc, char *argv[])
 {
-    const char            *desc[] = {
+    const char                          *desc[] = {
         "[THISMODULE] (the gromacs preprocessor)",
         "reads a molecular topology file, checks the validity of the",
         "file, expands the topology from a molecular description to an atomic",
@@ -1678,24 +1689,24 @@ int gmx_grompp(int argc, char *argv[])
         "interpret the output messages before attempting to bypass them with",
         "this option."
     };
-    t_gromppopts          *opts;
-    int                    nmi;
-    t_molinfo             *mi, *intermolecular_interactions;
-    gpp_atomtype          *atype;
-    int                    nvsite, comb;
-    t_params              *plist;
-    real                   fudgeQQ;
-    double                 reppow;
-    const char            *mdparin;
-    int                    ntype;
-    bool                   bNeedVel, bGenVel;
-    gmx_bool               have_atomnumber;
-    gmx_output_env_t      *oenv;
-    gmx_bool               bVerbose = FALSE;
-    warninp               *wi;
-    char                   warn_buf[STRLEN];
+    t_gromppopts                        *opts;
+    std::vector<MoleculeInformation>     mi;
+    std::unique_ptr<MoleculeInformation> intermolecular_interactions;
+    gpp_atomtype                        *atype;
+    int                                  nvsite, comb;
+    t_params                            *plist;
+    real                                 fudgeQQ;
+    double                               reppow;
+    const char                          *mdparin;
+    int                                  ntype;
+    bool                                 bNeedVel, bGenVel;
+    gmx_bool                             have_atomnumber;
+    gmx_output_env_t                    *oenv;
+    gmx_bool                             bVerbose = FALSE;
+    warninp                             *wi;
+    char                                 warn_buf[STRLEN];
 
-    t_filenm               fnm[] = {
+    t_filenm                             fnm[] = {
         { efMDP, nullptr,  nullptr,        ffREAD  },
         { efMDP, "-po", "mdout",     ffWRITE },
         { efSTX, "-c",  nullptr,        ffREAD  },
@@ -1806,7 +1817,7 @@ int gmx_grompp(int argc, char *argv[])
     t_state state;
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
                opts, ir, bZero, bGenVel, bVerbose, &state,
-               atype, &sys, &nmi, &mi, &intermolecular_interactions,
+               atype, &sys, &mi, &intermolecular_interactions,
                plist, &comb, &reppow, &fudgeQQ,
                opts->bMorse,
                wi);
@@ -1842,7 +1853,7 @@ int gmx_grompp(int argc, char *argv[])
         gmx_mtop_remove_chargegroups(&sys);
     }
 
-    if (count_constraints(&sys, mi, wi) && (ir->eConstrAlg == econtSHAKE))
+    if ((count_constraints(&sys, mi, wi) != 0) && (ir->eConstrAlg == econtSHAKE))
     {
         if (ir->eI == eiCG || ir->eI == eiLBFGS)
         {
@@ -1976,7 +1987,7 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     ntype = get_atomtype_ntypes(atype);
-    convert_params(ntype, plist, mi, intermolecular_interactions,
+    convert_params(ntype, plist, mi, intermolecular_interactions.get(),
                    comb, reppow, fudgeQQ, &sys);
 
     if (debug)
@@ -2314,14 +2325,12 @@ int gmx_grompp(int argc, char *argv[])
     sfree(opts);
     done_plist(plist);
     sfree(plist);
-    for (int i = 0; i < nmi; i++)
+    for (auto &mol : mi)
     {
         // Some of the contents of molinfo have been stolen, so
-        // done_mi can't be called.
-        done_block(&mi[i].mols);
-        done_plist(mi[i].plist);
+        // fullCleanUp can't be called.
+        mol.partialCleanUp();
     }
-    sfree(mi);
     done_atomtype(atype);
     done_inputrec_strings();
     output_env_done(oenv);

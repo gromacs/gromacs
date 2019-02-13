@@ -94,17 +94,56 @@ struct t_excls
     int           *e;       /* The excluded atoms                   */
 };
 
-struct t_molinfo
+
+/*! \libinternal \brief
+ * Holds the molecule information during preprocessing.
+ */
+struct MoleculeInformation
 {
-    char            **name;
-    int               nrexcl;       /* Number of exclusions per atom	*/
-    bool              excl_set;     /* Have exclusions been generated?	*/
-    bool              bProcessed;   /* Has the mol been processed           */
-    t_atoms           atoms;        /* Atoms                                */
-    t_block           cgs;          /* Charge groups                        */
-    t_block           mols;         /* Molecules                            */
-    t_blocka          excls;        /* Exclusions                           */
-    t_params          plist[F_NRE]; /* Parameters in old style              */
+    //! Name of the molecule.
+    char            **name = nullptr;
+    //!Number of exclusions per atom.
+    int               nrexcl = 0;
+    //! Have exclusions been generated?.
+    bool              excl_set = false;
+    //! Has the mol been processed.
+    bool              bProcessed = false;
+    //! Atoms in the moelcule.
+    t_atoms           atoms;
+    //! Charge groups in the molecule
+    t_block           cgs;
+    //! Molecules separated in datastructure.
+    t_block           mols;
+    //! Exclusions in the molecule.
+    t_blocka          excls;
+    //! Parameters in old style.
+    t_params          plist[F_NRE];
+
+    /*! \brief
+     * Initializer.
+     *
+     * This should be removed as soon as the underlying datastructures
+     * have been cleaned up to use proper initialization and can be copy
+     * constructed.
+     */
+    void initMolInfo();
+
+    /*! \brief
+     * Partial clean up function.
+     *
+     * Should be removed once this datastructure actually owns all its own memory and
+     * elements of it are not stolen by other structures and properly copy constructed
+     * or moved.
+     * Cleans up the mols and plist datastructures but not cgs and excls.
+     */
+    void partialCleanUp();
+
+    /*! \brief
+     * Full clean up function.
+     *
+     * Should be removed once the destructor can always do this.
+     */
+    void fullCleanUp();
 };
 
 struct t_mols
