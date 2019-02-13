@@ -3041,28 +3041,29 @@ Non-equilibrium MD
 Electric fields
 ^^^^^^^^^^^^^^^
 
-.. mdp:: electric-field-x ; electric-field-y ; electric-field-z
+.. mdp:: electric-field-x
+.. mdp:: electric-field-y
+.. mdp:: electric-field-z
 
    Here you can specify an electric field that optionally can be
    alternating and pulsed. The general expression for the field
    has the form of a gaussian laser pulse:
 
-   E(t) = E0 exp ( -(t-t0)\ :sup:`2`/(2 sigma\ :sup:`2`) ) cos(omega (t-t0))
+   .. math:: E(t) = E_0 \exp\left[-\frac{(t-t_0)^2}{2\sigma^2}\right]\cos\left[\omega (t-t_0)\right]
 
    For example, the four parameters for direction x are set in the
-   three fields of :mdp:`electric-field-x` (and similar for y and z)
-   like
+   fields of :mdp:`electric-field-x` (and similar for ``electric-field-y``
+   and ``electric-field-z``) like
 
-   electric-field-x  = E0 omega t0 sigma
+   ``electric-field-x  = E0 omega t0 sigma``
 
-   In the special case that sigma = 0, the exponential term is omitted
-   and only the cosine term is used. If also omega = 0 a static
+   with units (respectively) V nm\ :sup:`-1`, ps\ :sup:`-1`, ps, ps.
+
+   In the special case that ``sigma = 0``, the exponential term is omitted
+   and only the cosine term is used. If also ``omega = 0`` a static
    electric field is applied.
 
-   More details in Carl Caleman and David van der Spoel: Picosecond
-   Melting of Ice by an Infrared Laser Pulse - A Simulation Study.
-   Angew. Chem. Intl. Ed. 47 pp. 14 17-1420 (2008)
-
+   Read more at :ref:`electric fields` and in ref. \ :ref:`146 <refCaleman2008a>`.
 
 
 Mixed quantum/classical molecular dynamics

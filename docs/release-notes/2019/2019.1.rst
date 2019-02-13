@@ -98,3 +98,6 @@ A known unsupported 32-bit platform is ARMv7.
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Improved docs for applying electric fields
+------------------------------------------------
