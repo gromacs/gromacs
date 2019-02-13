@@ -195,7 +195,7 @@
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
 set(GMX_VERSION_MAJOR 2019)
-set(GMX_VERSION_PATCH 1)
+set(GMX_VERSION_PATCH 2)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
@@ -257,8 +257,8 @@ endif()
 # from Zenodo for the manual and source code
 # Has to be done by hand before every final release
 # Use force to override anything given as a cmake command line input
-set(GMX_MANUAL_DOI "10.5281/zenodo.2564761" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
-set(GMX_SOURCE_DOI "10.5281/zenodo.2564764" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
+set(GMX_MANUAL_DOI "" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
+set(GMX_SOURCE_DOI "" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
 
 #####################################################################
 # git version info management

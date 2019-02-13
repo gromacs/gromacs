@@ -20,6 +20,13 @@ release is made, the 2018 series will no longer be maintained.
 Where issue numbers are reported in these release notes, more details
 can be found at https://redmine.gromacs.org at that issue number.
 
+
+.. PSA
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on redmine, without the
+   a space between the colon and number!
+
 |Gromacs| 2019 series
 ---------------------
 
@@ -29,6 +36,7 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
+   2019/2019.2
    2019/2019.1
 
 Major release
