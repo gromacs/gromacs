@@ -63,6 +63,7 @@
 #include "mymol_low.h"
 #include "optparam.h"
 #include "poldata.h"
+#include "poldata_tables.h"
 #include "poldata_xml.h"
 #include "tuning_utility.h"
 
@@ -827,7 +828,8 @@ int alex_tune_eem(int argc, char *argv[])
         { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
         { efXVG, "-anisopol",  "anisopol_corr", ffWRITE },
         { efXVG, "-conv",      "param-conv",    ffWRITE },
-        { efXVG, "-epot",      "param-epot",    ffWRITE }
+        { efXVG, "-epot",      "param-epot",    ffWRITE },
+        { efTEX, "-latex",     "eemprop",       ffWRITE }
     };
 
     const int                   NFILE         = asize(fnm);
@@ -846,6 +848,7 @@ int alex_tune_eem(int argc, char *argv[])
     gmx_bool                    bRandom       = false;
     gmx_bool                    bcompress     = false;
     gmx_bool                    bZPE          = false;
+    gmx_bool                    bPrintTable   = false;
     gmx_bool                    bZero         = true;
     gmx_bool                    bOptimize     = true;
 
@@ -876,6 +879,8 @@ int alex_tune_eem(int argc, char *argv[])
           "Maximum angle to be considered a planar A-B-C/B-C-D torsion" },
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML file" },
+        { "-btex", FALSE, etBOOL, {&bPrintTable},
+          "[HIDDEN]Print the latex table for the Gaussian and Slater exponents" },
         { "-factor", FALSE, etREAL, {&factor},
           "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
         { "-efield",  FALSE, etREAL, {&efield},
@@ -1014,6 +1019,13 @@ int alex_tune_eem(int argc, char *argv[])
 
         writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
         gmx_ffclose(fp);
+        if (bPrintTable)
+        {
+            FILE        *tp;
+            tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
+            alexandria_poldata_eemprops_table(tp, opt.poldata(), opt.iChargeDistributionModel());
+            gmx_ffclose(tp);
+        }
     }
     return 0;
 }

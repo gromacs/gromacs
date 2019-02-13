@@ -56,19 +56,19 @@ static void eemprops_zeta_header(LongTable &lt)
     char             longbuf[STRLEN];
     CompositionSpecs cs;
 
-    lt.setColumns("lcc");
+    lt.setColumns("lccc");
 
-    snprintf(longbuf, STRLEN, "The optimized exponent for the polarizable Gaussian and Slater $s$-type orbitals represented by $\\beta$ and $\\zeta$ in nm$^{-1}$, rescpectively. Slater 3s orbital has been optimized rather than the valence Slater $s$-orbital for Bromine and Iodine ({\\it See} THEORY).");
+    snprintf(longbuf, STRLEN, "The optimized parameters for the Alexandria charge model. The exponent of the $1s$-Gaussian density function is represented by $\\beta$ in nm$^{-1}$. The atomic electronegativity and absolute hardness are represented by $\\chi$ and $\\eta$, respectively, in eV.");
     lt.setCaption(longbuf);
-    lt.setLabel("orbitalexpoenent");
-    snprintf(longbuf, STRLEN, "Polarizability Type & $\\beta$($\\sigma$) & $\\zeta$($\\sigma$)");
+    lt.setLabel("eemprop");
+    snprintf(longbuf, STRLEN, "Alexandria Type & $\\chi$($\\sigma$) & $\\eta$($\\sigma$) & $\\beta$($\\sigma$)");
     lt.addHeadLine(longbuf);
     lt.printHeader();
 }
 
-
-void alexandria_poldata_eemprops_zeta_table(FILE           *fp,
-                                            const Poldata  &pd)
+void alexandria_poldata_eemprops_table(FILE                   *fp,
+                                       const Poldata          &pd,
+                                       ChargeDistributionModel qdist)
 {
     char       longbuf[STRLEN];
     LongTable  lt(fp, false, nullptr);
@@ -77,10 +77,9 @@ void alexandria_poldata_eemprops_zeta_table(FILE           *fp,
     auto ztypes = pd.ztype_names();
     for (auto ztp = ztypes.begin(); ztp < ztypes.end(); ztp++)
     {
-        auto AXpg = pd.ztype2Eem(eqdAXpg, ztp->c_str());
-        auto AXps = pd.ztype2Eem(eqdAXps, ztp->c_str());
-
-        if (AXpg != pd.EndEemprops() && AXps != pd.EndEemprops())
+        auto qDist  = pd.ztype2Eem(qdist,  ztp->c_str());
+        
+        if (qDist != pd.EndEemprops())
         {
             size_t      pos   = ztp->find("z_");
             std::string ztype = ztp->c_str();
@@ -91,30 +90,17 @@ void alexandria_poldata_eemprops_zeta_table(FILE           *fp,
 
             snprintf(longbuf, STRLEN, "%s & %0.2f (%0.2f) & %0.2f (%0.2f)",
                      ztype.c_str(),
-                     AXpg->getZeta(1),
-                     atof(gmx::splitString(AXpg->getZeta_sigma()).back().c_str()) + 0.005,
-                     AXps->getZeta(1),
-                     atof(gmx::splitString(AXps->getZeta_sigma()).back().c_str()) + 0.005);
+                     qDist->getChi0(),
+                     qDist->getChi0_sigma() + 0.005,
+                     qDist->getJ0(),
+                     qDist->getJ0_sigma() + 0.005,
+                     qDist->getZeta(1),
+                     atof(gmx::splitString(qDist->getZeta_sigma()).back().c_str()) + 0.005);
             lt.printLine(longbuf);
         }
     }
     lt.printFooter();
     fflush(fp);
-}
-
-void alexandria_poldata_eemprops_table(FILE                *fp,
-                                       bool                 bzeta,
-                                       bool                 bchiJ00,
-                                       const Poldata       &pd)
-{
-    if (bzeta)
-    {
-        alexandria_poldata_eemprops_zeta_table(fp, pd);
-    }
-    else if (bchiJ00)
-    {
-        //alexandria_poldata_eemprops_chiJ00_table(fp, pd);
-    }
 }
 
 } //namespace

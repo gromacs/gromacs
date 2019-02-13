@@ -45,13 +45,10 @@ namespace alexandria
  * \param[out] fp   File pointer to write to
  * \param[in]  pd   Force field data
  */
-void alexandria_poldata_eemprops_zeta_table(FILE          *fp,
-                                            const Poldata  &pd);
 
-void alexandria_poldata_eemprops_table(FILE               *fp, 
-                                       bool                bzeta,
-                                       bool                bchiJ00,
-                                       const Poldata       &pd);                                            
+void alexandria_poldata_eemprops_table(FILE                       *fp, 
+                                       const Poldata              &pd,
+                                       ChargeDistributionModel    qdist);                                            
 } //namespace
 
 #endif
