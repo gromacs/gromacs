@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -356,7 +356,9 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
     if (pmeOnGpu)
     {
         GMX_RELEASE_ASSERT((EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)) &&
-                           pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, *mtop, nullptr),
+                           pme_gpu_supports_build(nullptr) &&
+                           pme_gpu_supports_hardware(*hwinfo, nullptr) &&
+                           pme_gpu_supports_input(*inputrec, *mtop, nullptr),
                            "PME can't be on GPUs unless we are using PME");
 
         // PME on GPUs supports a single PME rank with PP running on the same or few other ranks.
