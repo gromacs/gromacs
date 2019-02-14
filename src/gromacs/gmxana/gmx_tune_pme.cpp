@@ -2169,7 +2169,7 @@ int gmx_tune_pme(int argc, char *argv[])
         { efLOG, "-err",    "bencherr", ffWRITE },
         { efTPR, "-so",     "tuned",    ffWRITE },
         /* mdrun: */
-        { efTPR, nullptr,      nullptr,       ffREAD },
+        { efTPR, "-s",      nullptr,       ffREAD },
         { efTRN, "-o",      nullptr,       ffWRITE },
         { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
         { efCPT, "-cpi",    nullptr,       ffOPTRD },
