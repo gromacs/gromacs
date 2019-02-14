@@ -794,10 +794,9 @@ int gmx_editconf(int argc, char *argv[])
                   " when using the -mead option\n");
     }
 
-    t_topology *top_tmp;
-    snew(top_tmp, 1);
-    read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
-    t_atoms  &atoms = top_tmp->atoms;
+    t_topology top_tmp;
+    read_tps_conf(infile, &top_tmp, &ePBC, &x, &v, box, FALSE);
+    t_atoms   &atoms = top_tmp.atoms;
     natom = atoms.nr;
     if (atoms.pdbinfo == nullptr)
     {
@@ -1267,12 +1266,12 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
+            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, *top_tmp.name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
         }
     }
     else
@@ -1322,7 +1321,7 @@ int gmx_editconf(int argc, char *argv[])
             {
                 index[i] = i;
             }
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
+            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
                                   TRUE, outftp == efPQR);
             sfree(index);
             if (bLegend)
@@ -1338,10 +1337,20 @@ int gmx_editconf(int argc, char *argv[])
         }
         else
         {
-            write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
+            write_sto_conf(outfile, *top_tmp.name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
         }
     }
+    done_top(&top_tmp);
+    if (x)
+    {
+        sfree(x);
+    }
+    if (v)
+    {
+        sfree(v);
+    }
     do_view(oenv, outfile, nullptr);
+    output_env_done(oenv);
 
     return 0;
 }
