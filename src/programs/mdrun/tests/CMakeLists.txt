@@ -58,6 +58,7 @@ gmx_add_gtest_executable(
     initialconstraints.cpp
     interactiveMD.cpp
     pmetest.cpp
+    simulator.cpp
     swapcoords.cpp
     tabulated_bonded_interactions.cpp
     termination.cpp
