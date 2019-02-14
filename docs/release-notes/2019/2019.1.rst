@@ -81,6 +81,13 @@ again be used even when a .tpr file is not supplied.
 
 :issue:`2847`
 
+Fix tune_pme
+---------------------------------------------------------
+
+The tool did not work due to a file reading error that is fixed now.
+
+:issue:`2827`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
