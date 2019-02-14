@@ -73,6 +73,12 @@ it would only write fixed-width columns.
 :issue:`2824`
 :issue:`2037`
 
+Fix tune_pme
+---------------------------------------------------------
+
+The tool did not work due to a file reading error that is fixed now.
+
+:issue:`2827`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
