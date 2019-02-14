@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,8 @@
 #include <vector>
 
 struct gmx_hw_info_t;
+struct gmx_mtop_t;
+struct t_inputrec;
 
 enum class EmulateGpuNonbonded : bool;
 
@@ -102,7 +104,9 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
  * \param[in]  pmeTarget                 The user's choice for mdrun -pme for where to assign long-ranged PME nonbonded interaction tasks.
  * \param[in]  gpuIdsToUse               The compatible GPUs that the user permitted us to use.
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  canUseGpuForPme           Whether the form of PME chosen can run on a GPU
+ * \param[in]  hardwareInfo              Hardware information
+ * \param[in]  inputrec                  The user input
+ * \param[in]  mtop                      Global system topology
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
  *
@@ -114,7 +118,9 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
                                                TaskTarget              pmeTarget,
                                                const std::vector<int> &gpuIdsToUse,
                                                const std::vector<int> &userGpuTaskAssignment,
-                                               bool                    canUseGpuForPme,
+                                               const gmx_hw_info_t    &hardwareInfo,
+                                               const t_inputrec       &inputrec,
+                                               const gmx_mtop_t       &mtop,
                                                int                     numRanksPerSimulation,
                                                int                     numPmeRanksPerSimulation);
 
@@ -173,7 +179,9 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
  * \param[in]  pmeTarget                 The user's choice for mdrun -pme for where to assign long-ranged PME nonbonded interaction tasks.
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  canUseGpuForPme           Whether the form of PME chosen can run on a GPU
+ * \param[in]  hardwareInfo              Hardware information
+ * \param[in]  inputrec                  The user input
+ * \param[in]  mtop                      Global system topology
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
  * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
@@ -185,7 +193,9 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
 bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
                                   TaskTarget              pmeTarget,
                                   const std::vector<int> &userGpuTaskAssignment,
-                                  bool                    canUseGpuForPme,
+                                  const gmx_hw_info_t    &hardwareInfo,
+                                  const t_inputrec       &inputrec,
+                                  const gmx_mtop_t       &mtop,
                                   int                     numRanksPerSimulation,
                                   int                     numPmeRanksPerSimulation,
                                   bool                    gpusWereDetected);
