@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,33 +133,48 @@ static bool
 addMessageIfNotSupported(const std::list<std::string> &errorReasons,
                          std::string                  *error)
 {
-    bool foundErrorReasons = errorReasons.empty();
-    if (!foundErrorReasons && error)
+    bool isSupported = errorReasons.empty();
+    if (!isSupported && error)
     {
         std::string regressionTestMarker = "PME GPU does not support";
         // this prefix is tested for in the regression tests script gmxtest.pl
-        *error = regressionTestMarker + ": " + gmx::joinStrings(errorReasons, "; ") + ".";
+        *error = regressionTestMarker;
+        if (errorReasons.size() == 1)
+        {
+            *error += " " + errorReasons.back();
+        }
+        else
+        {
+            *error += ": " + gmx::joinStrings(errorReasons, "; ");
+        }
+        *error += ".";
     }
-    return foundErrorReasons;
+    return isSupported;
 }
 
-bool pme_gpu_supports_build(const gmx_hw_info_t &hwinfo,
-                            std::string         *error)
+bool pme_gpu_supports_build(std::string *error)
 {
     std::list<std::string> errorReasons;
     if (GMX_DOUBLE)
     {
-        errorReasons.emplace_back("double precision");
+        errorReasons.emplace_back("a double-precision build");
     }
     if (GMX_GPU == GMX_GPU_NONE)
     {
-        errorReasons.emplace_back("non-GPU build of GROMACS");
+        errorReasons.emplace_back("a non-GPU build");
     }
+    return addMessageIfNotSupported(errorReasons, error);
+}
+
+bool pme_gpu_supports_hardware(const gmx_hw_info_t &hwinfo,
+                               std::string         *error)
+{
+    std::list<std::string> errorReasons;
     if (GMX_GPU == GMX_GPU_OPENCL)
     {
         if (!areAllGpuDevicesFromAmd(hwinfo.gpu_info))
         {
-            errorReasons.emplace_back("only AMD devices are supported");
+            errorReasons.emplace_back("non-AMD devices");
         }
     }
     return addMessageIfNotSupported(errorReasons, error);
