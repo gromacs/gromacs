@@ -84,8 +84,8 @@ static void checkCompiledTargetCompatibility(int                   deviceId,
     if (cudaErrorInvalidDeviceFunction == stat)
     {
         gmx_fatal(FARGS,
-                  "The %s binary does not include support for the CUDA architecture of "
-                  "the GPU ID #%d (compute capability %d.%d) detected during detection. "
+                  "The %s binary does not include support for the CUDA architecture of a "
+                  "detected GPU: %s, ID #%d (compute capability %d.%d). "
                   "By default, GROMACS supports all architectures of compute "
                   "capability >= 3.0, so your GPU "
                   "might be rare, or some architectures were disabled in the build. "
@@ -93,7 +93,7 @@ static void checkCompiledTargetCompatibility(int                   deviceId,
                   "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture. "
                   "To work around this error, use the CUDA_VISIBLE_DEVICES environment"
                   "variable to pass a list of GPUs that excludes the ID %d.",
-                  gmx::getProgramContext().displayName(), deviceId,
+                  gmx::getProgramContext().displayName(), deviceProp.name, deviceId,
                   deviceProp.major, deviceProp.minor, deviceId);
     }
 
