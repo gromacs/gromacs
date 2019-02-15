@@ -166,16 +166,13 @@ bool pme_gpu_supports_build(std::string *error)
     return addMessageIfNotSupported(errorReasons, error);
 }
 
-bool pme_gpu_supports_hardware(const gmx_hw_info_t &hwinfo,
-                               std::string         *error)
+bool pme_gpu_supports_hardware(const gmx_hw_info_t gmx_unused &hwinfo,
+                               std::string                    *error)
 {
     std::list<std::string> errorReasons;
+
     if (GMX_GPU == GMX_GPU_OPENCL)
     {
-        if (!areAllGpuDevicesFromAmd(hwinfo.gpu_info))
-        {
-            errorReasons.emplace_back("non-AMD devices");
-        }
 #ifdef __APPLE__
         errorReasons.emplace_back("Apple OS X operating system");
 #endif

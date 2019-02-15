@@ -1275,14 +1275,12 @@ Limitations in the current OpenCL support of interest to |Gromacs| users:
 - On NVIDIA GPUs the OpenCL kernels achieve much lower performance
   than the equivalent CUDA kernels due to limitations of the NVIDIA OpenCL
   compiler.
-- PME is currently only supported on AMD devices, because of known
-  issues with devices from other vendors
 
 Limitations of interest to |Gromacs| developers:
 
-- The current implementation is not compatible with OpenCL devices that are
-  not using warp/wavefronts or for which the warp/wavefront size is not a
-  multiple of 32
+- The current implementation requires a minimum execution with of 16; kernels
+  compiled for narrower execution width (be it due to hardware requirements or
+  compiler choice) will not be suitable and will trigger a runtime error.
 
 Performance checklist
 ---------------------
