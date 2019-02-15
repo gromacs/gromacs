@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2014,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@ add_custom_target(tests)
 # This is necessary to be able to add separate targets that execute as part
 # of 'make check', but are ensured to be executed after the actual tests.
 add_custom_target(run-ctest
-                  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+                  COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS) --output-on-failure
                   COMMENT "Running all tests"
                   USES_TERMINAL VERBATIM
                   DEPENDS run-physval-sims)
@@ -50,7 +50,7 @@ add_custom_target(check-all DEPENDS run-ctest)
 # "run-ctest-nophys" is an internal target that actually runs the tests analogously to "run-ctest".
 # It runs all tests except the physical validation tests.
 add_custom_target(run-ctest-nophys
-                  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -E physicalvalidationtests
+                  COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS) --output-on-failure -E physicalvalidationtests
                   COMMENT "Running all tests except physical validation"
                   USES_TERMINAL VERBATIM)
 add_dependencies(run-ctest-nophys tests)
@@ -60,13 +60,13 @@ add_custom_target(check DEPENDS run-ctest-nophys)
 # "run-ctest-phys" is an internal target that actually runs the tests analogously to "run-ctest".
 # It only runs the physical validation tests.
 add_custom_target(run-ctest-phys
-                  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R physicalvalidationtests
+                  COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS) --output-on-failure -R physicalvalidationtests
                   COMMENT "Running physical validation tests"
                   USES_TERMINAL VERBATIM
                   DEPENDS run-physval-sims)
 # "run-ctest-phys-analyze" is the equivalent to "run-ctest-phys" not running the physical validation simulations.
 add_custom_target(run-ctest-phys-analyze
-                  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R physicalvalidationtests
+                  COMMAND ${CMAKE_CTEST_COMMAND} $(ARGS) --output-on-failure -R physicalvalidationtests
                   COMMENT "Running physical validation tests"
                   USES_TERMINAL VERBATIM
                   DEPENDS gmx)
