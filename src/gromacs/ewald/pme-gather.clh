@@ -123,12 +123,10 @@ inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
         // Store input force contributions
         sm_forceReduction[elementIndex] = (dimIndex == XX) ? fx : (dimIndex == YY) ? fy : fz;
 
-#if !defined(_AMD_SOURCE_)
-        /* This barrier was not needed in CUDA, nor is it needed on AMD GPUs.
-         * Different OpenCL compilers might have different ideas
-         * about #pragma unroll, though. OpenCL 2 has _attribute__((opencl_unroll_hint)).
-         * #2519
-         */
+#if (warp_size < 48)
+        // sync here when exec width is smaller than the size of the sm_forceReduction
+        // buffer flushed to local mem above (size 3*16) as different warps will consume
+        // the data below.
         barrier(CLK_LOCAL_MEM_FENCE);
 #endif
 
@@ -150,19 +148,27 @@ inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
             const int packedIndex = atomIndexLocal * redStride + splineIndex;
             sm_forceTemp[dimIndex][packedIndex] = sm_forceReduction[elementIndex] + sm_forceReduction[elementIndex + redStride];
         }
+
+        // barrier needed every iteration for <64-wide exec, but
+        // only for the last iteration on AMD
+#if (warp_size < 64)
+        barrier(CLK_LOCAL_MEM_FENCE);
+#endif
     }
 
+#if (warp_size >= 64)
     barrier(CLK_LOCAL_MEM_FENCE);
+#endif
 
     assert ((blockSize / warp_size) >= DIM);
 
     const int warpIndex = lineIndex / warp_size;
     const int dimIndex  = warpIndex;
+    const int sourceIndex = lineIndex % warp_size;
 
     // First 3 warps can now process 1 dimension each
     if (dimIndex < DIM)
     {
-        int sourceIndex = lineIndex % warp_size;
 #pragma unroll
         for (int redStride = minStride >> 1; redStride > 1; redStride >>= 1)
         {
@@ -171,7 +177,12 @@ inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
                 sm_forceTemp[dimIndex][sourceIndex] += sm_forceTemp[dimIndex][sourceIndex + redStride];
             }
         }
-
+#if (warp_size < 64)
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    if (dimIndex < DIM)
+    {
+#endif
         const float n = read_grid_size(realGridSizeFP, dimIndex);
 
         const int   atomIndex = sourceIndex / minStride;

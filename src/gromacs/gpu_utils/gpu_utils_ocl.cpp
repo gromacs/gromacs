@@ -551,7 +551,8 @@ bool areAllGpuDevicesFromAmd(const gmx_gpu_info_t &gpuInfo)
     for (int i = 0; i < gpuInfo.n_dev; ++i)
     {
         if ((gpuInfo.gpu_dev[i].stat == egpuCompatible) &&
-            (gpuInfo.gpu_dev[i].vendor_e != OCL_VENDOR_AMD))
+            (gpuInfo.gpu_dev[i].vendor_e != OCL_VENDOR_AMD) &&
+            (gpuInfo.gpu_dev[i].vendor_e != OCL_VENDOR_NVIDIA))
         {
             result = false;
             break;
