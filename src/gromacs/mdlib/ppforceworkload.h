@@ -68,6 +68,11 @@ class PpForceWorkload
         bool haveGpuBondedWork = false;
         //! Whether this MD step has bonded work to run on he CPU.
         bool haveCpuBondedWork = false;
+        //! Whether this MD step has listed forces bonded work to run on he CPU.
+        bool haveRestraintsWork = false;
+        //! Whether this MD step has listed forces work to run on he CPU.
+        //  Note: currently this is haveCpuBondedWork | haveRestraintWork
+        bool haveCpuListedForceWork = false;
         //! Whether this MD step has special forces on the CPU.
         bool haveSpecialForces = false;
 };
