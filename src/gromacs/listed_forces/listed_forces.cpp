@@ -520,6 +520,7 @@ calc_one_bond(int thread,
 
 } // namespace
 
+
 /*! \brief Compute the bonded part of the listed forces, parallelized over threads
  */
 static void
@@ -589,6 +590,28 @@ calcBondedForces(const t_idef     *idef,
     }
 }
 
+bool havePositionRestraints(const t_idef   *idef,
+                            const t_fcdata *fcd)
+{
+    return
+        ((idef->il[F_POSRES].nr > 0) ||
+         (idef->il[F_FBPOSRES].nr > 0) ||
+         fcd->orires.nr > 0 ||
+         fcd->disres.nres > 0);
+}
+
+bool haveCpuBondeds(const t_forcerec *fr)
+{
+    return fr->bondedThreading->haveBondeds;
+}
+
+bool haveCpuListedForces(const t_forcerec *fr,
+                         const t_idef     *idef,
+                         const t_fcdata   *fcd)
+{
+    return haveCpuBondeds(fr) || havePositionRestraints(idef, fcd);
+}
+
 void calc_listed(const t_commrec             *cr,
                  const gmx_multisim_t *ms,
                  struct gmx_wallcycle        *wcycle,
@@ -621,10 +644,7 @@ void calc_listed(const t_commrec             *cr,
         pbc_null = nullptr;
     }
 
-    if ((idef->il[F_POSRES].nr > 0) ||
-        (idef->il[F_FBPOSRES].nr > 0) ||
-        fcd->orires.nr > 0 ||
-        fcd->disres.nres > 0)
+    if (havePositionRestraints(idef, fcd))
     {
         /* TODO Use of restraints triggers further function calls
            inside the loop over calc_one_bond(), but those are too
@@ -673,7 +693,7 @@ void calc_listed(const t_commrec             *cr,
         wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
     }
 
-    if (bt->haveBondeds)
+    if (haveCpuBondeds(fr))
     {
         wallcycle_sub_start(wcycle, ewcsLISTED);
         /* The dummy array is to have a place to store the dhdl at other values

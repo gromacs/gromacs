@@ -64,6 +64,7 @@
 #include "gromacs/listed_forces/bonded.h"
 #include "gromacs/listed_forces/disre.h"
 #include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/manage_threading.h"
 #include "gromacs/listed_forces/orires.h"
 #include "gromacs/math/arrayrefwithpadding.h"
@@ -760,17 +761,17 @@ static void checkPotentialEnergyValidity(int64_t               step,
 }
 
 /*! \brief Return true if there are special forces computed this step.
- * 
+ *
  * The conditionals exactly correspond to those in computeSpecialForces().
  */
-static bool 
+static bool
 haveSpecialForces(const t_inputrec              *inputrec,
                   ForceProviders                *forceProviders,
                   int                            forceFlags,
-                  gmx_edsam                     *ed)
+                  const gmx_edsam               *ed)
 {
     const bool computeForces = (forceFlags & GMX_FORCE_FORCES) != 0;
-    
+
     if ((computeForces && forceProviders->hasForceProvider()) ||         // forceProviders
         (inputrec->bPull && pull_have_potential(inputrec->pull_work)) || // pull
         inputrec->bRot ||                                                // enforced rotation
@@ -1038,6 +1039,34 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
     }
 }
 
+/*! \brief Set up flags that indicate what type of work is there to compute.
+ *
+ * Currently we only update it at search steps,
+ * but some properties may change more frequently (e.g. virial/non-virial step),
+ * iso this will change.
+ *
+ */
+static void
+setupForceWorkload(gmx::PpForceWorkload *forceWork,
+                   const t_inputrec     *inputrec,
+                   const t_forcerec     *fr,
+                   const gmx_edsam      *ed,
+                   const t_idef         &idef,
+                   const t_fcdata       *fcd,
+                   bool                  bNS,
+                   const int             forceFlags
+                   )
+{
+    if (bNS)
+    {
+        forceWork->haveSpecialForces      = haveSpecialForces(inputrec, fr->forceProviders, forceFlags, ed);
+        forceWork->haveCpuBondedWork      = haveCpuBondeds(fr);
+        forceWork->haveGpuBondedWork      = fr->gpuBonded->haveInteractions();
+        forceWork->haveRestraintsWork     = havePositionRestraints(&idef, fcd);
+        forceWork->haveCpuListedForceWork = haveCpuListedForces(fr, &idef, fcd);
+    }
+}
+
 static void do_force_cutsVERLET(FILE *fplog,
                                 const t_commrec *cr,
                                 const gmx_multisim_t *ms,
@@ -1095,13 +1124,14 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     const bool useGpuXBufOps = (bUseGPU && (GMX_GPU == GMX_GPU_CUDA));
 
-    /* Check what PP force work there is. */
-    if (bNS)
-    {
-        ppForceWorkload->haveSpecialForces = haveSpecialForces(inputrec, fr->forceProviders, flags, ed);
-        // FIXME
-        ppForceWorkload->haveCpuBondedWork = false;
-    }
+    setupForceWorkload(ppForceWorkload,
+                       inputrec,
+                       fr,
+                       ed,
+                       top->idef,
+                       fcd,
+                       bNS,
+                       flags);
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -1264,7 +1294,6 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                                   nbnxn_gpu_get_xq(nbv->gpu_nbv),
                                                                   nbnxn_gpu_get_f(nbv->gpu_nbv),
                                                                   nbnxn_gpu_get_fshift(nbv->gpu_nbv));
-            ppForceWorkload->haveGpuBondedWork = fr->gpuBonded->haveInteractions();
         }
 
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -1840,7 +1869,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                    nbv->gpu_nbv,
                                                    pme_gpu_get_device_f(fr->pmedata),
                                                    f,
-                                                   (ppForceWorkload->haveSpecialForces || ppForceWorkload->haveCpuBondedWork),
+                                                   (ppForceWorkload->haveSpecialForces || ppForceWorkload->haveCpuListedForceWork),
                                                    wcycle);
             }
             else
