@@ -139,7 +139,7 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
         // We use blockSize shared memory elements to read fx, or fy, or fz, and then reduce them to fit into smemPerDim elements
         // which are stored separately (first 2 dimensions only)
         const int         smemPerDim   = warp_size;
-        const int         smemReserved = (DIM - 1) * smemPerDim;
+        const int         smemReserved = (DIM) *smemPerDim;
         __shared__ float  sm_forceReduction[smemReserved + blockSize];
         __shared__ float *sm_forceTemp[DIM];
 
@@ -152,6 +152,8 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
             int elementIndex = smemReserved + lineIndex;
             // Store input force contributions
             sm_forceReduction[elementIndex] = (dimIndex == XX) ? fx : (dimIndex == YY) ? fy : fz;
+            // sync here because two warps write data that the first one consumes below
+            __syncthreads();
             // Reduce to fit into smemPerDim (warp size)
 #pragma unroll
             for (int redStride = atomDataSize / 2; redStride > minStride; redStride >>= 1)
@@ -170,9 +172,8 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
                 const int packedIndex = atomIndexLocal * redStride + splineIndex;
                 sm_forceTemp[dimIndex][packedIndex] = sm_forceReduction[elementIndex] + sm_forceReduction[elementIndex + redStride];
             }
+            __syncthreads();
         }
-
-        __syncthreads();
 
         assert ((blockSize / warp_size) >= DIM);
         //assert (atomsPerBlock <= warp_size);
@@ -193,9 +194,11 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
                 }
             }
 
-            const float n = read_grid_size(realGridSizeFP, dimIndex);
+            gmx_syncwarp();
 
+            const float n         = read_grid_size(realGridSizeFP, dimIndex);
             const int   atomIndex = sourceIndex / minStride;
+
             if (sourceIndex == minStride * atomIndex)
             {
                 *((float *)(&sm_forces[atomIndex]) + dimIndex) = (sm_forceTemp[dimIndex][sourceIndex] + sm_forceTemp[dimIndex][sourceIndex + 1]) * n;
