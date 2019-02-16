@@ -60,8 +60,6 @@ int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type)
         default:
             gmx_incons("unknown kernel type");
     }
-
-    return 0;
 }
 
 int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
