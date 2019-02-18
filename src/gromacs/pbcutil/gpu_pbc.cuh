@@ -40,7 +40,7 @@
 /*! \brief Compact and ordered version of the PBC matrix.
  *
  * The structure contains all the dimensions of the periodic box,
- * arrange in a convinient order. This duplicates the information,
+ * arranged in a convenient order. This duplicates the information,
  * stored in PBC 'box' matrix object. The structure can be set by
  * setPbcAiuc( ... ) routine below.
  *
@@ -63,13 +63,12 @@ struct PbcAiuc
  *
  * Computes the vector dr between points x2 and x1, taking into account the
  * periodic boundary conditions, described in pbcAiuc object. Note that this
- * routine always does the PBC arithmetics for all directions, multiplying the
+ * routine always does the PBC arithmetic for all directions, multiplying the
  * displacements by zeroes if the corresponding direction is not periodic.
  * For triclinic boxes only distances up to half the smallest box diagonal
  * element are guaranteed to be the shortest. This means that distances from
  * 0.5/sqrt(2) times a box vector length (e.g. for a rhombic dodecahedron)
  * can use a more distant periodic image.
- * See src/gromacs/pbcutil/pbc-simd.h for CPU-based SIMD version.
  *
  * \param[in]  pbcAiuc  PBC object.
  * \param[in]  x1       Coordinates of the first point.
@@ -115,13 +114,49 @@ int pbcDxAiuc(const PbcAiuc &pbcAiuc,
     }
 }
 
+/*! \brief Computes the vector between two points taking PBC into account.
+ *
+ * Computes the vector dr between points x2 and x1, taking into account the
+ * periodic boundary conditions, described in pbcAiuc object. Same as above, 
+ * only takes and returns data in float3 format. Does not return shifts.
+ *
+ * \param[in]  pbcAiuc  PBC object.
+ * \param[in]  x1       Coordinates of the first point.
+ * \param[in]  x2       Coordinates of the second point.
+ * \returns    dx       Resulting distance.
+ */
+static __forceinline__ __device__
+float3 pbcDxAiucFloat3(const PbcAiuc &pbcAiuc,
+                       const float3  &x1,
+                       const float3  &x2)
+{
+    float3 dx;
+    dx.x = x1.x - x2.x;
+    dx.y = x1.y - x2.y;
+    dx.z = x1.z - x2.z;
+
+    float shz  = rintf(dx.z*pbcAiuc.invBoxDiagZ);
+    dx.x    -= shz*pbcAiuc.boxZX;
+    dx.y    -= shz*pbcAiuc.boxZY;
+    dx.z    -= shz*pbcAiuc.boxZZ;
+
+    float shy  = rintf(dx.y*pbcAiuc.invBoxDiagY);
+    dx.x    -= shy*pbcAiuc.boxYX;
+    dx.y    -= shy*pbcAiuc.boxYY;
+
+    float shx  = rintf(dx.x*pbcAiuc.invBoxDiagX);
+    dx.x    -= shx*pbcAiuc.boxXX;
+
+    return dx;
+}
+
 /*! \brief Set the PBC data to use in GPU kernels.
  *
  * \param[in]   numPbcDim   Number of periodic dimensions:
  *                          0 - no periodicity.
  *                          1 - periodicity along X-axis.
  *                          2 - periodicity in XY plane.
- *                          3 - periodicity along all dimentions.
+ *                          3 - periodicity along all dimensions.
  * \param[in]   box         Matrix, describing the periodic cell.
  * \param[out]  pbcAiuc     Pointer to PbcAiuc structure to be initialized.
  *
@@ -131,32 +166,32 @@ static void setPbcAiuc(int           numPbcDim,
                        PbcAiuc      *pbcAiuc)
 {
 
-    pbcAiuc->invBoxDiagZ = 0;
-    pbcAiuc->boxZX       = 0;
-    pbcAiuc->boxZY       = 0;
-    pbcAiuc->boxZZ       = 0;
-    pbcAiuc->invBoxDiagY = 0;
-    pbcAiuc->boxYX       = 0;
-    pbcAiuc->boxYY       = 0;
-    pbcAiuc->invBoxDiagX = 0;
-    pbcAiuc->boxXX       = 0;
+    pbcAiuc->invBoxDiagZ = 0.0f;
+    pbcAiuc->boxZX       = 0.0f;
+    pbcAiuc->boxZY       = 0.0f;
+    pbcAiuc->boxZZ       = 0.0f;
+    pbcAiuc->invBoxDiagY = 0.0f;
+    pbcAiuc->boxYX       = 0.0f;
+    pbcAiuc->boxYY       = 0.0f;
+    pbcAiuc->invBoxDiagX = 0.0f;
+    pbcAiuc->boxXX       = 0.0f;
 
     if (numPbcDim > ZZ)
     {
-        pbcAiuc->invBoxDiagZ = 1/box[ZZ][ZZ];
+        pbcAiuc->invBoxDiagZ = 1.0f/box[ZZ][ZZ];
         pbcAiuc->boxZX       = box[ZZ][XX];
         pbcAiuc->boxZY       = box[ZZ][YY];
         pbcAiuc->boxZZ       = box[ZZ][ZZ];
     }
     if (numPbcDim > YY)
     {
-        pbcAiuc->invBoxDiagY = 1/box[YY][YY];
+        pbcAiuc->invBoxDiagY = 1.0f/box[YY][YY];
         pbcAiuc->boxYX       = box[YY][XX];
         pbcAiuc->boxYY       = box[YY][YY];
     }
     if (numPbcDim > XX)
     {
-        pbcAiuc->invBoxDiagX = 1/box[XX][XX];
+        pbcAiuc->invBoxDiagX = 1.0f/box[XX][XX];
         pbcAiuc->boxXX       = box[XX][XX];
     }
 }

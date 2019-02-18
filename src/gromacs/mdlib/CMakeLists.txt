@@ -36,6 +36,7 @@ file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.cpp nbnxn_kernels/simd_2xnn/*.c
 
 if(GMX_USE_CUDA)
     add_subdirectory(nbnxn_cuda)
+    file(GLOB NBNXN_CUDA_SOURCES lincs_cuda.cu)
 endif()
 if(GMX_USE_OPENCL)
     add_subdirectory(nbnxn_ocl)

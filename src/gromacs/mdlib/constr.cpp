@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,6 +83,8 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
+
+#include "gromacs/mdlib/lincs_cuda.h"
 
 namespace gmx
 {
@@ -180,6 +182,8 @@ class Constraints::Impl
         t_nrnb           *nrnb = nullptr;
         //! Tracks wallcycle usage.
         gmx_wallcycle    *wcycle;
+
+        LincsCuda       * lincsCuda;
 };
 
 Constraints::~Constraints() = default;
@@ -446,12 +450,28 @@ Constraints::Impl::apply(bool                  bLog,
 
     if (lincsd != nullptr)
     {
-        bOK = constrain_lincs(bLog || bEner, ir, step, lincsd, md, cr, ms,
-                              x, xprime, min_proj,
-                              box, pbc_null, lambda, dvdlambda,
-                              invdt, v, vir != nullptr, vir_r_m_dr,
-                              econq, nrnb,
-                              maxwarn, &warncount_lincs);
+        if (getenv("GMX_LINCS_GPU") != nullptr)
+        {
+            lincsCuda->setPBC(&pbc);
+            lincsCuda->copyCoordinatesToGpu(x, xprime, v);
+            lincsCuda->apply(v != nullptr,
+                             invdt,
+                             vir != nullptr, vir_r_m_dr);
+            lincsCuda->copyCoordinatesFromGpu(xprime);
+            if (v != nullptr)
+            {
+                lincsCuda->copyVelocitiesFromGpu(v);
+            }
+        }
+        else
+        {
+            bOK = constrain_lincs(bLog || bEner, ir, step, lincsd, md, cr, ms,
+                                  x, xprime, min_proj,
+                                  box, pbc_null, lambda, dvdlambda,
+                                  invdt, v, vir != nullptr, vir_r_m_dr,
+                                  econq, nrnb,
+                                  maxwarn, &warncount_lincs);
+        }
         if (!bOK && maxwarn < INT_MAX)
         {
             if (log != nullptr)
@@ -897,7 +917,14 @@ Constraints::Impl::setConstraints(const gmx_localtop_t &top,
          */
         if (ir.eConstrAlg == econtLINCS)
         {
-            set_lincs(top.idef, md, EI_DYNAMICS(ir.eI), cr, lincsd);
+            if (getenv("GMX_LINCS_GPU") != nullptr)
+            {
+                lincsCuda->set(top.idef, md);
+            }
+            else
+            {
+                set_lincs(top.idef, md, EI_DYNAMICS(ir.eI), cr, lincsd);
+            }
         }
         if (ir.eConstrAlg == econtSHAKE)
         {
@@ -1043,10 +1070,19 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
 
         if (ir.eConstrAlg == econtLINCS)
         {
-            lincsd = init_lincs(log, mtop,
-                                nflexcon, at2con_mt,
-                                DOMAINDECOMP(cr) && cr->dd->splitConstraints,
-                                ir.nLincsIter, ir.nProjOrder);
+            if (getenv("GMX_LINCS_GPU") != nullptr)
+            {
+                fprintf(log, "Initializing LINCS on a GPU for %d atoms\n", mtop.natoms);
+                GMX_ASSERT(nflexcon == 0, "Flexible constraints are not supported by the GPU-based implementation of LINCS.\n");
+                lincsCuda = new LincsCuda(mtop.natoms, ir.nLincsIter, ir.nProjOrder);
+            }
+            else
+            {
+                lincsd = init_lincs(log, mtop,
+                                    nflexcon, at2con_mt,
+                                    DOMAINDECOMP(cr) && cr->dd->splitConstraints,
+                                    ir.nLincsIter, ir.nProjOrder);
+            }
         }
 
         if (ir.eConstrAlg == econtSHAKE)
