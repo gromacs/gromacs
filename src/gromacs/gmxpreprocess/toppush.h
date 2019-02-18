@@ -57,7 +57,7 @@ struct warninp;
 
 namespace gmx
 {
-struct ExclusionBlocks;
+struct ExclusionBlock;
 } // namespace gmx
 
 void generate_nbparams(int comb, int funct, t_params plist[],
@@ -114,7 +114,7 @@ void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char *pline,
 void push_molt(struct t_symtab *symtab, std::vector<MoleculeInformation> *mol, char *line,
                warninp *wi);
 
-void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp *wi);
+void push_excl(char *line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp *wi);
 
 int copy_nbparams(t_nbparam **param, int ftype, t_params *plist, int nr);
 

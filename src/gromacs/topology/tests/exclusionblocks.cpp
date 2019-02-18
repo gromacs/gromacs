@@ -72,24 +72,22 @@ void addGroupToBlocka(t_blocka *b, gmx::ArrayRef<const int> index)
 }
 
 //! Fill ExclusionBlock with data.
-int fillExclusionBlock(ExclusionBlocks *b)
+int fillExclusionBlock(gmx::ArrayRef<ExclusionBlock> b)
 {
-    srenew(b->nra, b->nr);
-    srenew(b->a, b->nr);
     std::vector < std::vector < int>> index = {{0, 4, 7}, {1, 5, 8, 10}, {2, 6, 9, 11, 12}};
     int nra = 0;
-    for (int i = 0; i < b->nr; i++)
+    for (int i = 0; i < b.ssize(); i++)
     {
-        srenew(b->a[i], index[i].size());
-        for (unsigned j = 0; j < index[i].size(); j++)
+        b[i].atomNumber.clear();
+        for (const auto &j : index[i])
         {
-            b->a[i][j] = index[i][j];
+            b[i].atomNumber.push_back(j);
         }
-        b->nra[i] = index[i].size();
-        nra      += b->nra[i];
+        nra      += b[i].nra();
     }
     return nra;
 }
+
 //! Fill the t_blocka with some datastructures
 void fillBlocka(t_blocka *ba)
 {
@@ -98,6 +96,7 @@ void fillBlocka(t_blocka *ba)
     addGroupToBlocka(ba, {{12, 11, 9, 6, 2}});
     addGroupToBlocka(ba, {{10, 8, 5, 1}});
     addGroupToBlocka(ba, {{7, 4, 0}});
+
 }
 
 class ExclusionBlockTest : public test::CommandLineTestBase
@@ -106,7 +105,7 @@ class ExclusionBlockTest : public test::CommandLineTestBase
         ExclusionBlockTest()
         {
             const int natom = 3;
-            initExclusionBlocks(&b_, natom);
+            b_.resize(natom);
             fillBlocka(&ba_);
         }
         ~ExclusionBlockTest() override
@@ -114,30 +113,29 @@ class ExclusionBlockTest : public test::CommandLineTestBase
             cleanUp();
         }
 
-        ExclusionBlocks *b() { return &b_; }
+        gmx::ArrayRef<ExclusionBlock> b() { return b_; }
         t_blocka *ba() { return &ba_; }
 
         void compareBlocks()
         {
-            for (int i = 0; i < b_.nr; i++)
+            for (unsigned i = 0; i < b_.size(); i++)
             {
                 int index  = ba_.index[i];
-                for (int j = 0; j < b_.nra[i]; j++)
+                for (int j = 0; j < b_[i].nra(); j++)
                 {
                     int pos = index + j;
-                    EXPECT_EQ(b_.a[i][j], ba_.a[pos]);
+                    EXPECT_EQ(b_[i].atomNumber[j], ba_.a[pos]);
                 }
             }
         }
     private:
         void cleanUp()
         {
-            doneExclusionBlocks(&b_);
             done_blocka(&ba_);
         }
 
-        t_blocka        ba_;
-        ExclusionBlocks b_;
+        t_blocka                    ba_;
+        std::vector<ExclusionBlock> b_;
 };
 
 TEST_F(ExclusionBlockTest, ConvertBlockAToExclusionBlocks)
@@ -150,7 +148,7 @@ TEST_F(ExclusionBlockTest, ConvertExclusionBlockToBlocka)
 {
     int             nra = fillExclusionBlock(b());
     srenew(ba()->a, nra+1);
-    srenew(ba()->index, b()->nr+1);
+    srenew(ba()->index, b().size()+1);
     exclusionBlocksToBlocka(b(), ba());
     compareBlocks();
 }
