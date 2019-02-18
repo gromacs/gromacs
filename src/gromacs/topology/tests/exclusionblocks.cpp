@@ -79,23 +79,20 @@ static void fillBlocka(t_blocka *b)
     hackBlocka(b, index);
 }
 
-static void initialize(ExclusionBlocks *b, int natom)
+static void initialize(gmx::ArrayRef<ExclusionBlock> b, int natom)
 {
-    initExclusionBlocks(b, natom);
-    EXPECT_EQ(b->nr, natom);
-    ASSERT_NE(b->nra, nullptr);
-    ASSERT_NE(b->a, nullptr);
-    for (int i = 0; i < natom; i++)
+    EXPECT_EQ(b.size(), natom);
+    for (auto &i : b)
     {
-        EXPECT_EQ(b->a[i], nullptr);
+        EXPECT_TRUE(i.atomNumber.empty());
     }
 }
 
 TEST(ExclusionBlockTest, EmptyOnInit)
 {
-    ExclusionBlocks b;
-    int             natom  = 3;
-    initialize(&b, natom);
+    int                         natom  = 3;
+    std::vector<ExclusionBlock> b(natom);
+    initialize(b, natom);
 }
 
 TEST(ExclusionBlockTest, ConvertBlockAToExclusionBlocks)
@@ -103,21 +100,21 @@ TEST(ExclusionBlockTest, ConvertBlockAToExclusionBlocks)
     t_blocka ba;
     fillBlocka(&ba);
 
-    ExclusionBlocks b;
-    int             natom = 3;
-    initialize(&b, natom);
+    int                         natom = 3;
+    std::vector<ExclusionBlock> b(natom);
+    initialize(b, natom);
 
-    ASSERT_EQ(b.nr, ba.nr);
+    ASSERT_EQ(b.size(), ba.nr);
 
-    blockaToExclusionBlocks(&ba, &b);
+    b = blockaToExclusionBlocks(&ba, b);
 
     for (int i = 0; i < natom; i++)
     {
         int index  = ba.index[i];
-        for (int j = 0; j < b.nra[i]; j++)
+        for (int j = 0; j < b[i].nra(); j++)
         {
             int pos = index + j;
-            EXPECT_EQ(b.a[i][j], ba.a[pos]);
+            EXPECT_EQ(b[i].atomNumber[j], ba.a[pos]);
         }
     }
 }
@@ -127,23 +124,23 @@ TEST(ExclusionBlocks, MergeExclusions)
     t_blocka ba;
     fillBlocka(&ba);
 
-    ExclusionBlocks b;
-    int             natom = 3;
-    initialize(&b, natom);
+    int                         natom = 3;
+    std::vector<ExclusionBlock> b(natom);
+    initialize(b, natom);
 
-    ASSERT_EQ(b.nr, ba.nr);
+    ASSERT_EQ(b.size(), ba.nr);
 
-    blockaToExclusionBlocks(&ba, &b);
+    b = blockaToExclusionBlocks(&ba, b);
 
-    mergeExclusions(&ba, &b);
+    b = mergeExclusions(&ba, b);
 
     for (int i = 0; i < natom; i++)
     {
         int index  = ba.index[i];
-        for (int j = 0; j < b.nra[i]; j++)
+        for (int j = 0; j < b[i].nra(); j++)
         {
             int pos = index + j;
-            EXPECT_EQ(b.a[i][j], ba.a[pos]);
+            EXPECT_EQ(b[i].atomNumber[j], ba.a[pos]);
         }
     }
 }
