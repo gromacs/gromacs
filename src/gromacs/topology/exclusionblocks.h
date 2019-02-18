@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,39 +36,43 @@
 #ifndef GMX_TOPOLOGY_EXCLUSIONBLOCKS_H
 #define GMX_TOPOLOGY_EXCLUSIONBLOCKS_H
 
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
+
 struct t_blocka;
 
 namespace gmx
 {
 
-// TODO This should be replaced by a vector of vector<int>
-struct ExclusionBlocks
+/*! \brief
+ * Describes a single interaction exclusion.
+ */
+struct ExclusionBlock
 {
-    int       nr;   /* The number of entries in the list */
-    int       nra2; /* The total number of entries in a */
-    int      *nra;  /* The number of entries in each a array (dim nr) */
-    int     **a;    /* The atom numbers (dim nr) the length of each element */
-    /* i is nra[i] */
+    //! Atom numbers for exclusion.
+    std::vector<int> atomNumber;
+    //! Number of atoms in the exclusion.
+    int              nra() const { return atomNumber.size(); }
 };
-
-//! Initialize the content of the pre-allocated blocks.
-void initExclusionBlocks(ExclusionBlocks *b2, int natom);
-
-//! Deallocate the content of the blocks.
-void doneExclusionBlocks(ExclusionBlocks *b2);
 
 /*! \brief Merge the contents of \c b2 into \c excl.
  *
  * Requires that \c b2 and \c excl describe the same number of
  * particles, if \c b2 describes a non-zero number.
+ *
+ * \returns New ExclusionBlock object.
  */
-void mergeExclusions(t_blocka *excl, ExclusionBlocks *b2);
+std::vector<ExclusionBlock> mergeExclusions(t_blocka *excl, gmx::ArrayRef<const ExclusionBlock> b2);
 
-//! Convert the exclusions expressed in \c b into ExclusionBlock form
-void blockaToExclusionBlocks(t_blocka *b, ExclusionBlocks *b2);
+/*! \brief
+ * Convert the exclusions expressed in \c b into ExclusionBlock form and
+ * append then to \c b2.
+ */
+std::vector<ExclusionBlock> blockaToExclusionBlocks(const t_blocka *b, gmx::ArrayRef<const ExclusionBlock> b2);
 
 //! Convert the exclusions expressed in \c b into t_blocka form
-void exclusionBlocksToBlocka(ExclusionBlocks *b2, t_blocka *b);
+void exclusionBlocksToBlocka(gmx::ArrayRef<const ExclusionBlock> b2, t_blocka *b);
 
 } // namespace gmx
 
