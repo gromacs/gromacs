@@ -405,7 +405,6 @@ static char **read_topol(const char *infile, const char *outfile,
     DirStack                       *DS;
     Directive                       d, newd;
     t_nbparam                     **nbparam, **pair;
-    gmx::ExclusionBlocks           *exclusionBlocks;
     real                            fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
     bool                            bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
     double                          qt = 0, qBt = 0; /* total charge */
@@ -448,7 +447,7 @@ static char **read_topol(const char *infile, const char *outfile,
     d               = Directive::d_invalid; /* first thing should be a directive */
     nbparam         = nullptr;              /* The temporary non-bonded matrix */
     pair            = nullptr;              /* The temporary pair interaction matrix */
-    exclusionBlocks = nullptr;              /* the extra exclusions */
+    std::vector < std::vector < gmx::ExclusionBlock>> exclusionBlocks;
     nb_funct        = F_LJ;
 
     *reppow  = 12.0;      /* Default value for repulsion power     */
@@ -724,8 +723,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
                             push_molt(symtab, molinfo, pline, wi);
                             nmol = molinfo->size();
-                            srenew(exclusionBlocks, nmol);
-                            exclusionBlocks[nmol-1].nr      = 0;
+                            exclusionBlocks.emplace_back();
                             mi0                             = &molinfo->back();
                             mi0->atoms.haveMass             = TRUE;
                             mi0->atoms.haveCharge           = TRUE;
@@ -775,12 +773,13 @@ static char **read_topol(const char *infile, const char *outfile,
                             push_vsitesn(d, mi0->plist, &(mi0->atoms), pline, wi);
                             break;
                         case Directive::d_exclusions:
-                            GMX_ASSERT(exclusionBlocks, "exclusionBlocks must always be allocated so exclusions can be processed");
-                            if (!exclusionBlocks[nmol-1].nr)
+                            GMX_ASSERT(!exclusionBlocks.empty(), "exclusionBlocks must always be allocated so exclusions can be processed");
+                            if (exclusionBlocks.back().empty())
                             {
-                                initExclusionBlocks(&(exclusionBlocks[nmol-1]), mi0->atoms.nr);
+                                GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
+                                exclusionBlocks.back().resize(mi0->atoms.nr);
                             }
-                            push_excl(pline, &(exclusionBlocks[nmol-1]), wi);
+                            push_excl(pline, exclusionBlocks.back(), wi);
                             break;
                         case Directive::d_system:
                             trim(pline);
@@ -822,11 +821,8 @@ static char **read_topol(const char *infile, const char *outfile,
                                               mi0->plist,
                                               &nnb,
                                               &(mi0->excls));
-                                gmx::mergeExclusions(&(mi0->excls), &(exclusionBlocks[whichmol]));
-                                gmx::doneExclusionBlocks(&(exclusionBlocks[whichmol]));
+                                gmx::mergeExclusions(&(mi0->excls), exclusionBlocks[whichmol]);
                                 make_shake(mi0->plist, &mi0->atoms, opts->nshake);
-
-
 
                                 done_nnb(&nnb);
 
@@ -924,11 +920,6 @@ static char **read_topol(const char *infile, const char *outfile,
     }
 
     DS_Done (&DS);
-    for (int i = 0; i < gmx::index(molinfo->size()); i++)
-    {
-        gmx::doneExclusionBlocks(&(exclusionBlocks[i]));
-    }
-    free(exclusionBlocks);
 
     done_bond_atomtype(&batype);
 
@@ -1269,11 +1260,9 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
     /* and merging with the exclusions already present in sys.
      */
 
-    gmx::ExclusionBlocks  qmexcl2;
-    initExclusionBlocks(&qmexcl2, molt->atoms.nr);
-    gmx::blockaToExclusionBlocks(&qmexcl, &qmexcl2);
-    gmx::mergeExclusions(&(molt->excls), &qmexcl2);
-    gmx::doneExclusionBlocks(&qmexcl2);
+    std::vector<gmx::ExclusionBlock> qmexcl2(molt->atoms.nr);
+    gmx::blockaToExclusionBlocks(&qmexcl, qmexcl2);
+    gmx::mergeExclusions(&(molt->excls), qmexcl2);
 
     /* Finally, we also need to get rid of the pair interactions of the
      * classical atom bonded to the boundary QM atoms with the QMatoms,

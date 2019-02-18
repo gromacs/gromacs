@@ -72,24 +72,22 @@ void addGroupToBlocka(t_blocka *b, gmx::ArrayRef<const int> index)
 }
 
 //! Fill ExclusionBlock with data.
-int fillExclusionBlock(ExclusionBlocks *b)
+int fillExclusionBlock(gmx::ArrayRef<ExclusionBlock> b)
 {
-    srenew(b->nra, b->nr);
-    srenew(b->a, b->nr);
     std::vector < std::vector < int>> index = {{0, 4, 7}, {1, 5, 8, 10}, {2, 6, 9, 11, 12}};
     int nra = 0;
-    for (int i = 0; i < b->nr; i++)
+    for (int i = 0; i < b.ssize(); i++)
     {
-        srenew(b->a[i], index[i].size());
-        for (unsigned j = 0; j < index[i].size(); j++)
+        b[i].atomNumber.clear();
+        for (const auto &j : index[i])
         {
-            b->a[i][j] = index[i][j];
+            b[i].atomNumber.push_back(j);
         }
-        b->nra[i] = index[i].size();
-        nra      += b->nra[i];
+        nra      += b[i].nra();
     }
     return nra;
 }
+
 //! Fill the t_blocka with some datastructures
 void makeTestBlockAData(t_blocka *ba)
 {
@@ -110,50 +108,48 @@ class ExclusionBlockTest : public ::testing::Test
         {
             const int natom = 3;
             makeTestBlockAData(&ba_);
-            initExclusionBlocks(&b_, natom);
+            b_.resize(natom);
         }
         ~ExclusionBlockTest() override
         {
-            doneExclusionBlocks(&b_);
             done_blocka(&ba_);
         }
 
         void compareBlocks()
         {
-            for (int i = 0; i < b_.nr; i++)
+            for (unsigned i = 0; i < b_.size(); i++)
             {
                 int index  = ba_.index[i];
-                for (int j = 0; j < b_.nra[i]; j++)
+                for (int j = 0; j < b_[i].nra(); j++)
                 {
                     int pos = index + j;
-                    EXPECT_EQ(b_.a[i][j], ba_.a[pos])<< "Block mismatch at " << i << " , " << j << ".";
+                    EXPECT_EQ(b_[i].atomNumber[j], ba_.a[pos])<< "Block mismatch at " << i << " , " << j << ".";
                 }
             }
         }
     protected:
-
-        t_blocka        ba_;
-        ExclusionBlocks b_;
+        t_blocka                    ba_;
+        std::vector<ExclusionBlock> b_;
 };
 
 TEST_F(ExclusionBlockTest, ConvertBlockAToExclusionBlocks)
 {
-    blockaToExclusionBlocks(&ba_, &b_);
+    blockaToExclusionBlocks(&ba_, b_);
     compareBlocks();
 }
 
 TEST_F(ExclusionBlockTest, ConvertExclusionBlockToBlocka)
 {
-    int             nra = fillExclusionBlock(&b_);
+    int             nra = fillExclusionBlock(b_);
     srenew(ba_.a, nra+1);
-    srenew(ba_.index, b_.nr+1);
-    exclusionBlocksToBlocka(&b_, &ba_);
+    srenew(ba_.index, b_.size()+1);
+    exclusionBlocksToBlocka(b_, &ba_);
     compareBlocks();
 }
 
 TEST_F(ExclusionBlockTest, MergeExclusions)
 {
-    mergeExclusions(&ba_, &b_);
+    mergeExclusions(&ba_, b_);
     compareBlocks();
 }
 

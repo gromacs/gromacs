@@ -1105,13 +1105,11 @@ static void addMimicExclusions(t_blocka                      *excls,
 
     inter_excl.index[inter_excl.nr] = n_q * n_q;
 
-    gmx::ExclusionBlocks qmexcl2 {};
-    initExclusionBlocks(&qmexcl2, excls->nr);
-    gmx::blockaToExclusionBlocks(&inter_excl, &qmexcl2);
+    std::vector<gmx::ExclusionBlock> qmexcl2(excls->nr);
+    gmx::blockaToExclusionBlocks(&inter_excl, qmexcl2);
 
     // Merge the created exclusion list with the existing one
-    gmx::mergeExclusions(excls, &qmexcl2);
-    gmx::doneExclusionBlocks(&qmexcl2);
+    gmx::mergeExclusions(excls, qmexcl2);
 }
 
 static void gen_local_top(const gmx_mtop_t  &mtop,

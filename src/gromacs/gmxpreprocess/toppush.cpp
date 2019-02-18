@@ -2436,7 +2436,7 @@ void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char *pline, int *whichmo
     }
 }
 
-void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp *wi)
+void push_excl(char *line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp *wi)
 {
     int  i, j;
     int  n;
@@ -2447,7 +2447,7 @@ void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp *wi)
         return;
     }
 
-    if ((1 <= i) && (i <= b2->nr))
+    if ((1 <= i) && (i <= b2.ssize()))
     {
         i--;
     }
@@ -2463,19 +2463,17 @@ void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp *wi)
         n = sscanf(line, format, &j);
         if (n == 1)
         {
-            if ((1 <= j) && (j <= b2->nr))
+            if ((1 <= j) && (j <= b2.ssize()))
             {
                 j--;
-                srenew(b2->a[i], ++(b2->nra[i]));
-                b2->a[i][b2->nra[i]-1] = j;
+                b2[i].atomNumber.push_back(j);
                 /* also add the reverse exclusion! */
-                srenew(b2->a[j], ++(b2->nra[j]));
-                b2->a[j][b2->nra[j]-1] = i;
+                b2[j].atomNumber.push_back(i);
                 strcat(base, "%*d");
             }
             else
             {
-                auto message = gmx::formatString("Invalid Atomnr j: %d, b2->nr: %d\n", j, b2->nr);
+                auto message = gmx::formatString("Invalid Atomnr j: %d, b2->nr: %zu\n", j, b2.size());
                 warning_error_and_exit(wi, message, FARGS);
             }
         }
