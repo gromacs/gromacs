@@ -79,65 +79,54 @@ void fillBlocka(t_blocka *b)
     hackBlocka(b, index);
 }
 
-void initialize(ExclusionBlocks *b, int natom)
+void initialize(gmx::ArrayRef<ExclusionBlock> b, int natom)
 {
-    initExclusionBlocks(b, natom);
-    EXPECT_EQ(b->nr, natom);
-    ASSERT_NE(b->nra, nullptr);
-    ASSERT_NE(b->a, nullptr);
-    for (int i = 0; i < natom; i++)
+    EXPECT_EQ(b.size(), natom);
+    for (auto &i : b)
     {
-        EXPECT_EQ(b->a[i], nullptr);
+        EXPECT_TRUE(i.atomNumber.empty());
     }
 }
 
-int fillExclusionBlock(ExclusionBlocks *b)
+int fillExclusionBlock(gmx::ArrayRef<ExclusionBlock> b)
 {
-    snew(b->nra, b->nr);
-    snew(b->a, b->nr);
     std::vector < std::vector < int>> index = {{0, 4, 7}, {1, 5, 8, 10}, {2, 6, 9, 11, 12}};
     int nra = 0;
-    for (int i = 0; i < b->nr; i++)
+    for (int i = 0; i < b.ssize(); i++)
     {
-        snew(b->a[i], index[i].size());
-        for (unsigned j = 0; j < index[i].size(); j++)
+        b[i].atomNumber.clear();
+        for (const auto &j : index[i])
         {
-            b->a[i][j] = index[i][j];
+            b[i].atomNumber.push_back(j);
         }
-        b->nra[i] = index[i].size();
-        nra      += b->nra[i];
+        nra      += b[i].nra();
     }
     return nra;
 }
 
-void compareBlocks(ExclusionBlocks *b, t_blocka *ba)
+void compareBlocks(gmx::ArrayRef<const ExclusionBlock> b, const t_blocka *ba)
 {
-    for (int i = 0; i < b->nr; i++)
+    for (int i = 0; i < b.ssize(); i++)
     {
         int index  = ba->index[i];
-        for (int j = 0; j < b->nra[i]; j++)
+        for (int j = 0; j < b[i].nra(); j++)
         {
             int pos = index + j;
-            EXPECT_EQ(b->a[i][j], ba->a[pos]);
+            EXPECT_EQ(b[i].atomNumber[j], ba->a[pos]);
         }
     }
 }
 
-void cleanUp(ExclusionBlocks *b, t_blocka *ba)
+void cleanUp(t_blocka *ba)
 {
-    doneExclusionBlocks(b);
-    if (ba)
-    {
-        done_blocka(ba);
-    }
+    done_blocka(ba);
 }
 
 TEST(ExclusionBlockTest, EmptyOnInit)
 {
-    ExclusionBlocks b;
-    int             natom  = 3;
-    initialize(&b, natom);
-    cleanUp(&b, nullptr);
+    int                         natom  = 3;
+    std::vector<ExclusionBlock> b(natom);
+    initialize(b, natom);
 }
 
 TEST(ExclusionBlockTest, ConvertBlockAToExclusionBlocks)
@@ -145,35 +134,35 @@ TEST(ExclusionBlockTest, ConvertBlockAToExclusionBlocks)
     t_blocka ba;
     fillBlocka(&ba);
 
-    int             natom = 3;
-    ExclusionBlocks b;
-    initialize(&b, natom);
+    int                         natom = 3;
+    std::vector<ExclusionBlock> b(natom);
+    initialize(b, natom);
 
-    ASSERT_EQ(b.nr, ba.nr);
+    ASSERT_EQ(b.size(), ba.nr);
 
-    blockaToExclusionBlocks(&ba, &b);
+    b = blockaToExclusionBlocks(&ba, b);
 
-    compareBlocks(&b, &ba);
+    compareBlocks(b, &ba);
 
-    cleanUp(&b, &ba);
+    cleanUp(&ba);
 }
 
 TEST(ExclusionBlockTest, ConvertExclusionBlockToBlocka)
 {
-    int             natom = 3;
-    ExclusionBlocks b;
-    initialize(&b, natom);
-    int             nra = fillExclusionBlock(&b);
+    int                         natom = 3;
+    std::vector<ExclusionBlock> b(natom);
+    initialize(b, natom);
+    int                         nra = fillExclusionBlock(b);
 
-    t_blocka        ba;
+    t_blocka                    ba;
     init_blocka(&ba);
     snew(ba.a, nra+1);
-    snew(ba.index, b.nr);
-    exclusionBlocksToBlocka(&b, &ba);
+    snew(ba.index, b.size());
+    exclusionBlocksToBlocka(b, &ba);
 
-    compareBlocks(&b, &ba);
+    compareBlocks(b, &ba);
 
-    cleanUp(&b, &ba);
+    cleanUp(&ba);
 }
 
 TEST(ExclusionBlockTest, MergeExclusions)
@@ -181,17 +170,17 @@ TEST(ExclusionBlockTest, MergeExclusions)
     t_blocka ba;
     fillBlocka(&ba);
 
-    int             natom = 3;
-    ExclusionBlocks b;
-    initialize(&b, natom);
+    int                         natom = 3;
+    std::vector<ExclusionBlock> b(natom);
+    initialize(b, natom);
 
-    ASSERT_EQ(b.nr, ba.nr);
+    ASSERT_EQ(b.size(), ba.nr);
 
-    mergeExclusions(&ba, &b);
+    b = mergeExclusions(&ba, b);
 
-    compareBlocks(&b, &ba);
+    compareBlocks(b, &ba);
 
-    cleanUp(&b, &ba);
+    cleanUp(&ba);
 }
 
 }  // namespace
