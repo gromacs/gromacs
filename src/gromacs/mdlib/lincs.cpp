@@ -90,20 +90,6 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 namespace gmx
 {
 
-//! Indices of the two atoms involved in a single constraint
-struct AtomPair
-{
-    //! \brief Constructor, does not initialize to catch bugs and faster construction
-    AtomPair()
-    {
-    }
-
-    //! Index of atom 1
-    int index1;
-    //! Index of atom 2
-    int index2;
-};
-
 //! Unit of work within LINCS.
 struct Task
 {
@@ -1955,7 +1941,7 @@ void set_lincs(const t_idef         &idef,
     li->atoms.resize(numEntries);
     li->blc.resize(numEntries);
     li->blc1.resize(numEntries);
-    li->blnr.resize(numEntries);
+    li->blnr.resize(numEntries+1);
     li->bllen.resize(numEntries);
     li->tmpv.resizeWithPadding(numEntries);
     if (DOMAINDECOMP(cr))
