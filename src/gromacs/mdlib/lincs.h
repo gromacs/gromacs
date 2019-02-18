@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,10 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/math/paddedvector.h"
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -68,6 +71,20 @@ enum class ConstraintVariable : int;
 
 /* Abstract type for LINCS that is defined only in the file that uses it */
 class Lincs;
+
+//! Indices of the two atoms involved in a single constraint
+struct AtomPair
+{
+    //! \brief Constructor, does not initialize to catch bugs and faster construction
+    AtomPair()
+    {
+    }
+
+    //! Index of atom 1
+    int index1;
+    //! Index of atom 2
+    int index2;
+};
 
 /*! \brief Return the data for determining constraint RMS relative deviations. */
 ArrayRef<real> lincs_rmsdData(Lincs *lincsd);

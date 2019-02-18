@@ -36,6 +36,7 @@
 #define GMX_PBCUTIL_GPU_PBC_CUH
 
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/gpu_utils/gpu_vec.cuh"
 
 /*! \brief Compact and ordered version of the PBC matrix.
  *
@@ -113,6 +114,32 @@ int pbcDxAiuc(const PbcAiuc &pbcAiuc,
     {
         return 0;
     }
+}
+
+
+static __forceinline__ __device__
+float3 pbcDxAiucFloat3(const PbcAiuc &pbcAiuc,
+                       const float3  &r1,
+                       const float3  &r2)
+{
+    float3 dr;
+    dr.x = r1.x - r2.x;
+    dr.y = r1.y - r2.y;
+    dr.z = r1.z - r2.z;
+
+    float shz  = rintf(dr.z*pbcAiuc.invBoxDiagZ);
+    dr.x    -= shz*pbcAiuc.boxZX;
+    dr.y    -= shz*pbcAiuc.boxZY;
+    dr.z    -= shz*pbcAiuc.boxZZ;
+
+    float shy  = rintf(dr.y*pbcAiuc.invBoxDiagY);
+    dr.x    -= shy*pbcAiuc.boxYX;
+    dr.y    -= shy*pbcAiuc.boxYY;
+
+    float shx  = rintf(dr.x*pbcAiuc.invBoxDiagX);
+    dr.x    -= shx*pbcAiuc.boxXX;
+
+    return dr;
 }
 
 /*! \brief Set the PBC data to use in GPU kernels.
