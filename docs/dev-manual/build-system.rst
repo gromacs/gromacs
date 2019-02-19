@@ -417,6 +417,12 @@ Variables affecting special targets
    documentation.  It gets inserted into the download section of the HTML
    pages.
 
+.. cmake:: SOURCE_SHA256SUM
+
+   Sets the SHA256 sum of the release tarball when generating the HTML
+   documentation.  It gets inserted into the download section of the HTML
+   pages.
+
 External libraries
 ------------------
 
