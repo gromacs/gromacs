@@ -4026,16 +4026,18 @@ static void sort_sci(NbnxnPairlistGpu *nbl)
     std::swap(nbl->sci, work.sci_sort);
 }
 
-void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
-                         const InteractionLocality  iLocality,
-                         nbnxn_pairlist_set_t      *nbl_list,
-                         const t_blocka            *excl,
-                         const int64_t              step,
-                         t_nrnb                    *nrnb)
+void
+nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality,
+                                            nbnxn_search              *nbs,
+                                            nbnxn_atomdata_t          *nbat,
+                                            const t_blocka            *excl,
+                                            const Nbnxm::KernelType    kernelType,
+                                            const int64_t              step,
+                                            t_nrnb                    *nrnb)
 {
-    nbnxn_search         *nbs      = nbv->nbs.get();
-    nbnxn_atomdata_t     *nbat     = nbv->nbat;
-    const real            rlist    = nbv->listParams->rlistOuter;
+    nbnxn_pairlist_set_t *nbl_list = &pairlistSet(iLocality);
+
+    const real            rlist    = nbl_list->params.rlistOuter;
 
     int                nsubpair_target;
     float              nsubpair_tot_est;
@@ -4071,9 +4073,9 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
         nzi = nbs->zones->nizone;
     }
 
-    if (!nbl_list->bSimple && nbv->min_ci_balanced > 0)
+    if (!nbl_list->bSimple && minimumIlistCountForGpuBalancing_ > 0)
     {
-        get_nsubpair_target(nbs, iLocality, rlist, nbv->min_ci_balanced,
+        get_nsubpair_target(nbs, iLocality, rlist, minimumIlistCountForGpuBalancing_,
                             &nsubpair_target, &nsubpair_tot_est);
     }
     else
@@ -4164,7 +4166,7 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
                         nbnxn_make_pairlist_part(nbs, iGrid, jGrid,
                                                  &nbs->work[th], nbat, *excl,
                                                  rlist,
-                                                 nbv->kernelSetup().kernelType,
+                                                 kernelType,
                                                  ci_block,
                                                  nbat->bUseBufferFlags,
                                                  nsubpair_target,
@@ -4178,7 +4180,7 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
                         nbnxn_make_pairlist_part(nbs, iGrid, jGrid,
                                                  &nbs->work[th], nbat, *excl,
                                                  rlist,
-                                                 nbv->kernelSetup().kernelType,
+                                                 kernelType,
                                                  ci_block,
                                                  nbat->bUseBufferFlags,
                                                  nsubpair_target,
@@ -4291,7 +4293,15 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
         GMX_ASSERT(nbl_list->nbl[0]->ciOuter.empty(), "ciOuter is invalid so it should be empty");
     }
 
-    nbl_list->outerListCreationStep = step;
+    if (iLocality == Nbnxm::InteractionLocality::Local)
+    {
+        outerListCreationStep_ = step;
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(outerListCreationStep_ == step,
+                           "Outer list should be created at the same step as the inner list");
+    }
 
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
     if (iLocality == InteractionLocality::Local)
@@ -4346,19 +4356,30 @@ void nbnxn_make_pairlist(nonbonded_verlet_t        *nbv,
         }
     }
 
-    if (nbv->listParams->useDynamicPruning && !nbv->useGpu())
+    if (params_.useDynamicPruning && nbl_list->bSimple)
     {
         nbnxnPrepareListForDynamicPruning(nbl_list);
     }
+}
 
-    if (nbv->useGpu())
+void
+nonbonded_verlet_t::constructPairlist(const Nbnxm::InteractionLocality  iLocality,
+                                      const t_blocka                   *excl,
+                                      int64_t                           step,
+                                      t_nrnb                           *nrnb)
+{
+    pairlistSets_->construct(iLocality, nbs.get(), nbat, excl,
+                             kernelSetup_.kernelType,
+                             step, nrnb);
+
+    if (useGpu())
     {
         /* Launch the transfer of the pairlist to the GPU.
          *
          * NOTE: The launch overhead is currently not timed separately
          */
-        Nbnxm::gpu_init_pairlist(nbv->gpu_nbv,
-                                 nbl_list->nblGpu[0],
+        Nbnxm::gpu_init_pairlist(gpu_nbv,
+                                 pairlistSets().pairlistSet(iLocality).nblGpu[0],
                                  iLocality);
     }
 }

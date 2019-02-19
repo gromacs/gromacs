@@ -51,6 +51,7 @@ class MDLogger;
 
 struct nbnxn_atomdata_t;
 struct nbnxn_search;
+struct nonbonded_verlet_t;
 struct t_mdatoms;
 struct gmx_wallcycle;
 
@@ -106,13 +107,6 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
                                      rvec                *x,
                                      nbnxn_atomdata_t    *nbat,
                                      gmx_wallcycle       *wcycle);
-
-/* Add the forces stored in nbat to f, zeros the forces in nbat */
-void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
-                                    Nbnxm::AtomLocality     locality,
-                                    nbnxn_atomdata_t       *nbat,
-                                    rvec                   *f,
-                                    gmx_wallcycle          *wcycle);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,

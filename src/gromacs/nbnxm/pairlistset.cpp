@@ -90,18 +90,4 @@ nbnxn_pairlist_set_t::nbnxn_pairlist_set_t(const NbnxnListParameters &listParams
     nbnxn_init_pairlist_set(this);
 }
 
-int nbnxnNumStepsWithPairlist(const nonbonded_verlet_t         &nbv,
-                              const Nbnxm::InteractionLocality  iLocality,
-                              const int64_t                     step)
-{
-    return step - nbv.pairlistSet(iLocality).outerListCreationStep;
-}
-
-bool nbnxnIsDynamicPairlistPruningStep(const nonbonded_verlet_t         &nbv,
-                                       const Nbnxm::InteractionLocality  iLocality,
-                                       const int64_t                     step)
-{
-    return nbnxnNumStepsWithPairlist(nbv, iLocality, step) % nbv.listParams->nstlistPrune == 0;
-}
-
 /*! \endcond */
