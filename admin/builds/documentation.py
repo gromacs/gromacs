@@ -39,7 +39,8 @@ build_options = ['doxygen-1.8.5']
 build_out_of_source = True
 
 extra_options = {
-    'source-md5': Option.string
+    'source-md5': Option.string,
+    'source-sha256': Option.string
 }
 
 def do_build(context):
@@ -47,6 +48,7 @@ def do_build(context):
             'GMX_BUILD_HELP': 'ON',
             'GMX_BUILD_MANUAL': 'ON',
             'SOURCE_MD5SUM': context.opts.source_md5,
+            'SOURCE_SHA256SUM': context.opts.source_sha256,
             'CMAKE_BUILD_TYPE': 'Debug',
             'GMX_GPU': 'OFF',
             'GMX_OPENMP': 'OFF',
