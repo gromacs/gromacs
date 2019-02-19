@@ -422,15 +422,14 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
 }
 
 static void accountFlops(t_nrnb                           *nrnb,
+                         const nbnxn_pairlist_set_t       &pairlistSet,
                          const nonbonded_verlet_t         &nbv,
-                         const Nbnxm::InteractionLocality  iLocality,
                          const interaction_const_t        &ic,
                          const int                         forceFlags)
 {
-    const nbnxn_pairlist_set_t &pairlistSet     = nbv.pairlistSet(iLocality);
-    const bool                  usingGpuKernels = nbv.useGpu();
+    const bool usingGpuKernels = nbv.useGpu();
 
-    int enr_nbnxn_kernel_ljc;
+    int        enr_nbnxn_kernel_ljc;
     if (EEL_RF(ic.eeltype) || ic.eeltype == eelCUT)
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
@@ -481,25 +480,25 @@ static void accountFlops(t_nrnb                           *nrnb,
     }
 }
 
-void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
-                         Nbnxm::InteractionLocality iLocality,
-                         const interaction_const_t &ic,
-                         int                        forceFlags,
-                         int                        clearF,
-                         t_forcerec                *fr,
-                         gmx_enerdata_t            *enerd,
-                         t_nrnb                    *nrnb)
+void
+nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality,
+                                            const interaction_const_t &ic,
+                                            int                        forceFlags,
+                                            int                        clearF,
+                                            t_forcerec                *fr,
+                                            gmx_enerdata_t            *enerd,
+                                            t_nrnb                    *nrnb)
 {
-    const nbnxn_pairlist_set_t &pairlistSet = nbv->pairlistSet(iLocality);
+    const nbnxn_pairlist_set_t &pairlistSet = pairlistSets().pairlistSet(iLocality);
 
-    switch (nbv->kernelSetup().kernelType)
+    switch (kernelSetup().kernelType)
     {
         case Nbnxm::KernelType::Cpu4x4_PlainC:
         case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
         case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
             nbnxn_kernel_cpu(pairlistSet,
-                             nbv->kernelSetup(),
-                             nbv->nbat,
+                             kernelSetup(),
+                             nbat,
                              ic,
                              fr->shift_vec,
                              forceFlags,
@@ -512,16 +511,16 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
             break;
 
         case Nbnxm::KernelType::Gpu8x8x8:
-            Nbnxm::gpu_launch_kernel(nbv->gpu_nbv, forceFlags, iLocality);
+            Nbnxm::gpu_launch_kernel(gpu_nbv, forceFlags, iLocality);
             break;
 
         case Nbnxm::KernelType::Cpu8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(pairlistSet.nblGpu[0],
-                                 nbv->nbat, &ic,
+                                 nbat, &ic,
                                  fr->shift_vec,
                                  forceFlags,
                                  clearF,
-                                 nbv->nbat->out[0].f,
+                                 nbat->out[0].f,
                                  fr->fshift[0],
                                  enerd->grpp.ener[egCOULSR],
                                  fr->bBHAM ?
@@ -534,7 +533,7 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
 
     }
 
-    accountFlops(nrnb, *nbv, iLocality, ic, forceFlags);
+    accountFlops(nrnb, pairlistSet, *this, ic, forceFlags);
 }
 
 void
@@ -549,7 +548,7 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
                                              const int                   forceFlags,
                                              t_nrnb                     *nrnb)
 {
-    const gmx::ArrayRef<t_nblist const * const > nbl_fep = pairlistSet(iLocality).nbl_fep;
+    const gmx::ArrayRef<t_nblist const * const > nbl_fep = pairlistSets().pairlistSet(iLocality).nbl_fep;
 
     /* When the first list is empty, all are empty and there is nothing to do */
     if (nbl_fep[0]->nrj == 0)

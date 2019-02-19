@@ -416,8 +416,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         /* When dynamic pair-list  pruning is requested, we need to prune
          * at nstlistPrune steps.
          */
-        if (nbv->listParams->useDynamicPruning &&
-            nbnxnIsDynamicPairlistPruningStep(*nbv, ilocality, step))
+        if (nbv->pairlistSets().isDynamicPairlistPruningStep(step))
         {
             /* Prune the pair-list beyond fr->ic->rlistPrune using
              * the current coordinates of the atoms.
@@ -430,7 +429,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
 
-    NbnxnDispatchKernel(nbv, ilocality, *ic, flags, clearF, fr, enerd, nrnb);
+    nbv->dispatchNonbondedKernel(ilocality, *ic, flags, clearF, fr, enerd, nrnb);
 
     if (!nbv->useGpu())
     {
@@ -761,8 +760,8 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxm::AtomLocality::Local,
-                                               nbv->nbat, as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
+                nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
+                                              as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
             }
         }
     }
@@ -790,9 +789,11 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
      * With domain decomposition we alternate local and non-local
      * pruning at even and odd steps.
      */
-    int  numRollingParts     = nbv->listParams->numRollingParts;
-    GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
-    int  stepWithCurrentList = nbnxnNumStepsWithPairlist(*nbv, Nbnxm::InteractionLocality::Local, step);
+    int  numRollingParts     = nbv->pairlistSets().params().numRollingParts;
+    GMX_ASSERT(numRollingParts == nbv->pairlistSets().params().nstlistPrune/2,
+               "Since we alternate local/non-local at even/odd steps, "
+               "we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
+    int  stepWithCurrentList = nbv->pairlistSets().numStepsWithPairlist(step);
     bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
     if (stepWithCurrentList > 0 &&
         stepWithCurrentList < inputrec->nstlist - 1 &&
@@ -1274,22 +1275,18 @@ static void do_force_cutsVERLET(FILE *fplog,
                          step, nrnb, wcycle);
         }
 
-        const Nbnxm::InteractionLocality iloc =
-            (!bUseOrEmulGPU ? Nbnxm::InteractionLocality::Local : Nbnxm::InteractionLocality::NonLocal);
-
         /* Add all the non-bonded force to the normal force array.
          * This can be split into a local and a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
         wallcycle_stop(wcycle, ewcFORCE);
 
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxm::AtomLocality::All, nbv->nbat, f, wcycle);
+        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, f, wcycle);
 
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
-        /* if there are multiple fshift output buffers reduce them */
-        if ((flags & GMX_FORCE_VIRIAL) &&
-            nbv->pairlistSet(iloc).nnbl > 1)
+        /* If there are multiple fshift output buffers we need to reduce them */
+        if (flags & GMX_FORCE_VIRIAL)
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
@@ -1343,12 +1340,8 @@ static void do_force_cutsVERLET(FILE *fplog,
                 wallcycle_stop(wcycle, ewcFORCE);
             }
 
-            /* skip the reduction if there was no non-local work to do */
-            if (!nbv->pairlistSet(Nbnxm::InteractionLocality::NonLocal).nblGpu[0]->sci.empty())
-            {
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxm::AtomLocality::NonLocal,
-                                               nbv->nbat, f, wcycle);
-            }
+            nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
+                                          f, wcycle);
         }
     }
 
@@ -1438,7 +1431,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
 
         /* Is dynamic pair-list pruning activated? */
-        if (nbv->listParams->useDynamicPruning)
+        if (nbv->pairlistSets().params().useDynamicPruning)
         {
             launchGpuRollingPruning(cr, nbv, inputrec, step);
         }
@@ -1466,8 +1459,8 @@ static void do_force_cutsVERLET(FILE *fplog,
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), Nbnxm::AtomLocality::Local,
-                                       nbv->nbat, f, wcycle);
+        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
+                                      f, wcycle);
     }
     if (DOMAINDECOMP(cr))
     {

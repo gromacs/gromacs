@@ -101,7 +101,6 @@
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
@@ -116,10 +115,12 @@ struct gmx_domdec_zones_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
+struct gmx_wallcycle;
 struct interaction_const_t;
 struct nbnxn_pairlist_set_t;
 struct nbnxn_search;
 struct nonbonded_verlet_t;
+enum class PairlistType;
 struct t_blocka;
 struct t_commrec;
 struct t_lambda;
@@ -133,6 +134,31 @@ namespace gmx
 class MDLogger;
 class UpdateGroupsCog;
 }
+
+namespace Nbnxm
+{
+enum class KernelType;
+}
+
+/*! \libinternal
+ * \brief The setup for generating and pruning the nbnxn pair list.
+ *
+ * Without dynamic pruning rlistOuter=rlistInner.
+ */
+struct NbnxnListParameters
+{
+    /*! \brief Constructor producing a struct with dynamic pruning disabled
+     */
+    NbnxnListParameters(Nbnxm::KernelType kernelType,
+                        real              rlist);
+
+    PairlistType pairlistType;      //!< The type of cluster-pair list
+    bool         useDynamicPruning; //!< Are we using dynamic pair-list pruning
+    int          nstlistPrune;      //!< Pair-list dynamic pruning interval
+    real         rlistOuter;        //!< Cut-off of the larger, outer pair-list
+    real         rlistInner;        //!< Cut-off of the smaller, inner pair-list
+    int          numRollingParts;   //!< The number parts to divide the pair-list into for rolling pruning, a value of 1 gives no rolling pruning
+};
 
 /*! \brief Resources that can be used to execute non-bonded kernels on */
 enum class NonbondedResource : int
@@ -216,6 +242,96 @@ void NbnxnDispatchPruneKernel(nbnxn_pairlist_set_t   *pairlistSet,
 struct nonbonded_verlet_t
 {
     public:
+        class PairlistSets
+        {
+            public:
+                PairlistSets(const NbnxnListParameters  &listParams,
+                             bool                        haveMultipleDomains,
+                             int                         minimumIlistCountForGpuBalancing);
+
+                //! Construct the pairlist set for the given locality
+                void construct(Nbnxm::InteractionLocality  iLocality,
+                               nbnxn_search               *nbs,
+                               nbnxn_atomdata_t           *nbat,
+                               const t_blocka             *excl,
+                               Nbnxm::KernelType           kernelbType,
+                               int64_t                     step,
+                               t_nrnb                     *nrnb);
+
+                //! Dispatches the dynamic pruning kernel for the given locality
+                void dispatchPruneKernel(Nbnxm::InteractionLocality  iLocality,
+                                         const nbnxn_atomdata_t     *nbat,
+                                         const rvec                 *shift_vec,
+                                         Nbnxm::KernelType           kernelbType);
+
+                //! Returns the pair list parameters
+                const NbnxnListParameters &params() const
+                {
+                    return params_;
+                }
+
+                //! Returns the number of steps performed with the current pair list
+                int numStepsWithPairlist(int64_t step) const
+                {
+                    return step - outerListCreationStep_;
+                }
+
+                //! Returns whether step is a dynamic list pruning step, for CPU lists only
+                bool isDynamicPairlistPruningStep(int64_t step) const
+                {
+                    return (params_.useDynamicPruning &&
+                            numStepsWithPairlist(step) % params_.nstlistPrune == 0);
+                }
+
+                //! Changes the pair-list outer and inner radius
+                void changeRadii(real rlistOuter,
+                                 real rlistInner)
+                {
+                    params_.rlistOuter = rlistOuter;
+                    params_.rlistInner = rlistInner;
+                }
+
+                //! Returns the pair-list set for the given locality
+                const nbnxn_pairlist_set_t &pairlistSet(Nbnxm::InteractionLocality iLocality) const
+                {
+                    if (iLocality == Nbnxm::InteractionLocality::Local)
+                    {
+                        return *localSet_;
+                    }
+                    else
+                    {
+                        GMX_ASSERT(nonlocalSet_, "Need a non-local set when requesting access");
+                        return *nonlocalSet_;
+                    }
+                }
+
+            private:
+                //! Returns the pair-list set for the given locality
+                nbnxn_pairlist_set_t &pairlistSet(Nbnxm::InteractionLocality iLocality)
+                {
+                    if (iLocality == Nbnxm::InteractionLocality::Local)
+                    {
+                        return *localSet_;
+                    }
+                    else
+                    {
+                        GMX_ASSERT(nonlocalSet_, "Need a non-local set when requesting access");
+                        return *nonlocalSet_;
+                    }
+                }
+
+                //! Parameters for the search and list pruning setup
+                NbnxnListParameters                   params_;
+                //! Pair list balancing parameter for use with GPU
+                int                                   minimumIlistCountForGpuBalancing_;
+                //! Local pairlist set
+                std::unique_ptr<nbnxn_pairlist_set_t> localSet_;
+                //! Non-local pairlist set
+                std::unique_ptr<nbnxn_pairlist_set_t> nonlocalSet_;
+                //! MD step at with the outer lists in pairlistSets_ were created
+                int64_t                               outerListCreationStep_;
+        };
+
         //! Returns whether a GPU is use for the non-bonded calculations
         bool useGpu() const
         {
@@ -237,34 +353,32 @@ struct nonbonded_verlet_t
         //! Initialize the pair list sets, TODO this should be private
         void initPairlistSets(bool haveMultipleDomains);
 
-        //! Returns a reference to the pairlist set for the requested locality
-        const nbnxn_pairlist_set_t &pairlistSet(Nbnxm::InteractionLocality iLocality) const
-        {
-            GMX_ASSERT(static_cast<size_t>(iLocality) < pairlistSets_.size(),
-                       "The requested locality should be in the list");
-            return pairlistSets_[static_cast<int>(iLocality)];
-        }
-
         //! Constructs the pairlist for the given locality
         void constructPairlist(Nbnxm::InteractionLocality  iLocality,
                                const t_blocka             *excl,
                                int64_t                     step,
-                               t_nrnb                     *nrnb)
+                               t_nrnb                     *nrnb);
+
+        //! Returns a reference to the pairlist sets
+        const PairlistSets &pairlistSets() const
         {
-            nbnxn_make_pairlist(this, iLocality, &pairlistSets_[static_cast<int>(iLocality)], excl, step, nrnb);
+            return *pairlistSets_;
         }
 
         //! Dispatches the dynamic pruning kernel for the given locality
         void dispatchPruneKernel(Nbnxm::InteractionLocality  iLocality,
-                                 const rvec                 *shift_vec)
-        {
-            GMX_ASSERT(static_cast<size_t>(iLocality) < pairlistSets_.size(),
-                       "The requested locality should be in the list");
-            NbnxnDispatchPruneKernel(&pairlistSets_[static_cast<int>(iLocality)],
-                                     kernelSetup_.kernelType, nbat, shift_vec);
-        }
+                                 const rvec                 *shift_vec);
 
-        //! Dispatches the non-bonded free-energy kernel, always runs on the CPU
+        //! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU
+        void dispatchNonbondedKernel(Nbnxm::InteractionLocality  iLocality,
+                                     const interaction_const_t  &ic,
+                                     int                         forceFlags,
+                                     int                         clearF,
+                                     t_forcerec                 *fr,
+                                     gmx_enerdata_t             *enerd,
+                                     t_nrnb                     *nrnb);
+
+        //! Executes the non-bonded free-energy kernel, always runs on the CPU
         void dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocality,
                                       t_forcerec                 *fr,
                                       rvec                        x[],
@@ -275,6 +389,11 @@ struct nonbonded_verlet_t
                                       gmx_enerdata_t             *enerd,
                                       int                         forceFlags,
                                       t_nrnb                     *nrnb);
+
+        //! Add the forces stored in nbat to f, zeros the forces in nbat */
+        void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality  locality,
+                                      rvec                *f,
+                                      gmx_wallcycle       *wcycle);
 
         //! Return the kernel setup
         const Nbnxm::KernelSetup &kernelSetup() const
@@ -288,14 +407,12 @@ struct nonbonded_verlet_t
             kernelSetup_ = kernelSetup;
         }
 
-        //! Parameters for the search and list pruning setup
-        std::unique_ptr<NbnxnListParameters>  listParams;
+        // TODO: Make all data members private
+    public:
+        //! All data related to the pair lists
+        std::unique_ptr<PairlistSets>         pairlistSets_;
         //! Working data for constructing the pairlists
         std::unique_ptr<nbnxn_search>         nbs;
-    private:
-        //! Local and, optionally, non-local pairlist sets
-        std::vector<nbnxn_pairlist_set_t>     pairlistSets_;
-    public:
         //! Atom data
         nbnxn_atomdata_t                     *nbat;
 
@@ -305,7 +422,6 @@ struct nonbonded_verlet_t
     public:
 
         gmx_nbnxn_gpu_t     *gpu_nbv;         /**< pointer to GPU nb verlet data     */
-        int                  min_ci_balanced; /**< pair list balancing parameter used for the 8x8x8 GPU kernels    */
 };
 
 namespace Nbnxm
@@ -370,25 +486,5 @@ void nbnxn_set_atomorder(nbnxn_search *nbs);
 
 /*! \brief Returns the index position of the atoms on the pairlist search grid */
 gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs);
-
-/*! \brief Returns the number of steps performed with the current pair list */
-int nbnxnNumStepsWithPairlist(const nonbonded_verlet_t   &nbv,
-                              Nbnxm::InteractionLocality  ilocality,
-                              int64_t                     step);
-
-/*! \brief Returns whether step is a dynamic list pruning step */
-bool nbnxnIsDynamicPairlistPruningStep(const nonbonded_verlet_t   &nbv,
-                                       Nbnxm::InteractionLocality  ilocality,
-                                       int64_t                     step);
-
-/*! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU */
-void NbnxnDispatchKernel(nonbonded_verlet_t         *nbv,
-                         Nbnxm::InteractionLocality  iLocality,
-                         const interaction_const_t  &ic,
-                         int                         forceFlags,
-                         int                         clearF,
-                         t_forcerec                 *fr,
-                         gmx_enerdata_t             *enerd,
-                         t_nrnb                     *nrnb);
 
 #endif // GMX_NBNXN_NBNXN_H

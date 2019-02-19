@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_geometry.h"
+#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
@@ -1171,7 +1172,7 @@ nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
 static void
 nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search *nbs,
                                     const nbnxn_atomdata_t *nbat,
-                                    gmx::ArrayRef<nbnxn_atomdata_output_t> out,
+                                    gmx::ArrayRef<const nbnxn_atomdata_output_t> out,
                                     int nfa,
                                     int a0, int a1,
                                     rvec *f)
@@ -1465,12 +1466,18 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t *nbat,
 }
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
-void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search             *nbs,
-                                    const Nbnxm::AtomLocality locality,
-                                    nbnxn_atomdata_t         *nbat,
-                                    rvec                     *f,
-                                    gmx_wallcycle            *wcycle)
+void
+nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality,
+                                             rvec                      *f,
+                                             gmx_wallcycle             *wcycle)
 {
+    /* Skip the non-local reduction if there was no non-local work to do */
+    if (locality == Nbnxm::AtomLocality::NonLocal &&
+        pairlistSets().pairlistSet(Nbnxm::InteractionLocality::NonLocal).nblGpu[0]->sci.empty())
+    {
+        return;
+    }
+
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
 
@@ -1521,7 +1528,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search             *nbs,
     {
         try
         {
-            nbnxn_atomdata_add_nbat_f_to_f_part(nbs, nbat,
+            nbnxn_atomdata_add_nbat_f_to_f_part(nbs.get(), nbat,
                                                 nbat->out,
                                                 1,
                                                 a0+((th+0)*na)/nth,
@@ -1542,6 +1549,15 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift)
 {
     gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers = nbat->out;
+
+    if (outputBuffers.size() == 1)
+    {
+        /* When there is a single output object, with CPU or GPU, shift forces
+         * have been written directly to the main buffer instead of to the
+         * (single) thread local output object. There is nothing to reduce.
+         */
+        return;
+    }
 
     for (int s = 0; s < SHIFTS; s++)
     {
