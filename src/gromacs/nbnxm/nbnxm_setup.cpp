@@ -292,17 +292,56 @@ pick_nbnxn_kernel(const gmx::MDLogger     &mdlog,
 
 } // namespace Nbnxm
 
-void nonbonded_verlet_t::initPairlistSets(const bool haveMultipleDomains)
+nonbonded_verlet_t::PairlistSets::PairlistSets(const NbnxnListParameters &listParams,
+                                               const bool                 haveMultipleDomains,
+                                               const int                  minimumIlistCountForGpuBalancing) :
+    params_(listParams),
+    minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
 {
-    pairlistSets_.emplace_back(*listParams);
+    localSet_ = std::make_unique<nbnxn_pairlist_set_t>(params_);
+
     if (haveMultipleDomains)
     {
-        pairlistSets_.emplace_back(*listParams);
+        nonlocalSet_ = std::make_unique<nbnxn_pairlist_set_t>(params_);
     }
 }
 
 namespace Nbnxm
 {
+
+/*! \brief Gets and returns the minimum i-list count for balacing based on the GPU used or env.var. when set */
+static int getMinimumIlistCountForGpuBalancing(gmx_nbnxn_gpu_t *nbnxmGpu)
+{
+    int minimumIlistCount;
+
+    if (const char *env = getenv("GMX_NB_MIN_CI"))
+    {
+        char *end;
+
+        minimumIlistCount = strtol(env, &end, 10);
+        if (!end || (*end != 0) || minimumIlistCount < 0)
+        {
+            gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, non-negative integer required", env);
+        }
+
+        if (debug)
+        {
+            fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n",
+                    minimumIlistCount);
+        }
+    }
+    else
+    {
+        minimumIlistCount = gpu_min_ci_balanced(nbnxmGpu);
+        if (debug)
+        {
+            fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",
+                    minimumIlistCount);
+        }
+    }
+
+    return minimumIlistCount;
+}
 
 void init_nb_verlet(const gmx::MDLogger     &mdlog,
                     nonbonded_verlet_t     **nb_verlet,
@@ -342,22 +381,12 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
                                           nonbondedResource, ir,
                                           fr->bNonbonded));
 
-    const bool haveMultipleDomains = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
+    const bool          haveMultipleDomains = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
 
-    nbv->listParams = std::make_unique<NbnxnListParameters>(nbv->kernelSetup().kernelType,
-                                                            ir->rlist);
-    nbv->initPairlistSets(haveMultipleDomains);
-
-    nbv->min_ci_balanced = 0;
+    NbnxnListParameters listParams(nbv->kernelSetup().kernelType, ir->rlist);
 
     setupDynamicPairlistPruning(mdlog, ir, mtop, box, fr->ic,
-                                nbv->listParams.get());
-
-    nbv->nbs = std::make_unique<nbnxn_search>(ir->ePBC,
-                                              DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
-                                              DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
-                                              bFEP_NonBonded,
-                                              gmx_omp_nthreads_get(emntPairsearch));
+                                &listParams);
 
     int      enbnxninitcombrule;
     if (fr->ic->vdwtype == evdwCUT &&
@@ -404,6 +433,7 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
                         mimimumNumEnergyGroupNonbonded,
                         nbv->pairlistIsSimple() ? gmx_omp_nthreads_get(emntNonbonded) : 1);
 
+    int minimumIlistCountForGpuBalancing = 0;
     if (useGpu)
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
@@ -411,38 +441,24 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
         gpu_init(&nbv->gpu_nbv,
                  deviceInfo,
                  fr->ic,
-                 nbv->listParams.get(),
+                 &listParams,
                  nbv->nbat,
                  cr->nodeid,
                  haveMultipleDomains);
 
-        if (const char *env = getenv("GMX_NB_MIN_CI"))
-        {
-            char *end;
-
-            nbv->min_ci_balanced = strtol(env, &end, 10);
-            if (!end || (*end != 0) || nbv->min_ci_balanced < 0)
-            {
-                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, non-negative integer required", env);
-            }
-
-            if (debug)
-            {
-                fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n",
-                        nbv->min_ci_balanced);
-            }
-        }
-        else
-        {
-            nbv->min_ci_balanced = gpu_min_ci_balanced(nbv->gpu_nbv);
-            if (debug)
-            {
-                fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",
-                        nbv->min_ci_balanced);
-            }
-        }
-
+        minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(nbv->gpu_nbv);
     }
+
+    nbv->pairlistSets_ =
+        std::make_unique<nonbonded_verlet_t::PairlistSets>(listParams,
+                                                           haveMultipleDomains,
+                                                           minimumIlistCountForGpuBalancing);
+
+    nbv->nbs = std::make_unique<nbnxn_search>(ir->ePBC,
+                                              DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
+                                              DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
+                                              bFEP_NonBonded,
+                                              gmx_omp_nthreads_get(emntPairsearch));
 
     *nb_verlet = nbv;
 }
