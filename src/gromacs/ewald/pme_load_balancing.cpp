@@ -793,11 +793,8 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     set = &pme_lb->setup[pme_lb->cur];
 
-    NbnxnListParameters *listParams = nbv->listParams.get();
-
     ic->rcoulomb           = set->rcut_coulomb;
-    listParams->rlistOuter = set->rlistOuter;
-    listParams->rlistInner = set->rlistInner;
+    nbv->pairlistSets_->changeRadii(set->rlistOuter, set->rlistInner);
     ic->ewaldcoeff_q       = set->ewaldcoeff_q;
     /* TODO: centralize the code that sets the potentials shifts */
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
@@ -825,7 +822,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     /* We always re-initialize the tables whether they are used or not */
     init_interaction_const_tables(nullptr, ic, rtab);
 
-    Nbnxm::gpu_pme_loadbal_update_param(nbv, ic, listParams);
+    Nbnxm::gpu_pme_loadbal_update_param(nbv, ic, &nbv->pairlistSets().params());
 
     if (!pme_lb->bSepPMERanks)
     {
@@ -997,7 +994,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
              * This also ensures that we won't disable the currently
              * optimal setting during a second round of PME balancing.
              */
-            set_dd_dlb_max_cutoff(cr, fr->nbv->listParams->rlistOuter);
+            set_dd_dlb_max_cutoff(cr, fr->nbv->pairlistSets().params().rlistOuter);
         }
     }
 
@@ -1014,7 +1011,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
                          step);
 
         /* Update deprecated rlist in forcerec to stay in sync with fr->nbv */
-        fr->rlist         = fr->nbv->listParams->rlistOuter;
+        fr->rlist         = fr->nbv->pairlistSets().params().rlistOuter;
 
         if (ir.eDispCorr != edispcNO)
         {
