@@ -37,12 +37,14 @@
 #ifndef GMX_MDLIB_SIM_UTIL_H
 #define GMX_MDLIB_SIM_UTIL_H
 
+#include <gromacs/domdec/dlbtiming.h>
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/math/arrayrefwithpadding.h"
 
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
@@ -53,9 +55,21 @@ struct nonbonded_verlet_t;
 struct t_forcerec;
 struct t_mdatoms;
 struct t_nrnb;
+struct gmx_edsam;
+struct gmx_enfrot;
+struct gmx_localtop_t;
+struct gmx_multisim_t;
+struct gmx_vsite_t;
+struct t_fcdata;
+struct t_graph;
+struct interaction_const_t;
+
+class history_t;
 
 namespace gmx
 {
+class PpForceWorkload;
+class Awh;
 class BoxDeformation;
 class Constraints;
 class EnergyOutput;
@@ -160,5 +174,65 @@ void do_constrain_first(FILE *log, gmx::Constraints *constr,
 /* Routine in sim_util.c */
 
 gmx_bool use_GPU(const nonbonded_verlet_t *nbv);
+
+
+void do_force_cutsVERLET(FILE *fplog,
+                         const t_commrec *cr,
+                         const gmx_multisim_t *ms,
+                         const t_inputrec *inputrec,
+                         gmx::Awh *awh,
+                         gmx_enfrot *enforcedRotation,
+                         int64_t step,
+                         t_nrnb *nrnb,
+                         gmx_wallcycle_t wcycle,
+                         const gmx_localtop_t *top,
+                         const gmx_groups_t * /* groups */,
+                         matrix box, gmx::ArrayRefWithPadding<gmx::RVec> x,
+                         history_t *hist,
+                         gmx::ArrayRefWithPadding<gmx::RVec> force,
+                         tensor vir_force,
+                         const t_mdatoms *mdatoms,
+                         gmx_enerdata_t *enerd, t_fcdata *fcd,
+                         real *lambda,
+                         t_graph *graph,
+                         t_forcerec *fr,
+                         gmx::PpForceWorkload *ppForceWorkload,
+                         interaction_const_t *ic,
+                         const gmx_vsite_t *vsite,
+                         rvec mu_tot,
+                         double t,
+                         gmx_edsam *ed,
+                         const int flags,
+                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
+
+void do_force_cutsGROUP(FILE *fplog,
+                        const t_commrec *cr,
+                        const gmx_multisim_t *ms,
+                        const t_inputrec *inputrec,
+                        gmx::Awh *awh,
+                        gmx_enfrot *enforcedRotation,
+                        int64_t step,
+                        t_nrnb *nrnb,
+                        gmx_wallcycle_t wcycle,
+                        gmx_localtop_t *top,
+                        const gmx_groups_t *groups,
+                        matrix box, gmx::ArrayRefWithPadding<gmx::RVec> x,
+                        history_t *hist,
+                        gmx::ArrayRefWithPadding<gmx::RVec> force,
+                        tensor vir_force,
+                        const t_mdatoms *mdatoms,
+                        gmx_enerdata_t *enerd,
+                        t_fcdata *fcd,
+                        real *lambda,
+                        t_graph *graph,
+                        t_forcerec *fr,
+                        const gmx_vsite_t *vsite,
+                        rvec mu_tot,
+                        double t,
+                        gmx_edsam *ed,
+                        int flags,
+                        DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                        DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
 
 #endif
