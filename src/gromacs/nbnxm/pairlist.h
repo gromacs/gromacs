@@ -53,6 +53,7 @@
 // to include it during OpenCL jitting without including config.h
 #include "gromacs/nbnxm/constants.h"
 
+struct NbnxnListParameters;
 struct NbnxnPairlistCpuWork;
 struct NbnxnPairlistGpuWork;
 struct tMPI_Atomic;
@@ -81,29 +82,6 @@ enum class PairlistType : int
 
 static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = { 4, 4, 4, 8 };
 static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = { 2, 4, 8, 8 };
-
-/*! \cond INTERNAL */
-
-/*! \brief The setup for generating and pruning the nbnxn pair list.
- *
- * Without dynamic pruning rlistOuter=rlistInner.
- */
-struct NbnxnListParameters
-{
-    /*! \brief Constructor producing a struct with dynamic pruning disabled
-     */
-    NbnxnListParameters(Nbnxm::KernelType kernelType,
-                        real              rlist);
-
-    PairlistType pairlistType;      //!< The type of cluster-pair list
-    bool         useDynamicPruning; //!< Are we using dynamic pair-list pruning
-    int          nstlistPrune;      //!< Pair-list dynamic pruning interval
-    real         rlistOuter;        //!< Cut-off of the larger, outer pair-list
-    real         rlistInner;        //!< Cut-off of the smaller, inner pair-list
-    int          numRollingParts;   //!< The number parts to divide the pair-list into for rolling pruning, a value of 1 gives no rolling pruning
-};
-
-/*! \endcond */
 
 /* With CPU kernels the i-cluster size is always 4 atoms. */
 static constexpr int c_nbnxnCpuIClusterSize = 4;
@@ -307,7 +285,6 @@ struct nbnxn_pairlist_set_t
     int                     natpair_lj;            /* Total number of atom pairs for LJ kernel   */
     int                     natpair_q;             /* Total number of atom pairs for Q kernel    */
     std::vector<t_nblist *> nbl_fep;               /* List of free-energy atom pair interactions */
-    int64_t                 outerListCreationStep; /* Step at which the outer list was created */
 };
 
 enum {
