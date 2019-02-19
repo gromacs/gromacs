@@ -53,8 +53,12 @@
 
 set(SOURCE_MD5SUM "unknown" CACHE STRING
     "MD5 sum of the source tarball, normally used only for the pre-release webpage build")
+set(SOURCE_SHA256SUM "unknown" CACHE STRING
+    "SHA256 sum of the source tarball, normally used only for the pre-release webpage build")
+
 # REGRESSIONTEST_MD5SUM is set in cmake/gmxVersionInfo.cmake because it is used also in tests/CMakeLists.txt
 mark_as_advanced(SOURCE_MD5SUM)
+mark_as_advanced(SOURCE_SHA256SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
