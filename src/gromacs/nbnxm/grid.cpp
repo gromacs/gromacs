@@ -1428,8 +1428,8 @@ void nbnxn_put_on_grid(nonbonded_verlet_t             *nbv,
 
     grid->bSimple = nbv->pairlistIsSimple();
 
-    grid->na_c      = IClusterSizePerListType[nbv->listParams->pairlistType];
-    grid->na_cj     = JClusterSizePerListType[nbv->listParams->pairlistType];
+    grid->na_c      = IClusterSizePerListType[nbv->pairlistSets().params().pairlistType];
+    grid->na_cj     = JClusterSizePerListType[nbv->pairlistSets().params().pairlistType];
     grid->na_sc     = (grid->bSimple ? 1 : c_gpuNumClusterPerCell)*grid->na_c;
     grid->na_c_2log = get_2log(grid->na_c);
 

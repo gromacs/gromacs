@@ -37,12 +37,12 @@
 #define GMX_NBNXM_PAIRLISTSET_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #include "locality.h"
-
-struct nbnxn_pairlist_set_t;
 
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t
  *

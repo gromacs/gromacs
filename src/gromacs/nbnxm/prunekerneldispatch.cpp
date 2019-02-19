@@ -45,12 +45,15 @@
 #include "kernels_simd_4xm/kernel_prune.h"
 
 
-void NbnxnDispatchPruneKernel(nbnxn_pairlist_set_t   *nbl_lists,
-                              const Nbnxm::KernelType kernelType,
-                              const nbnxn_atomdata_t *nbat,
-                              const rvec             *shift_vec)
+void
+nonbonded_verlet_t::PairlistSets::dispatchPruneKernel(const Nbnxm::InteractionLocality  iLocality,
+                                                      const nbnxn_atomdata_t           *nbat,
+                                                      const rvec                       *shift_vec,
+                                                      const Nbnxm::KernelType           kernelType)
 {
-    const real rlistInner = nbl_lists->params.rlistInner;
+    nbnxn_pairlist_set_t *nbl_lists  = &pairlistSet(iLocality);
+
+    const real            rlistInner = nbl_lists->params.rlistInner;
 
     GMX_ASSERT(nbl_lists->nbl[0]->ciOuter.size() >= nbl_lists->nbl[0]->ci.size(),
                "Here we should either have an empty ci list or ciOuter should be >= ci");
@@ -76,4 +79,11 @@ void NbnxnDispatchPruneKernel(nbnxn_pairlist_set_t   *nbl_lists,
                 GMX_RELEASE_ASSERT(false, "kernel type not handled (yet)");
         }
     }
+}
+
+void
+nonbonded_verlet_t::dispatchPruneKernel(const Nbnxm::InteractionLocality  iLocality,
+                                        const rvec                       *shift_vec)
+{
+    pairlistSets_->dispatchPruneKernel(iLocality, nbat, shift_vec, kernelSetup_.kernelType);
 }
