@@ -52,10 +52,10 @@ The following make targets are the most useful:
   Makes the complete |Gromacs| webpage, requires everything. When complete,
   you can browse ``docs/html/index.html`` to find everything.
 
-  If built from a release tarball, the ``SOURCE_MD5SUM``,
+  If built from a release tarball, the ``SOURCE_MD5SUM``,``SOURCE_SHA256SUM``,
   ``SOURCE_TARBALL``, ``REGRESSIONTESTS_MD5SUM``, and
   ``REGRESSIONTESTS_TARBALL`` CMake variables can be set to pass in
-  the md5sum values and names of those tarballs, for embedding into the
+  the md5sum, sha256sum values and names of those tarballs, for embedding into the
   final deployment to the |Gromacs| website.
 
 Needed build tools
