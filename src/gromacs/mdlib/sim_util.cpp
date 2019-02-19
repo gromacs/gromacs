@@ -668,6 +668,32 @@ static void checkPotentialEnergyValidity(int64_t               step,
     }
 }
 
+/*! \brief Return true if there are special forces computed this step.
+ *
+ * The conditionals exactly correspond to those in computeSpecialForces().
+ */
+static bool
+haveSpecialForces(const t_inputrec              *inputrec,
+                  ForceProviders                *forceProviders,
+                  int                            forceFlags,
+                  const gmx_edsam               *ed)
+{
+    const bool computeForces = (forceFlags & GMX_FORCE_FORCES) != 0;
+
+    if ((computeForces && forceProviders->hasForceProvider()) ||         // forceProviders
+        (inputrec->bPull && pull_have_potential(inputrec->pull_work)) || // pull
+        inputrec->bRot ||                                                // enforced rotation
+        ed ||                                                            // flooding
+        (inputrec->bIMD && computeForces))                               // IMD
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 /*! \brief Compute forces and/or energies for special algorithms
  *
  * The intention is to collect all calls to algorithms that compute
@@ -919,6 +945,34 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
     }
 }
 
+/*! \brief Set up flags that indicate what type of work is there to compute.
+ *
+ * Currently we only update it at search steps,
+ * but some properties may change more frequently (e.g. virial/non-virial step),
+ * iso this will change.
+ *
+ */
+static void
+setupForceWorkload(gmx::PpForceWorkload *forceWork,
+                   const t_inputrec     *inputrec,
+                   const t_forcerec     *fr,
+                   const gmx_edsam      *ed,
+                   const t_idef         &idef,
+                   const t_fcdata       *fcd,
+                   bool                  bNS,
+                   const int             forceFlags
+                   )
+{
+    if (bNS)
+    {
+        forceWork->haveSpecialForces      = haveSpecialForces(inputrec, fr->forceProviders, forceFlags, ed);
+        forceWork->haveCpuBondedWork      = haveCpuBondeds(fr);
+        forceWork->haveGpuBondedWork      = fr->gpuBonded->haveInteractions();
+        forceWork->haveRestraintsWork     = havePositionRestraints(&idef, fcd);
+        forceWork->haveCpuListedForceWork = haveCpuListedForces(fr, &idef, fcd);
+    }
+}
+
 static void do_force_cutsVERLET(FILE *fplog,
                                 const t_commrec *cr,
                                 const gmx_multisim_t *ms,
@@ -973,6 +1027,15 @@ static void do_force_cutsVERLET(FILE *fplog,
         ((flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
+
+    setupForceWorkload(ppForceWorkload,
+                       inputrec,
+                       fr,
+                       ed,
+                       top->idef,
+                       fcd,
+                       bNS,
+                       flags);
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
