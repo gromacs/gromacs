@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,6 +66,15 @@ class PpForceWorkload
     public:
         //! Whether this MD step has bonded work to run on a GPU.
         bool haveGpuBondedWork = false;
+        //! Whether this MD step has bonded work to run on he CPU.
+        bool haveCpuBondedWork = false;
+        //! Whether this MD step has listed forces bonded work to run on he CPU.
+        bool haveRestraintsWork = false;
+        //! Whether this MD step has listed forces work to run on he CPU.
+        //  Note: currently this is haveCpuBondedWork | haveRestraintsWork
+        bool haveCpuListedForceWork = false;
+        //! Whether this MD step has special forces on the CPU.
+        bool haveSpecialForces = false;
 };
 
 } // namespace gmx
