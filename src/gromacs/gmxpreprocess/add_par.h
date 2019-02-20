@@ -40,31 +40,31 @@
 
 #include "gromacs/utility/real.h"
 
-struct t_params;
+struct InteractionTypeParameters;
 struct PreprocessResidue;
 
-void add_param(t_params *ps, int ai, int aj, const real *c, const char *s);
+void add_param(InteractionTypeParameters *ps, int ai, int aj, const real *c, const char *s);
 
-void add_imp_param(t_params *ps, int ai, int aj, int ak, int al,
+void add_imp_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
                    real c0, real c1, const char *s);
 
-void add_dih_param(t_params *ps, int ai, int aj, int ak, int al,
+void add_dih_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
                    real c0, real c1, real c2, const char *s);
 
-void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am,
+void add_cmap_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, int am,
                     const char *s);
 
-void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak);
+void add_vsite2_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak);
 
-void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al,
+void add_vsite3_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
                       bool bSwapParity);
 
-void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0);
+void add_vsite2_param(InteractionTypeParameters *ps, int ai, int aj, int ak, real c0);
 
-void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
+void add_vsite3_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
                       real c0, real c1);
 
-void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al,
+void add_vsite4_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
                       int am);
 
 int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool bFirstRes);

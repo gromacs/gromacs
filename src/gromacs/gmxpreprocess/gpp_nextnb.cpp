@@ -340,15 +340,12 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
 
 }
 
-static void add_b(t_params *bonds, int *nrf, sortable *s)
+static void add_b(InteractionTypeParameters *bonds, int *nrf, sortable *s)
 {
-    int i;
-    int ai, aj;
-
-    for (i = 0; (i < bonds->nr); i++)
+    for (int i = 0; (i < bonds->nr); i++)
     {
-        ai = bonds->param[i].ai();
-        aj = bonds->param[i].aj();
+        int ai = bonds->param[i].ai();
+        int aj = bonds->param[i].aj();
         if ((ai < 0) || (aj < 0))
         {
             gmx_fatal(FARGS, "Impossible atom numbers in bond %d: ai=%d, aj=%d",
@@ -362,13 +359,13 @@ static void add_b(t_params *bonds, int *nrf, sortable *s)
     }
 }
 
-void gen_nnb(t_nextnb *nnb, t_params plist[])
+void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionTypeParameters> plist)
 {
     sortable *s;
-    int       i, nrbonds, nrf;
+    int       nrbonds, nrf;
 
     nrbonds = 0;
-    for (i = 0; (i < F_NRE); i++)
+    for (int i = 0; (i < F_NRE); i++)
     {
         if (IS_CHEMBOND(i))
         {
@@ -380,7 +377,7 @@ void gen_nnb(t_nextnb *nnb, t_params plist[])
     snew(s, nrbonds);
 
     nrf = 0;
-    for (i = 0; (i < F_NRE); i++)
+    for (int i = 0; (i < F_NRE); i++)
     {
         if (IS_CHEMBOND(i))
         {
@@ -441,7 +438,9 @@ sort_and_purge_nnb(t_nextnb *nnb)
 }
 
 
-void generate_excl (int nrexcl, int nratoms, t_params plist[], t_nextnb *nnb, t_blocka *excl)
+void generate_excl (int nrexcl,
+                    int nratoms,
+                    gmx::ArrayRef<InteractionTypeParameters> plist, t_nextnb *nnb, t_blocka *excl)
 {
     if (nrexcl < 0)
     {

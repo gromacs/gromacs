@@ -85,7 +85,7 @@
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */
 
-static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
+static void gen_pairs(InteractionTypeParameters *nbs, InteractionTypeParameters *pairs, real fudge, int comb)
 {
     int     i, j, ntp, nrfp, nrfpA, nrfpB, nnn;
     real    scaling;
@@ -381,7 +381,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          int         *nrmols,
                          std::vector<MoleculeInformation> *molinfo,
                          std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
-                         t_params    plist[],
+                         gmx::ArrayRef<InteractionTypeParameters> plist,
                          int         *combination_rule,
                          double      *reppow,
                          t_gromppopts *opts,
@@ -453,8 +453,8 @@ static char **read_topol(const char *infile, const char *outfile,
     *reppow  = 12.0;      /* Default value for repulsion power     */
 
     /* Init the number of CMAP torsion angles  and grid spacing */
-    plist[F_CMAP].grid_spacing = 0;
-    plist[F_CMAP].nc           = 0;
+    plist[F_CMAP].cmakeGridSpacing = 0;
+    plist[F_CMAP].cmapAngles       = 0;
 
     bWarn_copy_A_B = bFEP;
 
@@ -737,10 +737,12 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
 
                         case Directive::d_pairs:
+                            GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
                             push_bond(d, plist, mi0->plist, &(mi0->atoms), atype, pline, FALSE,
                                       bGenPairs, *fudgeQQ, bZero, &bWarn_copy_A_B, wi);
                             break;
                         case Directive::d_pairs_nb:
+                            GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
                             push_bond(d, plist, mi0->plist, &(mi0->atoms), atype, pline, FALSE,
                                       FALSE, 1.0, bZero, &bWarn_copy_A_B, wi);
                             break;
@@ -762,14 +764,17 @@ static char **read_topol(const char *infile, const char *outfile,
                         case Directive::d_polarization:
                         case Directive::d_water_polarization:
                         case Directive::d_thole_polarization:
+                            GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
                             push_bond(d, plist, mi0->plist, &(mi0->atoms), atype, pline, TRUE,
                                       bGenPairs, *fudgeQQ, bZero, &bWarn_copy_A_B, wi);
                             break;
                         case Directive::d_cmap:
+                            GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
                             push_cmap(d, plist, mi0->plist, &(mi0->atoms), atype, pline, wi);
                             break;
 
                         case Directive::d_vsitesn:
+                            GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
                             push_vsitesn(d, mi0->plist, &(mi0->atoms), pline, wi);
                             break;
                         case Directive::d_exclusions:
@@ -933,24 +938,24 @@ static char **read_topol(const char *infile, const char *outfile,
     return title;
 }
 
-char **do_top(bool                                  bVerbose,
-              const char                           *topfile,
-              const char                           *topppfile,
-              t_gromppopts                         *opts,
-              bool                                  bZero,
-              t_symtab                             *symtab,
-              t_params                              plist[],
-              int                                  *combination_rule,
-              double                               *repulsion_power,
-              real                                 *fudgeQQ,
-              gpp_atomtype                         *atype,
-              int                                  *nrmols,
-              std::vector<MoleculeInformation>     *molinfo,
-              std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
-              const t_inputrec                     *ir,
-              std::vector<gmx_molblock_t>          *molblock,
-              bool                                 *ffParametrizedWithHBondConstraints,
-              warninp                              *wi)
+char **do_top(bool                                           bVerbose,
+              const char                                    *topfile,
+              const char                                    *topppfile,
+              t_gromppopts                                  *opts,
+              bool                                           bZero,
+              t_symtab                                      *symtab,
+              gmx::ArrayRef<InteractionTypeParameters>       plist,
+              int                                           *combination_rule,
+              double                                        *repulsion_power,
+              real                                          *fudgeQQ,
+              gpp_atomtype                                  *atype,
+              int                                           *nrmols,
+              std::vector<MoleculeInformation>              *molinfo,
+              std::unique_ptr<MoleculeInformation>          *intermolecular_interactions,
+              const t_inputrec                              *ir,
+              std::vector<gmx_molblock_t>                   *molblock,
+              bool                                          *ffParametrizedWithHBondConstraints,
+              warninp                                       *wi)
 {
     /* Tmpfile might contain a long path */
     const char *tmpfile;

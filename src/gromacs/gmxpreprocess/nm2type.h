@@ -41,7 +41,7 @@
 
 struct gpp_atomtype;
 struct t_atoms;
-struct t_params;
+struct InteractionTypeParameters;
 struct t_symtab;
 
 struct t_nm2type
@@ -62,7 +62,7 @@ void dump_nm2type(FILE *fp, int nnm, t_nm2type nm2t[]);
 /* Dump the database for debugging. Can be reread by the program */
 
 int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
-            gpp_atomtype *atype, int *nbonds, t_params *bond);
+            gpp_atomtype *atype, int *nbonds, InteractionTypeParameters *bond);
 /* Try to determine the atomtype (force field dependent) for the atoms
  * with help of the bond list
  */

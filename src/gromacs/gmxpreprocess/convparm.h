@@ -43,12 +43,12 @@
 
 struct gmx_mtop_t;
 struct MoleculeInformation;
-struct t_params;
+struct InteractionTypeParameters;
 
-void convert_params(int atnr, t_params nbtypes[],
-                    gmx::ArrayRef<const MoleculeInformation> mi,
-                    const MoleculeInformation *intermolecular_interactions,
-                    int comb, double reppow, real fudgeQQ,
-                    gmx_mtop_t *mtop);
+void convertInteractionTypeParameters(int atnr, gmx::ArrayRef<const InteractionTypeParameters> nbtypes,
+                                      gmx::ArrayRef<const MoleculeInformation> mi,
+                                      const MoleculeInformation *intermolecular_interactions,
+                                      int comb, double reppow, real fudgeQQ,
+                                      gmx_mtop_t *mtop);
 
 #endif

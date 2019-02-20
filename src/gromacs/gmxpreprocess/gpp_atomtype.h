@@ -40,6 +40,7 @@
 
 #include <cstdio>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
@@ -47,7 +48,7 @@ struct gpp_atomtype;
 struct t_atom;
 struct t_atomtypes;
 struct t_param;
-struct t_params;
+struct InteractionTypeParameters;
 struct t_symtab;
 
 int get_atomtype_type(const char *str, gpp_atomtype *at);
@@ -94,7 +95,7 @@ int add_atomtype(gpp_atomtype *at, t_symtab *tab,
 void print_at (FILE * out, gpp_atomtype *at);
 /* Print an atomtype record to a text file */
 
-void renum_atype(t_params plist[], gmx_mtop_t *mtop,
+void renum_atype(gmx::ArrayRef<InteractionTypeParameters> plist, gmx_mtop_t *mtop,
                  int *wall_atomtype,
                  gpp_atomtype *at, bool bVerbose);
 
