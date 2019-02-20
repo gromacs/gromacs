@@ -78,7 +78,7 @@ void set_p_string(t_param *p, const char *s)
     }
 }
 
-void pr_alloc (int extra, t_params *pr)
+void pr_alloc (int extra, SystemParameters *pr)
 {
     int i, j;
 
@@ -91,7 +91,7 @@ void pr_alloc (int extra, t_params *pr)
     {
         return;
     }
-    GMX_ASSERT(pr->nr != 0 || pr->param == nullptr, "Invalid t_params object");
+    GMX_ASSERT(pr->nr != 0 || pr->param == nullptr, "Invalid SystemParameters object");
     if (pr->nr+extra > pr->maxnr)
     {
         pr->maxnr = std::max(static_cast<int>(1.2*pr->maxnr), pr->maxnr + extra);
@@ -111,7 +111,7 @@ void pr_alloc (int extra, t_params *pr)
     }
 }
 
-void init_plist(t_params plist[])
+void init_plist(gmx::ArrayRef<SystemParameters> plist)
 {
     int i;
 
@@ -120,25 +120,14 @@ void init_plist(t_params plist[])
         plist[i].nr    = 0;
         plist[i].maxnr = 0;
         plist[i].param = nullptr;
-
-        /* CMAP */
-        plist[i].ncmap        = 0;
-        plist[i].cmap         = nullptr;
-        plist[i].grid_spacing = 0;
-        plist[i].nc           = 0;
-        plist[i].nct          = 0;
-        plist[i].cmap_types   = nullptr;
     }
 }
 
-void done_plist(t_params *plist)
+void done_plist(gmx::ArrayRef<SystemParameters> plist)
 {
     for (int i = 0; i < F_NRE; i++)
     {
-        t_params *pl = &plist[i];
-        sfree(pl->param);
-        sfree(pl->cmap);
-        sfree(pl->cmap_types);
+        sfree(plist[i].param);
     }
 }
 
@@ -157,7 +146,7 @@ void cp_param(t_param *dest, t_param *src)
     strncpy(dest->s, src->s, sizeof(dest->s));
 }
 
-void add_param_to_list(t_params *list, t_param *b)
+void add_param_to_list(SystemParameters *list, t_param *b)
 {
     int j;
 
@@ -181,18 +170,17 @@ void add_param_to_list(t_params *list, t_param *b)
 /* PRINTING STRUCTURES */
 
 static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
-                     int ftype, int fsubtype, t_params plist[],
+                     int ftype, int fsubtype, gmx::ArrayRef<const SystemParameters> plist,
                      bool bFullDih)
 {
     /* This dihp is a DIRTY patch because the dih-types do not use
      * all four atoms to determine the type.
      */
-    const int    dihp[2][2] = { { 1, 2 }, { 0, 3 } };
-    t_params    *bt;
-    int          i, j, f, nral, nrfp;
-    bool         bDih = FALSE, bSwapParity;
+    const int               dihp[2][2] = { { 1, 2 }, { 0, 3 } };
+    int                     i, j, f, nral, nrfp;
+    bool                    bDih = FALSE, bSwapParity;
 
-    bt = &(plist[ftype]);
+    const SystemParameters *bt = &(plist[ftype]);
 
     if (!bt->nr)
     {
@@ -501,7 +489,7 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
 }
 
 void print_bondeds(FILE *out, int natoms, Directive d,
-                   int ftype, int fsubtype, t_params plist[])
+                   int ftype, int fsubtype, gmx::ArrayRef<const SystemParameters> plist)
 {
     t_symtab       stab;
     gpp_atomtype  *atype;

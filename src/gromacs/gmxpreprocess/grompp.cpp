@@ -509,7 +509,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
            gpp_atomtype *atype, gmx_mtop_t *sys,
            std::vector<MoleculeInformation> *mi,
            std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
-           t_params plist[],
+           gmx::ArrayRef<SystemParameters> plist,
            int *comb, double *reppow, real *fudgeQQ,
            gmx_bool bMorse,
            warninp *wi)
@@ -870,8 +870,8 @@ static void read_posres(gmx_mtop_t *mtop,
     for (gmx_molblock_t &molb : mtop->molblock)
     {
         nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.nr;
-        const t_params *pr   = &(molinfo[molb.type].plist[F_POSRES]);
-        const t_params *prfb = &(molinfo[molb.type].plist[F_FBPOSRES]);
+        const SystemParameters *pr   = &(molinfo[molb.type].plist[F_POSRES]);
+        const SystemParameters *prfb = &(molinfo[molb.type].plist[F_FBPOSRES]);
         if (pr->nr > 0 || prfb->nr > 0)
         {
             atom = mtop->moltype[molb.type].atoms.atom;
@@ -1111,10 +1111,10 @@ interpolate1d( double           xmin,
 
 
 static void
-setup_cmap (int                    grid_spacing,
-            int                    nc,
-            const real *           grid,
-            gmx_cmap_t       *     cmap_grid)
+setup_cmap (int                       grid_spacing,
+            int                       nc,
+            gmx::ArrayRef<const real> grid,
+            gmx_cmap_t          *     cmap_grid)
 {
     int                 i, j, k, ii, jj, kk, idx;
     int                 offset;
@@ -1213,7 +1213,7 @@ static int count_constraints(const gmx_mtop_t                        *mtop,
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         count_mol = 0;
-        const t_params *plist = mi[molb.type].plist;
+        gmx::ArrayRef<const SystemParameters> plist = mi[molb.type].plist;
 
         for (i = 0; i < F_NRE; i++)
         {
@@ -1694,7 +1694,6 @@ int gmx_grompp(int argc, char *argv[])
     std::unique_ptr<MoleculeInformation> intermolecular_interactions;
     gpp_atomtype                        *atype;
     int                                  nvsite, comb;
-    t_params                            *plist;
     real                                 fudgeQQ;
     double                               reppow;
     const char                          *mdparin;
@@ -1799,7 +1798,7 @@ int gmx_grompp(int argc, char *argv[])
         warning_error(wi, warn_buf);
     }
 
-    snew(plist, F_NRE);
+    std::array<SystemParameters, F_NRE> plist;
     init_plist(plist);
     gmx_mtop_t sys;
     atype = init_atomtype();
@@ -1955,10 +1954,10 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
-    if (plist[F_CMAP].ncmap > 0)
+    if (plist[F_CMAP].ncmap() > 0)
     {
-        init_cmap_grid(&sys.ffparams.cmap_grid, plist[F_CMAP].nc, plist[F_CMAP].grid_spacing);
-        setup_cmap(plist[F_CMAP].grid_spacing, plist[F_CMAP].nc, plist[F_CMAP].cmap, &sys.ffparams.cmap_grid);
+        init_cmap_grid(&sys.ffparams.cmap_grid, plist[F_CMAP].cmapAngles, plist[F_CMAP].cmakeGridSpacing);
+        setup_cmap(plist[F_CMAP].cmakeGridSpacing, plist[F_CMAP].cmapAngles, plist[F_CMAP].cmap, &sys.ffparams.cmap_grid);
     }
 
     set_wall_atomtype(atype, opts, ir, wi);
@@ -1987,12 +1986,12 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     ntype = get_atomtype_ntypes(atype);
-    convert_params(ntype, plist, mi, intermolecular_interactions.get(),
-                   comb, reppow, fudgeQQ, &sys);
+    convertSystemParameters(ntype, plist, mi, intermolecular_interactions.get(),
+                            comb, reppow, fudgeQQ, &sys);
 
     if (debug)
     {
-        pr_symtab(debug, 0, "After convert_params", &sys.symtab);
+        pr_symtab(debug, 0, "After converSystemParameters", &sys.symtab);
     }
 
     /* set ptype to VSite for virtual sites */
@@ -2324,7 +2323,6 @@ int gmx_grompp(int argc, char *argv[])
     sfree(opts->include);
     sfree(opts);
     done_plist(plist);
-    sfree(plist);
     for (auto &mol : mi)
     {
         // Some of the contents of molinfo have been stolen, so

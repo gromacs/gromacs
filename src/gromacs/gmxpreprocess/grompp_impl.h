@@ -50,42 +50,55 @@
 
 struct t_param
 {
-    int        a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
-    /* i = a[0] (ai), j = a[1] (aj))	*/
-    real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
-    char       s[MAXSLEN];       /* A string (instead of parameters),    *
-                                  * read from the .rtp file in pdb2gmx   */
-    const int &ai() const { return a[0]; }
-    int       &ai() { return a[0]; }
-    const int &aj() const { return a[1]; }
-    int       &aj() { return a[1]; }
-    const int &ak() const { return a[2]; }
-    int       &ak() { return a[2]; }
-    const int &al() const { return a[3]; }
-    int       &al() { return a[3]; }
-    const int &am() const { return a[4]; }
-    int       &am() { return a[4]; }
+    int         a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
+                                  /* i = a[0] (ai), j = a[1] (aj))	*/
+    real        c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
+    char        s[MAXSLEN];       /* A string (instead of parameters),    *
+                                   * read from the .rtp file in pdb2gmx   */
+    const int  &ai() const { return a[0]; }
+    int        &ai() { return a[0]; }
+    const int  &aj() const { return a[1]; }
+    int        &aj() { return a[1]; }
+    const int  &ak() const { return a[2]; }
+    int        &ak() { return a[2]; }
+    const int  &al() const { return a[3]; }
+    int        &al() { return a[3]; }
+    const int  &am() const { return a[4]; }
+    int        &am() { return a[4]; }
 
-    real      &c0() { return c[0]; }
-    real      &c1() { return c[1]; }
-    real      &c2() { return c[2]; }
+    const real &c0() const { return c[0]; }
+    real       &c0() { return c[0]; }
+    const real &c1() const { return c[1]; }
+    real       &c1() { return c[1]; }
+    const real &c2() const { return c[2]; }
+    real       &c2() { return c[2]; }
 };
 
-struct t_params
+/*! \libinternal \brief
+ * All parameters for a system.
+ * \todo Remove manual memory management.
+ */
+struct SystemParameters
 {                       // NOLINT (clang-analyzer-optin.performance.Padding)
-    int          nr;    /* The number of bonds in this record   */
-    int          maxnr; /* The amount of elements in the array  */
-    t_param     *param; /* Array of parameters (dim: nr or nr*nr) */
+    //! Number of parameters.
+    int                  nr = 0;
+    //! Maximum number of parameters.
+    int                  maxnr = 0;
+    //! The different parameters in the system.
+    t_param             *param;
+    //! CMAP grid spacing.
+    int                  cmakeGridSpacing = -1;
+    //! Number of cmap angles.
+    int                  cmapAngles = -1;
+    //! CMAP grid data.
+    std::vector<real>    cmap;
+    //! The five atomtypes followed by a number that identifies the type.
+    std::vector<int>     cmapAtomTypes;
 
-    /* CMAP tmp data, there are probably better places for this */
-    int         grid_spacing; /* Cmap grid spacing */
-    int         nc;           /* Number of cmap angles */
-
-    real       *cmap;         /* Temporary storage of the raw cmap grid data */
-    int         ncmap;        /* Number of allocated elements in cmap grid*/
-
-    int        *cmap_types;   /* Store the five atomtypes followed by a number that identifies the type */
-    int         nct;          /* Number of allocated elements in cmap_types */
+    //! Elements in cmap grid data.
+    int ncmap() const { return cmap.size(); }
+    //! Number of elements in cmapAtomTypes.
+    int nct() const { return cmapAtomTypes.size(); }
 };
 
 struct t_excls
@@ -101,23 +114,23 @@ struct t_excls
 struct MoleculeInformation
 {
     //! Name of the molecule.
-    char            **name = nullptr;
+    char                              **name = nullptr;
     //!Number of exclusions per atom.
-    int               nrexcl = 0;
+    int                                 nrexcl = 0;
     //! Have exclusions been generated?.
-    bool              excl_set = false;
+    bool                                excl_set = false;
     //! Has the mol been processed.
-    bool              bProcessed = false;
+    bool                                bProcessed = false;
     //! Atoms in the moelcule.
-    t_atoms           atoms;
+    t_atoms                             atoms;
     //! Charge groups in the molecule
-    t_block           cgs;
+    t_block                             cgs;
     //! Molecules separated in datastructure.
-    t_block           mols;
+    t_block                             mols;
     //! Exclusions in the molecule.
-    t_blocka          excls;
+    t_blocka                            excls;
     //! Parameters in old style.
-    t_params          plist[F_NRE];
+    std::array<SystemParameters, F_NRE> plist;
 
     /*! \brief
      * Initializer.
