@@ -122,6 +122,8 @@ struct nbnxn_search;
 struct nonbonded_verlet_t;
 struct t_blocka;
 struct t_commrec;
+struct t_lambda;
+struct t_mdatoms;
 struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
@@ -262,6 +264,17 @@ struct nonbonded_verlet_t
                                      kernelSetup_.kernelType, nbat, shift_vec);
         }
 
+        void dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocality,
+                                      t_forcerec                 *fr,
+                                      rvec                        x[],
+                                      rvec                        f[],
+                                      const t_mdatoms            &mdatoms,
+                                      t_lambda                   *fepvals,
+                                      real                       *lambda,
+                                      gmx_enerdata_t             *enerd,
+                                      int                         forceFlags,
+                                      t_nrnb                     *nrnb);
+
         //! Return the kernel setup
         const Nbnxm::KernelSetup &kernelSetup() const
         {
@@ -272,13 +285,6 @@ struct nonbonded_verlet_t
         void setKernelSetup(const Nbnxm::KernelSetup &kernelSetup)
         {
             kernelSetup_ = kernelSetup;
-        }
-
-        //! Returns the a list of free-energy pairlists for the given locality
-        const gmx::ArrayRef<t_nblist const * const>
-        freeEnergyPairlistSet(Nbnxm::InteractionLocality iLocality) const
-        {
-            return pairlistSet(iLocality).nbl_fep;
         }
 
         //! Parameters for the search and list pruning setup
