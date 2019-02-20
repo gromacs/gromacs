@@ -62,6 +62,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs.h"
+#include "gromacs/mdlib/lincs_cuda.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/shake.h"
@@ -175,11 +176,13 @@ class Constraints::Impl
         /*!\brief Input options.
          *
          * \todo Replace with IMdpOptions */
-        const t_inputrec &ir;
+        const t_inputrec            &ir;
         //! Flop counting support.
-        t_nrnb           *nrnb = nullptr;
+        t_nrnb                      *nrnb = nullptr;
         //! Tracks wallcycle usage.
-        gmx_wallcycle    *wcycle;
+        gmx_wallcycle               *wcycle;
+        //! LINCS CUDA object or a dummy if CUDA is not enabled for LINCS.
+        std::unique_ptr<LincsCuda>   lincsCuda;
 };
 
 Constraints::~Constraints() = default;
@@ -477,6 +480,23 @@ Constraints::Impl::apply(bool                  bLog,
                         econstr_names[econtLINCS], gmx_step_str(step, buf));
             }
             bDump = TRUE;
+        }
+    }
+    else
+    {
+        if (lincsCuda != nullptr && getenv("GMX_LINCS_GPU") != nullptr)
+        {
+            lincsCuda->setPbc(pbc_null);
+            lincsCuda->copyCoordinatesToGpu(x, xprime);
+            lincsCuda->copyVelocitiesToGpu(v);
+            lincsCuda->apply(v != nullptr,
+                             invdt,
+                             vir != nullptr, vir_r_m_dr);
+            lincsCuda->copyCoordinatesFromGpu(xprime);
+            if (v != nullptr)
+            {
+                lincsCuda->copyVelocitiesFromGpu(v);
+            }
         }
     }
 
@@ -914,7 +934,14 @@ Constraints::Impl::setConstraints(const gmx_localtop_t &top,
          */
         if (ir.eConstrAlg == econtLINCS)
         {
-            set_lincs(top.idef, md, EI_DYNAMICS(ir.eI), cr, lincsd);
+            if (getenv("GMX_LINCS_GPU") != nullptr)
+            {
+                lincsCuda->set(top.idef, md);
+            }
+            else
+            {
+                set_lincs(top.idef, md, EI_DYNAMICS(ir.eI), cr, lincsd);
+            }
         }
         if (ir.eConstrAlg == econtSHAKE)
         {
@@ -1060,10 +1087,19 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
 
         if (ir.eConstrAlg == econtLINCS)
         {
-            lincsd = init_lincs(log, mtop,
-                                nflexcon, at2con_mt,
-                                DOMAINDECOMP(cr) && cr->dd->splitConstraints,
-                                ir.nLincsIter, ir.nProjOrder);
+            if (getenv("GMX_LINCS_GPU") != nullptr)
+            {
+                fprintf(log, "Initializing LINCS on a GPU for %d atoms\n", mtop.natoms);
+                GMX_ASSERT(nflexcon == 0, "Flexible constraints are not supported by the GPU-based implementation of LINCS.\n");
+                lincsCuda = std::make_unique<LincsCuda>(mtop.natoms, ir.nLincsIter, ir.nProjOrder);
+            }
+            else
+            {
+                lincsd = init_lincs(log, mtop,
+                                    nflexcon, at2con_mt,
+                                    DOMAINDECOMP(cr) && cr->dd->splitConstraints,
+                                    ir.nLincsIter, ir.nProjOrder);
+            }
         }
 
         if (ir.eConstrAlg == econtSHAKE)
