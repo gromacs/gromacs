@@ -202,6 +202,8 @@ installation on multiple different machines, it is convenient to compile the ana
 the lowest common SIMD instruction set (as these rely little on SIMD acceleration), but for best
 performance :ref:`mdrun <gmx mdrun>` should be compiled separately for each machine.
 
+.. TODO add a note on AVX throttle and its impact on MPI-parallel and GPU accelerated runs
+
 Process(-or) level parallelization via OpenMP
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1139,8 +1141,16 @@ Performance considerations for GPU tasks
    with the GPUs focused on the calculation of the NB.
 
 #) With fast/modern GPUs and/or slow/old CPUs with few cores,
-   it generally helps to have the GPU do PME. With very few/weak
-   cores, it can help to have the GPU do bonded interactions also.
+   it generally helps to have the GPU do PME.
+
+#) Offloading bonded work to a GPU will often not improve simulation performance
+   as efficient CPU-based kernels can complete the bonded computation
+   before the GPU is done with other offloaded work. Therefore,
+   `gmx mdrun` will default to no bonded offload when PME is offloaded.
+   Typical cases where performance can be improvement with bonded offload are:
+   with significant bonded work (e.g. pure lipid or mostly polymer systems with little solvent),
+   with very few and/or slow CPU cores per GPU, or when the CPU does
+   other computation (e.g. PME, free energy).
 
 #) It *is* possible to use multiple GPUs with PME offload
    by letting e.g.
@@ -1228,7 +1238,7 @@ The minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
 also the :ref:`known limitations <opencl-known-limitations>`.
 
 Devices from the AMD GCN architectures (all series) are compatible
-and regularly tested; NVIDIA Fermi and later (compute capability 2.0)
+and regularly tested; NVIDIA Kepler and later (compute capability 3.0)
 are known to work, but before doing production runs always make sure that the |Gromacs| tests
 pass successfully on the hardware.
 

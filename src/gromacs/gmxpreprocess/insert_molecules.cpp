@@ -71,12 +71,10 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/unique_cptr.h"
 
 using gmx::RVec;
 
@@ -330,10 +328,11 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         {
             clear_rvec(newBox_);
             clear_rvec(deltaR_);
+            clear_mat(box_);
         }
 
         // From ITopologyProvider
-        gmx_mtop_t *getTopology(bool /*required*/) override { return topInfo_.mtop(); }
+        gmx_mtop_t *getTopology(bool /*required*/) override { return &top_; }
         int getAtomCount() override { return 0; }
 
         // From ICommandLineOptionsModule
@@ -363,7 +362,10 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         RotationType        enumRot_;
         Selection           replaceSel_;
 
-        TopologyInformation topInfo_;
+        gmx_mtop_t          top_;
+        std::vector<RVec>   x_;
+        matrix              box_;
+        int                 ePBC_;
 };
 
 void InsertMolecules::initOptions(IOptionsContainer                 *options,
@@ -493,9 +495,14 @@ void InsertMolecules::optionsFinished()
 
     if (!inputConfFile_.empty())
     {
+        bool  bTprFileWasRead;
+        rvec *temporaryX = nullptr;
         fprintf(stderr, "Reading solute configuration\n");
-        topInfo_.fillFromInputFile(inputConfFile_);
-        if (topInfo_.mtop()->natoms == 0)
+        readConfAndTopology(inputConfFile_.c_str(), &bTprFileWasRead, &top_,
+                            &ePBC_, &temporaryX, nullptr, box_);
+        x_.assign(temporaryX, temporaryX + top_.natoms);
+        sfree(temporaryX);
+        if (top_.natoms == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", inputConfFile_.c_str());
         }
@@ -504,29 +511,16 @@ void InsertMolecules::optionsFinished()
 
 int InsertMolecules::run()
 {
-    const char       *outputTitle = topInfo_.name();
-    std::vector<RVec> xOutput;
-    matrix            box = {{ 0 }};
-    if (topInfo_.hasTopology())
-    {
-        xOutput = copyOf(topInfo_.x());
-        topInfo_.getBox(box);
-    }
-    else
-    {
-        xOutput.resize(topInfo_.mtop()->natoms);
-    }
-    auto          atomsSolute = topInfo_.copyAtoms();
     std::set<int> removableAtoms;
     if (replaceSel_.isValid())
     {
         t_pbc       pbc;
-        set_pbc(&pbc, topInfo_.ePBC(), box);
+        set_pbc(&pbc, ePBC_, box_);
         t_trxframe *fr;
         snew(fr, 1);
-        fr->natoms = topInfo_.mtop()->natoms;
+        fr->natoms = x_.size();
         fr->bX     = TRUE;
-        fr->x      = as_rvec_array(xOutput.data());
+        fr->x      = as_rvec_array(x_.data());
         selections_.evaluate(fr, &pbc);
         sfree(fr);
         removableAtoms.insert(replaceSel_.atomIndices().begin(),
@@ -536,59 +530,70 @@ int InsertMolecules::run()
         // individual atoms.
     }
 
-    int ePBCForOutput = topInfo_.ePBC();
+    int ePBCForOutput = ePBC_;
     if (bBox_)
     {
         ePBCForOutput = epbcXYZ;
-        clear_mat(box);
-        box[XX][XX] = newBox_[XX];
-        box[YY][YY] = newBox_[YY];
-        box[ZZ][ZZ] = newBox_[ZZ];
+        clear_mat(box_);
+        box_[XX][XX] = newBox_[XX];
+        box_[YY][YY] = newBox_[YY];
+        box_[ZZ][ZZ] = newBox_[ZZ];
     }
-    if (det(box) == 0)
+    if (det(box_) == 0)
     {
         gmx_fatal(FARGS, "Undefined solute box.\nCreate one with gmx editconf "
                   "or give explicit -box command line option");
     }
 
-    fprintf(stderr, "Reading molecule configuration\n");
-    TopologyInformation      topInfoForInsertedMolecule;
-    topInfoForInsertedMolecule.fillFromInputFile(insertConfFile_);
-    auto                     atomsInserted = topInfoForInsertedMolecule.atoms();
-    std::vector<RVec>        xInserted     = copyOf(topInfoForInsertedMolecule.x());
+    gmx_mtop_t         topInserted;
+    t_atoms            atomsInserted;
+    std::vector<RVec>  xInserted;
+    {
+        bool        bTprFileWasRead;
+        int         ePBC_dummy;
+        matrix      box_dummy;
+        rvec       *temporaryX;
+        readConfAndTopology(insertConfFile_.c_str(), &bTprFileWasRead, &topInserted,
+                            &ePBC_dummy, &temporaryX, nullptr, box_dummy);
+        xInserted.assign(temporaryX, temporaryX + topInserted.natoms);
+        sfree(temporaryX);
+        atomsInserted = gmx_mtop_global_atoms(&topInserted);
+        if (atomsInserted.nr == 0)
+        {
+            gmx_fatal(FARGS, "No molecule in %s, please check your input",
+                      insertConfFile_.c_str());
+        }
+        if (top_.name == nullptr)
+        {
+            top_.name = topInserted.name;
+        }
+        if (positionFile_.empty())
+        {
+            center_molecule(xInserted);
+        }
+    }
 
-    if (topInfoForInsertedMolecule.mtop()->natoms == 0)
-    {
-        gmx_fatal(FARGS, "No molecule in %s, please check your input",
-                  insertConfFile_.c_str());
-    }
-    if (outputTitle == nullptr)
-    {
-        outputTitle = topInfoForInsertedMolecule.name();
-    }
-    if (positionFile_.empty())
-    {
-        center_molecule(xInserted);
-    }
+    t_atoms atoms = gmx_mtop_global_atoms(&top_);
 
-    auto              symtabInserted = duplicateSymtab(&topInfo_.mtop()->symtab);
-    const sfree_guard symtabInsertedGuard(symtabInserted);
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
-                atomsSolute.get(), symtabInserted, &xOutput, removableAtoms, *atomsInserted, xInserted,
-                ePBCForOutput, box, positionFile_, deltaR_, enumRot_);
+                &atoms, &top_.symtab, &x_, removableAtoms, atomsInserted, xInserted,
+                ePBCForOutput, box_, positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), outputTitle, atomsSolute.get(),
-                   as_rvec_array(xOutput.data()), nullptr, ePBCForOutput, box);
+    write_sto_conf(outputConfFile_.c_str(), *top_.name, &atoms,
+                   as_rvec_array(x_.data()), nullptr, ePBCForOutput, box_);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
-            atomsSolute->nr, atomsSolute->nres);
-    done_symtab(symtabInserted);
+            atoms.nr, atoms.nres);
+
+    done_atom(&atoms);
+    done_atom(&atomsInserted);
+
     return 0;
 }
 

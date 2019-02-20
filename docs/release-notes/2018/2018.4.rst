@@ -18,7 +18,7 @@ or LJ PME mesh forces would be scaled with lambda. Note that this bug
 did not affect the, usual, setup where charges or atom types are actually
 perturbed.
 
-:issue: `2640`
+:issue:`2640`
 
 Add constraint contribution to foreign Hamiltonian differences
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -27,7 +27,7 @@ The contribution of perturbed constraints was missing from the foreign
 Hamiltonian values. This is important for free energy calculations,
 such as BAR.
 
-:issue: `2703`
+:issue:`2703`
 
 Add mass contribution to foreign Hamiltonian differences
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -35,7 +35,7 @@ Add mass contribution to foreign Hamiltonian differences
 For free energy calculations with perturbed masses, the kinetic energy
 contribution was missing from the foreign Hamiltonian values.
 
-:issue: `2703`
+:issue:`2703`
 
 Work around bugs with expanded ensemble runs
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -45,8 +45,8 @@ with the velocity Verlet integrator with nstcalcenergy>1 or with
 other integrators when nstexpanded was not a multiple of nstcalcenergy.
 In these cases mdrun now sets nstcalcenergy to 1.
 
-:issue: `2714`
-:issue: `2718`
+:issue:`2714`
+:issue:`2718`
 
 Checkpoint continuations require suitable .tpr files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -57,7 +57,7 @@ a particular result, but the use of that option is already deprecated.
 Use gmx grompp or gmx convert-tpr to make a .tpr file that expresses
 the intent.
 
-:issue: `2717`
+:issue:`2717`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^

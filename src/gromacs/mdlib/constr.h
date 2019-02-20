@@ -120,6 +120,9 @@ class Constraints
         /*! \brief Returns the total number of flexible constraints in the system. */
         int numFlexibleConstraints() const;
 
+        /*! \brief Returns whether the system contains perturbed constraints */
+        bool havePerturbedConstraints() const;
+
         /*! \brief Set up all the local constraints for the domain.
          *
          * \todo Make this a callback that is called automatically

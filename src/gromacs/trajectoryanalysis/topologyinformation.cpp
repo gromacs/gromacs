@@ -60,8 +60,7 @@ namespace gmx
 {
 
 TopologyInformation::TopologyInformation()
-    : mtop_(std::make_unique<gmx_mtop_t>()),
-      hasLoadedMtop_(false),
+    : hasLoadedMtop_(false),
       expandedTopology_(nullptr),
       atoms_ (nullptr),
       bTop_(false), ePBC_(-1)

@@ -112,7 +112,7 @@ void calculate_force_switch_F(const  cu_nbparam_t nbparam,
 
     *F_invr  +=
         -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
-        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+        c12*(repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
 }
 
 /*! Apply force switch, force-only version. */
@@ -144,7 +144,7 @@ void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
 
     *F_invr  +=
         -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
-        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+        c12*(repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
     *E_lj    +=
         c6*(disp_shift_F2 + disp_shift_F3*r_switch)*r_switch*r_switch*r_switch -
         c12*(repu_shift_F2 + repu_shift_F3*r_switch)*r_switch*r_switch*r_switch;

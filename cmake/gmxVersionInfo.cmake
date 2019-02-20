@@ -83,7 +83,6 @@
 #       This ID is used for the source code tarball.
 #   GMX_MANUAL_DOI_ID
 #       Same as above, but for the reference manual.
-# Setting and retrieving of those variables is handled in gmxCheckReleaseDOI.cmake
 # They are collected into a single section below.
 # The following variables are set based on these:
 #   GMX_VERSION            String composed from GMX_VERSION_* numeric variables
