@@ -38,5 +38,10 @@ set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
+if(GMX_USE_CUDA)
+    gmx_add_libgromacs_sources(
+       lincs_cuda_impl.cu
+       )
+endif()
 
 gmx_install_headers(simulationsignal.h)
