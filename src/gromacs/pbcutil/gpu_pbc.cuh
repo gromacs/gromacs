@@ -36,6 +36,7 @@
 #define GMX_PBCUTIL_GPU_PBC_CUH
 
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/gpu_utils/gpu_vec.cuh"
 
 /*! \brief Compact and ordered version of the PBC matrix.
  *
@@ -112,6 +113,42 @@ int pbcDxAiuc(const PbcAiuc &pbcAiuc,
     {
         return 0;
     }
+}
+
+/*! \brief Computes the vector between two points taking PBC into account.
+ *
+ * Computes the vector dr between points x2 and x1, taking into account the
+ * periodic boundary conditions, described in pbcAiuc object. Same as above,
+ * only takes and returns data in float3 format. Does not return shifts.
+ *
+ * \param[in]  pbcAiuc  PBC object.
+ * \param[in]  x1       Coordinates of the first point.
+ * \param[in]  x2       Coordinates of the second point.
+ * \returns    dx       Resulting distance.
+ */
+static __forceinline__ __device__
+float3 pbcDxAiucFloat3(const PbcAiuc &pbcAiuc,
+                       const float3  &x1,
+                       const float3  &x2)
+{
+    float3 dx;
+    dx.x = x1.x - x2.x;
+    dx.y = x1.y - x2.y;
+    dx.z = x1.z - x2.z;
+
+    float shz  = rintf(dx.z*pbcAiuc.invBoxDiagZ);
+    dx.x    -= shz*pbcAiuc.boxZX;
+    dx.y    -= shz*pbcAiuc.boxZY;
+    dx.z    -= shz*pbcAiuc.boxZZ;
+
+    float shy  = rintf(dx.y*pbcAiuc.invBoxDiagY);
+    dx.x    -= shy*pbcAiuc.boxYX;
+    dx.y    -= shy*pbcAiuc.boxYY;
+
+    float shx  = rintf(dx.x*pbcAiuc.invBoxDiagX);
+    dx.x    -= shx*pbcAiuc.boxXX;
+
+    return dx;
 }
 
 /*! \brief Set the PBC data to use in GPU kernels.
