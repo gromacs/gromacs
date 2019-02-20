@@ -85,17 +85,16 @@
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */
 
-static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
+static void gen_pairs(SystemParameters *nbs, SystemParameters *pairs, real fudge, int comb)
 {
-    int     i, j, ntp, nrfp, nrfpA, nrfpB, nnn;
+    int     ntp, nrfp, nrfpA, nrfpB, nnn;
     real    scaling;
-    ntp       = nbs->nr;
+    ntp       = nbs->nr();
     nnn       = static_cast<int>(std::sqrt(static_cast<double>(ntp)));
     GMX_ASSERT(nnn * nnn == ntp, "Number of pairs of generated non-bonded parameters should be a perfect square");
     nrfp      = NRFP(F_LJ);
     nrfpA     = interaction_function[F_LJ14].nrfpA;
     nrfpB     = interaction_function[F_LJ14].nrfpB;
-    pairs->nr = ntp;
 
     if ((nrfp  != nrfpA) || (nrfpA != nrfpB))
     {
@@ -103,17 +102,17 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
     }
 
     fprintf(stderr, "Generating 1-4 interactions: fudge = %g\n", fudge);
-    snew(pairs->param, pairs->nr);
-    for (i = 0; (i < ntp); i++)
+    for (int i = 0; (i < ntp); i++)
     {
+        pairs->param.emplace_back();
         /* Copy param.a */
-        pairs->param[i].a[0] = i / nnn;
-        pairs->param[i].a[1] = i % nnn;
+        pairs->param.back().a[0] = i / nnn;
+        pairs->param.back().a[1] = i % nnn;
         /* Copy normal and FEP parameters and multiply by fudge factor */
 
 
 
-        for (j = 0; (j < nrfp); j++)
+        for (int j = 0; (j < nrfp); j++)
         {
             /* If we are using sigma/epsilon values, only the epsilon values
              * should be scaled, but not sigma.
@@ -128,12 +127,12 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
                 scaling = fudge;
             }
 
-            pairs->param[i].c[j]      = scaling*nbs->param[i].c[j];
+            pairs->param.back().c[j]      = scaling*nbs->param[i].c[j];
             /* NOTE: this should be clear to the compiler, but some gcc 5.2 versions
              *  issue false positive warnings for the pairs->param.c[] indexing below.
              */
             assert(2*nrfp <= MAXFORCEPARAM);
-            pairs->param[i].c[nrfp+j] = scaling*nbs->param[i].c[j];
+            pairs->param.back().c[nrfp+j] = scaling*nbs->param[i].c[j];
         }
     }
 }
@@ -381,7 +380,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          int         *nrmols,
                          std::vector<MoleculeInformation> *molinfo,
                          std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
-                         t_params    plist[],
+                         gmx::ArrayRef<SystemParameters> plist,
                          int         *combination_rule,
                          double      *reppow,
                          t_gromppopts *opts,
@@ -453,8 +452,8 @@ static char **read_topol(const char *infile, const char *outfile,
     *reppow  = 12.0;      /* Default value for repulsion power     */
 
     /* Init the number of CMAP torsion angles  and grid spacing */
-    plist[F_CMAP].grid_spacing = 0;
-    plist[F_CMAP].nc           = 0;
+    plist[F_CMAP].cmakeGridSpacing = 0;
+    plist[F_CMAP].cmapAngles       = 0;
 
     bWarn_copy_A_B = bFEP;
 
@@ -938,7 +937,7 @@ char **do_top(bool                                  bVerbose,
               t_gromppopts                         *opts,
               bool                                  bZero,
               t_symtab                             *symtab,
-              t_params                              plist[],
+              gmx::ArrayRef<SystemParameters>       plist,
               int                                  *combination_rule,
               double                               *repulsion_power,
               real                                 *fudgeQQ,

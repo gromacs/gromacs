@@ -192,8 +192,6 @@ void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, gpp_atomtype *at
     int       n2m;
     t_2morse *t2m;
 
-    bool     *bRemoveHarm;
-
     /* First get the data */
     t2m = read_dissociation_energies(&n2m);
     if (n2m <= 0)
@@ -209,65 +207,46 @@ void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, gpp_atomtype *at
         /* Check how many morse and harmonic BONDSs there are, increase size of
          * morse with the number of harmonics
          */
-        int nrmorse = mol.plist[F_MORSE].nr;
-
         for (int bb = 0; (bb < F_NRE); bb++)
         {
             if ((interaction_function[bb].flags & IF_BTYPE) && (bb != F_MORSE))
             {
-                int nrharm  = mol.plist[bb].nr;
-                pr_alloc(nrharm, &(mol.plist[F_MORSE]));
-                snew(bRemoveHarm, nrharm);
+                int               nrHarm    = mol.plist[bb].nr();
+                SystemParameters *harmonics = &mol.plist[bb];
 
                 /* Now loop over the harmonics, trying to convert them */
-                for (int j = 0; (j < nrharm); j++)
+                for (auto harm = harmonics->param.begin(); harm != harmonics->param.end(); )
                 {
-                    int  ni   = mol.plist[bb].param[j].ai();
-                    int  nj   = mol.plist[bb].param[j].aj();
+                    int  ni   = harm->ai();
+                    int  nj   = harm->aj();
                     real edis =
                         search_e_diss(n2m, t2m,
                                       get_atomtype_name(mol.atoms.atom[ni].type, atype),
                                       get_atomtype_name(mol.atoms.atom[nj].type, atype));
                     if (edis != 0)
                     {
-                        bRemoveHarm[j] = true;
-                        real b0             = mol.plist[bb].param[j].c[0];
-                        real kb             = mol.plist[bb].param[j].c[1];
+                        real b0             = harm->c[0];
+                        real kb             = harm->c[1];
                         real beta           = std::sqrt(kb/(2*edis));
-                        mol.plist[F_MORSE].param[nrmorse].a[0] = ni;
-                        mol.plist[F_MORSE].param[nrmorse].a[1] = nj;
-                        mol.plist[F_MORSE].param[nrmorse].c[0] = b0;
-                        mol.plist[F_MORSE].param[nrmorse].c[1] = edis;
-                        mol.plist[F_MORSE].param[nrmorse].c[2] = beta;
-                        nrmorse++;
+                        mol.plist[F_MORSE].param.emplace_back();
+                        initializeTparam(&mol.plist[F_MORSE].param.back());
+                        mol.plist[F_MORSE].param.back().a[0] = ni;
+                        mol.plist[F_MORSE].param.back().a[1] = nj;
+                        mol.plist[F_MORSE].param.back().c[0] = b0;
+                        mol.plist[F_MORSE].param.back().c[1] = edis;
+                        mol.plist[F_MORSE].param.back().c[2] = beta;
+                        harm = harmonics->param.erase(harm);
                     }
-                }
-                mol.plist[F_MORSE].nr = nrmorse;
-
-                /* Now remove the harmonics */
-                int last = 0;
-                for (int j = 0; (j < nrharm); j++)
-                {
-                    if (!bRemoveHarm[j])
+                    else
                     {
-                        /* Copy it to the last position */
-                        for (int k = 0; (k < MAXATOMLIST); k++)
-                        {
-                            mol.plist[bb].param[last].a[k] =
-                                mol.plist[bb].param[j].a[k];
-                        }
-                        for (int k = 0; (k < MAXFORCEPARAM); k++)
-                        {
-                            mol.plist[bb].param[last].c[k] =
-                                mol.plist[bb].param[j].c[k];
-                        }
-                        last++;
+                        ++harm;
                     }
                 }
-                sfree(bRemoveHarm);
+                int nrMorse = mol.plist[bb].nr();
+                int diff    = nrHarm - nrMorse;
+
                 fprintf(stderr, "Converted %d out of %d %s to morse bonds for mol %d\n",
-                        nrharm-last, nrharm, interaction_function[bb].name, i);
-                mol.plist[bb].nr = last;
+                        diff, nrHarm, interaction_function[bb].name, i);
             }
         }
         i++;

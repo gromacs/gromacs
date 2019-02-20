@@ -106,7 +106,6 @@
 
 void MoleculeInformation::initMolInfo()
 {
-    init_plist(plist);
     init_block(&cgs);
     init_block(&mols);
     init_blocka(&excls);
@@ -116,7 +115,6 @@ void MoleculeInformation::initMolInfo()
 void MoleculeInformation::partialCleanUp()
 {
     done_block(&mols);
-    done_plist(plist);
 }
 
 void MoleculeInformation::fullCleanUp()
@@ -124,7 +122,6 @@ void MoleculeInformation::fullCleanUp()
     done_atom (&atoms);
     done_block(&cgs);
     done_block(&mols);
-    done_plist(plist);
 }
 
 static int rm_interactions(int ifunc, gmx::ArrayRef<MoleculeInformation> mols)
@@ -133,8 +130,8 @@ static int rm_interactions(int ifunc, gmx::ArrayRef<MoleculeInformation> mols)
     /* For all the molecule types */
     for (auto &mol : mols)
     {
-        n                  += mol.plist[ifunc].nr;
-        mol.plist[ifunc].nr = 0;
+        n                  += mol.plist[ifunc].nr();
+        mol.plist[ifunc].param.clear();
     }
     return n;
 }
@@ -432,7 +429,7 @@ static int nint_ftype(gmx_mtop_t *mtop, gmx::ArrayRef<const MoleculeInformation>
     int nint = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        nint += molb.nmol*mi[molb.type].plist[ftype].nr;
+        nint += molb.nmol*mi[molb.type].plist[ftype].nr();
     }
 
     return nint;
@@ -509,7 +506,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
            gpp_atomtype *atype, gmx_mtop_t *sys,
            std::vector<MoleculeInformation> *mi,
            std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
-           t_params plist[],
+           gmx::ArrayRef<SystemParameters> plist,
            int *comb, double *reppow, real *fudgeQQ,
            gmx_bool bMorse,
            warninp *wi)
@@ -835,7 +832,7 @@ static void read_posres(gmx_mtop_t *mtop,
     matrix              box, invbox;
     int                 natoms, npbcdim = 0;
     char                warn_buf[STRLEN];
-    int                 a, i, ai, j, k, nat_molb;
+    int                 a, ai, nat_molb;
     t_atom             *atom;
 
     snew(top, 1);
@@ -854,7 +851,7 @@ static void read_posres(gmx_mtop_t *mtop,
     if (rc_scaling != erscNO)
     {
         copy_mat(box, invbox);
-        for (j = npbcdim; j < DIM; j++)
+        for (int j = npbcdim; j < DIM; j++)
         {
             clear_rvec(invbox[j]);
             invbox[j][j] = 1;
@@ -870,12 +867,12 @@ static void read_posres(gmx_mtop_t *mtop,
     for (gmx_molblock_t &molb : mtop->molblock)
     {
         nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.nr;
-        const t_params *pr   = &(molinfo[molb.type].plist[F_POSRES]);
-        const t_params *prfb = &(molinfo[molb.type].plist[F_FBPOSRES]);
-        if (pr->nr > 0 || prfb->nr > 0)
+        const SystemParameters *pr   = &(molinfo[molb.type].plist[F_POSRES]);
+        const SystemParameters *prfb = &(molinfo[molb.type].plist[F_FBPOSRES]);
+        if (pr->nr() > 0 || prfb->nr() > 0)
         {
             atom = mtop->moltype[molb.type].atoms.atom;
-            for (i = 0; (i < pr->nr); i++)
+            for (int i = 0; (i < pr->nr()); i++)
             {
                 ai = pr->param[i].ai();
                 if (ai >= natoms)
@@ -887,7 +884,7 @@ static void read_posres(gmx_mtop_t *mtop,
                 if (rc_scaling == erscCOM)
                 {
                     /* Determine the center of mass of the posres reference coordinates */
-                    for (j = 0; j < npbcdim; j++)
+                    for (int j = 0; j < npbcdim; j++)
                     {
                         sum[j] += atom[ai].m*x[a+ai][j];
                     }
@@ -895,7 +892,7 @@ static void read_posres(gmx_mtop_t *mtop,
                 }
             }
             /* Same for flat-bottomed posres, but do not count an atom twice for COM */
-            for (i = 0; (i < prfb->nr); i++)
+            for (int i = 0; (i < prfb->nr()); i++)
             {
                 ai = prfb->param[i].ai();
                 if (ai >= natoms)
@@ -906,7 +903,7 @@ static void read_posres(gmx_mtop_t *mtop,
                 if (rc_scaling == erscCOM && !hadAtom[ai])
                 {
                     /* Determine the center of mass of the posres reference coordinates */
-                    for (j = 0; j < npbcdim; j++)
+                    for (int j = 0; j < npbcdim; j++)
                     {
                         sum[j] += atom[ai].m*x[a+ai][j];
                     }
@@ -916,7 +913,7 @@ static void read_posres(gmx_mtop_t *mtop,
             if (!bTopB)
             {
                 molb.posres_xA.resize(nat_molb);
-                for (i = 0; i < nat_molb; i++)
+                for (int i = 0; i < nat_molb; i++)
                 {
                     copy_rvec(x[a+i], molb.posres_xA[i]);
                 }
@@ -924,7 +921,7 @@ static void read_posres(gmx_mtop_t *mtop,
             else
             {
                 molb.posres_xB.resize(nat_molb);
-                for (i = 0; i < nat_molb; i++)
+                for (int i = 0; i < nat_molb; i++)
                 {
                     copy_rvec(x[a+i], molb.posres_xB[i]);
                 }
@@ -938,7 +935,7 @@ static void read_posres(gmx_mtop_t *mtop,
         {
             gmx_fatal(FARGS, "The total mass of the position restraint atoms is 0");
         }
-        for (j = 0; j < npbcdim; j++)
+        for (int j = 0; j < npbcdim; j++)
         {
             com[j] = sum[j]/totmass;
         }
@@ -955,15 +952,15 @@ static void read_posres(gmx_mtop_t *mtop,
             if (!molb.posres_xA.empty() || !molb.posres_xB.empty())
             {
                 std::vector<gmx::RVec> &xp = (!bTopB ? molb.posres_xA : molb.posres_xB);
-                for (i = 0; i < nat_molb; i++)
+                for (int i = 0; i < nat_molb; i++)
                 {
-                    for (j = 0; j < npbcdim; j++)
+                    for (int j = 0; j < npbcdim; j++)
                     {
                         if (rc_scaling == erscALL)
                         {
                             /* Convert from Cartesian to crystal coordinates */
                             xp[i][j] *= invbox[j][j];
-                            for (k = j+1; k < npbcdim; k++)
+                            for (int k = j+1; k < npbcdim; k++)
                             {
                                 xp[i][j] += invbox[k][j]*xp[i][k];
                             }
@@ -981,10 +978,10 @@ static void read_posres(gmx_mtop_t *mtop,
         if (rc_scaling == erscCOM)
         {
             /* Convert the COM from Cartesian to crystal coordinates */
-            for (j = 0; j < npbcdim; j++)
+            for (int j = 0; j < npbcdim; j++)
             {
                 com[j] *= invbox[j][j];
-                for (k = j+1; k < npbcdim; k++)
+                for (int k = j+1; k < npbcdim; k++)
                 {
                     com[j] += invbox[k][j]*com[k];
                 }
@@ -1111,10 +1108,10 @@ interpolate1d( double           xmin,
 
 
 static void
-setup_cmap (int                    grid_spacing,
-            int                    nc,
-            const real *           grid,
-            gmx_cmap_t       *     cmap_grid)
+setup_cmap (int                       grid_spacing,
+            int                       nc,
+            gmx::ArrayRef<const real> grid,
+            gmx_cmap_t          *     cmap_grid)
 {
     int                 i, j, k, ii, jj, kk, idx;
     int                 offset;
@@ -1213,17 +1210,17 @@ static int count_constraints(const gmx_mtop_t                        *mtop,
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         count_mol = 0;
-        const t_params *plist = mi[molb.type].plist;
+        const SystemParameters *plist = mi[molb.type].plist;
 
         for (i = 0; i < F_NRE; i++)
         {
             if (i == F_SETTLE)
             {
-                count_mol += 3*plist[i].nr;
+                count_mol += 3*plist[i].nr();
             }
             else if (interaction_function[i].flags & IF_CONSTRAINT)
             {
-                count_mol += plist[i].nr;
+                count_mol += plist[i].nr();
             }
         }
 
@@ -1694,7 +1691,6 @@ int gmx_grompp(int argc, char *argv[])
     std::unique_ptr<MoleculeInformation> intermolecular_interactions;
     gpp_atomtype                        *atype;
     int                                  nvsite, comb;
-    t_params                            *plist;
     real                                 fudgeQQ;
     double                               reppow;
     const char                          *mdparin;
@@ -1799,9 +1795,8 @@ int gmx_grompp(int argc, char *argv[])
         warning_error(wi, warn_buf);
     }
 
-    snew(plist, F_NRE);
-    init_plist(plist);
-    gmx_mtop_t sys;
+    std::array<SystemParameters, F_NRE> plist;
+    gmx_mtop_t                          sys;
     atype = init_atomtype();
     if (debug)
     {
@@ -1955,10 +1950,10 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
-    if (plist[F_CMAP].ncmap > 0)
+    if (plist[F_CMAP].nr() > 0)
     {
-        init_cmap_grid(&sys.ffparams.cmap_grid, plist[F_CMAP].nc, plist[F_CMAP].grid_spacing);
-        setup_cmap(plist[F_CMAP].grid_spacing, plist[F_CMAP].nc, plist[F_CMAP].cmap, &sys.ffparams.cmap_grid);
+        init_cmap_grid(&sys.ffparams.cmap_grid, plist[F_CMAP].cmapAngles, plist[F_CMAP].cmakeGridSpacing);
+        setup_cmap(plist[F_CMAP].cmakeGridSpacing, plist[F_CMAP].cmapAngles, plist[F_CMAP].cmap, &sys.ffparams.cmap_grid);
     }
 
     set_wall_atomtype(atype, opts, ir, wi);
@@ -1987,12 +1982,12 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     ntype = get_atomtype_ntypes(atype);
-    convert_params(ntype, plist, mi, intermolecular_interactions.get(),
-                   comb, reppow, fudgeQQ, &sys);
+    convertSystemParameters(ntype, plist, mi, intermolecular_interactions.get(),
+                            comb, reppow, fudgeQQ, &sys);
 
     if (debug)
     {
-        pr_symtab(debug, 0, "After convert_params", &sys.symtab);
+        pr_symtab(debug, 0, "After converSystemParameters", &sys.symtab);
     }
 
     /* set ptype to VSite for virtual sites */
@@ -2323,8 +2318,6 @@ int gmx_grompp(int argc, char *argv[])
     sfree(opts->define);
     sfree(opts->include);
     sfree(opts);
-    done_plist(plist);
-    sfree(plist);
     for (auto &mol : mi)
     {
         // Some of the contents of molinfo have been stolen, so

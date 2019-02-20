@@ -53,34 +53,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static void copy_bond (t_params *pr, int to, int from)
-/* copies an entry in a bond list to another position.
- * does no allocing or freeing of memory
- */
-{
-    /*memcpy((char*) &(pr->param[to]),(char*) &(pr->param[from]),
-       (size_t)sizeof(pr->param[from]));*/
-    int i;
-
-    if (to != from)
-    {
-        range_check(to, 0, pr->nr);
-        range_check(from, 0, pr->nr);
-        for (i = 0; (i < MAXATOMLIST); i++)
-        {
-            pr->param[to].a[i] = pr->param[from].a[i];
-        }
-        for (i = 0; (i < MAXFORCEPARAM); i++)
-        {
-            pr->param[to].c[i] = pr->param[from].c[i];
-        }
-        for (i = 0; (i < MAXSLEN); i++)
-        {
-            pr->param[to].s[i] = pr->param[from].s[i];
-        }
-    }
-}
-
 static int count_hydrogens (char ***atomname, int nra, const int a[])
 {
     int  i, nh;
@@ -103,14 +75,10 @@ static int count_hydrogens (char ***atomname, int nra, const int a[])
     return nh;
 }
 
-void make_shake (t_params plist[], t_atoms *atoms, int nshake)
+void make_shake (gmx::ArrayRef<SystemParameters> plist, t_atoms *atoms, int nshake)
 {
     char          ***info = atoms->atomname;
-    t_params        *pr;
-    t_params        *bonds;
-    t_param          p, *bond, *ang;
-    real             b_ij, b_jk;
-    int              i, j, ftype, ftype_a;
+    t_param          p;
     bool             bFound;
 
     if (nshake != eshNONE)
@@ -138,23 +106,24 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
             /* Add all the angles with hydrogens to the shake list
              * and remove them from the bond list
              */
-            for (ftype = 0; (ftype < F_NRE); ftype++)
+            for (int ftype = 0; (ftype < F_NRE); ftype++)
             {
                 if (interaction_function[ftype].flags & IF_BTYPE)
                 {
-                    bonds = &(plist[ftype]);
+                    SystemParameters *bonds = &(plist[ftype]);
 
-                    for (ftype_a = 0; (bonds->nr > 0 && ftype_a < F_NRE); ftype_a++)
+                    for (int ftype_a = 0; (bonds->nr() > 0 && ftype_a < F_NRE); ftype_a++)
                     {
                         if (interaction_function[ftype_a].flags & IF_ATYPE)
                         {
-                            pr = &(plist[ftype_a]);
+                            SystemParameters *pr = &(plist[ftype_a]);
 
-                            for (i = 0; (i < pr->nr); )
+                            for (auto singleAngle = pr->param.begin();
+                                 singleAngle != pr->param.end(); )
                             {
-                                int numhydrogens;
+                                int            numhydrogens;
 
-                                ang = &(pr->param[i]);
+                                const t_param *ang = &(*singleAngle);
 #ifdef DEBUG
                                 printf("Angle: %d-%d-%d\n", ang->ai(), ang->aj(), ang->ak());
 #endif
@@ -172,10 +141,12 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
 
                                     /* Calculate length of constraint */
                                     bFound = FALSE;
-                                    b_ij   = b_jk = 0.0;
-                                    for (j = 0; !bFound && (j < bonds->nr); j++)
+                                    real b_ij = 0.0;
+                                    real b_jk = 0.0;
+                                    for (auto singleBond = bonds->param.begin();
+                                         singleBond != bonds->param.end() && !bFound; singleBond++)
                                     {
-                                        bond = &(bonds->param[j]);
+                                        const t_param *bond = &(*singleBond);
                                         if (((bond->ai() == ang->ai()) &&
                                              (bond->aj() == ang->aj())) ||
                                             ((bond->ai() == ang->aj()) &&
@@ -202,15 +173,17 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                                         printf("p: %d, q: %d, dist: %12.5e\n", p.ai(), p.aj(), p.c0());
 #endif
                                         add_param_to_list (&(plist[F_CONSTR]), &p);
-                                        /* move the last bond to this position */
-                                        copy_bond (pr, i, pr->nr-1);
-                                        /* should free memory here!! */
-                                        pr->nr--;
+
+                                        singleAngle = pr->param.erase(singleAngle);
+                                    }
+                                    else
+                                    {
+                                        ++singleAngle;
                                     }
                                 }
                                 else
                                 {
-                                    i++;
+                                    ++singleAngle;
                                 }
                             }
                         } /* if IF_ATYPE */
@@ -222,30 +195,29 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
         /* Add all the bonds with hydrogens to the shake list
          * and remove them from the bond list
          */
-        for (ftype = 0; (ftype < F_NRE); ftype++)
+        for (int ftype = 0; (ftype < F_NRE); ftype++)
         {
             if (interaction_function[ftype].flags & IF_BTYPE)
             {
-                pr = &(plist[ftype]);
-                j  = 0;
-                for (i = 0; i < pr->nr; i++)
+                SystemParameters *pr = &(plist[ftype]);
+                for (auto singleBond = pr->param.begin(); singleBond != pr->param.end(); )
                 {
                     if ( (nshake != eshHBONDS) ||
-                         (count_hydrogens (info, 2, pr->param[i].a) > 0) )
+                         (count_hydrogens (info, 2, singleBond->a) > 0) )
                     {
                         /* append this bond to the shake list */
-                        p.ai() = pr->param[i].ai();
-                        p.aj() = pr->param[i].aj();
-                        p.c0() = pr->param[i].c0();
-                        p.c1() = pr->param[i].c2();
+                        p.ai() = singleBond->ai();
+                        p.aj() = singleBond->aj();
+                        p.c0() = singleBond->c0();
+                        p.c1() = singleBond->c2();
                         add_param_to_list (&(plist[F_CONSTR]), &p);
+                        singleBond = pr->param.erase(singleBond);
                     }
                     else
                     {
-                        copy_bond(pr, j++, i);
+                        ++singleBond;
                     }
                 }
-                pr->nr = j;
             }
         }
     }

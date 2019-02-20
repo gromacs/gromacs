@@ -50,6 +50,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -273,7 +274,7 @@ void done_atomtype(gpp_atomtype *ga)
 
 static int search_atomtypes(gpp_atomtype *ga, int *n, int typelist[],
                             int thistype,
-                            t_param param[], int ftype)
+                            gmx::ArrayRef<const t_param> param, int ftype)
 {
     int      i, nn, nrfp, j, k, ntype, tli;
     bool     bFound = FALSE;
@@ -326,13 +327,11 @@ static int search_atomtypes(gpp_atomtype *ga, int *n, int typelist[],
     return i;
 }
 
-void renum_atype(t_params plist[], gmx_mtop_t *mtop,
+void renum_atype(gmx::ArrayRef<SystemParameters> plist, gmx_mtop_t *mtop,
                  int *wall_atomtype,
                  gpp_atomtype *ga, bool bVerbose)
 {
-    int         i, j, k, l, mi, mj, nat, nrfp, ftype, ntype;
-    t_atoms    *atoms;
-    t_param    *nbsnew;
+    int         nat, nrfp, ftype, ntype;
     int        *typelist;
     int        *new_atomnumber;
     char     ***new_atomname;
@@ -354,7 +353,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
      */
 
     /* Get nonbonded interaction type */
-    if (plist[F_LJ].nr > 0)
+    if (plist[F_LJ].nr() > 0)
     {
         ftype = F_LJ;
     }
@@ -370,8 +369,8 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     nat = 0;
     for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        atoms = &moltype.atoms;
-        for (i = 0; (i < atoms->nr); i++)
+        const t_atoms *atoms = &moltype.atoms;
+        for (int i = 0; (i < atoms->nr); i++)
         {
             atoms->atom[i].type =
                 search_atomtypes(ga, &nat, typelist, atoms->atom[i].type,
@@ -382,7 +381,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
         }
     }
 
-    for (i = 0; i < 2; i++)
+    for (int i = 0; i < 2; i++)
     {
         if (wall_atomtype[i] >= 0)
         {
@@ -396,34 +395,33 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     /* We now have a list of unique atomtypes in typelist */
 
     /* Renumber nlist */
-    nbsnew = nullptr;
-    snew(nbsnew, plist[ftype].nr);
+    std::vector<t_param> renumberParameters;
 
     nrfp  = NRFP(ftype);
 
-    for (i = k = 0; (i < nat); i++)
+    for (int i = 0; (i < nat); i++)
     {
-        mi = typelist[i];
-        for (j = 0; (j < nat); j++, k++)
+        int mi = typelist[i];
+        for (int j = 0; (j < nat); j++)
         {
-            mj = typelist[j];
-            for (l = 0; (l < nrfp); l++)
+            renumberParameters.emplace_back();
+            int mj = typelist[j];
+            for (int l = 0; (l < nrfp); l++)
             {
-                nbsnew[k].c[l] = plist[ftype].param[ntype*mi+mj].c[l];
+                renumberParameters.back().c[l] = plist[ftype].param[ntype*mi+mj].c[l];
             }
         }
         new_atomnumber[i] = get_atomtype_atomnumber(mi, ga);
         new_atomname[i]   = ga->atomname[mi];
     }
 
-    for (i = 0; (i < nat*nat); i++)
+    for (int i = 0; (i < nat*nat); i++)
     {
-        for (l = 0; (l < nrfp); l++)
+        for (int l = 0; (l < nrfp); l++)
         {
-            plist[ftype].param[i].c[l] = nbsnew[i].c[l];
+            plist[ftype].param[i].c[l] = renumberParameters[i].c[l];
         }
     }
-    plist[ftype].nr     = i;
     mtop->ffparams.atnr = nat;
 
     sfree(ga->atomnumber);
@@ -435,7 +433,6 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
 
     ga->nr = nat;
 
-    sfree(nbsnew);
     sfree(typelist);
 }
 

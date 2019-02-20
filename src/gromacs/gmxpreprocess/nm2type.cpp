@@ -192,7 +192,7 @@ static int match_str(const char *atom, const char *template_string)
 }
 
 int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
-            gpp_atomtype *atype, int *nbonds, t_params *bonds)
+            gpp_atomtype *atype, int *nbonds, SystemParameters *bonds)
 {
     int      cur = 0;
 #define prev (1-cur)
@@ -226,7 +226,7 @@ int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
     {
         aname_i = *atoms->atomname[i];
         nb      = 0;
-        for (j = 0; (j < bonds->nr); j++)
+        for (j = 0; (j < bonds->nr()); j++)
         {
             ai = bonds->param[j].ai();
             aj = bonds->param[j].aj();

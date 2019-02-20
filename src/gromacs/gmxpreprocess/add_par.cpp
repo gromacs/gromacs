@@ -72,7 +72,7 @@ static void clear_force_param(int i0, real c[])
     }
 }
 
-void add_param(t_params *ps, int ai, int aj, const real *c, const char *s)
+void add_param(SystemParameters *ps, int ai, int aj, const real *c, const char *s)
 {
     int i;
 
@@ -80,142 +80,142 @@ void add_param(t_params *ps, int ai, int aj, const real *c, const char *s)
     {
         gmx_fatal(FARGS, "Trying to add impossible atoms: ai=%d, aj=%d", ai, aj);
     }
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    clear_atom_list(2, ps->param[ps->nr].a);
+    ps->param.emplace_back();
+    initializeTparam(&ps->param.back());
+    ps->param.back().ai() = ai;
+    ps->param.back().aj() = aj;
+    clear_atom_list(2, ps->param.back().a);
     if (c == nullptr)
     {
-        clear_force_param(0, ps->param[ps->nr].c);
+        clear_force_param(0, ps->param.back().c);
     }
     else
     {
         for (i = 0; (i < MAXFORCEPARAM); i++)
         {
-            ps->param[ps->nr].c[i] = c[i];
+            ps->param.back().c[i] = c[i];
         }
     }
-    set_p_string(&(ps->param[ps->nr]), s);
-    ps->nr++;
+    set_p_string(&(ps->param.back()), s);
 }
 
-void add_imp_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
+void add_imp_param(SystemParameters *ps, int ai, int aj, int ak, int al, real c0, real c1,
                    const char *s)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
-    ps->param[ps->nr].c0() = c0;
-    ps->param[ps->nr].c1() = c1;
-    clear_force_param(2, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), s);
-    ps->nr++;
+    ps->param.emplace_back();
+    initializeTparam(&ps->param.back());
+    ps->param.back().ai() = ai;
+    ps->param.back().aj() = aj;
+    ps->param.back().ak() = ak;
+    ps->param.back().al() = al;
+    clear_atom_list  (4, ps->param.back().a);
+    ps->param.back().c0() = c0;
+    ps->param.back().c1() = c1;
+    clear_force_param(2, ps->param.back().c);
+    set_p_string(&(ps->param.back()), s);
 }
 
-void add_dih_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
+void add_dih_param(SystemParameters *ps, int ai, int aj, int ak, int al, real c0, real c1,
                    real c2, const char *s)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
-    ps->param[ps->nr].c0() = c0;
-    ps->param[ps->nr].c1() = c1;
-    ps->param[ps->nr].c2() = c2;
-    clear_force_param(3, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), s);
-    ps->nr++;
+    ps->param.emplace_back();
+    initializeTparam(&ps->param.back());
+    ps->param.back().ai() = ai;
+    ps->param.back().aj() = aj;
+    ps->param.back().ak() = ak;
+    ps->param.back().al() = al;
+    clear_atom_list  (4, ps->param.back().a);
+    ps->param.back().c0() = c0;
+    ps->param.back().c1() = c1;
+    ps->param.back().c2() = c2;
+    clear_force_param(3, ps->param.back().c);
+    set_p_string(&(ps->param.back()), s);
 }
 
-void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am, const char *s)
+void add_cmap_param(SystemParameters *ps, int ai, int aj, int ak, int al, int am, const char *s)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    ps->param[ps->nr].am() = am;
-    clear_atom_list(5, ps->param[ps->nr].a);
-    clear_force_param(0, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), s);
-    ps->nr++;
+    ps->param.emplace_back();
+    initializeTparam(&ps->param.back());
+    ps->param.back().ai() = ai;
+    ps->param.back().aj() = aj;
+    ps->param.back().ak() = ak;
+    ps->param.back().al() = al;
+    ps->param.back().am() = am;
+    clear_atom_list(5, ps->param.back().a);
+    clear_force_param(0, ps->param.back().c);
+    set_p_string(&(ps->param.back()), s);
 }
 
-void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak)
+void add_vsite2_atoms(SystemParameters *ps, int ai, int aj, int ak)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    clear_atom_list  (3, ps->param[ps->nr].a);
-    clear_force_param(0, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
+    ps->param.emplace_back();
+    initializeTparam(&ps->param.back());
+    ps->param.back().ai() = ai;
+    ps->param.back().aj() = aj;
+    ps->param.back().ak() = ak;
+    clear_atom_list  (3, ps->param.back().a);
+    clear_force_param(0, ps->param.back().c);
+    set_p_string(&(ps->param.back()), "");
 }
 
-void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0)
+void add_vsite2_param(SystemParameters *ps, int ai, int aj, int ak, real c0)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    clear_atom_list  (3, ps->param[ps->nr].a);
-    ps->param[ps->nr].c0() = c0;
-    clear_force_param(1, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
+    ps->param.emplace_back();
+    initializeTparam(&ps->param.back());
+    ps->param.back().ai() = ai;
+    ps->param.back().aj() = aj;
+    ps->param.back().ak() = ak;
+    clear_atom_list  (3, ps->param.back().a);
+    ps->param.back().c0() = c0;
+    clear_force_param(1, ps->param.back().c);
+    set_p_string(&(ps->param.back()), "");
 }
 
-void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
+void add_vsite3_param(SystemParameters *ps, int ai, int aj, int ak, int al,
                       real c0, real c1)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
-    ps->param[ps->nr].c0() = c0;
-    ps->param[ps->nr].c1() = c1;
-    clear_force_param(2, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
+    ps->param.emplace_back();
+    initializeTparam(&ps->param.back());
+    ps->param.back().ai() = ai;
+    ps->param.back().aj() = aj;
+    ps->param.back().ak() = ak;
+    ps->param.back().al() = al;
+    clear_atom_list  (4, ps->param.back().a);
+    ps->param.back().c0() = c0;
+    ps->param.back().c1() = c1;
+    clear_force_param(2, ps->param.back().c);
+    set_p_string(&(ps->param.back()), "");
 }
 
-void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, bool bSwapParity)
+void add_vsite3_atoms(SystemParameters *ps, int ai, int aj, int ak, int al, bool bSwapParity)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
-    clear_force_param(0, ps->param[ps->nr].c);
+    ps->param.emplace_back();
+    initializeTparam(&ps->param.back());
+    ps->param.back().ai() = ai;
+    ps->param.back().aj() = aj;
+    ps->param.back().ak() = ak;
+    ps->param.back().al() = al;
+    clear_atom_list  (4, ps->param.back().a);
+    clear_force_param(0, ps->param.back().c);
     if (bSwapParity)
     {
-        ps->param[ps->nr].c1() = -1;
+        ps->param.back().c1() = -1;
     }
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
+    set_p_string(&(ps->param.back()), "");
 }
 
-void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
+void add_vsite4_atoms(SystemParameters *ps, int ai, int aj, int ak, int al, int am)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    ps->param[ps->nr].am() = am;
-    clear_atom_list  (5, ps->param[ps->nr].a);
-    clear_force_param(0, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
+    ps->param.emplace_back();
+    initializeTparam(&ps->param.back());
+    ps->param.back().ai() = ai;
+    ps->param.back().aj() = aj;
+    ps->param.back().ak() = ak;
+    ps->param.back().al() = al;
+    ps->param.back().am() = am;
+    clear_atom_list  (5, ps->param.back().a);
+    clear_force_param(0, ps->param.back().c);
+    set_p_string(&(ps->param.back()), "");
 }
 
 int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool bNterm)
