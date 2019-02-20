@@ -150,7 +150,7 @@ static void get_bondeds(int nrat, const t_iatom atoms[],
     }
 }
 
-static at2vsitebond_t *make_at2vsitebond(int natoms, t_params plist[])
+static at2vsitebond_t *make_at2vsitebond(int natoms, gmx::ArrayRef<InteractionTypeParameters> plist)
 {
     bool           *bVSI;
     int             ftype, i, j, nrcheck, nr;
@@ -218,7 +218,7 @@ static void done_at2vsitebond(int natoms, at2vsitebond_t *at2vb)
     sfree(at2vb);
 }
 
-static at2vsitecon_t *make_at2vsitecon(int natoms, t_params plist[])
+static at2vsitecon_t *make_at2vsitecon(int natoms, gmx::ArrayRef<InteractionTypeParameters> plist)
 {
     bool          *bVSI;
     int            ftype, i, j, ai, aj, nr;
@@ -768,7 +768,7 @@ calc_vsite4fdn_param(t_param *param,
 
 
 int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
-               t_params plist[])
+               gmx::ArrayRef<InteractionTypeParameters> plist)
 {
     int             i, j, ftype;
     int             nvsite, nrbond, nrang, nridih, nrset;
@@ -934,12 +934,12 @@ typedef struct {
     int ftype, parnr;
 } t_pindex;
 
-static void check_vsite_constraints(t_params *plist,
+static void check_vsite_constraints(gmx::ArrayRef<InteractionTypeParameters> plist,
                                     int cftype, const int vsite_type[])
 {
-    int       i, k, n;
-    int       atom;
-    t_params *ps;
+    int                        i, k, n;
+    int                        atom;
+    InteractionTypeParameters *ps;
 
     n  = 0;
     ps = &(plist[cftype]);
@@ -962,14 +962,14 @@ static void check_vsite_constraints(t_params *plist,
     }
 }
 
-static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
+static void clean_vsite_bonds(gmx::ArrayRef<InteractionTypeParameters> plist, t_pindex pindex[],
                               int cftype, const int vsite_type[])
 {
-    int          ftype, i, j, k, m, n, nvsite, nOut, kept_i;
-    int          nconverted, nremoved;
-    int          atom, oatom, at1, at2;
-    bool         bKeep, bRemove, bUsed, bPresent, bThisFD, bThisOUT, bAllFD, bFirstTwo;
-    t_params    *ps;
+    int                           ftype, i, j, k, m, n, nvsite, nOut, kept_i;
+    int                           nconverted, nremoved;
+    int                           atom, oatom, at1, at2;
+    bool                          bKeep, bRemove, bUsed, bPresent, bThisFD, bThisOUT, bAllFD, bFirstTwo;
+    InteractionTypeParameters    *ps;
 
     if (cftype == F_CONNBONDS)
     {
@@ -1186,14 +1186,14 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
     ps->nr = kept_i;
 }
 
-static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
+static void clean_vsite_angles(gmx::ArrayRef<InteractionTypeParameters> plist, t_pindex pindex[],
                                int cftype, const int vsite_type[],
                                at2vsitecon_t *at2vc)
 {
-    int          i, j, k, m, n, nvsite, kept_i;
-    int          atom, at1, at2;
-    bool         bKeep, bUsed, bPresent, bAll3FAD, bFirstTwo;
-    t_params    *ps;
+    int                           i, j, k, m, n, nvsite, kept_i;
+    int                           atom, at1, at2;
+    bool                          bKeep, bUsed, bPresent, bAll3FAD, bFirstTwo;
+    InteractionTypeParameters    *ps;
 
     ps     = &(plist[cftype]);
     kept_i = 0;
@@ -1323,11 +1323,11 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
     ps->nr = kept_i;
 }
 
-static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
+static void clean_vsite_dihs(gmx::ArrayRef<InteractionTypeParameters> plist, t_pindex pindex[],
                              int cftype, const int vsite_type[])
 {
-    int       i, kept_i;
-    t_params *ps;
+    int                        i, kept_i;
+    InteractionTypeParameters *ps;
 
     ps = &(plist[cftype]);
 
@@ -1435,7 +1435,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
     ps->nr = kept_i;
 }
 
-void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
+void clean_vsite_bondeds(gmx::ArrayRef<InteractionTypeParameters> plist, int natoms, bool bRmVSiteBds)
 {
     int            i, k, nvsite, ftype, vsite, parnr;
     int           *vsite_type;

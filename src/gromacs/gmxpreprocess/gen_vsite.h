@@ -44,7 +44,7 @@
 
 struct gpp_atomtype;
 struct t_atoms;
-struct t_params;
+struct InteractionTypeParameters;
 struct PreprocessResidue;
 struct t_symtab;
 
@@ -52,11 +52,11 @@ struct t_symtab;
 
 void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *atype,
                t_atoms *at, t_symtab *symtab, std::vector<gmx::RVec> *x,
-               t_params plist[], int *dummy_type[], int *cgnr[],
+               gmx::ArrayRef<InteractionTypeParameters> plist, int *dummy_type[], int *cgnr[],
                real mHmult, bool bVSiteAromatics,
                const char *ffdir);
 
-void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
+void do_h_mass(InteractionTypeParameters *psb, int vsite_type[], t_atoms *at, real mHmult,
                bool bDeuterate);
 
 #endif
