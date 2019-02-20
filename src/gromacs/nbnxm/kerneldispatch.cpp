@@ -35,12 +35,18 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
@@ -529,4 +535,111 @@ void NbnxnDispatchKernel(nonbonded_verlet_t        *nbv,
     }
 
     accountFlops(nrnb, *nbv, iLocality, ic, forceFlags);
+}
+
+void
+nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocality,
+                                             t_forcerec                 *fr,
+                                             rvec                        x[],
+                                             rvec                        f[],
+                                             const t_mdatoms            &mdatoms,
+                                             t_lambda                   *fepvals,
+                                             real                       *lambda,
+                                             gmx_enerdata_t             *enerd,
+                                             const int                   forceFlags,
+                                             t_nrnb                     *nrnb)
+{
+    const gmx::ArrayRef<t_nblist const * const > nbl_fep = pairlistSet(iLocality).nbl_fep;
+
+    /* When the first list is empty, all are empty and there is nothing to do */
+    if (nbl_fep[0]->nrj == 0)
+    {
+        return;
+    }
+
+    int donb_flags = 0;
+    /* Add short-range interactions */
+    donb_flags |= GMX_NONBONDED_DO_SR;
+
+    /* Currently all group scheme kernels always calculate (shift-)forces */
+    if (forceFlags & GMX_FORCE_FORCES)
+    {
+        donb_flags |= GMX_NONBONDED_DO_FORCE;
+    }
+    if (forceFlags & GMX_FORCE_VIRIAL)
+    {
+        donb_flags |= GMX_NONBONDED_DO_SHIFTFORCE;
+    }
+    if (forceFlags & GMX_FORCE_ENERGY)
+    {
+        donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
+    }
+
+    nb_kernel_data_t kernel_data;
+    real             dvdl_nb[efptNR] = { 0 };
+    kernel_data.flags  = donb_flags;
+    kernel_data.lambda = lambda;
+    kernel_data.dvdl   = dvdl_nb;
+
+    kernel_data.energygrp_elec = enerd->grpp.ener[egCOULSR];
+    kernel_data.energygrp_vdw  = enerd->grpp.ener[egLJSR];
+
+    GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_fep.ssize(), "Number of lists should be same as number of NB threads");
+
+#pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
+    for (int th = 0; th < nbl_fep.ssize(); th++)
+    {
+        try
+        {
+            gmx_nb_free_energy_kernel(nbl_fep[th],
+                                      x, f, fr, &mdatoms, &kernel_data, nrnb);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+
+    if (fepvals->sc_alpha != 0)
+    {
+        enerd->dvdl_nonlin[efptVDW]  += dvdl_nb[efptVDW];
+        enerd->dvdl_nonlin[efptCOUL] += dvdl_nb[efptCOUL];
+    }
+    else
+    {
+        enerd->dvdl_lin[efptVDW]  += dvdl_nb[efptVDW];
+        enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
+    }
+
+    /* If we do foreign lambda and we have soft-core interactions
+     * we have to recalculate the (non-linear) energies contributions.
+     */
+    if (fepvals->n_lambda > 0 && (forceFlags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
+    {
+        real lam_i[efptNR];
+        kernel_data.flags          = (donb_flags & ~(GMX_NONBONDED_DO_FORCE | GMX_NONBONDED_DO_SHIFTFORCE)) | GMX_NONBONDED_DO_FOREIGNLAMBDA;
+        kernel_data.lambda         = lam_i;
+        kernel_data.energygrp_elec = enerd->foreign_grpp.ener[egCOULSR];
+        kernel_data.energygrp_vdw  = enerd->foreign_grpp.ener[egLJSR];
+        /* Note that we add to kernel_data.dvdl, but ignore the result */
+
+        for (int i = 0; i < enerd->n_lambda; i++)
+        {
+            for (int j = 0; j < efptNR; j++)
+            {
+                lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
+            }
+            reset_foreign_enerdata(enerd);
+#pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
+            for (int th = 0; th < nbl_fep.ssize(); th++)
+            {
+                try
+                {
+                    gmx_nb_free_energy_kernel(nbl_fep[th],
+                                              x, f, fr, &mdatoms, &kernel_data, nrnb);
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+            }
+
+            sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
+            enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
+        }
+    }
 }
