@@ -84,6 +84,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
+#include "gromacs/mdlib/lincs_cuda.h"
+
 namespace gmx
 {
 
@@ -180,6 +182,8 @@ class Constraints::Impl
         t_nrnb           *nrnb = nullptr;
         //! Tracks wallcycle usage.
         gmx_wallcycle    *wcycle;
+
+        LincsCuda       * lincsCuda;
 };
 
 Constraints::~Constraints() = default;
@@ -460,6 +464,22 @@ Constraints::Impl::apply(bool                  bLog,
                         econstr_names[econtLINCS], gmx_step_str(step, buf));
             }
             bDump = TRUE;
+        }
+    }
+    else
+    {
+        if (lincsCuda != nullptr && getenv("GMX_LINCS_GPU") != nullptr)
+        {
+            lincsCuda->setPbc(pbc_null);
+            lincsCuda->copyCoordinatesToGpu(x, xprime, v);
+            lincsCuda->apply(v != nullptr,
+                             invdt,
+                             vir != nullptr, vir_r_m_dr);
+            lincsCuda->copyCoordinatesFromGpu(xprime);
+            if (v != nullptr)
+            {
+                lincsCuda->copyVelocitiesFromGpu(v);
+            }
         }
     }
 
@@ -897,7 +917,14 @@ Constraints::Impl::setConstraints(const gmx_localtop_t &top,
          */
         if (ir.eConstrAlg == econtLINCS)
         {
-            set_lincs(top.idef, md, EI_DYNAMICS(ir.eI), cr, lincsd);
+            if (getenv("GMX_LINCS_GPU") != nullptr)
+            {
+                lincsCuda->set(top.idef, md);
+            }
+            else
+            {
+                set_lincs(top.idef, md, EI_DYNAMICS(ir.eI), cr, lincsd);
+            }
         }
         if (ir.eConstrAlg == econtSHAKE)
         {
@@ -1043,10 +1070,19 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
 
         if (ir.eConstrAlg == econtLINCS)
         {
-            lincsd = init_lincs(log, mtop,
-                                nflexcon, at2con_mt,
-                                DOMAINDECOMP(cr) && cr->dd->splitConstraints,
-                                ir.nLincsIter, ir.nProjOrder);
+            if (getenv("GMX_LINCS_GPU") != nullptr)
+            {
+                fprintf(log, "Initializing LINCS on a GPU for %d atoms\n", mtop.natoms);
+                GMX_ASSERT(nflexcon == 0, "Flexible constraints are not supported by the GPU-based implementation of LINCS.\n");
+                lincsCuda = new LincsCuda(mtop.natoms, ir.nLincsIter, ir.nProjOrder);
+            }
+            else
+            {
+                lincsd = init_lincs(log, mtop,
+                                    nflexcon, at2con_mt,
+                                    DOMAINDECOMP(cr) && cr->dd->splitConstraints,
+                                    ir.nLincsIter, ir.nProjOrder);
+            }
         }
 
         if (ir.eConstrAlg == econtSHAKE)
