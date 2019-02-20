@@ -42,31 +42,7 @@
 
 #include "locality.h"
 
-struct gmx_domdec_zones_t;
-struct gmx_groups_t;
-struct nbnxn_atomdata_t;
 struct nbnxn_pairlist_set_t;
-struct nbnxn_search;
-struct t_blocka;
-struct t_nrnb;
-
-/* Function that should return a pointer *ptr to memory
- * of size nbytes.
- * Error handling should be done within this function.
- */
-typedef void nbnxn_alloc_t (void **ptr, size_t nbytes);
-
-/* Function that should free the memory pointed to by *ptr.
- * NULL should not be passed to this function.
- */
-typedef void nbnxn_free_t (void *ptr);
-
-/* Allocates and initializes a pair search data structure */
-nbnxn_search *nbnxn_init_search(int                        ePBC,
-                                const ivec                *n_dd_cells,
-                                const gmx_domdec_zones_t  *zones,
-                                gmx_bool                   bFEP,
-                                int                        nthread_max);
 
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t
  *
