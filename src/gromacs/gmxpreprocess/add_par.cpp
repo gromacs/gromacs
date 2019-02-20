@@ -72,7 +72,7 @@ static void clear_force_param(int i0, real c[])
     }
 }
 
-void add_param(t_params *ps, int ai, int aj, const real *c, const char *s)
+void add_param(SystemParameters *ps, int ai, int aj, const real *c, const char *s)
 {
     int i;
 
@@ -99,7 +99,7 @@ void add_param(t_params *ps, int ai, int aj, const real *c, const char *s)
     ps->nr++;
 }
 
-void add_imp_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
+void add_imp_param(SystemParameters *ps, int ai, int aj, int ak, int al, real c0, real c1,
                    const char *s)
 {
     pr_alloc(1, ps);
@@ -115,7 +115,7 @@ void add_imp_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c
     ps->nr++;
 }
 
-void add_dih_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
+void add_dih_param(SystemParameters *ps, int ai, int aj, int ak, int al, real c0, real c1,
                    real c2, const char *s)
 {
     pr_alloc(1, ps);
@@ -132,7 +132,7 @@ void add_dih_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c
     ps->nr++;
 }
 
-void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am, const char *s)
+void add_cmap_param(SystemParameters *ps, int ai, int aj, int ak, int al, int am, const char *s)
 {
     pr_alloc(1, ps);
     ps->param[ps->nr].ai() = ai;
@@ -146,7 +146,7 @@ void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am, const 
     ps->nr++;
 }
 
-void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak)
+void add_vsite2_atoms(SystemParameters *ps, int ai, int aj, int ak)
 {
     pr_alloc(1, ps);
     ps->param[ps->nr].ai() = ai;
@@ -158,7 +158,7 @@ void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak)
     ps->nr++;
 }
 
-void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0)
+void add_vsite2_param(SystemParameters *ps, int ai, int aj, int ak, real c0)
 {
     pr_alloc(1, ps);
     ps->param[ps->nr].ai() = ai;
@@ -171,7 +171,7 @@ void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0)
     ps->nr++;
 }
 
-void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
+void add_vsite3_param(SystemParameters *ps, int ai, int aj, int ak, int al,
                       real c0, real c1)
 {
     pr_alloc(1, ps);
@@ -187,7 +187,7 @@ void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
     ps->nr++;
 }
 
-void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, bool bSwapParity)
+void add_vsite3_atoms(SystemParameters *ps, int ai, int aj, int ak, int al, bool bSwapParity)
 {
     pr_alloc(1, ps);
     ps->param[ps->nr].ai() = ai;
@@ -204,7 +204,7 @@ void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, bool bSwapPa
     ps->nr++;
 }
 
-void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
+void add_vsite4_atoms(SystemParameters *ps, int ai, int aj, int ak, int al, int am)
 {
     pr_alloc(1, ps);
     ps->param[ps->nr].ai() = ai;

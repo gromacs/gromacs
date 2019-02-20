@@ -85,7 +85,7 @@
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */
 
-static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
+static void gen_pairs(SystemParameters *nbs, SystemParameters *pairs, real fudge, int comb)
 {
     int     i, j, ntp, nrfp, nrfpA, nrfpB, nnn;
     real    scaling;
@@ -381,7 +381,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          int         *nrmols,
                          std::vector<MoleculeInformation> *molinfo,
                          std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
-                         t_params    plist[],
+                         gmx::ArrayRef<SystemParameters> plist,
                          int         *combination_rule,
                          double      *reppow,
                          t_gromppopts *opts,
@@ -453,8 +453,8 @@ static char **read_topol(const char *infile, const char *outfile,
     *reppow  = 12.0;      /* Default value for repulsion power     */
 
     /* Init the number of CMAP torsion angles  and grid spacing */
-    plist[F_CMAP].grid_spacing = 0;
-    plist[F_CMAP].nc           = 0;
+    plist[F_CMAP].cmakeGridSpacing = 0;
+    plist[F_CMAP].cmapAngles       = 0;
 
     bWarn_copy_A_B = bFEP;
 
@@ -939,7 +939,7 @@ char **do_top(bool                                  bVerbose,
               t_gromppopts                         *opts,
               bool                                  bZero,
               t_symtab                             *symtab,
-              t_params                              plist[],
+              gmx::ArrayRef<SystemParameters>       plist,
               int                                  *combination_rule,
               double                               *repulsion_power,
               real                                 *fudgeQQ,

@@ -40,6 +40,8 @@
 
 #include <cstdio>
 
+#include "gromacs/utility/arrayref.h"
+
 enum class Directive : int;
 struct gpp_atomtype;
 struct t_atoms;
@@ -47,24 +49,24 @@ struct t_blocka;
 struct t_excls;
 struct MoleculeInformation;
 struct t_param;
-struct t_params;
+struct SystemParameters;
 
 /* UTILITIES */
 
 int name2index(char *str, char ***typenames, int ntypes);
 
-void pr_alloc (int extra, t_params *pr);
+void pr_alloc (int extra, SystemParameters *pr);
 
 void set_p_string(t_param *p, const char *s);
 
 void cp_param(t_param *dest, t_param *src);
 
-void add_param_to_list(t_params *list, t_param *b);
+void add_param_to_list(SystemParameters *list, t_param *b);
 
 /* INITIATE */
 
-void init_plist(t_params plist[]);
-void done_plist(t_params *plist);
+void init_plist(gmx::ArrayRef<SystemParameters> plist);
+void done_plist(gmx::ArrayRef<SystemParameters> plist);
 
 
 /* PRINTING */
@@ -76,7 +78,7 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
                  bool bRTPresname);
 
 void print_bondeds(FILE *out, int natoms, Directive d,
-                   int ftype, int fsubtype, t_params plist[]);
+                   int ftype, int fsubtype, gmx::ArrayRef<const SystemParameters> plist);
 
 void print_excl(FILE *out, int natoms, t_excls excls[]);
 
