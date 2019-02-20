@@ -438,120 +438,6 @@ static void do_nb_verlet(t_forcerec                       *fr,
     }
 }
 
-static void do_nb_verlet_fep(const nonbonded_verlet_t         &nbv,
-                             const Nbnxm::InteractionLocality  iLocality,
-                             t_forcerec                       *fr,
-                             rvec                              x[],
-                             rvec                              f[],
-                             const t_mdatoms                  *mdatoms,
-                             t_lambda                         *fepvals,
-                             real                             *lambda,
-                             gmx_enerdata_t                   *enerd,
-                             int                               flags,
-                             t_nrnb                           *nrnb,
-                             gmx_wallcycle_t                   wcycle)
-{
-    int              donb_flags;
-    nb_kernel_data_t kernel_data;
-    real             lam_i[efptNR];
-    real             dvdl_nb[efptNR];
-    int              i, j;
-
-    donb_flags = 0;
-    /* Add short-range interactions */
-    donb_flags |= GMX_NONBONDED_DO_SR;
-
-    /* Currently all group scheme kernels always calculate (shift-)forces */
-    if (flags & GMX_FORCE_FORCES)
-    {
-        donb_flags |= GMX_NONBONDED_DO_FORCE;
-    }
-    if (flags & GMX_FORCE_VIRIAL)
-    {
-        donb_flags |= GMX_NONBONDED_DO_SHIFTFORCE;
-    }
-    if (flags & GMX_FORCE_ENERGY)
-    {
-        donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
-    }
-
-    kernel_data.flags  = donb_flags;
-    kernel_data.lambda = lambda;
-    kernel_data.dvdl   = dvdl_nb;
-
-    kernel_data.energygrp_elec = enerd->grpp.ener[egCOULSR];
-    kernel_data.energygrp_vdw  = enerd->grpp.ener[egLJSR];
-
-    /* reset free energy components */
-    for (i = 0; i < efptNR; i++)
-    {
-        dvdl_nb[i]  = 0;
-    }
-
-    const gmx::ArrayRef<t_nblist const * const > nbl_fep = nbv.freeEnergyPairlistSet(iLocality);
-
-    GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_fep.ssize(), "Number of lists should be same as number of NB threads");
-
-    wallcycle_sub_start(wcycle, ewcsNONBONDED);
-#pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
-    for (int th = 0; th < nbl_fep.ssize(); th++)
-    {
-        try
-        {
-            gmx_nb_free_energy_kernel(nbl_fep[th],
-                                      x, f, fr, mdatoms, &kernel_data, nrnb);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
-
-    if (fepvals->sc_alpha != 0)
-    {
-        enerd->dvdl_nonlin[efptVDW]  += dvdl_nb[efptVDW];
-        enerd->dvdl_nonlin[efptCOUL] += dvdl_nb[efptCOUL];
-    }
-    else
-    {
-        enerd->dvdl_lin[efptVDW]  += dvdl_nb[efptVDW];
-        enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
-    }
-
-    /* If we do foreign lambda and we have soft-core interactions
-     * we have to recalculate the (non-linear) energies contributions.
-     */
-    if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
-    {
-        kernel_data.flags          = (donb_flags & ~(GMX_NONBONDED_DO_FORCE | GMX_NONBONDED_DO_SHIFTFORCE)) | GMX_NONBONDED_DO_FOREIGNLAMBDA;
-        kernel_data.lambda         = lam_i;
-        kernel_data.energygrp_elec = enerd->foreign_grpp.ener[egCOULSR];
-        kernel_data.energygrp_vdw  = enerd->foreign_grpp.ener[egLJSR];
-        /* Note that we add to kernel_data.dvdl, but ignore the result */
-
-        for (i = 0; i < enerd->n_lambda; i++)
-        {
-            for (j = 0; j < efptNR; j++)
-            {
-                lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
-            }
-            reset_foreign_enerdata(enerd);
-#pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
-            for (int th = 0; th < nbl_fep.ssize(); th++)
-            {
-                try
-                {
-                    gmx_nb_free_energy_kernel(nbl_fep[th],
-                                              x, f, fr, mdatoms, &kernel_data, nrnb);
-                }
-                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            }
-
-            sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
-            enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
-        }
-    }
-
-    wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-}
-
 gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
 {
     return nbv != nullptr && nbv->useGpu();
@@ -1364,22 +1250,20 @@ static void do_force_cutsVERLET(FILE *fplog,
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.
          */
-        if (fr->nbv->freeEnergyPairlistSet(Nbnxm::InteractionLocality::Local)[0]->nrj > 0)
-        {
-            do_nb_verlet_fep(*nbv, Nbnxm::InteractionLocality::Local,
-                             fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
-                             inputrec->fepvals, lambda,
-                             enerd, flags, nrnb, wcycle);
-        }
+        wallcycle_sub_start(wcycle, ewcsNONBONDED);
+        nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::Local,
+                                      fr, as_rvec_array(x.unpaddedArrayRef().data()), f, *mdatoms,
+                                      inputrec->fepvals, lambda,
+                                      enerd, flags, nrnb);
 
-        if (havePPDomainDecomposition(cr) &&
-            fr->nbv->freeEnergyPairlistSet(Nbnxm::InteractionLocality::NonLocal)[0]->nrj > 0)
+        if (havePPDomainDecomposition(cr))
         {
-            do_nb_verlet_fep(*nbv, Nbnxm::InteractionLocality::NonLocal,
-                             fr, as_rvec_array(x.unpaddedArrayRef().data()), f, mdatoms,
-                             inputrec->fepvals, lambda,
-                             enerd, flags, nrnb, wcycle);
+            nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::NonLocal,
+                                          fr, as_rvec_array(x.unpaddedArrayRef().data()), f, *mdatoms,
+                                          inputrec->fepvals, lambda,
+                                          enerd, flags, nrnb);
         }
+        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
 
     if (!bUseOrEmulGPU)
