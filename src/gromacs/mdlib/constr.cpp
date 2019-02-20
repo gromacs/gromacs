@@ -189,6 +189,23 @@ int Constraints::numFlexibleConstraints() const
     return impl_->nflexcon;
 }
 
+bool Constraints::havePerturbedConstraints() const
+{
+    const gmx_ffparams_t &ffparams = impl_->mtop.ffparams;
+
+    for (size_t i = 0; i < ffparams.functype.size(); i++)
+    {
+        if ((ffparams.functype[i] == F_CONSTR ||
+             ffparams.functype[i] == F_CONSTRNC) &&
+            ffparams.iparams[i].constr.dA != ffparams.iparams[i].constr.dB)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 //! Clears constraint quantities for atoms in nonlocal region.
 static void clear_constraint_quantity_nonlocal(gmx_domdec_t *dd, rvec *q)
 {

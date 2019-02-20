@@ -85,7 +85,8 @@ bool pmeSupportsInputForMode(const gmx_hw_info_t &hwinfo,
             break;
 
         case CodePath::GPU:
-            implemented = (pme_gpu_supports_build(hwinfo, nullptr) &&
+            implemented = (pme_gpu_supports_build(nullptr) &&
+                           pme_gpu_supports_hardware(hwinfo, nullptr) &&
                            pme_gpu_supports_input(*inputRec, mtop, nullptr));
             break;
 

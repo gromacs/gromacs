@@ -783,7 +783,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
                 enerpart_lambda += dlam*enerd->term[F_DVDL_CONSTR];
             }
 
-            if (j == efptMASS)
+            if (j == efptMASS && !fepvals->separate_dvdl[j])
             {
                 enerpart_lambda += dlam*enerd->term[F_DKDL];
             }

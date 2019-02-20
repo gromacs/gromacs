@@ -1197,7 +1197,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
 
         /* launch local nonbonded work on GPU */
-        wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         do_nb_verlet(fr, ic, enerd, flags, Nbnxm::InteractionLocality::Local, enbvClearFNo,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
@@ -1262,7 +1262,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
             /* launch non-local nonbonded tasks on GPU */
-            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, Nbnxm::AtomLocality::NonLocal, ppForceWorkload->haveGpuBondedWork);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
