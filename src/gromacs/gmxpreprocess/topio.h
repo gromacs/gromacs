@@ -41,6 +41,7 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_molblock_t;
@@ -49,7 +50,7 @@ struct gpp_atomtype;
 struct t_gromppopts;
 struct t_inputrec;
 struct MoleculeInformation;
-struct t_params;
+struct SystemParameters;
 struct t_symtab;
 struct warninp;
 enum struct GmxQmmmMode;
@@ -64,7 +65,7 @@ char **do_top(bool                                               bVerbose,
               t_gromppopts                                      *opts,
               bool                                               bZero,
               t_symtab                                          *symtab,
-              t_params                                           plist[],
+              gmx::ArrayRef<SystemParameters>                    plist,
               int                                               *combination_rule,
               double                                            *repulsion_power,
               real                                              *fudgeQQ,

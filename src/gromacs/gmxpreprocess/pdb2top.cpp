@@ -672,7 +672,7 @@ void print_top_mols(FILE *out,
 
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
-               int bts[], t_params plist[], t_excls excls[],
+               int bts[], gmx::ArrayRef<const SystemParameters> plist, t_excls excls[],
                gpp_atomtype *atype, int *cgnr, int nrexcl)
 /* NOTE: nrexcl is not the size of *excl! */
 {
@@ -711,7 +711,7 @@ void write_top(FILE *out, const char *pr, const char *molname,
 
 
 
-static void do_ssbonds(t_params *ps, t_atoms *atoms,
+static void do_ssbonds(SystemParameters *ps, t_atoms *atoms,
                        gmx::ArrayRef<const DisulfideBond> ssbonds, bool bAllowMissing)
 {
     for (const auto &bond : ssbonds)
@@ -731,7 +731,7 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
     }
 }
 
-static void at2bonds(t_params *psb, gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
+static void at2bonds(SystemParameters *psb, gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
                      t_atoms *atoms,
                      gmx::ArrayRef<const gmx::RVec> x,
                      real long_bond_dist, real short_bond_dist)
@@ -813,21 +813,16 @@ static void at2bonds(t_params *psb, gmx::ArrayRef<MoleculePatchDatabase> globalP
     }
 }
 
-static int pcompar(const void *a, const void *b)
+static int pcompar(const t_param &a, const t_param &b)
 {
-    const t_param *pa, *pb;
-    int            d;
-    pa = static_cast<const t_param *>(a);
-    pb = static_cast<const t_param *>(b);
-
-    d = pa->a[0] - pb->a[0];
+    int d = a.a[0] - b.a[0];
     if (d == 0)
     {
-        d = pa->a[1] - pb->a[1];
+        d = a.a[1] - b.a[1];
     }
     if (d == 0)
     {
-        return strlen(pb->s) - strlen(pa->s);
+        return strlen(b.s) - strlen(a.s);
     }
     else
     {
@@ -835,43 +830,40 @@ static int pcompar(const void *a, const void *b)
     }
 }
 
-static void clean_bonds(t_params *ps)
+static void clean_bonds(SystemParameters *ps)
 {
-    int     i, j;
-    int     a;
-
-    if (ps->nr > 0)
+    if (ps->nr() > 0)
     {
         /* swap atomnumbers in bond if first larger than second: */
-        for (i = 0; (i < ps->nr); i++)
+        for (auto &param : ps->param)
         {
-            if (ps->param[i].a[1] < ps->param[i].a[0])
+            if (param.a[1] < param.a[0])
             {
-                a                 = ps->param[i].a[0];
-                ps->param[i].a[0] = ps->param[i].a[1];
-                ps->param[i].a[1] = a;
+                int a = param.a[0];
+                param.a[0] = param.a[1];
+                param.a[1] = a;
             }
         }
 
         /* Sort bonds */
-        qsort(ps->param, ps->nr, static_cast<size_t>(sizeof(ps->param[0])), pcompar);
+        std::sort(ps->param.begin(), ps->param.end(), pcompar);
 
         /* remove doubles, keep the first one always. */
-        j = 1;
-        for (i = 1; (i < ps->nr); i++)
+        int oldBondNumber = ps->nr();
+        for (auto param = ps->param.begin() + 1; param != ps->param.end(); )
         {
-            if ((ps->param[i].a[0] != ps->param[j-1].a[0]) ||
-                (ps->param[i].a[1] != ps->param[j-1].a[1]) )
+            auto prev = param - 1;
+            if ((param->a[0] == prev->a[0]) &&
+                (param->a[1] == prev->a[1]) )
             {
-                if (j != i)
-                {
-                    cp_param(&(ps->param[j]), &(ps->param[i]));
-                }
-                j++;
+                param = ps->param.erase(param);
+            }
+            else
+            {
+                ++param;
             }
         }
-        fprintf(stderr, "Number of bonds was %d, now %d\n", ps->nr, j);
-        ps->nr = j;
+        fprintf(stderr, "Number of bonds was %d, now %d\n", oldBondNumber, ps->nr());
     }
     else
     {
@@ -879,10 +871,9 @@ static void clean_bonds(t_params *ps)
     }
 }
 
-void print_sums(t_atoms *atoms, bool bSystem)
+void print_sums(const t_atoms *atoms, bool bSystem)
 {
     double      m, qtot;
-    int         i;
     const char *where;
 
     if (bSystem)
@@ -896,7 +887,7 @@ void print_sums(t_atoms *atoms, bool bSystem)
 
     m    = 0;
     qtot = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         m    += atoms->atom[i].m;
         qtot += atoms->atom[i].q;
@@ -1348,7 +1339,7 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(t_params *psb, gmx::ArrayRef<const PreprocessResidue> usedPpResidues, t_atoms *atoms)
+static void gen_cmap(SystemParameters *psb, gmx::ArrayRef<const PreprocessResidue> usedPpResidues, t_atoms *atoms)
 {
     int         residx;
     const char *ptr;
@@ -1478,15 +1469,14 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              bool bDeuterate, bool bChargeGroups, bool bCmap,
              bool bRenumRes, bool bRTPresname)
 {
-    t_params          plist[F_NRE];
-    t_excls          *excls;
-    t_nextnb          nnb;
-    int              *cgnr;
-    int              *vsite_type;
-    int               i, nmissat;
-    int               bts[ebtsNR];
+    std::array<SystemParameters, F_NRE> plist;
+    t_excls                            *excls;
+    t_nextnb                            nnb;
+    int                                *cgnr;
+    int                                *vsite_type;
+    int                                 i, nmissat;
+    int                                 bts[ebtsNR];
 
-    init_plist(plist);
     ResidueType rt;
 
     /* Make bonds */
@@ -1548,10 +1538,10 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     if (bCmap)
     {
         gen_cmap(&(plist[F_CMAP]), usedPpResidues, atoms);
-        if (plist[F_CMAP].nr > 0)
+        if (plist[F_CMAP].nr() > 0)
         {
             fprintf(stderr, "There are %4d cmap torsion pairs\n",
-                    plist[F_CMAP].nr);
+                    plist[F_CMAP].nr());
         }
     }
 
@@ -1568,15 +1558,15 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     fprintf(stderr,
             "There are %4d dihedrals, %4d impropers, %4d angles\n"
             "          %4d pairs,     %4d bonds and  %4d virtual sites\n",
-            plist[F_PDIHS].nr, plist[F_IDIHS].nr, plist[F_ANGLES].nr,
-            plist[F_LJ14].nr, plist[F_BONDS].nr,
-            plist[F_VSITE2].nr +
-            plist[F_VSITE3].nr +
-            plist[F_VSITE3FD].nr +
-            plist[F_VSITE3FAD].nr +
-            plist[F_VSITE3OUT].nr +
-            plist[F_VSITE4FD].nr +
-            plist[F_VSITE4FDN].nr );
+            plist[F_PDIHS].nr(), plist[F_IDIHS].nr(), plist[F_ANGLES].nr(),
+            plist[F_LJ14].nr(), plist[F_BONDS].nr(),
+            plist[F_VSITE2].nr() +
+            plist[F_VSITE3].nr() +
+            plist[F_VSITE3FD].nr() +
+            plist[F_VSITE3FAD].nr() +
+            plist[F_VSITE3OUT].nr() +
+            plist[F_VSITE4FD].nr() +
+            plist[F_VSITE4FDN].nr() );
 
     print_sums(atoms, FALSE);
 
@@ -1612,10 +1602,6 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
 
     /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
     sfree(cgnr);
-    for (i = 0; i < F_NRE; i++)
-    {
-        sfree(plist[i].param);
-    }
     for (i = 0; i < atoms->nr; i++)
     {
         sfree(excls[i].e);

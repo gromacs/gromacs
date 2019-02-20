@@ -216,32 +216,32 @@ static void rm2par(t_param p[], int *np, peq eq)
     sfree(index);
 }
 
-static void cppar(t_param p[], int np, t_params plist[], int ftype)
+static void cppar(t_param p[], int np, gmx::ArrayRef<SystemParameters> plist, int ftype)
 {
-    int       i, j, nral, nrfp;
-    t_params *ps;
+    int               nral, nrfp;
+    SystemParameters *ps;
 
     ps   = &plist[ftype];
     nral = NRAL(ftype);
     nrfp = NRFP(ftype);
 
     /* Keep old stuff */
-    pr_alloc(np, ps);
-    for (i = 0; (i < np); i++)
+    for (int i = 0; (i < np); i++)
     {
-        for (j = 0; (j < nral); j++)
+        ps->param.emplace_back();
+        initializeTparam(&ps->param.back());
+        for (int j = 0; (j < nral); j++)
         {
-            ps->param[ps->nr].a[j] = p[i].a[j];
+            ps->param.back().a[j] = p[i].a[j];
         }
-        for (j = 0; (j < nrfp); j++)
+        for (int j = 0; (j < nrfp); j++)
         {
-            ps->param[ps->nr].c[j] = p[i].c[j];
+            ps->param.back().c[j] = p[i].c[j];
         }
-        for (j = 0; (j < MAXSLEN); j++)
+        for (int j = 0; (j < MAXSLEN); j++)
         {
-            ps->param[ps->nr].s[j] = p[i].s[j];
+            ps->param.back().s[j] = p[i].s[j];
         }
-        ps->nr++;
     }
 }
 
@@ -725,9 +725,13 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 }
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-             t_params plist[], t_excls excls[], gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-             bool bAllowMissing)
+void gen_pad(t_nextnb                              *nnb,
+             t_atoms                               *atoms,
+             gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+             gmx::ArrayRef<SystemParameters>        plist,
+             t_excls                                excls[],
+             gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
+             bool                                   bAllowMissing)
 {
     t_param    *ang, *dih, *pai, *improper;
     char      **anm;

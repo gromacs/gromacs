@@ -66,7 +66,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype,
+void generate_nbparams(int comb, int ftype, SystemParameters *plist, gpp_atomtype *atype,
                        warninp *wi)
 {
     int   i, j, k = -1, nf;
@@ -76,8 +76,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype
     /* Lean mean shortcuts */
     nr   = get_atomtype_ntypes(atype);
     nrfp = NRFP(ftype);
-    snew(plist->param, nr*nr);
-    plist->nr = nr*nr;
+    plist->param.resize(nr*nr);
 
     /* Fill the matrix with force parameters */
     switch (ftype)
@@ -152,7 +151,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype
                     auto message = gmx::formatString("No such combination rule %d", comb);
                     warning_error_and_exit(wi, message, FARGS);
             }
-            if (plist->nr != k)
+            if (plist->nr() != k)
             {
                 gmx_incons("Topology processing, generate nb parameters");
             }
@@ -192,7 +191,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype *atype
 }
 
 /*! \brief Used to temporarily store the explicit non-bonded parameter
- * combinations, which will be copied to t_params. */
+ * combinations, which will be copied to SystemParameters. */
 struct t_nbparam
 {
     //! Has this combination been set.
@@ -215,7 +214,7 @@ static void realloc_nb_params(gpp_atomtype *at,
     }
 }
 
-int copy_nbparams(t_nbparam **param, int ftype, t_params *plist, int nr)
+int copy_nbparams(t_nbparam **param, int ftype, SystemParameters *plist, int nr)
 {
     int i, j, f;
     int nrfp, ncopy;
@@ -581,15 +580,15 @@ static bool equalEitherForwardOrBackward(gmx::ArrayRef<const T> a, gmx::ArrayRef
             std::equal(a.begin(), a.end(), b.rbegin()));
 }
 
-static void push_bondtype(t_params     *       bt,
-                          const t_param *      b,
-                          int                  nral,
-                          int                  ftype,
-                          bool                 bAllowRepeat,
-                          const char *         line,
-                          warninp             *wi)
+static void push_bondtype(SystemParameters     *       bt,
+                          const t_param         *      b,
+                          int                          nral,
+                          int                          ftype,
+                          bool                         bAllowRepeat,
+                          const char         *         line,
+                          warninp                     *wi)
 {
-    int      nr   = bt->nr;
+    int      nr   = bt->nr();
     int      nrfp = NRFP(ftype);
 
     /* If bAllowRepeat is TRUE, we allow multiple entries as long as they
@@ -688,13 +687,14 @@ static void push_bondtype(t_params     *       bt,
 
     if (addBondType)
     {
-        /* alloc */
-        pr_alloc (2, bt);
-
+        bt->param.emplace_back();
+        initializeTparam(&bt->param.back());
         /* fill the arrays up and down */
-        memcpy(bt->param[bt->nr].c,  b->c, sizeof(b->c));
-        memcpy(bt->param[bt->nr].a,  b->a, sizeof(b->a));
-        memcpy(bt->param[bt->nr+1].c, b->c, sizeof(b->c));
+        /* TODO this needs to go away with a refactoring of t_param */
+        memcpy(bt->param.back().c,  b->c, sizeof(b->c));
+        memcpy(bt->param.back().a,  b->a, sizeof(b->a));
+        bt->param.emplace_back();
+        memcpy(bt->param.back().c, b->c, sizeof(b->c));
 
         /* The definitions of linear angles depend on the order of atoms,
          * that means that for atoms i-j-k, with certain parameter a, the
@@ -702,20 +702,18 @@ static void push_bondtype(t_params     *       bt,
          */
         if (ftype == F_LINEAR_ANGLES)
         {
-            bt->param[bt->nr+1].c[0] = 1-bt->param[bt->nr+1].c[0];
-            bt->param[bt->nr+1].c[2] = 1-bt->param[bt->nr+1].c[2];
+            bt->param.back().c[0] = 1-bt->param.back().c[0];
+            bt->param.back().c[2] = 1-bt->param.back().c[2];
         }
 
         for (int j = 0; (j < nral); j++)
         {
-            bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
+            bt->param.back().a[j] = b->a[nral-1-j];
         }
-
-        bt->nr += 2;
     }
 }
 
-void push_bt(Directive d, t_params bt[], int nral,
+void push_bt(Directive d, gmx::ArrayRef<SystemParameters> bt, int nral,
              gpp_atomtype *at,
              gpp_bond_atomtype *bat, char *line,
              warninp *wi)
@@ -815,7 +813,7 @@ void push_bt(Directive d, t_params bt[], int nral,
 }
 
 
-void push_dihedraltype(Directive d, t_params bt[],
+void push_dihedraltype(Directive d, gmx::ArrayRef<SystemParameters> bt,
                        gpp_bond_atomtype *bat, char *line,
                        warninp *wi)
 {
@@ -1111,7 +1109,7 @@ void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
 }
 
 void
-push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
+push_cmaptype(Directive d, gmx::ArrayRef<SystemParameters> bt, int nral, gpp_atomtype *at,
               gpp_bond_atomtype *bat, char *line,
               warninp *wi)
 {
@@ -1155,10 +1153,6 @@ push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
     nrfpB  = strtol(alc[7], nullptr, 10)*strtol(alc[7], nullptr, 10);
     nrfp   = nrfpA+nrfpB;
 
-    /* Allocate memory for the CMAP grid */
-    bt[F_CMAP].ncmap += nrfp;
-    srenew(bt[F_CMAP].cmap, bt[F_CMAP].ncmap);
-
     /* Read in CMAP parameters */
     sl = 0;
     for (i = 0; i < ncmap; i++)
@@ -1169,7 +1163,7 @@ push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
         }
         nn  = sscanf(line+start+sl, " %s ", s);
         sl += strlen(s);
-        bt[F_CMAP].cmap[i+(bt[F_CMAP].ncmap)-nrfp] = strtod(s, nullptr);
+        bt[F_CMAP].cmap.emplace_back(strtod(s, nullptr));
 
         if (nn == 1)
         {
@@ -1211,12 +1205,9 @@ push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
     /* Set grid spacing and the number of grids (we assume these numbers to be the same for all grids
      * so we can safely assign them each time
      */
-    bt[F_CMAP].grid_spacing = nxcmap;            /* Or nycmap, they need to be equal */
-    bt[F_CMAP].nc           = bt[F_CMAP].nc + 1; /* Since we are incrementing here, we need to subtract later, see (*****) */
-    nct                     = (nral+1) * bt[F_CMAP].nc;
-
-    /* Allocate memory for the cmap_types information */
-    srenew(bt[F_CMAP].cmap_types, nct);
+    bt[F_CMAP].cmakeGridSpacing = nxcmap; /* Or nycmap, they need to be equal */
+    bt[F_CMAP].cmapAngles++;              /* Since we are incrementing here, we need to subtract later, see (*****) */
+    nct                     = (nral+1) * bt[F_CMAP].cmapAngles;
 
     for (i = 0; (i < nral); i++)
     {
@@ -1232,16 +1223,16 @@ push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
         }
 
         /* Assign a grid number to each cmap_type */
-        bt[F_CMAP].cmap_types[bt[F_CMAP].nct++] = get_bond_atomtype_type(alc[i], bat);
+        bt[F_CMAP].cmapAtomTypes.emplace_back(get_bond_atomtype_type(alc[i], bat));
     }
 
     /* Assign a type number to this cmap */
-    bt[F_CMAP].cmap_types[bt[F_CMAP].nct++] = bt[F_CMAP].nc-1; /* Since we inremented earlier, we need to subtrac here, to get the types right (****) */
+    bt[F_CMAP].cmapAtomTypes.emplace_back(bt[F_CMAP].cmapAngles-1); /* Since we inremented earlier, we need to subtrac here, to get the types right (****) */
 
     /* Check for the correct number of atoms (again) */
-    if (bt[F_CMAP].nct != nct)
+    if (bt[F_CMAP].nct() != nct)
     {
-        auto message = gmx::formatString("Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].nc);
+        auto message = gmx::formatString("Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].cmapAngles);
         warning_error(wi, message);
     }
 
@@ -1469,13 +1460,13 @@ void push_molt(t_symtab                         *symtab,
     mol->back().excl_set = false;
 }
 
-static bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
+static bool default_nb_params(int ftype, gmx::ArrayRef<SystemParameters> bt, t_atoms *at,
                               t_param *p, int c_start, bool bB, bool bGenPairs)
 {
     int          i, j, ti, tj, ntype;
     bool         bFound;
     t_param     *pi    = nullptr;
-    int          nr    = bt[ftype].nr;
+    int          nr    = bt[ftype].nr();
     int          nral  = NRAL(ftype);
     int          nrfp  = interaction_function[ftype].nrfpA;
     int          nrfpB = interaction_function[ftype].nrfpB;
@@ -1564,7 +1555,7 @@ static bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
     return bFound;
 }
 
-static bool default_cmap_params(t_params bondtype[],
+static bool default_cmap_params(gmx::ArrayRef<SystemParameters> bondtype,
                                 t_atoms *at, gpp_atomtype *atype,
                                 t_param *p, bool bB,
                                 int *cmap_type, int *nparam_def,
@@ -1578,7 +1569,7 @@ static bool default_cmap_params(t_params bondtype[],
     ct           = 0;
 
     /* Match the current cmap angle against the list of cmap_types */
-    for (i = 0; i < bondtype[F_CMAP].nct && !bFound; i += 6)
+    for (i = 0; i < bondtype[F_CMAP].nct() && !bFound; i += 6)
     {
         if (bB)
         {
@@ -1587,15 +1578,15 @@ static bool default_cmap_params(t_params bondtype[],
         else
         {
             if (
-                (get_atomtype_batype(at->atom[p->a[0]].type, atype) == bondtype[F_CMAP].cmap_types[i])   &&
-                (get_atomtype_batype(at->atom[p->a[1]].type, atype) == bondtype[F_CMAP].cmap_types[i+1]) &&
-                (get_atomtype_batype(at->atom[p->a[2]].type, atype) == bondtype[F_CMAP].cmap_types[i+2]) &&
-                (get_atomtype_batype(at->atom[p->a[3]].type, atype) == bondtype[F_CMAP].cmap_types[i+3]) &&
-                (get_atomtype_batype(at->atom[p->a[4]].type, atype) == bondtype[F_CMAP].cmap_types[i+4]))
+                (get_atomtype_batype(at->atom[p->a[0]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i])   &&
+                (get_atomtype_batype(at->atom[p->a[1]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i+1]) &&
+                (get_atomtype_batype(at->atom[p->a[2]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i+2]) &&
+                (get_atomtype_batype(at->atom[p->a[3]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i+3]) &&
+                (get_atomtype_batype(at->atom[p->a[4]].type, atype) == bondtype[F_CMAP].cmapAtomTypes[i+4]))
             {
                 /* Found cmap torsion */
                 bFound       = TRUE;
-                ct           = bondtype[F_CMAP].cmap_types[i+5];
+                ct           = bondtype[F_CMAP].cmapAtomTypes[i+5];
                 nparam_found = 1;
             }
         }
@@ -1639,17 +1630,17 @@ static int natom_match(t_param *pi,
     }
 }
 
-static bool default_params(int ftype, t_params bt[],
-                           t_atoms *at, gpp_atomtype *atype,
-                           t_param *p, bool bB,
-                           t_param **param_def,
-                           int *nparam_def)
+static bool defaulSystemParameters(int ftype, gmx::ArrayRef<SystemParameters> bt,
+                                   t_atoms *at, gpp_atomtype *atype,
+                                   t_param *p, bool bB,
+                                   t_param **param_def,
+                                   int *nparam_def)
 {
     int          nparam_found;
     bool         bFound, bSame;
     t_param     *pi    = nullptr;
     t_param     *pj    = nullptr;
-    int          nr    = bt[ftype].nr;
+    int          nr    = bt[ftype].nr();
     int          nral  = NRAL(ftype);
     int          nrfpA = interaction_function[ftype].nrfpA;
     int          nrfpB = interaction_function[ftype].nrfpB;
@@ -1758,7 +1749,8 @@ static bool default_params(int ftype, t_params bt[],
 
 
 
-void push_bond(Directive d, t_params bondtype[], t_params bond[],
+void push_bond(Directive d, gmx::ArrayRef<SystemParameters> bondtype,
+               gmx::ArrayRef<SystemParameters> bond,
                t_atoms *at, gpp_atomtype *atype, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
@@ -1904,7 +1896,7 @@ void push_bond(Directive d, t_params bondtype[], t_params bond[],
 
     if (bBonded)
     {
-        bFoundA = default_params(ftype, bondtype, at, atype, &param, FALSE, &param_defA, &nparam_defA);
+        bFoundA = defaulSystemParameters(ftype, bondtype, at, atype, &param, FALSE, &param_defA, &nparam_defA);
         if (bFoundA)
         {
             /* Copy the A-state and B-state default parameters. */
@@ -1914,7 +1906,7 @@ void push_bond(Directive d, t_params bondtype[], t_params bond[],
                 param.c[j] = param_defA->c[j];
             }
         }
-        bFoundB = default_params(ftype, bondtype, at, atype, &param, TRUE, &param_defB, &nparam_defB);
+        bFoundB = defaulSystemParameters(ftype, bondtype, at, atype, &param, TRUE, &param_defB, &nparam_defB);
         if (bFoundB)
         {
             /* Copy only the B-state default parameters */
@@ -2166,7 +2158,9 @@ void push_bond(Directive d, t_params bondtype[], t_params bond[],
     }
 }
 
-void push_cmap(Directive d, t_params bondtype[], t_params bond[],
+void push_cmap(Directive d,
+               gmx::ArrayRef<SystemParameters> bondtype,
+               gmx::ArrayRef<SystemParameters> bond,
                t_atoms *at, gpp_atomtype *atype, char *line,
                warninp *wi)
 {
@@ -2259,7 +2253,7 @@ void push_cmap(Directive d, t_params bondtype[], t_params bond[],
 
 
 
-void push_vsitesn(Directive d, t_params bond[],
+void push_vsitesn(Directive d, gmx::ArrayRef<SystemParameters> bond,
                   t_atoms *at, char *line,
                   warninp *wi)
 {
@@ -2508,20 +2502,18 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype *at,
     return nr;
 }
 
-static void convert_pairs_to_pairsQ(t_params *plist,
+static void convert_pairs_to_pairsQ(SystemParameters *plist,
                                     real fudgeQQ, t_atoms *atoms)
 {
-    t_param *paramp1, *paramp2, *paramnew;
     int      i, j, p1nr, p2nr, p2newnr;
 
     /* Add the pair list to the pairQ list */
-    p1nr    = plist[F_LJ14].nr;
-    p2nr    = plist[F_LJC14_Q].nr;
+    p1nr    = plist[F_LJ14].nr();
+    p2nr    = plist[F_LJC14_Q].nr();
     p2newnr = p1nr + p2nr;
-    snew(paramnew, p2newnr);
 
-    paramp1             = plist[F_LJ14].param;
-    paramp2             = plist[F_LJC14_Q].param;
+    gmx::ArrayRef<t_param> paramp1 = plist[F_LJ14].param;
+    gmx::ArrayRef<t_param> paramp2 = plist[F_LJC14_Q].param;
 
     /* Fill in the new F_LJC14_Q array with the old one. NOTE:
        it may be possible to just ADD the converted F_LJ14 array
@@ -2529,6 +2521,7 @@ static void convert_pairs_to_pairsQ(t_params *plist,
        a new sized memory structure, better just to deep copy it all.
      */
 
+    std::vector<t_param> paramnew(p2newnr);
     for (i = 0; i < p2nr; i++)
     {
         /* Copy over parameters */
@@ -2560,20 +2553,14 @@ static void convert_pairs_to_pairsQ(t_params *plist,
         paramnew[i].a[1] = paramp1[j].a[1];
     }
 
-    /* free the old pairlists */
-    sfree(plist[F_LJC14_Q].param);
-    sfree(plist[F_LJ14].param);
-
     /* now assign the new data to the F_LJC14_Q structure */
     plist[F_LJC14_Q].param   = paramnew;
-    plist[F_LJC14_Q].nr      = p2newnr;
 
     /* Empty the LJ14 pairlist */
-    plist[F_LJ14].nr    = 0;
-    plist[F_LJ14].param = nullptr;
+    plist[F_LJ14].param.clear();
 }
 
-static void generate_LJCpairsNB(MoleculeInformation *mol, int nb_funct, t_params *nbp, warninp *wi)
+static void generate_LJCpairsNB(MoleculeInformation *mol, int nb_funct, SystemParameters *nbp, warninp *wi)
 {
     int       n, ntype, i, j, k;
     t_atom   *atom;
@@ -2584,8 +2571,8 @@ static void generate_LJCpairsNB(MoleculeInformation *mol, int nb_funct, t_params
     n    = mol->atoms.nr;
     atom = mol->atoms.atom;
 
-    ntype = static_cast<int>(std::sqrt(static_cast<double>(nbp->nr)));
-    GMX_ASSERT(ntype * ntype == nbp->nr, "Number of pairs of generated non-bonded parameters should be a perfect square");
+    ntype = static_cast<int>(std::sqrt(static_cast<double>(nbp->nr())));
+    GMX_ASSERT(ntype * ntype == nbp->nr(), "Number of pairs of generated non-bonded parameters should be a perfect square");
 
     for (i = 0; i < MAXATOMLIST; i++)
     {
@@ -2695,7 +2682,7 @@ static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
 
 void convert_moltype_couple(MoleculeInformation *mol, int atomtype_decouple, real fudgeQQ,
                             int couple_lam0, int couple_lam1,
-                            bool bCoupleIntra, int nb_funct, t_params *nbp,
+                            bool bCoupleIntra, int nb_funct, SystemParameters *nbp,
                             warninp *wi)
 {
     convert_pairs_to_pairsQ(mol->plist, fudgeQQ, &mol->atoms);
