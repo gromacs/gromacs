@@ -1,10 +1,10 @@
 GROMACS 2018.6 release notes
 ----------------------------
 
-This version was released on TODO, 2019. These release notes document
+This version was released on February 22, 2019. These release notes document
 the changes that have taken place in GROMACS since version 2018.5, to fix known
-issues. It also incorporates all fixes made in version TODO and
-earlier, which you can find described in the :ref:`release-notes`.
+issues. It also incorporates all fixes made in previous versions,
+which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -38,6 +38,15 @@ Fixes for ``gmx`` tools
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix compiler flags for Power8
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A compiler flag for Power8 processors lead to errors in the code and was removed.
+
+:issue:`2747`
+:issue:`2746`
+:issue:`2734`
 
 Miscellaneous
 ^^^^^^^^^^^^^
