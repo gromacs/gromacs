@@ -51,7 +51,7 @@ struct t_block;
 struct MoleculeInformation;
 struct t_nbparam;
 struct t_param;
-struct t_params;
+struct SystemParameters;
 struct PreprocessResidue;
 struct warninp;
 
@@ -60,7 +60,7 @@ namespace gmx
 struct ExclusionBlock;
 } // namespace gmx
 
-void generate_nbparams(int comb, int funct, t_params plist[],
+void generate_nbparams(int comb, int funct, SystemParameters *plist,
                        gpp_atomtype *atype,
                        warninp *wi);
 
@@ -69,15 +69,15 @@ void push_at (struct t_symtab *symtab, gpp_atomtype *at,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp *wi);
 
-void push_bt(Directive d, t_params bt[], int nral,
+void push_bt(Directive d, gmx::ArrayRef<SystemParameters> bt, int nral,
              gpp_atomtype *at, gpp_bond_atomtype *bat, char *line,
              warninp *wi);
 
-void push_dihedraltype(Directive d, t_params bt[],
+void push_dihedraltype(Directive d, gmx::ArrayRef<SystemParameters> bt,
                        gpp_bond_atomtype *bat, char *line,
                        warninp *wi);
 
-void push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
+void push_cmaptype(Directive d, gmx::ArrayRef<SystemParameters> bt, int nral, gpp_atomtype *at,
                    gpp_bond_atomtype *bat, char *line,
                    warninp *wi);
 
@@ -93,17 +93,20 @@ void push_atom(struct t_symtab *symtab,
                int             *lastcg,
                warninp         *wi);
 
-void push_bond(Directive d, t_params bondtype[], t_params bond[],
+void push_bond(Directive d, gmx::ArrayRef<SystemParameters> bondtype,
+               gmx::ArrayRef<SystemParameters> bond,
                t_atoms *at, gpp_atomtype *atype, char *line,
                bool bBonded, bool bGenPairs, real fudgeQQ,
                bool bZero, bool *bWarn_copy_A_B,
                warninp *wi);
 
-void push_cmap(Directive d, t_params bondtype[], t_params bond[],
+void push_cmap(Directive d,
+               gmx::ArrayRef<SystemParameters> bondtype,
+               gmx::ArrayRef<SystemParameters> bond,
                t_atoms *at, gpp_atomtype *atype, char *line,
                warninp *wi);
 
-void push_vsitesn(Directive d, t_params bond[],
+void push_vsitesn(Directive d, gmx::ArrayRef<SystemParameters> bond,
                   t_atoms *at, char *line,
                   warninp *wi);
 
@@ -116,7 +119,7 @@ void push_molt(struct t_symtab *symtab, std::vector<MoleculeInformation> *mol, c
 
 void push_excl(char *line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp *wi);
 
-int copy_nbparams(t_nbparam **param, int ftype, t_params *plist, int nr);
+int copy_nbparams(t_nbparam **param, int ftype, SystemParameters *plist, int nr);
 
 void free_nbparam(t_nbparam **param, int nr);
 
@@ -130,7 +133,7 @@ void convert_moltype_couple(MoleculeInformation *mol, int atomtype_decouple,
                             real fudgeQQ,
                             int couple_lam0, int couple_lam1,
                             bool bCoupleIntra,
-                            int nb_funct, t_params *nbp,
+                            int nb_funct, SystemParameters *nbp,
                             warninp *wi);
 /* Setup mol such that the B-state has no interaction with the rest
  * of the system, but full interaction with itself.

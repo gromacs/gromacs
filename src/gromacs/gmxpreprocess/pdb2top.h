@@ -50,7 +50,7 @@ struct t_atoms;
 struct t_excls;
 struct MoleculePatchDatabase;
 struct t_mols;
-struct t_params;
+struct SystemParameters;
 struct t_resinfo;
 struct PreprocessResidue;
 struct DisulfideBond;
@@ -113,7 +113,7 @@ void print_top_mols(FILE *out,
 
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
-               int bts[], t_params plist[], t_excls excls[],
+               int bts[], gmx::ArrayRef<const SystemParameters> plist, t_excls excls[],
                gpp_atomtype *atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
@@ -134,6 +134,6 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              bool bRenumRes, bool bRTPresname);
 /* Create a topology ! */
 
-void print_sums(t_atoms *atoms, bool bSystem);
+void print_sums(const t_atoms *atoms, bool bSystem);
 
 #endif
