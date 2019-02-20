@@ -58,6 +58,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/forceschedules/defaultschedule.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/conformation_utilities.h"
 #include "gromacs/gmxlib/network.h"
