@@ -43,6 +43,8 @@
 
 #include "gromacs/mdlib/constr.h"
 
+#include "config.h"
+
 #include <assert.h>
 
 #include <cmath>
@@ -59,6 +61,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs.h"
+#include "gromacs/mdlib/lincs_cuda.h"
 #include "gromacs/mdlib/shake.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -358,7 +361,7 @@ struct ConstraintsTestData
  * The test will run for all possible combinations of accessible
  * values of the:
  * 1. PBC setup ("PBCNONE" or "PBCXYZ")
- * 2. The algorithm ("SHAKE" or "LINCS").
+ * 2. The algorithm ("SHAKE", "LINCS" or "LINCS_GPU").
  */
 typedef std::tuple<std::string, std::string> ConstraintsTestParameters;
 
@@ -419,6 +422,10 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
             algorithms_["SHAKE"] = applyShake;
             // LINCS
             algorithms_["LINCS"] = applyLincs;
+            // LINCS using CUDA (if CUDA is available)
+#if GMX_GPU == GMX_GPU_CUDA
+            algorithms_["LINCS_CUDA"] = applyLincsCuda;
+#endif
 
         }
 
@@ -508,6 +515,27 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
                 sfree(at2con_mt.at(i).a);
             }
             done_lincs(lincsd);
+        }
+
+        /*! \brief
+         * Initialize and apply LINCS constraints on CUDA-enabled GPU.
+         *
+         * \param[in] testData        Test data structure.
+         * \param[in] pbc             Periodic boundary data.
+         */
+        static void applyLincsCuda(ConstraintsTestData *testData, t_pbc pbc)
+        {
+            std::unique_ptr<LincsCuda>   lincsCuda = std::make_unique<LincsCuda>(testData->nAtom_,
+                                                                                 testData->ir_.nLincsIter,
+                                                                                 testData->ir_.nProjOrder);
+            lincsCuda->set(testData->idef_, testData->md_);
+            lincsCuda->setPbc(&pbc);
+            lincsCuda->copyCoordinatesToGpu(as_rvec_array(testData->x_.data()),
+                                            as_rvec_array(testData->xPrime_.data()));
+            lincsCuda->copyVelocitiesToGpu(as_rvec_array(testData->v_.data()));
+            lincsCuda->apply(true, testData->invdt_, testData->computeVirial_, testData->virialScaled_);
+            lincsCuda->copyCoordinatesFromGpu(as_rvec_array(testData->xPrime_.data()));
+            lincsCuda->copyVelocitiesFromGpu(as_rvec_array(testData->v_.data()));
         }
 
         /*! \brief
@@ -1057,9 +1085,18 @@ TEST_P(ConstraintsTest, TriangleOfConstraints){
 }
 
 
+#if GMX_GPU == GMX_GPU_CUDA
+INSTANTIATE_TEST_CASE_P(WithParameters, ConstraintsTest,
+                            ::testing::Combine(::testing::Values("PBCNone", "PBCXYZ"),
+                                                   ::testing::Values("SHAKE", "LINCS", "LINCS_CUDA")));
+#endif
+
+#if GMX_GPU != GMX_GPU_CUDA
 INSTANTIATE_TEST_CASE_P(WithParameters, ConstraintsTest,
                             ::testing::Combine(::testing::Values("PBCNone", "PBCXYZ"),
                                                    ::testing::Values("SHAKE", "LINCS")));
+#endif
+
 
 } // namespace test
 } // namespace gmx
