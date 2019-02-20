@@ -1,2 +1,0 @@
-Improvements to |Gromacs| tools
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
