@@ -672,7 +672,7 @@ void print_top_mols(FILE *out,
 
 void write_top(FILE *out, const char *pr, const char *molname,
                t_atoms *at, bool bRTPresname,
-               int bts[], t_params plist[], t_excls excls[],
+               int bts[], gmx::ArrayRef<const SystemParameters> plist, t_excls excls[],
                gpp_atomtype *atype, int *cgnr, int nrexcl)
 /* NOTE: nrexcl is not the size of *excl! */
 {
@@ -711,7 +711,7 @@ void write_top(FILE *out, const char *pr, const char *molname,
 
 
 
-static void do_ssbonds(t_params *ps, t_atoms *atoms,
+static void do_ssbonds(SystemParameters *ps, t_atoms *atoms,
                        gmx::ArrayRef<const DisulfideBond> ssbonds, bool bAllowMissing)
 {
     for (const auto &bond : ssbonds)
@@ -731,7 +731,7 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
     }
 }
 
-static void at2bonds(t_params *psb, gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
+static void at2bonds(SystemParameters *psb, gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
                      t_atoms *atoms,
                      gmx::ArrayRef<const gmx::RVec> x,
                      real long_bond_dist, real short_bond_dist)
@@ -835,7 +835,7 @@ static int pcompar(const void *a, const void *b)
     }
 }
 
-static void clean_bonds(t_params *ps)
+static void clean_bonds(SystemParameters *ps)
 {
     int     i, j;
     int     a;
@@ -879,7 +879,7 @@ static void clean_bonds(t_params *ps)
     }
 }
 
-void print_sums(t_atoms *atoms, bool bSystem)
+void print_sums(const t_atoms *atoms, bool bSystem)
 {
     double      m, qtot;
     int         i;
@@ -1348,7 +1348,7 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(t_params *psb, gmx::ArrayRef<const PreprocessResidue> usedPpResidues, t_atoms *atoms)
+static void gen_cmap(SystemParameters *psb, gmx::ArrayRef<const PreprocessResidue> usedPpResidues, t_atoms *atoms)
 {
     int         residx;
     const char *ptr;
@@ -1478,13 +1478,13 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              bool bDeuterate, bool bChargeGroups, bool bCmap,
              bool bRenumRes, bool bRTPresname)
 {
-    t_params          plist[F_NRE];
-    t_excls          *excls;
-    t_nextnb          nnb;
-    int              *cgnr;
-    int              *vsite_type;
-    int               i, nmissat;
-    int               bts[ebtsNR];
+    std::array<SystemParameters, F_NRE> plist;
+    t_excls                            *excls;
+    t_nextnb                            nnb;
+    int                                *cgnr;
+    int                                *vsite_type;
+    int                                 i, nmissat;
+    int                                 bts[ebtsNR];
 
     init_plist(plist);
     ResidueType rt;
