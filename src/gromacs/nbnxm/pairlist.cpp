@@ -332,15 +332,6 @@ nbnxn_search::nbnxn_search(int                       ePBC,
     nbs_cycle_clear(cc);
 }
 
-nbnxn_search *nbnxn_init_search(int                        ePBC,
-                                const ivec                *n_dd_cells,
-                                const gmx_domdec_zones_t  *zones,
-                                gmx_bool                   bFEP,
-                                int                        nthread_max)
-{
-    return new nbnxn_search(ePBC, n_dd_cells, zones, bFEP, nthread_max);
-}
-
 static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
                               int                   natoms)
 {

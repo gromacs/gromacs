@@ -139,20 +139,6 @@ typedef struct {
     int dummy[16];
 } gmx_cache_protect_t;
 
-/* Abstract type for pair searching data */
-typedef struct nbnxn_search * nbnxn_search_t;
-
-/* Function that should return a pointer *ptr to memory
- * of size nbytes.
- * Error handling should be done within this function.
- */
-typedef void nbnxn_alloc_t (void **ptr, size_t nbytes);
-
-/* Function that should free the memory pointed to by *ptr.
- * NULL should not be passed to this function.
- */
-typedef void nbnxn_free_t (void *ptr);
-
 /* This is the actual cluster-pair list j-entry.
  * cj is the j-cluster.
  * The interaction bits in excl are indexed i-major, j-minor.

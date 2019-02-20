@@ -118,6 +118,7 @@ struct gmx_hw_info_t;
 struct gmx_mtop_t;
 struct interaction_const_t;
 struct nbnxn_pairlist_set_t;
+struct nbnxn_search;
 struct nonbonded_verlet_t;
 struct t_blocka;
 struct t_commrec;
@@ -352,13 +353,13 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nb_verlet,
                                 gmx::ArrayRef<const gmx::RVec>   x);
 
 /*! \brief Returns the number of x and y cells in the local grid */
-void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy);
+void nbnxn_get_ncells(const nbnxn_search *nbs, int *ncx, int *ncy);
 
 /*! \brief Returns the order indices of the atoms on the pairlist search grid */
 gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search* nbs);
 
 /*! \brief Renumbers the atom indices on the grid to consecutive order */
-void nbnxn_set_atomorder(nbnxn_search_t nbs);
+void nbnxn_set_atomorder(nbnxn_search *nbs);
 
 /*! \brief Returns the index position of the atoms on the pairlist search grid */
 gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs);
