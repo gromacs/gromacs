@@ -53,7 +53,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static void copy_bond (t_params *pr, int to, int from)
+static void copy_bond (SystemParameters *pr, int to, int from)
 /* copies an entry in a bond list to another position.
  * does no allocing or freeing of memory
  */
@@ -103,15 +103,15 @@ static int count_hydrogens (char ***atomname, int nra, const int a[])
     return nh;
 }
 
-void make_shake (t_params plist[], t_atoms *atoms, int nshake)
+void make_shake(gmx::ArrayRef<SystemParameters> plist, t_atoms *atoms, int nshake)
 {
-    char          ***info = atoms->atomname;
-    t_params        *pr;
-    t_params        *bonds;
-    t_param          p, *bond, *ang;
-    real             b_ij, b_jk;
-    int              i, j, ftype, ftype_a;
-    bool             bFound;
+    char                  ***info = atoms->atomname;
+    SystemParameters        *pr;
+    SystemParameters        *bonds;
+    t_param                  p, *bond, *ang;
+    real                     b_ij, b_jk;
+    int                      i, j, ftype, ftype_a;
+    bool                     bFound;
 
     if (nshake != eshNONE)
     {
