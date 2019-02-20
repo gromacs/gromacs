@@ -497,7 +497,7 @@ static void append_interaction(InteractionList *ilist,
     }
 }
 
-static void enter_function(const t_params *p, t_functype ftype, int comb, real reppow,
+static void enter_function(const InteractionTypeParameters *p, t_functype ftype, int comb, real reppow,
                            gmx_ffparams_t *ffparams, InteractionList *il,
                            bool bNB, bool bAppend)
 {
@@ -519,11 +519,11 @@ static void enter_function(const t_params *p, t_functype ftype, int comb, real r
     }
 }
 
-void convert_params(int atnr, t_params nbtypes[],
-                    gmx::ArrayRef<const MoleculeInformation> mi,
-                    const MoleculeInformation *intermolecular_interactions,
-                    int comb, double reppow, real fudgeQQ,
-                    gmx_mtop_t *mtop)
+void convertInteractionTypeParameters(int atnr, gmx::ArrayRef<const InteractionTypeParameters> nbtypes,
+                                      gmx::ArrayRef<const MoleculeInformation> mi,
+                                      const MoleculeInformation *intermolecular_interactions,
+                                      int comb, double reppow, real fudgeQQ,
+                                      gmx_mtop_t *mtop)
 {
     int             i;
     unsigned long   flags;
@@ -548,7 +548,7 @@ void convert_params(int atnr, t_params nbtypes[],
         {
             molt->ilist[i].iatoms.clear();
 
-            const t_params *plist = mi[mt].plist;
+            gmx::ArrayRef<const InteractionTypeParameters> plist = mi[mt].plist;
 
             flags = interaction_function[i].flags;
             if ((i != F_LJ) && (i != F_BHAM) && ((flags & IF_BOND) ||
@@ -572,7 +572,7 @@ void convert_params(int atnr, t_params nbtypes[],
         {
             (*mtop->intermolecular_ilist)[i].iatoms.clear();
 
-            const t_params *plist = intermolecular_interactions->plist;
+            gmx::ArrayRef<const InteractionTypeParameters> plist = intermolecular_interactions->plist;
 
             if (plist[i].nr > 0)
             {

@@ -192,7 +192,7 @@ static int match_str(const char *atom, const char *template_string)
 }
 
 int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
-            gpp_atomtype *atype, int *nbonds, t_params *bonds)
+            gpp_atomtype *atype, int *nbonds, InteractionTypeParameters *bonds)
 {
     int      cur = 0;
 #define prev (1-cur)
