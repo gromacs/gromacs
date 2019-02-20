@@ -326,7 +326,7 @@ static int search_atomtypes(gpp_atomtype *ga, int *n, int typelist[],
     return i;
 }
 
-void renum_atype(t_params plist[], gmx_mtop_t *mtop,
+void renum_atype(gmx::ArrayRef<InteractionTypeParameters> plist, gmx_mtop_t *mtop,
                  int *wall_atomtype,
                  gpp_atomtype *ga, bool bVerbose)
 {

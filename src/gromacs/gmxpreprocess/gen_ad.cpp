@@ -216,12 +216,11 @@ static void rm2par(t_param p[], int *np, peq eq)
     sfree(index);
 }
 
-static void cppar(t_param p[], int np, t_params plist[], int ftype)
+static void cppar(t_param p[], int np, gmx::ArrayRef<InteractionTypeParameters> plist, int ftype)
 {
-    int       i, j, nral, nrfp;
-    t_params *ps;
+    int                        i, j, nral, nrfp;
 
-    ps   = &plist[ftype];
+    InteractionTypeParameters *ps   = &plist[ftype];
     nral = NRAL(ftype);
     nrfp = NRFP(ftype);
 
@@ -726,7 +725,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-             t_params plist[], t_excls excls[], gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
+             gmx::ArrayRef<InteractionTypeParameters> plist, t_excls excls[], gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
              bool bAllowMissing)
 {
     t_param    *ang, *dih, *pai, *improper;
