@@ -1539,7 +1539,7 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nbv,
     }
 }
 
-void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy)
+void nbnxn_get_ncells(const nbnxn_search *nbs, int *ncx, int *ncy)
 {
     *ncx = nbs->grid[0].numCells[XX];
     *ncy = nbs->grid[0].numCells[YY];
@@ -1555,7 +1555,7 @@ gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search *nbs)
     return gmx::constArrayRefFromArray(nbs->a.data(), numIndices);
 }
 
-void nbnxn_set_atomorder(nbnxn_search_t nbs)
+void nbnxn_set_atomorder(nbnxn_search *nbs)
 {
     /* Set the atom order for the home cell (index 0) */
     nbnxn_grid_t *grid = &nbs->grid[0];
