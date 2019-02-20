@@ -1,2 +1,0 @@
-New and improved features
-^^^^^^^^^^^^^^^^^^^^^^^^^
