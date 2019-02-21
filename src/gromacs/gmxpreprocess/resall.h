@@ -46,7 +46,10 @@
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"
-
+namespace gmx
+{
+class MDLogger;
+}
 struct gpp_atomtype;
 struct PreprocessResidue;
 struct t_symtab;
@@ -60,9 +63,12 @@ struct t_symtab;
  *
  * \param[in] key The atomname to search for.
  * \param[in] rtpDBEntry Database with residue information.
+ * \param[in] log Logger interface.
  * \returns The rtp residue name.
  */
-std::string searchResidueDatabase(const std::string &key, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry);
+std::string searchResidueDatabase(const std::string                     &key,
+                                  gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
+                                  const gmx::MDLogger                   &log);
 
 /*! \brief
  * Returns matching entry in database.
@@ -79,9 +85,10 @@ getDatabaseEntry(const std::string &rtpname, gmx::ArrayRef<const PreprocessResid
  *
  * \param[in] ffdir Force field directory.
  * \param[in] tab Symbol table for names.
+ * \param[in] log Logger interface
  * \returns Atom type database.
  */
-gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab);
+gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab, const gmx::MDLogger &log);
 
 /*! \brief
  * Read in database, append to exisiting.
@@ -90,12 +97,14 @@ gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab);
  * \param[inout] rtpDBEntry Database to populate.
  * \param[in] atype Atomtype information.
  * \param[inout] tab Symbol table for names.
+ * \param[in] log Logger interface.
  * \param[in] bAllowOverrideRTP If entries can be overwritten in the database.
  */
 void readResidueDatabase(const std::string              &resdb,
                          std::vector<PreprocessResidue> *rtpDBEntry,
                          gpp_atomtype                   *atype,
                          t_symtab                       *tab,
+                         const gmx::MDLogger            &log,
                          bool                            bAllowOverrideRTP);
 
 /*! \brief

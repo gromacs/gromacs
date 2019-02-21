@@ -958,6 +958,7 @@ static void add_atom_to_restp(PreprocessResidue         *usedPpResidues,
 void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
                         std::vector<PreprocessResidue> *usedPpResidues,
                         gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+                        const gmx::MDLogger &log,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
                         t_symtab *symtab,
@@ -997,7 +998,7 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
          */
         key = *resinfo[i].rtp;
 
-        resinfo[i].rtp = put_symtab(symtab, searchResidueDatabase(key, rtpFFDB).c_str());
+        resinfo[i].rtp = put_symtab(symtab, searchResidueDatabase(key, rtpFFDB, log).c_str());
         auto               res             = getDatabaseEntry(*resinfo[i].rtp, rtpFFDB);
         usedPpResidues->push_back(PreprocessResidue());
         PreprocessResidue *newentry = &usedPpResidues->back();
