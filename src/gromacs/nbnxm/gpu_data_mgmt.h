@@ -44,6 +44,8 @@
 #ifndef GMX_NBNXN_GPU_DATA_MGMT_H
 #define GMX_NBNXN_GPU_DATA_MGMT_H
 
+#include <memory>
+
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdtypes/interaction_const.h"
 
@@ -63,14 +65,14 @@ namespace Nbnxm
 
 /** Initializes the data structures related to GPU nonbonded calculations. */
 GPU_FUNC_QUALIFIER
-void gpu_init(gmx_nbnxn_gpu_t gmx_unused            **p_nb,
-              const gmx_device_info_t gmx_unused     *deviceInfo,
-              const interaction_const_t gmx_unused   *ic,
-              const NbnxnListParameters gmx_unused   *listParams,
-              const nbnxn_atomdata_t gmx_unused      *nbat,
-              int gmx_unused                          rank,
-              /* true if both local and non-local are done on GPU */
-              gmx_bool gmx_unused                     bLocalAndNonlocal) GPU_FUNC_TERM
+gmx_nbnxn_gpu_t *
+gpu_init(const gmx_device_info_t gmx_unused     *deviceInfo,
+         const interaction_const_t gmx_unused   *ic,
+         const NbnxnListParameters gmx_unused   *listParams,
+         const nbnxn_atomdata_t gmx_unused      *nbat,
+         int gmx_unused                          rank,
+         /* true if both local and non-local are done on GPU */
+         gmx_bool gmx_unused                     bLocalAndNonlocal) GPU_FUNC_TERM
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER

@@ -2624,9 +2624,9 @@ void init_forcerec(FILE                             *fp,
             GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
-        Nbnxm::init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
-                              cr, hardwareInfo, deviceInfo,
-                              mtop, box);
+        fr->nbv = std::move(Nbnxm::init_nb_verlet(mdlog, bFEP_NonBonded, ir, fr,
+                                                  cr, hardwareInfo, deviceInfo,
+                                                  mtop, box));
 
         if (useGpuForBonded)
         {

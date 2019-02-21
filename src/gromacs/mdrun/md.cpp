@@ -412,7 +412,7 @@ void gmx::Integrator::do_md()
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, *ir, state->box,
-                         *fr->ic, fr->nbv->pairlistSets().params(), fr->pmedata, use_GPU(fr->nbv),
+                         *fr->ic, fr->nbv->pairlistSets().params(), fr->pmedata, use_GPU(fr->nbv.get()),
                          &bPMETunePrinting);
     }
 
@@ -1474,7 +1474,7 @@ void gmx::Integrator::do_md()
         step_rel++;
 
         resetHandler->resetCounters(
-                step, step_rel, mdlog, fplog, cr, (use_GPU(fr->nbv) ? fr->nbv : nullptr),
+                step, step_rel, mdlog, fplog, cr, (use_GPU(fr->nbv.get()) ? fr->nbv.get() : nullptr),
                 nrnb, fr->pmedata, pme_loadbal, wcycle, walltime_accounting);
 
         /* If bIMD is TRUE, the master updates the IMD energy record and sends positions to VMD client */
@@ -1509,7 +1509,7 @@ void gmx::Integrator::do_md()
 
     if (bPMETune)
     {
-        pme_loadbal_done(pme_loadbal, fplog, mdlog, use_GPU(fr->nbv));
+        pme_loadbal_done(pme_loadbal, fplog, mdlog, use_GPU(fr->nbv.get()));
     }
 
     done_shellfc(fplog, shellfc, step_rel);

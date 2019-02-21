@@ -1007,7 +1007,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         pme_load_balance(pme_lb, cr,
                          fp_err, fp_log, mdlog,
                          ir, state, pme_lb->cycles_c - cycles_prev,
-                         fr->ic, fr->nbv, &fr->pmedata,
+                         fr->ic, fr->nbv.get(), &fr->pmedata,
                          step);
 
         /* Update deprecated rlist in forcerec to stay in sync with fr->nbv */

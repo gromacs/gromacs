@@ -332,6 +332,14 @@ struct nonbonded_verlet_t
                 int64_t                               outerListCreationStep_;
         };
 
+        nonbonded_verlet_t(std::unique_ptr<PairlistSets>     *pairlistSets_,
+                           std::unique_ptr<nbnxn_search>     *nbs,
+                           std::unique_ptr<nbnxn_atomdata_t> *nbat,
+                           const Nbnxm::KernelSetup          &kernelSetup,
+                           gmx_nbnxn_gpu_t                   *gpu_nbv);
+
+        ~nonbonded_verlet_t();
+
         //! Returns whether a GPU is use for the non-bonded calculations
         bool useGpu() const
         {
@@ -401,43 +409,36 @@ struct nonbonded_verlet_t
             return kernelSetup_;
         }
 
-        //! Sets the kernel setup, TODO: make private
-        void setKernelSetup(const Nbnxm::KernelSetup &kernelSetup)
-        {
-            kernelSetup_ = kernelSetup;
-        }
-
         // TODO: Make all data members private
     public:
         //! All data related to the pair lists
-        std::unique_ptr<PairlistSets>         pairlistSets_;
+        std::unique_ptr<PairlistSets>     pairlistSets_;
         //! Working data for constructing the pairlists
-        std::unique_ptr<nbnxn_search>         nbs;
+        std::unique_ptr<nbnxn_search>     nbs;
         //! Atom data
-        nbnxn_atomdata_t                     *nbat;
-
+        std::unique_ptr<nbnxn_atomdata_t> nbat;
     private:
         //! The non-bonded setup, also affects the pairlist construction kernel
-        Nbnxm::KernelSetup   kernelSetup_;
+        Nbnxm::KernelSetup                kernelSetup_;
     public:
-
-        gmx_nbnxn_gpu_t     *gpu_nbv;         /**< pointer to GPU nb verlet data     */
+        //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)
+        gmx_nbnxn_gpu_t                  *gpu_nbv;
 };
 
 namespace Nbnxm
 {
 
-/*! \brief Initializes the nbnxn module */
-void init_nb_verlet(const gmx::MDLogger     &mdlog,
-                    nonbonded_verlet_t     **nb_verlet,
-                    gmx_bool                 bFEP_NonBonded,
-                    const t_inputrec        *ir,
-                    const t_forcerec        *fr,
-                    const t_commrec         *cr,
-                    const gmx_hw_info_t     &hardwareInfo,
-                    const gmx_device_info_t *deviceInfo,
-                    const gmx_mtop_t        *mtop,
-                    matrix                   box);
+/*! \brief Creates an Nbnxm object */
+std::unique_ptr<nonbonded_verlet_t>
+    init_nb_verlet(const gmx::MDLogger     &mdlog,
+                   gmx_bool                 bFEP_NonBonded,
+                   const t_inputrec        *ir,
+                   const t_forcerec        *fr,
+                   const t_commrec         *cr,
+                   const gmx_hw_info_t     &hardwareInfo,
+                   const gmx_device_info_t *deviceInfo,
+                   const gmx_mtop_t        *mtop,
+                   matrix                   box);
 
 } // namespace Nbnxm
 

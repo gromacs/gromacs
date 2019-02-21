@@ -38,6 +38,7 @@
 #define GMX_MDTYPES_TYPES_FORCEREC_H
 
 #include <array>
+#include <memory>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -227,7 +228,8 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 
     int                        cutoff_scheme; /* group- or Verlet-style cutoff */
     gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
-    struct nonbonded_verlet_t *nbv = nullptr;
+    /* The Nbnxm Verlet non-bonded machinery */
+    std::unique_ptr<nonbonded_verlet_t> nbv;
 
     /* The wall tables (if used) */
     int                    nwall;
