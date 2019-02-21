@@ -429,7 +429,7 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
 
     nbp->eeltype = gpu_pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
 
-    init_ewald_coulomb_force_table(ic, nb->nbparam, nb->dev_rundata);
+    init_ewald_coulomb_force_table(ic, nbp, nb->dev_rundata);
 }
 
 /*! \brief Initializes the pair list data structure.
@@ -633,24 +633,19 @@ static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
 
 
 //! This function is documented in the header file
-void gpu_init(gmx_nbnxn_ocl_t          **p_nb,
-              const gmx_device_info_t   *deviceInfo,
-              const interaction_const_t *ic,
-              const NbnxnListParameters *listParams,
-              const nbnxn_atomdata_t    *nbat,
-              const int                  rank,
-              const gmx_bool             bLocalAndNonlocal)
+gmx_nbnxn_ocl_t *
+gpu_init(const gmx_device_info_t   *deviceInfo,
+         const interaction_const_t *ic,
+         const NbnxnListParameters *listParams,
+         const nbnxn_atomdata_t    *nbat,
+         const int                  rank,
+         const gmx_bool             bLocalAndNonlocal)
 {
     gmx_nbnxn_ocl_t            *nb;
     cl_int                      cl_error;
     cl_command_queue_properties queue_properties;
 
     assert(ic);
-
-    if (p_nb == nullptr)
-    {
-        return;
-    }
 
     snew(nb, 1);
     snew(nb->atdat, 1);
@@ -743,12 +738,12 @@ void gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     /* clear energy and shift force outputs */
     nbnxn_ocl_clear_e_fshift(nb);
 
-    *p_nb = nb;
-
     if (debug)
     {
         fprintf(debug, "Initialized OpenCL data structures.\n");
     }
+
+    return nb;
 }
 
 /*! \brief Clears the first natoms_clear elements of the GPU nonbonded force output array.

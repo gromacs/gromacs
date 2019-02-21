@@ -2624,9 +2624,9 @@ void init_forcerec(FILE                             *fp,
             GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
-        Nbnxm::init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
-                              cr, hardwareInfo, deviceInfo,
-                              mtop, box);
+        fr->nbv = Nbnxm::init_nb_verlet(mdlog, bFEP_NonBonded, ir, fr,
+                                        cr, hardwareInfo, deviceInfo,
+                                        mtop, box);
 
         if (useGpuForBonded)
         {
@@ -2675,6 +2675,9 @@ void free_gpu_resources(t_forcerec                          *fr,
     {
         /* free nbnxn data in GPU memory */
         Nbnxm::gpu_free(fr->nbv->gpu_nbv);
+        // TODO: Replace this by freeing the complete nbv
+        fr->nbv->nbat.reset();
+
         delete fr->gpuBonded;
         fr->gpuBonded = nullptr;
     }

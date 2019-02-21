@@ -498,7 +498,7 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
         case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
             nbnxn_kernel_cpu(pairlistSet,
                              kernelSetup(),
-                             nbat,
+                             nbat.get(),
                              ic,
                              fr->shift_vec,
                              forceFlags,
@@ -516,7 +516,7 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
 
         case Nbnxm::KernelType::Cpu8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(pairlistSet.nblGpu[0],
-                                 nbat, &ic,
+                                 nbat.get(), &ic,
                                  fr->shift_vec,
                                  forceFlags,
                                  clearF,
