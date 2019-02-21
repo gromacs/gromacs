@@ -214,11 +214,11 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     int                 nWatMol;
     gmx_bool            bGrid;
     gmx_bool            bExcl_IntraCGAll_InterCGNone;
-    struct cginfo_mb_t *cginfo_mb;
-    int                *cginfo;
-    rvec               *cg_cm;
-    int                 cg_nalloc;
-    rvec               *shift_vec;
+    struct cginfo_mb_t *cginfo_mb = nullptr;
+    int                *cginfo    = nullptr;
+    rvec               *cg_cm     = nullptr;
+    int                 cg_nalloc = 0;
+    rvec               *shift_vec = nullptr;
 
     /* The neighborlists including tables */
     int                        nnblists;
@@ -227,7 +227,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 
     int                        cutoff_scheme; /* group- or Verlet-style cutoff */
     gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
-    struct nonbonded_verlet_t *nbv;
+    struct nonbonded_verlet_t *nbv = nullptr;
 
     /* The wall tables (if used) */
     int                    nwall;
@@ -240,7 +240,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     /* The number of atoms participating in force and constraints */
     int natoms_force_constr;
     /* The allocation size of vectors of size natoms_force */
-    int nalloc_force;
+    int nalloc_force = 0;
 
     /* Forces that should not enter into the coord x force virial summation:
      * PPPM/PME/Ewald/posres/ForceProviders
@@ -251,19 +251,19 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     std::vector<gmx::RVec>  *forceBufferForDirectVirialContributions;
 
     /* Data for PPPM/PME/Ewald */
-    struct gmx_pme_t *pmedata;
+    struct gmx_pme_t *pmedata = nullptr;
     int               ljpme_combination_rule;
 
     /* PME/Ewald stuff */
     struct gmx_ewald_tab_t *ewald_table;
 
     /* Shift force array for computing the virial */
-    rvec *fshift;
+    rvec *fshift = nullptr;
 
     /* Non bonded Parameter lists */
     int      ntype; /* Number of atom types */
     gmx_bool bBHAM;
-    real    *nbfp;
+    real    *nbfp = nullptr;
     real    *ljpme_c6grid; /* C6-values used on grid in LJPME */
 
     /* Energy group pair flags */
@@ -311,7 +311,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     struct bonded_threading_t *bondedThreading;
 
     /* TODO: Replace the pointer by an object once we got rid of C */
-    gmx::GpuBonded *gpuBonded;
+    gmx::GpuBonded *gpuBonded = nullptr;
 
     /* Ewald correction thread local virial and energy data */
     int                         nthread_ewc;
