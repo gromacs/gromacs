@@ -99,15 +99,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
-t_forcerec *mk_forcerec()
-{
-    t_forcerec *fr;
-
-    snew(fr, 1);
-
-    return fr;
-}
-
 static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
 {
     real *nbfp;
@@ -2459,5 +2450,5 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
     tear_down_bonded_threading(fr->bondedThreading);
     GMX_RELEASE_ASSERT(fr->gpuBonded == nullptr, "Should have been deleted earlier, when used");
     fr->bondedThreading = nullptr;
-    sfree(fr);
+    delete fr;
 }
