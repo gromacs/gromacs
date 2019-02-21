@@ -166,4 +166,21 @@ TEST(MultiDimIndexRange, IntersectionEmpty)
     EXPECT_EQ(intersectionRange.begin(), intersectionRange.end());
 }
 
+TEST(MultiDimIndexRange, NullShiftYieldsSameRange)
+{
+    MultiDimIndexRange<2> range({0, 0}, {2, 2});
+    auto                  shiftedRange = multiDimIndexRangeShift(range, {{0, 0}});
+    EXPECT_EQ(range, shiftedRange);
+}
+
+TEST(MultiDimIndexRange, ShiftOkay)
+{
+    MultiDimIndexRange<2> range({0, 0}, {2, 2});
+    auto                  shiftedRange = multiDimIndexRangeShift(range, {{-10, 10}});
+
+    MultiDimIndexRange<2> expectedRange({-10, 10}, {-8, 12});
+    EXPECT_THAT(*expectedRange.begin(), testing::Pointwise(testing::Eq(), *shiftedRange.begin()));
+    EXPECT_THAT(*expectedRange.end(), testing::Pointwise(testing::Eq(), *shiftedRange.end()));
+}
+
 } // namespace gmx
