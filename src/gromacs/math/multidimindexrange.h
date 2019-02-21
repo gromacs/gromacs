@@ -219,4 +219,31 @@ bool operator!=(const MultiDimIndexRange<Rank> &firstRange,
 };
 
 
+/*! \libinternal
+ * \brief calculate the intersection between two multidimensional index ranges.
+ *
+ * The element-wise maximum of input ranges determines the intersection range begin,
+ * the element-wise maximum of input ranges its end.
+ *
+ * \tparam Rank the dimensionality of the index range
+ * \returns intersection of two index ranges
+ */
+template <int Rank>
+MultiDimIndexRange<Rank> multiDimIndexRangeIntersection(const MultiDimIndexRange<Rank> &first,
+                                                        const MultiDimIndexRange<Rank> &second)
+{
+
+    typename MultiDimIndexRange<Rank>::iterator::value_type intersectionBegin;
+    std::transform(std::begin(*first.begin()), std::end(*first.begin()),
+                   std::begin(*second.begin()), std::begin(intersectionBegin),
+                   [](auto a, auto b){return std::max(a, b); });
+
+    //
+    typename MultiDimIndexRange<Rank>::iterator::value_type intersectionEnd;
+    std::transform(std::begin(*first.end()), std::end(*first.end()),
+                   std::begin(*second.end()), std::begin(intersectionEnd),
+                   [](auto a, auto b){return std::min(a, b); });
+
+    return {intersectionBegin, intersectionEnd};
+}
 } // namespace gmx
