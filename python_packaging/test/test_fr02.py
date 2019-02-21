@@ -45,8 +45,13 @@ from gmxapi.version import has_feature
 @pytest.mark.skipif(not has_feature('fr2'),
                    reason="Feature level not met.")
 def test_fr2():
-    """FR2: Output proxy establishes execution dependency."""
-    # A sequence of two shell subcommands writes two lines to a temporary file.
+    """FR2: Output proxy establishes execution dependency.
+    
+    Confirm that dependent operations are only executed after their dependencies.
+
+    In a sequence of two operations, write a two-line file one line at a time.
+    Use a user-provided filename as a parameter to each operation.
+    """
     with tempfile.TemporaryDirectory() as directory:
         fh, filename = tempfile.mkstemp(dir=directory)
         os.close(fh)
