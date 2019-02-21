@@ -57,9 +57,6 @@ class MDLogger;
 class PhysicalNodeCommunicator;
 }
 
-/*! \brief Create a new forcerec structure */
-t_forcerec *mk_forcerec();
-
 //! Destroy a forcerec.
 void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups);
 
@@ -101,7 +98,6 @@ void init_interaction_const_tables(FILE                   *fp,
 
 /*! \brief Initialize forcerec structure.
  *
- * The Force rec struct must be created with mk_forcerec.
  * \param[in]  fplog       File for printing
  * \param[in]  mdlog       File for printing
  * \param[out] fr          The forcerec
