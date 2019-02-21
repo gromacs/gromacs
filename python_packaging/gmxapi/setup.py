@@ -40,7 +40,7 @@ setup(
     name='gmxapi',
 
     # TODO: replace with CMake variables from GMXAPI version.
-    version='0.1.0.dev1',
+    version='0.1.0.dev2',
     python_requires='>=3.4, <4',
     setup_requires=['setuptools>=28'],
 

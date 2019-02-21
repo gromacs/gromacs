@@ -57,7 +57,7 @@ patch = 0
 # Note: this is not automatically updated. See RELEASE.txt and https://github.com/kassonlab/gmxapi/issues/152
 release = False
 
-_named_features = ['fr1']
+_named_features = ['fr1', 'fr2']
 
 
 class FeatureError(GmxapiError):
