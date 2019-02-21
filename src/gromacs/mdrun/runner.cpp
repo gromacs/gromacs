@@ -1324,7 +1324,7 @@ int Mdrunner::mdrunner()
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Initiate forcerecord */
-        fr                 = mk_forcerec();
+        fr                 = new t_forcerec;
         fr->forceProviders = mdModules->initForceProviders();
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
