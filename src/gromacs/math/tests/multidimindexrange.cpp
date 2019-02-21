@@ -183,4 +183,39 @@ TEST(MultiDimIndexRange, ShiftOkay)
     EXPECT_THAT(*expectedRange.end(), testing::Pointwise(testing::Eq(), *shiftedRange.end()));
 }
 
+TEST(MultiDimIndexRange, PeriodicImagesSkipOneDimension)
+{
+    MultiDimIndexRange<2> range({0, 0}, {2, 2});
+    auto                  images = multiDimIndexRangeClosestPeriodicImages(range, {{4, 0}});
+    
+    EXPECT_EQ(3, images.size());
+    
+    std::vector<decltype(range)> expectedImages(3);
+    expectedImages = { {{-4, 0},{-2, 2}},
+                       {{ 0, 0},{ 2, 2}},
+                       {{ 4, 0},{ 6, 2}} };
+    EXPECT_THAT(expectedImages, testing::Pointwise(testing::Eq(), images));
+}
+
+TEST(MultiDimIndexRange, PeriodicImages)
+{
+    MultiDimIndexRange<2> range({0, 0}, {2, 2});
+    const auto images = multiDimIndexRangeClosestPeriodicImages(range, {{4, 3}});
+    
+    EXPECT_EQ(9, images.size());
+    
+    std::vector<decltype(range)> expectedImages(9);
+    expectedImages = { {{-4,-3},{-2,-1}}, 
+                       {{-4, 0},{-2, 2}},
+                       {{-4, 3},{-2, 5}},
+                       {{ 0,-3},{ 2,-1}},
+                       {{ 0, 0},{ 2, 2}},
+                       {{ 0, 3},{ 2, 5}},
+                       {{ 4,-3},{ 6,-1}},
+                       {{ 4, 0},{ 6, 2}},
+                       {{ 4, 3},{ 6, 5}} };
+    EXPECT_THAT(expectedImages, testing::Pointwise(testing::Eq(), images));
+}
+
+
 } // namespace gmx
