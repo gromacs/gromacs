@@ -85,5 +85,5 @@ void
 nonbonded_verlet_t::dispatchPruneKernelCpu(const Nbnxm::InteractionLocality  iLocality,
                                            const rvec                       *shift_vec)
 {
-    pairlistSets_->dispatchPruneKernel(iLocality, nbat, shift_vec, kernelSetup_.kernelType);
+    pairlistSets_->dispatchPruneKernel(iLocality, nbat.get(), shift_vec, kernelSetup_.kernelType);
 }
