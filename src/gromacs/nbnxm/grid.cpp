@@ -1495,7 +1495,7 @@ void nbnxn_put_on_grid(nonbonded_verlet_t             *nbv,
                      lowerCorner, upperCorner,
                      nbs->grid[0].atom_density);
 
-    nbnxn_atomdata_t *nbat = nbv->nbat;
+    nbnxn_atomdata_t *nbat = nbv->nbat.get();
 
     calc_cell_indices(nbs, ddZone, grid, updateGroupsCog, atomStart, atomEnd, atinfo, x, numAtomsMoved, move, nbat);
 

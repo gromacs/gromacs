@@ -1423,7 +1423,7 @@ int Mdrunner::mdrunner()
      */
     finish_run(fplog, mdlog, cr,
                inputrec, nrnb, wcycle, walltime_accounting,
-               fr ? fr->nbv : nullptr,
+               fr ? fr->nbv.get() : nullptr,
                pmedata,
                EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
 

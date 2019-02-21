@@ -4368,7 +4368,7 @@ nonbonded_verlet_t::constructPairlist(const Nbnxm::InteractionLocality  iLocalit
                                       int64_t                           step,
                                       t_nrnb                           *nrnb)
 {
-    pairlistSets_->construct(iLocality, nbs.get(), nbat, excl,
+    pairlistSets_->construct(iLocality, nbs.get(), nbat.get(), excl,
                              kernelSetup_.kernelType,
                              step, nrnb);
 
