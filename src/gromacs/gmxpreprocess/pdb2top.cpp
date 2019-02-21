@@ -71,6 +71,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/niceheader.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
@@ -86,7 +87,7 @@
 /* this must correspond to enum in pdb2top.h */
 const char* hh[ehisNR] = { "HISD", "HISE", "HISH", "HIS1" };
 
-static int missing_atoms(const PreprocessResidue* rp, int resind, t_atoms* at, int i0, int i)
+static int missing_atoms(const PreprocessResidue* rp, int resind, t_atoms* at, int i0, int i, const gmx::MDLogger& logger)
 {
     int nmiss = 0;
     for (int j = 0; j < rp->natom(); j++)
@@ -100,19 +101,20 @@ static int missing_atoms(const PreprocessResidue* rp, int resind, t_atoms* at, i
         if (!bFound)
         {
             nmiss++;
-            fprintf(stderr,
-                    "\nWARNING: "
-                    "atom %s is missing in residue %s %d in the pdb file\n",
-                    name, *(at->resinfo[resind].name), at->resinfo[resind].nr);
+            GMX_LOG(logger.warning)
+                    .asParagraph()
+                    .appendTextFormatted("atom %s is missing in residue %s %d in the pdb file",
+                                         name, *(at->resinfo[resind].name), at->resinfo[resind].nr);
             if (name[0] == 'H' || name[0] == 'h')
             {
-                fprintf(stderr,
-                        "         You might need to add atom %s to the hydrogen database of "
-                        "building block %s\n"
-                        "         in the file %s.hdb (see the manual)\n",
-                        name, *(at->resinfo[resind].rtp), rp->filebase.c_str());
+                GMX_LOG(logger.warning)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "You might need to add atom %s to the hydrogen database of "
+                                "building block %s "
+                                "in the file %s.hdb (see the manual)",
+                                name, *(at->resinfo[resind].rtp), rp->filebase.c_str());
             }
-            fprintf(stderr, "\n");
         }
     }
 
@@ -133,7 +135,12 @@ bool is_int(double x)
     return (fabs(x - ix) < tol);
 }
 
-static void choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, char* ffdir, int ffdir_maxlen)
+static void choose_ff_impl(const char*          ffsel,
+                           char*                forcefield,
+                           int                  ff_maxlen,
+                           char*                ffdir,
+                           int                  ffdir_maxlen,
+                           const gmx::MDLogger& logger)
 {
     std::vector<gmx::DataFileInfo> ffdirs = fflib_enumerate_forcefields();
     const int                      nff    = ssize(ffdirs);
@@ -184,11 +191,13 @@ static void choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, c
         {
             if (cwdsel != -1)
             {
-                fprintf(stderr,
-                        "Force field '%s' occurs in %d places. pdb2gmx is using the one in the\n"
-                        "current directory. Use interactive selection (not the -ff option) if\n"
-                        "you would prefer a different one.\n",
-                        ffsel, nfound);
+                GMX_LOG(logger.warning)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "Force field '%s' occurs in %d places. pdb2gmx is using the one in "
+                                "the current directory. Use interactive selection "
+                                "(not the -ff option) if you would prefer a different one.",
+                                ffsel, nfound);
             }
             else
             {
@@ -253,21 +262,25 @@ static void choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, c
             }
         }
 
-        printf("\nSelect the Force Field:\n");
+        GMX_LOG(logger.info).asParagraph().appendTextFormatted("Select the Force Field:");
         for (int i = 0; i < nff; ++i)
         {
             if (i == 0 || ffdirs[i - 1].dir != ffdirs[i].dir)
             {
                 if (ffdirs[i].dir == ".")
                 {
-                    printf("From current directory:\n");
+                    GMX_LOG(logger.info)
+                            .asParagraph()
+                            .appendTextFormatted("From current directory:");
                 }
                 else
                 {
-                    printf("From '%s':\n", ffdirs[i].dir.c_str());
+                    GMX_LOG(logger.info)
+                            .asParagraph()
+                            .appendTextFormatted("From '%s':", ffdirs[i].dir.c_str());
                 }
             }
-            printf("%2d: %s\n", i + 1, desc[i].c_str());
+            GMX_LOG(logger.info).asParagraph().appendTextFormatted("%2d: %s", i + 1, desc[i].c_str());
         }
 
         sel = -1;
@@ -338,16 +351,16 @@ static void choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, c
     strcpy(ffdir, ffpath.c_str());
 }
 
-void choose_ff(const char* ffsel, char* forcefield, int ff_maxlen, char* ffdir, int ffdir_maxlen)
+void choose_ff(const char* ffsel, char* forcefield, int ff_maxlen, char* ffdir, int ffdir_maxlen, const gmx::MDLogger& logger)
 {
     try
     {
-        choose_ff_impl(ffsel, forcefield, ff_maxlen, ffdir, ffdir_maxlen);
+        choose_ff_impl(ffsel, forcefield, ff_maxlen, ffdir, ffdir_maxlen, logger);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }
 
-void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel)
+void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel, const gmx::MDLogger& logger)
 {
     const char* fn_watermodels = "watermodels.dat";
     FILE*       fp;
@@ -372,14 +385,16 @@ void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel)
     std::string filename = gmx::Path::join(ffdir, fn_watermodels);
     if (!fflib_fexist(filename))
     {
-        fprintf(stderr, "No file '%s' found, will not include a water model\n", fn_watermodels);
+        GMX_LOG(logger.warning)
+                .asParagraph()
+                .appendTextFormatted("No file '%s' found, will not include a water model", fn_watermodels);
         *watermodel = nullptr;
 
         return;
     }
 
     fp = fflib_open(filename);
-    printf("\nSelect the Water Model:\n");
+    GMX_LOG(logger.info).asParagraph().appendTextFormatted("Select the Water Model:");
     nwm   = 0;
     model = nullptr;
     while (get_a_line(fp, buf, STRLEN))
@@ -390,7 +405,7 @@ void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel)
         if (i > 0)
         {
             ltrim(buf + i);
-            fprintf(stderr, "%2d: %s\n", nwm + 1, buf + i);
+            GMX_LOG(logger.info).asParagraph().appendTextFormatted("%2d: %s", nwm + 1, buf + i);
             nwm++;
         }
         else
@@ -399,7 +414,7 @@ void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel)
         }
     }
     gmx_ffclose(fp);
-    fprintf(stderr, "%2d: %s\n", nwm + 1, "None");
+    GMX_LOG(logger.info).asParagraph().appendTextFormatted("%2d: %s", nwm + 1, "None");
 
     sel = -1;
     do
@@ -429,7 +444,11 @@ void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel)
     sfree(model);
 }
 
-static int name2type(t_atoms* at, int** cgnr, gmx::ArrayRef<const PreprocessResidue> usedPpResidues, ResidueType* rt)
+static int name2type(t_atoms*                               at,
+                     int**                                  cgnr,
+                     gmx::ArrayRef<const PreprocessResidue> usedPpResidues,
+                     ResidueType*                           rt,
+                     const gmx::MDLogger&                   logger)
 {
     int    i, j, prevresind, i0, prevcg, cg, curcg;
     char*  name;
@@ -457,7 +476,7 @@ static int name2type(t_atoms* at, int** cgnr, gmx::ArrayRef<const PreprocessResi
             bNterm     = bProt && (resind == 0);
             if (resind > 0)
             {
-                nmissat += missing_atoms(&usedPpResidues[prevresind], prevresind, at, i0, i);
+                nmissat += missing_atoms(&usedPpResidues[prevresind], prevresind, at, i0, i, logger);
             }
             i0 = i;
         }
@@ -494,7 +513,7 @@ static int name2type(t_atoms* at, int** cgnr, gmx::ArrayRef<const PreprocessResi
         at->atom[i].qB    = at->atom[i].q;
         at->atom[i].mB    = at->atom[i].m;
     }
-    nmissat += missing_atoms(&usedPpResidues[resind], resind, at, i0, i);
+    nmissat += missing_atoms(&usedPpResidues[resind], resind, at, i0, i, logger);
 
     return nmissat;
 }
@@ -736,7 +755,8 @@ static void at2bonds(InteractionsOfType*                  psb,
                      t_atoms*                             atoms,
                      gmx::ArrayRef<const gmx::RVec>       x,
                      real                                 long_bond_dist,
-                     real                                 short_bond_dist)
+                     real                                 short_bond_dist,
+                     const gmx::MDLogger&                 logger)
 {
     real        long_bond_dist2, short_bond_dist2;
     const char* ptr;
@@ -753,7 +773,7 @@ static void at2bonds(InteractionsOfType*                  psb,
         ptr = "check";
     }
 
-    fprintf(stderr, "Making bonds...\n");
+    GMX_LOG(logger.info).asParagraph().appendTextFormatted("Making bonds...");
     int i = 0;
     for (int resind = 0; (resind < atoms->nres) && (i < atoms->nr); resind++)
     {
@@ -772,13 +792,17 @@ static void at2bonds(InteractionsOfType*                  psb,
                 if (dist2 > long_bond_dist2)
 
                 {
-                    fprintf(stderr, "Warning: Long Bond (%d-%d = %g nm)\n", ai + 1, aj + 1,
-                            std::sqrt(dist2));
+                    GMX_LOG(logger.warning)
+                            .asParagraph()
+                            .appendTextFormatted("Long Bond (%d-%d = %g nm)", ai + 1, aj + 1,
+                                                 std::sqrt(dist2));
                 }
                 else if (dist2 < short_bond_dist2)
                 {
-                    fprintf(stderr, "Warning: Short Bond (%d-%d = %g nm)\n", ai + 1, aj + 1,
-                            std::sqrt(dist2));
+                    GMX_LOG(logger.warning)
+                            .asParagraph()
+                            .appendTextFormatted("Short Bond (%d-%d = %g nm)", ai + 1, aj + 1,
+                                                 std::sqrt(dist2));
                 }
                 add_param(psb, ai, aj, {}, patch.s.c_str());
             }
@@ -830,7 +854,7 @@ static bool pcompar(const InteractionOfType& a, const InteractionOfType& b)
     }
 }
 
-static void clean_bonds(InteractionsOfType* ps)
+static void clean_bonds(InteractionsOfType* ps, const gmx::MDLogger& logger)
 {
     if (ps->size() > 0)
     {
@@ -855,15 +879,17 @@ static void clean_bonds(InteractionsOfType* ps)
                 ++parm;
             }
         }
-        fprintf(stderr, "Number of bonds was %d, now %zu\n", oldNumber, ps->size());
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("Number of bonds was %d, now %zu", oldNumber, ps->size());
     }
     else
     {
-        fprintf(stderr, "No bonds\n");
+        GMX_LOG(logger.info).asParagraph().appendTextFormatted("No bonds");
     }
 }
 
-void print_sums(const t_atoms* atoms, bool bSystem)
+void print_sums(const t_atoms* atoms, bool bSystem, const gmx::MDLogger& logger)
 {
     double      m, qtot;
     int         i;
@@ -886,8 +912,8 @@ void print_sums(const t_atoms* atoms, bool bSystem)
         qtot += atoms->atom[i].q;
     }
 
-    fprintf(stderr, "Total mass%s %.3f a.m.u.\n", where, m);
-    fprintf(stderr, "Total charge%s %.3f e\n", where, qtot);
+    GMX_LOG(logger.info).asParagraph().appendTextFormatted("Total mass%s %.3f a.m.u.", where, m);
+    GMX_LOG(logger.info).asParagraph().appendTextFormatted("Total charge%s %.3f e", where, qtot);
 }
 
 static void check_restp_type(const char* name, int t1, int t2)
@@ -954,7 +980,8 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
                         gmx::ArrayRef<MoleculePatchDatabase*>  ctdb,
                         gmx::ArrayRef<const int>               rn,
                         gmx::ArrayRef<const int>               rc,
-                        bool                                   bAllowMissing)
+                        bool                                   bAllowMissing,
+                        const gmx::MDLogger&                   logger)
 {
     char* key;
     bool  bRM;
@@ -986,7 +1013,7 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
          */
         key = *resinfo[i].rtp;
 
-        resinfo[i].rtp = put_symtab(symtab, searchResidueDatabase(key, rtpFFDB).c_str());
+        resinfo[i].rtp = put_symtab(symtab, searchResidueDatabase(key, rtpFFDB, logger).c_str());
         auto res       = getDatabaseEntry(*resinfo[i].rtp, rtpFFDB);
         usedPpResidues->push_back(PreprocessResidue());
         PreprocessResidue* newentry = &usedPpResidues->back();
@@ -1022,7 +1049,7 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
                     "terminal database entries (.tdb).";
             if (bAllowMissing)
             {
-                fprintf(stderr, "%s\n", errString);
+                GMX_LOG(logger.warning).asParagraph().appendTextFormatted("%s", errString);
             }
             else
             {
@@ -1037,7 +1064,7 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
                     "proper existing terminal entry.";
             if (bAllowMissing)
             {
-                fprintf(stderr, "%s\n", errString);
+                GMX_LOG(logger.warning).asParagraph().appendTextFormatted("%s", errString);
             }
             else
             {
@@ -1157,7 +1184,8 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
                                           int                          atind,
                                           PreprocessResidue*           localPpResidue,
                                           const MoleculePatchDatabase& singlePatch,
-                                          bool                         bVerbose)
+                                          bool                         bVerbose,
+                                          const gmx::MDLogger&         logger)
 {
     int   resnr;
     char* oldnm;
@@ -1259,8 +1287,10 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
 
             if (bVerbose)
             {
-                printf("Renaming atom '%s' in residue '%s' %d to '%s'\n", oldnm,
-                       localPpResidue->resname.c_str(), resnr, newnm.c_str());
+                GMX_LOG(logger.info)
+                        .asParagraph()
+                        .appendTextFormatted("Renaming atom '%s' in residue '%s' %d to '%s'", oldnm,
+                                             localPpResidue->resname.c_str(), resnr, newnm.c_str());
             }
             /* Rename the atom in pdba */
             pdba->atomname[atind] = put_symtab(symtab, newnm.c_str());
@@ -1281,8 +1311,10 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
                  */
                 if (bVerbose)
                 {
-                    printf("Deleting atom '%s' in residue '%s' %d\n", oldnm,
-                           localPpResidue->resname.c_str(), resnr);
+                    GMX_LOG(logger.info)
+                            .asParagraph()
+                            .appendTextFormatted("Deleting atom '%s' in residue '%s' %d", oldnm,
+                                                 localPpResidue->resname.c_str(), resnr);
                 }
                 /* We should free the atom name,
                  * but it might be used multiple times in the symtab.
@@ -1308,7 +1340,8 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
                               t_atoms*                             pdba,
                               t_symtab*                            symtab,
                               gmx::ArrayRef<gmx::RVec>             x,
-                              bool                                 bVerbose)
+                              bool                                 bVerbose,
+                              const gmx::MDLogger&                 logger)
 {
     for (int i = 0; i < pdba->nr; i++)
     {
@@ -1321,7 +1354,7 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
         {
             /* Not found yet, check if we have to rename this atom */
             if (match_atomnames_with_rtp_atom(pdba, x, symtab, i, localPpResidue,
-                                              globalPatches[pdba->atom[i].resind], bVerbose))
+                                              globalPatches[pdba->atom[i].resind], bVerbose, logger))
             {
                 /* We deleted this atom, decrease the atom counter by 1. */
                 i--;
@@ -1331,7 +1364,10 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(InteractionsOfType* psb, gmx::ArrayRef<const PreprocessResidue> usedPpResidues, t_atoms* atoms)
+static void gen_cmap(InteractionsOfType*                    psb,
+                     gmx::ArrayRef<const PreprocessResidue> usedPpResidues,
+                     t_atoms*                               atoms,
+                     const gmx::MDLogger&                   logger)
 {
     int         residx;
     const char* ptr;
@@ -1349,7 +1385,7 @@ static void gen_cmap(InteractionsOfType* psb, gmx::ArrayRef<const PreprocessResi
         ptr = "check";
     }
 
-    fprintf(stderr, "Making cmap torsions...\n");
+    GMX_LOG(logger.info).asParagraph().appendTextFormatted("Making cmap torsions...");
     int i = 0;
     /* Most cmap entries use the N atom from the next residue, so the last
      * residue should not have its CMAP entry in that case, but for things like
@@ -1466,7 +1502,8 @@ void pdb2top(FILE*                                  top_file,
              bool                                   bChargeGroups,
              bool                                   bCmap,
              bool                                   bRenumRes,
-             bool                                   bRTPresname)
+             bool                                   bRTPresname,
+             const gmx::MDLogger&                   logger)
 {
     std::array<InteractionsOfType, F_NRE> plist;
     t_excls*                              excls;
@@ -1478,17 +1515,19 @@ void pdb2top(FILE*                                  top_file,
     ResidueType rt;
 
     /* Make bonds */
-    at2bonds(&(plist[F_BONDS]), globalPatches, atoms, *x, long_bond_dist, short_bond_dist);
+    at2bonds(&(plist[F_BONDS]), globalPatches, atoms, *x, long_bond_dist, short_bond_dist, logger);
 
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]), atoms, ssbonds, bAllowMissing);
 
-    nmissat = name2type(atoms, &cgnr, usedPpResidues, &rt);
+    nmissat = name2type(atoms, &cgnr, usedPpResidues, &rt, logger);
     if (nmissat)
     {
         if (bAllowMissing)
         {
-            fprintf(stderr, "There were %d missing atoms in molecule %s\n", nmissat, molname);
+            GMX_LOG(logger.warning)
+                    .asParagraph()
+                    .appendTextFormatted("There were %d missing atoms in molecule %s", nmissat, molname);
         }
         else
         {
@@ -1500,7 +1539,7 @@ void pdb2top(FILE*                                  top_file,
     }
 
     /* Cleanup bonds (sort and rm doubles) */
-    clean_bonds(&(plist[F_BONDS]));
+    clean_bonds(&(plist[F_BONDS]), logger);
 
     snew(vsite_type, atoms->nr);
     for (i = 0; i < atoms->nr; i++)
@@ -1511,9 +1550,11 @@ void pdb2top(FILE*                                  top_file,
     {
         if (bVsiteAromatics)
         {
-            fprintf(stdout,
-                    "The conversion of aromatic rings into virtual sites is deprecated "
-                    "and may be removed in a future version of GROMACS");
+            GMX_LOG(logger.info)
+                    .asParagraph()
+                    .appendTextFormatted(
+                            "The conversion of aromatic rings into virtual sites is deprecated "
+                            "and may be removed in a future version of GROMACS");
         }
         /* determine which atoms will be vsites and add dummy masses
            also renumber atom numbers in plist[0..F_NRE]! */
@@ -1521,17 +1562,21 @@ void pdb2top(FILE*                                  top_file,
     }
 
     /* Make Angles and Dihedrals */
-    fprintf(stderr, "Generating angles, dihedrals and pairs...\n");
+    GMX_LOG(logger.info)
+            .asParagraph()
+            .appendTextFormatted("Generating angles, dihedrals and pairs...");
     snew(excls, atoms->nr);
     gen_pad(atoms, usedPpResidues, plist, excls, globalPatches, bAllowMissing);
 
     /* Make CMAP */
     if (bCmap)
     {
-        gen_cmap(&(plist[F_CMAP]), usedPpResidues, atoms);
+        gen_cmap(&(plist[F_CMAP]), usedPpResidues, atoms, logger);
         if (plist[F_CMAP].size() > 0)
         {
-            fprintf(stderr, "There are %4zu cmap torsion pairs\n", plist[F_CMAP].size());
+            GMX_LOG(logger.info)
+                    .asParagraph()
+                    .appendTextFormatted("There are %4zu cmap torsion pairs", plist[F_CMAP].size());
         }
     }
 
@@ -1545,16 +1590,18 @@ void pdb2top(FILE*                                  top_file,
     /* Cleanup bonds (sort and rm doubles) */
     /* clean_bonds(&(plist[F_BONDS]));*/
 
-    fprintf(stderr,
-            "There are %4zu dihedrals, %4zu impropers, %4zu angles\n"
-            "          %4zu pairs,     %4zu bonds and  %4zu virtual sites\n",
-            plist[F_PDIHS].size(), plist[F_IDIHS].size(), plist[F_ANGLES].size(),
-            plist[F_LJ14].size(), plist[F_BONDS].size(),
-            plist[F_VSITE2].size() + plist[F_VSITE3].size() + plist[F_VSITE3FD].size()
-                    + plist[F_VSITE3FAD].size() + plist[F_VSITE3OUT].size()
-                    + plist[F_VSITE4FD].size() + plist[F_VSITE4FDN].size());
+    GMX_LOG(logger.info)
+            .asParagraph()
+            .appendTextFormatted(
+                    "There are %4zu dihedrals, %4zu impropers, %4zu angles\n"
+                    "          %4zu pairs,     %4zu bonds and  %4zu virtual sites",
+                    plist[F_PDIHS].size(), plist[F_IDIHS].size(), plist[F_ANGLES].size(),
+                    plist[F_LJ14].size(), plist[F_BONDS].size(),
+                    plist[F_VSITE2].size() + plist[F_VSITE3].size() + plist[F_VSITE3FD].size()
+                            + plist[F_VSITE3FAD].size() + plist[F_VSITE3OUT].size()
+                            + plist[F_VSITE4FD].size() + plist[F_VSITE4FDN].size());
 
-    print_sums(atoms, FALSE);
+    print_sums(atoms, FALSE, logger);
 
     if (!bChargeGroups)
     {
@@ -1572,7 +1619,7 @@ void pdb2top(FILE*                                  top_file,
 
     if (top_file)
     {
-        fprintf(stderr, "Writing topology\n");
+        GMX_LOG(logger.info).asParagraph().appendTextFormatted("Writing topology");
         /* We can copy the bonded types from the first restp,
          * since the types have to be identical for all residues in one molecule.
          */

@@ -57,6 +57,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
@@ -92,7 +93,6 @@ PreprocessingAtomTypes read_atype(const char* ffdir, t_symtab* tab)
             {
                 a->m = m;
                 at.addType(tab, *a, name, InteractionOfType({}, {}), 0, 0);
-                fflush(stderr);
             }
             else
             {
@@ -212,7 +212,9 @@ static void print_resbondeds(FILE* out, int bt, const PreprocessResidue& rtpDBEn
     }
 }
 
-static void check_rtp(gmx::ArrayRef<const PreprocessResidue> rtpDBEntry, const std::string& libfn)
+static void check_rtp(gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
+                      const std::string&                     libfn,
+                      const gmx::MDLogger&                   logger)
 {
     /* check for double entries, assuming list is already sorted */
     for (auto it = rtpDBEntry.begin() + 1; it != rtpDBEntry.end(); it++)
@@ -220,7 +222,9 @@ static void check_rtp(gmx::ArrayRef<const PreprocessResidue> rtpDBEntry, const s
         auto prev = it - 1;
         if (gmx::equalCaseInsensitive(prev->resname, it->resname))
         {
-            fprintf(stderr, "WARNING double entry %s in file %s\n", it->resname.c_str(), libfn.c_str());
+            GMX_LOG(logger.warning)
+                    .asParagraph()
+                    .appendTextFormatted("Double entry %s in file %s", it->resname.c_str(), libfn.c_str());
         }
     }
 }
@@ -253,6 +257,26 @@ static void print_resall_header(FILE* out, gmx::ArrayRef<const PreprocessResidue
             static_cast<int>(rtpDBEntry[0].bRemoveDihedralIfWithImproper));
 }
 
+
+static void print_resall_log(const gmx::MDLogger& logger, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry)
+{
+    GMX_LOG(logger.info).asParagraph().appendTextFormatted("[ bondedtypes ]");
+    GMX_LOG(logger.info)
+            .asParagraph()
+            .appendTextFormatted(
+                    "; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  "
+                    "remove_dih");
+    GMX_LOG(logger.info)
+            .asParagraph()
+            .appendTextFormatted(
+                    " %5d  %6d  %9d  %9d  %14d  %14d %14d %14d", rtpDBEntry[0].rb[0].type,
+                    rtpDBEntry[0].rb[1].type, rtpDBEntry[0].rb[2].type, rtpDBEntry[0].rb[3].type,
+                    static_cast<int>(rtpDBEntry[0].bKeepAllGeneratedDihedrals),
+                    rtpDBEntry[0].nrexcl, static_cast<int>(rtpDBEntry[0].bGenerateHH14Interactions),
+                    static_cast<int>(rtpDBEntry[0].bRemoveDihedralIfWithImproper));
+}
+
+
 void print_resall(FILE* out, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry, const PreprocessingAtomTypes& atype)
 {
     if (rtpDBEntry.empty())
@@ -279,6 +303,7 @@ void readResidueDatabase(const std::string&              rrdb,
                          std::vector<PreprocessResidue>* rtpDBEntry,
                          PreprocessingAtomTypes*         atype,
                          t_symtab*                       tab,
+                         const gmx::MDLogger&            logger,
                          bool                            bAllowOverrideRTP)
 {
     FILE* in;
@@ -347,33 +372,43 @@ void readResidueDatabase(const std::string&              rrdb,
         get_a_line(in, line, STRLEN);
         if (nparam < 5)
         {
-            fprintf(stderr, "Using default: not generating all possible dihedrals\n");
+            GMX_LOG(logger.info)
+                    .asParagraph()
+                    .appendTextFormatted("Using default: not generating all possible dihedrals");
             header_settings.bKeepAllGeneratedDihedrals = FALSE;
         }
         if (nparam < 6)
         {
-            fprintf(stderr, "Using default: excluding 3 bonded neighbors\n");
+            GMX_LOG(logger.info)
+                    .asParagraph()
+                    .appendTextFormatted("Using default: excluding 3 bonded neighbors");
             header_settings.nrexcl = 3;
         }
         if (nparam < 7)
         {
-            fprintf(stderr, "Using default: generating 1,4 H--H interactions\n");
+            GMX_LOG(logger.info)
+                    .asParagraph()
+                    .appendTextFormatted("Using default: generating 1,4 H--H interactions");
             header_settings.bGenerateHH14Interactions = TRUE;
         }
         if (nparam < 8)
         {
-            fprintf(stderr,
-                    "Using default: removing proper dihedrals found on the same bond as a proper "
-                    "dihedral\n");
+            GMX_LOG(logger.warning)
+                    .asParagraph()
+                    .appendTextFormatted(
+                            "Using default: removing proper dihedrals found on the same bond as a "
+                            "proper dihedral");
             header_settings.bRemoveDihedralIfWithImproper = TRUE;
         }
     }
     else
     {
-        fprintf(stderr,
-                "Reading .rtp file without '[ bondedtypes ]' directive,\n"
-                "Will proceed as if the entry was:\n");
-        print_resall_header(stderr, gmx::arrayRefFromArray(&header_settings, 1));
+        GMX_LOG(logger.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "Reading .rtp file without '[ bondedtypes ]' directive, "
+                        "Will proceed as if the entry was:");
+        print_resall_log(logger, gmx::arrayRefFromArray(&header_settings, 1));
     }
     /* We don't know the current size of rrtp, but simply realloc immediately */
     auto oldArrayEnd = rtpDBEntry->end();
@@ -442,10 +477,12 @@ void readResidueDatabase(const std::string&              rrdb,
             }
             if (bAllowOverrideRTP)
             {
-                fprintf(stderr,
-                        "Found another rtp entry for '%s' in '%s', ignoring this entry and keeping "
-                        "the one from '%s.rtp'\n",
-                        res->resname.c_str(), rrdb.c_str(), found->filebase.c_str());
+                GMX_LOG(logger.warning)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "Found another rtp entry for '%s' in '%s',"
+                                " ignoring this entry and keeping the one from '%s.rtp'",
+                                res->resname.c_str(), rrdb.c_str(), found->filebase.c_str());
                 /* We should free all the data for this entry.
                  * The current code gives a lot of dangling pointers.
                  */
@@ -468,7 +505,7 @@ void readResidueDatabase(const std::string&              rrdb,
                 [](const char& c1, const char& c2) { return std::toupper(c1) < std::toupper(c2); });
     });
 
-    check_rtp(*rtpDBEntry, rrdb);
+    check_rtp(*rtpDBEntry, rrdb, logger);
 }
 
 /************************************************************
@@ -503,7 +540,9 @@ static int neq_str_sign(const char* a1, const char* a2)
     }
 }
 
-std::string searchResidueDatabase(const std::string& key, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry)
+std::string searchResidueDatabase(const std::string&                     key,
+                                  gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
+                                  const gmx::MDLogger&                   logger)
 {
     int         nbest, best, besti;
     std::string bestbuf;
@@ -559,10 +598,12 @@ std::string searchResidueDatabase(const std::string& key, gmx::ArrayRef<const Pr
     }
     if (!gmx::equalCaseInsensitive(rtpDBEntry[besti].resname, key))
     {
-        fprintf(stderr,
-                "\nWARNING: '%s' not found in residue topology database, "
-                "trying to use '%s'\n\n",
-                key.c_str(), rtpDBEntry[besti].resname.c_str());
+        GMX_LOG(logger.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "'%s' not found in residue topology database, "
+                        "trying to use '%s'",
+                        key.c_str(), rtpDBEntry[besti].resname.c_str());
     }
 
     return rtpDBEntry[besti].resname;

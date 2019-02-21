@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,11 @@
 #include "gromacs/utility/arrayref.h"
 
 class PreprocessingAtomTypes;
+
+namespace gmx
+{
+class MDLogger;
+}
 struct PreprocessResidue;
 struct t_symtab;
 
@@ -60,9 +65,12 @@ struct t_symtab;
  *
  * \param[in] key The atomname to search for.
  * \param[in] rtpDBEntry Database with residue information.
+ * \param[in] logger Logging object.
  * \returns The rtp residue name.
  */
-std::string searchResidueDatabase(const std::string& key, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry);
+std::string searchResidueDatabase(const std::string&                     key,
+                                  gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
+                                  const gmx::MDLogger&                   logger);
 
 /*! \brief
  * Returns matching entry in database.
@@ -90,12 +98,14 @@ PreprocessingAtomTypes read_atype(const char* ffdir, t_symtab* tab);
  * \param[inout] rtpDBEntry Database to populate.
  * \param[inout] atype Atomtype information.
  * \param[inout] tab Symbol table for names.
+ * \param[in] logger MDLogger interface.
  * \param[in] bAllowOverrideRTP If entries can be overwritten in the database.
  */
 void readResidueDatabase(const std::string&              resdb,
                          std::vector<PreprocessResidue>* rtpDBEntry,
                          PreprocessingAtomTypes*         atype,
                          t_symtab*                       tab,
+                         const gmx::MDLogger&            logger,
                          bool                            bAllowOverrideRTP);
 
 /*! \brief
