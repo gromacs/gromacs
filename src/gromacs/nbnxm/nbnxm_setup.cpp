@@ -61,6 +61,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
+#include "gpu_types.h"
 #include "grid.h"
 #include "internal.h"
 
@@ -343,19 +344,17 @@ static int getMinimumIlistCountForGpuBalancing(gmx_nbnxn_gpu_t *nbnxmGpu)
     return minimumIlistCount;
 }
 
-void init_nb_verlet(const gmx::MDLogger     &mdlog,
-                    nonbonded_verlet_t     **nb_verlet,
-                    gmx_bool                 bFEP_NonBonded,
-                    const t_inputrec        *ir,
-                    const t_forcerec        *fr,
-                    const t_commrec         *cr,
-                    const gmx_hw_info_t     &hardwareInfo,
-                    const gmx_device_info_t *deviceInfo,
-                    const gmx_mtop_t        *mtop,
-                    matrix                   box)
+std::unique_ptr<nonbonded_verlet_t>
+init_nb_verlet(const gmx::MDLogger     &mdlog,
+               gmx_bool                 bFEP_NonBonded,
+               const t_inputrec        *ir,
+               const t_forcerec        *fr,
+               const t_commrec         *cr,
+               const gmx_hw_info_t     &hardwareInfo,
+               const gmx_device_info_t *deviceInfo,
+               const gmx_mtop_t        *mtop,
+               matrix                   box)
 {
-    nonbonded_verlet_t *nbv        = new nonbonded_verlet_t();
-
     const bool          emulateGpu = (getenv("GMX_EMULATE_GPU") != nullptr);
     const bool          useGpu     = deviceInfo != nullptr;
 
@@ -375,15 +374,14 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
         nonbondedResource = NonbondedResource::Cpu;
     }
 
-    nbv->nbs             = nullptr;
-
-    nbv->setKernelSetup(pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hardwareInfo,
-                                          nonbondedResource, ir,
-                                          fr->bNonbonded));
+    Nbnxm::KernelSetup kernelSetup =
+        pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hardwareInfo,
+                          nonbondedResource, ir,
+                          fr->bNonbonded);
 
     const bool          haveMultipleDomains = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
 
-    NbnxnListParameters listParams(nbv->kernelSetup().kernelType,
+    NbnxnListParameters listParams(kernelSetup.kernelType,
                                    ir->rlist,
                                    havePPDomainDecomposition(cr));
 
@@ -417,7 +415,9 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
         enbnxninitcombrule = enbnxninitcombruleNONE;
     }
 
-    nbv->nbat = new nbnxn_atomdata_t(useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
+    std::unique_ptr<nbnxn_atomdata_t> nbat =
+        std::make_unique<nbnxn_atomdata_t>(useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
+
     int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
     if (ir->opts.ngener - ir->nwall == 1)
     {
@@ -428,41 +428,67 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
         mimimumNumEnergyGroupNonbonded = 1;
     }
     nbnxn_atomdata_init(mdlog,
-                        nbv->nbat,
-                        nbv->kernelSetup().kernelType,
+                        nbat.get(),
+                        kernelSetup.kernelType,
                         enbnxninitcombrule,
                         fr->ntype, fr->nbfp,
                         mimimumNumEnergyGroupNonbonded,
-                        nbv->pairlistIsSimple() ? gmx_omp_nthreads_get(emntNonbonded) : 1);
+                        (useGpu || emulateGpu) ? 1 : gmx_omp_nthreads_get(emntNonbonded));
 
-    int minimumIlistCountForGpuBalancing = 0;
+    gmx_nbnxn_gpu_t *gpu_nbv = nullptr;
+    int              minimumIlistCountForGpuBalancing = 0;
     if (useGpu)
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        gpu_init(&nbv->gpu_nbv,
-                 deviceInfo,
-                 fr->ic,
-                 &listParams,
-                 nbv->nbat,
-                 cr->nodeid,
-                 haveMultipleDomains);
+        gpu_nbv = gpu_init(deviceInfo,
+                           fr->ic,
+                           &listParams,
+                           nbat.get(),
+                           cr->nodeid,
+                           haveMultipleDomains);
 
-        minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(nbv->gpu_nbv);
+        minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }
 
-    nbv->pairlistSets_ =
+    std::unique_ptr<nonbonded_verlet_t::PairlistSets> pairlistSets =
         std::make_unique<nonbonded_verlet_t::PairlistSets>(listParams,
                                                            haveMultipleDomains,
                                                            minimumIlistCountForGpuBalancing);
 
-    nbv->nbs = std::make_unique<nbnxn_search>(ir->ePBC,
-                                              DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
-                                              DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
-                                              bFEP_NonBonded,
-                                              gmx_omp_nthreads_get(emntPairsearch));
+    std::unique_ptr<nbnxn_search> nbs =
+        std::make_unique<nbnxn_search>(ir->ePBC,
+                                       DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
+                                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
+                                       bFEP_NonBonded,
+                                       gmx_omp_nthreads_get(emntPairsearch));
 
-    *nb_verlet = nbv;
+    return std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets),
+                                                std::move(nbs),
+                                                std::move(nbat),
+                                                kernelSetup,
+                                                gpu_nbv);
 }
 
 } // namespace Nbnxm
+
+nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>      pairlistSets,
+                                       std::unique_ptr<nbnxn_search>      nbs_in,
+                                       std::unique_ptr<nbnxn_atomdata_t>  nbat_in,
+                                       const Nbnxm::KernelSetup          &kernelSetup,
+                                       gmx_nbnxn_gpu_t                   *gpu_nbv_ptr) :
+    pairlistSets_(std::move(pairlistSets)),
+    nbs(std::move(nbs_in)),
+    nbat(std::move(nbat_in)),
+    kernelSetup_(kernelSetup),
+    gpu_nbv(gpu_nbv_ptr)
+{
+    GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");
+    GMX_RELEASE_ASSERT(nbs, "Need valid search object");
+    GMX_RELEASE_ASSERT(nbat, "Need valid atomdata object");
+}
+
+nonbonded_verlet_t::~nonbonded_verlet_t()
+{
+    Nbnxm::gpu_free(gpu_nbv);
+}

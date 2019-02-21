@@ -345,14 +345,13 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
     {
         return;
     }
-    gmx_nbnxn_cuda_t *nb    = nbv->gpu_nbv;
-    cu_nbparam_t     *nbp   = nb->nbparam;
+    cu_nbparam_t *nbp   = nbv->gpu_nbv->nbparam;
 
     set_cutoff_parameters(nbp, ic, listParams);
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
 
-    init_ewald_coulomb_force_table(ic, nb->nbparam);
+    init_ewald_coulomb_force_table(ic, nbp);
 }
 
 /*! Initializes the pair list data structure. */
@@ -415,22 +414,17 @@ static void cuda_init_const(gmx_nbnxn_cuda_t               *nb,
     nbnxn_cuda_clear_e_fshift(nb);
 }
 
-void gpu_init(gmx_nbnxn_cuda_t         **p_nb,
-              const gmx_device_info_t   *deviceInfo,
-              const interaction_const_t *ic,
-              const NbnxnListParameters *listParams,
-              const nbnxn_atomdata_t    *nbat,
-              int                        /*rank*/,
-              gmx_bool                   bLocalAndNonlocal)
+gmx_nbnxn_cuda_t *
+gpu_init(const gmx_device_info_t   *deviceInfo,
+         const interaction_const_t *ic,
+         const NbnxnListParameters *listParams,
+         const nbnxn_atomdata_t    *nbat,
+         int                        /*rank*/,
+         gmx_bool                   bLocalAndNonlocal)
 {
     cudaError_t       stat;
+
     gmx_nbnxn_cuda_t *nb;
-
-    if (p_nb == nullptr)
-    {
-        return;
-    }
-
     snew(nb, 1);
     snew(nb->atdat, 1);
     snew(nb->nbparam, 1);
@@ -499,12 +493,12 @@ void gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 
     cuda_init_const(nb, ic, listParams, nbat->params());
 
-    *p_nb = nb;
-
     if (debug)
     {
         fprintf(debug, "Initialized CUDA data structures.\n");
     }
+
+    return nb;
 }
 
 void gpu_init_pairlist(gmx_nbnxn_cuda_t          *nb,
