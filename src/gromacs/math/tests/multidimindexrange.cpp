@@ -125,4 +125,45 @@ TEST(MultiDimIndexRange, IsNotEqualDifferentEnd)
     EXPECT_NE(range, otherRange);
 }
 
+namespace
+{
+//! Test wether the intersection of two two-dimensional input ranges matches the expected range
+void test2DIntersection(MultiDimIndexRange<2> firstRange,
+                        MultiDimIndexRange<2> otherRange, MultiDimIndexRange<2> expectedRange)
+{
+    auto intersectionRange = multiDimIndexRangeIntersection(firstRange, otherRange);
+    EXPECT_THAT(*expectedRange.begin(), testing::Pointwise(testing::Eq(), *intersectionRange.begin()));
+    EXPECT_THAT(*expectedRange.end(), testing::Pointwise(testing::Eq(), *intersectionRange.end()));
+}
+}   // namespace
+
+TEST(MultiDimIndexRange, IntersectionWithEncompassingRange)
+{
+    test2DIntersection({{0, 0}, {2, 2}}, {{-1, -1}, {3, 3}}, {{0, 0}, {2, 2}});
+}
+
+TEST(MultiDimIndexRange, IntersectionSameBeginDifferentEnds)
+{
+    test2DIntersection({{0, 0}, {3, 2}}, {{0, 0}, {2, 3}}, {{0, 0}, {2, 2}});
+}
+
+TEST(MultiDimIndexRange, IntersectionSameEndDifferentBegins)
+{
+    test2DIntersection({{1, 0}, {2, 2}}, {{0, 1}, {2, 2}}, {{1, 1}, {2, 2}});
+}
+
+TEST(MultiDimIndexRange, IntersectionDifferentEndDifferentBegins)
+{
+    test2DIntersection({{1, 0}, {3, 2}}, {{0, 1}, {2, 3}}, {{1, 1}, {2, 2}});
+}
+
+TEST(MultiDimIndexRange, IntersectionEmpty)
+{
+    MultiDimIndexRange<2> firstRange({0, 0}, {2, 2});
+    MultiDimIndexRange<2> otherRange({-1, 2}, {4, 4});
+    auto                  intersectionRange = multiDimIndexRangeIntersection(firstRange, otherRange);
+    // how an empty range is implemented should not be tested
+    EXPECT_EQ(intersectionRange.begin(), intersectionRange.end());
+}
+
 } // namespace gmx
