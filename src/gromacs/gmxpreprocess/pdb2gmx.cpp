@@ -79,6 +79,8 @@
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/filestream.h"
+#include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
@@ -1577,6 +1579,11 @@ void pdb2gmx::optionsFinished()
     {
         gmx_fatal(FARGS, "Empty forcefield string");
     }
+
+    gmx::LoggerBuilder builder;
+    builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &gmx::TextOutputFile::standardOutput());
+    builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &gmx::TextOutputFile::standardError());
+
 }
 
 int pdb2gmx::run()
@@ -1598,6 +1605,12 @@ int pdb2gmx::run()
     int                        this_chainnumber;
     int                        this_chainstart;
     int                        prev_chainstart;
+
+    gmx::LoggerBuilder         builder;
+    builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &gmx::TextOutputFile::standardOutput());
+    builder.addTargetStream(gmx::MDLogger::LogLevel::Warning, &gmx::TextOutputFile::standardError());
+    gmx::LoggerOwner logOwner(builder.build());
+    gmx::MDLogger    log(logOwner.logger());
 
     printf("\nUsing the %s force field in directory %s\n\n",
            ffname_, ffdir_);
@@ -1912,7 +1925,7 @@ int pdb2gmx::run()
     check_occupancy(&pdba_all, inputConfFile_.c_str(), bVerbose_);
 
     /* Read atomtypes... */
-    gpp_atomtype *atype = read_atype(ffdir_, &symtab);
+    gpp_atomtype *atype = read_atype(ffdir_, &symtab, log);
 
     /* read residue database */
     printf("Reading residue database... (%s)\n", forcefield_);
@@ -1920,7 +1933,7 @@ int pdb2gmx::run()
     std::vector<PreprocessResidue> rtpFFDB;
     for (const auto &filename : rtpf)
     {
-        readResidueDatabase(filename, &rtpFFDB, atype, &symtab, false);
+        readResidueDatabase(filename, &rtpFFDB, atype, &symtab, log, false);
     }
     if (bNewRTP_)
     {
@@ -2090,7 +2103,7 @@ int pdb2gmx::run()
         /* lookup hackblocks and rtp for all residues */
         std::vector<PreprocessResidue>     restp_chain;
         get_hackblocks_rtp(&hb_chain, &restp_chain,
-                           rtpFFDB, pdba->nres, pdba->resinfo,
+                           rtpFFDB, log, pdba->nres, pdba->resinfo,
                            cc->nterpairs, &symtab, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end,
                            bAllowMissing_);
         /* ideally, now we would not need the rtp itself anymore, but do

@@ -45,6 +45,11 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+class MDLogger;
+}
+
 struct gpp_atomtype;
 struct t_atoms;
 struct t_excls;
@@ -80,6 +85,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 void get_hackblocks_rtp(std::vector<MoleculePatchDatabase> *globalPatches,
                         std::vector<PreprocessResidue> *usedPpResidues,
                         gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+                        const gmx::MDLogger &log,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
                         t_symtab *symtab,
