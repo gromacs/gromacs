@@ -403,7 +403,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         return;
     }
 
-    nonbonded_verlet_t *nbv  = fr->nbv;
+    nonbonded_verlet_t *nbv  = fr->nbv.get();
 
     /* GPU kernel launch overhead is already timed separately */
     if (fr->cutoff_scheme != ecutsVERLET)
@@ -840,7 +840,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
     rvec                vzero, box_diag;
     float               cycles_pme, cycles_wait_gpu;
-    nonbonded_verlet_t *nbv = fr->nbv;
+    nonbonded_verlet_t *nbv = fr->nbv.get();
 
     bStateChanged = ((flags & GMX_FORCE_STATECHANGED) != 0);
     bNS           = ((flags & GMX_FORCE_NS) != 0);
@@ -925,7 +925,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
 
     nbnxn_atomdata_copy_shiftvec((flags & GMX_FORCE_DYNAMICBOX) != 0,
-                                 fr->shift_vec, nbv->nbat);
+                                 fr->shift_vec, nbv->nbat.get());
 
 #if GMX_MPI
     if (!thisRankHasDuty(cr, DUTY_PME))
@@ -980,7 +980,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
 
-        nbnxn_atomdata_set(nbv->nbat, nbv->nbs.get(), mdatoms, fr->cginfo);
+        nbnxn_atomdata_set(nbv->nbat.get(), nbv->nbs.get(), mdatoms, fr->cginfo);
 
         wallcycle_stop(wcycle, ewcNS);
     }
@@ -993,10 +993,10 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (bNS)
         {
-            Nbnxm::gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat);
+            Nbnxm::gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat.get());
         }
 
-        Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat);
+        Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat.get());
 
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
@@ -1036,7 +1036,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxm::AtomLocality::Local,
                                         FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                        nbv->nbat, wcycle);
+                                        nbv->nbat.get(), wcycle);
     }
 
     if (bUseGPU)
@@ -1046,7 +1046,9 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
         wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, Nbnxm::AtomLocality::Local, ppForceWorkload->haveGpuBondedWork);
+        Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
+                                  Nbnxm::AtomLocality::Local,
+                                  ppForceWorkload->haveGpuBondedWork);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
         // bonded work not split into separate local and non-local, so with DD
@@ -1095,7 +1097,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxm::AtomLocality::NonLocal,
                                             FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                            nbv->nbat, wcycle);
+                                            nbv->nbat.get(), wcycle);
         }
 
         if (bUseGPU)
@@ -1104,7 +1106,9 @@ static void do_force_cutsVERLET(FILE *fplog,
 
             /* launch non-local nonbonded tasks on GPU */
             wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat, Nbnxm::AtomLocality::NonLocal, ppForceWorkload->haveGpuBondedWork);
+            Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
+                                      Nbnxm::AtomLocality::NonLocal,
+                                      ppForceWorkload->haveGpuBondedWork);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
             if (ppForceWorkload->haveGpuBondedWork)
@@ -1130,10 +1134,10 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         if (havePPDomainDecomposition(cr))
         {
-            Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
+            Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
                                       flags, Nbnxm::AtomLocality::NonLocal, ppForceWorkload->haveGpuBondedWork);
         }
-        Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
+        Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
                                   flags, Nbnxm::AtomLocality::Local, ppForceWorkload->haveGpuBondedWork);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
@@ -1290,7 +1294,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
-            nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat,
+            nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat.get(),
                                                      fr->fshift);
         }
     }
@@ -1365,7 +1369,8 @@ static void do_force_cutsVERLET(FILE *fplog,
     bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, pmeFlags, ppForceWorkload->haveGpuBondedWork, wcycle);
+        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd,
+                                    flags, pmeFlags, ppForceWorkload->haveGpuBondedWork, wcycle);
     }
 
     if (!alternateGpuWait && useGpuPme)

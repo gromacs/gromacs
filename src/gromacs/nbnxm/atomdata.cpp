@@ -1516,11 +1516,11 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
          */
         if (nbat->bUseTreeReduce)
         {
-            nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbat, nth);
+            nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbat.get(), nth);
         }
         else
         {
-            nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat, nth);
+            nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat.get(), nth);
         }
     }
 #pragma omp parallel for num_threads(nth) schedule(static)
@@ -1528,7 +1528,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
     {
         try
         {
-            nbnxn_atomdata_add_nbat_f_to_f_part(nbs.get(), nbat,
+            nbnxn_atomdata_add_nbat_f_to_f_part(nbs.get(), nbat.get(),
                                                 nbat->out,
                                                 1,
                                                 a0+((th+0)*na)/nth,
