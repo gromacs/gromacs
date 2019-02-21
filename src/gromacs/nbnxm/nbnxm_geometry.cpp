@@ -63,7 +63,6 @@ bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 
         default:
             gmx_incons("Invalid nonbonded kernel type passed!");
-            return false;
     }
 }
 
