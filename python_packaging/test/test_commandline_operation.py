@@ -38,7 +38,9 @@ gmxapi.commandline_operation() provides additional logic over gmxapi.make_operat
 to conveniently wrap command line tools.
 """
 
+import os
 import pytest
+import tempfile
 import unittest
 
 from gmxapi import commandline_operation
@@ -60,3 +62,36 @@ class CommandLineOperationSimpleTestCase(unittest.TestCase):
         operation = commandline_operation(executable='false')
         operation.run()
         assert operation.output.returncode == 1
+
+class CommandLineOperationPipelineTestCase(unittest.TestCase):
+    """Test dependent sequence of operations.
+
+    Tests associated with FR2.
+    """
+    def test_operation_dependence(self):
+        """Confirm that dependent operations are only executed after their dependencies.
+
+        In a sequence of two operations, write a two-line file one line at a time.
+        Use a user-provided filename as a parameter to each operation.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            fh, filename = tempfile.mkstemp(dir=directory)
+            os.close(fh)
+
+            line1 = 'first line'
+            subcommand = ' '.join(['echo', '"{}"'.format(line1), '>>', filename])
+            commandline = ['-c', subcommand]
+            filewriter1 = commandline_operation('bash', arguments=commandline)
+
+            line2 = 'second line'
+            subcommand = ' '.join(['echo', '"{}"'.format(line2), '>>', filename])
+            commandline = ['-c', subcommand]
+            filewriter2 = commandline_operation('bash', arguments=commandline, input=filewriter1)
+
+            filewriter2.run()
+            # Check that the file has the two expected lines
+            with open(filename, 'r') as fh:
+                lines = [text.rstrip() for text in fh]
+            assert len(lines) == 2
+            assert lines[0] == line1
+            assert lines[1] == line2
