@@ -246,4 +246,30 @@ MultiDimIndexRange<Rank> multiDimIndexRangeIntersection(const MultiDimIndexRange
 
     return {intersectionBegin, intersectionEnd};
 }
+
+/*! \libinternal
+ * \brief Return a copy of a multidimensional index range shifted by a shift array.
+ *
+ * Adds shift to begin and end of range.
+ * \param[in] range Range to be shifted
+ * \param[in] shift Shift array
+ * \tparam Rank dimensionality of the range and shift array
+ * \tparam position_type convencience type definition
+ * \returns shifted copy of multidimensional index range
+ */
+template <int Rank, typename position_type = typename MultiDimIndexRange<Rank>::iterator::value_type>
+MultiDimIndexRange<Rank> multiDimIndexRangeShift(
+        const MultiDimIndexRange<Rank> &range, const position_type &shift)
+{
+    position_type shiftedRangeBegin;
+    std::transform(std::begin(*range.begin()), std::end(*range.begin()),
+                   std::begin(shift), std::begin(shiftedRangeBegin), std::plus<>());
+
+    position_type shiftedRangeEnd;
+    std::transform(std::begin(*range.end()), std::end(*range.end()),
+                   std::begin(shift), std::begin(shiftedRangeEnd), std::plus<>());
+
+    return {shiftedRangeBegin, shiftedRangeEnd};
+}
+
 } // namespace gmx
