@@ -272,4 +272,51 @@ MultiDimIndexRange<Rank> multiDimIndexRangeShift(
     return {shiftedRangeBegin, shiftedRangeEnd};
 }
 
+/*! \libinternal
+ * \brief Generate all surrounding periodic images of the
+ *        index range including the index range self.
+ *
+ * Periodically shift index range, where the periodicity along that dimension is not zero.
+ *
+ * Generates at most 3^Rank periodic images.
+ *
+ * Each element of periodicity and its negative are applied in combination with all
+ * other periodicities adn their negatives as shift to the index range.
+ *
+ * \tparam Rank dimensionality of the indices
+ * \param[in] range index range to be shifted
+ * \param[in] periodicity determines the shift
+ *
+ * \returns all periodic images, where periodicity was not null
+ */
+template <int Rank, typename position_type = typename MultiDimIndexRange<Rank>::iterator::value_type >
+std::vector<MultiDimIndexRange<Rank> > multiDimIndexRangeClosestPeriodicImages(
+        const MultiDimIndexRange<Rank> &range, const position_type &periodicity)
+{
+    std::vector<MultiDimIndexRange<Rank> > periodicImages;
+
+    // iterating over integer lattice [-1,0,1] x ... x [0] x .. x [-1,0,1] x [0] x ...
+    // creates the periodic shift vectors where dimensions with shift span [-1,0,1],
+    // and those without span [0]
+    position_type periodicShiftsBegin;
+    std::transform(std::begin(periodicity), std::end(periodicity),
+                   std::begin(periodicShiftsBegin),
+                   [](auto p){return p != 0 ? -1 : 0; });
+
+    position_type periodicShiftsEnd;
+    std::transform(std::begin(periodicity), std::end(periodicity),
+                   std::begin(periodicShiftsEnd),
+                   [](auto p) { return p != 0 ? 2 : 1; });
+
+    for (const auto &shiftVector : MultiDimIndexRange<Rank>(periodicShiftsBegin, periodicShiftsEnd))
+    {
+        position_type shift;
+        std::transform(std::begin(periodicity), std::end(periodicity),
+                       std::begin(shiftVector), std::begin(shift), std::multiplies<>());
+        const auto periodicallyShiftedRange = multiDimIndexRangeShift(range, shift);
+        periodicImages.push_back(periodicallyShiftedRange);
+    }
+    return periodicImages;
+}
+
 } // namespace gmx
