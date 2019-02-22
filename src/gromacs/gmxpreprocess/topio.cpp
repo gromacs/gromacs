@@ -85,16 +85,15 @@
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */
 
-static void gen_pairs(const InteractionTypeParameters &nbs, InteractionTypeParameters *pairs, real fudge, int comb)
+static void gen_pairs(InteractionTypeParameters &nbs, InteractionTypeParameters *pairs, real fudge, int comb)
 {
     real    scaling;
-    int     ntp       = nbs.nr;
+    int     ntp       = nbs.size();
     int     nnn       = static_cast<int>(std::sqrt(static_cast<double>(ntp)));
     GMX_ASSERT(nnn * nnn == ntp, "Number of pairs of generated non-bonded parameters should be a perfect square");
     int     nrfp      = NRFP(F_LJ);
     int     nrfpA     = interaction_function[F_LJ14].nrfpA;
     int     nrfpB     = interaction_function[F_LJ14].nrfpB;
-    pairs->nr = ntp;
 
     if ((nrfp  != nrfpA) || (nrfpA != nrfpB))
     {
@@ -102,17 +101,16 @@ static void gen_pairs(const InteractionTypeParameters &nbs, InteractionTypeParam
     }
 
     fprintf(stderr, "Generating 1-4 interactions: fudge = %g\n", fudge);
-    snew(pairs->param, pairs->nr);
-    for (int i = 0; (i < ntp); i++)
+    pairs->param.clear();
+    int i = 0;
+    for (auto param : nbs.param)
     {
         /* Copy param.a */
-        pairs->param[i].a[0] = i / nnn;
-        pairs->param[i].a[1] = i % nnn;
+        std::vector<int>          atomNumbers = {i / nnn, i % nnn };
         /* Copy normal and FEP parameters and multiply by fudge factor */
-
-
-
-        for (int j = 0; (j < nrfp); j++)
+        std::vector<real>         forceParam;
+        gmx::ArrayRef<const real> existingParam = param.forceParam();
+        for (int j = 0; j < nrfp; j++)
         {
             /* If we are using sigma/epsilon values, only the epsilon values
              * should be scaled, but not sigma.
@@ -127,13 +125,13 @@ static void gen_pairs(const InteractionTypeParameters &nbs, InteractionTypeParam
                 scaling = fudge;
             }
 
-            pairs->param[i].c[j]      = scaling*nbs.param[i].c[j];
-            /* NOTE: this should be clear to the compiler, but some gcc 5.2 versions
-             *  issue false positive warnings for the pairs->param.c[] indexing below.
-             */
-            assert(2*nrfp <= MAXFORCEPARAM);
-            pairs->param[i].c[nrfp+j] = scaling*nbs.param[i].c[j];
+            forceParam.emplace_back(scaling*existingParam[j]);
         }
+        std::vector<real> fepParam = forceParam;
+        GMX_RELEASE_ASSERT(2*nrfp <= MAXFORCEPARAM, "Can't have more parameters than half of maximum parameter number");
+        forceParam.insert(forceParam.end(), fepParam.begin(), fepParam.end());
+        pairs->param.emplace_back(FFParameter(param.atoms(), forceParam, param.name().c_str()));
+        i++;
     }
 }
 
