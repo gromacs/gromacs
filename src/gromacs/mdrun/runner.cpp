@@ -99,6 +99,7 @@
 #include "gromacs/mdrun/multisim.h"
 #include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/mdmodules.h"
+#include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
