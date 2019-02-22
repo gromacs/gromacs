@@ -342,10 +342,11 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
 
 static void add_b(InteractionTypeParameters *bonds, int *nrf, sortable *s)
 {
-    for (int i = 0; (i < bonds->nr); i++)
+    int i = 0;
+    for (const auto &bond : bonds->param)
     {
-        int ai = bonds->param[i].ai();
-        int aj = bonds->param[i].aj();
+        int ai = bond.ai();
+        int aj = bond.aj();
         if ((ai < 0) || (aj < 0))
         {
             gmx_fatal(FARGS, "Impossible atom numbers in bond %d: ai=%d, aj=%d",
@@ -356,6 +357,7 @@ static void add_b(InteractionTypeParameters *bonds, int *nrf, sortable *s)
         s[(*nrf)++].aj = aj;
         s[(*nrf)].aj   = ai;
         s[(*nrf)++].ai = aj;
+        i++;
     }
 }
 
@@ -370,7 +372,7 @@ void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionTypeParameters> plist)
         if (IS_CHEMBOND(i))
         {
             /* we need every bond twice (bidirectional) */
-            nrbonds += 2*plist[i].nr;
+            nrbonds += 2*plist[i].size();
         }
     }
 
