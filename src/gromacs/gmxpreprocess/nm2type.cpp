@@ -194,14 +194,12 @@ static int match_str(const char *atom, const char *template_string)
 int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
             PreprocessingAtomTypes *atype, int *nbonds, InteractionTypeParameters *bonds)
 {
-    int      cur = 0;
+    int          cur = 0;
 #define prev (1-cur)
-    int      nresolved, nb, maxbond, nqual[2][ematchNR];
-    int     *bbb, *n_mask, *m_mask, **match;
-    char    *aname_i, *aname_n;
-    t_param *param;
+    int          nresolved, nb, maxbond, nqual[2][ematchNR];
+    int         *bbb, *n_mask, *m_mask, **match;
+    char        *aname_i, *aname_n;
 
-    snew(param, 1);
     maxbond = 0;
     for (int i = 0; (i < atoms->nr); i++)
     {
@@ -225,10 +223,10 @@ int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
     {
         aname_i = *atoms->atomname[i];
         nb      = 0;
-        for (int j = 0; (j < bonds->nr); j++)
+        for (const auto &bond : bonds->interactionTypes)
         {
-            int ai = bonds->param[j].ai();
-            int aj = bonds->param[j].aj();
+            int ai = bond.ai();
+            int aj = bond.aj();
             if (ai == i)
             {
                 bbb[nb++] = aj;
@@ -338,7 +336,7 @@ int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
             {
                 atoms->atom[i].qB = alpha;
                 atoms->atom[i].m  = atoms->atom[i].mB = mm;
-                k                 = atype->addType(tab, atoms->atom[i], type, param,
+                k                 = atype->addType(tab, atoms->atom[i], type, InteractionType({}, {}),
                                                    atoms->atom[i].type, atomnr);
             }
             atoms->atom[i].type  = k;
@@ -358,7 +356,6 @@ int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
     sfree(bbb);
     sfree(n_mask);
     sfree(m_mask);
-    sfree(param);
 
     return nresolved;
 }
