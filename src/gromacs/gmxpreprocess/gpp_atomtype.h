@@ -47,7 +47,7 @@
 struct gmx_mtop_t;
 struct t_atom;
 struct t_atomtypes;
-struct t_param;
+class FFParameter;
 struct InteractionTypeParameters;
 struct t_symtab;
 
@@ -165,13 +165,13 @@ class PreprocessingAtomTypes
          * \param[in] atomNumber Atomic number of the entry.
          * \returns Number of the type set or NOTSET
          */
-        int setType(int            nt,
-                    t_symtab      *tab,
-                    const t_atom  &a,
-                    const char    *name,
-                    const t_param *nb,
-                    int            bondAtomType,
-                    int            atomNumber);
+        int setType(int                nt,
+                    t_symtab          *tab,
+                    const t_atom      &a,
+                    const char        *name,
+                    const FFParameter &nb,
+                    int                bondAtomType,
+                    int                atomNumber);
 
         /*! \brief
          * Add new atom type to database.
@@ -184,12 +184,12 @@ class PreprocessingAtomTypes
          * \param[in] atomNumber Atomic number of the entry.
          * \returns Number of entries in database.
          */
-        int addType(t_symtab      *tab,
-                    const t_atom  &a,
-                    const char    *name,
-                    const t_param *nb,
-                    int            bondAtomType,
-                    int            atomNumber);
+        int addType(t_symtab          *tab,
+                    const t_atom      &a,
+                    const char        *name,
+                    const FFParameter &nb,
+                    int                bondAtomType,
+                    int                atomNumber);
 
         /*! \brief
          * Renumber existing atom type entries.
