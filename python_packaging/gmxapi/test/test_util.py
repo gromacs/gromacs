@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # This file is part of the GROMACS molecular simulation package.
 #
@@ -31,22 +32,20 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+import os
+import unittest
 
-"""gmxapi Python package for GROMACS.
+from gmxapi import util
 
 
-"""
+class WhichUtilTestCase(unittest.TestCase):
+    """test util.which"""
+    def test_find_executable(self):
+        # This command exists pretty much everywhere...
+        executable = '/usr/bin/env'
+        if os.path.exists(executable):
+            assert util.which('env') == '/usr/bin/env'
 
-# Import system facilities
-import logging
-logging.getLogger().addHandler(logging.NullHandler(level=logging.DEBUG))
-logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().info("Setting up logging for gmxapi package.")
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.info("Importing gmxapi.")
 
-__all__ = ['operation', 'commandline_operation']
-
-from gmxapi import operation
-from gmxapi.commandline import commandline_operation
+if __name__ == '__main__':
+    unittest.main()
