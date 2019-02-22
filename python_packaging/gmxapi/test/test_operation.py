@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # This file is part of the GROMACS molecular simulation package.
 #
@@ -31,22 +32,38 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+import unittest
 
-"""gmxapi Python package for GROMACS.
+from gmxapi import commandline_operation
+
+class CommandLineOperationSimpleTestCase(unittest.TestCase):
+    """Test creation and execution of command line wrapper."""
+    def test_true(self):
+        operation = commandline_operation(executable='true')
+        # Note: 'stdout' and 'stderr' not mapped.
+        # Note: getitem not implemented.
+        # assert not 'stdout' in operation.output
+        # assert not 'stderr' in operation.output
+        assert not hasattr(operation.output, 'stdout')
+        assert not hasattr(operation.output, 'stderr')
+        assert hasattr(operation.output, 'file')
+        assert hasattr(operation.output, 'erroroutput')
+        assert hasattr(operation.output, 'returncode')
+        operation.run()
+        # assert operation.output.returncode.result() == 0
+        assert operation.output.returncode == 0
+
+    def test_false(self):
+        operation = commandline_operation(executable='false')
+        operation.run()
+        assert operation.output.returncode == 1
+
+    def test_echo(self):
+        # TODO: do we want to pipeline or checkpoint stdout somehow?
+        operation = commandline_operation(executable='echo', arguments=['hi there'])
+        operation.run()
+        assert operation.output.returncode == 0
 
 
-"""
-
-# Import system facilities
-import logging
-logging.getLogger().addHandler(logging.NullHandler(level=logging.DEBUG))
-logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().info("Setting up logging for gmxapi package.")
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.info("Importing gmxapi.")
-
-__all__ = ['operation', 'commandline_operation']
-
-from gmxapi import operation
-from gmxapi.commandline import commandline_operation
+if __name__ == '__main__':
+    unittest.main()
