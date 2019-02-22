@@ -50,6 +50,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/timing/walltime_accounting.h"
