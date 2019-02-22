@@ -58,27 +58,26 @@
 struct AtomTypeData
 {
     //! Explicit constructor.
-    AtomTypeData(const t_atom  &a,
-                 char         **name,
-                 const t_param *nb,
-                 const int      bondAtomType,
-                 const int      atomNumber) :
-        atom_(a), name_(name),
+    AtomTypeData(const t_atom      &a,
+                 char             **name,
+                 const FFParameter &nb,
+                 const int          bondAtomType,
+                 const int          atomNumber) :
+        atom_(a), name_(name), nb_(nb),
         bondAtomType_(bondAtomType),
         atomNumber_(atomNumber)
     {
-        cp_param(&nb_, nb);
     }
     //! Actual atom data.
-    t_atom   atom_;
+    t_atom       atom_;
     //! Atom name.
-    char   **name_;
+    char       **name_;
     //! Nonbonded data.
-    t_param  nb_;
+    FFParameter  nb_;
     //! Bonded atomtype for the type.
-    int      bondAtomType_;
+    int          bondAtomType_;
     //! Atom number for the atom type.
-    int      atomNumber_;
+    int          atomNumber_;
 };
 
 class PreprocessingAtomTypes::Impl
@@ -198,11 +197,12 @@ real PreprocessingAtomTypes::atomNBParamFromType(int nt, int param) const
     {
         return NOTSET;
     }
+    gmx::ArrayRef<const real> forceParam = impl_->types[nt].nb_.forceParam();
     if ((param < 0) || (param >= MAXFORCEPARAM))
     {
         return NOTSET;
     }
-    return impl_->types[nt].nb_.c[param];
+    return forceParam[param];
 }
 
 PreprocessingAtomTypes::PreprocessingAtomTypes()
@@ -215,7 +215,7 @@ PreprocessingAtomTypes::~PreprocessingAtomTypes()
 int PreprocessingAtomTypes::addType(t_symtab          *tab,
                                     const t_atom      &a,
                                     const char        *name,
-                                    const t_param     *nb,
+                                    const FFParameter &nb,
                                     int                bondAtomType,
                                     int                atomNumber)
 {
@@ -242,7 +242,7 @@ int PreprocessingAtomTypes::setType(int                nt,
                                     t_symtab          *tab,
                                     const t_atom      &a,
                                     const char        *name,
-                                    const t_param     *nb,
+                                    const FFParameter &nb,
                                     int                bondAtomType,
                                     int                atomNumber)
 {
@@ -253,7 +253,7 @@ int PreprocessingAtomTypes::setType(int                nt,
 
     impl_->types[nt].atom_         = a;
     impl_->types[nt].name_         = put_symtab(tab, name);
-    cp_param(&impl_->types[nt].nb_, nb);
+    impl_->types[nt].nb_           = nb;
     impl_->types[nt].bondAtomType_ = bondAtomType;
     impl_->types[nt].atomNumber_   = atomNumber;
 
@@ -275,19 +275,18 @@ void PreprocessingAtomTypes::printTypes(FILE * out)
     fprintf (out, "\n");
 }
 
-static int search_atomtypes(const PreprocessingAtomTypes *ga,
-                            int                          *n,
-                            gmx::ArrayRef<int>            typelist,
-                            int                           thistype,
-                            t_param                       param[],
-                            int                           ftype)
+static int search_atomtypes(const PreprocessingAtomTypes    *ga,
+                            int                             *n,
+                            gmx::ArrayRef<int>               typelist,
+                            int                              thistype,
+                            gmx::ArrayRef<const FFParameter> param,
+                            int                              ftype)
 {
-    int      i, nn, nrfp, ntype;
+    int nn    = *n;
+    int nrfp  = NRFP(ftype);
+    int ntype = ga->size();
 
-    nn    = *n;
-    nrfp  = NRFP(ftype);
-    ntype = ga->size();
-
+    int i;
     for (i = 0; (i < nn); i++)
     {
         if (typelist[i] == thistype)
@@ -302,9 +301,11 @@ static int search_atomtypes(const PreprocessingAtomTypes *ga,
         for (int j = 0; j < ntype && bFound; j++)
         {
             /* Check nonbonded parameters */
-            for (int k = 0; k < nrfp && bFound; k++)
+            gmx::ArrayRef<const real> forceParam1 = param[ntype*typelist[i]+j].forceParam();
+            gmx::ArrayRef<const real> forceParam2 = param[ntype*thistype+j].forceParam();
+            for (int k = 0; (k < nrfp) && bFound; k++)
             {
-                bFound = (param[ntype*typelist[i]+j].c[k] == param[ntype*thistype+j].c[k]);
+                bFound = forceParam1[k] == forceParam2[k];
             }
 
             /* Check atomnumber */
@@ -356,7 +357,7 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionTypeParamete
      */
 
     /* Get nonbonded interaction type */
-    if (plist[F_LJ].nr > 0)
+    if (plist[F_LJ].size() > 0)
     {
         ftype = F_LJ;
     }
@@ -397,41 +398,28 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionTypeParamete
     /* We now have a list of unique atomtypes in typelist */
 
     /* Renumber nlist */
-    /* Renumber nlist */
-    t_param *nbsnew = nullptr;
-    snew(nbsnew, plist[ftype].nr);
+    std::vector<FFParameter> nbsnew;
 
-    int nrfp  = NRFP(ftype);
-
-    int k = 0;
     for (int i = 0; (i < nat); i++)
     {
         int mi = typelist[i];
-        for (int j = 0; (j < nat); j++, k++)
+        for (int j = 0; (j < nat); j++)
         {
-            int mj = typelist[j];
-            for (int l = 0; (l < nrfp); l++)
-            {
-                nbsnew[k].c[l] = plist[ftype].param[ntype*mi+mj].c[l];
-            }
+            int         mj = typelist[j];
+            nbsnew.push_back(FFParameter({}, plist[ftype].param[ntype*mi+mj].forceParam(), ""));
         }
         new_types.push_back(impl_->types[mi]);
     }
 
-    int i;
-    for (i = 0; (i < nat*nat); i++)
+    int i = 0;
+    for (auto &param : plist[ftype].param)
     {
-        for (int l = 0; (l < nrfp); l++)
-        {
-            plist[ftype].param[i].c[l] = nbsnew[i].c[l];
-        }
+        param = FFParameter(param.atoms(), nbsnew[i].forceParam(), param.name());
     }
-    plist[ftype].nr     = i;
     mtop->ffparams.atnr = nat;
 
     impl_->types = new_types;
 
-    sfree(nbsnew);
 }
 
 void PreprocessingAtomTypes::copyTot_atomtypes(t_atomtypes *atomtypes) const

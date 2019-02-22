@@ -50,25 +50,15 @@ struct t_atoms;
 struct t_blocka;
 struct t_excls;
 struct MoleculeInformation;
-struct t_param;
+class FFParameter;
 struct InteractionTypeParameters;
 
 /* UTILITIES */
 
 int name2index(char *str, char ***typenames, int ntypes);
 
-void pr_alloc (int extra, InteractionTypeParameters *pr);
+void add_param_to_list(InteractionTypeParameters *list, const FFParameter &b);
 
-void set_p_string(t_param *p, const char *s);
-
-void cp_param(t_param *dest, const t_param *src);
-
-void add_param_to_list(InteractionTypeParameters *list, t_param *b);
-
-/* INITIATE */
-
-void init_plist(gmx::ArrayRef<InteractionTypeParameters> plist);
-void done_plist(gmx::ArrayRef<InteractionTypeParameters> plist);
 
 
 /* PRINTING */
