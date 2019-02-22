@@ -1,0 +1,13 @@
+cmake>=0.8.0
+networkx>=2.0
+pip>=10.1
+py>=1.4.34
+setuptools>=28.0.0
+scikit-build>=0.7
+# The following packages are not strictly necessary, but allow full documentation
+# builds and testing.
+mpi4py>=2
+numpy>=1
+pytest>=3.9
+Sphinx>=1.7
+sphinx-rtd-theme>=0.1
