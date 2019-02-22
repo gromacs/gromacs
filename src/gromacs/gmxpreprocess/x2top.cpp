@@ -97,20 +97,10 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
                      t_atoms *atoms, const rvec x[], InteractionTypeParameters *bond, int nbond[],
                      bool bPBC, matrix box)
 {
-    t_param b;
-    int     i, j;
-    t_pbc   pbc;
-    rvec    dx;
-    real    dx2;
-
-    for (i = 0; (i < MAXATOMLIST); i++)
-    {
-        b.a[i] = -1;
-    }
-    for (i = 0; (i < MAXFORCEPARAM); i++)
-    {
-        b.c[i] = 0.0;
-    }
+    int         i, j;
+    t_pbc       pbc;
+    rvec        dx;
+    real        dx2;
 
     if (bPBC)
     {
@@ -138,10 +128,7 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
             if (is_bond(nnm, nmt, *atoms->atomname[i], *atoms->atomname[j],
                         std::sqrt(dx2)))
             {
-                b.ai() = i;
-                b.aj() = j;
-                b.c0() = std::sqrt(dx2);
-                add_param_to_list (bond, &b);
+                add_param_to_list (bond, FFParameter({{i, j}}, {{std::sqrt(dx2)}}, ""));
                 nbond[i]++;
                 nbond[j]++;
             }
@@ -206,7 +193,7 @@ static void lo_set_force_const(InteractionTypeParameters *plist, real c[], int n
     double cc;
     char   buf[32];
 
-    for (int i = 0; (i < plist->nr); i++)
+    for (auto &param : plist->param)
     {
         if (!bParam)
         {
@@ -219,13 +206,13 @@ static void lo_set_force_const(InteractionTypeParameters *plist, real c[], int n
         {
             if (bRound)
             {
-                sprintf(buf, "%.2e", plist->param[i].c[0]);
+                sprintf(buf, "%.2e", param.c0());
                 sscanf(buf, "%lf", &cc);
                 c[0] = cc;
             }
             else
             {
-                c[0] = plist->param[i].c[0];
+                c[0] = param.c0();
             }
             if (bDih)
             {
@@ -240,12 +227,13 @@ static void lo_set_force_const(InteractionTypeParameters *plist, real c[], int n
             }
         }
         GMX_ASSERT(nrfp <= MAXFORCEPARAM/2, "Only 6 parameters may be used for an interaction");
+        std::vector<real> forceParam(2*nrfp);
         for (int j = 0; (j < nrfp); j++)
         {
-            plist->param[i].c[j]      = c[j];
-            plist->param[i].c[nrfp+j] = c[j];
+            forceParam[j]      = c[j];
+            forceParam[nrfp+j] = c[j];
         }
-        set_p_string(&(plist->param[i]), "");
+        param = FFParameter(param.atoms(), forceParam, "");
     }
 }
 
@@ -276,24 +264,24 @@ static void calc_angles_dihs(InteractionTypeParameters *ang, InteractionTypePara
     {
         set_pbc(&pbc, epbcXYZ, box);
     }
-    for (int i = 0; (i < ang->nr); i++)
+    for (auto &angle : ang->param)
     {
-        int  ai = ang->param[i].ai();
-        int  aj = ang->param[i].aj();
-        int  ak = ang->param[i].ak();
+        int  ai = angle.ai();
+        int  aj = angle.aj();
+        int  ak = angle.ak();
         real th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
                                      r_ij, r_kj, &costh, &t1, &t2);
-        ang->param[i].c0() = th;
+        angle = FFParameter(angle.atoms(), {{th}}, angle.name());
     }
-    for (int i = 0; (i < dih->nr); i++)
+    for (auto dihedral : dih->param)
     {
-        int  ai = dih->param[i].ai();
-        int  aj = dih->param[i].aj();
-        int  ak = dih->param[i].ak();
-        int  al = dih->param[i].al();
+        int  ai = dihedral.ai();
+        int  aj = dihedral.aj();
+        int  ak = dihedral.ak();
+        int  al = dihedral.al();
         real ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
                                     r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
-        dih->param[i].c0() = ph;
+        dihedral = FFParameter(dihedral.atoms(), {{ph}}, dihedral.name());
     }
 }
 
@@ -308,24 +296,22 @@ static void dump_hybridization(FILE *fp, t_atoms *atoms, int nbonds[])
 static void print_pl(FILE *fp, gmx::ArrayRef<const InteractionTypeParameters> plist, int ftp, const char *name,
                      char ***atomname)
 {
-    if (plist[ftp].nr > 0)
+    if (!plist[ftp].param.empty())
     {
         fprintf(fp, "\n");
         fprintf(fp, "[ %s ]\n", name);
-        int nral = interaction_function[ftp].nratoms;
         int nrfp = interaction_function[ftp].nrfpA;
-        for (int i = 0; (i < plist[ftp].nr); i++)
+        for (const auto &param : plist[ftp].param)
         {
-            for (int j = 0; (j < nral); j++)
+            gmx::ArrayRef<const int>  atoms      = param.atoms();
+            gmx::ArrayRef<const real> forceParam = param.forceParam();
+            for (const auto &atom : atoms)
             {
-                fprintf(fp, "  %5s", *atomname[plist[ftp].param[i].a[j]]);
+                fprintf(fp, "  %5s", *atomname[atom]);
             }
-            for (int j = 0; (j < nrfp); j++)
+            for (int j = 0; (j < nrfp) && (j < forceParam.ssize()); j++)
             {
-                if (plist[ftp].param[i].c[j] != NOTSET)
-                {
-                    fprintf(fp, "  %10.3e", plist[ftp].param[i].c[j]);
-                }
+                fprintf(fp, "  %10.3e", forceParam[j]);
             }
             fprintf(fp, "\n");
         }
@@ -542,15 +528,15 @@ int gmx_x2top(int argc, char *argv[])
 
     if (!bPairs)
     {
-        plist[F_LJ14].nr = 0;
+        plist[F_LJ14].param.clear();
     }
     fprintf(stderr,
-            "There are %4d %s dihedrals, %4d impropers, %4d angles\n"
-            "          %4d pairs,     %4d bonds and  %4d atoms\n",
-            plist[F_PDIHS].nr,
+            "There are %4zu %s dihedrals, %4zu impropers, %4zu angles\n"
+            "          %4zu pairs,     %4zu bonds and  %4d atoms\n",
+            plist[F_PDIHS].size(),
             bOPLS ? "Ryckaert-Bellemans" : "proper",
-            plist[F_IDIHS].nr, plist[F_ANGLES].nr,
-            plist[F_LJ14].nr, plist[F_BONDS].nr, atoms->nr);
+            plist[F_IDIHS].size(), plist[F_ANGLES].size(),
+            plist[F_LJ14].size(), plist[F_BONDS].size(), atoms->nr);
 
     calc_angles_dihs(&plist[F_ANGLES], &plist[F_PDIHS], x, bPBC, box);
 

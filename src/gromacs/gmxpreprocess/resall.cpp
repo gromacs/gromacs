@@ -68,11 +68,9 @@ void read_atype(const char *ffdir, t_symtab *tab, PreprocessingAtomTypes *at)
     double                   m;
     int                      nratt = 0;
     t_atom                  *a;
-    t_param                 *nb;
 
     std::vector<std::string> files = fflib_search_file_end(ffdir, ".atp", TRUE);
     snew(a, 1);
-    snew(nb, 1);
 
     for (const auto &filename : files)
     {
@@ -93,7 +91,7 @@ void read_atype(const char *ffdir, t_symtab *tab, PreprocessingAtomTypes *at)
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
                 a->m = m;
-                at->addType(tab, *a, name, nb, 0, 0);
+                at->addType(tab, *a, name, FFParameter({}, {}, ""), 0, 0);
                 fprintf(stderr, "\rAtomtype %d", ++nratt);
                 fflush(stderr);
             }

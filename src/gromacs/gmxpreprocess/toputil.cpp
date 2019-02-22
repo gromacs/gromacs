@@ -57,112 +57,9 @@
 
 /* UTILITIES */
 
-void set_p_string(t_param *p, const char *s)
+void add_param_to_list(InteractionTypeParameters *list, const FFParameter &b)
 {
-    if (s)
-    {
-        if (strlen(s) < sizeof(p->s)-1)
-        {
-            strncpy(p->s, s, sizeof(p->s));
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %zu,"
-                      " or shorten your definition of bonds like %s to at most %d",
-                      strlen(s)+1, s, MAXSLEN-1);
-        }
-    }
-    else
-    {
-        strcpy(p->s, "");
-    }
-}
-
-void pr_alloc (int extra, InteractionTypeParameters *pr)
-{
-    int i, j;
-
-    /* get new space for arrays */
-    if (extra < 0)
-    {
-        gmx_fatal(FARGS, "Trying to make array smaller.\n");
-    }
-    if (extra == 0)
-    {
-        return;
-    }
-    GMX_ASSERT(pr->nr != 0 || pr->param == nullptr, "Invalid InteractionTypeParameters object");
-    if (pr->nr+extra > pr->maxnr)
-    {
-        pr->maxnr = std::max(static_cast<int>(1.2*pr->maxnr), pr->maxnr + extra);
-        srenew(pr->param, pr->maxnr);
-        for (i = pr->nr; (i < pr->maxnr); i++)
-        {
-            for (j = 0; (j < MAXATOMLIST); j++)
-            {
-                pr->param[i].a[j] = 0;
-            }
-            for (j = 0; (j < MAXFORCEPARAM); j++)
-            {
-                pr->param[i].c[j] = 0;
-            }
-            set_p_string(&(pr->param[i]), "");
-        }
-    }
-}
-
-void init_plist(gmx::ArrayRef<InteractionTypeParameters> plist)
-{
-    int i;
-
-    for (i = 0; (i < F_NRE); i++)
-    {
-        plist[i].nr    = 0;
-        plist[i].maxnr = 0;
-        plist[i].param = nullptr;
-    }
-}
-
-void done_plist(gmx::ArrayRef<InteractionTypeParameters> plist)
-{
-    for (int i = 0; i < F_NRE; i++)
-    {
-        sfree(plist[i].param);
-    }
-}
-
-void cp_param(t_param *dest, const t_param *src)
-{
-    int j;
-
-    for (j = 0; (j < MAXATOMLIST); j++)
-    {
-        dest->a[j] = src->a[j];
-    }
-    for (j = 0; (j < MAXFORCEPARAM); j++)
-    {
-        dest->c[j] = src->c[j];
-    }
-    strncpy(dest->s, src->s, sizeof(dest->s));
-}
-
-void add_param_to_list(InteractionTypeParameters *list, t_param *b)
-{
-    /* allocate one position extra */
-    pr_alloc (1, list);
-
-    /* fill the arrays */
-    for (int j = 0; (j < MAXFORCEPARAM); j++)
-    {
-        list->param[list->nr].c[j]   = b->c[j];
-    }
-    for (int j = 0; (j < MAXATOMLIST); j++)
-    {
-        list->param[list->nr].a[j]   = b->a[j];
-    }
-    memset(list->param[list->nr].s, 0, sizeof(list->param[list->nr].s));
-
-    list->nr++;
+    list->param.emplace_back(b);
 }
 
 /* PRINTING STRUCTURES */
@@ -180,7 +77,7 @@ static void print_bt(FILE *out, Directive d, PreprocessingAtomTypes *at,
 
     const InteractionTypeParameters *bt = &(plist[ftype]);
 
-    if (bt->nr == 0)
+    if (bt->size() == 0)
     {
         return;
     }
@@ -285,34 +182,36 @@ static void print_bt(FILE *out, Directive d, PreprocessingAtomTypes *at,
     fprintf (out, "\n");
 
     /* print bondtypes */
-    for (int i = 0; (i < bt->nr); i++)
+    for (const auto &parm : bt->param)
     {
-        bSwapParity = (bt->param[i].c0() == NOTSET) && (bt->param[i].c1() == -1);
+        bSwapParity = (parm.c0() == NOTSET) && (parm.c1() == -1);
+        gmx::ArrayRef<const int> atoms = parm.atoms();
         if (!bDih)
         {
             for (int j = 0; (j < nral); j++)
             {
-                fprintf (out, "%5s ", at->atomNameFromType(bt->param[i].a[j]));
+                fprintf (out, "%5s ", at->atomNameFromType(atoms[j]));
             }
         }
         else
         {
             for (int j = 0; (j < 2); j++)
             {
-                fprintf (out, "%5s ", at->atomNameFromType(bt->param[i].a[dihp[f][j]]));
+                fprintf (out, "%5s ", at->atomNameFromType(atoms[dihp[f][j]]));
             }
         }
         fprintf (out, "%5d ", bSwapParity ? -f-1 : f+1);
 
-        if (bt->param[i].s[0])
+        if (!parm.name().empty())
         {
-            fprintf(out, "   %s", bt->param[i].s);
+            fprintf(out, "   %s", parm.name().c_str());
         }
         else
         {
-            for (int j = 0; (j < nrfp && (bt->param[i].c[j] != NOTSET)); j++)
+            gmx::ArrayRef<const real> forceParam = parm.forceParam();
+            for (int j = 0; (j < nrfp); j++)
             {
-                fprintf (out, "%13.6e ", bt->param[i].c[j]);
+                fprintf (out, "%13.6e ", forceParam[j]);
             }
         }
 
@@ -490,22 +389,19 @@ void print_bondeds(FILE *out, int natoms, Directive d,
                    int ftype, int fsubtype, gmx::ArrayRef<const InteractionTypeParameters> plist)
 {
     t_symtab               stab;
-    t_param               *param;
     t_atom                *a;
 
     PreprocessingAtomTypes atype;
     snew(a, 1);
-    snew(param, 1);
     open_symtab(&stab);
     for (int i = 0; (i < natoms); i++)
     {
         char buf[12];
         sprintf(buf, "%4d", (i+1));
-        atype.addType(&stab, *a, buf, param, 0, 0);
+        atype.addType(&stab, *a, buf, FFParameter({}, {}, ""), 0, 0);
     }
     print_bt(out, d, &atype, ftype, fsubtype, plist, TRUE);
 
     done_symtab(&stab);
     sfree(a);
-    sfree(param);
 }

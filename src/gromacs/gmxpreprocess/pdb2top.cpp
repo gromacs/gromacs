@@ -727,7 +727,7 @@ static void do_ssbonds(InteractionTypeParameters *ps, t_atoms *atoms,
             gmx_fatal(FARGS, "Trying to make impossible special bond (%s-%s)!",
                       bond.firstAtom.c_str(), bond.secondAtom.c_str());
         }
-        add_param(ps, ai, aj, nullptr, nullptr);
+        add_param(ps, ai, aj, {}, nullptr);
     }
 }
 
@@ -780,7 +780,7 @@ static void at2bonds(InteractionTypeParameters *psb, gmx::ArrayRef<MoleculePatch
                     fprintf(stderr, "Warning: Short Bond (%d-%d = %g nm)\n",
                             ai+1, aj+1, std::sqrt(dist2));
                 }
-                add_param(psb, ai, aj, nullptr, patch.s.c_str());
+                add_param(psb, ai, aj, {}, patch.s.c_str());
             }
         }
         /* add bonds from list of hacks (each added atom gets a bond) */
@@ -794,15 +794,15 @@ static void at2bonds(InteractionTypeParameters *psb, gmx::ArrayRef<MoleculePatch
                 {
                     switch (patch.tp)
                     {
-                        case 9 :                                        /* COOH terminus */
-                            add_param(psb, i, i+1, nullptr, nullptr);   /* C-O  */
-                            add_param(psb, i, i+2, nullptr, nullptr);   /* C-OA */
-                            add_param(psb, i+2, i+3, nullptr, nullptr); /* OA-H */
+                        case 9 :                                   /* COOH terminus */
+                            add_param(psb, i, i+1, {}, nullptr);   /* C-O  */
+                            add_param(psb, i, i+2, {}, nullptr);   /* C-OA */
+                            add_param(psb, i+2, i+3, {}, nullptr); /* OA-H */
                             break;
                         default:
                             for (int k = 0; (k < patch.nr); k++)
                             {
-                                add_param(psb, i, i+k+1, nullptr, nullptr);
+                                add_param(psb, i, i+k+1, {}, nullptr);
                             }
                     }
                 }
@@ -813,21 +813,18 @@ static void at2bonds(InteractionTypeParameters *psb, gmx::ArrayRef<MoleculePatch
     }
 }
 
-static int pcompar(const void *a, const void *b)
+static int pcompar(const FFParameter &a, const FFParameter &b)
 {
-    const t_param *pa, *pb;
-    int            d;
-    pa = static_cast<const t_param *>(a);
-    pb = static_cast<const t_param *>(b);
+    int                d;
 
-    d = pa->a[0] - pb->a[0];
+    d = a.ai() - b.ai();
     if (d == 0)
     {
-        d = pa->a[1] - pb->a[1];
+        d = a.aj() - b.aj();
     }
     if (d == 0)
     {
-        return strlen(pb->s) - strlen(pa->s);
+        return b.name().length() - a.name().length();
     }
     else
     {
@@ -837,41 +834,27 @@ static int pcompar(const void *a, const void *b)
 
 static void clean_bonds(InteractionTypeParameters *ps)
 {
-    int     i, j;
-    int     a;
-
-    if (ps->nr > 0)
+    if (ps->size() > 0)
     {
-        /* swap atomnumbers in bond if first larger than second: */
-        for (i = 0; (i < ps->nr); i++)
-        {
-            if (ps->param[i].a[1] < ps->param[i].a[0])
-            {
-                a                 = ps->param[i].a[0];
-                ps->param[i].a[0] = ps->param[i].a[1];
-                ps->param[i].a[1] = a;
-            }
-        }
-
         /* Sort bonds */
-        qsort(ps->param, ps->nr, static_cast<size_t>(sizeof(ps->param[0])), pcompar);
+        std::sort(ps->param.begin(), ps->param.end(), pcompar);
 
         /* remove doubles, keep the first one always. */
-        j = 1;
-        for (i = 1; (i < ps->nr); i++)
+        int oldNumber = ps->size();
+        for (auto parm = ps->param.begin() + 1; parm != ps->param.end(); )
         {
-            if ((ps->param[i].a[0] != ps->param[j-1].a[0]) ||
-                (ps->param[i].a[1] != ps->param[j-1].a[1]) )
+            auto prev = parm - 1;
+            if (parm->ai() == prev->ai() &&
+                parm->aj() == prev->aj())
             {
-                if (j != i)
-                {
-                    cp_param(&(ps->param[j]), &(ps->param[i]));
-                }
-                j++;
+                parm = ps->param.erase(parm);
+            }
+            else
+            {
+                ++parm;
             }
         }
-        fprintf(stderr, "Number of bonds was %d, now %d\n", ps->nr, j);
-        ps->nr = j;
+        fprintf(stderr, "Number of bonds was %d, now %zu\n", oldNumber, ps->size());
     }
     else
     {
@@ -1486,7 +1469,6 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     int                                          i, nmissat;
     int                                          bts[ebtsNR];
 
-    init_plist(plist);
     ResidueType rt;
 
     /* Make bonds */
@@ -1548,10 +1530,10 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     if (bCmap)
     {
         gen_cmap(&(plist[F_CMAP]), usedPpResidues, atoms);
-        if (plist[F_CMAP].nr > 0)
+        if (plist[F_CMAP].size() > 0)
         {
-            fprintf(stderr, "There are %4d cmap torsion pairs\n",
-                    plist[F_CMAP].nr);
+            fprintf(stderr, "There are %zu cmap torsion pairs\n",
+                    plist[F_CMAP].size());
         }
     }
 
@@ -1566,17 +1548,17 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     /* clean_bonds(&(plist[F_BONDS]));*/
 
     fprintf(stderr,
-            "There are %4d dihedrals, %4d impropers, %4d angles\n"
-            "          %4d pairs,     %4d bonds and  %4d virtual sites\n",
-            plist[F_PDIHS].nr, plist[F_IDIHS].nr, plist[F_ANGLES].nr,
-            plist[F_LJ14].nr, plist[F_BONDS].nr,
-            plist[F_VSITE2].nr +
-            plist[F_VSITE3].nr +
-            plist[F_VSITE3FD].nr +
-            plist[F_VSITE3FAD].nr +
-            plist[F_VSITE3OUT].nr +
-            plist[F_VSITE4FD].nr +
-            plist[F_VSITE4FDN].nr );
+            "There are %zu dihedrals, %zu impropers, %zu angles\n"
+            "          %zu pairs,     %zu bonds and  %zu virtual sites\n",
+            plist[F_PDIHS].size(), plist[F_IDIHS].size(), plist[F_ANGLES].size(),
+            plist[F_LJ14].size(), plist[F_BONDS].size(),
+            plist[F_VSITE2].size() +
+            plist[F_VSITE3].size() +
+            plist[F_VSITE3FD].size() +
+            plist[F_VSITE3FAD].size() +
+            plist[F_VSITE3OUT].size() +
+            plist[F_VSITE4FD].size() +
+            plist[F_VSITE4FDN].size() );
 
     print_sums(atoms, FALSE);
 
@@ -1612,10 +1594,6 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
 
     /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
     sfree(cgnr);
-    for (i = 0; i < F_NRE; i++)
-    {
-        sfree(plist[i].param);
-    }
     for (i = 0; i < atoms->nr; i++)
     {
         sfree(excls[i].e);
