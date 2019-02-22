@@ -61,6 +61,8 @@ RUN . /usr/local/gromacs/bin/GMXRC && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir .
 
+RUN pytest /home/jovyan/gmxapi/test
+
 # MPI tests can be run in this container without requiring MPI on the host.
 # We should also try tests with an MPI-connected set of docker containers.
 
