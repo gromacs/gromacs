@@ -52,7 +52,9 @@
 
 #include <algorithm>
 
+#include "gromacs/compat/apply.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/multidimindexrange.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/cstringutil.h"
@@ -587,52 +589,60 @@ int Grid::nearestIndex(const awh_dvec value) const
 
 namespace
 {
-
+using position_type = MultiDimIndexRange<c_biasMaxNumDim>::iterator::value_type;
 /*! \brief
  * Find and set the neighbors of a grid point.
  *
  * The search space for neighbors is a subgrid with size set by a scope cutoff.
  * In general not all point within scope will be valid grid points.
  *
- * \param[in]     pointIndex           Grid point index.
- * \param[in]     grid                 The grid.
- * \param[in,out] neighborIndexArray   Array to fill with neighbor indices.
+ * \param[in]  centerPosition Grid point index.
+ * \param[in]  extent         Extent of the grid.
+ * \param[in]  periodicity    Number of repeat points per dimension, zero 
+ *                            indicates no periodicity
+ * \returns    neighborIndexArray   Array with neighbor indices.
+ *
  */
-void setNeighborsOfGridPoint(int               pointIndex,
-                             const Grid       &grid,
-                             std::vector<int> *neighborIndexArray)
+std::vector<int> setNeighborsOfGridPoint(const position_type &centerPosition,
+                                         const position_type &extent,
+                                         const position_type &periodicity)
 {
-    const int c_maxNeighborsAlongAxis = 1 + 2*static_cast<int>(Grid::c_numPointsPerSigma*Grid::c_scopeCutoff);
+    std::vector<int> neighborIndexArray;
+    layout_right::mapping<Grid::extents_type> mapToOneD(extent);
 
-    awh_ivec  numCandidates           = {0};
-    awh_ivec  subgridOrigin           = {0};
-    for (int d = 0; d < grid.numDimensions(); d++)
+    const int     c_maxNeighborsAlongAxis = 1 + 2*static_cast<int>(Grid::c_numPointsPerSigma * Grid::c_scopeCutoff);
+
+    position_type aroundCenterRangeBegin;
+    std::transform(std::begin(centerPosition), std::end(centerPosition), 
+        begin(extent), std::begin(aroundCenterRangeBegin),
+        [c_maxNeighborsAlongAxis](int center, int e){return center - std::min(c_maxNeighborsAlongAxis, e)/2; });
+
+    position_type aroundCenterRangeEnd;
+    std::transform(std::begin(aroundCenterRangeBegin), std::end(aroundCenterRangeBegin), 
+        begin(extent), std::begin(aroundCenterRangeEnd), 
+        [c_maxNeighborsAlongAxis](int b, int e){return b + std::min(c_maxNeighborsAlongAxis, e); });
+    auto aroundCenter   = MultiDimIndexRange<c_biasMaxNumDim>(aroundCenterRangeBegin, aroundCenterRangeEnd);
+
+    for (auto periodicImage : multiDimIndexRangeClosestPeriodicImages<c_biasMaxNumDim>(aroundCenter, periodicity))
     {
-        /* The number of candidate points along this dimension is given by the scope cutoff. */
-        numCandidates[d] = std::min(c_maxNeighborsAlongAxis,
-                                    grid.axis(d).numPoints());
-
-        /* The origin of the subgrid to search */
-        int centerIndex  = grid.point(pointIndex).index[d];
-        subgridOrigin[d] = centerIndex - numCandidates[d]/2;
-    }
-
-    /* Find and set the neighbors */
-    int  neighborIndex = -1;
-    bool aPointExists  = true;
-
-    /* Keep looking for grid points while traversing the subgrid. */
-    while (aPointExists)
-    {
-        /* The point index is updated if a grid point was found. */
-        aPointExists = advancePointInSubgrid(grid, subgridOrigin, numCandidates, &neighborIndex);
-
-        if (aPointExists)
+        // only consider neighbours within the grid 
+        for (auto position : multiDimIndexRangeIntersection(periodicImage, {{}, extent}))
         {
-            neighborIndexArray->push_back(neighborIndex);
+            neighborIndexArray.push_back(gmx::compat::apply(mapToOneD,position));
         }
     }
+    return neighborIndexArray;
 }
+
+//! Helper struct to use gmx::compat::apply for multidimensional array construction.
+struct AwhMultiDimArrayMaker 
+{
+    template<class ...IndexType>
+    MultiDimArray<std::vector<GridPoint>, Grid::extents_type> operator() (IndexType ... index)
+    {
+        return {index...};
+    }
+};
 
 }   // namespace
 
@@ -725,8 +735,10 @@ Grid::Grid(const std::vector<DimParams> &dimParams,
            const AwhDimParams           *awhDimParams)
 {
     /* Define the discretization along each dimension */
-    awh_dvec period;
-    int      numPoints = 1;
+    awh_dvec      period;
+    position_type extents;
+    std::fill(std::begin(extents), std::end(extents), 1);
+    position_type numPointsInPeriod = {};
     for (size_t d = 0; d < dimParams.size(); d++)
     {
         double origin = dimParams[d].scaleUserInputToInternal(awhDimParams[d].origin);
@@ -735,10 +747,10 @@ Grid::Grid(const std::vector<DimParams> &dimParams,
         static_assert(c_numPointsPerSigma >= 1.0, "The number of points per sigma should be at least 1.0 to get a uniformly covering the reaction using Gaussians");
         double pointDensity = std::sqrt(dimParams[d].betak)*c_numPointsPerSigma;
         axis_.emplace_back(origin, end, period[d], pointDensity);
-        numPoints *= axis_[d].numPoints();
+        numPointsInPeriod[d] = axis_.back().numPointsInPeriod();
+        extents[d]           = axis_[d].numPoints();
     }
-
-    point_.resize(numPoints);
+    point_ = gmx::compat::apply(AwhMultiDimArrayMaker(), extents);
 
     /* Set their values */
     initPoints();
@@ -747,11 +759,9 @@ Grid::Grid(const std::vector<DimParams> &dimParams,
      * Note: could also generate neighbor list only when needed
      * instead of storing them for each point.
      */
-    for (size_t m = 0; m < point_.size(); m++)
+    for (const auto position : MultiDimIndexRange<c_biasMaxNumDim>(extents))
     {
-        std::vector<int> *neighbor = &point_[m].neighbor;
-
-        setNeighborsOfGridPoint(m, *this, neighbor);
+        gmx::compat::apply(point_,position).neighbor = setNeighborsOfGridPoint(position, extents, numPointsInPeriod);
     }
 }
 

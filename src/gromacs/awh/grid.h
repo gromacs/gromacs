@@ -57,6 +57,8 @@
 #include <memory>
 #include <string>
 
+#include "gromacs/math/multidimarray.h"
+
 #include "dimparams.h" /* This is needed for awh_dvec */
 
 namespace gmx
@@ -196,6 +198,7 @@ class Grid
         void initPoints();
 
     public:
+        using extents_type = extents<dynamic_extent, dynamic_extent, dynamic_extent, dynamic_extent>;
         /*! \brief
          * The point density per sigma of the Gaussian distribution in an umbrella.
          *
@@ -221,7 +224,7 @@ class Grid
          */
         size_t numPoints() const
         {
-            return point_.size();
+            return point_.asConstView().mapping().required_span_size();
         }
 
         /*! \brief Returns a reference to a point on the grid.
@@ -230,7 +233,7 @@ class Grid
          */
         const GridPoint &point(size_t pointIndex) const
         {
-            return point_[pointIndex];
+            return point_.toArrayRef()[pointIndex];
         }
 
         /*! \brief Returns the dimensionality of the grid.
@@ -277,8 +280,8 @@ class Grid
         bool covers(const awh_dvec value) const;
 
     private:
-        std::vector<GridPoint> point_; /**< Points on the grid */
-        std::vector<GridAxis>  axis_;  /**< Axes, one for each dimension. */
+        MultiDimArray<std::vector<GridPoint>, extents_type> point_; /**< Points on the grid */
+        std::vector<GridAxis>  axis_;                               /**< Axes, one for each dimension. */
 };
 
 /*! \endcond */
