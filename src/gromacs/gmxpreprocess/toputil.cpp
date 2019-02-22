@@ -57,115 +57,28 @@
 
 /* UTILITIES */
 
-void set_p_string(t_param *p, const char *s)
+void set_p_string(FFParameter *p, const char *s)
 {
     if (s)
     {
-        if (strlen(s) < sizeof(p->s)-1)
-        {
-            strncpy(p->s, s, sizeof(p->s));
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %zu,"
-                      " or shorten your definition of bonds like %s to at most %d",
-                      strlen(s)+1, s, MAXSLEN-1);
-        }
+        p->paramString = s;
     }
     else
     {
-        strcpy(p->s, "");
+        p->paramString = "";
     }
 }
 
-void pr_alloc (int extra, SystemParameters *pr)
+void cp_param(FFParameter *dest, const FFParameter &src)
 {
-    int i, j;
-
-    /* get new space for arrays */
-    if (extra < 0)
-    {
-        gmx_fatal(FARGS, "Trying to make array smaller.\n");
-    }
-    if (extra == 0)
-    {
-        return;
-    }
-    GMX_ASSERT(pr->nr != 0 || pr->param == nullptr, "Invalid SystemParameters object");
-    if (pr->nr+extra > pr->maxnr)
-    {
-        pr->maxnr = std::max(static_cast<int>(1.2*pr->maxnr), pr->maxnr + extra);
-        srenew(pr->param, pr->maxnr);
-        for (i = pr->nr; (i < pr->maxnr); i++)
-        {
-            for (j = 0; (j < MAXATOMLIST); j++)
-            {
-                pr->param[i].a[j] = 0;
-            }
-            for (j = 0; (j < MAXFORCEPARAM); j++)
-            {
-                pr->param[i].c[j] = 0;
-            }
-            set_p_string(&(pr->param[i]), "");
-        }
-    }
+    dest->atoms       = src.atoms;
+    dest->forceParm   = src.forceParm;
+    dest->paramString = src.paramString;
 }
 
-void init_plist(gmx::ArrayRef<SystemParameters> plist)
+void add_param_to_list(SystemParameters *list, const FFParameter &b)
 {
-    int i;
-
-    for (i = 0; (i < F_NRE); i++)
-    {
-        plist[i].nr    = 0;
-        plist[i].maxnr = 0;
-        plist[i].param = nullptr;
-    }
-}
-
-void done_plist(gmx::ArrayRef<SystemParameters> plist)
-{
-    for (int i = 0; i < F_NRE; i++)
-    {
-        SystemParameters *pl = &plist[i];
-        sfree(pl->param);
-    }
-}
-
-void cp_param(t_param *dest, t_param *src)
-{
-    int j;
-
-    for (j = 0; (j < MAXATOMLIST); j++)
-    {
-        dest->a[j] = src->a[j];
-    }
-    for (j = 0; (j < MAXFORCEPARAM); j++)
-    {
-        dest->c[j] = src->c[j];
-    }
-    strncpy(dest->s, src->s, sizeof(dest->s));
-}
-
-void add_param_to_list(SystemParameters *list, t_param *b)
-{
-    int j;
-
-    /* allocate one position extra */
-    pr_alloc (1, list);
-
-    /* fill the arrays */
-    for (j = 0; (j < MAXFORCEPARAM); j++)
-    {
-        list->param[list->nr].c[j]   = b->c[j];
-    }
-    for (j = 0; (j < MAXATOMLIST); j++)
-    {
-        list->param[list->nr].a[j]   = b->a[j];
-    }
-    memset(list->param[list->nr].s, 0, sizeof(list->param[list->nr].s));
-
-    list->nr++;
+    list->param.push_back(b);
 }
 
 /* FREEING MEMORY */
@@ -175,7 +88,6 @@ void done_mi(MoleculeInformation *mi)
     done_atom (&(mi->atoms));
     done_block(&(mi->cgs));
     done_block(&(mi->mols));
-    done_plist(mi->plist);
 }
 
 /* PRINTING STRUCTURES */
@@ -188,12 +100,12 @@ static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
      * all four atoms to determine the type.
      */
     const int               dihp[2][2] = { { 1, 2 }, { 0, 3 } };
-    int                     i, j, f, nral, nrfp;
+    int                     f, nral, nrfp;
     bool                    bDih = FALSE, bSwapParity;
 
     const SystemParameters *bt = &(plist[ftype]);
 
-    if (!bt->nr)
+    if (bt->nr() == 0)
     {
         return;
     }
@@ -277,55 +189,55 @@ static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
     if (!bDih)
     {
         fprintf (out, "%3s  %4s", "ai", "aj");
-        for (j = 2; (j < nral); j++)
+        for (int j = 2; (j < nral); j++)
         {
             fprintf (out, "  %3c%c", 'a', 'i'+j);
         }
     }
     else
     {
-        for (j = 0; (j < 2); j++)
+        for (int j = 0; (j < 2); j++)
         {
             fprintf (out, "%3c%c", 'a', 'i'+dihp[f][j]);
         }
     }
 
     fprintf (out, " funct");
-    for (j = 0; (j < nrfp); j++)
+    for (int j = 0; (j < nrfp); j++)
     {
         fprintf (out, " %12c%1d", 'c', j);
     }
     fprintf (out, "\n");
 
     /* print bondtypes */
-    for (i = 0; (i < bt->nr); i++)
+    for (const auto &parm : bt->param)
     {
-        bSwapParity = (bt->param[i].c0() == NOTSET) && (bt->param[i].c1() == -1);
+        bSwapParity = (parm.c0() == NOTSET) && (parm.c1() == -1);
         if (!bDih)
         {
-            for (j = 0; (j < nral); j++)
+            for (int j = 0; (j < nral); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[j], at));
+                fprintf (out, "%5s ", get_atomtype_name(parm.atoms[j], at));
             }
         }
         else
         {
-            for (j = 0; (j < 2); j++)
+            for (int j = 0; (j < 2); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[dihp[f][j]], at));
+                fprintf (out, "%5s ", get_atomtype_name(parm.atoms[dihp[f][j]], at));
             }
         }
         fprintf (out, "%5d ", bSwapParity ? -f-1 : f+1);
 
-        if (bt->param[i].s[0])
+        if (!parm.paramString.empty())
         {
-            fprintf(out, "   %s", bt->param[i].s);
+            fprintf(out, "   %s", parm.paramString.c_str());
         }
         else
         {
-            for (j = 0; (j < nrfp && (bt->param[i].c[j] != NOTSET)); j++)
+            for (int j = 0; (j < nrfp && (parm.forceParm[j] != NOTSET)); j++)
             {
-                fprintf (out, "%13.6e ", bt->param[i].c[j]);
+                fprintf (out, "%13.6e ", parm.forceParm[j]);
             }
         }
 
@@ -502,11 +414,11 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
 void print_bondeds(FILE *out, int natoms, Directive d,
                    int ftype, int fsubtype, gmx::ArrayRef<const SystemParameters> plist)
 {
-    t_symtab       stab;
-    gpp_atomtype  *atype;
-    t_param       *param;
-    t_atom        *a;
-    int            i;
+    t_symtab           stab;
+    gpp_atomtype      *atype;
+    FFParameter       *param;
+    t_atom            *a;
+    int                i;
 
     atype = init_atomtype();
     snew(a, 1);

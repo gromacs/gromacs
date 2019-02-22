@@ -815,10 +815,10 @@ static void at2bonds(SystemParameters *psb, gmx::ArrayRef<MoleculePatchDatabase>
 
 static int pcompar(const void *a, const void *b)
 {
-    const t_param *pa, *pb;
-    int            d;
-    pa = static_cast<const t_param *>(a);
-    pb = static_cast<const t_param *>(b);
+    const FFParameter *pa, *pb;
+    int                d;
+    pa = static_cast<const FFParameter *>(a);
+    pb = static_cast<const FFParameter *>(b);
 
     d = pa->a[0] - pb->a[0];
     if (d == 0)

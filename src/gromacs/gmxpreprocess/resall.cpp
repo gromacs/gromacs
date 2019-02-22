@@ -63,15 +63,15 @@
 
 gpp_atomtype *read_atype(const char *ffdir, t_symtab *tab)
 {
-    FILE                    *in;
-    char                     buf[STRLEN], name[STRLEN];
-    double                   m;
-    int                      nratt = 0;
-    gpp_atomtype            *at;
-    t_atom                  *a;
-    t_param                 *nb;
+    FILE                        *in;
+    char                         buf[STRLEN], name[STRLEN];
+    double                       m;
+    int                          nratt = 0;
+    gpp_atomtype                *at;
+    t_atom                      *a;
+    FFParameter                 *nb;
 
-    std::vector<std::string> files = fflib_search_file_end(ffdir, ".atp", TRUE);
+    std::vector<std::string>     files = fflib_search_file_end(ffdir, ".atp", TRUE);
     at    = init_atomtype();
     snew(a, 1);
     snew(nb, 1);

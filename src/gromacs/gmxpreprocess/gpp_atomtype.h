@@ -47,7 +47,7 @@ struct gmx_mtop_t;
 struct gpp_atomtype;
 struct t_atom;
 struct t_atomtypes;
-struct t_param;
+struct FFParameter;
 struct SystemParameters;
 struct t_symtab;
 
@@ -81,13 +81,13 @@ void done_atomtype(gpp_atomtype *at);
 /* Free the memory in the structure */
 
 int set_atomtype(int nt, gpp_atomtype *at, t_symtab *tab,
-                 t_atom *a, const char *name, t_param *nb,
+                 t_atom *a, const char *name, FFParameter *nb,
                  int bondatomtype, int atomnumber);
 /* Set the values of an existing atom type nt. Returns nt on success or
    NOTSET on error. */
 
 int add_atomtype(gpp_atomtype *at, t_symtab *tab,
-                 t_atom *a, const char *name, t_param *nb,
+                 t_atom *a, const char *name, FFParameter *nb,
                  int bondatomtype, int atomnumber);
 /* Add a complete new atom type to an existing atomtype structure. Returns
    the number of the atom type. */

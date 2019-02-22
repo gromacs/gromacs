@@ -194,13 +194,13 @@ static int match_str(const char *atom, const char *template_string)
 int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
             gpp_atomtype *atype, int *nbonds, SystemParameters *bonds)
 {
-    int      cur = 0;
+    int          cur = 0;
 #define prev (1-cur)
-    int      i, j, k, m, n, nresolved, nb, maxbond, ai, aj, best, im, nqual[2][ematchNR];
-    int     *bbb, *n_mask, *m_mask, **match;
-    char    *aname_i, *aname_m, *aname_n, *type;
-    double   qq, mm;
-    t_param *param;
+    int          i, j, k, m, n, nresolved, nb, maxbond, ai, aj, best, im, nqual[2][ematchNR];
+    int         *bbb, *n_mask, *m_mask, **match;
+    char        *aname_i, *aname_m, *aname_n, *type;
+    double       qq, mm;
+    FFParameter *param;
 
     snew(param, 1);
     maxbond = 0;

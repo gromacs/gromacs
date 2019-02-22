@@ -477,15 +477,15 @@ static void count_bonds(int atom, SystemParameters *psb, char ***atomname,
 
     /* find heavy atom bound to this hydrogen */
     heavy = NOTSET;
-    for (int i = 0; (i < psb->nr) && (heavy == NOTSET); i++)
+    for (auto parm = psb->param.begin(); (parm != psb->param.end()) && (heavy == NOTSET); parm++)
     {
-        if (psb->param[i].ai() == atom)
+        if (parm->ai() == atom)
         {
-            heavy = psb->param[i].aj();
+            heavy = parm->aj();
         }
-        else if (psb->param[i].aj() == atom)
+        else if (parm->aj() == atom)
         {
-            heavy = psb->param[i].ai();
+            heavy = parm->ai();
         }
     }
     if (heavy == NOTSET)
@@ -497,15 +497,15 @@ static void count_bonds(int atom, SystemParameters *psb, char ***atomname,
     nrb   = 0;
     nrH   = 0;
     nrhv  = 0;
-    for (int i = 0; i < psb->nr; i++)
+    for (const auto &parm : psb->param)
     {
-        if (psb->param[i].ai() == heavy)
+        if (parm.ai() == heavy)
         {
-            other = psb->param[i].aj();
+            other = parm.aj();
         }
-        else if (psb->param[i].aj() == heavy)
+        else if (parm.aj() == heavy)
         {
-            other = psb->param[i].ai();
+            other = parm.ai();
         }
         if (other != NOTSET)
         {
@@ -669,15 +669,16 @@ static void add_vsites(gmx::ArrayRef<SystemParameters> plist, int vsite_type[],
                     {
                         /* find more heavy atoms */
                         other = moreheavy = NOTSET;
-                        for (int j = 0; (j < plist[F_BONDS].nr) && (moreheavy == NOTSET); j++)
+                        for (auto parm = plist[F_BONDS].param.begin();
+                             (parm != plist[F_BONDS].param.end()) && (moreheavy == NOTSET); parm++)
                         {
-                            if (plist[F_BONDS].param[j].ai() == heavies[0])
+                            if (parm->ai() == heavies[0])
                             {
-                                other = plist[F_BONDS].param[j].aj();
+                                other = parm->aj();
                             }
-                            else if (plist[F_BONDS].param[j].aj() == heavies[0])
+                            else if (parm->aj() == heavies[0])
                             {
-                                other = plist[F_BONDS].param[j].ai();
+                                other = parm->ai();
                             }
                             if ( (other != NOTSET) && (other != Heavy) )
                             {
@@ -2138,30 +2139,30 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
         SystemParameters *params = &(plist[ftype]);
         if (debug)
         {
-            fprintf(debug, "Renumbering %d %s\n", params->nr,
+            fprintf(debug, "Renumbering %d %s\n", params->nr(),
                     interaction_function[ftype].longname);
         }
-        for (int i = 0; i < params->nr; i++)
+        for (auto &parm : params->param)
         {
             for (int j = 0; j < NRAL(ftype); j++)
             {
-                if (params->param[i].a[j] >= add_shift)
+                if (parm.atoms[j] >= add_shift)
                 {
                     if (debug)
                     {
-                        fprintf(debug, " [%d -> %d]", params->param[i].a[j],
-                                params->param[i].a[j]-add_shift);
+                        fprintf(debug, " [%d -> %d]", parm.atoms[j],
+                                parm.atoms[j]-add_shift);
                     }
-                    params->param[i].a[j] = params->param[i].a[j]-add_shift;
+                    parm.atoms[j] = parm.atoms[j]-add_shift;
                 }
                 else
                 {
                     if (debug)
                     {
-                        fprintf(debug, " [%d -> %d]", params->param[i].a[j],
-                                o2n[params->param[i].a[j]]);
+                        fprintf(debug, " [%d -> %d]", parm.atoms[j],
+                                o2n[parm.atoms[j]]);
                     }
-                    params->param[i].a[j] = o2n[params->param[i].a[j]];
+                    parm.atoms[j] = o2n[parm.atoms[j]];
                 }
             }
             if (debug)
@@ -2172,13 +2173,11 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
     }
     /* now check if atoms in the added constraints are in increasing order */
     params = &(plist[F_CONSTRNC]);
-    for (int i = 0; i < params->nr; i++)
+    for (auto &parm : params->param)
     {
-        if (params->param[i].ai() > params->param[i].aj())
+        if (parm.ai() > parm.aj())
         {
-            int j                     = params->param[i].aj();
-            params->param[i].aj() = params->param[i].ai();
-            params->param[i].ai() = j;
+            int j = parm.aj(); parm.aj() = parm.ai(); parm.ai() = j;
         }
     }
 
@@ -2188,7 +2187,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *aty
     /* tell the user what we did */
     fprintf(stderr, "Marked %d virtual sites\n", nvsite);
     fprintf(stderr, "Added %d dummy masses\n", nadd);
-    fprintf(stderr, "Added %d new constraints\n", plist[F_CONSTRNC].nr);
+    fprintf(stderr, "Added %d new constraints\n", plist[F_CONSTRNC].nr());
 }
 
 void do_h_mass(SystemParameters *psb, int vsite_type[], t_atoms *at, real mHmult,
@@ -2202,18 +2201,18 @@ void do_h_mass(SystemParameters *psb, int vsite_type[], t_atoms *at, real mHmult
         {
             /* find bonded heavy atom */
             int a = NOTSET;
-            for (int j = 0; (j < psb->nr) && (a == NOTSET); j++)
+            for (auto parm = psb->param.begin(); (parm != psb->param.end()) && (a == NOTSET); parm++)
             {
                 /* if other atom is not a virtual site, it is the one we want */
-                if ( (psb->param[j].ai() == i) &&
-                     !is_vsite(vsite_type[psb->param[j].aj()]) )
+                if ( (parm->ai() == i) &&
+                     !is_vsite(vsite_type[parm->aj()]) )
                 {
-                    a = psb->param[j].aj();
+                    a = parm->aj();
                 }
-                else if ( (psb->param[j].aj() == i) &&
-                          !is_vsite(vsite_type[psb->param[j].ai()]) )
+                else if ( (parm->aj() == i) &&
+                          !is_vsite(vsite_type[parm->ai()]) )
                 {
-                    a = psb->param[j].ai();
+                    a = parm->ai();
                 }
             }
             if (a == NOTSET)

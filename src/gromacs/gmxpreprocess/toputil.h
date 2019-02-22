@@ -48,26 +48,18 @@ struct t_atoms;
 struct t_blocka;
 struct t_excls;
 struct MoleculeInformation;
-struct t_param;
+struct FFParameter;
 struct SystemParameters;
 
 /* UTILITIES */
 
 int name2index(char *str, char ***typenames, int ntypes);
 
-void pr_alloc (int extra, SystemParameters *pr);
+void set_p_string(FFParameter *p, const char *s);
 
-void set_p_string(t_param *p, const char *s);
+void cp_param(FFParameter *dest, const FFParameter &src);
 
-void cp_param(t_param *dest, t_param *src);
-
-void add_param_to_list(SystemParameters *list, t_param *b);
-
-/* INITIATE */
-
-void init_plist(gmx::ArrayRef<SystemParameters> plist);
-void done_plist(gmx::ArrayRef<SystemParameters> plist);
-
+void add_param_to_list(SystemParameters *list, const FFParameter &b);
 
 /*! \brief
  * We need this free method as long as the normal copy constructor for

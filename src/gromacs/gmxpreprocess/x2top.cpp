@@ -97,11 +97,11 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
                      t_atoms *atoms, const rvec x[], SystemParameters *bond, int nbond[],
                      bool bPBC, matrix box)
 {
-    t_param b;
-    int     i, j;
-    t_pbc   pbc;
-    rvec    dx;
-    real    dx2;
+    FFParameter b;
+    int         i, j;
+    t_pbc       pbc;
+    rvec        dx;
+    real        dx2;
 
     for (i = 0; (i < MAXATOMLIST); i++)
     {

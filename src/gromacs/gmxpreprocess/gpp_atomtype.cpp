@@ -55,12 +55,12 @@
 
 struct gpp_atomtype
 {
-    int              nr;           /* The number of atomtypes		*/
-    t_atom          *atom;         /* Array of atoms			*/
-    char          ***atomname;     /* Names of the atomtypes		*/
-    t_param         *nb;           /* Nonbonded force default params	*/
-    int             *bondatomtype; /* The bond_atomtype for each atomtype  */
-    int             *atomnumber;   /* Atomic number, used for QM/MM        */
+    int                  nr;           /* The number of atomtypes		*/
+    t_atom              *atom;         /* Array of atoms			*/
+    char              ***atomname;     /* Names of the atomtypes		*/
+    FFParameter         *nb;           /* Nonbonded force default params	*/
+    int                 *bondatomtype; /* The bond_atomtype for each atomtype  */
+    int                 *atomnumber;   /* Atomic number, used for QM/MM        */
 };
 
 int get_atomtype_type(const char *str, gpp_atomtype *ga)
@@ -174,7 +174,7 @@ real get_atomtype_nbparam(int nt, int param, gpp_atomtype *ga)
     {
         return NOTSET;
     }
-    return ga->nb[nt].c[param];
+    return ga->nb[nt].forceParm[param];
 }
 
 gpp_atomtype *init_atomtype()
@@ -194,7 +194,7 @@ gpp_atomtype *init_atomtype()
 }
 
 int set_atomtype(int nt, gpp_atomtype *ga, t_symtab *tab,
-                 t_atom *a, const char *name, t_param *nb,
+                 t_atom *a, const char *name, FFParameter *nb,
                  int bondatomtype, int atomnumber)
 {
     if ((nt < 0) || (nt >= ga->nr))
@@ -212,7 +212,7 @@ int set_atomtype(int nt, gpp_atomtype *ga, t_symtab *tab,
 }
 
 int add_atomtype(gpp_atomtype *ga, t_symtab *tab,
-                 t_atom *a, const char *name, t_param *nb,
+                 t_atom *a, const char *name, FFParameter *nb,
                  int bondatomtype, int atomnumber)
 {
     int i;
@@ -243,9 +243,9 @@ int add_atomtype(gpp_atomtype *ga, t_symtab *tab,
 
 void print_at (FILE * out, gpp_atomtype *ga)
 {
-    int         i;
-    t_atom     *atom = ga->atom;
-    t_param    *nb   = ga->nb;
+    int             i;
+    t_atom         *atom = ga->atom;
+    FFParameter    *nb   = ga->nb;
 
     fprintf (out, "[ %s ]\n", dir2str(Directive::d_atomtypes));
     fprintf (out, "; %6s  %8s  %8s  %8s  %12s  %12s\n",
@@ -273,7 +273,7 @@ void done_atomtype(gpp_atomtype *ga)
 
 static int search_atomtypes(gpp_atomtype *ga, int *n, int typelist[],
                             int thistype,
-                            t_param param[], int ftype)
+                            gmx::ArrayRef<const FFParameter> param, int ftype)
 {
     int      i, nn, nrfp, j, k, ntype, tli;
     bool     bFound = FALSE;
@@ -298,7 +298,7 @@ static int search_atomtypes(gpp_atomtype *ga, int *n, int typelist[],
             /* Check nonbonded parameters */
             for (k = 0; k < nrfp && bFound; k++)
             {
-                bFound = (param[ntype*typelist[i]+j].c[k] == param[ntype*thistype+j].c[k]);
+                bFound = (param[ntype*typelist[i]+j].forceParm[k] == param[ntype*thistype+j].forceParm[k]);
             }
 
             /* Check atomnumber */
@@ -330,9 +330,7 @@ void renum_atype(gmx::ArrayRef<SystemParameters> plist, gmx_mtop_t *mtop,
                  int *wall_atomtype,
                  gpp_atomtype *ga, bool bVerbose)
 {
-    int         i, j, k, l, mi, mj, nat, nrfp, ftype, ntype;
-    t_atoms    *atoms;
-    t_param    *nbsnew;
+    int         nat, nrfp, ftype, ntype;
     int        *typelist;
     int        *new_atomnumber;
     char     ***new_atomname;
@@ -354,7 +352,7 @@ void renum_atype(gmx::ArrayRef<SystemParameters> plist, gmx_mtop_t *mtop,
      */
 
     /* Get nonbonded interaction type */
-    if (plist[F_LJ].nr > 0)
+    if (plist[F_LJ].nr() > 0)
     {
         ftype = F_LJ;
     }
@@ -368,10 +366,10 @@ void renum_atype(gmx::ArrayRef<SystemParameters> plist, gmx_mtop_t *mtop,
      * can determine if two types should be merged.
      */
     nat = 0;
-    for (gmx_moltype_t &moltype : mtop->moltype)
+    for (const gmx_moltype_t &moltype : mtop->moltype)
     {
-        atoms = &moltype.atoms;
-        for (i = 0; (i < atoms->nr); i++)
+        const t_atoms *atoms = &moltype.atoms;
+        for (int i = 0; (i < atoms->nr); i++)
         {
             atoms->atom[i].type =
                 search_atomtypes(ga, &nat, typelist, atoms->atom[i].type,
@@ -382,7 +380,7 @@ void renum_atype(gmx::ArrayRef<SystemParameters> plist, gmx_mtop_t *mtop,
         }
     }
 
-    for (i = 0; i < 2; i++)
+    for (int i = 0; i < 2; i++)
     {
         if (wall_atomtype[i] >= 0)
         {
@@ -396,34 +394,28 @@ void renum_atype(gmx::ArrayRef<SystemParameters> plist, gmx_mtop_t *mtop,
     /* We now have a list of unique atomtypes in typelist */
 
     /* Renumber nlist */
-    nbsnew = nullptr;
-    snew(nbsnew, plist[ftype].nr);
+    std::vector<FFParameter> nbsnew;
 
     nrfp  = NRFP(ftype);
 
-    for (i = k = 0; (i < nat); i++)
+    for (int i = 0; (i < nat); i++)
     {
-        mi = typelist[i];
-        for (j = 0; (j < nat); j++, k++)
+        int mi = typelist[i];
+        for (int j = 0; (j < nat); j++)
         {
-            mj = typelist[j];
-            for (l = 0; (l < nrfp); l++)
-            {
-                nbsnew[k].c[l] = plist[ftype].param[ntype*mi+mj].c[l];
-            }
+            int         mj = typelist[j];
+            FFParameter newParam;
+            newParam.forceParm = plist[ftype].param[ntype*mi+mj].forceParm;
+            nbsnew.push_back(newParam);
         }
         new_atomnumber[i] = get_atomtype_atomnumber(mi, ga);
         new_atomname[i]   = ga->atomname[mi];
     }
 
-    for (i = 0; (i < nat*nat); i++)
+    for (int i = 0; (i < nat*nat); i++)
     {
-        for (l = 0; (l < nrfp); l++)
-        {
-            plist[ftype].param[i].c[l] = nbsnew[i].c[l];
-        }
+        plist[ftype].param[i].forceParm = nbsnew[i].forceParm;
     }
-    plist[ftype].nr     = i;
     mtop->ffparams.atnr = nat;
 
     sfree(ga->atomnumber);
@@ -435,7 +427,6 @@ void renum_atype(gmx::ArrayRef<SystemParameters> plist, gmx_mtop_t *mtop,
 
     ga->nr = nat;
 
-    sfree(nbsnew);
     sfree(typelist);
 }
 

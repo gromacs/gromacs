@@ -279,7 +279,7 @@ void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
         const char *entry;
         int         ptype;
     } t_xlate;
-    t_xlate    xl[eptNR] = {
+    t_xlate        xl[eptNR] = {
         { "A",   eptAtom },
         { "N",   eptNucleus },
         { "S",   eptShell },
@@ -287,17 +287,17 @@ void push_at (t_symtab *symtab, gpp_atomtype *at, gpp_bond_atomtype *bat,
         { "V",   eptVSite },
     };
 
-    int        nr, i, nfields, j, pt, nfp0 = -1;
-    int        batype_nr, nread;
-    char       type[STRLEN], btype[STRLEN], ptype[STRLEN];
-    double     m, q;
-    double     c[MAXFORCEPARAM];
-    char       tmpfield[12][100]; /* Max 12 fields of width 100 */
-    t_atom    *atom;
-    t_param   *param;
-    int        atomnr;
-    bool       have_atomic_number;
-    bool       have_bonded_type;
+    int            nr, i, nfields, j, pt, nfp0 = -1;
+    int            batype_nr, nread;
+    char           type[STRLEN], btype[STRLEN], ptype[STRLEN];
+    double         m, q;
+    double         c[MAXFORCEPARAM];
+    char           tmpfield[12][100]; /* Max 12 fields of width 100 */
+    t_atom        *atom;
+    FFParameter   *param;
+    int            atomnr;
+    bool           have_atomic_number;
+    bool           have_bonded_type;
 
     snew(atom, 1);
     snew(param, 1);
@@ -581,13 +581,13 @@ static bool equalEitherForwardOrBackward(gmx::ArrayRef<const T> a, gmx::ArrayRef
             std::equal(a.begin(), a.end(), b.rbegin()));
 }
 
-static void push_bondtype(SystemParameters     *       bt,
-                          const t_param         *      b,
-                          int                          nral,
-                          int                          ftype,
-                          bool                         bAllowRepeat,
-                          const char         *         line,
-                          warninp                     *wi)
+static void push_bondtype(SystemParameters         *       bt,
+                          const FFParameter         *      b,
+                          int                              nral,
+                          int                              ftype,
+                          bool                             bAllowRepeat,
+                          const char             *         line,
+                          warninp                         *wi)
 {
     int      nr   = bt->nr;
     int      nrfp = NRFP(ftype);
@@ -720,7 +720,7 @@ void push_bt(Directive d, gmx::ArrayRef<SystemParameters> bt, int nral,
              gpp_bond_atomtype *bat, char *line,
              warninp *wi)
 {
-    const char *formal[MAXATOMLIST+1] = {
+    const char     *formal[MAXATOMLIST+1] = {
         "%s",
         "%s%s",
         "%s%s%s",
@@ -729,7 +729,7 @@ void push_bt(Directive d, gmx::ArrayRef<SystemParameters> bt, int nral,
         "%s%s%s%s%s%s",
         "%s%s%s%s%s%s%s"
     };
-    const char *formnl[MAXATOMLIST+1] = {
+    const char     *formnl[MAXATOMLIST+1] = {
         "%*s",
         "%*s%*s",
         "%*s%*s%*s",
@@ -738,13 +738,13 @@ void push_bt(Directive d, gmx::ArrayRef<SystemParameters> bt, int nral,
         "%*s%*s%*s%*s%*s%*s",
         "%*s%*s%*s%*s%*s%*s%*s"
     };
-    const char *formlf = "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-    int         i, ft, ftype, nn, nrfp, nrfpA;
-    char        f1[STRLEN];
-    char        alc[MAXATOMLIST+1][20];
+    const char     *formlf = "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
+    int             i, ft, ftype, nn, nrfp, nrfpA;
+    char            f1[STRLEN];
+    char            alc[MAXATOMLIST+1][20];
     /* One force parameter more, so we can check if we read too many */
-    double      c[MAXFORCEPARAM+1];
-    t_param     p;
+    double          c[MAXFORCEPARAM+1];
+    FFParameter     p;
 
     if ((bat && at) || (!bat && !at))
     {
@@ -819,7 +819,7 @@ void push_dihedraltype(Directive d, gmx::ArrayRef<SystemParameters> bt,
                        gpp_bond_atomtype *bat, char *line,
                        warninp *wi)
 {
-    const char  *formal[MAXATOMLIST+1] = {
+    const char      *formal[MAXATOMLIST+1] = {
         "%s",
         "%s%s",
         "%s%s%s",
@@ -828,7 +828,7 @@ void push_dihedraltype(Directive d, gmx::ArrayRef<SystemParameters> bt,
         "%s%s%s%s%s%s",
         "%s%s%s%s%s%s%s"
     };
-    const char  *formnl[MAXATOMLIST+1] = {
+    const char      *formnl[MAXATOMLIST+1] = {
         "%*s",
         "%*s%*s",
         "%*s%*s%*s",
@@ -837,7 +837,7 @@ void push_dihedraltype(Directive d, gmx::ArrayRef<SystemParameters> bt,
         "%*s%*s%*s%*s%*s%*s",
         "%*s%*s%*s%*s%*s%*s%*s"
     };
-    const char  *formlf[MAXFORCEPARAM] = {
+    const char      *formlf[MAXFORCEPARAM] = {
         "%lf",
         "%lf%lf",
         "%lf%lf%lf",
@@ -851,12 +851,12 @@ void push_dihedraltype(Directive d, gmx::ArrayRef<SystemParameters> bt,
         "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
         "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
     };
-    int          i, ft, ftype, nn, nrfp, nrfpA, nral;
-    char         f1[STRLEN];
-    char         alc[MAXATOMLIST+1][20];
-    double       c[MAXFORCEPARAM];
-    t_param      p;
-    bool         bAllowRepeat;
+    int              i, ft, ftype, nn, nrfp, nrfpA, nral;
+    char             f1[STRLEN];
+    char             alc[MAXATOMLIST+1][20];
+    double           c[MAXFORCEPARAM];
+    FFParameter      p;
+    bool             bAllowRepeat;
 
     /* This routine accepts dihedraltypes defined from either 2 or 4 atoms.
      *
@@ -1115,13 +1115,13 @@ push_cmaptype(Directive d, gmx::ArrayRef<SystemParameters> bt, int nral, gpp_ato
               gpp_bond_atomtype *bat, char *line,
               warninp *wi)
 {
-    const char  *formal = "%s%s%s%s%s%s%s%s%n";
+    const char      *formal = "%s%s%s%s%s%s%s%s%n";
 
-    int          i, ft, ftype, nn, nrfp, nrfpA, nrfpB;
-    int          start, nchar_consumed;
-    int          nxcmap, nycmap, ncmap, read_cmap, sl, nct;
-    char         s[20], alc[MAXATOMLIST+2][20];
-    t_param      p;
+    int              i, ft, ftype, nn, nrfp, nrfpA, nrfpB;
+    int              start, nchar_consumed;
+    int              nxcmap, nycmap, ncmap, read_cmap, sl, nct;
+    char             s[20], alc[MAXATOMLIST+2][20];
+    FFParameter      p;
 
     /* Keep the compiler happy */
     read_cmap = 0;
@@ -1463,15 +1463,15 @@ void push_molt(t_symtab                         *symtab,
 }
 
 static bool default_nb_params(int ftype, gmx::ArrayRef<SystemParameters> bt, t_atoms *at,
-                              t_param *p, int c_start, bool bB, bool bGenPairs)
+                              FFParameter *p, int c_start, bool bB, bool bGenPairs)
 {
-    int          i, j, ti, tj, ntype;
-    bool         bFound;
-    t_param     *pi    = nullptr;
-    int          nr    = bt[ftype].nr;
-    int          nral  = NRAL(ftype);
-    int          nrfp  = interaction_function[ftype].nrfpA;
-    int          nrfpB = interaction_function[ftype].nrfpB;
+    int              i, j, ti, tj, ntype;
+    bool             bFound;
+    FFParameter     *pi    = nullptr;
+    int              nr    = bt[ftype].nr;
+    int              nral  = NRAL(ftype);
+    int              nrfp  = interaction_function[ftype].nrfpA;
+    int              nrfpB = interaction_function[ftype].nrfpB;
 
     if ((!bB && nrfp == 0) || (bB && nrfpB == 0))
     {
@@ -1559,7 +1559,7 @@ static bool default_nb_params(int ftype, gmx::ArrayRef<SystemParameters> bt, t_a
 
 static bool default_cmap_params(gmx::ArrayRef<SystemParameters> bondtype,
                                 t_atoms *at, gpp_atomtype *atype,
-                                t_param *p, bool bB,
+                                FFParameter *p, bool bB,
                                 int *cmap_type, int *nparam_def,
                                 warninp *wi)
 {
@@ -1611,7 +1611,7 @@ static bool default_cmap_params(gmx::ArrayRef<SystemParameters> bondtype,
 /* Returns the number of exact atom type matches, i.e. non wild-card matches,
  * returns -1 when there are no matches at all.
  */
-static int natom_match(t_param *pi,
+static int natom_match(FFParameter *pi,
                        int type_i, int type_j, int type_k, int type_l,
                        const gpp_atomtype* atype)
 {
@@ -1634,18 +1634,18 @@ static int natom_match(t_param *pi,
 
 static bool defaultSystemParameters(int ftype, gmx::ArrayRef<SystemParameters> bt,
                                     t_atoms *at, gpp_atomtype *atype,
-                                    t_param *p, bool bB,
-                                    t_param **param_def,
+                                    FFParameter *p, bool bB,
+                                    FFParameter **param_def,
                                     int *nparam_def)
 {
-    int          nparam_found;
-    bool         bFound, bSame;
-    t_param     *pi    = nullptr;
-    t_param     *pj    = nullptr;
-    int          nr    = bt[ftype].nr;
-    int          nral  = NRAL(ftype);
-    int          nrfpA = interaction_function[ftype].nrfpA;
-    int          nrfpB = interaction_function[ftype].nrfpB;
+    int              nparam_found;
+    bool             bFound, bSame;
+    FFParameter     *pi    = nullptr;
+    FFParameter     *pj    = nullptr;
+    int              nr    = bt[ftype].nr;
+    int              nral  = NRAL(ftype);
+    int              nrfpA = interaction_function[ftype].nrfpA;
+    int              nrfpB = interaction_function[ftype].nrfpB;
 
     if ((!bB && nrfpA == 0) || (bB && nrfpB == 0))
     {
@@ -1666,8 +1666,8 @@ static bool defaultSystemParameters(int ftype, gmx::ArrayRef<SystemParameters> b
          */
         for (t = 0; ((t < nr) && nmatch_max < 4); t++)
         {
-            int      nmatch;
-            t_param *pt;
+            int          nmatch;
+            FFParameter *pt;
 
             pt = &(bt[ftype].param[t]);
             if (bB)
@@ -1758,7 +1758,7 @@ void push_bond(Directive d, gmx::ArrayRef<SystemParameters> bondtype,
                bool bZero, bool *bWarn_copy_A_B,
                warninp *wi)
 {
-    const char  *aaformat[MAXATOMLIST] = {
+    const char      *aaformat[MAXATOMLIST] = {
         "%d%d",
         "%d%d%d",
         "%d%d%d%d",
@@ -1766,7 +1766,7 @@ void push_bond(Directive d, gmx::ArrayRef<SystemParameters> bondtype,
         "%d%d%d%d%d%d",
         "%d%d%d%d%d%d%d"
     };
-    const char  *asformat[MAXATOMLIST] = {
+    const char      *asformat[MAXATOMLIST] = {
         "%*s%*s",
         "%*s%*s%*s",
         "%*s%*s%*s%*s",
@@ -1774,15 +1774,15 @@ void push_bond(Directive d, gmx::ArrayRef<SystemParameters> bondtype,
         "%*s%*s%*s%*s%*s%*s",
         "%*s%*s%*s%*s%*s%*s%*s"
     };
-    const char  *ccformat = "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-    int          nr, i, j, nral, nral_fmt, nread, ftype;
-    char         format[STRLEN];
+    const char      *ccformat = "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
+    int              nr, i, j, nral, nral_fmt, nread, ftype;
+    char             format[STRLEN];
     /* One force parameter more, so we can check if we read too many */
-    double       cc[MAXFORCEPARAM+1];
-    int          aa[MAXATOMLIST+1];
-    t_param      param, *param_defA, *param_defB;
-    bool         bFoundA = FALSE, bFoundB = FALSE, bDef, bPert, bSwapParity = FALSE;
-    int          nparam_defA, nparam_defB;
+    double           cc[MAXFORCEPARAM+1];
+    int              aa[MAXATOMLIST+1];
+    FFParameter      param, *param_defA, *param_defB;
+    bool             bFoundA = FALSE, bFoundB = FALSE, bDef, bPert, bSwapParity = FALSE;
+    int              nparam_defA, nparam_defB;
 
     nparam_defA = nparam_defB = 0;
 
@@ -2176,11 +2176,11 @@ void push_cmap(Directive d, gmx::ArrayRef<SystemParameters> bondtype,
         "%d%d%d%d%d%d%d"
     };
 
-    int      i, j, ftype, nral, nread, ncmap_params;
-    int      cmap_type;
-    int      aa[MAXATOMLIST+1];
-    bool     bFound;
-    t_param  param;
+    int          i, j, ftype, nral, nread, ncmap_params;
+    int          cmap_type;
+    int          aa[MAXATOMLIST+1];
+    bool         bFound;
+    FFParameter  param;
 
     ftype        = ifunc_index(d, 1);
     nral         = NRAL(ftype);
@@ -2258,11 +2258,11 @@ void push_vsitesn(Directive d, gmx::ArrayRef<SystemParameters> bond,
                   t_atoms *at, char *line,
                   warninp *wi)
 {
-    char   *ptr;
-    int     type, ftype, j, n, ret, nj, a;
-    int    *atc    = nullptr;
-    double *weight = nullptr, weight_tot;
-    t_param param;
+    char       *ptr;
+    int         type, ftype, j, n, ret, nj, a;
+    int        *atc    = nullptr;
+    double     *weight = nullptr, weight_tot;
+    FFParameter param;
 
     /* default force parameters  */
     for (j = 0; (j < MAXATOMLIST); j++)
@@ -2479,9 +2479,9 @@ void push_excl(char *line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp *wi)
 int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype *at,
                            t_nbparam ***nbparam, t_nbparam ***pair)
 {
-    t_atom  atom;
-    t_param param;
-    int     i, nr;
+    t_atom      atom;
+    FFParameter param;
+    int         i, nr;
 
     /* Define an atom type with all parameters set to zero (no interactions) */
     atom.q = 0.0;
@@ -2506,8 +2506,8 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype *at,
 static void convert_pairs_to_pairsQ(gmx::ArrayRef<SystemParameters> plist,
                                     real fudgeQQ, t_atoms *atoms)
 {
-    t_param *paramp1, *paramp2, *paramnew;
-    int      i, j, p1nr, p2nr, p2newnr;
+    FFParameter *paramp1, *paramp2, *paramnew;
+    int          i, j, p1nr, p2nr, p2newnr;
 
     /* Add the pair list to the pairQ list */
     p1nr    = plist[F_LJ14].nr;
@@ -2570,11 +2570,11 @@ static void convert_pairs_to_pairsQ(gmx::ArrayRef<SystemParameters> plist,
 
 static void generate_LJCpairsNB(MoleculeInformation *mol, int nb_funct, SystemParameters *nbp, warninp *wi)
 {
-    int       n, ntype, i, j, k;
-    t_atom   *atom;
-    t_blocka *excl;
-    bool      bExcl;
-    t_param   param;
+    int           n, ntype, i, j, k;
+    t_atom       *atom;
+    t_blocka     *excl;
+    bool          bExcl;
+    FFParameter   param;
 
     n    = mol->atoms.nr;
     atom = mol->atoms.atom;

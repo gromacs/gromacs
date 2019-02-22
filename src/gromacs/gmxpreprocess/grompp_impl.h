@@ -40,6 +40,7 @@
 
 #include <string>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -48,53 +49,58 @@
 
 #define MAXSLEN 32
 
-struct t_param
+/*! \libinternal \brief
+ * Describes a single parameter in a force field.
+ */
+struct FFParameter
 {
-    int              a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
-    /* i = a[0] (ai), j = a[1] (aj))	*/
-    real             c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
-    char             s[MAXSLEN];       /* A string (instead of parameters),    *
-                                        * read from the .rtp file in pdb2gmx   */
-    const int       &ai() const { return a[0]; }
-    int             &ai() { return a[0]; }
-    const int       &aj() const { return a[1]; }
-    int             &aj() { return a[1]; }
-    const int       &ak() const { return a[2]; }
-    int             &ak() { return a[2]; }
-    const int       &al() const { return a[3]; }
-    int             &al() { return a[3]; }
-    const int       &am() const { return a[4]; }
-    int             &am() { return a[4]; }
+    //! The atom list (eg. bonds: particle, i = a[0] (ai), j = a[1] (aj))
+    std::array<int, MAXATOMLIST>    atoms = {-1};
+    //! Force parameters (eg. b0 = c[0])
+    std::array<real, MAXFORCEPARAM> forceParm {NOTSET};
+    //! A string (instead of parameters),read from the .rtp file in pdb2gmx
+    std::string                     paramString;
 
-    const real      &c0() const { return c[0]; }
-    real            &c0() { return c[0]; }
-    const real      &c1() const { return c[1]; }
-    real            &c1() { return c[1]; }
-    const real      &c2() const { return c[2]; }
-    real            &c2() { return c[2]; }
+    //! @{
+    //! Access the individual elements set for the parameter.
+    const int       &ai() const { return atoms[0]; }
+    int             &ai() { return atoms[0]; }
+    const int       &aj() const { return atoms[1]; }
+    int             &aj() { return atoms[1]; }
+    const int       &ak() const { return atoms[2]; }
+    int             &ak() { return atoms[2]; }
+    const int       &al() const { return atoms[3]; }
+    int             &al() { return atoms[3]; }
+    const int       &am() const { return atoms[4]; }
+    int             &am() { return atoms[4]; }
+
+    const real      &c0() const { return forceParm[0]; }
+    real            &c0() { return forceParm[0]; }
+    const real      &c1() const { return forceParm[1]; }
+    real            &c1() { return forceParm[1]; }
+    const real      &c2() const { return forceParm[2]; }
+    real            &c2() { return forceParm[2]; }
+    //! @}
 };
 
 /*! \libinternal \brief
  * All parameters for a system.
- * \todo Remove manual memory management.
  */
 struct SystemParameters
 {                       // NOLINT (clang-analyzer-optin.performance.Padding)
-    //! Number of parameters.
-    int                  nr = 0;
-    //! Maximum number of parameters.
-    int                  maxnr = 0;
     //! The different parameters in the system.
-    t_param             *param;
+    std::vector<FFParameter> param;
     //! CMAP grid spacing.
-    int                  cmakeGridSpacing = -1;
+    int                      cmakeGridSpacing = -1;
     //! Number of cmap angles.
-    int                  cmapAngles = -1;
+    int                      cmapAngles = -1;
     //! CMAP grid data.
-    std::vector<real>    cmap;
+    std::vector<real>        cmap;
     //! The five atomtypes followed by a number that identifies the type.
-    std::vector<int>     cmapAtomTypes;
+    std::vector<int>         cmapAtomTypes;
 
+    //! Number of parameters.
+    int nr() const { return param.size(); }
     //! Elements in cmap grid data.
     int ncmap() const { return cmap.size(); }
     //! Number of elements in cmapAtomTypes.

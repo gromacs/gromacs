@@ -105,13 +105,13 @@ static int count_hydrogens (char ***atomname, int nra, const int a[])
 
 void make_shake(gmx::ArrayRef<SystemParameters> plist, t_atoms *atoms, int nshake)
 {
-    char                  ***info = atoms->atomname;
-    SystemParameters        *pr;
-    SystemParameters        *bonds;
-    t_param                  p, *bond, *ang;
-    real                     b_ij, b_jk;
-    int                      i, j, ftype, ftype_a;
-    bool                     bFound;
+    char                      ***info = atoms->atomname;
+    SystemParameters            *pr;
+    SystemParameters            *bonds;
+    FFParameter                  p, *bond, *ang;
+    real                         b_ij, b_jk;
+    int                          i, j, ftype, ftype_a;
+    bool                         bFound;
 
     if (nshake != eshNONE)
     {

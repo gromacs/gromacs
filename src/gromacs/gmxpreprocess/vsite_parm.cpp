@@ -74,8 +74,8 @@ typedef struct {
 } t_mybonded;
 
 typedef struct {
-    int      ftype;
-    t_param *param;
+    int          ftype;
+    FFParameter *param;
 } vsitebondparam_t;
 
 typedef struct {
@@ -106,7 +106,7 @@ static int vsite_bond_nrcheck(int ftype)
 }
 
 static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
-                         t_param *param)
+                         FFParameter *param)
 {
     int j;
 
@@ -129,8 +129,8 @@ static void get_bondeds(int nrat, const t_iatom atoms[],
                         int *nrang,  t_mybonded **angles,
                         int *nridih, t_mybonded **idihs )
 {
-    int      k, i, ftype, nrcheck;
-    t_param *param;
+    int          k, i, ftype, nrcheck;
+    FFParameter *param;
 
     for (k = 0; k < nrat; k++)
     {
@@ -332,7 +332,7 @@ static void print_bad(FILE *fp,
     }
 }
 
-static void print_param(FILE *fp, int ftype, int i, t_param *param)
+static void prinFFParameter(FILE *fp, int ftype, int i, FFParameter *param)
 {
     static int pass       = 0;
     static int prev_ftype = NOTSET;
@@ -418,7 +418,7 @@ static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype *atype)
 }
 
 static bool calc_vsite3_param(gpp_atomtype *atype,
-                              t_param *param, t_atoms *at,
+                              FFParameter *param, t_atoms *at,
                               int nrbond, t_mybonded *bonds,
                               int nrang,  t_mybonded *angles )
 {
@@ -497,7 +497,7 @@ static bool calc_vsite3_param(gpp_atomtype *atype,
     return bError;
 }
 
-static bool calc_vsite3fd_param(t_param *param,
+static bool calc_vsite3fd_param(FFParameter *param,
                                 int nrbond, t_mybonded *bonds,
                                 int nrang,  t_mybonded *angles)
 {
@@ -525,7 +525,7 @@ static bool calc_vsite3fd_param(t_param *param,
     return bError;
 }
 
-static bool calc_vsite3fad_param(t_param *param,
+static bool calc_vsite3fad_param(FFParameter *param,
                                  int nrbond, t_mybonded *bonds,
                                  int nrang,  t_mybonded *angles)
 {
@@ -555,10 +555,10 @@ static bool calc_vsite3fad_param(t_param *param,
     return bError;
 }
 
-static bool calc_vsite3out_param(gpp_atomtype *atype,
-                                 t_param *param, t_atoms *at,
-                                 int nrbond, t_mybonded *bonds,
-                                 int nrang,  t_mybonded *angles)
+static bool calc_vsite3ouFFParameter(gpp_atomtype *atype,
+                                     FFParameter *param, t_atoms *at,
+                                     int nrbond, t_mybonded *bonds,
+                                     int nrang,  t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
@@ -652,7 +652,7 @@ static bool calc_vsite3out_param(gpp_atomtype *atype,
     return bError;
 }
 
-static bool calc_vsite4fd_param(t_param *param,
+static bool calc_vsite4fd_param(FFParameter *param,
                                 int nrbond, t_mybonded *bonds,
                                 int nrang,  t_mybonded *angles)
 {
@@ -709,7 +709,7 @@ static bool calc_vsite4fd_param(t_param *param,
 
 
 static bool
-calc_vsite4fdn_param(t_param *param,
+calc_vsite4fdn_param(FFParameter *param,
                      int nrbond, t_mybonded *bonds,
                      int nrang,  t_mybonded *angles)
 {
@@ -809,7 +809,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
                 if (debug)
                 {
                     fprintf(debug, "bSet=%s ", gmx::boolToString(bSet));
-                    print_param(debug, ftype, i, &plist[ftype].param[i]);
+                    prinFFParameter(debug, ftype, i, &plist[ftype].param[i]);
                 }
                 if (!bSet)
                 {
@@ -854,8 +854,8 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
                             break;
                         case F_VSITE3OUT:
                             bERROR =
-                                calc_vsite3out_param(atype, &(plist[ftype].param[i]), atoms,
-                                                     nrbond, bonds, nrang, angles);
+                                calc_vsite3ouFFParameter(atype, &(plist[ftype].param[i]), atoms,
+                                                         nrbond, bonds, nrang, angles);
                             break;
                         case F_VSITE4FD:
                             bERROR =
