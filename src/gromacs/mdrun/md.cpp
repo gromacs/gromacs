@@ -63,6 +63,8 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/forceschedules/iforceschedule.h"
+#include "gromacs/forceschedules/schedulebuilder.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -682,6 +684,18 @@ void gmx::Integrator::do_md()
         }
     }
 
+    /* Initializing Schedule here based on execution context */
+    MDLoopSharedPrimitives          sp(&step, &t);
+
+    ScheduleBuilder                 scheduleBuilder;
+    std::unique_ptr<IForceSchedule> schedule = scheduleBuilder.generateSchedule(fplog, cr, ms, inputrec, nrnb,
+                                                                                wcycle, &top, groups, state, &f,
+                                                                                &force_vir, mdatoms, enerd, fcd,
+                                                                                graph, fr, vsite, &mu_tot,
+                                                                                ed ? ed->getLegacyED() : nullptr,
+                                                                                &sp, awh.get(), enforcedRotation,
+                                                                                ppForceWorkload, &ddBalanceRegionHandler);
+
     /* and stop now if we should */
     bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep)
@@ -876,14 +890,7 @@ void gmx::Integrator::do_md()
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-            do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation,
-                     step, nrnb, wcycle, &top, groups,
-                     state->box, state->x.arrayRefWithPadding(), &state->hist,
-                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
-                     state->lambda, graph,
-                     fr, ppForceWorkload, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
-                     (bNS ? GMX_FORCE_NS : 0) | force_flags,
-                     ddBalanceRegionHandler);
+            schedule->computeForces((bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint)
