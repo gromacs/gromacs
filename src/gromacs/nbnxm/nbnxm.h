@@ -150,14 +150,17 @@ struct NbnxnListParameters
     /*! \brief Constructor producing a struct with dynamic pruning disabled
      */
     NbnxnListParameters(Nbnxm::KernelType kernelType,
-                        real              rlist);
+                        real              rlist,
+                        bool              haveMultipleDomains);
 
-    PairlistType pairlistType;      //!< The type of cluster-pair list
-    bool         useDynamicPruning; //!< Are we using dynamic pair-list pruning
-    int          nstlistPrune;      //!< Pair-list dynamic pruning interval
-    real         rlistOuter;        //!< Cut-off of the larger, outer pair-list
-    real         rlistInner;        //!< Cut-off of the smaller, inner pair-list
-    int          numRollingParts;   //!< The number parts to divide the pair-list into for rolling pruning, a value of 1 gives no rolling pruning
+    PairlistType pairlistType;           //!< The type of cluster-pair list
+    real         rlistOuter;             //!< Cut-off of the larger, outer pair-list
+    real         rlistInner;             //!< Cut-off of the smaller, inner pair-list
+    bool         haveMultipleDomains;    //!< True when using DD with multiple domains
+    bool         useDynamicPruning;      //!< Are we using dynamic pair-list pruning
+    int          nstlistPrune;           //!< Pair-list dynamic pruning interval
+    int          numRollingPruningParts; //!< The number parts to divide the pair-list into for rolling pruning, a value of 1 gives no rolling pruning
+    int          lifetime;               //!< Lifetime in steps of the pair-list
 };
 
 /*! \brief Resources that can be used to execute non-bonded kernels on */
@@ -276,11 +279,22 @@ struct nonbonded_verlet_t
                     return step - outerListCreationStep_;
                 }
 
-                //! Returns whether step is a dynamic list pruning step, for CPU lists only
-                bool isDynamicPairlistPruningStep(int64_t step) const
+                //! Returns whether step is a dynamic list pruning step, for CPU lists
+                bool isDynamicPruningStepCpu(int64_t step) const
                 {
                     return (params_.useDynamicPruning &&
                             numStepsWithPairlist(step) % params_.nstlistPrune == 0);
+                }
+
+                //! Returns whether step is a dynamic list pruning step, for GPU lists
+                bool isDynamicPruningStepGpu(int64_t step) const
+                {
+                    const int age = numStepsWithPairlist(step);
+
+                    return (params_.useDynamicPruning &&
+                            age > 0 &&
+                            age < params_.lifetime &&
+                            (params_.haveMultipleDomains || age % 2 == 0));
                 }
 
                 //! Changes the pair-list outer and inner radius
@@ -365,9 +379,19 @@ struct nonbonded_verlet_t
             return *pairlistSets_;
         }
 
-        //! Dispatches the dynamic pruning kernel for the given locality
-        void dispatchPruneKernel(Nbnxm::InteractionLocality  iLocality,
-                                 const rvec                 *shift_vec);
+        //! Dispatches the dynamic pruning kernel for the given locality, for CPU lists
+        void dispatchPruneKernelCpu(Nbnxm::InteractionLocality  iLocality,
+                                    const rvec                 *shift_vec);
+
+        //! Dispatches the dynamic pruning kernel for GPU lists
+        void dispatchPruneKernelGpu(int64_t step)
+        {
+            const bool stepIsEven = (pairlistSets().numStepsWithPairlist(step) % 2 == 0);
+
+            Nbnxm::gpu_launch_kernel_pruneonly(gpu_nbv,
+                                               stepIsEven ? Nbnxm::InteractionLocality::Local : Nbnxm::InteractionLocality::NonLocal,
+                                               pairlistSets().params().numRollingPruningParts);
+        }
 
         //! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU
         void dispatchNonbondedKernel(Nbnxm::InteractionLocality  iLocality,

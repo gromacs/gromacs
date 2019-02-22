@@ -82,8 +82,8 @@ nonbonded_verlet_t::PairlistSets::dispatchPruneKernel(const Nbnxm::InteractionLo
 }
 
 void
-nonbonded_verlet_t::dispatchPruneKernel(const Nbnxm::InteractionLocality  iLocality,
-                                        const rvec                       *shift_vec)
+nonbonded_verlet_t::dispatchPruneKernelCpu(const Nbnxm::InteractionLocality  iLocality,
+                                           const rvec                       *shift_vec)
 {
     pairlistSets_->dispatchPruneKernel(iLocality, nbat, shift_vec, kernelSetup_.kernelType);
 }

@@ -416,13 +416,13 @@ static void do_nb_verlet(t_forcerec                       *fr,
         /* When dynamic pair-list  pruning is requested, we need to prune
          * at nstlistPrune steps.
          */
-        if (nbv->pairlistSets().isDynamicPairlistPruningStep(step))
+        if (nbv->pairlistSets().isDynamicPruningStepCpu(step))
         {
             /* Prune the pair-list beyond fr->ic->rlistPrune using
              * the current coordinates of the atoms.
              */
             wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNING);
-            nbv->dispatchPruneKernel(ilocality, fr->shift_vec);
+            nbv->dispatchPruneKernelCpu(ilocality, fr->shift_vec);
             wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNING);
         }
 
@@ -764,44 +764,6 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                                               as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
             }
         }
-    }
-}
-
-/*! \brief
- *  Launch the dynamic rolling pruning GPU task.
- *
- *  We currently alternate local/non-local list pruning in odd-even steps
- *  (only pruning every second step without DD).
- *
- * \param[in]     cr               The communication record
- * \param[in]     nbv              Nonbonded verlet structure
- * \param[in]     inputrec         The input record
- * \param[in]     step             The current MD step
- */
-static inline void launchGpuRollingPruning(const t_commrec          *cr,
-                                           const nonbonded_verlet_t *nbv,
-                                           const t_inputrec         *inputrec,
-                                           const int64_t             step)
-{
-    /* We should not launch the rolling pruning kernel at a search
-     * step or just before search steps, since that's useless.
-     * Without domain decomposition we prune at even steps.
-     * With domain decomposition we alternate local and non-local
-     * pruning at even and odd steps.
-     */
-    int  numRollingParts     = nbv->pairlistSets().params().numRollingParts;
-    GMX_ASSERT(numRollingParts == nbv->pairlistSets().params().nstlistPrune/2,
-               "Since we alternate local/non-local at even/odd steps, "
-               "we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
-    int  stepWithCurrentList = nbv->pairlistSets().numStepsWithPairlist(step);
-    bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
-    if (stepWithCurrentList > 0 &&
-        stepWithCurrentList < inputrec->nstlist - 1 &&
-        (stepIsEven || havePPDomainDecomposition(cr)))
-    {
-        Nbnxm::gpu_launch_kernel_pruneonly(nbv->gpu_nbv,
-                                           stepIsEven ? Nbnxm::InteractionLocality::Local : Nbnxm::InteractionLocality::NonLocal,
-                                           numRollingParts);
     }
 }
 
@@ -1430,10 +1392,9 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
 
-        /* Is dynamic pair-list pruning activated? */
-        if (nbv->pairlistSets().params().useDynamicPruning)
+        if (nbv->pairlistSets().isDynamicPruningStepGpu(step))
         {
-            launchGpuRollingPruning(cr, nbv, inputrec, step);
+            nbv->dispatchPruneKernelGpu(step);
         }
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
