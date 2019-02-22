@@ -38,12 +38,17 @@
 #ifndef GMX_GMXPREPROCESS_ADD_PAR_H
 #define GMX_GMXPREPROCESS_ADD_PAR_H
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct InteractionTypeParameters;
 struct PreprocessResidue;
 
-void add_param(InteractionTypeParameters *ps, int ai, int aj, const real *c, const char *s);
+void add_param(InteractionTypeParameters *ps,
+               int                        ai,
+               int                        aj,
+               gmx::ArrayRef<const real>  c,
+               const char                *s);
 
 void add_imp_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
                    real c0, real c1, const char *s);

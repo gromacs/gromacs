@@ -40,38 +40,163 @@
 
 #include <string>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/exceptions.h"
 
-#define MAXSLEN 32
-
-struct t_param
+/*! \libinternal \brief
+ * Describes a single parameter in a force field.
+ */
+class FFParameter
 {
-    int         a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
-                                  /* i = a[0] (ai), j = a[1] (aj))	*/
-    real        c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
-    char        s[MAXSLEN];       /* A string (instead of parameters),    *
-                                   * read from the .rtp file in pdb2gmx   */
-    const int  &ai() const { return a[0]; }
-    int        &ai() { return a[0]; }
-    const int  &aj() const { return a[1]; }
-    int        &aj() { return a[1]; }
-    const int  &ak() const { return a[2]; }
-    int        &ak() { return a[2]; }
-    const int  &al() const { return a[3]; }
-    int        &al() { return a[3]; }
-    const int  &am() const { return a[4]; }
-    int        &am() { return a[4]; }
+    public:
+        //! Constructor that initializes vectors.
+        FFParameter(gmx::ArrayRef<const int>  atoms,
+                    gmx::ArrayRef<const real> params,
+                    const std::string        &name)
+            : atoms_(atoms.begin(), atoms.end()),
+              paramName_(name)
+        {
+            GMX_RELEASE_ASSERT(params.ssize() < MAXFORCEPARAM, "Can't have more parameters added than the maximum possible number of parameters");
+            int i = 0;
+            for (const auto param : params)
+            {
+                forceParam_[i] = param;
+                i++;
+            }
+            for (int j = i; j < MAXFORCEPARAM; j++)
+            {
+                forceParam_[j] = NOTSET;
+            }
+        }
+        //! @{
+        //! Access the individual elements set for the parameter.
+        const int       &ai() const
+        {
+            GMX_RELEASE_ASSERT(!atoms_.empty(), "Need to have at least one atom set");
+            return atoms_[0];
+        }
+        const int       &aj() const
+        {
+            GMX_RELEASE_ASSERT(atoms_.size() > 1, "Need to have at least two atoms set");
+            return atoms_[1];
+        }
+        const int       &ak() const
+        {
+            GMX_RELEASE_ASSERT(atoms_.size() > 2, "Need to have at least three atoms set");
+            return atoms_[2];
+        }
+        const int       &al() const
+        {
+            GMX_RELEASE_ASSERT(atoms_.size() > 3, "Need to have at least four atoms set");
+            return atoms_[3];
+        }
+        const int       &am() const
+        {
+            GMX_RELEASE_ASSERT(atoms_.size() > 4, "Need to have at least five atoms set");
+            return atoms_[4];
+        }
 
-    const real &c0() const { return c[0]; }
-    real       &c0() { return c[0]; }
-    const real &c1() const { return c[1]; }
-    real       &c1() { return c[1]; }
-    const real &c2() const { return c[2]; }
-    real       &c2() { return c[2]; }
+        const real &c0() const
+        {
+            return forceParam_[0];
+        }
+        const real &c1() const
+        {
+            return forceParam_[1];
+        }
+        const real &c2() const
+        {
+            return forceParam_[2];
+        }
+
+        const std::string &name() const { return paramName_; }
+        //! @}
+
+        //! Sort atom ids in bond to be ascending.
+        void sortBondAtomIds()
+        {
+            if (aj() < ai())
+            {
+                int tmp = ai(); atoms_[0] = aj(); atoms_[1] = tmp;
+            }
+        }
+
+        //! Sort atom ids in angle to be ascending.
+        void sortAngleAtomIds()
+        {
+            if (ak() < ai())
+            {
+                int tmp = ai(); atoms_[0] = ak(); atoms_[2] = tmp;
+            }
+        }
+
+        //! Sort atom ids in dihedrals to be ascending.
+        void sortDihedralAtomIds()
+        {
+            if (al() < ai())
+            {
+                int tmp = al(); atoms_[3] = ai(); atoms_[0] = tmp;
+                tmp = ak(); atoms_[2] = aj(); atoms_[1] = tmp;
+            }
+        }
+
+        //! Return if we have a bond parameter, means two atoms right now.
+        bool isBond() const { return atoms_.size() == 2; }
+        //! Return if we have an angle parameter, means three atoms right now.
+        bool isAngle() const { return atoms_.size() == 3; }
+        //! Return if we have a dihedral parameter, means four atoms right now.
+        bool isDihedral() const { return atoms_.size() == 4; }
+        //! Return if we have a cmap parameter, means five atoms right now.
+        bool isCmap() const { return atoms_.size() == 5; }
+
+        //! Renumber atom Ids.
+        void sortID()
+        {
+            if (isBond())
+            {
+                sortBondAtomIds();
+            }
+            else if (isAngle())
+            {
+                sortAngleAtomIds();
+            }
+            else if (isDihedral())
+            {
+                sortDihedralAtomIds();
+            }
+            else
+            {
+                GMX_THROW(gmx::InternalError("Can not sort parameters other than bonds, angles or dihedrals"));
+            }
+        }
+
+        //! Set single force field parameter.
+        void setForceParameter(int pos, real value)
+        {
+            GMX_RELEASE_ASSERT(pos < MAXFORCEPARAM, "Can't set parameter beyond the maximum number of parameters");
+            forceParam_[pos] = value;
+        }
+
+        //! View on all atoms numbers that are actually set.
+        gmx::ArrayRef<int> atoms() { return atoms_; }
+        //! Const view on all atoms numbers that are actually set.
+        gmx::ArrayRef<const int> atoms() const { return atoms_; }
+        //! View on the actual force field parameters
+        gmx::ArrayRef<const real> forceParam() const { return forceParam_; }
+
+    private:
+        //! The atom list (eg. bonds: particle, i = atoms[0] (ai), j = atoms[1] (aj))
+        std::vector<int>                atoms_;
+        //! Force parameters (eg. b0 = forceParam[0])
+        std::array<real, MAXFORCEPARAM> forceParam_;
+        //! A string (instead of parameters),read from the .rtp file in pdb2gmx
+        std::string                     paramName_;
 };
 
 /*! \libinternal \brief
@@ -86,25 +211,23 @@ struct t_param
  */
 struct InteractionTypeParameters
 {                       // NOLINT (clang-analyzer-optin.performance.Padding)
-    //! Number of parameters.
-    int                  nr = 0;
-    //! Maximum number of parameters.
-    int                  maxnr = 0;
-    //! The parameters of the interactions
-    t_param             *param;
+    //! The different parameters in the system.
+    std::vector<FFParameter> param;
     //! CMAP grid spacing.
-    int                  cmakeGridSpacing = -1;
+    int                      cmakeGridSpacing = -1;
     //! Number of cmap angles.
-    int                  cmapAngles = -1;
+    int                      cmapAngles = -1;
     //! CMAP grid data.
-    std::vector<real>    cmap;
+    std::vector<real>        cmap;
     //! The five atomtypes followed by a number that identifies the type.
-    std::vector<int>     cmapAtomTypes;
+    std::vector<int>         cmapAtomTypes;
 
+    //! Number of parameters.
+    size_t size() const { return param.size(); }
     //! Elements in cmap grid data.
-    int ncmap() const { return cmap.size(); }
+    int    ncmap() const { return cmap.size(); }
     //! Number of elements in cmapAtomTypes.
-    int nct() const { return cmapAtomTypes.size(); }
+    int    nct() const { return cmapAtomTypes.size(); }
 };
 
 struct t_excls
