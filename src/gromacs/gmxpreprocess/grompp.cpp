@@ -106,7 +106,6 @@
 
 void MoleculeInformation::initMolInfo()
 {
-    init_plist(plist);
     init_block(&cgs);
     init_block(&mols);
     init_blocka(&excls);
@@ -116,7 +115,6 @@ void MoleculeInformation::initMolInfo()
 void MoleculeInformation::partialCleanUp()
 {
     done_block(&mols);
-    done_plist(plist);
 }
 
 void MoleculeInformation::fullCleanUp()
@@ -124,7 +122,6 @@ void MoleculeInformation::fullCleanUp()
     done_atom (&atoms);
     done_block(&cgs);
     done_block(&mols);
-    done_plist(plist);
 }
 
 static int rm_interactions(int ifunc, gmx::ArrayRef<MoleculeInformation> mols)
@@ -133,8 +130,8 @@ static int rm_interactions(int ifunc, gmx::ArrayRef<MoleculeInformation> mols)
     /* For all the molecule types */
     for (auto &mol : mols)
     {
-        n                  += mol.plist[ifunc].nr;
-        mol.plist[ifunc].nr = 0;
+        n                  += mol.plist[ifunc].size();
+        mol.plist[ifunc].param.clear();
     }
     return n;
 }
@@ -432,7 +429,7 @@ static int nint_ftype(gmx_mtop_t *mtop, gmx::ArrayRef<const MoleculeInformation>
     int nint = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        nint += molb.nmol*mi[molb.type].plist[ftype].nr;
+        nint += molb.nmol*mi[molb.type].plist[ftype].size();
     }
 
     return nint;
@@ -835,7 +832,7 @@ static void read_posres(gmx_mtop_t *mtop,
     matrix              box, invbox;
     int                 natoms, npbcdim = 0;
     char                warn_buf[STRLEN];
-    int                 a, i, ai, j, k, nat_molb;
+    int                 a, nat_molb;
     t_atom             *atom;
 
     snew(top, 1);
@@ -854,7 +851,7 @@ static void read_posres(gmx_mtop_t *mtop,
     if (rc_scaling != erscNO)
     {
         copy_mat(box, invbox);
-        for (j = npbcdim; j < DIM; j++)
+        for (int j = npbcdim; j < DIM; j++)
         {
             clear_rvec(invbox[j]);
             invbox[j][j] = 1;
@@ -872,12 +869,12 @@ static void read_posres(gmx_mtop_t *mtop,
         nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.nr;
         const InteractionTypeParameters *pr   = &(molinfo[molb.type].plist[F_POSRES]);
         const InteractionTypeParameters *prfb = &(molinfo[molb.type].plist[F_FBPOSRES]);
-        if (pr->nr > 0 || prfb->nr > 0)
+        if (pr->size() > 0 || prfb->size() > 0)
         {
             atom = mtop->moltype[molb.type].atoms.atom;
-            for (i = 0; (i < pr->nr); i++)
+            for (const auto &restraint : pr->param)
             {
-                ai = pr->param[i].ai();
+                int ai = restraint.ai();
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
@@ -887,7 +884,7 @@ static void read_posres(gmx_mtop_t *mtop,
                 if (rc_scaling == erscCOM)
                 {
                     /* Determine the center of mass of the posres reference coordinates */
-                    for (j = 0; j < npbcdim; j++)
+                    for (int j = 0; j < npbcdim; j++)
                     {
                         sum[j] += atom[ai].m*x[a+ai][j];
                     }
@@ -895,9 +892,9 @@ static void read_posres(gmx_mtop_t *mtop,
                 }
             }
             /* Same for flat-bottomed posres, but do not count an atom twice for COM */
-            for (i = 0; (i < prfb->nr); i++)
+            for (const auto &restraint : prfb->param)
             {
-                ai = prfb->param[i].ai();
+                int ai = restraint.ai();
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
@@ -906,7 +903,7 @@ static void read_posres(gmx_mtop_t *mtop,
                 if (rc_scaling == erscCOM && !hadAtom[ai])
                 {
                     /* Determine the center of mass of the posres reference coordinates */
-                    for (j = 0; j < npbcdim; j++)
+                    for (int j = 0; j < npbcdim; j++)
                     {
                         sum[j] += atom[ai].m*x[a+ai][j];
                     }
@@ -916,7 +913,7 @@ static void read_posres(gmx_mtop_t *mtop,
             if (!bTopB)
             {
                 molb.posres_xA.resize(nat_molb);
-                for (i = 0; i < nat_molb; i++)
+                for (int i = 0; i < nat_molb; i++)
                 {
                     copy_rvec(x[a+i], molb.posres_xA[i]);
                 }
@@ -924,7 +921,7 @@ static void read_posres(gmx_mtop_t *mtop,
             else
             {
                 molb.posres_xB.resize(nat_molb);
-                for (i = 0; i < nat_molb; i++)
+                for (int i = 0; i < nat_molb; i++)
                 {
                     copy_rvec(x[a+i], molb.posres_xB[i]);
                 }
@@ -938,7 +935,7 @@ static void read_posres(gmx_mtop_t *mtop,
         {
             gmx_fatal(FARGS, "The total mass of the position restraint atoms is 0");
         }
-        for (j = 0; j < npbcdim; j++)
+        for (int j = 0; j < npbcdim; j++)
         {
             com[j] = sum[j]/totmass;
         }
@@ -955,15 +952,15 @@ static void read_posres(gmx_mtop_t *mtop,
             if (!molb.posres_xA.empty() || !molb.posres_xB.empty())
             {
                 std::vector<gmx::RVec> &xp = (!bTopB ? molb.posres_xA : molb.posres_xB);
-                for (i = 0; i < nat_molb; i++)
+                for (int i = 0; i < nat_molb; i++)
                 {
-                    for (j = 0; j < npbcdim; j++)
+                    for (int j = 0; j < npbcdim; j++)
                     {
                         if (rc_scaling == erscALL)
                         {
                             /* Convert from Cartesian to crystal coordinates */
                             xp[i][j] *= invbox[j][j];
-                            for (k = j+1; k < npbcdim; k++)
+                            for (int k = j+1; k < npbcdim; k++)
                             {
                                 xp[i][j] += invbox[k][j]*xp[i][k];
                             }
@@ -981,10 +978,10 @@ static void read_posres(gmx_mtop_t *mtop,
         if (rc_scaling == erscCOM)
         {
             /* Convert the COM from Cartesian to crystal coordinates */
-            for (j = 0; j < npbcdim; j++)
+            for (int j = 0; j < npbcdim; j++)
             {
                 com[j] *= invbox[j][j];
-                for (k = j+1; k < npbcdim; k++)
+                for (int k = j+1; k < npbcdim; k++)
                 {
                     com[j] += invbox[k][j]*com[k];
                 }
@@ -1206,7 +1203,7 @@ static int count_constraints(const gmx_mtop_t                        *mtop,
                              gmx::ArrayRef<const MoleculeInformation> mi,
                              warninp                                 *wi)
 {
-    int             count, count_mol, i;
+    int             count, count_mol;
     char            buf[STRLEN];
 
     count = 0;
@@ -1215,15 +1212,15 @@ static int count_constraints(const gmx_mtop_t                        *mtop,
         count_mol = 0;
         gmx::ArrayRef<const InteractionTypeParameters> plist = mi[molb.type].plist;
 
-        for (i = 0; i < F_NRE; i++)
+        for (int i = 0; i < F_NRE; i++)
         {
             if (i == F_SETTLE)
             {
-                count_mol += 3*plist[i].nr;
+                count_mol += 3*plist[i].size();
             }
             else if (interaction_function[i].flags & IF_CONSTRAINT)
             {
-                count_mol += plist[i].nr;
+                count_mol += plist[i].size();
             }
         }
 
@@ -1797,7 +1794,6 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     std::array<InteractionTypeParameters, F_NRE> plist;
-    init_plist(plist);
     gmx_mtop_t             sys;
     PreprocessingAtomTypes atypes;
     if (debug)
@@ -2319,7 +2315,6 @@ int gmx_grompp(int argc, char *argv[])
     sfree(opts->define);
     sfree(opts->include);
     sfree(opts);
-    done_plist(plist);
     for (auto &mol : mi)
     {
         // Some of the contents of molinfo have been stolen, so
