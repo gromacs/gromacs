@@ -388,6 +388,8 @@ setDynamicPairlistPruningParameters(const t_inputrec             *ir,
                                     const interaction_const_t    *ic,
                                     NbnxnListParameters          *listParams)
 {
+    listParams->lifetime = ir->nstlist - 1;
+
     /* When nstlistPrune was set by the user, we need to execute one loop
      * iteration to determine rlistInner.
      * Otherwise we compute rlistInner and increase nstlist as long as
@@ -439,7 +441,7 @@ setDynamicPairlistPruningParameters(const t_inputrec             *ir,
          */
         listParams->useDynamicPruning =
             (listParams->rlistInner + rlistInc < 0.99*(listParams->rlistOuter + rlistInc) &&
-             listParams->nstlistPrune < ir->nstlist - 1);
+             listParams->nstlistPrune < listParams->lifetime);
     }
 
     if (!listParams->useDynamicPruning)
@@ -543,11 +545,11 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
                                ( "With dynamic list pruning on GPUs pruning frequency must be at least as large as the rolling pruning interval (" +
                                  std::to_string(c_nbnxnGpuRollingListPruningInterval) +
                                  ").").c_str() );
-            listParams->numRollingParts = listParams->nstlistPrune/c_nbnxnGpuRollingListPruningInterval;
+            listParams->numRollingPruningParts = listParams->nstlistPrune/c_nbnxnGpuRollingListPruningInterval;
         }
         else
         {
-            listParams->numRollingParts = 1;
+            listParams->numRollingPruningParts = 1;
         }
     }
 
@@ -558,7 +560,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
     {
         mesg += gmx::formatString("Using a dual %dx%d pair-list setup updated with dynamic%s pruning:\n",
                                   ls.cluster_size_i, ls.cluster_size_j,
-                                  listParams->numRollingParts > 1 ? ", rolling" : "");
+                                  listParams->numRollingPruningParts > 1 ? ", rolling" : "");
         mesg += formatListSetup("outer", ir->nstlist, ir->nstlist, listParams->rlistOuter, interactionCutoff);
         mesg += formatListSetup("inner", listParams->nstlistPrune, ir->nstlist, listParams->rlistInner, interactionCutoff);
     }

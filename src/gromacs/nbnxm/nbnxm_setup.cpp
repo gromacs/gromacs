@@ -383,7 +383,9 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     const bool          haveMultipleDomains = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
 
-    NbnxnListParameters listParams(nbv->kernelSetup().kernelType, ir->rlist);
+    NbnxnListParameters listParams(nbv->kernelSetup().kernelType,
+                                   ir->rlist,
+                                   havePPDomainDecomposition(cr));
 
     setupDynamicPairlistPruning(mdlog, ir, mtop, box, fr->ic,
                                 &listParams);

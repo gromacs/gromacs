@@ -53,12 +53,15 @@
 /*! \cond INTERNAL */
 
 NbnxnListParameters::NbnxnListParameters(const Nbnxm::KernelType kernelType,
-                                         const real              rlist) :
-    useDynamicPruning(false),
-    nstlistPrune(-1),
+                                         const real              rlist,
+                                         const bool              haveMultipleDomains) :
     rlistOuter(rlist),
     rlistInner(rlist),
-    numRollingParts(1)
+    haveMultipleDomains(haveMultipleDomains),
+    useDynamicPruning(false),
+    nstlistPrune(-1),
+    numRollingPruningParts(1),
+    lifetime(-1)
 {
     if (!Nbnxm::kernelTypeUsesSimplePairlist(kernelType))
     {
