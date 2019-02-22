@@ -40,71 +40,106 @@
 
 #include <string>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 
-#define MAXSLEN 32
-
-struct t_param
+/*! \libinternal \brief
+ * Describes a single parameter in a force field.
+ */
+class InteractionType
 {
-    int         a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
-                                  /* i = a[0] (ai), j = a[1] (aj))	*/
-    real        c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
-    char        s[MAXSLEN];       /* A string (instead of parameters),    *
-                                   * read from the .rtp file in pdb2gmx   */
-    const int  &ai() const { return a[0]; }
-    int        &ai() { return a[0]; }
-    const int  &aj() const { return a[1]; }
-    int        &aj() { return a[1]; }
-    const int  &ak() const { return a[2]; }
-    int        &ak() { return a[2]; }
-    const int  &al() const { return a[3]; }
-    int        &al() { return a[3]; }
-    const int  &am() const { return a[4]; }
-    int        &am() { return a[4]; }
+    public:
+        //! Constructor that initializes vectors.
+        InteractionType(gmx::ArrayRef<const int>  atoms,
+                        gmx::ArrayRef<const real> params,
+                        const std::string        &name = "");
+        /*!@{*/
+        //! Access the individual elements set for the parameter.
+        const int       &ai() const;
+        const int       &aj() const;
+        const int       &ak() const;
+        const int       &al() const;
+        const int       &am() const;
 
-    const real &c0() const { return c[0]; }
-    real       &c0() { return c[0]; }
-    const real &c1() const { return c[1]; }
-    real       &c1() { return c[1]; }
-    const real &c2() const { return c[2]; }
-    real       &c2() { return c[2]; }
+        const real &c0() const;
+        const real &c1() const;
+        const real &c2() const;
+
+        const std::string &interactionTypeName() const;
+        /*!@}*/
+
+        //! Renumber atom Ids.
+        void sortAtomIds();
+
+        //! Set single force field parameter.
+        void setForceParameter(int pos, real value);
+
+        //! View on all atoms numbers that are actually set.
+        gmx::ArrayRef<int> atoms() { return atoms_; }
+        //! Const view on all atoms numbers that are actually set.
+        gmx::ArrayRef<const int> atoms() const { return atoms_; }
+        //! View on all of the force field parameters
+        gmx::ArrayRef<const real> forceParam() const { return forceParam_; }
+        //! View on all of the force field parameters
+        gmx::ArrayRef<real> forceParam() { return forceParam_; }
+
+    private:
+        //! Return if we have a bond parameter, means two atoms right now.
+        bool isBond() const { return atoms_.size() == 2; }
+        //! Return if we have an angle parameter, means three atoms right now.
+        bool isAngle() const { return atoms_.size() == 3; }
+        //! Return if we have a dihedral parameter, means four atoms right now.
+        bool isDihedral() const { return atoms_.size() == 4; }
+        //! Return if we have a cmap parameter, means five atoms right now.
+        bool isCmap() const { return atoms_.size() == 5; }
+        //! Sort atom ids in bond to be ascending.
+        void sortBondAtomIds();
+        //! Sort atom ids in angle to be ascending.
+        void sortAngleAtomIds();
+        //! Sort atom ids in dihedrals to be ascending.
+        void sortDihedralAtomIds();
+        //! The atom list (eg. bonds: particle, i = atoms[0] (ai), j = atoms[1] (aj))
+        std::vector<int>                atoms_;
+        //! Force parameters (eg. b0 = forceParam[0])
+        std::array<real, MAXFORCEPARAM> forceParam_;
+        //! A string (instead of parameters),read from the .rtp file in pdb2gmx
+        std::string                     interactionTypeName_;
 };
 
 /*! \libinternal \brief
- * The parameters for a set of interactions of a given
- * (unspecified) type found in the enumeration in ifunc.h.
+ * A set of interactions of a given type
+ * (found in the enumeration in ifunc.h), complete with
+ * atom indices and force field function parameters.
  *
  * This is used for containing the data obtained from the
  * lists of interactions of a given type in a [moleculetype]
  * topology file definition.
- *
- * \todo Remove manual memory management.
  */
 struct InteractionTypeParameters
 {                       // NOLINT (clang-analyzer-optin.performance.Padding)
-    //! Number of parameters.
-    int                  nr = 0;
-    //! Maximum number of parameters.
-    int                  maxnr = 0;
-    //! The parameters of the interactions
-    t_param             *param;
+    //! The different parameters in the system.
+    std::vector<InteractionType> interactionTypes;
     //! CMAP grid spacing.
-    int                  cmakeGridSpacing = -1;
+    int                          cmakeGridSpacing = -1;
     //! Number of cmap angles.
-    int                  cmapAngles = -1;
+    int                          cmapAngles = -1;
     //! CMAP grid data.
-    std::vector<real>    cmap;
+    std::vector<real>            cmap;
     //! The five atomtypes followed by a number that identifies the type.
-    std::vector<int>     cmapAtomTypes;
+    std::vector<int>             cmapAtomTypes;
 
+    //! Number of parameters.
+    size_t size() const { return interactionTypes.size(); }
     //! Elements in cmap grid data.
-    int ncmap() const { return cmap.size(); }
+    int    ncmap() const { return cmap.size(); }
     //! Number of elements in cmapAtomTypes.
-    int nct() const { return cmapAtomTypes.size(); }
+    int    nct() const { return cmapAtomTypes.size(); }
 };
 
 struct t_excls
