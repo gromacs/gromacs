@@ -58,7 +58,7 @@ mark_as_advanced(SOURCE_MD5SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
-set(EXPECTED_SPHINX_VERSION 1.6.1)
+set(EXPECTED_SPHINX_VERSION 1.7.9)
 
 if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
