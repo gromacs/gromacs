@@ -91,6 +91,21 @@ with :math:`{\lambda}` is:
 where :math:`f = \frac{1}{4\pi \varepsilon_0} = {138.935\,458}` (see
 chapter :ref:`defunits`).
 
+Coulomb interaction with Gaussian distributed charges
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Coulomb interaction between two Gaussian distributed 
+particles of which the charge and distribution widths vary
+with :math:`{\lambda}` is:
+
+.. math:: \begin{aligned}
+          V_c &=& \frac{f}{r_{ij}}erf(((1-\lambda)\zeta_{ij}^A+\lambda\zeta_{ij}^B)r_{ij})\Left[{(1-{\lambda})}q_i^A q_j^A + {\lambda}\, q_i^B q_j^B\right] \\
+          {\frac{\partial V_c}{\partial {\lambda}}}&=& -\frac{2 f (\zeta^A-\zeta^B) exp(-(r((1-\lambda)\zeta^A+\lambda\zeta^B)^2))}{\sqrt{pi}}\left[{(1-{\lambda})}q_i^A q_j^A + {\lambda}\, q_i^B q_j^B\right] + (q_i^B-q_i^A)(q_j^B-q_j^A) \frac{f}{r_{ij}}erf(((1-\lambda)\zeta_{ij}^A+\lambda\zeta_{ij}^B)r_{ij}) \end{aligned}
+          :label: eqnfepcoloumbgauss
+
+where :math:`f = \frac{1}{4\pi \varepsilon_0} = {138.935\,458}` (see
+chapter :ref:`defunits`).
+
 Coulomb interaction with reaction field
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
