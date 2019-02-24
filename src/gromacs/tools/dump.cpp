@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,12 +73,18 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
-static void list_tpx(const char *fn,
-                     gmx_bool    bShowNumbers,
-                     gmx_bool    bShowParameters,
-                     const char *mdpfn,
-                     gmx_bool    bSysTop,
-                     gmx_bool    bOriginalInputrec)
+namespace gmx
+{
+
+namespace
+{
+
+void list_tpx(const char *fn,
+              gmx_bool    bShowNumbers,
+              gmx_bool    bShowParameters,
+              const char *mdpfn,
+              gmx_bool    bSysTop,
+              gmx_bool    bOriginalInputrec)
 {
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
@@ -95,7 +101,7 @@ static void list_tpx(const char *fn,
                    tpx.bTop ? &mtop : nullptr);
     if (tpx.bIr && !bOriginalInputrec)
     {
-        gmx::MDModules().adjustInputrecBasedOnModules(&ir);
+        MDModules().adjustInputrecBasedOnModules(&ir);
     }
 
     if (mdpfn && tpx.bIr)
@@ -175,7 +181,7 @@ static void list_tpx(const char *fn,
     }
 }
 
-static void list_top(const char *fn)
+void list_top(const char *fn)
 {
     int       status, done;
 #define BUFLEN 256
@@ -212,7 +218,7 @@ static void list_top(const char *fn)
     }
 }
 
-static void list_trr(const char *fn)
+void list_trr(const char *fn)
 {
     t_fileio         *fpread;
     int               nframe, indent;
@@ -278,7 +284,7 @@ static void list_trr(const char *fn)
     gmx_trr_close(fpread);
 }
 
-static void list_xtc(const char *fn)
+void list_xtc(const char *fn)
 {
     t_fileio   *xd;
     int         indent;
@@ -318,16 +324,16 @@ static void list_xtc(const char *fn)
 #if GMX_USE_TNG
 
 /*! \brief Callback used by list_tng_for_gmx_dump. */
-static void list_tng_inner(const char *fn,
-                           gmx_bool    bFirstFrame,
-                           real       *values,
-                           int64_t     step,
-                           double      frame_time,
-                           int64_t     n_values_per_frame,
-                           int64_t     n_atoms,
-                           real        prec,
-                           int64_t     nframe,
-                           char       *block_name)
+void list_tng_inner(const char *fn,
+                    gmx_bool    bFirstFrame,
+                    real       *values,
+                    int64_t     step,
+                    double      frame_time,
+                    int64_t     n_values_per_frame,
+                    int64_t     n_atoms,
+                    real        prec,
+                    int64_t     nframe,
+                    char       *block_name)
 {
     char                 buf[256];
     int                  indent = 0;
@@ -351,7 +357,7 @@ static void list_tng_inner(const char *fn,
 
 #endif
 
-static void list_tng(const char gmx_unused *fn)
+void list_tng(const char *fn)
 {
 #if GMX_USE_TNG
     gmx_tng_trajectory_t tng;
@@ -409,10 +415,12 @@ static void list_tng(const char gmx_unused *fn)
     }
     sfree(values);
     gmx_tng_close(&tng);
+#else
+    GMX_UNUSED_VALUE(fn);
 #endif
 }
 
-static void list_trx(const char *fn)
+void list_trx(const char *fn)
 {
     switch (fn2ftp(fn))
     {
@@ -431,7 +439,7 @@ static void list_trx(const char *fn)
     }
 }
 
-static void list_ene(const char *fn)
+void list_ene(const char *fn)
 {
     ener_file_t    in;
     gmx_bool       bCont;
@@ -560,7 +568,7 @@ static void list_ene(const char *fn)
     sfree(enm);
 }
 
-static void list_mtx(const char *fn)
+void list_mtx(const char *fn)
 {
     int                  nrow, ncol, i, j, k;
     real                *full   = nullptr, value;
@@ -601,6 +609,8 @@ static void list_mtx(const char *fn)
 
     sfree(full);
 }
+
+}   // namespace
 
 int gmx_dump(int argc, char *argv[])
 {
@@ -677,3 +687,5 @@ int gmx_dump(int argc, char *argv[])
 
     return 0;
 }
+
+}   // namespace gmx
