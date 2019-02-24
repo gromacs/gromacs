@@ -614,6 +614,9 @@ else()
         COMMAND ${CMAKE_COMMAND} -E echo
             "Cannot prepare LaTeX input files because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
+    add_custom_target(manual
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "manual cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available")
 endif()
 
 if (MAN_PAGE_DIR)
