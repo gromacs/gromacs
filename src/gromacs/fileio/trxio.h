@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 
 #ifndef GMX_FILEIO_TRXIO_H
 #define GMX_FILEIO_TRXIO_H
+
+#include <string>
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/arrayref.h"
@@ -123,10 +125,10 @@ int write_trx(t_trxstatus *status, int nind, const int *ind, const t_atoms *atom
  * \returns Pointer to output TNG file.
  */
 t_trxstatus *
-trjtools_gmx_prepare_tng_writing(const char              *filename,
+trjtools_gmx_prepare_tng_writing(const std::string       &filename,
                                  char                     filemode,
                                  t_trxstatus             *in,
-                                 const char              *infile,
+                                 const std::string       &infile,
                                  int                      natoms,
                                  const struct gmx_mtop_t *mtop,
                                  gmx::ArrayRef<const int> index,
@@ -147,7 +149,7 @@ void close_trx(t_trxstatus *status);
  * Also frees memory in the structure.
  */
 
-t_trxstatus *open_trx(const char *outfile, const char *filemode);
+t_trxstatus *open_trx(const std::string &outfile, const char *filemode);
 /* Open a TRX file and return an allocated status pointer */
 
 struct t_fileio *trx_get_fileio(t_trxstatus *status);
@@ -209,7 +211,7 @@ int check_times(real t);
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
 bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
-                      const char *fn, struct t_trxframe *fr, int flags);
+                      const std::string &fn, struct t_trxframe *fr, int flags);
 /* Read the first frame which is in accordance with flags, which are
  * defined further up in this file.
  * Memory will be allocated for flagged entries.
@@ -224,7 +226,7 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status,
  */
 
 int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status,
-                 const char *fn, real *t, rvec **x, matrix box);
+                 const std::string &fn, real *t, rvec **x, matrix box);
 /* These routines read first coordinates and box, and allocates
  * memory for the coordinates, for a trajectory file.
  * The routine returns the number of atoms, or 0 when something is wrong.
@@ -240,7 +242,7 @@ gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t,
 void rewind_trj(t_trxstatus *status);
 /* Rewind trajectory file as opened with read_first_x */
 
-struct t_topology *read_top(const char *fn, int *ePBC);
+struct t_topology *read_top(const std::string &fn, int *ePBC);
 /* Extract a topology data structure from a topology file.
  * If ePBC!=NULL *ePBC gives the pbc type.
  */

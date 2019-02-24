@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
  */
 #ifndef GMX_FILEIO_FILETYPES_H
 #define GMX_FILEIO_FILETYPES_H
+
+#include <string>
 
 #include "gromacs/utility/basedefinitions.h"
 
@@ -89,7 +91,10 @@ const char *ftp2defopt(int ftp);
 gmx_bool ftp_is_text(int ftp);
 gmx_bool ftp_is_xdr(int ftp);
 
+//! Return the filetype corrsponding to filename
+//! \{
 int fn2ftp(const char *fn);
-/* Return the filetype corrsponding to filename */
+int fn2ftp(const std::string &fn);
+//! \}
 
 #endif

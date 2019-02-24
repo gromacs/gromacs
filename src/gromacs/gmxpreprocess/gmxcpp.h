@@ -53,7 +53,7 @@ enum {
    info for the cpp emulator. The cppopt variable (null terminated)
    can hold cpp options like -IXXX and -DXXX. Return integer status.
  */
-int cpp_open_file(const char *filenm, gmx_cpp_t *handlep, char **cppopts);
+int cpp_open_file(const std::string &filenm, gmx_cpp_t *handlep, char **cppopts);
 
 /* Return one whole line from the file into buf which holds at most n
    characters, for subsequent processing. Returns integer status.

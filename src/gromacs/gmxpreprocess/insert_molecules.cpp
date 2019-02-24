@@ -498,7 +498,7 @@ void InsertMolecules::optionsFinished()
         bool  bTprFileWasRead;
         rvec *temporaryX = nullptr;
         fprintf(stderr, "Reading solute configuration\n");
-        readConfAndTopology(inputConfFile_.c_str(), &bTprFileWasRead, &top_,
+        readConfAndTopology(inputConfFile_, &bTprFileWasRead, &top_,
                             &ePBC_, &temporaryX, nullptr, box_);
         x_.assign(temporaryX, temporaryX + top_.natoms);
         sfree(temporaryX);
@@ -553,7 +553,7 @@ int InsertMolecules::run()
         int         ePBC_dummy;
         matrix      box_dummy;
         rvec       *temporaryX;
-        readConfAndTopology(insertConfFile_.c_str(), &bTprFileWasRead, &topInserted,
+        readConfAndTopology(insertConfFile_, &bTprFileWasRead, &topInserted,
                             &ePBC_dummy, &temporaryX, nullptr, box_dummy);
         xInserted.assign(temporaryX, temporaryX + topInserted.natoms);
         sfree(temporaryX);
@@ -584,7 +584,7 @@ int InsertMolecules::run()
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), *top_.name, &atoms,
+    write_sto_conf(outputConfFile_, *top_.name, &atoms,
                    as_rvec_array(x_.data()), nullptr, ePBCForOutput, box_);
 
     /* print size of generated configuration */

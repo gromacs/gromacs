@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
+#include "gromacs/utility/stringutil.h"
 
 #if GMX_NATIVE_WINDOWS
     #define NULL_DEVICE  "nul"
@@ -562,7 +563,6 @@ int gmx_do_dssp(int argc, char *argv[])
     rvec              *xp, *x;
     int               *average_area;
     real             **accr, *accr_ptr = nullptr, *av_area, *norm_av_area;
-    char               pdbfile[32], tmpfile[32];
     char               dssp[256];
     const char        *dptr;
     gmx_output_env_t  *oenv;
@@ -612,28 +612,28 @@ int gmx_do_dssp(int argc, char *argv[])
     }
     fprintf(stderr, "There are %d residues in your selected group\n", nres);
 
-    std::strcpy(pdbfile, "ddXXXXXX");
-    gmx_tmpnam(pdbfile);
-    if ((tmpf = fopen(pdbfile, "w")) == nullptr)
+    std::string pdbfile = "ddXXXXXX";
+    gmx_tmpnam(&pdbfile);
+    if ((tmpf = fopen(pdbfile.c_str(), "w")) == nullptr)
     {
-        sprintf(pdbfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(pdbfile);
-        if ((tmpf = fopen(pdbfile, "w")) == nullptr)
+        pdbfile = gmx::formatString("%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
+        gmx_tmpnam(&pdbfile);
+        if ((tmpf = fopen(pdbfile.c_str(), "w")) == nullptr)
         {
-            gmx_fatal(FARGS, "Can not open tmp file %s", pdbfile);
+            gmx_fatal(FARGS, "Can not open tmp file %s", pdbfile.c_str());
         }
     }
     fclose(tmpf);
 
-    std::strcpy(tmpfile, "ddXXXXXX");
-    gmx_tmpnam(tmpfile);
-    if ((tmpf = fopen(tmpfile, "w")) == nullptr)
+    std::string tmpfile = "ddXXXXXX";
+    gmx_tmpnam(&tmpfile);
+    if ((tmpf = fopen(tmpfile.c_str(), "w")) == nullptr)
     {
-        sprintf(tmpfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(tmpfile);
-        if ((tmpf = fopen(tmpfile, "w")) == nullptr)
+        tmpfile = gmx::formatString("%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
+        gmx_tmpnam(&tmpfile);
+        if ((tmpf = fopen(tmpfile.c_str(), "w")) == nullptr)
         {
-            gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile);
+            gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile.c_str());
         }
     }
     fclose(tmpf);
@@ -732,8 +732,8 @@ int gmx_do_dssp(int argc, char *argv[])
         if (0 != system(dssp) || nullptr == (tapeout = gmx_ffopen(tmpfile, "r")))
 #endif
         {
-            remove(pdbfile);
-            remove(tmpfile);
+            remove(pdbfile.c_str());
+            remove(tmpfile.c_str());
             gmx_fatal(FARGS, "Failed to execute command: %s\n"
                       "Try specifying your dssp version with the -ver option.", dssp);
         }
@@ -750,8 +750,8 @@ int gmx_do_dssp(int argc, char *argv[])
 #else
         gmx_ffclose(tapeout);
 #endif
-        remove(tmpfile);
-        remove(pdbfile);
+        remove(tmpfile.c_str());
+        remove(pdbfile.c_str());
         nframe++;
     }
     while (read_next_x(oenv, status, &t, x, box));

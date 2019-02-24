@@ -243,12 +243,11 @@ static void update_topol(const char *topinout, int p_num, int n_num,
     char     buf[STRLEN], buf2[STRLEN], *temp, **mol_line = nullptr;
     int      line, i, nmol_line, sol_line, nsol_last;
     gmx_bool bMolecules;
-    char     temporary_filename[STRLEN];
 
     printf("\nProcessing topology\n");
     fpin  = gmx_ffopen(topinout, "r");
-    std::strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
-    fpout = gmx_fopen_temporary(temporary_filename);
+    std::string temporary_filename = "temp.topXXXXXX";
+    fpout = gmx_fopen_temporary(&temporary_filename);
 
     line       = 0;
     bMolecules = FALSE;

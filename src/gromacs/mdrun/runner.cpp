@@ -830,9 +830,10 @@ int Mdrunner::mdrunner()
         /* Check if checkpoint file exists before doing continuation.
          * This way we can use identical input options for the first and subsequent runs...
          */
-        gmx_bool bReadEkin;
+        gmx_bool    bReadEkin;
 
-        load_checkpoint(opt2fn_master("-cpi", filenames.size(), filenames.data(), cr),
+        std::string fn = opt2fn_master("-cpi", filenames.size(), filenames.data(), cr);
+        load_checkpoint(fn,
                         logFileHandle,
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),

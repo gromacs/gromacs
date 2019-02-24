@@ -315,7 +315,7 @@ gmx_bool gmx_trr_read_frame_data(t_fileio *fio, gmx_trr_header_t *header,
     return do_trr_frame_data(fio, header, box, x, v, f);
 }
 
-t_fileio *gmx_trr_open(const char *fn, const char *mode)
+t_fileio *gmx_trr_open(const std::string &fn, const char *mode)
 {
     return gmx_fio_open(fn, mode);
 }

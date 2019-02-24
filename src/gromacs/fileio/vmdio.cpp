@@ -265,7 +265,7 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
     return true;
 }
 
-static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
+static int load_vmd_library(const std::string &fn, gmx_vmdplugin_t *vmdplugin)
 {
     const char       *err;
     int               ret = 0;
@@ -283,7 +283,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
 #endif
 
     vmdplugin->api      = nullptr;
-    vmdplugin->filetype = strrchr(fn, '.');
+    vmdplugin->filetype = std::strrchr(fn.c_str(), '.');
     if (!vmdplugin->filetype)
     {
         return 0;
@@ -382,7 +382,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
 
 }
 
-int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxframe *fr)
+int read_first_vmd_frame(const std::string &fn, gmx_vmdplugin_t **vmdpluginp, t_trxframe *fr)
 {
     molfile_timestep_metadata_t *metadata = nullptr;
     gmx_vmdplugin_t             *vmdplugin;
@@ -394,29 +394,29 @@ int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxfram
         return 0;
     }
 
-    vmdplugin->handle = vmdplugin->api->open_file_read(fn, vmdplugin->filetype, &fr->natoms);
+    vmdplugin->handle = vmdplugin->api->open_file_read(fn.c_str(), vmdplugin->filetype, &fr->natoms);
 
     if (!vmdplugin->handle)
     {
         fprintf(stderr, "\nError: could not open file '%s' for reading.\n",
-                fn);
+                fn.c_str());
         return 0;
     }
 
     if (fr->natoms == MOLFILE_NUMATOMS_UNKNOWN)
     {
-        fprintf(stderr, "\nFormat of file %s does not record number of atoms.\n", fn);
+        fprintf(stderr, "\nFormat of file %s does not record number of atoms.\n", fn.c_str());
         return 0;
     }
     else if (fr->natoms == MOLFILE_NUMATOMS_NONE)
     {
-        fprintf(stderr, "\nNo atoms found by VMD plugin in file %s.\n", fn );
+        fprintf(stderr, "\nNo atoms found by VMD plugin in file %s.\n", fn.c_str());
         return 0;
     }
     else if (fr->natoms < 1)     /*should not be reached*/
     {
         fprintf(stderr, "\nUnknown number of atoms %d for VMD plugin opening file %s.\n",
-                fr->natoms, fn );
+                fr->natoms, fn.c_str());
         return 0;
     }
 

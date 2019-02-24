@@ -453,7 +453,7 @@ void CommandLineTestBase::setModifiableInputFile(
 {
     std::string originalFileName   = gmx::test::TestFileManager::getInputFilePath(filename);
     std::string modifiableFileName = fileManager().getTemporaryFilePath(filename);
-    gmx_file_copy(originalFileName.c_str(), modifiableFileName.c_str(), true);
+    gmx_file_copy(originalFileName, modifiableFileName, true);
     impl_->cmdline_.addOption(option, modifiableFileName);
 }
 
@@ -492,7 +492,7 @@ void CommandLineTestBase::setInputAndOutputFile(
 {
     std::string originalFileName   = gmx::test::TestFileManager::getInputFilePath(filename);
     std::string modifiableFileName = fileManager().getTemporaryFilePath(filename);
-    gmx_file_copy(originalFileName.c_str(), modifiableFileName.c_str(), true);
+    gmx_file_copy(originalFileName, modifiableFileName, true);
     impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
 }
 
@@ -502,7 +502,7 @@ void CommandLineTestBase::setInputAndOutputFile(
 {
     std::string originalFileName   = gmx::test::TestFileManager::getInputFilePath(filename);
     std::string modifiableFileName = fileManager().getTemporaryFilePath(filename);
-    gmx_file_copy(originalFileName.c_str(), modifiableFileName.c_str(), true);
+    gmx_file_copy(originalFileName, modifiableFileName, true);
     impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
 }
 

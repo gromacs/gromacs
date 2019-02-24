@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -147,6 +147,45 @@ TEST(PathTest, GetParentPathAndBasenameWorks)
         EXPECT_EQ("dir", std::get<0>(result));
         EXPECT_EQ("anotherdir", std::get<1>(result));
     }
+}
+
+TEST(PathTest, FilenameParsingWorks)
+{
+    // Test filename with extension
+    EXPECT_EQ("a.b", gmx::Path::getFilename("a.b"));
+    EXPECT_TRUE(gmx::Path::hasExtension("a.b"));
+    EXPECT_EQ("a", gmx::Path::stripExtension("a.b"));
+    EXPECT_EQ("b", gmx::Path::getExtension("a.b"));
+
+    // Test filename without extension
+    EXPECT_EQ("a", gmx::Path::getFilename("a"));
+    EXPECT_FALSE(gmx::Path::hasExtension("a"));
+    EXPECT_EQ("a", gmx::Path::stripExtension("a"));
+    EXPECT_EQ("", gmx::Path::getExtension("a"));
+
+    // Test filename with directory and extension
+    EXPECT_EQ("a.b", gmx::Path::getFilename("d/a.b"));
+    EXPECT_TRUE(gmx::Path::hasExtension("d/a.b"));
+    EXPECT_EQ("d/a", gmx::Path::stripExtension("d/a.b"));
+    EXPECT_EQ("b", gmx::Path::getExtension("d/a.b"));
+
+    // Test filename with directory and without extension
+    EXPECT_EQ("a", gmx::Path::getFilename("d/a"));
+    EXPECT_FALSE(gmx::Path::hasExtension("d/a"));
+    EXPECT_EQ("d/a", gmx::Path::stripExtension("d/a"));
+    EXPECT_EQ("", gmx::Path::getExtension("d/a"));
+
+    // Test filename with directory including extension character
+    EXPECT_EQ("a.b", gmx::Path::getFilename("c.d/a.b"));
+    EXPECT_TRUE(gmx::Path::hasExtension("c.d/a.b"));
+    EXPECT_EQ("c.d/a", gmx::Path::stripExtension("c.d/a.b"));
+    EXPECT_EQ("b", gmx::Path::getExtension("c.d/a.b"));
+
+    // Test filename with directory including extension character and without extension
+    EXPECT_EQ("a", gmx::Path::getFilename("c.d/a"));
+    EXPECT_FALSE(gmx::Path::hasExtension("c.d/a"));
+    EXPECT_EQ("c.d/a", gmx::Path::stripExtension("c.d/a"));
+    EXPECT_EQ("", gmx::Path::getExtension("c.d/a"));
 }
 
 } // namespace

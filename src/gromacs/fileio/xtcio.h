@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
 #ifndef GMX_FILEIO_XTCIO_H
 #define GMX_FILEIO_XTCIO_H
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -55,7 +57,7 @@ struct t_fileio;
  * negative. Fortunately, this tends not to cause serious problems,
  * and we've fixed it in TNG. */
 
-struct t_fileio *open_xtc(const char *filename, const char *mode);
+struct t_fileio *open_xtc(const std::string &filename, const char *mode);
 /* Open a file for xdr I/O */
 
 void close_xtc(struct t_fileio *fio);
