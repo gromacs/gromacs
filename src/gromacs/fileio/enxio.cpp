@@ -776,7 +776,7 @@ void done_ener_file(ener_file_t ef)
  * \return TRUE if file could be open but is empty, otherwise FALSE.
  */
 static gmx_bool
-empty_file(const char *fn)
+empty_file(const std::string &fn)
 {
     FILE    *fp;
     char     dum;
@@ -794,7 +794,7 @@ empty_file(const char *fn)
 }
 
 
-ener_file_t open_enx(const char *fn, const char *mode)
+ener_file_t open_enx(const std::string &fn, const char *mode)
 {
     int               nre;
     gmx_enxnm_t      *nms          = nullptr;
@@ -822,7 +822,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
             ((fr->e_size && (fr->nre == nre) &&
               (nre*4*static_cast<long int>(sizeof(float)) == fr->e_size)) ) )
         {
-            fprintf(stderr, "Opened %s as single precision energy file\n", fn);
+            fprintf(stderr, "Opened %s as single precision energy file\n", fn.c_str());
             free_enxnms(nre, nms);
         }
         else
@@ -840,18 +840,18 @@ ener_file_t open_enx(const char *fn, const char *mode)
                   (nre*4*static_cast<long int>(sizeof(double)) == fr->e_size)) ))
             {
                 fprintf(stderr, "Opened %s as double precision energy file\n",
-                        fn);
+                        fn.c_str());
             }
             else
             {
                 if (empty_file(fn))
                 {
-                    gmx_fatal(FARGS, "File %s is empty", fn);
+                    gmx_fatal(FARGS, "File %s is empty", fn.c_str());
                 }
                 else
                 {
                     gmx_fatal(FARGS, "Energy file %s not recognized, maybe different CPU?",
-                              fn);
+                              fn.c_str());
                 }
             }
             free_enxnms(nre, nms);

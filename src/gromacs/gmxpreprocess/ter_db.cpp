@@ -158,7 +158,7 @@ static void print_ter_db(const char *ff, char C, gmx::ArrayRef<const MoleculePat
                          gpp_atomtype *atype)
 {
     std::string buf = gmx::formatString("%s-%c.tdb", ff, C);
-    FILE       *out = gmx_fio_fopen(buf.c_str(), "w");
+    FILE       *out = gmx_fio_fopen(buf, "w");
 
     for (const auto &modification : tb)
     {

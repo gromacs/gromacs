@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,9 +76,14 @@ class Path
          *
          * Path must not contain '.' or '..' elements. */
         static std::pair<std::string, std::string> getParentPathAndBasename(const std::string &path);
+        //! Return the filename before the last '.' separator (if found), or the whole filename.
         static std::string getFilename(const std::string &path);
+        //! Return whether a filename extension '.' separator is found.
         static bool hasExtension(const std::string &path);
+        //! Return the filename (and leading directory names) without any extension after '.'
         static std::string stripExtension(const std::string &path);
+        //! Return the filename extension after the last '.' separator (if found), or empty.
+        static std::string getExtension(const std::string &path);
         /*! \brief Concatenate \c stringToAdd to \c input, before any
          * file extension (if one exists), and return the result.
          *

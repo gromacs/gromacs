@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 #include <stdio.h>
 
 #include <array>
+#include <string>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -61,10 +62,10 @@ typedef struct t_fileio t_fileio;
  * Open and Close
  ********************************************************/
 
-t_fileio *gmx_fio_open(const char *fn, const char *mode);
-/* Open a new file for reading or writing.
- * The file type will be deduced from the file name.
- */
+/*! \brief Open a new file for reading or writing.
+ *
+ * The file type will be deduced from the file name. */
+t_fileio *gmx_fio_open(const std::string &fn, const char *mode);
 
 int gmx_fio_close(t_fileio *fp);
 /* Close the file corresponding to fp (if not stdio)
@@ -82,8 +83,8 @@ int gmx_fio_fp_close(t_fileio *fp);
  */
 
 
-/* Open a file, return a stream, record the entry in internal FIO object */
-FILE* gmx_fio_fopen(const char *fn, const char *mode);
+//! Open a file, return a stream, record the entry in internal FIO object
+FILE* gmx_fio_fopen(const std::string &fn, const char *mode);
 
 /* Close a file previously opened with gmx_fio_fopen.
  * Do not mix these calls with standard fopen/fclose ones!

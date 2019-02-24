@@ -1941,7 +1941,7 @@ int pdb2gmx::run()
     int                                                 nNtdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
     int                                                 nCtdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
 
-    FILE                                               *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
+    FILE                                               *top_file = gmx_fio_fopen(topologyFile_, "w");
 
     print_top_header(top_file, topologyFile_.c_str(), FALSE, ffdir_, mHmult_);
 
@@ -2211,7 +2211,7 @@ int pdb2gmx::run()
             }
             incls_.emplace_back();
             incls_.back()    = itp_fn;
-            itp_file_        = gmx_fio_fopen(itp_fn.c_str(), "w");
+            itp_file_        = gmx_fio_fopen(itp_fn, "w");
         }
         else
         {

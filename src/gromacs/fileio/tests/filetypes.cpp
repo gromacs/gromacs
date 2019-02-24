@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,15 +34,18 @@
  */
 /*! \internal \file
  * \brief
- * Tests for routines for computing MD5 sums on files.
+ * Tests for file type handling routines.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_fileio
  */
 #include "gmxpre.h"
 
+#include "../filetypes.h"
+
 #include <cstdio>
 
+// TODO
 #include <algorithm>
 #include <numeric>
 #include <string>
@@ -64,59 +67,26 @@ namespace test
 namespace
 {
 
-class FileMD5Test : public ::testing::Test
+struct TestPair
 {
-    public:
-        void prepareFile(int lengthInBytes)
-        {
-            // Fill some memory with some arbitrary bits.
-            std::vector<char> data(lengthInBytes);
-            std::iota(data.begin(), data.end(), 1);
-            // Binary mode ensures it works the same on all OS
-            FILE *fp = fopen(filename_.c_str(), "wb");
-            fwrite(data.data(), sizeof(char), data.size(), fp);
-            fclose(fp);
-        }
-        ~FileMD5Test() override
-        {
-            if (file_)
-            {
-                gmx_fio_close(file_);
-            }
-        }
-        TestFileManager fileManager_;
-        // Make sure the file extension is one that gmx_fio_open will
-        // recognize to open as binary.
-        std::string     filename_ = fileManager_.getTemporaryFilePath("data.edr");
-        t_fileio       *file_     = nullptr;
+    int         fileType;
+    const char *filename;
 };
 
-TEST_F(FileMD5Test, CanComputeMD5)
+TEST(FilenameConversionTest, ReturnsCorrectTypes)
 {
-    prepareFile(1000);
-    file_ = gmx_fio_open(filename_, "r+");
-
-    std::array<unsigned char, 16> digest = {0};
-    // Chosen to be less than the full file length
-    gmx_off_t                     offset             = 64;
-    gmx_off_t                     expectedLength     = 64;
-    gmx_off_t                     lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, &digest);
-
-    EXPECT_EQ(expectedLength, lengthActuallyRead);
-    // Did we compute an actual reproducible checksum?
-    auto total = std::accumulate(digest.begin(), digest.end(), 0);
-    EXPECT_EQ(2111, total);
-}
-
-TEST_F(FileMD5Test, ReturnsErrorIfFileModeIsWrong)
-{
-    prepareFile(1000);
-    file_ = gmx_fio_open(filename_, "r");
-
-    std::array<unsigned char, 16> digest;
-    gmx_off_t                     offset             = 100;
-    gmx_off_t                     lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, &digest);
-    EXPECT_EQ(-1, lengthActuallyRead);
+    TestPair testPairs[] = {
+        {efPDB, "some.pdb"},
+        {efGRO, "some.gro"},
+        {efMTX, "some.mtx"},
+        {efTNG, "some.tng"},
+        {efNR, ""}
+    };
+    for (auto testPair : testPairs)
+    {
+        //EXPECT_EQ(testPair.fileType, fn2ftp(testPair.filename)) << "as char *";
+        EXPECT_EQ(testPair.fileType, fn2ftp(std::string(testPair.filename))) << "as std::string";
+    }
 }
 
 } // namespace

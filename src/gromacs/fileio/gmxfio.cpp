@@ -261,7 +261,7 @@ static void gmx_fio_stop_getting_next(t_fileio *fio)
  *                     EXPORTED SECTION
  *
  *****************************************************************/
-t_fileio *gmx_fio_open(const char *fn, const char *mode)
+t_fileio *gmx_fio_open(const std::string &fn, const char *mode)
 {
     t_fileio *fio = nullptr;
     char      newmode[5];
@@ -309,42 +309,41 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     bReadWrite = (newmode[1] == '+');
     fio->fp    = nullptr;
     fio->xdr   = nullptr;
-    if (fn)
-    {
-        if (fn2ftp(fn) == efTNG)
-        {
-            gmx_incons("gmx_fio_open may not be used to open TNG files");
-        }
-        fio->iFTP   = fn2ftp(fn);
-        fio->fn     = gmx_strdup(fn);
 
-        fio->fp = gmx_ffopen(fn, newmode);
-        /* If this file type is in the list of XDR files, open it like that */
-        if (ftp_is_xdr(fio->iFTP))
-        {
-            /* determine the XDR direction */
-            if (newmode[0] == 'w' || newmode[0] == 'a')
-            {
-                fio->xdrmode = XDR_ENCODE;
-            }
-            else
-            {
-                fio->xdrmode = XDR_DECODE;
-            }
-            snew(fio->xdr, 1);
-            xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
-        }
-
-        /* for appending seek to end of file to make sure ftell gives correct position
-         * important for checkpointing */
-        if (newmode[0] == 'a')
-        {
-            gmx_fseek(fio->fp, 0, SEEK_END);
-        }
-    }
-    else
+    if (fn.empty())
     {
         gmx_fatal(FARGS, "Cannot open file with NULL filename string");
+    }
+
+    if (fn2ftp(fn) == efTNG)
+    {
+        gmx_incons("gmx_fio_open may not be used to open TNG files");
+    }
+    fio->iFTP   = fn2ftp(fn);
+    fio->fn     = gmx_strdup(fn);
+
+    fio->fp = gmx_ffopen(fn, newmode);
+    /* If this file type is in the list of XDR files, open it like that */
+    if (ftp_is_xdr(fio->iFTP))
+    {
+        /* determine the XDR direction */
+        if (newmode[0] == 'w' || newmode[0] == 'a')
+        {
+            fio->xdrmode = XDR_ENCODE;
+        }
+        else
+        {
+            fio->xdrmode = XDR_DECODE;
+        }
+        snew(fio->xdr, 1);
+        xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
+    }
+
+    /* for appending seek to end of file to make sure ftell gives correct position
+     * important for checkpointing */
+    if (newmode[0] == 'a')
+    {
+        gmx_fseek(fio->fp, 0, SEEK_END);
     }
 
     fio->bRead             = bRead;
@@ -408,7 +407,7 @@ int gmx_fio_fp_close(t_fileio *fio)
     return rc;
 }
 
-FILE * gmx_fio_fopen(const char *fn, const char *mode)
+FILE * gmx_fio_fopen(const std::string &fn, const char *mode)
 {
     FILE     *ret;
     t_fileio *fio;

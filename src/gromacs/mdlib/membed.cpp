@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -870,11 +870,10 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
     FILE      *fpin, *fpout;
     char       buf[STRLEN], buf2[STRLEN], *temp;
     int        i, *nmol_rm, nmol, line;
-    char       temporary_filename[STRLEN];
 
     fpin  = gmx_ffopen(topfile, "r");
-    strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
-    gmx_tmpnam(temporary_filename);
+    std::string temporary_filename = "temp.topXXXXXX";
+    gmx_tmpnam(&temporary_filename);
     fpout = gmx_ffopen(temporary_filename, "w");
 
     snew(nmol_rm, mtop->moltype.size());
@@ -944,7 +943,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
     /* use gmx_ffopen to generate backup of topinout */
     fpout = gmx_ffopen(topfile, "w");
     gmx_ffclose(fpout);
-    rename(temporary_filename, topfile);
+    rename(temporary_filename.c_str(), topfile);
 }
 
 void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x)

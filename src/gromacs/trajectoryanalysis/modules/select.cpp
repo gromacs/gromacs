@@ -183,7 +183,7 @@ void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 {
     if (!fnm_.empty())
     {
-        fp_ = gmx_fio_fopen(fnm_.c_str(), "w");
+        fp_ = gmx_fio_fopen(fnm_, "w");
     }
 }
 
