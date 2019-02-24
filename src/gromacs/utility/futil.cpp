@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -539,15 +539,19 @@ FilePtr openLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
 
 } // namespace gmx
 
-void gmx_tmpnam(char *buf)
+/*! \brief Use mkstemp (or similar function to make a new temporary
+ * file and (on non-Windows systems) return a file descriptor to it.
+ *
+ * \todo Use std::string and std::vector<char>. */
+static int makeTemporaryFilename(char *buf)
 {
-    int i, len;
+    int len;
 
     if ((len = strlen(buf)) < 7)
     {
         gmx_fatal(FARGS, "Buf passed to gmx_tmpnam must be at least 7 bytes long");
     }
-    for (i = len-6; (i < len); i++)
+    for (int i = len-6; (i < len); i++)
     {
         buf[i] = 'X';
     }
@@ -555,6 +559,7 @@ void gmx_tmpnam(char *buf)
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
      */
+    int fd;
 #if GMX_NATIVE_WINDOWS
     _mktemp(buf);
     if (buf == NULL)
@@ -562,60 +567,44 @@ void gmx_tmpnam(char *buf)
         gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
                   strerror(errno));
     }
+    fd = 0;
 #else
-    int fd = mkstemp(buf);
+    fd = mkstemp(buf);
 
     if (fd < 0)
     {
         gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
                   strerror(errno));
     }
+#endif
+    return fd;
+}
+// TODO use std::string
+void gmx_tmpnam(char *buf)
+{
+    int fd = makeTemporaryFilename(buf);
+#if !GMX_NATIVE_WINDOWS
     close(fd);
 #endif
-    /* name in Buf should now be OK and file is CLOSED */
 }
 
+// TODO use std::string
 FILE *gmx_fopen_temporary(char *buf)
 {
-    int   i, len;
     FILE *fpout = nullptr;
+    int fd = makeTemporaryFilename(buf);
 
-    if ((len = strlen(buf)) < 7)
-    {
-        gmx_fatal(FARGS, "Buf passed to gmx_fopentmp must be at least 7 bytes long");
-    }
-    for (i = len-6; (i < len); i++)
-    {
-        buf[i] = 'X';
-    }
-    /* mktemp is dangerous and we should use mkstemp instead, but
-     * since windows doesnt support it we have to separate the cases.
-     * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
-     */
 #if GMX_NATIVE_WINDOWS
-    _mktemp(buf);
-    if (buf == NULL)
-    {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
-                  strerror(errno));
-    }
     if ((fpout = fopen(buf, "w")) == NULL)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }
 #else
-    int fd = mkstemp(buf);
-    if (fd < 0)
-    {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
-                  strerror(errno));
-    }
     if ((fpout = fdopen(fd, "w")) == nullptr)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }
 #endif
-    /* name in Buf should now be OK and file is open */
 
     return fpout;
 }
