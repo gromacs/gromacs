@@ -82,10 +82,9 @@ static void shell_comm(const char *title, const char *script, int nsleep)
 {
     FILE *tfil;
     char  command[STRLEN];
-    char  tmp[32];
 
-    std::strcpy(tmp, "dialogXXXXXX");
-    tfil = gmx_fopen_temporary(tmp);
+    std::string tmp = "dialogXXXXXX";
+    tfil = gmx_fopen_temporary(&tmp);
 
     fprintf(tfil, "%s\n", script);
     fprintf(tfil, "sleep %d\n", nsleep);

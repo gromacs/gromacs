@@ -213,7 +213,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
 
     if (hasTrajectory())
     {
-        if (!read_first_frame(oenv_, &status_, trjfile_.c_str(), fr, frflags))
+        if (!read_first_frame(oenv_, &status_, trjfile_, fr, frflags))
         {
             GMX_THROW(FileIOError("Could not read coordinates from trajectory"));
         }

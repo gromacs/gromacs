@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,7 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
  * This routine cannot print tons of data, since it is called before
  * the log file is opened. */
 static void
-read_checkpoint_data(const char *filename, int *simulation_part,
+read_checkpoint_data(const std::string &filename, int *simulation_part,
                      t_commrec *cr,
                      gmx_bool bTryToAppendFiles,
                      int nfile, const t_filenm fnm[],
@@ -151,7 +151,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                             "Output file appending has been requested,\n"
                             "but some output files listed in the checkpoint file %s\n"
                             "are not present or not named as the output files by the current program:\n",
-                            filename);
+                            filename.c_str());
                     fprintf(stderr, "Expect output files present:\n");
                     for (const auto &outputfile : outputfiles)
                     {

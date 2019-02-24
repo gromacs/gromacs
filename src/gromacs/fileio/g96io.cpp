@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@
 #define CHAR_SHIFT 24
 
 static int read_g96_pos(char line[], t_symtab *symtab,
-                        FILE *fp, const char *infile,
+                        FILE *fp, const std::string &infile,
                         t_trxframe *fr)
 {
     t_atoms   *atoms;
@@ -103,13 +103,13 @@ static int read_g96_pos(char line[], t_symtab *symtab,
                 if (sscanf(line+shift, "%15lf%15lf%15lf", &db1, &db2, &db3) != 3)
                 {
                     gmx_fatal(FARGS, "Did not find 3 coordinates for atom %d in %s\n",
-                              natoms+1, infile);
+                              natoms+1, infile.c_str());
                 }
                 if ((nwanted != -1) && (natoms >= nwanted))
                 {
                     gmx_fatal(FARGS,
                               "Found more coordinates (%d) in %s than expected %d\n",
-                              natoms, infile, nwanted);
+                              natoms, infile.c_str(), nwanted);
                 }
                 if (atoms)
                 {
@@ -136,7 +136,7 @@ static int read_g96_pos(char line[], t_symtab *symtab,
                         if (newres >= atoms->nr)
                         {
                             gmx_fatal(FARGS, "More residues than atoms in %s (natoms = %d)",
-                                      infile, atoms->nr);
+                                      infile.c_str(), atoms->nr);
                         }
                         atoms->atom[natoms].resind = newres;
                         if (newres+1 > atoms->nres)
@@ -163,7 +163,7 @@ static int read_g96_pos(char line[], t_symtab *symtab,
         {
             fprintf(stderr,
                     "Warning: found less coordinates (%d) in %s than expected %d\n",
-                    natoms, infile, nwanted);
+                    natoms, infile.c_str(), nwanted);
         }
     }
 
@@ -172,7 +172,7 @@ static int read_g96_pos(char line[], t_symtab *symtab,
     return natoms;
 }
 
-static int read_g96_vel(char line[], FILE *fp, const char *infile,
+static int read_g96_vel(char line[], FILE *fp, const std::string &infile,
                         t_trxframe *fr)
 {
     gmx_bool   bEnd;
@@ -201,12 +201,12 @@ static int read_g96_vel(char line[], FILE *fp, const char *infile,
                 if (sscanf(line+shift, "%15lf%15lf%15lf", &db1, &db2, &db3) != 3)
                 {
                     gmx_fatal(FARGS, "Did not find 3 velocities for atom %d in %s",
-                              natoms+1, infile);
+                              natoms+1, infile.c_str());
                 }
                 if ((nwanted != -1) && (natoms >= nwanted))
                 {
                     gmx_fatal(FARGS, "Found more velocities (%d) in %s than expected %d\n",
-                              natoms, infile, nwanted);
+                              natoms, infile.c_str(), nwanted);
                 }
                 if (fr->v)
                 {
@@ -221,14 +221,14 @@ static int read_g96_vel(char line[], FILE *fp, const char *infile,
         {
             fprintf(stderr,
                     "Warning: found less velocities (%d) in %s than expected %d\n",
-                    natoms, infile, nwanted);
+                    natoms, infile.c_str(), nwanted);
         }
     }
 
     return natoms;
 }
 
-int read_g96_conf(FILE *fp, const char *infile, char **name, t_trxframe *fr,
+int read_g96_conf(FILE *fp, const std::string &infile, char **name, t_trxframe *fr,
                   t_symtab *symtab, char *line)
 {
     gmx_bool   bAtStart, bTime, bAtoms, bPos, bVel, bBox, bEnd, bFinished;
@@ -324,7 +324,7 @@ int read_g96_conf(FILE *fp, const char *infile, char **name, t_trxframe *fr,
                                  &db1, &db2, &db3, &db4, &db5, &db6, &db7, &db8, &db9);
                     if (nbp < 3)
                     {
-                        gmx_fatal(FARGS, "Found a BOX line, but no box in %s", infile);
+                        gmx_fatal(FARGS, "Found a BOX line, but no box in %s", infile.c_str());
                     }
                     fr->box[XX][XX] = db1;
                     fr->box[YY][YY] = db2;

@@ -652,7 +652,7 @@ static void add_solv(const char *filename, t_atoms *atoms,
     fprintf(stderr, "Reading solvent configuration\n");
     bool              bTprFileWasRead;
     rvec             *temporaryX = nullptr, *temporaryV = nullptr;
-    readConfAndTopology(gmx::findLibraryFile(filename).c_str(), &bTprFileWasRead, &topSolvent,
+    readConfAndTopology(gmx::findLibraryFile(filename), &bTprFileWasRead, &topSolvent,
                         &ePBCSolvent, &temporaryX, &temporaryV, boxSolvent);
     t_atoms *atomsSolvent;
     snew(atomsSolvent, 1);
@@ -789,12 +789,11 @@ static void update_top(t_atoms        *atoms,
     topinout  = ftp2fn(efTOP, NFILE, fnm);
     if (ftp2bSet(efTOP, NFILE, fnm) )
     {
-        char temporary_filename[STRLEN];
-        strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
+        std::string temporary_filename = "temp.topXXXXXX";
 
         fprintf(stderr, "Processing topology\n");
         fpin    = gmx_ffopen(topinout, "r");
-        fpout   = gmx_fopen_temporary(temporary_filename);
+        fpout   = gmx_fopen_temporary(&temporary_filename);
         line    = 0;
         bSystem = false;
         while (fgets(buf, STRLEN, fpin))

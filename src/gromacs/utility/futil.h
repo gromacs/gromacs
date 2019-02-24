@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,8 +155,6 @@ namespace gmx
  * bFatal is true.
  */
 std::string findLibraryFile(const std::string &filename, bool bAddCWD = true, bool bFatal = true);
-//! \copydoc findLibraryFile(const std::string &, bool, bool)
-std::string findLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal = true);
 
 /*! \brief
  * Opens a library file for reading in an RAII-style `FILE` handle.
@@ -165,38 +163,40 @@ std::string findLibraryFile(const char *filename, bool bAddCWD = true, bool bFat
  * returns a file handle.
  */
 FilePtr openLibraryFile(const std::string &filename, bool bAddCWD = true, bool bFatal = true);
-//! \copydoc openLibraryFile(const std::string &, bool, bool)
-FilePtr openLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal = true);
 
 } // namespace gmx
 
 /*! \brief
  * Creates unique name for temp file (wrapper around mkstemp) and opens it.
  *
- * \p buf should be at least 7 bytes long
+ * Replaces the final six characters to make a unique file name.
+ *
+ * \param[inout] filename  Required to have at least 6 characters
  */
-FILE *gmx_fopen_temporary(char *buf);
+FILE *gmx_fopen_temporary(std::string *filename);
 
 /*! \brief
  * Creates unique name for temp file (wrapper around mkstemp).
  *
- * \p buf should be at least 7 bytes long
+ * Replaces the final six characters to make a unique file name.
+ *
+ * \param[inout] filename  Required to have at least 6 characters
  */
-void gmx_tmpnam(char *buf);
+void gmx_tmpnam(std::string *filename);
 
 /*! \brief
  * OS-independent rename().
  *
  * Renames/moves a file atomically, if the OS makes that available.
  */
-int gmx_file_rename(const char *oldname, const char *newname);
+int gmx_file_rename(const std::string &oldname, const std::string &newname);
 
 /*! \brief
  * Copies a file (data only) oldname to newname.
  *
  * If \p copy_if_empty is `FALSE`, the file won't be copied if it's empty.
  */
-int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty);
+int gmx_file_copy(const std::string &oldname, const std::string &newname, gmx_bool copy_if_empty);
 
 /*! \brief
  * OS-independent fsync().
@@ -210,7 +210,7 @@ int gmx_fsync(FILE *fp);
  *
  * Exits with a fatal error if changing the directory fails.
  */
-void gmx_chdir(const char *directory);
+void gmx_chdir(const std::string &directory);
 /*! \brief
  * OS-independent getcwd().
  *

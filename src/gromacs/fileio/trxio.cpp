@@ -465,10 +465,10 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
 }
 
 t_trxstatus *
-trjtools_gmx_prepare_tng_writing(const char              *filename,
+trjtools_gmx_prepare_tng_writing(const std::string       &filename,
                                  char                     filemode,
                                  t_trxstatus             *in,
-                                 const char              *infile,
+                                 const std::string       &infile,
                                  const int                natoms,
                                  const gmx_mtop_t        *mtop,
                                  gmx::ArrayRef<const int> index,
@@ -493,7 +493,7 @@ trjtools_gmx_prepare_tng_writing(const char              *filename,
                                 index,
                                 index_group_name);
     }
-    else if ((infile) && (efTNG == fn2ftp(infile)))
+    else if (!infile.empty() && (efTNG == fn2ftp(infile)))
     {
         gmx_tng_trajectory_t tng_in;
         gmx_tng_open(infile, 'r', &tng_in);
@@ -651,7 +651,7 @@ void close_trx(t_trxstatus *status)
     sfree(status);
 }
 
-t_trxstatus *open_trx(const char *outfile, const char *filemode)
+t_trxstatus *open_trx(const std::string &outfile, const char *filemode)
 {
     t_trxstatus *stat;
     if (filemode[0] != 'w' && filemode[0] != 'a' && filemode[1] != '+')
@@ -927,7 +927,7 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
 }
 
 bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
-                      const char *fn, t_trxframe *fr, int flags)
+                      const std::string &fn, t_trxframe *fr, int flags)
 {
     t_fileio      *fio = nullptr;
     gmx_bool       bFirst, bOK;
@@ -1040,11 +1040,11 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             fprintf(stderr, "The file format of %s is not a known trajectory format to GROMACS.\n"
                     "Please make sure that the file is a trajectory!\n"
                     "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
-                    "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n", fn);
+                    "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n", fn.c_str());
             gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
             if (!read_first_vmd_frame(fn, &(*status)->vmdplugin, fr))
             {
-                gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn);
+                gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn.c_str());
             }
 #else
             gmx_fatal(FARGS, "Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n"
@@ -1082,7 +1082,7 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
 
 /***** C O O R D I N A T E   S T U F F *****/
 
-int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status, const char *fn,
+int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status, const std::string &fn,
                  real *t, rvec **x, matrix box)
 {
     t_trxframe fr;
@@ -1121,7 +1121,7 @@ void rewind_trj(t_trxstatus *status)
 
 /***** T O P O L O G Y   S T U F F ******/
 
-t_topology *read_top(const char *fn, int *ePBC)
+t_topology *read_top(const std::string &fn, int *ePBC)
 {
     int         epbc, natoms;
     t_topology *top;

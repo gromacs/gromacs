@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-void write_sto_conf_indexed(const char *outfile, const char *title,
+void write_sto_conf_indexed(const std::string &outfile, const char *title,
                             const t_atoms *atoms,
                             const rvec x[], const rvec *v, int ePBC, const matrix box,
                             int nindex, int index[])
@@ -110,13 +110,13 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             gmx_fio_fclose(out);
             break;
         case efTPR:
-            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
+            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile.c_str());
         default:
             gmx_incons("Not supported in write_sto_conf_indexed");
     }
 }
 
-void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms,
+void write_sto_conf(const std::string &outfile, const char *title, const t_atoms *atoms,
                     const rvec x[], const rvec *v, int ePBC, const matrix box)
 {
     FILE       *out;
@@ -160,13 +160,13 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
             gmx_fio_fclose(out);
             break;
         case efTPR:
-            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
+            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile.c_str());
         default:
             gmx_incons("Not supported in write_sto_conf");
     }
 }
 
-void write_sto_conf_mtop(const char *outfile, const char *title,
+void write_sto_conf_mtop(const std::string &outfile, const char *title,
                          gmx_mtop_t *mtop,
                          const rvec x[], const rvec *v, int ePBC, const matrix box)
 {
@@ -195,7 +195,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
     }
 }
 
-static void get_stx_coordnum(const char *infile, int *natoms)
+static void get_stx_coordnum(const std::string &infile, int *natoms)
 {
     FILE      *in;
     int        ftp;
@@ -297,7 +297,7 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     }
 }
 
-static void read_stx_conf(const char *infile,
+static void read_stx_conf(const std::string &infile,
                           t_symtab *symtab, char **name, t_atoms *atoms,
                           rvec x[], rvec *v, int *ePBC, matrix box)
 {
@@ -308,7 +308,7 @@ static void read_stx_conf(const char *infile,
 
     if (atoms->nr == 0)
     {
-        fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile);
+        fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile.c_str());
     }
     else if (atoms->atom == nullptr)
     {
@@ -350,7 +350,7 @@ static void read_stx_conf(const char *infile,
     }
 }
 
-void readConfAndAtoms(const char *infile,
+void readConfAndAtoms(const std::string &infile,
                       t_symtab *symtab, char **name, t_atoms *atoms,
                       int *ePBC,
                       rvec **x, rvec **v, matrix box)
@@ -381,7 +381,7 @@ void readConfAndAtoms(const char *infile,
     }
 }
 
-void readConfAndTopology(const char *infile,
+void readConfAndTopology(const std::string &infile,
                          bool *haveTopology, gmx_mtop_t *mtop,
                          int *ePBC,
                          rvec **x, rvec **v, matrix box)
@@ -430,7 +430,7 @@ void readConfAndTopology(const char *infile,
     }
 }
 
-gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
+gmx_bool read_tps_conf(const std::string &infile, t_topology *top, int *ePBC,
                        rvec **x, rvec **v, matrix box, gmx_bool requireMasses)
 {
     bool        haveTopology;

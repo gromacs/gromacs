@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
 
 #include <cstdio>
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -57,7 +59,7 @@ struct t_trxframe;
  *
  * Handles all I/O errors internally via fatal error
  */
-void gmx_tng_open(const char           *filename,
+void gmx_tng_open(const std::string    &filename,
                   char                  mode,
                   gmx_tng_trajectory_t *tng_data_p);
 
@@ -143,7 +145,7 @@ void fflush_tng(gmx_tng_trajectory_t tng);
 float gmx_tng_get_time_of_final_frame(gmx_tng_trajectory_t tng);
 
 /*! \brief Prepare to write TNG output from trajectory conversion tools */
-void gmx_prepare_tng_writing(const char              *filename,
+void gmx_prepare_tng_writing(const std::string       &filename,
                              char                     mode,
                              gmx_tng_trajectory_t    *in,
                              gmx_tng_trajectory_t    *out,

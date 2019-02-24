@@ -1455,7 +1455,7 @@ static gmx_bool bConvertFromOldTpr(t_swapcoords *sc)
 void init_swapcoords(
         FILE                     *fplog,
         t_inputrec               *ir,
-        const char               *fn,
+        const std::string        &fn,
         gmx_mtop_t               *mtop,
         const t_state            *globalState,
         ObservablesHistory       *oh,
@@ -1626,7 +1626,7 @@ void init_swapcoords(
     {
         if (bVerbose)
         {
-            fprintf(stderr, "%s Opening output file %s%s\n", SwS, fn, bAppend ? " for appending" : "");
+            fprintf(stderr, "%s Opening output file %s%s\n", SwS, fn.c_str(), bAppend ? " for appending" : "");
         }
 
         s->fpout = gmx_fio_fopen(fn, bAppend ? "a" : "w" );

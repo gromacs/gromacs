@@ -131,7 +131,7 @@ void TopologyManager::loadTopology(const char *filename)
     GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
     mtop_ = std::make_unique<gmx_mtop_t>();
     readConfAndTopology(
-            gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
+            gmx::test::TestFileManager::getInputFilePath(filename),
             &fullTopology, mtop_.get(), &ePBC, frame_ != nullptr ? &xtop : nullptr,
             nullptr, box);
 

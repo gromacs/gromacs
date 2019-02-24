@@ -42,6 +42,7 @@
 #include <cstring>
 
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -88,6 +89,17 @@ const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[])
     GMX_RELEASE_ASSERT(false, "opt2fn should be called with a valid option");
 
     return nullptr;
+}
+
+std::string opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
+                          t_commrec *cr)
+{
+    std::string filename;
+    if (SIMMASTER(cr))
+    {
+        filename.assign(opt2fn(opt, nfile, fnm));
+    }
+    return filename;
 }
 
 gmx::ArrayRef<const std::string>

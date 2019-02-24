@@ -1614,7 +1614,7 @@ int gmx_make_ndx(int argc, char *argv[])
     {
         for (const std::string &ndxInFile : ndxInFiles)
         {
-            block2 = init_index(ndxInFile.c_str(), &gnames2);
+            block2 = init_index(ndxInFile, &gnames2);
             srenew(gnames, block->nr+block2->nr);
             for (j = 0; j < block2->nr; j++)
             {

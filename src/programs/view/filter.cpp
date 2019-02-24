@@ -121,7 +121,6 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     static const char *ok    = "\"Ok\"";
     FILE              *tmp;
     t_dlg             *dlg;
-    char               tmpfile[STRLEN];
     int                i, j, k, len, tlen, ht, ncol, nrow, x0;
 
     len = std::strlen(title);
@@ -145,8 +144,8 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     {
         ht = 1+(gmx->filter->grps->nr+1)*2+3;
     }
-    std::strcpy(tmpfile, "filterXXXXXX");
-    tmp = gmx_fopen_temporary(tmpfile);
+    std::string tmpfile = "filterXXXXXX";
+    tmp = gmx_fopen_temporary(&tmpfile);
 #ifdef DEBUG
     std::fprintf(stderr, "file: %s\n", tmpfile);
 #endif

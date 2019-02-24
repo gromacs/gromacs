@@ -68,7 +68,7 @@ static void get_coordnum_fp(FILE *in, char *title, int *natoms)
     }
 }
 
-void get_coordnum(const char *infile, int *natoms)
+void get_coordnum(const std::string &infile, int *natoms)
 {
     FILE *in;
     char  title[STRLEN];
@@ -83,7 +83,7 @@ void get_coordnum(const char *infile, int *natoms)
  * We have removed writing of variable precision to avoid compatibility
  * issues with other software packages.
  */
-static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
+static gmx_bool get_w_conf(FILE *in, const std::string &infile, char *title,
                            t_symtab *symtab, t_atoms *atoms, int *ndec,
                            rvec x[], rvec *v, matrix box)
 {
@@ -135,11 +135,11 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         if ((fgets2(line, STRLEN, in)) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d",
-                      infile, i+2);
+                      infile.c_str(), i+2);
         }
         if (strlen(line) < 39)
         {
-            gmx_fatal(FARGS, "Invalid line in %s for atom %d:\n%s", infile, i+1, line);
+            gmx_fatal(FARGS, "Invalid line in %s for atom %d:\n%s", infile.c_str(), i+1, line);
         }
 
         /* determine read precision from distance between periods
@@ -150,12 +150,12 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
             p1     = strchr(line, '.');
             if (p1 == nullptr)
             {
-                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile);
+                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.c_str());
             }
             p2 = strchr(&p1[1], '.');
             if (p2 == nullptr)
             {
-                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile);
+                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.c_str());
             }
             ddist = p2 - p1;
             *ndec = ddist - 5;
@@ -163,12 +163,12 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
             p3 = strchr(&p2[1], '.');
             if (p3 == nullptr)
             {
-                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile);
+                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.c_str());
             }
 
             if (p3 - p2 != ddist)
             {
-                gmx_fatal(FARGS, "The spacing of the decimal points in file %s is not consistent for x, y and z", infile);
+                gmx_fatal(FARGS, "The spacing of the decimal points in file %s is not consistent for x, y and z", infile.c_str());
             }
         }
 
@@ -186,7 +186,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
             if (newres >= natoms)
             {
                 gmx_fatal(FARGS, "More residues than atoms in %s (natoms = %d)",
-                          infile, natoms);
+                          infile.c_str(), natoms);
             }
             atoms->atom[i].resind = newres;
             t_atoms_set_resinfo(atoms, i, symtab, resname, resnr, ' ', 0, ' ');
@@ -218,7 +218,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
             buf[c] = '\0';
             if (sscanf(buf, "%lf %lf", &x1, &x2) != 1)
             {
-                gmx_fatal(FARGS, "Something is wrong in the coordinate formatting of file %s. Note that gro is fixed format (see the manual)", infile);
+                gmx_fatal(FARGS, "Something is wrong in the coordinate formatting of file %s. Note that gro is fixed format (see the manual)", infile.c_str());
             }
             else
             {
@@ -256,7 +256,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     fgets2(line, STRLEN, in);
     if (sscanf(line, "%lf%lf%lf", &x1, &y1, &z1) != 3)
     {
-        gmx_warning("Bad box in file %s", infile);
+        gmx_warning("Bad box in file %s", infile.c_str());
 
         /* Generate a cubic box */
         for (m = 0; (m < DIM); m++)
@@ -307,7 +307,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     return bVel;
 }
 
-void gmx_gro_read_conf(const char *infile,
+void gmx_gro_read_conf(const std::string &infile,
                        t_symtab *symtab, char **name, t_atoms *atoms,
                        rvec x[], rvec *v, matrix box)
 {
@@ -558,7 +558,7 @@ void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms,
     sfree(aa);
 }
 
-void write_conf_p(const char *outfile, const char *title,
+void write_conf_p(const std::string &outfile, const char *title,
                   const t_atoms *atoms,
                   const rvec *x, const rvec *v, const matrix box)
 {

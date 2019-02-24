@@ -39,6 +39,8 @@
 
 #include <stdio.h>
 
+#include <string>
+
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -52,10 +54,10 @@ void check_index(const char *gname, int n, int index[],
  * and traj (if traj=NULL, "the trajectory" is used).
  */
 
-struct t_blocka *init_index(const char *gfile, char ***grpname);
+struct t_blocka *init_index(const std::string &gfile, char ***grpname);
 /* Lower level routine than the next */
 
-void rd_index(const char *statfile, int ngrps, int isize[],
+void rd_index(const std::string &statfile, int ngrps, int isize[],
               int *index[], char *grpnames[]);
 /* Assume the group file is generated, so the
  * format need not be user-friendly. The format is:
@@ -72,7 +74,7 @@ void rd_index(const char *statfile, int ngrps, int isize[],
  * the dimension of the isize and grpnames arrays are ngrps.
  */
 
-void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
+void get_index(const t_atoms *atoms, const std::string &fnm, int ngrps,
                int isize[], int *index[], char *grpnames[]);
 /* Does the same as rd_index, but if the fnm pointer is NULL it
  * will not read from fnm, but it will make default index groups
@@ -89,7 +91,7 @@ typedef struct {
 t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx);
 
 
-void write_index(const char *outf, struct t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms);
+void write_index(const std::string &outf, struct t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms);
 /* Writes index blocks to outf (writes an indexfile) */
 
 /*! \brief
