@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -539,6 +539,7 @@ FilePtr openLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
 
 } // namespace gmx
 
+// TODO use std::string and std::vector<char>
 void gmx_tmpnam(char *buf)
 {
     int i, len;
@@ -572,50 +573,27 @@ void gmx_tmpnam(char *buf)
     }
     close(fd);
 #endif
-    /* name in Buf should now be OK and file is CLOSED */
 }
 
+// TODO use std::string
 FILE *gmx_fopen_temporary(char *buf)
 {
-    int   i, len;
     FILE *fpout = nullptr;
+    gmx_tmpnam(buf);
 
-    if ((len = strlen(buf)) < 7)
-    {
-        gmx_fatal(FARGS, "Buf passed to gmx_fopentmp must be at least 7 bytes long");
-    }
-    for (i = len-6; (i < len); i++)
-    {
-        buf[i] = 'X';
-    }
-    /* mktemp is dangerous and we should use mkstemp instead, but
-     * since windows doesnt support it we have to separate the cases.
-     * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
-     */
 #if GMX_NATIVE_WINDOWS
-    _mktemp(buf);
-    if (buf == NULL)
-    {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
-                  strerror(errno));
-    }
     if ((fpout = fopen(buf, "w")) == NULL)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }
 #else
-    int fd = mkstemp(buf);
-    if (fd < 0)
-    {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
-                  strerror(errno));
-    }
-    if ((fpout = fdopen(fd, "w")) == nullptr)
+    // Ideally we would re-use the file descriptor obtained in
+    // gmx_tmpnam, but the performance difference isn't worth it.
+    if ((fpout = fopen(buf, "w")) == nullptr)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }
 #endif
-    /* name in Buf should now be OK and file is open */
 
     return fpout;
 }
