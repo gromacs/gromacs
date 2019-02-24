@@ -174,8 +174,10 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
 {
     registerModule(manager, &gmx_check, "check",
                    "Check and compare files");
-    registerModule(manager, &gmx::gmx_dump, "dump",
-                   "Make binary files human readable");
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::DumpInfo::name,
+            gmx::DumpInfo::shortDescription,
+            &gmx::DumpInfo::create);
     registerModule(manager, &gmx_grompp, "grompp",
                    "Make a run input file");
     registerModule(manager, &gmx_convert_tpr, "convert-tpr",
