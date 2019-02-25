@@ -346,7 +346,7 @@ calc_bonded_reduction_mask(int                       natoms,
     if (bondedThreading.nthreads > BITMASK_SIZE)
     {
 #pragma omp master
-        gmx_fatal(FARGS, "You are using %d OpenMP threads, which is larger than GMX_OPENMP_MAX_THREADS (%d). Decrease the number of OpenMP threads or rebuild GROMACS with a larger value for GMX_OPENMP_MAX_THREADS.",
+        gmx_fatal(FARGS, "You are using %d OpenMP threads, which is larger than GMX_OPENMP_MAX_THREADS (%d). Decrease the number of OpenMP threads or rebuild GROMACS with a larger value for GMX_OPENMP_MAX_THREADS passed to CMake.",
                   bondedThreading.nthreads, GMX_OPENMP_MAX_THREADS);
 #pragma omp barrier
     }
