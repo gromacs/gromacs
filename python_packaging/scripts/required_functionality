@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TODO: get script or script directory through repository or package infrastructure.
+# TODO: (FR1+) Get script or script directory through repository or package infrastructure? (dependencies)
 cd $HOME/acceptance
 jupyter nbconvert RequiredFunctionality.ipynb --to python
 python -c '

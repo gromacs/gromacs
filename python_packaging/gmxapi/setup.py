@@ -39,8 +39,8 @@ from setuptools import setup, find_packages
 setup(
     name='gmxapi',
 
-    # TODO: replace with CMake variables from GMXAPI version.
-    version='0.1.0.dev0',
+    # TODO: (pending infrastructure and further discussion) Replace with CMake variables from GMXAPI version.
+    version='0.1.0.dev1',
     python_requires='>=3.4, <4',
     setup_requires=['setuptools>=28'],
 
