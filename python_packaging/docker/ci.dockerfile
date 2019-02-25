@@ -60,8 +60,7 @@ COPY --from=gromacs $CMAKE_ROOT $CMAKE_ROOT
 COPY --from=gromacs /usr/local/gromacs /usr/local/gromacs
 
 ADD --chown=testing:testing gmxapi /home/testing/gmxapi
-# Enable this dir when there is something to test (i.e. fr1)
-#ADD --chown=testing:testing gmxapi/test /home/testing/gmxapi/test
+ADD --chown=testing:testing gmxapi/test /home/testing/gmxapi/test
 ADD --chown=testing:testing gmxapi/src/gmxapi /home/testing/gmxapi/src/gmxapi
 
 RUN . $HOME/testing/bin/activate && \

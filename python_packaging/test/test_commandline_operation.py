@@ -32,27 +32,31 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Python setuptools script to build and install the gmxapi Python interface
-# from a GROMACS installation directory.
+"""Test the gmxapi.commandline_operation wrapper tool.
 
-from setuptools import setup, find_packages
-setup(
-    name='gmxapi',
+gmxapi.commandline_operation() provides additional logic over gmxapi.make_operation
+to conveniently wrap command line tools.
+"""
 
-    # TODO: replace with CMake variables from GMXAPI version.
-    version='0.1.0.dev1',
-    python_requires='>=3.4, <4',
-    setup_requires=['setuptools>=28'],
+import pytest
+import unittest
 
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
-    author='M. Eric Irrgang',
-    author_email='info@gmxapi.org',
-    description='gmxapi Python interface for GROMACS',
-    license='LGPL',
-    url='http://gmxapi.org/',
+from gmxapi import commandline_operation
 
-    # The installed package will contain compiled C++ extensions that cannot be loaded
-    # directly from a zip file.
-    zip_safe=False
-)
+# Decorator to mark tests that are expected to fail
+xfail = pytest.mark.xfail
+
+class CommandLineOperationSimpleTestCase(unittest.TestCase):
+    """Test creation and execution of command line wrapper.
+
+    Tests associated with FR1.
+    """
+    def test_true(self):
+        operation = commandline_operation(executable='true')
+        operation.run()
+        assert operation.output.returncode == 0
+
+    def test_false(self):
+        operation = commandline_operation(executable='false')
+        operation.run()
+        assert operation.output.returncode == 1
