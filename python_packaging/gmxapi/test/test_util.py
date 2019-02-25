@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # This file is part of the GROMACS molecular simulation package.
 #
@@ -31,28 +32,20 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+import os
+import unittest
 
-# Python setuptools script to build and install the gmxapi Python interface
-# from a GROMACS installation directory.
+from gmxapi import util
 
-from setuptools import setup, find_packages
-setup(
-    name='gmxapi',
 
-    # TODO: replace with CMake variables from GMXAPI version.
-    version='0.1.0.dev1',
-    python_requires='>=3.4, <4',
-    setup_requires=['setuptools>=28'],
+class WhichUtilTestCase(unittest.TestCase):
+    """test util.which"""
+    def test_find_executable(self):
+        # This command exists pretty much everywhere...
+        executable = '/usr/bin/env'
+        if os.path.exists(executable):
+            assert util.which('env') == '/usr/bin/env'
 
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
-    author='M. Eric Irrgang',
-    author_email='info@gmxapi.org',
-    description='gmxapi Python interface for GROMACS',
-    license='LGPL',
-    url='http://gmxapi.org/',
 
-    # The installed package will contain compiled C++ extensions that cannot be loaded
-    # directly from a zip file.
-    zip_safe=False
-)
+if __name__ == '__main__':
+    unittest.main()
