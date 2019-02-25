@@ -99,14 +99,6 @@ bool do_per_step(int64_t step, int64_t nstep);
 
 /* ROUTINES from sim_util.c */
 
-void finish_run(FILE *log, const gmx::MDLogger &mdlog, const t_commrec *cr,
-                const t_inputrec *inputrec,
-                t_nrnb nrnb[], gmx_wallcycle_t wcycle,
-                gmx_walltime_accounting_t walltime_accounting,
-                nonbonded_verlet_t *nbv,
-                const gmx_pme_t *pme,
-                gmx_bool bWriteStat);
-
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
 
 void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
