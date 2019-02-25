@@ -60,6 +60,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/localatomsetmanager.h"
+#include "gromacs/domdec/partition.h"
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_program.h"
@@ -107,6 +108,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -121,7 +123,9 @@
 #include "gromacs/taskassignment/resourcedivision.h"
 #include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/taskassignment/usergpuids.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/wallcyclereporting.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/basenetwork.h"
@@ -414,6 +418,142 @@ static TaskTarget findTaskTarget(const char *optionString)
     }
 
     return returnValue;
+}
+
+//! Finish run, aggregate data to print performance info.
+static void finish_run(FILE *fplog,
+                       const gmx::MDLogger &mdlog,
+                       const t_commrec *cr,
+                       const t_inputrec *inputrec,
+                       t_nrnb nrnb[], gmx_wallcycle_t wcycle,
+                       gmx_walltime_accounting_t walltime_accounting,
+                       nonbonded_verlet_t *nbv,
+                       const gmx_pme_t *pme,
+                       gmx_bool bWriteStat)
+{
+    t_nrnb *nrnb_tot = nullptr;
+    double  delta_t  = 0;
+    double  nbfs     = 0, mflop = 0;
+    double  elapsed_time,
+            elapsed_time_over_all_ranks,
+            elapsed_time_over_all_threads,
+            elapsed_time_over_all_threads_over_all_ranks;
+    /* Control whether it is valid to print a report. Only the
+       simulation master may print, but it should not do so if the run
+       terminated e.g. before a scheduled reset step. This is
+       complicated by the fact that PME ranks are unaware of the
+       reason why they were sent a pmerecvqxFINISH. To avoid
+       communication deadlocks, we always do the communication for the
+       report, even if we've decided not to write the report, because
+       how long it takes to finish the run is not important when we've
+       decided not to report on the simulation performance.
+
+       Further, we only report performance for dynamical integrators,
+       because those are the only ones for which we plan to
+       consider doing any optimizations. */
+    bool printReport = EI_DYNAMICS(inputrec->eI) && SIMMASTER(cr);
+
+    if (printReport && !walltime_accounting_get_valid_finish(walltime_accounting))
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendText("Simulation ended prematurely, no performance report will be written.");
+        printReport = false;
+    }
+
+    if (cr->nnodes > 1)
+    {
+        snew(nrnb_tot, 1);
+#if GMX_MPI
+        MPI_Allreduce(nrnb->n, nrnb_tot->n, eNRNB, MPI_DOUBLE, MPI_SUM,
+                      cr->mpi_comm_mysim);
+#endif
+    }
+    else
+    {
+        nrnb_tot = nrnb;
+    }
+
+    elapsed_time                  = walltime_accounting_get_time_since_reset(walltime_accounting);
+    elapsed_time_over_all_threads = walltime_accounting_get_time_since_reset_over_all_threads(walltime_accounting);
+    if (cr->nnodes > 1)
+    {
+#if GMX_MPI
+        /* reduce elapsed_time over all MPI ranks in the current simulation */
+        MPI_Allreduce(&elapsed_time,
+                      &elapsed_time_over_all_ranks,
+                      1, MPI_DOUBLE, MPI_SUM,
+                      cr->mpi_comm_mysim);
+        elapsed_time_over_all_ranks /= cr->nnodes;
+        /* Reduce elapsed_time_over_all_threads over all MPI ranks in the
+         * current simulation. */
+        MPI_Allreduce(&elapsed_time_over_all_threads,
+                      &elapsed_time_over_all_threads_over_all_ranks,
+                      1, MPI_DOUBLE, MPI_SUM,
+                      cr->mpi_comm_mysim);
+#endif
+    }
+    else
+    {
+        elapsed_time_over_all_ranks                  = elapsed_time;
+        elapsed_time_over_all_threads_over_all_ranks = elapsed_time_over_all_threads;
+    }
+
+    if (printReport)
+    {
+        print_flop(fplog, nrnb_tot, &nbfs, &mflop);
+    }
+    if (cr->nnodes > 1)
+    {
+        sfree(nrnb_tot);
+    }
+
+    if (thisRankHasDuty(cr, DUTY_PP) && DOMAINDECOMP(cr))
+    {
+        print_dd_statistics(cr, inputrec, fplog);
+    }
+
+    /* TODO Move the responsibility for any scaling by thread counts
+     * to the code that handled the thread region, so that there's a
+     * mechanism to keep cycle counting working during the transition
+     * to task parallelism. */
+    int nthreads_pp  = gmx_omp_nthreads_get(emntNonbonded);
+    int nthreads_pme = gmx_omp_nthreads_get(emntPME);
+    wallcycle_scale_by_num_threads(wcycle, thisRankHasDuty(cr, DUTY_PME) && !thisRankHasDuty(cr, DUTY_PP), nthreads_pp, nthreads_pme);
+    auto cycle_sum(wallcycle_sum(cr, wcycle));
+
+    if (printReport)
+    {
+        auto                    nbnxn_gpu_timings = (use_GPU(nbv) && nbv != nullptr) ? Nbnxm::gpu_get_timings(nbv->gpu_nbv) : nullptr;
+        gmx_wallclock_gpu_pme_t pme_gpu_timings   = {};
+        if (pme_gpu_task_enabled(pme))
+        {
+            pme_gpu_get_timings(pme, &pme_gpu_timings);
+        }
+        wallcycle_print(fplog, mdlog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
+                        elapsed_time_over_all_ranks,
+                        wcycle, cycle_sum,
+                        nbnxn_gpu_timings,
+                        &pme_gpu_timings);
+
+        if (EI_DYNAMICS(inputrec->eI))
+        {
+            delta_t = inputrec->delta_t;
+        }
+
+        if (fplog)
+        {
+            print_perf(fplog, elapsed_time_over_all_threads_over_all_ranks,
+                       elapsed_time_over_all_ranks,
+                       walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
+                       delta_t, nbfs, mflop);
+        }
+        if (bWriteStat)
+        {
+            print_perf(stderr, elapsed_time_over_all_threads_over_all_ranks,
+                       elapsed_time_over_all_ranks,
+                       walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
+                       delta_t, nbfs, mflop);
+        }
+    }
 }
 
 int Mdrunner::mdrunner()
