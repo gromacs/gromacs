@@ -38,7 +38,6 @@
 #define GMX_MDLIB_SIM_UTIL_H
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -65,12 +64,6 @@ class Update;
 }
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
-
-void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
-                       const gmx_mtop_t *mtop, rvec x[]);
-
-void do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
-                 const gmx_mtop_t *mtop, rvec x[]);
 
 /*! \brief Parallellizes put_atoms_in_box()
  *

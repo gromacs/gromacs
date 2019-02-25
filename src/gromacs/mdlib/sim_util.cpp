@@ -2258,63 +2258,6 @@ void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
     }
 }
 
-static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
-                            const gmx_mtop_t *mtop, rvec x[],
-                            gmx_bool bFirst)
-{
-    t_graph        *graph;
-    int             as, mol;
-
-    if (bFirst && fplog)
-    {
-        fprintf(fplog, "Removing pbc first time\n");
-    }
-
-    snew(graph, 1);
-    as = 0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
-    {
-        const gmx_moltype_t &moltype = mtop->moltype[molb.type];
-        if (moltype.atoms.nr == 1 ||
-            (!bFirst && moltype.cgs.nr == 1))
-        {
-            /* Just one atom or charge group in the molecule, no PBC required */
-            as += molb.nmol*moltype.atoms.nr;
-        }
-        else
-        {
-            mk_graph_moltype(moltype, graph);
-
-            for (mol = 0; mol < molb.nmol; mol++)
-            {
-                mk_mshift(fplog, graph, ePBC, box, x+as);
-
-                shift_self(graph, box, x+as);
-                /* The molecule is whole now.
-                 * We don't need the second mk_mshift call as in do_pbc_first,
-                 * since we no longer need this graph.
-                 */
-
-                as += moltype.atoms.nr;
-            }
-            done_graph(graph);
-        }
-    }
-    sfree(graph);
-}
-
-void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
-                       const gmx_mtop_t *mtop, rvec x[])
-{
-    low_do_pbc_mtop(fplog, ePBC, box, mtop, x, TRUE);
-}
-
-void do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
-                 const gmx_mtop_t *mtop, rvec x[])
-{
-    low_do_pbc_mtop(fplog, ePBC, box, mtop, x, FALSE);
-}
-
 void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x)
 {
     int t, nth;
