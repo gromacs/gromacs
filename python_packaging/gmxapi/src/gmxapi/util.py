@@ -31,21 +31,48 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+"""Utility functions supporting the Gromacs Python interface.
+"""
 
-"""gmxapi Python package for GROMACS."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-# Import system facilities
-import logging
+__all__ = ['which']
 
-# Define `logger` attribute that is used by submodules to create sub-loggers.
-logging.getLogger().addHandler(logging.NullHandler(level=logging.DEBUG))
-logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().info("Setting up logging for gmxapi package.")
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.info("Importing gmxapi.")
+import os
 
-__all__ = ['operation', 'commandline_operation']
+from gmxapi import exceptions
 
-from gmxapi import operation
-from gmxapi.commandline import commandline_operation
+
+def which(command):
+    """
+    Get the full path of an executable that can be resolved by the shell.
+
+    :param command: executable in the user's PATH
+    :return: Absolute path of executable.
+
+    Ref: https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+    """
+    try:
+        command_path = os.fsencode(command)
+    except:
+        raise exceptions.ValueError("Argument must be representable on the command line.")
+    if os.path.exists(command_path):
+        command_path = os.path.abspath(command_path)
+        if os.access(command_path, os.X_OK):
+            return command_path
+    else:
+        # Try to find the executable on the default PATH
+        from shutil import which
+        return which(command)
+
+
+def _test():
+    import doctest
+    doctest.testmod()
+
+
+if __name__ == "__main__":
+    _test()

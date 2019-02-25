@@ -32,20 +32,31 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""gmxapi Python package for GROMACS."""
+"""Test the gmxapi.commandline_operation wrapper tool.
 
-# Import system facilities
-import logging
+gmxapi.commandline_operation() provides additional logic over gmxapi.make_operation
+to conveniently wrap command line tools.
+"""
 
-# Define `logger` attribute that is used by submodules to create sub-loggers.
-logging.getLogger().addHandler(logging.NullHandler(level=logging.DEBUG))
-logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().info("Setting up logging for gmxapi package.")
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.info("Importing gmxapi.")
+import pytest
+import unittest
 
-__all__ = ['operation', 'commandline_operation']
+from gmxapi import commandline_operation
 
-from gmxapi import operation
-from gmxapi.commandline import commandline_operation
+# Decorator to mark tests that are expected to fail
+xfail = pytest.mark.xfail
+
+class CommandLineOperationSimpleTestCase(unittest.TestCase):
+    """Test creation and execution of command line wrapper.
+
+    Tests associated with FR1.
+    """
+    def test_true(self):
+        operation = commandline_operation(executable='true')
+        operation.run()
+        assert operation.output.returncode == 0
+
+    def test_false(self):
+        operation = commandline_operation(executable='false')
+        operation.run()
+        assert operation.output.returncode == 1
