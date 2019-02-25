@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# TODO: get script or script directory through repository or package infrastructure.
+cd $HOME/acceptance
+jupyter nbconvert RequiredFunctionality.ipynb --to python
+python -c '
+import gmxapi.version
+try:
+    import RequiredFunctionality
+except gmxapi.version.FeatureError:
+    pass'
