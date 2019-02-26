@@ -776,7 +776,7 @@ void done_ener_file(ener_file_t ef)
  * \return TRUE if file could be open but is empty, otherwise FALSE.
  */
 static gmx_bool
-empty_file(const char *fn)
+empty_file(const std::string &fn)
 {
     FILE    *fp;
     char     dum;
@@ -794,7 +794,7 @@ empty_file(const char *fn)
 }
 
 
-ener_file_t open_enx(const char *fn, const char *mode)
+ener_file_t open_enx(const std::string &fn, const char *mode)
 {
     int               nre;
     gmx_enxnm_t      *nms          = nullptr;
@@ -822,7 +822,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
             ((fr->e_size && (fr->nre == nre) &&
               (nre*4*static_cast<long int>(sizeof(float)) == fr->e_size)) ) )
         {
-            fprintf(stderr, "Opened %s as single precision energy file\n", fn);
+            fprintf(stderr, "Opened %s as single precision energy file\n", fn.c_str());
             free_enxnms(nre, nms);
         }
         else
@@ -840,18 +840,18 @@ ener_file_t open_enx(const char *fn, const char *mode)
                   (nre*4*static_cast<long int>(sizeof(double)) == fr->e_size)) ))
             {
                 fprintf(stderr, "Opened %s as double precision energy file\n",
-                        fn);
+                        fn.c_str());
             }
             else
             {
                 if (empty_file(fn))
                 {
-                    gmx_fatal(FARGS, "File %s is empty", fn);
+                    gmx_fatal(FARGS, "File %s is empty", fn.c_str());
                 }
                 else
                 {
                     gmx_fatal(FARGS, "Energy file %s not recognized, maybe different CPU?",
-                              fn);
+                              fn.c_str());
                 }
             }
             free_enxnms(nre, nms);
@@ -1149,7 +1149,7 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
 }
 
 
-void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputrec *ir,
+void get_enx_state(const std::string &fn, real t, const gmx_groups_t *groups, t_inputrec *ir,
                    t_state *state)
 {
     /* Should match the names in mdebin.c */
@@ -1185,7 +1185,7 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
 
     if (nfr == 0 || fr->t != t)
     {
-        gmx_fatal(FARGS, "Could not find frame with time %f in '%s'", t, fn);
+        gmx_fatal(FARGS, "Could not find frame with time %f in '%s'", t, fn.c_str());
     }
 
     npcoupl = TRICLINIC(ir->compress) ? 6 : 3;
@@ -1197,7 +1197,7 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
             state->boxv[ind0[i]][ind1[i]] =
                 find_energy(boxvel_nm[i], nre, enm, fr);
         }
-        fprintf(stderr, "\nREAD %d BOX VELOCITIES FROM %s\n\n", npcoupl, fn);
+        fprintf(stderr, "\nREAD %d BOX VELOCITIES FROM %s\n\n", npcoupl, fn.c_str());
     }
 
     if (ir->etc == etcNOSEHOOVER)
@@ -1223,7 +1223,7 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
             }
 
         }
-        fprintf(stderr, "\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n", state->ngtc, fn);
+        fprintf(stderr, "\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n", state->ngtc, fn.c_str());
 
         if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir))
         {
@@ -1238,7 +1238,7 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
                     state->nhpres_vxi[i] = find_energy(buf, nre, enm, fr);
                 }
             }
-            fprintf(stderr, "\nREAD %d NOSE-HOOVER BAROSTAT Xi chains FROM %s\n\n", state->nnhpres, fn);
+            fprintf(stderr, "\nREAD %d NOSE-HOOVER BAROSTAT Xi chains FROM %s\n\n", state->nnhpres, fn.c_str());
         }
     }
 
@@ -1491,7 +1491,7 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
     }
 }
 
-void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const char *lastener)
+void comp_enx(const std::string &fn1, const std::string &fn2, real ftol, real abstol, const char *lastener)
 {
     int            nre, nre1, nre2;
     ener_file_t    in1, in2;
@@ -1500,7 +1500,7 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
     t_enxframe    *fr1, *fr2;
     gmx_bool       b1, b2;
 
-    fprintf(stdout, "comparing energy file %s and %s\n\n", fn1, fn2);
+    fprintf(stdout, "comparing energy file %s and %s\n\n", fn1.c_str(), fn2.c_str());
 
     in1 = open_enx(fn1, "r");
     in2 = open_enx(fn2, "r");
@@ -1572,11 +1572,11 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
         b2 = do_enx(in2, fr2);
         if (b1 && !b2)
         {
-            fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn2, fn1);
+            fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn2.c_str(), fn1.c_str());
         }
         else if (!b1 && b2)
         {
-            fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn1, fn2);
+            fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn1.c_str(), fn2.c_str());
         }
         else if (!b1 && !b2)
         {

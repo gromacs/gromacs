@@ -261,7 +261,7 @@ static void gmx_fio_stop_getting_next(t_fileio *fio)
  *                     EXPORTED SECTION
  *
  *****************************************************************/
-t_fileio *gmx_fio_open(const char *fn, const char *mode)
+t_fileio *gmx_fio_open(const std::string &fn, const char *mode)
 {
     t_fileio *fio = nullptr;
     char      newmode[5];
@@ -309,7 +309,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     bReadWrite = (newmode[1] == '+');
     fio->fp    = nullptr;
     fio->xdr   = nullptr;
-    if (fn == nullptr)
+    if (fn.empty())
     {
         gmx_fatal(FARGS, "Cannot open file with NULL filename string");
     }
@@ -406,7 +406,7 @@ int gmx_fio_fp_close(t_fileio *fio)
     return rc;
 }
 
-FILE * gmx_fio_fopen(const char *fn, const char *mode)
+FILE * gmx_fio_fopen(const std::string &fn, const char *mode)
 {
     FILE     *ret;
     t_fileio *fio;

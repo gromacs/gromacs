@@ -79,7 +79,7 @@
  *         Each entry consists of an integer column index and floating-point data value.
  */
 
-void gmx_mtxio_write(const char *             filename,
+void gmx_mtxio_write(const std::string       &filename,
                      int                      nrow,
                      int                      ncol,
                      real *                   full_matrix,
@@ -152,7 +152,7 @@ void gmx_mtxio_write(const char *             filename,
 
 
 void
-gmx_mtxio_read (const char *            filename,
+gmx_mtxio_read (const std::string      &filename,
                 int *                   nrow,
                 int *                   ncol,
                 real **                 full_matrix,

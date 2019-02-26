@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1512,7 +1512,7 @@ static void do_nhb_dist(FILE *fp, t_hbdata *hb, real t)
     fprintf(fp, "  %8d\n", nbtot);
 }
 
-static void do_hblife(const char *fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bContact,
+static void do_hblife(const std::string &fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bContact,
                       const gmx_output_env_t *oenv)
 {
     FILE          *fp;
@@ -1907,7 +1907,7 @@ static void normalizeACF(real *ct, real *gt, int nhb, int len)
     }
 }
 
-static void do_hbac(const char *fn, t_hbdata *hb,
+static void do_hbac(const std::string &fn, t_hbdata *hb,
                     int nDump, gmx_bool bMerge, gmx_bool bContact, real fit_start,
                     real temp, gmx_bool R2, const gmx_output_env_t *oenv,
                     int nThreads)
@@ -2176,14 +2176,14 @@ static void init_hbframe(t_hbdata *hb, int nframes, real t)
     }
 }
 
-static FILE *open_donor_properties_file(const char             *fn,
+static FILE *open_donor_properties_file(const std::string      &fn,
                                         t_hbdata               *hb,
                                         const gmx_output_env_t *oenv)
 {
     FILE       *fp    = nullptr;
     const char *leg[] = { "Nbound", "Nfree" };
 
-    if (!fn || !hb)
+    if (fn.empty() || !hb)
     {
         return nullptr;
     }

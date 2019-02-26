@@ -66,7 +66,7 @@ EnergyFrameReaderPtr
 openEnergyFileToReadFields(const std::string              &filename,
                            const std::vector<std::string> &namesOfRequiredEnergyFields)
 {
-    ener_file_ptr energyFile(open_enx(filename.c_str(), "r"));
+    ener_file_ptr energyFile(open_enx(filename, "r"));
 
     if (!energyFile)
     {

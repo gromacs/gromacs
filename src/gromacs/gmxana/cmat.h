@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 
 #ifndef _cmat_h
 #define _cmat_h
+
+#include <string>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -82,10 +84,10 @@ extern real mat_energy(t_mat *mat);
 
 extern void swap_mat(t_mat *m);
 
-extern void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
+extern void low_rmsd_dist(const std::string &fn, real maxrms, int nn, real **mat,
                           const gmx_output_env_t *oenv);
 
-extern void rmsd_distribution(const char *fn, t_mat *m, const gmx_output_env_t *oenv);
+extern void rmsd_distribution(const std::string &fn, t_mat *m, const gmx_output_env_t *oenv);
 
 extern t_clustid *new_clustid(int n1);
 

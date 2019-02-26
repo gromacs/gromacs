@@ -457,7 +457,7 @@ FILE * OutputFile::openBiasOutputFile(double                  time,
 {
     std::string filename = baseFilename_ + gmx::formatString("_t%g.xvg", time);
 
-    FILE       *fp = xvgropen(filename.c_str(), title_.c_str(), xLabel_, yLabel_, oenv);
+    FILE       *fp = xvgropen(filename, title_.c_str(), xLabel_, yLabel_, oenv);
     xvgrLegend(fp, legend_, oenv);
 
     return fp;
@@ -590,7 +590,7 @@ int gmx_awh(int argc, char *argv[])
 
     if (!ir.bDoAwh)
     {
-        gmx_fatal(FARGS, "No AWH data in %s\n", opt2fn("-f", nfile, fnm));
+        gmx_fatal(FARGS, "No AWH data in %s\n", opt2fn("-f", nfile, fnm).c_str());
     }
 
     std::unique_ptr<AwhReader> awhReader;

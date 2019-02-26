@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2007, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,10 +64,10 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static void clust_size(const char *ndx, const char *trx, const char *xpm,
-                       const char *xpmw, const char *ncl, const char *acl,
-                       const char *mcl, const char *histo, const char *tempf,
-                       const char *mcn, gmx_bool bMol, gmx_bool bPBC, const char *tpr,
+static void clust_size(const std::string &ndx, const std::string &trx, const std::string &xpm,
+                       const std::string &xpmw, const std::string &ncl, const std::string &acl,
+                       const std::string &mcl, const std::string &histo, const std::string &tempf,
+                       const std::string &mcn, gmx_bool bMol, gmx_bool bPBC, const std::string &tpr,
                        real cut, int nskip, int nlevels,
                        t_rgb rmid, t_rgb rhi, int ndf,
                        const gmx_output_env_t *oenv)
@@ -112,7 +112,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     natoms = fr.natoms;
     x      = fr.x;
 
-    if (tpr)
+    if (!tpr.empty())
     {
         mtop = new gmx_mtop_t;
         read_tpxheader(tpr, &tpxh, TRUE);
@@ -135,10 +135,10 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     gmx::RangePartitioning mols;
     if (bMol)
     {
-        if (ndx)
+        if (!ndx.empty())
         {
             printf("Using molecules rather than atoms. Not reading index file %s\n",
-                   ndx);
+                   ndx.c_str());
         }
         GMX_RELEASE_ASSERT(mtop != nullptr, "Trying to access mtop->mols from NULL mtop pointer");
         mols = gmx_mtop_molecules(*mtop);
@@ -316,7 +316,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         /* Analyse velocities, if present */
         if (fr.bV)
         {
-            if (!tpr)
+            if (tpr.empty())
             {
                 if (bTPRwarn)
                 {
@@ -506,7 +506,6 @@ int gmx_clustsize(int argc, char *argv[])
           "RGB values for the color of the highest occupied cluster size" }
     };
 #define NPA asize(pa)
-    const char       *fnNDX, *fnTPR;
     t_rgb             rgblo, rgbhi;
 
     t_filenm          fnm[] = {
@@ -531,12 +530,12 @@ int gmx_clustsize(int argc, char *argv[])
         return 0;
     }
 
-    fnNDX   = ftp2fn_null(efNDX, NFILE, fnm);
+    std::string fnNDX   = ftp2fn_null(efNDX, NFILE, fnm);
     rgblo.r = rlo[XX]; rgblo.g = rlo[YY]; rgblo.b = rlo[ZZ];
     rgbhi.r = rhi[XX]; rgbhi.g = rhi[YY]; rgbhi.b = rhi[ZZ];
 
-    fnTPR = ftp2fn_null(efTPR, NFILE, fnm);
-    if (bMol && !fnTPR)
+    std::string fnTPR = ftp2fn_null(efTPR, NFILE, fnm);
+    if (bMol && fnTPR.empty())
     {
         gmx_fatal(FARGS, "You need a tpr file for the -mol option");
     }

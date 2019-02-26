@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -170,7 +170,7 @@ typedef struct {
     char *aname;
 } t_equiv;
 
-static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
+static int read_equiv(const std::string &eq_fn, t_equiv ***equivptr)
 {
     FILE     *fp;
     char      line[STRLEN], resname[10], atomname[10], *lp;
@@ -280,7 +280,7 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
     return bFound;
 }
 
-static int analyze_noe_equivalent(const char *eq_fn,
+static int analyze_noe_equivalent(const std::string &eq_fn,
                                   const t_atoms *atoms, int isize, const int *index,
                                   gmx_bool bSumH,
                                   int *noe_index, t_noe_gr *noe_gr)
@@ -293,7 +293,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
     snew(nnm, isize);
     if (bSumH)
     {
-        if (eq_fn)
+        if (!eq_fn.empty())
         {
             neq = read_equiv(eq_fn, &equiv);
             if (debug)

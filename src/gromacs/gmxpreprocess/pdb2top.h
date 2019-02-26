@@ -101,9 +101,9 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue> usedPpResidues,
  * add these atoms to restp.
  */
 
-void print_top_comment(FILE *out, const char *filename, const char *ffdir, bool bITP);
+void print_top_comment(FILE *out, const std::string &filename, const char *ffdir, bool bITP);
 
-void print_top_header(FILE *out, const char *filename, bool bITP,
+void print_top_header(FILE *out, const std::string &filename, bool bITP,
                       const char *ffdir, real mHmult);
 
 void print_top_mols(FILE *out,
@@ -111,13 +111,13 @@ void print_top_mols(FILE *out,
                     gmx::ArrayRef<const std::string> incls,
                     gmx::ArrayRef<const t_mols> mols);
 
-void write_top(FILE *out, const char *pr, const char *molname,
+void write_top(FILE *out, const std::string &pr, const char *molname,
                t_atoms *at, bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
                gpp_atomtype *atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
-void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
+void pdb2top(FILE *top_file, const std::string &posre_fn, const char *molname,
              t_atoms *atoms,
              std::vector<gmx::RVec> *x,
              gpp_atomtype *atype, t_symtab *tab,

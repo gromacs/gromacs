@@ -513,11 +513,6 @@ std::string findLibraryFile(const std::string &filename, bool bAddCWD, bool bFat
     return result;
 }
 
-std::string findLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
-{
-    return findLibraryFile(std::string(filename), bAddCWD, bFatal);
-}
-
 FilePtr openLibraryFile(const std::string &filename, bool bAddCWD, bool bFatal)
 {
     FilePtr fp;
@@ -532,29 +527,28 @@ FilePtr openLibraryFile(const std::string &filename, bool bAddCWD, bool bFatal)
     return fp;
 }
 
-FilePtr openLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
-{
-    return openLibraryFile(std::string(filename), bAddCWD, bFatal);
-}
-
 } // namespace gmx
 
 /*! \brief Use mkstemp (or similar function to make a new temporary
- * file and (on non-Windows systems) return a file descriptor to it.
- *
- * \todo Use std::string and std::vector<char>. */
-static int makeTemporaryFilename(char *buf)
+ * file and (on non-Windows systems) return a file descriptor to it. */
+static int makeTemporaryFilename(std::string *filename)
 {
-    int len;
-
-    if ((len = strlen(buf)) < 7)
+    if (filename->length() < 7)
     {
-        gmx_fatal(FARGS, "Buf passed to gmx_tmpnam must be at least 7 bytes long");
+        gmx_fatal(FARGS, "String passed to gmx_tmpnam must be at least 7 bytes long");
     }
-    for (int i = len-6; (i < len); i++)
+    // Make a deep copy of filename, because one cannot modify the
+    // buffer of a std::string in place, e.g. to permit small-string
+    // optimizations to work.
+    std::vector<char> chars(filename->begin(), filename->end());
+    // Ensure the last six characters are XXXXXX, leaving the terminating null alone.
+    auto              charsIterator = chars.end();
+    charsIterator -= 7;
+    for (int i = 0; i < 6; ++i, ++charsIterator)
     {
-        buf[i] = 'X';
+        *charsIterator = 'X';
     }
+    char *buf = chars.data();
     /* mktemp is dangerous and we should use mkstemp instead, but
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
@@ -569,6 +563,7 @@ static int makeTemporaryFilename(char *buf)
     }
     fd = 0;
 #else
+    // Note, this modifies buf
     fd = mkstemp(buf);
 
     if (fd < 0)
@@ -577,45 +572,48 @@ static int makeTemporaryFilename(char *buf)
                   strerror(errno));
     }
 #endif
+    // Copy the chars back to the string, now that the X chars have
+    // been replaced.
+    filename->assign(chars.begin(), chars.end());
     return fd;
 }
+
 // TODO use std::string
-void gmx_tmpnam(char *buf)
+void gmx_tmpnam(std::string *filename)
 {
-    int fd = makeTemporaryFilename(buf);
+    int fd = makeTemporaryFilename(filename);
 #if !GMX_NATIVE_WINDOWS
     close(fd);
 #endif
 }
 
-// TODO use std::string
-FILE *gmx_fopen_temporary(char *buf)
+FILE *gmx_fopen_temporary(std::string *filename)
 {
     FILE *fpout = nullptr;
-    int   fd    = makeTemporaryFilename(buf);
+    int   fd    = makeTemporaryFilename(filename);
 
 #if GMX_NATIVE_WINDOWS
-    if ((fpout = fopen(buf, "w")) == NULL)
+    if ((fpout = fopen(filename->c_str(), "w")) == NULL)
     {
-        gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
+        gmx_fatal(FARGS, "Cannot open temporary file %s", filename->c_str());
     }
 #else
     if ((fpout = fdopen(fd, "w")) == nullptr)
     {
-        gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
+        gmx_fatal(FARGS, "Cannot open temporary file %s", filename->c_str());
     }
 #endif
 
     return fpout;
 }
 
-int gmx_file_rename(const char *oldname, const char *newname)
+int gmx_file_rename(const std::string &oldname, const std::string &newname)
 {
 #if !GMX_NATIVE_WINDOWS
     /* under unix, rename() is atomic (at least, it should be). */
-    return rename(oldname, newname);
+    return rename(oldname.c_str(), newname.c_str());
 #else
-    if (MoveFileEx(oldname, newname,
+    if (MoveFileEx(oldname.c_str(), newname.c_str(),
                    MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))
     {
         return 0;
@@ -627,9 +625,9 @@ int gmx_file_rename(const char *oldname, const char *newname)
 #endif
 }
 
-int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty)
+int gmx_file_copy(const std::string &oldname, const std::string &newname, gmx_bool copy_if_empty)
 {
-    gmx::FilePtr in(fopen(oldname, "rb"));
+    gmx::FilePtr in(fopen(oldname.c_str(), "rb"));
     if (!in)
     {
         return 1;
@@ -640,7 +638,7 @@ int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_emp
     gmx::FilePtr out;
     if (copy_if_empty)
     {
-        out.reset(fopen(newname, "wb"));
+        out.reset(fopen(newname.c_str(), "wb"));
         if (!out)
         {
             return 1;
@@ -663,7 +661,7 @@ int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_emp
             {
                 /* so this is where we open when copy_if_empty is false:
                    here we know we read something. */
-                out.reset(fopen(newname, "wb"));
+                out.reset(fopen(newname.c_str(), "wb"));
                 if (!out)
                 {
                     return 1;
@@ -737,17 +735,17 @@ int gmx_fsync(FILE *fp)
     return rc;
 }
 
-void gmx_chdir(const char *directory)
+void gmx_chdir(const std::string &directory)
 {
 #if GMX_NATIVE_WINDOWS
-    int rc = _chdir(directory);
+    int rc = _chdir(directory.c_str());
 #else
-    int rc = chdir(directory);
+    int rc = chdir(directory.c_str());
 #endif
     if (rc != 0)
     {
         gmx_fatal(FARGS, "Cannot change directory to '%s'. Reason: %s",
-                  directory, strerror(errno));
+                  directory.c_str(), strerror(errno));
     }
 }
 

@@ -172,7 +172,7 @@ static int in_data(t_corr *curr, int nx00)
     return curr->nframes-curr->n_offs[nx00];
 }
 
-static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *title,
+static void corr_print(t_corr *curr, gmx_bool bTen, const std::string &fn, const char *title,
                        const char *yaxis,
                        real msdtime, real beginfit, real endfit,
                        real *DD, real *SigmaD, char *grpname[],
@@ -544,8 +544,8 @@ static real calc1_mol(t_corr *curr, int nx, const int gmx_unused index[], int nx
     return gtot/nx;
 }
 
-static void printmol(t_corr *curr, const char *fn,
-                     const char *fn_pdb, const int *molindex, const t_topology *top,
+static void printmol(t_corr *curr, const std::string &fn,
+                     const std::string &fn_pdb, const int *molindex, const t_topology *top,
                      rvec *x, int ePBC, matrix box, const gmx_output_env_t *oenv)
 {
     FILE       *out;
@@ -557,7 +557,7 @@ static void printmol(t_corr *curr, const char *fn,
 
     out = xvgropen(fn, "Diffusion Coefficients / Molecule", "Molecule", "D (1e-5 cm^2/s)", oenv);
 
-    if (fn_pdb)
+    if (!fn_pdb.empty())
     {
         pdbinfo = top->atoms.pdbinfo;
         mol2a   = top->mols.index;
@@ -610,7 +610,7 @@ static void printmol(t_corr *curr, const char *fn,
     printf("<D> = %.4f Std. Dev. = %.4f Error = %.4f\n",
            Dav, std::sqrt(VarD), std::sqrt(VarD/curr->nmol));
 
-    if (fn_pdb && x)
+    if (!fn_pdb.empty() && x)
     {
         scale = 1;
         while (scale*sqrtD_max > 10)
@@ -634,7 +634,7 @@ static void printmol(t_corr *curr, const char *fn,
  * fx and nx are file pointers to things like read_first_x and
  * read_next_x
  */
-static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
+static int corr_loop(t_corr *curr, const std::string &fn, const t_topology *top, int ePBC,
                      gmx_bool bMol, int gnx[], int *index[],
                      t_calc_func *calc1, gmx_bool bTen, gmx::ArrayRef<const int> gnx_com, int *index_com[],
                      real dt, real t_pdb, rvec **x_pdb, matrix box_pdb,
@@ -867,8 +867,8 @@ static void index_atom2mol(int *n, int *index, const t_block *mols)
     *n = nmol;
 }
 
-static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
-                    const char *mol_file, const char *pdb_file, real t_pdb,
+static void do_corr(const std::string &trx_file, const std::string &ndx_file, const std::string &msd_file,
+                    const std::string &mol_file, const std::string &pdb_file, real t_pdb,
                     int nrgrp, t_topology *top, int ePBC,
                     gmx_bool bTen, gmx_bool bMW, gmx_bool bRmCOMM,
                     int type, real dim_factor, int axis,
@@ -903,20 +903,20 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
         get_index(&top->atoms, ndx_file, 1, gnx_com.data(), index_com, grpname_com);
     }
 
-    if (mol_file)
+    if (!mol_file.empty())
     {
         index_atom2mol(&gnx[0], index[0], &top->mols);
     }
 
     msd = std::make_unique<t_corr>(nrgrp, type, axis, dim_factor,
-                                   mol_file == nullptr ? 0 : gnx[0],
+                                   mol_file.empty() ? 0 : gnx[0],
                                    bTen, bMW, dt, top, beginfit, endfit);
 
     nat_trx =
-        corr_loop(msd.get(), trx_file, top, ePBC, mol_file ? gnx[0] != 0 : false, gnx.data(), index,
-                  (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
+        corr_loop(msd.get(), trx_file, top, ePBC, !mol_file.empty() ? gnx[0] != 0 : false, gnx.data(), index,
+                  !mol_file.empty() ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
                   bTen, gnx_com, index_com, dt, t_pdb,
-                  pdb_file ? &x : nullptr, box, oenv);
+                  !pdb_file.empty() ? &x : nullptr, box, oenv);
 
     /* Correct for the number of points */
     for (j = 0; (j < msd->ngrp); j++)
@@ -931,16 +931,16 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
         }
     }
 
-    if (mol_file)
+    if (!mol_file.empty())
     {
-        if (pdb_file && x == nullptr)
+        if (!pdb_file.empty() && x == nullptr)
         {
             fprintf(stderr, "\nNo frame found need time tpdb = %g ps\n"
-                    "Can not write %s\n\n", t_pdb, pdb_file);
+                    "Can not write %s\n\n", t_pdb, pdb_file.c_str());
         }
         i             = top->atoms.nr;
         top->atoms.nr = nat_trx;
-        if (pdb_file && top->atoms.pdbinfo == nullptr)
+        if (!pdb_file.empty() && top->atoms.pdbinfo == nullptr)
         {
             snew(top->atoms.pdbinfo, top->atoms.nr);
         }
@@ -1112,7 +1112,6 @@ int gmx_msd(int argc, char *argv[])
     t_topology        top;
     int               ePBC;
     matrix            box;
-    const char       *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
     rvec             *xdum;
     gmx_bool          bTop;
     int               axis, type;
@@ -1125,12 +1124,13 @@ int gmx_msd(int argc, char *argv[])
     {
         return 0;
     }
-    trx_file = ftp2fn_null(efTRX, NFILE, fnm);
-    tps_file = ftp2fn_null(efTPS, NFILE, fnm);
-    ndx_file = ftp2fn_null(efNDX, NFILE, fnm);
-    msd_file = ftp2fn_null(efXVG, NFILE, fnm);
-    pdb_file = opt2fn_null("-pdb", NFILE, fnm);
-    if (pdb_file)
+    std::string trx_file = ftp2fn_null(efTRX, NFILE, fnm);
+    std::string tps_file = ftp2fn_null(efTPS, NFILE, fnm);
+    std::string ndx_file = ftp2fn_null(efNDX, NFILE, fnm);
+    std::string msd_file = ftp2fn_null(efXVG, NFILE, fnm);
+    std::string pdb_file = opt2fn_null("-pdb", NFILE, fnm);
+    std::string mol_file;
+    if (!pdb_file.empty())
     {
         mol_file = opt2fn("-mol", NFILE, fnm);
     }
@@ -1143,14 +1143,14 @@ int gmx_msd(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Must have at least 1 group (now %d)", ngroup);
     }
-    if (mol_file && ngroup > 1)
+    if (!mol_file.empty() && ngroup > 1)
     {
         gmx_fatal(FARGS, "With molecular msd can only have 1 group (now %d)",
                   ngroup);
     }
 
 
-    if (mol_file)
+    if (!mol_file.empty())
     {
         bMW  = TRUE;
         fprintf(stderr, "Calculating diffusion coefficients for molecules.\n");
@@ -1186,11 +1186,11 @@ int gmx_msd(int argc, char *argv[])
     }
 
     bTop = read_tps_conf(tps_file, &top, &ePBC, &xdum, nullptr, box, bMW || bRmCOMM);
-    if (mol_file && !bTop)
+    if (!mol_file.empty() && !bTop)
     {
         gmx_fatal(FARGS,
                   "Could not read a topology from %s. Try a tpr file instead.",
-                  tps_file);
+                  tps_file.c_str());
     }
 
     do_corr(trx_file, ndx_file, msd_file, mol_file, pdb_file, t_pdb, ngroup,

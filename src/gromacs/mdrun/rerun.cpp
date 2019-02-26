@@ -276,13 +276,13 @@ void gmx::Integrator::do_rerun()
     /* Rerun can't work if an output file name is the same as the input file name.
      * If this is the case, the user will get an error telling them what the issue is.
      */
-    if (strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-o", nfile, fnm)) == 0 ||
-        strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-x", nfile, fnm)) == 0)
+    if (opt2fn("-rerun", nfile, fnm) == opt2fn("-o", nfile, fnm) ||
+        opt2fn("-rerun", nfile, fnm) == opt2fn("-x", nfile, fnm))
     {
         gmx_fatal(FARGS, "When using mdrun -rerun, the name of the input trajectory file "
                   "%s cannot be identical to the name of an output file (whether "
                   "given explicitly with -o or -x, or by default)",
-                  opt2fn("-rerun", nfile, fnm));
+                  opt2fn("-rerun", nfile, fnm).c_str());
     }
 
     /* Settings for rerun */
@@ -399,7 +399,7 @@ void gmx::Integrator::do_rerun()
     {
         fprintf(stderr, "starting md rerun '%s', reading coordinates from"
                 " input trajectory '%s'\n\n",
-                *(top_global->name), opt2fn("-rerun", nfile, fnm));
+                *(top_global->name), opt2fn("-rerun", nfile, fnm).c_str());
         if (mdrunOptions.verbose)
         {
             fprintf(stderr, "Calculated time to finish depends on nsteps from "

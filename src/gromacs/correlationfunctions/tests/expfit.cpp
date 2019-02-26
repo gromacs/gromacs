@@ -143,7 +143,7 @@ class ExpfitTest : public ::testing::Test
                      &(data_[testType].x_[0]),
                      data_[testType].startTime_,
                      data_[testType].endTime_,
-                     oenv, false, type, result, 0, nullptr);
+                     oenv, false, type, result, 0, std::string());
             output_env_done(oenv);
             checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, tolerance));
             checker_.checkSequenceArray(nfitparm, result, "result");

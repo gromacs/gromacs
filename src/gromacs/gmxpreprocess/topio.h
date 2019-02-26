@@ -39,6 +39,7 @@
 #define GMX_GMXPREPROCESS_TOPIO_H
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "gromacs/utility/real.h"
@@ -59,8 +60,8 @@ double check_mol(const gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */
 
 char **do_top(bool                                               bVerbose,
-              const char                                        *topfile,
-              const char                                        *topppfile,
+              const std::string                                 &topfile,
+              const std::string                                 &topppfile,
               t_gromppopts                                      *opts,
               bool                                               bZero,
               t_symtab                                          *symtab,

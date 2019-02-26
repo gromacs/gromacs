@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
+void read_eigenvectors(const std::string &file, int *natoms, gmx_bool *bFit,
                        rvec **xref, gmx_bool *bDMR,
                        rvec **xav, gmx_bool *bDMA,
                        int *nvec, int **eignr,
@@ -77,11 +77,11 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
         *bFit = (head.lambda > -0.5);
         if (*bFit)
         {
-            fprintf(stderr, "Read %smass weighted reference structure with %d atoms from %s\n", *bDMR ? "" : "non ", *natoms, file);
+            fprintf(stderr, "Read %smass weighted reference structure with %d atoms from %s\n", *bDMR ? "" : "non ", *natoms, file.c_str());
         }
         else
         {
-            fprintf(stderr, "Eigenvectors in %s were determined without fitting\n", file);
+            fprintf(stderr, "Eigenvectors in %s were determined without fitting\n", file.c_str());
             sfree(*xref);
             *xref = nullptr;
         }
@@ -99,13 +99,13 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
         fprintf(stderr, "WARNING: %s does not start with t=0, which should be the "
                 "average structure. This might not be a eigenvector file. "
                 "Some things might go wrong.\n",
-                file);
+                file.c_str());
     }
     else
     {
         fprintf(stderr,
                 "Read %smass weighted average/minimum structure with %d atoms from %s\n",
-                *bDMA ? "" : "non ", *natoms, file);
+                *bDMA ? "" : "non ", *natoms, file.c_str());
     }
 
     snew(x, *natoms);
@@ -141,7 +141,7 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
 }
 
 
-void write_eigenvectors(const char *trrname, int natoms, const real mat[],
+void write_eigenvectors(const std::string &trrname, int natoms, const real mat[],
                         gmx_bool bReverse, int begin, int end,
                         int WriteXref, const rvec *xref, gmx_bool bDMR,
                         const rvec xav[], gmx_bool bDMA, const real eigval[])
@@ -158,7 +158,7 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
     fprintf (stderr,
              "\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
              (WriteXref == eWXR_YES) ? "reference, " : "",
-             begin, end, trrname);
+             begin, end, trrname.c_str());
 
     trrout = gmx_trr_open(trrname, "w");
     if (WriteXref == eWXR_YES)

@@ -183,7 +183,7 @@ void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 {
     if (!fnm_.empty())
     {
-        fp_ = gmx_fio_fopen(fnm_.c_str(), "w");
+        fp_ = gmx_fio_fopen(fnm_, "w");
     }
 }
 
@@ -717,7 +717,7 @@ Select::writeOutput()
         {
             case PdbAtomsSelection_All:
             {
-                t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+                t_trxstatus *status = open_trx(fnPDB_, "w");
                 write_trxframe(status, &fr, nullptr);
                 close_trx(status);
                 break;
@@ -732,7 +732,7 @@ Select::writeOutput()
                 }
                 std::vector<int>  allAtomIndices(atomIndicesSet.begin(),
                                                  atomIndicesSet.end());
-                t_trxstatus      *status = open_trx(fnPDB_.c_str(), "w");
+                t_trxstatus      *status = open_trx(fnPDB_, "w");
                 write_trxframe_indexed(status, &fr, allAtomIndices.size(),
                                        allAtomIndices.data(), nullptr);
                 close_trx(status);
@@ -748,7 +748,7 @@ Select::writeOutput()
                         indices.push_back(i);
                     }
                 }
-                t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+                t_trxstatus *status = open_trx(fnPDB_, "w");
                 write_trxframe_indexed(status, &fr, indices.size(), indices.data(), nullptr);
                 close_trx(status);
                 break;

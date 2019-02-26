@@ -139,7 +139,7 @@ static int rm_interactions(int ifunc, gmx::ArrayRef<MoleculeInformation> mols)
     return n;
 }
 
-static int check_atom_names(const char *fn1, const char *fn2,
+static int check_atom_names(const std::string &fn1, const std::string &fn2,
                             gmx_mtop_t *mtop, const t_atoms *at)
 {
     int      m, i, j, nmismatch;
@@ -166,7 +166,7 @@ static int check_atom_names(const char *fn1, const char *fn2,
                     {
                         fprintf(stderr,
                                 "Warning: atom name %d in %s and %s does not match (%s - %s)\n",
-                                i+1, fn1, fn2, *(tat->atomname[j]), *(at->atomname[i]));
+                                i+1, fn1.c_str(), fn2.c_str(), *(tat->atomname[j]), *(at->atomname[i]));
                     }
                     else if (nmismatch == MAXMISMATCH)
                     {
@@ -218,7 +218,7 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
     }
 }
 
-static void check_cg_sizes(const char *topfn, const t_block *cgs, warninp *wi)
+static void check_cg_sizes(const std::string &topfn, const t_block *cgs, warninp *wi)
 {
     int  maxsize, cg;
     char warn_buf[STRLEN];
@@ -503,7 +503,7 @@ static void molinfo2mtop(gmx::ArrayRef<const MoleculeInformation> mi, gmx_mtop_t
 }
 
 static void
-new_status(const char *topfile, const char *topppfile, const char *confin,
+new_status(const std::string &topfile, const std::string &topppfile, const std::string &confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
            bool bGenVel, bool bVerbose, t_state *state,
            gpp_atomtype *atype, gmx_mtop_t *sys,
@@ -616,7 +616,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     {
         gmx_fatal(FARGS, "number of coordinates in coordinate file (%s, %d)\n"
                   "             does not match topology (%s, %d)",
-                  confin, state->natoms, topfile, sys->natoms);
+                  confin.c_str(), state->natoms, topfile.c_str(), sys->natoms);
     }
     /* It would be nice to get rid of the copies below, but we don't know
      * a priori if the number of atoms in confin matches what we expect.
@@ -646,7 +646,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         sprintf(buf, "%d non-matching atom name%s\n"
                 "atom names from %s will be used\n"
                 "atom names from %s will be ignored\n",
-                nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
+                nmismatch, (nmismatch == 1) ? "" : "s", topfile.c_str(), confin.c_str());
         warning(wi, buf);
     }
 
@@ -699,7 +699,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     }
 }
 
-static void copy_state(const char *slog, t_trxframe *fr,
+static void copy_state(const std::string &slog, t_trxframe *fr,
                        bool bReadVel, t_state *state,
                        double *use_time)
 {
@@ -710,7 +710,7 @@ static void copy_state(const char *slog, t_trxframe *fr,
     if (!fr->bX)
     {
         gmx_fatal(FARGS, "Did not find a frame with coordinates in file %s",
-                  slog);
+                  slog.c_str());
     }
 
     std::copy(fr->x, fr->x+state->natoms, state->x.data());
@@ -730,7 +730,7 @@ static void copy_state(const char *slog, t_trxframe *fr,
     *use_time = fr->time;
 }
 
-static void cont_status(const char *slog, const char *ener,
+static void cont_status(const std::string &slog, const std::string &ener,
                         bool bNeedVel, bool bGenVel, real fr_time,
                         t_inputrec *ir, t_state *state,
                         gmx_mtop_t *sys,
@@ -773,7 +773,7 @@ static void cont_status(const char *slog, const char *ener,
             fprintf(stderr,
                     "\n"
                     "WARNING: Did not find a frame with velocities in file %s,\n"
-                    "         all velocities will be set to zero!\n\n", slog);
+                    "         all velocities will be set to zero!\n\n", slog.c_str());
             for (auto &vi : makeArrayRef(state->v))
             {
                 vi = {0, 0, 0};
@@ -812,7 +812,7 @@ static void cont_status(const char *slog, const char *ener,
     fprintf(stderr, "Using frame at t = %g ps\n", use_time);
     fprintf(stderr, "Starting time for run is %g ps\n", ir->init_t);
 
-    if ((ir->epc != epcNO  || ir->etc == etcNOSEHOOVER) && ener)
+    if ((ir->epc != epcNO  || ir->etc == etcNOSEHOOVER) && !ener.empty())
     {
         get_enx_state(ener, use_time, &sys->groups, ir, state);
         preserve_box_shape(ir, state->box_rel, state->boxv);
@@ -822,7 +822,7 @@ static void cont_status(const char *slog, const char *ener,
 static void read_posres(gmx_mtop_t *mtop,
                         gmx::ArrayRef<const MoleculeInformation> molinfo,
                         gmx_bool bTopB,
-                        const char *fn,
+                        const std::string &fn,
                         int rc_scaling, int ePBC,
                         rvec com,
                         warninp *wi)
@@ -845,7 +845,7 @@ static void read_posres(gmx_mtop_t *mtop,
     sfree(top);
     if (natoms != mtop->natoms)
     {
-        sprintf(warn_buf, "The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.", fn, natoms, mtop->natoms, std::min(mtop->natoms, natoms), fn);
+        sprintf(warn_buf, "The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.", fn.c_str(), natoms, mtop->natoms, std::min(mtop->natoms, natoms), fn.c_str());
         warning(wi, warn_buf);
     }
 
@@ -881,7 +881,7 @@ static void read_posres(gmx_mtop_t *mtop,
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
-                              ai+1, *molinfo[molb.type].name, fn, natoms);
+                              ai+1, *molinfo[molb.type].name, fn.c_str(), natoms);
                 }
                 hadAtom[ai] = TRUE;
                 if (rc_scaling == erscCOM)
@@ -901,7 +901,7 @@ static void read_posres(gmx_mtop_t *mtop,
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
-                              ai+1, *molinfo[molb.type].name, fn, natoms);
+                              ai+1, *molinfo[molb.type].name, fn.c_str(), natoms);
                 }
                 if (rc_scaling == erscCOM && !hadAtom[ai])
                 {
@@ -999,7 +999,7 @@ static void read_posres(gmx_mtop_t *mtop,
 
 static void gen_posres(gmx_mtop_t *mtop,
                        gmx::ArrayRef<const MoleculeInformation> mi,
-                       const char *fnA, const char *fnB,
+                       const std::string &fnA, const std::string &fnB,
                        int rc_scaling, int ePBC,
                        rvec com, rvec comB,
                        warninp *wi)
@@ -1697,7 +1697,6 @@ int gmx_grompp(int argc, char *argv[])
     t_params                            *plist;
     real                                 fudgeQQ;
     double                               reppow;
-    const char                          *mdparin;
     int                                  ntype;
     bool                                 bNeedVel, bGenVel;
     gmx_bool                             have_atomnumber;
@@ -1762,7 +1761,7 @@ int gmx_grompp(int argc, char *argv[])
     wi = init_warning(TRUE, maxwarn);
 
     /* PARAMETER file processing */
-    mdparin = opt2fn("-f", NFILE, fnm);
+    std::string mdparin = opt2fn("-f", NFILE, fnm);
     set_warning_line(wi, mdparin, -1);
     try
     {
@@ -1808,10 +1807,10 @@ int gmx_grompp(int argc, char *argv[])
         pr_symtab(debug, 0, "Just opened", &sys.symtab);
     }
 
-    const char *fn = ftp2fn(efTOP, NFILE, fnm);
+    std::string fn = ftp2fn(efTOP, NFILE, fnm);
     if (!gmx_fexist(fn))
     {
-        gmx_fatal(FARGS, "%s does not exist", fn);
+        gmx_fatal(FARGS, "%s does not exist", fn.c_str());
     }
 
     t_state state;
@@ -1907,8 +1906,7 @@ int gmx_grompp(int argc, char *argv[])
             warning_note(wi, warn_buf);
         }
 
-        const char *fn = opt2fn("-r", NFILE, fnm);
-        const char *fnB;
+        std::string fn = opt2fn("-r", NFILE, fnm), fnB;
 
         if (!gmx_fexist(fn))
         {
@@ -1916,7 +1914,7 @@ int gmx_grompp(int argc, char *argv[])
                       "Cannot find position restraint file %s (option -r).\n"
                       "From GROMACS-2018, you need to specify the position restraint "
                       "coordinate files explicitly to avoid mistakes, although you can "
-                      "still use the same file as you specify for the -c option.", fn);
+                      "still use the same file as you specify for the -c option.", fn.c_str());
         }
 
         if (opt2bSet("-rb", NFILE, fnm))
@@ -1928,7 +1926,7 @@ int gmx_grompp(int argc, char *argv[])
                           "Cannot find B-state position restraint file %s (option -rb).\n"
                           "From GROMACS-2018, you need to specify the position restraint "
                           "coordinate files explicitly to avoid mistakes, although you can "
-                          "still use the same file as you specify for the -c option.", fn);
+                          "still use the same file as you specify for the -c option.", fn.c_str());
             }
         }
         else
@@ -1938,14 +1936,14 @@ int gmx_grompp(int argc, char *argv[])
 
         if (bVerbose)
         {
-            fprintf(stderr, "Reading position restraint coords from %s", fn);
-            if (strcmp(fn, fnB) == 0)
+            fprintf(stderr, "Reading position restraint coords from %s", fn.c_str());
+            if (fn == fnB)
             {
                 fprintf(stderr, "\n");
             }
             else
             {
-                fprintf(stderr, " and %s\n", fnB);
+                fprintf(stderr, " and %s\n", fnB.c_str());
             }
         }
         gen_posres(&sys, mi, fn, fnB,

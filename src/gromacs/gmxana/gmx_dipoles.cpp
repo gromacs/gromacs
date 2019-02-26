@@ -70,6 +70,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
@@ -185,6 +186,7 @@ static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
     rvec         dx;
     t_pbc        pbc;
 
+    GMX_ASSERT((ncos == 1) || (ncos == 2), "ncos didn't take a legal value");
     for (n = 0; (n < ncos); n++)
     {
         if (!xcm[n])
@@ -293,7 +295,7 @@ static real normalize_cmap(t_gkrbin *gb)
     return hi;
 }
 
-static void print_cmap(const char *cmap, t_gkrbin *gb, int *nlevels)
+static void print_cmap(const std::string &cmap, t_gkrbin *gb, int *nlevels)
 {
     FILE   *out;
     int     i, j;
@@ -333,7 +335,7 @@ static void print_cmap(const char *cmap, t_gkrbin *gb, int *nlevels)
     sfree(yaxis);
 }
 
-static void print_gkrbin(const char *fn, t_gkrbin *gb,
+static void print_gkrbin(const std::string &fn, t_gkrbin *gb,
                          int ngrp, int nframes, real volume,
                          const gmx_output_env_t *oenv)
 {
@@ -660,7 +662,7 @@ static void update_slab_dipoles(int k0, int k1, rvec x[], rvec mu,
     rvec_inc(slab_dipole[k], mu);
 }
 
-static void dump_slab_dipoles(const char *fn, int idim, int nslice,
+static void dump_slab_dipoles(const std::string &fn, int idim, int nslice,
                               rvec slab_dipole[], matrix box, int nframes,
                               const gmx_output_env_t *oenv)
 {
@@ -724,24 +726,24 @@ static void compute_avercos(int n, rvec dip[], real *dd, rvec axis, gmx_bool bPa
 }
 
 static void do_dip(const t_topology *top, int ePBC, real volume,
-                   const char *fn,
-                   const char *out_mtot, const char *out_eps,
-                   const char *out_aver, const char *dipdist,
-                   const char *cosaver, const char *fndip3d,
-                   const char *fnadip,  gmx_bool bPairs,
-                   const char *corrtype, const char *corf,
-                   gmx_bool bGkr,     const char *gkrfn,
+                   const std::string &fn,
+                   const std::string &out_mtot, const std::string &out_eps,
+                   const std::string &out_aver, const std::string &dipdist,
+                   const std::string &cosaver, const std::string &fndip3d,
+                   const std::string &fnadip,  gmx_bool bPairs,
+                   const char *corrtype, const std::string &corf,
+                   gmx_bool bGkr,     const std::string &gkrfn,
                    gmx_bool bPhi,     int  *nlevels,  int ndegrees,
                    int  ncos,
-                   const char *cmap,    real rcmax,
+                   const std::string &cmap,    real rcmax,
                    gmx_bool bQuad,
-                   gmx_bool bMU,      const char *mufn,
+                   gmx_bool bMU,      const std::string &mufn,
                    int  *gnx,     int  *molindex[],
                    real mu_max,   real mu_aver,
                    real epsilonRF, real temp,
                    int  *gkatom,  int skip,
                    gmx_bool bSlab,    int nslices,
-                   const char *axtitle, const char *slabfn,
+                   const char *axtitle, const std::string &slabfn,
                    const gmx_output_env_t *oenv)
 {
     const char *leg_mtot[] = {
@@ -926,13 +928,13 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
         }
     }
 
-    if (fnadip)
+    if (!fnadip.empty())
     {
         adip = xvgropen(fnadip, "Average molecular dipole", "Dipole (D)", "", oenv);
         xvgr_legend(adip, NLEGADIP, leg_adip, oenv);
 
     }
-    if (cosaver)
+    if (!cosaver.empty())
     {
         caver = xvgropen(cosaver, bPairs ? "Average pair orientation" :
                          "Average absolute dipole orientation", "Time (ps)", "", oenv);
@@ -940,7 +942,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
                     oenv);
     }
 
-    if (fndip3d)
+    if (!fndip3d.empty())
     {
         snew(dipsp, gnx_tot);
 
@@ -998,7 +1000,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
             }
             else
             {
-                printf("End of %s reached\n", mufn);
+                printf("End of %s reached\n", mufn.c_str());
                 break;
             }
         }
@@ -1126,7 +1128,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
                         dipole_bin[ibin]++;
                     }
 
-                    if (fndip3d)
+                    if (dipsp)
                     {
                         rvec2sprvec(dipole[i], dipsp[i]);
 
@@ -1206,7 +1208,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
             M_av2[m] = M_av[m]*M_av[m];
         }
 
-        if (cosaver)
+        if (!cosaver.empty())
         {
             compute_avercos(gnx_tot, dipole, &dd, dipaxis, bPairs);
             rms_cos = std::sqrt(gmx::square(dipaxis[XX]-0.5)+
@@ -1287,7 +1289,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
             fprintf(outaver, "%10g  %10.3e %10.3e %10.3e %10.3e\n",
                     t, M2_ave, M_ave2, M_diff, M_ave2/M2_ave);
 
-            if (fnadip)
+            if (!fnadip.empty())
             {
                 real aver;
                 gmx_stats_get_average(muframelsq, &aver);
@@ -1344,12 +1346,12 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
     xvgrclose(outaver);
     xvgrclose(outeps);
 
-    if (fnadip)
+    if (!fnadip.empty())
     {
         xvgrclose(adip);
     }
 
-    if (cosaver)
+    if (!cosaver.empty())
     {
         xvgrclose(caver);
     }

@@ -1277,13 +1277,13 @@ static real calcBuckinghamBMax(FILE *fplog, const gmx_mtop_t *mtop)
 
 static void make_nbf_tables(FILE *fp,
                             const interaction_const_t *ic, real rtab,
-                            const char *tabfn, char *eg1, char *eg2,
+                            const std::string &tabfn, char *eg1, char *eg2,
                             t_nblists *nbl)
 {
     char buf[STRLEN];
     int  i, j;
 
-    if (tabfn == nullptr)
+    if (tabfn.empty())
     {
         if (debug)
         {
@@ -1292,11 +1292,11 @@ static void make_nbf_tables(FILE *fp,
         return;
     }
 
-    sprintf(buf, "%s", tabfn);
+    sprintf(buf, "%s", tabfn.c_str());
     if (eg1 && eg2)
     {
         /* Append the two energy group names */
-        sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
+        sprintf(buf + tabfn.length() - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
                 eg1, eg2, ftp2ext(efXVG));
     }
     nbl->table_elec_vdw = make_tables(fp, ic, buf, rtab, 0);
@@ -1449,7 +1449,7 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
                     if (gmx::endsWith(tabbfnm[j], patternToFind))
                     {
                         // Finally read the table from the file found
-                        tab[i]    = make_bonded_table(fplog, tabbfnm[j].c_str(), NRAL(ftype1)-2);
+                        tab[i]    = make_bonded_table(fplog, tabbfnm[j], NRAL(ftype1)-2);
                         madeTable = true;
                     }
                 }
@@ -1887,8 +1887,8 @@ void init_forcerec(FILE                             *fp,
                    const gmx_mtop_t                 *mtop,
                    const t_commrec                  *cr,
                    matrix                            box,
-                   const char                       *tabfn,
-                   const char                       *tabpfn,
+                   const std::string                &tabfn,
+                   const std::string                &tabpfn,
                    gmx::ArrayRef<const std::string>  tabbfnm,
                    const gmx_hw_info_t              &hardwareInfo,
                    const gmx_device_info_t          *deviceInfo,

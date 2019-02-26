@@ -446,15 +446,15 @@ static void center_x(int ecenter, rvec x[], matrix box, int n, int nc, const int
     }
 }
 
-static void check_trr(const char *fn)
+static void check_trr(const std::string &fn)
 {
     if (fn2ftp(fn) != efTRR)
     {
-        gmx_fatal(FARGS, "%s is not a trajectory file, exiting\n", fn);
+        gmx_fatal(FARGS, "%s is not a trajectory file, exiting\n", fn.c_str());
     }
 }
 
-static void do_trunc(const char *fn, real t0)
+static void do_trunc(const std::string &fn, real t0)
 {
     t_fileio        *in;
     FILE            *fp;
@@ -477,7 +477,7 @@ static void do_trunc(const char *fn, real t0)
     fp   = gmx_fio_getfp(in);
     if (fp == nullptr)
     {
-        fprintf(stderr, "Sorry, can not trunc %s, truncation of this filetype is not supported\n", fn);
+        fprintf(stderr, "Sorry, can not trunc %s, truncation of this filetype is not supported\n", fn.c_str());
         gmx_trr_close(in);
     }
     else
@@ -500,7 +500,7 @@ static void do_trunc(const char *fn, real t0)
         {
             fprintf(stderr, "Do you REALLY want to truncate this trajectory (%s) at:\n"
                     "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
-                    fn, j, t, static_cast<long int>(fpos));
+                    fn.c_str(), j, t, static_cast<long int>(fpos));
             if (1 != scanf("%s", yesno))
             {
                 gmx_fatal(FARGS, "Error reading user input");
@@ -511,7 +511,7 @@ static void do_trunc(const char *fn, real t0)
                 gmx_trr_close(in);
                 if (0 != gmx_truncate(fn, fpos))
                 {
-                    gmx_fatal(FARGS, "Error truncating file %s", fn);
+                    gmx_fatal(FARGS, "Error truncating file %s", fn.c_str());
                 }
             }
             else
@@ -548,9 +548,9 @@ static void do_trunc(const char *fn, real t0)
  * file was written by a GROMACS tool, this seems like reasonable
  * behaviour. */
 static std::unique_ptr<gmx_mtop_t>
-read_mtop_for_tng(const char *tps_file,
-                  const char *input_file,
-                  const char *output_file)
+read_mtop_for_tng(const std::string &tps_file,
+                  const std::string &input_file,
+                  const std::string &output_file)
 {
     std::unique_ptr<gmx_mtop_t> mtop;
 
@@ -877,10 +877,7 @@ int gmx_trjconv(int argc, char *argv[])
     gmx_bool          bHaveFirstFrame, bHaveNextFrame, bSetBox, bSetUR, bSplit = FALSE;
     gmx_bool          bSubTraj = FALSE, bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
     gmx_bool          bWriteFrame, bSplitHere;
-    const char       *top_file, *in_file, *out_file = nullptr;
     char             *charpt;
-    char             *outf_base = nullptr;
-    const char       *outf_ext  = nullptr;
     char              top_title[256], timestr[32], stepstr[32], filemode[5];
     gmx_output_env_t *oenv;
 
@@ -906,10 +903,11 @@ int gmx_trjconv(int argc, char *argv[])
     fprintf(stdout, "Note that major changes are planned in future for "
             "trjconv, to improve usability and utility.");
 
-    top_file = ftp2fn(efTPS, NFILE, fnm);
+    std::string top_file = ftp2fn(efTPS, NFILE, fnm);
 
     /* Check command line */
-    in_file = opt2fn("-f", NFILE, fnm);
+    std::string in_file = opt2fn("-f", NFILE, fnm);
+    std::string out_file, separate_out_file;
     std::string separateOutFileFormat = gmx::formatString("%%0%d", nzero);
 
     if (ttrunc != -1)
@@ -1009,13 +1007,11 @@ int gmx_trjconv(int argc, char *argv[])
         }
         if (bSeparate || bSplit)
         {
-            outf_ext = std::strrchr(out_file, '.');
+            const char *outf_ext = std::strrchr(out_file.c_str(), '.');
             if (outf_ext == nullptr)
             {
-                gmx_fatal(FARGS, "Output file name '%s' does not contain a '.'", out_file);
+                gmx_fatal(FARGS, "Output file name '%s' does not contain a '.'", out_file.c_str());
             }
-            outf_base = gmx_strdup(out_file);
-            outf_base[outf_ext - out_file] = '\0';
         }
 
         bSubTraj = opt2bSet("-sub", NFILE, fnm);
@@ -1172,7 +1168,7 @@ int gmx_trjconv(int argc, char *argv[])
             /* no index file, so read natoms from TRX */
             if (!read_first_frame(oenv, &trxin, in_file, &fr, TRX_DONT_SKIP))
             {
-                gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
+                gmx_fatal(FARGS, "Could not read a frame from %s", in_file.c_str());
             }
             natoms = fr.natoms;
             close_trx(trxin);
@@ -1222,7 +1218,7 @@ int gmx_trjconv(int argc, char *argv[])
             if (ndrop == 0 || ncol < 2)
             {
                 gmx_fatal(FARGS, "Found no data points in %s",
-                          opt2fn("-drop", NFILE, fnm));
+                          opt2fn("-drop", NFILE, fnm).c_str());
             }
             drop0 = 0;
             drop1 = 0;
@@ -1271,7 +1267,7 @@ int gmx_trjconv(int argc, char *argv[])
         bHaveFirstFrame = read_first_frame(oenv, &trxin, in_file, &fr, flags);
         if (fr.bPrec)
         {
-            fprintf(stderr, "\nPrecision of %s is %g (nm)\n", in_file, 1/fr.prec);
+            fprintf(stderr, "\nPrecision of %s is %g (nm)\n", in_file.c_str(), 1/fr.prec);
         }
         if (bNeedPrec)
         {
@@ -1346,7 +1342,7 @@ int gmx_trjconv(int argc, char *argv[])
                     trxout = trjtools_gmx_prepare_tng_writing(out_file,
                                                               filemode[0],
                                                               trxin,
-                                                              nullptr,
+                                                              std::string(),
                                                               nout,
                                                               mtop.get(),
                                                               gmx::arrayRefFromArray(index, nout),
@@ -1773,7 +1769,7 @@ int gmx_trjconv(int argc, char *argv[])
                                     {
                                         close_trx(trxout);
                                     }
-                                    trxout = open_trx(separate_out_file.c_str(), filemode);
+                                    trxout = open_trx(separate_out_file, filemode);
                                 }
                                 if (bSubTraj)
                                 {

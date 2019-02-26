@@ -2944,7 +2944,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     return ePBC;
 }
 
-static t_fileio *open_tpx(const char *fn, const char *mode)
+static t_fileio *open_tpx(const std::string &fn, const char *mode)
 {
     return gmx_fio_open(fn, mode);
 }
@@ -2960,7 +2960,7 @@ static void close_tpx(t_fileio *fio)
  *
  ************************************************************/
 
-void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
+void read_tpxheader(const std::string &fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
 {
     t_fileio *fio;
 
@@ -2969,7 +2969,7 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
     close_tpx(fio);
 }
 
-void write_tpx_state(const char *fn,
+void write_tpx_state(const std::string &fn,
                      const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop)
 {
     t_fileio *fio;
@@ -2982,7 +2982,7 @@ void write_tpx_state(const char *fn,
     close_tpx(fio);
 }
 
-void read_tpx_state(const char *fn,
+void read_tpx_state(const std::string &fn,
                     t_inputrec *ir, t_state *state, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
@@ -2992,7 +2992,7 @@ void read_tpx_state(const char *fn,
     close_tpx(fio);
 }
 
-int read_tpx(const char *fn,
+int read_tpx(const std::string &fn,
              t_inputrec *ir, matrix box, int *natoms,
              rvec *x, rvec *v, gmx_mtop_t *mtop)
 {
@@ -3015,7 +3015,7 @@ int read_tpx(const char *fn,
     return ePBC;
 }
 
-int read_tpx_top(const char *fn,
+int read_tpx_top(const std::string &fn,
                  t_inputrec *ir, matrix box, int *natoms,
                  rvec *x, rvec *v, t_topology *top)
 {
@@ -3029,12 +3029,12 @@ int read_tpx_top(const char *fn,
     return ePBC;
 }
 
-gmx_bool fn2bTPX(const char *file)
+gmx_bool fn2bTPX(const std::string &file)
 {
     return (efTPR == fn2ftp(file));
 }
 
-void pr_tpxheader(FILE *fp, int indent, const char *title, const t_tpxheader *sh)
+void pr_tpxheader(FILE *fp, int indent, const std::string &title, const t_tpxheader *sh)
 {
     if (available(fp, sh, indent, title))
     {

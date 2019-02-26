@@ -40,6 +40,8 @@
 
 #include <stdio.h>
 
+#include <string>
+
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/topology.h"
@@ -160,8 +162,8 @@ extern void move_man(t_x11 *x11, t_manager *man, int width, int height);
 extern void step_message(t_x11 *x11, t_manager *man);
 /* Send a message to the manager */
 
-extern void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
-                     const char *status);
+extern void set_file(t_x11 *x11, t_manager *man, const std::string &trajectory,
+                     const std::string &status);
 /* Read a new trajectory and topology */
 
 extern void map_man(t_x11 *x11, t_manager *man);

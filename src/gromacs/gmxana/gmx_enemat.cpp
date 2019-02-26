@@ -475,7 +475,7 @@ int gmx_enemat(int argc, char *argv[])
                         fprintf(stderr, "Energy range adjusted: %f to %f\n", emin, emax);
                     }
 
-                    sprintf(fn, "%s%s", egrp_nm[m], ftp2fn(efXPM, NFILE, fnm));
+                    sprintf(fn, "%s%s", egrp_nm[m], ftp2fn(efXPM, NFILE, fnm).c_str());
                     sprintf(label, "%s Interaction Energies", egrp_nm[m]);
                     out = gmx_ffopen(fn, "w");
                     if (emin >= emid)

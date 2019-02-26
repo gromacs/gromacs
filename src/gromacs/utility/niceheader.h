@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #ifndef GMX_UTILITY_NICEHEADER_H
 #define GMX_UTILITY_NICEHEADER_H
 
+#include <string>
+
 namespace gmx
 {
 
@@ -55,7 +57,7 @@ class TextWriter;
  * \param[in]  fn             Name of the file being written; if nullptr, described as "unknown".
  * \param[in]  commentChar    Character to use as the starting delimiter for comments.
  * \throws     std::bad_alloc if out of memory. */
-void niceHeader(TextWriter *writer, const char *fn, char commentChar);
+void niceHeader(TextWriter *writer, const std::string &fn, char commentChar);
 
 }  // namespace gmx
 

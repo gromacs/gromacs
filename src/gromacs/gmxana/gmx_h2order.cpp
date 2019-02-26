@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@
 /* directions.                                                              */
 /****************************************************************************/
 
-static void calc_h2order(const char *fn, const int index[], int ngx, rvec **slDipole,
+static void calc_h2order(const std::string &fn, const int index[], int ngx, rvec **slDipole,
                          real **slOrder, real *slWidth, int *nslices,
                          const t_topology *top, int ePBC,
                          int axis, gmx_bool bMicel, int micel[], int nmic,
@@ -230,7 +230,7 @@ static void calc_h2order(const char *fn, const int index[], int ngx, rvec **slDi
     sfree(x0);       /* free memory used by coordinate arrays */
 }
 
-static void h2order_plot(rvec dipole[], real order[], const char *afile,
+static void h2order_plot(rvec dipole[], real order[], const std::string &afile,
                          int nslices, real slWidth, const gmx_output_env_t *oenv)
 {
     FILE       *ord;              /* xvgr files with order parameters  */

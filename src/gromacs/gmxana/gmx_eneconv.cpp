@@ -161,7 +161,7 @@ static int scan_ene_files(const std::vector<std::string> &files,
 
     for (size_t f = 0; f < files.size(); f++)
     {
-        in  = open_enx(files[f].c_str(), "r");
+        in  = open_enx(files[f], "r");
         enm = nullptr;
         do_enxnms(in, &nre, &enm);
 
@@ -547,7 +547,7 @@ int gmx_eneconv(int argc, char *argv[])
     {
         bNewFile   = TRUE;
         bNewOutput = TRUE;
-        in         = open_enx(files[f].c_str(), "r");
+        in         = open_enx(files[f], "r");
         enm        = nullptr;
         do_enxnms(in, &this_nre, &enm);
         if (f == 0)
