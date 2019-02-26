@@ -99,12 +99,6 @@ bool do_per_step(int64_t step, int64_t nstep);
 
 /* ROUTINES from sim_util.c */
 
-void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
-
-void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
-                   const matrix box, real lambda, tensor pres, tensor virial,
-                   real *prescorr, real *enercorr, real *dvdlcorr);
-
 /*! \brief Fills fep_state, lambda, and lam0 if needed
  *
  * If FEP or simulated tempering is in use:
