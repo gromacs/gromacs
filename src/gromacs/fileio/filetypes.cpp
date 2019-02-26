@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,8 +40,13 @@
 
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
+#include "gromacs/utility/stringutil.h"
 
 enum
 {
@@ -285,6 +290,30 @@ const char *ftp2defopt(int ftp)
     {
         return nullptr;
     }
+}
+
+int fn2ftp(const std::string &fn)
+{
+    if (fn.empty())
+    {
+        return efNR;
+    }
+    auto extension = gmx::Path::getExtension(fn);
+    if (extension.empty())
+    {
+        return efNR;
+    }
+    std::string dotPlusExtension = ".";
+    dotPlusExtension += extension;
+    auto foundPosition =
+        std::find_if(std::begin(deffile), std::end(deffile),
+                     [&dotPlusExtension](const t_deffile &deffile)
+                     {
+                         GMX_ASSERT(deffile.ext != nullptr, "Must have valid '.ext' extensions");
+                         return gmx::equalCaseInsensitive(dotPlusExtension, deffile.ext);
+                     });
+
+    return foundPosition - std::begin(deffile);
 }
 
 int fn2ftp(const char *fn)

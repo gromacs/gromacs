@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "thermochemistry.h"
 
@@ -465,7 +467,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
     matrix       box;
     rvec        *xread, *x;
     real         t, inp, **inprod = nullptr;
-    char         str[STRLEN], str2[STRLEN], *c;
+    char         str[STRLEN], str2[STRLEN];
     const char **ylabel;
     real         fact;
     gmx_rmpbc_t  gpbc = nullptr;
@@ -770,25 +772,22 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
             pmin[0] = -extreme;
             pmax[0] =  extreme;
         }
-        /* build format string for filename: */
-        std::strcpy(str, extremefile); /* copy filename */
-        c = std::strrchr(str, '.');    /* find where extention begins */
-        std::strcpy(str2, c);          /* get extention */
-        sprintf(c, "%%d%s", str2);     /* append '%s' and extention to filename */
         for (v = 0; v < noutvec_extr; v++)
         {
+            std::string outputFile;
             /* make filename using format string */
             if (noutvec_extr == 1)
             {
-                std::strcpy(str2, extremefile);
+                outputFile = extremefile;
             }
             else
             {
-                sprintf(str2, str, eignr[outvec[v]]+1);
+                outputFile = gmx::Path::concatenateBeforeExtension
+                        (extremefile, gmx::toString(eignr[outvec[v]]+1));
             }
             fprintf(stderr, "Writing %d frames along eigenvector %d to %s\n",
-                    nextr, outvec[v]+1, str2);
-            out = open_trx(str2, "w");
+                    nextr, outvec[v]+1, outputFile.c_str());
+            out = open_trx(outputFile.c_str(), "w");
             for (frame = 0; frame < nextr; frame++)
             {
                 if ((extreme == 0) && (nextr <= 3))
