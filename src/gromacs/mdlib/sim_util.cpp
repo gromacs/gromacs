@@ -50,6 +50,7 @@
 #include "gromacs/awh/awh.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_gpu.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
@@ -1036,6 +1037,17 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         if (bNS)
         {
+
+            if (bUseGPU)
+            {
+                /* Temporarily using env variable to define schedule, awaiting proper mechanism */
+                /* TODO fix when schedule mechanism available */
+                if (getenv("SCHEDULEPUREMULTIGPU") != nullptr)
+                {
+                    dd_init_move_x_gpu(cr->dd, box);
+                }
+            }
+
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
