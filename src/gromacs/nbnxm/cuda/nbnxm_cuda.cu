@@ -111,6 +111,8 @@
 #include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_pruneonly.cu"
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
+static const bool c_enableGpuDD = (getenv("GMX_GPU_DD_COMMS") != nullptr);
+
 namespace Nbnxm
 {
 
@@ -781,12 +783,15 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
         return;
     }
 
-    const rvec *d_x;
-
     // copy of coordinates will be required if null pointer has been
     // passed to function
     // TODO improve this mechanism
     bool        copyCoord = (xPmeDevicePtr == nullptr);
+    if (c_enableGpuDD && interactionLoc == Nbnxm::InteractionLocality::NonLocal)
+    {
+        copyCoord = false;
+    }
+
 
     // copy X-coordinate data to device
     if (copyCoord)
@@ -806,11 +811,16 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
             nb->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
         }
 
-        d_x = nb->xrvec;
+    }
+
+    const rvec *d_x;
+    if (xPmeDevicePtr != nullptr)
+    {
+        d_x = (rvec*) xPmeDevicePtr;
     }
     else //coordinates have already been copied by PME stream
     {
-        d_x = (rvec*) xPmeDevicePtr;
+        d_x = nb->xrvec;
     }
 
     if ((interactionLoc == Nbnxm::InteractionLocality::Local))
@@ -994,7 +1004,6 @@ void nbnxmRecvFFromPmeCudaDirect(gmx_nbnxn_gpu_t *gpu_nbv, void *recvPtr, int re
                                        stream);
     CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
 }
-
 
 void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused atomLocality,
                            gmx_nbnxn_gpu_t                   *nb)

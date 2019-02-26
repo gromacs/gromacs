@@ -73,6 +73,7 @@ namespace gmx
 {
 template <typename T> class HashedMap;
 class LocalAtomSetManager;
+class DomdecCuda;
 }
 
 typedef struct {
@@ -122,7 +123,6 @@ struct gmx_ddbox_t {
     /* Normal vectors for the cells walls */
     rvec normal[DIM];
 };
-
 
 struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     /* The DD particle-particle nodes only */
@@ -214,6 +214,10 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     /* gmx_pme_recv_f buffer */
     int   pme_recv_f_alloc = 0;
     rvec *pme_recv_f_buf   = nullptr;
+
+    /* GPU halo exchange object */
+    gmx::DomdecCuda *ddGpu;
+
 };
 
 //! Are we the master node for domain decomposition

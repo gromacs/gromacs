@@ -56,6 +56,7 @@
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_cuda.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/mdsetup.h"
@@ -149,6 +150,9 @@ using gmx::SimulationSignaller;
 
 //! Whether the GPU versions of Leap-Frog integrator and LINCS and SHAKE constraints
 static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
+
+/*! \brief environment variable to enable GPU P2P communication */
+static const bool c_enableGpuDD = (getenv("GMX_GPU_DD_COMMS") != nullptr);
 
 void gmx::Simulator::do_md()
 {
@@ -699,6 +703,12 @@ void gmx::Simulator::do_md()
                 mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
 
     const DDBalanceRegionHandler ddBalanceRegionHandler(cr);
+
+
+    if (DOMAINDECOMP(cr) && c_enableGpuDD)
+    {
+        cr->dd->ddGpu = new DomdecCuda(cr->dd);
+    }
 
     step     = ir->init_step;
     step_rel = 0;

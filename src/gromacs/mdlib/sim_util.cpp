@@ -48,6 +48,7 @@
 #include "gromacs/awh/awh.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_cuda.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
@@ -124,6 +125,9 @@ static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GP
 // introduction of this functionality.
 // TODO eventially tie this in with other existing GPU flags.
 static const bool c_enableGpuBufOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
+
+/*! \brief environment variable to enable GPU P2P communication */
+static const bool c_enableGpuDD = (getenv("GMX_GPU_DD_COMMS") != nullptr);
 
 /*! \brief environment variable to enable GPU P2P communication */
 static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
@@ -1143,6 +1147,12 @@ void do_force(FILE                                     *fplog,
         launchPmeGpuFftAndGather(fr->pmedata, wcycle, copyPmeForceBack);
     }
 
+    gmx::DomdecCuda* ddGpu = nullptr;
+    if (bUseGPU && c_enableGpuDD && havePPDomainDecomposition(cr))
+    {
+        ddGpu = cr->dd->ddGpu;
+    }
+
     /* Communicate coordinates and sum dipole if necessary +
        do non-local pair search */
     if (havePPDomainDecomposition(cr))
@@ -1150,6 +1160,7 @@ void do_force(FILE                                     *fplog,
         if (bNS)
         {
             // TODO: fuse this branch with the above large bNS block
+
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
@@ -1159,10 +1170,28 @@ void do_force(FILE                                     *fplog,
             nbv->setupGpuShortRangeWork(fr->gpuBonded, Nbnxm::InteractionLocality::NonLocal);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             wallcycle_stop(wcycle, ewcNS);
+
+            if (bUseGPU && c_enableGpuDD)
+            {
+                rvec* d_x    = static_cast<rvec *> (nbv->get_gpu_xrvec());
+                void* stream = nbv->get_gpu_stream(Nbnxm::AtomLocality::NonLocal);
+                ddGpu->initHaloExchange(cr->dd, box, d_x, stream);
+            }
         }
         else
         {
-            dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
+            if (c_enableGpuDD)
+            {
+                rvec* d_x    = static_cast<rvec *> (nbv->get_gpu_xrvec());
+                void* stream = nbv->get_gpu_stream(Nbnxm::AtomLocality::NonLocal);
+                //ensure non-local stream waits until local stream has copied X data to device
+                nbv->stream_wait_x_on_device(Nbnxm::InteractionLocality::NonLocal);
+                ddGpu->applyXHaloExchange(d_x, stream);
+            }
+            else
+            {
+                dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
+            }
 
             nbv->setCoordinates(Nbnxm::AtomLocality::NonLocal, false,
                                 x.unpaddedArrayRef(), useGpuXBufOps, pme_gpu_get_device_x(fr->pmedata), wcycle);

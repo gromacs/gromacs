@@ -254,7 +254,6 @@ void nonbonded_verlet_t::recvFFromPmeCudaDirect(void *recvPtr, int recvSize, int
     Nbnxm::nbnxmRecvFFromPmeCudaDirect(gpu_nbv, recvPtr, recvSize, pmeRank);
 }
 
-
 void nonbonded_verlet_t::wait_stream_gpu(const Nbnxm::AtomLocality locality)
 {
     nbnxn_wait_stream_gpu(locality, gpu_nbv);

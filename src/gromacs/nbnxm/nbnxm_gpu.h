@@ -310,13 +310,11 @@ CUDA_FUNC_QUALIFIER
 void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused  atomLocality,
                            gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM
 
-
 /*! \brief return GPU pointer to PME force in rvec format
  * \param[in] nb                   The nonbonded data GPU structure
  */
 CUDA_FUNC_QUALIFIER
 void* nbnxn_get_gpu_fpmervec(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
-
 
 /*! \brief return GPU pointer to x in rvec format
  * \param[in] nb                   The nonbonded data GPU structure
@@ -363,6 +361,10 @@ CUDA_FUNC_QUALIFIER
 void nbnxmSendXToPmeCudaDirect(gmx_nbnxn_gpu_t gmx_unused *nb, void gmx_unused *sendPtr, int gmx_unused sendSize,
                                int gmx_unused pmeRank, void gmx_unused *stream) CUDA_FUNC_TERM
 
+/*! \brief return GPU pointer to x in rvec format*/
+CUDA_FUNC_QUALIFIER
+void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t     gmx_unused *gpu_nbv,
+                          Nbnxm::AtomLocality gmx_unused  locality) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
 
 } // namespace Nbnxm
 
