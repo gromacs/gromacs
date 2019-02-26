@@ -1772,68 +1772,53 @@ static void do_bootstrapping(const char *fnres, const char* fnprof, const char *
 }
 
 //! Return type of input file based on file extension (xvg, pdo, or tpr)
-static int whaminFileType(char *fn)
+static int whaminFileType(const std::string &fn)
 {
-    int len;
-    len = std::strlen(fn);
-    if (std::strcmp(fn+len-3, "tpr") == 0)
+    auto extension = gmx::Path::getExtension(fn);
+    if (extension == "tpr")
     {
         return whamin_tpr;
     }
-    else if (std::strcmp(fn+len-3, "xvg") == 0 || std::strcmp(fn+len-6, "xvg.gz") == 0)
+    else if (extension == "xvg" || extension == "xvg.gz")
     {
         return whamin_pullxf;
     }
-    else if (std::strcmp(fn+len-3, "pdo") == 0 || std::strcmp(fn+len-6, "pdo.gz") == 0)
+    else if (extension == "pdo" || extension == "pdo.gz")
     {
         return whamin_pdo;
     }
     else
     {
-        gmx_fatal(FARGS, "Unknown file type of %s. Should be tpr, xvg, or pdo.\n", fn);
+        gmx_fatal(FARGS, "Unknown file type of %s. Should be tpr, xvg, or pdo.\n", fn.c_str());
     }
 }
 
 //! Read the files names in pdo-files.dat, pullf/x-files.dat, tpr-files.dat
-static void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
-                         t_UmbrellaOptions *opt)
+static std::vector<std::string> read_wham_in(const std::string       &fn,
+                                             const t_UmbrellaOptions &opt)
 {
-    char **filename = nullptr, tmp[WHAM_MAXFILELEN+2];
-    int    nread, sizenow, i, block = 1;
-    FILE  *fp;
+    std::vector<std::string> filenames;
+    char                     tmp[WHAM_MAXFILELEN+2];
 
-    fp      = gmx_ffopen(fn, "r");
-    nread   = 0;
-    sizenow = 0;
+    FILE                    *fp      = gmx_ffopen(fn, "r");
     while (fgets(tmp, sizeof(tmp), fp) != nullptr)
     {
         if (std::strlen(tmp) >= WHAM_MAXFILELEN)
         {
-            gmx_fatal(FARGS, "Filename too long in %s. Only %d characters allowed.\n", fn, WHAM_MAXFILELEN);
-        }
-        if (nread >= sizenow)
-        {
-            sizenow += block;
-            srenew(filename, sizenow);
-            for (i = sizenow-block; i < sizenow; i++)
-            {
-                snew(filename[i], WHAM_MAXFILELEN);
-            }
+            gmx_fatal(FARGS, "Filename too long in %s. Only %d characters allowed.\n", fn.c_str(), WHAM_MAXFILELEN);
         }
         /* remove newline if there is one */
         if (tmp[std::strlen(tmp)-1] == '\n')
         {
             tmp[std::strlen(tmp)-1] = '\0';
         }
-        std::strcpy(filename[nread], tmp);
-        if (opt->verbose)
+        filenames.emplace_back(tmp);
+        if (opt.verbose)
         {
-            printf("Found file %s in %s\n", filename[nread], fn);
+            printf("Found file %s in %s\n", filenames.back().c_str(), fn.c_str());
         }
-        nread++;
     }
-    *filenamesRet = filename;
-    *nfilesRet    = nread;
+    return filenames;
 }
 
 //! Open a file or a pipe to a gzipped file
@@ -1917,33 +1902,32 @@ static void pdo_close_file(FILE *fp)
 }
 
 //! Reading all pdo files
-static void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
+static void read_pdo_files(gmx::ArrayRef<const std::string> fn, t_UmbrellaHeader* header,
                            t_UmbrellaWindow *window, t_UmbrellaOptions *opt)
 {
     FILE    *file;
     real     mintmp, maxtmp, done = 0.;
-    int      i;
     gmx_bool bPipeOpen;
     /* char Buffer0[1000]; */
 
-    if (nfiles < 1)
+    if (fn.empty())
     {
-        gmx_fatal(FARGS, "No files found. Hick.");
+        gmx_fatal(FARGS, "No files found.");
     }
 
     /* if min and max are not given, get min and max from the input files */
     if (opt->bAuto)
     {
-        printf("Automatic determination of boundaries from %d pdo files...\n", nfiles);
+        printf("Automatic determination of boundaries from %ld pdo files...\n", gmx::ssize(fn));
         opt->min = 1e20;
         opt->max = -1e20;
-        for (i = 0; i < nfiles; ++i)
+        for (int i = 0; i < gmx::ssize(fn); ++i)
         {
-            file = open_pdo_pipe(fn[i], opt, &bPipeOpen);
+            file = open_pdo_pipe(fn[i].c_str(), opt, &bPipeOpen);
             /*fgets(Buffer0,999,file);
                fprintf(stderr,"First line '%s'\n",Buffer0); */
-            done = 100.0*(i+1)/nfiles;
-            fprintf(stdout, "\rOpening %s ... [%2.0f%%]", fn[i], done); fflush(stdout);
+            done = 100.0*(i+1)/gmx::ssize(fn);
+            fprintf(stdout, "\rOpening %s ... [%2.0f%%]", fn[i].c_str(), done); fflush(stdout);
             if (opt->verbose)
             {
                 printf("\n");
@@ -1981,21 +1965,21 @@ static void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
 
     /* Having min and max, we read in all files */
     /* Loop over all files */
-    for (i = 0; i < nfiles; ++i)
+    for (int i = 0; i < gmx::ssize(fn); ++i)
     {
-        done = 100.0*(i+1)/nfiles;
-        fprintf(stdout, "\rOpening %s ... [%2.0f%%]", fn[i], done); fflush(stdout);
+        done = 100.0*(i+1)/gmx::ssize(fn);
+        fprintf(stdout, "\rOpening %s ... [%2.0f%%]", fn[i].c_str(), done); fflush(stdout);
         if (opt->verbose)
         {
             printf("\n");
         }
-        file = open_pdo_pipe(fn[i], opt, &bPipeOpen);
+        file = open_pdo_pipe(fn[i].c_str(), opt, &bPipeOpen);
         read_pdo_header(file, header, opt);
         /* load data into window */
         read_pdo_data(file, header, i, window, opt, FALSE, nullptr, nullptr);
         if ((window+i)->Ntot[0] == 0)
         {
-            fprintf(stderr, "\nWARNING, no data points read from file %s (check -b option)\n", fn[i]);
+            fprintf(stderr, "\nWARNING, no data points read from file %s (check -b option)\n", fn[i].c_str());
         }
         if (bPipeOpen)
         {
@@ -2007,11 +1991,6 @@ static void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
         }
     }
     printf("\n");
-    for (i = 0; i < nfiles; ++i)
-    {
-        sfree(fn[i]);
-    }
-    sfree(fn);
 }
 
 //! translate 0/1 to N/Y to write pull dimensions
@@ -2490,14 +2469,14 @@ static void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
 }
 
 //! read pullf-files.dat or pullx-files.dat and tpr-files.dat
-static void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
+static void read_tpr_pullxf_files(gmx::ArrayRef<const std::string> fnTprs,
+                                  gmx::ArrayRef<const std::string> fnPull,
                                   t_UmbrellaHeader* header,
                                   t_UmbrellaWindow *window, t_UmbrellaOptions *opt)
 {
-    int  i;
     real mintmp, maxtmp;
 
-    printf("Reading %d tpr and pullf files\n", nfiles);
+    printf("Reading %zu tpr and pullf files\n", fnTprs.size());
 
     /* min and max not given? */
     if (opt->bAuto)
@@ -2505,18 +2484,18 @@ static void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
         printf("Automatic determination of boundaries...\n");
         opt->min = 1e20;
         opt->max = -1e20;
-        for (i = 0; i < nfiles; i++)
+        for (int i = 0; i < gmx::ssize(fnTprs); i++)
         {
             if (whaminFileType(fnTprs[i]) != whamin_tpr)
             {
                 gmx_fatal(FARGS, "Expected the %d'th file in input file to be a tpr file\n", i);
             }
-            read_tpr_header(fnTprs[i], header, opt, (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
+            read_tpr_header(fnTprs[i].c_str(), header, opt, (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
             if (whaminFileType(fnPull[i]) != whamin_pullxf)
             {
                 gmx_fatal(FARGS, "Expected the %d'th file in input file to be a xvg (pullx/pullf) file\n", i);
             }
-            read_pull_xf(fnPull[i], header, nullptr, opt, TRUE, &mintmp, &maxtmp,
+            read_pull_xf(fnPull[i].c_str(), header, nullptr, opt, TRUE, &mintmp, &maxtmp,
                          (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
             if (maxtmp > opt->max)
             {
@@ -2538,22 +2517,22 @@ static void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
     opt->dz = (opt->max-opt->min)/opt->bins;
 
     bool foundData = false;
-    for (i = 0; i < nfiles; i++)
+    for (int i = 0; i < gmx::ssize(fnTprs); i++)
     {
         if (whaminFileType(fnTprs[i]) != whamin_tpr)
         {
             gmx_fatal(FARGS, "Expected the %d'th file in input file to be a tpr file\n", i);
         }
-        read_tpr_header(fnTprs[i], header, opt, (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
+        read_tpr_header(fnTprs[i].c_str(), header, opt, (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
         if (whaminFileType(fnPull[i]) != whamin_pullxf)
         {
             gmx_fatal(FARGS, "Expected the %d'th file in input file to be a xvg (pullx/pullf) file\n", i);
         }
-        read_pull_xf(fnPull[i], header, window+i, opt, FALSE, nullptr, nullptr,
+        read_pull_xf(fnPull[i].c_str(), header, window+i, opt, FALSE, nullptr, nullptr,
                      (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
         if (window[i].Ntot[0] == 0)
         {
-            fprintf(stderr, "\nWARNING, no data points read from file %s (check -b option)\n", fnPull[i]);
+            fprintf(stderr, "\nWARNING, no data points read from file %s (check -b option)\n", fnPull[i].c_str());
         }
         else
         {
@@ -2564,14 +2543,6 @@ static void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
     {
         gmx_fatal(FARGS, "No data points were found in pullf/pullx files. Maybe you need to specify the -b option?\n");
     }
-
-    for (i = 0; i < nfiles; i++)
-    {
-        sfree(fnTprs[i]);
-        sfree(fnPull[i]);
-    }
-    sfree(fnTprs);
-    sfree(fnPull);
 }
 
 /*! \brief Read integrated autocorrelation times from input file (option -iiact)
@@ -3123,7 +3094,7 @@ static int wordcount(char *ptr)
  *
  * TO DO: ptr=fgets(...) is never freed (small memory leak)
  */
-static void readPullCoordSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
+static void readPullCoordSelection(t_UmbrellaOptions *opt, gmx::ArrayRef<const std::string> fnTpr)
 {
     FILE *fp;
     int   i, iline, n, len = STRLEN, temp;
@@ -3169,16 +3140,16 @@ static void readPullCoordSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTp
         iline++;
     }
     opt->nCoordsel = iline;
-    if (nTpr != opt->nCoordsel)
+    if (fnTpr.size() != static_cast<size_t>(opt->nCoordsel))
     {
-        gmx_fatal(FARGS, "Found %d tpr files but %d lines in %s\n", nTpr, opt->nCoordsel,
+        gmx_fatal(FARGS, "Found %zu tpr files but %d lines in %s\n", fnTpr.size(), opt->nCoordsel,
                   opt->fnCoordSel);
     }
 
     printf("\nUse only these pull coordinates:\n");
-    for (iline = 0; iline < nTpr; iline++)
+    for (size_t iline = 0; iline < fnTpr.size(); iline++)
     {
-        printf("%s (%d of %d coordinates):", fnTpr[iline], opt->coordsel[iline].nUse, opt->coordsel[iline].n);
+        printf("%s (%d of %d coordinates):", fnTpr[iline].c_str(), opt->coordsel[iline].nUse, opt->coordsel[iline].n);
         for (i = 0; i < opt->coordsel[iline].n; i++)
         {
             if (opt->coordsel[iline].bUse[i])
@@ -3448,13 +3419,11 @@ int gmx_wham(int argc, char *argv[])
         { efDAT, "-tab", "umb-pot", ffOPTRD},    /* Tabulated umbrella potential (if not harmonic) */
     };
 
-    int                      i, j, l, nfiles, nwins, nfiles2;
+    int                      i, j, l, nwins;
     t_UmbrellaHeader         header;
     t_UmbrellaWindow       * window = nullptr;
     double                  *profile, maxchange = 1e20;
     gmx_bool                 bMinSet, bMaxSet, bAutoSet, bExact = FALSE;
-    char                   **fninTpr, **fninPull, **fninPdo;
-    const char              *fnPull;
     FILE                    *histout, *profout;
     char                     xlabel[STRLEN], ylabel[256], title[256];
 
@@ -3572,26 +3541,27 @@ int gmx_wham(int argc, char *argv[])
     /* Reading gmx4/gmx5 pull output and tpr files */
     if (opt.bTpr || opt.bPullf || opt.bPullx)
     {
-        read_wham_in(opt.fnTpr, &fninTpr, &nfiles, &opt);
+        auto        fninTpr = read_wham_in(opt.fnTpr, opt);
 
-        fnPull = opt.bPullf ? opt.fnPullf : opt.fnPullx;
-        read_wham_in(fnPull, &fninPull, &nfiles2, &opt);
-        printf("Found %d tpr and %d pull %s files in %s and %s, respectively\n",
-               nfiles, nfiles2, opt.bPullf ? "force" : "position", opt.fnTpr, fnPull);
-        if (nfiles != nfiles2)
+        std::string fnPull   = opt.bPullf ? opt.fnPullf : opt.fnPullx;
+        auto        fninPull = read_wham_in(fnPull, opt);
+        printf("Found %zu tpr and %zu pull %s files in %s and %s, respectively\n",
+               fninTpr.size(), fnPull.size(), opt.bPullf ? "force" : "position", opt.fnTpr, fnPull.c_str());
+        if (fninTpr.size() != fnPull.size())
         {
-            gmx_fatal(FARGS, "Found %d file names in %s, but %d in %s\n", nfiles,
-                      opt.fnTpr, nfiles2, fnPull);
+            gmx_fatal(FARGS, "Found %zu file names in %s, but %zu in %s\n",
+                      fninTpr.size(), opt.fnTpr, fnPull.size(), fnPull.c_str());
         }
 
         /* Read file that selects the pull group to be used */
-        if (opt.fnCoordSel != nullptr)
+        if (opt.fnCoordSel)
         {
-            readPullCoordSelection(&opt, fninTpr, nfiles);
+            readPullCoordSelection(&opt, fninTpr);
         }
 
-        window = initUmbrellaWindows(nfiles);
-        read_tpr_pullxf_files(fninTpr, fninPull, nfiles, &header, window, &opt);
+        nwins  = gmx::ssize(fninPull);
+        window = initUmbrellaWindows(nwins);
+        read_tpr_pullxf_files(fninTpr, fninPull, &header, window, &opt);
     }
     else
     {   /* reading pdo files */
@@ -3600,17 +3570,16 @@ int gmx_wham(int argc, char *argv[])
             gmx_fatal(FARGS, "Reading a -is file is not supported with PDO input files.\n"
                       "Use awk or a similar tool to pick the required pull groups from your PDO files\n");
         }
-        read_wham_in(opt.fnPdo, &fninPdo, &nfiles, &opt);
-        printf("Found %d pdo files in %s\n", nfiles, opt.fnPdo);
-        window = initUmbrellaWindows(nfiles);
-        read_pdo_files(fninPdo, nfiles, &header, window, &opt);
+        auto fninPdo = read_wham_in(opt.fnPdo, opt);
+        printf("Found %zu pdo files in %s\n", fninPdo.size(), opt.fnPdo);
+        nwins  = gmx::ssize(fninPdo);
+        window = initUmbrellaWindows(nwins);
+        read_pdo_files(fninPdo, &header, window, &opt);
     }
 
     /* It is currently assumed that all pull coordinates have the same geometry, so they also have the same coordinate units.
        We can therefore get the units for the xlabel from the first coordinate. */
     sprintf(xlabel, "\\xx\\f{} (%s)", header.pcrd[0].coord_unit);
-
-    nwins = nfiles;
 
     /* enforce equal weight for all histograms? */
     if (opt.bHistEq)
@@ -3746,7 +3715,7 @@ int gmx_wham(int argc, char *argv[])
     }
 
     sfree(profile);
-    freeUmbrellaWindows(window, nfiles);
+    freeUmbrellaWindows(window, nwins);
 
     printf("\nIn case you use results from gmx wham for a publication, please cite:\n");
     please_cite(stdout, "Hub2010");

@@ -84,6 +84,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/int64_to_int.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
@@ -2009,7 +2010,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       t_state *state, ObservablesHistory *observablesHistory)
 {
     t_fileio            *fp;
-    char                *fntemp; /* the temporary checkpoint file name */
+    std::string          fntemp; /* the temporary checkpoint file name */
     int                  npmenodes;
     char                 buf[1024], suffix[5+STEPSTRSIZE], sbuf[STEPSTRSIZE];
     t_fileio            *ret;
@@ -2025,18 +2026,13 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
 #if !GMX_NO_RENAME
     /* make the new temporary filename */
-    snew(fntemp, std::strlen(fn)+5+STEPSTRSIZE);
-    std::strcpy(fntemp, fn);
-    fntemp[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
     sprintf(suffix, "_%s%s", "step", gmx_step_str(step, sbuf));
-    std::strcat(fntemp, suffix);
-    std::strcat(fntemp, fn+std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1);
+    fntemp = gmx::Path::concatenateBeforeExtension(fn, suffix);
 #else
     /* if we can't rename, we just overwrite the cpt file.
      * dangerous if interrupted.
      */
-    snew(fntemp, std::strlen(fn));
-    std::strcpy(fntemp, fn);
+    fntemp = fn;
 #endif
     std::string timebuf = gmx_format_current_time();
 
@@ -2049,7 +2045,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     /* Get offsets for open files */
     auto outputfiles = gmx_fio_get_output_file_positions();
 
-    fp = gmx_fio_open(fntemp, "w");
+    fp = gmx_fio_open(fntemp.c_str(), "w");
 
     int flags_eks;
     if (state->ekinstate.bUpToDate)
@@ -2215,10 +2211,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         if (gmx_fexist(fn))
         {
             /* Rename the previous checkpoint file */
-            std::strcpy(buf, fn);
-            buf[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-            std::strcat(buf, "_prev");
-            std::strcat(buf, fn+std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1);
+            auto previousFilename = gmx::Path::concatenateBeforeExtension(fn, "_prev");
             if (!GMX_FAHCORE)
             {
                 /* we copy here so that if something goes wrong between now and
@@ -2226,24 +2219,22 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                  * If renames are atomic (such as in POSIX systems),
                  * this copying should be unneccesary.
                  */
-                gmx_file_copy(fn, buf, FALSE);
+                gmx_file_copy(fn, previousFilename.c_str(), FALSE);
                 /* We don't really care if this fails:
                  * there's already a new checkpoint.
                  */
             }
             else
             {
-                gmx_file_rename(fn, buf);
+                gmx_file_rename(fn, previousFilename.c_str());
             }
         }
-        if (gmx_file_rename(fntemp, fn) != 0)
+        if (gmx_file_rename(fntemp.c_str(), fn) != 0)
         {
             gmx_file("Cannot rename checkpoint file; maybe you are out of disk space?");
         }
     }
 #endif  /* GMX_NO_RENAME */
-
-    sfree(fntemp);
 
 #if GMX_FAHCORE
     /*code for alternate checkpointing scheme.  moved from top of loop over

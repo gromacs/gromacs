@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -883,32 +884,24 @@ static void mark_clusters(int nf, real **mat, real val, t_clusters *clust)
     }
 }
 
-static char *parse_filename(const char *fn, int maxnr)
+static std::string parse_filename(const std::string &fn, int maxnr)
 {
-    int         i;
-    char       *fnout;
-    const char *ext;
-    char        buf[STRLEN];
-
-    if (std::strchr(fn, '%'))
+    if (std::strchr(fn.c_str(), '%'))
     {
-        gmx_fatal(FARGS, "will not number filename %s containing '%c'", fn, '%');
+        gmx_fatal(FARGS, "will not number filename %s containing '%c'", fn.c_str(), '%');
     }
-    /* number of digits needed in numbering */
-    i = static_cast<int>((std::log(static_cast<real>(maxnr))/std::log(10.0)) + 1);
+    // Find number of digits needed in numbering
+    int         i = static_cast<int>((std::log(static_cast<real>(maxnr))/std::log(10.0)) + 1);
     /* split fn and ext */
-    ext = std::strrchr(fn, '.');
-    if (!ext)
+    const char *ext = std::strrchr(fn.c_str(), '.');
+    if (ext == nullptr)
     {
-        gmx_fatal(FARGS, "cannot separate extension in filename %s", fn);
+        gmx_fatal(FARGS, "cannot separate extension in filename %s", fn.c_str());
     }
-    ext++;
-    /* insert e.g. '%03d' between fn and ext */
-    sprintf(buf, "%s%%0%dd.%s", fn, i, ext);
-    snew(fnout, std::strlen(buf)+1);
-    std::strcpy(fnout, buf);
+    // Insert e.g. '%03d' between basename and extension
+    auto filenameFormat = gmx::Path::concatenateBeforeExtension(fn, gmx::formatString("%%0%dd", i));
 
-    return fnout;
+    return filenameFormat;
 }
 
 static void ana_trans(t_clusters *clust, int nf,
@@ -987,8 +980,8 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              const gmx_output_env_t *oenv)
 {
     FILE        *size_fp = nullptr;
-    FILE        *ndxfn   = nullptr;
-    char         buf[STRLEN], buf1[40], buf2[40], buf3[40], *trxsfn;
+    FILE        *ndxfp   = nullptr;
+    char         buf[STRLEN], buf1[40], buf2[40], buf3[40];
     t_trxstatus *trxout  = nullptr;
     t_trxstatus *trxsout = nullptr;
     int          i, i1, cl, nstr, *structure, first = 0, midstr;
@@ -1000,7 +993,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     clear_mat(zerobox);
 
     ffprintf_d(stderr, log, buf, "\nFound %d clusters\n\n", clust->ncl);
-    trxsfn = nullptr;
+    std::string trxsfn;
     if (trxfn)
     {
         /* do we write all structures? */
@@ -1040,7 +1033,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             {
                 sprintf(buf3, " with more than %d structures", write_nst);
             }
-            sprintf(buf, "Writing %s for %sclusters%s to %s\n", buf1, buf2, buf3, trxsfn);
+            sprintf(buf, "Writing %s for %sclusters%s to %s\n", buf1, buf2, buf3, trxsfn.c_str());
             ffprintf(stderr, log, buf);
         }
 
@@ -1086,7 +1079,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     }
     if (clustndxfn && frameindexes)
     {
-        ndxfn = gmx_ffopen(clustndxfn, "w");
+        ndxfp = gmx_ffopen(clustndxfn, "w");
     }
 
     snew(structure, nf);
@@ -1137,9 +1130,9 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         {
             fprintf(size_fp, "%8d %8d\n", cl, nstr);
         }
-        if (ndxfn)
+        if (ndxfp)
         {
-            fprintf(ndxfn, "[Cluster_%04d]\n", cl);
+            fprintf(ndxfp, "[Cluster_%04d]\n", cl);
         }
         clrmsd  = 0;
         midstr  = 0;
@@ -1196,9 +1189,9 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             if ((i % 7 == 0) && i)
             {
                 sprintf(buf, "\n%3s | %3s  %4s | %6s %4s |", "", "", "", "", "");
-                if (ndxfn)
+                if (ndxfp)
                 {
-                    fprintf(ndxfn, "\n");
+                    fprintf(ndxfp, "\n");
                 }
             }
             else
@@ -1207,15 +1200,15 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             }
             i1 = structure[i];
             fprintf(log, "%s %6g", buf, time[i1]);
-            if (ndxfn)
+            if (ndxfp)
             {
-                fprintf(ndxfn, " %6d", frameindexes[i1]);
+                fprintf(ndxfp, " %6d", frameindexes[i1]);
             }
         }
         fprintf(log, "\n");
-        if (ndxfn)
+        if (ndxfp)
         {
-            fprintf(ndxfn, "\n");
+            fprintf(ndxfp, "\n");
         }
 
         /* write structures to trajectory file(s) */
@@ -1232,7 +1225,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             {
                 /* Dump all structures for this cluster */
                 /* generate numbered filename (there is a %d in trxfn!) */
-                sprintf(buf, trxsfn, cl);
+                sprintf(buf, trxsfn.c_str(), cl);
                 trxsout = open_trx(buf, "w");
                 for (i = 0; i < nstr; i++)
                 {
@@ -1292,18 +1285,14 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         }
     }
     sfree(structure);
-    if (trxsfn)
-    {
-        sfree(trxsfn);
-    }
 
     if (size_fp)
     {
         xvgrclose(size_fp);
     }
-    if (ndxfn)
+    if (ndxfp)
     {
-        gmx_ffclose(ndxfn);
+        gmx_ffclose(ndxfp);
     }
 }
 
