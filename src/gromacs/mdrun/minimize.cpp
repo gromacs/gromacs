@@ -560,7 +560,7 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
             if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr))
             {
                 /* Make molecules whole only for confout writing */
-                do_pbc_mtop(fplog, ir->ePBC, state->s.box, top_global,
+                do_pbc_mtop(ir->ePBC, state->s.box, top_global,
                             state_global->x.rvec_array());
             }
 

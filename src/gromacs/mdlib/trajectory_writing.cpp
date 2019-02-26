@@ -195,7 +195,7 @@ do_md_trajectory_writing(FILE                     *fplog,
             if (fr->bMolPBC && !ir->bPeriodicMols)
             {
                 /* Make molecules whole only for confout writing */
-                do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, x_for_confout);
+                do_pbc_mtop(ir->ePBC, state->box, top_global, x_for_confout);
             }
             write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
                                 *top_global->name, top_global,

@@ -337,25 +337,25 @@ void put_atoms_in_compact_unitcell(int ePBC, int ecenter,
                                    const matrix box,
                                    gmx::ArrayRef<gmx::RVec> x);
 
-/*! \brief Make molecules whole by shifting positions
+/*! \brief Make all molecules whole by shifting positions
  *
  * \param[in]     fplog     Log file
  * \param[in]     ePBC      The PBC type
  * \param[in]     box       The simulation box
  * \param[in]     mtop      System topology definition
  * \param[in,out] x         The coordinates of the atoms
- * \param[in]     bFirst    Specifier for first-time PBC removal
  */
-void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
-                     const gmx_mtop_t *mtop, rvec x[],
-                     gmx_bool bFirst);
-
-//! Wrapper for low_do_pbc_mtop for making molecules whole at the start
 void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
                        const gmx_mtop_t *mtop, rvec x[]);
 
-//! Wrapper for low_do_pbc_mtop for making molecules whole during simulation
-void do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
+/*! \brief Make molecules consisting of multiple charge groups whole by shifting positions
+ *
+ * \param[in]     ePBC      The PBC type
+ * \param[in]     box       The simulation box
+ * \param[in]     mtop      System topology definition
+ * \param[in,out] x         The coordinates of the atoms
+ */
+void do_pbc_mtop(int ePBC, const matrix box,
                  const gmx_mtop_t *mtop, rvec x[]);
 
 #endif

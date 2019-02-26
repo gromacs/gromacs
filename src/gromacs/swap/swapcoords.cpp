@@ -1286,7 +1286,7 @@ static void init_swapstate(
         copy_rvecn(x, x_pbc, 0, mtop->natoms);
 
         /* This can only make individual molecules whole, not multimers */
-        do_pbc_mtop(nullptr, ir->ePBC, box, mtop, x_pbc);
+        do_pbc_mtop(ir->ePBC, box, mtop, x_pbc);
 
         /* Output the starting structure? */
         outputStartStructureIfWanted(mtop, x_pbc, ir->ePBC, box);

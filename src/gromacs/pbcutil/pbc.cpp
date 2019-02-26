@@ -1550,9 +1550,18 @@ void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box,
     }
 }
 
-void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
-                     const gmx_mtop_t *mtop, rvec x[],
-                     gmx_bool bFirst)
+/*! \brief Make molecules whole by shifting positions
+ *
+ * \param[in]     fplog     Log file
+ * \param[in]     ePBC      The PBC type
+ * \param[in]     box       The simulation box
+ * \param[in]     mtop      System topology definition
+ * \param[in,out] x         The coordinates of the atoms
+ * \param[in]     bFirst    Specifier for first-time PBC removal
+ */
+static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
+                            const gmx_mtop_t *mtop, rvec x[],
+                            gmx_bool bFirst)
 {
     t_graph        *graph;
     int             as, mol;
@@ -1601,8 +1610,8 @@ void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, TRUE);
 }
 
-void do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
+void do_pbc_mtop(int ePBC, const matrix box,
                  const gmx_mtop_t *mtop, rvec x[])
 {
-    low_do_pbc_mtop(fplog, ePBC, box, mtop, x, FALSE);
+    low_do_pbc_mtop(nullptr, ePBC, box, mtop, x, FALSE);
 }
