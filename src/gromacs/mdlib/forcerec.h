@@ -159,10 +159,6 @@ gmx_bool uses_simple_tables(int                       cutoff_scheme,
  * with the type of kernel indicated.
  */
 
-/* Compute the average C6 and C12 params for LJ corrections */
-void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
-                      const gmx_mtop_t *mtop);
-
 void free_gpu_resources(t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);
 
