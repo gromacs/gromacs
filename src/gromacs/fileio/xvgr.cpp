@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -279,7 +279,7 @@ void xvgr_header(FILE *fp, const char *title, const std::string &xaxis,
     }
 }
 
-FILE *xvgropen_type(const char *fn, const char *title, const std::string &xaxis,
+FILE *xvgropen_type(const std::string &fn, const char *title, const std::string &xaxis,
                     const std::string &yaxis, int exvg_graph_type,
                     const gmx_output_env_t *oenv)
 {
@@ -292,7 +292,7 @@ FILE *xvgropen_type(const char *fn, const char *title, const std::string &xaxis,
     return fp;
 }
 
-FILE *xvgropen(const char *fn, const char *title, const std::string &xaxis,
+FILE *xvgropen(const std::string &fn, const char *title, const std::string &xaxis,
                const std::string &yaxis, const gmx_output_env_t *oenv)
 {
     return xvgropen_type(fn, title, xaxis, yaxis, exvggtXNY, oenv);
@@ -569,7 +569,7 @@ static char *read_xvgr_string(const char *line)
     return str;
 }
 
-int read_xvg_legend(const char *fn, double ***y, int *ny,
+int read_xvg_legend(const std::string &fn, double ***y, int *ny,
                     char **subtitle, char ***legend)
 {
     FILE    *fp;
@@ -695,7 +695,7 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
             if (k != nny)
             {
                 fprintf(stderr, "Only %d columns on line %d in file %s\n",
-                        k, line, fn);
+                        k, line, fn.c_str());
                 for (; (k < nny); k++)
                 {
                     yy[k][nx] = 0.0;
@@ -727,12 +727,12 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
     return nx;
 }
 
-int read_xvg(const char *fn, double ***y, int *ny)
+int read_xvg(const std::string &fn, double ***y, int *ny)
 {
     return read_xvg_legend(fn, y, ny, nullptr, nullptr);
 }
 
-void write_xvg(const char *fn, const char *title, int nx, int ny, real **y,
+void write_xvg(const std::string &fn, const char *title, int nx, int ny, real **y,
                const char **leg, const gmx_output_env_t *oenv)
 {
     FILE *fp;
@@ -754,7 +754,7 @@ void write_xvg(const char *fn, const char *title, int nx, int ny, real **y,
     xvgrclose(fp);
 }
 
-real **read_xvg_time(const char *fn,
+real **read_xvg_time(const std::string &fn,
                      gmx_bool bHaveT, gmx_bool bTB, real tb, gmx_bool bTE, real te,
                      int nsets_in, int *nset, int *nval, real *dt, real **t)
 {
@@ -803,7 +803,7 @@ real **read_xvg_time(const char *fn,
                     a = sscanf(line, "%lf%lf", &dbl, &dbl);
                     if (a == 0)
                     {
-                        gmx_fatal(FARGS, "Expected a number in %s on line:\n%s", fn, line0);
+                        gmx_fatal(FARGS, "Expected a number in %s on line:\n%s", fn.c_str(), line0);
                     }
                     else if (a == 1)
                     {
@@ -895,13 +895,13 @@ real **read_xvg_time(const char *fn,
                 }
                 if (line0[strlen(line0)-1] != '\n')
                 {
-                    fprintf(stderr, "File %s does not end with a newline, ignoring the last line\n", fn);
+                    fprintf(stderr, "File %s does not end with a newline, ignoring the last line\n", fn.c_str());
                 }
                 else if (bTimeInRange)
                 {
                     if (a == 0)
                     {
-                        fprintf(stderr, "Ignoring invalid line in %s:\n%s", fn, line0);
+                        fprintf(stderr, "Ignoring invalid line in %s:\n%s", fn.c_str(), line0);
                     }
                     else
                     {
@@ -909,7 +909,7 @@ real **read_xvg_time(const char *fn,
                         {
                             fprintf(stderr, "Invalid line in %s:\n%s"
                                     "Using zeros for the last %d sets\n",
-                                    fn, line0, narg-a);
+                                    fn.c_str(), line0, narg-a);
                         }
                         n++;
                     }

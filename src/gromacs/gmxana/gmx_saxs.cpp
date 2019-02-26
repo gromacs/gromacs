@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,6 @@ int gmx_saxs(int argc, char *argv[])
          "Energy of the incoming X-ray (keV) "}
     };
 #define NPA asize(pa)
-    const char       *fnTPS, *fnTRX, *fnNDX, *fnDAT = nullptr;
     gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {
@@ -85,10 +84,10 @@ int gmx_saxs(int argc, char *argv[])
         return 0;
     }
 
-    fnTPS = ftp2fn(efTPS, NFILE, fnm);
-    fnTRX = ftp2fn(efTRX, NFILE, fnm);
-    fnDAT = ftp2fn(efDAT, NFILE, fnm);
-    fnNDX = ftp2fn_null(efNDX, NFILE, fnm);
+    std::string fnTPS = ftp2fn(efTPS, NFILE, fnm);
+    std::string fnTRX = ftp2fn(efTRX, NFILE, fnm);
+    std::string fnDAT = ftp2fn(efDAT, NFILE, fnm);
+    std::string fnNDX = ftp2fn_null(efNDX, NFILE, fnm);
 
     do_scattering_intensity(fnTPS, fnNDX, opt2fn("-sq", NFILE, fnm),
                             fnTRX, fnDAT,

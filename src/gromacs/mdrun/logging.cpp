@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,8 +80,8 @@ static void prepareLogFile(BinaryInformationSettings settings,
     fflush(fplog);
 }
 
-LogFilePtr openLogFile(const char *lognm,
-                       bool        appendFiles)
+LogFilePtr openLogFile(const std::string &lognm,
+                       bool               appendFiles)
 {
     const char *fileOpeningMode = "w+";
     if (appendFiles)
@@ -92,7 +92,7 @@ LogFilePtr openLogFile(const char *lognm,
     LogFilePtr logfio(gmx_fio_open(lognm, fileOpeningMode));
     if (!logfio)
     {
-        GMX_THROW(FileIOError("Could not open log file" + std::string(lognm)));
+        GMX_THROW(FileIOError("Could not open log file " + lognm));
     }
     // If appending, then there is no need to write this header
     // information, and we don't want to change the file until the

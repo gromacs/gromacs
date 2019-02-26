@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -405,7 +405,7 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
     }
 }
 
-static void write_pdb_bfac(const char *fname, const char *xname,
+static void write_pdb_bfac(const std::string &fname, const std::string &xname,
                            const char *title, t_atoms *atoms, int ePBC, matrix box,
                            int isize, int *index, int nfr_x, rvec *x,
                            int nfr_v, rvec *sum,
@@ -420,7 +420,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
     if ((nfr_x == 0) || (nfr_v == 0))
     {
         fprintf(stderr, "No frames found for %s, will not write %s\n",
-                title, fname);
+                title, fname.c_str());
     }
     else
     {
@@ -565,7 +565,7 @@ static void update_histo(int gnx, const int index[], rvec v[],
     }
 }
 
-static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
+static void print_histo(const std::string &fn, int nhisto, int histo[], real binwidth,
                         const gmx_output_env_t *oenv)
 {
     FILE *fp;
@@ -652,7 +652,6 @@ int gmx_traj(int argc, char *argv[])
     t_topology        top;
     int               ePBC;
     real             *mass, time;
-    const char       *indexfn;
     t_trxframe        fr;
     int               flags, nvhisto = 0, *vhisto = nullptr;
     rvec             *xtop, *xp = nullptr;
@@ -747,6 +746,7 @@ int gmx_traj(int argc, char *argv[])
         gmx_fatal(FARGS, "Need a run input file for option -mol, -cv or -cf");
     }
 
+    std::string indexfn;
     if (bMol)
     {
         indexfn = ftp2fn(efNDX, NFILE, fnm);

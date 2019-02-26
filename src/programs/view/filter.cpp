@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,13 +51,13 @@
 #include "dialogs.h"
 #include "xdlghi.h"
 
-t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
+t_filter *init_filter(t_atoms *atoms, const std::string &fn, int natom_trx)
 {
     t_filter *f;
     int       g, i;
 
     snew(f, 1);
-    if (fn != nullptr)
+    if (!fn.empty())
     {
         f->grps = init_index(fn, &f->grpnames);
     }
@@ -121,7 +121,6 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     static const char *ok    = "\"Ok\"";
     FILE              *tmp;
     t_dlg             *dlg;
-    char               tmpfile[STRLEN];
     int                i, j, k, len, tlen, ht, ncol, nrow, x0;
 
     len = std::strlen(title);
@@ -145,8 +144,8 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     {
         ht = 1+(gmx->filter->grps->nr+1)*2+3;
     }
-    std::strcpy(tmpfile, "filterXXXXXX");
-    tmp = gmx_fopen_temporary(tmpfile);
+    std::string tmpfile = "filterXXXXXX";
+    tmp = gmx_fopen_temporary(&tmpfile);
 #ifdef DEBUG
     std::fprintf(stderr, "file: %s\n", tmpfile);
 #endif
@@ -176,10 +175,10 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     std::fprintf(tmp, "}\n\n}\n");
     gmx_ffclose(tmp);
 
-    dlg = ReadDlg(x11, gmx->wd->self, title, tmpfile,
+    dlg = ReadDlg(x11, gmx->wd->self, title, tmpfile.c_str(),
                   0, 0, true, false, FilterCB, gmx);
 
-    std::remove(tmpfile);
+    std::remove(tmpfile.c_str());
 
     return dlg;
 }

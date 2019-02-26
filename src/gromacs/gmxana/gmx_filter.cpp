@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,7 +91,6 @@ int gmx_filter(int argc, char *argv[])
         { "-fit", FALSE, etBOOL, {&bFit},
           "Fit all frames to a reference structure" }
     };
-    const char       *topfile, *lowfile, *highfile;
     gmx_bool          bTop = FALSE;
     t_topology        top;
     int               ePBC = -1;
@@ -126,8 +125,9 @@ int gmx_filter(int argc, char *argv[])
         return 0;
     }
 
-    highfile = opt2fn_null("-oh", NFILE, fnm);
-    if (highfile)
+    std::string highfile = opt2fn_null("-oh", NFILE, fnm);
+    std::string topfile, lowfile;
+    if (!highfile.empty())
     {
         topfile = ftp2fn(efTPS, NFILE, fnm);
         lowfile = opt2fn_null("-ol", NFILE, fnm);
@@ -137,7 +137,7 @@ int gmx_filter(int argc, char *argv[])
         topfile = ftp2fn_null(efTPS, NFILE, fnm);
         lowfile = opt2fn("-ol", NFILE, fnm);
     }
-    if (topfile)
+    if (!topfile.empty())
     {
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC,
                              &xtop, nullptr, topbox, TRUE);
@@ -202,7 +202,7 @@ int gmx_filter(int argc, char *argv[])
         snew(x[i], nat);
     }
     snew(xf, nat);
-    if (lowfile)
+    if (!lowfile.empty())
     {
         outl = open_trx(lowfile, "w");
     }
@@ -210,7 +210,7 @@ int gmx_filter(int argc, char *argv[])
     {
         outl = nullptr;
     }
-    if (highfile)
+    if (!highfile.empty())
     {
         outh = open_trx(highfile, "w");
     }
@@ -301,7 +301,7 @@ int gmx_filter(int argc, char *argv[])
             }
             if (outl && (bLowAll || fr % nf == nf - 1))
             {
-                write_trx(outl, nat, ind, topfile ? &(top.atoms) : nullptr,
+                write_trx(outl, nat, ind, !topfile.empty() ? &(top.atoms) : nullptr,
                           0, t[nf - 1], bFit ? topbox : boxf, xf, nullptr, nullptr);
             }
             if (outh)
@@ -328,7 +328,7 @@ int gmx_filter(int argc, char *argv[])
                         boxf[j][d] = topbox[j][d] + box[nf - 1][j][d] - boxf[j][d];
                     }
                 }
-                write_trx(outh, nat, ind, topfile ? &(top.atoms) : nullptr,
+                write_trx(outh, nat, ind, !topfile.empty() ? &(top.atoms) : nullptr,
                           0, t[nf - 1], bFit ? topbox : boxf, xf, nullptr, nullptr);
             }
         }

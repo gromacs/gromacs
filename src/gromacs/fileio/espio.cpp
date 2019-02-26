@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2005, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,7 +100,7 @@ static int get_espresso_word(FILE *fp, char word[])
 }
 
 static int check_open_parenthesis(FILE *fp, int r,
-                                  const char *infile, const char *keyword)
+                                  const std::string &infile, const char *keyword)
 {
     int  level_inc;
     char word[STRLEN];
@@ -120,7 +120,7 @@ static int check_open_parenthesis(FILE *fp, int r,
         else
         {
             gmx_fatal(FARGS, "Expected '{' after '%s' in file '%s'",
-                      keyword, infile);
+                      keyword, infile.c_str());
         }
     }
 
@@ -128,7 +128,7 @@ static int check_open_parenthesis(FILE *fp, int r,
 }
 
 static int check_close_parenthesis(FILE *fp, int r,
-                                   const char *infile, const char *keyword)
+                                   const std::string &infile, const char *keyword)
 {
     int  level_inc;
     char word[STRLEN];
@@ -148,7 +148,7 @@ static int check_close_parenthesis(FILE *fp, int r,
         else
         {
             gmx_fatal(FARGS, "Expected '}' after section '%s' in file '%s'",
-                      keyword, infile);
+                      keyword, infile.c_str());
         }
     }
 
@@ -163,7 +163,7 @@ static const char *const esp_prop[espNR] = {
     "molecule"
 };
 
-void gmx_espresso_read_conf(const char *infile,
+void gmx_espresso_read_conf(const std::string &infile,
                             t_symtab *symtab, char **name, t_atoms *atoms,
                             rvec x[], rvec *v, matrix box)
 {
@@ -381,13 +381,13 @@ void gmx_espresso_read_conf(const char *infile,
     if (!bFoundParticles)
     {
         fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n",
-                infile);
+                infile.c_str());
     }
 
     gmx_fio_fclose(fp);
 }
 
-int get_espresso_coordnum(const char *infile)
+int get_espresso_coordnum(const std::string &infile)
 {
     FILE    *fp;
     char     word[STRLEN];
@@ -434,7 +434,7 @@ int get_espresso_coordnum(const char *infile)
     if (!bFoundParticles)
     {
         fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n",
-                infile);
+                infile.c_str());
     }
 
     gmx_fio_fclose(fp);

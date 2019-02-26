@@ -91,7 +91,7 @@ static real tick_spacing(real range, int minticks)
     return sp;
 }
 
-static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
+static void write_xvgr_graphs(const std::string &file, int ngraphs, int nsetspergraph,
                               const char *title, const char *subtitle,
                               const std::string &xlabel, const char **ylabel,
                               int n, real *x, real **y, real ***sy,
@@ -313,7 +313,7 @@ compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
 }
 
 
-static void inprod_matrix(const char *matfile, int natoms,
+static void inprod_matrix(const std::string &matfile, int natoms,
                           int nvec1, int *eignr1, rvec **eigvec1,
                           int nvec2, const int *eignr2, rvec **eigvec2,
                           gmx_bool bSelect, int noutvec, const int *outvec)
@@ -404,7 +404,7 @@ static void inprod_matrix(const char *matfile, int natoms,
     gmx_ffclose(out);
 }
 
-static void overlap(const char *outfile, int natoms,
+static void overlap(const std::string &outfile, int natoms,
                     rvec **eigvec1,
                     int nvec2, int *eignr2, rvec **eigvec2,
                     int noutvec, int *outvec,
@@ -446,10 +446,10 @@ static void overlap(const char *outfile, int natoms,
     xvgrclose(out);
 }
 
-static void project(const char *trajfile, const t_topology *top, int ePBC, matrix topbox,
-                    const char *projfile, const char *twodplotfile,
-                    const char *threedplotfile, const char *filterfile, int skip,
-                    const char *extremefile, gmx_bool bExtrAll, real extreme,
+static void project(const std::string &trajfile, const t_topology *top, int ePBC, matrix topbox,
+                    const std::string &projfile, const std::string &twodplotfile,
+                    const std::string &threedplotfile, const std::string &filterfile, int skip,
+                    const std::string &extremefile, gmx_bool bExtrAll, real extreme,
                     int nextr, const t_atoms *atoms, int natoms, int *index,
                     gmx_bool bFit, rvec *xref, int nfit, int *ifit, real *w_rls,
                     const real *sqrtm, rvec *xav,
@@ -484,14 +484,14 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
     }
 
 
-    if (trajfile)
+    if (!trajfile.empty())
     {
         snew(inprod, noutvec+1);
 
-        if (filterfile)
+        if (!filterfile.empty())
         {
             fprintf(stderr, "Writing a filtered trajectory to %s using eigenvectors\n",
-                    filterfile);
+                    filterfile.c_str());
             for (i = 0; i < noutvec; i++)
             {
                 fprintf(stderr, "%d ", outvec[i]+1);
@@ -559,7 +559,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     }
                     inprod[v][nframes] = inp;
                 }
-                if (filterfile)
+                if (!filterfile.empty())
                 {
                     for (i = 0; i < natoms; i++)
                     {
@@ -583,7 +583,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         while (read_next_x(oenv, status, &t, xread, box));
         close_trx(status);
         sfree(x);
-        if (filterfile)
+        if (!filterfile.empty())
         {
             close_trx(out);
         }
@@ -599,7 +599,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
     }
 
 
-    if (projfile)
+    if (!projfile.empty())
     {
         GMX_RELEASE_ASSERT(inprod != nullptr, "inprod must be non-NULL if projfile is non-NULL");
         snew(ylabel, noutvec);
@@ -615,7 +615,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                           output_env_get_time_factor(oenv), FALSE, bSplit, oenv);
     }
 
-    if (twodplotfile)
+    if (!twodplotfile.empty())
     {
         sprintf(str, "projection on eigenvector %d (%s)",
                 eignr[outvec[0]]+1, proj_unit);
@@ -634,7 +634,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         xvgrclose(xvgrout);
     }
 
-    if (threedplotfile)
+    if (!threedplotfile.empty())
     {
         t_atoms     atoms;
         rvec       *x;
@@ -735,7 +735,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         done_atom(&atoms);
     }
 
-    if (extremefile)
+    if (!extremefile.empty())
     {
         snew(pmin, noutvec_extr);
         snew(pmax, noutvec_extr);
@@ -787,7 +787,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
             }
             fprintf(stderr, "Writing %d frames along eigenvector %d to %s\n",
                     nextr, outvec[v]+1, outputFile.c_str());
-            out = open_trx(outputFile.c_str(), "w");
+            out = open_trx(outputFile, "w");
             for (frame = 0; frame < nextr; frame++)
             {
                 if ((extreme == 0) && (nextr <= 3))
@@ -816,7 +816,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
     fprintf(stderr, "\n");
 }
 
-static void components(const char *outfile, int natoms,
+static void components(const std::string &outfile, int natoms,
                        int *eignr, rvec **eigvec,
                        int noutvec, const int *outvec,
                        const gmx_output_env_t *oenv)
@@ -826,7 +826,7 @@ static void components(const char *outfile, int natoms,
     char        str[STRLEN];
     const char**ylabel;
 
-    fprintf(stderr, "Writing eigenvector components to %s\n", outfile);
+    fprintf(stderr, "Writing eigenvector components to %s\n", outfile.c_str());
 
     snew(ylabel, noutvec);
     snew(y, noutvec);
@@ -861,7 +861,7 @@ static void components(const char *outfile, int natoms,
     fprintf(stderr, "\n");
 }
 
-static void rmsf(const char *outfile, int natoms, const real *sqrtm,
+static void rmsf(const std::string &outfile, int natoms, const real *sqrtm,
                  int *eignr, rvec **eigvec,
                  int noutvec, const int *outvec,
                  real *eigval, int neig,
@@ -880,7 +880,7 @@ static void rmsf(const char *outfile, int natoms, const real *sqrtm,
         }
     }
 
-    fprintf(stderr, "Writing rmsf to %s\n", outfile);
+    fprintf(stderr, "Writing rmsf to %s\n", outfile.c_str());
 
     snew(ylabel, noutvec);
     snew(y, noutvec);
@@ -1028,16 +1028,9 @@ int gmx_anaeig(int argc, char *argv[])
     real              totmass, *sqrtm, *w_rls, t;
     int               natoms;
     char             *grpname;
-    const char       *indexfile;
     int               i, j, d;
     int               nout, *iout, noutvec, *outvec, nfit;
     int              *index = nullptr, *ifit = nullptr;
-    const char       *VecFile, *Vec2File, *topfile;
-    const char       *EigFile, *Eig2File;
-    const char       *CompFile, *RmsfFile, *ProjOnVecFile;
-    const char       *TwoDPlotFile, *ThreeDPlotFile;
-    const char       *FilterFile, *ExtremeFile;
-    const char       *OverlapFile, *InpMatFile;
     gmx_bool          bFit1, bFit2, bM, bIndex, bTPS, bTop, bVec2, bProj;
     gmx_bool          bFirstToLast, bFirstLastSet, bTraj, bCompare, bPDB3D;
     real             *eigval1 = nullptr, *eigval2 = nullptr;
@@ -1073,37 +1066,37 @@ int gmx_anaeig(int argc, char *argv[])
         return 0;
     }
 
-    indexfile = ftp2fn_null(efNDX, NFILE, fnm);
+    std::string indexfile = ftp2fn_null(efNDX, NFILE, fnm);
 
-    VecFile         = opt2fn("-v", NFILE, fnm);
-    Vec2File        = opt2fn_null("-v2", NFILE, fnm);
-    topfile         = ftp2fn(efTPS, NFILE, fnm);
-    EigFile         = opt2fn_null("-eig", NFILE, fnm);
-    Eig2File        = opt2fn_null("-eig2", NFILE, fnm);
-    CompFile        = opt2fn_null("-comp", NFILE, fnm);
-    RmsfFile        = opt2fn_null("-rmsf", NFILE, fnm);
-    ProjOnVecFile   = opt2fn_null("-proj", NFILE, fnm);
-    TwoDPlotFile    = opt2fn_null("-2d", NFILE, fnm);
-    ThreeDPlotFile  = opt2fn_null("-3d", NFILE, fnm);
-    FilterFile      = opt2fn_null("-filt", NFILE, fnm);
-    ExtremeFile     = opt2fn_null("-extr", NFILE, fnm);
-    OverlapFile     = opt2fn_null("-over", NFILE, fnm);
-    InpMatFile      = ftp2fn_null(efXPM, NFILE, fnm);
+    std::string VecFile         = opt2fn("-v", NFILE, fnm);
+    std::string Vec2File        = opt2fn_null("-v2", NFILE, fnm);
+    std::string topfile         = ftp2fn(efTPS, NFILE, fnm);
+    std::string EigFile         = opt2fn_null("-eig", NFILE, fnm);
+    std::string Eig2File        = opt2fn_null("-eig2", NFILE, fnm);
+    std::string CompFile        = opt2fn_null("-comp", NFILE, fnm);
+    std::string RmsfFile        = opt2fn_null("-rmsf", NFILE, fnm);
+    std::string ProjOnVecFile   = opt2fn_null("-proj", NFILE, fnm);
+    std::string TwoDPlotFile    = opt2fn_null("-2d", NFILE, fnm);
+    std::string ThreeDPlotFile  = opt2fn_null("-3d", NFILE, fnm);
+    std::string FilterFile      = opt2fn_null("-filt", NFILE, fnm);
+    std::string ExtremeFile     = opt2fn_null("-extr", NFILE, fnm);
+    std::string OverlapFile     = opt2fn_null("-over", NFILE, fnm);
+    std::string InpMatFile      = ftp2fn_null(efXPM, NFILE, fnm);
 
-    bProj  = (ProjOnVecFile != nullptr) || (TwoDPlotFile != nullptr) || (ThreeDPlotFile != nullptr)
-        || (FilterFile != nullptr) || (ExtremeFile != nullptr);
+    bProj  = !ProjOnVecFile.empty() || !TwoDPlotFile.empty() || !ThreeDPlotFile.empty()
+        || !FilterFile.empty() || !ExtremeFile.empty();
     bFirstLastSet  =
         opt2parg_bSet("-first", NPA, pa) && opt2parg_bSet("-last", NPA, pa);
-    bFirstToLast = (CompFile != nullptr) || (RmsfFile != nullptr) || (ProjOnVecFile != nullptr) || (FilterFile != nullptr) ||
-        (OverlapFile != nullptr) || (((ExtremeFile != nullptr) || (InpMatFile != nullptr)) && bFirstLastSet);
-    bVec2  = (Vec2File != nullptr) || (OverlapFile != nullptr) || (InpMatFile != nullptr);
-    bM     = (RmsfFile != nullptr) || bProj;
-    bTraj  = (ProjOnVecFile != nullptr) || (FilterFile != nullptr) || ((ExtremeFile != nullptr) && (max == 0))
-        || (TwoDPlotFile != nullptr) || (ThreeDPlotFile != nullptr);
+    bFirstToLast = !CompFile.empty() || !RmsfFile.empty() || !ProjOnVecFile.empty() || !FilterFile.empty() ||
+        !OverlapFile.empty() || ((!ExtremeFile.empty() || !InpMatFile.empty()) && bFirstLastSet);
+    bVec2  = !Vec2File.empty() || !OverlapFile.empty() || !InpMatFile.empty();
+    bM     = !RmsfFile.empty() || bProj;
+    bTraj  = !ProjOnVecFile.empty() || !FilterFile.empty() || (!ExtremeFile.empty() && (max == 0))
+        || !TwoDPlotFile.empty() || !ThreeDPlotFile.empty();
     bIndex = bM || bProj;
     bTPS   = ftp2bSet(efTPS, NFILE, fnm) || bM || bTraj ||
-        (FilterFile != nullptr)  || (bIndex && (indexfile != nullptr));
-    bCompare = (Vec2File != nullptr) || (Eig2File != nullptr);
+        !FilterFile.empty()  || (bIndex && !indexfile.empty());
+    bCompare = !Vec2File.empty() || !Eig2File.empty();
     bPDB3D   = fn2ftp(ThreeDPlotFile) == efPDB;
 
     read_eigenvectors(VecFile, &natoms, &bFit1,
@@ -1114,11 +1107,11 @@ int gmx_anaeig(int argc, char *argv[])
     {
         fprintf(stderr, "Warning: number of eigenvectors %d does not match three times\n"
                 "the number of atoms %d in %s. Using %d eigenvectors.\n\n",
-                nvec1, natoms, VecFile, neig1);
+                nvec1, natoms, VecFile.c_str(), neig1);
     }
 
     /* Overwrite eigenvalues from separate files if the user provides them */
-    if (EigFile != nullptr)
+    if (!EigFile.empty())
     {
         int neig_tmp = read_xvg(EigFile, &xvgdata, &i);
         if (neig_tmp != neig1)
@@ -1142,7 +1135,7 @@ int gmx_anaeig(int argc, char *argv[])
             sfree(xvgdata[j]);
         }
         sfree(xvgdata);
-        fprintf(stderr, "Read %d eigenvalues from %s\n", neig1, EigFile);
+        fprintf(stderr, "Read %d eigenvalues from %s\n", neig1, EigFile.c_str());
     }
 
     if (bEntropy)
@@ -1161,7 +1154,7 @@ int gmx_anaeig(int argc, char *argv[])
 
     if (bVec2)
     {
-        if (!Vec2File)
+        if (Vec2File.empty())
         {
             gmx_fatal(FARGS, "Need a second eigenvector file to do this analysis.");
         }
@@ -1180,7 +1173,7 @@ int gmx_anaeig(int argc, char *argv[])
         neig2 = 0;
     }
 
-    if (Eig2File != nullptr)
+    if (!Eig2File.empty())
     {
         neig2 = read_xvg(Eig2File, &xvgdata, &i);
         srenew(eigval2, neig2);
@@ -1193,7 +1186,7 @@ int gmx_anaeig(int argc, char *argv[])
             sfree(xvgdata[j]);
         }
         sfree(xvgdata);
-        fprintf(stderr, "Read %d eigenvalues from %s\n", neig2, Eig2File);
+        fprintf(stderr, "Read %d eigenvalues from %s\n", neig2, Eig2File.c_str());
     }
 
 
@@ -1228,7 +1221,7 @@ int gmx_anaeig(int argc, char *argv[])
             if (xref1 == nullptr)
             {
                 printf("\nNote: the structure in %s should be the same\n"
-                       "      as the one used for the fit in g_covar\n", topfile);
+                       "      as the one used for the fit in g_covar\n", topfile.c_str());
             }
             printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
             get_index(atoms, indexfile, 1, &nfit, &ifit, &grpname);
@@ -1333,7 +1326,7 @@ int gmx_anaeig(int argc, char *argv[])
                 iout[i] = first-1+i;
             }
         }
-        else if (ThreeDPlotFile)
+        else if (!ThreeDPlotFile.empty())
         {
             /* make an index of first+(0,1,2) and last */
             nout = bPDB3D ? 4 : 3;
@@ -1403,12 +1396,12 @@ int gmx_anaeig(int argc, char *argv[])
     }
     fprintf(stderr, "\n");
 
-    if (CompFile)
+    if (!CompFile.empty())
     {
         components(CompFile, natoms, eignr1, eigvec1, noutvec, outvec, oenv);
     }
 
-    if (RmsfFile)
+    if (!RmsfFile.empty())
     {
         rmsf(RmsfFile, natoms, sqrtm, eignr1, eigvec1, noutvec, outvec, eigval1,
              neig1, oenv);
@@ -1425,13 +1418,13 @@ int gmx_anaeig(int argc, char *argv[])
                 oenv);
     }
 
-    if (OverlapFile)
+    if (!OverlapFile.empty())
     {
         overlap(OverlapFile, natoms,
                 eigvec1, nvec2, eignr2, eigvec2, noutvec, outvec, oenv);
     }
 
-    if (InpMatFile)
+    if (!InpMatFile.empty())
     {
         inprod_matrix(InpMatFile, natoms,
                       nvec1, eignr1, eigvec1, nvec2, eignr2, eigvec2,
@@ -1444,7 +1437,7 @@ int gmx_anaeig(int argc, char *argv[])
     }
 
 
-    if (!CompFile && !bProj && !OverlapFile && !InpMatFile &&
+    if (CompFile.empty() && !bProj && OverlapFile.empty() && InpMatFile.empty() &&
         !bCompare && !bEntropy)
     {
         fprintf(stderr, "\nIf you want some output,"

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #define GMX_MDRUN_LOGGING_H
 
 #include <memory>
+#include <string>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -62,8 +63,8 @@ using LogFilePtr = std::unique_ptr < t_fileio, functor_wrapper < t_fileio, close
 /*! \brief Open the log file for writing/appending.
  *
  * \throws FileIOError when the log file cannot be opened. */
-LogFilePtr openLogFile(const char *lognm,
-                       bool        appendFiles);
+LogFilePtr openLogFile(const std::string &lognm,
+                       bool               appendFiles);
 
 /*! \brief Prepare to use the open log file when appending.
  *

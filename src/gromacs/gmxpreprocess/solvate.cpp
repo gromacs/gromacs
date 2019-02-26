@@ -637,7 +637,7 @@ static void removeExtraSolventMolecules(t_atoms *atoms, std::vector<RVec> *x,
     remover.removeMarkedAtoms(atoms);
 }
 
-static void add_solv(const char *filename, t_atoms *atoms,
+static void add_solv(const std::string &filename, t_atoms *atoms,
                      t_symtab *symtab,
                      std::vector<RVec> *x, std::vector<RVec> *v,
                      int ePBC, matrix box, AtomProperties *aps,
@@ -652,7 +652,7 @@ static void add_solv(const char *filename, t_atoms *atoms,
     fprintf(stderr, "Reading solvent configuration\n");
     bool              bTprFileWasRead;
     rvec             *temporaryX = nullptr, *temporaryV = nullptr;
-    readConfAndTopology(gmx::findLibraryFile(filename).c_str(), &bTprFileWasRead, &topSolvent,
+    readConfAndTopology(gmx::findLibraryFile(filename), &bTprFileWasRead, &topSolvent,
                         &ePBCSolvent, &temporaryX, &temporaryV, boxSolvent);
     t_atoms *atomsSolvent;
     snew(atomsSolvent, 1);
@@ -664,11 +664,11 @@ static void add_solv(const char *filename, t_atoms *atoms,
     if (gmx::boxIsZero(boxSolvent))
     {
         gmx_fatal(FARGS, "No box information for solvent in %s, please use a properly formatted file\n",
-                  filename);
+                  filename.c_str());
     }
     if (0 == atomsSolvent->nr)
     {
-        gmx_fatal(FARGS, "No solvent in %s, please check your input\n", filename);
+        gmx_fatal(FARGS, "No solvent in %s, please check your input\n", filename.c_str());
     }
     fprintf(stderr, "\n");
 
@@ -760,7 +760,6 @@ static void update_top(t_atoms        *atoms,
 {
     FILE        *fpin, *fpout;
     char         buf[STRLEN*2], buf2[STRLEN], *temp;
-    const char  *topinout;
     int          line;
     bool         bSystem;
     int          i;
@@ -786,15 +785,14 @@ static void update_top(t_atoms        *atoms,
     fprintf(stderr, "Number of solvent molecules:  %5d   \n\n", nsol);
 
     /* open topology file and append sol molecules */
-    topinout  = ftp2fn(efTOP, NFILE, fnm);
+    std::string topinout  = ftp2fn(efTOP, NFILE, fnm);
     if (ftp2bSet(efTOP, NFILE, fnm) )
     {
-        char temporary_filename[STRLEN];
-        strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
+        std::string temporary_filename = "temp.topXXXXXX";
 
         fprintf(stderr, "Processing topology\n");
         fpin    = gmx_ffopen(topinout, "r");
-        fpout   = gmx_fopen_temporary(temporary_filename);
+        fpout   = gmx_fopen_temporary(&temporary_filename);
         line    = 0;
         bSystem = false;
         while (fgets(buf, STRLEN, fpin))
@@ -853,7 +851,7 @@ static void update_top(t_atoms        *atoms,
                 {
                     // Change topology and restart count
                     fprintf(stdout, "Adding line for %d solvent molecules with resname (%s) to "
-                            "topology file (%s)\n", resCount, currRes.c_str(), topinout);
+                            "topology file (%s)\n", resCount, currRes.c_str(), topinout.c_str());
                     fprintf(fpout, "%-15s %5d\n", currRes.c_str(), resCount);
                     currRes  = *atoms->resinfo[i].name;
                     resCount = 1;
@@ -861,7 +859,7 @@ static void update_top(t_atoms        *atoms,
             }
             // One more print needed for last residue type
             fprintf(stdout, "Adding line for %d solvent molecules with resname (%s) to "
-                    "topology file (%s)\n", resCount, currRes.c_str(), topinout);
+                    "topology file (%s)\n", resCount, currRes.c_str(), topinout.c_str());
             fprintf(fpout, "%-15s %5d\n", currRes.c_str(), resCount);
         }
         gmx_ffclose(fpout);
@@ -931,7 +929,6 @@ int gmx_solvate(int argc, char *argv[])
 
     /* parameter data */
     gmx_bool       bProt, bBox;
-    const char    *conf_prot, *confout;
 
     t_filenm       fnm[] = {
         { efSTX, "-cp", "protein", ffOPTRD },
@@ -968,7 +965,7 @@ int gmx_solvate(int argc, char *argv[])
         return 0;
     }
 
-    const char *solventFileName = opt2fn("-cs", NFILE, fnm);
+    std::string solventFileName = opt2fn("-cs", NFILE, fnm);
     bProt     = opt2bSet("-cp", NFILE, fnm);
     bBox      = opt2parg_bSet("-box", asize(pa), pa);
 
@@ -991,7 +988,7 @@ int gmx_solvate(int argc, char *argv[])
     if (bProt)
     {
         /* Generate a solute configuration */
-        conf_prot = opt2fn("-cp", NFILE, fnm);
+        std::string conf_prot = opt2fn("-cp", NFILE, fnm);
         fprintf(stderr, "Reading solute configuration%s\n",
                 bReadV ? " and velocities" : "");
         bool  bTprFileWasRead;
@@ -1012,7 +1009,7 @@ int gmx_solvate(int argc, char *argv[])
         }
         if (atoms->nr == 0)
         {
-            fprintf(stderr, "Note: no atoms in %s\n", conf_prot);
+            fprintf(stderr, "Note: no atoms in %s\n", conf_prot.c_str());
             bProt = FALSE;
         }
         else
@@ -1039,8 +1036,8 @@ int gmx_solvate(int argc, char *argv[])
              &aps, defaultDistance, scaleFactor, r_shell, max_sol);
 
     /* write new configuration 1 to file confout */
-    confout = ftp2fn(efSTO, NFILE, fnm);
-    fprintf(stderr, "Writing generated configuration to %s\n", confout);
+    std::string confout = ftp2fn(efSTO, NFILE, fnm);
+    fprintf(stderr, "Writing generated configuration to %s\n", confout.c_str());
     const char *outputTitle = (bProt ? *top.name : "Generated by gmx solvate");
     write_sto_conf(confout, outputTitle, atoms, as_rvec_array(x.data()),
                    !v.empty() ? as_rvec_array(v.data()) : nullptr, ePBCForOutput, box);

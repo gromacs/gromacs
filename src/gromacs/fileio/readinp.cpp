@@ -57,14 +57,14 @@
 #include "gromacs/utility/textwriter.h"
 
 std::vector<t_inpfile>
-read_inpfile(gmx::TextInputStream *stream, const char *fn,
+read_inpfile(gmx::TextInputStream *stream, const std::string &fn,
              warninp_t wi)
 {
     std::vector<t_inpfile> inp;
 
     if (debug)
     {
-        fprintf(debug, "Reading MDP file %s\n", fn);
+        fprintf(debug, "Reading MDP file %s\n", fn.c_str());
     }
 
     int             indexOfLineReadFromFile = 0;
@@ -88,7 +88,7 @@ read_inpfile(gmx::TextInputStream *stream, const char *fn,
             // TODO this seems like it silently ignores the user accidentally deleting an equals sign...
             if (debug)
             {
-                fprintf(debug, "No = on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
+                fprintf(debug, "No = on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn.c_str());
             }
             continue;
         }
@@ -109,7 +109,7 @@ read_inpfile(gmx::TextInputStream *stream, const char *fn,
             // TODO ignoring such lines does not seem like good behaviour
             if (debug)
             {
-                fprintf(debug, "Empty left hand side on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
+                fprintf(debug, "Empty left hand side on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn.c_str());
             }
             continue;
         }
@@ -118,7 +118,7 @@ read_inpfile(gmx::TextInputStream *stream, const char *fn,
             // TODO ignoring such lines does not seem like good behaviour
             if (debug)
             {
-                fprintf(debug, "Empty right hand side on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
+                fprintf(debug, "Empty right hand side on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn.c_str());
             }
             continue;
         }
@@ -194,7 +194,7 @@ static void sort_inp(std::vector<t_inpfile> *inp)
     std::sort(inpRef.begin(), inpRef.end(), inp_comp());
 }
 
-void write_inpfile(gmx::TextOutputStream *stream, const char *fn, std::vector<t_inpfile> *inp,
+void write_inpfile(gmx::TextOutputStream *stream, const std::string &fn, std::vector<t_inpfile> *inp,
                    gmx_bool bHaltOnUnknown,
                    WriteMdpHeader writeHeader,
                    warninp_t wi)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 
 #include <cstdio>
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 
 struct gmx_groups_t;
@@ -52,7 +54,7 @@ class ForceWithVirial;
 }
 
 void make_wall_tables(FILE *fplog,
-                      const t_inputrec *ir, const char *tabfn,
+                      const t_inputrec *ir, const std::string &tabfn,
                       const gmx_groups_t *groups,
                       t_forcerec *fr);
 

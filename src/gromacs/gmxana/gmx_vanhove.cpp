@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,7 +132,6 @@ int gmx_vanhove(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     gmx_output_env_t *oenv;
-    const char       *matfile, *otfile, *orfile;
     t_topology        top;
     int               ePBC;
     matrix            boxtop, box, *sbox, avbox, corr;
@@ -156,7 +155,7 @@ int gmx_vanhove(int argc, char *argv[])
         return 0;
     }
 
-    matfile = opt2fn_null("-om", NFILE, fnm);
+    std::string matfile = opt2fn_null("-om", NFILE, fnm), orfile, otfile;
     if (opt2parg_bSet("-fr", NPA, pa))
     {
         orfile  = opt2fn("-or", NFILE, fnm);
@@ -174,7 +173,7 @@ int gmx_vanhove(int argc, char *argv[])
         otfile  = opt2fn_null("-ot", NFILE, fnm);
     }
 
-    if (!matfile && !otfile && !orfile)
+    if (matfile.empty() && otfile.empty() && orfile.empty())
     {
         fprintf(stderr,
                 "For output set one (or more) of the output file options\n");
@@ -233,7 +232,7 @@ int gmx_vanhove(int argc, char *argv[])
 
     invbin = 1.0/rbin;
 
-    if (matfile)
+    if (!matfile.empty())
     {
         if (fmmax <= 0 || fmmax >= nfr)
         {
@@ -265,14 +264,14 @@ int gmx_vanhove(int argc, char *argv[])
         fmmax = 0;
     }
 
-    if (orfile)
+    if (!orfile.empty())
     {
         snew(pr, nr);
         nalloc = 0;
         snew(rcount, nr);
     }
 
-    if (otfile)
+    if (!otfile.empty())
     {
         if (ftmax <= 0)
         {
@@ -352,17 +351,17 @@ int gmx_vanhove(int argc, char *argv[])
                         pt[fbin]++;
                     }
                 }
-                if (matfile)
+                if (!matfile.empty())
                 {
                     mcount[mbin]++;
                 }
-                if (otfile)
+                if (!otfile.empty())
                 {
                     tcount[fbin]++;
                 }
             }
         }
-        if (orfile)
+        if (!orfile.empty())
         {
             for (fbin = 0; fbin < nr; fbin++)
             {
@@ -395,7 +394,7 @@ int gmx_vanhove(int argc, char *argv[])
     }
     fprintf(stderr, "\n");
 
-    if (matfile)
+    if (!matfile.empty())
     {
         matmax = 0;
         for (f = 0; f < mat_nx; f++)
@@ -440,7 +439,7 @@ int gmx_vanhove(int argc, char *argv[])
         gmx_ffclose(fp);
     }
 
-    if (orfile)
+    if (!orfile.empty())
     {
         fp = xvgropen(orfile, "Van Hove function", "r (nm)", "G (nm\\S-1\\N)", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
@@ -466,7 +465,7 @@ int gmx_vanhove(int argc, char *argv[])
         xvgrclose(fp);
     }
 
-    if (otfile)
+    if (!otfile.empty())
     {
         sprintf(buf, "Probability of moving less than %g nm", rint);
         fp = xvgropen(otfile, buf, "t (ps)", "", oenv);

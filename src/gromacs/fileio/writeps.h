@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
 
 #include <stdio.h>
 
+#include <string>
+
 #include "gromacs/fileio/rgb.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -69,7 +71,7 @@ typedef struct t_int_psdata *t_psdata;
 
 extern const char *fontnm[efontNR];
 
-t_psdata ps_open(const char *fn, real x1, real y1, real x2, real y2);
+t_psdata ps_open(const std::string &fn, real x1, real y1, real x2, real y2);
 
 void ps_linewidth(t_psdata ps, int lw);
 void ps_color(t_psdata ps, real r, real g, real b);

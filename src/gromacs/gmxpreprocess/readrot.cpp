@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -206,7 +206,7 @@ extern char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot,
 
 
 /* Check whether the box is unchanged */
-static void check_box_unchanged(matrix f_box, matrix box, const char fn[], warninp_t wi)
+static void check_box_unchanged(matrix f_box, matrix box, const std::string &fn, warninp_t wi)
 {
     int      i, ii;
     bool     bSame = TRUE;
@@ -226,7 +226,7 @@ static void check_box_unchanged(matrix f_box, matrix box, const char fn[], warni
     if (!bSame)
     {
         sprintf(warn_buf, "%s Box size in reference file %s differs from actual box size!",
-                RotStr, fn);
+                RotStr, fn.c_str());
         warning(wi, warn_buf);
         pr_rvecs(stderr, 0, "Your box is:", box, 3);
         pr_rvecs(stderr, 0, "Box in file:", f_box, 3);
@@ -237,7 +237,7 @@ static void check_box_unchanged(matrix f_box, matrix box, const char fn[], warni
 /* Extract the reference positions for the rotation group(s) */
 extern void set_reference_positions(
         t_rot *rot, rvec *x, matrix box,
-        const char *fn, bool bSet, warninp_t wi)
+        const std::string &fn, bool bSet, warninp_t wi)
 {
     int              g, i, ii;
     t_rotgrp        *rotg;
@@ -251,8 +251,7 @@ extern void set_reference_positions(
         snew(rotg->x_ref, rotg->nat);
 
         /* Construct the name for the file containing the reference positions for this group: */
-        std::string reffileString = gmx::Path::concatenateBeforeExtension(fn, gmx::formatString(".%d", g));
-        const char *reffile       = reffileString.c_str();
+        std::string reffile = gmx::Path::concatenateBeforeExtension(fn, gmx::formatString(".%d", g));
 
         /* If the base filename for the reference position files was explicitly set by
          * the user, we issue a fatal error if the group file can not be found */
@@ -260,17 +259,17 @@ extern void set_reference_positions(
         {
             gmx_fatal(FARGS, "%s The file containing the reference positions was not found.\n"
                       "Expected the file '%s' for group %d.\n",
-                      RotStr, reffile, g);
+                      RotStr, reffile.c_str(), g);
         }
 
         if (gmx_fexist(reffile))
         {
-            fprintf(stderr, "  Reading them from %s.\n", reffile);
+            fprintf(stderr, "  Reading them from %s.\n", reffile.c_str());
             gmx_trr_read_single_header(reffile, &header);
             if (rotg->nat != header.natoms)
             {
                 gmx_fatal(FARGS, "Number of atoms in file %s (%d) does not match the number of atoms in rotation group (%d)!\n",
-                          reffile, header.natoms, rotg->nat);
+                          reffile.c_str(), header.natoms, rotg->nat);
             }
             gmx_trr_read_single_frame(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, nullptr, nullptr);
 
@@ -279,7 +278,7 @@ extern void set_reference_positions(
         }
         else
         {
-            fprintf(stderr, " Saving them to %s.\n", reffile);
+            fprintf(stderr, " Saving them to %s.\n", reffile.c_str());
             for (i = 0; i < rotg->nat; i++)
             {
                 ii = rotg->ind[i];

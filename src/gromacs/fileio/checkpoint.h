@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 
 #include <cstdio>
 
+#include <string>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -61,7 +62,7 @@ struct t_trxframe;
  * Appends the _step<step>.cpt with bNumberAndKeep,
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
  */
-void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
+void write_checkpoint(const std::string &fn, gmx_bool bNumberAndKeep,
                       FILE *fplog, const t_commrec *cr,
                       ivec domdecCells, int nppnodes,
                       int eIntegrator, int simulation_part,
@@ -80,7 +81,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * support file locking.
  * With reproducibilityRequested warns about version, build, #ranks differences.
  */
-void load_checkpoint(const char *fn, t_fileio *logfio,
+void load_checkpoint(const std::string &fn, t_fileio *logfio,
                      const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
@@ -92,7 +93,7 @@ void load_checkpoint(const char *fn, t_fileio *logfio,
 void read_checkpoint_trxframe(struct t_fileio *fp, t_trxframe *fr);
 
 /* Print the complete contents of checkpoint file fn to out */
-void list_checkpoint(const char *fn, FILE *out);
+void list_checkpoint(const std::string &fn, FILE *out);
 
 /* ! \brief Read simulation step and part from a checkpoint file
  *
@@ -104,9 +105,9 @@ void list_checkpoint(const char *fn, FILE *out);
  *
  * The output variables will both contain 0 if filename is NULL, the file
  * does not exist, or is not readable. */
-void read_checkpoint_part_and_step(const char  *filename,
-                                   int         *simulation_part,
-                                   int64_t     *step);
+void read_checkpoint_part_and_step(const std::string &filename,
+                                   int               *simulation_part,
+                                   int64_t           *step);
 
 /* ! \brief Read simulation part and output filenames from a checkpoint file
  *

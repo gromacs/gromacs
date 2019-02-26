@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -806,7 +806,6 @@ int gmx_current(int argc, char *argv[])
     gmx_output_env_t      *oenv;
     t_topology             top;
     char                 **grpname = nullptr;
-    const char            *indexfn;
     t_trxframe             fr;
     real                  *mass2 = nullptr;
     matrix                 box;
@@ -890,7 +889,7 @@ int gmx_current(int argc, char *argv[])
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
 
-    indexfn = ftp2fn_null(efNDX, NFILE, fnm);
+    std::string indexfn = ftp2fn_null(efNDX, NFILE, fnm);
     snew(grpname, 1);
 
     get_index(&(top.atoms), indexfn, 1, &isize, &index0, grpname);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -397,18 +397,18 @@ static void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
     write_t_edx(fp, edpars->sori, "NORIGIN, XORIGIN");
 }
 
-static int read_conffile(const char *confin, rvec **x)
+static int read_conffile(const std::string &confin, rvec **x)
 {
     t_topology  top;
     matrix      box;
-    printf("read coordnumber from file %s\n", confin);
+    printf("read coordnumber from file %s\n", confin.c_str());
     read_tps_conf(confin, &top, nullptr, x, nullptr, box, FALSE);
     printf("number of coordinates in file %d\n", top.atoms.nr);
     return top.atoms.nr;
 }
 
 
-static void read_eigenvalues(const int vecs[], const char *eigfile, real values[],
+static void read_eigenvalues(const int vecs[], const std::string &eigfile, real values[],
                              gmx_bool bHesse, real kT, int natoms_average_struct)
 {
     int      neig, nrow, i;
@@ -509,7 +509,7 @@ static void init_edx(struct edix *edx)
 }
 
 static void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
-                       const int igro[], const rvec *x, const char* structure)
+                       const int igro[], const rvec *x, const std::string &structure)
 {
 /* filter2edx copies coordinates from x to edx which are given in index
  */
@@ -527,15 +527,15 @@ static void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
         ;                                                            /*search element in igro*/
         if (igro[pos] != index[i])
         {
-            gmx_fatal(FARGS, "Couldn't find atom with index %d in structure %s", index[i], structure);
+            gmx_fatal(FARGS, "Couldn't find atom with index %d in structure %s", index[i], structure.c_str());
         }
         edx->anrs[ix] = index[i];
         copy_rvec(x[pos], edx->x[ix]);
     }
 }
 
-static void get_structure(const t_atoms *atoms, const char *IndexFile,
-                          const char *StructureFile, struct edix *edx, int nfit,
+static void get_structure(const t_atoms *atoms, const std::string &IndexFile,
+                          const std::string &StructureFile, struct edix *edx, int nfit,
                           int ifit[], int nav, int index[])
 {
     int     *igro; /*index corresponding to target or origin structure*/
@@ -547,7 +547,7 @@ static void get_structure(const t_atoms *atoms, const char *IndexFile,
 
     ntar = read_conffile(StructureFile, &xtar);
     printf("Select an index group of %d elements that corresponds to the atoms in the structure file %s\n",
-           ntar, StructureFile);
+           ntar, StructureFile.c_str());
     get_index(atoms, IndexFile, 1, &ngro, &igro, &grpname);
     if (ngro != ntar)
     {
@@ -745,18 +745,12 @@ int gmx_make_edi(int argc, char *argv[])
     t_atoms          *atoms = nullptr;
     int               nav; /* Number of atoms in the average structure */
     char             *grpname;
-    const char       *indexfile;
     int               i;
     int              *index, *ifit;
     int               nfit;              /* Number of atoms in the reference/fit structure */
     int               ev_class;          /* parameter _class i.e. evMON, evRADFIX etc. */
     int               nvecs;
     real             *eigval1 = nullptr; /* in V3.3 this is parameter of read_eigenvectors */
-
-    const char       *EdiFile;
-    const char       *TargetFile;
-    const char       *OriginFile;
-    const char       *EigvecFile;
 
     gmx_output_env_t *oenv;
 
@@ -784,10 +778,10 @@ int gmx_make_edi(int argc, char *argv[])
         return 0;
     }
 
-    indexfile       = ftp2fn_null(efNDX, NFILE, fnm);
-    EdiFile         = ftp2fn(efEDI, NFILE, fnm);
-    TargetFile      = opt2fn_null("-tar", NFILE, fnm);
-    OriginFile      = opt2fn_null("-ori", NFILE, fnm);
+    std::string indexfile  = ftp2fn_null(efNDX, NFILE, fnm);
+    std::string EdiFile    = ftp2fn(efEDI, NFILE, fnm);
+    std::string TargetFile = opt2fn_null("-tar", NFILE, fnm);
+    std::string OriginFile = opt2fn_null("-ori", NFILE, fnm);
 
 
     for (ev_class = 0; ev_class < evNr; ++ev_class)
@@ -856,7 +850,7 @@ int gmx_make_edi(int argc, char *argv[])
         printf("\n");
     }
 
-    EigvecFile = opt2fn("-f", NFILE, fnm);
+    std::string EigvecFile = opt2fn("-f", NFILE, fnm);
 
     /*read eigenvectors from eigvec.trr*/
     read_eigenvectors(EigvecFile, &nav, &bFit1,
@@ -883,7 +877,7 @@ int gmx_make_edi(int argc, char *argv[])
         {
             /* if g_covar used different coordinate groups to fit and to do the PCA */
             printf("\nNote: the structure in %s should be the same\n"
-                   "      as the one used for the fit in g_covar\n", ftp2fn(efTPS, NFILE, fnm));
+                   "      as the one used for the fit in g_covar\n", ftp2fn(efTPS, NFILE, fnm).c_str());
             printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
         }
         else

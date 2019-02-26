@@ -509,7 +509,7 @@ static void swap_em_state(em_state_t **ems1, em_state_t **ems2)
 //! Save the EM trajectory
 static void write_em_traj(FILE *fplog, const t_commrec *cr,
                           gmx_mdoutf_t outf,
-                          gmx_bool bX, gmx_bool bF, const char *confout,
+                          gmx_bool bX, gmx_bool bF, const std::string &confout,
                           gmx_mtop_t *top_global,
                           t_inputrec *ir, int64_t step,
                           em_state_t *state,
@@ -538,7 +538,7 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
                                      &state->s, state_global, observablesHistory,
                                      state->f);
 
-    if (confout != nullptr)
+    if (!confout.empty())
     {
         if (DOMAINDECOMP(cr))
         {
@@ -1277,7 +1277,7 @@ Integrator::do_cg()
         do_x = do_per_step(step, inputrec->nstxout);
         do_f = do_per_step(step, inputrec->nstfout);
 
-        write_em_traj(fplog, cr, outf, do_x, do_f, nullptr,
+        write_em_traj(fplog, cr, outf, do_x, do_f, std::string(),
                       top_global, inputrec, step,
                       s_min, state_global, observablesHistory);
 
@@ -2588,7 +2588,7 @@ Integrator::do_steep()
             /* Write to trn, if necessary */
             do_x = do_per_step(steps_accepted, inputrec->nstxout);
             do_f = do_per_step(steps_accepted, inputrec->nstfout);
-            write_em_traj(fplog, cr, outf, do_x, do_f, nullptr,
+            write_em_traj(fplog, cr, outf, do_x, do_f, std::string(),
                           top_global, inputrec, count,
                           s_min, state_global, observablesHistory);
         }

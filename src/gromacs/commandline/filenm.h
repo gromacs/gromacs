@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
+struct t_commrec;
 
 //! \addtogroup module_commandline
 //! \{
@@ -104,11 +105,15 @@ struct t_filenm
 //! Convenience flag for an optional output file that accepts multiple files.
 #define ffOPTWRMULT   (ffWRMULT | ffOPT)
 
-/*! \brief
- * Returns the filename belonging to cmd-line option opt, or NULL when
- * no such option.
- */
-const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
+/*! \brief Returns the filename belonging to command line option opt
+ * (which must have been declared). */
+std::string opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
+
+/*! \brief Return the filename belonging to cmd-line option opt (which
+ * must have been declared) or empty when not running on master
+ * rank. */
+std::string opt2fn_master(const char *opt, int nfile,
+                          const t_filenm fnm[], t_commrec *cr);
 
 /*! \brief
  * Returns the filenames belonging to cmd-line option opt.
@@ -130,8 +135,8 @@ opt2fnsIfOptionSet(const char *opt, int nfile, const t_filenm fnm[]);
 //! Returns a file pointer from the filename.
 #define opt2FILE(opt, nfile, fnm, mode) gmx_ffopen(opt2fn(opt, nfile, fnm), mode)
 
-//! Returns the first file name with type ftp, or NULL when none found.
-const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[]);
+//! Returns the first file name with type ftp, which must be found.
+std::string ftp2fn(int ftp, int nfile, const t_filenm fnm[]);
 
 /*! \brief
  * Returns the filenames for the first option with type ftp.
@@ -150,20 +155,16 @@ gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[]);
 //! Returns TRUE when this option has been found on the cmd-line.
 gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[]);
 
-/*! \brief
- * Returns the file name belonging top cmd-line option opt, or NULL when
- * no such option.
- *
- * Also return NULL when opt is optional and option is not set.
- */
-const char *opt2fn_null(const char *opt, int nfile, const t_filenm fnm[]);
+/*! \brief Returns the file name belonging to commandline option \c
+ * opt, or an empty string when the option is not set. */
+std::string opt2fn_null(const char *opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
  * Returns the first file name with type ftp, or NULL when none found.
  *
  * Also return NULL when ftp is optional and option is not set.
  */
-const char *ftp2fn_null(int ftp, int nfile, const t_filenm fnm[]);
+std::string ftp2fn_null(int ftp, int nfile, const t_filenm fnm[]);
 
 //! Returns whether or not this filenm is optional.
 gmx_bool is_optional(const t_filenm *fnm);

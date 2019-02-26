@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,7 +120,7 @@ t_matelmt searchcmap(int n, t_mapping map[], t_xpmelmt c)
     return -1;
 }
 
-int getcmap(FILE *in, const char *fn, t_mapping **map)
+int getcmap(FILE *in, const std::string &fn, t_mapping **map)
 {
     int        i, n;
     char       line[STRLEN];
@@ -131,7 +131,7 @@ int getcmap(FILE *in, const char *fn, t_mapping **map)
     if (fgets2(line, STRLEN-1, in) == nullptr)
     {
         gmx_fatal(FARGS, "Not enough lines in colormap file %s"
-                  "(just wanted to read number of entries)", fn);
+                  "(just wanted to read number of entries)", fn.c_str());
     }
     sscanf(line, "%d", &n);
     snew(m, n);
@@ -140,7 +140,7 @@ int getcmap(FILE *in, const char *fn, t_mapping **map)
         if (fgets2(line, STRLEN-1, in) == nullptr)
         {
             gmx_fatal(FARGS, "Not enough lines in colormap file %s"
-                      "(should be %d, found only %d)", fn, n+1, i);
+                      "(should be %d, found only %d)", fn.c_str(), n+1, i);
         }
         sscanf(line, "%s%s%lf%lf%lf", code, desc, &r, &g, &b);
         m[i].code.c1 = code[0];
@@ -155,7 +155,7 @@ int getcmap(FILE *in, const char *fn, t_mapping **map)
     return n;
 }
 
-int readcmap(const char *fn, t_mapping **map)
+int readcmap(const std::string &fn, t_mapping **map)
 {
     gmx::FilePtr in = gmx::openLibraryFile(fn);
     return getcmap(in.get(), fn, map);
@@ -175,7 +175,7 @@ void printcmap(FILE *out, int n, t_mapping map[])
     }
 }
 
-void writecmap(const char *fn, int n, t_mapping map[])
+void writecmap(const std::string &fn, int n, t_mapping map[])
 {
     FILE *out;
 
@@ -544,7 +544,7 @@ static void read_xpm_entry(FILE *in, t_matrix *mm)
     sfree(line_buf);
 }
 
-int read_xpm_matrix(const char *fnm, t_matrix **mat)
+int read_xpm_matrix(const std::string &fnm, t_matrix **mat)
 {
     FILE *in;
     char *line = nullptr;

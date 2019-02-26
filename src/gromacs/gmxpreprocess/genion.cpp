@@ -236,19 +236,18 @@ static void sort_ions(int nsa, int nw, const int repl[], const int index[],
     }
 }
 
-static void update_topol(const char *topinout, int p_num, int n_num,
+static void update_topol(const std::string &topinout, int p_num, int n_num,
                          const char *p_name, const char *n_name, char *grpname)
 {
     FILE    *fpin, *fpout;
     char     buf[STRLEN], buf2[STRLEN], *temp, **mol_line = nullptr;
     int      line, i, nmol_line, sol_line, nsol_last;
     gmx_bool bMolecules;
-    char     temporary_filename[STRLEN];
 
     printf("\nProcessing topology\n");
     fpin  = gmx_ffopen(topinout, "r");
-    std::strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
-    fpout = gmx_fopen_temporary(temporary_filename);
+    std::string temporary_filename = "temp.topXXXXXX";
+    fpout = gmx_fopen_temporary(&temporary_filename);
 
     line       = 0;
     bMolecules = FALSE;
@@ -305,12 +304,12 @@ static void update_topol(const char *topinout, int p_num, int n_num,
     if (sol_line == -1)
     {
         gmx_ffclose(fpout);
-        gmx_fatal(FARGS, "No line with moleculetype '%s' found the [ molecules ] section of file '%s'", grpname, topinout);
+        gmx_fatal(FARGS, "No line with moleculetype '%s' found the [ molecules ] section of file '%s'", grpname, topinout.c_str());
     }
     if (nsol_last < p_num+n_num)
     {
         gmx_ffclose(fpout);
-        gmx_fatal(FARGS, "The last entry for moleculetype '%s' in the [ molecules ] section of file '%s' has less solvent molecules (%d) than were replaced (%d)", grpname, topinout, nsol_last, p_num+n_num);
+        gmx_fatal(FARGS, "The last entry for moleculetype '%s' in the [ molecules ] section of file '%s' has less solvent molecules (%d) than were replaced (%d)", grpname, topinout.c_str(), nsol_last, p_num+n_num);
     }
 
     /* Print all the molecule entries */
@@ -324,7 +323,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
         {
             printf("Replacing %d solute molecules in topology file (%s) "
                    " by %d %s and %d %s ions.\n",
-                   p_num+n_num, topinout, p_num, p_name, n_num, n_name);
+                   p_num+n_num, topinout.c_str(), p_num, p_name, n_num, n_name);
             nsol_last -= p_num + n_num;
             if (nsol_last > 0)
             {

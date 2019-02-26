@@ -744,7 +744,7 @@ static void print_lambda_vector(t_lambda *fep, int i,
     }
 }
 
-FILE *open_dhdl(const char *filename, const t_inputrec *ir,
+FILE *open_dhdl(const std::string &filename, const t_inputrec *ir,
                 const gmx_output_env_t *oenv)
 {
     FILE       *fp;

@@ -212,7 +212,7 @@ static void add_define(std::vector<t_define> *defines,
 /* Open the file to be processed. The handle variable holds internal
    info for the cpp emulator. Return integer status */
 static int
-cpp_open_file(const char                                     *filenm,
+cpp_open_file(const std::string                              &filenm,
               gmx_cpp_t                                      *handle,
               char                                          **cppopts,
               std::shared_ptr < std::vector < t_define>>     *definesFromParent,
@@ -283,7 +283,9 @@ cpp_open_file(const char                                     *filenm,
         /* If not, check all the paths given with -I. */
         for (const std::string &include : *cpp->includes)
         {
-            std::string buf = include + "/" + filenm;
+            std::string buf = include;
+            buf += '/';
+            buf += filenm;
             if (gmx_fexist(buf))
             {
                 cpp->fn = buf;
@@ -298,7 +300,7 @@ cpp_open_file(const char                                     *filenm,
     }
     if (cpp->fn.empty())
     {
-        gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm);
+        gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm.c_str());
     }
     /* If the file name has a path component, we need to change to that
      * directory. Note that we - just as C - always use UNIX path separators
@@ -321,7 +323,7 @@ cpp_open_file(const char                                     *filenm,
         gmx_getcwd(buf, STRLEN);
         cpp->cwd = buf;
 
-        gmx_chdir(cpp->path.c_str());
+        gmx_chdir(cpp->path);
     }
     cpp->line.clear();
     cpp->line_nr  = 0;
@@ -346,7 +348,7 @@ cpp_open_file(const char                                     *filenm,
 
 /* Open the file to be processed. The handle variable holds internal
    info for the cpp emulator. Return integer status */
-int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
+int cpp_open_file(const std::string &filenm, gmx_cpp_t *handle, char **cppopts)
 {
     return cpp_open_file(filenm, handle, cppopts, nullptr, nullptr);
 }
@@ -479,7 +481,7 @@ process_directive(gmx_cpp_t         *handlep,
         std::string inc_fn = dval.substr(i0, len);
 
         /* Open include file and store it as a child in the handle structure */
-        int status = cpp_open_file(inc_fn.c_str(), &(handle->child), nullptr,
+        int status = cpp_open_file(inc_fn, &(handle->child), nullptr,
                                    &handle->defines, &handle->includes);
         if (status != eCPP_OK)
         {
@@ -693,7 +695,7 @@ int cpp_close_file(gmx_cpp_t *handlep)
 
     if (!handle->cwd.empty())
     {
-        gmx_chdir(handle->cwd.c_str());
+        gmx_chdir(handle->cwd);
     }
 
     handle->fp      = nullptr;

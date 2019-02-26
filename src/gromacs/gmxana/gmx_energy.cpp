@@ -305,7 +305,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
     return set;
 }
 
-static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
+static void get_dhdl_parms(const std::string &topnm, t_inputrec *ir)
 {
     gmx_mtop_t  mtop;
     int         natoms;
@@ -315,7 +315,7 @@ static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, &mtop);
 }
 
-static void einstein_visco(const char *fn, const char *fni, int nsets,
+static void einstein_visco(const std::string &fn, const std::string &fni, int nsets,
                            int nint, real **eneint,
                            real V, real T, double dt,
                            const gmx_output_env_t *oenv)
@@ -861,10 +861,10 @@ static void calc_fluctuation_props(FILE *fp,
     }
 }
 
-static void analyse_ener(gmx_bool bCorr, const char *corrfn,
-                         const char *eviscofn, const char *eviscoifn,
+static void analyse_ener(gmx_bool bCorr, const std::string &corrfn,
+                         const std::string &eviscofn, const std::string &eviscoifn,
                          gmx_bool bFee, gmx_bool bSum, gmx_bool bFluct,
-                         gmx_bool bVisco, const char *visfn, int nmol,
+                         gmx_bool bVisco, const std::string &visfn, int nmol,
                          int64_t start_step, double start_t,
                          int64_t step, double t,
                          real reftemp,
@@ -1204,7 +1204,7 @@ static void print1(FILE *fp, gmx_bool bDp, real e)
     }
 }
 
-static void fec(const char *ene2fn, const char *runavgfn,
+static void fec(const std::string &ene2fn, const std::string &runavgfn,
                 real reftemp, int nset, const int set[], char *leg[],
                 enerdata_t *edat, double time[],
                 const gmx_output_env_t *oenv)
@@ -1292,7 +1292,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
 
     /* calculate fe difference dF = -kT ln < exp(-(E_B-E_A)/kT) >_A */
     fp = nullptr;
-    if (runavgfn)
+    if (!runavgfn.empty())
     {
         fp = xvgropen(runavgfn, "Running average free energy difference",
                       "Time (" unit_time ")", "\\8D\\4E (" unit_energy ")", oenv);
@@ -1331,7 +1331,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
 
 
 static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
-                    const char *filename, gmx_bool bDp,
+                    const std::string &filename, gmx_bool bDp,
                     int *blocks, int *hists, int *samples, int *nlambdas,
                     const gmx_output_env_t *oenv)
 {
@@ -2079,12 +2079,12 @@ int gmx_energy(int argc, char *argv[])
             {
                 printf("%d dH data blocks ", dh_blocks);
             }
-            printf("to %s\n", opt2fn("-odh", NFILE, fnm));
+            printf("to %s\n", opt2fn("-odh", NFILE, fnm).c_str());
 
         }
         else
         {
-            gmx_fatal(FARGS, "No dH data in %s\n", opt2fn("-f", NFILE, fnm));
+            gmx_fatal(FARGS, "No dH data in %s\n", opt2fn("-f", NFILE, fnm).c_str());
         }
 
     }

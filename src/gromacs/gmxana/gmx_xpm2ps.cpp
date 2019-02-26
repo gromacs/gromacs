@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,7 +114,7 @@ enum {
     ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR
 };
 
-static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
+static void get_params(const std::string &mpin, const std::string &mpout, t_psrec *psr)
 {
     static const char     *gmx_bools[BOOL_NR+1]  = { "no", "yes", nullptr };
     /* this must correspond to t_rgb *linecolors[] below */
@@ -128,7 +128,7 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     if (!libmpin.empty())
     {
         gmx::TextInputFile stream(libmpin);
-        inp = read_inpfile(&stream, libmpin.c_str(), wi);
+        inp = read_inpfile(&stream, libmpin, wi);
     }
     else
     {
@@ -178,7 +178,7 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     check_warning_error(wi, FARGS);
 
-    if (mpout != nullptr)
+    if (!mpout.empty())
     {
         gmx::TextOutputFile stream(mpout);
         write_inpfile(&stream, mpout, &inp, TRUE, WriteMdpHeader::yes, wi);
@@ -680,7 +680,7 @@ static int add_maps(t_mapping **newmap,
     return nmap;
 }
 
-static void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
+static void xpm_mat(const std::string &outf, int nmat, t_matrix *mat, t_matrix *mat2,
                     gmx_bool bDiag, gmx_bool bFirstDiag)
 {
     FILE      *out;
@@ -783,10 +783,10 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
             axisnm, *major, *minor);
 }
 
-static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
+static void ps_mat(const std::string &outf, int nmat, t_matrix mat[], t_matrix mat2[],
                    gmx_bool bFrame, gmx_bool bDiag, gmx_bool bFirstDiag,
                    gmx_bool bTitle, gmx_bool bTitleOnce, gmx_bool bYonce, int elegend,
-                   real size, real boxx, real boxy, const char *m2p, const char *m2pout,
+                   real size, real boxx, real boxy, const std::string &m2p, const std::string &m2pout,
                    int mapoffset)
 {
     char         *legend;
@@ -1173,7 +1173,7 @@ static void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
     }
 }
 
-static void write_combined_matrix(int ecombine, const char *fn,
+static void write_combined_matrix(int ecombine, const std::string &fn,
                                   int nmat, t_matrix *mat1, t_matrix *mat2,
                                   const real *cmin, const real *cmax)
 {
@@ -1260,8 +1260,8 @@ static void do_mat(int nmat, t_matrix *mat, t_matrix *mat2,
                    gmx_bool bFrame, gmx_bool bZeroLine, gmx_bool bDiag, gmx_bool bFirstDiag, gmx_bool bTitle,
                    gmx_bool bTitleOnce, gmx_bool bYonce, int elegend,
                    real size, real boxx, real boxy,
-                   const char *epsfile, const char *xpmfile, const char *m2p,
-                   const char *m2pout, int skip, int mapoffset)
+                   const std::string &epsfile, const std::string &xpmfile, const std::string &m2p,
+                   const std::string &m2pout, int skip, int mapoffset)
 {
     int      i, j, k;
 
@@ -1300,13 +1300,13 @@ static void do_mat(int nmat, t_matrix *mat, t_matrix *mat2,
         zero_lines(nmat, mat, mat);
     }
 
-    if (epsfile != nullptr)
+    if (!epsfile.empty())
     {
         ps_mat(epsfile, nmat, mat, mat2, bFrame, bDiag, bFirstDiag,
                bTitle, bTitleOnce, bYonce, elegend,
                size, boxx, boxy, m2p, m2pout, mapoffset);
     }
-    if (xpmfile != nullptr)
+    if (!xpmfile.empty())
     {
         xpm_mat(xpmfile, nmat, mat, mat2, bDiag, bFirstDiag);
     }
@@ -1438,7 +1438,6 @@ int gmx_xpm2ps(int argc, char *argv[])
     };
 
     gmx_output_env_t *oenv;
-    const char       *fn, *epsfile = nullptr, *xpmfile = nullptr;
     int               i, nmat, nmat2, etitle, elegend, ediag, erainbow, ecombine;
     t_matrix         *mat = nullptr, *mat2 = nullptr;
     gmx_bool          bTitle, bTitleOnce, bDiag, bFirstDiag, bGrad;
@@ -1527,9 +1526,9 @@ int gmx_xpm2ps(int argc, char *argv[])
         elegend = elNone;
     }
 
-    epsfile = ftp2fn_null(efEPS, NFILE, fnm);
-    xpmfile = opt2fn_null("-xpm", NFILE, fnm);
-    if (epsfile == nullptr && xpmfile == nullptr)
+    std::string epsfile = ftp2fn_null(efEPS, NFILE, fnm);
+    std::string xpmfile = opt2fn_null("-xpm", NFILE, fnm);
+    if (epsfile.empty() && xpmfile.empty())
     {
         if (ecombine != ecHalves)
         {
@@ -1540,26 +1539,26 @@ int gmx_xpm2ps(int argc, char *argv[])
             epsfile = ftp2fn(efEPS, NFILE, fnm);
         }
     }
-    if (ecombine != ecHalves && epsfile)
+    if (ecombine != ecHalves && !epsfile.empty())
     {
         fprintf(stderr,
                 "WARNING: can only write result of arithmetic combination "
                 "of two matrices to .xpm file\n"
-                "         file %s will not be written\n", epsfile);
+                "         file %s will not be written\n", epsfile.c_str());
         epsfile = nullptr;
     }
 
     bDiag      = ediag != edNone;
     bFirstDiag = ediag != edSecond;
 
-    fn   = opt2fn("-f", NFILE, fnm);
+    std::string fn = opt2fn("-f", NFILE, fnm);
     nmat = read_xpm_matrix(fn, &mat);
-    fprintf(stderr, "There %s %d matri%s in %s\n", (nmat > 1) ? "are" : "is", nmat, (nmat > 1) ? "ces" : "x", fn);
+    fprintf(stderr, "There %s %d matri%s in %s\n", (nmat > 1) ? "are" : "is", nmat, (nmat > 1) ? "ces" : "x", fn.c_str());
     fn = opt2fn_null("-f2", NFILE, fnm);
-    if (fn)
+    if (!fn.empty())
     {
         nmat2 = read_xpm_matrix(fn, &mat2);
-        fprintf(stderr, "There %s %d matri%s in %s\n", (nmat2 > 1) ? "are" : "is", nmat2, (nmat2 > 1) ? "ces" : "x", fn);
+        fprintf(stderr, "There %s %d matri%s in %s\n", (nmat2 > 1) ? "are" : "is", nmat2, (nmat2 > 1) ? "ces" : "x", fn.c_str());
         if (nmat != nmat2)
         {
             fprintf(stderr, "Different number of matrices, using the smallest number.\n");

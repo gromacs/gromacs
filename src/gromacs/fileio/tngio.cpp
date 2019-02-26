@@ -118,7 +118,7 @@ static const char *modeToVerb(char mode)
 }
 #endif
 
-void gmx_tng_open(const char           *filename,
+void gmx_tng_open(const std::string    &filename,
                   char                  mode,
                   gmx_tng_trajectory_t *gmx_tng)
 {
@@ -140,14 +140,14 @@ void gmx_tng_open(const char           *filename,
     /* tng must not be pointing at already allocated memory.
      * Memory will be allocated by tng_util_trajectory_open() and must
      * later on be freed by tng_util_trajectory_close(). */
-    if (TNG_SUCCESS != tng_util_trajectory_open(filename, mode, tng))
+    if (TNG_SUCCESS != tng_util_trajectory_open(filename.c_str(), mode, tng))
     {
         /* TNG does return more than one degree of error, but there is
            no use case for GROMACS handling the non-fatal errors
            gracefully. */
         gmx_fatal(FARGS,
                   "File I/O error while opening %s for %s",
-                  filename,
+                  filename.c_str(),
                   modeToVerb(mode));
     }
 
@@ -998,7 +998,7 @@ float gmx_tng_get_time_of_final_frame(gmx_tng_trajectory_t gmx_tng)
 #endif
 }
 
-void gmx_prepare_tng_writing(const char              *filename,
+void gmx_prepare_tng_writing(const std::string       &filename,
                              char                     mode,
                              gmx_tng_trajectory_t    *gmx_tng_input,
                              gmx_tng_trajectory_t    *gmx_tng_output,

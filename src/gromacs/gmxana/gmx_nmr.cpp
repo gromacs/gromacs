@@ -158,7 +158,7 @@ static int *select_it(int nre, char *nm[], int *nset)
     return set;
 }
 
-static void get_orires_parms(const char *topnm, t_inputrec *ir,
+static void get_orires_parms(const std::string &topnm, t_inputrec *ir,
                              int *nor, int *nex, int **label, real **obs)
 {
     gmx_mtop_t      mtop;
@@ -306,7 +306,7 @@ static void calc_violations(real rt[], real rav3[], int nb, const int index[],
     *sa = sumaver;
 }
 
-static void analyse_disre(const char *voutfn,    int nframes,
+static void analyse_disre(const std::string &voutfn,    int nframes,
                           real violaver[], real bounds[], int index[],
                           int pair[],      int nbounds,
                           const gmx_output_env_t *oenv)

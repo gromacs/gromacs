@@ -82,7 +82,7 @@ void TopologyInformation::fillFromInputFile(const std::string &filename)
     // TODO Once there are fewer callers of the file-reading
     // functionality, make them read directly into std::vector.
     rvec *x, *v;
-    readConfAndTopology(filename.c_str(), &bTop_, mtop_.get(),
+    readConfAndTopology(filename, &bTop_, mtop_.get(),
                         &ePBC_, &x, &v,
                         boxtop_);
     xtop_.assign(x, x + mtop_->natoms);

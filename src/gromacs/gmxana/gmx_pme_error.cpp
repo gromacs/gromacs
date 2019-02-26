@@ -844,7 +844,7 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
 
 
 /* Read in the tpr file and save information we need later in info */
-static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *state, gmx_mtop_t *mtop, t_inputrec *ir, real user_beta, real fracself)
+static void read_tpr_file(const std::string &fn_sim_tpr, t_inputinfo *info, t_state *state, gmx_mtop_t *mtop, t_inputrec *ir, real user_beta, real fracself)
 {
     read_tpx_state(fn_sim_tpr, ir, state, mtop);
 
@@ -1139,7 +1139,7 @@ int gmx_pme_error(int argc, char *argv[])
     {
         read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, &ir, user_beta, fracself);
         /* Open logfile for reading */
-        fp = fopen(opt2fn("-o", NFILE, fnm), "w");
+        fp = fopen(opt2fn("-o", NFILE, fnm).c_str(), "w");
 
         /* Determine the volume of the simulation box */
         info.volume = det(state.box);

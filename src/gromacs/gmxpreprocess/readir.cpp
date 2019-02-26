@@ -242,7 +242,7 @@ static void process_interaction_modifier(const t_inputrec *ir, int *eintmod)
     }
 }
 
-void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
+void check_ir(const std::string &mdparin, t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi)
 /* Check internal consistency.
  * NOTE: index groups are not set here yet, don't check things
@@ -1768,7 +1768,7 @@ class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
 
 } // namespace
 
-void get_ir(const char *mdparin, const char *mdparout,
+void get_ir(const std::string &mdparin, const std::string &mdparout,
             gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
             WriteMdpHeader writeMdpHeader, warninp_t wi)
 {
@@ -1796,7 +1796,7 @@ void get_ir(const char *mdparin, const char *mdparout,
                 "with GROMACS before 4.6. In 4.6, the Verlet scheme was "
                 "introduced, but the group scheme was still the default. "
                 "The default is now the Verlet scheme, so you will observe "
-                "different behaviour.", mdparin);
+                "different behaviour.", mdparin.c_str());
         warning_note(wi, warn_buf);
     }
 
@@ -3139,7 +3139,7 @@ static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char
     }
 }
 
-void do_index(const char* mdparin, const char *ndx,
+void do_index(const std::string &mdparin, const std::string &ndx,
               gmx_mtop_t *mtop,
               bool bVerbose,
               t_inputrec *ir,
@@ -3162,7 +3162,7 @@ void do_index(const char* mdparin, const char *ndx,
     {
         fprintf(stderr, "processing index file...\n");
     }
-    if (ndx == nullptr)
+    if (ndx.empty())
     {
         snew(grps, 1);
         snew(grps->index, 1);
@@ -3948,7 +3948,7 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
     }
 }
 
-void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
+void triple_check(const std::string &mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
     char                      err_buf[STRLEN];

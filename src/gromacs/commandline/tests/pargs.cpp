@@ -321,16 +321,16 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgs)
         "test", "-o1", "-o2", "test", "-om", "test1", "test2.xvg", "-om2"
     };
     parseFromArray(cmdline, 0, fnm, {});
-    EXPECT_STREQ("out1.xvg", opt2fn_null("-o1", nfile(), fnm));
-    EXPECT_STREQ("test.xvg", opt2fn_null("-o2", nfile(), fnm));
+    EXPECT_EQ("out1.xvg", opt2fn_null("-o1", nfile(), fnm));
+    EXPECT_EQ("test.xvg", opt2fn_null("-o2", nfile(), fnm));
     gmx::ArrayRef<const std::string> files = opt2fns("-om", nfile(), fnm);
     EXPECT_EQ(2, files.size());
     if (files.size() != 2)
     {
-        EXPECT_STREQ("test1.xvg", files[0].c_str());
-        EXPECT_STREQ("test2.xvg", files[1].c_str());
+        EXPECT_EQ("test1.xvg", files[0].c_str());
+        EXPECT_EQ("test2.xvg", files[1].c_str());
     }
-    EXPECT_STREQ("outm2.xvg", opt2fn("-om2", nfile(), fnm));
+    EXPECT_EQ("outm2.xvg", opt2fn("-om2", nfile(), fnm));
 }
 
 TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaults)
@@ -346,12 +346,12 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaults)
         "test"
     };
     parseFromArray(cmdline, 0, fnm, {});
-    EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
-    EXPECT_STREQ("traj.xtc", opt2fn("-f2", nfile(), fnm));
-    EXPECT_EQ(nullptr, opt2fn_null("-f2", nfile(), fnm));
-    EXPECT_STREQ("trj3.xtc", opt2fn("-f3", nfile(), fnm));
-    EXPECT_STREQ("out.xvg", opt2fn("-o", nfile(), fnm));
-    EXPECT_STREQ("outm.xvg", opt2fn("-om", nfile(), fnm));
+    EXPECT_EQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
+    EXPECT_EQ("traj.xtc", opt2fn("-f2", nfile(), fnm));
+    EXPECT_TRUE(opt2fn_null("-f2", nfile(), fnm).empty());
+    EXPECT_EQ("trj3.xtc", opt2fn("-f3", nfile(), fnm));
+    EXPECT_EQ("out.xvg", opt2fn("-o", nfile(), fnm));
+    EXPECT_EQ("outm.xvg", opt2fn("-om", nfile(), fnm));
 }
 
 TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaultFileName)
@@ -367,11 +367,11 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaultFileName)
         "test", "-deffnm", "def", "-f2", "other", "-o"
     };
     parseFromArray(cmdline, PCA_CAN_SET_DEFFNM, fnm, {});
-    EXPECT_STREQ("def.tpr", ftp2fn(efTPS, nfile(), fnm));
-    EXPECT_STREQ("other.xtc", opt2fn("-f2", nfile(), fnm));
-    EXPECT_STREQ("def.xtc", opt2fn("-f3", nfile(), fnm));
-    EXPECT_STREQ("def.xvg", opt2fn("-o", nfile(), fnm));
-    EXPECT_STREQ("def.xvg", opt2fn("-om", nfile(), fnm));
+    EXPECT_EQ("def.tpr", ftp2fn(efTPS, nfile(), fnm));
+    EXPECT_EQ("other.xtc", opt2fn("-f2", nfile(), fnm));
+    EXPECT_EQ("def.xtc", opt2fn("-f3", nfile(), fnm));
+    EXPECT_EQ("def.xvg", opt2fn("-o", nfile(), fnm));
+    EXPECT_EQ("def.xvg", opt2fn("-om", nfile(), fnm));
 }
 
 TEST_F(ParseCommonArgsTest, ParseFileArgsWithCustomDefaultExtension)
@@ -385,9 +385,9 @@ TEST_F(ParseCommonArgsTest, ParseFileArgsWithCustomDefaultExtension)
         "test", "-o2", "-o3", "test"
     };
     parseFromArray(cmdline, PCA_CAN_SET_DEFFNM, fnm, {});
-    EXPECT_STREQ("conf1.gro", opt2fn("-o1", nfile(), fnm));
-    EXPECT_STREQ("conf2.pdb", opt2fn("-o2", nfile(), fnm));
-    EXPECT_STREQ("test.gro", opt2fn("-o3", nfile(), fnm));
+    EXPECT_EQ("conf1.gro", opt2fn("-o1", nfile(), fnm));
+    EXPECT_EQ("conf2.pdb", opt2fn("-o2", nfile(), fnm));
+    EXPECT_EQ("test.gro", opt2fn("-o3", nfile(), fnm));
 }
 
 /********************************************************************
@@ -409,13 +409,13 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentInputFiles)
         "test", "-f2", "-f3", "other", "-f4", "trj.gro", "-g2", "foo"
     };
     parseFromArray(cmdline, PCA_DISABLE_INPUT_FILE_CHECKING, fnm, {});
-    EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
-    EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
-    EXPECT_STREQ("trj2.xtc", opt2fn("-f2", nfile(), fnm));
-    EXPECT_STREQ("other.xtc", opt2fn("-f3", nfile(), fnm));
-    EXPECT_STREQ("trj.gro", opt2fn("-f4", nfile(), fnm));
-    EXPECT_STREQ("cnf.gro", opt2fn("-g", nfile(), fnm));
-    EXPECT_STREQ("foo.gro", opt2fn("-g2", nfile(), fnm));
+    EXPECT_EQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
+    EXPECT_EQ("trj.xtc", opt2fn("-f", nfile(), fnm));
+    EXPECT_EQ("trj2.xtc", opt2fn("-f2", nfile(), fnm));
+    EXPECT_EQ("other.xtc", opt2fn("-f3", nfile(), fnm));
+    EXPECT_EQ("trj.gro", opt2fn("-f4", nfile(), fnm));
+    EXPECT_EQ("cnf.gro", opt2fn("-g", nfile(), fnm));
+    EXPECT_EQ("foo.gro", opt2fn("-g2", nfile(), fnm));
 }
 
 TEST_F(ParseCommonArgsTest, HandlesNonExistentOptionalInputFiles)
@@ -428,8 +428,8 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentOptionalInputFiles)
         "test"
     };
     parseFromArray(cmdline, 0, fnm, {});
-    EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
-    EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
+    EXPECT_EQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
+    EXPECT_EQ("trj.xtc", opt2fn("-f", nfile(), fnm));
 }
 
 TEST_F(ParseCommonArgsTest, AcceptsNonExistentInputFilesIfSpecified)
@@ -445,11 +445,11 @@ TEST_F(ParseCommonArgsTest, AcceptsNonExistentInputFilesIfSpecified)
         "test", "-c2", "-c3", "nonexistent", "-c4", "nonexistent.cpt", "-f", "nonexistent"
     };
     parseFromArray(cmdline, 0, fnm, {});
-    EXPECT_STREQ("file1.cpt", opt2fn("-c", nfile(), fnm));
-    EXPECT_STREQ("file2.cpt", opt2fn("-c2", nfile(), fnm));
-    EXPECT_STREQ("nonexistent.cpt", opt2fn("-c3", nfile(), fnm));
-    EXPECT_STREQ("nonexistent.cpt", opt2fn("-c4", nfile(), fnm));
-    EXPECT_STREQ("nonexistent.xtc", opt2fn("-f", nfile(), fnm));
+    EXPECT_EQ("file1.cpt", opt2fn("-c", nfile(), fnm));
+    EXPECT_EQ("file2.cpt", opt2fn("-c2", nfile(), fnm));
+    EXPECT_EQ("nonexistent.cpt", opt2fn("-c3", nfile(), fnm));
+    EXPECT_EQ("nonexistent.cpt", opt2fn("-c4", nfile(), fnm));
+    EXPECT_EQ("nonexistent.xtc", opt2fn("-f", nfile(), fnm));
 }
 
 TEST_F(ParseCommonArgsTest, HandlesCompressedFiles)
@@ -544,8 +544,8 @@ TEST_F(ParseCommonArgsTest, CanKeepUnknownArgs)
     parseFromArray(cmdline, PCA_NOEXIT_ON_ARGS, fnm, pa);
     EXPECT_EQ(2, ivalue);
     EXPECT_TRUE(bvalue);
-    EXPECT_STREQ("out1.xvg", opt2fn_null("-o1", nfile(), fnm));
-    EXPECT_STREQ("test.xvg", opt2fn_null("-o2", nfile(), fnm));
+    EXPECT_EQ("out1.xvg", opt2fn_null("-o1", nfile(), fnm));
+    EXPECT_EQ("test.xvg", opt2fn_null("-o2", nfile(), fnm));
     EXPECT_EQ(6, args_.argc());
     EXPECT_STREQ(cmdline[0],  args_.arg(0));
     EXPECT_STREQ(cmdline[1],  args_.arg(1));

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -525,7 +525,6 @@ int gmx_confrms(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* the two structure files */
-    const char       *conf1file, *conf2file, *matchndxfile, *outfile;
     FILE             *fp;
     char             *name1, *name2;
     t_topology       *top1, *top2;
@@ -558,9 +557,9 @@ int gmx_confrms(int argc, char *argv[])
     {
         return 0;
     }
-    matchndxfile = opt2fn_null("-no", NFILE, fnm);
-    conf1file    = ftp2fn(efTPS, NFILE, fnm);
-    conf2file    = ftp2fn(efSTX, NFILE, fnm);
+    std::string matchndxfile = opt2fn_null("-no", NFILE, fnm);
+    std::string conf1file    = ftp2fn(efTPS, NFILE, fnm);
+    std::string conf2file    = ftp2fn(efSTX, NFILE, fnm);
 
     /* reading reference structure from first structure file */
     fprintf(stderr, "\nReading first structure file\n");
@@ -605,17 +604,17 @@ int gmx_confrms(int argc, char *argv[])
     if (bName)
     {
         find_matching_names(&isize1, index1, atoms1, &isize2, index2, atoms2);
-        if (matchndxfile)
+        if (!matchndxfile.empty())
         {
             fp = gmx_ffopen(matchndxfile, "w");
             fprintf(fp, "; Matching atoms between %s from %s and %s from %s\n",
-                    groupnames1, conf1file, groupnames2, conf2file);
-            fprintf(fp, "[ Match_%s_%s ]\n", conf1file, groupnames1);
+                    groupnames1, conf1file.c_str(), groupnames2, conf2file.c_str());
+            fprintf(fp, "[ Match_%s_%s ]\n", conf1file.c_str(), groupnames1);
             for (i = 0; i < isize1; i++)
             {
                 fprintf(fp, "%4d%s", index1[i]+1, (i%15 == 14 || i == isize1-1) ? "\n" : " ");
             }
-            fprintf(fp, "[ Match_%s_%s ]\n", conf2file, groupnames2);
+            fprintf(fp, "[ Match_%s_%s ]\n", conf2file.c_str(), groupnames2);
             for (i = 0; i < isize2; i++)
             {
                 fprintf(fp, "%4d%s", index2[i]+1, (i%15 == 14 || i == isize2-1) ? "\n" : " ");
@@ -728,7 +727,7 @@ int gmx_confrms(int argc, char *argv[])
         }
     }
 
-    outfile = ftp2fn(efSTO, NFILE, fnm);
+    std::string outfile = ftp2fn(efSTO, NFILE, fnm);
     switch (fn2ftp(outfile))
     {
         case efPDB:

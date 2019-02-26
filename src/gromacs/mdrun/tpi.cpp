@@ -325,7 +325,7 @@ Integrator::do_tpi()
                 a_tp1-a_tp0, bCharge ? "with" : "without");
 
         fprintf(fplog, "\nWill insert %" PRId64 " times in each frame of %s\n",
-                nsteps, opt2fn("-rerun", nfile, fnm));
+                nsteps, opt2fn("-rerun", nfile, fnm).c_str());
     }
 
     if (!bCavity)

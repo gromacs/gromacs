@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,7 +121,6 @@ int gmx_sans(int argc, char *argv[])
 #endif
     };
     FILE                                 *fp;
-    const char                           *fnTPX, *fnTRX, *fnDAT = nullptr;
     t_trxstatus                          *status;
     t_topology                           *top  = nullptr;
     gmx_rmpbc_t                           gpbc = nullptr;
@@ -216,12 +215,12 @@ int gmx_sans(int argc, char *argv[])
     }
 
     /* Try to read files */
-    fnDAT = ftp2fn(efDAT, NFILE, fnm);
-    fnTPX = ftp2fn(efTPR, NFILE, fnm);
-    fnTRX = ftp2fn(efTRX, NFILE, fnm);
+    std::string fnDAT = ftp2fn(efDAT, NFILE, fnm);
+    std::string fnTPX = ftp2fn(efTPR, NFILE, fnm);
+    std::string fnTRX = ftp2fn(efTRX, NFILE, fnm);
 
     gnsf = gmx_neutronstructurefactors_init(fnDAT);
-    fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n", gnsf->nratoms, fnDAT);
+    fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n", gnsf->nratoms, fnDAT.c_str());
 
     snew(top, 1);
     snew(grpname, 1);
@@ -291,7 +290,7 @@ int gmx_sans(int argc, char *argv[])
         /* convert p(r) to sq */
         sqframecurrent = convert_histogram_to_intensity_curve(prframecurrent, start_q, end_q, q_step);
         /* print frame data if needed */
-        if (opt2fn_null("-prframe", NFILE, fnm))
+        if (!opt2fn_null("-prframe", NFILE, fnm).empty())
         {
             snew(hdr, 25);
             snew(suffix, GMX_PATH_MAX);
@@ -310,7 +309,7 @@ int gmx_sans(int argc, char *argv[])
             sfree(hdr);
             sfree(suffix);
         }
-        if (opt2fn_null("-sqframe", NFILE, fnm))
+        if (!opt2fn_null("-sqframe", NFILE, fnm).empty())
         {
             snew(hdr, 25);
             snew(suffix, GMX_PATH_MAX);

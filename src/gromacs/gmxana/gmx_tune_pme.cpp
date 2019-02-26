@@ -152,23 +152,23 @@ static void cleandata(t_perf *perfdata, int test_nr)
 }
 
 
-static void remove_if_exists(const char *fn)
+static void remove_if_exists(const std::string &fn)
 {
     if (gmx_fexist(fn))
     {
-        fprintf(stdout, "Deleting %s\n", fn);
-        remove(fn);
+        fprintf(stdout, "Deleting %s\n", fn.c_str());
+        remove(fn.c_str());
     }
 }
 
 
-static void finalize(const char *fn_out)
+static void finalize(const std::string &fn_out)
 {
     char  buf[STRLEN];
     FILE *fp;
 
 
-    fp = fopen(fn_out, "r");
+    fp = fopen(fn_out.c_str(), "r");
     fprintf(stdout, "\n\n");
 
     while (fgets(buf, STRLEN-1, fp) != nullptr)
@@ -184,7 +184,7 @@ enum {
     eFoundNothing, eFoundDDStr, eFoundAccountingStr, eFoundCycleStr
 };
 
-static int parse_logfile(const char *logfile, const char *errfile,
+static int parse_logfile(const std::string &logfile, const std::string &errfile,
                          t_perf *perfdata, int test_nr, int presteps, int64_t cpt_steps,
                          int nnodes)
 {
@@ -206,12 +206,12 @@ static int parse_logfile(const char *logfile, const char *errfile,
 
     if (!gmx_fexist(logfile))
     {
-        fprintf(stderr, "WARNING: Could not find logfile %s.\n", logfile);
+        fprintf(stderr, "WARNING: Could not find logfile %s.\n", logfile.c_str());
         cleandata(perfdata, test_nr);
         return eParselogNotFound;
     }
 
-    fp = fopen(logfile, "r");
+    fp = fopen(logfile.c_str(), "r");
     perfdata->PME_f_load[test_nr] = -1.0;
     perfdata->guessPME            = -1;
 
@@ -358,7 +358,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
      * Did a fatal errors occur? */
     if (gmx_fexist(errfile))
     {
-        fp = fopen(errfile, "r");
+        fp = fopen(errfile.c_str(), "r");
         while (fgets(line, STRLEN, fp) != nullptr)
         {
             if (str_starts(line, "Fatal error:") )
@@ -377,7 +377,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
     }
     else
     {
-        fprintf(stderr, "WARNING: Could not find stderr file %s.\n", errfile);
+        fprintf(stderr, "WARNING: Could not find stderr file %s.\n", errfile.c_str());
     }
 
     /* Giving up ... we could not find out why there is no performance data in
@@ -390,16 +390,16 @@ static int parse_logfile(const char *logfile, const char *errfile,
 
 
 static gmx_bool analyze_data(
-        FILE         *fp,
-        const char   *fn,
-        t_perf      **perfdata,
-        int           nnodes,
-        int           ntprs,
-        int           ntests,
-        int           nrepeats,
-        t_inputinfo  *info,
-        int          *index_tpr,    /* OUT: Nr of mdp file with best settings */
-        int          *npme_optimal) /* OUT: Optimal number of PME nodes */
+        FILE              *fp,
+        const std::string &fn,
+        t_perf           **perfdata,
+        int                nnodes,
+        int                ntprs,
+        int                ntests,
+        int                nrepeats,
+        t_inputinfo       *info,
+        int               *index_tpr,    /* OUT: Nr of mdp file with best settings */
+        int               *npme_optimal) /* OUT: Optimal number of PME nodes */
 {
     int      i, j, k;
     int      line  = 0, line_win = -1;
@@ -519,7 +519,7 @@ static gmx_bool analyze_data(
 
     if (k_win == -1)
     {
-        gmx_fatal(FARGS, "None of the runs was successful! Check %s for problems.", fn);
+        gmx_fatal(FARGS, "None of the runs was successful! Check %s for problems.", fn.c_str());
     }
 
     sep_line(fp);
@@ -768,24 +768,24 @@ static std::string make_gpu_id_command_line(const char *eligible_gpu_ids)
 }
 
 static void launch_simulation(
-        gmx_bool    bLaunch,          /* Should the simulation be launched? */
-        FILE       *fp,               /* General log file */
-        gmx_bool    bThreads,         /* whether to use threads */
-        char       *cmd_mpirun,       /* Command for mpirun */
-        char       *cmd_np,           /* Switch for -np or -ntmpi or empty */
-        char       *cmd_mdrun,        /* Command for mdrun */
-        char       *args_for_mdrun,   /* Arguments for mdrun */
-        const char *simulation_tpr,   /* This tpr will be simulated */
-        int         nPMEnodes,        /* Number of PME ranks to use */
-        const char *eligible_gpu_ids) /* Available GPU IDs for
-                                       * constructing mdrun command lines */
+        gmx_bool           bLaunch,          /* Should the simulation be launched? */
+        FILE              *fp,               /* General log file */
+        gmx_bool           bThreads,         /* whether to use threads */
+        char              *cmd_mpirun,       /* Command for mpirun */
+        char              *cmd_np,           /* Switch for -np or -ntmpi or empty */
+        char              *cmd_mdrun,        /* Command for mdrun */
+        char              *args_for_mdrun,   /* Arguments for mdrun */
+        const std::string &simulation_tpr,   /* This tpr will be simulated */
+        int                nPMEnodes,        /* Number of PME ranks to use */
+        const char        *eligible_gpu_ids) /* Available GPU IDs for
+                                              * constructing mdrun command lines */
 {
     char  *command;
 
 
     /* Make enough space for the system call command,
      * (200 extra chars for -npme ... etc. options should suffice): */
-    snew(command, std::strlen(cmd_mpirun)+std::strlen(cmd_mdrun)+std::strlen(cmd_np)+std::strlen(args_for_mdrun)+std::strlen(simulation_tpr)+200);
+    snew(command, std::strlen(cmd_mpirun)+std::strlen(cmd_mdrun)+std::strlen(cmd_np)+std::strlen(args_for_mdrun)+simulation_tpr.length()+200);
 
     auto cmd_gpu_ids = make_gpu_id_command_line(eligible_gpu_ids);
 
@@ -794,12 +794,12 @@ static void launch_simulation(
     if (bThreads)
     {
         sprintf(command, "%s%s-npme %d -s %s %s %s",
-                cmd_mdrun, cmd_np, nPMEnodes, simulation_tpr, args_for_mdrun, cmd_gpu_ids.c_str());
+                cmd_mdrun, cmd_np, nPMEnodes, simulation_tpr.c_str(), args_for_mdrun, cmd_gpu_ids.c_str());
     }
     else
     {
         sprintf(command, "%s%s%s -npme %d -s %s %s %s",
-                cmd_mpirun, cmd_np, cmd_mdrun, nPMEnodes, simulation_tpr, args_for_mdrun, cmd_gpu_ids.c_str());
+                cmd_mpirun, cmd_np, cmd_mdrun, nPMEnodes, simulation_tpr.c_str(), args_for_mdrun, cmd_gpu_ids.c_str());
     }
 
     fprintf(fp, "%s this command line to launch the simulation:\n\n%s", bLaunch ? "Using" : "Please use", command);
@@ -818,10 +818,10 @@ static void launch_simulation(
 
 
 static void modify_PMEsettings(
-        int64_t         simsteps,    /* Set this value as number of time steps */
-        int64_t         init_step,   /* Set this value as init_step */
-        const char     *fn_best_tpr, /* tpr file with the best performance */
-        const char     *fn_sim_tpr)  /* name of tpr file to be launched */
+        int64_t            simsteps,    /* Set this value as number of time steps */
+        int64_t            init_step,   /* Set this value as init_step */
+        const std::string &fn_best_tpr, /* tpr file with the best performance */
+        const std::string &fn_sim_tpr)  /* name of tpr file to be launched */
 {
     t_state        state;
     gmx_mtop_t     mtop;
@@ -836,7 +836,7 @@ static void modify_PMEsettings(
     ir->init_step = init_step;
 
     /* Write the tpr file which will be launched */
-    sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr, "%" PRId64);
+    sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr.c_str(), "%" PRId64);
     fprintf(stdout, buf, ir->nsteps);
     fflush(stdout);
     write_tpx_state(fn_sim_tpr, ir, &state, &mtop);
@@ -853,7 +853,7 @@ static gmx_bool can_scale_rvdw(int vdwtype)
 /* Make additional TPR files with more computational load for the
  * direct space processors: */
 static std::vector<std::string> make_benchmark_tprs(
-        const char           *fn_sim_tpr,   /* READ : User-provided tpr file                 */
+        const std::string    &fn_sim_tpr,   /* READ : User-provided tpr file                 */
         int64_t               benchsteps,   /* Number of time steps for benchmark runs       */
         int64_t               statesteps,   /* Step counter in checkpoint file               */
         real                  rmin,         /* Minimal Coulomb radius                        */
@@ -1089,7 +1089,7 @@ static std::vector<std::string> make_benchmark_tprs(
             fprintf(stdout, ", unmodified settings\n");
         }
 
-        write_tpx_state(benchmarkTprFilenames.back().c_str(), ir, &state, &mtop);
+        write_tpx_state(benchmarkTprFilenames.back(), ir, &state, &mtop);
 
         /* Write information about modified tpr settings to log file */
         fprintf(fp, "%4d%10f%10f", j, fac, ir->rcoulomb);
@@ -1130,7 +1130,6 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
                     int nPMEnodes, int nr, gmx_bool bKeepStderr)
 {
     char        numstring[STRLEN];
-    const char *fn = nullptr;
     int         i;
     const char *opt;
 
@@ -1153,37 +1152,37 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
             {
                 sprintf(numstring, "_%d", nr);
             }
-            std::string newfilename = gmx::formatString("%s_no%d_np%d_npme%d%s", opt2fn("-bg", nfile, fnm), k, nnodes, nPMEnodes, numstring);
+            std::string newfilename = gmx::formatString("%s_no%d_np%d_npme%d%s", opt2fn("-bg", nfile, fnm).c_str(), k, nnodes, nPMEnodes, numstring);
             if (gmx_fexist(opt2fn("-bg", nfile, fnm)))
             {
                 fprintf(stdout, "renaming log file to %s\n", newfilename.c_str());
                 make_backup(newfilename);
-                gmx_file_rename(opt2fn("-bg", nfile, fnm), newfilename.c_str());
+                rename(opt2fn("-bg", nfile, fnm).c_str(), newfilename.c_str());
             }
         }
         else if (std::strcmp(opt, "-err") == 0)
         {
             /* This file contains the output of stderr. We want to keep it in
              * cases where there have been problems. */
-            fn           = opt2fn(opt, nfile, fnm);
+            std::string fn = opt2fn(opt, nfile, fnm);
             numstring[0] = '\0';
             if (nr > 0)
             {
                 sprintf(numstring, "_%d", nr);
             }
-            std::string newfilename = gmx::formatString("%s_no%d_np%d_npme%d%s", fn, k, nnodes, nPMEnodes, numstring);
+            std::string newfilename = gmx::formatString("%s_no%d_np%d_npme%d%s", fn.c_str(), k, nnodes, nPMEnodes, numstring);
             if (gmx_fexist(fn))
             {
                 if (bKeepStderr)
                 {
                     fprintf(stdout, "Saving stderr output in %s\n", newfilename.c_str());
                     make_backup(newfilename);
-                    gmx_file_rename(fn, newfilename.c_str());
+                    rename(fn.c_str(), newfilename.c_str());
                 }
                 else
                 {
-                    fprintf(stdout, "Deleting %s\n", fn);
-                    remove(fn);
+                    fprintf(stdout, "Deleting %s\n", fn.c_str());
+                    remove(fn.c_str());
                 }
             }
         }
@@ -1539,7 +1538,7 @@ static void do_the_tests(
                         (100.0*count)/totaltests,
                         k+1, nr_tprs, i+1, *pmeentries, buf);
                 make_backup(opt2fn("-err", nfile, fnm));
-                sprintf(command, "%s 1> /dev/null 2>%s", pd->mdrun_cmd_line, opt2fn("-err", nfile, fnm));
+                sprintf(command, "%s 1> /dev/null 2>%s", pd->mdrun_cmd_line, opt2fn("-err", nfile, fnm).c_str());
                 fprintf(stdout, "%s\n", pd->mdrun_cmd_line);
                 gmx_system_call(command);
 
@@ -1631,11 +1630,11 @@ static void check_input(
     /* Make sure the input file exists */
     if (!gmx_fexist(opt2fn("-s", nfile, fnm)))
     {
-        gmx_fatal(FARGS, "File %s not found.", opt2fn("-s", nfile, fnm));
+        gmx_fatal(FARGS, "File %s not found.", opt2fn("-s", nfile, fnm).c_str());
     }
 
     /* Make sure that the checkpoint file is not overwritten during benchmarking */
-    if ( (0 == std::strcmp(opt2fn("-cpi", nfile, fnm), opt2fn("-bcpo", nfile, fnm)) ) && (sim_part > 1) )
+    if ((opt2fn("-cpi", nfile, fnm) == opt2fn("-bcpo", nfile, fnm)) && (sim_part > 1))
     {
         gmx_fatal(FARGS, "Checkpoint input (-cpi) and benchmark checkpoint output (-bcpo) files must not be identical.\n"
                   "The checkpoint input file must not be overwritten during the benchmarks.\n");
@@ -1879,7 +1878,6 @@ static void create_command_line_snippets(
 {
     int         i;
     char       *opt;
-    const char *name;
     char        strbuf[STRLEN];
 
 
@@ -1924,10 +1922,10 @@ static void create_command_line_snippets(
     for (i = 0; i < nfile; i++)
     {
         opt  = const_cast<char *>(fnm[i].opt);
-        name = opt2fn(opt, nfile, fnm);
+        std::string name = opt2fn(opt, nfile, fnm);
 
         /* Strbuf contains the options, now let's sort out where we need that */
-        sprintf(strbuf, "%s %s ", opt, name);
+        sprintf(strbuf, "%s %s ", opt, name.c_str());
 
         if (is_bench_file(opt, opt2bSet(opt, nfile, fnm), is_optional(&fnm[i]), is_output(&fnm[i])) )
         {
@@ -1935,7 +1933,7 @@ static void create_command_line_snippets(
              * therefore overwrite strbuf */
             if (0 == std::strncmp(opt, "-b", 2))
             {
-                sprintf(strbuf, "-%s %s ", &opt[2], name);
+                sprintf(strbuf, "-%s %s ", &opt[2], name.c_str());
             }
 
             add_to_string(cmd_args_bench, strbuf);
@@ -2140,7 +2138,6 @@ int gmx_tune_pme(int argc, char *argv[])
     gmx_bool        bOverwrite     = FALSE, bKeepTPR;
     gmx_bool        bLaunch        = FALSE;
     char           *ExtraArgs      = nullptr;
-    const char     *simulation_tpr = nullptr;
     char           *deffnm         = nullptr;
     int             best_npme, best_tpr;
     int             sim_part = 1; /* For benchmarks with checkpoint files */
@@ -2374,13 +2371,13 @@ int gmx_tune_pme(int argc, char *argv[])
     sim_part = 1;
     if (opt2bSet("-cpi", NFILE, fnm))
     {
-        const char *filename = opt2fn("-cpi", NFILE, fnm);
+        std::string filename = opt2fn("-cpi", NFILE, fnm);
         int         cpt_sim_part;
         read_checkpoint_part_and_step(filename,
                                       &cpt_sim_part, &cpt_steps);
         if (cpt_sim_part == 0)
         {
-            gmx_fatal(FARGS, "Checkpoint file %s could not be read!", filename);
+            gmx_fatal(FARGS, "Checkpoint file %s could not be read!", filename.c_str());
         }
         /* tune_pme will run the next part of the simulation */
         sim_part = cpt_sim_part + 1;
@@ -2484,7 +2481,7 @@ int gmx_tune_pme(int argc, char *argv[])
     if (new_sim_nsteps >= 0)
     {
         bOverwrite = TRUE;
-        fprintf(stderr, "Note: Simulation input file %s will have ", opt2fn("-so", NFILE, fnm));
+        fprintf(stderr, "Note: Simulation input file %s will have ", opt2fn("-so", NFILE, fnm).c_str());
         fprintf(stderr, "%" PRId64, new_sim_nsteps+cpt_steps);
         fprintf(stderr, " steps.\n");
         fprintf(fp, "Simulation steps        : ");
@@ -2501,7 +2498,7 @@ int gmx_tune_pme(int argc, char *argv[])
         fprintf(fp, "Fixing -npme at         : %d\n", npme_fixed);
     }
 
-    fprintf(fp, "Input file              : %s\n", opt2fn("-s", NFILE, fnm));
+    fprintf(fp, "Input file              : %s\n", opt2fn("-s", NFILE, fnm).c_str());
     fprintf(fp, "   PME/PP load estimate : %g\n", guessPMEratio);
 
     /* Allocate memory for the inputinfo struct: */
@@ -2543,6 +2540,7 @@ int gmx_tune_pme(int argc, char *argv[])
                                 repeats, info, &best_tpr, &best_npme);
 
         /* Take the best-performing tpr file and enlarge nsteps to original value */
+        std::string simulation_tpr;
         if (bKeepTPR && !bOverwrite)
         {
             simulation_tpr = opt2fn("-s", NFILE, fnm);

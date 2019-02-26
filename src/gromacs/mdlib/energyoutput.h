@@ -37,6 +37,8 @@
 
 #include <cstdio>
 
+#include <string>
+
 #include "gromacs/mdtypes/enerdata.h"
 
 class energyhistory_t;
@@ -175,7 +177,7 @@ class EnergyOutput
 } // namespace gmx
 
 //! Open the dhdl file for output
-FILE *open_dhdl(const char *filename, const t_inputrec *ir,
+FILE *open_dhdl(const std::string &filename, const t_inputrec *ir,
                 const gmx_output_env_t *oenv);
 
 namespace gmx

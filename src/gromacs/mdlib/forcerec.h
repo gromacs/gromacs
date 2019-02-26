@@ -37,6 +37,8 @@
 #ifndef GMX_MDLIB_FORCEREC_H
 #define GMX_MDLIB_FORCEREC_H
 
+#include <string>
+
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/vsite.h"
@@ -127,8 +129,8 @@ void init_forcerec(FILE                             *fplog,
                    const gmx_mtop_t                 *mtop,
                    const t_commrec                  *cr,
                    matrix                            box,
-                   const char                       *tabfn,
-                   const char                       *tabpfn,
+                   const std::string                &tabfn,
+                   const std::string                &tabpfn,
                    gmx::ArrayRef<const std::string>  tabbfnm,
                    const gmx_hw_info_t              &hardwareInfo,
                    const gmx_device_info_t          *deviceInfo,

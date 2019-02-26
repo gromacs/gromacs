@@ -327,7 +327,7 @@ namespace
  * \returns A vector of containing the essentiail dyanmics parameters.
  * NOTE: edi files may that it may contain several ED data sets from concatenated edi files.
  * The standard case would be a single ED data set, though. */
-std::vector<t_edpar> read_edi_file(const char *fn, int nr_mdatoms);
+std::vector<t_edpar> read_edi_file(const std::string &fn, int nr_mdatoms);
 }
 static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam &ed, edsamhistory_t *EDstate);
 static void init_edsamstate(const gmx_edsam &ed, edsamhistory_t *EDstate);
@@ -1123,8 +1123,8 @@ static void get_flood_energies(t_edpar *edi, real Vfl[], int nnames)
 static std::unique_ptr<gmx::EssentialDynamics> ed_open(
         int                     natoms,
         ObservablesHistory     *oh,
-        const char             *ediFileName,
-        const char             *edoFileName,
+        const std::string      &ediFileName,
+        const std::string      &edoFileName,
         gmx_bool                bAppend,
         const gmx_output_env_t *oenv,
         const t_commrec        *cr)
@@ -1678,7 +1678,7 @@ bool ediFileHasValidDataSet(FILE *in, int * magicNumber)
  * \param[in] magicNumber A magic number read from the edi file
  * \param[in] fn name of input file for error reporting
  */
-void exitWhenMagicNumberIsInvalid(int magicNumber, const char * fn)
+void exitWhenMagicNumberIsInvalid(int magicNumber, const std::string &fn)
 {
 
     if (magicNumber < c_oldestSupportedMagicNumber || magicNumber > c_latestSupportedMagicNumber)
@@ -1689,7 +1689,7 @@ void exitWhenMagicNumberIsInvalid(int magicNumber, const char * fn)
         }
         else
         {
-            gmx_fatal(FARGS, "Wrong magic number %d in %s", magicNumber, fn);
+            gmx_fatal(FARGS, "Wrong magic number %d in %s", magicNumber, fn.c_str());
         }
     }
 }
@@ -1702,7 +1702,7 @@ void exitWhenMagicNumberIsInvalid(int magicNumber, const char * fn)
  * \param[in] fn the file name of the input file for error reporting
  * \returns edi essential dynamics parameters
  */
-t_edpar read_edi(FILE* in, int nr_mdatoms, bool hasConstForceFlooding, const char *fn)
+t_edpar read_edi(FILE* in, int nr_mdatoms, bool hasConstForceFlooding, const std::string &fn)
 {
     t_edpar edi;
     bool    bEOF;
@@ -1710,7 +1710,7 @@ t_edpar read_edi(FILE* in, int nr_mdatoms, bool hasConstForceFlooding, const cha
     edi.nini = read_edint(in, &bEOF);
     if (edi.nini != nr_mdatoms)
     {
-        gmx_fatal(FARGS, "Nr of atoms in %s (%d) does not match nr of md atoms (%d)", fn, edi.nini, nr_mdatoms);
+        gmx_fatal(FARGS, "Nr of atoms in %s (%d) does not match nr of md atoms (%d)", fn.c_str(), edi.nini, nr_mdatoms);
     }
 
     /* Done checking. For the rest we blindly trust the input */
@@ -1799,7 +1799,7 @@ t_edpar read_edi(FILE* in, int nr_mdatoms, bool hasConstForceFlooding, const cha
     return edi;
 }
 
-std::vector<t_edpar> read_edi_file(const char *fn, int nr_mdatoms)
+std::vector<t_edpar> read_edi_file(const std::string &fn, int nr_mdatoms)
 {
     std::vector<t_edpar> essentialDynamicsParameters;
     FILE                *in;
@@ -1807,7 +1807,7 @@ std::vector<t_edpar> read_edi_file(const char *fn, int nr_mdatoms)
 
     /* Open the .edi parameter input file */
     in = gmx_fio_fopen(fn, "r");
-    fprintf(stderr, "ED: Reading edi file %s\n", fn);
+    fprintf(stderr, "ED: Reading edi file %s\n", fn.c_str());
 
     /* Now read a sequence of ED input parameter sets from the edi file */
     int ediFileMagicNumber;
@@ -1824,7 +1824,7 @@ std::vector<t_edpar> read_edi_file(const char *fn, int nr_mdatoms)
     }
     if (essentialDynamicsParameters.empty())
     {
-        gmx_fatal(FARGS, "No complete ED data set found in edi file %s.", fn);
+        gmx_fatal(FARGS, "No complete ED data set found in edi file %s.", fn.c_str());
     }
 
     fprintf(stderr, "ED: Found %zu ED group%s.\n", essentialDynamicsParameters.size(), essentialDynamicsParameters.size() > 1 ? "s" : "");
@@ -2646,8 +2646,8 @@ static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oe
  * contained in the input file, creates a NULL terminated list of t_edpar structures */
 std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         const gmx::MDLogger    &mdlog,
-        const char             *ediFileName,
-        const char             *edoFileName,
+        const std::string      &ediFileName,
+        const std::string      &edoFileName,
         const gmx_mtop_t       *mtop,
         const t_inputrec       *ir,
         const t_commrec        *cr,

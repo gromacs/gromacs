@@ -374,7 +374,7 @@ static void make_atoms_sys(gmx::ArrayRef<const gmx_molblock_t>      molblock,
 }
 
 
-static char **read_topol(const char *infile, const char *outfile,
+static char **read_topol(const std::string &infile, const std::string &outfile,
                          const char *define, const char *include,
                          t_symtab    *symtab,
                          gpp_atomtype *atype,
@@ -393,7 +393,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          bool        usingFullRangeElectrostatics,
                          warninp    *wi)
 {
-    FILE                           *out;
+    FILE                           *out = nullptr;
     int                             sl, nb_funct;
     char                           *pline = nullptr, **title = nullptr;
     char                            line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
@@ -424,13 +424,9 @@ static char **read_topol(const char *infile, const char *outfile,
     /* We need to open the output file before opening the input file,
      * because cpp_open_file can change the current working directory.
      */
-    if (outfile)
+    if (!outfile.empty())
     {
         out = gmx_fio_fopen(outfile, "w");
-    }
-    else
-    {
-        out = nullptr;
     }
 
     /* open input file */
@@ -934,8 +930,8 @@ static char **read_topol(const char *infile, const char *outfile,
 }
 
 char **do_top(bool                                  bVerbose,
-              const char                           *topfile,
-              const char                           *topppfile,
+              const std::string                    &topfile,
+              const std::string                    &topppfile,
               t_gromppopts                         *opts,
               bool                                  bZero,
               t_symtab                             *symtab,
@@ -952,24 +948,13 @@ char **do_top(bool                                  bVerbose,
               bool                                 *ffParametrizedWithHBondConstraints,
               warninp                              *wi)
 {
-    /* Tmpfile might contain a long path */
-    const char *tmpfile;
     char      **title;
-
-    if (topppfile)
-    {
-        tmpfile = topppfile;
-    }
-    else
-    {
-        tmpfile = nullptr;
-    }
 
     if (bVerbose)
     {
         printf("processing topology...\n");
     }
-    title = read_topol(topfile, tmpfile, opts->define, opts->include,
+    title = read_topol(topfile, topppfile, opts->define, opts->include,
                        symtab, atype,
                        nrmols, molinfo, intermolecular_interactions,
                        plist, combination_rule, repulsion_power,

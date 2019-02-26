@@ -246,7 +246,7 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
 /*Determines interface from tetrahedral order parameter in box with specified binwidth.  */
 /*Outputs interface positions(bins), the number of timeframes, and the number of surface-mesh points in xy*/
 
-static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, const char *fnTRX, real binw, int tblock,
+static void calc_tetra_order_interface(const std::string &fnNDX, const std::string &fnTPS, const std::string &fnTRX, real binw, int tblock,
                                        int *nframes,  int *nslicex, int *nslicey,
                                        real sgang1, real sgang2, real ****intfpos,
                                        gmx_output_env_t *oenv)
@@ -608,7 +608,6 @@ int gmx_hydorder(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /*Filenames*/
-    const char       *ndxfnm, *tpsfnm, *trxfnm;
     gmx_output_env_t *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
@@ -624,9 +623,9 @@ int gmx_hydorder(int argc, char *argv[])
         gmx_fatal(FARGS, "Can not have binwidth < 0");
     }
 
-    ndxfnm = ftp2fn(efNDX, NFILE, fnm);
-    tpsfnm = ftp2fn(efTPR, NFILE, fnm);
-    trxfnm = ftp2fn(efTRX, NFILE, fnm);
+    std::string ndxfnm = ftp2fn(efNDX, NFILE, fnm);
+    std::string tpsfnm = ftp2fn(efTPR, NFILE, fnm);
+    std::string trxfnm = ftp2fn(efTRX, NFILE, fnm);
 
     /* Calculate axis */
     GMX_RELEASE_ASSERT(normal_axis[0] != nullptr, "Option setting inconsistency; normal_axis[0] is NULL");

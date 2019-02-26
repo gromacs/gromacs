@@ -84,7 +84,7 @@ static void scan_trj_files(gmx::ArrayRef<const std::string> files,
 
     for (gmx::index i = 0; i < files.ssize(); i++)
     {
-        ok = read_first_frame(oenv, &status, files[i].c_str(), &fr, FLAGS);
+        ok = read_first_frame(oenv, &status, files[i], &fr, FLAGS);
 
         if (!ok)
         {
@@ -323,7 +323,7 @@ static void do_demux(gmx::ArrayRef<const std::string> inFiles,
     t      = -1;
     for (gmx::index i = 0; i < inFiles.ssize(); i++)
     {
-        read_first_frame(oenv, &(fp_in[i]), inFiles[i].c_str(), &(trx[i]),
+        read_first_frame(oenv, &(fp_in[i]), inFiles[i], &(trx[i]),
                          TRX_NEED_X);
         if (natoms == -1)
         {
@@ -347,7 +347,7 @@ static void do_demux(gmx::ArrayRef<const std::string> inFiles,
     snew(fp_out, inFiles.size());
     for (gmx::index i = 0; i < inFiles.ssize(); i++)
     {
-        fp_out[i] = open_trx(outFiles[i].c_str(), "w");
+        fp_out[i] = open_trx(outFiles[i], "w");
     }
     k = 0;
     if (std::round(time[k] - t) != 0)
@@ -657,12 +657,12 @@ int gmx_trjcat(int argc, char *argv[])
                 if (bIndex)
                 {
                     trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), isize, nullptr, gmx::arrayRefFromArray(index, isize), grpname);
+                                                              inFilesEdited[0], isize, nullptr, gmx::arrayRefFromArray(index, isize), grpname);
                 }
                 else
                 {
                     trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), -1, nullptr, {}, nullptr);
+                                                              inFilesEdited[0], -1, nullptr, {}, nullptr);
                 }
             }
             else
@@ -814,7 +814,7 @@ int gmx_trjcat(int argc, char *argv[])
             {
                 timestep = timest[i];
             }
-            read_first_frame(oenv, &status, inFilesEdited[i].c_str(), &fr, FLAGS);
+            read_first_frame(oenv, &status, inFilesEdited[i], &fr, FLAGS);
             if (!fr.bTime)
             {
                 fr.time = 0;

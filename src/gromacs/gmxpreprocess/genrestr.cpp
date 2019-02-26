@@ -117,7 +117,6 @@ int gmx_genrestr(int argc, char *argv[])
     int               igrp;
     real              d, dd, lo, hi;
     int              *ind_grp;
-    const char       *xfn, *nfn;
     char             *gn_grp;
     matrix            box;
     gmx_bool          bFreeze;
@@ -139,10 +138,10 @@ int gmx_genrestr(int argc, char *argv[])
 
     bFreeze = opt2bSet("-of", NFILE, fnm) || opt2parg_bSet("-freeze", asize(pa), pa);
     bDisre  = bDisre || opt2parg_bSet("-disre_dist", npargs, pa);
-    xfn     = opt2fn_null("-f", NFILE, fnm);
-    nfn     = opt2fn_null("-n", NFILE, fnm);
+    std::string xfn = opt2fn_null("-f", NFILE, fnm);
+    std::string nfn = opt2fn_null("-n", NFILE, fnm);
 
-    if (( nfn == nullptr ) && ( xfn == nullptr))
+    if (nfn.empty() && xfn.empty())
     {
         gmx_fatal(FARGS, "no index file and no structure file supplied");
     }
@@ -157,7 +156,7 @@ int gmx_genrestr(int argc, char *argv[])
     }
 
     const char *title = "";
-    if (xfn != nullptr)
+    if (!xfn.empty())
     {
         fprintf(stderr, "\nReading structure file\n");
         t_topology *top = nullptr;
@@ -176,7 +175,7 @@ int gmx_genrestr(int argc, char *argv[])
         if (!atoms || !atoms->pdbinfo)
         {
             gmx_fatal(FARGS, "No B-factors in input file %s, use a pdb file next time.",
-                      xfn);
+                      xfn.c_str());
         }
 
         out = opt2FILE("-of", NFILE, fnm, "w");
@@ -259,7 +258,7 @@ int gmx_genrestr(int argc, char *argv[])
         }
         gmx_ffclose(out);
     }
-    if (xfn)
+    if (!xfn.empty())
     {
         sfree(x);
         sfree(v);

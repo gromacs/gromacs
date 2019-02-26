@@ -497,7 +497,7 @@ static void init_dr_res(t_dr_result *dr, int ndr)
     dr->averv   = 0;
 }
 
-static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
+static void dump_disre_matrix(const std::string &fn, t_dr_result *dr, int ndr,
                               int nsteps, t_idef *idef, const gmx_mtop_t *mtop,
                               real max_dr, int nlevels, gmx_bool bThird)
 {
@@ -509,7 +509,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
     real     **matrix, *t_res, hi, *w_dr, rav, rviol;
     t_rgb      rlo = { 1, 1, 1 };
     t_rgb      rhi = { 0, 0, 0 };
-    if (fn == nullptr)
+    if (fn.empty())
     {
         return;
     }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,6 @@ int gmx_dyecoupl(int argc, char *argv[])
 #define NFILE asize(fnm)
 
 
-    const char  *in_trajfile, *out_xvgrkfile = nullptr, *out_xvginstefffile = nullptr, *out_xvgrhistfile = nullptr, *out_xvgkhistfile = nullptr, *out_datfile = nullptr;
     gmx_bool     bHaveFirstFrame, bHaveNextFrame, indexOK = TRUE;
     int          ndon, nacc;
     int         *donindex, *accindex;
@@ -138,12 +137,12 @@ int gmx_dyecoupl(int argc, char *argv[])
 
 
     /* Check command line options for filenames and set bool flags when switch used*/
-    in_trajfile        = opt2fn("-f", NFILE, fnm);
-    out_xvgrkfile      = opt2fn("-ot", NFILE, fnm);
-    out_xvgrhistfile   = opt2fn("-rhist", NFILE, fnm);
-    out_xvgkhistfile   = opt2fn("-khist", NFILE, fnm);
-    out_xvginstefffile = opt2fn("-oe", NFILE, fnm);
-    out_datfile        = opt2fn("-o", NFILE, fnm);
+    std::string in_trajfile        = opt2fn("-f", NFILE, fnm);
+    std::string out_xvgrkfile      = opt2fn("-ot", NFILE, fnm);
+    std::string out_xvgrhistfile   = opt2fn("-rhist", NFILE, fnm);
+    std::string out_xvgkhistfile   = opt2fn("-khist", NFILE, fnm);
+    std::string out_xvginstefffile = opt2fn("-oe", NFILE, fnm);
+    std::string out_datfile        = opt2fn("-o", NFILE, fnm);
 
     bRKout      = opt2bSet("-ot", NFILE, fnm);
     bRhistout   = opt2bSet("-rhist", NFILE, fnm);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 #ifndef GMX_FILEIO_CONFIO_H
 #define GMX_FILEIO_CONFIO_H
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -48,19 +50,19 @@ struct t_atoms;
 struct t_symtab;
 struct t_topology;
 
-void write_sto_conf_indexed(const char *outfile, const char *title,
+void write_sto_conf_indexed(const std::string &outfile, const char *title,
                             const t_atoms *atoms,
                             const rvec x[], const rvec *v, int ePBC, const matrix box,
                             int nindex, int index[]);
 /* like write_sto_conf, but indexed */
 
-void write_sto_conf(const char *outfile, const char *title,
+void write_sto_conf(const std::string &outfile, const char *title,
                     const t_atoms *atoms,
                     const rvec x[], const rvec *v, int ePBC, const matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL)
  * to an STO (.gro or .pdb) file */
 
-void write_sto_conf_mtop(const char *outfile, const char *title,
+void write_sto_conf_mtop(const std::string &outfile, const char *title,
                          struct gmx_mtop_t *mtop,
                          const rvec x[], const rvec *v, int ePBC, const matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
@@ -78,7 +80,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
  * \param[in,out] v             Velocities will be stored when *v!=NULL
  * \param[out]    box           Box dimensions
  */
-void readConfAndTopology(const char *infile,
+void readConfAndTopology(const std::string &infile,
                          bool *haveTopology, gmx_mtop_t *mtop,
                          int *ePBC,
                          rvec **x, rvec **v, matrix box);
@@ -96,7 +98,7 @@ void readConfAndTopology(const char *infile,
  * \param[in,out] v             Velocities will be stored when *v!=NULL
  * \param[out]    box           Box dimensions
  */
-void readConfAndAtoms(const char *infile,
+void readConfAndAtoms(const std::string &infile,
                       t_symtab *symtab, char **name, t_atoms *atoms,
                       int *ePBC,
                       rvec **x, rvec **v, matrix box);
@@ -120,7 +122,7 @@ void readConfAndAtoms(const char *infile,
  * \param[in]     requireMasses Require masses to be present, either from tpr or from the mass database
  * \returns if a topology is available
  */
-gmx_bool read_tps_conf(const char *infile, struct t_topology *top,
+gmx_bool read_tps_conf(const std::string &infile, struct t_topology *top,
                        int *ePBC, rvec **x, rvec **v, matrix box,
                        gmx_bool requireMasses);
 

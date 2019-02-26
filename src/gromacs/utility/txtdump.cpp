@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@ int pr_indent(FILE *fp, int n)
     return n;
 }
 
-bool available(FILE *fp, const void *p, int indent, const char *title)
+bool available(FILE *fp, const void *p, int indent, const std::string &title)
 {
     if (!p)
     {
@@ -64,40 +64,40 @@ bool available(FILE *fp, const void *p, int indent, const char *title)
         {
             pr_indent(fp, indent);
         }
-        fprintf(fp, "%s: not available\n", title);
+        fprintf(fp, "%s: not available\n", title.c_str());
     }
     return (p != nullptr);
 }
 
-int pr_title(FILE *fp, int indent, const char *title)
+int pr_title(FILE *fp, int indent, const std::string &title)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%s:\n", title);
+    fprintf(fp, "%s:\n", title.c_str());
     return (indent+INDENT);
 }
 
-int pr_title_n(FILE *fp, int indent, const char *title, int n)
+int pr_title_n(FILE *fp, int indent, const std::string &title, int n)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%s (%d):\n", title, n);
+    fprintf(fp, "%s (%d):\n", title.c_str(), n);
     return (indent+INDENT);
 }
 
-int pr_title_nxn(FILE *fp, int indent, const char *title, int n1, int n2)
+int pr_title_nxn(FILE *fp, int indent, const std::string &title, int n1, int n2)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%s (%dx%d):\n", title, n1, n2);
+    fprintf(fp, "%s (%dx%d):\n", title.c_str(), n1, n2);
     return (indent+INDENT);
 }
 
-void pr_reals(FILE *fp, int indent, const char *title, const real *vec, int n)
+void pr_reals(FILE *fp, int indent, const std::string &title, const real *vec, int n)
 {
     int i;
 
     if (available(fp, vec, indent, title))
     {
         pr_indent(fp, indent);
-        fprintf(fp, "%s:\t", title);
+        fprintf(fp, "%s:\t", title.c_str());
         for (i = 0; i < n; i++)
         {
             fprintf(fp, "  %10g", vec[i]);
@@ -106,14 +106,14 @@ void pr_reals(FILE *fp, int indent, const char *title, const real *vec, int n)
     }
 }
 
-void pr_doubles(FILE *fp, int indent, const char *title, const double *vec, int n)
+void pr_doubles(FILE *fp, int indent, const std::string &title, const double *vec, int n)
 {
     int i;
 
     if (available(fp, vec, indent, title))
     {
         pr_indent(fp, indent);
-        fprintf(fp, "%s:\t", title);
+        fprintf(fp, "%s:\t", title.c_str());
         for (i = 0; i < n; i++)
         {
             fprintf(fp, "  %10g", vec[i]);
@@ -122,7 +122,7 @@ void pr_doubles(FILE *fp, int indent, const char *title, const double *vec, int 
     }
 }
 
-void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, int n, int dim)
+void pr_reals_of_dim(FILE *fp, int indent, const std::string &title, const real *vec, int n, int dim)
 {
     int         i, j;
     const char *fshort = "%12.5e";
@@ -144,7 +144,7 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, i
         for (i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
-            fprintf(fp, "%s[%5d]={", title, i);
+            fprintf(fp, "%s[%5d]={", title.c_str(), i);
             for (j = 0; j < dim; j++)
             {
                 if (j != 0)
@@ -158,39 +158,39 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, i
     }
 }
 
-void pr_int(FILE *fp, int indent, const char *title, int i)
+void pr_int(FILE *fp, int indent, const std::string &title, int i)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%-30s = %d\n", title, i);
+    fprintf(fp, "%-30s = %d\n", title.c_str(), i);
 }
 
-void pr_int64(FILE *fp, int indent, const char *title, int64_t i)
+void pr_int64(FILE *fp, int indent, const std::string &title, int64_t i)
 {
     char buf[STEPSTRSIZE];
 
     pr_indent(fp, indent);
-    fprintf(fp, "%-30s = %s\n", title, gmx_step_str(i, buf));
+    fprintf(fp, "%-30s = %s\n", title.c_str(), gmx_step_str(i, buf));
 }
 
-void pr_real(FILE *fp, int indent, const char *title, real r)
+void pr_real(FILE *fp, int indent, const std::string &title, real r)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%-30s = %g\n", title, r);
+    fprintf(fp, "%-30s = %g\n", title.c_str(), r);
 }
 
-void pr_double(FILE *fp, int indent, const char *title, double d)
+void pr_double(FILE *fp, int indent, const std::string &title, double d)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%-30s = %g\n", title, d);
+    fprintf(fp, "%-30s = %g\n", title.c_str(), d);
 }
 
-void pr_str(FILE *fp, int indent, const char *title, const char *s)
+void pr_str(FILE *fp, int indent, const std::string &title, const char *s)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%-30s = %s\n", title, s);
+    fprintf(fp, "%-30s = %s\n", title.c_str(), s);
 }
 
-void pr_strings(FILE *fp, int indent, const char *title, char ***nm, int n, gmx_bool bShowNumbers)
+void pr_strings(FILE *fp, int indent, const std::string &title, char ***nm, int n, gmx_bool bShowNumbers)
 {
     int i;
 
@@ -201,7 +201,7 @@ void pr_strings(FILE *fp, int indent, const char *title, char ***nm, int n, gmx_
         {
             pr_indent(fp, indent);
             fprintf(fp, "%s[%d]={name=\"%s\"}\n",
-                    title, bShowNumbers ? i : -1, *(nm[i]));
+                    title.c_str(), bShowNumbers ? i : -1, *(nm[i]));
         }
     }
 }

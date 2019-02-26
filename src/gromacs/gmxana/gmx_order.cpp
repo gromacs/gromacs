@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -251,11 +251,11 @@ static void find_nearest_neighbours(int ePBC,
 }
 
 
-static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
-                                  const char *fnTRX, const char *sgfn,
-                                  const char *skfn,
+static void calc_tetra_order_parm(const std::string &fnNDX, const std::string &fnTPS,
+                                  const std::string &fnTRX, const std::string &sgfn,
+                                  const std::string &skfn,
                                   int nslice, int slice_dim,
-                                  const char *sgslfn, const char *skslfn,
+                                  const std::string &sgslfn, const std::string &skslfn,
                                   const gmx_output_env_t *oenv)
 {
     FILE        *fpsg = nullptr, *fpsk = nullptr;
@@ -372,10 +372,10 @@ static void check_length(real length, int a, int b)
     }
 }
 
-static void calc_order(const char *fn, const int *index, int *a, rvec **order,
+static void calc_order(const std::string &fn, const int *index, int *a, rvec **order,
                        real ***slOrder, real *slWidth, int nslices, gmx_bool bSliced,
                        gmx_bool bUnsat, const t_topology *top, int ePBC, int ngrps, int axis,
-                       gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
+                       gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const std::string &radfn,
                        real ***distvals,
                        const gmx_output_env_t *oenv)
 {
@@ -751,8 +751,8 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
 }
 
 
-static void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bfile,
-                       const char *cfile, int ngrps, int nslices, real slWidth, gmx_bool bSzonly,
+static void order_plot(rvec order[], real *slOrder[], const std::string &afile, const std::string &bfile,
+                       const std::string &cfile, int ngrps, int nslices, real slWidth, gmx_bool bSzonly,
                        gmx_bool permolecule, real **distvals, const gmx_output_env_t *oenv)
 {
     FILE       *ord, *slOrd;      /* xvgr files with order parameters  */
@@ -968,7 +968,6 @@ int gmx_order(int argc, char *argv[])
     gmx_bool          bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
     real            **distvals = nullptr;
-    const char       *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
     gmx_output_env_t *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
@@ -980,11 +979,11 @@ int gmx_order(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Can not have nslices < 1");
     }
-    sgfnm  = opt2fn_null("-Sg", NFILE, fnm);
-    skfnm  = opt2fn_null("-Sk", NFILE, fnm);
-    ndxfnm = opt2fn_null("-n", NFILE, fnm);
-    tpsfnm = ftp2fn(efTPR, NFILE, fnm);
-    trxfnm = ftp2fn(efTRX, NFILE, fnm);
+    std::string sgfnm  = opt2fn_null("-Sg", NFILE, fnm);
+    std::string skfnm  = opt2fn_null("-Sk", NFILE, fnm);
+    std::string ndxfnm = opt2fn_null("-n", NFILE, fnm);
+    std::string tpsfnm = ftp2fn(efTPR, NFILE, fnm);
+    std::string trxfnm = ftp2fn(efTRX, NFILE, fnm);
 
     /* Calculate axis */
     GMX_RELEASE_ASSERT(normal_axis[0] != nullptr, "Options inconsistency; normal_axis[0] is NULL");
@@ -1019,7 +1018,7 @@ int gmx_order(int argc, char *argv[])
     }
 
     /* tetraheder order parameter */
-    if (skfnm || sgfnm)
+    if (!skfnm.empty() || !sgfnm.empty())
     {
         /* If either of theoptions is set we compute both */
         sgfnm = opt2fn("-Sg", NFILE, fnm);

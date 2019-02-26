@@ -209,7 +209,7 @@ static void check_types(t_block *ins_at, t_block *rest_at, gmx_mtop_t *mtop)
     sfree(rest_mtype);
 }
 
-static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real *z_fac, real *z_max,
+static void get_input(const std::string &membed_input, real *xy_fac, real *xy_max, real *z_fac, real *z_max,
                       int *it_xy, int *it_z, real *probe_rad, int *low_up_rm, int *maxwarn,
                       int *pieces, gmx_bool *bALLOW_ASYMMETRY)
 {
@@ -864,17 +864,16 @@ static int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 }
 
 /* Write a topology where the number of molecules is correct for the system after embedding */
-static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
+static void top_update(const std::string &topfile, rm_t *rm_p, gmx_mtop_t *mtop)
 {
     int        bMolecules         = 0;
     FILE      *fpin, *fpout;
     char       buf[STRLEN], buf2[STRLEN], *temp;
     int        i, *nmol_rm, nmol, line;
-    char       temporary_filename[STRLEN];
 
     fpin  = gmx_ffopen(topfile, "r");
-    strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
-    gmx_tmpnam(temporary_filename);
+    std::string temporary_filename = "temp.topXXXXXX";
+    gmx_tmpnam(&temporary_filename);
     fpout = gmx_ffopen(temporary_filename, "w");
 
     snew(nmol_rm, mtop->moltype.size());
@@ -944,7 +943,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
     /* use gmx_ffopen to generate backup of topinout */
     fpout = gmx_ffopen(topfile, "w");
     gmx_ffclose(fpout);
-    gmx_file_rename(temporary_filename, topfile);
+    rename(temporary_filename.c_str(), topfile.c_str());
 }
 
 void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x)

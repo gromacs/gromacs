@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -590,7 +590,7 @@ static void print_chi2_params(FILE        *fp,
 real do_lmfit(int ndata, const real c1[], real sig[], real dt, const real *x0,
               real begintimefit, real endtimefit, const gmx_output_env_t *oenv,
               gmx_bool bVerbose, int eFitFn, double fitparms[], int fix,
-              const char *fn_fitted)
+              const std::string &fn_fitted)
 {
     FILE    *fp;
     int      i, j, nfitpnts;
@@ -708,7 +708,7 @@ real do_lmfit(int ndata, const real c1[], real sig[], real dt, const real *x0,
                 }
             }
             /* Generate debug output */
-            if (nullptr != fn_fitted)
+            if (!fn_fitted.empty())
             {
                 fp = xvgropen(fn_fitted, "Data + Fit", "Time (ps)",
                               "Data (t)", oenv);

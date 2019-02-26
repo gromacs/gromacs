@@ -38,6 +38,8 @@
 #ifndef _dialogs_h
 #define _dialogs_h
 
+#include <string>
+
 #include "logo.h"
 #include "manager.h"
 #include "pulldown.h"
@@ -106,9 +108,9 @@ extern void show_mb(t_gmx *gmx, int mb);
 
 extern void done_dlgs(t_gmx *gmx);
 
-extern void edit_file(const char *fn);
+extern void edit_file(const std::string &fn);
 
-extern t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx);
+extern t_filter *init_filter(t_atoms *atoms, const std::string &fn, int natom_trx);
 
 extern t_dlg *select_filter(t_x11 *x11, t_gmx *gmx);
 

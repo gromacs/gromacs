@@ -382,7 +382,7 @@ static void set_legend_for_coord_components(const pull_coord_work_t *pcrd, int c
     }
 }
 
-static FILE *open_pull_out(const char *fn, struct pull_t *pull,
+static FILE *open_pull_out(const std::string &fn, struct pull_t *pull,
                            const gmx_output_env_t *oenv,
                            gmx_bool bCoord,
                            const ContinuationOptions &continuationOptions)
@@ -510,8 +510,8 @@ void init_pull_output_files(pull_t                    *pull,
     std::string px_appended, pf_appended;
     try
     {
-        px_filename  = std::string(opt2fn("-px", nfile, fnm));
-        pf_filename  = std::string(opt2fn("-pf", nfile, fnm));
+        px_filename  = opt2fn("-px", nfile, fnm);
+        pf_filename  = opt2fn("-pf", nfile, fnm);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -528,9 +528,9 @@ void init_pull_output_files(pull_t                    *pull,
                 pf_appended   = append_before_extension(pf_filename, "_pullf");
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            pull->out_x = open_pull_out(px_appended.c_str(), pull, oenv,
+            pull->out_x = open_pull_out(px_appended, pull, oenv,
                                         TRUE, continuationOptions);
-            pull->out_f = open_pull_out(pf_appended.c_str(), pull, oenv,
+            pull->out_f = open_pull_out(pf_appended, pull, oenv,
                                         FALSE, continuationOptions);
             return;
         }
