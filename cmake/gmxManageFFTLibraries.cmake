@@ -108,6 +108,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
             NO_CMAKE_PATH
             NO_SYSTEM_ENVIRONMENT_PATH
             NO_CMAKE_SYSTEM_PATH)
+        mark_as_advanced(ARMPL_INCLUDE_DIR)
         if (ARMPL_INCLUDE_DIR)
             set(GMX_FFT_ARMPL_FFTW3 1)
             set(FFT_STATUS_MESSAGE "Using external FFT library - ARM Performance Library (FFTW3 compatibility mode)")
