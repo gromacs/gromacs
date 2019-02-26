@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,9 +124,6 @@ int gmx_covar(int argc, char *argv[])
     int               natoms, nat, nframes0, nframes, nlevels;
     int64_t           ndim, i, j, k, l;
     int               WriteXref;
-    const char       *fitfile, *trxfile, *ndxfile;
-    const char       *eigvalfile, *eigvecfile, *averfile, *logfile;
-    const char       *asciifile, *xpmfile, *xpmafile;
     char              str[STRLEN], *fitname, *ananame;
     int               d, dj, nfit;
     int              *index, *ifit;
@@ -158,16 +155,16 @@ int gmx_covar(int argc, char *argv[])
 
     clear_mat(zerobox);
 
-    fitfile    = ftp2fn(efTPS, NFILE, fnm);
-    trxfile    = ftp2fn(efTRX, NFILE, fnm);
-    ndxfile    = ftp2fn_null(efNDX, NFILE, fnm);
-    eigvalfile = ftp2fn(efXVG, NFILE, fnm);
-    eigvecfile = ftp2fn(efTRN, NFILE, fnm);
-    averfile   = ftp2fn(efSTO, NFILE, fnm);
-    logfile    = ftp2fn(efLOG, NFILE, fnm);
-    asciifile  = opt2fn_null("-ascii", NFILE, fnm);
-    xpmfile    = opt2fn_null("-xpm", NFILE, fnm);
-    xpmafile   = opt2fn_null("-xpma", NFILE, fnm);
+    std::string fitfile    = ftp2fn(efTPS, NFILE, fnm);
+    std::string trxfile    = ftp2fn(efTRX, NFILE, fnm);
+    std::string ndxfile    = ftp2fn_null(efNDX, NFILE, fnm);
+    std::string eigvalfile = ftp2fn(efXVG, NFILE, fnm);
+    std::string eigvecfile = ftp2fn(efTRN, NFILE, fnm);
+    std::string averfile   = ftp2fn(efSTO, NFILE, fnm);
+    std::string logfile    = ftp2fn(efLOG, NFILE, fnm);
+    std::string asciifile  = opt2fn_null("-ascii", NFILE, fnm);
+    std::string xpmfile    = opt2fn_null("-xpm", NFILE, fnm);
+    std::string xpmafile   = opt2fn_null("-xpma", NFILE, fnm);
 
     read_tps_conf(fitfile, &top, &ePBC, &xref, nullptr, box, TRUE);
     atoms = &top.atoms;
@@ -405,7 +402,7 @@ int gmx_covar(int argc, char *argv[])
     fprintf(stderr, "\nTrace of the covariance matrix: %g (%snm^2)\n",
             trace, bM ? "u " : "");
 
-    if (asciifile)
+    if (!asciifile.empty())
     {
         out = gmx_ffopen(asciifile, "w");
         for (j = 0; j < ndim; j++)
@@ -419,7 +416,7 @@ int gmx_covar(int argc, char *argv[])
         gmx_ffclose(out);
     }
 
-    if (xpmfile)
+    if (!xpmfile.empty())
     {
         min = 0;
         max = 0;
@@ -457,7 +454,7 @@ int gmx_covar(int argc, char *argv[])
         sfree(mat2);
     }
 
-    if (xpmafile)
+    if (!xpmafile.empty())
     {
         min = 0;
         max = 0;
@@ -550,7 +547,7 @@ int gmx_covar(int argc, char *argv[])
         }
     }
 
-    fprintf(stderr, "\nWriting eigenvalues to %s\n", eigvalfile);
+    fprintf(stderr, "\nWriting eigenvalues to %s\n", eigvalfile.c_str());
 
     sprintf(str, "(%snm\\S2\\N)", bM ? "u " : "");
     out = xvgropen(eigvalfile,
@@ -596,15 +593,15 @@ int gmx_covar(int argc, char *argv[])
 
     fprintf(out, "Working directory: %s\n\n", str);
 
-    fprintf(out, "Read %d frames from %s (time %g to %g %s)\n", nframes, trxfile,
+    fprintf(out, "Read %d frames from %s (time %g to %g %s)\n", nframes, trxfile.c_str(),
             output_env_conv_time(oenv, tstart), output_env_conv_time(oenv, tend), output_env_get_time_unit(oenv).c_str());
     if (bFit)
     {
-        fprintf(out, "Read reference structure for fit from %s\n", fitfile);
+        fprintf(out, "Read reference structure for fit from %s\n", fitfile.c_str());
     }
-    if (ndxfile)
+    if (!ndxfile.empty())
     {
-        fprintf(out, "Read index groups from %s\n", ndxfile);
+        fprintf(out, "Read index groups from %s\n", ndxfile.c_str());
     }
     fprintf(out, "\n");
 
@@ -628,17 +625,17 @@ int gmx_covar(int argc, char *argv[])
     fprintf(out, "Trace of the covariance matrix after diagonalizing: %g\n\n",
             sum);
 
-    fprintf(out, "Wrote %d eigenvalues to %s\n", static_cast<int>(end), eigvalfile);
+    fprintf(out, "Wrote %d eigenvalues to %s\n", static_cast<int>(end), eigvalfile.c_str());
     if (WriteXref == eWXR_YES)
     {
-        fprintf(out, "Wrote reference structure to %s\n", eigvecfile);
+        fprintf(out, "Wrote reference structure to %s\n", eigvecfile.c_str());
     }
-    fprintf(out, "Wrote average structure to %s and %s\n", averfile, eigvecfile);
-    fprintf(out, "Wrote eigenvectors %d to %d to %s\n", 1, end, eigvecfile);
+    fprintf(out, "Wrote average structure to %s and %s\n", averfile.c_str(), eigvecfile.c_str());
+    fprintf(out, "Wrote eigenvectors %d to %d to %s\n", 1, end, eigvecfile.c_str());
 
     gmx_ffclose(out);
 
-    fprintf(stderr, "Wrote the log to %s\n", logfile);
+    fprintf(stderr, "Wrote the log to %s\n", logfile.c_str());
 
     return 0;
 }

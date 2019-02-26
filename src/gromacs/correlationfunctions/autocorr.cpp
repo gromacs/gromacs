@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -528,7 +528,7 @@ static void do_four_core(unsigned long mode, int nframes,
     }
 }
 
-void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *title,
+void low_do_autocorr(const std::string &fn, const gmx_output_env_t *oenv, const char *title,
                      int nframes, int nitem, int nout, real **c1,
                      real dt, unsigned long mode, int nrestart,
                      gmx_bool bAver, gmx_bool bNormalize,
@@ -613,7 +613,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
     sfree(ctmp);
     sfree(csum);
 
-    if (fn)
+    if (!fn.empty())
     {
         snew(fit, nout);
         fp = xvgropen(fn, title, "Time (ps)", "C(t)", oenv);
@@ -637,7 +637,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
 
         if (eFitFn != effnNONE)
         {
-            fit_acf(nout, eFitFn, oenv, fn != nullptr, tbeginfit, tendfit, dt, c1[0], fit);
+            fit_acf(nout, eFitFn, oenv, !fn.empty(), tbeginfit, tendfit, dt, c1[0], fit);
             sum = print_and_integrate(fp, nout, dt, c1[0], fit, 1);
         }
         else
@@ -665,7 +665,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
             }
             if (eFitFn != effnNONE)
             {
-                fit_acf(nout, eFitFn, oenv, fn != nullptr, tbeginfit, tendfit, dt, c1[i], fit);
+                fit_acf(nout, eFitFn, oenv, !fn.empty(), tbeginfit, tendfit, dt, c1[i], fit);
                 sum = print_and_integrate(fp, nout, dt, c1[i], fit, 1);
             }
             else
@@ -758,7 +758,7 @@ t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
     return ppa;
 }
 
-void do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *title,
+void do_autocorr(const std::string &fn, const gmx_output_env_t *oenv, const char *title,
                  int nframes, int nitem, real **c1,
                  real dt, unsigned long mode, gmx_bool bAver)
 {

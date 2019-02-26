@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,7 +89,7 @@ static real find_pdb_bfac(const t_atoms *atoms, t_resinfo *ri, char *atomnm)
     return atoms->pdbinfo[i].bfac;
 }
 
-static void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
+static void correlate_aniso(const std::string &fn, t_atoms *ref, t_atoms *calc,
                             const gmx_output_env_t *oenv)
 {
     FILE *fp;
@@ -247,7 +247,6 @@ int gmx_rmsf(int argc, char *argv[])
     const char       *label;
 
     FILE             *fp;         /* the graphics file */
-    const char       *devfn, *dirfn;
     int               resind;
 
     gmx_bool          bReadPDB;
@@ -291,8 +290,8 @@ int gmx_rmsf(int argc, char *argv[])
     }
 
     bReadPDB = ftp2bSet(efPDB, NFILE, fnm);
-    devfn    = opt2fn_null("-od", NFILE, fnm);
-    dirfn    = opt2fn_null("-dir", NFILE, fnm);
+    std::string devfn = opt2fn_null("-od", NFILE, fnm);
+    std::string dirfn = opt2fn_null("-dir", NFILE, fnm);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, nullptr, box, TRUE);
     const char *title = *top.name;
@@ -315,7 +314,7 @@ int gmx_rmsf(int argc, char *argv[])
         snew(U[i], DIM*DIM);
     }
     snew(rmsf, isize);
-    if (devfn)
+    if (!devfn.empty())
     {
         snew(rmsd_x, isize);
     }
@@ -388,7 +387,7 @@ int gmx_rmsf(int argc, char *argv[])
             }
         }
 
-        if (devfn)
+        if (!devfn.empty())
         {
             /* Calculate RMS Deviation */
             for (i = 0; (i < isize); i++)
@@ -473,7 +472,7 @@ int gmx_rmsf(int argc, char *argv[])
         rmsf[i] = U[i][XX*DIM + XX] + U[i][YY*DIM + YY] + U[i][ZZ*DIM + ZZ];
     }
 
-    if (dirfn)
+    if (!dirfn.empty())
     {
         fprintf(stdout, "\n");
         print_dir(stdout, Uaver);
@@ -531,7 +530,7 @@ int gmx_rmsf(int argc, char *argv[])
         pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
     }
 
-    if (devfn)
+    if (!devfn.empty())
     {
         for (i = 0; i < isize; i++)
         {
@@ -587,7 +586,7 @@ int gmx_rmsf(int argc, char *argv[])
         do_view(oenv, opt2fn("-oc", NFILE, fnm), "-nxy");
     }
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
-    if (devfn)
+    if (!devfn.empty())
     {
         do_view(oenv, opt2fn("-od", NFILE, fnm), "-nxy");
     }

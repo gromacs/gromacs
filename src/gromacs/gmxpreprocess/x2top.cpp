@@ -336,7 +336,7 @@ static void print_pl(FILE *fp, t_params plist[], int ftp, const char *name,
     }
 }
 
-static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
+static void print_rtp(const std::string &filenm, const char *title, t_atoms *atoms,
                       t_params plist[], gpp_atomtype *atype, int cgnr[])
 {
     FILE *fp;

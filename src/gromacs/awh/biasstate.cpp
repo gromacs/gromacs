@@ -1481,7 +1481,7 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
 
     double  **data;
     int       numColumns;
-    int       numRows = read_xvg(filenameModified.c_str(), &data, &numColumns);
+    int       numRows = read_xvg(filenameModified, &data, &numColumns);
 
     /* Check basic data properties here. Grid takes care of more complicated things. */
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 
 #ifndef _dialogs_h
 #define _dialogs_h
+
+#include <string>
 
 #include "logo.h"
 #include "manager.h"
@@ -106,9 +108,9 @@ extern void show_mb(t_gmx *gmx, int mb);
 
 extern void done_dlgs(t_gmx *gmx);
 
-extern void edit_file(const char *fn);
+extern void edit_file(const std::string &fn);
 
-extern t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx);
+extern t_filter *init_filter(t_atoms *atoms, const std::string &fn, int natom_trx);
 
 extern t_dlg *select_filter(t_x11 *x11, t_gmx *gmx);
 

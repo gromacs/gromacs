@@ -40,6 +40,8 @@
 
 #include <stdio.h>
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -122,7 +124,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
  * ePBC and gmx_conect structure may be NULL.
  */
 
-void gmx_pdb_read_conf(const char *infile,
+void gmx_pdb_read_conf(const std::string &infile,
                        t_symtab *symtab, char **name, t_atoms *atoms,
                        rvec x[], int *ePBC, matrix box);
 /* Read a pdb file and extract ATOM and HETATM fields.

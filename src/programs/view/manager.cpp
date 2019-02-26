@@ -202,8 +202,8 @@ static void hide_label(t_x11 *x11, t_manager *man, int x, int y)
     do_label(x11, man, x, y, false);
 }
 
-void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
-              const char *status)
+void set_file(t_x11 *x11, t_manager *man, const std::string &trajectory,
+              const std::string &status)
 {
     t_tpxheader       sh;
     t_atoms          *at;
@@ -238,8 +238,8 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     if (man->natom > man->top.atoms.nr)
     {
         gmx_fatal(FARGS, "Topology %s (%d atoms) and trajectory %s (%d atoms) "
-                  "do not match", status, man->top.atoms.nr,
-                  trajectory, man->natom);
+                  "do not match", status.c_str(), man->top.atoms.nr,
+                  trajectory.c_str(), man->natom);
     }
 
     man->title.text = gmx_strdup(gmx::formatString("%s: %s", *man->top.name, gmx::getCoolQuote().c_str()).c_str());

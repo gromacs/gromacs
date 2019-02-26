@@ -1941,9 +1941,9 @@ int pdb2gmx::run()
     int                                                 nNtdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
     int                                                 nCtdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
 
-    FILE                                               *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
+    FILE                                               *top_file = gmx_fio_fopen(topologyFile_, "w");
 
-    print_top_header(top_file, topologyFile_.c_str(), FALSE, ffdir_, mHmult_);
+    print_top_header(top_file, topologyFile_, FALSE, ffdir_, mHmult_);
 
     t_chain                *cc;
     std::vector<gmx::RVec>  x;
@@ -2119,7 +2119,7 @@ int pdb2gmx::run()
                             "(the index file is generated before hydrogens are added)",
                             indexOutputFile_.c_str());
                 }
-                write_index(indexOutputFile_.c_str(), block, gnames, false, 0);
+                write_index(indexOutputFile_, block, gnames, false, 0);
             }
             for (int i = 0; i < block->nr; i++)
             {
@@ -2211,7 +2211,7 @@ int pdb2gmx::run()
             }
             incls_.emplace_back();
             incls_.back()    = itp_fn;
-            itp_file_        = gmx_fio_fopen(itp_fn.c_str(), "w");
+            itp_file_        = gmx_fio_fopen(itp_fn, "w");
         }
         else
         {
@@ -2232,7 +2232,7 @@ int pdb2gmx::run()
 
         if (bITP_)
         {
-            print_top_comment(itp_file_, itp_fn.c_str(), ffdir_, true);
+            print_top_comment(itp_file_, itp_fn, ffdir_, true);
         }
 
         FILE *top_file2;
@@ -2249,7 +2249,7 @@ int pdb2gmx::run()
             top_file2 = top_file;
         }
 
-        pdb2top(top_file2, posre_fn.c_str(), molname.c_str(), pdba, &x, atype, &symtab,
+        pdb2top(top_file2, posre_fn, molname.c_str(), pdba, &x, atype, &symtab,
                 rtpFFDB,
                 restp_chain, hb_chain,
                 bAllowMissing_,
@@ -2364,7 +2364,7 @@ int pdb2gmx::run()
     {
         make_new_box(atoms->nr, gmx::as_rvec_array(x.data()), box, box_space, false);
     }
-    write_sto_conf(outputConfFile_.c_str(), title, atoms, gmx::as_rvec_array(x.data()), nullptr, ePBC, box);
+    write_sto_conf(outputConfFile_, title, atoms, gmx::as_rvec_array(x.data()), nullptr, ePBC, box);
 
     done_symtab(&symtab);
     done_atom(&pdba_all);

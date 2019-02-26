@@ -76,7 +76,7 @@ static gmx_bool gmx_ask_yesno(gmx_bool bASK)
     }
 }
 
-void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms)
+void write_index(const std::string &outf, t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms)
 {
     FILE *out;
     int   i, j, k;
@@ -723,7 +723,7 @@ void check_index(const char *gname, int n, int index[], const char *traj, int na
     }
 }
 
-t_blocka *init_index(const char *gfile, char ***grpname)
+t_blocka *init_index(const std::string &gfile, char ***grpname)
 {
     FILE      *in;
     t_blocka  *b;
@@ -954,7 +954,7 @@ static void rd_groups(t_blocka *grps, char **grpname, char *gnames[],
     }
 }
 
-void rd_index(const char *statfile, int ngrps, int isize[],
+void rd_index(const std::string &statfile, int ngrps, int isize[],
               int *index[], char *grpnames[])
 {
     char    **gnames;
@@ -962,7 +962,7 @@ void rd_index(const char *statfile, int ngrps, int isize[],
     int      *grpnr;
 
     snew(grpnr, ngrps);
-    if (!statfile)
+    if (statfile.empty())
     {
         gmx_fatal(FARGS, "No index file specified");
     }
@@ -978,7 +978,7 @@ void rd_index(const char *statfile, int ngrps, int isize[],
     sfree(grps);
 }
 
-void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
+void get_index(const t_atoms *atoms, const std::string &fnm, int ngrps,
                int isize[], int *index[], char *grpnames[])
 {
     char    ***gnames;
@@ -987,7 +987,7 @@ void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
 
     snew(grpnr, ngrps);
     snew(gnames, 1);
-    if (fnm != nullptr)
+    if (!fnm.empty())
     {
         grps = init_index(fnm, gnames);
     }
@@ -1014,7 +1014,7 @@ void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
     sfree(grps);
 }
 
-t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx)
+t_cluster_ndx *cluster_index(FILE *fplog, const std::string &ndx)
 {
     t_cluster_ndx *c;
     int            i;

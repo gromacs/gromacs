@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
  */
 #ifndef GMX_EXPFIT_H
 #define GMX_EXPFIT_H
+
+#include <string>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -125,7 +127,7 @@ double fit_function(int eFitFn, const double parm[], double x);
 real do_lmfit(int ndata, const real c1[], real sig[], real dt, const real *x0,
               real begintimefit, real endtimefit, const gmx_output_env_t *oenv,
               gmx_bool bVerbose, int eFitFn, double fitparms[], int fix,
-              const char *fn_fitted);
+              const std::string &fn_fitted);
 
 /*! \brief
  * Fit an autocorrelation function to a pre-defined functional form

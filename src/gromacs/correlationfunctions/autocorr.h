@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,8 @@
  */
 #ifndef GMX_AUTOCORR_H
 #define GMX_AUTOCORR_H
+
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/real.h"
@@ -117,7 +119,7 @@ int get_acffitfn();
  * \param[in] bAver    If set, all ndih C(t) functions are averaged into a single
  *          C(t)
  */
-void do_autocorr(const char *fn, const gmx_output_env_t *oenv,
+void do_autocorr(const std::string &fn, const gmx_output_env_t *oenv,
                  const char *title,
                  int nframes, int nitem, real **c1,
                  real dt, unsigned long mode, gmx_bool bAver);
@@ -171,7 +173,7 @@ void do_autocorr(const char *fn, const gmx_output_env_t *oenv,
  * \param[in] tendfit Time to end fitting to the ACF
  * \param[in] nfitparm Number of fitting parameters in a multi-exponential fit
  */
-void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv,
+void low_do_autocorr(const std::string &fn, const gmx_output_env_t *oenv,
                      const char *title, int  nframes, int nitem,
                      int nout, real **c1, real dt, unsigned long mode,
                      int nrestart, gmx_bool bAver, gmx_bool bNormalize,

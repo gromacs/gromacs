@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -341,7 +341,6 @@ int gmx_convert_tpr(int argc, char *argv[])
         "using the LIE (Linear Interaction Energy) method."
     };
 
-    const char       *top_fn;
     int               i;
     int64_t           nsteps_req, run_step;
     double            run_t, state_t;
@@ -390,8 +389,8 @@ int gmx_convert_tpr(int argc, char *argv[])
     bExtend    = opt2parg_bSet("-extend", asize(pa), pa);
     bUntil     = opt2parg_bSet("-until", asize(pa), pa);
 
-    top_fn = ftp2fn(efTPR, NFILE, fnm);
-    fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
+    std::string top_fn = ftp2fn(efTPR, NFILE, fnm);
+    fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn.c_str());
 
     t_inputrec  irInstance;
     t_inputrec *ir = &irInstance;

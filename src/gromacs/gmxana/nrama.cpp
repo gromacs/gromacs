@@ -239,8 +239,8 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
 
 
 
-t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
-                      const char *topfile, t_xrama *xr, int mult)
+t_topology *init_rama(gmx_output_env_t *oenv, const std::string &infile,
+                      const std::string &topfile, t_xrama *xr, int mult)
 {
     t_topology *top;
     real        t;

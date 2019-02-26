@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@ class GetIrTest : public ::testing::Test
 
             TextWriter::writeFileFromString(inputMdpFilename, inputMdpFileContents);
 
-            get_ir(inputMdpFilename.c_str(), outputMdpFilename.c_str(),
+            get_ir(inputMdpFilename, outputMdpFilename,
                    &mdModules_, &ir_, &opts_, WriteMdpHeader::no, wi_);
 
             // Now check

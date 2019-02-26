@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,7 +103,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
 
         void writeReferenceFile()
         {
-            write_sto_conf(referenceFilename_.c_str(), *refTop_->name,
+            write_sto_conf(referenceFilename_, *refTop_->name,
                            &refTop_->atoms, as_rvec_array(refX_.data()), nullptr, -1,
                            refBox_);
         }
@@ -112,7 +112,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         {
             snew(testTop_, 1);
             int  ePBC = -2;
-            read_tps_conf(referenceFilename_.c_str(), testTop_,
+            read_tps_conf(referenceFilename_, testTop_,
                           &ePBC, &testX_, nullptr, testBox_, FALSE);
         }
 
@@ -123,7 +123,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
 
         void writeTestFileAndTest()
         {
-            write_sto_conf(testFilename_.c_str(), *testTop_->name,
+            write_sto_conf(testFilename_, *testTop_->name,
                            &testTop_->atoms, testX_, nullptr, -1, testBox_);
             testFilesEqual(referenceFilename_, testFilename_);
         }

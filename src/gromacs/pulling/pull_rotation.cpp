@@ -848,7 +848,7 @@ static void print_aligned_short(FILE *fp, char const *str)
 }
 
 
-static FILE *open_output_file(const char *fn, int steps, const char what[])
+static FILE *open_output_file(const std::string &fn, int steps, const char what[])
 {
     FILE *fp;
 
@@ -863,8 +863,8 @@ static FILE *open_output_file(const char *fn, int steps, const char what[])
 
 
 /* Open output file for slab center data. Call on master only */
-static FILE *open_slab_out(const char *fn,
-                           gmx_enfrot *er)
+static FILE *open_slab_out(const std::string &fn,
+                           gmx_enfrot        *er)
 {
     FILE *fp;
 
@@ -931,7 +931,7 @@ static void add_to_string_aligned(char **str, char *buf)
 
 /* Open output file and print some general information about the rotation groups.
  * Call on master only */
-static FILE *open_rot_out(const char             *fn,
+static FILE *open_rot_out(const std::string      &fn,
                           const gmx_output_env_t *oenv,
                           gmx_enfrot             *er)
 {
@@ -1075,8 +1075,8 @@ static FILE *open_rot_out(const char             *fn,
 
 
 /* Call on master only */
-static FILE *open_angles_out(const char *fn,
-                             gmx_enfrot *er)
+static FILE *open_angles_out(const std::string &fn,
+                             gmx_enfrot        *er)
 {
     FILE        *fp;
     char         buf[100];
@@ -1159,8 +1159,8 @@ static FILE *open_angles_out(const char *fn,
 
 /* Open torque output file and write some information about it's structure.
  * Call on master only */
-static FILE *open_torque_out(const char *fn,
-                             gmx_enfrot *er)
+static FILE *open_torque_out(const std::string &fn,
+                             gmx_enfrot        *er)
 {
     FILE        *fp;
     const t_rot *rot = er->rot;

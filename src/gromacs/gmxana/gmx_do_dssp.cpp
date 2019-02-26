@@ -371,14 +371,14 @@ static void prune_ss_legend(t_matrix *mat)
     }
 }
 
-static void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *mat)
+static void write_sas_mat(const std::string &fn, real **accr, int nframe, int nres, t_matrix *mat)
 {
     real  lo, hi;
     int   i, j, nlev;
     t_rgb rlo = {1, 1, 1}, rhi = {0, 0, 0};
     FILE *fp;
 
-    if (fn)
+    if (!fn.empty())
     {
         hi = lo = accr[0][0];
         for (i = 0; i < nframe; i++)
@@ -398,7 +398,7 @@ static void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_m
     }
 }
 
-static void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
+static void analyse_ss(const std::string &outfile, t_matrix *mat, const char *ss_string,
                        const gmx_output_env_t *oenv)
 {
     FILE        *fp;
@@ -546,7 +546,6 @@ int gmx_do_dssp(int argc, char *argv[])
     t_trxstatus       *status;
     FILE              *tapein,  *tapeout;
     FILE              *ss, *acc, *fTArea, *tmpf;
-    const char        *fnSCount, *fnArea, *fnTArea, *fnAArea;
     const char        *leg[] = { "Phobic", "Phylic" };
     t_topology         top;
     int                ePBC;
@@ -563,7 +562,6 @@ int gmx_do_dssp(int argc, char *argv[])
     rvec              *xp, *x;
     int               *average_area;
     real             **accr, *accr_ptr = nullptr, *av_area, *norm_av_area;
-    char               pdbfile[32], tmpfile[32];
     char               dssp[256];
     const char        *dptr;
     gmx_output_env_t  *oenv;
@@ -589,11 +587,11 @@ int gmx_do_dssp(int argc, char *argv[])
     {
         return 0;
     }
-    fnSCount   = opt2fn("-sc", NFILE, fnm);
-    fnArea     = opt2fn_null("-a", NFILE, fnm);
-    fnTArea    = opt2fn_null("-ta", NFILE, fnm);
-    fnAArea    = opt2fn_null("-aa", NFILE, fnm);
-    bDoAccSurf = ((fnArea != nullptr) || (fnTArea != nullptr) || (fnAArea != nullptr));
+    std::string fnSCount   = opt2fn("-sc", NFILE, fnm);
+    std::string fnArea     = opt2fn_null("-a", NFILE, fnm);
+    std::string fnTArea    = opt2fn_null("-ta", NFILE, fnm);
+    std::string fnAArea    = opt2fn_null("-aa", NFILE, fnm);
+    bDoAccSurf = (!fnArea.empty() || !fnTArea.empty() || !fnAArea.empty());
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, FALSE);
     atoms = &(top.atoms);
@@ -613,28 +611,28 @@ int gmx_do_dssp(int argc, char *argv[])
     }
     fprintf(stderr, "There are %d residues in your selected group\n", nres);
 
-    std::strcpy(pdbfile, "ddXXXXXX");
-    gmx_tmpnam(pdbfile);
-    if ((tmpf = fopen(pdbfile, "w")) == nullptr)
+    std::string pdbfile = "ddXXXXXX";
+    gmx_tmpnam(&pdbfile);
+    if ((tmpf = fopen(pdbfile.c_str(), "w")) == nullptr)
     {
-        std::strcpy(pdbfile, gmx::formatString("%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR).c_str());
-        gmx_tmpnam(pdbfile);
-        if ((tmpf = fopen(pdbfile, "w")) == nullptr)
+        pdbfile = gmx::formatString("%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
+        gmx_tmpnam(&pdbfile);
+        if ((tmpf = fopen(pdbfile.c_str(), "w")) == nullptr)
         {
-            gmx_fatal(FARGS, "Can not open tmp file %s", pdbfile);
+            gmx_fatal(FARGS, "Can not open tmp file %s", pdbfile.c_str());
         }
     }
     fclose(tmpf);
 
-    std::strcpy(tmpfile, "ddXXXXXX");
-    gmx_tmpnam(tmpfile);
-    if ((tmpf = fopen(tmpfile, "w")) == nullptr)
+    std::string tmpfile = "ddXXXXXX";
+    gmx_tmpnam(&tmpfile);
+    if ((tmpf = fopen(tmpfile.c_str(), "w")) == nullptr)
     {
-        std::strcpy(tmpfile, gmx::formatString("%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR).c_str());
-        gmx_tmpnam(tmpfile);
-        if ((tmpf = fopen(tmpfile, "w")) == nullptr)
+        tmpfile = gmx::formatString("%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
+        gmx_tmpnam(&tmpfile);
+        if ((tmpf = fopen(tmpfile.c_str(), "w")) == nullptr)
         {
-            gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile);
+            gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile.c_str());
         }
     }
     fclose(tmpf);
@@ -677,7 +675,7 @@ int gmx_do_dssp(int argc, char *argv[])
     }
     fprintf(stderr, "dssp cmd='%s'\n", dssp);
 
-    if (fnTArea)
+    if (!fnTArea.empty())
     {
         fTArea = xvgropen(fnTArea, "Solvent Accessible Surface Area",
                           output_env_get_xvgr_tlabel(oenv), "Area (nm\\S2\\N)", oenv);
@@ -733,8 +731,8 @@ int gmx_do_dssp(int argc, char *argv[])
         if (0 != system(dssp) || nullptr == (tapeout = gmx_ffopen(tmpfile, "r")))
 #endif
         {
-            remove(pdbfile);
-            remove(tmpfile);
+            remove(pdbfile.c_str());
+            remove(tmpfile.c_str());
             gmx_fatal(FARGS, "Failed to execute command: %s\n"
                       "Try specifying your dssp version with the -ver option.", dssp);
         }
@@ -751,8 +749,8 @@ int gmx_do_dssp(int argc, char *argv[])
 #else
         gmx_ffclose(tapeout);
 #endif
-        remove(tmpfile);
-        remove(pdbfile);
+        remove(tmpfile.c_str());
+        remove(pdbfile.c_str());
         nframe++;
     }
     while (read_next_x(oenv, status, &t, x, box));
@@ -801,7 +799,7 @@ int gmx_do_dssp(int argc, char *argv[])
 
         norm_acc(atoms, nres, av_area, norm_av_area);
 
-        if (fnAArea)
+        if (!fnAArea.empty())
         {
             acc = xvgropen(fnAArea, "Average Accessible Area",
                            "Residue", "A\\S2", oenv);

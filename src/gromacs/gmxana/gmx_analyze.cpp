@@ -136,7 +136,7 @@ static real cosine_content(int nhp, int n, const real *y)
     return 2*cosyint*cosyint/(n*yyint);
 }
 
-static void plot_coscont(const char *ccfile, int n, int nset, real **val,
+static void plot_coscont(const std::string &ccfile, int n, int nset, real **val,
                          const gmx_output_env_t *oenv)
 {
     FILE *fp;
@@ -238,7 +238,7 @@ static void regression_analysis(int n, gmx_bool bXYdy,
     }
 }
 
-static void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
+static void histogram(const std::string &distfile, real binwidth, int n, int nset, real **val,
                       const gmx_output_env_t *oenv)
 {
     FILE          *fp;
@@ -316,7 +316,7 @@ static int real_comp(const void *a, const void *b)
     }
 }
 
-static void average(const char *avfile, int avbar_opt,
+static void average(const std::string &avfile, int avbar_opt,
                     int n, int nset, real **val, real *t)
 {
     FILE   *fp;
@@ -410,7 +410,7 @@ static real optimal_error_estimate(double sigma, const double fitparm[], real tT
     return sigma*std::sqrt(2*ss/tTotal);
 }
 
-static void estimate_error(const char *eefile, int nb_min, int resol, int n,
+static void estimate_error(const std::string &eefile, int nb_min, int resol, int n,
                            int nset, double *av, double *sig, real **val, real dt,
                            gmx_bool bFitAc, gmx_bool bSingleExpFit, gmx_bool bAllowNegLTCorr,
                            const gmx_output_env_t *oenv)
@@ -798,7 +798,7 @@ static void filter(real flen, int n, int nset, real **val, real dt)
 static void do_fit(FILE *out, int n, gmx_bool bYdy,
                    int ny, real *x0, real **val,
                    int npargs, t_pargs *ppa, const gmx_output_env_t *oenv,
-                   const char *fn_fitted)
+                   const std::string &fn_fitted)
 {
     real   *c1 = nullptr, *sig = nullptr;
     double *fitparm;
@@ -900,16 +900,16 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
     }
 }
 
-static void print_fitted_function(const char       *fitfile,
-                                  const char       *fn_fitted,
-                                  gmx_bool          bXYdy,
-                                  int               nset,
-                                  int               n,
-                                  real             *t,
-                                  real            **val,
-                                  int               npargs,
-                                  t_pargs          *ppa,
-                                  gmx_output_env_t *oenv)
+static void print_fitted_function(const std::string &fitfile,
+                                  const std::string &fn_fitted,
+                                  gmx_bool           bXYdy,
+                                  int                nset,
+                                  int                n,
+                                  real              *t,
+                                  real             **val,
+                                  int                npargs,
+                                  t_pargs           *ppa,
+                                  gmx_output_env_t  *oenv)
 {
     FILE *out_fit = gmx_ffopen(fitfile, "w");
     if (bXYdy && nset >= 2)
@@ -922,12 +922,12 @@ static void print_fitted_function(const char       *fitfile,
         std::string fn_fittedForSet;
         for (int s = 0; s < nset; s++)
         {
-            if (fn_fitted)
+            if (!fn_fitted.empty())
             {
                 fn_fittedForSet =
                     gmx::Path::concatenateBeforeExtension(fn_fitted, gmx::formatString("_%d", s));
             }
-            do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv, fn_fittedForSet.c_str());
+            do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv, fn_fittedForSet);
             fn_fittedForSet.clear();
         }
     }
@@ -1097,7 +1097,6 @@ int gmx_analyze(int argc, char *argv[])
     int               n, nlast, s, nset, i, j = 0;
     real            **val, *t, dt, tot, error;
     double           *av, *sig, cum1, cum2, cum3, cum4, db;
-    const char       *acfile, *msdfile, *ccfile, *distfile, *avfile, *eefile, *fitfile;
     gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {
@@ -1126,13 +1125,14 @@ int gmx_analyze(int argc, char *argv[])
         return 0;
     }
 
-    acfile   = opt2fn_null("-ac", NFILE, fnm);
-    msdfile  = opt2fn_null("-msd", NFILE, fnm);
-    ccfile   = opt2fn_null("-cc", NFILE, fnm);
-    distfile = opt2fn_null("-dist", NFILE, fnm);
-    avfile   = opt2fn_null("-av", NFILE, fnm);
-    eefile   = opt2fn_null("-ee", NFILE, fnm);
-    if (opt2parg_bSet("-fitfn", npargs, ppa) && acfile == nullptr)
+    std::string acfile   = opt2fn_null("-ac", NFILE, fnm);
+    std::string msdfile  = opt2fn_null("-msd", NFILE, fnm);
+    std::string ccfile   = opt2fn_null("-cc", NFILE, fnm);
+    std::string distfile = opt2fn_null("-dist", NFILE, fnm);
+    std::string avfile   = opt2fn_null("-av", NFILE, fnm);
+    std::string eefile   = opt2fn_null("-ee", NFILE, fnm);
+    std::string fitfile;
+    if (opt2parg_bSet("-fitfn", npargs, ppa) && acfile.empty())
     {
         fitfile  = opt2fn("-g", NFILE, fnm);
     }
@@ -1182,7 +1182,7 @@ int gmx_analyze(int argc, char *argv[])
         }
     }
 
-    if (fitfile != nullptr)
+    if (!fitfile.empty())
     {
         print_fitted_function(fitfile,
                               opt2fn_null("-fitted", NFILE, fnm),
@@ -1241,7 +1241,7 @@ int gmx_analyze(int argc, char *argv[])
         filter(filtlen, n, nset, val, dt);
     }
 
-    if (msdfile)
+    if (!msdfile.empty())
     {
         out = xvgropen(msdfile, "Mean square displacement",
                        "time", "MSD (nm\\S2\\N)", oenv);
@@ -1272,20 +1272,20 @@ int gmx_analyze(int argc, char *argv[])
         fprintf(stderr, "\r%d, time=%g\n", j-1, (j-1)*dt);
         fflush(stderr);
     }
-    if (ccfile)
+    if (!ccfile.empty())
     {
         plot_coscont(ccfile, n, nset, val, oenv);
     }
 
-    if (distfile)
+    if (!distfile.empty())
     {
         histogram(distfile, binwidth, n, nset, val, oenv);
     }
-    if (avfile)
+    if (!avfile.empty())
     {
         average(avfile, nenum(avbar_opt), n, nset, val, t);
     }
-    if (eefile)
+    if (!eefile.empty())
     {
         estimate_error(eefile, nb_min, resol, n, nset, av, sig, val, dt,
                        bEeFitAc, bEESEF, bEENLC, oenv);
@@ -1295,7 +1295,7 @@ int gmx_analyze(int argc, char *argv[])
         power_fit(n, nset, val, t);
     }
 
-    if (acfile != nullptr)
+    if (!acfile.empty())
     {
         if (bSubAv)
         {

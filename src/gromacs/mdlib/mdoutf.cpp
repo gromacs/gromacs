@@ -66,7 +66,7 @@ struct gmx_mdoutf {
     gmx_tng_trajectory_t    tng_low_prec;
     int                     x_compression_precision; /* only used by XTC output */
     ener_file_t             fp_ene;
-    const char             *fn_cpt;
+    std::string             fn_cpt;
     gmx_bool                bKeepAndNumCPT;
     int                     eIntegrator;
     gmx_bool                bExpanded;
@@ -94,7 +94,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     gmx_bool       bAppendFiles, bCiteTng = FALSE;
     int            i;
 
-    snew(of, 1);
+    of = new gmx_mdoutf;
 
     of->fp_trn       = nullptr;
     of->fp_ene       = nullptr;
@@ -123,8 +123,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         if (EI_DYNAMICS(ir->eI) &&
             ir->nstxout_compressed > 0)
         {
-            const char *filename;
-            filename = ftp2fn(efCOMPRESSED, nfile, fnm);
+            std::string filename = ftp2fn(efCOMPRESSED, nfile, fnm);
             switch (fn2ftp(filename))
             {
                 case efXTC:
@@ -151,8 +150,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
             )
             )
         {
-            const char *filename;
-            filename = ftp2fn(efTRN, nfile, fnm);
+            std::string filename = ftp2fn(efTRN, nfile, fnm);
             switch (fn2ftp(filename))
             {
                 case efTRR:
@@ -469,7 +467,7 @@ void done_mdoutf(gmx_mdoutf_t of)
     gmx_tng_close(&of->tng);
     gmx_tng_close(&of->tng_low_prec);
 
-    sfree(of);
+    delete of;
 }
 
 int mdoutf_get_tng_box_output_interval(gmx_mdoutf_t of)

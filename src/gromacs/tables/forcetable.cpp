@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -573,7 +573,7 @@ static void set_forces(FILE *fp, int angle,
     spline_forces(end-start, h, v+start, TRUE, end == nx, f+start);
 }
 
-static void read_tables(FILE *fp, const char *filename,
+static void read_tables(FILE *fp, const std::string &filename,
                         int ntab, int angle, t_tabledata td[])
 {
     char     buf[STRLEN];
@@ -584,7 +584,7 @@ static void read_tables(FILE *fp, const char *filename,
 
     nny   = 2*ntab+1;
     std::string libfn = gmx::findLibraryFile(filename);
-    nx    = read_xvg(libfn.c_str(), &yy, &ny);
+    nx    = read_xvg(libfn, &yy, &ny);
     if (ny != nny)
     {
         gmx_fatal(FARGS, "Trying to read file %s, but nr columns = %d, should be %d",
@@ -642,7 +642,7 @@ static void read_tables(FILE *fp, const char *filename,
                 /* Check for 1% deviation in spacing */
                 if (fabs(dx1 - dx0) >= 0.005*(fabs(dx0) + fabs(dx1)))
                 {
-                    gmx_fatal(FARGS, "In table file '%s' the x values are not equally spaced: %f %f %f", filename, yy[0][i-2], yy[0][i-1], yy[0][i]);
+                    gmx_fatal(FARGS, "In table file '%s' the x values are not equally spaced: %f %f %f", filename.c_str(), yy[0][i-2], yy[0][i-1], yy[0][i]);
                 }
             }
             if (yy[1+k*2][i] != 0)
@@ -657,7 +657,7 @@ static void read_tables(FILE *fp, const char *filename,
                     yy[1+k*2][i] < -0.01*GMX_REAL_MAX)
                 {
                     gmx_fatal(FARGS, "Out of range potential value %g in file '%s'",
-                              yy[1+k*2][i], filename);
+                              yy[1+k*2][i], filename.c_str());
                 }
             }
             if (yy[1+k*2+1][i] != 0)
@@ -672,7 +672,7 @@ static void read_tables(FILE *fp, const char *filename,
                     yy[1+k*2+1][i] < -0.01*GMX_REAL_MAX)
                 {
                     gmx_fatal(FARGS, "Out of range force value %g in file '%s'",
-                              yy[1+k*2+1][i], filename);
+                              yy[1+k*2+1][i], filename.c_str());
                 }
             }
         }
@@ -1312,7 +1312,7 @@ static void set_table_type(int tabsel[], const interaction_const_t *ic, gmx_bool
 
 t_forcetable *make_tables(FILE *out,
                           const interaction_const_t *ic,
-                          const char *fn,
+                          const std::string &fn,
                           real rtab, int flags)
 {
     t_tabledata    *td;
@@ -1367,7 +1367,7 @@ t_forcetable *make_tables(FILE *out,
             if (td[0].x[td[0].nx-1] < rtab)
             {
                 gmx_fatal(FARGS, "Tables in file %s not long enough for cut-off:\n"
-                          "\tshould be at least %f nm\n", fn, rtab);
+                          "\tshould be at least %f nm\n", fn.c_str(), rtab);
             }
             table->n = gmx::roundToInt(rtab*td[0].tabscale);
         }
@@ -1446,7 +1446,7 @@ t_forcetable *make_tables(FILE *out,
     return table;
 }
 
-bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle)
+bondedtable_t make_bonded_table(FILE *fplog, const std::string &fn, int angle)
 {
     t_tabledata   td;
     int           i;
@@ -1476,11 +1476,11 @@ bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle)
 t_forcetable *makeDispersionCorrectionTable(FILE                      *fp,
                                             const interaction_const_t *ic,
                                             real                       rtab,
-                                            const char                *tabfn)
+                                            const std::string         &tabfn)
 {
     t_forcetable *dispersionCorrectionTable = nullptr;
 
-    if (tabfn == nullptr)
+    if (tabfn.empty())
     {
         if (debug)
         {

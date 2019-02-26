@@ -199,7 +199,7 @@ static void scale_conf(int natom, rvec x[], matrix box, const rvec scale)
     }
 }
 
-static void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
+static void read_bfac(const std::string &fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 {
     int    i;
     char **bfac_lines;
@@ -207,7 +207,7 @@ static void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac
     *n_bfac = get_lines(fn, &bfac_lines);
     snew(*bfac_val, *n_bfac);
     snew(*bfac_nr, *n_bfac);
-    fprintf(stderr, "Reading %d B-factors from %s\n", *n_bfac, fn);
+    fprintf(stderr, "Reading %d B-factors from %s\n", *n_bfac, fn.c_str());
     for (i = 0; (i < *n_bfac); i++)
     {
         /*fprintf(stderr, "Line %d: %s",i,bfac_lines[i]);*/
@@ -337,7 +337,7 @@ static void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[]
     }
 }
 
-static void visualize_images(const char *fn, int ePBC, matrix box)
+static void visualize_images(const std::string &fn, int ePBC, matrix box)
 {
     t_atoms atoms;
     rvec   *img;
@@ -702,7 +702,6 @@ int gmx_editconf(int argc, char *argv[])
 #define NPA asize(pa)
 
     FILE             *out;
-    const char       *infile, *outfile;
     int               outftp, inftp, natom, i, j, n_bfac, itype, ntype;
     double           *bfac    = nullptr, c6, c12;
     int              *bfac_nr = nullptr;
@@ -764,7 +763,7 @@ int gmx_editconf(int argc, char *argv[])
 
     bCalcDiam = (btype[0][0] == 'c' || btype[0][0] == 'd' || btype[0][0] == 'o');
 
-    infile = ftp2fn(efSTX, NFILE, fnm);
+    std::string infile = ftp2fn(efSTX, NFILE, fnm), outfile;
     if (bMead)
     {
         outfile = ftp2fn(efPQR, NFILE, fnm);

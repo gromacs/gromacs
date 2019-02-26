@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,10 +74,10 @@ static rvec              v1[NK] = {{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 0, 1}, {
 static rvec              v2[NK] = {{0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {1, -1, 0}, {1, 1, 0}, {1, 0, -1}, {1, 0, 1}, {0, 1, -1}, {0, 1, 1}, {1, 1, -2}, {1, 1, 2}, {1, 2, 1}, { 2, 1, 1}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}};
 
 static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
-                         real rho, real wt, const char *fn_trans,
-                         const char *fn_tca, const char *fn_tc,
-                         const char *fn_tcf, const char *fn_cub,
-                         const char *fn_vk, const gmx_output_env_t *oenv)
+                         real rho, real wt, const std::string &fn_trans,
+                         const std::string &fn_tca, const std::string &fn_tc,
+                         const std::string &fn_tcf, const std::string &fn_cub,
+                         const std::string &fn_vk, const gmx_output_env_t *oenv)
 {
     FILE  *fp, *fp_vk, *fp_cub = nullptr;
     int    nk, ntc;
@@ -89,7 +89,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
     nk  = kset_c[nkc];
     ntc = nk*NPK;
 
-    if (fn_trans)
+    if (!fn_trans.empty())
     {
         fp = xvgropen(fn_trans, "Transverse Current", "Time (ps)", "TC (nm/ps)",
                       oenv);
@@ -116,7 +116,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
     {
         snew(tcaf[k], ncorr);
     }
-    if (fn_cub)
+    if (!fn_cub.empty())
     {
         snew(tcafc, nkc);
         for (k = 0; k < nkc; k++)
@@ -147,7 +147,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             {
                 tcaf[k][i] += tc[NPK*k+j][i];
             }
-            if (fn_cub)
+            if (tcafc)
             {
                 for (j = 0; j < NPK; j++)
                 {
@@ -173,7 +173,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
     xvgrclose(fp);
     do_view(oenv, fn_tc, "-nxy");
 
-    if (fn_cub)
+    if (tcafc)
     {
         fp_cub = xvgropen(fn_cub, "TCAFs and fits", "Time (ps)", "TCAF", oenv);
         for (kc = 0; kc < nkc; kc++)
@@ -196,7 +196,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         fprintf(fp_vk, "@    s0 symbol 2\n");
         fprintf(fp_vk, "@    s0 symbol color 1\n");
         fprintf(fp_vk, "@    s0 linestyle 0\n");
-        if (fn_cub)
+        if (!fn_cub.empty())
         {
             fprintf(fp_vk, "@    s1 symbol 3\n");
             fprintf(fp_vk, "@    s1 symbol color 2\n");
@@ -224,7 +224,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
     xvgrclose(fp);
     do_view(oenv, fn_tcf, "-nxy");
 
-    if (fn_cub)
+    if (tcafc)
     {
         fprintf(stdout, "Averaged over k-vectors:\n");
         fprintf(fp_vk, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");

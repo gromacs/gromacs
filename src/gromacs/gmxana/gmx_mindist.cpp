@@ -139,7 +139,7 @@ static void periodic_dist(int ePBC,
     *rmax = std::sqrt(r2max);
 }
 
-static void periodic_mindist_plot(const char *trxfn, const char *outfn,
+static void periodic_mindist_plot(const std::string &trxfn, const std::string &outfn,
                                   const t_topology *top, int ePBC,
                                   int n, int index[], gmx_bool bSplit,
                                   const gmx_output_env_t *oenv)
@@ -324,8 +324,8 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
     *rmax = std::sqrt(rmax2);
 }
 
-static void dist_plot(const char *fn, const char *afile, const char *dfile,
-                      const char *nfile, const char *rfile, const char *xfile,
+static void dist_plot(const std::string &fn, const std::string &afile, const std::string &dfile,
+                      const std::string &nfile, const std::string &rfile, const std::string &xfile,
                       real rcut, gmx_bool bMat, const t_atoms *atoms,
                       int ng, int *index[], int gnx[], char *grpn[], gmx_bool bSplit,
                       gmx_bool bMin, int nres, int *residue, gmx_bool bPBC, int ePBC,
@@ -357,9 +357,9 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
     sprintf(buf, "%simum Distance", bMin ? "Min" : "Max");
     dist = xvgropen(dfile, buf, output_env_get_time_label(oenv), "Distance (nm)", oenv);
     sprintf(buf, "Number of Contacts %s %g nm", bMin ? "<" : ">", rcut);
-    num    = nfile ? xvgropen(nfile, buf, output_env_get_time_label(oenv), "Number", oenv) : nullptr;
-    atm    = afile ? gmx_ffopen(afile, "w") : nullptr;
-    trxout = xfile ? open_trx(xfile, "w") : nullptr;
+    num    = !nfile.empty() ? xvgropen(nfile, buf, output_env_get_time_label(oenv), "Number", oenv) : nullptr;
+    atm    = !afile.empty() ? gmx_ffopen(afile, "w") : nullptr;
+    trxout = !xfile.empty() ? open_trx(xfile, "w") : nullptr;
 
     if (bMat)
     {
@@ -712,7 +712,6 @@ int gmx_mindist(int argc, char *argv[])
     gmx_bool          bTop = FALSE;
 
     int               i, nres = 0;
-    const char       *trxfnm, *tpsfnm, *ndxfnm, *distfnm, *numfnm, *atmfnm, *oxfnm, *resfnm;
     char            **grpname;
     int              *gnx;
     int             **index, *residues = nullptr;
@@ -735,14 +734,15 @@ int gmx_mindist(int argc, char *argv[])
         return 0;
     }
 
-    trxfnm  = ftp2fn(efTRX, NFILE, fnm);
-    ndxfnm  = ftp2fn_null(efNDX, NFILE, fnm);
-    distfnm = opt2fn("-od", NFILE, fnm);
-    numfnm  = opt2fn_null("-on", NFILE, fnm);
-    atmfnm  = ftp2fn_null(efOUT, NFILE, fnm);
-    oxfnm   = opt2fn_null("-ox", NFILE, fnm);
-    resfnm  = opt2fn_null("-or", NFILE, fnm);
-    if (bPI || resfnm != nullptr)
+    std::string trxfnm  = ftp2fn(efTRX, NFILE, fnm);
+    std::string ndxfnm  = ftp2fn_null(efNDX, NFILE, fnm);
+    std::string distfnm = opt2fn("-od", NFILE, fnm);
+    std::string numfnm  = opt2fn_null("-on", NFILE, fnm);
+    std::string atmfnm  = ftp2fn_null(efOUT, NFILE, fnm);
+    std::string oxfnm   = opt2fn_null("-ox", NFILE, fnm);
+    std::string resfnm  = opt2fn_null("-or", NFILE, fnm);
+    std::string tpsfnm;
+    if (bPI || !resfnm.empty())
     {
         /* We need a tps file */
         tpsfnm = ftp2fn(efTPS, NFILE, fnm);
@@ -752,7 +752,7 @@ int gmx_mindist(int argc, char *argv[])
         tpsfnm = ftp2fn_null(efTPS, NFILE, fnm);
     }
 
-    if (!tpsfnm && !ndxfnm)
+    if (tpsfnm.empty() && ndxfnm.empty())
     {
         gmx_fatal(FARGS, "You have to specify either the index file or a tpr file");
     }
@@ -771,7 +771,7 @@ int gmx_mindist(int argc, char *argv[])
     snew(index, ng);
     snew(grpname, ng);
 
-    if (tpsfnm || resfnm || !ndxfnm)
+    if (!tpsfnm.empty() || !resfnm.empty() || ndxfnm.empty())
     {
         snew(top, 1);
         bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
@@ -800,7 +800,7 @@ int gmx_mindist(int argc, char *argv[])
         gnx[0] = 1;
     }
 
-    if (resfnm)
+    if (!resfnm.empty())
     {
         GMX_RELEASE_ASSERT(top != nullptr, "top pointer cannot be NULL when finding residues");
         nres = find_residues(&(top->atoms), gnx[0], index[0], &residues);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,12 +73,12 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
-static void list_tpx(const char *fn,
-                     gmx_bool    bShowNumbers,
-                     gmx_bool    bShowParameters,
-                     const char *mdpfn,
-                     gmx_bool    bSysTop,
-                     gmx_bool    bOriginalInputrec)
+static void list_tpx(const std::string &fn,
+                     gmx_bool           bShowNumbers,
+                     gmx_bool           bShowParameters,
+                     const std::string &mdpfn,
+                     gmx_bool           bSysTop,
+                     gmx_bool           bOriginalInputrec)
 {
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
@@ -98,14 +98,14 @@ static void list_tpx(const char *fn,
         gmx::MDModules().adjustInputrecBasedOnModules(&ir);
     }
 
-    if (mdpfn && tpx.bIr)
+    if (!mdpfn.empty() && tpx.bIr)
     {
         gp = gmx_fio_fopen(mdpfn, "w");
         pr_inputrec(gp, 0, nullptr, &ir, TRUE);
         gmx_fio_fclose(gp);
     }
 
-    if (!mdpfn)
+    if (mdpfn.empty())
     {
         if (bSysTop)
         {
@@ -175,7 +175,7 @@ static void list_tpx(const char *fn,
     }
 }
 
-static void list_top(const char *fn)
+static void list_top(const std::string &fn)
 {
     int       status, done;
 #define BUFLEN 256
@@ -212,7 +212,7 @@ static void list_top(const char *fn)
     }
 }
 
-static void list_trr(const char *fn)
+static void list_trr(const std::string &fn)
 {
     t_fileio         *fpread;
     int               nframe, indent;
@@ -236,7 +236,7 @@ static void list_trr(const char *fn)
                                     trrheader.v_size   ? v : nullptr,
                                     trrheader.f_size   ? f : nullptr))
         {
-            sprintf(buf, "%s frame %d", fn, nframe);
+            sprintf(buf, "%s frame %d", fn.c_str(), nframe);
             indent = 0;
             indent = pr_title(stdout, indent, buf);
             pr_indent(stdout, indent);
@@ -278,7 +278,7 @@ static void list_trr(const char *fn)
     gmx_trr_close(fpread);
 }
 
-static void list_xtc(const char *fn)
+static void list_xtc(const std::string &fn)
 {
     t_fileio   *xd;
     int         indent;
@@ -296,7 +296,7 @@ static void list_xtc(const char *fn)
     nframe = 0;
     do
     {
-        sprintf(buf, "%s frame %d", fn, nframe);
+        sprintf(buf, "%s frame %d", fn.c_str(), nframe);
         indent = 0;
         indent = pr_title(stdout, indent, buf);
         pr_indent(stdout, indent);
@@ -318,23 +318,23 @@ static void list_xtc(const char *fn)
 #if GMX_USE_TNG
 
 /*! \brief Callback used by list_tng_for_gmx_dump. */
-static void list_tng_inner(const char *fn,
-                           gmx_bool    bFirstFrame,
-                           real       *values,
-                           int64_t     step,
-                           double      frame_time,
-                           int64_t     n_values_per_frame,
-                           int64_t     n_atoms,
-                           real        prec,
-                           int64_t     nframe,
-                           char       *block_name)
+static void list_tng_inner(const std::string &fn,
+                           gmx_bool           bFirstFrame,
+                           real              *values,
+                           int64_t            step,
+                           double             frame_time,
+                           int64_t            n_values_per_frame,
+                           int64_t            n_atoms,
+                           real               prec,
+                           int64_t            nframe,
+                           char              *block_name)
 {
     char                 buf[256];
     int                  indent = 0;
 
     if (bFirstFrame)
     {
-        sprintf(buf, "%s frame %" PRId64, fn, nframe);
+        sprintf(buf, "%s frame %" PRId64, fn.c_str(), nframe);
         indent = 0;
         indent = pr_title(stdout, indent, buf);
         pr_indent(stdout, indent);
@@ -351,7 +351,7 @@ static void list_tng_inner(const char *fn,
 
 #endif
 
-static void list_tng(const char gmx_unused *fn)
+static void list_tng(const std::string &fn)
 {
 #if GMX_USE_TNG
     gmx_tng_trajectory_t tng;
@@ -409,10 +409,12 @@ static void list_tng(const char gmx_unused *fn)
     }
     sfree(values);
     gmx_tng_close(&tng);
+#else
+    GMX_UNUSED_VALUE(fn);
 #endif
 }
 
-static void list_trx(const char *fn)
+static void list_trx(const std::string &fn)
 {
     switch (fn2ftp(fn))
     {
@@ -427,11 +429,11 @@ static void list_trx(const char *fn)
             break;
         default:
             fprintf(stderr, "File %s is of an unsupported type. Try using the command\n 'less %s'\n",
-                    fn, fn);
+                    fn.c_str(), fn.c_str());
     }
 }
 
-static void list_ene(const char *fn)
+static void list_ene(const std::string &fn)
 {
     ener_file_t    in;
     gmx_bool       bCont;
@@ -440,7 +442,7 @@ static void list_ene(const char *fn)
     int            i, j, nre, b;
     char           buf[22];
 
-    printf("gmx dump: %s\n", fn);
+    printf("gmx dump: %s\n", fn.c_str());
     in = open_enx(fn, "r");
     do_enxnms(in, &nre, &enm);
     assert(enm);
@@ -560,7 +562,7 @@ static void list_ene(const char *fn)
     sfree(enm);
 }
 
-static void list_mtx(const char *fn)
+static void list_mtx(const std::string &fn)
 {
     int                  nrow, ncol, i, j, k;
     real                *full   = nullptr, value;

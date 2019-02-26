@@ -979,7 +979,7 @@ static void imd_readcommand(t_gmx_IMD_setup *IMDsetup)
  *
  * Call on master only.
  */
-static FILE *open_imd_out(const char                *fn,
+static FILE *open_imd_out(const std::string         &fn,
                           t_gmx_IMD_setup           *IMDsetup,
                           int                        nat_total,
                           const gmx_output_env_t    *oenv,
@@ -989,7 +989,7 @@ static FILE *open_imd_out(const char                *fn,
 
 
     /* Open log file of applied IMD forces if requested */
-    if (fn && oenv)
+    if (!fn.empty() && oenv)
     {
         /* If we append to an existing file, all the header information is already there */
         if (continuationOptions.appendFiles)

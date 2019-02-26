@@ -130,7 +130,7 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
     return 0;
 }
 
-void ana_dih_trans(const char *fn_trans, const char *fn_histo,
+void ana_dih_trans(const std::string &fn_trans, const std::string &fn_histo,
                    real **dih, int nframes, int nangles,
                    const char *grpname, real *time, gmx_bool bRb,
                    const gmx_output_env_t *oenv)
@@ -157,8 +157,8 @@ void ana_dih_trans(const char *fn_trans, const char *fn_histo,
 
 }
 
-void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
-                       gmx_bool bHisto, const char *fn_histo, int maxchi,
+void low_ana_dih_trans(gmx_bool bTrans, const std::string &fn_trans,
+                       gmx_bool bHisto, const std::string &fn_histo, int maxchi,
                        real **dih, int nlist, t_dlist dlist[], int nframes,
                        int nangles, const char *grpname, int multiplicity[],
                        real *time, gmx_bool bRb, real core_frac,
@@ -450,7 +450,7 @@ void mk_chi_lookup (int **lookup, int maxchi,
 void get_chi_product_traj (real **dih, int nframes, int nlist,
                            int maxchi, t_dlist dlist[], real time[],
                            int **lookup, int *multiplicity, gmx_bool bRb, gmx_bool bNormalize,
-                           real core_frac, gmx_bool bAll, const char *fnall,
+                           real core_frac, gmx_bool bAll, const std::string &fnall,
                            const gmx_output_env_t *oenv)
 {
 
@@ -807,7 +807,7 @@ void normalize_histo(int npoints, const int histo[], real dx, real normhisto[])
     }
 }
 
-void read_ang_dih(const char *trj_fn,
+void read_ang_dih(const std::string &trj_fn,
                   gmx_bool bAngles, gmx_bool bSaveAll, gmx_bool bRb, gmx_bool bPBC,
                   int maxangstat, int angstat[],
                   int *nframes, real **time,

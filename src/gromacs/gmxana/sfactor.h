@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 #ifndef GMX_GMXANA_SFACTOR_H
 #define GMX_GMXANA_SFACTOR_H
 
+#include <string>
+
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -57,7 +59,7 @@ void compute_structure_factor (structure_factor_t * sft, matrix box,
                                reduced_atom_t * red, int isize, real start_q,
                                real end_q, int group, real **sf_table);
 
-gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn);
+gmx_structurefactors_t *gmx_structurefactors_init(const std::string &datfn);
 
 void gmx_structurefactors_done(gmx_structurefactors_t *gsf);
 
@@ -66,7 +68,7 @@ int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, real a[4]
 real **gmx_structurefactors_table(gmx_structurefactors_t *gsf, real momentum, real ref_k,
                                   real lambda, int n_angles);
 
-void save_data (structure_factor_t * sft, const char *file, int ngrps,
+void save_data (structure_factor_t * sft, const std::string &file, int ngrps,
                 real start_q, real end_q, const gmx_output_env_t *oenv);
 
 double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda, double sin_theta);
@@ -76,9 +78,9 @@ int return_atom_type (const char *name, gmx_structurefactors_t *gsf);
 void rearrange_atoms (reduced_atom_t * positions, struct t_trxframe *fr, const int * index,
                       int isize, const t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf);
 
-int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
-                             const char* fnXVG, const char *fnTRX,
-                             const char* fnDAT,
+int do_scattering_intensity (const std::string &fnTPS, const std::string &fnNDX,
+                             const std::string &fnXVG, const std::string &fnTRX,
+                             const std::string &fnDAT,
                              real start_q, real end_q,
                              real energy, int ng, const gmx_output_env_t *oenv);
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,19 +102,19 @@ t_matelmt searchcmap(int n, t_mapping map[], t_xpmelmt c);
  * return -1 if not found
  */
 
-int getcmap(FILE *in, const char *fn, t_mapping **map);
+int getcmap(FILE *in, const std::string &fn, t_mapping **map);
 /* Read the mapping table from in, return number of entries */
 
-int readcmap(const char *fn, t_mapping **map);
+int readcmap(const std::string &fn, t_mapping **map);
 /* Read the mapping table from fn, return number of entries */
 
 void printcmap(FILE *out, int n, t_mapping map[]);
 /* print mapping table to out */
 
-void writecmap(const char *fn, int n, t_mapping map[]);
+void writecmap(const std::string &fn, int n, t_mapping map[]);
 /* print mapping table to fn */
 
-int read_xpm_matrix(const char *fnm, t_matrix **mat);
+int read_xpm_matrix(const std::string &fnm, t_matrix **mat);
 /* Reads a number of matrices from .xpm file fnm and returns this number */
 
 real **matrix2real(t_matrix *in, real **out);

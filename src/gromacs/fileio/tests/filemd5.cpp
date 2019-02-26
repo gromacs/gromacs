@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@ class FileMD5Test : public ::testing::Test
 TEST_F(FileMD5Test, CanComputeMD5)
 {
     prepareFile(1000);
-    file_ = gmx_fio_open(filename_.c_str(), "r+");
+    file_ = gmx_fio_open(filename_, "r+");
 
     std::array<unsigned char, 16> digest = {0};
     // Chosen to be less than the full file length
@@ -111,7 +111,7 @@ TEST_F(FileMD5Test, CanComputeMD5)
 TEST_F(FileMD5Test, ReturnsErrorIfFileModeIsWrong)
 {
     prepareFile(1000);
-    file_ = gmx_fio_open(filename_.c_str(), "r");
+    file_ = gmx_fio_open(filename_, "r");
 
     std::array<unsigned char, 16> digest;
     gmx_off_t                     offset             = 100;

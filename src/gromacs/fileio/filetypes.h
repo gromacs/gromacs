@@ -91,7 +91,9 @@ const char *ftp2defopt(int ftp);
 gmx_bool ftp_is_text(int ftp);
 gmx_bool ftp_is_xdr(int ftp);
 
-//! Return the filetype corrsponding to filename
+/*! \brief Return the GromacsFileType corresponding to filename \c fn
+ *
+ * \todo Remove the not-fully-compatible legacy version taking const char *. */
 //! \{
 int fn2ftp(const char *fn);
 int fn2ftp(const std::string &fn);

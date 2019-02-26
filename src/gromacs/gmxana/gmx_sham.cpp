@@ -99,7 +99,7 @@ typedef struct {
     real * ed;      /* data */
 } XplorMap;
 
-static void lo_write_xplor(XplorMap * map, const char * file)
+static void lo_write_xplor(XplorMap * map, const std::string &file)
 {
     FILE * fp;
     int    z, i, j, n;
@@ -140,7 +140,7 @@ static void lo_write_xplor(XplorMap * map, const char * file)
     gmx_ffclose(fp);
 }
 
-static void write_xplor(const char *file, const real *data, int *ibox, const real dmin[], const real dmax[])
+static void write_xplor(const std::string &file, const real *data, int *ibox, const real dmin[], const real dmax[])
 {
     XplorMap *xm;
     int       i, j, k, n;
@@ -270,7 +270,7 @@ gmx_bool is_local_minimum_from_above(const t_minimum       *this_min,
     /* Note over/underflow within W cannot occur. */
 }
 
-static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real W[])
+static void pick_minima(const std::string &logfile, int *ibox, int ndim, int len, real W[])
 {
     FILE      *fp;
     int        i, j, k, nmin;
@@ -412,10 +412,10 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
     sfree(mm);
 }
 
-static void do_sham(const char *fn, const char *ndx,
-                    const char *xpmP, const char *xpm, const char *xpm2,
-                    const char *xpm3, const char *pdb,
-                    const char *logf,
+static void do_sham(const std::string &fn, const std::string &ndx,
+                    const std::string &xpmP, const std::string &xpm, const std::string &xpm2,
+                    const std::string &xpm3, const std::string &pdb,
+                    const std::string &logf,
                     int n, int neig, real **eig,
                     gmx_bool bGE, int nenerT, real **enerT,
                     real Tref,
@@ -808,7 +808,7 @@ static void do_sham(const char *fn, const char *ndx,
     }
 }
 
-static void ehisto(const char *fh, int n, real **enerT, const gmx_output_env_t *oenv)
+static void ehisto(const std::string &fh, int n, real **enerT, const gmx_output_env_t *oenv)
 {
     FILE  *fp;
     int    i, j, k, nbin, blength;
@@ -959,7 +959,6 @@ int gmx_sham(int argc, char *argv[])
     int               n, e_n, nset, e_nset = 0, i, *idim, *ibox;
     real            **val, **et_val, *t, *e_t, e_dt, dt;
     real             *rmin, *rmax;
-    const char       *fn_ge, *fn_ene;
     gmx_output_env_t *oenv;
     int64_t           num_grid_points;
 
@@ -994,26 +993,26 @@ int gmx_sham(int argc, char *argv[])
                         nsets_in, &nset, &n, &dt, &t);
     printf("Read %d sets of %d points, dt = %g\n\n", nset, n, dt);
 
-    fn_ge  = opt2fn_null("-ge", NFILE, fnm);
-    fn_ene = opt2fn_null("-ene", NFILE, fnm);
+    std::string fn_ge  = opt2fn_null("-ge", NFILE, fnm);
+    std::string fn_ene = opt2fn_null("-ene", NFILE, fnm);
 
-    if (fn_ge && fn_ene)
+    if (!fn_ge.empty() && !fn_ene.empty())
     {
         gmx_fatal(FARGS, "Can not do free energy and energy corrections at the same time");
     }
 
-    if (fn_ge || fn_ene)
+    if (!fn_ge.empty() || !fn_ene.empty())
     {
-        et_val = read_xvg_time(fn_ge ? fn_ge : fn_ene, bHaveT,
+        et_val = read_xvg_time(!fn_ge.empty() ? fn_ge : fn_ene, bHaveT,
                                opt2parg_bSet("-b", npargs, pa), tb-ttol,
                                opt2parg_bSet("-e", npargs, pa), te+ttol,
                                1, &e_nset, &e_n, &e_dt, &e_t);
-        if (fn_ge)
+        if (!fn_ge.empty())
         {
             if (e_nset != 1)
             {
                 gmx_fatal(FARGS, "Can only handle one free energy component in %s",
-                          fn_ge);
+                          fn_ge.c_str());
             }
         }
         else
@@ -1021,12 +1020,12 @@ int gmx_sham(int argc, char *argv[])
             if (e_nset != 1 && e_nset != 2)
             {
                 gmx_fatal(FARGS, "Can only handle one energy component or one energy and one T in %s",
-                          fn_ene);
+                          fn_ene.c_str());
             }
         }
         if (e_n != n)
         {
-            gmx_fatal(FARGS, "Number of energies (%d) does not match number of entries (%d) in %s", e_n, n, opt2fn("-f", NFILE, fnm));
+            gmx_fatal(FARGS, "Number of energies (%d) does not match number of entries (%d) in %s", e_n, n, opt2fn("-f", NFILE, fnm).c_str());
         }
     }
     else
@@ -1034,7 +1033,7 @@ int gmx_sham(int argc, char *argv[])
         et_val = nullptr;
     }
 
-    if (fn_ene && et_val)
+    if (!fn_ene.empty() && et_val)
     {
         ehisto(opt2fn("-histo", NFILE, fnm), e_n, et_val, oenv);
     }
@@ -1077,7 +1076,7 @@ int gmx_sham(int argc, char *argv[])
             opt2fn("-ls", NFILE, fnm), opt2fn("-lsh", NFILE, fnm),
             opt2fn("-lss", NFILE, fnm),
             opt2fn("-ls3", NFILE, fnm), opt2fn("-g", NFILE, fnm),
-            n, nset, val, fn_ge != nullptr, e_nset, et_val, Tref,
+            n, nset, val, !fn_ge.empty(), e_nset, et_val, Tref,
             pmax, gmax,
             opt2parg_bSet("-emin", NPA, pa) ? &emin : nullptr,
             opt2parg_bSet("-emax", NPA, pa) ? &emax : nullptr,

@@ -90,24 +90,22 @@ typedef struct {
     float bBox;
 } t_fr_time;
 
-static void comp_tpx(const char *fn1, const char *fn2,
+static void comp_tpx(const std::string &fn1, const std::string &fn2,
                      gmx_bool bRMSD, real ftol, real abstol)
 {
-    const char    *ff[2];
     t_inputrec    *ir[2];
     t_state        state[2];
     gmx_mtop_t     mtop[2];
     int            i;
+    bool compareFiles = !fn2.empty();
 
-    ff[0] = fn1;
-    ff[1] = fn2;
-    for (i = 0; i < (fn2 ? 2 : 1); i++)
+    for (i = 0; i < (compareFiles ? 2 : 1); i++)
     {
         ir[i] = new t_inputrec();
-        read_tpx_state(ff[i], ir[i], &state[i], &(mtop[i]));
+        read_tpx_state((i == 0) ? fn1 : fn2, ir[i], &state[i], &(mtop[i]));
         gmx::MDModules().adjustInputrecBasedOnModules(ir[i]);
     }
-    if (fn2)
+    if (compareFiles)
     {
         cmp_inputrec(stdout, ir[0], ir[1], ftol, abstol);
         compareMtop(stdout, mtop[0], mtop[1], ftol, abstol);
@@ -130,21 +128,18 @@ static void comp_tpx(const char *fn1, const char *fn2,
     }
 }
 
-static void comp_trx(const gmx_output_env_t *oenv, const char *fn1, const char *fn2,
+static void comp_trx(const gmx_output_env_t *oenv, const std::string &fn1, const std::string &fn2,
                      gmx_bool bRMSD, real ftol, real abstol)
 {
     int          i;
-    const char  *fn[2];
     t_trxframe   fr[2];
     t_trxstatus *status[2];
     gmx_bool     b[2];
 
-    fn[0] = fn1;
-    fn[1] = fn2;
-    fprintf(stderr, "Comparing trajectory files %s and %s\n", fn1, fn2);
+    fprintf(stderr, "Comparing trajectory files %s and %s\n", fn1.c_str(), fn2.c_str());
     for (i = 0; i < 2; i++)
     {
-        b[i] = read_first_frame(oenv, &status[i], fn[i], &fr[i], TRX_READ_X|TRX_READ_V|TRX_READ_F);
+        b[i] = read_first_frame(oenv, &status[i], (i == 0) ? fn1 : fn2, &fr[i], TRX_READ_X|TRX_READ_V|TRX_READ_F);
     }
 
     if (b[0] && b[1])
@@ -162,9 +157,13 @@ static void comp_trx(const gmx_output_env_t *oenv, const char *fn1, const char *
 
         for (i = 0; i < 2; i++)
         {
-            if (b[i] && !b[1-i])
+            if (b[0] && !b[1])
             {
-                fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn[1-i], fn[i]);
+                fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn2.c_str(), fn1.c_str());
+            }
+            if (b[1] && !b[0])
+            {
+                fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn1.c_str(), fn2.c_str());
             }
             close_trx(status[i]);
         }
@@ -292,7 +291,7 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
     }
 }
 
-static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real tol)
+static void chk_trj(const gmx_output_env_t *oenv, const std::string &fn, const std::string &tpr, real tol)
 {
     t_trxframe     fr;
     t_count        count;
@@ -306,7 +305,7 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
     t_state        state;
     t_inputrec     ir;
 
-    if (tpr)
+    if (!tpr.empty())
     {
         read_tpx_state(tpr, &ir, &state, &mtop);
         gmx_mtop_generate_local_top(mtop, &top, ir.efep != efepNO);
@@ -314,7 +313,7 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
     new_natoms = -1;
     natoms     = -1;
 
-    printf("Checking file %s\n", fn);
+    printf("Checking file %s\n", fn.c_str());
 
     j      =  0;
     old_t2 = -2.0;
@@ -374,7 +373,7 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
             }
         }
         natoms = new_natoms;
-        if (tpr)
+        if (!tpr.empty())
         {
             chk_bonds(&top.idef, ir.ePBC, fr.x, fr.box, tol);
         }
@@ -428,7 +427,7 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
     PRINTITEM ( "Box",        bBox );
 }
 
-static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
+static void chk_tps(const std::string &fn, real vdw_fac, real bon_lo, real bon_hi)
 {
     int            natom, i, j, k;
     t_topology     top;
@@ -442,7 +441,7 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     real           r2, ekin, temp1, temp2, dist2, vdwfac2, bonlo2, bonhi2;
     real          *atom_vdw;
 
-    fprintf(stderr, "Checking coordinate file %s\n", fn);
+    fprintf(stderr, "Checking coordinate file %s\n", fn.c_str());
     read_tps_conf(fn, &top, &ePBC, &x, &v, box, TRUE);
     atoms = &top.atoms;
     natom = atoms->nr;
@@ -627,7 +626,7 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     }
 }
 
-static void chk_ndx(const char *fn)
+static void chk_ndx(const std::string &fn)
 {
     t_blocka *grps;
     char    **grpname;
@@ -636,11 +635,11 @@ static void chk_ndx(const char *fn)
     grps = init_index(fn, &grpname);
     if (debug)
     {
-        pr_blocka(debug, 0, fn, grps, FALSE);
+        pr_blocka(debug, 0, fn.c_str(), grps, FALSE);
     }
     else
     {
-        printf("Contents of index file %s\n", fn);
+        printf("Contents of index file %s\n", fn.c_str());
         printf("--------------------------------------------------\n");
         printf("Nr.   Group               #Entries   First    Last\n");
         for (i = 0; (i < grps->nr); i++)
@@ -659,7 +658,7 @@ static void chk_ndx(const char *fn)
     done_blocka(grps);
 }
 
-static void chk_enx(const char *fn)
+static void chk_enx(const std::string &fn)
 {
     int            nre, fnr;
     ener_file_t    in;
@@ -670,7 +669,7 @@ static void chk_enx(const char *fn)
     real           t0, old_t1, old_t2;
     char           buf[22];
 
-    fprintf(stderr, "Checking energy file %s\n\n", fn);
+    fprintf(stderr, "Checking energy file %s\n\n", fn.c_str());
 
     in = open_enx(fn, "r");
     do_enxnms(in, &nre, &enm);
@@ -765,7 +764,6 @@ int gmx_check(int argc, char *argv[])
         { efTEX, "-m",  nullptr, ffOPTWR }
     };
 #define NFILE asize(fnm)
-    const char       *fn1 = nullptr, *fn2 = nullptr, *tex = nullptr;
 
     gmx_output_env_t *oenv;
     static real       vdw_fac  = 0.8;
@@ -801,35 +799,35 @@ int gmx_check(int argc, char *argv[])
         return 0;
     }
 
-    fn1 = opt2fn_null("-f", NFILE, fnm);
-    fn2 = opt2fn_null("-f2", NFILE, fnm);
-    tex = opt2fn_null("-m", NFILE, fnm);
+    std::string fn1 = opt2fn_null("-f", NFILE, fnm);
+    std::string fn2 = opt2fn_null("-f2", NFILE, fnm);
+    std::string tex = opt2fn_null("-m", NFILE, fnm);
 
-    if (tex)
+    if (!tex.empty())
     {
         fprintf(stderr, "LaTeX file writing has been removed from gmx check. "
                 "Please use gmx report-methods instead for it.\n");
     }
-    if (fn1 && fn2)
+    if (!fn1.empty() && !fn2.empty())
     {
         comp_trx(oenv, fn1, fn2, bRMSD, ftol, abstol);
     }
-    else if (fn1)
+    else if (!fn1.empty())
     {
         chk_trj(oenv, fn1, opt2fn_null("-s1", NFILE, fnm), ftol);
     }
-    else if (fn2)
+    else if (!fn2.empty())
     {
         fprintf(stderr, "Please give me TWO trajectory (.xtc/.trr/.tng) files!\n");
     }
 
     fn1 = opt2fn_null("-s1", NFILE, fnm);
     fn2 = opt2fn_null("-s2", NFILE, fnm);
-    if ((fn1 && fn2) || bCompAB)
+    if ((!fn1.empty() && !fn2.empty()) || bCompAB)
     {
         if (bCompAB)
         {
-            if (fn1 == nullptr)
+            if (fn1.empty())
             {
                 gmx_fatal(FARGS, "With -ab you need to set the -s1 option");
             }
@@ -847,22 +845,22 @@ int gmx_check(int argc, char *argv[])
         }
         comp_tpx(fn1, fn2, bRMSD, ftol, abstol);
     }
-    else if ((fn1 && !opt2fn_null("-f", NFILE, fnm)) || (!fn1 && fn2))
+    else if ((!fn1.empty() && opt2fn_null("-f", NFILE, fnm).empty()) || (fn1.empty() && !fn2.empty()))
     {
         fprintf(stderr, "Please give me TWO run input (.tpr) files\n");
     }
 
     fn1 = opt2fn_null("-e", NFILE, fnm);
     fn2 = opt2fn_null("-e2", NFILE, fnm);
-    if (fn1 && fn2)
+    if (!fn1.empty() && !fn2.empty())
     {
         comp_enx(fn1, fn2, ftol, abstol, lastener);
     }
-    else if (fn1)
+    else if (!fn1.empty())
     {
         chk_enx(ftp2fn(efEDR, NFILE, fnm));
     }
-    else if (fn2)
+    else if (!fn2.empty())
     {
         fprintf(stderr, "Please give me TWO energy (.edr/.ene) files!\n");
     }

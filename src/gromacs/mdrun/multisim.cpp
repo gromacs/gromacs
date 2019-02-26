@@ -124,7 +124,7 @@ gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
 #endif
 
     // TODO This should throw upon error
-    gmx_chdir(multidirs[ms->sim].c_str());
+    gmx_chdir(multidirs[ms->sim]);
 #else
     GMX_UNUSED_VALUE(comm);
     ms = nullptr;

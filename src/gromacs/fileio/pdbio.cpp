@@ -1065,7 +1065,7 @@ void get_pdb_coordnum(FILE *in, int *natoms)
     }
 }
 
-void gmx_pdb_read_conf(const char *infile,
+void gmx_pdb_read_conf(const std::string &infile,
                        t_symtab *symtab, char **name, t_atoms *atoms,
                        rvec x[], int *ePBC, matrix box)
 {

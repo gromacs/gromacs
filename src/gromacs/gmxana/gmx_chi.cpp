@@ -212,7 +212,7 @@ static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
     return id;
 }
 
-static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
+static void do_dihcorr(const std::string &fn, int nf, int ndih, real **dih, real dt,
                        int nlist, t_dlist dlist[], real time[], int maxchi,
                        gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega,
                        const gmx_output_env_t *oenv)
@@ -440,9 +440,9 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
                           int nlist, t_dlist dlist[],
                           const int index[],
                           gmx_bool bPhi, gmx_bool bPsi, gmx_bool bOmega, gmx_bool bChi,
-                          gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
+                          gmx_bool bNormalize, gmx_bool bSSHisto, const std::string &ssdump,
                           real bfac_max, const t_atoms *atoms,
-                          gmx_bool bDo_jc, const char *fn,
+                          gmx_bool bDo_jc, const std::string &fn,
                           const gmx_output_env_t *oenv)
 {
     /* also gets 3J couplings and order parameters S2 */
@@ -492,13 +492,13 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
         fp = gmx_ffopen(ssdump, "r");
         if (1 != fscanf(fp, "%d", &nres))
         {
-            gmx_fatal(FARGS, "Error reading from file %s", ssdump);
+            gmx_fatal(FARGS, "Error reading from file %s", ssdump.c_str());
         }
 
         snew(ss_str, nres+1);
         if (1 != fscanf(fp, "%s", ss_str))
         {
-            gmx_fatal(FARGS, "Error reading from file %s", ssdump);
+            gmx_fatal(FARGS, "Error reading from file %s", ssdump.c_str());
         }
 
         gmx_ffclose(fp);
@@ -844,7 +844,7 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
     }
 }
 
-static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
+static FILE *rama_file(const std::string &fn, const char *title, const char *xaxis,
                        const char *yaxis, const gmx_output_env_t *oenv)
 {
     FILE *fp;
@@ -1008,7 +1008,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
 }
 
 
-static void print_transitions(const char *fn, int maxchi, int nlist,
+static void print_transitions(const std::string &fn, int maxchi, int nlist,
                               t_dlist dlist[], real dt,
                               const gmx_output_env_t *oenv)
 {
@@ -1057,8 +1057,8 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
 }
 
 static void order_params(FILE *log,
-                         const char *fn, int maxchi, int nlist, t_dlist dlist[],
-                         const char *pdbfn, real bfac_init,
+                         const std::string &fn, int maxchi, int nlist, t_dlist dlist[],
+                         const std::string &pdbfn, real bfac_init,
                          t_atoms *atoms, const rvec x[], int ePBC, matrix box,
                          gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, const gmx_output_env_t *oenv)
 {
@@ -1133,7 +1133,7 @@ static void order_params(FILE *log,
     }
     xvgrclose(fp);
 
-    if (nullptr != pdbfn)
+    if (!pdbfn.empty())
     {
         real x0, y0, z0;
 

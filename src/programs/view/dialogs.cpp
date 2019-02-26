@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,18 +80,17 @@ void write_gmx(t_x11 *x11, t_gmx *gmx, int mess)
 
 static void shell_comm(const char *title, const char *script, int nsleep)
 {
-    FILE *tfil;
-    char  command[STRLEN];
-    char  tmp[32];
+    FILE       *tfil;
+    char        command[STRLEN];
 
-    std::strcpy(tmp, "dialogXXXXXX");
-    tfil = gmx_fopen_temporary(tmp);
+    std::string tmp = "dialogXXXXXX";
+    tfil = gmx_fopen_temporary(&tmp);
 
     fprintf(tfil, "%s\n", script);
     fprintf(tfil, "sleep %d\n", nsleep);
     gmx_ffclose(tfil);
 
-    std::sprintf(command, "xterm -title %s -e sh %s", title, tmp);
+    std::sprintf(command, "xterm -title %s -e sh %s", title, tmp.c_str());
 #ifdef DEBUG
     std::fprintf(stderr, "command: %s\n", command);
 #endif
@@ -102,7 +101,7 @@ static void shell_comm(const char *title, const char *script, int nsleep)
     }
 
 #ifdef DEBUG
-    unlink(tmp)
+    unlink(tmp.c_str())
 #endif
 }
 
@@ -450,14 +449,14 @@ void done_dlgs(t_gmx *gmx)
     }
 }
 
-void edit_file(const char *fn)
+void edit_file(const std::string &fn)
 {
     if (fork() == 0)
     {
         char script[256];
 
-        std::sprintf(script, "vi  %s", fn);
-        shell_comm(fn, script, 0);
+        std::sprintf(script, "vi  %s", fn.c_str());
+        shell_comm(fn.c_str(), script, 0);
         std::exit(0);
     }
 }

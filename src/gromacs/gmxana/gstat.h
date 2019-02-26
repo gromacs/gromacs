@@ -37,6 +37,8 @@
 #ifndef GMX_GMXANA_GSTAT_H
 #define GMX_GMXANA_GSTAT_H
 
+#include <string>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/index.h"
 
@@ -108,7 +110,7 @@ void calc_distribution_props(int nh, const int histo[],
  *
  */
 
-void ana_dih_trans(const char *fn_trans, const char *fn_histo,
+void ana_dih_trans(const std::string &fn_trans, const std::string &fn_histo,
                    real **dih, int nframes, int nangles,
                    const char *grpname, real *time, gmx_bool bRb,
                    const gmx_output_env_t *oenv);
@@ -135,8 +137,8 @@ void ana_dih_trans(const char *fn_trans, const char *fn_histo,
  *           (trans = 0)
  */
 
-void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
-                       gmx_bool bHisto, const char *fn_histo, int maxchi,
+void low_ana_dih_trans(gmx_bool bTrans, const std::string &fn_trans,
+                       gmx_bool bHisto, const std::string &fn_histo, int maxchi,
                        real **dih, int nlist, t_dlist dlist[],
                        int nframes, int nangles, const char *grpname,
                        int multiplicity[], real *time, gmx_bool bRb,
@@ -150,7 +152,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 
 
 
-void read_ang_dih(const char *trj_fn,
+void read_ang_dih(const std::string &trj_fn,
                   gmx_bool bAngles, gmx_bool bSaveAll, gmx_bool bRb, gmx_bool bPBC,
                   int maxangstat, int angstat[],
                   int *nframes, real **time,
@@ -237,7 +239,7 @@ void get_chi_product_traj (real **dih, int nframes,
                            int nlist, int maxchi, t_dlist dlist[],
                            real time[], int **lookup, int *multiplicity,
                            gmx_bool bRb, gmx_bool bNormalize,
-                           real core_frac, gmx_bool bAll, const char *fnall,
+                           real core_frac, gmx_bool bAll, const std::string &fnall,
                            const gmx_output_env_t *oenv);
 
 void print_one (const gmx_output_env_t *oenv, const char *base,

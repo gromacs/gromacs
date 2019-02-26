@@ -41,6 +41,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -86,7 +87,8 @@ typedef struct lambda_vec_t
 /* the dhdl.xvg data from a simulation */
 typedef struct xvg_t
 {
-    const char   *filename;
+    // TODO Hold filename by value when we don't use snew for these objects.
+    std::string  *filename;
     int           ftp;           /* file type */
     int           nset;          /* number of lambdas, including dhdl */
     int          *np;            /* number of data points (du or hists) per lambda */
@@ -143,7 +145,8 @@ typedef struct samples_t
     hist_t         *hist_alloc;          /* allocated hist */
 
     int64_t         ntot;                /* total number of samples */
-    const char     *filename;            /* the file name this sample comes from */
+    // TODO Hold filename by value when we don't use snew for these objects.
+    std::string    *filename;            /* the file name this sample comes from */
 } samples_t;
 
 /* a sample range (start to end for du-style data, or boolean
@@ -563,7 +566,7 @@ static void hist_init(hist_t *h, int nhist, int *nbin)
 
 static void xvg_init(xvg_t *ba)
 {
-    ba->filename = nullptr;
+    ba->filename = new std::string();
     ba->nset     = 0;
     ba->np_alloc = 0;
     ba->np       = nullptr;
@@ -572,7 +575,7 @@ static void xvg_init(xvg_t *ba)
 
 static void samples_init(samples_t *s, lambda_vec_t *native_lambda,
                          lambda_vec_t *foreign_lambda, double temp,
-                         gmx_bool derivative, const char *filename)
+                         gmx_bool derivative, const std::string &filename)
 {
     s->native_lambda  = native_lambda;
     s->foreign_lambda = foreign_lambda;
@@ -590,8 +593,9 @@ static void samples_init(samples_t *s, lambda_vec_t *native_lambda,
     s->ndu_alloc  = 0;
     s->nt_alloc   = 0;
 
-    s->ntot     = 0;
-    s->filename = filename;
+    s->ntot      = 0;
+    s->filename  = new std::string();
+    *s->filename = filename;
 }
 
 static void sample_range_init(sample_range_t *r, samples_t *s)
@@ -748,17 +752,17 @@ static void sample_coll_insert_sample(sample_coll_t *sc, samples_t *s,
     if (sc->temp != s->temp)
     {
         gmx_fatal(FARGS, "Temperatures in files %s and %s are not the same!",
-                  s->filename, sc->next->s[0]->filename);
+                  s->filename->c_str(), sc->next->s[0]->filename->c_str());
     }
     if (!lambda_vec_same(sc->native_lambda, s->native_lambda))
     {
         gmx_fatal(FARGS, "Native lambda in files %s and %s are not the same (and they should be)!",
-                  s->filename, sc->next->s[0]->filename);
+                  s->filename->c_str(), sc->next->s[0]->filename->c_str());
     }
     if (!lambda_vec_same(sc->foreign_lambda, s->foreign_lambda))
     {
         gmx_fatal(FARGS, "Foreign lambda in files %s and %s are not the same (and they should be)!",
-                  s->filename, sc->next->s[0]->filename);
+                  s->filename->c_str(), sc->next->s[0]->filename->c_str());
     }
 
     /* check if there's room */
@@ -983,7 +987,7 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
 }
 
 /* write a collection of histograms to a file */
-static void sim_data_histogram(sim_data_t *sd, const char *filename,
+static void sim_data_histogram(sim_data_t *sd, const std::string &filename,
                                int nbin_default, const gmx_output_env_t *oenv)
 {
     char           label_x[STRLEN];
@@ -1004,7 +1008,7 @@ static void sim_data_histogram(sim_data_t *sd, const char *filename,
     int            i;
     lambda_data_t *bl_head = sd->lb;
 
-    printf("\nWriting histogram to %s\n", filename);
+    printf("\nWriting histogram to %s\n", filename.c_str());
     sprintf(label_x, "\\DeltaH (%s)", unit_energy);
 
     fp = xvgropen_type(filename, title, label_x, label_y, exvggtXNY, oenv);
@@ -2244,7 +2248,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
                                     const lambda_components_t *lc_in,
                                     lambda_components_t       *lc_out,
                                     const char               **end,
-                                    const char                *fn)
+                                    const std::string         &fn)
 {
     gmx_bool    initialize_lc = FALSE;   /* whether to initialize the lambda
                                             components, or to check them */
@@ -2290,7 +2294,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
             }
             else if (!std::isspace(*str))
             {
-                gmx_fatal(FARGS, "Error in lambda components in %s", fn);
+                gmx_fatal(FARGS, "Error in lambda components in %s", fn.c_str());
             }
         }
         else
@@ -2323,7 +2327,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
                         if (val_start == strtod_end)
                         {
                             gmx_fatal(FARGS,
-                                      "Error reading lambda vector in %s", fn);
+                                      "Error reading lambda vector in %s", fn.c_str());
                         }
                     }
                     /* reset for the next identifier */
@@ -2348,7 +2352,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
                 }
                 if (!vector)
                 {
-                    gmx_fatal(FARGS, "Error in lambda components in %s", fn);
+                    gmx_fatal(FARGS, "Error in lambda components in %s", fn.c_str());
                 }
                 else
                 {
@@ -2364,7 +2368,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
                     else
                     {
                         gmx_fatal(FARGS, "Incomplete lambda vector data in %s",
-                                  fn);
+                                  fn.c_str());
                         return FALSE;
                     }
 
@@ -2383,7 +2387,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
     }
     if (vector)
     {
-        gmx_fatal(FARGS, "Incomplete lambda components data in %s", fn);
+        gmx_fatal(FARGS, "Incomplete lambda components data in %s", fn.c_str());
         return FALSE;
     }
     return OK;
@@ -2393,16 +2397,16 @@ static gmx_bool read_lambda_compvec(const char                *str,
 static gmx_bool read_lambda_components(const char          *str,
                                        lambda_components_t *lc,
                                        const char         **end,
-                                       const char          *fn)
+                                       const std::string   &fn)
 {
     return read_lambda_compvec(str, nullptr, nullptr, lc, end, fn);
 }
 
 /* read an initialized lambda vector from a string */
-static gmx_bool read_lambda_vector(const char   *str,
-                                   lambda_vec_t *lv,
-                                   const char  **end,
-                                   const char   *fn)
+static gmx_bool read_lambda_vector(const char        *str,
+                                   lambda_vec_t      *lv,
+                                   const char       **end,
+                                   const std::string &fn)
 {
     return read_lambda_compvec(str, lv, lv->lc, nullptr, end, fn);
 }
@@ -2416,9 +2420,9 @@ static gmx_bool read_lambda_vector(const char   *str,
     lam = the initialized lambda vector
    returns whether to use the data in this set.
  */
-static gmx_bool legend2lambda(const char   *fn,
-                              const char   *legend,
-                              lambda_vec_t *lam)
+static gmx_bool legend2lambda(const std::string &fn,
+                              const char        *legend,
+                              lambda_vec_t      *lam)
 {
     const char   *ptr    = nullptr, *ptr2 = nullptr;
     gmx_bool      ok     = FALSE;
@@ -2427,7 +2431,7 @@ static gmx_bool legend2lambda(const char   *fn,
 
     if (legend == nullptr)
     {
-        gmx_fatal(FARGS, "There is no legend in file '%s', can not deduce lambda", fn);
+        gmx_fatal(FARGS, "There is no legend in file '%s', can not deduce lambda", fn.c_str());
     }
 
     /* look for the last 'to': */
@@ -2479,14 +2483,14 @@ static gmx_bool legend2lambda(const char   *fn,
 
     if (!ok)
     {
-        gmx_fatal(FARGS, "There is no proper lambda legend in file '%s', can not deduce lambda", fn);
+        gmx_fatal(FARGS, "There is no proper lambda legend in file '%s', can not deduce lambda", fn.c_str());
     }
     if (!bdhdl)
     {
         ptr = find_value(ptr);
         if (!ptr || !read_lambda_vector(ptr, lam, nullptr, fn))
         {
-            gmx_fatal(FARGS, "lambda vector '%s' %s faulty", legend, fn);
+            gmx_fatal(FARGS, "lambda vector '%s' %s faulty", legend, fn.c_str());
         }
     }
     else
@@ -2502,7 +2506,7 @@ static gmx_bool legend2lambda(const char   *fn,
             ptr--;
             if (ptr < legend)
             {
-                gmx_fatal(FARGS, "dhdl legend '%s' %s faulty", legend, fn);
+                gmx_fatal(FARGS, "dhdl legend '%s' %s faulty", legend, fn.c_str());
             }
             /* now backtrack to the start of the identifier */
             while (isspace(*ptr))
@@ -2511,7 +2515,7 @@ static gmx_bool legend2lambda(const char   *fn,
                 ptr--;
                 if (ptr < legend)
                 {
-                    gmx_fatal(FARGS, "dhdl legend '%s' %s faulty", legend, fn);
+                    gmx_fatal(FARGS, "dhdl legend '%s' %s faulty", legend, fn.c_str());
                 }
             }
             while (!std::isspace(*ptr))
@@ -2519,7 +2523,7 @@ static gmx_bool legend2lambda(const char   *fn,
                 ptr--;
                 if (ptr < legend)
                 {
-                    gmx_fatal(FARGS, "dhdl legend '%s' %s faulty", legend, fn);
+                    gmx_fatal(FARGS, "dhdl legend '%s' %s faulty", legend, fn.c_str());
                 }
             }
             ptr++;
@@ -2531,7 +2535,7 @@ static gmx_bool legend2lambda(const char   *fn,
                 buf[(end-ptr)] = '\0';
                 gmx_fatal(FARGS,
                           "Did not find lambda component for '%s' in %s",
-                          buf, fn);
+                          buf, fn.c_str());
             }
         }
         else
@@ -2540,7 +2544,7 @@ static gmx_bool legend2lambda(const char   *fn,
             {
                 gmx_fatal(FARGS,
                           "dhdl without component name with >1 lambda component in %s",
-                          fn);
+                          fn.c_str());
             }
             dhdl_index = 0;
         }
@@ -2549,7 +2553,7 @@ static gmx_bool legend2lambda(const char   *fn,
     return TRUE;
 }
 
-static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
+static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const std::string &fn,
                                 lambda_components_t *lc)
 {
     gmx_bool    bFound;
@@ -2573,14 +2577,14 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
             index = std::strtol(ptr, &end, 10);
             if (ptr == end)
             {
-                gmx_fatal(FARGS, "Incomplete state data in %s", fn);
+                gmx_fatal(FARGS, "Incomplete state data in %s", fn.c_str());
                 return FALSE;
             }
             ptr = end;
         }
         else
         {
-            gmx_fatal(FARGS, "Incomplete state data in %s", fn);
+            gmx_fatal(FARGS, "Incomplete state data in %s", fn.c_str());
             return FALSE;
         }
         /* now find the lambda vector component names */
@@ -2590,7 +2594,7 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
             if (*ptr == '\0')
             {
                 gmx_fatal(FARGS,
-                          "Incomplete lambda vector component data in %s", fn);
+                          "Incomplete lambda vector component data in %s", fn.c_str());
                 return FALSE;
             }
         }
@@ -2599,18 +2603,18 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
         {
             gmx_fatal(FARGS,
                       "lambda vector components in %s don't match those previously read",
-                      fn);
+                      fn.c_str());
         }
         ptr = find_value(val_end);
         if (!ptr)
         {
-            gmx_fatal(FARGS, "Incomplete state data in %s", fn);
+            gmx_fatal(FARGS, "Incomplete state data in %s", fn.c_str());
             return FALSE;
         }
         lambda_vec_init(&(ba->native_lambda), lc);
         if (!read_lambda_vector(ptr, &(ba->native_lambda), nullptr, fn))
         {
-            gmx_fatal(FARGS, "lambda vector in %s faulty", fn);
+            gmx_fatal(FARGS, "lambda vector in %s faulty", fn.c_str());
         }
         ba->native_lambda.index = index;
         bFound                  = TRUE;
@@ -2644,7 +2648,7 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
                 {
                     gmx_fatal(FARGS,
                               "lambda vector components in %s don't match those previously read",
-                              fn);
+                              fn.c_str());
                 }
             }
             else
@@ -2659,7 +2663,7 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
     return bFound;
 }
 
-static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
+static void read_bar_xvg_lowlevel(const std::string &fn, const real *temp, xvg_t *ba,
                                   lambda_components_t *lc)
 {
     int          i;
@@ -2670,12 +2674,12 @@ static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
 
     xvg_init(ba);
 
-    ba->filename = fn;
+    *ba->filename = fn;
 
     np = read_xvg_legend(fn, &ba->y, &ba->nset, &subtitle, &legend);
     if (!ba->y)
     {
-        gmx_fatal(FARGS, "File %s contains no usable data.", fn);
+        gmx_fatal(FARGS, "File %s contains no usable data.", fn.c_str());
     }
     /* Reorder the data */
     ba->t  = ba->y[0];
@@ -2704,7 +2708,7 @@ static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
                 if (ba->temp <= 0)
                 {
                     gmx_fatal(FARGS, "Found temperature of %f in file '%s'",
-                              ba->temp, fn);
+                              ba->temp, fn.c_str());
                 }
             }
         }
@@ -2713,7 +2717,7 @@ static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
     {
         if (*temp <= 0)
         {
-            gmx_fatal(FARGS, "Did not find a temperature in the subtitle in file '%s', use the -temp option of [TT]gmx bar[tt]", fn);
+            gmx_fatal(FARGS, "Did not find a temperature in the subtitle in file '%s', use the -temp option of [TT]gmx bar[tt]", fn.c_str());
         }
         ba->temp = *temp;
     }
@@ -2736,7 +2740,7 @@ static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
         }
         else
         {
-            gmx_fatal(FARGS, "File %s contains multiple sets but no legends, can not determine the lambda values", fn);
+            gmx_fatal(FARGS, "File %s contains multiple sets but no legends, can not determine the lambda values", fn.c_str());
         }
     }
     else
@@ -2755,7 +2759,7 @@ static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
             else
             {
                 int j;
-                printf("%s: Ignoring set '%s'.\n", fn, legend[i]);
+                printf("%s: Ignoring set '%s'.\n", fn.c_str(), legend[i]);
                 for (j = i+1; j < ba->nset; j++)
                 {
                     ba->y[j-1]  = ba->y[j];
@@ -2768,7 +2772,7 @@ static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
 
     if (!native_lambda_read)
     {
-        gmx_fatal(FARGS, "File %s contains multiple sets but no indication of the native lambda", fn);
+        gmx_fatal(FARGS, "File %s contains multiple sets but no indication of the native lambda", fn.c_str());
     }
 
     if (legend != nullptr)
@@ -2781,7 +2785,7 @@ static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
     }
 }
 
-static void read_bar_xvg(const char *fn, real *temp, sim_data_t *sd)
+static void read_bar_xvg(const std::string &fn, real *temp, sim_data_t *sd)
 {
     xvg_t     *barsim;
     samples_t *s;
@@ -2793,12 +2797,12 @@ static void read_bar_xvg(const char *fn, real *temp, sim_data_t *sd)
 
     if (barsim->nset < 1)
     {
-        gmx_fatal(FARGS, "File '%s' contains fewer than two columns", fn);
+        gmx_fatal(FARGS, "File '%s' contains fewer than two columns", fn.c_str());
     }
 
     if (!gmx_within_tol(*temp, barsim->temp, GMX_FLOAT_EPS) && (*temp > 0) )
     {
-        gmx_fatal(FARGS, "Temperature in file %s different from earlier files or setting\n", fn);
+        gmx_fatal(FARGS, "Temperature in file %s different from earlier files or setting\n", fn.c_str());
     }
     *temp = barsim->temp;
 
@@ -2821,7 +2825,7 @@ static void read_bar_xvg(const char *fn, real *temp, sim_data_t *sd)
 
         lambda_vec_print(s[0].native_lambda, buf, FALSE);
         printf("%s: %.1f - %.1f; lambda = %s\n    dH/dl & foreign lambdas:\n",
-               fn, s[0].t[0], s[0].t[s[0].ndu-1], buf);
+               fn.c_str(), s[0].t[0], s[0].t[s[0].ndu-1], buf);
         for (i = 0; i < barsim->nset; i++)
         {
             lambda_vec_print(s[i].foreign_lambda, buf, TRUE);
@@ -2829,12 +2833,14 @@ static void read_bar_xvg(const char *fn, real *temp, sim_data_t *sd)
         }
     }
     printf("\n\n");
+    delete barsim->filename;
+    sfree(barsim);
 }
 
 static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
                                  double start_time, double delta_time,
                                  lambda_vec_t *native_lambda, double temp,
-                                 double *last_t, const char *filename)
+                                 double *last_t, const std::string &filename)
 {
     int           i, j;
     lambda_vec_t *foreign_lambda;
@@ -2855,7 +2861,7 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
     {
         gmx_fatal(FARGS,
                   "Unexpected/corrupted block data in file %s around time %f.",
-                  filename, start_time);
+                  filename.c_str(), start_time);
     }
 
     snew(foreign_lambda, 1);
@@ -2902,7 +2908,7 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
         lambda_vec_print(s->foreign_lambda, buf2, FALSE);
         fprintf(stderr, "Got foreign lambda=%s, expected: %s\n", buf, buf2);
         gmx_fatal(FARGS, "Corrupted data in file %s around t=%f.",
-                  filename, start_time);
+                  filename.c_str(), start_time);
     }
 
     /* make room for the data */
@@ -2939,7 +2945,7 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
 static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
                                       double start_time, double delta_time,
                                       lambda_vec_t *native_lambda, double temp,
-                                      double *last_t, const char *filename)
+                                      double *last_t, const std::string &filename)
 {
     int           i, j;
     samples_t    *s;
@@ -2957,7 +2963,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     {
         gmx_fatal(FARGS,
                   "Unexpected/corrupted block data in file %s around time %f",
-                  filename, start_time);
+                  filename.c_str(), start_time);
     }
 
     nhist = blk->nsub-2;
@@ -2969,7 +2975,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     {
         gmx_fatal(FARGS,
                   "Unexpected/corrupted block data in file %s around time %f",
-                  filename, start_time);
+                  filename.c_str(), start_time);
     }
 
     snew(s, 1);
@@ -2991,7 +2997,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
             {
                 gmx_fatal(FARGS,
                           "Single-component lambda in multi-component file %s",
-                          filename);
+                          filename.c_str());
             }
         }
         else
@@ -3010,7 +3016,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
             {
                 gmx_fatal(FARGS,
                           "Missing derivative coord in multi-component file %s",
-                          filename);
+                          filename.c_str());
             }
             foreign_lambda->dhdl = blk->sub[1].lval[2 + nhist];
         }
@@ -3068,7 +3074,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
             if (s->ntot != sum)
             {
                 gmx_fatal(FARGS, "Histogram counts don't match in %s",
-                          filename);
+                          filename.c_str());
             }
         }
     }
@@ -3081,7 +3087,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
 }
 
 
-static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
+static void read_barsim_edr(const std::string &fn, real *temp, sim_data_t *sd)
 {
     int            i, j;
     ener_file_t    fp;
@@ -3135,7 +3141,7 @@ static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
                      (fr->block[i].sub[0].type != xdr_datatype_double) ||
                      (fr->block[i].sub[0].nr < 5))
                 {
-                    gmx_fatal(FARGS, "Unexpected block data in file %s", fn);
+                    gmx_fatal(FARGS, "Unexpected block data in file %s", fn.c_str());
                 }
 
                 /* read the data from the DHCOLL block */
@@ -3147,11 +3153,11 @@ static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
 
                 if (delta_lambda > 0)
                 {
-                    gmx_fatal(FARGS, "Lambda values not constant in %s: can't apply BAR method", fn);
+                    gmx_fatal(FARGS, "Lambda values not constant in %s: can't apply BAR method", fn.c_str());
                 }
                 if ( ( *temp != rtemp) && (*temp > 0) )
                 {
-                    gmx_fatal(FARGS, "Temperature in file %s different from earlier files or setting\n", fn);
+                    gmx_fatal(FARGS, "Temperature in file %s different from earlier files or setting\n", fn.c_str());
                 }
                 *temp = rtemp;
 
@@ -3163,7 +3169,7 @@ static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
                         {
                             gmx_fatal(FARGS,
                                       "lambda vector components in %s don't match those previously read",
-                                      fn);
+                                      fn.c_str());
                         }
                     }
                     else
@@ -3220,11 +3226,11 @@ static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
 
         if (nlam != 1)
         {
-            gmx_fatal(FARGS, "Did not find delta H information in file %s", fn);
+            gmx_fatal(FARGS, "Did not find delta H information in file %s", fn.c_str());
         }
         if (nblocks_raw > 0 && nblocks_hist > 0)
         {
-            gmx_fatal(FARGS, "Can't handle both raw delta U data and histograms in the same file %s", fn);
+            gmx_fatal(FARGS, "Can't handle both raw delta U data and histograms in the same file %s", fn.c_str());
         }
 
         if (nsamples == 0)
@@ -3256,13 +3262,13 @@ static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
             if (!lambda_vec_same(&start_lambda, native_lambda) )
             {
                 gmx_fatal(FARGS, "Native lambda not constant in file %s: started at %f, and becomes %f at time %f",
-                          fn, native_lambda->val[0], start_lambda.val[0], start_time);
+                          fn.c_str(), native_lambda->val[0], start_lambda.val[0], start_time);
             }
             /* check the number of samples against the previous number */
             if ( ((nblocks_raw+nblocks_hist) != nsamples) || (nlam != 1 ) )
             {
                 gmx_fatal(FARGS, "Unexpected block count in %s: was %d, now %d\n",
-                          fn, nsamples+1, nblocks_raw+nblocks_hist+nlam);
+                          fn.c_str(), nsamples+1, nblocks_raw+nblocks_hist+nlam);
             }
             /* check whether last iterations's end time matches with
                the currrent start time */
@@ -3351,7 +3357,7 @@ static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
         printf("\n");
         lambda_vec_print(native_lambda, buf, FALSE);
         printf("%s: %.1f - %.1f; lambda = %s\n    foreign lambdas:\n",
-               fn, first_t, last_t, buf);
+               fn.c_str(), first_t, last_t, buf);
         for (i = 0; i < nsamples; i++)
         {
             if (lambdas[i])
@@ -3568,13 +3574,13 @@ int gmx_bar(int argc, char *argv[])
     /* read in all files. First xvg files */
     for (const std::string &filenm : xvgFiles)
     {
-        read_bar_xvg(filenm.c_str(), &temp, &sim_data);
+        read_bar_xvg(filenm, &temp, &sim_data);
         nf++;
     }
     /* then .edr files */
     for (const std::string &filenm : edrFiles)
     {
-        read_barsim_edr(filenm.c_str(), &temp, &sim_data);;
+        read_barsim_edr(filenm, &temp, &sim_data);;
         nf++;
     }
 

@@ -526,10 +526,10 @@ static void print_top_heavy_H(FILE *out, real mHmult)
     }
 }
 
-void print_top_comment(FILE       *out,
-                       const char *filename,
-                       const char *ffdir,
-                       bool        bITP)
+void print_top_comment(FILE              *out,
+                       const std::string &filename,
+                       const char        *ffdir,
+                       bool               bITP)
 {
     char  ffdir_parent[STRLEN];
     char *p;
@@ -576,7 +576,7 @@ void print_top_comment(FILE       *out,
     }
 }
 
-void print_top_header(FILE *out, const char *filename,
+void print_top_header(FILE *out, const std::string &filename,
                       bool bITP, const char *ffdir, real mHmult)
 {
     const char *p;
@@ -592,11 +592,11 @@ void print_top_header(FILE *out, const char *filename,
     fprintf(out, "#include \"%s/%s\"\n\n", p, fflib_forcefield_itp());
 }
 
-static void print_top_posre(FILE *out, const char *pr)
+static void print_top_posre(FILE *out, const std::string &pr)
 {
     fprintf(out, "; Include Position restraint file\n");
     fprintf(out, "#ifdef POSRES\n");
-    fprintf(out, "#include \"%s\"\n", pr);
+    fprintf(out, "#include \"%s\"\n", pr.c_str());
     fprintf(out, "#endif\n\n");
 }
 
@@ -670,7 +670,7 @@ void print_top_mols(FILE *out,
     }
 }
 
-void write_top(FILE *out, const char *pr, const char *molname,
+void write_top(FILE *out, const std::string &pr, const char *molname,
                t_atoms *at, bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
                gpp_atomtype *atype, int *cgnr, int nrexcl)
@@ -702,7 +702,7 @@ void write_top(FILE *out, const char *pr, const char *molname,
         print_bondeds(out, at->nr, Directive::d_vsites4,    F_VSITE4FD, 0,              plist);
         print_bondeds(out, at->nr, Directive::d_vsites4,    F_VSITE4FDN, 0,             plist);
 
-        if (pr)
+        if (!pr.empty())
         {
             print_top_posre(out, pr);
         }
@@ -1463,7 +1463,7 @@ scrub_charge_groups(int *cgnr, int natoms)
 }
 
 
-void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
+void pdb2top(FILE *top_file, const std::string &posre_fn, const char *molname,
              t_atoms *atoms,
              std::vector<gmx::RVec> *x, gpp_atomtype *atype, t_symtab *tab,
              gmx::ArrayRef<const PreprocessResidue> rtpFFDB,

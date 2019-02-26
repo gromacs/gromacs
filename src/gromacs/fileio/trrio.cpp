@@ -261,13 +261,13 @@ do_trr_frame(t_fileio *fio, bool bRead, int64_t *step, real *t, real *lambda,
  *
  ************************************************************/
 
-void gmx_trr_read_single_header(const char *fn, gmx_trr_header_t *header)
+void gmx_trr_read_single_header(const std::string &fn, gmx_trr_header_t *header)
 {
     t_fileio *fio = gmx_trr_open(fn, "r");
     gmx_bool  bOK;
     if (!do_trr_frame_header(fio, true, header, &bOK))
     {
-        gmx_fatal(FARGS, "Empty file %s", fn);
+        gmx_fatal(FARGS, "Empty file %s", fn.c_str());
     }
     gmx_trr_close(fio);
 }
@@ -277,7 +277,7 @@ gmx_bool gmx_trr_read_frame_header(t_fileio *fio, gmx_trr_header_t *header, gmx_
     return do_trr_frame_header(fio, true, header, bOK);
 }
 
-void gmx_trr_write_single_frame(const char *fn, int64_t step, real t, real lambda,
+void gmx_trr_write_single_frame(const std::string &fn, int64_t step, real t, real lambda,
                                 const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f)
 {
     t_fileio *fio = gmx_trr_open(fn, "w");
@@ -285,7 +285,7 @@ void gmx_trr_write_single_frame(const char *fn, int64_t step, real t, real lambd
     gmx_trr_close(fio);
 }
 
-void gmx_trr_read_single_frame(const char *fn, int64_t *step, real *t, real *lambda,
+void gmx_trr_read_single_frame(const std::string &fn, int64_t *step, real *t, real *lambda,
                                rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     t_fileio *fio = gmx_trr_open(fn, "r");
@@ -315,7 +315,7 @@ gmx_bool gmx_trr_read_frame_data(t_fileio *fio, gmx_trr_header_t *header,
     return do_trr_frame_data(fio, header, box, x, v, f);
 }
 
-t_fileio *gmx_trr_open(const char *fn, const char *mode)
+t_fileio *gmx_trr_open(const std::string &fn, const char *mode)
 {
     return gmx_fio_open(fn, mode);
 }

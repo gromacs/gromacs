@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,7 +79,7 @@ static int compare(void *a, void *b)
     return std::strcmp(tmp1->atomname, tmp2->atomname);
 }
 
-static int get_electrons(t_electron **eltab, const char *fn)
+static int get_electrons(t_electron **eltab, const std::string &fn)
 {
     char  buffer[256];  /* to read in a line   */
     char  tempname[80]; /* buffer to hold name */
@@ -91,12 +91,12 @@ static int get_electrons(t_electron **eltab, const char *fn)
 
     if ((in = gmx_ffopen(fn, "r")) == nullptr)
     {
-        gmx_fatal(FARGS, "Couldn't open %s. Exiting.\n", fn);
+        gmx_fatal(FARGS, "Couldn't open %s. Exiting.\n", fn.c_str());
     }
 
     if (nullptr == fgets(buffer, 255, in))
     {
-        gmx_fatal(FARGS, "Error reading from file %s", fn);
+        gmx_fatal(FARGS, "Error reading from file %s", fn.c_str());
     }
 
     if (sscanf(buffer, "%d", &nr) != 1)
@@ -167,7 +167,7 @@ static void center_coords(t_atoms *atoms, const int *index_center, int ncenter,
     }
 }
 
-static void calc_electron_density(const char *fn, int **index, const int gnx[],
+static void calc_electron_density(const std::string &fn, int **index, const int gnx[],
                                   double ***slDensity, int *nslices, t_topology *top,
                                   int ePBC,
                                   int axis, int nr_grps, real *slWidth,
@@ -325,7 +325,7 @@ static void calc_electron_density(const char *fn, int **index, const int gnx[],
     sfree(x0); /* free memory used by coordinate array */
 }
 
-static void calc_density(const char *fn, int **index, const int gnx[],
+static void calc_density(const std::string &fn, int **index, const int gnx[],
                          double ***slDensity, int *nslices, t_topology *top, int ePBC,
                          int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                          int *index_center, int ncenter,
@@ -500,7 +500,7 @@ static void calc_density(const char *fn, int **index, const int gnx[],
     sfree(den_val);
 }
 
-static void plot_density(double *slDensity[], const char *afile, int nslices,
+static void plot_density(double *slDensity[], const std::string &afile, int nslices,
                          int nr_grps, char *grpname[], real slWidth,
                          const char **dens_opt,
                          gmx_bool bCenter, gmx_bool bRelative, gmx_bool bSymmetrize,

@@ -1553,8 +1553,6 @@ int gmx_make_ndx(int argc, char *argv[])
 #define NPA asize(pa)
 
     gmx_output_env_t *oenv;
-    const char       *stxfile;
-    const char       *ndxoutfile;
     gmx_bool          bNatoms;
     int               j;
     t_atoms          *atoms;
@@ -1576,17 +1574,17 @@ int gmx_make_ndx(int argc, char *argv[])
         return 0;
     }
 
-    stxfile = ftp2fn_null(efSTX, NFILE, fnm);
+    std::string stxfile = ftp2fn_null(efSTX, NFILE, fnm);
     gmx::ArrayRef<const std::string> ndxInFiles = opt2fnsIfOptionSet("-n", NFILE, fnm);
-    ndxoutfile = opt2fn("-o", NFILE, fnm);
+    std::string ndxoutfile = opt2fn("-o", NFILE, fnm);
     bNatoms    = opt2parg_bSet("-natoms", NPA, pa);
 
-    if (!stxfile && ndxInFiles.empty())
+    if (stxfile.empty() && ndxInFiles.empty())
     {
         gmx_fatal(FARGS, "No input files (structure or index)");
     }
 
-    if (stxfile)
+    if (!stxfile.empty())
     {
         t_topology *top;
         snew(top, 1);
@@ -1614,7 +1612,7 @@ int gmx_make_ndx(int argc, char *argv[])
     {
         for (const std::string &ndxInFile : ndxInFiles)
         {
-            block2 = init_index(ndxInFile.c_str(), &gnames2);
+            block2 = init_index(ndxInFile, &gnames2);
             srenew(gnames, block->nr+block2->nr);
             for (j = 0; j < block2->nr; j++)
             {

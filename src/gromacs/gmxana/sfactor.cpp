@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -259,7 +259,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
 }
 
 
-extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
+extern gmx_structurefactors_t *gmx_structurefactors_init(const std::string &datfn)
 {
 
     /* Read the database for the structure factor of the different atoms */
@@ -317,7 +317,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
         else
         {
             fprintf(stderr, "WARNING: Error in file %s at line %d ignored\n",
-                    datfn, line_no);
+                    datfn.c_str(), line_no);
         }
     }
 
@@ -435,9 +435,9 @@ extern int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, re
     return success;
 }
 
-extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
-                                    const char* fnXVG, const char *fnTRX,
-                                    const char* fnDAT,
+extern int do_scattering_intensity (const std::string &fnTPS, const std::string &fnNDX,
+                                    const std::string &fnXVG, const std::string &fnTRX,
+                                    const std::string &fnDAT,
                                     real start_q, real end_q,
                                     real energy, int ng, const gmx_output_env_t *oenv)
 {
@@ -480,7 +480,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 
     fprintf (stderr, "\nSelect %d group%s\n", ng,
              ng == 1 ? "" : "s");
-    if (fnTPS)
+    if (!fnTPS.empty())
     {
         get_index (&top.atoms, fnNDX, ng, isize, index, grpname);
     }
@@ -547,7 +547,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 }
 
 
-extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
+extern void save_data (structure_factor_t *sft, const std::string &file, int ngrps,
                        real start_q, real end_q, const gmx_output_env_t *oenv)
 {
 
