@@ -34,7 +34,6 @@
  */
 #include "gmxpre.h"
 
-#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -2659,58 +2658,6 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
     return bFound;
 }
 
-static double filename2lambda(const char *fn)
-{
-    double        lambda;
-    const char   *ptr, *digitptr;
-    char         *endptr;
-    int           dirsep;
-    ptr = fn;
-    /* go to the end of the path string and search backward to find the last
-       directory in the path which has to contain the value of lambda
-     */
-    while (ptr[1] != '\0')
-    {
-        ptr++;
-    }
-    /* searching backward to find the second directory separator */
-    dirsep   = 0;
-    digitptr = nullptr;
-    while (ptr >= fn)
-    {
-        if (ptr[0] != DIR_SEPARATOR && ptr[1] == DIR_SEPARATOR)
-        {
-            if (dirsep == 1)
-            {
-                break;
-            }
-            dirsep++;
-        }
-        /* save the last position of a digit between the last two
-           separators = in the last dirname */
-        if (dirsep > 0 && std::isdigit(*ptr))
-        {
-            digitptr = ptr;
-        }
-        ptr--;
-    }
-    if (!digitptr)
-    {
-        gmx_fatal(FARGS, "While trying to read the lambda value from the file path:"
-                  " last directory in the path '%s' does not contain a number", fn);
-    }
-    if (digitptr[-1] == '-')
-    {
-        digitptr--;
-    }
-    lambda = strtod(digitptr, &endptr);
-    if (endptr == digitptr)
-    {
-        gmx_fatal(FARGS, "Malformed number in file path '%s'", fn);
-    }
-    return lambda;
-}
-
 static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
                                   lambda_components_t *lc)
 {
@@ -2784,15 +2731,6 @@ static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
         /* Check if we have a single set, no legend, nset=1 means t and dH/dl */
         if (ba->nset == 1)
         {
-            if (!native_lambda_read)
-            {
-                // Deduce lambda from the file name.
-                // Updated the routine filename2lambda to actually return lambda
-                // to avoid C++ warnings, but this usage does not seem to need it?
-                // EL 2015-07-10
-                filename2lambda(fn);
-                native_lambda_read = TRUE;
-            }
             ba->lambda[0] = ba->native_lambda;
         }
         else
