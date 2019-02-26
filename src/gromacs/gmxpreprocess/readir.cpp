@@ -2658,7 +2658,7 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
             /* Range checking */
             if ((aj < 0) || (aj >= natoms))
             {
-                gmx_fatal(FARGS, "Invalid atom number %d in indexfile", aj);
+                gmx_fatal(FARGS, "Invalid atom number %d in indexfile", aj + 1);
             }
             /* Lookup up the old group number */
             ognr = cbuf[aj];
