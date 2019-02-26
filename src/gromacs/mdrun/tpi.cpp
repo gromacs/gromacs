@@ -55,6 +55,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/ewald/long_range_correction.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"

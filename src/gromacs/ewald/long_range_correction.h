@@ -88,4 +88,9 @@ ewald_LRcorrection(int numAtomsLocal,
                    real lambda_q, real lambda_lj,
                    real *dvdlambda_q, real *dvdlambda_lj);
 
+/*! Calculate long range corrections to pressure and energy */
+void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
+                   const matrix box, real lambda, tensor pres, tensor virial,
+                   real *prescorr, real *enercorr, real *dvdlcorr);
+
 #endif
