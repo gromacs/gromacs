@@ -169,7 +169,7 @@ static bool isDeviceSane(const gmx_device_info_t *devInfo,
         return false;
     }
 
-    const char *lines[] = { "__kernel void dummyKernel(){}" };
+    const char *lines[] = { "__kernel void dummyKernel(__global void* input){}" };
     ClProgram   program(clCreateProgramWithSource(context, 1, lines, nullptr, &status));
     if (status != CL_SUCCESS)
     {
@@ -189,6 +189,9 @@ static bool isDeviceSane(const gmx_device_info_t *devInfo,
         errorMessage->assign(makeOpenClInternalErrorString("clCreateKernel", status));
         return false;
     }
+
+    // pass an empty pointer for dummyKernel 
+    clSetKernelArg(kernel, 0, sizeof(void*), nullptr);
 
     const size_t localWorkSize = 1, globalWorkSize = 1;
     if ((status =
