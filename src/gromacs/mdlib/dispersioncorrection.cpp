@@ -47,71 +47,80 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 
-static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
+/* Returns a matrix, as flat list, of combination rule combined LJ parameters */
+static std::vector<real> mk_nbfp_combination_rule(const gmx_ffparams_t &ffparams,
+                                                  const int             comb_rule)
 {
-    real      *nbfp;
-    int        i, j, atnr;
-    real       c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
-    real       c6, c12;
+    const int         atnr = ffparams.atnr;
 
-    atnr = idef->atnr;
-    snew(nbfp, 2*atnr*atnr);
-    for (i = 0; i < atnr; ++i)
+    std::vector<real> nbfp(atnr*atnr*2);
+
+    for (int i = 0; i < atnr; ++i)
     {
-        for (j = 0; j < atnr; ++j)
+        for (int j = 0; j < atnr; ++j)
         {
-            c6i  = idef->iparams[i*(atnr+1)].lj.c6;
-            c12i = idef->iparams[i*(atnr+1)].lj.c12;
-            c6j  = idef->iparams[j*(atnr+1)].lj.c6;
-            c12j = idef->iparams[j*(atnr+1)].lj.c12;
-            c6   = std::sqrt(c6i  * c6j);
-            c12  = std::sqrt(c12i * c12j);
+            const real c6i  = ffparams.iparams[i*(atnr + 1)].lj.c6;
+            const real c12i = ffparams.iparams[i*(atnr + 1)].lj.c12;
+            const real c6j  = ffparams.iparams[j*(atnr + 1)].lj.c6;
+            const real c12j = ffparams.iparams[j*(atnr + 1)].lj.c12;
+            real       c6   = std::sqrt(c6i  * c6j);
+            real       c12  = std::sqrt(c12i * c12j);
             if (comb_rule == eCOMB_ARITHMETIC
                 && !gmx_numzero(c6) && !gmx_numzero(c12))
             {
-                sigmai = gmx::sixthroot(c12i / c6i);
-                sigmaj = gmx::sixthroot(c12j / c6j);
-                epsi   = c6i * c6i / c12i;
-                epsj   = c6j * c6j / c12j;
-                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5*(sigmai+sigmaj));
-                c12    = std::sqrt(epsi * epsj) * gmx::power12(0.5*(sigmai+sigmaj));
+                const real sigmai = gmx::sixthroot(c12i / c6i);
+                const real sigmaj = gmx::sixthroot(c12j / c6j);
+                const real epsi   = c6i * c6i / c12i;
+                const real epsj   = c6j * c6j / c12j;
+                const real sigma  = 0.5*(sigmai + sigmaj);
+                const real eps    = std::sqrt(epsi * epsj);
+                c6                = eps * gmx::power6(sigma);
+                c12               = eps * gmx::power12(sigma);
             }
-            C6(nbfp, atnr, i, j)   = c6*6.0;
-            C12(nbfp, atnr, i, j)  = c12*12.0;
+            C6(nbfp, atnr, i, j)  = c6*6.0;
+            C12(nbfp, atnr, i, j) = c12*12.0;
         }
     }
+
     return nbfp;
 }
 
-void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
+/* Returns the A-topology atom type when aOrB=0, the B-topology atom type when aOrB=1 */
+static int atomtypeAOrB(const t_atom &atom,
+                        int           aOrB)
 {
-    const t_atoms  *atoms, *atoms_tpi;
-    const t_blocka *excl;
-    int             nmolc, i, j, tpi, tpj, j1, j2, k, nexcl, q;
-    int64_t         npair, npair_ij, tmpi, tmpj;
-    double          csix, ctwelve;
-    int             ntp, *typecount;
-    gmx_bool        bBHAM;
-    real           *nbfp;
-    real           *nbfp_comb = nullptr;
+    if (aOrB == 0)
+    {
+        return atom.type;
+    }
+    else
+    {
+        return atom.typeB;
+    }
+}
 
-    ntp   = fr->ntype;
-    bBHAM = fr->bBHAM;
-    nbfp  = fr->nbfp;
+void set_avcsixtwelve(FILE             *fplog,
+                      t_forcerec       *fr,
+                      const gmx_mtop_t *mtop)
+{
+    const int                 ntp   = fr->ntype;
+    const gmx_bool            bBHAM = fr->bBHAM;
 
+    gmx::ArrayRef<const real> nbfp;
+    std::vector<real>         nbfp_comb;
     /* For LJ-PME, we want to correct for the difference between the
      * actual C6 values and the C6 values used by the LJ-PME based on
      * combination rules. */
-
     if (EVDW_PME(fr->ic->vdwtype))
     {
-        nbfp_comb = mk_nbfp_combination_rule(&mtop->ffparams,
+        nbfp_comb = mk_nbfp_combination_rule(mtop->ffparams,
                                              (fr->ljpme_combination_rule == eljpmeLB) ? eCOMB_ARITHMETIC : eCOMB_GEOMETRIC);
-        for (tpi = 0; tpi < ntp; ++tpi)
+        for (int tpi = 0; tpi < ntp; ++tpi)
         {
-            for (tpj = 0; tpj < ntp; ++tpj)
+            for (int tpj = 0; tpj < ntp; ++tpj)
             {
                 C6(nbfp_comb, ntp, tpi, tpj) =
                     C6(nbfp, ntp, tpi, tpj) - C6(nbfp_comb, ntp, tpi, tpj);
@@ -120,31 +129,37 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
         }
         nbfp = nbfp_comb;
     }
-    for (q = 0; q < (fr->efep == efepNO ? 1 : 2); q++)
+    else
     {
-        csix    = 0;
-        ctwelve = 0;
-        npair   = 0;
-        nexcl   = 0;
+        nbfp = gmx::arrayRefFromArray(fr->nbfp, ntp*ntp*2);
+    }
+
+    for (int q = 0; q < (fr->efep == efepNO ? 1 : 2); q++)
+    {
+        double csix    = 0;
+        double ctwelve = 0;
+        int    npair   = 0;
+        int    nexcl   = 0;
         if (!fr->n_tpi)
         {
             /* Count the types so we avoid natoms^2 operations */
-            snew(typecount, ntp);
-            gmx_mtop_count_atomtypes(mtop, q, typecount);
+            std::vector<int> typecount(ntp);
+            gmx_mtop_count_atomtypes(mtop, q, typecount.data());
 
-            for (tpi = 0; tpi < ntp; tpi++)
+            for (int tpi = 0; tpi < ntp; tpi++)
             {
-                for (tpj = tpi; tpj < ntp; tpj++)
+                for (int tpj = tpi; tpj < ntp; tpj++)
                 {
-                    tmpi = typecount[tpi];
-                    tmpj = typecount[tpj];
+                    const int iCount = typecount[tpi];
+                    const int jCount = typecount[tpj];
+                    int       npair_ij;
                     if (tpi != tpj)
                     {
-                        npair_ij = tmpi*tmpj;
+                        npair_ij = iCount*jCount;
                     }
                     else
                     {
-                        npair_ij = tmpi*(tmpi - 1)/2;
+                        npair_ij = iCount*(iCount - 1)/2;
                     }
                     if (bBHAM)
                     {
@@ -160,7 +175,6 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                     npair += npair_ij;
                 }
             }
-            sfree(typecount);
             /* Subtract the excluded pairs.
              * The main reason for substracting exclusions is that in some cases
              * some combinations might never occur and the parameters could have
@@ -169,34 +183,20 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
              */
             for (const gmx_molblock_t &molb : mtop->molblock)
             {
-                int nmol = molb.nmol;
-                atoms    = &mtop->moltype[molb.type].atoms;
-                excl     = &mtop->moltype[molb.type].excls;
+                const int       nmol  = molb.nmol;
+                const t_atoms  *atoms = &mtop->moltype[molb.type].atoms;
+                const t_blocka *excl  = &mtop->moltype[molb.type].excls;
                 for (int i = 0; (i < atoms->nr); i++)
                 {
-                    if (q == 0)
+                    const int tpi = atomtypeAOrB( atoms->atom[i], q);
+                    const int j1  = excl->index[i];
+                    const int j2  = excl->index[i+1];
+                    for (int j = j1; j < j2; j++)
                     {
-                        tpi = atoms->atom[i].type;
-                    }
-                    else
-                    {
-                        tpi = atoms->atom[i].typeB;
-                    }
-                    j1  = excl->index[i];
-                    j2  = excl->index[i+1];
-                    for (j = j1; j < j2; j++)
-                    {
-                        k = excl->a[j];
+                        const int k = excl->a[j];
                         if (k > i)
                         {
-                            if (q == 0)
-                            {
-                                tpj = atoms->atom[k].type;
-                            }
-                            else
-                            {
-                                tpj = atoms->atom[k].typeB;
-                            }
+                            const int tpj = atomtypeAOrB(atoms->atom[k], q);
                             if (bBHAM)
                             {
                                 /* nbfp now includes the 6.0 derivative prefactor */
@@ -219,17 +219,17 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
             /* Only correct for the interaction of the test particle
              * with the rest of the system.
              */
-            atoms_tpi =
+            const t_atoms *atoms_tpi =
                 &mtop->moltype[mtop->molblock.back().type].atoms;
 
             npair = 0;
             for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
             {
-                const gmx_molblock_t &molb = mtop->molblock[mb];
-                atoms                      = &mtop->moltype[molb.type].atoms;
-                for (j = 0; j < atoms->nr; j++)
+                const gmx_molblock_t &molb  = mtop->molblock[mb];
+                const t_atoms        *atoms = &mtop->moltype[molb.type].atoms;
+                for (int j = 0; j < atoms->nr; j++)
                 {
-                    nmolc = molb.nmol;
+                    int nmolc = molb.nmol;
                     /* Remove the interaction of the test charge group
                      * with itself.
                      */
@@ -242,24 +242,10 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                             gmx_fatal(FARGS, "Old format tpr with TPI, please generate a new tpr file");
                         }
                     }
-                    if (q == 0)
+                    const int tpj = atomtypeAOrB(atoms->atom[j], q);
+                    for (int i = 0; i < fr->n_tpi; i++)
                     {
-                        tpj = atoms->atom[j].type;
-                    }
-                    else
-                    {
-                        tpj = atoms->atom[j].typeB;
-                    }
-                    for (i = 0; i < fr->n_tpi; i++)
-                    {
-                        if (q == 0)
-                        {
-                            tpi = atoms_tpi->atom[i].type;
-                        }
-                        else
-                        {
-                            tpi = atoms_tpi->atom[i].typeB;
-                        }
+                        const int tpi = atomtypeAOrB(atoms_tpi->atom[i], q);
                         if (bBHAM)
                         {
                             /* nbfp now includes the 6.0 derivative prefactor */
@@ -297,11 +283,6 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
         fr->avctwelve[q] = ctwelve;
     }
 
-    if (EVDW_PME(fr->ic->vdwtype))
-    {
-        sfree(nbfp_comb);
-    }
-
     if (fplog != nullptr)
     {
         if (fr->eDispCorr == edispcAllEner ||
@@ -318,19 +299,17 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
 }
 
 static void
-integrate_table(const real vdwtab[], real scale, int offstart, int rstart, int rend,
-                double *enerout, double *virout)
+integrate_table(const real  vdwtab[],
+                const real  scale,
+                const int   offstart,
+                const int   rstart,
+                const int   rend,
+                double     *enerout,
+                double     *virout)
 {
-    double enersum, virsum;
-    double invscale, invscale2, invscale3;
-    double r, ea, eb, ec, pa, pb, pc, pd;
-    double y0, f, g, h;
-    int    ri, offset;
-    double tabfactor;
-
-    invscale  = 1.0/scale;
-    invscale2 = invscale*invscale;
-    invscale3 = invscale*invscale2;
+    const double invscale  = 1.0/scale;
+    const double invscale2 = invscale*invscale;
+    const double invscale3 = invscale*invscale2;
 
     /* Following summation derived from cubic spline definition,
      * Numerical Recipies in C, second edition, p. 113-116.  Exact for
@@ -341,42 +320,35 @@ integrate_table(const real vdwtab[], real scale, int offstart, int rstart, int r
      * perform both the pressure and energy loops at the same time for
      * simplicity, as the computational cost is low. */
 
-    if (offstart == 0)
-    {
-        /* Since the dispersion table has been scaled down a factor
-         * 6.0 and the repulsion a factor 12.0 to compensate for the
-         * c6/c12 parameters inside nbfp[] being scaled up (to save
-         * flops in kernels), we need to correct for this.
-         */
-        tabfactor = 6.0;
-    }
-    else
-    {
-        tabfactor = 12.0;
-    }
+    /* Since the dispersion table has been scaled down a factor
+     * 6.0 and the repulsion a factor 12.0 to compensate for the
+     * c6/c12 parameters inside nbfp[] being scaled up (to save
+     * flops in kernels), we need to correct for this.
+     */
+    const double tabfactor = (offstart == 0 ? 6.0 : 12.0);
 
-    enersum = 0.0;
-    virsum  = 0.0;
-    for (ri = rstart; ri < rend; ++ri)
+    double       enersum = 0.0;
+    double       virsum  = 0.0;
+    for (int ri = rstart; ri < rend; ++ri)
     {
-        r  = ri*invscale;
-        ea = invscale3;
-        eb = 2.0*invscale2*r;
-        ec = invscale*r*r;
+        const double r  = ri*invscale;
+        const double ea = invscale3;
+        const double eb = 2.0*invscale2*r;
+        const double ec = invscale*r*r;
 
-        pa = invscale3;
-        pb = 3.0*invscale2*r;
-        pc = 3.0*invscale*r*r;
-        pd = r*r*r;
+        const double pa = invscale3;
+        const double pb = 3.0*invscale2*r;
+        const double pc = 3.0*invscale*r*r;
+        const double pd = r*r*r;
 
         /* this "8" is from the packing in the vdwtab array - perhaps
            should be defined? */
 
-        offset = 8*ri + offstart;
-        y0     = vdwtab[offset];
-        f      = vdwtab[offset+1];
-        g      = vdwtab[offset+2];
-        h      = vdwtab[offset+3];
+        const int    offset = 8*ri + offstart;
+        const double y0     = vdwtab[offset];
+        const double f      = vdwtab[offset+1];
+        const double g      = vdwtab[offset+2];
+        const double h      = vdwtab[offset+3];
 
         enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2) + g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);
         virsum  +=  f*(pa/4 + pb/3 + pc/2 + pd) + 2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
@@ -385,13 +357,10 @@ integrate_table(const real vdwtab[], real scale, int offstart, int rstart, int r
     *virout  = 4.0*M_PI*virsum*tabfactor;
 }
 
-void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
+void calc_enervirdiff(FILE       *fplog,
+                      const int   eDispCorr,
+                      t_forcerec *fr)
 {
-    double   eners[2], virs[2], enersum, virsum;
-    double   r0, rc3, rc9;
-    int      ri0, ri1, i;
-    real     scale, *vdwtab;
-
     fr->enershiftsix    = 0;
     fr->enershifttwelve = 0;
     fr->enerdiffsix     = 0;
@@ -403,11 +372,9 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 
     if (eDispCorr != edispcNO)
     {
-        for (i = 0; i < 2; i++)
-        {
-            eners[i] = 0;
-            virs[i]  = 0;
-        }
+        double eners[2] = { 0 };
+        double virs[2]  = { 0 };
+
         if ((ic->vdw_modifier == eintmodPOTSHIFT) ||
             (ic->vdw_modifier == eintmodPOTSWITCH) ||
             (ic->vdw_modifier == eintmodFORCESWITCH) ||
@@ -428,12 +395,12 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                explicit in future cleanup. */
             GMX_ASSERT(fr->dispersionCorrectionTable->interaction == GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
                        "Dispersion-correction code needs a table with both repulsion and dispersion terms");
-            scale  = fr->dispersionCorrectionTable->scale;
-            vdwtab = fr->dispersionCorrectionTable->data;
+            const real  scale  = fr->dispersionCorrectionTable->scale;
+            const real *vdwtab = fr->dispersionCorrectionTable->data;
 
             /* Round the cut-offs to exact table values for precision */
-            ri0  = static_cast<int>(std::floor(ic->rvdw_switch*scale));
-            ri1  = static_cast<int>(std::ceil(ic->rvdw*scale));
+            int ri0  = static_cast<int>(std::floor(ic->rvdw_switch*scale));
+            int ri1  = static_cast<int>(std::ceil(ic->rvdw*scale));
 
             /* The code below has some support for handling force-switching, i.e.
              * when the force (instead of potential) is switched over a limited
@@ -451,11 +418,11 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * we need to calculate the constant shift up to the point where we
              * start modifying the potential.
              */
-            ri0  = (ic->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
+            ri0               = (ic->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
 
-            r0   = ri0/scale;
-            rc3  = r0*r0*r0;
-            rc9  = rc3*rc3*rc3;
+            const double r0   = ri0/scale;
+            const double rc3  = r0*r0*r0;
+            const double rc9  = rc3*rc3*rc3;
 
             if ((ic->vdw_modifier == eintmodFORCESWITCH) ||
                 (ic->vdwtype == evdwSHIFT))
@@ -485,10 +452,10 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * modify the potential. For a pure potential-shift modifier we will
              * have ri0==ri1, and there will not be any contribution here.
              */
-            for (i = 0; i < 2; i++)
+            for (int i = 0; i < 2; i++)
             {
-                enersum = 0;
-                virsum  = 0;
+                double enersum = 0;
+                double virsum  = 0;
                 integrate_table(vdwtab, scale, (i == 0 ? 0 : 4), ri0, ri1, &enersum, &virsum);
                 eners[i] -= enersum;
                 virs[i]  -= virsum;
@@ -524,8 +491,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * can be used here.
              */
 
-            rc3  = ic->rvdw*ic->rvdw*ic->rvdw;
-            rc9  = rc3*rc3*rc3;
+            const double rc3 = ic->rvdw*ic->rvdw*ic->rvdw;
+            const double rc9 = rc3*rc3*rc3;
             /* Contribution beyond the cut-off */
             eners[0] += -4.0*M_PI/(3.0*rc3);
             eners[1] +=  4.0*M_PI/(9.0*rc9);
@@ -571,10 +538,6 @@ void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
                    const matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
-    gmx_bool bCorrAll, bCorrPres;
-    real     dvdlambda, invvol, dens, ninter, avcsix, avctwelve, enerdiff, svir = 0, spres = 0;
-    int      m;
-
     *prescorr = 0;
     *enercorr = 0;
     *dvdlcorr = 0;
@@ -584,12 +547,14 @@ void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
 
     if (ir->eDispCorr != edispcNO)
     {
-        bCorrAll  = (ir->eDispCorr == edispcAllEner ||
-                     ir->eDispCorr == edispcAllEnerPres);
-        bCorrPres = (ir->eDispCorr == edispcEnerPres ||
-                     ir->eDispCorr == edispcAllEnerPres);
+        const bool bCorrAll  = (ir->eDispCorr == edispcAllEner ||
+                                ir->eDispCorr == edispcAllEnerPres);
+        const bool bCorrPres = (ir->eDispCorr == edispcEnerPres ||
+                                ir->eDispCorr == edispcAllEnerPres);
 
-        invvol = 1/det(box);
+        const real invvol = 1/det(box);
+        real       dens;
+        real       ninter;
         if (fr->n_tpi)
         {
             /* Only correct for the interactions with the inserted molecule */
@@ -602,6 +567,8 @@ void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
             ninter = 0.5*fr->numAtomsForDispersionCorrection;
         }
 
+        real avcsix;
+        real avctwelve;
         if (ir->efep == efepNO)
         {
             avcsix    = fr->avcsix[0];
@@ -613,23 +580,25 @@ void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
             avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
         }
 
-        enerdiff   = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-        *enercorr += avcsix*enerdiff;
-        dvdlambda  = 0.0;
+        const real enerdiff   = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
+        *enercorr            += avcsix*enerdiff;
+        real       dvdlambda  = 0;
         if (ir->efep != efepNO)
         {
             dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
         }
         if (bCorrAll)
         {
-            enerdiff   = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-            *enercorr += avctwelve*enerdiff;
+            const real enerdiff  = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
+            *enercorr           += avctwelve*enerdiff;
             if (fr->efep != efepNO)
             {
                 dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
             }
         }
 
+        real svir  = 0;
+        real spres = 0;
         if (bCorrPres)
         {
             svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
@@ -640,7 +609,7 @@ void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
             /* The factor 2 is because of the Gromacs virial definition */
             spres = -2.0*invvol*svir*PRESFAC;
 
-            for (m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
                 virial[m][m] += svir;
                 pres[m][m]   += spres;
