@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
+#include "gromacs/utility/stringutil.h"
 
 #if GMX_NATIVE_WINDOWS
     #define NULL_DEVICE  "nul"
@@ -616,7 +617,7 @@ int gmx_do_dssp(int argc, char *argv[])
     gmx_tmpnam(pdbfile);
     if ((tmpf = fopen(pdbfile, "w")) == nullptr)
     {
-        sprintf(pdbfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
+        std::strcpy(pdbfile, gmx::formatString("%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR).c_str());
         gmx_tmpnam(pdbfile);
         if ((tmpf = fopen(pdbfile, "w")) == nullptr)
         {
@@ -629,7 +630,7 @@ int gmx_do_dssp(int argc, char *argv[])
     gmx_tmpnam(tmpfile);
     if ((tmpf = fopen(tmpfile, "w")) == nullptr)
     {
-        sprintf(tmpfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
+        std::strcpy(tmpfile, gmx::formatString("%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR).c_str());
         gmx_tmpnam(tmpfile);
         if ((tmpf = fopen(tmpfile, "w")) == nullptr)
         {

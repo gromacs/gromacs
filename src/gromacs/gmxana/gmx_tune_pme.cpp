@@ -852,18 +852,17 @@ static gmx_bool can_scale_rvdw(int vdwtype)
 
 /* Make additional TPR files with more computational load for the
  * direct space processors: */
-static void make_benchmark_tprs(
-        const char           *fn_sim_tpr,      /* READ : User-provided tpr file                 */
-        char                 *fn_bench_tprs[], /* WRITE: Names of benchmark tpr files           */
-        int64_t               benchsteps,      /* Number of time steps for benchmark runs       */
-        int64_t               statesteps,      /* Step counter in checkpoint file               */
-        real                  rmin,            /* Minimal Coulomb radius                        */
-        real                  rmax,            /* Maximal Coulomb radius                        */
-        bool                  bScaleRvdw,      /* Scale rvdw along with rcoulomb                */
-        const int            *ntprs,           /* No. of TPRs to write, each with a different
-                                                  rcoulomb and fourierspacing                   */
-        t_inputinfo          *info,            /* Contains information about mdp file options   */
-        FILE                 *fp)              /* Write the output here                         */
+static std::vector<std::string> make_benchmark_tprs(
+        const char           *fn_sim_tpr,   /* READ : User-provided tpr file                 */
+        int64_t               benchsteps,   /* Number of time steps for benchmark runs       */
+        int64_t               statesteps,   /* Step counter in checkpoint file               */
+        real                  rmin,         /* Minimal Coulomb radius                        */
+        real                  rmax,         /* Maximal Coulomb radius                        */
+        bool                  bScaleRvdw,   /* Scale rvdw along with rcoulomb                */
+        const int             ntprs,        /* No. of TPRs to write, each with a different
+                                               rcoulomb and fourierspacing                   */
+        t_inputinfo          *info,         /* Contains information about mdp file options   */
+        FILE                 *fp)           /* Write the output here                         */
 {
     int           i, j, d;
     t_state       state;
@@ -877,8 +876,9 @@ static void make_benchmark_tprs(
     real          fourierspacing;   /* Basic fourierspacing from tpr          */
 
 
+    std::vector<std::string> benchmarkTprFilenames;
     sprintf(buf, "Making benchmark tpr file%s with %s time step%s",
-            *ntprs > 1 ? "s" : "", "%" PRId64, benchsteps > 1 ? "s" : "");
+            ntprs > 1 ? "s" : "", "%" PRId64, benchsteps > 1 ? "s" : "");
     fprintf(stdout, buf, benchsteps);
     if (statesteps > 0)
     {
@@ -1002,14 +1002,14 @@ static void make_benchmark_tprs(
     fprintf(fp, "  tpr file\n");
 
     /* Loop to create the requested number of tpr input files */
-    for (j = 0; j < *ntprs; j++)
+    for (j = 0; j < ntprs; j++)
     {
         /* The first .tpr is the provided one, just need to modify nsteps,
          * so skip the following block */
         if (j != 0)
         {
             /* Determine which Coulomb radii rc to use in the benchmarks */
-            add = (rmax-rmin)/(*ntprs-1);
+            add = (rmax-rmin)/(ntprs-1);
             if (gmx_within_tol(rmin, info->rcoulomb[0], GMX_REAL_EPS))
             {
                 ir->rcoulomb = rmin + j*add;
@@ -1021,7 +1021,7 @@ static void make_benchmark_tprs(
             else
             {
                 /* rmin != rcoul != rmax, ergo test between rmin and rmax */
-                add          = (rmax-rmin)/(*ntprs-2);
+                add          = (rmax-rmin)/(ntprs-2);
                 ir->rcoulomb = rmin + (j-1)*add;
             }
 
@@ -1076,9 +1076,9 @@ static void make_benchmark_tprs(
         info->fsz[j]       = fac*fourierspacing;
 
         /* Write the benchmark tpr file */
-        fn_bench_tprs[j] = gmx_strdup(gmx::Path::concatenateBeforeExtension(fn_sim_tpr, gmx::formatString("_bench%.2d", j)).c_str());
+        benchmarkTprFilenames.emplace_back(gmx::Path::concatenateBeforeExtension(fn_sim_tpr, gmx::formatString("_bench%.2d", j)).c_str());
 
-        fprintf(stdout, "Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
+        fprintf(stdout, "Writing benchmark tpr %s with nsteps=", benchmarkTprFilenames.back().c_str());
         fprintf(stdout, "%" PRId64, ir->nsteps);
         if (j > 0)
         {
@@ -1089,7 +1089,7 @@ static void make_benchmark_tprs(
             fprintf(stdout, ", unmodified settings\n");
         }
 
-        write_tpx_state(fn_bench_tprs[j], ir, &state, &mtop);
+        write_tpx_state(benchmarkTprFilenames.back().c_str(), ir, &state, &mtop);
 
         /* Write information about modified tpr settings to log file */
         fprintf(fp, "%4d%10f%10f", j, fac, ir->rcoulomb);
@@ -1103,7 +1103,7 @@ static void make_benchmark_tprs(
         {
             fprintf(fp, "%10f", ir->rlist);
         }
-        fprintf(fp, "  %-14s\n", fn_bench_tprs[j]);
+        fprintf(fp, "  %-14s\n", benchmarkTprFilenames.back().c_str());
 
         /* Make it clear to the user that some additional settings were modified */
         if (!gmx_within_tol(ir->rvdw, info->rvdw[0], GMX_REAL_EPS)
@@ -1120,6 +1120,7 @@ static void make_benchmark_tprs(
     }
     fflush(stdout);
     fflush(fp);
+    return benchmarkTprFilenames;
 }
 
 
@@ -1157,7 +1158,7 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
             {
                 fprintf(stdout, "renaming log file to %s\n", newfilename.c_str());
                 make_backup(newfilename);
-                rename(opt2fn("-bg", nfile, fnm), newfilename.c_str());
+                gmx_file_rename(opt2fn("-bg", nfile, fnm), newfilename.c_str());
             }
         }
         else if (std::strcmp(opt, "-err") == 0)
@@ -1177,7 +1178,7 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
                 {
                     fprintf(stdout, "Saving stderr output in %s\n", newfilename.c_str());
                     make_backup(newfilename);
-                    rename(fn, newfilename.c_str());
+                    gmx_file_rename(fn, newfilename.c_str());
                 }
                 else
                 {
@@ -1371,30 +1372,30 @@ static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp,
 }
 
 static void do_the_tests(
-        FILE           *fp,               /* General tune_pme output file           */
-        char          **tpr_names,        /* Filenames of the input files to test   */
-        int             maxPMEnodes,      /* Max fraction of nodes to use for PME   */
-        int             minPMEnodes,      /* Min fraction of nodes to use for PME   */
-        int             npme_fixed,       /* If >= -1, test fixed number of PME
-                                           * nodes only                             */
-        const char     *npmevalues_opt,   /* Which -npme values should be tested    */
-        t_perf        **perfdata,         /* Here the performace data is stored     */
-        int            *pmeentries,       /* Entries in the nPMEnodes list          */
-        int             repeats,          /* Repeat each test this often            */
-        int             nnodes,           /* Total number of nodes = nPP + nPME     */
-        int             nr_tprs,          /* Total number of tpr files to test      */
-        gmx_bool        bThreads,         /* Threads or MPI?                        */
-        char           *cmd_mpirun,       /* mpirun command string                  */
-        char           *cmd_np,           /* "-np", "-n", whatever mpirun needs     */
-        char           *cmd_mdrun,        /* mdrun command string                   */
-        char           *cmd_args_bench,   /* arguments for mdrun in a string        */
-        const t_filenm *fnm,              /* List of filenames from command line    */
-        int             nfile,            /* Number of files specified on the cmdl. */
-        int             presteps,         /* DLB equilibration steps, is checked    */
-        int64_t         cpt_steps,        /* Time step counter in the checkpoint    */
-        gmx_bool        bCheck,           /* Check whether benchmark mdrun works    */
-        const char     *eligible_gpu_ids) /* GPU IDs for
-                                           * constructing mdrun command lines */
+        FILE                      *fp,               /* General tune_pme output file           */
+        gmx::ArrayRef<std::string> tpr_names,        /* Filenames of the input files to test   */
+        int                        maxPMEnodes,      /* Max fraction of nodes to use for PME   */
+        int                        minPMEnodes,      /* Min fraction of nodes to use for PME   */
+        int                        npme_fixed,       /* If >= -1, test fixed number of PME
+                                                      * nodes only                             */
+        const char                *npmevalues_opt,   /* Which -npme values should be tested    */
+        t_perf                   **perfdata,         /* Here the performace data is stored     */
+        int                       *pmeentries,       /* Entries in the nPMEnodes list          */
+        int                        repeats,          /* Repeat each test this often            */
+        int                        nnodes,           /* Total number of nodes = nPP + nPME     */
+        int                        nr_tprs,          /* Total number of tpr files to test      */
+        gmx_bool                   bThreads,         /* Threads or MPI?                        */
+        char                      *cmd_mpirun,       /* mpirun command string                  */
+        char                      *cmd_np,           /* "-np", "-n", whatever mpirun needs     */
+        char                      *cmd_mdrun,        /* mdrun command string                   */
+        char                      *cmd_args_bench,   /* arguments for mdrun in a string        */
+        const t_filenm            *fnm,              /* List of filenames from command line    */
+        int                        nfile,            /* Number of files specified on the cmdl. */
+        int                        presteps,         /* DLB equilibration steps, is checked    */
+        int64_t                    cpt_steps,        /* Time step counter in the checkpoint    */
+        gmx_bool                   bCheck,           /* Check whether benchmark mdrun works    */
+        const char                *eligible_gpu_ids) /* GPU IDs for
+                                                      * constructing mdrun command lines */
 {
     int      i, nr, k, ret, count = 0, totaltests;
     int     *nPMEnodes = nullptr;
@@ -1430,7 +1431,7 @@ static void do_the_tests(
         + std::strlen(cmd_np)
         + std::strlen(cmd_mdrun)
         + std::strlen(cmd_args_bench)
-        + std::strlen(tpr_names[0]) + 100;
+        + tpr_names[0].length() + 100;
     snew(command, cmdline_length);
     snew(cmd_stub, cmdline_length);
 
@@ -1475,7 +1476,7 @@ static void do_the_tests(
     totaltests = nr_tprs*(*pmeentries)*repeats;
     for (k = 0; k < nr_tprs; k++)
     {
-        fprintf(fp, "\nIndividual timings for input file %d (%s):\n", k, tpr_names[k]);
+        fprintf(fp, "\nIndividual timings for input file %d (%s):\n", k, tpr_names[k].c_str());
         fprintf(fp, "PME ranks      Gcycles       ns/day        PME/f    Remark\n");
         /* Loop over various numbers of PME nodes: */
         for (i = 0; i < *pmeentries; i++)
@@ -1494,7 +1495,7 @@ static void do_the_tests(
                  * at the end of the command line string */
                 snew(pd->mdrun_cmd_line, cmdline_length);
                 sprintf(pd->mdrun_cmd_line, "%s-npme %d -s %s %s %s",
-                        cmd_stub, pd->nPMEnodes, tpr_names[k], cmd_args_bench, cmd_gpu_ids.c_str());
+                        cmd_stub, pd->nPMEnodes, tpr_names[k].c_str(), cmd_args_bench, cmd_gpu_ids.c_str());
 
                 /* To prevent that all benchmarks fail due to a show-stopper argument
                  * on the mdrun command line, we make a quick check first.
@@ -1520,7 +1521,7 @@ static void do_the_tests(
                        implement that after some refactoring of how
                        the number of MPI ranks is managed. */
                     sprintf(temporary_cmd_line, "%s-npme 0 -nb cpu -s %s %s",
-                            cmd_stub, tpr_names[k], cmd_args_bench);
+                            cmd_stub, tpr_names[k].c_str(), cmd_args_bench);
                     make_sure_it_runs(temporary_cmd_line, cmdline_length, fp, fnm, nfile);
                 }
                 bFirst = FALSE;
@@ -2139,7 +2140,6 @@ int gmx_tune_pme(int argc, char *argv[])
     gmx_bool        bOverwrite     = FALSE, bKeepTPR;
     gmx_bool        bLaunch        = FALSE;
     char           *ExtraArgs      = nullptr;
-    char          **tpr_names      = nullptr;
     const char     *simulation_tpr = nullptr;
     char           *deffnm         = nullptr;
     int             best_npme, best_tpr;
@@ -2519,17 +2519,11 @@ int gmx_tune_pme(int argc, char *argv[])
         snew(info->fsy, ntprs);
         snew(info->fsz, ntprs);
     }
-    /* Make alternative tpr files to test: */
-    snew(tpr_names, ntprs);
-    for (i = 0; i < ntprs; i++)
-    {
-        snew(tpr_names[i], STRLEN);
-    }
-
-    /* It can be that ntprs is reduced by make_benchmark_tprs if not enough
-     * different grids could be found. */
-    make_benchmark_tprs(opt2fn("-s", NFILE, fnm), tpr_names, bench_nsteps+presteps,
-                        cpt_steps, rmin, rmax, bScaleRvdw, &ntprs, info, fp);
+    /* Make alternative tpr files to test. It can be that ntprs is
+     * reduced by make_benchmark_tprs if not enough different grids
+     * could be found. */
+    auto tpr_names = make_benchmark_tprs(opt2fn("-s", NFILE, fnm), bench_nsteps+presteps,
+                                         cpt_steps, rmin, rmax, bScaleRvdw, ntprs, info, fp);
 
     /********************************************************************************/
     /* Main loop over all scenarios we need to test: tpr files, PME nodes, repeats  */
@@ -2557,14 +2551,14 @@ int gmx_tune_pme(int argc, char *argv[])
         {
             simulation_tpr = opt2fn("-so", NFILE, fnm);
             modify_PMEsettings(bOverwrite ? (new_sim_nsteps+cpt_steps) : info->orig_sim_steps,
-                               info->orig_init_step, tpr_names[best_tpr], simulation_tpr);
+                               info->orig_init_step, tpr_names[best_tpr].c_str(), simulation_tpr);
         }
 
         /* Let's get rid of the temporary benchmark input files */
         for (i = 0; i < ntprs; i++)
         {
-            fprintf(stdout, "Deleting temporary benchmark input file %s\n", tpr_names[i]);
-            remove(tpr_names[i]);
+            fprintf(stdout, "Deleting temporary benchmark input file %s\n", tpr_names[i].c_str());
+            remove(tpr_names[i].c_str());
         }
 
         /* Now start the real simulation if the user requested it ... */

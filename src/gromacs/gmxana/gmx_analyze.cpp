@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
@@ -918,27 +919,17 @@ static void print_fitted_function(const char       *fitfile,
     }
     else
     {
-        char *buf2 = nullptr;
-        int   s, buflen = 0;
-        if (nullptr != fn_fitted)
+        std::string fn_fittedForSet;
+        for (int s = 0; s < nset; s++)
         {
-            buflen = std::strlen(fn_fitted)+32;
-            snew(buf2, buflen);
-            std::strncpy(buf2, fn_fitted, buflen);
-            buf2[std::strlen(buf2)-4] = '\0';
-        }
-        for (s = 0; s < nset; s++)
-        {
-            char *buf = nullptr;
-            if (nullptr != fn_fitted)
+            if (fn_fitted)
             {
-                snew(buf, buflen);
-                snprintf(buf, n, "%s_%d.xvg", buf2, s);
+                fn_fittedForSet =
+                    gmx::Path::concatenateBeforeExtension(fn_fitted, gmx::formatString("_%d", s));
             }
-            do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv, buf);
-            sfree(buf);
+            do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv, fn_fittedForSet.c_str());
+            fn_fittedForSet.clear();
         }
-        sfree(buf2);
     }
     gmx_ffclose(out_fit);
 }
