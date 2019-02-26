@@ -302,9 +302,32 @@ void nonbonded_verlet_t::launch_copy_f_from_gpu(rvec *f, const Nbnxm::AtomLocali
                                  f);
 }
 
+void nonbonded_verlet_t::launch_copy_x_from_gpu(rvec *x, const Nbnxm::AtomLocality locality)
+{
+    nbnxn_launch_copy_x_from_gpu(locality,
+                                 pairSearch_->gridSet(),
+                                 gpu_nbv,
+                                 x);
+}
+
 void nonbonded_verlet_t::wait_for_gpu_force_reduction(const Nbnxm::AtomLocality locality)
 {
     nbnxn_wait_for_gpu_force_reduction(locality, gpu_nbv);
+}
+
+void* nonbonded_verlet_t::get_gpu_xrvec()
+{
+    return Nbnxm::nbnxn_get_gpu_xrvec(gpu_nbv);
+}
+
+void* nonbonded_verlet_t::get_x_on_device_event()
+{
+    return Nbnxm::nbnxn_get_x_on_device_event(gpu_nbv);
+}
+
+void nonbonded_verlet_t::wait_nonlocal_x_copy_D2H_done()
+{
+    Nbnxm::nbnxn_wait_nonlocal_x_copy_D2H_done(gpu_nbv);
 }
 
 /*! \endcond */

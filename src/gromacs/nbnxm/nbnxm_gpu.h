@@ -370,12 +370,46 @@ void nbnxn_launch_copy_f_from_gpu(AtomLocality            gmx_unused  atomLocali
                                   gmx_nbnxn_gpu_t         gmx_unused *nb,
                                   rvec                    gmx_unused *f) CUDA_FUNC_TERM;
 
+/*! \brief Asynchronous launch of copying coordinate buffer from GPU to CPU
+ * \param[in]  atomLocality  Locality for data trasnfer
+ * \param[in]  gridSet       The Grid Set data object
+ * \param[in]  nb            The nonbonded data GPU structure
+ * \param[out] x             Coordinate buffer on CPU
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxn_launch_copy_x_from_gpu(AtomLocality            gmx_unused  atomLocality,
+                                  const Nbnxm::GridSet    gmx_unused &gridSet,
+                                  gmx_nbnxn_gpu_t         gmx_unused *nb,
+                                  rvec                    gmx_unused *x) CUDA_FUNC_TERM;
+
 /*! \brief Wait for GPU stream to complete */
 CUDA_FUNC_QUALIFIER
 void nbnxn_wait_for_gpu_force_reduction(AtomLocality            gmx_unused  atomLocality,
                                         gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM;
 
+/*! \brief sync CPU thread on coordinate copy to device
+ * \param[in] nb                   The nonbonded data GPU structure
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxn_wait_x_on_device(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM;
 
-}     // namespace Nbnxm
+/*! \brief return pointer to event recorded when coordinates have been copied to device
+ * \param[in] nb                   The nonbonded data GPU structure
+ */
+CUDA_FUNC_QUALIFIER
+void* nbnxn_get_x_on_device_event(const gmx_nbnxn_gpu_t gmx_unused    *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
 
+/*! \brief return GPU pointer to x in rvec format
+ * \param[in] nb                   The nonbonded data GPU structure
+ */
+CUDA_FUNC_QUALIFIER
+void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
+
+/*! \brief Wait for non-local copy of coordinate buffer from device to host
+ * \param[in] nb                   The nonbonded data GPU structure
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxn_wait_nonlocal_x_copy_D2H_done(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM;
+
+} // namespace Nbnxm
 #endif

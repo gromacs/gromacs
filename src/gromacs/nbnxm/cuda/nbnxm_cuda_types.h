@@ -206,6 +206,8 @@ using cu_plist_t = Nbnxm::gpu_plist;
  */
 typedef struct Nbnxm::gpu_timers_t cu_timers_t;
 
+class GpuEventSynchronizer;
+
 /** \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
  */
@@ -277,6 +279,16 @@ struct gmx_nbnxn_cuda_t
     //  local/nonlocal, if there is bonded GPU work, both flags will be true.
     gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork;
 
+
+    GpuEventSynchronizer *xAvailableOnDevice;   /**< event triggered when
+                                                   coordinate buffer has been
+                                                   copied to device by PP task and
+                                                   any dependent task (e.g. transfer of coordinates
+                                                   to the PME rank's GPU) can proceed. */
+
+    GpuEventSynchronizer *xNonLocalCopyD2HDone; /**< event triggered when
+                                                   non-local coordinate buffer has been
+                                                   copied from device to host*/
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.

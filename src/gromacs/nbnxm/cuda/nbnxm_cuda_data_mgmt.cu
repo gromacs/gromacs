@@ -51,6 +51,7 @@
 // TODO Remove this comment when the above order issue is resolved
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/pmalloc_cuda.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/math/vectypes.h"
@@ -481,6 +482,9 @@ gpu_init(const gmx_device_info_t   *deviceInfo,
     stat = cudaEventCreateWithFlags(&nb->misc_ops_and_local_H2D_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on misc_ops_and_local_H2D_done failed");
 
+    nb->xAvailableOnDevice   = new GpuEventSynchronizer();
+    nb->xNonLocalCopyD2HDone = new GpuEventSynchronizer();
+
     /* WARNING: CUDA timings are incorrect with multiple streams.
      *          This is the main reason why they are disabled by default.
      */
@@ -899,6 +903,7 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
         const int           atomIndicesSize   = gridSet.atomIndices().size();
         const int          *cxy_na            = grid.cxy_na().data();
         const int          *cxy_ind           = grid.cxy_ind().data();
+        // TODO Should be done once per gridset
         const int           numRealAtomsTotal = gridSet.numRealAtomsTotal();
 
         reallocateDeviceBuffer(&gpu_nbv->xrvec, numRealAtomsTotal, &gpu_nbv->natoms, &gpu_nbv->natoms_alloc, nullptr);

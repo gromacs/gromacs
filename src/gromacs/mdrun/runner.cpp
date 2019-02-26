@@ -59,6 +59,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/ewald/ewald_utils.h"
@@ -161,18 +162,25 @@
 namespace gmx
 {
 
-/*! \brief Log if development feature flags are encountered
+/*! \brief environment variable to enable GPU P2P communication */
+static const bool c_enableGpuHaloExchange = (getenv("GMX_GPU_DD_COMMS") != nullptr)
+    && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA);
+
+/*! \brief Manage any development feature flag variables encountered
  *
- * The use of dev features indicated by environment variables is logged
- * in order to ensure that runs with such featrues enabled can be identified
- * from their log and standard output.
+ * The use of dev features indicated by environment variables is
+ * logged in order to ensure that runs with such featrues enabled can
+ * be identified from their log and standard output. Any cross
+ * dependencies are also checked, and if unsatisified, a fatal error
+ * issued.
  *
  * \param[in]  mdlog        Logger object.
  */
-static void reportDevelopmentFeatures(const gmx::MDLogger &mdlog)
+static void manageDevelopmentFeatures(const gmx::MDLogger &mdlog)
 {
     const bool enableGpuBufOps       = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
     const bool useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
+    const bool enableGpuHaloExchange = (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
 
     if (enableGpuBufOps)
     {
@@ -180,11 +188,22 @@ static void reportDevelopmentFeatures(const gmx::MDLogger &mdlog)
                 "NOTE: This run uses the 'GPU buffer ops' feature, enabled by the GMX_USE_GPU_BUFFER_OPS environment variable.");
     }
 
+    if (enableGpuHaloExchange)
+    {
+        if (!enableGpuBufOps)
+        {
+            gmx_fatal(FARGS, "Cannot enable GPU halo exchange without GPU buffer operations, set GMX_USE_GPU_BUFFER_OPS=1\n");
+        }
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "NOTE: This run uses the 'GPU halo exchange' feature, enabled by the GMX_GPU_DD_COMMS environment variable.");
+    }
+
     if (useGpuUpdateConstrain)
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "NOTE: This run uses the 'GPU update/constraints' feature, enabled by the GMX_UPDATE_CONSTRAIN_GPU environment variable.");
     }
+
 }
 
 /*! \brief Barrier for safe simultaneous thread access to mdrunner data
@@ -654,7 +673,7 @@ int Mdrunner::mdrunner()
     gmx::MDLogger    mdlog(logOwner.logger());
 
     // report any development features that may be enabled by environment variables
-    reportDevelopmentFeatures(mdlog);
+    manageDevelopmentFeatures(mdlog);
 
     // With thread-MPI, the communicator changes after threads are
     // launched, so this is rebuilt for the master rank at that
@@ -1315,6 +1334,15 @@ int Mdrunner::mdrunner()
                       FALSE,
                       pforce,
                       wcycle);
+
+        // TODO Move this to happen during domain decomposition setup,
+        // once stream and event handling works well with that.
+        if (havePPDomainDecomposition(cr) && c_enableGpuHaloExchange && useGpuForNonbonded)
+        {
+            void *stream                   = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
+            void *coordinatesOnDeviceEvent = fr->nbv->get_x_on_device_event();
+            cr->dd->gpuHaloExchange = std::make_unique<GpuHaloExchange>(cr->dd, cr->mpi_comm_mysim, stream, coordinatesOnDeviceEvent);
+        }
 
         /* Initialize the mdAtoms structure.
          * mdAtoms is not filled with atom data,

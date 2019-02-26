@@ -388,11 +388,23 @@ struct nonbonded_verlet_t
         /*! \brief D2H transfer of force buffer*/
         void launch_copy_f_from_gpu(rvec *f, Nbnxm::AtomLocality locality);
 
+        /*! \brief D2H transfer of coordinate buffer*/
+        void launch_copy_x_from_gpu(rvec *f, Nbnxm::AtomLocality locality);
+
         /*! \brief Wait for GPU force reduction task and D2H transfer of its results to complete
          *
          * FIXME: need more details: when should be called / after which operation, etc.
          */
         void wait_for_gpu_force_reduction(Nbnxm::AtomLocality locality);
+
+        /*! \brief return GPU pointer to x in rvec format */
+        void* get_gpu_xrvec();
+
+        /*! \brief return pointer to GPU event recorded when coordinates have been copied to device */
+        void* get_x_on_device_event();
+
+        /*! \brief Wait for non-local copy of coordinate buffer from device to host */
+        void wait_nonlocal_x_copy_D2H_done();
 
         //! Return the kernel setup
         const Nbnxm::KernelSetup &kernelSetup() const

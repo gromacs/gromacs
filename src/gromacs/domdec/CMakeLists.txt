@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2018, by the GROMACS development team, led by
+# Copyright (c) 2014,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,7 +33,12 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB DOMDEC_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${DOMDEC_SOURCES} PARENT_SCOPE)
+
+if(GMX_USE_CUDA)
+  file(GLOB DOMDEC_CUDA_SOURCES gpuhaloexchange_impl.cu)
+endif()
+
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${DOMDEC_SOURCES} ${DOMDEC_CUDA_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

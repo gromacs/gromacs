@@ -55,6 +55,7 @@
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/gmxlib/network.h"
@@ -3016,7 +3017,13 @@ getDDSettings(const gmx::MDLogger     &mdlog,
 
     ddSettings.useSendRecv2        = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     ddSettings.dlb_scale_lim       = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
-    ddSettings.request1DAnd1Pulse  = bool(dd_getenv(mdlog, "GMX_DD_1D_1PULSE", 0));
+    // TODO GPU halo exchange requires a 1D single-pulse DD, and when
+    // it is properly integrated the hack with GMX_GPU_DD_COMMS should
+    // be removed.
+    ddSettings.request1DAnd1Pulse  = (bool(dd_getenv(mdlog, "GMX_DD_1D_1PULSE", 0)) ||
+                                      (bool(getenv("GMX_GPU_DD_COMMS") != nullptr &&
+                                            GMX_THREAD_MPI &&
+                                            (GMX_GPU == GMX_GPU_CUDA))));
     ddSettings.useDDOrderZYX       = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
     ddSettings.useCartesianReorder = bool(dd_getenv(mdlog, "GMX_NO_CART_REORDER", 1));
     ddSettings.eFlop               = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);

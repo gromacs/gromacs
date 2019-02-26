@@ -111,7 +111,6 @@
 #include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_pruneonly.cu"
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
-
 namespace Nbnxm
 {
 
@@ -777,6 +776,11 @@ void nbnxn_gpu_copy_x_to_gpu(const Nbnxm::Grid               &grid,
     copyToDeviceBuffer(&devicePtrDest, devicePtrSrc, 0, numCopyAtoms,
                        stream, GpuApiCallBehavior::Async, nullptr);
 
+    if (interactionLoc == Nbnxm::InteractionLocality::Local)
+    {
+        nb->xAvailableOnDevice->markEvent(stream);
+    }
+
     if (bDoTime)
     {
         nb->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
@@ -1011,6 +1015,47 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
     return;
 }
 
+void nbnxn_launch_copy_x_from_gpu(const AtomLocality               atomLocality,
+                                  const Nbnxm::GridSet            &gridSet,
+                                  gmx_nbnxn_gpu_t                 *nb,
+                                  rvec                            *x)
+{
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(x,  "Need a valid x pointer");
+
+    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
+    cudaStream_t              stream    = nb->stream[iLocality];
+
+    bool                      bDoTime = nb->bDoTime;
+    cu_timers_t              *t       = nb->timers;
+    int                       atomStart, nAtoms;
+
+    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &nAtoms);
+
+    if (bDoTime)
+    {
+        t->xf[atomLocality].nb_d2h.openTimingRegion(stream);
+    }
+
+    GMX_ASSERT(nb->xrvec,  "Need a valid nb->xrvec pointer");
+    rvec       *ptrDest = reinterpret_cast<rvec *> (x[atomStart]);
+    rvec       *ptrSrc  = reinterpret_cast<rvec *> (nb->xrvec[atomStart]);
+    copyFromDeviceBuffer(ptrDest, &ptrSrc, 0, nAtoms,
+                         stream, GpuApiCallBehavior::Async, stream);
+
+    if (atomLocality == AtomLocality::NonLocal)
+    {
+        nb->xNonLocalCopyD2HDone->markEvent(stream);
+    }
+
+    if (bDoTime)
+    {
+        t->xf[atomLocality].nb_d2h.closeTimingRegion(stream);
+    }
+
+    return;
+}
+
 void nbnxn_wait_for_gpu_force_reduction(const AtomLocality      gmx_unused atomLocality,
                                         gmx_nbnxn_gpu_t                   *nb)
 {
@@ -1022,6 +1067,21 @@ void nbnxn_wait_for_gpu_force_reduction(const AtomLocality      gmx_unused atomL
 
     cudaStreamSynchronize(stream);
 
+}
+
+void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t *gpu_nbv)
+{
+    return static_cast<void *> (gpu_nbv->xrvec);
+}
+
+void* nbnxn_get_x_on_device_event(const gmx_nbnxn_cuda_t   *nb)
+{
+    return static_cast<void*> (nb->xAvailableOnDevice);
+}
+
+void nbnxn_wait_nonlocal_x_copy_D2H_done(gmx_nbnxn_cuda_t   *nb)
+{
+    nb->xNonLocalCopyD2HDone->waitForEvent();
 }
 
 } // namespace Nbnxm

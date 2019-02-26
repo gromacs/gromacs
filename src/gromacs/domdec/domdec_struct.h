@@ -74,6 +74,7 @@ namespace gmx
 {
 template <typename T> class HashedMap;
 class LocalAtomSetManager;
+class GpuHaloExchange;
 }
 
 typedef struct {
@@ -226,6 +227,9 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
 
     /* gmx_pme_recv_f buffer */
     std::vector<gmx::RVec> pmeForceReceiveBuffer;
+
+    /* GPU halo exchange object */
+    std::unique_ptr<gmx::GpuHaloExchange> gpuHaloExchange;
 };
 
 //! Are we the master node for domain decomposition

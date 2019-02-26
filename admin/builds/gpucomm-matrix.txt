@@ -13,14 +13,16 @@
 
 # Test an older version of CUDA
 # Test MPI with CUDA
-# Test MPMD PME with thread-MPI (library MPI not supported initially)
+# Test multiple PP ranks with separate PME rank
+# Test with thread-MPI (library MPI not supported initially)
 # Test GPU comm features in the above combination
-gcc-5 gpuhw=nvidia cuda-9.0 npme=1 nranks=2 thread-mpi openmp gpucomm
+gcc-5 gpuhw=nvidia cuda-9.0 npme=1 nranks=3 thread-mpi openmp gpucomm
 
 # Test newest gcc supported by newest CUDA at time of release
+# Test multiple PP ranks without separate PME rank
 # Test thread-MPI with CUDA
 # Test GPU comm features in the above combination
-gcc-8 gpuhw=nvidia nranks=1 gpu_id=1 cuda-10.1 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256 hwloc libhwloc-2.0.4 gpucomm
+gcc-8 gpuhw=nvidia nranks=2 gpu_id=1 cuda-10.1 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256 hwloc libhwloc-2.0.4 gpucomm
 
 # Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
@@ -36,3 +38,6 @@ gcc-7 gpuhw=none cuda-10.0 openmp no-tng release-with-assert gpucomm
 # Test OpenCL build with gpudev features
 # Test GPU comm on the OpenCL path where it is unsupported
 clang-8 openmp gpuhw=amd opencl-1.2 clFFT-2.14 simd=None gpucomm
+
+# Test a non-GPU build with the gpucomm optiom set
+gcc-8 double x11 no-tng fftpack simd=sse4.1 gpucomm
