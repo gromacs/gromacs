@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -314,6 +314,22 @@ std::string Path::stripExtension(const std::string &path)
         return path;
     }
     return path.substr(0, extPos);
+}
+
+std::string Path::getExtension(const std::string &path)
+{
+    size_t extPos = path.find_last_of('.');
+    if (extPos == std::string::npos)
+    {
+        return "";
+    }
+    size_t dirSeparatorPos = path.find_last_of(cDirSeparators);
+    if (dirSeparatorPos != std::string::npos &&
+        extPos < dirSeparatorPos)
+    {
+        return "";
+    }
+    return path.substr(extPos+1, std::string::npos);
 }
 
 std::string Path::concatenateBeforeExtension(const std::string &input, const std::string &stringToAdd)

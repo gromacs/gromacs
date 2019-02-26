@@ -70,6 +70,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 
 enum {
@@ -443,30 +444,6 @@ static void center_x(int ecenter, rvec x[], matrix box, int n, int nc, const int
             rvec_inc(x[i], dx);
         }
     }
-}
-
-static void mk_filenm(char *base, const char *ext, int ndigit, int file_nr,
-                      char out_file[])
-{
-    char nbuf[128];
-    int  nd = 0, fnr;
-
-    std::strcpy(out_file, base);
-    fnr = file_nr;
-    do
-    {
-        fnr /= 10;
-        nd++;
-    }
-    while (fnr > 0);
-
-    if (nd < ndigit)
-    {
-        std::strncat(out_file, "00000000000", ndigit-nd);
-    }
-    sprintf(nbuf, "%d.", file_nr);
-    std::strcat(out_file, nbuf);
-    std::strcat(out_file, ext);
 }
 
 static void check_trr(const char *fn)
@@ -901,7 +878,7 @@ int gmx_trjconv(int argc, char *argv[])
     gmx_bool          bSubTraj = FALSE, bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
     gmx_bool          bWriteFrame, bSplitHere;
     const char       *top_file, *in_file, *out_file = nullptr;
-    char              out_file2[256], *charpt;
+    char             *charpt;
     char             *outf_base = nullptr;
     const char       *outf_ext  = nullptr;
     char              top_title[256], timestr[32], stepstr[32], filemode[5];
@@ -933,6 +910,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     /* Check command line */
     in_file = opt2fn("-f", NFILE, fnm);
+    std::string separateOutFileFormat = gmx::formatString("%%0%d", nzero);
 
     if (ttrunc != -1)
     {
@@ -1773,9 +1751,11 @@ int gmx_trjconv(int argc, char *argv[])
                                                          std::floor(tzero+0.5),
                                                          std::floor(split_t+0.5));
                         }
+                        std::string separate_out_file;
                         if (bSeparate || bSplitHere)
                         {
-                            mk_filenm(outf_base, ftp2ext(ftp), nzero, file_nr, out_file2);
+                            separate_out_file = gmx::Path::concatenateBeforeExtension
+                                    (out_file, gmx::formatString(separateOutFileFormat.c_str(), file_nr));
                         }
 
                         std::string title;
@@ -1793,7 +1773,7 @@ int gmx_trjconv(int argc, char *argv[])
                                     {
                                         close_trx(trxout);
                                     }
-                                    trxout = open_trx(out_file2, filemode);
+                                    trxout = open_trx(separate_out_file.c_str(), filemode);
                                 }
                                 if (bSubTraj)
                                 {
@@ -1863,7 +1843,7 @@ int gmx_trjconv(int argc, char *argv[])
                                 title = gmx::formatString("%s%s%s", top_title, timestr, stepstr);
                                 if (bSeparate || bSplitHere)
                                 {
-                                    out = gmx_ffopen(out_file2, "w");
+                                    out = gmx_ffopen(separate_out_file, "w");
                                 }
                                 switch (ftp)
                                 {
@@ -1954,7 +1934,6 @@ int gmx_trjconv(int argc, char *argv[])
         fprintf(stderr, "\n");
 
         close_trx(trxin);
-        sfree(outf_base);
 
         if (bRmPBC)
         {

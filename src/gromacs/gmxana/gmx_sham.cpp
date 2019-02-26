@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 
 
@@ -429,7 +430,6 @@ static void do_sham(const char *fn, const char *ndx,
     double      *P;
     real       **PP, *W, *E, **WW, **EE, *S, **SS, *M, *bE;
     rvec         xxx;
-    char        *buf;
     double      *bfac, efac, bref, Pmax, Wmin, Wmax, Winf, Emin, Emax, Einf, Smin, Smax, Sinf;
     real        *delta;
     int          i, j, k, imin, len, index, *nbin, *bindex, bi;
@@ -779,10 +779,7 @@ static void do_sham(const char *fn, const char *ndx,
                 WW[i][j] = W[index3(ibox, i, j, nxyz[ZZ])];
             }
         }
-        snew(buf, std::strlen(xpm)+4);
-        sprintf(buf, "%s", xpm);
-        sprintf(&buf[std::strlen(xpm)-4], "12.xpm");
-        fp = gmx_ffopen(buf, "w");
+        fp = gmx_ffopen(gmx::Path::concatenateBeforeExtension(xpm, "12"), "w");
         write_xpm(fp, flags, "Gibbs Energy Landscape", "W (kJ/mol)", "PC1", "PC2",
                   ibox[0], ibox[1], axis_x, axis_y, WW, 0, gmax, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
@@ -793,8 +790,7 @@ static void do_sham(const char *fn, const char *ndx,
                 WW[i][j] = W[index3(ibox, i, nxyz[YY], j)];
             }
         }
-        sprintf(&buf[std::strlen(xpm)-4], "13.xpm");
-        fp = gmx_ffopen(buf, "w");
+        fp = gmx_ffopen(gmx::Path::concatenateBeforeExtension(xpm, "13"), "w");
         write_xpm(fp, flags, "SHAM Energy Landscape", "kJ/mol", "PC1", "PC3",
                   ibox[0], ibox[2], axis_x, axis_z, WW, 0, gmax, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
@@ -805,12 +801,10 @@ static void do_sham(const char *fn, const char *ndx,
                 WW[i][j] = W[index3(ibox, nxyz[XX], i, j)];
             }
         }
-        sprintf(&buf[std::strlen(xpm)-4], "23.xpm");
-        fp = gmx_ffopen(buf, "w");
+        fp = gmx_ffopen(gmx::Path::concatenateBeforeExtension(xpm, "23"), "w");
         write_xpm(fp, flags, "SHAM Energy Landscape", "kJ/mol", "PC2", "PC3",
                   ibox[1], ibox[2], axis_y, axis_z, WW, 0, gmax, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
-        sfree(buf);
     }
 }
 
