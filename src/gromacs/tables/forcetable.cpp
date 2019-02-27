@@ -1478,16 +1478,10 @@ t_forcetable *makeDispersionCorrectionTable(FILE                      *fp,
                                             real                       rtab,
                                             const char                *tabfn)
 {
-    t_forcetable *dispersionCorrectionTable = nullptr;
+    GMX_RELEASE_ASSERT(ic->vdwtype != evdwUSER || tabfn,
+                       "With VdW user tables we need a table file name");
 
-    if (tabfn == nullptr)
-    {
-        if (debug)
-        {
-            fprintf(debug, "No table file name passed, can not read table, can not do non-bonded interactions\n");
-        }
-        return dispersionCorrectionTable;
-    }
+    t_forcetable *dispersionCorrectionTable = nullptr;
 
     t_forcetable *fullTable = make_tables(fp, ic, tabfn, rtab, 0);
     /* Copy the contents of the table to one that has just dispersion

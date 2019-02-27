@@ -664,14 +664,21 @@ Integrator::do_tpi()
             bStateChanged = FALSE;
             bNS           = FALSE;
 
-            /* Calculate long range corrections to pressure and energy */
-            calc_dispcorr(inputrec, fr, state_global->box,
-                          lambda, pres, vir, &prescorr, &enercorr, &dvdlcorr);
-            /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
-            enerd->term[F_DISPCORR]  = enercorr;
-            enerd->term[F_EPOT]     += enercorr;
-            enerd->term[F_PRES]     += prescorr;
-            enerd->term[F_DVDL_VDW] += dvdlcorr;
+            if (fr->dispersionCorrection)
+            {
+                /* Calculate long range corrections to pressure and energy */
+                const DispersionCorrection::Correction correction =
+                    fr->dispersionCorrection->calculate(state_global->box, lambda);
+                /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
+                enerd->term[F_DISPCORR] = correction.energy;
+                enerd->term[F_EPOT]    += correction.energy;
+                enerd->term[F_PRES]    += correction.pressure;
+                enerd->term[F_DVDL]    += correction.dvdl;
+            }
+            else
+            {
+                enerd->term[F_DISPCORR]  = 0;
+            }
 
             epot               = enerd->term[F_EPOT];
             bEnergyOutOfBounds = FALSE;
