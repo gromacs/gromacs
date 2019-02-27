@@ -1,0 +1,1 @@
+This directory contains scripts used to support continuous integration testing infrastructure.

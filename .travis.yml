@@ -1,0 +1,77 @@
+# Recipe for build and integration testing on Travis-CI
+
+# See article on Validating .travis.yml files:
+# https://support.travis-ci.com/hc/en-us/articles/115002904174-Validating-travis-yml-files
+# For extra debugging of failed jobs, see
+# https://docs.travis-ci.com/user/common-build-problems/#Troubleshooting-Locally-in-a-Docker-Image
+
+language: cpp
+dist: xenial
+compiler: gcc
+
+#env:
+## Python 2.7 and 3.6 are the only generations provided by pyenv on Travis-CI out-of-the-box
+#  - CI_MPI=0 GCC=5 PY=3.6
+#  - CI_MPI=0 GCC=7 PY=3.6
+#  - CI_MPI=1 GCC=7 PY=3.6
+#  - CI_MPI=1 GCC=5 PY=3.6
+
+# For tag for GROMACS docker image, use
+#    git show -s --pretty=format:"%h" `git merge-base gerrit_master kassonLabFork`
+
+stages:
+  - name: gromacs
+    if: branch = kassonLabFork
+  - name: pygmxapi
+    if: branch != kassonLabFork
+
+jobs:
+  include:
+# Assume gmxapi/gromacs-dependencies-<matrix>:latest exists and is sufficient.
+#    # Build and push gmxapi/gromacs-dependencies-<matrix>:<tag> on kassonLabFork branch if the tag does not exist yet.
+#    - stage: build base image
+#      script:
+#      - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+#      - docker pull gmxapi/gromacs-dependencies-mpich
+#      - cd python_packaging/docker && docker build -t gmxapi/gromacs-dependencies-mpich .
+#      - docker images
+#      deploy:
+#      - docker push gmxapi/gromacs-dependencies-mpich
+
+    - stage: gromacs
+      env: MATRIX=mpich
+      install:
+        - docker pull gmxapi/gromacs-dependencies-$MATRIX
+        - docker build -t gromacs-$MATRIX --build-arg DOCKER_CORES=4 -f python_packaging/docker/gromacs.dockerfile .
+      script: true
+      after_script:
+        - source python_packaging/ci_scripts/gitrefs && export FORKPOINT
+        - docker tag gromacs-$MATRIX gmxapi/gromacs-$MATRIX:$FORKPOINT
+        - docker tag gromacs-$MATRIX gmxapi/gromacs-$MATRIX:latest
+        - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+        - docker push gmxapi/gromacs-$MATRIX:$FORKPOINT
+        - docker push gmxapi/gromacs-$MATRIX:latest
+    - stage: pygmxapi
+      env: MATRIX=mpich REF=fr0
+      before_script:
+        - source python_packaging/ci_scripts/gitrefs && export FORKPOINT
+        - docker pull gmxapi/gromacs-$MATRIX
+        - docker build -t ci-$MATRIX --build-arg REF=$FORKPOINT -f python_packaging/docker/ci.dockerfile python_packaging
+      script:
+        - docker run --rm ci-$MATRIX run_pytest
+        - docker run --rm ci-$MATRIX run_pytest_mpi
+        - docker run --rm ci-$MATRIX integrationtest
+      after_success:
+        - |
+          if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
+            docker tag ci-$MATRIX gmxapi/ci-$MATRIX:$REF
+            docker tag ci-$MATRIX gmxapi/ci-$MATRIX:`git show -s --pretty=format:"%h"`
+            docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+            docker push gmxapi/ci-$MATRIX:$REF
+            docker push gmxapi/ci-$MATRIX:`git show -s --pretty=format:"%h"`
+          fi
+
+# At some point, we should test more types of interactions between components, such as both static and dynamically
+# linked builds, and components built with different compilers.
+#
+# Reference https://docs.travis-ci.com/user/customizing-the-build/#The-Build-Lifecycle

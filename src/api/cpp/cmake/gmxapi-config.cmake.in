@@ -4,3 +4,5 @@ set(gmxapi_VERSION @GMXAPI_RELEASE@)
 # https://cmake.org/cmake/help/v3.4/module/CMakePackageConfigHelpers.html#command:configure_package_config_file
 include("${CMAKE_CURRENT_LIST_DIR}/gmxapi.cmake")
 check_required_components(gmxapi)
+
+set(gmxapi_EXPERIMENTAL TRUE)

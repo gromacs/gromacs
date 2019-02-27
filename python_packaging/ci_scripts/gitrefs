@@ -1,0 +1,6 @@
+# bash and git syntax to find relevant git commit hashes.
+
+# Get the (short) git revision hash of the `master` branch commit corresponding to
+# the relevant state of the `kassonLabFork` branch.
+git fetch --depth=50 origin gerrit_master
+FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
