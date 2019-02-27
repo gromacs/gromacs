@@ -36,6 +36,8 @@
 
 # Import system facilities
 import logging
+
+# Define `logger` attribute that is used by submodules to create sub-loggers.
 logging.getLogger().addHandler(logging.NullHandler(level=logging.DEBUG))
 logging.getLogger().setLevel(logging.DEBUG)
 logging.getLogger().info("Setting up logging for gmxapi package.")
@@ -43,4 +45,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.info("Importing gmxapi.")
 
-__all__ = []
+__all__ = ['operation', 'commandline_operation']
+
+from gmxapi import operation
+from gmxapi.commandline import commandline_operation
