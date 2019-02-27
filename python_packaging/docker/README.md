@@ -30,6 +30,18 @@ For integration testing here, we only want the `python_packaging` subdirectory.
 
 ## Running
 
+### acceptance.dockerfile
+
+For the interactive Jupyter notebook server, mapped to local port 8888:
+
+    docker run --rm -t -p 8888:8888 gmxapi/acceptance
+
+For a build that tests a feature branch that has been built and updated, add a tag, such as `gmxapi/acceptance:fr1`
+    
+For the a `bash` shell in a Conda environment under the `jovyan` user:
+
+    docker run --rm -ti gmxapi/acceptance bash
+
 ### ci.dockerfile
 
 The `entrypoint.sh` script activates the python venv and wraps commands in a `bash` `exec`.

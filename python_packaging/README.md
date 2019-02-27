@@ -76,7 +76,7 @@ will automatically build and run Docker-based tests for each outstanding
 feature branch.
 
 The Dockerfiles direct a few different Linux, Python, and GROMACS configurations,
-build and install Python packages, and provide a
+build and install the `gmxapi` and `sample_restraint` packages, and provide a
 few styles of testing through the `scripts` accessible through `entrypoint.sh`.
 
 In successive build stages, Travis-CI is directed to use a series of Docker images,
@@ -99,6 +99,14 @@ and the Dockerfiles from which they are built.
    This is recorded in the `kassonLabFork` `.travis.yml`.
 3. `gmxapi/ci-<matrix>:<tag>` starts with `gromacs-<matrix>` and merges in the
     `python_packaging` changes associated with the feature branch indicated by `<tag>`
+
+`acceptance.dockerfile` is based on the `jupyter/scipy-notebook` image and is probably
+too expensive to build in Travis-CI builds right now,
+but will be available to pull from `gmxapi/acceptance:frN` as
+feature test builds are available.
+It is primarily intended for running the acceptance tests interactively,
+though it also provides a useful alternative environment,
+in that the base Python installation is a user-space Conda install.
 
 Additional information in `python_packaging/docker/README.md`.
 
