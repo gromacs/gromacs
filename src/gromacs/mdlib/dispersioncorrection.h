@@ -38,21 +38,61 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_mtop_t;
+struct interaction_const_t;
 struct t_forcerec;
 struct t_inputrec;
 
-/* Computes and sets the average C6 and C12 params for LJ corrections */
-void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
-                      const gmx_mtop_t *mtop);
+namespace gmx
+{
+class MDLogger;
+} // namespace gmx
 
-/* Computs and sets energy and virial correction parameters based on the cut-off and LJ-ewald coefficient */
-void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
+class DispersionCorrection
+{
+    public:
+        DispersionCorrection(const gmx_mtop_t          &mtop,
+                             const t_inputrec          &inputrec,
+                             bool                       useBuckingham,
+                             int                        numAtomTypes,
+                             gmx::ArrayRef<const real>  nonbondedForceParameters);
 
-/* Computes and returns the dispersion correction for the pressure and energy */
-void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
-                   const matrix box, real lambda, tensor pres, tensor virial,
-                   real *prescorr, real *enercorr, real *dvdlcorr);
+        /* Print dispersion correction information to the log file */
+        void print(const gmx::MDLogger &mdlog) const;
+
+        /* Computes and sets energy and virial correction parameters based on the cut-off and LJ-ewald coefficient */
+        void setParameters(const interaction_const_t &ic,
+                           const char                *tableFileName);
+
+        /* Computes and returns the dispersion correction for the pressure and energy */
+        void calculate(const matrix box, real lambda, tensor pres, tensor virial,
+                       real *prescorr, real *enercorr, real *dvdlcorr) const;
+       
+    private:
+        int                  eDispCorr_;
+        int                  vdwType_;
+        int                  eFep_;
+        int                  numAtomsForDispersionCorrection_;
+        int                  numAtomsForTpi_;
+        struct t_forcetable *dispersionCorrectionTable_;
+
+        /* The shift of the shift or user potentials */
+        real enershiftsix_;
+        real enershifttwelve_;
+        /* Integrated differces for energy and virial with cut-off functions */
+        real enerdiffsix_;
+        real enerdifftwelve_;
+        real virdiffsix_;
+        real virdifftwelve_;
+        /* Constant for long range dispersion correction (average dispersion)
+         * for topology A/B ([0]/[1]) */
+        std::array<real, 2> avcsix_;
+        /* Constant for long range repulsion term. Relative difference of about
+         * 0.1 percent with 0.8 nm cutoffs. But hey, it's cheap anyway...
+         */
+        std::array<real, 2> avctwelve_;
+};
 
 #endif
