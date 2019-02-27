@@ -113,10 +113,6 @@ void initialize_lambdas(FILE               *fplog,
                         gmx::ArrayRef<real> lambda,
                         double             *lam0);
 
-void do_constrain_first(FILE *log, gmx::Constraints *constr,
-                        const t_inputrec *inputrec, const t_mdatoms *md,
-                        t_state *state);
-
 /* Routine in sim_util.c */
 
 gmx_bool use_GPU(const nonbonded_verlet_t *nbv);
