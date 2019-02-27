@@ -2129,11 +2129,16 @@ void init_forcerec(FILE                             *fp,
                 fr->rlist, ic->rcoulomb, fr->bBHAM ? "BHAM" : "LJ", ic->rvdw);
     }
 
-    fr->eDispCorr = ir->eDispCorr;
-    fr->numAtomsForDispersionCorrection = mtop->natoms;
     if (ir->eDispCorr != edispcNO)
     {
-        set_avcsixtwelve(fp, fr, mtop);
+        fr->dispersionCorrection = new DispersionCorrection(*mtop, *ir, fr->bBHAM,
+                                                            fr->ntype,
+                                                            gmx::arrayRefFromArray(fr->nbfp, fr->ntype*fr->ntype*2));
+        fr->dispersionCorrection->print(mdlog);
+    }
+    else
+    {
+        fr->dispersionCorrection = nullptr;
     }
 
     if (ir->implicit_solvent)
@@ -2239,14 +2244,6 @@ void init_forcerec(FILE                             *fp,
                 }
             }
         }
-    }
-
-    /* Tables might not be used for the potential modifier
-     * interactions per se, but we still need them to evaluate
-     * switch/shift dispersion corrections in this case. */
-    if (fr->eDispCorr != edispcNO)
-    {
-        fr->dispersionCorrectionTable = makeDispersionCorrectionTable(fp, ic, rtab, tabfn);
     }
 
     /* We want to use unmodified tables for 1-4 coulombic
@@ -2390,9 +2387,9 @@ void init_forcerec(FILE                             *fp,
         fprintf(fp, "\n");
     }
 
-    if (ir->eDispCorr != edispcNO)
+    if (fr->dispersionCorrection)
     {
-        calc_enervirdiff(fp, ir->eDispCorr, fr);
+        fr->dispersionCorrection->setParameters(*fr->ic, tabfn);
     }
 }
 
