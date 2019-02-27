@@ -41,6 +41,7 @@ endif()
 if(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
        lincs_cuda_impl.cu
+       settle_cuda_impl.cu
        )
 endif()
 
