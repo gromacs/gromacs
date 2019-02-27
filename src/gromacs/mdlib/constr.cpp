@@ -65,6 +65,7 @@
 #include "gromacs/mdlib/lincs_cuda.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/settle.h"
+#include "gromacs/mdlib/settle_cuda.h"
 #include "gromacs/mdlib/shake.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -183,6 +184,8 @@ class Constraints::Impl
         gmx_wallcycle               *wcycle;
         //! LINCS CUDA object or a dummy if CUDA is not enabled for LINCS.
         std::unique_ptr<LincsCuda>   lincsCuda;
+        //! SETTLE CUDA object or a dummy if CUDA is not enabled for SETTLE.
+        std::unique_ptr<SettleCuda>  settleCuda;
 };
 
 Constraints::~Constraints() = default;
@@ -527,41 +530,62 @@ Constraints::Impl::apply(bool                  bLog,
         switch (econq)
         {
             case ConstraintVariable::Positions:
+                if (settled != nullptr)
+                {
 #pragma omp parallel for num_threads(nth) schedule(static)
-                for (th = 0; th < nth; th++)
-                {
-                    try
+                    for (th = 0; th < nth; th++)
                     {
-                        if (th > 0)
+                        try
                         {
-                            clear_mat(vir_r_m_dr_th[th]);
-                        }
+                            if (th > 0)
+                            {
+                                clear_mat(vir_r_m_dr_th[th]);
+                            }
 
-                        csettle(settled,
-                                nth, th,
-                                pbc_null,
-                                x[0], xprime[0],
-                                invdt, v ? v[0] : nullptr,
-                                vir != nullptr,
-                                th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th],
-                                th == 0 ? &bSettleErrorHasOccurred0 : &bSettleErrorHasOccurred[th]);
+                            csettle(settled,
+                                    nth, th,
+                                    pbc_null,
+                                    x[0], xprime[0],
+                                    invdt, v ? v[0] : nullptr,
+                                    vir != nullptr,
+                                    th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th],
+                                    th == 0 ? &bSettleErrorHasOccurred0 : &bSettleErrorHasOccurred[th]);
+                        }
+                        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                     }
-                    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+                    inc_nrnb(nrnb, eNR_SETTLE, nsettle);
+                    if (v != nullptr)
+                    {
+                        inc_nrnb(nrnb, eNR_CONSTR_V, nsettle*3);
+                    }
+                    if (vir != nullptr)
+                    {
+                        inc_nrnb(nrnb, eNR_CONSTR_VIR, nsettle*3);
+                    }
                 }
-                inc_nrnb(nrnb, eNR_SETTLE, nsettle);
-                if (v != nullptr)
+                else
                 {
-                    inc_nrnb(nrnb, eNR_CONSTR_V, nsettle*3);
-                }
-                if (vir != nullptr)
-                {
-                    inc_nrnb(nrnb, eNR_CONSTR_VIR, nsettle*3);
+                    if (settleCuda != nullptr && getenv("GMX_SETTLE_GPU") != nullptr)
+                    {
+                        settleCuda->setPbc(pbc_null);
+                        settleCuda->copyCoordinatesToGpu(x, xprime);
+                        settleCuda->copyVelocitiesToGpu(v);
+                        settleCuda->apply(v   != nullptr, invdt,
+                                          vir != nullptr, vir_r_m_dr);
+                        settleCuda->copyCoordinatesFromGpu(xprime);
+                        if (v != nullptr)
+                        {
+                            settleCuda->copyVelocitiesFromGpu(v);
+                        }
+                    }
                 }
                 break;
             case ConstraintVariable::Velocities:
             case ConstraintVariable::Derivative:
             case ConstraintVariable::Force:
             case ConstraintVariable::ForceDispl:
+                GMX_RELEASE_ASSERT(settled != nullptr, "SETTLE projection correction is not implemented on GPU.");
+                //if(settled != nullptr){
 #pragma omp parallel for num_threads(nth) schedule(static)
                 for (th = 0; th < nth; th++)
                 {
@@ -601,6 +625,7 @@ Constraints::Impl::apply(bool                  bLog,
                 }
                 /* This is an overestimate */
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
+                //}
                 break;
             case ConstraintVariable::Deriv_FlexCon:
                 /* Nothing to do, since the are no flexible constraints in settles */
@@ -963,6 +988,10 @@ Constraints::Impl::setConstraints(const gmx_localtop_t &top,
         settle_set_constraints(settled,
                                &idef->il[F_SETTLE], md);
     }
+    else if (settleCuda != nullptr && getenv("GMX_SETTLE_GPU") != nullptr)
+    {
+        settleCuda->set(top.idef, md);
+    }
 
     /* Make a selection of the local atoms for essential dynamics */
     if (ed && cr->dd)
@@ -1128,8 +1157,17 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
 
         bInterCGsettles = inter_charge_group_settles(mtop);
 
-        settled         = settle_init(mtop);
-
+        if (getenv("GMX_SETTLE_GPU") != nullptr)
+        {
+            fprintf(log, "Initializing SETTLE on a GPU for %d atoms\n", mtop.natoms);
+            GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr), "CUDA version of SETTLE is not supported with domain decomposition");
+            gmx_omp_nthreads_set(emntSETTLE, 1);
+            settleCuda = std::make_unique<SettleCuda>(mtop.natoms, mtop);
+        }
+        else
+        {
+            settled         = settle_init(mtop);
+        }
         /* Make an atom to settle index for use in domain decomposition */
         for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
         {
