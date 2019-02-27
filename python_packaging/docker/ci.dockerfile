@@ -69,9 +69,7 @@ RUN . $HOME/testing/bin/activate && \
      pip install . \
     )
 
-# Enable this dir when there is something to test (i.e. fr1)
-#ADD --chown=testing:testing src/test /home/testing/gmxapi/test
-ADD --chown=testing:testing acceptance /home/testing/acceptance
+ADD --chown=testing:testing src/test /home/testing/gmxapi/test
 ADD --chown=testing:testing scripts /home/testing/scripts
 ADD --chown=testing:testing test /home/testing/test
 

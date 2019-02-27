@@ -41,7 +41,7 @@ Attributes:
 
 """
 
-# TODO: configure with CMake
+# TODO: (pending infrastructure and further discussion) Configure with CMake.
 # __version__ = "@PROJECT_VERSION@"
 # major = @PROJECT_VERSION_MAJOR@
 # minor = @PROJECT_VERSION_MINOR@
@@ -57,7 +57,7 @@ patch = 0
 # Note: this is not automatically updated. See RELEASE.txt and https://github.com/kassonlab/gmxapi/issues/152
 release = False
 
-_named_features = []
+_named_features = ['fr1']
 
 
 class FeatureError(GmxapiError):
