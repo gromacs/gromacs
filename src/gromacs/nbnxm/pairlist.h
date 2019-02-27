@@ -80,8 +80,8 @@ enum class PairlistType : int
     Count
 };
 
-static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = { 4, 4, 4, 8 };
-static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = { 2, 4, 8, 8 };
+static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = { { 4, 4, 4, 8 } };
+static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = { { 2, 4, 8, 8 } };
 
 /* With CPU kernels the i-cluster size is always 4 atoms. */
 static constexpr int c_nbnxnCpuIClusterSize = 4;
