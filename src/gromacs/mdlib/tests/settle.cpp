@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
 
 #include "gromacs/mdlib/settle.h"
 
+#include "config.h"
+
 #include <tuple>
 #include <vector>
 
@@ -43,6 +45,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/settle_cuda.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
@@ -90,8 +93,9 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
         t_pbc                  pbcXYZ_;
 
         SettleTest() :
-            updatedPositions_(std::begin(c_waterPositions), std::end(c_waterPositions)),
-            velocities_(updatedPositions_.size(), { 0, 0, 0 })
+            updatedPositions_( std::begin(c_waterPositions), std::end(c_waterPositions) ),
+            velocities_( updatedPositions_.size(), { 0, 0, 0 }
+                         )
         {
             set_pbc(&pbcNone_, epbcNONE, g_box);
             set_pbc(&pbcXYZ_, epbcXYZ, g_box);
@@ -166,6 +170,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
     // Set up the masses.
     t_mdatoms         mdatoms;
     std::vector<real> mass, massReciprocal;
+    mtop.moltype[0].atoms.atom = static_cast<t_atom*>(calloc(numSettles*atomsPerSettle, sizeof(t_atom)));
     const real        oxygenMass = 15.9994, hydrogenMass = 1.008;
     for (int i = 0; i < numSettles; ++i)
     {
@@ -175,24 +180,37 @@ TEST_P(SettleTest, SatisfiesConstraints)
         massReciprocal.push_back(1./oxygenMass);
         massReciprocal.push_back(1./hydrogenMass);
         massReciprocal.push_back(1./hydrogenMass);
+        mtop.moltype[0].atoms.atom[i*atomsPerSettle + 0].m = oxygenMass;
+        mtop.moltype[0].atoms.atom[i*atomsPerSettle + 1].m = hydrogenMass;
+        mtop.moltype[0].atoms.atom[i*atomsPerSettle + 2].m = hydrogenMass;
     }
     mdatoms.massT   = mass.data();
     mdatoms.invmass = massReciprocal.data();
     mdatoms.homenr  = numSettles * atomsPerSettle;
 
-    // Finally make the settle data structures
-    settledata    *settled = settle_init(mtop);
     const t_ilist  ilist   = { mtop.moltype[0].ilist[F_SETTLE].size(), 0, mtop.moltype[0].ilist[F_SETTLE].iatoms.data(), 0 };
-    settle_set_constraints(settled, &ilist, mdatoms);
 
     // Copy the original positions from the array of doubles to a vector of reals
     std::vector<gmx::RVec> startingPositions(std::begin(c_waterPositions), std::end(c_waterPositions));
 
+    const real             reciprocalTimeStep = 1.0/0.002;
+    tensor                 virial             = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+
+#if GMX_GPU == GMX_GPU_CUDA
+    // Make a copy of all data-structures for CUDA code testing
+    std::vector<gmx::RVec> updatedPositionsCuda  = updatedPositions_;
+    std::vector<gmx::RVec> velocitiesCuda        = velocities_;
+    tensor                 virialCuda            = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+#endif
+
+    // Finally make the settle data structures
+    settledata    *settled = settle_init(mtop);
+
+    settle_set_constraints(settled, &ilist, mdatoms);
+
     // Run the test
     bool       errorOccured;
-    tensor     virial             = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     int        numThreads         = 1, threadIndex = 0;
-    const real reciprocalTimeStep = 1.0/0.002;
     csettle(settled, numThreads, threadIndex,
             usePbc ? &pbcXYZ_ : &pbcNone_,
             static_cast<real *>(startingPositions[0]), static_cast<real *>(updatedPositions_[0]), reciprocalTimeStep,
@@ -226,11 +244,14 @@ TEST_P(SettleTest, SatisfiesConstraints)
         {
             for (int d = 0; d < DIM; ++d)
             {
-                EXPECT_TRUE(useVelocities == (0. != velocities_[i*3 + j][d])) << formatString("for water %d velocity atom %d dim %d", i, j, d) << testDescription;
+                EXPECT_TRUE(useVelocities == (0. != velocities_[i*3 + j][d]))
+                << formatString("for water %d velocity atom %d dim %d", i, j, d)
+                << testDescription;
             }
         }
     }
 
+    FloatingPointTolerance toleranceVirial = absoluteTolerance(0.000001);
     // This merely tests whether the viral was updated from
     // the starting values of zero (or not), but not whether
     // any update was correct.
@@ -238,9 +259,64 @@ TEST_P(SettleTest, SatisfiesConstraints)
     {
         for (int dd = 0; dd < DIM; ++dd)
         {
-            EXPECT_TRUE(calcVirial == (0. != virial[d][dd])) << formatString("for virial component[%d][%d] ", d, dd) << testDescription;
+
+            EXPECT_TRUE(calcVirial == (0. != virial[d][dd]))
+            << formatString("for virial component[%d][%d] ", d, dd)
+            << testDescription;
+
+            if (calcVirial)
+            {
+                EXPECT_REAL_EQ_TOL(virial[d][dd], virial[dd][d], toleranceVirial)
+                << formatString("Virial is not symmetrical for [%d][%d] ", d, dd)
+                << testDescription;
+            }
         }
     }
+
+#if GMX_GPU == GMX_GPU_CUDA
+    // Run the CUDA code and check if it gives identical results to CPU code
+    t_idef                        idef;
+    idef.il[F_SETTLE] = ilist;
+    std::unique_ptr<SettleCuda>   settleCuda = std::make_unique<SettleCuda>(mdatoms.homenr, mtop);
+    settleCuda->copyCoordinatesToGpu(as_rvec_array(startingPositions.data()),
+                                     as_rvec_array(updatedPositionsCuda.data()));
+    settleCuda->copyVelocitiesToGpu(as_rvec_array(velocitiesCuda.data()));
+    settleCuda->setPbc(usePbc ? &pbcXYZ_ : &pbcNone_);
+    settleCuda->set(idef, mdatoms);
+    settleCuda->apply(useVelocities, reciprocalTimeStep, calcVirial, virialCuda);
+    settleCuda->copyCoordinatesFromGpu(as_rvec_array(updatedPositionsCuda.data()));
+    settleCuda->copyVelocitiesFromGpu(as_rvec_array(velocitiesCuda.data()));
+
+    FloatingPointTolerance toleranceCudaCpu = absoluteTolerance(0.0001);
+
+    for (unsigned i = 0; i < updatedPositionsCuda.size(); i++)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            EXPECT_REAL_EQ_TOL(updatedPositionsCuda.at(i)[d], updatedPositions_.at(i)[d], toleranceCudaCpu)
+            << formatString("Different coordinates in CUDA and CPU codes for particle %d component %d ", i, d)
+            << testDescription;
+        }
+    }
+    for (unsigned i = 0; i < velocitiesCuda.size(); i++)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            EXPECT_REAL_EQ_TOL(velocitiesCuda.at(i)[d], velocities_.at(i)[d], toleranceCudaCpu)
+            << formatString("Different velocities in CUDA and CPU codes for particle %d component %d ", i, d)
+            << testDescription;
+        }
+    }
+    for (int d1 = 0; d1 < DIM; d1++)
+    {
+        for (int d2 = 0; d2 < DIM; d2++)
+        {
+            EXPECT_REAL_EQ_TOL(virialCuda[d1][d2], virial[d1][d2], toleranceCudaCpu)
+            << formatString("Different virial components in CUDA and CPU codes for components %d and %d ", d1, d2)
+            << testDescription;
+        }
+    }
+#endif
 }
 
 // Scan the full Cartesian product of numbers of SETTLE interactions
@@ -248,7 +324,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
 // hardware SIMD widths), and whether or not we use PBC, velocities or
 // calculate the virial contribution.
 INSTANTIATE_TEST_CASE_P(WithParameters, SettleTest,
-                            ::testing::Combine(::testing::Values(1, 4, 7),
+                            ::testing::Combine(::testing::Values(1, 2, 4, 5, 7, 10, 12, 15, 17),
                                                    ::testing::Bool(),
                                                    ::testing::Bool(),
                                                    ::testing::Bool()));
