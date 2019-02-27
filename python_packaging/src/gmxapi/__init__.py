@@ -44,3 +44,5 @@ logger.setLevel(logging.DEBUG)
 logger.info("Importing gmxapi.")
 
 __all__ = []
+
+from . import _gmxapi
