@@ -31,42 +31,48 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+"""Utility functions supporting the Gromacs Python interface.
+"""
 
-# Python setuptools script to build and install the gmxapi Python interface
-# from a GROMACS installation directory.
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-# Usage note: things go smoothly when we stick to the setup.py convention of
-# having a package source directory with the same name as the package at the
-# same level as the setup.py script and only expect `pip install .` in the
-# setup.py directory. If we play with the layout more, it is hard to keep all
-# of the `pip` and `setup.py` cases working as expected. This is annoying
-# because running the Python interpreter immediately from the same directory
-# can find the uninstalled source instead of the installed package. We can
-# ease this pain by building an sdist in the enclosing CMake build scope
-# and encouraging users to `pip install the_sdist.archive`. Otherwise, we
-# just have to document that we only support full build-install of the Python
-# package from the directory containing setup.py, which may clutter that
-# directory with some artifacts.
+__all__ = ['which']
 
-from setuptools import setup
+import os
 
-setup(
-    name='gmxapi',
+from gmxapi import exceptions
 
-    # TODO: (pending infrastructure and further discussion) Replace with CMake variables from GMXAPI version.
-    version='0.1.0.dev1',
-    python_requires='>=3.4, <4',
-    setup_requires=['setuptools>=28'],
 
-    packages=['gmxapi'],
+def which(command):
+    """
+    Get the full path of an executable that can be resolved by the shell.
 
-    author='M. Eric Irrgang',
-    author_email='info@gmxapi.org',
-    description='gmxapi Python interface for GROMACS',
-    license='LGPL',
-    url='http://gmxapi.org/',
+    :param command: executable in the user's PATH
+    :return: Absolute path of executable.
 
-    # The installed package will contain compiled C++ extensions that cannot be loaded
-    # directly from a zip file.
-    zip_safe=False
-)
+    Ref: https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+    """
+    try:
+        command_path = os.fsencode(command)
+    except:
+        raise exceptions.ValueError("Argument must be representable on the command line.")
+    if os.path.exists(command_path):
+        command_path = os.path.abspath(command_path)
+        if os.access(command_path, os.X_OK):
+            return command_path
+    else:
+        # Try to find the executable on the default PATH
+        from shutil import which
+        return which(command)
+
+
+def _test():
+    import doctest
+    doctest.testmod()
+
+
+if __name__ == "__main__":
+    _test()
