@@ -163,12 +163,11 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      matrix box, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags)
 {
-    tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat,
              bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
     gmx_bool bCheckNumberOfBondedInteractions;
-    real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
+    real     dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
     bStopCM                          = ((flags & CGLO_STOPCM) != 0);
@@ -283,17 +282,27 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
 
     /* ##########  Long range energy information ###### */
 
-    if (bEner || bPres || bConstrain)
+    real   prescorr  = 0;
+    tensor corr_pres = { { 0 } };
+    tensor corr_vir  = { { 0 } };
+    if (bEner || bPres)
     {
-        calc_dispcorr(ir, fr, box, state->lambda[efptVDW],
-                      corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
-    }
+        real enercorr = 0;
+        real dvdlcorr = 0;
 
-    if (bEner)
-    {
-        enerd->term[F_DISPCORR]  = enercorr;
-        enerd->term[F_EPOT]     += enercorr;
-        enerd->term[F_DVDL_VDW] += dvdlcorr;
+        if (fr->dispersionCorrection)
+        {
+            fr->dispersionCorrection->calculate(box, state->lambda[efptVDW],
+                                                corr_pres, corr_vir, &prescorr,
+                                                &enercorr, &dvdlcorr);
+        }
+
+        if (bEner)
+        {
+            enerd->term[F_DISPCORR]  = enercorr;
+            enerd->term[F_EPOT]     += enercorr;
+            enerd->term[F_DVDL_VDW] += dvdlcorr;
+        }
     }
 
     /* ########## Now pressure ############## */
