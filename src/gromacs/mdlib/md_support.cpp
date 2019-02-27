@@ -283,10 +283,12 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
 
     /* ##########  Long range energy information ###### */
 
-    if (bEner || bPres || bConstrain)
+    if ((bEner || bPres || bConstrain) &&
+	fr->dispersionCorrection)
     {
-        calc_dispcorr(ir, fr, box, state->lambda[efptVDW],
-                      corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
+        fr->dispersionCorrection->calculate(box, state->lambda[efptVDW],
+					    corr_pres, corr_vir, &prescorr,
+					    &enercorr, &dvdlcorr);
     }
 
     if (bEner)
