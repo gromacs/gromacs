@@ -169,7 +169,8 @@ static bool isDeviceSane(const gmx_device_info_t *devInfo,
         return false;
     }
 
-    const char *lines[] = { "__kernel void dummyKernel(){}" };
+    // Some compilers such as Apple's require kernel functions to have at least one argument
+    const char *lines[] = { "__kernel void dummyKernel(__global void* input){}" };
     ClProgram   program(clCreateProgramWithSource(context, 1, lines, nullptr, &status));
     if (status != CL_SUCCESS)
     {
@@ -189,6 +190,8 @@ static bool isDeviceSane(const gmx_device_info_t *devInfo,
         errorMessage->assign(makeOpenClInternalErrorString("clCreateKernel", status));
         return false;
     }
+
+    clSetKernelArg(kernel, 0, sizeof(void*), nullptr);
 
     const size_t localWorkSize = 1, globalWorkSize = 1;
     if ((status =
