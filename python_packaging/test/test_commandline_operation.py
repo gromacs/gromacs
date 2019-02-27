@@ -32,41 +32,31 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Python setuptools script to build and install the gmxapi Python interface
-# from a GROMACS installation directory.
+"""Test the gmxapi.commandline_operation wrapper tool.
 
-# Usage note: things go smoothly when we stick to the setup.py convention of
-# having a package source directory with the same name as the package at the
-# same level as the setup.py script and only expect `pip install .` in the
-# setup.py directory. If we play with the layout more, it is hard to keep all
-# of the `pip` and `setup.py` cases working as expected. This is annoying
-# because running the Python interpreter immediately from the same directory
-# can find the uninstalled source instead of the installed package. We can
-# ease this pain by building an sdist in the enclosing CMake build scope
-# and encouraging users to `pip install the_sdist.archive`. Otherwise, we
-# just have to document that we only support full build-install of the Python
-# package from the directory containing setup.py, which may clutter that
-# directory with some artifacts.
+gmxapi.commandline_operation() provides additional logic over gmxapi.make_operation
+to conveniently wrap command line tools.
+"""
 
-from setuptools import setup
+import pytest
+import unittest
 
-setup(
-    name='gmxapi',
+from gmxapi import commandline_operation
 
-    # TODO: (pending infrastructure and further discussion) Replace with CMake variables from GMXAPI version.
-    version='0.1.0.dev1',
-    python_requires='>=3.4, <4',
-    setup_requires=['setuptools>=28'],
+# Decorator to mark tests that are expected to fail
+xfail = pytest.mark.xfail
 
-    packages=['gmxapi'],
+class CommandLineOperationSimpleTestCase(unittest.TestCase):
+    """Test creation and execution of command line wrapper.
 
-    author='M. Eric Irrgang',
-    author_email='info@gmxapi.org',
-    description='gmxapi Python interface for GROMACS',
-    license='LGPL',
-    url='http://gmxapi.org/',
+    Tests associated with FR1.
+    """
+    def test_true(self):
+        operation = commandline_operation(executable='true')
+        operation.run()
+        assert operation.output.returncode == 0
 
-    # The installed package will contain compiled C++ extensions that cannot be loaded
-    # directly from a zip file.
-    zip_safe=False
-)
+    def test_false(self):
+        operation = commandline_operation(executable='false')
+        operation.run()
+        assert operation.output.returncode == 1
