@@ -290,6 +290,11 @@ bool inter_charge_group_constraints(const gmx_mtop_t &mtop);
 /*! \brief Returns whether there are inter charge group settles */
 bool inter_charge_group_settles(const gmx_mtop_t &mtop);
 
+/*! \brief Constrain the initial coordinates and velocities */
+void do_constrain_first(FILE *log, gmx::Constraints *constr,
+                        const t_inputrec *inputrec, const t_mdatoms *md,
+                        t_state *state);
+
 }  // namespace gmx
 
 #endif
