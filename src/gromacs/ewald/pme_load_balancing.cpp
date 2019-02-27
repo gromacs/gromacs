@@ -1015,7 +1015,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
 
         if (ir.eDispCorr != edispcNO)
         {
-            calc_enervirdiff(nullptr, ir.eDispCorr, fr);
+            fr->dispersionCorrection->setParameters(*fr->ic);
         }
     }
 
