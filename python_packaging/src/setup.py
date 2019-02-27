@@ -48,17 +48,19 @@
 # package from the directory containing setup.py, which may clutter that
 # directory with some artifacts.
 
-from setuptools import setup
+from skbuild import setup
 
 setup(
     name='gmxapi',
 
     # TODO: replace with CMake variables from GMXAPI version.
-    version='0.1.0.dev0',
+    version='0.1.0.dev0+fr7',
     python_requires='>=3.4, <4',
     setup_requires=['setuptools>=28'],
 
     packages=['gmxapi'],
+    cmake_args=['-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=10.9',
+                '-DCMAKE_OSX_ARCHITECTURES:STRING=x86_64'],
 
     author='M. Eric Irrgang',
     author_email='info@gmxapi.org',

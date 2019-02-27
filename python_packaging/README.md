@@ -25,14 +25,19 @@ This allows C++ extension modules to be built against a user-chosen GROMACS inst
 but for a Python interpreter that is very likely different from that used
 by the system administrator who installed GROMACS.
 
-To test, first install GROMACS to `/path/to/gromacs`.
-Then, install and test in a Python virtualenv.
+To build and install the Python package,
+first install GROMACS to `/path/to/gromacs`.
+Then, install the package in a Python virtualenv.
 
     source /path/to/gromacs/bin/GMXRC
     python3 -m venv $HOME/somevirtualenv
     source $HOME/somevirtualenv/bin/activate
     (cd src && pip install -r requirements.txt && pip install .)
     python -c 'import gmxapi as gmx'
+
+Use `pytest` to run unit tests and integration tests.
+
+    pip install -r requirements-test.txt
     pytest src/test
     pytest test
 
@@ -89,13 +94,41 @@ Hint: the fork point from `master` and the current git ref can be set as environ
     FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base gerrit_master HEAD`)
     REF=`git show -s --pretty=format:"%h"`
 
-# Cross compiling
+## External project code
+
+Refer to `./src/external/README.md` for current details on the copied external
+sources.
+
+# scikit-build
+
+For the C++ extension module `_gmxapi`, 
+[scikit-build](https://scikit-build.readthedocs.io/en/latest/)
+provides glue between Python package tools and CMake infrastructure in `./src`.
+Scikit-build is installed with Python packaging tools automatically with
+`pip install -r requirements.txt`, as above.
+
+Note: scikit-build is only required for convenient management of the Python
+build environment and packaging. See https://redmine.gromacs.org/issues/2896
+
+# pybind11
+
+Python bindings are expressed in C++ using the
+[pybind11](https://pybind11.readthedocs.io/en/stable/)
+template library.
+The pybind11 repository is mirrored in GROMACS project sources and
+installed with GROMACS for convenience and reproducibility.
+
+# Build and install
+
+## Cross compiling
 
 On some systems, GROMACS will have been built and installed for a different
 architecture than the system on which the Python package will be compiled.
 We need to use CMake Tool-chains to support cross-compiling for the target architecture.
 
-# Offline installation
+Note: scikit-build can use CMake Toolchains to properly handle `pip` builds.
+
+## Offline installation
 
 The `pip install` options `--no-index` and `--find-links` allow for an offline stash of package archives so that
 satisfying dependencies for a new virtualenv does not require network access or lengthy build times.
