@@ -54,6 +54,7 @@ struct gmx_ns_t;
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
+class DispersionCorrection;
 struct t_forcetable;
 struct t_QMMMrec;
 
@@ -166,25 +167,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     rvec   mu_tot[2] = { { 0 } };
 
     /* Dispersion correction stuff */
-    int                  eDispCorr = 0;
-    int                  numAtomsForDispersionCorrection = 0;
-    struct t_forcetable *dispersionCorrectionTable       = nullptr;
-
-    /* The shift of the shift or user potentials */
-    real enershiftsix    = 0;
-    real enershifttwelve = 0;
-    /* Integrated differces for energy and virial with cut-off functions */
-    real enerdiffsix    = 0;
-    real enerdifftwelve = 0;
-    real virdiffsix     = 0;
-    real virdifftwelve  = 0;
-    /* Constant for long range dispersion correction (average dispersion)
-     * for topology A/B ([0]/[1]) */
-    real avcsix[2] = { 0 };
-    /* Constant for long range repulsion term. Relative difference of about
-     * 0.1 percent with 0.8 nm cutoffs. But hey, it's cheap anyway...
-     */
-    real avctwelve[2] = { 0 };
+    std::unique_ptr<DispersionCorrection> dispersionCorrection;
 
     /* Fudge factors */
     real fudgeQQ = 0;

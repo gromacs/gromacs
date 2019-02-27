@@ -162,12 +162,11 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      matrix box, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags)
 {
-    tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat,
              bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
     gmx_bool bCheckNumberOfBondedInteractions;
-    real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
+    real     dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
     bStopCM                          = ((flags & CGLO_STOPCM) != 0);
@@ -280,25 +279,10 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
 
-    /* ##########  Long range energy information ###### */
-
-    if (bEner || bPres || bConstrain)
-    {
-        calc_dispcorr(ir, fr, box, state->lambda[efptVDW],
-                      corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
-    }
-
-    if (bEner)
-    {
-        enerd->term[F_DISPCORR]  = enercorr;
-        enerd->term[F_EPOT]     += enercorr;
-        enerd->term[F_DVDL_VDW] += dvdlcorr;
-    }
-
     /* ########## Now pressure ############## */
+    // TODO: For the VV integrator bConstrain is needed in the conditional. This is confusing, so get rid of this.
     if (bPres || bConstrain)
     {
-
         m_add(force_vir, shake_vir, total_vir);
 
         /* Calculate pressure and apply LR correction if PPPM is used.
@@ -306,16 +290,32 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
          */
 
         enerd->term[F_PRES] = calc_pres(fr->ePBC, ir->nwall, box, ekind->ekin, total_vir, pres);
+    }
 
+    /* ##########  Long range energy information ###### */
+    if ((bEner || bPres) && fr->dispersionCorrection)
+    {
         /* Calculate long range corrections to pressure and energy */
         /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT],
            and computes enerd->term[F_DISPCORR].  Also modifies the
-           total_vir and pres tesors */
+           total_vir and pres tensors */
 
-        m_add(total_vir, corr_vir, total_vir);
-        m_add(pres, corr_pres, pres);
-        enerd->term[F_PDISPCORR] = prescorr;
-        enerd->term[F_PRES]     += prescorr;
+        const DispersionCorrection::Correction correction =
+            fr->dispersionCorrection->calculate(box, state->lambda[efptVDW]);
+
+        if (bEner)
+        {
+            enerd->term[F_DISPCORR]  = correction.energy;
+            enerd->term[F_EPOT]     += correction.energy;
+            enerd->term[F_DVDL_VDW] += correction.dvdl;
+        }
+        if (bPres)
+        {
+            correction.correctVirial(total_vir);
+            correction.correctPressure(pres);
+            enerd->term[F_PDISPCORR] = correction.pressure;
+            enerd->term[F_PRES]     += correction.pressure;
+        }
     }
 }
 
