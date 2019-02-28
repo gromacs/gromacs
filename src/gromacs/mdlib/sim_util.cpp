@@ -682,6 +682,83 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
     }
 }
 
+/*! \brief Hack structure with force ouput buffers for do_force */
+struct ForceOutputs
+{
+    //! Constructor
+    ForceOutputs(rvec *f, gmx::ForceWithVirial const forceWithVirial) :
+        f(f),
+        forceWithVirial(forceWithVirial) {}
+
+    //! Force output buffer used by legacy modules
+    rvec                 *const f;
+    //! Force with direct virial contribution (if there are any)
+    gmx::ForceWithVirial        forceWithVirial;
+};
+
+/*! \brief Set up the different force buffers; also does clearing.
+ *
+ * \param[in] fr        force record pointer
+ * \param[in] inputrec  input record
+ * \param[in] force     force array
+ * \param[in] bDoForces True if force are computed this step
+ * \param[in] doVirial  True if virial is computed this step
+ * \param[out] wcycle   wallcycle recording structure
+ *
+ * \returns             Cleared force output structure
+ */
+static ForceOutputs
+setupForceOutputs(const t_forcerec                    *fr,
+                  const t_inputrec                    &inputrec,
+                  gmx::ArrayRefWithPadding<gmx::RVec> &force,
+                  const bool                           bDoForces,
+                  const bool                           doVirial,
+                  gmx_wallcycle_t                      wcycle)
+{
+    wallcycle_sub_start(wcycle, ewcsCLEAR_FORCE_BUFFER);
+
+    /* Temporary solution until all routines take PaddedRVecVector */
+    rvec *const f = as_rvec_array(force.unpaddedArrayRef().data());
+    if (bDoForces)
+    {
+        /* Clear the short- and long-range forces */
+        clear_rvecs_omp(fr->natoms_force_constr, f);
+    }
+
+    /* If we need to compute the virial, we might need a separate
+     * force buffer for algorithms for which the virial is calculated
+     * directly, such as PME. Otherwise, forceWithVirial uses the
+     * the same force (f in legacy calls) buffer as other algorithms.
+     */
+    const bool useSeparateForceWithVirialBuffer = (bDoForces && (doVirial && fr->haveDirectVirialContributions));
+
+
+    /* forceWithVirial uses the local atom range only */
+    gmx::ForceWithVirial forceWithVirial (useSeparateForceWithVirialBuffer ?
+                                          *fr->forceBufferForDirectVirialContributions : force.unpaddedArrayRef(),
+                                          doVirial);
+
+    if (useSeparateForceWithVirialBuffer)
+    {
+        /* TODO: update comment
+         * We only compute forces on local atoms. Note that vsites can
+         * spread to non-local atoms, but that part of the buffer is
+         * cleared separately in the vsite spreading code.
+         */
+        clear_rvecs_omp(forceWithVirial.force_.size(), as_rvec_array(forceWithVirial.force_.data()));
+    }
+
+    if (inputrec.bPull && pull_have_constraint(inputrec.pull_work))
+    {
+        clear_pull_forces(inputrec.pull_work);
+    }
+
+    wallcycle_sub_stop(wcycle, ewcsCLEAR_FORCE_BUFFER);
+
+    return ForceOutputs(f, forceWithVirial);
+}
+
+
 static void do_force_cutsVERLET(FILE *fplog,
                                 const t_commrec *cr,
                                 const gmx_multisim_t *ms,
@@ -1076,45 +1153,8 @@ static void do_force_cutsVERLET(FILE *fplog,
      */
     wallcycle_start(wcycle, ewcFORCE);
 
-    // Set up/clear the different force buffers
-    wallcycle_sub_start(wcycle, ewcsCLEAR_FORCE_BUFFER);
-
-    /* Temporary solution until all routines take PaddedRVecVector */
-    rvec *const f = as_rvec_array(force.unpaddedArrayRef().data());
-    if (bDoForces)
-    {
-        /* Clear the short- and long-range forces */
-        clear_rvecs_omp(fr->natoms_force_constr, f);
-    }
-
-    /* If we need to compute the virial, we might need a separate
-     * force buffer for algorithms for which the virial is calculated
-     * directly, such as PME. Otherwise, forceWithVirial uses the
-     * the same force (f in legacy calls) buffer as other algorithms.
-     */
-    const bool  useSeparateForceWithVirialBuffer = (bDoForces && ((flags & GMX_FORCE_VIRIAL) != 0 && fr->haveDirectVirialContributions));
-
-
-    /* forceWithVirial uses the local atom range only */
-    gmx::ForceWithVirial forceWithVirial(useSeparateForceWithVirialBuffer ?
-                                         *fr->forceBufferForDirectVirialContributions : force.unpaddedArrayRef(),
-                                         (flags & GMX_FORCE_VIRIAL) != 0);
-
-    if (useSeparateForceWithVirialBuffer)
-    {
-        /* TODO: update comment
-         * We only compute forces on local atoms. Note that vsites can
-         * spread to non-local atoms, but that part of the buffer is
-         * cleared separately in the vsite spreading code.
-         */
-        clear_rvecs_omp(forceWithVirial.force_.size(), as_rvec_array(forceWithVirial.force_.data()));
-    }
-
-    if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
-    {
-        clear_pull_forces(inputrec->pull_work);
-    }
-    wallcycle_sub_stop(wcycle, ewcsCLEAR_FORCE_BUFFER);
+    // set up and clear force outputs
+    struct ForceOutputs forceOut = setupForceOutputs(fr, *inputrec, force, bDoForces, ((flags & GMX_FORCE_VIRIAL) != 0), wcycle);
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
      * We do this before calling do_force_lowlevel, because in that
@@ -1137,14 +1177,14 @@ static void do_force_cutsVERLET(FILE *fplog,
          */
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
         nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::Local,
-                                      fr, as_rvec_array(x.unpaddedArrayRef().data()), f, *mdatoms,
+                                      fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, *mdatoms,
                                       inputrec->fepvals, lambda,
                                       enerd, flags, nrnb);
 
         if (havePPDomainDecomposition(cr))
         {
             nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::NonLocal,
-                                          fr, as_rvec_array(x.unpaddedArrayRef().data()), f, *mdatoms,
+                                          fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, *mdatoms,
                                           inputrec->fepvals, lambda,
                                           enerd, flags, nrnb);
         }
@@ -1165,7 +1205,7 @@ static void do_force_cutsVERLET(FILE *fplog,
          */
         wallcycle_stop(wcycle, ewcFORCE);
 
-        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, f, wcycle);
+        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, forceOut.f, wcycle);
 
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
@@ -1188,7 +1228,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
-                      as_rvec_array(x.unpaddedArrayRef().data()), hist, f, &forceWithVirial, enerd, fcd,
+                      as_rvec_array(x.unpaddedArrayRef().data()), hist, forceOut.f, &forceOut.forceWithVirial, enerd, fcd,
                       box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags,
                       &cycles_pme, ddBalanceRegionHandler);
@@ -1198,7 +1238,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
                          step, t, wcycle,
                          fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
-                         flags, &forceWithVirial, enerd,
+                         flags, &forceOut.forceWithVirial, enerd,
                          ed, bNS);
 
     if (bUseOrEmulGPU)
@@ -1225,7 +1265,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             }
 
             nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
-                                          f, wcycle);
+                                          forceOut.f, wcycle);
         }
     }
 
@@ -1249,12 +1289,12 @@ static void do_force_cutsVERLET(FILE *fplog,
     bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, pmeFlags, ppForceWorkload->haveGpuBondedWork, wcycle);
+        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceOut.forceWithVirial, fr->fshift, enerd, flags, pmeFlags, ppForceWorkload->haveGpuBondedWork, wcycle);
     }
 
     if (!alternateGpuWait && useGpuPme)
     {
-        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceWithVirial, enerd);
+        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial, enerd);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */
@@ -1343,7 +1383,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
         nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                      f, wcycle);
+                                      forceOut.f, wcycle);
     }
     if (DOMAINDECOMP(cr))
     {
@@ -1353,18 +1393,18 @@ static void do_force_cutsVERLET(FILE *fplog,
     if (bDoForces)
     {
         /* If we have NoVirSum forces, but we do not calculate the virial,
-         * we sum fr->f_novirsum=f later.
+         * we sum fr->f_novirsum=forceOut.f later.
          */
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fr->fshift, FALSE, nullptr, nrnb,
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, fr->fshift, FALSE, nullptr, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Calculation of the virial must be done after vsites! */
-            calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), f,
+            calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
@@ -1374,13 +1414,13 @@ static void do_force_cutsVERLET(FILE *fplog,
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
-        pme_receive_force_ener(cr, &forceWithVirial, enerd, wcycle);
+        pme_receive_force_ener(cr, &forceOut.forceWithVirial, enerd, wcycle);
     }
 
     if (bDoForces)
     {
         post_process_forces(cr, step, nrnb, wcycle,
-                            top, box, as_rvec_array(x.unpaddedArrayRef().data()), f, &forceWithVirial,
+                            top, box, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, &forceOut.forceWithVirial,
                             vir_force, mdatoms, graph, fr, vsite,
                             flags);
     }
@@ -1597,34 +1637,13 @@ static void do_force_cutsGROUP(FILE *fplog,
     }
 
 
-    /* Temporary solution until all routines take PaddedRVecVector */
-    rvec *f = as_rvec_array(force.unpaddedArrayRef().data());
-
     /* Start the force cycle counter.
      * Note that a different counter is used for dynamic load balancing.
      */
     wallcycle_start(wcycle, ewcFORCE);
 
-    gmx::ArrayRef<gmx::RVec> forceRef = force.paddedArrayRef();
-    if (bDoForces)
-    {
-        /* If we need to compute the virial, we might need a separate
-         * force buffer for algorithms for which the virial is calculated
-         * separately, such as PME.
-         */
-        if ((flags & GMX_FORCE_VIRIAL) && fr->haveDirectVirialContributions)
-        {
-            forceRef = *fr->forceBufferForDirectVirialContributions;
-
-            clear_rvecs_omp(forceRef.size(), as_rvec_array(forceRef.data()));
-        }
-
-        /* Clear the short- and long-range forces */
-        clear_rvecs(fr->natoms_force_constr, f);
-    }
-
-    /* forceWithVirial might need the full force atom range */
-    gmx::ForceWithVirial forceWithVirial(forceRef, (flags & GMX_FORCE_VIRIAL) != 0);
+    // set up and clear force outputs
+    struct ForceOutputs forceOut = setupForceOutputs(fr, *inputrec, force, bDoForces, ((flags & GMX_FORCE_VIRIAL) != 0), wcycle);
 
     if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
     {
@@ -1640,7 +1659,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
-                      as_rvec_array(x.unpaddedArrayRef().data()), hist, f, &forceWithVirial, enerd, fcd,
+                      as_rvec_array(x.unpaddedArrayRef().data()), hist, forceOut.f, &forceOut.forceWithVirial, enerd, fcd,
                       box, inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
                       flags,
@@ -1658,7 +1677,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
                          step, t, wcycle,
                          fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
-                         flags, &forceWithVirial, enerd,
+                         flags, &forceOut.forceWithVirial, enerd,
                          ed, bNS);
 
     if (bDoForces)
@@ -1671,29 +1690,29 @@ static void do_force_cutsGROUP(FILE *fplog,
              * for terms that do not contribute to the single sum virial?
              * Position restraints and electric fields do not introduce
              * inter-cg forces, only full electrostatics methods do.
-             * When we do not calculate the virial, fr->f_novirsum = f,
+             * When we do not calculate the virial, fr->f_novirsum = forceOut.f,
              * so we have already communicated these forces.
              */
             if (EEL_FULL(fr->ic->eeltype) && cr->dd->n_intercg_excl &&
                 (flags & GMX_FORCE_VIRIAL))
             {
-                dd_move_f(cr->dd, forceWithVirial.force_, nullptr, wcycle);
+                dd_move_f(cr->dd, forceOut.forceWithVirial.force_, nullptr, wcycle);
             }
         }
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
-         * we sum fr->f_novirsum=f later.
+         * we sum fr->f_novirsum=forceOut.f later.
          */
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fr->fshift, FALSE, nullptr, nrnb,
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, fr->fshift, FALSE, nullptr, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Calculation of the virial must be done after vsites! */
-            calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), f,
+            calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
@@ -1703,13 +1722,13 @@ static void do_force_cutsGROUP(FILE *fplog,
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
-        pme_receive_force_ener(cr, &forceWithVirial, enerd, wcycle);
+        pme_receive_force_ener(cr, &forceOut.forceWithVirial, enerd, wcycle);
     }
 
     if (bDoForces)
     {
         post_process_forces(cr, step, nrnb, wcycle,
-                            top, box, as_rvec_array(x.unpaddedArrayRef().data()), f, &forceWithVirial,
+                            top, box, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, &forceOut.forceWithVirial,
                             vir_force, mdatoms, graph, fr, vsite,
                             flags);
     }
