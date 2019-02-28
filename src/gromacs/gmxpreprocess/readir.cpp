@@ -3328,7 +3328,7 @@ void do_index(const char* mdparin, const char *ndx,
     if (!simulatedAnnealingGroupNames.empty() &&
         simulatedAnnealingGroupNames.size() != size_t(nr))
     {
-        gmx_fatal(FARGS, "Not enough annealing values: %zu (for %d groups)\n",
+        gmx_fatal(FARGS, "Wrong number of annealing values: %zu (for %d groups)\n",
                   simulatedAnnealingGroupNames.size(), nr);
     }
     else
@@ -3374,7 +3374,8 @@ void do_index(const char* mdparin, const char *ndx,
                               simulatedAnnealingPoints.size(), simulatedAnnealingGroupNames.size());
                 }
                 convertInts(wi, simulatedAnnealingPoints, "annealing points", ir->opts.anneal_npoints);
-                for (k = 0, i = 0; i < nr; i++)
+                int k = 0;
+                for (i = 0; i < nr; i++)
                 {
                     if (ir->opts.anneal_npoints[i] == 1)
                     {
@@ -3386,6 +3387,7 @@ void do_index(const char* mdparin, const char *ndx,
                 }
 
                 auto simulatedAnnealingTimes = gmx::splitString(is->anneal_time);
+
                 if (simulatedAnnealingTimes.size() != size_t(k))
                 {
                     gmx_fatal(FARGS, "Found %zu annealing-time values, wanted %d\n",
@@ -3398,12 +3400,21 @@ void do_index(const char* mdparin, const char *ndx,
                               simulatedAnnealingTemperatures.size(), k);
                 }
 
-                convertReals(wi, simulatedAnnealingTimes, "anneal-time", ir->opts.anneal_time[i]);
-                convertReals(wi, simulatedAnnealingTemperatures, "anneal-temp", ir->opts.anneal_temp[i]);
+                real *allSimulatedAnnealingTimes;
+                real *allSimulatedAnnealingTemperatures;
+                snew(allSimulatedAnnealingTimes, k);
+                snew(allSimulatedAnnealingTemperatures, k);
+                convertReals(wi, simulatedAnnealingTimes, "anneal-time", allSimulatedAnnealingTimes);
+                convertReals(wi, simulatedAnnealingTemperatures, "anneal-temp", allSimulatedAnnealingTemperatures);
+                /* TODO the code here could use some more general clean up and restructuring.
+                 * This will also help in understanding the use of variables in the loop.
+                 */
                 for (i = 0, k = 0; i < nr; i++)
                 {
                     for (j = 0; j < ir->opts.anneal_npoints[i]; j++)
                     {
+                        ir->opts.anneal_time[i][j] = allSimulatedAnnealingTimes[k];
+                        ir->opts.anneal_temp[i][j] = allSimulatedAnnealingTemperatures[k];
                         if (j == 0)
                         {
                             if (ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
@@ -3427,6 +3438,8 @@ void do_index(const char* mdparin, const char *ndx,
                         k++;
                     }
                 }
+                sfree(allSimulatedAnnealingTimes);
+                sfree(allSimulatedAnnealingTemperatures);
                 /* Print out some summary information, to make sure we got it right */
                 for (i = 0, k = 0; i < nr; i++)
                 {

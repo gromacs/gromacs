@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -307,6 +307,11 @@ void done_inputrec(t_inputrec *ir)
 {
     sfree(ir->opts.nrdf);
     sfree(ir->opts.ref_t);
+    for (int i = 0; i < ir->opts.ngtc; i++)
+    {
+        sfree(ir->opts.anneal_time[i]);
+        sfree(ir->opts.anneal_temp[i]);
+    }
     sfree(ir->opts.annealing);
     sfree(ir->opts.anneal_npoints);
     sfree(ir->opts.anneal_time);

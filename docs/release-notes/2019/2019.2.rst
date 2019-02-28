@@ -19,6 +19,14 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix segmentation fault when preparing simulated annealing inputs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+grompp was unable to prepare tpr files for inputs containing simulated annealing
+procedures. The code has been fixed to allow the generation of those files again.
+
+:issue:`2871`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
