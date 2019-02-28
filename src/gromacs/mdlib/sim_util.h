@@ -96,23 +96,6 @@ void global_stat(const gmx_global_stat *gs,
 bool do_per_step(int64_t step, int64_t nstep);
 /* Return TRUE if io should be done */
 
-/* ROUTINES from sim_util.c */
-
-/*! \brief Fills fep_state, lambda, and lam0 if needed
- *
- * If FEP or simulated tempering is in use:
- *
- *    fills non-null lam0 with the initial lambda values, and
- *    on master rank fills fep_state and lambda.
- *
- * Reports the initial lambda state to the log file. */
-void initialize_lambdas(FILE               *fplog,
-                        const t_inputrec   &ir,
-                        bool                isMaster,
-                        int                *fep_state,
-                        gmx::ArrayRef<real> lambda,
-                        double             *lam0);
-
 /* Routine in sim_util.c */
 
 gmx_bool use_GPU(const nonbonded_verlet_t *nbv);

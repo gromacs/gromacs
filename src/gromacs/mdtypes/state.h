@@ -315,4 +315,19 @@ positionsFromStatePointer(const t_state *state)
     }
 };
 
+/*! \brief Fills fep_state, lambda, and lam0 if needed
+ *
+ * If FEP or simulated tempering is in use:
+ *
+ *    fills non-null lam0 with the initial lambda values, and
+ *    on master rank fills fep_state and lambda.
+ *
+ * Reports the initial lambda state to the log file. */
+void initialize_lambdas(FILE               *fplog,
+                        const t_inputrec   &ir,
+                        bool                isMaster,
+                        int                *fep_state,
+                        gmx::ArrayRef<real> lambda,
+                        double             *lam0);
+
 #endif
