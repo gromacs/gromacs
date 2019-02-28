@@ -37,12 +37,15 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
 struct gmx_mtop_t;
 struct interaction_const_t;
 struct t_forcerec;
+struct t_forcetable;
 struct t_inputrec;
 
 namespace gmx
@@ -130,7 +133,7 @@ class DispersionCorrection
                 ~InteractionParams();
 
                 //! Table used for correcting modified LJ interactions
-                struct t_forcetable *dispersionCorrectionTable_ = nullptr;
+                std::unique_ptr<t_forcetable> dispersionCorrectionTable_;
 
                 //! Dispersion energy shift constant
                 real enershiftsix_ = 0;
