@@ -37,6 +37,7 @@
 
 #include "kernel_ref_prune.h"
 
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/gmxassert.h"
 
