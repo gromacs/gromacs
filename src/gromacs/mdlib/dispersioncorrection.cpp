@@ -51,15 +51,10 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/smalloc.h"
 
+/* Implementation here to avoid other files needing to include nblist.h */
 DispersionCorrection::InteractionParams::~InteractionParams()
 {
-    if (dispersionCorrectionTable_)
-    {
-        sfree_aligned(dispersionCorrectionTable_->data);
-        sfree(dispersionCorrectionTable_);
-    }
 }
 
 /* Returns a matrix, as flat list, of combination rule combined LJ parameters */
@@ -406,7 +401,7 @@ void DispersionCorrection::setParameters(const interaction_const_t &ic,
          * switch/shift dispersion corrections in this case.
          */
         iParams_.dispersionCorrectionTable_ =
-            makeDispersionCorrectionTable(nullptr, &ic, ic.rvdw, tableFileName);
+            std::move(makeDispersionCorrectionTable(nullptr, &ic, ic.rvdw, tableFileName));
     }
 
     iParams_.enershiftsix_    = 0;

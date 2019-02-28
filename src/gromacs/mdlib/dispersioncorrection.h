@@ -35,6 +35,7 @@
 #ifndef GMX_MDLIB_DISPERSIONCORRECTION_H
 #define GMX_MDLIB_DISPERSIONCORRECTION_H
 
+#include <memory>
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
@@ -43,6 +44,7 @@
 struct gmx_mtop_t;
 struct interaction_const_t;
 struct t_forcerec;
+struct t_forcetable;
 struct t_inputrec;
 
 namespace gmx
@@ -130,7 +132,7 @@ class DispersionCorrection
                 ~InteractionParams();
 
                 //! Table used for correcting modified LJ interactions
-                struct t_forcetable *dispersionCorrectionTable_ = nullptr;
+                std::unique_ptr<t_forcetable> dispersionCorrectionTable_;
 
                 //! Dispersion energy shift constant
                 real enershiftsix_ = 0;
