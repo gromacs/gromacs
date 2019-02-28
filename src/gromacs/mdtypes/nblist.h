@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -158,8 +158,13 @@ typedef struct t_nblist
  */
 
 /* Structure describing the data in a single table */
-typedef struct t_forcetable
+struct t_forcetable
 {
+    t_forcetable(enum gmx_table_interaction interaction,
+                 enum gmx_table_format      format);
+
+    ~t_forcetable();
+
     enum gmx_table_interaction  interaction; /* Types of interactions stored in this table */
     enum gmx_table_format       format;      /* Interpolation type and data format */
 
@@ -176,9 +181,9 @@ typedef struct t_forcetable
     int                         formatsize;    /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
     int                         ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
     int                         stride;        /* Distance to next table point (number of fp variables per table point in total) */
-} t_forcetable;
+};
 
-typedef struct t_nblists
+struct t_nblists
 {
     struct t_forcetable   *table_elec;
     struct t_forcetable   *table_vdw;
@@ -189,9 +194,9 @@ typedef struct t_nblists
      */
     struct t_nblist nlist_sr[eNL_NR];
     struct t_nblist nlist_lr[eNL_NR];
-} t_nblists;
+};
 
-typedef struct gmx_ns_t {
+struct gmx_ns_t {
     gmx_bool      bCGlist;
     int          *simple_aaj;
     struct t_grid*grid;
@@ -210,6 +215,6 @@ typedef struct gmx_ns_t {
     /* the nblists should probably go in here */
     gmx_bool      nblist_initialized; /* has the nblist been initialized?  */
     int           dump_nl;            /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
-} gmx_ns_t;
+};
 
 #endif /* GMX_MDTYPES_NBLIST_H */
