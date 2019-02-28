@@ -3398,8 +3398,17 @@ void do_index(const char* mdparin, const char *ndx,
                               simulatedAnnealingTemperatures.size(), k);
                 }
 
-                convertReals(wi, simulatedAnnealingTimes, "anneal-time", ir->opts.anneal_time[i]);
-                convertReals(wi, simulatedAnnealingTemperatures, "anneal-temp", ir->opts.anneal_temp[i]);
+                for (i = 0, k = 0; i < nr; i++)
+                {
+                    std::vector<std::string> temps(simulatedAnnealingTemperatures.begin(),
+                                                   simulatedAnnealingTemperatures.begin() + ir->opts.anneal_npoints[i]);
+                    std::vector<std::string> times(simulatedAnnealingTimes.begin(),
+                                                   simulatedAnnealingTimes.begin() + ir->opts.anneal_npoints[i]);
+
+                    convertReals(wi, times, "anneal-time", ir->opts.anneal_time[i]);
+                    convertReals(wi, temps, "anneal-temp", ir->opts.anneal_temp[i]);
+                    k = ir->opts.anneal_npoints[i];
+                }
                 for (i = 0, k = 0; i < nr; i++)
                 {
                     for (j = 0; j < ir->opts.anneal_npoints[i]; j++)
