@@ -99,21 +99,6 @@ bool do_per_step(int64_t step, int64_t nstep);
 
 /* ROUTINES from sim_util.c */
 
-/*! \brief Fills fep_state, lambda, and lam0 if needed
- *
- * If FEP or simulated tempering is in use:
- *
- *    fills non-null lam0 with the initial lambda values, and
- *    on master rank fills fep_state and lambda.
- *
- * Reports the initial lambda state to the log file. */
-void initialize_lambdas(FILE               *fplog,
-                        const t_inputrec   &ir,
-                        bool                isMaster,
-                        int                *fep_state,
-                        gmx::ArrayRef<real> lambda,
-                        double             *lam0);
-
 void do_constrain_first(FILE *log, gmx::Constraints *constr,
                         const t_inputrec *inputrec, const t_mdatoms *md,
                         t_state *state);
