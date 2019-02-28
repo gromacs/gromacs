@@ -4,7 +4,7 @@
 If you are familiar with Unix, it should be fairly trivial to compile and
 install GROMACS. GROMACS uses only the CMake build sytem, and our
 installation guide can be found at
-http://www.gromacs.org/Documentation/Installation_Instructions.
+http://manual.gromacs.org/documentation/current/install-guide/index.html
 
 Of course we will do our utmost to help you with any problems, but PLEASE 
 READ THE INSTALLATION INSTRUCTIONS BEFORE CONTACTING US!

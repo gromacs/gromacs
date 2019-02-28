@@ -10,7 +10,8 @@ Welcome to the |Gromacs| documentation!
 
 .. only:: html
 
-        The complete documentation is also available as a `printable PDF here`_.
+        The complete documentation is also available as a `printable PDF here`_. The documentation
+        for other versions of |GROMACS| can be found at http://manual.gromacs.org/documentation
 
         .. toctree::
            :maxdepth: 1
