@@ -3398,8 +3398,11 @@ void do_index(const char* mdparin, const char *ndx,
                               simulatedAnnealingTemperatures.size(), k);
                 }
 
-                convertReals(wi, simulatedAnnealingTimes, "anneal-time", ir->opts.anneal_time[i]);
-                convertReals(wi, simulatedAnnealingTemperatures, "anneal-temp", ir->opts.anneal_temp[i]);
+                for (i = 0; i < nr; i++)
+                {
+                    convertReals(wi, simulatedAnnealingTemperatures, "anneal-time", ir->opts.anneal_time[i]);
+                    convertReals(wi, simulatedAnnealingTemperatures, "anneal-temp", ir->opts.anneal_temp[i]);
+                }
                 for (i = 0, k = 0; i < nr; i++)
                 {
                     for (j = 0; j < ir->opts.anneal_npoints[i]; j++)
