@@ -176,7 +176,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool             bcoultab = FALSE;
     gmx_bool             bvdwtab  = FALSE;
 
-    struct t_forcetable *pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
+    t_forcetable        *pairsTable = nullptr; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* Free energy */
     int      efep          = 0;
@@ -209,7 +209,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* The wall tables (if used) */
     int                    nwall    = 0;
-    struct t_forcetable ***wall_tab = nullptr;
+    t_forcetable        ***wall_tab = nullptr;
 
     /* The number of charge groups participating in do_force_lowlevel */
     int ncg_force = 0;

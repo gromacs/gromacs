@@ -1320,9 +1320,9 @@ t_forcetable *make_tables(FILE *out,
     int             nx0, tabsel[etiNR];
     real            scalefactor;
 
-    t_forcetable   *table;
+    t_forcetable   *table = new t_forcetable(GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
+                                             GMX_TABLE_FORMAT_CUBICSPLINE_YFGH);
 
-    snew(table, 1);
     b14only = ((flags & GMX_MAKETABLES_14ONLY) != 0);
 
     if (flags & GMX_MAKETABLES_FORCEUSER)
@@ -1340,8 +1340,6 @@ t_forcetable *make_tables(FILE *out,
     table->scale     = 0;
     table->n         = 0;
 
-    table->interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
-    table->format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
     table->formatsize    = 4;
     table->ninteractions = etiNR;
     table->stride        = table->formatsize*table->ninteractions;
@@ -1473,24 +1471,28 @@ bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle)
     return tab;
 }
 
-t_forcetable *makeDispersionCorrectionTable(FILE                      *fp,
-                                            const interaction_const_t *ic,
-                                            real                       rtab,
-                                            const char                *tabfn)
+std::unique_ptr<t_forcetable>
+makeDispersionCorrectionTable(FILE                      *fp,
+                              const interaction_const_t *ic,
+                              real                       rtab,
+                              const char                *tabfn)
 {
     GMX_RELEASE_ASSERT(ic->vdwtype != evdwUSER || tabfn,
                        "With VdW user tables we need a table file name");
 
-    t_forcetable *dispersionCorrectionTable = nullptr;
+    if (tabfn == nullptr)
+    {
+        return std::unique_ptr<t_forcetable>(nullptr);
+    }
 
     t_forcetable *fullTable = make_tables(fp, ic, tabfn, rtab, 0);
     /* Copy the contents of the table to one that has just dispersion
      * and repulsion, to improve cache performance. We want the table
-     * data to be aligned to 32-byte boundaries. The pointers could be
-     * freed but currently aren't. */
-    snew(dispersionCorrectionTable, 1);
-    dispersionCorrectionTable->interaction   = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
-    dispersionCorrectionTable->format        = fullTable->format;
+     * data to be aligned to 32-byte boundaries.
+     */
+    std::unique_ptr<t_forcetable> dispersionCorrectionTable =
+        std::make_unique<t_forcetable>(GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+                                       fullTable->format);
     dispersionCorrectionTable->r             = fullTable->r;
     dispersionCorrectionTable->n             = fullTable->n;
     dispersionCorrectionTable->scale         = fullTable->scale;
@@ -1506,8 +1508,26 @@ t_forcetable *makeDispersionCorrectionTable(FILE                      *fp,
             dispersionCorrectionTable->data[8*i+j] = fullTable->data[12*i+4+j];
         }
     }
-    sfree_aligned(fullTable->data);
-    sfree(fullTable);
+    delete fullTable;
 
     return dispersionCorrectionTable;
+}
+
+t_forcetable::t_forcetable(enum gmx_table_interaction interaction,
+                           enum gmx_table_format      format) :
+    interaction(interaction),
+    format(format),
+    r(0),
+    n(0),
+    scale(0),
+    data(nullptr),
+    formatsize(0),
+    ninteractions(0),
+    stride(0)
+{
+}
+
+t_forcetable::~t_forcetable()
+{
+    sfree_aligned(data);
 }

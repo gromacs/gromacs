@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,8 @@
  */
 
 #include <cstdio>
+
+#include <memory>
 
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -145,8 +147,11 @@ bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle);
 
 /*! \brief Construct and return tabulated dispersion and repulsion interactions
  *
- * This table can be used to compute long-range dispersion corrections */
-t_forcetable *makeDispersionCorrectionTable(FILE *fp, const interaction_const_t *ic,
-                                            real rtab, const char *tabfn);
+ * This table can be used to compute long-range dispersion corrections.
+ * Returns pointer owning nothing when tabfn=nullptr.
+ */
+std::unique_ptr<t_forcetable>
+makeDispersionCorrectionTable(FILE *fp, const interaction_const_t *ic,
+                              real rtab, const char *tabfn);
 
 #endif  /* GMX_TABLES_FORCETABLE_H */

@@ -1025,12 +1025,11 @@ static void make_nbf_tables(FILE *fp,
      * to improve cache performance.
      */
     /* For performance reasons we want
-     * the table data to be aligned to 16-byte. The pointers could be freed
-     * but currently aren't.
+     * the table data to be aligned to 16-byte.
      */
-    snew(nbl->table_elec, 1);
-    nbl->table_elec->interaction   = GMX_TABLE_INTERACTION_ELEC;
-    nbl->table_elec->format        = nbl->table_elec_vdw->format;
+    nbl->table_elec                =
+        new t_forcetable(GMX_TABLE_INTERACTION_ELEC,
+                         nbl->table_elec_vdw->format);
     nbl->table_elec->r             = nbl->table_elec_vdw->r;
     nbl->table_elec->n             = nbl->table_elec_vdw->n;
     nbl->table_elec->scale         = nbl->table_elec_vdw->scale;
@@ -1039,9 +1038,9 @@ static void make_nbf_tables(FILE *fp,
     nbl->table_elec->stride        = nbl->table_elec->formatsize * nbl->table_elec->ninteractions;
     snew_aligned(nbl->table_elec->data, nbl->table_elec->stride*(nbl->table_elec->n+1), 32);
 
-    snew(nbl->table_vdw, 1);
-    nbl->table_vdw->interaction   = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
-    nbl->table_vdw->format        = nbl->table_elec_vdw->format;
+    nbl->table_vdw                =
+        new t_forcetable(GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+                         nbl->table_elec_vdw->format);
     nbl->table_vdw->r             = nbl->table_elec_vdw->r;
     nbl->table_vdw->n             = nbl->table_elec_vdw->n;
     nbl->table_vdw->scale         = nbl->table_elec_vdw->scale;

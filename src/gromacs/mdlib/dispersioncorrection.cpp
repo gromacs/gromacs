@@ -51,16 +51,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/smalloc.h"
 
-DispersionCorrection::InteractionParams::~InteractionParams()
-{
-    if (dispersionCorrectionTable_)
-    {
-        sfree_aligned(dispersionCorrectionTable_->data);
-        sfree(dispersionCorrectionTable_);
-    }
-}
+/* Implementation here to avoid other files needing to include the file that defines t_nblists */
+DispersionCorrection::InteractionParams::~InteractionParams() = default;
 
 /* Returns a matrix, as flat list, of combination rule combined LJ parameters */
 static std::vector<real> mk_nbfp_combination_rule(const gmx_ffparams_t &ffparams,
