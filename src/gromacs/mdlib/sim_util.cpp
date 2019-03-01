@@ -136,10 +136,10 @@ static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 
 static void calc_virial(int start, int homenr, const rvec x[], const rvec f[],
                         tensor vir_part, const t_graph *graph, const matrix box,
-                        t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
+                        t_nrnb *nrnb, rvec *shift_vec, rvec *fshift, int ePBC)
 {
     /* The short-range virial from surrounding boxes */
-    calc_vir(SHIFTS, fr->shift_vec, fr->fshift, vir_part, ePBC == epbcSCREW, box);
+    calc_vir(SHIFTS, shift_vec, fshift, vir_part, ePBC == epbcSCREW, box);
     inc_nrnb(nrnb, eNR_VIRIAL, SHIFTS);
 
     /* Calculate partial virial, for local atoms only, based on short range.
@@ -610,6 +610,33 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
     pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set);
 }
 
+
+/*! \brief Hack structure with force ouput buffers for do_force */
+struct ForceOutputs
+{
+    //! Constructor
+    ForceOutputs(rvec                               *f,
+                 gmx::ArrayRefWithPadding<gmx::RVec> force,
+                 gmx::ForceWithVirial const          forceWithVirial,
+                 rvec                               *fshift) :
+        f(f),
+        force(force),
+        forceWithVirial(forceWithVirial),
+        fshift(fshift) {}
+
+    //! Pointer to raw force output array (same as force)
+    rvec                 *const f;
+
+    // Force output buffer array
+    gmx::ArrayRefWithPadding<gmx::RVec> force;
+
+    //! Force with direct virial contribution (if there are any)
+    gmx::ForceWithVirial        forceWithVirial;
+
+    //! Shift force array pointer
+    rvec                *const  fshift;
+};
+
 /*! \brief
  *  Polling wait for either of the PME or nonbonded GPU tasks.
  *
@@ -621,9 +648,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  *
  * \param[in]     nbv              Nonbonded verlet structure
  * \param[in,out] pmedata          PME module data
- * \param[in,out] force            Force array to reduce task outputs into.
- * \param[in,out] forceWithVirial  Force and virial buffers
- * \param[in,out] fshift           Shift force output vector results are reduced into
+ * \param[in,out] forceOut         Struct holding force/virial outputs.
  * \param[in,out] enerd            Energy data structure results are reduced into
  * \param[in]     flags            Force flags
  * \param[in]     pmeFlags         PME flags
@@ -632,9 +657,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  */
 static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv,
                                         gmx_pme_t                           *pmedata,
-                                        gmx::ArrayRefWithPadding<gmx::RVec> *force,
-                                        gmx::ForceWithVirial                *forceWithVirial,
-                                        rvec                                 fshift[],
+                                        struct ForceOutputs                 &forceOut,
                                         gmx_enerdata_t                      *enerd,
                                         int                                  flags,
                                         int                                  pmeFlags,
@@ -652,7 +675,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
         if (!isPmeGpuDone)
         {
             GpuTaskCompletion completionType = (isNbGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
-            isPmeGpuDone = pme_gpu_try_finish_task(pmedata, pmeFlags, wcycle, forceWithVirial, enerd, completionType);
+            isPmeGpuDone = pme_gpu_try_finish_task(pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial, enerd, completionType);
         }
 
         if (!isNbGpuDone)
@@ -664,7 +687,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                                                      Nbnxm::AtomLocality::Local,
                                                      haveOtherWork,
                                                      enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                                     fshift, completionType);
+                                                     forceOut.fshift, completionType);
             wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
             // To get the call count right, when the task finished we
             // issue a start/stop.
@@ -676,25 +699,11 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
                 nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                              as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
+                                              forceOut.f, wcycle);
             }
         }
     }
 }
-
-/*! \brief Hack structure with force ouput buffers for do_force */
-struct ForceOutputs
-{
-    //! Constructor
-    ForceOutputs(rvec *f, gmx::ForceWithVirial const forceWithVirial) :
-        f(f),
-        forceWithVirial(forceWithVirial) {}
-
-    //! Force output buffer used by legacy modules
-    rvec                 *const f;
-    //! Force with direct virial contribution (if there are any)
-    gmx::ForceWithVirial        forceWithVirial;
-};
 
 /*! \brief Set up the different force buffers; also does clearing.
  *
@@ -753,9 +762,11 @@ setupForceOutputs(const t_forcerec                    *fr,
         clear_pull_forces(inputrec.pull_work);
     }
 
+    clear_rvecs(SHIFTS, fr->fshift);
+
     wallcycle_sub_stop(wcycle, ewcsCLEAR_FORCE_BUFFER);
 
-    return ForceOutputs(f, forceWithVirial);
+    return ForceOutputs(f, force, forceWithVirial, fr->fshift);
 }
 
 
@@ -1137,7 +1148,6 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     /* Reset energies */
     reset_enerdata(enerd);
-    clear_rvecs(SHIFTS, fr->fshift);
 
     if (DOMAINDECOMP(cr) && !thisRankHasDuty(cr, DUTY_PME))
     {
@@ -1219,7 +1229,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
             nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat.get(),
-                                                     fr->fshift);
+                                                     forceOut.fshift);
         }
     }
 
@@ -1257,7 +1267,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                             flags, Nbnxm::AtomLocality::NonLocal,
                                             ppForceWorkload->haveGpuBondedWork,
                                             enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                            fr->fshift);
+                                            forceOut.fshift);
                 cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
             }
             else
@@ -1284,7 +1294,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (bDoForces)
         {
-            dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
+            dd_move_f(cr->dd, forceOut.force.unpaddedArrayRef(), forceOut.fshift, wcycle);
         }
     }
 
@@ -1293,7 +1303,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &force, &forceOut.forceWithVirial, fr->fshift, enerd,
+        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, forceOut, enerd,
                                     flags, pmeFlags, ppForceWorkload->haveGpuBondedWork, wcycle);
     }
 
@@ -1316,7 +1326,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         Nbnxm::gpu_wait_finish_task(nbv->gpu_nbv,
                                     flags, Nbnxm::AtomLocality::Local, ppForceWorkload->haveGpuBondedWork,
                                     enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                    fr->fshift);
+                                    forceOut.fshift);
         float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
         if (ddBalanceRegionHandler.useBalancingRegion())
@@ -1402,7 +1412,7 @@ static void do_force_cutsVERLET(FILE *fplog,
          */
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, fr->fshift, FALSE, nullptr, nrnb,
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, forceOut.fshift, FALSE, nullptr, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
@@ -1410,7 +1420,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             /* Calculation of the virial must be done after vsites! */
             calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f,
-                        vir_force, graph, box, nrnb, fr, inputrec->ePBC);
+                        vir_force, graph, box, nrnb, fr->shift_vec, forceOut.fshift, inputrec->ePBC);
         }
     }
 
@@ -1608,7 +1618,6 @@ static void do_force_cutsGROUP(FILE *fplog,
 
     /* Reset energies */
     reset_enerdata(enerd);
-    clear_rvecs(SHIFTS, fr->fshift);
 
     if (bNS)
     {
@@ -1690,7 +1699,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         /* Communicate the forces */
         if (DOMAINDECOMP(cr))
         {
-            dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
+            dd_move_f(cr->dd, force.unpaddedArrayRef(), forceOut.fshift, wcycle);
             /* Do we need to communicate the separate force array
              * for terms that do not contribute to the single sum virial?
              * Position restraints and electric fields do not introduce
@@ -1710,7 +1719,7 @@ static void do_force_cutsGROUP(FILE *fplog,
          */
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, fr->fshift, FALSE, nullptr, nrnb,
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, forceOut.fshift, FALSE, nullptr, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
@@ -1718,7 +1727,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         {
             /* Calculation of the virial must be done after vsites! */
             calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f,
-                        vir_force, graph, box, nrnb, fr, inputrec->ePBC);
+                        vir_force, graph, box, nrnb, fr->shift_vec, forceOut.fshift, inputrec->ePBC);
         }
     }
 
