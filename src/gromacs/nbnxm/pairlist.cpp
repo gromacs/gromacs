@@ -420,20 +420,20 @@ static void get_cell_range(real b0, real b1,
 
     d2 = 0;
 
-    dl  = bx0 - bb->upper[BB_X];
-    dh  = bb->lower[BB_X] - bx1;
+    dl  = bx0 - bb->upper.x;
+    dh  = bb->lower.x - bx1;
     dm  = std::max(dl, dh);
     dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
-    dl  = by0 - bb->upper[BB_Y];
-    dh  = bb->lower[BB_Y] - by1;
+    dl  = by0 - bb->upper.y;
+    dh  = bb->lower.y - by1;
     dm  = std::max(dl, dh);
     dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
-    dl  = bz0 - bb->upper[BB_Z];
-    dh  = bb->lower[BB_Z] - bz1;
+    dl  = bz0 - bb->upper.z;
+    dh  = bb->lower.z - bz1;
     dm  = std::max(dl, dh);
     dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
@@ -448,26 +448,26 @@ static float subc_bb_dist2(int                              si,
                            int                              csj,
                            gmx::ArrayRef<const nbnxn_bb_t>  bb_j_all)
 {
-    const nbnxn_bb_t *bb_i = bb_i_ci         +  si;
-    const nbnxn_bb_t *bb_j = bb_j_all.data() + csj;
+    const nbnxn_bb_t &bb_i = bb_i_ci[si];
+    const nbnxn_bb_t &bb_j = bb_j_all[csj];
 
     float             d2 = 0;
     float             dl, dh, dm, dm0;
 
-    dl  = bb_i->lower[BB_X] - bb_j->upper[BB_X];
-    dh  = bb_j->lower[BB_X] - bb_i->upper[BB_X];
+    dl  = bb_i.lower.x - bb_j.upper.x;
+    dh  = bb_j.lower.x - bb_i.upper.x;
     dm  = std::max(dl, dh);
     dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
-    dl  = bb_i->lower[BB_Y] - bb_j->upper[BB_Y];
-    dh  = bb_j->lower[BB_Y] - bb_i->upper[BB_Y];
+    dl  = bb_i.lower.y - bb_j.upper.y;
+    dh  = bb_j.lower.y - bb_i.upper.y;
     dm  = std::max(dl, dh);
     dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
-    dl  = bb_i->lower[BB_Z] - bb_j->upper[BB_Z];
-    dh  = bb_j->lower[BB_Z] - bb_i->upper[BB_Z];
+    dl  = bb_i.lower.z - bb_j.upper.z;
+    dh  = bb_j.lower.z - bb_i.upper.z;
     dm  = std::max(dl, dh);
     dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
@@ -493,10 +493,10 @@ static float subc_bb_dist2_simd4(int                              si,
     Simd4Float dm_S;
     Simd4Float dm0_S;
 
-    bb_i_S0 = load4(&bb_i_ci[si].lower[0]);
-    bb_i_S1 = load4(&bb_i_ci[si].upper[0]);
-    bb_j_S0 = load4(&bb_j_all[csj].lower[0]);
-    bb_j_S1 = load4(&bb_j_all[csj].upper[0]);
+    bb_i_S0 = load4(bb_i_ci[si].lower.ptr());
+    bb_i_S1 = load4(bb_i_ci[si].upper.ptr());
+    bb_j_S0 = load4(bb_j_all[csj].lower.ptr());
+    bb_j_S1 = load4(bb_j_all[csj].upper.ptr());
 
     dl_S    = bb_i_S0 - bb_j_S1;
     dh_S    = bb_j_S0 - bb_i_S1;
@@ -2354,12 +2354,12 @@ static inline void set_icell_bb_simple(gmx::ArrayRef<const nbnxn_bb_t> bb,
                                        real shx, real shy, real shz,
                                        nbnxn_bb_t *bb_ci)
 {
-    bb_ci->lower[BB_X] = bb[ci].lower[BB_X] + shx;
-    bb_ci->lower[BB_Y] = bb[ci].lower[BB_Y] + shy;
-    bb_ci->lower[BB_Z] = bb[ci].lower[BB_Z] + shz;
-    bb_ci->upper[BB_X] = bb[ci].upper[BB_X] + shx;
-    bb_ci->upper[BB_Y] = bb[ci].upper[BB_Y] + shy;
-    bb_ci->upper[BB_Z] = bb[ci].upper[BB_Z] + shz;
+    bb_ci->lower.x = bb[ci].lower.x + shx;
+    bb_ci->lower.y = bb[ci].lower.y + shy;
+    bb_ci->lower.z = bb[ci].lower.z + shz;
+    bb_ci->upper.x = bb[ci].upper.x + shx;
+    bb_ci->upper.y = bb[ci].upper.y + shy;
+    bb_ci->upper.z = bb[ci].upper.z + shz;
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
@@ -3405,7 +3405,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
         {
             if (bSimple)
             {
-                bx1 = bb_i[ci].upper[BB_X];
+                bx1 = bb_i[ci].upper.x;
             }
             else
             {
@@ -3465,8 +3465,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
 
                 if (bSimple)
                 {
-                    by0 = bb_i[ci].lower[BB_Y] + shy;
-                    by1 = bb_i[ci].upper[BB_Y] + shy;
+                    by0 = bb_i[ci].lower.y + shy;
+                    by1 = bb_i[ci].upper.y + shy;
                 }
                 else
                 {
@@ -3509,8 +3509,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
 
                     if (bSimple)
                     {
-                        bx0 = bb_i[ci].lower[BB_X] + shx;
-                        bx1 = bb_i[ci].upper[BB_X] + shx;
+                        bx0 = bb_i[ci].lower.x + shx;
+                        bx1 = bb_i[ci].upper.x + shx;
                     }
                     else
                     {
