@@ -462,12 +462,12 @@ static void calc_bounding_box(int na, int stride, const real *x,
         i += stride;
     }
     /* Note: possible double to float conversion here */
-    bb->lower[BB_X] = R2F_D(xl);
-    bb->lower[BB_Y] = R2F_D(yl);
-    bb->lower[BB_Z] = R2F_D(zl);
-    bb->upper[BB_X] = R2F_U(xh);
-    bb->upper[BB_Y] = R2F_U(yh);
-    bb->upper[BB_Z] = R2F_U(zh);
+    bb->lower.x = R2F_D(xl);
+    bb->lower.y = R2F_D(yl);
+    bb->lower.z = R2F_D(zl);
+    bb->upper.x = R2F_U(xh);
+    bb->upper.y = R2F_U(yh);
+    bb->upper.z = R2F_U(zh);
 }
 
 /*! \brief Computes the bounding box for na packed coordinates, bb order xyz0 */
@@ -492,12 +492,12 @@ static void calc_bounding_box_x_x4(int na, const real *x,
         zh = std::max(zh, x[j+ZZ*c_packX4]);
     }
     /* Note: possible double to float conversion here */
-    bb->lower[BB_X] = R2F_D(xl);
-    bb->lower[BB_Y] = R2F_D(yl);
-    bb->lower[BB_Z] = R2F_D(zl);
-    bb->upper[BB_X] = R2F_U(xh);
-    bb->upper[BB_Y] = R2F_U(yh);
-    bb->upper[BB_Z] = R2F_U(zh);
+    bb->lower.x = R2F_D(xl);
+    bb->lower.y = R2F_D(yl);
+    bb->lower.z = R2F_D(zl);
+    bb->upper.x = R2F_U(xh);
+    bb->upper.y = R2F_U(yh);
+    bb->upper.z = R2F_U(zh);
 }
 
 /*! \brief Computes the bounding box for na coordinates, bb order xyz0 */
@@ -522,12 +522,12 @@ static void calc_bounding_box_x_x8(int na, const real *x,
         zh = std::max(zh, x[j+ZZ*c_packX8]);
     }
     /* Note: possible double to float conversion here */
-    bb->lower[BB_X] = R2F_D(xl);
-    bb->lower[BB_Y] = R2F_D(yl);
-    bb->lower[BB_Z] = R2F_D(zl);
-    bb->upper[BB_X] = R2F_U(xh);
-    bb->upper[BB_Y] = R2F_U(yh);
-    bb->upper[BB_Z] = R2F_U(zh);
+    bb->lower.x = R2F_D(xl);
+    bb->lower.y = R2F_D(yl);
+    bb->lower.z = R2F_D(zl);
+    bb->upper.x = R2F_U(xh);
+    bb->upper.y = R2F_U(yh);
+    bb->upper.z = R2F_U(zh);
 }
 
 /*! \brief Computes the bounding box for na packed coordinates, bb order xyz0 */
@@ -550,25 +550,24 @@ gmx_unused static void calc_bounding_box_x_x4_halves(int na, const real *x,
          * so we don't need to treat special cases in the rest of the code.
          */
 #if NBNXN_SEARCH_BB_SIMD4
-        store4(&bbj[1].lower[0], load4(&bbj[0].lower[0]));
-        store4(&bbj[1].upper[0], load4(&bbj[0].upper[0]));
+        store4(bbj[1].lower.ptr(), load4(bbj[0].lower.ptr()));
+        store4(bbj[1].upper.ptr(), load4(bbj[0].upper.ptr()));
 #else
         bbj[1] = bbj[0];
 #endif
     }
 
 #if NBNXN_SEARCH_BB_SIMD4
-    store4(&bb->lower[0], min(load4(&bbj[0].lower[0]), load4(&bbj[1].lower[0])));
-    store4(&bb->upper[0], max(load4(&bbj[0].upper[0]), load4(&bbj[1].upper[0])));
+    store4(bb->lower.ptr(),
+           min(load4(bbj[0].lower.ptr()), load4(bbj[1].lower.ptr())));
+    store4(bb->upper.ptr(),
+           max(load4(bbj[0].upper.ptr()), load4(bbj[1].upper.ptr())));
 #else
     {
-        int i;
-
-        for (i = 0; i < NNBSBB_C; i++)
-        {
-            bb->lower[i] = std::min(bbj[0].lower[i], bbj[1].lower[i]);
-            bb->upper[i] = std::max(bbj[0].upper[i], bbj[1].upper[i]);
-        }
+        bb->lower = BoundingBox::Corner::min(bbj[0].lower,
+                                             bbj[1].lower);
+        bb->upper = BoundingBox::Corner::max(bbj[0].upper,
+                                             bbj[1].upper);
     }
 #endif
 }
@@ -619,21 +618,21 @@ static void calc_bounding_box_simd4(int na, const float *x,
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
     using namespace gmx;
 
-    Simd4Float bb_0_S, bb_1_S;
-    Simd4Float x_S;
+    static_assert(sizeof(BoundingBox::Corner) == GMX_SIMD4_WIDTH*sizeof(float),
+                  "The Corner struct should hold exactly 4 floats");
 
-    bb_0_S = load4(x);
-    bb_1_S = bb_0_S;
+    Simd4Float bb_0_S = load4(x);
+    Simd4Float bb_1_S = bb_0_S;
 
     for (int i = 1; i < na; i++)
     {
-        x_S    = load4(x+i*NNBSBB_C);
-        bb_0_S = min(bb_0_S, x_S);
-        bb_1_S = max(bb_1_S, x_S);
+        Simd4Float x_S = load4(x + i*GMX_SIMD4_WIDTH);
+        bb_0_S         = min(bb_0_S, x_S);
+        bb_1_S         = max(bb_1_S, x_S);
     }
 
-    store4(&bb->lower[0], bb_0_S);
-    store4(&bb->upper[0], bb_1_S);
+    store4(bb->lower.ptr(), bb_0_S);
+    store4(bb->upper.ptr(), bb_1_S);
 }
 
 /*! \brief Computes the bounding box for na coordinates in order xyz?, bb order xxxxyyyyzzzz */
@@ -643,12 +642,12 @@ static void calc_bounding_box_xxxx_simd4(int na, const float *x,
 {
     calc_bounding_box_simd4(na, x, bb_work_aligned);
 
-    bb[0*STRIDE_PBB] = bb_work_aligned->lower[BB_X];
-    bb[1*STRIDE_PBB] = bb_work_aligned->lower[BB_Y];
-    bb[2*STRIDE_PBB] = bb_work_aligned->lower[BB_Z];
-    bb[3*STRIDE_PBB] = bb_work_aligned->upper[BB_X];
-    bb[4*STRIDE_PBB] = bb_work_aligned->upper[BB_Y];
-    bb[5*STRIDE_PBB] = bb_work_aligned->upper[BB_Z];
+    bb[0*STRIDE_PBB] = bb_work_aligned->lower.x;
+    bb[1*STRIDE_PBB] = bb_work_aligned->lower.y;
+    bb[2*STRIDE_PBB] = bb_work_aligned->lower.z;
+    bb[3*STRIDE_PBB] = bb_work_aligned->upper.x;
+    bb[4*STRIDE_PBB] = bb_work_aligned->upper.y;
+    bb[5*STRIDE_PBB] = bb_work_aligned->upper.z;
 }
 
 #endif /* NBNXN_SEARCH_SIMD4_FLOAT_X_BB */
@@ -674,30 +673,24 @@ static void combine_bounding_box_pairs(const Grid                       &grid,
 #if NBNXN_SEARCH_BB_SIMD4
             Simd4Float min_S, max_S;
 
-            min_S = min(load4(&bb[c2*2+0].lower[0]),
-                        load4(&bb[c2*2+1].lower[0]));
-            max_S = max(load4(&bb[c2*2+0].upper[0]),
-                        load4(&bb[c2*2+1].upper[0]));
-            store4(&bbj[c2].lower[0], min_S);
-            store4(&bbj[c2].upper[0], max_S);
+            min_S = min(load4(bb[c2*2+0].lower.ptr()),
+                        load4(bb[c2*2+1].lower.ptr()));
+            max_S = max(load4(bb[c2*2+0].upper.ptr()),
+                        load4(bb[c2*2+1].upper.ptr()));
+            store4(bbj[c2].lower.ptr(), min_S);
+            store4(bbj[c2].upper.ptr(), max_S);
 #else
-            for (int j = 0; j < NNBSBB_C; j++)
-            {
-                bbj[c2].lower[j] = std::min(bb[c2*2 + 0].lower[j],
-                                            bb[c2*2 + 1].lower[j]);
-                bbj[c2].upper[j] = std::max(bb[c2*2 + 0].upper[j],
-                                            bb[c2*2 + 1].upper[j]);
-            }
+            bbj[c2].lower = BoundingBox::Corner::min(bb[c2*2 + 0].lower,
+                                                     bb[c2*2 + 1].lower);
+            bbj[c2].upper = BoundingBox::Corner::max(bb[c2*2 + 0].upper,
+                                                     bb[c2*2 + 1].upper);
 #endif
         }
         if (((grid.numAtomsInColumn(i) + 3) >> 2) & 1)
         {
             /* The bb count in this column is odd: duplicate the last bb */
-            for (int j = 0; j < NNBSBB_C; j++)
-            {
-                bbj[c2].lower[j] = bb[c2*2].lower[j];
-                bbj[c2].upper[j] = bb[c2*2].upper[j];
-            }
+            bbj[c2].lower = bb[c2*2].lower;
+            bbj[c2].upper = bb[c2*2].upper;
         }
     }
 }
@@ -707,15 +700,13 @@ static void combine_bounding_box_pairs(const Grid                       &grid,
 static void print_bbsizes_simple(FILE       *fp,
                                  const Grid &grid)
 {
-    dvec ba;
-
-    clear_dvec(ba);
+    dvec ba = { 0 };
     for (int c = 0; c < grid.numCells(); c++)
     {
-        for (int d = 0; d < DIM; d++)
-        {
-            ba[d] += grid.iBoundingBoxes()[c].upper[d] - grid.iBoundingBoxes()[c].lower[d];
-        }
+        const BoundingBox &bb = grid.iBoundingBoxes()[c];
+        ba[XX] += bb.upper.x - bb.lower.x;
+        ba[YY] += bb.upper.y - bb.lower.y;
+        ba[ZZ] += bb.upper.z - bb.lower.z;
     }
     dsvmul(1.0/grid.numCells(), ba, ba);
 
@@ -760,11 +751,10 @@ static void print_bbsizes_supersub(FILE       *fp,
 #else
         for (int s = 0; s < grid.numClustersPerCell()[c]; s++)
         {
-            int cs = c*c_gpuNumClusterPerCell + s;
-            for (int d = 0; d < DIM; d++)
-            {
-                ba[d] += grid.iBoundingBoxes()[cs].upper[d] - grid.iBoundingBoxes()[cs].lower[d];
-            }
+            const BoundingBox &bb = grid.iBoundingBoxes()[c*c_gpuNumClusterPerCell + s];
+            ba[XX] += bb.upper.x - bb.lower.x;
+            ba[YY] += bb.upper.y - bb.lower.y;
+            ba[ZZ] += bb.upper.z - bb.lower.z;
         }
 #endif
         ns += grid.numClustersPerCell()[c];
@@ -983,12 +973,12 @@ void Grid::fillCell(nbnxn_search                   *nbs,
             int bbo = atomToCluster(atomStart - cellOffset_*geometry_.numAtomsPerCell);
             fprintf(debug, "cell %4d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
                     atomToCluster(atomStart),
-                    bb_[bbo].lower[BB_X],
-                    bb_[bbo].lower[BB_Y],
-                    bb_[bbo].lower[BB_Z],
-                    bb_[bbo].upper[BB_X],
-                    bb_[bbo].upper[BB_Y],
-                    bb_[bbo].upper[BB_Z]);
+                    bb_[bbo].lower.x,
+                    bb_[bbo].lower.y,
+                    bb_[bbo].lower.z,
+                    bb_[bbo].upper.x,
+                    bb_[bbo].upper.y,
+                    bb_[bbo].upper.z);
         }
     }
 }
@@ -1049,8 +1039,8 @@ void Grid::sortColumnsCpuGeometry(nbnxn_search *nbs,
             {
                 cellFilled = cell;
             }
-            bbcz_[cell*NNBSBB_D    ] = bb_[cellFilled].lower[BB_Z];
-            bbcz_[cell*NNBSBB_D + 1] = bb_[cellFilled].upper[BB_Z];
+            bbcz_[cell*NNBSBB_D    ] = bb_[cellFilled].lower.z;
+            bbcz_[cell*NNBSBB_D + 1] = bb_[cellFilled].upper.z;
         }
 
         /* Set the unused atom indices to -1 */
