@@ -2187,8 +2187,6 @@ int gmx_tune_pme(int argc, char *argv[])
         { efXVG, "-tpid",   "tpidist",  ffOPTWR },
         { efEDI, "-ei",     "sam",      ffOPTRD },
         { efXVG, "-eo",     "edsam",    ffOPTWR },
-        { efXVG, "-devout", "deviatie", ffOPTWR },
-        { efXVG, "-runav",  "runaver",  ffOPTWR },
         { efXVG, "-px",     "pullx",    ffOPTWR },
         { efXVG, "-pf",     "pullf",    ffOPTWR },
         { efXVG, "-ro",     "rotation", ffOPTWR },
