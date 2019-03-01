@@ -2481,7 +2481,7 @@ void get_ir(const char *mdparin, const char *mdparout,
             (couple_lambda_has_vdw_on(opts->couple_lam0) &&
              couple_lambda_has_vdw_on(opts->couple_lam1)))
         {
-            warning(wi, "You are using soft-core interactions while the Van der Waals interactions are not decoupled (note that the sc-coul option is only active when using lambda states). Although this will not lead to errors, you will need much more sampling than without soft-core interactions. Consider using sc-alpha=0.");
+            warning_note(wi, "You are using soft-core interactions while the Van der Waals interactions are not decoupled (note that the sc-coul option is only active when using lambda states). Although this will not lead to errors, you will need much more sampling than without soft-core interactions. Consider using sc-alpha=0.");
         }
     }
     else

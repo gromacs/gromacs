@@ -590,8 +590,8 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
     {
         try
         {
-            gmx_nb_free_energy_kernel(nbl_fep[th],
-                                      x, f, fr, &mdatoms, &kernel_data, nrnb);
+            gmx_nb_free_energy_kernel_gapsys(nbl_fep[th],
+                                             x, f, fr, &mdatoms, &kernel_data, nrnb);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
@@ -631,8 +631,8 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
             {
                 try
                 {
-                    gmx_nb_free_energy_kernel(nbl_fep[th],
-                                              x, f, fr, &mdatoms, &kernel_data, nrnb);
+                    gmx_nb_free_energy_kernel_gapsys(nbl_fep[th],
+                                                     x, f, fr, &mdatoms, &kernel_data, nrnb);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }

@@ -88,8 +88,8 @@ gmx_nonbonded_set_kernel_pointers(t_nblist *nl)
 
     if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
     {
-        nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_free_energy_kernel);
-        nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_free_energy_kernel);
+        nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_free_energy_kernel_gapsys);
+        nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_free_energy_kernel_gapsys);
         nl->simd_padding_width = 1;
     }
     else if (!gmx_strcasecmp_min(geom, "CG-CG"))
