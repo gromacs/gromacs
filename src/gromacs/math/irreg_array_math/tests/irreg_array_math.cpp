@@ -46,6 +46,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/simd/simd_setup.h"
 #include "gromacs/utility/data_structures/irreg_array_4d.h"
 
 #include "irreg_array_math_test_commons.h"
@@ -442,7 +443,7 @@ TYPED_TEST(ParamIrregArrayMathTest, VectorMatrixProduct)
     // tolerance needs to be that high for larger matrices
     constexpr float_type tolDiff = (std::is_same<float_type, float>::value ? 0.3 : 0.01);
 
-    typedef std::allocator<float_type>                           allocator_type;
+    typedef typename gmx::SimdSetup<float_type>::allocator_type allocator_type;
 
     typedef std::vector<float_type, allocator_type>                 vector_type;
     typedef gmx::IrregArray2D<float_type, allocator_type, false>     array_type;
@@ -467,6 +468,7 @@ TYPED_TEST(ParamIrregArrayMathTest, VectorMatrixProduct)
 
             vector_type  cVec(    n[j], static_cast<float_type>(0));
             vector_type  cVecRef( n[j], static_cast<float_type>(0));
+            vector_type  cVecSimd(n[j], static_cast<float_type>(0));
 
             array_type   aMat(m[i], n[j], static_cast<float_type>(0));
             array_type   aMatT(n[j], m[i], static_cast<float_type>(0));
@@ -533,15 +535,34 @@ TYPED_TEST(ParamIrregArrayMathTest, VectorMatrixProduct)
             << endl;
 #endif
 
+#ifdef DO_TIMING
+            auto start3 = std::chrono::high_resolution_clock::now();
+#endif
+            for (size_t r = 0; r < nruns; ++r)
+            {
+                // the data structure-provided reference solution
+                gmx::matrixProductVectorMatrixSimd(vVec, aMat, cVecSimd);
+            }
+#ifdef DO_TIMING
+            auto stop3 = std::chrono::high_resolution_clock::now();
+            this->debug << "Runtime of the SIMD      vector-matrix product using A  : "
+            << std::chrono::duration<double, std::milli>(stop3 - start3).count() << " ms"
+            << endl;
+#endif
+
             this->debug << "vector-matrix product using A:" << endl;
             this->debug << "c (scalar) ="   << cVec         << endl;
+            this->debug << "c (SIMD)   ="   << cVecSimd     << endl;
             this->debug << "c (ref.)   ="   << cVecRef      << endl;
 
             EXPECT_NEAR(maxAbsDeviationVectorElements(cVec,     cVecRef), 0, tolDiff)
             << "Scalar vector matrix product directly using the matrix as input differs from the reference solution." << std::endl;
+            EXPECT_NEAR(maxAbsDeviationVectorElements(cVecSimd, cVecRef), 0, tolDiff)
+            << "SIMD   vector matrix product directly using the matrix as input differs from the reference solution." << std::endl;
 
             std::fill(    cVec.begin(),     cVec.end(), static_cast<float_type>(0));
             std::fill( cVecRef.begin(),  cVecRef.end(), static_cast<float_type>(0));
+            std::fill(cVecSimd.begin(), cVecSimd.end(), static_cast<float_type>(0));
 
             // ==============================================
             //         using the transpose matrix
@@ -577,12 +598,31 @@ TYPED_TEST(ParamIrregArrayMathTest, VectorMatrixProduct)
             << endl;
 #endif
 
+#ifdef DO_TIMING
+            auto start6 = std::chrono::high_resolution_clock::now();
+#endif
+            for (size_t r = 0; r < nruns; ++r)
+            {
+                // the reference solution
+                gmx::matrixProductVectorMatrixTSimd(vVec, aMatT, cVecSimd);
+            }
+#ifdef DO_TIMING
+            auto stop6 = std::chrono::high_resolution_clock::now();
+            this->debug << "Runtime of the SIMD      vector-matrix product using A^T: "
+            << std::chrono::duration<double, std::milli>(stop6 - start6).count() << " ms"
+            << endl;
+#endif
+
             this->debug << "vector-matrix product using A^T:" << endl;
             this->debug << "c (scalar) ="   << cVec           << endl;
+            this->debug << "c (SIMD)   ="   << cVecSimd       << endl;
             this->debug << "c (ref.)   ="   << cVecRef        << endl;
 
             EXPECT_NEAR(maxAbsDeviationVectorElements(cVec,     cVecRef), 0, tolDiff)
             << "Scalar vector matrix product using the transpose matrix as input deviates from the reference solution." << std::endl;
+            EXPECT_NEAR(maxAbsDeviationVectorElements(cVecSimd, cVecRef), 0, tolDiff)
+            << "SIMD   vector matrix product using the transpose matrix as input deviates from the reference solution." << std::endl;
+
         }
     }
 
@@ -595,7 +635,7 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixVectorProduct)
     // tolerance needs to be that high for larger matrices
     constexpr float_type tolDiff = (std::is_same<float_type, float>::value ? 0.3 : 0.01);
 
-    typedef typename std::allocator<float_type>                  allocator_type;
+    typedef typename gmx::SimdSetup<float_type>::allocator_type allocator_type;
 
     typedef std::vector<float_type, allocator_type>                 vector_type;
     typedef gmx::IrregArray2D<float_type, allocator_type, false>     array_type;
@@ -620,6 +660,7 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixVectorProduct)
 
             vector_type  cVec(    m[i], static_cast<float_type>(0));
             vector_type  cVecRef( m[i], static_cast<float_type>(0));
+            vector_type  cVecSimd(m[i], static_cast<float_type>(0));
 
             array_type   aMat( m[i], n[j], static_cast<float_type>(0));
             array_type   aMatT(n[j], m[i], static_cast<float_type>(0));
@@ -644,7 +685,6 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixVectorProduct)
                     aMatT(k, l) = aMat(l, k);
                 }
             }
-
 
             this->debug << "Test input data:"        << endl;
             this->debug << "v        ="   << vVec    << endl;
@@ -686,15 +726,34 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixVectorProduct)
             << endl;
 #endif
 
+#ifdef DO_TIMING
+            auto start3 = std::chrono::high_resolution_clock::now();
+#endif
+            for (size_t r = 0; r < nruns; ++r)
+            {
+                // the data structure-provided reference solution
+                gmx::matrixProductMatrixVectorSimd(aMat, vVec, cVecSimd);
+            }
+#ifdef DO_TIMING
+            auto stop3 = std::chrono::high_resolution_clock::now();
+            this->debug << "Runtime of the SIMD      matrix-vector product using A  : "
+            << std::chrono::duration<double, std::milli>(stop3 - start3).count() << " ms"
+            << endl;
+#endif
+
             this->debug << "matrix-vector product using A:" << endl;
             this->debug << "c (scalar) ="   << cVec         << endl;
+            this->debug << "c (SIMD)   ="   << cVecSimd     << endl;
             this->debug << "c (ref.)   ="   << cVecRef      << endl;
 
             EXPECT_NEAR(maxAbsDeviationVectorElements(cVec,     cVecRef), 0, tolDiff)
             << "Scalar vector matrix product directly using the matrix as input differs from the reference solution." << std::endl;
+            EXPECT_NEAR(maxAbsDeviationVectorElements(cVecSimd, cVecRef), 0, tolDiff)
+            << "SIMD   vector matrix product directly using the matrix as input differs from the reference solution." << std::endl;
 
             std::fill(    cVec.begin(),     cVec.end(), static_cast<float_type>(0));
             std::fill( cVecRef.begin(),  cVecRef.end(), static_cast<float_type>(0));
+            std::fill(cVecSimd.begin(), cVecSimd.end(), static_cast<float_type>(0));
 
             // ==============================================
             //         using the transpose matrix
@@ -730,12 +789,31 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixVectorProduct)
             << endl;
 #endif
 
+#ifdef DO_TIMING
+            auto start6 = std::chrono::high_resolution_clock::now();
+#endif
+            for (size_t r = 0; r < nruns; ++r)
+            {
+                // the reference solution
+                gmx::matrixProductMatrixTVectorSimd(aMatT, vVec, cVecSimd);
+            }
+#ifdef DO_TIMING
+            auto stop6 = std::chrono::high_resolution_clock::now();
+            this->debug << "Runtime of the SIMD      matrix-vector product using A^T: "
+            << std::chrono::duration<double, std::milli>(stop6 - start6).count() << " ms"
+            << endl;
+#endif
+
             this->debug << "matrix-vector product using A^T:" << endl;
             this->debug << "c (scalar) ="   << cVec           << endl;
+            this->debug << "c (SIMD)   ="   << cVecSimd       << endl;
             this->debug << "c (ref.)   ="   << cVecRef        << endl;
 
             EXPECT_NEAR(maxAbsDeviationVectorElements(cVec,     cVecRef), 0, tolDiff)
             << "Scalar matrix vector product using the transpose matrix as input deviates from the reference solution." << std::endl;
+            EXPECT_NEAR(maxAbsDeviationVectorElements(cVecSimd, cVecRef), 0, tolDiff)
+            << "SIMD   matrix vector product using the transpose matrix as input deviates from the reference solution." << std::endl;
+
         }
     }
 
@@ -748,7 +826,7 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixProduct)
     // tolerance needs to be that high for larger matrices
     constexpr float_type tolDiff = (std::is_same<float_type, float>::value ? 0.3 : 0.01);
 
-    typedef std::allocator<float_type>                           allocator_type;
+    typedef typename gmx::SimdSetup<float_type>::allocator_type  allocator_type;
 
     typedef gmx::IrregArray2D<float_type, allocator_type, false>     array_type;
 
@@ -767,7 +845,6 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixProduct)
         {
 
             // length of the contracted dimension l
-//            const std::vector<size_t> l = {std::max(minnm - 1, (size_t)1), m[i], (maxnm + 1), (maxnm * 2 + 1)};
             const std::vector<size_t> l = {m[i]};
 
             for (size_t k = 0; k < l.size(); ++k)
@@ -784,6 +861,7 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixProduct)
                 array_type     bMatT(n[j], l[k], static_cast<float_type>(0));
                 array_type     cMat(m[i], n[j], static_cast<float_type>(0));
                 array_type     cMatRef(m[i], n[j], static_cast<float_type>(0));
+                array_type     cMatSimd(m[i], n[j], static_cast<float_type>(0));
 
                 // make sure that the result fits by filling the input vector and array with non-uniform values
                 // a[i][j] = i / C + j / C
@@ -850,12 +928,30 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixProduct)
                 << endl;
 #endif
 
+#ifdef DO_TIMING
+                auto start3 = std::chrono::high_resolution_clock::now();
+#endif
+                for (size_t r = 0; r < nruns; ++r)
+                {
+                    // the data structure-provided SIMD solution
+                    gmx::matrixProductSimd(aMat, bMat, cMatSimd);
+                }
+#ifdef DO_TIMING
+                auto stop3 = std::chrono::high_resolution_clock::now();
+                this->debug << "Runtime of the SIMD      matrix product A   B  : "
+                << std::chrono::duration<double, std::milli>(stop3 - start3).count() << " ms"
+                << endl;
+#endif
+
                 this->debug << "matrix product result:"       << endl;
                 this->debug << "c (scalar) =\n"   << cMat     << endl;
+                this->debug << "c (SIMD)   =\n"   << cMatSimd << endl;
                 this->debug << "c (ref.)   =\n"   << cMatRef  << endl;
 
                 EXPECT_NEAR(maxAbsDeviationMatrixElements(cMat,     cMatRef), 0, tolDiff)
                 << "Scalar matrix product differs from the reference solution." << std::endl;
+                EXPECT_NEAR(maxAbsDeviationMatrixElements(cMatSimd, cMatRef), 0, tolDiff)
+                << "SIMD   matrix product differs from the reference solution." << std::endl;
 
                 // ==============================================
                 //         C = A B^T
@@ -892,12 +988,30 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixProduct)
                 << endl;
 #endif
 
+#ifdef DO_TIMING
+                auto start6 = std::chrono::high_resolution_clock::now();
+#endif
+                for (size_t r = 0; r < nruns; ++r)
+                {
+                    // the data structure-provided reference solution
+                    gmx::matrixProductMatrixMatrixTSimd(aMat, bMatT, cMatSimd);
+                }
+#ifdef DO_TIMING
+                auto stop6 = std::chrono::high_resolution_clock::now();
+                this->debug << "Runtime of the SIMD      matrix product A   B^T: "
+                << std::chrono::duration<double, std::milli>(stop6 - start6).count() << " ms"
+                << endl;
+#endif
+
                 this->debug << "matrix product result:"       << endl;
                 this->debug << "c (scalar) =\n"   << cMat     << endl;
+                this->debug << "c (SIMD)   =\n"   << cMatSimd << endl;
                 this->debug << "c (ref.)   =\n"   << cMatRef  << endl;
 
                 EXPECT_NEAR(maxAbsDeviationMatrixElements(cMat,     cMatRef), 0, tolDiff)
                 << "Scalar matrix product differs from the reference solution." << std::endl;
+                EXPECT_NEAR(maxAbsDeviationMatrixElements(cMatSimd, cMatRef), 0, tolDiff)
+                << "SIMD   matrix product differs from the reference solution." << std::endl;
 
                 // ==============================================
                 //         C = A^T B
@@ -934,12 +1048,30 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixProduct)
                 << endl;
 #endif
 
+#ifdef DO_TIMING
+                auto start9 = std::chrono::high_resolution_clock::now();
+#endif
+                for (size_t r = 0; r < nruns; ++r)
+                {
+                    // the data structure-provided reference solution
+                    gmx::matrixProductMatrixTMatrixSimd(aMatT, bMat, cMatSimd);
+                }
+#ifdef DO_TIMING
+                auto stop9 = std::chrono::high_resolution_clock::now();
+                this->debug << "Runtime of the SIMD      matrix product A^T B  : "
+                << std::chrono::duration<double, std::milli>(stop9 - start9).count() << " ms"
+                << endl;
+#endif
+
                 this->debug << "matrix product result:"       << endl;
                 this->debug << "c (scalar) =\n"   << cMat     << endl;
+                this->debug << "c (SIMD)   =\n"   << cMatSimd << endl;
                 this->debug << "c (ref.)   =\n"   << cMatRef  << endl;
 
                 EXPECT_NEAR(maxAbsDeviationMatrixElements(cMat,     cMatRef), 0, tolDiff)
                 << "Scalar matrix product differs from the reference solution." << std::endl;
+                EXPECT_NEAR(maxAbsDeviationMatrixElements(cMatSimd, cMatRef), 0, tolDiff)
+                << "SIMD   matrix product differs from the reference solution." << std::endl;
 
                 // ==============================================
                 //         C = A^T B^T
@@ -976,16 +1108,33 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixProduct)
                 << endl;
 #endif
 
+#ifdef DO_TIMING
+                auto start12 = std::chrono::high_resolution_clock::now();
+#endif
+                for (size_t r = 0; r < nruns; ++r)
+                {
+                    // the data structure-provided reference solution
+                    gmx::matrixProductMatrixTMatrixTSimd(aMatT, bMatT, cMatSimd);
+                }
+#ifdef DO_TIMING
+                auto stop12 = std::chrono::high_resolution_clock::now();
+                this->debug << "Runtime of the SIMD      matrix product A^T B^T: "
+                << std::chrono::duration<double, std::milli>(stop12 - start12).count() << " ms"
+                << endl;
+#endif
+
                 this->debug << "matrix product result:"       << endl;
                 this->debug << "c (scalar) =\n"   << cMat     << endl;
+                this->debug << "c (SIMD)   =\n"   << cMatSimd << endl;
                 this->debug << "c (ref.)   =\n"   << cMatRef  << endl;
 
                 EXPECT_NEAR(maxAbsDeviationMatrixElements(cMat,     cMatRef), 0, tolDiff)
                 << "Scalar matrix product differs from the reference solution." << std::endl;
+                EXPECT_NEAR(maxAbsDeviationMatrixElements(cMatSimd, cMatRef), 0, tolDiff)
+                << "SIMD   matrix product differs from the reference solution." << std::endl;
             }
         }
     }
-
 }
 
 
@@ -1087,11 +1236,11 @@ TYPED_TEST(ParamIrregArrayMathTest, LUPDecomposition)
 {
     typedef TypeParam float_type;
 
-    typedef  std::allocator<float_type>                           allocator_type;
+    typedef  typename gmx::SimdSetup<float_type>::allocator_type  allocator_type;
     typedef  gmx::IrregArray2D<float_type, allocator_type, false>     array_type;
 
     typedef  typename  array_type::index_type                                   index_type;
-    typedef  typename  std::allocator<index_type>                     index_allocator_type;
+    typedef  typename  gmx::SimdSetup<index_type>::allocator_type     index_allocator_type;
     typedef  typename  std::vector<index_type, index_allocator_type>     index_vector_type;
 
     // n x n matrix sizes
@@ -1109,11 +1258,13 @@ TYPED_TEST(ParamIrregArrayMathTest, LUPDecomposition)
         array_type aMat(    n[i],               n[i],              static_cast<float_type>(0));
         // packed upper and lower triangular matrices, diagonal entries of L omitted (all equal to 1)
         array_type luMatRef( aMat.length1(), aMat.length1(), static_cast<float_type>(0));
+        array_type luMatSimd(aMat.length1(), aMat.length1(), static_cast<float_type>(0));
         // matrix for storing the reconstructed matrix A = P^{-1} L U
         array_type bMat(     aMat.length1(), aMat.length1(), static_cast<float_type>(0));
         // vector representation of the permutation matrix P, original rows
         // of matrix A are mapped to new rows after pivoting row i -> row pVec[i]
         index_vector_type pVecRef( aMat.length1(), static_cast<index_type>(0));
+        index_vector_type pVecSimd(aMat.length1(), static_cast<index_type>(0));
 
         // make sure that the result fits by filling the array with non-uniform values
         const float_type normfac1 = 2.0 * std::sqrt(static_cast<float_type>(n[i] * (n[i] + 1)) * static_cast<float_type>(i + 1));
@@ -1144,9 +1295,28 @@ TYPED_TEST(ParamIrregArrayMathTest, LUPDecomposition)
         << endl;
 #endif
 
+        bool successSimd = false;
+#ifdef DO_TIMING
+        auto start2 = std::chrono::high_resolution_clock::now();
+#endif
+        for (size_t r = 0; r < nruns; ++r)
+        {
+            successSimd = gmx::LUPDecompositionSimd(aMat, pVecSimd, luMatSimd);
+        }
+#ifdef DO_TIMING
+        auto stop2 = std::chrono::high_resolution_clock::now();
+        this->debug << "Runtime of the SIMD      LUP decomposition: "
+        << std::chrono::duration<double, std::milli>(stop2 - start2).count() << " ms"
+        << endl;
+#endif
+
         EXPECT_TRUE(successRef) << "Scalar LUP decomposition returned failure." << std::endl;
         EXPECT_TRUE(checkLUPDecomposition(aMat, pVecRef,  luMatRef,  this->debug))
         << "Scalar LUP decomposition B = P^{-1} L U differs from the " << n[i] << "x" << n[i] << " input matrix A." << std::endl;
+
+        EXPECT_TRUE(successSimd) << "SIMD LUP decomposition returned failure." << std::endl;
+        EXPECT_TRUE(checkLUPDecomposition(aMat, pVecSimd,  luMatSimd,  this->debug))
+        << "SIMD LUP decomposition B = P^{-1} L U differs from the " << n[i] << "x" << n[i] << " input matrix A." << std::endl;
     }
 
 }
@@ -1155,7 +1325,7 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixInverse)
 {
     typedef TypeParam float_type;
 
-    typedef  std::allocator<float_type>                           allocator_type;
+    typedef  typename gmx::SimdSetup<float_type>::allocator_type  allocator_type;
     typedef  gmx::IrregArray2D<float_type, allocator_type, false>     array_type;
     typedef  typename array_type::index_type                          index_type;
 
@@ -1192,6 +1362,7 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixInverse)
         array_type aMat(       n[i],              n[i],              static_cast<float_type>(0));
         // A^{-1}
         array_type aMatInvScalar(aMat.length1(), aMat.length1(), static_cast<float_type>(0));
+        array_type aMatInvSimd(aMat.length1(), aMat.length1(), static_cast<float_type>(0));
         // matrix for storing the A A^{-1}
         array_type bMat(       aMat.length1(), aMat.length1(), static_cast<float_type>(0));
         // the identity matrix
@@ -1230,6 +1401,21 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixInverse)
         << endl;
 #endif
 
+        bool successSimd = false;
+#ifdef DO_TIMING
+        auto start2 = std::chrono::high_resolution_clock::now();
+#endif
+        for (size_t r = 0; r < nruns; ++r)
+        {
+            successSimd = gmx::matrixInverseLUPSimd(aMat, aMatInvSimd);
+        }
+#ifdef DO_TIMING
+        auto stop2 = std::chrono::high_resolution_clock::now();
+        this->debug << "Runtime of the SIMD      matrix inversion: "
+        << std::chrono::duration<double, std::milli>(stop2 - start2).count() << " ms"
+        << endl;
+#endif
+
         gmx::matrixProduct(aMat, aMatInvScalar, bMat);
         this->debug << "A                 =\n" << aMat          << std::endl;
         this->debug << "A^{-1}   (Scalar) =\n" << aMatInvScalar << std::endl;
@@ -1237,9 +1423,18 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixInverse)
 
         EXPECT_TRUE(successRef) << "Scalar implementation of matrix inverse via LUP decomposition returned failure." << std::endl;
         EXPECT_NEAR(maxAbsDeviationMatrixElements(bMat, iMat), 0, tolDiff)
-        << "Product A A^{-1} != I for the Scalar matrix inversion of the " << n[i] << "x" << n[i] << " input matrix A." << std::endl;
-    }
+        << "Product A A^{-1} != I for the scalar matrix inversion of the " << n[i] << "x" << n[i] << " input matrix A." << std::endl;
 
+
+        gmx::matrixProduct(aMat, aMatInvSimd, bMat);
+        this->debug << "A                 =\n" << aMat        << std::endl;
+        this->debug << "A^{-1}   (SIMD)   =\n" << aMatInvSimd << std::endl;
+        this->debug << "A A^{-1} (SIMD)   =\n" << bMat        << std::endl;
+
+        EXPECT_TRUE(successSimd) << "SIMD implementation of matrix inverse via LUP decomposition returned failure." << std::endl;
+        EXPECT_NEAR(maxAbsDeviationMatrixElements(bMat, iMat), 0, tolDiff)
+        << "Product A A^{-1} != I for the SIMD matrix inversion of the " << n[i] << "x" << n[i] << " input matrix A." << std::endl;
+    }
 }
 
 
@@ -1301,7 +1496,7 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixDeterminant)
 {
     typedef TypeParam float_type;
 
-    typedef  std::allocator<float_type>                           allocator_type;
+    typedef  typename gmx::SimdSetup<float_type>::allocator_type  allocator_type;
     typedef  gmx::IrregArray2D<float_type, allocator_type, false>     array_type;
     typedef  typename array_type::index_type                          index_type;
 
@@ -1337,6 +1532,7 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixDeterminant)
         // the matrix to be decomposed
         array_type aMat(n[i], n[i], static_cast<float_type>(0));
         float_type detAScalar = 0;
+        float_type detASimd   = 0;
         float_type detAExpect = 0;
 
         // Make sure that the result fits by filling the array with non-uniform values.
@@ -1368,6 +1564,21 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixDeterminant)
         << endl;
 #endif
 
+        bool successSimd = false;
+#ifdef DO_TIMING
+        auto start2 = std::chrono::high_resolution_clock::now();
+#endif
+        for (size_t r = 0; r < nruns; ++r)
+        {
+            successSimd = gmx::matrixDeterminantLUPSimd(aMat, &detASimd);
+        }
+#ifdef DO_TIMING
+        auto stop2 = std::chrono::high_resolution_clock::now();
+        this->debug << "Runtime of the SIMD          matrix determinant computation: "
+        << std::chrono::duration<double, std::milli>(stop2 - start2).count() << " ms"
+        << endl;
+#endif
+
 #ifdef DO_TIMING
         auto start3 = std::chrono::high_resolution_clock::now();
 #endif
@@ -1381,10 +1592,15 @@ TYPED_TEST(ParamIrregArrayMathTest, MatrixDeterminant)
 
         this->debug << "det|A| expected =\n" << detAExpect << std::endl;
         this->debug << "det|A| (Scalar) =\n" << detAScalar << std::endl;
+        this->debug << "det|A| (SIMD)   =\n" << detASimd   << std::endl;
 
         EXPECT_TRUE(successRef) << "Scalar implementation of matrix determinant via LUP decomposition returned failure." << std::endl;
         EXPECT_NEAR(detAExpect, detAScalar, tolDiff)
         << "Matrix determinant (scalar) of the " << n[i] << "x" << n[i] << " input matrix A differs from the reference value." << std::endl;
+
+        EXPECT_TRUE(successSimd) << "SIMD implementation of matrix determinant via LUP decomposition returned failure." << std::endl;
+        EXPECT_NEAR(detAExpect, detASimd, tolDiff)
+        << "Matrix determinant (SIMD) of the " << n[i] << "x" << n[i] << " input matrix A differs from the reference value." << std::endl;
     }
 }
 
