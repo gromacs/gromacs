@@ -75,36 +75,73 @@ class UpdateGroupsCog;
 namespace Nbnxm
 {
 
-#ifndef DOXYGEN
-
-// TODO: Convert macros to constexpr int and replace BB_? indexing by struct with x,y,z
-
-/* Pair search box lower and upper corner in x,y,z.
- * Store this in 4 iso 3 reals, which is useful with 4-wide SIMD.
- * To avoid complicating the code we also use 4 without 4-wide SIMD.
+/*! \internal
+ * \brief Bounding box for a nbnxm atom cluster
  */
-#define NNBSBB_C         4
-/* Pair search box lower and upper bound in z only. */
-#define NNBSBB_D         2
-/* Pair search box lower and upper corner x,y,z indices, entry 3 is unused */
-#define BB_X  0
-#define BB_Y  1
-#define BB_Z  2
-
-#endif // !DOXYGEN
-
-
-/* Bounding box for a nbnxn atom cluster */
 struct BoundingBox
 {
-    float lower[NNBSBB_C];
-    float upper[NNBSBB_C];
+    /*! \internal
+     * \brief Corner for the bounding box, padded with one element to enable 4-wide SIMD ioperations
+     */
+    struct Corner
+    {
+        //! Returns a corner with the minimum coordinates along each dimension
+        static Corner min(const Corner &c1,
+                          const Corner &c2)
+        {
+            Corner cMin;
+
+            cMin.x       = std::min(c1.x, c2.x);
+            cMin.y       = std::min(c1.y, c2.y);
+            cMin.z       = std::min(c1.z, c2.z);
+            cMin.padding = std::min(c1.padding, c2.padding);
+
+            return cMin;
+        }
+
+        //! Returns a corner with the maximum coordinates along each dimension
+        static Corner max(const Corner &c1,
+                          const Corner &c2)
+        {
+            Corner cMax;
+
+            cMax.x       = std::max(c1.x, c2.x);
+            cMax.y       = std::max(c1.y, c2.y);
+            cMax.z       = std::max(c1.z, c2.z);
+            cMax.padding = std::max(c1.padding, c2.padding);
+
+            return cMax;
+        }
+
+        //! Returns a pointer for SIMD loading of a Corner object
+        const float *ptr() const
+        {
+            return &x;
+        }
+
+        //! Returns a pointer for SIMD storing of a Corner object
+        float *ptr()
+        {
+            return &x;
+        }
+
+        float x;       //!< x coordinate
+        float y;       //!< y coordinate
+        float z;       //!< z coordinate
+        float padding; //!< padding, unused, but should be set to avoid operations on unitialized data
+    };
+
+    Corner lower; //!< lower, along x and y and z, corner
+    Corner upper; //!< upper, along x and y and z, corner
 };
 
 
 #ifndef DOXYGEN
 
 // TODO: Convert macros to constexpr int
+
+/* Pair search box lower and upper bound in z only. */
+#define NNBSBB_D         2
 
 /* Bounding box calculations are (currently) always in single precision, so
  * we only need to check for single precision support here.
@@ -139,8 +176,8 @@ struct BoundingBox
 
 /* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
 #    define NBNXN_BBXXXX  1
-/* Size of bounding box corners quadruplet */
-#    define NNBSBB_XXXX  (NNBSBB_D*DIM*STRIDE_PBB)
+/* Size of a quadruplet of bounding boxes, each 2 corners, stored packed */
+#    define NNBSBB_XXXX  (2*DIM*STRIDE_PBB)
 
 #else  /* NBNXN_SEARCH_BB_SIMD4 */
 
