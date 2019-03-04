@@ -513,4 +513,13 @@ void nbnxn_set_atomorder(nbnxn_search *nbs);
 /*! \brief Returns the index position of the atoms on the pairlist search grid */
 gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs);
 
+/*! \brief Returns the effective increase of the cluster-pair list with respect to an atom-pair list
+ *
+ * Note that this is an estimate based on an eductated guess of what SIMD
+ * kernel will be used.
+ *
+ * \todo Pass in the hardware information so we know exactly which kernel is used.
+ */
+real nbnxn_get_rlist_effective_inc(real atomDensity);
+
 #endif // GMX_NBNXN_NBNXN_H

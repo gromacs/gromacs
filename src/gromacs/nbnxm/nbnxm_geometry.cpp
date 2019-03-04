@@ -39,6 +39,7 @@
 
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
@@ -70,3 +71,19 @@ real nbnxn_get_rlist_effective_inc(const int        clusterSize,
 
     return c_nbnxnRlistIncreaseOutsideFactor*gmx::square(volumeRatio)*0.5_real*diagonal;
 }
+
+real nbnxn_get_rlist_effective_inc(const real atomDensity)
+{
+    /* Effective cut-off for cluster pair list of 4x4 or 4x8 atoms.
+     * This choice should match the one of pick_nbnxn_kernel_cpu().
+     * TODO: Make this function use pick_nbnxn_kernel_cpu().
+     */
+#if GMX_SIMD_HAVE_REAL && ((GMX_SIMD_REAL_WIDTH == 8 && defined GMX_SIMD_HAVE_FMA) || GMX_SIMD_REAL_WIDTH > 8)
+    const int jClusterSize = 8;
+#else
+    const int jClusterSize = 4;
+#endif
+
+    return nbnxn_get_rlist_effective_inc(jClusterSize, atomDensity);
+}
+

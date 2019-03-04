@@ -46,7 +46,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/nbnxm/nbnxm_geometry.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
@@ -402,10 +402,8 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
 {
     int            atnr, a, nqlj, nq, nlj;
     gmx_bool       bQRF;
-    real           r_eff;
     double         c_qlj, c_q, c_lj;
     double         nppa;
-    int            j_cluster_size;
     /* Conversion factor for reference vs SIMD kernel performance.
      * The factor is about right for SSE2/4, but should be 2 higher for AVX256.
      */
@@ -457,16 +455,9 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     *nq_tot  = nqlj + nq;
     *nlj_tot = nqlj + nlj;
 
-    /* Effective cut-off for cluster pair list of 4x4 or 4x8 atoms.
-     * This choice should match the one of pick_nbnxn_kernel_cpu().
-     * TODO: Make this function use pick_nbnxn_kernel_cpu().
-     */
-#if GMX_SIMD_HAVE_REAL && ((GMX_SIMD_REAL_WIDTH == 8 && defined GMX_SIMD_HAVE_FMA) || GMX_SIMD_REAL_WIDTH > 8)
-    j_cluster_size = 8;
-#else
-    j_cluster_size = 4;
-#endif
-    r_eff = ir->rlist + nbnxn_get_rlist_effective_inc(j_cluster_size, mtop->natoms/det(box));
+    /* TODO: Consider passing the hardware information for accurate results */
+    const real r_eff =
+        ir->rlist + nbnxn_get_rlist_effective_inc(mtop->natoms/det(box));
 
     /* The average number of pairs per atom */
     nppa  = 0.5*4/3*M_PI*r_eff*r_eff*r_eff*mtop->natoms/det(box);
