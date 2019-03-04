@@ -33,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_MDLIB_CALC_VERLETBUF_H
-#define GMX_MDLIB_CALC_VERLETBUF_H
+#ifndef GMX_NBNXM_CALC_VERLETBUF_H
+#define GMX_NBXNM_CALC_VERLETBUF_H
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
