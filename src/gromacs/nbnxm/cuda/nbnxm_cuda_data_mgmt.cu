@@ -142,6 +142,8 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     /* initialize to nullptr poiters to data that is not allocated here and will
        need reallocation in nbnxn_cuda_init_atomdata */
     ad->xq = nullptr;
+    ad->x = nullptr;
+    ad->q = nullptr;
     ad->f  = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
@@ -648,6 +650,8 @@ void gpu_init_atomdata(gmx_nbnxn_cuda_t       *nb,
         {
             freeDeviceBuffer(&d_atdat->f);
             freeDeviceBuffer(&d_atdat->xq);
+            freeDeviceBuffer(&d_atdat->x);
+            freeDeviceBuffer(&d_atdat->q);
             freeDeviceBuffer(&d_atdat->atom_types);
             freeDeviceBuffer(&d_atdat->lj_comb);
         }
@@ -655,6 +659,8 @@ void gpu_init_atomdata(gmx_nbnxn_cuda_t       *nb,
         stat = cudaMalloc((void **)&d_atdat->f, nalloc*sizeof(*d_atdat->f));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->f");
         stat = cudaMalloc((void **)&d_atdat->xq, nalloc*sizeof(*d_atdat->xq));
+        stat = cudaMalloc((void **)&d_atdat->x, nalloc*sizeof(*d_atdat->x));
+        stat = cudaMalloc((void **)&d_atdat->q, nalloc*sizeof(*d_atdat->q));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->xq");
         if (useLjCombRule(nb->nbparam))
         {
@@ -760,6 +766,8 @@ void gpu_free(gmx_nbnxn_cuda_t *nb)
 
     freeDeviceBuffer(&atdat->f);
     freeDeviceBuffer(&atdat->xq);
+    freeDeviceBuffer(&atdat->x);
+    freeDeviceBuffer(&atdat->q);
     freeDeviceBuffer(&atdat->atom_types);
     freeDeviceBuffer(&atdat->lj_comb);
 

@@ -178,7 +178,7 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
 
         /* We don't need q, but using float4 in shmem avoids bank conflicts.
            (but it also wastes L2 bandwidth). */
-        float4 tmp = xq[ai];
+        float4 tmp = (useSeparateXQ) ? make_float4(atdat.x[ai]) : xq[ai];
         float4 xi  = tmp + shift_vec[nb_sci.shift];
         xib[tidxj * c_clSize + tidxi] = xi;
     }
@@ -230,8 +230,16 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
                     int          aj      = cj * c_clSize + tidxj;
 
                     /* load j atom data */
-                    float4 tmp  = xq[aj];
-                    float3 xj   = make_float3(tmp.x, tmp.y, tmp.z);
+                    float3 xj;
+                    if (useSeparateXQ)
+                    {
+                        xj   = atdat.x[aj];
+                    }
+                    else
+                    {
+                        float4 tmp  = xq[aj];
+                        xj   = make_float3(tmp.x, tmp.y, tmp.z);
+                    }
 
 #pragma unroll 8
                     for (int i = 0; i < c_numClPerSupercl; i++)
