@@ -58,6 +58,7 @@
 #ifndef NBNXM_CUDA_KERNEL_UTILS_CUH
 #define NBNXM_CUDA_KERNEL_UTILS_CUH
 
+
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
 static const int __device__          c_clSizeLog2  = 3;

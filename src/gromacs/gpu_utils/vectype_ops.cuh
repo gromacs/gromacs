@@ -114,6 +114,10 @@ __forceinline__ __host__ __device__ float4 make_float4(float3 a)
 {
     return make_float4(a.x, a.y, a.z, 0.0f);
 }
+__forceinline__ __host__ __device__ float4 make_float4(float3 a, float b)
+{
+    return make_float4(a.x, a.y, a.z, b);
+}
 __forceinline__ __host__ __device__ float4 operator+(float4 a, float4 b)
 {
     return make_float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
