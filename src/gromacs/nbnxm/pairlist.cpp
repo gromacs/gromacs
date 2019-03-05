@@ -76,7 +76,7 @@
 
 using namespace gmx;                        // TODO: Remove when this file is moved into gmx namespace
 
-using nbnxn_bb_t    = Nbnxm::BoundingBox;   // TODO: Remove when refactoring this file
+using BoundingBox   = Nbnxm::BoundingBox;   // TODO: Remove when refactoring this file
 using BoundingBox1D = Nbnxm::BoundingBox1D; // TODO: Remove when refactoring this file
 
 using Grid          = Nbnxm::Grid;          // TODO: Remove when refactoring this file
@@ -414,7 +414,7 @@ static void get_cell_range(real b0, real b1,
 /*
    static float box_dist2(float bx0, float bx1, float by0,
                        float by1, float bz0, float bz1,
-                       const nbnxn_bb_t *bb)
+                       const BoundingBox *bb)
    {
     float d2;
     float dl, dh, dm, dm0;
@@ -443,151 +443,141 @@ static void get_cell_range(real b0, real b1,
    }
  */
 
-/* Plain C code calculating the distance^2 between two bounding boxes */
-static float subc_bb_dist2(int                              si,
-                           const nbnxn_bb_t                *bb_i_ci,
-                           int                              csj,
-                           gmx::ArrayRef<const nbnxn_bb_t>  bb_j_all)
+#if !NBNXN_SEARCH_BB_SIMD4
+
+/*! \brief Plain C code calculating the distance^2 between two bounding boxes in xyz0 format
+ *
+ * \param[in] bb_i  First bounding box
+ * \param[in] bb_j  Second bounding box
+ */
+static float clusterBoundingBoxDistance2(const BoundingBox &bb_i,
+                                         const BoundingBox &bb_j)
 {
-    const nbnxn_bb_t &bb_i = bb_i_ci[si];
-    const nbnxn_bb_t &bb_j = bb_j_all[csj];
+    float dl   = bb_i.lower.x - bb_j.upper.x;
+    float dh   = bb_j.lower.x - bb_i.upper.x;
+    float dm   = std::max(dl, dh);
+    float dm0  = std::max(dm, 0.0f);
+    float d2   = dm0*dm0;
 
-    float             d2 = 0;
-    float             dl, dh, dm, dm0;
+    dl         = bb_i.lower.y - bb_j.upper.y;
+    dh         = bb_j.lower.y - bb_i.upper.y;
+    dm         = std::max(dl, dh);
+    dm0        = std::max(dm, 0.0f);
+    d2        += dm0*dm0;
 
-    dl  = bb_i.lower.x - bb_j.upper.x;
-    dh  = bb_j.lower.x - bb_i.upper.x;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0f);
-    d2 += dm0*dm0;
-
-    dl  = bb_i.lower.y - bb_j.upper.y;
-    dh  = bb_j.lower.y - bb_i.upper.y;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0f);
-    d2 += dm0*dm0;
-
-    dl  = bb_i.lower.z - bb_j.upper.z;
-    dh  = bb_j.lower.z - bb_i.upper.z;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0f);
-    d2 += dm0*dm0;
+    dl         = bb_i.lower.z - bb_j.upper.z;
+    dh         = bb_j.lower.z - bb_i.upper.z;
+    dm         = std::max(dl, dh);
+    dm0        = std::max(dm, 0.0f);
+    d2        += dm0*dm0;
 
     return d2;
 }
 
-#if NBNXN_SEARCH_BB_SIMD4
+#else /* NBNXN_SEARCH_BB_SIMD4 */
 
-/* 4-wide SIMD code for bb distance for bb format xyz0 */
-static float subc_bb_dist2_simd4(int                              si,
-                                 const nbnxn_bb_t                *bb_i_ci,
-                                 int                              csj,
-                                 gmx::ArrayRef<const nbnxn_bb_t>  bb_j_all)
+/*! \brief 4-wide SIMD code calculating the distance^2 between two bounding boxes in xyz0 format
+ *
+ * \param[in] bb_i  First bounding box, should be aligned for 4-wide SIMD
+ * \param[in] bb_j  Second bounding box, should be aligned for 4-wide SIMD
+ */
+static float clusterBoundingBoxDistance2(const BoundingBox &bb_i,
+                                         const BoundingBox &bb_j)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
     using namespace gmx;
 
-    Simd4Float bb_i_S0, bb_i_S1;
-    Simd4Float bb_j_S0, bb_j_S1;
-    Simd4Float dl_S;
-    Simd4Float dh_S;
-    Simd4Float dm_S;
-    Simd4Float dm0_S;
+    const Simd4Float bb_i_S0 = load4(bb_i.lower.ptr());
+    const Simd4Float bb_i_S1 = load4(bb_i.upper.ptr());
+    const Simd4Float bb_j_S0 = load4(bb_j.lower.ptr());
+    const Simd4Float bb_j_S1 = load4(bb_j.upper.ptr());
 
-    bb_i_S0 = load4(bb_i_ci[si].lower.ptr());
-    bb_i_S1 = load4(bb_i_ci[si].upper.ptr());
-    bb_j_S0 = load4(bb_j_all[csj].lower.ptr());
-    bb_j_S1 = load4(bb_j_all[csj].upper.ptr());
+    const Simd4Float dl_S    = bb_i_S0 - bb_j_S1;
+    const Simd4Float dh_S    = bb_j_S0 - bb_i_S1;
 
-    dl_S    = bb_i_S0 - bb_j_S1;
-    dh_S    = bb_j_S0 - bb_i_S1;
-
-    dm_S    = max(dl_S, dh_S);
-    dm0_S   = max(dm_S, simd4SetZeroF());
+    const Simd4Float dm_S    = max(dl_S, dh_S);
+    const Simd4Float dm0_S   = max(dm_S, simd4SetZeroF());
 
     return dotProduct(dm0_S, dm0_S);
 }
 
 /* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
-#define SUBC_BB_DIST2_SIMD4_XXXX_INNER(si, bb_i, d2) \
-    {                                                \
-        int               shi;                                  \
-                                                 \
-        Simd4Float        dx_0, dy_0, dz_0;                    \
-        Simd4Float        dx_1, dy_1, dz_1;                    \
-                                                 \
-        Simd4Float        mx, my, mz;                          \
-        Simd4Float        m0x, m0y, m0z;                       \
-                                                 \
-        Simd4Float        d2x, d2y, d2z;                       \
-        Simd4Float        d2s, d2t;                            \
-                                                 \
-        shi = (si)*Nbnxm::c_numBoundingBoxBounds1D*DIM; \
-                                                 \
-        xi_l = load4((bb_i)+shi+0*STRIDE_PBB);   \
-        yi_l = load4((bb_i)+shi+1*STRIDE_PBB);   \
-        zi_l = load4((bb_i)+shi+2*STRIDE_PBB);   \
-        xi_h = load4((bb_i)+shi+3*STRIDE_PBB);   \
-        yi_h = load4((bb_i)+shi+4*STRIDE_PBB);   \
-        zi_h = load4((bb_i)+shi+5*STRIDE_PBB);   \
-                                                 \
-        dx_0 = xi_l - xj_h;                 \
-        dy_0 = yi_l - yj_h;                 \
-        dz_0 = zi_l - zj_h;                 \
-                                                 \
-        dx_1 = xj_l - xi_h;                 \
-        dy_1 = yj_l - yi_h;                 \
-        dz_1 = zj_l - zi_h;                 \
-                                                 \
-        mx   = max(dx_0, dx_1);                 \
-        my   = max(dy_0, dy_1);                 \
-        mz   = max(dz_0, dz_1);                 \
-                                                 \
-        m0x  = max(mx, zero);                   \
-        m0y  = max(my, zero);                   \
-        m0z  = max(mz, zero);                   \
-                                                 \
-        d2x  = m0x * m0x;                   \
-        d2y  = m0y * m0y;                   \
-        d2z  = m0z * m0z;                   \
-                                                 \
-        d2s  = d2x + d2y;                   \
-        d2t  = d2s + d2z;                   \
-                                                 \
-        store4((d2)+(si), d2t);                      \
-    }
+template <int boundingBoxStart>
+static inline void gmx_simdcall
+clusterBoundingBoxDistance2_xxxx_simd4_inner(const float      *bb_i,
+                                             float            *d2,
+                                             const Simd4Float  xj_l,
+                                             const Simd4Float  yj_l,
+                                             const Simd4Float  zj_l,
+                                             const Simd4Float  xj_h,
+                                             const Simd4Float  yj_h,
+                                             const Simd4Float  zj_h)
+{
+    const int        shi  = boundingBoxStart*Nbnxm::c_numBoundingBoxBounds1D*DIM;
+
+    const Simd4Float zero = setZero();
+
+    const Simd4Float xi_l = load4(bb_i + shi + 0*STRIDE_PBB);
+    const Simd4Float yi_l = load4(bb_i + shi + 1*STRIDE_PBB);
+    const Simd4Float zi_l = load4(bb_i + shi + 2*STRIDE_PBB);
+    const Simd4Float xi_h = load4(bb_i + shi + 3*STRIDE_PBB);
+    const Simd4Float yi_h = load4(bb_i + shi + 4*STRIDE_PBB);
+    const Simd4Float zi_h = load4(bb_i + shi + 5*STRIDE_PBB);
+
+    const Simd4Float dx_0 = xi_l - xj_h;
+    const Simd4Float dy_0 = yi_l - yj_h;
+    const Simd4Float dz_0 = zi_l - zj_h;
+
+    const Simd4Float dx_1 = xj_l - xi_h;
+    const Simd4Float dy_1 = yj_l - yi_h;
+    const Simd4Float dz_1 = zj_l - zi_h;
+
+    const Simd4Float mx   = max(dx_0, dx_1);
+    const Simd4Float my   = max(dy_0, dy_1);
+    const Simd4Float mz   = max(dz_0, dz_1);
+
+    const Simd4Float m0x  = max(mx, zero);
+    const Simd4Float m0y  = max(my, zero);
+    const Simd4Float m0z  = max(mz, zero);
+
+    const Simd4Float d2x  = m0x * m0x;
+    const Simd4Float d2y  = m0y * m0y;
+    const Simd4Float d2z  = m0z * m0z;
+
+    const Simd4Float d2s  = d2x + d2y;
+    const Simd4Float d2t  = d2s + d2z;
+
+    store4(d2 + boundingBoxStart, d2t);
+}
 
 /* 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz */
-static void subc_bb_dist2_simd4_xxxx(const float *bb_j,
-                                     int nsi, const float *bb_i,
-                                     float *d2)
+static void
+clusterBoundingBoxDistance2_xxxx_simd4(const float *bb_j,
+                                       const int    nsi,
+                                       const float *bb_i,
+                                       float       *d2)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
     using namespace gmx;
 
-    Simd4Float xj_l, yj_l, zj_l;
-    Simd4Float xj_h, yj_h, zj_h;
-    Simd4Float xi_l, yi_l, zi_l;
-    Simd4Float xi_h, yi_h, zi_h;
-
-    Simd4Float zero;
-
-    zero = setZero();
-
-    xj_l = Simd4Float(bb_j[0*STRIDE_PBB]);
-    yj_l = Simd4Float(bb_j[1*STRIDE_PBB]);
-    zj_l = Simd4Float(bb_j[2*STRIDE_PBB]);
-    xj_h = Simd4Float(bb_j[3*STRIDE_PBB]);
-    yj_h = Simd4Float(bb_j[4*STRIDE_PBB]);
-    zj_h = Simd4Float(bb_j[5*STRIDE_PBB]);
+    const Simd4Float xj_l = Simd4Float(bb_j[0*STRIDE_PBB]);
+    const Simd4Float yj_l = Simd4Float(bb_j[1*STRIDE_PBB]);
+    const Simd4Float zj_l = Simd4Float(bb_j[2*STRIDE_PBB]);
+    const Simd4Float xj_h = Simd4Float(bb_j[3*STRIDE_PBB]);
+    const Simd4Float yj_h = Simd4Float(bb_j[4*STRIDE_PBB]);
+    const Simd4Float zj_h = Simd4Float(bb_j[5*STRIDE_PBB]);
 
     /* Here we "loop" over si (0,STRIDE_PBB) from 0 to nsi with step STRIDE_PBB.
      * But as we know the number of iterations is 1 or 2, we unroll manually.
      */
-    SUBC_BB_DIST2_SIMD4_XXXX_INNER(0, bb_i, d2);
+    clusterBoundingBoxDistance2_xxxx_simd4_inner<0>(bb_i, d2,
+                                                    xj_l, yj_l, zj_l,
+                                                    xj_h, yj_h, zj_h);
     if (STRIDE_PBB < nsi)
     {
-        SUBC_BB_DIST2_SIMD4_XXXX_INNER(STRIDE_PBB, bb_i, d2);
+        clusterBoundingBoxDistance2_xxxx_simd4_inner<STRIDE_PBB>(bb_i, d2,
+                                                                 xj_l, yj_l, zj_l,
+                                                                 xj_h, yj_h, zj_h);
     }
 }
 
@@ -1095,15 +1085,15 @@ makeClusterListSimple(const Grid               &jGrid,
                       float                     rbb2,
                       int * gmx_restrict        numDistanceChecks)
 {
-    const nbnxn_bb_t * gmx_restrict bb_ci = nbl->work->iClusterData.bb.data();
-    const real * gmx_restrict       x_ci  = nbl->work->iClusterData.x.data();
+    const BoundingBox * gmx_restrict bb_ci = nbl->work->iClusterData.bb.data();
+    const real * gmx_restrict        x_ci  = nbl->work->iClusterData.x.data();
 
-    gmx_bool                        InRange;
+    gmx_bool                         InRange;
 
     InRange = FALSE;
     while (!InRange && jclusterFirst <= jclusterLast)
     {
-        real d2  = subc_bb_dist2(0, bb_ci, jclusterFirst, jGrid.jBoundingBoxes());
+        real d2  = clusterBoundingBoxDistance2(bb_ci[0], jGrid.jBoundingBoxes()[jclusterFirst]);
         *numDistanceChecks += 2;
 
         /* Check if the distance is within the distance where
@@ -1143,7 +1133,7 @@ makeClusterListSimple(const Grid               &jGrid,
     InRange = FALSE;
     while (!InRange && jclusterLast > jclusterFirst)
     {
-        real d2  = subc_bb_dist2(0, bb_ci, jclusterLast, jGrid.jBoundingBoxes());
+        real d2  = clusterBoundingBoxDistance2(bb_ci[0], jGrid.jBoundingBoxes()[jclusterLast]);
         *numDistanceChecks += 2;
 
         /* Check if the distance is within the distance where
@@ -1218,7 +1208,7 @@ static void make_cluster_list_supersub(const Grid         &iGrid,
 #if NBNXN_BBXXXX
     const float          *pbb_ci = work.iSuperClusterData.bbPacked.data();
 #else
-    const nbnxn_bb_t     *bb_ci  = work.iSuperClusterData.bb.data();
+    const BoundingBox    *bb_ci  = work.iSuperClusterData.bb.data();
 #endif
 
     assert(c_nbnxnGpuClusterSize == iGrid.geometry().numAtomsICluster);
@@ -1258,8 +1248,8 @@ static void make_cluster_list_supersub(const Grid         &iGrid,
 
 #if NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SIMD4 */
-        subc_bb_dist2_simd4_xxxx(jGrid.packedBoundingBoxes().data() + (cj >> STRIDE_PBB_2LOG)*NNBSBB_XXXX + (cj & (STRIDE_PBB-1)),
-                                 ci1, pbb_ci, d2l);
+        clusterBoundingBoxDistance2_xxxx_simd4(jGrid.packedBoundingBoxes().data() + (cj >> STRIDE_PBB_2LOG)*NNBSBB_XXXX + (cj & (STRIDE_PBB-1)),
+                                               ci1, pbb_ci, d2l);
         *numDistanceChecks += c_nbnxnGpuClusterSize*2;
 #endif
 
@@ -1275,7 +1265,7 @@ static void make_cluster_list_supersub(const Grid         &iGrid,
 
 #if !NBNXN_BBXXXX
             /* Determine the bb distance between ci and cj */
-            d2l[ci]             = subc_bb_dist2(ci, bb_ci, cj, jGrid.jBoundingBoxes());
+            d2l[ci]             = clusterBoundingBoxDistance2(bb_ci[ci], jGrid.jBoundingBoxes()[cj]);
             *numDistanceChecks += 2;
 #endif
             float d2 = d2l[ci];
@@ -2350,10 +2340,10 @@ static void clear_pairlist_fep(t_nblist *nl)
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
-static inline void set_icell_bb_simple(gmx::ArrayRef<const nbnxn_bb_t> bb,
+static inline void set_icell_bb_simple(gmx::ArrayRef<const BoundingBox> bb,
                                        int ci,
                                        real shx, real shy, real shz,
-                                       nbnxn_bb_t *bb_ci)
+                                       BoundingBox *bb_ci)
 {
     bb_ci->lower.x = bb[ci].lower.x + shx;
     bb_ci->lower.y = bb[ci].lower.y + shy;
@@ -2397,10 +2387,10 @@ static void set_icell_bbxxxx_supersub(gmx::ArrayRef<const float> bb,
 #endif
 
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
-gmx_unused static void set_icell_bb_supersub(gmx::ArrayRef<const nbnxn_bb_t> bb,
+gmx_unused static void set_icell_bb_supersub(gmx::ArrayRef<const BoundingBox> bb,
                                              int ci,
                                              real shx, real shy, real shz,
-                                             nbnxn_bb_t *bb_ci)
+                                             BoundingBox *bb_ci)
 {
     for (int i = 0; i < c_gpuNumClusterPerCell; i++)
     {
@@ -3355,9 +3345,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
         }
     }
     const bool bSimple = pairlistIsSimple(*nbl);
-    gmx::ArrayRef<const nbnxn_bb_t> bb_i;
+    gmx::ArrayRef<const BoundingBox> bb_i;
 #if NBNXN_BBXXXX
-    gmx::ArrayRef<const float>      pbb_i;
+    gmx::ArrayRef<const float>       pbb_i;
     if (bSimple)
     {
         bb_i  = iGrid.iBoundingBoxes();
