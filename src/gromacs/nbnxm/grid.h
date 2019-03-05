@@ -250,31 +250,31 @@ class Grid
         int firstCellInColumn(int columnIndex) const
         {
             return cxy_ind_[columnIndex];
-        };
+        }
 
         //! Returns the number of cells in the column
         int numCellsInColumn(int columnIndex) const
         {
             return cxy_ind_[columnIndex + 1] - cxy_ind_[columnIndex];
-        };
+        }
 
         //! Returns the index of the first atom in the column
         int firstAtomInColumn(int columnIndex) const
         {
             return (cellOffset_ + cxy_ind_[columnIndex])*geometry_.numAtomsPerCell;
-        };
+        }
 
         //! Returns the number of real atoms in the column
         int numAtomsInColumn(int columnIndex) const
         {
             return cxy_na_[columnIndex];
-        };
+        }
 
         //! Returns the number of atoms in the column including padding
         int paddedNumAtomsInColumn(int columnIndex) const
         {
             return numCellsInColumn(columnIndex)*geometry_.numAtomsPerCell;
-        };
+        }
 
         //! Returns the end of the atom index range on the grid, including padding
         int atomIndexEnd() const
