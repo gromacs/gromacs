@@ -92,7 +92,7 @@ makeClusterListSimd4xn(const Grid               &jGrid,
 {
     using namespace gmx;
     const real * gmx_restrict          x_ci_simd = nbl->work->iClusterData.xSimd.data();
-    const nbnxn_bb_t * gmx_restrict    bb_ci     = nbl->work->iClusterData.bb.data();
+    const BoundingBox * gmx_restrict   bb_ci     = nbl->work->iClusterData.bb.data();
 
     SimdReal                           jx_S, jy_S, jz_S;
 
@@ -129,9 +129,9 @@ makeClusterListSimd4xn(const Grid               &jGrid,
     while (!InRange && jclusterFirst <= jclusterLast)
     {
 #if NBNXN_SEARCH_BB_SIMD4
-        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterFirst, jGrid.jBoundingBoxes());
+        d2 = clusterBoundingBoxDistance2_simd4(bb_ci[0], jGrid.jBoundingBoxes()[jclusterFirst]);
 #else
-        d2 = subc_bb_dist2(0, bb_ci, jclusterFirst, jGrid.jBoundingBoxes());
+        d2 = clusterBoundingBoxDistance2(bb_ci[0], jGrid.jBoundingBoxes()[jclusterFirst]);
 #endif
         *numDistanceChecks += 2;
 
@@ -200,9 +200,9 @@ makeClusterListSimd4xn(const Grid               &jGrid,
     while (!InRange && jclusterLast > jclusterFirst)
     {
 #if NBNXN_SEARCH_BB_SIMD4
-        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterLast, jGrid.jBoundingBoxes());
+        d2 = clusterBoundingBoxDistance2_simd4(bb_ci[0], jGrid.jBoundingBoxes()[jclusterLast]);
 #else
-        d2 = subc_bb_dist2(0, bb_ci, jclusterLast, jGrid.jBoundingBoxes());
+        d2 = clusterBoundingBoxDistance2(bb_ci[0], jGrid.jBoundingBoxes()[jclusterLast]);
 #endif
         *numDistanceChecks += 2;
 

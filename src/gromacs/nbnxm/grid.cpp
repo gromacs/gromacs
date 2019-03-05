@@ -572,7 +572,7 @@ gmx_unused static void calc_bounding_box_x_x4_halves(int na, const real *x,
 #endif
 }
 
-#if NBNXN_SEARCH_BB_SIMD4
+#if NBNXN_BBXXXX
 
 /*! \brief Computes the bouding box for na soordinates in order xyz, bb order xxxxyyyyzzzz */
 static void calc_bounding_box_xxxx(int na, int stride, const real *x, float *bb)
@@ -607,7 +607,7 @@ static void calc_bounding_box_xxxx(int na, int stride, const real *x, float *bb)
     bb[5*STRIDE_PBB] = R2F_U(zh);
 }
 
-#endif /* NBNXN_SEARCH_BB_SIMD4 */
+#endif /* NBNXN_BBXXXX */
 
 #if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
 
@@ -635,6 +635,8 @@ static void calc_bounding_box_simd4(int na, const float *x,
     store4(bb->upper.ptr(), bb_1_S);
 }
 
+#if NBNXN_BBXXXX
+
 /*! \brief Computes the bouding box for na coordinates in order xyz?, bb order xxxxyyyyzzzz */
 static void calc_bounding_box_xxxx_simd4(int na, const float *x,
                                          BoundingBox *bb_work_aligned,
@@ -649,6 +651,8 @@ static void calc_bounding_box_xxxx_simd4(int na, const float *x,
     bb[4*STRIDE_PBB] = bb_work_aligned->upper.y;
     bb[5*STRIDE_PBB] = bb_work_aligned->upper.z;
 }
+
+#endif /* NBNXN_BBXXXX */
 
 #endif /* NBNXN_SEARCH_SIMD4_FLOAT_X_BB */
 
