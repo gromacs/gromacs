@@ -208,7 +208,7 @@ void Grid::setDimensions(const nbnxn_search *nbs,
     {
         numClusters_.resize(maxNumCells);
     }
-    bbcz_.resize(maxNumCells*NNBSBB_D);
+    bbcz_.resize(maxNumCells);
 
     /* This resize also zeros the contents, this avoid possible
      * floating exceptions in SIMD with the unused bb elements.
@@ -1039,8 +1039,8 @@ void Grid::sortColumnsCpuGeometry(nbnxn_search *nbs,
             {
                 cellFilled = cell;
             }
-            bbcz_[cell*NNBSBB_D    ] = bb_[cellFilled].lower.z;
-            bbcz_[cell*NNBSBB_D + 1] = bb_[cellFilled].upper.z;
+            bbcz_[cell].lower = bb_[cellFilled].lower.z;
+            bbcz_[cell].upper = bb_[cellFilled].upper.z;
         }
 
         /* Set the unused atom indices to -1 */
@@ -1118,8 +1118,8 @@ void Grid::sortColumnsGpuGeometry(nbnxn_search *nbs,
                                               (numAtoms + geometry_.numAtomsICluster - 1)/ geometry_.numAtomsICluster);
 
                 /* Store the z-boundaries of the bounding box of the cell */
-                bbcz_[cell*NNBSBB_D  ] = x[nbs->a[atomOffsetZ]][ZZ];
-                bbcz_[cell*NNBSBB_D+1] = x[nbs->a[atomOffsetZ + numAtoms - 1]][ZZ];
+                bbcz_[cell].lower = x[nbs->a[atomOffsetZ]][ZZ];
+                bbcz_[cell].upper = x[nbs->a[atomOffsetZ + numAtoms - 1]][ZZ];
             }
 
             if (c_gpuNumClusterPerCellY > 1)

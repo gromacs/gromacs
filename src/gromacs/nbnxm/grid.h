@@ -135,13 +135,21 @@ struct BoundingBox
     Corner upper; //!< upper, along x and y and z, corner
 };
 
+/*! \internal
+ * \brief Bounding box for one dimension of a grid cell
+ */
+struct BoundingBox1D
+{
+    float lower; //!< lower bound
+    float upper; //!< upper bound
+};
+
+/*! \brief The number of bounds along one dimension of a bounding box */
+static constexpr int c_numBoundingBoxBounds1D = 2;
 
 #ifndef DOXYGEN
 
 // TODO: Convert macros to constexpr int
-
-/* Pair search box lower and upper bound in z only. */
-#define NNBSBB_D         2
 
 /* Bounding box calculations are (currently) always in single precision, so
  * we only need to check for single precision support here.
@@ -357,7 +365,7 @@ class Grid
         }
 
         //! Returns the bounding boxes along z for all cells on the grid
-        gmx::ArrayRef<const float> zBoundingBoxes() const
+        gmx::ArrayRef<const BoundingBox1D> zBoundingBoxes() const
         {
             return bbcz_;
         }
@@ -470,7 +478,7 @@ class Grid
 
         /* Bounding boxes */
         //! Bounding boxes in z for the cells
-        std::vector<float>                                  bbcz_;
+        std::vector<BoundingBox1D>                          bbcz_;
         //! 3D bounding boxes for the sub cells
         std::vector < BoundingBox, gmx::AlignedAllocator < BoundingBox>> bb_;
         //! 3D j-bounding boxes for the case where the i- and j-cluster sizes are different
