@@ -74,11 +74,12 @@
 #include "internal.h"
 #include "pairlistwork.h"
 
-using namespace gmx;                   // TODO: Remove when this file is moved into gmx namespace
+using namespace gmx;                        // TODO: Remove when this file is moved into gmx namespace
 
-using nbnxn_bb_t = Nbnxm::BoundingBox; // TODO: Remove when refactoring this file
+using nbnxn_bb_t    = Nbnxm::BoundingBox;   // TODO: Remove when refactoring this file
+using BoundingBox1D = Nbnxm::BoundingBox1D; // TODO: Remove when refactoring this file
 
-using Grid       = Nbnxm::Grid;        // TODO: Remove when refactoring this file
+using Grid          = Nbnxm::Grid;          // TODO: Remove when refactoring this file
 
 // Convience alias for partial Nbnxn namespace usage
 using InteractionLocality = Nbnxm::InteractionLocality;
@@ -521,7 +522,7 @@ static float subc_bb_dist2_simd4(int                              si,
         Simd4Float        d2x, d2y, d2z;                       \
         Simd4Float        d2s, d2t;                            \
                                                  \
-        shi = (si)*NNBSBB_D*DIM;                       \
+        shi = (si)*Nbnxm::c_numBoundingBoxBounds1D*DIM; \
                                                  \
         xi_l = load4((bb_i)+shi+0*STRIDE_PBB);   \
         yi_l = load4((bb_i)+shi+1*STRIDE_PBB);   \
@@ -3371,10 +3372,10 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
     /* We use the normal bounding box format for both grid types */
     bb_i  = iGrid.iBoundingBoxes();
 #endif
-    gmx::ArrayRef<const float> bbcz_i  = iGrid.zBoundingBoxes();
-    gmx::ArrayRef<const int>   flags_i = iGrid.clusterFlags();
-    gmx::ArrayRef<const float> bbcz_j  = jGrid.zBoundingBoxes();
-    int                        cell0_i = iGrid.cellOffset();
+    gmx::ArrayRef<const BoundingBox1D> bbcz_i  = iGrid.zBoundingBoxes();
+    gmx::ArrayRef<const int>           flags_i = iGrid.clusterFlags();
+    gmx::ArrayRef<const BoundingBox1D> bbcz_j  = jGrid.zBoundingBoxes();
+    int                                cell0_i = iGrid.cellOffset();
 
     if (debug)
     {
@@ -3431,8 +3432,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
         {
             const real shz = tz*box[ZZ][ZZ];
 
-            bz0 = bbcz_i[ci*NNBSBB_D  ] + shz;
-            bz1 = bbcz_i[ci*NNBSBB_D+1] + shz;
+            bz0 = bbcz_i[ci].lower + shz;
+            bz1 = bbcz_i[ci].upper + shz;
 
             if (tz == 0)
             {
@@ -3621,8 +3622,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                  */
                                 int downTestCell = midCell;
                                 while (downTestCell >= columnStart &&
-                                       (bbcz_j[downTestCell*NNBSBB_D + 1] >= bz0 ||
-                                        d2xy + gmx::square(bbcz_j[downTestCell*NNBSBB_D + 1] - bz0) < rlist2))
+                                       (bbcz_j[downTestCell].upper >= bz0 ||
+                                        d2xy + gmx::square(bbcz_j[downTestCell].upper - bz0) < rlist2))
                                 {
                                     downTestCell--;
                                 }
@@ -3636,8 +3637,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                  */
                                 int upTestCell = midCell + 1;
                                 while (upTestCell < columnEnd &&
-                                       (bbcz_j[upTestCell*NNBSBB_D] <= bz1 ||
-                                        d2xy + gmx::square(bbcz_j[upTestCell*NNBSBB_D] - bz1) < rlist2))
+                                       (bbcz_j[upTestCell].lower <= bz1 ||
+                                        d2xy + gmx::square(bbcz_j[upTestCell].lower - bz1) < rlist2))
                                 {
                                     upTestCell++;
                                 }
