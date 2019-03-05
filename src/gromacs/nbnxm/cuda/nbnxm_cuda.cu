@@ -325,9 +325,35 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* HtoD x, q */
-    cu_copy_H2D_async(adat->xq + adat_begin,
-                      static_cast<const void *>(nbatom->x().data() + adat_begin * 4),
-                      adat_len * sizeof(*adat->xq), stream);
+    if (useSeparateXQ)
+    {
+        std::vector<float3> x(adat_len);
+        std::vector<float>  q(adat_len);
+
+        for (int i = 0; i < adat_len; i++)
+        {
+            int srcIndex = adat_begin + i;
+            x[i].x = nbatom->x().data()[srcIndex*4 + 0];
+            x[i].y = nbatom->x().data()[srcIndex*4 + 1];
+            x[i].z = nbatom->x().data()[srcIndex*4 + 2];
+            q[i]   = nbatom->x().data()[srcIndex*4 + 3];
+        }
+        cu_copy_H2D_async(adat->x + adat_begin,
+                          static_cast<const void *>(x.data()),
+                          adat_len * sizeof(*adat->x), stream);
+
+        cu_copy_H2D_async(adat->q + adat_begin,
+                          static_cast<const void *>(q.data()),
+                          adat_len * sizeof(*adat->q), stream);
+    }
+
+    if (haveOtherWork || !useSeparateXQ)
+    {
+        cu_copy_H2D_async(adat->xq + adat_begin,
+                          static_cast<const void *>(nbatom->x().data() + adat_begin * 4),
+                          adat_len * sizeof(*adat->xq), stream);
+    }
+
 
     if (bDoTime)
     {

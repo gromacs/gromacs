@@ -70,6 +70,11 @@
  */
 const int c_cudaPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
 
+#ifndef GMX_USE_SEPARATE_XQ
+#define GMX_USE_SEPARATE_XQ 0
+#endif
+constexpr bool useSeparateXQ = (GMX_USE_SEPARATE_XQ != 0);
+
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
 /*! \brief number of clusters per supercluster. */
@@ -140,6 +145,8 @@ struct cu_atomdata
     int      nalloc;            /**< allocation size for the atom data (xq, f)    */
 
     float4  *xq;                /**< atom coordinates + charges, size natoms      */
+    float3  *x;
+    float   *q;
     float3  *f;                 /**< force output array, size natoms              */
 
     float   *e_lj;              /**< LJ energy output, size 1                     */

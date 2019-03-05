@@ -297,7 +297,17 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         ai = ci * c_clSize + tidxi;
 
         float  *shiftptr = (float *)&shift_vec[nb_sci.shift];
-        xqbuf    = xq[ai] + make_float4(LDG(shiftptr), LDG(shiftptr + 1), LDG(shiftptr + 2), 0.0f);
+        if (useSeparateXQ)
+        {
+            float3 xbuf = atdat.x[ai];
+            float  qbuf = atdat.q[ai];
+            xqbuf       = make_float4(xbuf, qbuf);
+        }
+        else
+        {
+            xqbuf    = xq[ai];
+        }
+        xqbuf   += make_float4(LDG(shiftptr), LDG(shiftptr + 1), LDG(shiftptr + 2), 0.0f);
         xqbuf.w *= nbparam.epsfac;
         xqib[tidxj * c_clSize + tidxi] = xqbuf;
 
@@ -406,9 +416,17 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     aj      = cj * c_clSize + tidxj;
 
                     /* load j atom data */
-                    xqbuf   = xq[aj];
-                    xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
-                    qj_f    = xqbuf.w;
+                    if (useSeparateXQ)
+                    {
+                        xj      = atdat.x[aj];
+                        qj_f    = atdat.q[aj];
+                    }
+                    else
+                    {
+                        xqbuf   = xq[aj];
+                        xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
+                        qj_f    = xqbuf.w;
+                    }
 #ifndef LJ_COMB
                     typej   = atom_types[aj];
 #else
