@@ -47,7 +47,6 @@ struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_output_env_t;
 struct gmx_pme_t;
-struct MdrunOptions;
 struct nonbonded_verlet_t;
 struct t_forcerec;
 struct t_mdatoms;

@@ -59,7 +59,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdrun/legacymdrunoptions.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/runner.h"

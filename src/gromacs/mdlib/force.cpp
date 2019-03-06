@@ -58,7 +58,6 @@
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec_threading.h"
-#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"

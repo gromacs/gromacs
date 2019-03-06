@@ -58,7 +58,6 @@ struct gmx_output_env_t;
 struct gmx_vsite_t;
 struct gmx_wallcycle;
 struct gmx_walltime_accounting;
-struct MdrunOptions;
 struct ObservablesHistory;
 struct ReplicaExchangeParameters;
 struct t_commrec;
@@ -79,6 +78,7 @@ class IMDOutputProvider;
 class MDLogger;
 class MDAtoms;
 class StopHandlerBuilder;
+struct MdrunOptions;
 
 //! Function type for integrator code.
 using IntegratorFunctionType = void();

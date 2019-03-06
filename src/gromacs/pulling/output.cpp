@@ -46,6 +46,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/pulling/pull.h"
@@ -385,7 +386,7 @@ static void set_legend_for_coord_components(const pull_coord_work_t *pcrd, int c
 static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                            const gmx_output_env_t *oenv,
                            gmx_bool bCoord,
-                           const ContinuationOptions &continuationOptions)
+                           const gmx::ContinuationOptions &continuationOptions)
 {
     FILE  *fp;
     int    nsets, m;
@@ -498,11 +499,11 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
     return fp;
 }
 
-void init_pull_output_files(pull_t                    *pull,
-                            int                        nfile,
-                            const t_filenm             fnm[],
-                            const gmx_output_env_t    *oenv,
-                            const ContinuationOptions &continuationOptions)
+void init_pull_output_files(pull_t                         *pull,
+                            int                             nfile,
+                            const t_filenm                  fnm[],
+                            const gmx_output_env_t         *oenv,
+                            const gmx::ContinuationOptions &continuationOptions)
 {
     /* Check for px and pf filename collision, if we are writing
        both files */
