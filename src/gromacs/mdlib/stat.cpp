@@ -48,6 +48,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/md_support.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"

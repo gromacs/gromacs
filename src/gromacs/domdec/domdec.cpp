@@ -66,11 +66,11 @@
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/constraintrange.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -1934,7 +1934,7 @@ static DlbState forceDlbOffOrBail(DlbState             cmdlineDlbState,
  */
 static DlbState determineInitialDlbState(const gmx::MDLogger &mdlog,
                                          DlbOption dlbOption, gmx_bool bRecordLoad,
-                                         const gmx::MdrunOptions &mdrunOptions,
+                                         const MdrunOptions &mdrunOptions,
                                          const t_inputrec *ir)
 {
     DlbState dlbState = DlbState::offCanTurnOn;
@@ -2137,7 +2137,7 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
 static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                    t_commrec *cr, gmx_domdec_t *dd,
                                    const DomdecOptions &options,
-                                   const gmx::MdrunOptions &mdrunOptions,
+                                   const MdrunOptions &mdrunOptions,
                                    const gmx_mtop_t *mtop,
                                    const t_inputrec *ir,
                                    const matrix box,
@@ -2953,7 +2953,7 @@ static void set_dd_envvar_options(const gmx::MDLogger &mdlog,
 gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
                                         t_commrec                     *cr,
                                         const DomdecOptions           &options,
-                                        const gmx::MdrunOptions       &mdrunOptions,
+                                        const MdrunOptions            &mdrunOptions,
                                         const gmx_mtop_t              *mtop,
                                         const t_inputrec              *ir,
                                         const matrix                   box,

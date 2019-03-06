@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,7 @@ struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct gmx_wallcycle;
+struct MdrunOptions;
 struct swaphistory_t;
 struct t_commrec;
 struct t_inputrec;
@@ -71,7 +72,6 @@ struct ObservablesHistory;
 namespace gmx
 {
 class LocalAtomSetManager;
-struct MdrunOptions;
 }
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
@@ -101,7 +101,7 @@ void init_swapcoords(
         t_commrec                *cr,
         gmx::LocalAtomSetManager *atomSets,
         const gmx_output_env_t   *oenv,
-        const gmx::MdrunOptions  &mdrunOptions);
+        const MdrunOptions       &mdrunOptions);
 
 
 /*! \brief Finalizes ion / water position swapping.

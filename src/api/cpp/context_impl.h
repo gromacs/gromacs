@@ -44,7 +44,7 @@
 #include <memory>
 #include <string>
 
-#include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdrun/legacymdrunoptions.h"
 
 #include "gmxapi/context.h"
 #include "gmxapi/session.h"

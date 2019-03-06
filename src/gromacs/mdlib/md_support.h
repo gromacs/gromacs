@@ -48,7 +48,6 @@ struct gmx_signalling_t;
 struct t_extmass;
 struct t_forcerec;
 struct t_grpopts;
-struct t_inputrec;
 struct t_lambda;
 struct t_nrnb;
 class t_state;
@@ -107,9 +106,6 @@ bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bLastStep);
-
-//! \brief Allocate and initialize node-local state entries
-void set_state_entries(t_state *state, const t_inputrec *ir);
 
 /* Set the lambda values in the global state from a frame read with rerun */
 void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,

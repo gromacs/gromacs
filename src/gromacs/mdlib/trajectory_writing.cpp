@@ -41,6 +41,7 @@
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdoutf.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"

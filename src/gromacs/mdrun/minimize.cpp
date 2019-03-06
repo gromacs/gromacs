@@ -78,6 +78,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/shellfc.h"
@@ -90,7 +91,6 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -354,7 +354,7 @@ static void init_em(FILE *fplog,
                     const t_commrec *cr,
                     const gmx_multisim_t *ms,
                     t_inputrec *ir,
-                    const gmx::MdrunOptions &mdrunOptions,
+                    const MdrunOptions &mdrunOptions,
                     t_state *state_global, gmx_mtop_t *top_global,
                     em_state_t *ems, gmx_localtop_t *top,
                     t_nrnb *nrnb,

@@ -46,12 +46,12 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
@@ -83,7 +83,7 @@ struct gmx_mdoutf {
 
 
 gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
-                         const gmx::MdrunOptions &mdrunOptions,
+                         const MdrunOptions &mdrunOptions,
                          const t_commrec *cr,
                          gmx::IMDOutputProvider *outputProvider,
                          const t_inputrec *ir, gmx_mtop_t *top_global,

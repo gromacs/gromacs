@@ -59,6 +59,7 @@
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"

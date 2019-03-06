@@ -53,8 +53,8 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdrun/logging.h"
-#include "gromacs/mdtypes/mdrunoptions.h"
 
 #include "replicaexchange.h"
 
