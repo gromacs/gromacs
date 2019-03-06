@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,25 +32,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 /*! \libinternal \file
  *
- * \brief This file declares types and functions for initializing an MD run
+ * \brief This file declares helper functionality for legacy option handling for mdrun
  *
- * \author Berk Hess <hess@kth.se>
+ * It is likely that much of this content will move closer to the
+ * functionality that supports the respective features. For example,
+ * modules that change behaviour according to whether it is a rerun
+ * could register themselves with the rerun module and get notified at
+ * setup time to set their own boolean, rather than rely on a central
+ * glob of mdrun options being passed around.
+ *
+ * \ingroup module_mdtypes
  * \inlibraryapi
  */
+#ifndef GMX_MDTYPES_MDRUNOPTIONS_H
+#define GMX_MDTYPES_MDRUNOPTIONS_H
 
-#ifndef GMX_MDLIB_MDRUN_H
-#define GMX_MDLIB_MDRUN_H
-
-#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_mtop_t;
-struct t_commrec;
-struct t_inputrec;
-class t_state;
+namespace gmx
+{
 
 //! \internal \brief Options and settings for continuing from checkpoint
 struct ContinuationOptions
@@ -133,17 +134,6 @@ struct MdrunOptions
     int                 verboseStepPrintInterval = 100;
 };
 
-//! \brief Allocate and initialize node-local state entries
-void set_state_entries(t_state *state, const t_inputrec *ir);
-
-//! \brief Broadcast inputrec and mtop and allocate node-specific settings
-void init_parallel(t_commrec *cr, t_inputrec *inputrec,
-                   gmx_mtop_t *mtop);
-
-//! \brief Broadcasts the, non-dynamic, state from the master to all ranks in cr->mpi_comm_mygroup
-//
-// This is intended to be used with MPI parallelization without
-// domain decompostion (currently with NM and TPI).
-void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state);
+} // end namespace gmx
 
 #endif
