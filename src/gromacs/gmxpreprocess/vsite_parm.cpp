@@ -78,11 +78,15 @@ typedef struct {
     t_param *param;
 } vsitebondparam_t;
 
-typedef struct {
-    int               nr;
-    int               ftype;
-    vsitebondparam_t *vsbp;
-} at2vsitebond_t;
+struct Atom2VsiteBond
+{
+    //! Function type for conversion.
+    int                           ftype;
+    //! The vsite parameters in a list.
+    std::vector<vsitebondparam_t> vsbp;
+    //! Number of vsite parameters.
+    size_t                        size() const { return vsbp.size(); }
+};
 
 typedef struct {
     int  nr;
@@ -106,7 +110,7 @@ static int vsite_bond_nrcheck(int ftype)
 }
 
 static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
-                         t_param *param)
+                         const t_param *param)
 {
     int j;
 
@@ -124,21 +128,18 @@ static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
 }
 
 static void get_bondeds(int nrat, const t_iatom atoms[],
-                        at2vsitebond_t *at2vb,
+                        gmx::ArrayRef<const Atom2VsiteBond> at2vb,
                         int *nrbond, t_mybonded **bonds,
                         int *nrang,  t_mybonded **angles,
                         int *nridih, t_mybonded **idihs )
 {
-    int      k, i, ftype, nrcheck;
-    t_param *param;
-
-    for (k = 0; k < nrat; k++)
+    for (int k = 0; k < nrat; k++)
     {
-        for (i = 0; i < at2vb[atoms[k]].nr; i++)
+        for (auto &vsite : at2vb[atoms[k]].vsbp)
         {
-            ftype   = at2vb[atoms[k]].vsbp[i].ftype;
-            param   = at2vb[atoms[k]].vsbp[i].param;
-            nrcheck = vsite_bond_nrcheck(ftype);
+            int            ftype   = vsite.ftype;
+            const t_param *param   = vsite.param;
+            int            nrcheck = vsite_bond_nrcheck(ftype);
             /* abuse nrcheck to see if we're adding bond, angle or idih */
             switch (nrcheck)
             {
@@ -150,23 +151,22 @@ static void get_bondeds(int nrat, const t_iatom atoms[],
     }
 }
 
-static at2vsitebond_t *make_at2vsitebond(int natoms, gmx::ArrayRef<InteractionTypeParameters> plist)
+static std::vector<Atom2VsiteBond>
+make_at2vsitebond(int natoms, gmx::ArrayRef<InteractionTypeParameters> plist)
 {
-    bool           *bVSI;
-    int             ftype, i, j, nrcheck, nr;
-    t_iatom        *aa;
-    at2vsitebond_t *at2vb;
+    bool                       *bVSI;
+    t_iatom                    *aa;
 
-    snew(at2vb, natoms);
+    std::vector<Atom2VsiteBond> at2vb(natoms);
 
     snew(bVSI, natoms);
-    for (ftype = 0; (ftype < F_NRE); ftype++)
+    for (int ftype = 0; (ftype < F_NRE); ftype++)
     {
         if ((interaction_function[ftype].flags & IF_VSITE) && ftype != F_VSITEN)
         {
-            for (i = 0; (i < plist[ftype].nr); i++)
+            for (int i = 0; (i < plist[ftype].nr); i++)
             {
-                for (j = 0; j < NRAL(ftype); j++)
+                for (int j = 0; j < NRAL(ftype); j++)
                 {
                     bVSI[plist[ftype].param[i].a[j]] = TRUE;
                 }
@@ -174,26 +174,21 @@ static at2vsitebond_t *make_at2vsitebond(int natoms, gmx::ArrayRef<InteractionTy
         }
     }
 
-    for (ftype = 0; (ftype < F_NRE); ftype++)
+    for (int ftype = 0; (ftype < F_NRE); ftype++)
     {
-        nrcheck = vsite_bond_nrcheck(ftype);
+        int nrcheck = vsite_bond_nrcheck(ftype);
         if (nrcheck > 0)
         {
-            for (i = 0; (i < plist[ftype].nr); i++)
+            for (int i = 0; (i < plist[ftype].nr); i++)
             {
                 aa = plist[ftype].param[i].a;
-                for (j = 0; j < nrcheck; j++)
+                for (int j = 0; j < nrcheck; j++)
                 {
                     if (bVSI[aa[j]])
                     {
-                        nr = at2vb[aa[j]].nr;
-                        if (nr % 10 == 0)
-                        {
-                            srenew(at2vb[aa[j]].vsbp, nr+10);
-                        }
-                        at2vb[aa[j]].vsbp[nr].ftype = ftype;
-                        at2vb[aa[j]].vsbp[nr].param = &plist[ftype].param[i];
-                        at2vb[aa[j]].nr++;
+                        at2vb[aa[j]].vsbp.emplace_back();
+                        at2vb[aa[j]].vsbp.back().ftype = ftype;
+                        at2vb[aa[j]].vsbp.back().param = &plist[ftype].param[i];
                     }
                 }
             }
@@ -202,20 +197,6 @@ static at2vsitebond_t *make_at2vsitebond(int natoms, gmx::ArrayRef<InteractionTy
     sfree(bVSI);
 
     return at2vb;
-}
-
-static void done_at2vsitebond(int natoms, at2vsitebond_t *at2vb)
-{
-    int i;
-
-    for (i = 0; i < natoms; i++)
-    {
-        if (at2vb[i].nr)
-        {
-            sfree(at2vb[i].vsbp);
-        }
-    }
-    sfree(at2vb);
 }
 
 static at2vsitecon_t *make_at2vsitecon(int natoms, gmx::ArrayRef<InteractionTypeParameters> plist)
@@ -773,7 +754,6 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
     int             i, j, ftype;
     int             nvsite, nrbond, nrang, nridih, nrset;
     bool            bFirst, bSet, bERROR;
-    at2vsitebond_t *at2vb;
     t_mybonded     *bonds;
     t_mybonded     *angles;
     t_mybonded     *idihs;
@@ -782,7 +762,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
     nvsite = 0;
 
     /* Make a reverse list to avoid ninteractions^2 operations */
-    at2vb = make_at2vsitebond(atoms->nr, plist);
+    std::vector<Atom2VsiteBond> at2vb = make_at2vsitebond(atoms->nr, plist);
 
     for (ftype = 0; (ftype < F_NRE); ftype++)
     {
@@ -889,8 +869,6 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype *atype,
         }         /* if IF_VSITE */
 
     }
-    done_at2vsitebond(atoms->nr, at2vb);
-
     return nvsite;
 }
 
