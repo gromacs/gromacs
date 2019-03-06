@@ -53,13 +53,11 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct ContinuationOptions;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_coord_work_t;

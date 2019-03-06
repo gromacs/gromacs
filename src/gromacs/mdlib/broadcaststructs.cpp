@@ -45,7 +45,6 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
