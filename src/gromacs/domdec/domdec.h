@@ -73,7 +73,6 @@ struct gmx_domdec_zones_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_vsite_t;
-struct MdrunOptions;
 struct t_block;
 struct t_blocka;
 struct t_commrec;
@@ -87,6 +86,7 @@ class t_state;
 namespace gmx
 {
 class MDLogger;
+struct MdrunOptions;
 class LocalAtomSetManager;
 } // namespace
 
@@ -203,7 +203,7 @@ gmx_domdec_t *
 init_domain_decomposition(const gmx::MDLogger            &mdlog,
                           t_commrec                      *cr,
                           const DomdecOptions            &options,
-                          const MdrunOptions             &mdrunOptions,
+                          const gmx::MdrunOptions        &mdrunOptions,
                           const gmx_mtop_t               *mtop,
                           const t_inputrec               *ir,
                           const matrix                    box,
