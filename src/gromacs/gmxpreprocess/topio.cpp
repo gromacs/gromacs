@@ -882,6 +882,17 @@ static char **read_topol(const char *infile, const char *outfile,
         }
     }
 
+    if (cpp_find_define(&handle, "_FF_GROMOS96") != nullptr)
+    {
+        warning(wi,
+                "The GROMOS force fields have been parametrized with a physically incorrect "
+                "multiple-time-stepping scheme for a twin-range cut-off. When used with "
+                "a single-range cut-off (or a correct Trotter multiple-time-stepping scheme), "
+                "physical properties, such as the density, might differ from the intended values. "
+                "Check if molecules in your system are affected by such issues before proceeding. "
+                "Further information may be available at https://redmine.gromacs.org/issues/2884.");
+    }
+
     cpp_done(handle);
 
     if (opts->couple_moltype)

@@ -234,10 +234,32 @@ TEST_F(PmeTest, ScalesTheBox)
                                                 "nstcalcenergy   = 1\n"
                                                 "nstenergy       = 1\n"
                                                 "pme-order       = 4\n"
+                                                "pbc             = xyz\n"
+                                                "nsteps          = %d\n",
+                                                nsteps
+                                                );
+
+    runner_.useStringAsMdpFile(theMdpFile);
+
+    RunModesList runModes;
+    runModes["PmeOnCpu"]         = {"-pme", "cpu"};
+    runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
+    runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
+
+    runTest(runModes);
+}
+
+TEST_F(PmeTest, ScalesTheBoxWithWalls)
+{
+    const int         nsteps     = 0;
+    const std::string theMdpFile = formatString("coulombtype     = PME\n"
+                                                "nstcalcenergy   = 1\n"
+                                                "nstenergy       = 1\n"
+                                                "pme-order       = 4\n"
                                                 "pbc             = xy\n"
                                                 "nwall           = 2\n"
                                                 "ewald-geometry  = 3dc\n"
-                                                "wall_atomtype   = OMet CMet\n"
+                                                "wall_atomtype   = CMet H\n"
                                                 "wall_density    = 9 9.0\n"
                                                 "wall-ewald-zfac = 5\n"
                                                 "nsteps          = %d\n",
