@@ -1844,6 +1844,27 @@ static std::vector<int> atom2cg(const t_block &chargeGroups)
     return a2cg;
 }
 
+int countNonlinearVsites(const gmx_mtop_t &mtop)
+{
+    int numNonlinearVsites = 0;
+    for (const gmx_molblock_t &molb : mtop.molblock)
+    {
+        const gmx_moltype_t &molt = mtop.moltype[molb.type];
+
+        for (const auto &ilist : extractILists(molt.ilist, IF_VSITE))
+        {
+            if (ilist.functionType != F_VSITE2 &&
+                ilist.functionType != F_VSITE3 &&
+                ilist.functionType != F_VSITEN)
+            {
+                numNonlinearVsites += molb.nmol*ilist.iatoms.size()/(1 + NRAL(ilist.functionType));
+            }
+        }
+    }
+
+    return numNonlinearVsites;
+}
+
 int count_intercg_vsites(const gmx_mtop_t *mtop)
 {
     int n_intercg_vsite = 0;

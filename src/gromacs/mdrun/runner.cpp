@@ -283,8 +283,8 @@ static void prepare_verlet_scheme(FILE                           *fplog,
         ListSetupType      listType  = (makeGpuPairList ? ListSetupType::Gpu : ListSetupType::CpuSimdWhenSupported);
         VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
-        real               rlist_new;
-        calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1, -1, &listSetup, nullptr, &rlist_new);
+        const real         rlist_new =
+            calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
 
         if (rlist_new != ir->rlist)
         {
