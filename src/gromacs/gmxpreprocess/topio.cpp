@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -929,6 +929,17 @@ static char **read_topol(const char *infile, const char *outfile,
         {
             *ffParametrizedWithHBondConstraints = true;
         }
+    }
+
+    if (cpp_find_define(&handle, "_FF_GROMOS96"))
+    {
+        warning(wi,
+                "The GROMOS force fields have been parametrized with a physically incorrect "
+                "multiple-time-stepping scheme for a twin-range cut-off. When used with "
+                "a single-range cut-off (or a correct Trotter multiple-time-stepping scheme), "
+                "physical properties, such as the density, might differ from the intended values. "
+                "Check if molecules in your system are affected by such issues before proceeding. "
+                "Further information may be available at https://redmine.gromacs.org/issues/2884.");
     }
 
     cpp_done(handle);

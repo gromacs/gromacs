@@ -24,3 +24,14 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Added warning with the use of GROMOS force fields
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+grompp now warns when a GROMOS force field is used. The GROMOS force fields
+have been parametrized with a physically incorrect multiple-time-stepping
+scheme for a twin-range cut-off. When used with a single-range cut-off,
+physical properties, such as the density, might be off from the intended values.
+
+:issue:`2884`
+
