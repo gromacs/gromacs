@@ -45,4 +45,10 @@ if(GMX_USE_CUDA)
        )
 endif()
 
+if(GMX_USE_CUDA)
+    gmx_add_libgromacs_sources(
+       leapfrog_cuda_impl.cu
+       )
+endif()
+
 gmx_install_headers(simulationsignal.h)

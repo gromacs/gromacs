@@ -37,6 +37,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
                   constr.cpp
                   ebin.cpp
                   energyoutput.cpp
+                  leapfrog.cpp
                   settle.cpp
                   shake.cpp
                   simulationsignal.cpp

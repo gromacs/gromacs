@@ -83,6 +83,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/leapfrog_cuda.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
@@ -143,6 +144,9 @@
 #endif
 
 using gmx::SimulationSignaller;
+
+//! Whether the GPU version of Leap-Frog integrator should be used.
+static const bool c_useGpuLeapFrog = (getenv("GMX_INTEGRATE_GPU") != nullptr);
 
 void gmx::Integrator::do_md()
 {
@@ -599,6 +603,16 @@ void gmx::Integrator::do_md()
      *             Loop over MD steps
      *
      ************************************************************/
+    std::unique_ptr<LeapFrogCuda> integrator;
+    if (c_useGpuLeapFrog)
+    {
+        GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only md integrator is supported on the GPU.");
+        GMX_RELEASE_ASSERT(ir->etc == etcNO, "Temperature coupling is not supported on the GPU.");
+        GMX_RELEASE_ASSERT(ir->epc == epcNO, "Pressure coupling is not supported on the GPU.");
+        GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported on the GPU");
+        integrator = std::make_unique<LeapFrogCuda>(state->natoms);
+        integrator->set(*mdatoms);
+    }
 
     bFirstStep       = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
@@ -1143,8 +1157,21 @@ void gmx::Integrator::do_md()
             copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
         }
 
-        update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
-                      ekind, M, &upd, etrtPOSITION, cr, constr);
+
+        if (c_useGpuLeapFrog)
+        {
+            integrator->copyCoordinatesToGpu(state->x.rvec_array());
+            integrator->copyVelocitiesToGpu(state->v.rvec_array());
+            integrator->copyForcesToGpu(as_rvec_array(f.data()));
+            integrator->integrate(ir->delta_t);
+            integrator->copyCoordinatesFromGpu(upd.xp()->rvec_array());
+            integrator->copyVelocitiesFromGpu(state->v.rvec_array());
+        }
+        else
+        {
+            update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
+                          ekind, M, &upd, etrtPOSITION, cr, constr);
+        }
         wallcycle_stop(wcycle, ewcUPDATE);
 
         constrain_coordinates(step, &dvdl_constr, state,
