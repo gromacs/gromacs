@@ -81,6 +81,7 @@
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -1547,8 +1548,6 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               matrix            box,
                               warninp          *wi)
 {
-    real                   rlist_1x1;
-    int                    n_nonlin_vsite;
     char                   warn_buf[STRLEN];
 
     printf("Determining Verlet buffer for a tolerance of %g kJ/mol/ps at %g K\n", ir->verletbuf_tol, buffer_temp);
@@ -1557,17 +1556,18 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     VerletbufListSetup listSetup1x1;
     listSetup1x1.cluster_size_i = 1;
     listSetup1x1.cluster_size_j = 1;
-    calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
-                            buffer_temp, &listSetup1x1,
-                            &n_nonlin_vsite, &rlist_1x1);
+    const real rlist_1x1 =
+        calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1,
+                             buffer_temp, listSetup1x1);
 
     /* Set the pair-list buffer size in ir */
     VerletbufListSetup listSetup4x4 =
         verletbufGetSafeListSetup(ListSetupType::CpuNoSimd);
-    calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
-                            buffer_temp, &listSetup4x4,
-                            &n_nonlin_vsite, &ir->rlist);
+    ir->rlist =
+        calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1,
+                             buffer_temp, listSetup4x4);
 
+    const int n_nonlin_vsite = countNonlinearVsites(*mtop);
     if (n_nonlin_vsite > 0)
     {
         sprintf(warn_buf, "There are %d non-linear virtual site constructions. Their contribution to the energy error is approximated. In most cases this does not affect the error significantly.", n_nonlin_vsite);
