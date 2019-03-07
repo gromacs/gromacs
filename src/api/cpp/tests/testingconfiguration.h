@@ -89,7 +89,7 @@ class GmxApiTest : public gmx::test::MdrunTestFixture
          */
         void makeTprFile(int steps)
         {
-            runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+            runner_.useTopGroAndNdxFromDatabase("spc_and_methane");
             runner_.useStringAsMdpFile(gmx::formatString("integrator = md\n"
                                                          "cutoff-scheme = Verlet\n"
                                                          "nsteps = %d\n"

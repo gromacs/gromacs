@@ -1,0 +1,33 @@
+#include "oplsaa.ff/forcefield.itp"
+
+[ atomtypes ]
+;name  at.num      mass        charge   ptype       sigma        epsilon
+  CH4    0          0.0        0.000       A        0.371        1.26
+
+#include "oplsaa.ff/spce.itp"
+
+[ moleculetype ]
+; Name            nrexcl
+ methane          3
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass
+     1   opls_138      1    METH     C      1      -0.24     12.011
+     2   opls_140      1    METH    H1      1       0.06      1.008
+     3   opls_140      1    METH    H2      1       0.06      1.008
+     4   opls_140      1    METH    H3      1       0.06      1.008
+     5   opls_140      1    METH    H4      1       0.06      1.008
+
+[ bonds ]
+;  ai    aj funct            c0            c1            c2            c3
+    1     2     1
+    1     3     1
+    1     4     1
+    1     5     1
+
+[ system ]
+Water and methane
+
+[ molecules ]
+SOL       1
+methane   1
