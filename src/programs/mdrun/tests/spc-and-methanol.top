@@ -2,6 +2,10 @@
 #include "gromos43a1.ff/methanol.itp"
 #include "gromos43a1.ff/spc.itp"
 
+; We undefine the GROMOS FF macro to avoid a warning in grompp in tests
+; TODO: Use a different force field for this test
+#undef _FF_GROMOS96
+
 [ system ]
 ; Name
 spc-and-methanol
