@@ -1547,7 +1547,6 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               matrix            box,
                               warninp          *wi)
 {
-    real                   rlist_1x1;
     int                    n_nonlin_vsite;
     char                   warn_buf[STRLEN];
 
@@ -1557,16 +1556,18 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     VerletbufListSetup listSetup1x1;
     listSetup1x1.cluster_size_i = 1;
     listSetup1x1.cluster_size_j = 1;
-    calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
-                            buffer_temp, &listSetup1x1,
-                            &n_nonlin_vsite, &rlist_1x1);
+    const real rlist_1x1 =
+        calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1,
+                             buffer_temp, listSetup1x1,
+                             nullptr);
 
     /* Set the pair-list buffer size in ir */
     VerletbufListSetup listSetup4x4 =
         verletbufGetSafeListSetup(ListSetupType::CpuNoSimd);
-    calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
-                            buffer_temp, &listSetup4x4,
-                            &n_nonlin_vsite, &ir->rlist);
+    ir->rlist =
+        calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1,
+                             buffer_temp, listSetup4x4,
+                             &n_nonlin_vsite);
 
     if (n_nonlin_vsite > 0)
     {
