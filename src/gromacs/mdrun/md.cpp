@@ -81,6 +81,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/leapfrog_cuda.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
@@ -612,6 +613,12 @@ void gmx::Integrator::do_md()
      *             Loop over MD steps
      *
      ************************************************************/
+    std::unique_ptr<LeapFrogCuda> integrator;
+    if (getenv("GMX_INTEGRATE_GPU") != nullptr)
+    {
+        integrator = std::make_unique<LeapFrogCuda>(state->natoms);
+        integrator->copyInverseMassesToGpu(mdatoms->invmass);
+    }
 
     bFirstStep       = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
@@ -910,9 +917,25 @@ void gmx::Integrator::do_md()
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
-                          ekind, M, &upd, etrtVELOCITY1,
-                          cr, constr);
+            if (getenv("GMX_INTEGRATE_GPU") != nullptr)
+            {
+                GMX_RELEASE_ASSERT(inputrec->eI == eiMD, "Only md integrator is supported on GPU.");
+                GMX_RELEASE_ASSERT(ir->etc != etcNOSEHOOVER, "Nose-Hoover is not implemented on the GPU.");
+                GMX_RELEASE_ASSERT(ir->epc != epcPARRINELLORAHMAN, "Pressure coupling is not supported on the GPU.");
+                GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported on the GPU");
+                integrator->copyCoordinatesToGpu(state->x.rvec_array());
+                integrator->copyVelocitiesToGpu(state->v.rvec_array());
+                integrator->copyForcesToGpu(as_rvec_array(f.data()));
+                integrator->integrate(inputrec->delta_t);
+                integrator->copyCoordinatesFromGpu(upd.xp()->rvec_array());
+                integrator->copyVelocitiesFromGpu(state->v.rvec_array());
+            }
+            else
+            {
+                update_coords(step, ir, mdatoms, state, f.arrayRefWithPadding(), fcd,
+                              ekind, M, &upd, etrtVELOCITY1,
+                              cr, constr);
+            }
 
             wallcycle_stop(wcycle, ewcUPDATE);
             constrain_velocities(step, nullptr,
