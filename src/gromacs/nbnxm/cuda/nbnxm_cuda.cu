@@ -61,6 +61,7 @@
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist.h"
+#include "gromacs/nbnxm/cuda/nbnxm_cuda_buffer_ops_kernels.cuh"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -379,7 +380,6 @@ void gpu_launch_kernel(gmx_nbnxn_cuda_t          *nb,
 {
     /* CUDA kernel launch-related stuff */
     int                  nblock;
-    dim3                 dim_block, dim_grid;
     nbnxn_cu_kfunc_ptr_t nb_kernel = nullptr; /* fn pointer to the nonbonded kernel */
 
     cu_atomdata_t       *adat    = nb->atdat;
@@ -624,7 +624,9 @@ void gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
                         nbnxn_atomdata_t       *nbatom,
                         const int               flags,
                         const AtomLocality      atomLocality,
-                        const bool              haveOtherWork)
+                        const bool              haveOtherWork,
+                        const bool              useGpuFBufOps,
+                        const bool              bNS)
 {
     cudaError_t stat;
     int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -664,8 +666,11 @@ void gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* DtoH f */
-    cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
-                      (adat_len)*sizeof(*adat->f), stream);
+    if (!useGpuFBufOps || bNS || (iloc == InteractionLocality::NonLocal))
+    {
+        cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
+                          (adat_len)*sizeof(*adat->f), stream);
+    }
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
@@ -720,5 +725,97 @@ void cuda_set_cacheconfig()
         }
     }
 }
+
+/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format. */
+void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality             atomLocality,
+                               const nbnxn_atomdata_t        *nbat,
+                               gmx_nbnxn_gpu_t               *gpu_nbv,
+                               int                            a0,
+                               int                            a1,
+                               rvec                          *f)
+{
+
+
+    cu_atomdata_t       *adat    = gpu_nbv->atdat;
+    cudaStream_t         stream  = gpu_nbv->stream[0];
+
+    bool                 bDoTime = gpu_nbv->bDoTime;
+    cu_timers_t         *t       = gpu_nbv->timers;
+
+    //TODO enable copyForce=false when we are sure all forces are on GPU through use of
+    //force workload mechanism
+    bool        copyForce = true;
+
+    if (copyForce)
+    {
+        if (bDoTime)
+        {
+            t->xf[atomLocality].nb_d2h.openTimingRegion(stream);
+        }
+
+        // FIXME: use copyToDeviceBuffer wrapper
+        // There still exist issues with host buffer not being pinned
+        //copyToDeviceBuffer(&gpu_nbv->frvec, f, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
+        cudaMemcpyAsync(gpu_nbv->frvec, f, a1*sizeof(rvec), cudaMemcpyHostToDevice, stream);
+
+
+
+        if (bDoTime)
+        {
+            t->xf[atomLocality].nb_d2h.closeTimingRegion(stream);
+        }
+
+    }
+
+    /* launch kernel */
+    const int          threadsPerBlock = 128;
+
+    KernelLaunchConfig config;
+    config.blockSize[0]     = threadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = (((a1-a0)+1)+threadsPerBlock-1)/threadsPerBlock;
+    config.gridSize[1]      = 1;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
+    config.stream           = stream;
+
+    auto             kernelFn                = nbnxn_gpu_add_nbat_f_to_f_kernel;
+    const float     *fPtr                    = (float*) adat->f;
+    rvec            *frvec                   = gpu_nbv->frvec;
+    const int       *cell                    = gpu_nbv->cell;
+    const int        stride                  = nbat->fstride;
+
+    const auto       kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
+                                                              &fPtr,
+                                                              &frvec,
+                                                              &cell,
+                                                              &a0,
+                                                              &a1,
+                                                              &stride);
+
+    launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
+
+    if (bDoTime)
+    {
+        t->xf[atomLocality].nb_d2h.openTimingRegion(stream);
+    }
+
+    // FIXME: use copyToDeviceBuffer wrapper
+    // There still exist issues with host buffer not being pinned
+    //copyFromDeviceBuffer(f, &gpu_nbv->frvec, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
+    cudaMemcpyAsync(f, gpu_nbv->frvec, a1*sizeof(rvec), cudaMemcpyDeviceToHost, stream);
+
+    if (bDoTime)
+    {
+        t->xf[atomLocality].nb_d2h.closeTimingRegion(stream);
+    }
+
+
+    cudaStreamSynchronize(stream);
+    return;
+}
+
+
 
 } // namespace Nbnxm

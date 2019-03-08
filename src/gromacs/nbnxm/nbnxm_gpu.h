@@ -45,10 +45,12 @@
 
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #include "gpu_types.h"
+#include "internal.h"
 #include "locality.h"
 
 struct nbnxn_atomdata_t;
@@ -140,7 +142,9 @@ void gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused *nb,
                         nbnxn_atomdata_t gmx_unused *nbatom,
                         int              gmx_unused  flags,
                         AtomLocality     gmx_unused  aloc,
-                        bool             gmx_unused  haveOtherWork) GPU_FUNC_TERM
+                        bool             gmx_unused  haveOtherWork,
+                        const bool       gmx_unused  useGpuFBufOps,
+                        const bool       gmx_unused  bNS) GPU_FUNC_TERM
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *
@@ -212,6 +216,22 @@ void gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
 int gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
+
+/*! \brief Initialization for F buffer operations on GPU */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
+                                    const nbnxn_search      gmx_unused *nbs,
+                                    gmx_nbnxn_gpu_t         gmx_unused *gpu_nbv,
+                                    int                     gmx_unused  a1) CUDA_FUNC_TERM
+
+/*! \brief F buffer operations on GPU: adds nb format force to rvec format. */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality           gmx_unused  atomLocality,
+                               const nbnxn_atomdata_t       gmx_unused *nbat,
+                               gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
+                               int                          gmx_unused  a0,
+                               int                          gmx_unused  a1,
+                               rvec                         gmx_unused *f) CUDA_FUNC_TERM
 
 } // namespace Nbnxm
 
