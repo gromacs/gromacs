@@ -804,6 +804,47 @@ setupForceWorkload(gmx::PpForceWorkload *forceWork,
     forceWork->haveCpuListedForceWork = haveCpuListedForces(*fr, idef, *fcd);
 }
 
+static void reduceAndUpdateMuTot(t_forcerec                   *fr,
+                                 const t_inputrec             *inputrec,
+                                 const t_commrec              *cr,
+                                 bool                          hasStateChanged,
+                                 double                       *mu,
+                                 rvec                          mu_tot,
+                                 const real                   *lambda,
+                                 const DDBalanceRegionHandler &ddBalanceRegionHandler)
+{
+    if (hasStateChanged && inputrecNeedMutot(inputrec))
+    {
+        if (PAR(cr))
+        {
+            gmx_sumd(2*DIM, mu, cr);
+
+            ddBalanceRegionHandler.reopenRegionCpu();
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            for (int j = 0; j < DIM; j++)
+            {
+                fr->mu_tot[i][j] = mu[i*DIM + j];
+            }
+        }
+    }
+    if (fr->efep == efepNO)
+    {
+        copy_rvec(fr->mu_tot[0], mu_tot);
+    }
+    else
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            mu_tot[j] =
+                (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] +
+                lambda[efptCOUL]*fr->mu_tot[1][j];
+        }
+    }
+}
+
 static void do_force_cutsVERLET(FILE *fplog,
                                 const t_commrec *cr,
                                 const gmx_multisim_t *ms,
@@ -833,8 +874,6 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 const int flags,
                                 const DDBalanceRegionHandler &ddBalanceRegionHandler)
 {
-    int                 cg1, i, j;
-    double              mu[2*DIM];
     gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
     rvec                vzero, box_diag;
@@ -869,34 +908,22 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     cycles_wait_gpu = 0;
 
-    const int start  = 0;
-    const int homenr = mdatoms->homenr;
-
     clear_mat(vir_force);
 
-    if (DOMAINDECOMP(cr))
-    {
-        cg1 = cr->dd->globalAtomGroupIndices.size();
-    }
-    else
-    {
-        cg1 = top->cgs.nr;
-    }
-    if (fr->n_tpi > 0)
-    {
-        cg1--;
-    }
-
+    double mu[2*DIM];
     if (bStateChanged)
     {
         update_forcerec(fr, box);
 
         if (inputrecNeedMutot(inputrec))
         {
+            // TODO: why is this start = 0 needed? legacy?
+            constexpr int start = 0;
+
             /* Calculate total (local) dipole moment in a temporary common array.
              * This makes it possible to sum them over nodes faster.
              */
-            calc_mu(start, homenr,
+            calc_mu(start, mdatoms->homenr,
                     x.unpaddedArrayRef(), mdatoms->chargeA, mdatoms->chargeB, mdatoms->nChargePerturbed,
                     mu, mu+DIM);
         }
@@ -914,8 +941,8 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (bCalcCGCM)
         {
-            put_atoms_in_box_omp(fr->ePBC, box, x.unpaddedArrayRef().subArray(0, homenr));
-            inc_nrnb(nrnb, eNR_SHIFTX, homenr);
+            put_atoms_in_box_omp(fr->ePBC, box, x.unpaddedArrayRef().subArray(0, mdatoms->homenr));
+            inc_nrnb(nrnb, eNR_SHIFTX, mdatoms->homenr);
         }
         else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
         {
@@ -1155,36 +1182,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    if (bStateChanged && inputrecNeedMutot(inputrec))
-    {
-        if (PAR(cr))
-        {
-            gmx_sumd(2*DIM, mu, cr);
-
-            ddBalanceRegionHandler.reopenRegionCpu();
-        }
-
-        for (i = 0; i < 2; i++)
-        {
-            for (j = 0; j < DIM; j++)
-            {
-                fr->mu_tot[i][j] = mu[i*DIM + j];
-            }
-        }
-    }
-    if (fr->efep == efepNO)
-    {
-        copy_rvec(fr->mu_tot[0], mu_tot);
-    }
-    else
-    {
-        for (j = 0; j < DIM; j++)
-        {
-            mu_tot[j] =
-                (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] +
-                lambda[efptCOUL]*fr->mu_tot[1][j];
-        }
-    }
+    reduceAndUpdateMuTot(fr, inputrec, cr, bStateChanged, mu, mu_tot, lambda, ddBalanceRegionHandler);
 
     /* Reset energies */
     reset_enerdata(enerd);
