@@ -855,6 +855,15 @@ int Mdrunner::mdrunner()
          */
         gmx_bool bReadEkin;
 
+        if (mdrunOptions.numStepsCommandline > -2)
+        {
+            /* Temporarily set the number of steps to unmlimited to avoid
+             * triggering the nsteps check in load_checkpoint().
+             * This hack will go away soon when the -nsteps option is removed.
+             */
+            inputrec->nsteps = -1;
+        }
+
         load_checkpoint(opt2fn_master("-cpi", filenames.size(), filenames.data(), cr),
                         logFileHandle,
                         cr, domdecOptions.numCells,
