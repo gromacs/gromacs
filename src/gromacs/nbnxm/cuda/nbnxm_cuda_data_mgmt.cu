@@ -59,7 +59,9 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/internal.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -69,6 +71,8 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "nbnxm_cuda.h"
+#include "nbnxm_cuda_types.h"
+
 
 namespace Nbnxm
 {
@@ -855,6 +859,49 @@ rvec *gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
     assert(nb);
 
     return reinterpret_cast<rvec *>(nb->atdat->fshift);
+}
+
+
+
+/* Initialization for F buffer operations on GPU. */
+/* TODO  Remove explicit pinning from host arrays from here and manage in a more natural way*/
+void nbnxn_gpu_init_add_nbat_f_to_f(const int                *cell,
+                                    const nbnxn_search       *nbs,
+                                    gmx_nbnxn_gpu_t          *gpu_nbv,
+                                    int                       a1)
+{
+
+
+    cudaStream_t         stream  = gpu_nbv->stream[0];
+
+    if (gpu_nbv->frvec)
+    {
+        freeDeviceBuffer(&gpu_nbv->frvec);
+    }
+    allocateDeviceBuffer(&gpu_nbv->frvec, nbs->natoms_nonlocal, nullptr);
+
+    if (a1 > 0)
+    {
+
+        if (gpu_nbv->cell)
+        {
+            freeDeviceBuffer(&gpu_nbv->cell);
+
+        }
+        allocateDeviceBuffer(&gpu_nbv->cell, a1, nullptr);
+
+        // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+        cudaError_t stat = cudaHostRegister((void*) cell, a1*sizeof(int), cudaHostRegisterDefault);
+        CU_RET_ERR(stat, "cudaHostRegister failed on cell");
+
+        copyToDeviceBuffer(&gpu_nbv->cell, cell, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
+
+        stat = cudaHostUnregister((void*) cell);
+        CU_RET_ERR(stat, "cudaHostUnRegister failed on cell");
+
+    }
+
+    return;
 }
 
 } // namespace Nbnxm
