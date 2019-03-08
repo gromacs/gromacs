@@ -71,17 +71,15 @@ void writeHeader(TextWriter *writer, const std::string &text, const std::string 
 
 void writeSystemInformation(TextWriter *writer, const gmx_mtop_t &top, bool writeFormattedText)
 {
-    int                       nmol, nvsite = 0;
-    gmx_mtop_atomloop_block_t aloop;
-    const t_atom             *atom;
+    int                       nvsite = 0;
 
     writeHeader(writer, "Simulation system", "subsection", writeFormattedText);
-    aloop = gmx_mtop_atomloop_block_init(&top);
-    while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
+    for (const AtomProxy atomP : AtomRange(top, false))
     {
-        if (atom->ptype == eptVSite)
+        const t_atom &local = atomP.atom();
+        if (local.ptype == eptVSite)
         {
-            nvsite += nmol;
+            nvsite += atomP.numberOfMoleculesInBlock();
         }
     }
     {

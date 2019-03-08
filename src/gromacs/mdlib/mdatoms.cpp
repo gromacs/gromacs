@@ -139,31 +139,30 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     double                     totalMassB = 0.0;
 
     md->haveVsites = FALSE;
-    gmx_mtop_atomloop_block_t  aloop = gmx_mtop_atomloop_block_init(&mtop);
-    const t_atom              *atom;
-    int                        nmol;
-    while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
+    for (const AtomProxy atomP : AtomRange(mtop, false))
     {
-        totalMassA += nmol*atom->m;
-        totalMassB += nmol*atom->mB;
+        const t_atom &local = atomP.atom();
+        const int     nmol  = atomP.numberOfMoleculesInBlock();
+        totalMassA += nmol*local.m;
+        totalMassB += nmol*local.mB;
 
-        if (atom->ptype == eptVSite)
+        if (local.ptype == eptVSite)
         {
             md->haveVsites = TRUE;
         }
 
-        if (ir.efep != efepNO && PERTURBED(*atom))
+        if (ir.efep != efepNO && PERTURBED(local))
         {
             md->nPerturbed++;
-            if (atom->mB != atom->m)
+            if (local.mB != local.m)
             {
                 md->nMassPerturbed += nmol;
             }
-            if (atom->qB != atom->q)
+            if (local.qB != local.q)
             {
                 md->nChargePerturbed += nmol;
             }
-            if (atom->typeB != atom->type)
+            if (local.typeB != local.type)
             {
                 md->nTypePerturbed += nmol;
             }
