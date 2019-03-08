@@ -844,6 +844,15 @@ int Mdrunner::mdrunner()
 
     auto                 deform = prepareBoxDeformation(globalState->box, cr, *inputrec);
 
+    if (mdrunOptions.numStepsCommandline > -2)
+    {
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("The -nsteps functionality is deprecated, and may be removed in a future version. "
+                       "Consider using gmx convert-tpr -nsteps or changing the appropriate .mdp file field.");
+    }
+    /* override nsteps with value set on the commamdline */
+    override_nsteps_cmdline(mdlog, mdrunOptions.numStepsCommandline, inputrec);
+
     ObservablesHistory   observablesHistory = {};
 
     ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
@@ -878,15 +887,6 @@ int Mdrunner::mdrunner()
             mdlog    = logOwner.logger();
         }
     }
-
-    if (mdrunOptions.numStepsCommandline > -2)
-    {
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText("The -nsteps functionality is deprecated, and may be removed in a future version. "
-                       "Consider using gmx convert-tpr -nsteps or changing the appropriate .mdp file field.");
-    }
-    /* override nsteps with value set on the commamdline */
-    override_nsteps_cmdline(mdlog, mdrunOptions.numStepsCommandline, inputrec);
 
     if (SIMMASTER(cr))
     {

@@ -16,6 +16,14 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed mdrun -nsteps option
+""""""""""""""""""""""""""
+
+Fixed that the, deprecated, mdrun option -nsteps only allowed extension
+of the simulation under certain conditions.
+
+:issue:`2881`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
