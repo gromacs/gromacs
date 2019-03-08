@@ -128,6 +128,22 @@ struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
 
+/*! \brief Switch for whether to use GPU for buffer ops*/
+enum class BufferOpsUseGpu
+{
+    True,
+    False
+};
+
+/*! \brief Switch for whether forces should accumulate in GPU buffer ops */
+enum class GpuBufferOpsAccumulateForce
+{
+    True,  // Force should be accumulated and format converted
+    False, // Force should be not accumulated, just format converted
+    Null   // GPU buffer ops are not in use, so this object is not applicable
+};
+
+
 namespace gmx
 {
 class MDLogger;
@@ -244,7 +260,7 @@ struct nonbonded_verlet_t
         void setCoordinates(Nbnxm::AtomLocality             locality,
                             bool                            fillLocal,
                             gmx::ArrayRef<const gmx::RVec>  x,
-                            bool                            useGpu,
+                            BufferOpsUseGpu                 useGpu,
                             void                           *xPmeDevicePtr,
                             gmx_wallcycle                  *wcycle);
 
@@ -297,9 +313,23 @@ struct nonbonded_verlet_t
                                       gmx_wallcycle              *wcycle);
 
         //! Add the forces stored in nbat to f, zeros the forces in nbat */
-        void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality  locality,
-                                      rvec                *f,
-                                      gmx_wallcycle       *wcycle);
+        void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality                 locality,
+                                      rvec                               *f,
+                                      BufferOpsUseGpu                     useGpu,
+                                      GpuBufferOpsAccumulateForce         accumulateForce,
+                                      gmx_wallcycle                      *wcycle);
+
+        /*! \brief Outer body of function to perform initialization for F buffer operations on GPU. */
+        void atomdata_init_add_nbat_f_to_f_gpu(gmx_wallcycle *wcycle);
+
+        /*! \brief H2D transfer of force buffer*/
+        void launch_copy_f_to_gpu(rvec *f, Nbnxm::AtomLocality locality);
+
+        /*! \brief D2H transfer of force buffer*/
+        void launch_copy_f_from_gpu(rvec *f, Nbnxm::AtomLocality locality);
+
+        /*! \brief Host sync on device stream given by locality */
+        void wait_stream_gpu(Nbnxm::AtomLocality locality);
 
         //! Return the kernel setup
         const Nbnxm::KernelSetup &kernelSetup() const

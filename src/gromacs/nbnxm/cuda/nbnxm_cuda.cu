@@ -54,6 +54,7 @@
 #include "nbnxm_cuda.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_common.h"
@@ -112,6 +113,10 @@
 
 namespace Nbnxm
 {
+
+//! Number of CUDA threads in a block
+//TODO Optimize this through experimentation
+constexpr static int c_bufOpsThreadsPerBlock = 128;
 
 /*! Nonbonded kernel function pointer type */
 typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
@@ -640,7 +645,8 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t          *nb,
 void gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
                         nbnxn_atomdata_t       *nbatom,
                         const int               flags,
-                        const AtomLocality      atomLocality)
+                        const AtomLocality      atomLocality,
+                        const bool              copyBackNbForce)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -682,8 +688,11 @@ void gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* DtoH f */
-    cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
-                      (adat_len)*sizeof(*adat->f), stream);
+    if (copyBackNbForce)
+    {
+        cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
+                          (adat_len)*sizeof(*adat->f), stream);
+    }
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
@@ -805,13 +814,12 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     }
 
     /* launch kernel on GPU */
-    const int          threadsPerBlock = 128;
 
     KernelLaunchConfig config;
-    config.blockSize[0]     = threadsPerBlock;
+    config.blockSize[0]     = c_bufOpsThreadsPerBlock;
     config.blockSize[1]     = 1;
     config.blockSize[2]     = 1;
-    config.gridSize[0]      = (grid.numCellsColumnMax()*numAtomsPerCell + threadsPerBlock - 1)/threadsPerBlock;
+    config.gridSize[0]      = (grid.numCellsColumnMax()*numAtomsPerCell + c_bufOpsThreadsPerBlock - 1)/c_bufOpsThreadsPerBlock;
     config.gridSize[1]      = numColumns;
     config.gridSize[2]      = 1;
     GMX_ASSERT(config.gridSize[0] > 0, "Can not have empty grid, early return above avoids this");
@@ -836,6 +844,128 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
 
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
+}
+
+/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format. */
+void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                  atomLocality,
+                               gmx_nbnxn_gpu_t                    *nb,
+                               int                                 atomStart,
+                               int                                 nAtoms,
+                               GpuBufferOpsAccumulateForce         accumulateForce)
+{
+
+    cu_atomdata_t       *adat    = nb->atdat;
+    cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
+        nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
+
+    /* launch kernel */
+
+    KernelLaunchConfig config;
+    config.blockSize[0]     = c_bufOpsThreadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = ((nAtoms+1)+c_bufOpsThreadsPerBlock-1)/c_bufOpsThreadsPerBlock;
+    config.gridSize[1]      = 1;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
+    config.stream           = stream;
+
+    auto              kernelFn = (accumulateForce == GpuBufferOpsAccumulateForce::True) ?
+        nbnxn_gpu_add_nbat_f_to_f_kernel<true> : nbnxn_gpu_add_nbat_f_to_f_kernel<false>;
+    const float3     *fPtr                    = adat->f;
+    rvec             *frvec                   = nb->frvec;
+    const int        *cell                    = nb->cell;
+
+    const auto        kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
+                                                               &fPtr,
+                                                               &frvec,
+                                                               &cell,
+                                                               &atomStart,
+                                                               &nAtoms);
+
+    launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
+
+}
+
+void nbnxn_launch_copy_f_to_gpu(const AtomLocality               atomLocality,
+                                const Nbnxm::GridSet            &gridSet,
+                                gmx_nbnxn_gpu_t                 *nb,
+                                rvec                            *f)
+{
+    cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
+        nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
+    bool                 bDoTime = nb->bDoTime;
+    cu_timers_t         *t       = nb->timers;
+
+    int                  atomStart = 0, nAtoms = 0;
+
+    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &nAtoms);
+
+    if (bDoTime)
+    {
+        t->xf[atomLocality].nb_h2d.openTimingRegion(stream);
+    }
+
+    rvec       *ptrDest  = reinterpret_cast<rvec *> (nb->frvec[atomStart]);
+    rvec       *ptrSrc   = reinterpret_cast<rvec *> (f[atomStart]);
+    //copyToDeviceBuffer(&ptrDest, ptrSrc, 0, nAtoms,
+    //                   stream, GpuApiCallBehavior::Async, nullptr);
+    //TODO use above API call rather than direct memcpy when force has been implemented in a hostvector
+    cudaMemcpyAsync(ptrDest, ptrSrc, nAtoms*sizeof(rvec), cudaMemcpyHostToDevice,
+                    stream);
+
+    if (bDoTime)
+    {
+        t->xf[atomLocality].nb_h2d.closeTimingRegion(stream);
+    }
+
+    return;
+}
+
+void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
+                                  const Nbnxm::GridSet            &gridSet,
+                                  gmx_nbnxn_gpu_t                 *nb,
+                                  rvec                            *f)
+{
+    cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
+        nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
+    bool                 bDoTime = nb->bDoTime;
+    cu_timers_t         *t       = nb->timers;
+
+    int                  atomStart = 0, nAtoms = 0;
+
+    nbnxn_get_atom_range(atomLocality, gridSet, &atomStart, &nAtoms);
+
+    if (bDoTime)
+    {
+        t->xf[atomLocality].nb_d2h.openTimingRegion(stream);
+    }
+
+    rvec       *ptrDest = reinterpret_cast<rvec *> (f[atomStart]);
+    rvec       *ptrSrc  = reinterpret_cast<rvec *> (nb->frvec[atomStart]);
+    //copyFromDeviceBuffer(ptrDest, &ptrSrc, 0, nAtoms,
+    //                   stream, GpuApiCallBehavior::Async, nullptr);
+    //TODO use above API call rather than direct memcpy when force has been implemented in a hostvector
+    cudaMemcpyAsync(ptrDest, ptrSrc, nAtoms*sizeof(rvec), cudaMemcpyDeviceToHost,
+                    stream);
+
+    if (bDoTime)
+    {
+        t->xf[atomLocality].nb_d2h.closeTimingRegion(stream);
+    }
+
+    return;
+}
+
+void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused atomLocality,
+                           gmx_nbnxn_gpu_t                   *nb)
+{
+
+    cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
+        nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
+
+    cudaStreamSynchronize(stream);
+
 }
 
 } // namespace Nbnxm

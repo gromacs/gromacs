@@ -223,7 +223,19 @@ struct gmx_nbnxn_cuda_t
     int                                                             natoms;
     //! number of atoms allocated in device buffer
     int                                                             natoms_alloc;
-    //! x buf ops input buffer index mapping
+    //! force in rvec format
+    rvec                                                           *frvec;
+    //! number of atoms in force buffer
+    int                                                             nfrvec;
+    //! number of atoms allocated in force buffer
+    int                                                             nfrvec_alloc;
+    //! f buf ops cell index mapping
+    int                                                            *cell;
+    //! number of indices in cell buffer
+    int                                                             ncell;
+    //! number of indices allocated in cell buffer
+    int                                                             ncell_alloc;
+    //! array of atom indices
     int                                                            *atomIndices;
     //! size of atom indices
     int                                                             atomIndicesSize;

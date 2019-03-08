@@ -61,6 +61,7 @@
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -503,6 +504,10 @@ gpu_init(const gmx_device_info_t   *deviceInfo,
     nb->ncxy_na_alloc            = 0;
     nb->ncxy_ind                 = 0;
     nb->ncxy_ind_alloc           = 0;
+    nb->nfrvec                   = 0;
+    nb->nfrvec_alloc             = 0;
+    nb->ncell                    = 0;
+    nb->ncell_alloc              = 0;
 
     if (debug)
     {
@@ -952,6 +957,25 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
     nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::Local);
     // ...and this call instructs the nonlocal stream to wait on that event:
     nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
+
+    return;
+}
+
+/* Initialization for F buffer operations on GPU. */
+void nbnxn_gpu_init_add_nbat_f_to_f(const int                *cell,
+                                    gmx_nbnxn_gpu_t          *gpu_nbv,
+                                    int                       natoms_total)
+{
+
+    cudaStream_t         stream  = gpu_nbv->stream[InteractionLocality::Local];
+
+    reallocateDeviceBuffer(&gpu_nbv->frvec, natoms_total, &gpu_nbv->nfrvec, &gpu_nbv->nfrvec_alloc, nullptr);
+
+    if (natoms_total > 0)
+    {
+        reallocateDeviceBuffer(&gpu_nbv->cell, natoms_total, &gpu_nbv->ncell, &gpu_nbv->ncell_alloc, nullptr);
+        copyToDeviceBuffer(&gpu_nbv->cell, cell, 0, natoms_total, stream, GpuApiCallBehavior::Async, nullptr);
+    }
 
     return;
 }

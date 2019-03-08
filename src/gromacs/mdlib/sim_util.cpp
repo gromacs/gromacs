@@ -120,11 +120,10 @@
 // PME-first ordering would suffice).
 static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GPU_WAIT") != nullptr);
 
-// environment variable to enable GPU buffer ops, to alow incremental and optional
+// environment variable to enable GPU buffer ops, to allow incremental and optional
 // introduction of this functionality.
 // TODO eventially tie this in with other existing GPU flags.
 static const bool c_enableGpuBufOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
-
 
 static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {
@@ -692,7 +691,10 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
                 nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                              as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
+                                              as_rvec_array(force->unpaddedArrayRef().data()),
+                                              BufferOpsUseGpu::False,
+                                              GpuBufferOpsAccumulateForce::Null,
+                                              wcycle);
             }
         }
     }
@@ -862,8 +864,12 @@ void do_force(FILE                                     *fplog,
         ((flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
+    const BufferOpsUseGpu useGpuFBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
+        && !(flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) ?
+        BufferOpsUseGpu::True : BufferOpsUseGpu::False;
 
-    const bool useGpuXBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA));
+    const BufferOpsUseGpu useGpuXBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA)) ?
+        BufferOpsUseGpu::True : BufferOpsUseGpu::False;;
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -1037,11 +1043,17 @@ void do_force(FILE                                     *fplog,
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
         wallcycle_stop(wcycle, ewcNS);
 
-        if (useGpuXBufOps)
+        if (useGpuXBufOps == BufferOpsUseGpu::True)
         {
             nbv->atomdata_init_copy_x_to_nbat_x_gpu();
         }
-
+        // For force buffer ops, we use the below conditon rather than
+        // useGpuFBufOps to ensure that init is performed even if this
+        // NS step is also a virial step (on which f buf ops are deactivated).
+        if (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
+        {
+            nbv->atomdata_init_add_nbat_f_to_f_gpu(wcycle);
+        }
     }
     else
     {
@@ -1057,7 +1069,7 @@ void do_force(FILE                                     *fplog,
 
         wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat.get());
-        if (bNS || !useGpuXBufOps)
+        if (bNS || (useGpuXBufOps == BufferOpsUseGpu::False))
         {
             Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
                                       Nbnxm::AtomLocality::Local);
@@ -1121,7 +1133,7 @@ void do_force(FILE                                     *fplog,
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
-            if (bNS || !useGpuXBufOps)
+            if (bNS || (useGpuXBufOps == BufferOpsUseGpu::False))
             {
                 wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
                 Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
@@ -1151,13 +1163,17 @@ void do_force(FILE                                     *fplog,
         /* launch D2H copy-back F */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+
+        bool copyBackNbForce  = (useGpuFBufOps == BufferOpsUseGpu::False);
+
         if (havePPDomainDecomposition(cr))
         {
             Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
-                                      flags, Nbnxm::AtomLocality::NonLocal);
+                                      flags, Nbnxm::AtomLocality::NonLocal, copyBackNbForce);
         }
         Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
-                                  flags, Nbnxm::AtomLocality::Local);
+                                  flags, Nbnxm::AtomLocality::Local, copyBackNbForce);
+
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
         if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
@@ -1272,8 +1288,10 @@ void do_force(FILE                                     *fplog,
          * communication with calculation with domain decomposition.
          */
         wallcycle_stop(wcycle, ewcFORCE);
-
-        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, forceOut.f, wcycle);
+        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, forceOut.f,
+                                      BufferOpsUseGpu::False,
+                                      GpuBufferOpsAccumulateForce::Null,
+                                      wcycle);
 
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
@@ -1309,6 +1327,21 @@ void do_force(FILE                                     *fplog,
                          flags, &forceOut.forceWithVirial, enerd,
                          ed, bNS);
 
+    // flag to specify if CPU force output is preset in force
+    // buffer. For now, this is true even when useGpuPme == true
+    // (because on-GPU PME-nonbonded reduction will be added in
+    // follow-up)
+    // TODO adapt the below when on-GPU PME-nonbonded reduction is available.
+    bool                   useCpuPmeReduction = true;
+    bool                   haveCpuForces      = (ppForceWorkload->haveSpecialForces || ppForceWorkload->haveCpuListedForceWork || useCpuPmeReduction);
+    // flag to specify if forces should be accumulated in force buffer
+    // ops. For now, this is solely determined by above haveCpuForces
+    // flag, but in future developments it will also depend on
+    // e.g. whether the GPU force halo exchange is active.
+    GpuBufferOpsAccumulateForce accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) &&
+        haveCpuForces ? GpuBufferOpsAccumulateForce::True :
+        GpuBufferOpsAccumulateForce::False;
+
     // Will store the amount of cycles spent waiting for the GPU that
     // will be later used in the DLB accounting.
     float cycles_wait_gpu = 0;
@@ -1335,8 +1368,16 @@ void do_force(FILE                                     *fplog,
                 wallcycle_stop(wcycle, ewcFORCE);
             }
 
+            if (useGpuFBufOps == BufferOpsUseGpu::True && haveCpuForces)
+            {
+                nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::NonLocal);
+            }
             nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
-                                          forceOut.f, wcycle);
+                                          forceOut.f, useGpuFBufOps, accumulateForce, wcycle);
+            if (useGpuFBufOps == BufferOpsUseGpu::True)
+            {
+                nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::NonLocal);
+            }
 
             if (fr->nbv->emulateGpu() && (flags & GMX_FORCE_VIRIAL))
             {
@@ -1357,13 +1398,18 @@ void do_force(FILE                                     *fplog,
 
         if (bDoForces)
         {
+            if (useGpuFBufOps == BufferOpsUseGpu::True)
+            {
+                nbv->wait_stream_gpu(Nbnxm::AtomLocality::NonLocal);
+            }
             dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
         }
     }
 
     // With both nonbonded and PME offloaded a GPU on the same rank, we use
     // an alternating wait/reduction scheme.
-    bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
+    bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr) &&
+                             (useGpuFBufOps == BufferOpsUseGpu::False));
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &force, &forceOut.forceWithVirial, fr->fshift, enerd,
@@ -1426,6 +1472,25 @@ void do_force(FILE                                     *fplog,
         pme_gpu_reinit_computation(fr->pmedata, wcycle);
     }
 
+    /* Do the nonbonded GPU (or emulation) force buffer reduction
+     * on the non-alternating path. */
+    if (bUseOrEmulGPU && !alternateGpuWait)
+    {
+
+        if (useGpuFBufOps == BufferOpsUseGpu::True && haveCpuForces)
+        {
+            nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
+        }
+        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
+                                      forceOut.f, useGpuFBufOps, accumulateForce, wcycle);
+        if (useGpuFBufOps == BufferOpsUseGpu::True)
+        {
+            nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
+            nbv->wait_stream_gpu(Nbnxm::AtomLocality::Local);
+        }
+
+    }
+
     if (bUseGPU)
     {
         /* now clear the GPU outputs while we finish the step on the CPU */
@@ -1457,13 +1522,6 @@ void do_force(FILE                                     *fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    /* Do the nonbonded GPU (or emulation) force buffer reduction
-     * on the non-alternating path. */
-    if (bUseOrEmulGPU && !alternateGpuWait)
-    {
-        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                      forceOut.f, wcycle);
-    }
     if (DOMAINDECOMP(cr))
     {
         dd_force_flop_stop(cr->dd, nrnb);

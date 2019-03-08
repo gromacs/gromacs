@@ -54,6 +54,7 @@
 
 struct nbnxn_atomdata_t;
 enum class GpuTaskCompletion;
+enum class GpuBufferOpsAccumulateForce;
 
 namespace gmx
 {
@@ -143,7 +144,8 @@ GPU_FUNC_QUALIFIER
 void gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused *nb,
                         nbnxn_atomdata_t gmx_unused *nbatom,
                         int              gmx_unused  flags,
-                        AtomLocality     gmx_unused  aloc) GPU_FUNC_TERM
+                        AtomLocality     gmx_unused  aloc,
+                        const bool       gmx_unused  copyBackNbForce) GPU_FUNC_TERM
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *
@@ -268,7 +270,40 @@ GPU_FUNC_QUALIFIER
 bool haveGpuShortRangeWork(const gmx_nbnxn_gpu_t     gmx_unused *nb,
                            const Nbnxm::AtomLocality gmx_unused  aLocality) GPU_FUNC_TERM_WITH_RETURN(false)
 
+/*! \brief Initialization for F buffer operations on GPU */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
+                                    gmx_nbnxn_gpu_t         gmx_unused *gpu_nbv,
+                                    int                     gmx_unused  natoms_total) CUDA_FUNC_TERM
 
-} // namespace Nbnxm
+/*! \brief F buffer operations on GPU: adds nb format force to rvec format. */
+CUDA_FUNC_QUALIFIER
+void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality           gmx_unused  atomLocality,
+                               gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
+                               int                          gmx_unused  atomStart,
+                               int                          gmx_unused  nAtoms,
+                               GpuBufferOpsAccumulateForce     gmx_unused  accumulateForce) CUDA_FUNC_TERM
+
+/*! \brief Copy force buffer from CPU to GPU */
+CUDA_FUNC_QUALIFIER
+void nbnxn_launch_copy_f_to_gpu(const AtomLocality      gmx_unused  atomLocality,
+                                const Nbnxm::GridSet    gmx_unused &gridSet,
+                                gmx_nbnxn_gpu_t         gmx_unused *nb,
+                                rvec                    gmx_unused *f) CUDA_FUNC_TERM
+
+/*! \brief Copy force buffer from GPU to CPU */
+CUDA_FUNC_QUALIFIER
+void nbnxn_launch_copy_f_from_gpu(const AtomLocality      gmx_unused  atomLocality,
+                                  const Nbnxm::GridSet    gmx_unused &gridSet,
+                                  gmx_nbnxn_gpu_t         gmx_unused *nb,
+                                  rvec                    gmx_unused *f) CUDA_FUNC_TERM
+
+/*! \brief Wait for GPU stream to complete */
+CUDA_FUNC_QUALIFIER
+void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused  atomLocality,
+                           gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM
+
+
+}     // namespace Nbnxm
 
 #endif
