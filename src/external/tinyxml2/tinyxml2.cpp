@@ -30,7 +30,7 @@ distribution.
 #   include <cstddef>
 #endif
 
-#if defined(__GNUC__) && __GNUC__>=7
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && __GNUC__>=7
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #endif
 
