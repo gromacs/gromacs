@@ -38,12 +38,14 @@
 
 #include <cstdio>
 
+#include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
 
+#include "gpu_types.h"
 #include "locality.h"
 
 namespace gmx
@@ -295,6 +297,24 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
                                      rvec                *x,
                                      nbnxn_atomdata_t    *nbat,
                                      gmx_wallcycle       *wcycle);
+
+/*! \brief Outer body of function to perform initialization for F buffer operations on GPU. */
+CUDA_FUNC_QUALIFIER
+void nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbnxn_search           gmx_unused *nbs,
+                                             Nbnxm::AtomLocality    gmx_unused  locality,
+                                             const nbnxn_atomdata_t gmx_unused *nbat,
+                                             gmx_nbnxn_gpu_t        gmx_unused *gpu_nbv,
+                                             gmx_wallcycle          gmx_unused *wcycle) CUDA_FUNC_TERM
+
+/*! \brief Outer body of F buffer operations on GPU: adds nb format force to rvec format copy. */
+CUDA_FUNC_QUALIFIER
+void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search           gmx_unused *nbs,
+                                        Nbnxm::AtomLocality    gmx_unused  locality,
+                                        const nbnxn_atomdata_t gmx_unused *nbat,
+                                        gmx_nbnxn_gpu_t        gmx_unused *gpu_nbv,
+                                        rvec                   gmx_unused *f,
+                                        bool                   gmx_unused  haveCpuForces,
+                                        gmx_wallcycle          gmx_unused *wcycle) CUDA_FUNC_TERM
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
