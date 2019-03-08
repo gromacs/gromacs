@@ -32,19 +32,19 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""Reusable definitions for test modules.
-
-Define the ``withmpi_only`` test decorator.
-"""
+"""Test gmxapi functionality described in roadmap.rst."""
 
 import pytest
 
-withmpi_only = None
+import gmxapi as gmx
+from gmxapi.version import has_feature
 
-try:
-    from mpi4py import MPI
-    withmpi_only = \
-        pytest.mark.skipif(not MPI.Is_initialized() or MPI.COMM_WORLD.Get_size() < 2,
-                           reason="Test requires at least 2 MPI ranks, but MPI is not initialized or too small.")
-except ImportError:
-    withmpi_only = pytest.mark.skip(reason="Test requires at least 2 MPI ranks, but mpi4py is not available.")
+@pytest.mark.skipif(not has_feature('fr19'),
+                   reason="Feature level not met.")
+def test_fr19():
+    """FR19: GROMACS CLI tools receive improved C++-level support over generic commandline_operations
+
+    gmx.tool uses Python bindings on C++ API for CLI modules (not testable at the UI level)
+    """
+    rmsf = gmx.rmsf(trajectory=md.output.trajectory,
+                    structure=initial_tpr)

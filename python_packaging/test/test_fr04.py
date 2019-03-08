@@ -32,19 +32,31 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""Reusable definitions for test modules.
-
-Define the ``withmpi_only`` test decorator.
-"""
+"""Test gmxapi functionality described in roadmap.rst."""
 
 import pytest
 
-withmpi_only = None
+import gmxapi as gmx
+from gmxapi.version import has_feature
 
-try:
-    from mpi4py import MPI
-    withmpi_only = \
-        pytest.mark.skipif(not MPI.Is_initialized() or MPI.COMM_WORLD.Get_size() < 2,
-                           reason="Test requires at least 2 MPI ranks, but MPI is not initialized or too small.")
-except ImportError:
-    withmpi_only = pytest.mark.skip(reason="Test requires at least 2 MPI ranks, but mpi4py is not available.")
+@pytest.mark.skipif(not has_feature('fr4'),
+                   reason="Feature level not met.")
+def test_fr4():
+    """FR4: Dimensionality and typing of named data causes generation of correct work topologies."""
+    N = 10
+    simulation_input = gmx.read_tpr(initial_tpr)
+
+    # Array inputs imply array outputs.
+    input_array = gmx.modify_input(
+        simulation_input, params={'tau-t': [t / 10.0 for t in range(N)]})
+
+    md = gmx.mdrun(input_array)  # An array of simulations
+
+    rmsf = gmx.commandline_operation(
+        'gmx',
+        'rmsf',
+        input={
+            '-f': md.output.trajectory,
+            '-s': initial_tpr
+        },
+        output={'-o': gmx.FileName(suffix='.xvg')})

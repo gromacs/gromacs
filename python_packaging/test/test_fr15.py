@@ -32,19 +32,29 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""Reusable definitions for test modules.
-
-Define the ``withmpi_only`` test decorator.
-"""
+"""Test gmxapi functionality described in roadmap.rst."""
 
 import pytest
 
-withmpi_only = None
+import gmxapi as gmx
+from gmxapi.version import has_feature
 
-try:
-    from mpi4py import MPI
-    withmpi_only = \
-        pytest.mark.skipif(not MPI.Is_initialized() or MPI.COMM_WORLD.Get_size() < 2,
-                           reason="Test requires at least 2 MPI ranks, but MPI is not initialized or too small.")
-except ImportError:
-    withmpi_only = pytest.mark.skip(reason="Test requires at least 2 MPI ranks, but mpi4py is not available.")
+@pytest.mark.skipif(not has_feature('fr15'),
+                   reason="Feature level not met.")
+def test_fr15():
+    """FR15: Simulation input modification.
+
+    * *gmx.modify_input produces new (tpr) simulation input in data flow operation*
+      (requires interaction with library development)
+    * gmx.make_input dispatches appropriate preprocessing for file or in-memory simulation input.
+    """
+    initial_input = gmx.read_tpr([tpr_filename for _ in range(10)])
+    tau_t = list([i/10. for i in range(10)])
+    param_sweep = gmx.modify_input(input=initial_input,
+                                   parameters={
+                                       'tau_t': tau_t
+                                   }
+                                   )
+    md = gmx.mdrun(param_sweep)
+    for tau_expected, tau_actual in zip(tau_t, md.output.params['tau_t'].extract()):
+        assert tau_expected == tau_actual

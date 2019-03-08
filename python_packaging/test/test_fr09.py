@@ -32,19 +32,45 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""Reusable definitions for test modules.
-
-Define the ``withmpi_only`` test decorator.
-"""
+"""Test gmxapi functionality described in roadmap.rst."""
 
 import pytest
 
-withmpi_only = None
+import gmxapi as gmx
+from gmxapi.version import has_feature
 
-try:
-    from mpi4py import MPI
-    withmpi_only = \
-        pytest.mark.skipif(not MPI.Is_initialized() or MPI.COMM_WORLD.Get_size() < 2,
-                           reason="Test requires at least 2 MPI ranks, but MPI is not initialized or too small.")
-except ImportError:
-    withmpi_only = pytest.mark.skip(reason="Test requires at least 2 MPI ranks, but mpi4py is not available.")
+@pytest.mark.skipif(not has_feature('fr9'),
+                   reason="Feature level not met.")
+def test_fr9():
+    """FR9: *gmx.mdrun supports interface for binding MD plugins*
+
+    (requires interaction with library development)
+    """
+    import sample_restraint
+
+    starting_structure = 'input_conf.gro'
+    topology_file = 'input.top'
+    run_parameters = 'params.mdp'
+
+    initial_tpr = gmx.commandline_operation(
+        'gmx',
+        'grompp',
+        input={
+            '-f': run_parameters,
+            '-c': starting_structure,
+            '-p': topology_file
+        },
+        output={'-o': gmx.OutputFile('.tpr')})
+
+    simulation_input = gmx.read_tpr(initial_tpr.output.file['-o'])
+
+    # Prepare a simple harmonic restraint between atoms 1 and 4
+    restraint_params = {'sites': [1, 4],
+                        'R0': 2.0,
+                        'k': 10000.0}
+
+    restraint = sample_restraint.harmonic_restraint(input=restraint_params)
+
+    md = gmx.mdrun(input=simulation_input, potential=sample_restraint)
+
+    #md.run()
