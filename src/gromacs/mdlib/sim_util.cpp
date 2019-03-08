@@ -628,6 +628,8 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  * \param[in]     pmeFlags         PME flags
  * \param[in]     haveOtherWork    Tells whether there is other work than non-bonded in the stream(s)
  * \param[in]     wcycle           The wallcycle structure
+ * \param[in]     bNS              Flag on whether this is a neighbour list step
+ * \param[in]     useGpuFBufOps    Flag on whether GPU buffer ops are active for force
  */
 static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv,
                                         gmx_pme_t                           *pmedata,
@@ -638,7 +640,9 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                                         int                                  flags,
                                         int                                  pmeFlags,
                                         bool                                 haveOtherWork,
-                                        gmx_wallcycle_t                      wcycle)
+                                        gmx_wallcycle_t                      wcycle,
+                                        bool                                 bNS,
+                                        bool                                 useGpuFBufOps)
 {
     bool isPmeGpuDone = false;
     bool isNbGpuDone  = false;
@@ -674,8 +678,28 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
-                nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                              as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
+                if (useGpuFBufOps)
+                {
+                    if (bNS)
+                    {
+                        nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbv->nbs.get(),
+                                                                Nbnxm::AtomLocality::Local,
+                                                                nbv->nbat.get(),
+                                                                nbv->gpu_nbv,
+                                                                wcycle);
+                    }
+                    nbnxn_atomdata_add_nbat_f_to_f_gpu(nbv->nbs.get(),
+                                                       Nbnxm::AtomLocality::Local,
+                                                       nbv->nbat.get(),
+                                                       nbv->gpu_nbv,
+                                                       as_rvec_array(force->unpaddedArrayRef().data()),
+                                                       wcycle);
+                }
+                else
+                {
+                    nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
+                                                  as_rvec_array(force->unpaddedArrayRef().data()), wcycle);
+                }
             }
         }
     }
@@ -1080,6 +1104,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
     }
 
+    const bool useGpuFBufOps = (bUseGPU && (GMX_GPU == GMX_GPU_CUDA));
+
     if (bUseGPU)
     {
         /* launch D2H copy-back F */
@@ -1088,10 +1114,10 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (havePPDomainDecomposition(cr))
         {
             Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
-                                      flags, Nbnxm::AtomLocality::NonLocal, ppForceWorkload->haveGpuBondedWork);
+                                      flags, Nbnxm::AtomLocality::NonLocal, ppForceWorkload->haveGpuBondedWork, useGpuFBufOps, bNS);
         }
         Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(),
-                                  flags, Nbnxm::AtomLocality::Local, ppForceWorkload->haveGpuBondedWork);
+                                  flags, Nbnxm::AtomLocality::Local, ppForceWorkload->haveGpuBondedWork, useGpuFBufOps, bNS);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
 
         if (ppForceWorkload->haveGpuBondedWork && (flags & GMX_FORCE_ENERGY))
@@ -1293,7 +1319,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &force, &forceOut.forceWithVirial, fr->fshift, enerd,
-                                    flags, pmeFlags, ppForceWorkload->haveGpuBondedWork, wcycle);
+                                    flags, pmeFlags, ppForceWorkload->haveGpuBondedWork, wcycle, bNS, useGpuFBufOps);
     }
 
     if (!alternateGpuWait && useGpuPme)
@@ -1353,11 +1379,8 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (bUseGPU)
     {
-        /* now clear the GPU outputs while we finish the step on the CPU */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
-
         if (nbv->pairlistSets().isDynamicPruningStepGpu(step))
         {
             nbv->dispatchPruneKernelGpu(step);
@@ -1386,9 +1409,33 @@ static void do_force_cutsVERLET(FILE *fplog,
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
-        nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                      forceOut.f, wcycle);
+        if (useGpuFBufOps)
+        {
+            if (bNS)
+            {
+                nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbv->nbs.get(),
+                                                        Nbnxm::AtomLocality::Local,
+                                                        nbv->nbat.get(),
+                                                        nbv->gpu_nbv,
+                                                        wcycle);
+            }
+            nbnxn_atomdata_add_nbat_f_to_f_gpu(nbv->nbs.get(),
+                                               Nbnxm::AtomLocality::Local,
+                                               nbv->nbat.get(),
+                                               nbv->gpu_nbv,
+                                               forceOut.f,
+                                               wcycle);
+
+        }
+        else
+        {
+            nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
+                                          forceOut.f, wcycle);
+        }
     }
+    /* now clear the GPU outputs while we finish the step on the CPU */
+    Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
+
     if (DOMAINDECOMP(cr))
     {
         dd_force_flop_stop(cr->dd, nrnb);
