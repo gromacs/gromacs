@@ -32,19 +32,28 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""Reusable definitions for test modules.
-
-Define the ``withmpi_only`` test decorator.
-"""
+"""Test gmxapi functionality described in roadmap.rst."""
 
 import pytest
 
-withmpi_only = None
+import gmxapi as gmx
+from gmxapi.version import has_feature
 
-try:
-    from mpi4py import MPI
-    withmpi_only = \
-        pytest.mark.skipif(not MPI.Is_initialized() or MPI.COMM_WORLD.Get_size() < 2,
-                           reason="Test requires at least 2 MPI ranks, but MPI is not initialized or too small.")
-except ImportError:
-    withmpi_only = pytest.mark.skip(reason="Test requires at least 2 MPI ranks, but mpi4py is not available.")
+@pytest.mark.skipif(not has_feature('fr12'),
+                   reason="Feature level not met.")
+def test_fr12():
+    """FR12: Simulation checkpoint handling
+
+    * gmx.mdrun is properly restartable
+
+    This should be invisible to the user, and requires introspection and testing infrastructure to properly test (TBD).
+    """
+    from gmxapi import testsupport
+
+    simulation_input = gmx.read_tpr(initial_tpr)
+    md = gmx.mdrun(simulation_input, label='md')
+    interrupting_context = testsupport.interrupted_md(md)
+    with interrupting_context as session:
+        first_half_md = session.md.run()
+    md = gmx.mdrun(first_half_md, context=testsupport.inspect)
+    testsupport.verify_restart(md)

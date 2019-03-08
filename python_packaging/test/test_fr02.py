@@ -32,19 +32,39 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""Reusable definitions for test modules.
+"""Test gmxapi functionality described in roadmap.rst."""
 
-Define the ``withmpi_only`` test decorator.
-"""
+import os
+import tempfile
 
 import pytest
 
-withmpi_only = None
+import gmxapi as gmx
+from gmxapi.version import has_feature
 
-try:
-    from mpi4py import MPI
-    withmpi_only = \
-        pytest.mark.skipif(not MPI.Is_initialized() or MPI.COMM_WORLD.Get_size() < 2,
-                           reason="Test requires at least 2 MPI ranks, but MPI is not initialized or too small.")
-except ImportError:
-    withmpi_only = pytest.mark.skip(reason="Test requires at least 2 MPI ranks, but mpi4py is not available.")
+@pytest.mark.skipif(not has_feature('fr2'),
+                   reason="Feature level not met.")
+def test_fr2():
+    """FR2: Output proxy establishes execution dependency."""
+    # A sequence of two shell subcommands writes two lines to a temporary file.
+    with tempfile.TemporaryDirectory() as directory:
+        fh, filename = tempfile.mkstemp(dir=directory)
+        os.close(fh)
+
+        line1 = 'first line'
+        subcommand = ' '.join(['echo', '"{}"'.format(line1), '>>', filename])
+        commandline = ['-c', subcommand]
+        filewriter1 = gmx.commandline_operation('bash', arguments=commandline)
+
+        line2 = 'second line'
+        subcommand = ' '.join(['echo', '"{}"'.format(line2), '>>', filename])
+        commandline = ['-c', subcommand]
+        filewriter2 = gmx.commandline_operation('bash', arguments=commandline, input=filewriter1)
+
+        filewriter2.run()
+        # Check that the file has the two expected lines
+        with open(filename, 'r') as fh:
+            lines = [text.rstrip() for text in fh]
+        assert len(lines) == 2
+        assert lines[0] == line1
+        assert lines[1] == line2

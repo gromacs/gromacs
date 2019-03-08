@@ -1,12 +1,12 @@
 # Tests for gmxapi Python packages distributed with GROMACS
 
-Potentially longer-running than the unit tests in the Python package directory
-and broader in scope. Intended to include more thorough and complete integration
-testing than in the `acceptance` subdirectory.
+Document functional requirements and test acceptable implementation.
+These are potentially longer-running than the unit tests in the Python package directory
+and broader in scope.
 
 ## Requirements
 
-Python tests use the `unittest` standard library module and the `unittest.mock`
+Python tests may use the `unittest` standard library module and the `unittest.mock`
 submodule, included in Python 3.3+.
 
 The additional `pytest` package allows tests to be written more easily and
@@ -20,8 +20,8 @@ framework during automatic test discovery.
 
 `conftest.py` and `pytest.ini` provide configuration for `pytest`.
 
-`sampleoperation.py` is a module that test scripts can load to mimic external
-Python code in user scripts.
+Tests are organized according to the functional requirements
+documented in `roadmap.rst` in the `python_packagin` directory.
 
 ## Usage
 
