@@ -263,21 +263,19 @@ static std::array<int, eptNR> countPtypes(FILE             *fplog,
         nptype[i] = 0;
     }
 
-    gmx_mtop_atomloop_block_t  aloopb = gmx_mtop_atomloop_block_init(mtop);
-    int                        nmol;
-    const t_atom              *atom;
-    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    for (const AtomProxy atomP : AtomRange(*mtop, false))
     {
-        switch (atom->ptype)
+        const t_atom &local = atomP.atom();
+        switch (local.ptype)
         {
             case eptAtom:
             case eptVSite:
             case eptShell:
-                nptype[atom->ptype] += nmol;
+                nptype[local.ptype] += atomP.numberOfMoleculesInBlock();
                 break;
             default:
                 fprintf(stderr, "Warning unsupported particle type %d in countPtypes",
-                        static_cast<int>(atom->ptype));
+                        static_cast<int>(local.ptype));
         }
     }
     if (fplog)

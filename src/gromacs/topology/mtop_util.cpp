@@ -217,11 +217,15 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
-AtomIterator::AtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber)
+AtomIterator::AtomIterator(const gmx_mtop_t &mtop,
+                           int               globalAtomNumber,
+                           bool              loopOverAllMolsInBlocks)
     : mtop_(&mtop), mblock_(0),
       atoms_(&mtop.moltype[mtop.molblock[0].type].atoms),
       currentMolecule_(0), highestResidueNumber_(mtop.maxresnr),
-      localAtomNumber_(0), globalAtomNumber_(globalAtomNumber)
+      localAtomNumber_(0), globalAtomNumber_(globalAtomNumber),
+      loopOverAllMolsInBlocks_(loopOverAllMolsInBlocks),
+      numberOfMoleculesInBlock_(mtop.molblock[0].nmol)
 {
     GMX_ASSERT(globalAtomNumber == 0 || globalAtomNumber == mtop.natoms,
                "Starting at other atoms not implemented yet");
@@ -239,17 +243,21 @@ AtomIterator &AtomIterator::operator++()
             /* Single residue molecule, increase the count with one */
             highestResidueNumber_ += atoms_->nres;
         }
-        currentMolecule_++;
+        if (loopOverAllMolsInBlocks_)
+        {
+            currentMolecule_++;
+        }
         localAtomNumber_ = 0;
-        if (currentMolecule_ >= mtop_->molblock[mblock_].nmol)
+        if ((currentMolecule_ >= numberOfMoleculesInBlock_) || !loopOverAllMolsInBlocks_)
         {
             mblock_++;
             if (mblock_ >= mtop_->molblock.size())
             {
                 return *this;
             }
-            atoms_           = &mtop_->moltype[mtop_->molblock[mblock_].type].atoms;
-            currentMolecule_ = 0;
+            atoms_                    = &mtop_->moltype[mtop_->molblock[mblock_].type].atoms;
+            numberOfMoleculesInBlock_ = mtop_->molblock[mblock_].nmol;
+            currentMolecule_          = 0;
         }
     }
     return *this;
@@ -277,6 +285,12 @@ const t_atom &AtomProxy::atom() const
     return it_->atoms_->atom[it_->localAtomNumber_];
 }
 
+const t_resinfo &AtomProxy::resinfo() const
+{
+    int residueIndexInMolecule = it_->atoms_->atom[it_->localAtomNumber_].resind;
+    return it_->atoms_->resinfo[residueIndexInMolecule];
+}
+
 int AtomProxy::globalAtomNumber() const
 {
     return it_->globalAtomNumber_;
@@ -289,8 +303,7 @@ const char *AtomProxy::atomName() const
 
 const char *AtomProxy::residueName() const
 {
-    int residueIndexInMolecule = it_->atoms_->atom[it_->localAtomNumber_].resind;
-    return *(it_->atoms_->resinfo[residueIndexInMolecule].name);
+    return *(resinfo().name);
 }
 
 int AtomProxy::residueNumber() const
@@ -316,60 +329,9 @@ int AtomProxy::atomNumberInMol() const
     return it_->localAtomNumber_;
 }
 
-typedef struct gmx_mtop_atomloop_block
+int AtomProxy::numberOfMoleculesInBlock() const
 {
-    const gmx_mtop_t *mtop;
-    size_t            mblock;
-    const t_atoms    *atoms;
-    int               at_local;
-} t_gmx_mtop_atomloop_block;
-
-gmx_mtop_atomloop_block_t
-gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop)
-{
-    struct gmx_mtop_atomloop_block *aloop;
-
-    snew(aloop, 1);
-
-    aloop->mtop      = mtop;
-    aloop->mblock    = 0;
-    aloop->atoms     = &mtop->moltype[mtop->molblock[aloop->mblock].type].atoms;
-    aloop->at_local  = -1;
-
-    return aloop;
-}
-
-static void gmx_mtop_atomloop_block_destroy(gmx_mtop_atomloop_block_t aloop)
-{
-    sfree(aloop);
-}
-
-gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                                      const t_atom **atom, int *nmol)
-{
-    if (aloop == nullptr)
-    {
-        gmx_incons("gmx_mtop_atomloop_all_next called without calling gmx_mtop_atomloop_all_init");
-    }
-
-    aloop->at_local++;
-
-    if (aloop->at_local >= aloop->atoms->nr)
-    {
-        aloop->mblock++;
-        if (aloop->mblock >= aloop->mtop->molblock.size())
-        {
-            gmx_mtop_atomloop_block_destroy(aloop);
-            return FALSE;
-        }
-        aloop->atoms    = &aloop->mtop->moltype[aloop->mtop->molblock[aloop->mblock].type].atoms;
-        aloop->at_local = 0;
-    }
-
-    *atom = &aloop->atoms->atom[aloop->at_local];
-    *nmol = aloop->mtop->molblock[aloop->mblock].nmol;
-
-    return TRUE;
+    return it_->numberOfMoleculesInBlock_;
 }
 
 typedef struct gmx_mtop_ilistloop

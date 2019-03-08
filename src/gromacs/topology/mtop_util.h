@@ -96,7 +96,9 @@ class AtomProxy
         //! Access current global atom number.
         int globalAtomNumber() const;
         //! Access current t_atom struct.
-        const t_atom &atom() const;
+        const t_atom    &atom() const;
+        //! Access current t_resinfo struct.
+        const t_resinfo &resinfo() const;
         //! Access current name of the atom.
         const char *atomName() const;
         //! Access current name of the residue the atom is in.
@@ -107,6 +109,8 @@ class AtomProxy
         const gmx_moltype_t &moleculeType() const;
         //! Access the position of the current atom in the molecule.
         int atomNumberInMol() const;
+        //! Get number if molecules in current block.
+        int numberOfMoleculesInBlock() const;
     private:
         const AtomIterator* it_;
 };
@@ -130,8 +134,11 @@ class ProxyPtr
 class AtomIterator
 {
     public:
-        //! Construct from topology and optionalally a global atom number.
-        explicit AtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber = 0);
+        //! Construct from topology and optionally a global atom number and
+        //! a flag to loop over only the first block or all blocks in the topology.
+        explicit AtomIterator(const gmx_mtop_t &mtop,
+                              int               globalAtomNumber = 0,
+                              bool              loopOverAllMolsInBlocks = true);
 
         //! Prefix increment.
         AtomIterator &operator++();
@@ -163,6 +170,10 @@ class AtomIterator
         int               localAtomNumber_;
         //! Global current atom number.
         int               globalAtomNumber_;
+        //! If all blocks in the topology should be included in loop or not.
+        bool              loopOverAllMolsInBlocks_;
+        //! Number of molecules in vurrent block.
+        int               numberOfMoleculesInBlock_;
 
         friend class AtomProxy;
 };
@@ -172,8 +183,8 @@ class AtomRange
 {
     public:
         //! Default constructor.
-        explicit AtomRange(const gmx_mtop_t &mtop) :
-            begin_(mtop), end_(mtop, mtop.natoms) {}
+        explicit AtomRange(const gmx_mtop_t &mtop, bool loopOverAllMolsInBlocks = true) :
+            begin_(mtop, 0, loopOverAllMolsInBlocks), end_(mtop, mtop.natoms, loopOverAllMolsInBlocks) {}
         //! Iterator to begin of range.
         AtomIterator &begin() { return begin_; }
         //! Iterator to end of range.
@@ -181,32 +192,6 @@ class AtomRange
     private:
         AtomIterator begin_, end_;
 };
-
-/* Abstract type for atom loop over atoms in all molecule blocks */
-typedef struct gmx_mtop_atomloop_block *gmx_mtop_atomloop_block_t;
-
-/* Initialize an atom loop over atoms in all molecule blocks the system.
- */
-gmx_mtop_atomloop_block_t
-gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop);
-
-/* Loop to the next atom.
- * When not at the end:
- *   returns TRUE
- *   sets the pointer atom to the t_atom struct of that atom
- *   and return the number of molecules corresponding to this atom.
- * When at the end, destroys aloop and returns FALSE.
- * Use as:
- * gmx_mtop_atomloop_block_t aloop;
- * aloop = gmx_mtop_atomloop_block_init(mtop)
- * while (gmx_mtop_atomloop_block_next(aloop,&atom,&nmol)) {
- *     ...
- * }
- */
-gmx_bool
-gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                             const t_atom **atom, int *nmol);
-
 
 /* Abstract type for ilist loop over all ilists */
 typedef struct gmx_mtop_ilistloop *gmx_mtop_ilistloop_t;
