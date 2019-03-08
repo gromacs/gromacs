@@ -737,7 +737,9 @@ void gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
                         struct nbnxn_atomdata_t       *nbatom,
                         const int                      flags,
                         const AtomLocality             aloc,
-                        const bool                     haveOtherWork)
+                        const bool                     haveOtherWork,
+                        const bool         gmx_unused  useGpuFBufOps,
+                        const bool         gmx_unused  bNS)
 {
     cl_int gmx_unused cl_error;
     int               adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */

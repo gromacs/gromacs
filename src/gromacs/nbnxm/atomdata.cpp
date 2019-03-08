@@ -37,6 +37,8 @@
 
 #include "atomdata.h"
 
+#include "config.h"
+
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
@@ -68,6 +70,7 @@
 
 #include "grid.h"
 #include "internal.h"
+#include "nbnxm_gpu.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
@@ -1568,3 +1571,103 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
         rvec_inc(fshift[s], sum);
     }
 }
+
+#if GMX_GPU == GMX_GPU_CUDA
+void nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbnxn_search              *nbs,
+                                             const Nbnxm::AtomLocality  locality,
+                                             const nbnxn_atomdata_t    *nbat,
+                                             gmx_nbnxn_gpu_t           *gpu_nbv,
+                                             gmx_wallcycle             *wcycle)
+{
+    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+
+    int a0 = 0, na = 0;
+
+
+    switch (locality)
+    {
+        case Nbnxm::AtomLocality::All:
+        case Nbnxm::AtomLocality::Count:
+            a0 = 0;
+            na = nbs->natoms_nonlocal;
+            break;
+        case Nbnxm::AtomLocality::Local:
+            a0 = 0;
+            na = nbs->natoms_local;
+            break;
+        case Nbnxm::AtomLocality::NonLocal:
+            a0 = nbs->natoms_local;
+            na = nbs->natoms_nonlocal - nbs->natoms_local;
+            break;
+    }
+
+
+    if (nbat->out.size() > 1)
+    {
+        gmx_incons("add_f_to_f_gpu called with nout>1");
+        if (locality != Nbnxm::AtomLocality::All)
+        {
+            gmx_incons("add_f_to_f_gpu called with nout>1 and locality!=eatAll");
+        }
+    }
+
+    Nbnxm::nbnxn_gpu_init_add_nbat_f_to_f(nbs->cell.data(),
+                                          nbs,
+                                          gpu_nbv,
+                                          a0+na);
+
+    wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
+    wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+}
+
+
+void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search              *nbs,
+                                        const Nbnxm::AtomLocality  locality,
+                                        const nbnxn_atomdata_t    *nbat,
+                                        gmx_nbnxn_gpu_t           *gpu_nbv,
+                                        rvec                      *f,
+                                        gmx_wallcycle             *wcycle)
+{
+    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+
+    int a0 = 0, na = 0;
+
+    switch (locality)
+    {
+        case Nbnxm::AtomLocality::All:
+        case Nbnxm::AtomLocality::Count:
+            a0 = 0;
+            na = nbs->natoms_nonlocal;
+            break;
+        case Nbnxm::AtomLocality::Local:
+            a0 = 0;
+            na = nbs->natoms_local;
+            break;
+        case Nbnxm::AtomLocality::NonLocal:
+            a0 = nbs->natoms_local;
+            na = nbs->natoms_nonlocal - nbs->natoms_local;
+            break;
+    }
+
+
+    if (nbat->out.size() > 1)
+    {
+        gmx_incons("add_f_to_f_gpu called with nout>1");
+        if (locality != Nbnxm::AtomLocality::All)
+        {
+            gmx_incons("add_f_to_f_gpu called with nout>1 and locality!=eatAll");
+        }
+    }
+
+    Nbnxm::nbnxn_gpu_add_nbat_f_to_f(locality,
+                                     nbat,
+                                     gpu_nbv,
+                                     a0, a0+na,
+                                     f);
+
+    wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
+    wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+}
+#endif
