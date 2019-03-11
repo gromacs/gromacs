@@ -2896,7 +2896,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
         /* The atoms are now exactly in grid order, update the grid order */
-        nbnxn_set_atomorder(fr->nbv->nbs.get());
+        fr->nbv->setLocalAtomOrder();
     }
     else
     {
@@ -3387,7 +3387,7 @@ void dd_partition_system(FILE                    *fplog,
                        fr->rlist, grid_density);
             break;
         case ecutsVERLET:
-            nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_old[XX], &ncells_old[YY]);
+            fr->nbv->getLocalNumCells(&ncells_old[XX], &ncells_old[YY]);
             break;
         default:
             gmx_incons("unimplemented");
@@ -3426,7 +3426,7 @@ void dd_partition_system(FILE                    *fplog,
                                   state_local->x,
                                   ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr);
 
-                nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_new[XX], &ncells_new[YY]);
+                fr->nbv->getLocalNumCells(&ncells_new[XX], &ncells_new[YY]);
                 break;
             case ecutsGROUP:
                 fill_grid(&comm->zones, fr->ns->grid, dd->ncg_home,
