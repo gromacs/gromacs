@@ -67,11 +67,6 @@ struct nbnxn_atomdata_t;
 struct nbnxn_search;
 enum class PairlistType;
 
-namespace gmx
-{
-class UpdateGroupsCog;
-}
-
 namespace Nbnxm
 {
 
@@ -201,6 +196,35 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
 
 #endif // !DOXYGEN
 
+
+/*! \internal
+ * \brief Helper struct to pass data that is shared over all grids
+ *
+ * To enable a single coordinate and force array, a single cell range
+ * is needed which covers all grids. This helper struct contains
+ * references to the index lists mapping both ways, as well as
+ * the free-energy boolean, which is the same for all grids.
+ */
+struct GridSetData
+{
+    //! The cell indices for all atoms
+    std::vector<int> &cells;
+    //! The atom indices for all atoms stored in cell order
+    std::vector<int> &atomIndices;
+    //! Tells whether we are have perturbed non-bonded interations
+    const bool        haveFep;
+};
+
+/*! \internal
+ * \brief Working arrays for constructing a grid
+ */
+struct GridWork
+{
+    //! Number of atoms for each grid column
+    std::vector<int> numAtomsPerColumn;
+    //! Buffer for sorting integers
+    std::vector<int> sortBuffer;
+};
 
 /*! \internal
  * \brief A pair-search grid object for one domain decomposition zone
@@ -407,33 +431,32 @@ class Grid
         }
 
         //! Sets the grid dimensions
-        void setDimensions(const nbnxn_search   *nbs,
-                           int                   ddZone,
+        void setDimensions(int                   ddZone,
                            int                   numAtoms,
                            const rvec            lowerCorner,
                            const rvec            upperCorner,
                            real                  atomDensity,
-                           real                  maxAtomGroupRadius);
+                           real                  maxAtomGroupRadius,
+                           bool                  haveFep);
 
-        //! Determine in which grid cells the atoms should go
-        void calcCellIndices(nbnxn_search                   *nbs,
-                             int                             ddZone,
-                             int                             cellOffset,
-                             const gmx::UpdateGroupsCog     *updateGroupsCog,
-                             int                             atomStart,
-                             int                             atomEnd,
-                             const int                      *atinfo,
-                             gmx::ArrayRef<const gmx::RVec>  x,
-                             int                             numAtomsMoved,
-                             const int                      *move,
-                             nbnxn_atomdata_t               *nbat);
+        //! Sets the cell indices using indices in \p gridSetData and \p gridWork
+        void setCellIndices(int                             ddZone,
+                            int                             cellOffset,
+                            GridSetData                    *gridSetData,
+                            gmx::ArrayRef<GridWork>         gridWork,
+                            int                             atomStart,
+                            int                             atomEnd,
+                            const int                      *atinfo,
+                            gmx::ArrayRef<const gmx::RVec>  x,
+                            int                             numAtomsMoved,
+                            nbnxn_atomdata_t               *nbat);
 
     private:
         /*! \brief Fill a pair search cell with atoms
          *
          * Potentially sorts atoms and sets the interaction flags.
          */
-        void fillCell(nbnxn_search                   *nbs,
+        void fillCell(const GridSetData              &gridSetData,
                       nbnxn_atomdata_t               *nbat,
                       int                             atomStart,
                       int                             atomEnd,
@@ -442,7 +465,7 @@ class Grid
                       BoundingBox gmx_unused         *bb_work_aligned);
 
         //! Spatially sort the atoms within one grid column
-        void sortColumnsCpuGeometry(nbnxn_search *nbs,
+        void sortColumnsCpuGeometry(const GridSetData &gridSetData,
                                     int dd_zone,
                                     int atomStart, int atomEnd,
                                     const int *atinfo,
@@ -452,7 +475,7 @@ class Grid
                                     gmx::ArrayRef<int> sort_work);
 
         //! Spatially sort the atoms within one grid column
-        void sortColumnsGpuGeometry(nbnxn_search *nbs,
+        void sortColumnsGpuGeometry(const GridSetData &gridSetData,
                                     int dd_zone,
                                     int atomStart, int atomEnd,
                                     const int *atinfo,
