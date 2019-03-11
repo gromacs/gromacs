@@ -719,19 +719,14 @@ static void copy_lj_to_nbat_lj_comb(gmx::ArrayRef<const real> ljparam_type,
     }
 }
 
-static int numAtomsFromGrids(const nbnxn_search &nbs)
-{
-    return nbs.grid.back().atomIndexEnd();
-}
-
 /* Sets the atom type in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params *params,
-                                         const nbnxn_search       *nbs,
+                                         const Nbnxm::GridSet     &gridSet,
                                          const int                *type)
 {
-    params->type.resize(numAtomsFromGrids(*nbs));
+    params->type.resize(gridSet.numGridAtomsTotal());
 
-    for (const Nbnxm::Grid &grid : nbs->grid)
+    for (const Nbnxm::Grid &grid : gridSet.grids())
     {
         /* Loop over all columns and copy and fill */
         for (int i = 0; i < grid.numColumns(); i++)
@@ -739,7 +734,8 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params *params,
             const int numAtoms   = grid.paddedNumAtomsInColumn(i);
             const int atomOffset = grid.firstAtomInColumn(i);
 
-            copy_int_to_nbat_int(nbs->a.data() + atomOffset, grid.numAtomsInColumn(i), numAtoms,
+            copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset,
+                                 grid.numAtomsInColumn(i), numAtoms,
                                  type, params->numTypes - 1, params->type.data() + atomOffset);
         }
     }
@@ -748,13 +744,13 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params *params,
 /* Sets the LJ combination rule parameters in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params *params,
                                             const int                 XFormat,
-                                            const nbnxn_search       *nbs)
+                                            const Nbnxm::GridSet     &gridSet)
 {
-    params->lj_comb.resize(numAtomsFromGrids(*nbs)*2);
+    params->lj_comb.resize(gridSet.numGridAtomsTotal()*2);
 
     if (params->comb_rule != ljcrNONE)
     {
-        for (const Nbnxm::Grid &grid : nbs->grid)
+        for (const Nbnxm::Grid &grid : gridSet.grids())
         {
             /* Loop over all columns and copy and fill */
             for (int i = 0; i < grid.numColumns(); i++)
@@ -789,16 +785,16 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params *params,
 }
 
 /* Sets the charges in nbnxn_atomdata_t *nbat */
-static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
-                                       const nbnxn_search  *nbs,
-                                       const real          *charge)
+static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t     *nbat,
+                                       const Nbnxm::GridSet &gridSet,
+                                       const real           *charge)
 {
     if (nbat->XFormat != nbatXYZQ)
     {
         nbat->paramsDeprecated().q.resize(nbat->numAtoms());
     }
 
-    for (const Nbnxm::Grid &grid : nbs->grid)
+    for (const Nbnxm::Grid &grid : gridSet.grids())
     {
         /* Loop over all columns and copy and fill */
         for (int cxy = 0; cxy < grid.numColumns(); cxy++)
@@ -813,7 +809,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
                 int   i;
                 for (i = 0; i < numAtoms; i++)
                 {
-                    *q = charge[nbs->a[atomOffset + i]];
+                    *q = charge[gridSet.atomIndices()[atomOffset + i]];
                     q += STRIDE_XYZQ;
                 }
                 /* Complete the partially filled last cell with zeros */
@@ -829,7 +825,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
                 int   i;
                 for (i = 0; i < numAtoms; i++)
                 {
-                    *q = charge[nbs->a[atomOffset + i]];
+                    *q = charge[gridSet.atomIndices()[atomOffset + i]];
                     q++;
                 }
                 /* Complete the partially filled last cell with zeros */
@@ -849,8 +845,8 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
  * All perturbed interactions are calculated in the free energy kernel,
  * using the original charge and LJ data, not nbnxn_atomdata_t.
  */
-static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
-                                    const nbnxn_search  *nbs)
+static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t     *nbat,
+                                    const Nbnxm::GridSet &gridSet)
 {
     nbnxn_atomdata_t::Params &params = nbat->paramsDeprecated();
     real                     *q;
@@ -867,7 +863,7 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
         stride_q = 1;
     }
 
-    for (const Nbnxm::Grid &grid : nbs->grid)
+    for (const Nbnxm::Grid &grid : gridSet.grids())
     {
         int nsubc;
         if (grid.geometry().isSimple)
@@ -936,7 +932,7 @@ static void copy_egp_to_nbat_egps(const int *a, int na, int na_round,
 
 /* Set the energy group indices for atoms in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params *params,
-                                            const nbnxn_search       *nbs,
+                                            const Nbnxm::GridSet     &gridSet,
                                             const int                *atinfo)
 {
     if (params->nenergrp == 1)
@@ -944,9 +940,9 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params *params,
         return;
     }
 
-    params->energrp.resize(numAtomsFromGrids(*nbs));
+    params->energrp.resize(gridSet.numGridAtomsTotal());
 
-    for (const Nbnxm::Grid &grid : nbs->grid)
+    for (const Nbnxm::Grid &grid : gridSet.grids())
     {
         /* Loop over all columns and copy and fill */
         for (int i = 0; i < grid.numColumns(); i++)
@@ -954,7 +950,8 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params *params,
             const int numAtoms   = grid.paddedNumAtomsInColumn(i);
             const int atomOffset = grid.firstAtomInColumn(i);
 
-            copy_egp_to_nbat_egps(nbs->a.data() + atomOffset, grid.numAtomsInColumn(i), numAtoms,
+            copy_egp_to_nbat_egps(gridSet.atomIndices().data() + atomOffset,
+                                  grid.numAtomsInColumn(i), numAtoms,
                                   c_nbnxnCpuIClusterSize, params->neg_2log,
                                   atinfo,
                                   params->energrp.data() + grid.atomToCluster(atomOffset));
@@ -970,19 +967,21 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
 {
     nbnxn_atomdata_t::Params &params = nbat->paramsDeprecated();
 
-    nbnxn_atomdata_set_atomtypes(&params, nbs, mdatoms->typeA);
+    const Nbnxm::GridSet     &gridSet = nbs->gridSet();
 
-    nbnxn_atomdata_set_charges(nbat, nbs, mdatoms->chargeA);
+    nbnxn_atomdata_set_atomtypes(&params, gridSet, mdatoms->typeA);
 
-    if (nbs->bFEP)
+    nbnxn_atomdata_set_charges(nbat, gridSet, mdatoms->chargeA);
+
+    if (gridSet.haveFep())
     {
-        nbnxn_atomdata_mask_fep(nbat, nbs);
+        nbnxn_atomdata_mask_fep(nbat, gridSet);
     }
 
     /* This must be done after masking types for FEP */
-    nbnxn_atomdata_set_ljcombparams(&params, nbat->XFormat, nbs);
+    nbnxn_atomdata_set_ljcombparams(&params, nbat->XFormat, gridSet);
 
-    nbnxn_atomdata_set_energygroups(&params, nbs, atinfo);
+    nbnxn_atomdata_set_energygroups(&params, gridSet, atinfo);
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */
@@ -1010,41 +1009,42 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search       *nbs,
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
 
-    int g0 = 0, g1 = 0;
-    int nth, th;
+    const Nbnxm::GridSet &gridSet = nbs->gridSet();
 
+    int                   gridBegin = 0;
+    int                   gridEnd = 0;
     switch (locality)
     {
         case Nbnxm::AtomLocality::All:
         case Nbnxm::AtomLocality::Count:
-            g0 = 0;
-            g1 = nbs->grid.size();
+            gridBegin = 0;
+            gridEnd = gridSet.grids().size();
             break;
         case Nbnxm::AtomLocality::Local:
-            g0 = 0;
-            g1 = 1;
+            gridBegin = 0;
+            gridEnd = 1;
             break;
         case Nbnxm::AtomLocality::NonLocal:
-            g0 = 1;
-            g1 = nbs->grid.size();
+            gridBegin = 1;
+            gridEnd = gridSet.grids().size();
             break;
     }
 
     if (FillLocal)
     {
-        nbat->natoms_local = nbs->grid[0].atomIndexEnd();
+        nbat->natoms_local = gridSet.grids()[0].atomIndexEnd();
     }
 
-    nth = gmx_omp_nthreads_get(emntPairsearch);
+    const int nth = gmx_omp_nthreads_get(emntPairsearch);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
-    for (th = 0; th < nth; th++)
+    for (int th = 0; th < nth; th++)
     {
         try
         {
-            for (int g = g0; g < g1; g++)
+            for (int g = gridBegin; g < gridEnd; g++)
             {
-                const Nbnxm::Grid  &grid       = nbs->grid[g];
+                const Nbnxm::Grid  &grid       = gridSet.grids()[g];
                 const int           numCellsXY = grid.numColumns();
 
                 const int           cxy0 = (numCellsXY* th      + nth - 1)/nth;
@@ -1068,7 +1068,8 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search       *nbs,
                          */
                         na_fill = na;
                     }
-                    copy_rvec_to_nbat_real(nbs->a.data() + ash, na, na_fill, x,
+                    copy_rvec_to_nbat_real(gridSet.atomIndices().data() + ash,
+                                           na, na_fill, x,
                                            nbat->XFormat, nbat->x().data(), ash);
                 }
             }
@@ -1166,14 +1167,14 @@ nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
 
 /* Add part of the force array(s) from nbnxn_atomdata_t to f */
 static void
-nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search *nbs,
+nbnxn_atomdata_add_nbat_f_to_f_part(const Nbnxm::GridSet &gridSet,
                                     const nbnxn_atomdata_t *nbat,
                                     gmx::ArrayRef<const nbnxn_atomdata_output_t> out,
                                     int nfa,
                                     int a0, int a1,
                                     rvec *f)
 {
-    gmx::ArrayRef<const int> cell = nbs->cell;
+    gmx::ArrayRef<const int> cell = gridSet.cells();
 
     /* Loop over all columns and copy and fill */
     switch (nbat->FFormat)
@@ -1477,24 +1478,26 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
 
-    int a0 = 0, na = 0;
+    const Nbnxm::GridSet &gridSet = nbs->gridSet();
 
     nbs_cycle_start(&nbs->cc[enbsCCreducef]);
 
+    int a0 = 0;
+    int na = 0;
     switch (locality)
     {
         case Nbnxm::AtomLocality::All:
         case Nbnxm::AtomLocality::Count:
             a0 = 0;
-            na = nbs->natoms_nonlocal;
+            na = gridSet.numRealAtomsTotal();
             break;
         case Nbnxm::AtomLocality::Local:
             a0 = 0;
-            na = nbs->natoms_local;
+            na = gridSet.numRealAtomsLocal();
             break;
         case Nbnxm::AtomLocality::NonLocal:
-            a0 = nbs->natoms_local;
-            na = nbs->natoms_nonlocal - nbs->natoms_local;
+            a0 = gridSet.numRealAtomsLocal();
+            na = gridSet.numRealAtomsTotal() - gridSet.numRealAtomsLocal();
             break;
     }
 
@@ -1524,7 +1527,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
     {
         try
         {
-            nbnxn_atomdata_add_nbat_f_to_f_part(nbs.get(), nbat.get(),
+            nbnxn_atomdata_add_nbat_f_to_f_part(gridSet, nbat.get(),
                                                 nbat->out,
                                                 1,
                                                 a0+((th+0)*na)/nth,
