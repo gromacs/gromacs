@@ -71,6 +71,25 @@ enum {
     nbatXYZ, nbatXYZQ, nbatX4, nbatX8
 };
 
+//! Stride for coordinate/force arrays with xyz coordinate storage
+static constexpr int STRIDE_XYZ  = 3;
+//! Stride for coordinate/force arrays with xyzq coordinate storage
+static constexpr int STRIDE_XYZQ = 4;
+//! Size of packs of x, y or z with SIMD 4-grouped packed coordinates/forces
+static constexpr int c_packX4    = 4;
+//! Size of packs of x, y or z with SIMD 8-grouped packed coordinates/forces
+static constexpr int c_packX8    = 8;
+//! Stridefor a pack of 4 coordinates/forces
+static constexpr int STRIDE_P4   = DIM*c_packX4;
+//! Stridefor a pack of 8 coordinates/forces
+static constexpr int STRIDE_P8   = DIM*c_packX8;
+
+//! Returns the index in a coordinate array corresponding to atom a
+template<int packSize> static inline int atom_to_x_index(int a)
+{
+    return DIM*(a & ~(packSize - 1)) + (a & (packSize - 1));
+}
+
 // Struct that holds force and energy output buffers
 struct nbnxn_atomdata_output_t
 {
