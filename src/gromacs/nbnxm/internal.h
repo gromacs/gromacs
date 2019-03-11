@@ -50,18 +50,16 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_domdec_zones_t;
+#include "gridset.h"
 
-namespace Nbnxm
-{
-class Grid;
-}
+struct gmx_domdec_zones_t;
 
 
 /*! \brief Convenience declaration for an std::vector with aligned memory */
@@ -90,8 +88,6 @@ struct nbnxn_search_work_t
 
     gmx_cache_protect_t       cp0;          /* Buffer to avoid cache polution */
 
-    std::vector<int>          cxy_na;       /* Grid column atom counts temporary buffer */
-
     std::vector<int>          sortBuffer;   /* Temporary buffer for sorting atoms within a grid column */
 
     nbnxn_buffer_flags_t      buffer_flags; /* Flags for force buffer access */
@@ -114,33 +110,28 @@ struct nbnxn_search
      * \param[in] ePBC            The periodic boundary conditions
      * \param[in] n_dd_cells      The number of domain decomposition cells per dimension, without DD nullptr should be passed
      * \param[in] zones           The domain decomposition zone setup, without DD nullptr should be passed
-     * \param[in] nb_kernel_type  The nbnxn non-bonded kernel type
-     * \param[in] bFEP            Tells whether non-bonded interactions are perturbed
-     * \param[in] nthread_max     The maximum number of threads used in the search
+     * \param[in] haveFep         Tells whether non-bonded interactions are perturbed
+     * \param[in] maxNumThreads   The maximum number of threads used in the search
      */
-
     nbnxn_search(int                       ePBC,
                  const ivec               *n_dd_cells,
                  const gmx_domdec_zones_t *zones,
                  PairlistType              pairlistType,
-                 gmx_bool                  bFEP,
-                 int                       nthread_max);
+                 bool                      haveFep,
+                 int                       maxNumthreads);
 
-    gmx_bool                   bFEP;            /* Do we have perturbed atoms? */
+    const Nbnxm::GridSet &gridSet() const
+    {
+        return gridSet_;
+    }
+
     int                        ePBC;            /* PBC type enum                              */
-    matrix                     box;             /* The periodic unit-cell                     */
-
     gmx_bool                   DomDec;          /* Are we doing domain decomposition?         */
     ivec                       dd_dim;          /* Are we doing DD in x,y,z?                  */
     const gmx_domdec_zones_t  *zones;           /* The domain decomposition zones        */
 
-    std::vector<Nbnxm::Grid>   grid;            /* Array of grids, size ngrid                 */
-    std::vector<int>           cell;            /* Actual allocated cell array for all grids  */
-    std::vector<int>           a;               /* Atom index for grid, the inverse of cell   */
-
-    int                        natoms_local;    /* The local atoms run from 0 to natoms_local */
-    int                        natoms_nonlocal; /* The non-local atoms run from natoms_local
-                                                 * to natoms_nonlocal */
+    //! The local and non-local grids
+    Nbnxm::GridSet       gridSet_;
 
     gmx_bool             print_cycles;
     int                  search_count;

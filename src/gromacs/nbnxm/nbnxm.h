@@ -376,6 +376,9 @@ struct nonbonded_verlet_t
         //! Initialize the pair list sets, TODO this should be private
         void initPairlistSets(bool haveMultipleDomains);
 
+        //! Sets the order of the local atoms to the order grid atom ordering
+        void setLocalAtomOrder();
+
         //! Constructs the pairlist for the given locality
         void constructPairlist(Nbnxm::InteractionLocality  iLocality,
                                const t_blocka             *excl,
@@ -433,6 +436,10 @@ struct nonbonded_verlet_t
         {
             return kernelSetup_;
         }
+
+        /*! \brief Returns the number of x and y cells in the local grid */
+        void getLocalNumCells(int *numCellsX,
+                              int *numCellsY) const;
 
         // TODO: Make all data members private
     public:
@@ -500,9 +507,6 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nb_verlet,
                                 const struct gmx_domdec_zones_t *zones,
                                 const int                       *atinfo,
                                 gmx::ArrayRef<const gmx::RVec>   x);
-
-/*! \brief Returns the number of x and y cells in the local grid */
-void nbnxn_get_ncells(const nbnxn_search *nbs, int *ncx, int *ncy);
 
 /*! \brief Returns the order indices of the atoms on the pairlist search grid */
 gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search* nbs);
