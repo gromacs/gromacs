@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,6 +102,8 @@ class SimulationRunner
         void useTopGroAndNdxFromDatabase(const std::string &name);
         //! Use a standard .gro file as input to grompp
         void useGroFromDatabase(const char *name);
+        //! Sets the value for maxwarn to be able to avoid warnings for known issues.
+        void setGromppMaxWarn(int maxWarn);
         //! Calls grompp (on rank 0, with a customized command line) to prepare for the mdrun test
         int callGrompp(const CommandLine &callerRef);
         //! Convenience wrapper for a default call to \c callGrompp
@@ -143,6 +145,10 @@ class SimulationRunner
         //@}
         //! What will be written into a temporary mdp file before the grompp call
         std::string mdpInputContents_;
+        //! Value for maxwarn if set by test.
+        int         maxWarn_;
+        //! If maxwarn has been set.
+        bool        hasSetMaxWarn_;
 
     private:
         TestFileManager &fileManager_;

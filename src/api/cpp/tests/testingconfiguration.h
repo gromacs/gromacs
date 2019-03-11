@@ -89,7 +89,9 @@ class GmxApiTest : public gmx::test::MdrunTestFixture
          */
         void makeTprFile(int steps)
         {
-            runner_.useTopGroAndNdxFromDatabase("spc_and_methane");
+            runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+            // Needed because the GROMOS FF used in the tests now gives a warning.
+            runner_.setGromppMaxWarn(1);
             runner_.useStringAsMdpFile(gmx::formatString("integrator = md\n"
                                                          "cutoff-scheme = Verlet\n"
                                                          "nsteps = %d\n"

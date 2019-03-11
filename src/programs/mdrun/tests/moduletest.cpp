@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
     tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
     logFileName_(fileManager->getTemporaryFilePath(".log")),
     edrFileName_(fileManager->getTemporaryFilePath(".edr")),
-    nsteps_(-2),
+    nsteps_(-2), maxWarn_(0), hasSetMaxWarn_(false),
     fileManager_(*fileManager)
 {
 #if GMX_LIB_MPI
@@ -150,6 +150,14 @@ SimulationRunner::useGroFromDatabase(const char *name)
     groFileName_ = gmx::test::TestFileManager::getInputFilePath((std::string(name) + ".gro").c_str());
 }
 
+
+void
+SimulationRunner::setGromppMaxWarn(int maxWarn)
+{
+    maxWarn_       = maxWarn;
+    hasSetMaxWarn_ = true;
+}
+
 int
 SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
 {
@@ -170,6 +178,10 @@ SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
 
     caller.addOption("-po", mdpOutputFileName_);
     caller.addOption("-o", tprFileName_);
+    if (hasSetMaxWarn_)
+    {
+        caller.addOption("-maxwarn", maxWarn_);
+    }
 
     return gmx_grompp(caller.argc(), caller.argv());
 }
