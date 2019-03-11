@@ -51,7 +51,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/pairlist.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
@@ -63,37 +62,6 @@ namespace Nbnxm
 {
 class Grid;
 }
-
-
-// TODO Document after refactoring
-#ifndef DOXYGEN
-
-/* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
-#define STRIDE_XYZ         3
-#define STRIDE_XYZQ        4
-/* Size of packs of x, y or z with SIMD packed coords/forces */
-static const int c_packX4 = 4;
-static const int c_packX8 = 8;
-/* Strides for a pack of 4 and 8 coordinates/forces */
-#define STRIDE_P4         (DIM*c_packX4)
-#define STRIDE_P8         (DIM*c_packX8)
-
-/* Returns the index in a coordinate array corresponding to atom a */
-template<int packSize> static inline int atom_to_x_index(int a)
-{
-    return DIM*(a & ~(packSize - 1)) + (a & (packSize - 1));
-}
-
-
-#if GMX_SIMD
-/* Memory alignment in bytes as required by SIMD aligned loads/stores */
-#define NBNXN_MEM_ALIGN  (GMX_SIMD_REAL_WIDTH*sizeof(real))
-#else
-/* No alignment required, but set it so we can call the same routines */
-#define NBNXN_MEM_ALIGN  32
-#endif
-
-#endif // !DOXYGEN
 
 
 /*! \brief Convenience declaration for an std::vector with aligned memory */
