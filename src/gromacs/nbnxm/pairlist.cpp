@@ -299,24 +299,19 @@ nbnxn_search_work_t::~nbnxn_search_work_t()
     free_nblist(nbl_fep.get());
 }
 
-nbnxn_search::nbnxn_search(int                       ePBC,
+nbnxn_search::nbnxn_search(const int                 ePBC,
                            const ivec               *n_dd_cells,
                            const gmx_domdec_zones_t *zones,
                            const PairlistType        pairlistType,
-                           gmx_bool                  bFEP,
-                           int                       nthread_max) :
-    bFEP(bFEP),
+                           const bool                haveFep,
+                           const int                 maxNumThreads) :
     ePBC(ePBC),
     zones(zones),
-    natoms_local(0),
-    natoms_nonlocal(0),
+    gridSet_(n_dd_cells, pairlistType, haveFep, maxNumThreads),
     search_count(0),
-    work(nthread_max)
+    work(maxNumThreads)
 {
-    // The correct value will be set during the gridding
-    clear_mat(box);
     clear_ivec(dd_dim);
-    int numGrids = 1;
     DomDec = n_dd_cells != nullptr;
     if (DomDec)
     {
@@ -325,13 +320,9 @@ nbnxn_search::nbnxn_search(int                       ePBC,
             if ((*n_dd_cells)[d] > 1)
             {
                 dd_dim[d] = 1;
-                /* Each grid matches a DD zone */
-                numGrids *= 2;
             }
         }
     }
-
-    grid.resize(numGrids, pairlistType);
 
     /* Initialize detailed nbsearch cycle counting */
     print_cycles = (getenv("GMX_NBNXN_CYCLE") != nullptr);
@@ -863,7 +854,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list)
 static void print_nblist_statistics(FILE *fp, const NbnxnPairlistCpu *nbl,
                                     const nbnxn_search *nbs, real rl)
 {
-    const Grid             &grid = nbs->grid[0];
+    const Grid             &grid = nbs->gridSet().grids()[0];
     const Grid::Dimensions &dims = grid.dimensions();
 
     fprintf(fp, "nbl nci %zu ncj %d\n",
@@ -908,7 +899,7 @@ static void print_nblist_statistics(FILE *fp, const NbnxnPairlistCpu *nbl,
 static void print_nblist_statistics(FILE *fp, const NbnxnPairlistGpu *nbl,
                                     const nbnxn_search *nbs, real rl)
 {
-    const Grid             &grid = nbs->grid[0];
+    const Grid             &grid = nbs->gridSet().grids()[0];
     const Grid::Dimensions &dims = grid.dimensions();
 
     fprintf(fp, "nbl nsci %zu ncj4 %zu nsi %d excl4 %zu\n",
@@ -1475,7 +1466,7 @@ static nbnxn_sci_t *getOpenIEntry(NbnxnPairlistGpu *nbl)
  * as masks in the pair-list for simple list entry iEntry.
  */
 static void
-setExclusionsForIEntry(const nbnxn_search   *nbs,
+setExclusionsForIEntry(const Nbnxm::GridSet &gridSet,
                        NbnxnPairlistCpu     *nbl,
                        gmx_bool              diagRemoved,
                        int                   na_cj_2log,
@@ -1492,13 +1483,14 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
 
     const int                iCluster = iEntry.ci;
 
-    gmx::ArrayRef<const int> cell = nbs->cell;
+    gmx::ArrayRef<const int> cell        = gridSet.cells();
+    gmx::ArrayRef<const int> atomIndices = gridSet.atomIndices();
 
     /* Loop over the atoms in the i-cluster */
     for (int i = 0; i < nbl->na_ci; i++)
     {
         const int iIndex = iCluster*nbl->na_ci + i;
-        const int iAtom  = nbs->a[iIndex];
+        const int iAtom  = atomIndices[iIndex];
         if (iAtom >= 0)
         {
             /* Loop over the topology-based exclusions for this i-atom */
@@ -1576,18 +1568,18 @@ const int max_nrj_fep = 40;
  * LJ parameters have been zeroed in the nbnxn data structure.
  * Simultaneously make a group pair list for the perturbed pairs.
  */
-static void make_fep_list(const nbnxn_search     *nbs,
-                          const nbnxn_atomdata_t *nbat,
-                          NbnxnPairlistCpu       *nbl,
-                          gmx_bool                bDiagRemoved,
-                          nbnxn_ci_t             *nbl_ci,
-                          real gmx_unused         shx,
-                          real gmx_unused         shy,
-                          real gmx_unused         shz,
-                          real gmx_unused         rlist_fep2,
-                          const Grid             &iGrid,
-                          const Grid             &jGrid,
-                          t_nblist               *nlist)
+static void make_fep_list(gmx::ArrayRef<const int>  atomIndices,
+                          const nbnxn_atomdata_t   *nbat,
+                          NbnxnPairlistCpu         *nbl,
+                          gmx_bool                  bDiagRemoved,
+                          nbnxn_ci_t               *nbl_ci,
+                          real gmx_unused           shx,
+                          real gmx_unused           shy,
+                          real gmx_unused           shz,
+                          real gmx_unused           rlist_fep2,
+                          const Grid               &iGrid,
+                          const Grid               &jGrid,
+                          t_nblist                 *nlist)
 {
     int      ci, cj_ind_start, cj_ind_end, cja, cjr;
     int      nri_max;
@@ -1643,7 +1635,7 @@ static void make_fep_list(const nbnxn_search     *nbs,
     for (int i = 0; i < nbl->na_ci; i++)
     {
         ind_i = ci*nbl->na_ci + i;
-        ai    = nbs->a[ind_i];
+        ai    = atomIndices[ind_i];
         if (ai >= 0)
         {
             nri                  = nlist->nri;
@@ -1711,7 +1703,7 @@ static void make_fep_list(const nbnxn_search     *nbs,
                     {
                         /* Is this interaction perturbed and not excluded? */
                         ind_j = cja*nbl->na_cj + j;
-                        aj    = nbs->a[ind_j];
+                        aj    = atomIndices[ind_j];
                         if (aj >= 0 &&
                             (bFEP_i || (fep_cj & (1 << j))) &&
                             (!bDiagRemoved || ind_j >= ind_i))
@@ -1789,18 +1781,18 @@ static inline int a_mod_wj(int a)
 }
 
 /* As make_fep_list above, but for super/sub lists. */
-static void make_fep_list(const nbnxn_search     *nbs,
-                          const nbnxn_atomdata_t *nbat,
-                          NbnxnPairlistGpu       *nbl,
-                          gmx_bool                bDiagRemoved,
-                          const nbnxn_sci_t      *nbl_sci,
-                          real                    shx,
-                          real                    shy,
-                          real                    shz,
-                          real                    rlist_fep2,
-                          const Grid             &iGrid,
-                          const Grid             &jGrid,
-                          t_nblist               *nlist)
+static void make_fep_list(gmx::ArrayRef<const int>  atomIndices,
+                          const nbnxn_atomdata_t   *nbat,
+                          NbnxnPairlistGpu         *nbl,
+                          gmx_bool                  bDiagRemoved,
+                          const nbnxn_sci_t        *nbl_sci,
+                          real                      shx,
+                          real                      shy,
+                          real                      shz,
+                          real                      rlist_fep2,
+                          const Grid               &iGrid,
+                          const Grid               &jGrid,
+                          t_nblist                 *nlist)
 {
     int                nri_max;
     int                c_abs;
@@ -1844,7 +1836,7 @@ static void make_fep_list(const nbnxn_search     *nbs,
         for (int i = 0; i < nbl->na_ci; i++)
         {
             ind_i = c_abs*nbl->na_ci + i;
-            ai    = nbs->a[ind_i];
+            ai    = atomIndices[ind_i];
             if (ai >= 0)
             {
                 nri                  = nlist->nri;
@@ -1889,7 +1881,7 @@ static void make_fep_list(const nbnxn_search     *nbs,
                             {
                                 /* Is this interaction perturbed and not excluded? */
                                 ind_j = (jGrid.cellOffset()*c_gpuNumClusterPerCell + cjr)*nbl->na_cj + j;
-                                aj    = nbs->a[ind_j];
+                                aj    = atomIndices[ind_j];
                                 if (aj >= 0 &&
                                     (bFEP_i || jGrid.atomIsPerturbed(cjr, j)) &&
                                     (!bDiagRemoved || ind_j >= ind_i))
@@ -1966,7 +1958,7 @@ static void make_fep_list(const nbnxn_search     *nbs,
  * as masks in the pair-list for i-super-cluster list entry iEntry.
  */
 static void
-setExclusionsForIEntry(const nbnxn_search   *nbs,
+setExclusionsForIEntry(const Nbnxm::GridSet &gridSet,
                        NbnxnPairlistGpu     *nbl,
                        gmx_bool              diagRemoved,
                        int gmx_unused        na_cj_2log,
@@ -1993,13 +1985,14 @@ setExclusionsForIEntry(const nbnxn_search   *nbs,
 
     const int                iSuperCluster = iEntry.sci;
 
-    gmx::ArrayRef<const int> cell = nbs->cell;
+    gmx::ArrayRef<const int> atomIndices   = gridSet.atomIndices();
+    gmx::ArrayRef<const int> cell          = gridSet.cells();
 
     /* Loop over the atoms in the i super-cluster */
     for (int i = 0; i < c_superClusterSize; i++)
     {
         const int iIndex = iSuperCluster*c_superClusterSize + i;
-        const int iAtom  = nbs->a[iIndex];
+        const int iAtom  = atomIndices[iIndex];
         if (iAtom >= 0)
         {
             const int iCluster = i/c_clusterSize;
@@ -2605,7 +2598,7 @@ static void get_nsubpair_target(const nbnxn_search        *nbs,
     const int           nsubpair_target_min = 36;
     real                r_eff_sup, vol_est, nsp_est, nsp_est_nl;
 
-    const Grid         &grid = nbs->grid[0];
+    const Grid         &grid = nbs->gridSet().grids()[0];
 
     /* We don't need to balance list sizes if:
      * - We didn't request balancing.
@@ -3250,7 +3243,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
 {
     int               na_cj_2log;
     matrix            box;
-    real              rlist2, rl_fep2 = 0;
+    real              rl_fep2 = 0;
     float             rbb2;
     int               ci_b, ci, ci_x, ci_y, ci_xy;
     ivec              shp;
@@ -3288,11 +3281,15 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
         gridj_flag       = work->buffer_flags.flag;
     }
 
-    copy_mat(nbs->box, box);
+    const Nbnxm::GridSet &gridSet = nbs->gridSet();
 
-    rlist2 = nbl->rlist*nbl->rlist;
+    gridSet.getBox(box);
 
-    if (nbs->bFEP && !pairlistIsSimple(*nbl))
+    const bool            haveFep = gridSet.haveFep();
+
+    const real            rlist2  = nbl->rlist*nbl->rlist;
+
+    if (haveFep && !pairlistIsSimple(*nbl))
     {
         /* Determine an atom-pair list cut-off distance for FEP atom pairs.
          * We should not simply use rlist, since then we would not have
@@ -3698,16 +3695,16 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                     }
 
                     /* Set the exclusions for this ci list */
-                    setExclusionsForIEntry(nbs,
+                    setExclusionsForIEntry(gridSet,
                                            nbl,
                                            excludeSubDiagonal,
                                            na_cj_2log,
                                            *getOpenIEntry(nbl),
                                            exclusions);
 
-                    if (nbs->bFEP)
+                    if (haveFep)
                     {
-                        make_fep_list(nbs, nbat, nbl,
+                        make_fep_list(gridSet.atomIndices(), nbat, nbl,
                                       excludeSubDiagonal,
                                       getOpenIEntry(nbl),
                                       shx, shy, shz,
@@ -3734,7 +3731,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
 
     nbs_cycle_stop(&work->cc[enbsCCsearch]);
 
-    checkListSizeConsistency(*nbl, nbs->bFEP);
+    checkListSizeConsistency(*nbl, haveFep);
 
     if (debug)
     {
@@ -3742,7 +3739,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
 
         print_nblist_statistics(debug, nbl, nbs, rlist);
 
-        if (nbs->bFEP)
+        if (haveFep)
         {
             fprintf(debug, "nbl FEP list pairs: %d\n", nbl_fep->nrj);
         }
@@ -4097,7 +4094,7 @@ nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality
             clear_pairlist(nbl_list->nblGpu[th]);
         }
 
-        if (nbs->bFEP)
+        if (nbs->gridSet().haveFep())
         {
             clear_pairlist_fep(nbl_list->nbl_fep[th]);
         }
@@ -4105,7 +4102,7 @@ nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality
 
     for (int zi = 0; zi < nzi; zi++)
     {
-        const Grid &iGrid = nbs->grid[zi];
+        const Grid &iGrid = nbs->gridSet().grids()[zi];
 
         int                 zj0;
         int                 zj1;
@@ -4125,7 +4122,7 @@ nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality
         }
         for (int zj = zj0; zj < zj1; zj++)
         {
-            const Grid &jGrid = nbs->grid[zj];
+            const Grid &jGrid = nbs->gridSet().grids()[zj];
 
             if (debug)
             {
@@ -4280,7 +4277,7 @@ nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality
         reduce_buffer_flags(nbs, nbl_list->nnbl, &nbat->buffer_flags);
     }
 
-    if (nbs->bFEP)
+    if (nbs->gridSet().haveFep())
     {
         /* Balance the free-energy lists over all the threads */
         balance_fep_lists(nbs, nbl_list);
