@@ -272,11 +272,8 @@ If the charge is already close to an integer, then the difference is caused by
 Note for PME users: It is possible to use a uniform neutralizing background
 charge in PME to compensate for a system with a net background charge.
 This may however, especially for non-homogeneous systems, lead to unwanted artifacts, as
-shown in `Hub, J. S., de Groot, B. L., Grubmüller, H. & Groenhof, G. Quantifying
-artifacts in Ewald simulations of inhomogeneous systems with a net charge.
-*J. Chem. Theory Comput.* **10**, 381–390 (2014) <http://pubs.acs.org/doi/abs/10.1021/ct400626b>`.
-Nevertheless, it is a standard
-practice to actually add counter-ions to make the system net neutral.
+shown in \ :ref:`181 <refGroenhofEwaldArtefact>` (http://pubs.acs.org/doi/abs/10.1021/ct400626b).
+Nevertheless, it is a standard practice to actually add counter-ions to make the system net neutral.
 
 Incorrect number of parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
