@@ -193,11 +193,8 @@ int PreprocessingAtomTypes::addType(t_symtab          *tab,
                                     int                bondAtomType,
                                     int                atomNumber)
 {
-    auto found = std::find_if(impl_->types.begin(), impl_->types.end(),
-                              [&name](const AtomTypeData &data)
-                              { return strcmp(name, *data.name_) == 0; });
-
-    if (found == impl_->types.end())
+    int position = atomTypeFromName(name);
+    if (position == NOTSET)
     {
         impl_->types.emplace_back(a,
                                   put_symtab(tab, name),
@@ -208,7 +205,7 @@ int PreprocessingAtomTypes::addType(t_symtab          *tab,
     }
     else
     {
-        return std::distance(impl_->types.begin(), found);
+        return position;
     }
 }
 
