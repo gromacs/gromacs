@@ -47,6 +47,7 @@
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
@@ -64,15 +65,44 @@
 
 #include "resall.h"
 
-typedef struct {
-    t_iatom  a[4];
-    real     c;
-    t_iatom &ai() { return a[0]; }
-    t_iatom &aj() { return a[1]; }
-    t_iatom &ak() { return a[2]; }
-    t_iatom &al() { return a[3]; }
-} t_mybonded;
+/*! \internal \brief
+ * Data type to store information about bonded interactions for virtual sites.
+ */
+class VsiteBondedInteraction
+{
+    public:
+        VsiteBondedInteraction(gmx::ArrayRef<const int> atomIndex,
+                               real                     parameterValue)
+            : parameterValue_(parameterValue)
+        {
+            GMX_RELEASE_ASSERT(atomIndex.size() <= atomIndex.size(),
+                               "Cannot add more atom indices than maximum number");
+            auto atomIndexIt = atomIndex_.begin();
+            for (const auto index : atomIndex)
+            {
+                *atomIndexIt++ = index;
+            }
+        }
+        /*!@{*/
+        //! Access the individual elements set for the vsite bonded interaction.
+        const int &ai() const { return atomIndex_[0]; }
+        const int &aj() const { return atomIndex_[1]; }
+        const int &ak() const { return atomIndex_[2]; }
+        const int &al() const { return atomIndex_[3]; }
 
+        const real &parameterValue() const { return parameterValue_; }
+        /*!@}*/
+
+    private:
+        //! The distance value for this bonded interaction.
+        real               parameterValue_;
+        //! Array of atom indices
+        std::array<int, 4> atomIndex_;
+};
+
+/*! \internal \brief
+ * Stores information about single virtual site bonded parameter.
+ */
 struct VsiteBondParameter
 {
     VsiteBondParameter(int ftype, const InteractionType &type)
@@ -82,6 +112,9 @@ struct VsiteBondParameter
     const InteractionType &type_;
 };
 
+/*! \internal \brief
+ * Helper type for conversion of bonded parameters to virtual sites.
+ */
 struct Atom2VsiteBond
 {
     //! Function type for conversion.
@@ -90,6 +123,7 @@ struct Atom2VsiteBond
     std::vector<VsiteBondParameter> vSiteBondedParameters;
 };
 
+//! Convenience type def for virtual site connections.
 using Atom2VsiteConnection = std::vector<int>;
 
 static int vsite_bond_nrcheck(int ftype)
@@ -108,29 +142,18 @@ static int vsite_bond_nrcheck(int ftype)
     return nrcheck;
 }
 
-static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
+static void enter_bonded(int nratoms, std::vector<VsiteBondedInteraction> *bondeds,
                          const InteractionType &type)
 {
-    srenew(*bondeds, *nrbonded+1);
-
-    /* copy atom numbers */
-    gmx::ArrayRef<const int> atoms = type.atoms();
-    GMX_RELEASE_ASSERT(nratoms == atoms.ssize(), "Size of atom array must much");
-    for (int j = 0; j < nratoms; j++)
-    {
-        (*bondeds)[*nrbonded].a[j] = atoms[j];
-    }
-    /* copy parameter */
-    (*bondeds)[*nrbonded].c = type.c0();
-
-    (*nrbonded)++;
+    GMX_RELEASE_ASSERT(nratoms == type.atoms().ssize(), "Size of atom array must much");
+    bondeds->emplace_back(VsiteBondedInteraction(type.atoms(), type.c0()));
 }
 
 static void get_bondeds(int nrat, gmx::ArrayRef<const int> atoms,
                         gmx::ArrayRef<const Atom2VsiteBond> at2vb,
-                        int *nrbond, t_mybonded **bonds,
-                        int *nrang,  t_mybonded **angles,
-                        int *nridih, t_mybonded **idihs )
+                        std::vector<VsiteBondedInteraction> *bonds,
+                        std::vector<VsiteBondedInteraction> *angles,
+                        std::vector<VsiteBondedInteraction> *idihs )
 {
     for (int k = 0; k < nrat; k++)
     {
@@ -142,9 +165,9 @@ static void get_bondeds(int nrat, gmx::ArrayRef<const int> atoms,
             /* abuse nrcheck to see if we're adding bond, angle or idih */
             switch (nrcheck)
             {
-                case 2: enter_bonded(nrcheck, nrbond, bonds, type); break;
-                case 3: enter_bonded(nrcheck, nrang, angles, type); break;
-                case 4: enter_bonded(nrcheck, nridih, idihs, type); break;
+                case 2: enter_bonded(nrcheck, bonds, type); break;
+                case 3: enter_bonded(nrcheck, angles, type); break;
+                case 4: enter_bonded(nrcheck, idihs, type); break;
             }
         }
     }
@@ -242,40 +265,40 @@ make_at2vsitecon(int natoms, gmx::ArrayRef<InteractionTypeParameters> plist)
 }
 
 /* for debug */
-static void print_bad(FILE *fp,
-                      int nrbond, t_mybonded *bonds,
-                      int nrang,  t_mybonded *angles,
-                      int nridih, t_mybonded *idihs )
+static void print_bad(FILE                                       *fp,
+                      gmx::ArrayRef<const VsiteBondedInteraction> bonds,
+                      gmx::ArrayRef<const VsiteBondedInteraction> angles,
+                      gmx::ArrayRef<const VsiteBondedInteraction> idihs )
 {
-    if (nrbond)
+    if (!bonds.empty())
     {
         fprintf(fp, "bonds:");
-        for (int i = 0; i < nrbond; i++)
+        for (const auto &bond : bonds)
         {
             fprintf(fp, " %d-%d (%g)",
-                    bonds[i].ai()+1, bonds[i].aj()+1, bonds[i].c);
+                    bond.ai()+1, bond.aj()+1, bond.parameterValue());
         }
         fprintf(fp, "\n");
     }
-    if (nrang)
+    if (!angles.empty())
     {
         fprintf(fp, "angles:");
-        for (int i = 0; i < nrang; i++)
+        for (const auto &angle : angles)
         {
             fprintf(fp, " %d-%d-%d (%g)",
-                    angles[i].ai()+1, angles[i].aj()+1,
-                    angles[i].ak()+1, angles[i].c);
+                    angle.ai()+1, angle.aj()+1,
+                    angle.ak()+1, angle.parameterValue());
         }
         fprintf(fp, "\n");
     }
-    if (nridih)
+    if (!idihs.empty())
     {
         fprintf(fp, "idihs:");
-        for (int i = 0; i < nridih; i++)
+        for (const auto &idih : idihs)
         {
             fprintf(fp, " %d-%d-%d-%d (%g)",
-                    idihs[i].ai()+1, idihs[i].aj()+1,
-                    idihs[i].ak()+1, idihs[i].al()+1, idihs[i].c);
+                    idih.ai()+1, idih.aj()+1,
+                    idih.ak()+1, idih.al()+1, idih.parameterValue());
         }
         fprintf(fp, "\n");
     }
@@ -304,39 +327,37 @@ static void printInteractionType(FILE *fp, int ftype, int i, const InteractionTy
     pass++;
 }
 
-static real get_bond_length(int nrbond, t_mybonded bonds[],
+static real get_bond_length(gmx::ArrayRef<const VsiteBondedInteraction> bonds,
                             t_iatom ai, t_iatom aj)
 {
-    int  i;
     real bondlen;
 
     bondlen = NOTSET;
-    for (i = 0; i < nrbond && (bondlen == NOTSET); i++)
+    for (auto bond = bonds.begin(); (bond != bonds.end()) && (bondlen == NOTSET); bond++)
     {
         /* check both ways */
-        if ( ( (ai == bonds[i].ai()) && (aj == bonds[i].aj()) ) ||
-             ( (ai == bonds[i].aj()) && (aj == bonds[i].ai()) ) )
+        if ( ( (ai == bond->ai()) && (aj == bond->aj()) ) ||
+             ( (ai == bond->aj()) && (aj == bond->ai()) ) )
         {
-            bondlen = bonds[i].c; /* note: bonds[i].c might be NOTSET */
+            bondlen = bond->parameterValue(); /* note: parameterValue might be NOTSET */
         }
     }
     return bondlen;
 }
 
-static real get_angle(int nrang, t_mybonded angles[],
+static real get_angle(gmx::ArrayRef<const VsiteBondedInteraction> angles,
                       t_iatom ai, t_iatom aj, t_iatom ak)
 {
-    int  i;
     real angle;
 
     angle = NOTSET;
-    for (i = 0; i < nrang && (angle == NOTSET); i++)
+    for (auto ang = angles.begin(); (ang != angles.end()) && (angle == NOTSET); ang++)
     {
         /* check both ways */
-        if ( ( (ai == angles[i].ai()) && (aj == angles[i].aj()) && (ak == angles[i].ak()) ) ||
-             ( (ai == angles[i].ak()) && (aj == angles[i].aj()) && (ak == angles[i].ai()) ) )
+        if ( ( (ai == ang->ai()) && (aj == ang->aj()) && (ak == ang->ak()) ) ||
+             ( (ai == ang->ak()) && (aj == ang->aj()) && (ak == ang->ai()) ) )
         {
-            angle = DEG2RAD*angles[i].c;
+            angle = DEG2RAD*ang->parameterValue();
         }
     }
     return angle;
@@ -366,8 +387,8 @@ static const char *get_atomtype_name_AB(t_atom *atom, PreprocessingAtomTypes *at
 
 static bool calc_vsite3_param(PreprocessingAtomTypes *atypes,
                               InteractionType *param, t_atoms *at,
-                              int nrbond, t_mybonded *bonds,
-                              int nrang,  t_mybonded *angles )
+                              gmx::ArrayRef<const VsiteBondedInteraction> bonds,
+                              gmx::ArrayRef<const VsiteBondedInteraction> angles )
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
@@ -384,8 +405,8 @@ static bool calc_vsite3_param(PreprocessingAtomTypes *atypes,
         ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MCH3", 4) == 0) &&
           (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MCH3", 4) == 0) );
 
-    bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
-    bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
+    bjk    = get_bond_length(bonds, param->aj(), param->ak());
+    bjl    = get_bond_length(bonds, param->aj(), param->al());
     bError = (bjk == NOTSET) || (bjl == NOTSET);
     if (bXH3)
     {
@@ -401,9 +422,9 @@ static bool calc_vsite3_param(PreprocessingAtomTypes *atypes,
         aN = std::max(param->ak(), param->al())+1;
 
         /* get common bonds */
-        bMM    = get_bond_length(nrbond, bonds, param->ak(), param->al());
+        bMM    = get_bond_length(bonds, param->ak(), param->al());
         bCM    = bjk;
-        bCN    = get_bond_length(nrbond, bonds, param->aj(), aN);
+        bCN    = get_bond_length(bonds, param->aj(), aN);
         bError = bError || (bMM == NOTSET) || (bCN == NOTSET);
 
         /* calculate common things */
@@ -420,8 +441,8 @@ static bool calc_vsite3_param(PreprocessingAtomTypes *atypes,
         else
         {
             /* get other bondlengths and angles: */
-            bNH    = get_bond_length(nrbond, bonds, aN, param->ai());
-            aCNH   = get_angle      (nrang, angles, param->aj(), aN, param->ai());
+            bNH    = get_bond_length(bonds, aN, param->ai());
+            aCNH   = get_angle      (angles, param->aj(), aN, param->ai());
             bError = bError || (bNH == NOTSET) || (aCNH == NOTSET);
 
             /* calculate */
@@ -443,9 +464,9 @@ static bool calc_vsite3_param(PreprocessingAtomTypes *atypes,
     return bError;
 }
 
-static bool calc_vsite3fd_param(InteractionType *param,
-                                int nrbond, t_mybonded *bonds,
-                                int nrang,  t_mybonded *angles)
+static bool calc_vsite3fd_param(InteractionType                            *param,
+                                gmx::ArrayRef<const VsiteBondedInteraction> bonds,
+                                gmx::ArrayRef<const VsiteBondedInteraction> angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
@@ -455,11 +476,11 @@ static bool calc_vsite3fd_param(InteractionType *param,
     bool     bError;
     real     bij, bjk, bjl, aijk, aijl, rk, rl;
 
-    bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
-    bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
-    bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
-    aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
-    aijl   = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
+    bij    = get_bond_length(bonds, param->ai(), param->aj());
+    bjk    = get_bond_length(bonds, param->aj(), param->ak());
+    bjl    = get_bond_length(bonds, param->aj(), param->al());
+    aijk   = get_angle      (angles, param->ai(), param->aj(), param->ak());
+    aijl   = get_angle      (angles, param->ai(), param->aj(), param->al());
     bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET) ||
         (aijk == NOTSET) || (aijl == NOTSET);
 
@@ -471,9 +492,9 @@ static bool calc_vsite3fd_param(InteractionType *param,
     return bError;
 }
 
-static bool calc_vsite3fad_param(InteractionType *param,
-                                 int nrbond, t_mybonded *bonds,
-                                 int nrang,  t_mybonded *angles)
+static bool calc_vsite3fad_param(InteractionType                            *param,
+                                 gmx::ArrayRef<const VsiteBondedInteraction> bonds,
+                                 gmx::ArrayRef<const VsiteBondedInteraction> angles)
 {
     /* i = virtual site          |
      * j = 1st bonded heavy atom | i-j
@@ -486,8 +507,8 @@ static bool calc_vsite3fad_param(InteractionType *param,
 
     bSwapParity = ( param->c1() == -1 );
 
-    bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
-    aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
+    bij    = get_bond_length(bonds, param->ai(), param->aj());
+    aijk   = get_angle      (angles, param->ai(), param->aj(), param->ak());
     bError = (bij == NOTSET) || (aijk == NOTSET);
 
     param->setForceParameter(1, bij);
@@ -503,8 +524,8 @@ static bool calc_vsite3fad_param(InteractionType *param,
 
 static bool calc_vsite3out_param(PreprocessingAtomTypes *atypes,
                                  InteractionType *param, t_atoms *at,
-                                 int nrbond, t_mybonded *bonds,
-                                 int nrang,  t_mybonded *angles)
+                                 gmx::ArrayRef<const VsiteBondedInteraction> bonds,
+                                 gmx::ArrayRef<const VsiteBondedInteraction> angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
@@ -526,8 +547,8 @@ static bool calc_vsite3out_param(PreprocessingAtomTypes *atypes,
     /* check if construction parity must be swapped */
     bSwapParity = ( param->c1() == -1 );
 
-    bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
-    bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
+    bjk    = get_bond_length(bonds, param->aj(), param->ak());
+    bjl    = get_bond_length(bonds, param->aj(), param->al());
     bError = (bjk == NOTSET) || (bjl == NOTSET);
     if (bXH3)
     {
@@ -543,11 +564,11 @@ static bool calc_vsite3out_param(PreprocessingAtomTypes *atypes,
         aN = std::max(param->ak(), param->al())+1;
 
         /* get all bondlengths and angles: */
-        bMM    = get_bond_length(nrbond, bonds, param->ak(), param->al());
+        bMM    = get_bond_length(bonds, param->ak(), param->al());
         bCM    = bjk;
-        bCN    = get_bond_length(nrbond, bonds, param->aj(), aN);
-        bNH    = get_bond_length(nrbond, bonds, aN, param->ai());
-        aCNH   = get_angle      (nrang, angles, param->aj(), aN, param->ai());
+        bCN    = get_bond_length(bonds, param->aj(), aN);
+        bNH    = get_bond_length(bonds, aN, param->ai());
+        aCNH   = get_angle      (angles, param->aj(), aN, param->ai());
         bError = bError ||
             (bMM == NOTSET) || (bCN == NOTSET) || (bNH == NOTSET) || (aCNH == NOTSET);
 
@@ -568,10 +589,10 @@ static bool calc_vsite3out_param(PreprocessingAtomTypes *atypes,
     {
         /* this is the general construction */
 
-        bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
-        aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
-        aijl   = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
-        akjl   = get_angle      (nrang, angles, param->ak(), param->aj(), param->al());
+        bij    = get_bond_length(bonds, param->ai(), param->aj());
+        aijk   = get_angle      (angles, param->ai(), param->aj(), param->ak());
+        aijl   = get_angle      (angles, param->ai(), param->aj(), param->al());
+        akjl   = get_angle      (angles, param->ak(), param->aj(), param->al());
         bError = bError ||
             (bij == NOTSET) || (aijk == NOTSET) || (aijl == NOTSET) || (akjl == NOTSET);
 
@@ -598,9 +619,9 @@ static bool calc_vsite3out_param(PreprocessingAtomTypes *atypes,
     return bError;
 }
 
-static bool calc_vsite4fd_param(InteractionType *param,
-                                int nrbond, t_mybonded *bonds,
-                                int nrang,  t_mybonded *angles)
+static bool calc_vsite4fd_param(InteractionType                            *param,
+                                gmx::ArrayRef<const VsiteBondedInteraction> bonds,
+                                gmx::ArrayRef<const VsiteBondedInteraction> angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j-m
@@ -611,15 +632,15 @@ static bool calc_vsite4fd_param(InteractionType *param,
     real     bij, bjk, bjl, bjm, aijk, aijl, aijm, akjm, akjl;
     real     pk, pl, pm, cosakl, cosakm, sinakl, sinakm, cl, cm;
 
-    bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
-    bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
-    bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
-    bjm    = get_bond_length(nrbond, bonds, param->aj(), param->am());
-    aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
-    aijl   = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
-    aijm   = get_angle      (nrang, angles, param->ai(), param->aj(), param->am());
-    akjm   = get_angle      (nrang, angles, param->ak(), param->aj(), param->am());
-    akjl   = get_angle      (nrang, angles, param->ak(), param->aj(), param->al());
+    bij    = get_bond_length(bonds, param->ai(), param->aj());
+    bjk    = get_bond_length(bonds, param->aj(), param->ak());
+    bjl    = get_bond_length(bonds, param->aj(), param->al());
+    bjm    = get_bond_length(bonds, param->aj(), param->am());
+    aijk   = get_angle      (angles, param->ai(), param->aj(), param->ak());
+    aijl   = get_angle      (angles, param->ai(), param->aj(), param->al());
+    aijm   = get_angle      (angles, param->ai(), param->aj(), param->am());
+    akjm   = get_angle      (angles, param->ak(), param->aj(), param->am());
+    akjl   = get_angle      (angles, param->ak(), param->aj(), param->al());
     bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET) || (bjm == NOTSET) ||
         (aijk == NOTSET) || (aijl == NOTSET) || (aijm == NOTSET) || (akjm == NOTSET) ||
         (akjl == NOTSET);
@@ -655,9 +676,9 @@ static bool calc_vsite4fd_param(InteractionType *param,
 
 
 static bool
-calc_vsite4fdn_param(InteractionType *param,
-                     int nrbond, t_mybonded *bonds,
-                     int nrang,  t_mybonded *angles)
+calc_vsite4fdn_param(InteractionType                            *param,
+                     gmx::ArrayRef<const VsiteBondedInteraction> bonds,
+                     gmx::ArrayRef<const VsiteBondedInteraction> angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j-m
@@ -668,13 +689,13 @@ calc_vsite4fdn_param(InteractionType *param,
     real     bij, bjk, bjl, bjm, aijk, aijl, aijm;
     real     pk, pl, pm, a, b;
 
-    bij  = get_bond_length(nrbond, bonds, param->ai(), param->aj());
-    bjk  = get_bond_length(nrbond, bonds, param->aj(), param->ak());
-    bjl  = get_bond_length(nrbond, bonds, param->aj(), param->al());
-    bjm  = get_bond_length(nrbond, bonds, param->aj(), param->am());
-    aijk = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
-    aijl = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
-    aijm = get_angle      (nrang, angles, param->ai(), param->aj(), param->am());
+    bij  = get_bond_length(bonds, param->ai(), param->aj());
+    bjk  = get_bond_length(bonds, param->aj(), param->ak());
+    bjl  = get_bond_length(bonds, param->aj(), param->al());
+    bjm  = get_bond_length(bonds, param->aj(), param->am());
+    aijk = get_angle      (angles, param->ai(), param->aj(), param->ak());
+    aijl = get_angle      (angles, param->ai(), param->aj(), param->al());
+    aijm = get_angle      (angles, param->ai(), param->aj(), param->am());
 
     bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET) || (bjm == NOTSET) ||
         (aijk == NOTSET) || (aijl == NOTSET) || (aijm == NOTSET);
@@ -715,12 +736,12 @@ calc_vsite4fdn_param(InteractionType *param,
 int set_vsites(bool bVerbose, t_atoms *atoms, PreprocessingAtomTypes *atypes,
                gmx::ArrayRef<InteractionTypeParameters> plist)
 {
-    int             ftype;
-    int             nvsite, nrbond, nrang, nridih, nrset;
-    bool            bFirst, bERROR;
-    t_mybonded     *bonds;
-    t_mybonded     *angles;
-    t_mybonded     *idihs;
+    int                                 ftype;
+    int                                 nvsite, nrset;
+    bool                                bFirst, bERROR;
+    std::vector<VsiteBondedInteraction> bonds;
+    std::vector<VsiteBondedInteraction> angles;
+    std::vector<VsiteBondedInteraction> idihs;
 
     bFirst = TRUE;
     nvsite = 0;
@@ -765,53 +786,49 @@ int set_vsites(bool bVerbose, t_atoms *atoms, PreprocessingAtomTypes *atypes,
                         bFirst = FALSE;
                     }
 
-                    nrbond = nrang = nridih = 0;
-                    bonds  = nullptr;
-                    angles = nullptr;
-                    idihs  = nullptr;
                     nrset++;
                     /* now set the vsite parameters: */
                     get_bondeds(NRAL(ftype), param.atoms(), at2vb,
-                                &nrbond, &bonds, &nrang,  &angles, &nridih, &idihs);
+                                &bonds, &angles, &idihs);
                     if (debug)
                     {
-                        fprintf(debug, "Found %d bonds, %d angles and %d idihs "
-                                "for virtual site %d (%s)\n", nrbond, nrang, nridih,
+                        fprintf(debug, "Found %zu bonds, %zu angles and %zu idihs "
+                                "for virtual site %d (%s)\n", bonds.size(), angles.size(), idihs.size(),
                                 param.ai()+1,
                                 interaction_function[ftype].longname);
-                        print_bad(debug, nrbond, bonds, nrang, angles, nridih, idihs);
+                        print_bad(debug, bonds, angles, idihs);
                     } /* debug */
                     switch (ftype)
                     {
                         case F_VSITE3:
                             bERROR =
                                 calc_vsite3_param(atypes, &param, atoms,
-                                                  nrbond, bonds, nrang, angles);
+                                                  bonds, angles);
                             break;
                         case F_VSITE3FD:
                             bERROR =
                                 calc_vsite3fd_param(&param,
-                                                    nrbond, bonds, nrang, angles);
+                                                    bonds, angles);
                             break;
                         case F_VSITE3FAD:
                             bERROR =
                                 calc_vsite3fad_param(&param,
-                                                     nrbond, bonds, nrang, angles);
+                                                     bonds, angles);
                             break;
                         case F_VSITE3OUT:
                             bERROR =
                                 calc_vsite3out_param(atypes, &param, atoms,
-                                                     nrbond, bonds, nrang, angles);
+                                                     bonds, angles);
                             break;
                         case F_VSITE4FD:
                             bERROR =
                                 calc_vsite4fd_param(&param,
-                                                    nrbond, bonds, nrang, angles);
+                                                    bonds, angles);
                             break;
                         case F_VSITE4FDN:
                             bERROR =
                                 calc_vsite4fdn_param(&param,
-                                                     nrbond, bonds, nrang, angles);
+                                                     bonds, angles);
                             break;
                         default:
                             gmx_fatal(FARGS, "Automatic parameter generation not supported "
@@ -827,9 +844,6 @@ int set_vsites(bool bVerbose, t_atoms *atoms, PreprocessingAtomTypes *atypes,
                                   interaction_function[ftype].longname,
                                   param.ai()+1);
                     }
-                    sfree(bonds);
-                    sfree(angles);
-                    sfree(idihs);
                 } /* if bSet */
                 i++;
             }
