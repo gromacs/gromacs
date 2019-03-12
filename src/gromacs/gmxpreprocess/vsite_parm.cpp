@@ -90,10 +90,7 @@ struct Atom2VsiteBond
     std::vector<VsiteBondParameter> vSiteBondedParameters;
 };
 
-typedef struct {
-    int  nr;
-    int *aj;
-} at2vsitecon_t;
+using Atom2VsiteConnection = std::vector<int>;
 
 static int vsite_bond_nrcheck(int ftype)
 {
@@ -199,12 +196,11 @@ make_at2vsitebond(int natoms, gmx::ArrayRef<InteractionTypeParameters> plist)
     return at2vb;
 }
 
-static at2vsitecon_t *make_at2vsitecon(int natoms, gmx::ArrayRef<InteractionTypeParameters> plist)
+static std::vector<Atom2VsiteConnection>
+make_at2vsitecon(int natoms, gmx::ArrayRef<InteractionTypeParameters> plist)
 {
-    bool          *bVSI;
-    at2vsitecon_t *at2vc;
-
-    snew(at2vc, natoms);
+    bool                             *bVSI;
+    std::vector<Atom2VsiteConnection> at2vc(natoms);
 
     snew(bVSI, natoms);
     for (int ftype = 0; (ftype < F_NRE); ftype++)
@@ -233,21 +229,9 @@ static at2vsitecon_t *make_at2vsitecon(int natoms, gmx::ArrayRef<InteractionType
                 if (bVSI[ai] && bVSI[aj])
                 {
                     /* Store forward direction */
-                    int nr = at2vc[ai].nr;
-                    if (nr % 10 == 0)
-                    {
-                        srenew(at2vc[ai].aj, nr+10);
-                    }
-                    at2vc[ai].aj[nr] = aj;
-                    at2vc[ai].nr++;
+                    at2vc[ai].emplace_back(aj);
                     /* Store backward direction */
-                    nr = at2vc[aj].nr;
-                    if (nr % 10 == 0)
-                    {
-                        srenew(at2vc[aj].aj, nr+10);
-                    }
-                    at2vc[aj].aj[nr] = ai;
-                    at2vc[aj].nr++;
+                    at2vc[aj].emplace_back(ai);
                 }
             }
         }
@@ -255,18 +239,6 @@ static at2vsitecon_t *make_at2vsitecon(int natoms, gmx::ArrayRef<InteractionType
     sfree(bVSI);
 
     return at2vc;
-}
-
-static void done_at2vsitecon(int natoms, at2vsitecon_t *at2vc)
-{
-    for (int i = 0; i < natoms; i++)
-    {
-        if (at2vc[i].nr)
-        {
-            sfree(at2vc[i].aj);
-        }
-    }
-    sfree(at2vc);
 }
 
 /* for debug */
@@ -1154,7 +1126,7 @@ static void clean_vsite_bonds(gmx::ArrayRef<InteractionTypeParameters> plist, t_
 
 static void clean_vsite_angles(gmx::ArrayRef<InteractionTypeParameters> plist, t_pindex pindex[],
                                int cftype, const int vsite_type[],
-                               at2vsitecon_t *at2vc)
+                               gmx::ArrayRef<const Atom2VsiteConnection> at2vc)
 {
     int                           atom, at1, at2;
     InteractionTypeParameters    *ps;
@@ -1258,12 +1230,11 @@ static void clean_vsite_angles(gmx::ArrayRef<InteractionTypeParameters> plist, t
                 at1      = first_atoms[m];
                 at2      = first_atoms[(m+1) % vsnral];
                 bool bPresent = false;
-                for (int j = 0; j < at2vc[at1].nr; j++)
+                auto found    = std::find_if(at2vc[at1].begin(), at2vc[at1].end(),
+                                             [&at2](const auto &vsite){ return vsite == at2; });
+                if (found != at2vc[at1].end())
                 {
-                    if (at2vc[at1].aj[j] == at2)
-                    {
-                        bPresent = true;
-                    }
+                    bPresent = true;
                 }
                 if (!bPresent)
                 {
@@ -1403,10 +1374,10 @@ static void clean_vsite_dihs(gmx::ArrayRef<InteractionTypeParameters> plist, t_p
 
 void clean_vsite_bondeds(gmx::ArrayRef<InteractionTypeParameters> plist, int natoms, bool bRmVSiteBds)
 {
-    int            nvsite, vsite;
-    int           *vsite_type;
-    t_pindex      *pindex;
-    at2vsitecon_t *at2vc;
+    int                               nvsite, vsite;
+    int                              *vsite_type;
+    t_pindex                         *pindex;
+    std::vector<Atom2VsiteConnection> at2vc;
 
     pindex = nullptr; /* avoid warnings */
     /* make vsite_type array */
@@ -1512,7 +1483,6 @@ void clean_vsite_bondeds(gmx::ArrayRef<InteractionTypeParameters> plist, int nat
             }
         }
 
-        done_at2vsitecon(natoms, at2vc);
     }
     sfree(pindex);
     sfree(vsite_type);
