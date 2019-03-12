@@ -67,6 +67,11 @@ struct nbnxn_atomdata_t;
 struct nbnxn_search;
 enum class PairlistType;
 
+namespace gmx
+{
+class UpdateGroupsCog;
+} // namespace gmx
+
 namespace Nbnxm
 {
 
@@ -450,6 +455,19 @@ class Grid
                             gmx::ArrayRef<const gmx::RVec>  x,
                             int                             numAtomsMoved,
                             nbnxn_atomdata_t               *nbat);
+
+        //! Determine in which grid columns atoms should go, store cells and atom counts in \p cell and \p cxy_na
+        static void calcColumnIndices(const Grid::Dimensions         &gridDims,
+                                      const gmx::UpdateGroupsCog     *updateGroupsCog,
+                                      int                             atomStart,
+                                      int                             atomEnd,
+                                      gmx::ArrayRef<const gmx::RVec>  x,
+                                      int                             dd_zone,
+                                      const int                      *move,
+                                      int                             thread,
+                                      int                             nthread,
+                                      gmx::ArrayRef<int>              cell,
+                                      gmx::ArrayRef<int>              cxy_na);
 
     private:
         /*! \brief Fill a pair search cell with atoms
