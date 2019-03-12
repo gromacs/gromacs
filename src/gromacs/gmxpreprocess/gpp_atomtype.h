@@ -34,7 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \libinternal \file
+ * \brief
+ * Declares PreprocessingAtomType.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_preprocessing
+ */
 #ifndef GMX_GMXPREPROCESS_GPP_ATOMTYPE_H
 #define GMX_GMXPREPROCESS_GPP_ATOMTYPE_H
 
@@ -168,7 +176,7 @@ class PreprocessingAtomTypes
         int setType(int                    nt,
                     t_symtab              *tab,
                     const t_atom          &a,
-                    const char            *name,
+                    const std::string     &name,
                     const InteractionType &nb,
                     int                    bondAtomType,
                     int                    atomNumber);
@@ -186,7 +194,7 @@ class PreprocessingAtomTypes
          */
         int addType(t_symtab              *tab,
                     const t_atom          &a,
-                    const char            *name,
+                    const std::string     &name,
                     const InteractionType &nb,
                     int                    bondAtomType,
                     int                    atomNumber);
@@ -212,6 +220,7 @@ class PreprocessingAtomTypes
         void copyTot_atomtypes(t_atomtypes *atypes) const;
     private:
         class Impl;
+        //! Pimpl that holds the data.
         gmx::PrivateImplPointer<Impl> impl_;
 };
 

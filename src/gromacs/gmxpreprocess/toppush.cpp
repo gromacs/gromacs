@@ -271,7 +271,7 @@ static void copy_B_from_A(int ftype, double *c)
     }
 }
 
-void push_at (t_symtab *symtab, PreprocessingAtomTypes *at, gpp_bond_atomtype *bat,
+void push_at (t_symtab *symtab, PreprocessingAtomTypes *at, PreprocessingBondAtomType *bondAtomType,
               char *line, int nb_funct,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp *wi)
@@ -543,11 +543,7 @@ void push_at (t_symtab *symtab, PreprocessingAtomTypes *at, gpp_bond_atomtype *b
 
     InteractionType interactionType({}, forceParam, "");
 
-    if ((batype_nr = get_bond_atomtype_type(btype, bat)) == NOTSET)
-    {
-        add_bond_atomtype(bat, symtab, btype);
-    }
-    batype_nr = get_bond_atomtype_type(btype, bat);
+    batype_nr = bondAtomType->addBondAtomType(symtab, btype);
 
     if ((nr = at->atomTypeFromName(type)) != NOTSET)
     {
@@ -724,7 +720,7 @@ void push_bt(Directive                                 d,
              gmx::ArrayRef<InteractionTypeParameters>  bt,
              int                                       nral,
              PreprocessingAtomTypes                   *at,
-             gpp_bond_atomtype                        *bat,
+             PreprocessingBondAtomType                *bondAtomType,
              char                                     *line,
              warninp                                  *wi)
 {
@@ -753,9 +749,9 @@ void push_bt(Directive                                 d,
     /* One force parameter more, so we can check if we read too many */
     double          c[MAXFORCEPARAM+1];
 
-    if ((bat && at) || (!bat && !at))
+    if ((bondAtomType && at) || (!bondAtomType && !at))
     {
-        gmx_incons("You should pass either bat or at to push_bt");
+        gmx_incons("You should pass either bondAtomType or at to push_bt");
     }
 
     /* Make format string (nral ints+functype) */
@@ -811,7 +807,7 @@ void push_bt(Directive                                 d,
             auto message = gmx::formatString("Unknown atomtype %s\n", alc[i]);
             warning_error_and_exit(wi, message, FARGS);
         }
-        else if (bat && ((atomNumber = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
+        else if ((bondAtomType != nullptr) && ((atomNumber = bondAtomType->bondAtomTypeFromName(alc[i])) == NOTSET))
         {
             auto message = gmx::formatString("Unknown bond_atomtype %s\n", alc[i]);
             warning_error_and_exit(wi, message, FARGS);
@@ -827,7 +823,7 @@ void push_bt(Directive                                 d,
 
 
 void push_dihedraltype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt,
-                       gpp_bond_atomtype *bat, char *line,
+                       PreprocessingBondAtomType *bondAtomType, char *line,
                        warninp *wi)
 {
     const char      *formal[MAXATOMLIST+1] = {
@@ -979,7 +975,7 @@ void push_dihedraltype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt,
         else
         {
             int atomNumber;
-            if ((atomNumber = get_bond_atomtype_type(alc[i], bat)) == NOTSET)
+            if ((atomNumber = bondAtomType->bondAtomTypeFromName(alc[i])) == NOTSET)
             {
                 auto message = gmx::formatString("Unknown bond_atomtype %s", alc[i]);
                 warning_error_and_exit(wi, message, FARGS);
@@ -1128,8 +1124,8 @@ void
 push_cmaptype(Directive                                 d,
               gmx::ArrayRef<InteractionTypeParameters>  bt,
               int                                       nral,
-              PreprocessingAtomTypes                   *at,
-              gpp_bond_atomtype                        *bat,
+              PreprocessingAtomTypes                   *atomtypes,
+              PreprocessingBondAtomType                *bondAtomType,
               char                                     *line,
               warninp                                  *wi)
 {
@@ -1232,12 +1228,12 @@ push_cmaptype(Directive                                 d,
     for (int i = 0; (i < nral); i++)
     {
         int atomNumber;
-        if (at && ((atomNumber = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
+        if ((atomtypes != nullptr) && ((atomNumber = bondAtomType->bondAtomTypeFromName(alc[i])) == NOTSET))
         {
             auto message = gmx::formatString("Unknown atomtype %s\n", alc[i]);
             warning_error(wi, message);
         }
-        else if (bat && ((atomNumber = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
+        else if ((bondAtomType != nullptr) && ((atomNumber = bondAtomType->bondAtomTypeFromName(alc[i])) == NOTSET))
         {
             auto message = gmx::formatString("Unknown bond_atomtype %s\n", alc[i]);
             warning_error(wi, message);
@@ -1245,7 +1241,8 @@ push_cmaptype(Directive                                 d,
         atoms.emplace_back(atomNumber);
 
         /* Assign a grid number to each cmap_type */
-        bt[F_CMAP].cmapAtomTypes.emplace_back(get_bond_atomtype_type(alc[i], bat));
+        GMX_RELEASE_ASSERT(bondAtomType != nullptr, "Need valid PreprocessingBondAtomType object");
+        bt[F_CMAP].cmapAtomTypes.emplace_back(bondAtomType->bondAtomTypeFromName(alc[i]));
     }
 
     /* Assign a type number to this cmap */

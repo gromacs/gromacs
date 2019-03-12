@@ -178,34 +178,31 @@ PreprocessingAtomTypes::~PreprocessingAtomTypes()
 
 int PreprocessingAtomTypes::addType(t_symtab              *tab,
                                     const t_atom          &a,
-                                    const char            *name,
+                                    const std::string     &name,
                                     const InteractionType &nb,
                                     int                    bondAtomType,
                                     int                    atomNumber)
 {
-    auto found = std::find_if(impl_->types.begin(), impl_->types.end(),
-                              [&name](const AtomTypeData &data)
-                              { return strcmp(name, *data.name_) == 0; });
-
-    if (found == impl_->types.end())
+    int position = atomTypeFromName(name);
+    if (position == NOTSET)
     {
         impl_->types.emplace_back(a,
-                                  put_symtab(tab, name),
+                                  put_symtab(tab, name.c_str()),
                                   nb,
                                   bondAtomType,
                                   atomNumber);
-        return size() - 1;
+        return atomTypeFromName(name);
     }
     else
     {
-        return std::distance(impl_->types.begin(), found);
+        return position;
     }
 }
 
 int PreprocessingAtomTypes::setType(int                    nt,
                                     t_symtab              *tab,
                                     const t_atom          &a,
-                                    const char            *name,
+                                    const std::string     &name,
                                     const InteractionType &nb,
                                     int                    bondAtomType,
                                     int                    atomNumber)
@@ -216,7 +213,7 @@ int PreprocessingAtomTypes::setType(int                    nt,
     }
 
     impl_->types[nt].atom_         = a;
-    impl_->types[nt].name_         = put_symtab(tab, name);
+    impl_->types[nt].name_         = put_symtab(tab, name.c_str());
     impl_->types[nt].nb_           = nb;
     impl_->types[nt].bondAtomType_ = bondAtomType;
     impl_->types[nt].atomNumber_   = atomNumber;

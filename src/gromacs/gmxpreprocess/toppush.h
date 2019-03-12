@@ -45,7 +45,7 @@
 
 enum class Directive : int;
 class PreprocessingAtomTypes;
-struct gpp_bond_atomtype;
+class PreprocessingBondAtomType;
 struct t_atoms;
 struct t_block;
 struct MoleculeInformation;
@@ -65,20 +65,20 @@ void generate_nbparams(int comb, int funct, InteractionTypeParameters *plist,
                        warninp *wi);
 
 void push_at (struct t_symtab *symtab, PreprocessingAtomTypes *at,
-              gpp_bond_atomtype *bat, char *line, int nb_funct,
+              PreprocessingBondAtomType *bat, char *line, int nb_funct,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp *wi);
 
 void push_bt(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral,
-             PreprocessingAtomTypes *at, gpp_bond_atomtype *bat, char *line,
+             PreprocessingAtomTypes *at, PreprocessingBondAtomType *bat, char *line,
              warninp *wi);
 
 void push_dihedraltype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt,
-                       gpp_bond_atomtype *bat, char *line,
+                       PreprocessingBondAtomType *bat, char *line,
                        warninp *wi);
 
 void push_cmaptype(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral, PreprocessingAtomTypes *at,
-                   gpp_bond_atomtype *bat, char *line,
+                   PreprocessingBondAtomType *bat, char *line,
                    warninp *wi);
 
 void push_nbt(Directive d, t_nbparam **nbt, PreprocessingAtomTypes *atype,
