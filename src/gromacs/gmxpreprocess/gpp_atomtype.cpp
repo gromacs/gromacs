@@ -92,7 +92,7 @@ class PreprocessingAtomTypes::Impl
 
 bool PreprocessingAtomTypes::isSet(int nt) const
 {
-    return ((nt >= 0) || (nt < gmx::ssize(*this)));
+    return ((nt >= 0) && (nt < gmx::ssize(*this)));
 }
 
 int PreprocessingAtomTypes::atomTypeFromName(const std::string &str) const
