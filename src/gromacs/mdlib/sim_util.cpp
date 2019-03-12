@@ -800,6 +800,7 @@ setupForceWorkload(gmx::PpForceWorkload *forceWork,
 {
     forceWork->haveSpecialForces      = haveSpecialForces(inputrec, fr->forceProviders, forceFlags, ed);
     forceWork->haveCpuBondedWork      = haveCpuBondeds(*fr);
+    forceWork->haveGpuBondedWork      = ((fr->gpuBonded != nullptr) && fr->gpuBonded->haveInteractions());
     forceWork->haveRestraintsWork     = havePositionRestraints(idef, *fcd);
     forceWork->haveCpuListedForceWork = haveCpuListedForces(*fr, idef, *fcd);
 }
@@ -857,17 +858,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         ((flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
-
-    if (bNS)
-    {
-        setupForceWorkload(ppForceWorkload,
-                           inputrec,
-                           fr,
-                           ed,
-                           top->idef,
-                           fcd,
-                           flags);
-    }
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -1025,10 +1015,22 @@ static void do_force_cutsVERLET(FILE *fplog,
                                                                   Nbnxm::gpu_get_xq(nbv->gpu_nbv),
                                                                   Nbnxm::gpu_get_f(nbv->gpu_nbv),
                                                                   Nbnxm::gpu_get_fshift(nbv->gpu_nbv));
-            ppForceWorkload->haveGpuBondedWork = fr->gpuBonded->haveInteractions();
         }
 
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    }
+
+    if (bNS)
+    {
+        // Need to run after the GPU-offload bonded interaction lists
+        // are set up to be able to determine whether there is bonded work.
+        setupForceWorkload(ppForceWorkload,
+                           inputrec,
+                           fr,
+                           ed,
+                           top->idef,
+                           fcd,
+                           flags);
     }
 
     /* do local pair search */
