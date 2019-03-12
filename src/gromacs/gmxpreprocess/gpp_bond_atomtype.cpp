@@ -39,64 +39,63 @@
 #include "gpp_bond_atomtype.h"
 
 #include <cstring>
+#include <algorithm>
+#include <vector>
 
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-struct gpp_bond_atomtype
+class PreprocessingBondAtomType::Impl
 {
-    int              nr;       /* The number of atomtypes		*/
-    char          ***atomname; /* Names of the atomtypes		*/
+    public:
+        //! The number for currently loaded entries.
+        size_t size() const { return types.size(); }
+        //! The atom type names.
+        std::vector<char **> types;
 };
 
-int get_bond_atomtype_type(const char *str, gpp_bond_atomtype *at)
+int PreprocessingBondAtomType::bondAtomTypeFromName(const std::string &str) const
 {
-    for (int i = 0; (i < at->nr); i++)
+    /* Atom types are always case sensitive */
+    auto found = std::find_if(impl_->types.begin(), impl_->types.end(),
+                              [&str](const auto &type)
+                              { return str == *type; });
+    if (found == impl_->types.end())
     {
-        /* Atom types are always case sensitive */
-        if (strcmp(str, *(at->atomname[i])) == 0)
-        {
-            return i;
-        }
+        return NOTSET;
     }
-
-    return NOTSET;
-}
-
-char *get_bond_atomtype_name(int nt, gpp_bond_atomtype *at)
-{
-    if ((nt < 0) || (nt >= at->nr))
+    else
     {
-        return nullptr;
+        return std::distance(impl_->types.begin(), found);
     }
-
-    return *(at->atomname[nt]);
 }
 
-gpp_bond_atomtype *init_bond_atomtype()
+const char *PreprocessingBondAtomType::atomNameFromBondAtomType(int nt) const
 {
-    gpp_bond_atomtype *ga;
-
-    snew(ga, 1);
-
-    return ga;
+    return isSet(nt) ? *impl_->types[nt] : nullptr;
 }
 
-void add_bond_atomtype(gpp_bond_atomtype *at, t_symtab *tab,
-                       char *name)
+PreprocessingBondAtomType::PreprocessingBondAtomType()
+    : impl_(new Impl)
+{}
+
+PreprocessingBondAtomType::~PreprocessingBondAtomType()
+{}
+
+void PreprocessingBondAtomType::addBondAtomType(t_symtab   *tab,
+                                                const char *name)
 {
-    at->nr++;
-    srenew(at->atomname, at->nr);
-    at->atomname[at->nr-1] = put_symtab(tab, name);
+    impl_->types.emplace_back(put_symtab(tab, name));
 }
 
-void done_bond_atomtype(gpp_bond_atomtype **at)
+size_t PreprocessingBondAtomType::size() const
 {
-    sfree((*at)->atomname);
-    (*at)->nr = 0;
-    sfree(*at);
+    return impl_->size();
+}
 
-    *at = nullptr;
+bool PreprocessingBondAtomType::isSet(int nt) const
+{
+    return ((nt >= 0) && (nt < gmx::ssize(*this)));
 }

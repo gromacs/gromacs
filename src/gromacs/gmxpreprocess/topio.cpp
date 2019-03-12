@@ -403,10 +403,9 @@ static char **read_topol(const char *infile, const char *outfile,
     DirStack                       *DS;
     Directive                       d, newd;
     t_nbparam                     **nbparam, **pair;
-    real                            fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
+    real                            fudgeLJ = -1;        /* Multiplication factor to generate 1-4 from LJ */
     bool                            bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
-    double                          qt = 0, qBt = 0; /* total charge */
-    gpp_bond_atomtype              *batype;
+    double                          qt     = 0, qBt = 0; /* total charge */
     int                             lastcg = -1;
     int                             dcatt  = -1, nmol_couple;
     /* File handling variables */
@@ -455,7 +454,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
     bWarn_copy_A_B = bFEP;
 
-    batype = init_bond_atomtype();
+    PreprocessingBondAtomType batype;
     /* parse the actual file */
     bReadDefaults = FALSE;
     bGenPairs     = FALSE;
@@ -636,15 +635,15 @@ static char **read_topol(const char *infile, const char *outfile,
 
                             break;
                         case Directive::d_atomtypes:
-                            push_at(symtab, atypes, batype, pline, nb_funct,
+                            push_at(symtab, atypes, &batype, pline, nb_funct,
                                     &nbparam, bGenPairs ? &pair : nullptr, wi);
                             break;
 
                         case Directive::d_bondtypes:
-                            push_bt(d, plist, 2, nullptr, batype, pline, wi);
+                            push_bt(d, plist, 2, nullptr, &batype, pline, wi);
                             break;
                         case Directive::d_constrainttypes:
-                            push_bt(d, plist, 2, nullptr, batype, pline, wi);
+                            push_bt(d, plist, 2, nullptr, &batype, pline, wi);
                             break;
                         case Directive::d_pairtypes:
                             if (bGenPairs)
@@ -657,11 +656,11 @@ static char **read_topol(const char *infile, const char *outfile,
                             }
                             break;
                         case Directive::d_angletypes:
-                            push_bt(d, plist, 3, nullptr, batype, pline, wi);
+                            push_bt(d, plist, 3, nullptr, &batype, pline, wi);
                             break;
                         case Directive::d_dihedraltypes:
                             /* Special routine that can read both 2 and 4 atom dihedral definitions. */
-                            push_dihedraltype(d, plist, batype, pline, wi);
+                            push_dihedraltype(d, plist, &batype, pline, wi);
                             break;
 
                         case Directive::d_nonbond_params:
@@ -681,7 +680,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
 
                         case Directive::d_cmaptypes:
-                            push_cmaptype(d, plist, 5, atypes, batype, pline, wi);
+                            push_cmaptype(d, plist, 5, atypes, &batype, pline, wi);
                             break;
 
                         case Directive::d_moleculetype:
@@ -921,8 +920,6 @@ static char **read_topol(const char *infile, const char *outfile,
     }
 
     DS_Done (&DS);
-
-    done_bond_atomtype(&batype);
 
     if (*intermolecular_interactions != nullptr)
     {

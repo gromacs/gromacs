@@ -40,24 +40,59 @@
 
 #include <cstdio>
 
-struct gpp_bond_atomtype;
+#include "gromacs/utility/classhelpers.h"
+
 struct t_symtab;
 
-int get_bond_atomtype_type(const char *str, gpp_bond_atomtype *at);
-/* Return atomtype corresponding to case-insensitive str
-   or NOTSET if not found */
+class PreprocessingBondAtomType
+{
+    public:
+        PreprocessingBondAtomType();
+        ~PreprocessingBondAtomType();
 
-char *get_bond_atomtype_name(int nt, gpp_bond_atomtype *at);
-/* Return name corresponding to atomtype nt, or NULL if not found */
+        //! Get number of defined bond atom types.
+        size_t size() const;
 
-gpp_bond_atomtype *init_bond_atomtype();
-/* Return a new atomtype structure */
+        /*! \brief
+         * Get name of atom from internal bond atom type number.
+         *
+         * \param[in] nt Internal number of atom type.
+         * \returns The type name.
+         */
+        const char *atomNameFromBondAtomType(int nt) const;
 
-void done_bond_atomtype(gpp_bond_atomtype **at);
-/* Free the memory in the structure */
+        /*! \brief
+         *  Get bond atom type index for atom type name if present in the database, or NOTSET.
+         *
+         *  \todo The code should be changed to instead use a gmx::compat version
+         *  of std::optional to return an iterator to the element being searched,
+         *  or an empty optional construct if the entry has not been found.
+         *
+         *  \param[in] str Input string to search type for.
+         *  \returns Atomtype as integer.
+         */
+        int bondAtomTypeFromName(const std::string &str) const;
 
-void add_bond_atomtype(gpp_bond_atomtype *at, t_symtab *tab,
-                       char *name);
-/* Add a complete new atom type to an existing atomtype structure */
+        /*! \brief
+         * Add a complete new bond atom type.
+         *
+         * \param[in] tab Symbol table.
+         * \param[in] name Atom name.
+         */
+        void addBondAtomType(t_symtab      *tab,
+                             const char    *name);
+
+        /*! \brief
+         * If a value is within the range of the current types or not.
+         *
+         * \param[in] nt Value to check.
+         * \returns True if value is in range.
+         */
+        bool isSet(int nt) const;
+
+    private:
+        class Impl;
+        gmx::PrivateImplPointer<Impl> impl_;
+};
 
 #endif
