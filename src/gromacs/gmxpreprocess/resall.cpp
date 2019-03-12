@@ -106,6 +106,7 @@ PreprocessingAtomTypes read_atype(const char *ffdir, t_symtab *tab)
         gmx_ffclose(in);
     }
     fprintf(stderr, "\n");
+    sfree(nb);
     sfree(a);
     return at;
 }
