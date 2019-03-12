@@ -443,5 +443,20 @@ constexpr bool operator!=(const extents<LHS...> &lhs,
     return !(lhs == rhs);
 }
 
+
+// this is secretely building a vector of vectors, which we just want to 
+// avoid. We'd like to use layout_irregular to store the extents, which adds
+// some circularity here
+template <size_t Rank>
+class IrregExtents
+{
+    IrregExtents(int size, std::vector < IrregExtents<Rank - 1>> extents);
+
+  private:
+    std::vector<IrregExtents<Rank - 1>> extents_;
+
+
+};
+
 }      // namespace gmx
 #endif /* end of include guard: MDSPAN_EXTENTS_H */

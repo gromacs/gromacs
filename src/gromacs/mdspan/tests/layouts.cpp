@@ -150,4 +150,11 @@ TEST(LayoutTests, LayoutRightOperator) {
     test.check_operator(0, 0, 0, 0, 0, 0);
 }
 
+TEST(LayoutIrrg, Exists)
+{
+    int Rank = 3; 
+    IrregExtents<Rank> irreg; 
+    layout_irreg<IrregExtents> test(irreg);
+}
+
 } // namespace gmx
