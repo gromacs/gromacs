@@ -41,7 +41,7 @@
 #include "gromacs/utility/arrayref.h"
 
 struct t_blocka;
-struct InteractionTypeParameters;
+struct InteractionsOfType;
 
 struct t_nextnb
 {
@@ -68,7 +68,7 @@ void print_nnb(t_nextnb *nnb, char *s);
 #define print_nnb(nnb, s)
 #endif
 
-void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionTypeParameters> plist);
+void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionsOfType> plist);
 /* Generate a t_nextnb structure from bond information.
  * With the structure you can either generate exclusions
  * or generate angles and dihedrals. The structure must be
@@ -76,7 +76,7 @@ void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionTypeParameters> plist);
  */
 
 void generate_excl (int nrexcl, int nratoms,
-                    gmx::ArrayRef<InteractionTypeParameters> plist, t_nextnb *nnb, t_blocka *excl);
+                    gmx::ArrayRef<InteractionsOfType> plist, t_nextnb *nnb, t_blocka *excl);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */

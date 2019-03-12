@@ -55,8 +55,8 @@
 struct gmx_mtop_t;
 struct t_atom;
 struct t_atomtypes;
-class InteractionType;
-struct InteractionTypeParameters;
+class InteractionOfType;
+struct InteractionsOfType;
 struct t_symtab;
 
 /*! \libinternal \brief
@@ -173,13 +173,13 @@ class PreprocessingAtomTypes
          * \param[in] atomNumber Atomic number of the entry.
          * \returns Number of the type set or NOTSET
          */
-        int setType(int                    nt,
-                    t_symtab              *tab,
-                    const t_atom          &a,
-                    const std::string     &name,
-                    const InteractionType &nb,
-                    int                    bondAtomType,
-                    int                    atomNumber);
+        int setType(int                      nt,
+                    t_symtab                *tab,
+                    const t_atom            &a,
+                    const std::string       &name,
+                    const InteractionOfType &nb,
+                    int                      bondAtomType,
+                    int                      atomNumber);
 
         /*! \brief
          * Add new atom type to database.
@@ -192,12 +192,12 @@ class PreprocessingAtomTypes
          * \param[in] atomNumber Atomic number of the entry.
          * \returns Number of entries in database.
          */
-        int addType(t_symtab              *tab,
-                    const t_atom          &a,
-                    const std::string     &name,
-                    const InteractionType &nb,
-                    int                    bondAtomType,
-                    int                    atomNumber);
+        int addType(t_symtab                *tab,
+                    const t_atom            &a,
+                    const std::string       &name,
+                    const InteractionOfType &nb,
+                    int                      bondAtomType,
+                    int                      atomNumber);
 
         /*! \brief
          * Renumber existing atom type entries.
@@ -207,7 +207,7 @@ class PreprocessingAtomTypes
          * \param[inout] wallAtomType Atom types of wall atoms, which may also be renumbered
          * \param[in] verbose If we want to print additional info.
          */
-        void renumberTypes(gmx::ArrayRef<InteractionTypeParameters> plist,
+        void renumberTypes(gmx::ArrayRef<InteractionsOfType>        plist,
                            gmx_mtop_t                              *mtop,
                            int                                     *wallAtomType,
                            bool                                     verbose);

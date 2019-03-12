@@ -75,7 +75,7 @@ static int count_hydrogens (char ***atomname, int nra, gmx::ArrayRef<const int> 
     return nh;
 }
 
-void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, int nshake)
+void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms *atoms, int nshake)
 {
     char                  ***info = atoms->atomname;
     real                     b_ij, b_jk;
@@ -108,17 +108,17 @@ void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, 
             {
                 if (interaction_function[ftype].flags & IF_BTYPE)
                 {
-                    InteractionTypeParameters *bonds = &(plist[ftype]);
+                    InteractionsOfType *bonds = &(plist[ftype]);
 
                     for (int ftype_a = 0; (gmx::ssize(*bonds) > 0 && ftype_a < F_NRE); ftype_a++)
                     {
                         if (interaction_function[ftype_a].flags & IF_ATYPE)
                         {
-                            InteractionTypeParameters *pr = &(plist[ftype_a]);
+                            InteractionsOfType *pr = &(plist[ftype_a]);
 
                             for (auto parm = pr->interactionTypes.begin(); parm != pr->interactionTypes.end(); )
                             {
-                                const InteractionType *ang = &(*parm);
+                                const InteractionOfType *ang = &(*parm);
 #ifdef DEBUG
                                 printf("Angle: %d-%d-%d\n", ang->ai(), ang->aj(), ang->ak());
 #endif
@@ -164,7 +164,7 @@ void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, 
                                         printf("p: %d, q: %d, dist: %12.5e\n", atomNumbers[0],
                                                atomNumbers[1], forceParm[0]);
 #endif
-                                        add_param_to_list (&(plist[F_CONSTR]), InteractionType(atomNumbers, forceParm));
+                                        add_param_to_list (&(plist[F_CONSTR]), InteractionOfType(atomNumbers, forceParm));
                                         /* move the last bond to this position */
                                         *parm = *(pr->interactionTypes.end() - 1);
                                         pr->interactionTypes.erase(pr->interactionTypes.end() - 1);
@@ -188,7 +188,7 @@ void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, 
         {
             if (interaction_function[ftype].flags & IF_BTYPE)
             {
-                InteractionTypeParameters *pr = &(plist[ftype]);
+                InteractionsOfType *pr = &(plist[ftype]);
                 for (auto parm = pr->interactionTypes.begin(); parm != pr->interactionTypes.end(); )
                 {
                     if ( (nshake != eshHBONDS) ||
@@ -197,7 +197,7 @@ void make_shake(gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, 
                         /* append this bond to the shake list */
                         std::vector<int>  atomNumbers = {parm->ai(), parm->aj()};
                         std::vector<real> forceParm   = { parm->c0(), parm->c2()};
-                        add_param_to_list (&(plist[F_CONSTR]), InteractionType(atomNumbers, forceParm));
+                        add_param_to_list (&(plist[F_CONSTR]), InteractionOfType(atomNumbers, forceParm));
                         parm = pr->interactionTypes.erase(parm);
                     }
                     else

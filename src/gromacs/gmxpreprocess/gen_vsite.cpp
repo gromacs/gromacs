@@ -469,7 +469,7 @@ static real get_ddb_angle(gmx::ArrayRef<const VirtualSiteTopology> vsitetop,
 }
 
 
-static void count_bonds(int atom, InteractionTypeParameters *psb, char ***atomname,
+static void count_bonds(int atom, InteractionsOfType *psb, char ***atomname,
                         int *nrbonds, int *nrHatoms, int Hatoms[], int *Heavy,
                         int *nrheavies, int heavies[])
 {
@@ -606,7 +606,7 @@ static real get_amass(int atom, t_atoms *at, gmx::ArrayRef<const PreprocessResid
     return mass;
 }
 
-static void my_add_param(InteractionTypeParameters *plist, int ai, int aj, real b)
+static void my_add_param(InteractionsOfType *plist, int ai, int aj, real b)
 {
     static real c[MAXFORCEPARAM] =
     { NOTSET, NOTSET, NOTSET, NOTSET, NOTSET, NOTSET };
@@ -615,7 +615,7 @@ static void my_add_param(InteractionTypeParameters *plist, int ai, int aj, real 
     add_param(plist, ai, aj, c, nullptr);
 }
 
-static void add_vsites(gmx::ArrayRef<InteractionTypeParameters> plist, int vsite_type[],
+static void add_vsites(gmx::ArrayRef<InteractionsOfType> plist, int vsite_type[],
                        int Heavy, int nrHatoms, int Hatoms[],
                        int nrheavies, int heavies[])
 {
@@ -722,7 +722,7 @@ static void add_vsites(gmx::ArrayRef<InteractionTypeParameters> plist, int vsite
 /* get cos(alpha) when a, b and c are given: */
 #define acosrule(a, b, c) ( (gmx::square(b)+gmx::square(c)-gmx::square(a))/(2*(b)*(c)) )
 
-static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], gmx::ArrayRef<InteractionTypeParameters> plist,
+static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], gmx::ArrayRef<InteractionsOfType> plist,
                             int nrfound, int *ats, real bond_cc, real bond_ch,
                             real xcom, bool bDoZ)
 {
@@ -813,7 +813,7 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], gmx::ArrayRef<Intera
     return nvsite;
 }
 
-static int gen_vsites_phe(t_atoms *at, int *vsite_type[], gmx::ArrayRef<InteractionTypeParameters> plist,
+static int gen_vsites_phe(t_atoms *at, int *vsite_type[], gmx::ArrayRef<InteractionsOfType> plist,
                           int nrfound, int *ats, gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
 {
     real bond_cc, bond_ch;
@@ -879,7 +879,7 @@ static int gen_vsites_trp(PreprocessingAtomTypes *atype,
                           t_symtab *symtab, int *nadd,
                           gmx::ArrayRef<const gmx::RVec> x, int *cgnr[],
                           t_atoms *at, int *vsite_type[],
-                          gmx::ArrayRef<InteractionTypeParameters> plist,
+                          gmx::ArrayRef<InteractionsOfType> plist,
                           int nrfound, int *ats, int add_shift,
                           gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
 {
@@ -1153,7 +1153,7 @@ static int gen_vsites_tyr(PreprocessingAtomTypes *atype,
                           t_symtab *symtab, int *nadd,
                           gmx::ArrayRef<const gmx::RVec> x, int *cgnr[],
                           t_atoms *at, int *vsite_type[],
-                          gmx::ArrayRef<InteractionTypeParameters> plist,
+                          gmx::ArrayRef<InteractionsOfType> plist,
                           int nrfound, int *ats, int add_shift,
                           gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
 {
@@ -1298,7 +1298,7 @@ static int gen_vsites_tyr(PreprocessingAtomTypes *atype,
 }
 
 static int gen_vsites_his(t_atoms *at, int *vsite_type[],
-                          gmx::ArrayRef<InteractionTypeParameters> plist,
+                          gmx::ArrayRef<InteractionsOfType> plist,
                           int nrfound, int *ats, gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
 {
     int  nvsite, i;
@@ -1553,7 +1553,7 @@ static char atomnamesuffix[] = "1234";
 void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtomTypes *atype,
                t_atoms *at, t_symtab *symtab,
                std::vector<gmx::RVec> *x,
-               gmx::ArrayRef<InteractionTypeParameters> plist, int *vsite_type[], int *cgnr[],
+               gmx::ArrayRef<InteractionsOfType> plist, int *vsite_type[], int *cgnr[],
                real mHmult, bool bVsiteAromatics,
                const char *ffdir)
 {
@@ -2135,7 +2135,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtom
     /* now renumber all the interactions because of the added atoms */
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        InteractionTypeParameters *params = &(plist[ftype]);
+        InteractionsOfType *params = &(plist[ftype]);
         if (debug)
         {
             fprintf(debug, "Renumbering %zu %s\n", params->size(),
@@ -2167,7 +2167,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtom
                     newAtomNumber.emplace_back(o2n[atomNumbers[j]]);
                 }
             }
-            *parm = InteractionType(newAtomNumber, parm->forceParam(), parm->interactionTypeName());
+            *parm = InteractionOfType(newAtomNumber, parm->forceParam(), parm->interactionTypeName());
             if (debug)
             {
                 fprintf(debug, "\n");
@@ -2175,7 +2175,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtom
         }
     }
     /* sort constraint parameters */
-    InteractionTypeParameters *params = &(plist[F_CONSTRNC]);
+    InteractionsOfType *params = &(plist[F_CONSTRNC]);
     for (auto &type : params->interactionTypes)
     {
         type.sortAtomIds();
@@ -2190,7 +2190,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtom
     fprintf(stderr, "Added %zu new constraints\n", plist[F_CONSTRNC].size());
 }
 
-void do_h_mass(InteractionTypeParameters *psb, int vsite_type[], t_atoms *at, real mHmult,
+void do_h_mass(InteractionsOfType *psb, int vsite_type[], t_atoms *at, real mHmult,
                bool bDeuterate)
 {
     /* loop over all atoms */

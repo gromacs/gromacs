@@ -43,10 +43,10 @@
 class PreprocessingAtomTypes;
 struct gmx_moltype_t;
 struct t_atoms;
-struct InteractionTypeParameters;
+struct InteractionsOfType;
 
 int set_vsites(bool bVerbose, t_atoms *atoms,  PreprocessingAtomTypes *atype,
-               gmx::ArrayRef<InteractionTypeParameters> plist);
+               gmx::ArrayRef<InteractionsOfType> plist);
 /* set parameters for virtual sites, return number of virtual sites */
 
 void set_vsites_ptype(bool bVerbose,  gmx_moltype_t *molt);
@@ -56,6 +56,6 @@ void set_vsites_ptype(bool bVerbose,  gmx_moltype_t *molt);
  *
  * Throw away all obsolete bonds, angles and dihedrals.
  * Throw away all constraints. */
-void clean_vsite_bondeds(gmx::ArrayRef<InteractionTypeParameters> ps, int natoms, bool bRmVSiteBds);
+void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> ps, int natoms, bool bRmVSiteBds);
 
 #endif

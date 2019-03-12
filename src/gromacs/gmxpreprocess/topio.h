@@ -50,7 +50,7 @@ class PreprocessingAtomTypes;
 struct t_gromppopts;
 struct t_inputrec;
 struct MoleculeInformation;
-struct InteractionTypeParameters;
+struct InteractionsOfType;
 struct t_symtab;
 struct warninp;
 enum struct GmxQmmmMode;
@@ -65,7 +65,7 @@ char **do_top(bool                                                         bVerb
               t_gromppopts                                                *opts,
               bool                                                         bZero,
               t_symtab                                                    *symtab,
-              gmx::ArrayRef<InteractionTypeParameters>                     plist,
+              gmx::ArrayRef<InteractionsOfType>                            plist,
               int                                                         *combination_rule,
               double                                                      *repulsion_power,
               real                                                        *fudgeQQ,

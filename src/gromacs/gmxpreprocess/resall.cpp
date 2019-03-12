@@ -92,7 +92,7 @@ PreprocessingAtomTypes read_atype(const char *ffdir, t_symtab *tab)
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
                 a->m = m;
-                at.addType(tab, *a, name, InteractionType({}, {}), 0, 0);
+                at.addType(tab, *a, name, InteractionOfType({}, {}), 0, 0);
                 fprintf(stderr, "\rAtomtype %d", ++nratt);
                 fflush(stderr);
             }

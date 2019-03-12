@@ -85,7 +85,7 @@
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */
 
-static void gen_pairs(const InteractionTypeParameters &nbs, InteractionTypeParameters *pairs, real fudge, int comb)
+static void gen_pairs(const InteractionsOfType &nbs, InteractionsOfType *pairs, real fudge, int comb)
 {
     real    scaling;
     int     ntp       = nbs.size();
@@ -130,7 +130,7 @@ static void gen_pairs(const InteractionTypeParameters &nbs, InteractionTypeParam
             forceParam[j]      = scaling*existingParam[j];
             forceParam[nrfp+j] = scaling*existingParam[j];
         }
-        pairs->interactionTypes.emplace_back(InteractionType(atomNumbers, forceParam));
+        pairs->interactionTypes.emplace_back(InteractionOfType(atomNumbers, forceParam));
         i++;
     }
 }
@@ -377,7 +377,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          PreprocessingAtomTypes *atypes,
                          std::vector<MoleculeInformation> *molinfo,
                          std::unique_ptr<MoleculeInformation> *intermolecular_interactions,
-                         gmx::ArrayRef<InteractionTypeParameters> plist,
+                         gmx::ArrayRef<InteractionsOfType> interactions,
                          int         *combination_rule,
                          double      *reppow,
                          t_gromppopts *opts,
@@ -447,8 +447,8 @@ static char **read_topol(const char *infile, const char *outfile,
     *reppow  = 12.0;      /* Default value for repulsion power     */
 
     /* Init the number of CMAP torsion angles  and grid spacing */
-    plist[F_CMAP].cmakeGridSpacing = 0;
-    plist[F_CMAP].cmapAngles       = 0;
+    interactions[F_CMAP].cmakeGridSpacing = 0;
+    interactions[F_CMAP].cmapAngles       = 0;
 
     bWarn_copy_A_B = bFEP;
 
@@ -638,10 +638,10 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
 
                         case Directive::d_bondtypes:
-                            push_bt(d, plist, 2, nullptr, &bondAtomType, pline, wi);
+                            push_bt(d, interactions, 2, nullptr, &bondAtomType, pline, wi);
                             break;
                         case Directive::d_constrainttypes:
-                            push_bt(d, plist, 2, nullptr, &bondAtomType, pline, wi);
+                            push_bt(d, interactions, 2, nullptr, &bondAtomType, pline, wi);
                             break;
                         case Directive::d_pairtypes:
                             if (bGenPairs)
@@ -650,15 +650,15 @@ static char **read_topol(const char *infile, const char *outfile,
                             }
                             else
                             {
-                                push_bt(d, plist, 2, atypes, nullptr, pline, wi);
+                                push_bt(d, interactions, 2, atypes, nullptr, pline, wi);
                             }
                             break;
                         case Directive::d_angletypes:
-                            push_bt(d, plist, 3, nullptr, &bondAtomType, pline, wi);
+                            push_bt(d, interactions, 3, nullptr, &bondAtomType, pline, wi);
                             break;
                         case Directive::d_dihedraltypes:
                             /* Special routine that can read both 2 and 4 atom dihedral definitions. */
-                            push_dihedraltype(d, plist, &bondAtomType, pline, wi);
+                            push_dihedraltype(d, interactions, &bondAtomType, pline, wi);
                             break;
 
                         case Directive::d_nonbond_params:
@@ -678,7 +678,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
 
                         case Directive::d_cmaptypes:
-                            push_cmaptype(d, plist, 5, atypes, &bondAtomType, pline, wi);
+                            push_cmaptype(d, interactions, 5, atypes, &bondAtomType, pline, wi);
                             break;
 
                         case Directive::d_moleculetype:
@@ -697,15 +697,15 @@ static char **read_topol(const char *infile, const char *outfile,
                                 }
                                 ntype  = atypes->size();
                                 ncombs = (ntype*(ntype+1))/2;
-                                generate_nbparams(*combination_rule, nb_funct, &(plist[nb_funct]), atypes, wi);
-                                ncopy = copy_nbparams(nbparam, nb_funct, &(plist[nb_funct]),
+                                generate_nbparams(*combination_rule, nb_funct, &(interactions[nb_funct]), atypes, wi);
+                                ncopy = copy_nbparams(nbparam, nb_funct, &(interactions[nb_funct]),
                                                       ntype);
                                 fprintf(stderr, "Generated %d of the %d non-bonded parameter combinations\n", ncombs-ncopy, ncombs);
                                 free_nbparam(nbparam, ntype);
                                 if (bGenPairs)
                                 {
-                                    gen_pairs((plist[nb_funct]), &(plist[F_LJ14]), fudgeLJ, *combination_rule);
-                                    ncopy = copy_nbparams(pair, nb_funct, &(plist[F_LJ14]),
+                                    gen_pairs((interactions[nb_funct]), &(interactions[F_LJ14]), fudgeLJ, *combination_rule);
+                                    ncopy = copy_nbparams(pair, nb_funct, &(interactions[F_LJ14]),
                                                           ntype);
                                     fprintf(stderr, "Generated %d of the %d 1-4 parameter combinations\n", ncombs-ncopy, ncombs);
                                     free_nbparam(pair, ntype);
@@ -731,12 +731,12 @@ static char **read_topol(const char *infile, const char *outfile,
 
                         case Directive::d_pairs:
                             GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
-                            push_bond(d, plist, mi0->plist, &(mi0->atoms), atypes, pline, FALSE,
+                            push_bond(d, interactions, mi0->interactions, &(mi0->atoms), atypes, pline, FALSE,
                                       bGenPairs, *fudgeQQ, bZero, &bWarn_copy_A_B, wi);
                             break;
                         case Directive::d_pairs_nb:
                             GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
-                            push_bond(d, plist, mi0->plist, &(mi0->atoms), atypes, pline, FALSE,
+                            push_bond(d, interactions, mi0->interactions, &(mi0->atoms), atypes, pline, FALSE,
                                       FALSE, 1.0, bZero, &bWarn_copy_A_B, wi);
                             break;
 
@@ -758,17 +758,17 @@ static char **read_topol(const char *infile, const char *outfile,
                         case Directive::d_water_polarization:
                         case Directive::d_thole_polarization:
                             GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
-                            push_bond(d, plist, mi0->plist, &(mi0->atoms), atypes, pline, TRUE,
+                            push_bond(d, interactions, mi0->interactions, &(mi0->atoms), atypes, pline, TRUE,
                                       bGenPairs, *fudgeQQ, bZero, &bWarn_copy_A_B, wi);
                             break;
                         case Directive::d_cmap:
                             GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
-                            push_cmap(d, plist, mi0->plist, &(mi0->atoms), atypes, pline, wi);
+                            push_cmap(d, interactions, mi0->interactions, &(mi0->atoms), atypes, pline, wi);
                             break;
 
                         case Directive::d_vsitesn:
                             GMX_RELEASE_ASSERT(mi0, "Need to have a valid MoleculeInformation object to work on");
-                            push_vsitesn(d, mi0->plist, &(mi0->atoms), pline, wi);
+                            push_vsitesn(d, mi0->interactions, &(mi0->atoms), pline, wi);
                             break;
                         case Directive::d_exclusions:
                             GMX_ASSERT(!exclusionBlocks.empty(), "exclusionBlocks must always be allocated so exclusions can be processed");
@@ -816,11 +816,11 @@ static char **read_topol(const char *infile, const char *outfile,
                                 t_nextnb nnb;
                                 generate_excl(mi0->nrexcl,
                                               mi0->atoms.nr,
-                                              mi0->plist,
+                                              mi0->interactions,
                                               &nnb,
                                               &(mi0->excls));
                                 gmx::mergeExclusions(&(mi0->excls), exclusionBlocks[whichmol]);
-                                make_shake(mi0->plist, &mi0->atoms, opts->nshake);
+                                make_shake(mi0->interactions, &mi0->atoms, opts->nshake);
 
                                 done_nnb(&nnb);
 
@@ -829,7 +829,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                     convert_moltype_couple(mi0, dcatt, *fudgeQQ,
                                                            opts->couple_lam0, opts->couple_lam1,
                                                            opts->bCoupleIntra,
-                                                           nb_funct, &(plist[nb_funct]), wi);
+                                                           nb_funct, &(interactions[nb_funct]), wi);
                                 }
                                 stupid_fill_block(&mi0->mols, mi0->atoms.nr, TRUE);
                                 mi0->bProcessed = TRUE;
@@ -933,7 +933,7 @@ char **do_top(bool                                            bVerbose,
               t_gromppopts                                   *opts,
               bool                                            bZero,
               t_symtab                                       *symtab,
-              gmx::ArrayRef<InteractionTypeParameters>        plist,
+              gmx::ArrayRef<InteractionsOfType>               interactions,
               int                                            *combination_rule,
               double                                         *repulsion_power,
               real                                           *fudgeQQ,
@@ -965,7 +965,7 @@ char **do_top(bool                                            bVerbose,
     title = read_topol(topfile, tmpfile, opts->define, opts->include,
                        symtab, atypes,
                        molinfo, intermolecular_interactions,
-                       plist, combination_rule, repulsion_power,
+                       interactions, combination_rule, repulsion_power,
                        opts, fudgeQQ, molblock,
                        ffParametrizedWithHBondConstraints,
                        ir->efep != efepNO, bZero,

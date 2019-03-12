@@ -81,10 +81,10 @@ class PreprocessingAtomTypesTest : public ::testing::Test
             done_symtab(&symtab_);
         }
     protected:
-        PreprocessingAtomTypes atypes_;
-        t_symtab               symtab_;
-        t_atom                 atom_;
-        InteractionType        nb_;
+        PreprocessingAtomTypes   atypes_;
+        t_symtab                 symtab_;
+        t_atom                   atom_;
+        InteractionOfType        nb_;
 };
 
 TEST_F(PreprocessingAtomTypesTest, EmptyOnCreate)

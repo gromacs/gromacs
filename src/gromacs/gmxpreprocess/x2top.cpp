@@ -94,7 +94,7 @@ static bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
 }
 
 static void mk_bonds(int nnm, t_nm2type nmt[],
-                     t_atoms *atoms, const rvec x[], InteractionTypeParameters *bond, int nbond[],
+                     t_atoms *atoms, const rvec x[], InteractionsOfType *bond, int nbond[],
                      bool bPBC, matrix box)
 {
     int                             i, j;
@@ -131,7 +131,7 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
             {
                 forceParam[0] = std::sqrt(dx2);
                 std::vector<int> atoms = {i, j};
-                add_param_to_list (bond, InteractionType(atoms, forceParam));
+                add_param_to_list (bond, InteractionOfType(atoms, forceParam));
                 nbond[i]++;
                 nbond[j]++;
             }
@@ -171,7 +171,7 @@ static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
 static void set_atom_type(PreprocessingAtomTypes     *atypes,
                           t_symtab                   *tab,
                           t_atoms                    *atoms,
-                          InteractionTypeParameters  *bonds,
+                          InteractionsOfType         *bonds,
                           int                        *nbonds,
                           int                         nnm,
                           t_nm2type                   nm2t[])
@@ -190,7 +190,7 @@ static void set_atom_type(PreprocessingAtomTypes     *atypes,
             atypes->size());
 }
 
-static void lo_set_force_const(InteractionTypeParameters *plist, real c[], int nrfp, bool bRound,
+static void lo_set_force_const(InteractionsOfType *plist, real c[], int nrfp, bool bRound,
                                bool bDih, bool bParam)
 {
     double cc;
@@ -236,11 +236,11 @@ static void lo_set_force_const(InteractionTypeParameters *plist, real c[], int n
             forceParam[j]      = c[j];
             forceParam[nrfp+j] = c[j];
         }
-        param = InteractionType(param.atoms(), forceParam);
+        param = InteractionOfType(param.atoms(), forceParam);
     }
 }
 
-static void set_force_const(gmx::ArrayRef<InteractionTypeParameters> plist, real kb, real kt, real kp, bool bRound,
+static void set_force_const(gmx::ArrayRef<InteractionsOfType> plist, real kb, real kt, real kp, bool bRound,
                             bool bParam)
 {
     real c[MAXFORCEPARAM];
@@ -255,7 +255,7 @@ static void set_force_const(gmx::ArrayRef<InteractionTypeParameters> plist, real
     lo_set_force_const(&plist[F_PDIHS], c, 3, bRound, TRUE, bParam);
 }
 
-static void calc_angles_dihs(InteractionTypeParameters *ang, InteractionTypeParameters *dih, const rvec x[], bool bPBC,
+static void calc_angles_dihs(InteractionsOfType *ang, InteractionsOfType *dih, const rvec x[], bool bPBC,
                              matrix box)
 {
     int    t1, t2, t3;
@@ -296,7 +296,7 @@ static void dump_hybridization(FILE *fp, t_atoms *atoms, int nbonds[])
     }
 }
 
-static void print_pl(FILE *fp, gmx::ArrayRef<const InteractionTypeParameters> plist, int ftp, const char *name,
+static void print_pl(FILE *fp, gmx::ArrayRef<const InteractionsOfType> plist, int ftp, const char *name,
                      char ***atomname)
 {
     if (!plist[ftp].interactionTypes.empty())
@@ -327,7 +327,7 @@ static void print_pl(FILE *fp, gmx::ArrayRef<const InteractionTypeParameters> pl
 static void print_rtp(const char                                     *filenm,
                       const char                                     *title,
                       t_atoms                                        *atoms,
-                      gmx::ArrayRef<const InteractionTypeParameters>  plist,
+                      gmx::ArrayRef<const InteractionsOfType>         plist,
                       PreprocessingAtomTypes                         *atypes,
                       int                                             cgnr[])
 {
@@ -390,7 +390,7 @@ int gmx_x2top(int argc, char *argv[])
         "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in the data directory). Please extend it and send the results back to the GROMACS crew."
     };
     FILE                                        *fp;
-    std::array<InteractionTypeParameters, F_NRE> plist;
+    std::array<InteractionsOfType, F_NRE>        plist;
     t_excls                                     *excls;
     t_nextnb                                     nnb;
     t_nm2type                                   *nm2t;

@@ -50,15 +50,15 @@
 #include "gromacs/utility/real.h"
 
 /*! \libinternal \brief
- * Describes a single parameter in a force field.
+ * Describes an interaction of a given type, plus its parameters.
  */
-class InteractionType
+class InteractionOfType
 {
     public:
         //! Constructor that initializes vectors.
-        InteractionType(gmx::ArrayRef<const int>  atoms,
-                        gmx::ArrayRef<const real> params,
-                        const std::string        &name = "");
+        InteractionOfType(gmx::ArrayRef<const int>  atoms,
+                          gmx::ArrayRef<const real> params,
+                          const std::string        &name = "");
         /*!@{*/
         //! Access the individual elements set for the parameter.
         const int       &ai() const;
@@ -130,18 +130,18 @@ class InteractionType
  * lists of interactions of a given type in a [moleculetype]
  * topology file definition.
  */
-struct InteractionTypeParameters
+struct InteractionsOfType
 {                       // NOLINT (clang-analyzer-optin.performance.Padding)
     //! The different parameters in the system.
-    std::vector<InteractionType> interactionTypes;
+    std::vector<InteractionOfType> interactionTypes;
     //! CMAP grid spacing.
-    int                          cmakeGridSpacing = -1;
+    int                            cmakeGridSpacing = -1;
     //! Number of cmap angles.
-    int                          cmapAngles = -1;
+    int                            cmapAngles = -1;
     //! CMAP grid data.
-    std::vector<real>            cmap;
+    std::vector<real>              cmap;
     //! The five atomtypes followed by a number that identifies the type.
-    std::vector<int>             cmapAtomTypes;
+    std::vector<int>               cmapAtomTypes;
 
     //! Number of parameters.
     size_t size() const { return interactionTypes.size(); }
@@ -179,8 +179,8 @@ struct MoleculeInformation
     t_block                                      mols;
     //! Exclusions in the molecule.
     t_blocka                                     excls;
-    //! Parameters in old style.
-    std::array<InteractionTypeParameters, F_NRE> plist;
+    //! Interactions of a defined type.
+    std::array<InteractionsOfType, F_NRE>        interactions;
 
     /*! \brief
      * Initializer.

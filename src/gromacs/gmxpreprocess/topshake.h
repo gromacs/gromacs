@@ -41,8 +41,8 @@
 #include "gromacs/utility/arrayref.h"
 
 struct t_atoms;
-struct InteractionTypeParameters;
+struct InteractionsOfType;
 
-void make_shake (gmx::ArrayRef<InteractionTypeParameters> plist, t_atoms *atoms, int nshake);
+void make_shake (gmx::ArrayRef<InteractionsOfType> plist, t_atoms *atoms, int nshake);
 
 #endif
