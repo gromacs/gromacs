@@ -47,7 +47,6 @@
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
@@ -63,6 +62,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+#include "hackblock.h"
 #include "resall.h"
 
 /*! \internal \brief
@@ -893,9 +893,12 @@ void set_vsites_ptype(bool bVerbose, gmx_moltype_t *molt)
 
 }
 
-typedef struct {
-    int ftype, parnr;
-} t_pindex;
+/*! \internal \brief
+ *  Convenience type def for linking function type to parameter numbers.
+ *
+ *  The first element is the function type, with the second element being the parameter number.
+ */
+using ParameterIndex = std::pair<int, int>;
 
 static void check_vsite_constraints(gmx::ArrayRef<InteractionTypeParameters> plist,
                                     int cftype, const int vsite_type[])
@@ -921,7 +924,8 @@ static void check_vsite_constraints(gmx::ArrayRef<InteractionTypeParameters> pli
     }
 }
 
-static void clean_vsite_bonds(gmx::ArrayRef<InteractionTypeParameters> plist, t_pindex pindex[],
+static void clean_vsite_bonds(gmx::ArrayRef<InteractionTypeParameters> plist,
+                              gmx::ArrayRef<const ParameterIndex> pindex,
                               int cftype, const int vsite_type[])
 {
     int                           ftype, nOut;
@@ -957,18 +961,18 @@ static void clean_vsite_bonds(gmx::ArrayRef<InteractionTypeParameters> plist, t_
             if (vsite_type[atom] != NOTSET && vsite_type[atom] != F_VSITEN)
             {
                 nvsite++;
-                bool bThisFD = ( (pindex[atom].ftype == F_VSITE3FD ) ||
-                                 (pindex[atom].ftype == F_VSITE3FAD) ||
-                                 (pindex[atom].ftype == F_VSITE4FD ) ||
-                                 (pindex[atom].ftype == F_VSITE4FDN ) );
-                bool bThisOUT = ( (pindex[atom].ftype == F_VSITE3OUT) &&
+                bool bThisFD = ( (pindex[atom].first == F_VSITE3FD ) ||
+                                 (pindex[atom].first == F_VSITE3FAD) ||
+                                 (pindex[atom].first == F_VSITE4FD ) ||
+                                 (pindex[atom].first == F_VSITE4FDN ) );
+                bool bThisOUT = ( (pindex[atom].first == F_VSITE3OUT) &&
                                   ((interaction_function[cftype].flags & IF_CONSTRAINT) != 0u) );
                 bAllFD = bAllFD && bThisFD;
                 if (bThisFD || bThisOUT)
                 {
                     oatom = atoms[1-k]; /* the other atom */
                     if (vsite_type[oatom] == NOTSET &&
-                        oatom == plist[pindex[atom].ftype].interactionTypes[pindex[atom].parnr].aj())
+                        oatom == plist[pindex[atom].first].interactionTypes[pindex[atom].second].aj())
                     {
                         /* if the other atom isn't a vsite, and it is AI */
                         bRemove = true;
@@ -990,8 +994,8 @@ static void clean_vsite_bonds(gmx::ArrayRef<InteractionTypeParameters> plist, t_
                         /* TODO This would be nicer to implement with
                            a C++ "vector view" class" with an
                            STL-container-like interface. */
-                        vsnral      = NRAL(pindex[atom].ftype) - 1;
-                        first_atoms = plist[pindex[atom].ftype].interactionTypes[pindex[atom].parnr].atoms().data() + 1;
+                        vsnral      = NRAL(pindex[atom].first) - 1;
+                        first_atoms = plist[pindex[atom].first].interactionTypes[pindex[atom].second].atoms().data() + 1;
                     }
                     else
                     {
@@ -999,14 +1003,14 @@ static void clean_vsite_bonds(gmx::ArrayRef<InteractionTypeParameters> plist, t_
                         GMX_ASSERT(first_atoms != nullptr, "nvsite > 1 must have first_atoms != NULL");
                         /* if it is not the first then
                            check if this vsite is constructed from the same atoms */
-                        if (vsnral == NRAL(pindex[atom].ftype)-1)
+                        if (vsnral == NRAL(pindex[atom].first)-1)
                         {
                             for (int m = 0; (m < vsnral) && !bKeep; m++)
                             {
                                 const int *atoms;
 
                                 bool       bPresent = false;
-                                atoms    = plist[pindex[atom].ftype].interactionTypes[pindex[atom].parnr].atoms().data() + 1;
+                                atoms    = plist[pindex[atom].first].interactionTypes[pindex[atom].second].atoms().data() + 1;
                                 for (int n = 0; (n < vsnral) && !bPresent; n++)
                                 {
                                     if (atoms[m] == first_atoms[n])
@@ -1142,7 +1146,8 @@ static void clean_vsite_bonds(gmx::ArrayRef<InteractionTypeParameters> plist, t_
     }
 }
 
-static void clean_vsite_angles(gmx::ArrayRef<InteractionTypeParameters> plist, t_pindex pindex[],
+static void clean_vsite_angles(gmx::ArrayRef<InteractionTypeParameters> plist,
+                               gmx::ArrayRef<ParameterIndex> pindex,
                                int cftype, const int vsite_type[],
                                gmx::ArrayRef<const Atom2VsiteConnection> at2vc)
 {
@@ -1167,26 +1172,26 @@ static void clean_vsite_angles(gmx::ArrayRef<InteractionTypeParameters> plist, t
             if (vsite_type[atom] != NOTSET && vsite_type[atom] != F_VSITEN)
             {
                 nvsite++;
-                bAll3FAD = bAll3FAD && (pindex[atom].ftype == F_VSITE3FAD);
+                bAll3FAD = bAll3FAD && (pindex[atom].first == F_VSITE3FAD);
                 if (nvsite == 1)
                 {
                     /* store construction atoms of first vsite */
-                    vsnral      = NRAL(pindex[atom].ftype) - 1;
-                    first_atoms = plist[pindex[atom].ftype].interactionTypes[pindex[atom].parnr].atoms().data() + 1;
+                    vsnral      = NRAL(pindex[atom].first) - 1;
+                    first_atoms = plist[pindex[atom].first].interactionTypes[pindex[atom].second].atoms().data() + 1;
                 }
                 else
                 {
                     GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
                     GMX_ASSERT(first_atoms != nullptr, "If we've seen a vsite before, we know what its first atom index was");
                     /* check if this vsite is constructed from the same atoms */
-                    if (vsnral == NRAL(pindex[atom].ftype)-1)
+                    if (vsnral == NRAL(pindex[atom].first)-1)
                     {
                         for (int m = 0; (m < vsnral) && !bKeep; m++)
                         {
                             const int *subAtoms;
 
                             bool       bPresent = false;
-                            subAtoms    = plist[pindex[atom].ftype].interactionTypes[pindex[atom].parnr].atoms().data() + 1;
+                            subAtoms    = plist[pindex[atom].first].interactionTypes[pindex[atom].second].atoms().data() + 1;
                             for (int n = 0; (n < vsnral) && !bPresent; n++)
                             {
                                 if (subAtoms[m] == first_atoms[n])
@@ -1278,7 +1283,8 @@ static void clean_vsite_angles(gmx::ArrayRef<InteractionTypeParameters> plist, t
     }
 }
 
-static void clean_vsite_dihs(gmx::ArrayRef<InteractionTypeParameters> plist, t_pindex pindex[],
+static void clean_vsite_dihs(gmx::ArrayRef<InteractionTypeParameters> plist,
+                             gmx::ArrayRef<const ParameterIndex> pindex,
                              int cftype, const int vsite_type[])
 {
     InteractionTypeParameters *ps;
@@ -1304,22 +1310,22 @@ static void clean_vsite_dihs(gmx::ArrayRef<InteractionTypeParameters> plist, t_p
                 if (nvsite == 0)
                 {
                     /* store construction atoms of first vsite */
-                    vsnral      = NRAL(pindex[atom].ftype) - 1;
-                    first_atoms = plist[pindex[atom].ftype].interactionTypes[pindex[atom].parnr].atoms().data() + 1;
+                    vsnral      = NRAL(pindex[atom].first) - 1;
+                    first_atoms = plist[pindex[atom].first].interactionTypes[pindex[atom].second].atoms().data() + 1;
                 }
                 else
                 {
                     GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
                     GMX_ASSERT(first_atoms != nullptr, "If we've seen a vsite before, we know what its first atom index was");
                     /* check if this vsite is constructed from the same atoms */
-                    if (vsnral == NRAL(pindex[atom].ftype)-1)
+                    if (vsnral == NRAL(pindex[atom].first)-1)
                     {
                         for (int m = 0; (m < vsnral) && !bKeep; m++)
                         {
                             const int *subAtoms;
 
                             bool       bPresent = false;
-                            subAtoms    = plist[pindex[atom].ftype].interactionTypes[pindex[atom].parnr].atoms().data() + 1;
+                            subAtoms    = plist[pindex[atom].first].interactionTypes[pindex[atom].second].atoms().data() + 1;
                             for (int n = 0; (n < vsnral) && !bPresent; n++)
                             {
                                 if (subAtoms[m] == first_atoms[n])
@@ -1394,10 +1400,9 @@ void clean_vsite_bondeds(gmx::ArrayRef<InteractionTypeParameters> plist, int nat
 {
     int                               nvsite, vsite;
     int                              *vsite_type;
-    t_pindex                         *pindex;
+    std::vector<ParameterIndex>       pindex;
     std::vector<Atom2VsiteConnection> at2vc;
 
-    pindex = nullptr; /* avoid warnings */
     /* make vsite_type array */
     snew(vsite_type, natoms);
     for (int i = 0; i < natoms; i++)
@@ -1446,7 +1451,7 @@ void clean_vsite_bondeds(gmx::ArrayRef<InteractionTypeParameters> plist, int nat
         /* Make a reverse list to avoid ninteractions^2 operations */
         at2vc = make_at2vsitecon(natoms, plist);
 
-        snew(pindex, natoms);
+        pindex.resize(natoms);
         for (int ftype = 0; ftype < F_NRE; ftype++)
         {
             /* Here we skip VSITEN. In neary all practical use cases this
@@ -1466,8 +1471,7 @@ void clean_vsite_bondeds(gmx::ArrayRef<InteractionTypeParameters> plist, int nat
                 for (int parnr = 0; (parnr < gmx::ssize(plist[ftype])); parnr++)
                 {
                     int k               = plist[ftype].interactionTypes[parnr].ai();
-                    pindex[k].ftype = ftype;
-                    pindex[k].parnr = parnr;
+                    pindex[k] = std::make_pair(ftype, parnr);
                 }
             }
         }
@@ -1502,6 +1506,5 @@ void clean_vsite_bondeds(gmx::ArrayRef<InteractionTypeParameters> plist, int nat
         }
 
     }
-    sfree(pindex);
     sfree(vsite_type);
 }
