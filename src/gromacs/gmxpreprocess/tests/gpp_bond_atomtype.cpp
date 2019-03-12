@@ -56,7 +56,6 @@ class PreprocessingBondAtomTypeTest : public ::testing::Test
         PreprocessingBondAtomTypeTest()
         {
             open_symtab(&symtab);
-            bat = init_bond_atomtype();
         }
 
         void addEntry(const char *name);
@@ -64,52 +63,56 @@ class PreprocessingBondAtomTypeTest : public ::testing::Test
         ~PreprocessingBondAtomTypeTest() override
         {
             done_symtab(&symtab);
-            done_bond_atomtype(&bat);
         }
     protected:
-        gpp_bond_atomtype *bat;
-        t_symtab           symtab;
+        PreprocessingBondAtomType bat;
+        t_symtab                  symtab;
 };
 
 void PreprocessingBondAtomTypeTest::addEntry(const char *name)
 {
-    add_bond_atomtype(bat,
-                      &symtab,
-                      const_cast<char *>(name));
+    bat.addBondAtomType(&symtab,
+                        name);
 }
 
-//TEST_F(PreprocessingBondAtomTypeTest, EmptyOnCreate)
-//{
-//    EXPECT_EQ(bat->nr, 0);
-//}
-//
-//TEST_F(PreprocessingBondAtomTypeTest, AddEntryWorks)
-//{
-//    addEntry("Foo");
-//    EXPECT_EQ(bat->nr,1);
-//}
+TEST_F(PreprocessingBondAtomTypeTest, EmptyOnCreate)
+{
+    EXPECT_EQ(bat.size(), 0);
+}
+
+TEST_F(PreprocessingBondAtomTypeTest, IndexOutOfRangeInvalid)
+{
+    EXPECT_FALSE(bat.isSet(-1));
+    EXPECT_FALSE(bat.isSet(1));
+}
+
+TEST_F(PreprocessingBondAtomTypeTest, AddEntryWorks)
+{
+    addEntry("Foo");
+    EXPECT_EQ(bat.size(), 1);
+}
 
 TEST_F(PreprocessingBondAtomTypeTest, CorrectNameFound)
 {
     addEntry("Foo");
-    EXPECT_EQ(get_bond_atomtype_type("Foo", bat), 0);
+    EXPECT_EQ(bat.bondAtomTypeFromName("Foo"), 0);
 }
 
 TEST_F(PreprocessingBondAtomTypeTest, WrongNameNotFound)
 {
     addEntry("Foo");
-    EXPECT_EQ(get_bond_atomtype_type("Bar", bat), NOTSET);
+    EXPECT_EQ(bat.bondAtomTypeFromName("Bar"), NOTSET);
 }
 
 TEST_F(PreprocessingBondAtomTypeTest, CorrectNameFromTypeNumber)
 {
     addEntry("Foo");
     addEntry("Bar");
-    EXPECT_STREQ(get_bond_atomtype_name(0, bat), "Foo");
-    EXPECT_STREQ(get_bond_atomtype_name(1, bat), "Bar");
+    EXPECT_STREQ(bat.atomNameFromBondAtomType(0), "Foo");
+    EXPECT_STREQ(bat.atomNameFromBondAtomType(1), "Bar");
 }
 
 TEST_F(PreprocessingBondAtomTypeTest, NoNameFromIncorrectTypeNumber)
 {
-    EXPECT_EQ(get_bond_atomtype_name(-1, bat), nullptr);
+    EXPECT_EQ(bat.atomNameFromBondAtomType(-1), nullptr);
 }
