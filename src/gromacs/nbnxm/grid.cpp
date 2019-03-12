@@ -51,7 +51,6 @@
 
 #include <algorithm>
 
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -61,8 +60,6 @@
 #include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
-
-#include "internal.h"
 
 namespace Nbnxm
 {
@@ -1177,15 +1174,17 @@ static void setCellAndAtomCount(gmx::ArrayRef<int>  cell,
     cxy_na[cellIndex] += 1;
 }
 
-/*! \brief Determine in which grid column atoms should go */
-static void calc_column_indices(const Grid::Dimensions &gridDims,
-                                const gmx::UpdateGroupsCog *updateGroupsCog,
-                                int atomStart, int atomEnd,
-                                gmx::ArrayRef<const gmx::RVec> x,
-                                int dd_zone, const int *move,
-                                int thread, int nthread,
-                                gmx::ArrayRef<int> cell,
-                                gmx::ArrayRef<int> cxy_na)
+void Grid::calcColumnIndices(const Grid::Dimensions         &gridDims,
+                             const gmx::UpdateGroupsCog     *updateGroupsCog,
+                             const int                       atomStart,
+                             const int                       atomEnd,
+                             gmx::ArrayRef<const gmx::RVec>  x,
+                             const int                       dd_zone,
+                             const int                      *move,
+                             const int                       thread,
+                             const int                       nthread,
+                             gmx::ArrayRef<int>              cell,
+                             gmx::ArrayRef<int>              cxy_na)
 {
     const int numColumns = gridDims.numCells[XX]*gridDims.numCells[YY];
 
@@ -1460,176 +1459,4 @@ void Grid::setCellIndices(int                             ddZone,
     }
 }
 
-// TODO: Move to gridset.cpp
-void GridSet::putOnGrid(const matrix                    box,
-                        const int                       ddZone,
-                        const rvec                      lowerCorner,
-                        const rvec                      upperCorner,
-                        const gmx::UpdateGroupsCog     *updateGroupsCog,
-                        const int                       atomStart,
-                        const int                       atomEnd,
-                        real                            atomDensity,
-                        const int                      *atinfo,
-                        gmx::ArrayRef<const gmx::RVec>  x,
-                        const int                       numAtomsMoved,
-                        const int                      *move,
-                        nbnxn_atomdata_t               *nbat)
-{
-    Nbnxm::Grid  &grid = grids_[ddZone];
-
-    int           cellOffset;
-    if (ddZone == 0)
-    {
-        cellOffset = 0;
-    }
-    else
-    {
-        const Nbnxm::Grid &previousGrid = grids_[ddZone - 1];
-        cellOffset = previousGrid.atomIndexEnd()/previousGrid.geometry().numAtomsPerCell;
-    }
-
-    const int n = atomEnd - atomStart;
-
-    real      maxAtomGroupRadius;
-    if (ddZone == 0)
-    {
-        copy_mat(box, box_);
-
-        numRealAtomsLocal_ = atomEnd - numAtomsMoved;
-        /* We assume that nbnxn_put_on_grid is called first
-         * for the local atoms (ddZone=0).
-         */
-        numRealAtomsTotal_ = atomEnd - numAtomsMoved;
-
-        maxAtomGroupRadius = (updateGroupsCog ? updateGroupsCog->maxUpdateGroupRadius() : 0);
-
-        if (debug)
-        {
-            fprintf(debug, "natoms_local = %5d atom_density = %5.1f\n",
-                    numRealAtomsLocal_, atomDensity);
-        }
-    }
-    else
-    {
-        const Nbnxm::Grid::Dimensions &dimsGrid0 = grids_[0].dimensions();
-        atomDensity        = dimsGrid0.atomDensity;
-        maxAtomGroupRadius = dimsGrid0.maxAtomGroupRadius;
-
-        numRealAtomsTotal_ = std::max(numRealAtomsTotal_, atomEnd);
-    }
-
-    /* We always use the home zone (grid[0]) for setting the cell size,
-     * since determining densities for non-local zones is difficult.
-     */
-    grid.setDimensions(ddZone, n - numAtomsMoved,
-                       lowerCorner, upperCorner,
-                       atomDensity,
-                       maxAtomGroupRadius,
-                       haveFep_);
-
-    for (GridWork &work : gridWork_)
-    {
-        work.numAtomsPerColumn.resize(grid.numColumns() + 1);
-    }
-
-    /* Make space for the new cell indices */
-    cells_.resize(atomEnd);
-
-    const int nthread = gmx_omp_nthreads_get(emntPairsearch);
-
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (int thread = 0; thread < nthread; thread++)
-    {
-        try
-        {
-            calc_column_indices(grid.dimensions(),
-                                updateGroupsCog,
-                                atomStart, atomEnd, x,
-                                ddZone, move, thread, nthread,
-                                cells_, gridWork_[thread].numAtomsPerColumn);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
-
-    GridSetData gridSetData = getGridSetData();
-
-    /* Copy the already computed cell indices to the grid and sort, when needed */
-    grid.setCellIndices(ddZone, cellOffset, &gridSetData, gridWork_,
-                        atomStart, atomEnd, atinfo, x, numAtomsMoved, nbat);
-
-    if (ddZone == 0)
-    {
-        nbat->natoms_local = nbat->numAtoms();
-    }
-    if (ddZone == gmx::ssize(grids_) - 1)
-    {
-        /* We are done setting up all grids, we can resize the force buffers */
-        nbat->resizeForceBuffers();
-    }
-}
-
 } // namespace Nbnxm
-
-// TODO: Move this function to a proper location after refactoring nbnxn_search
-void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
-                       const matrix                    box,
-                       int                             ddZone,
-                       const rvec                      lowerCorner,
-                       const rvec                      upperCorner,
-                       const gmx::UpdateGroupsCog     *updateGroupsCog,
-                       int                             atomStart,
-                       int                             atomEnd,
-                       real                            atomDensity,
-                       const int                      *atinfo,
-                       gmx::ArrayRef<const gmx::RVec>  x,
-                       int                             numAtomsMoved,
-                       const int                      *move)
-{
-    nbnxn_search &nbs = *nb_verlet->nbs;
-
-    nbs_cycle_start(&nbs.cc[enbsCCgrid]);
-
-    nbs.gridSet_.putOnGrid(box, ddZone, lowerCorner, upperCorner,
-                           updateGroupsCog, atomStart, atomEnd, atomDensity,
-                           atinfo, x, numAtomsMoved, move,
-                           nb_verlet->nbat.get());
-
-    nbs_cycle_stop(&nbs.cc[enbsCCgrid]);
-}
-
-/* Calls nbnxn_put_on_grid for all non-local domains */
-void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nbv,
-                                const struct gmx_domdec_zones_t *zones,
-                                const int                       *atinfo,
-                                gmx::ArrayRef<const gmx::RVec>   x)
-{
-    for (int zone = 1; zone < zones->n; zone++)
-    {
-        rvec c0, c1;
-        for (int d = 0; d < DIM; d++)
-        {
-            c0[d] = zones->size[zone].bb_x0[d];
-            c1[d] = zones->size[zone].bb_x1[d];
-        }
-
-        nbnxn_put_on_grid(nbv, nullptr,
-                          zone, c0, c1,
-                          nullptr,
-                          zones->cg_range[zone],
-                          zones->cg_range[zone+1],
-                          -1,
-                          atinfo,
-                          x,
-                          0, nullptr);
-    }
-}
-
-gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search *nbs)
-{
-    /* Return the atom order for the home cell (index 0) */
-    const Nbnxm::Grid &grid       = nbs->gridSet().grids()[0];
-
-    const int          numIndices = grid.atomIndexEnd() - grid.firstAtomInColumn(0);
-
-    return gmx::constArrayRefFromArray(nbs->gridSet().atomIndices().data(), numIndices);
-}

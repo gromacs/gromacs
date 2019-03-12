@@ -60,7 +60,6 @@ struct tMPI_Atomic;
 
 namespace Nbnxm
 {
-class GridSet;
 enum class KernelType;
 }
 
@@ -309,12 +308,12 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          dynamic_box,
 /* Copy x to nbat->x.
  * FillLocal tells if the local filler particle coordinates should be zeroed.
  */
-void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search   *nbs,
-                                     Nbnxm::AtomLocality   locality,
-                                     gmx_bool              FillLocal,
-                                     rvec                 *x,
-                                     nbnxn_atomdata_t     *nbat,
-                                     gmx_wallcycle        *wcycle);
+void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
+                                     Nbnxm::AtomLocality  locality,
+                                     gmx_bool             FillLocal,
+                                     rvec                *x,
+                                     nbnxn_atomdata_t    *nbat,
+                                     gmx_wallcycle       *wcycle);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,

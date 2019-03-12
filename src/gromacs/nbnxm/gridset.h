@@ -111,13 +111,13 @@ class GridSet
             return grids_.back().atomIndexEnd();
         }
 
-        /*! \brief Returns the number of local real atoms */
+        //! Returns the number of local real atoms, i.e. without padded atoms
         int numRealAtomsLocal() const
         {
             return numRealAtomsLocal_;
         }
 
-        /*! \brief Returns the total number of real atoms */
+        //! Returns the number of total real atoms, i.e. without padded atoms
         int numRealAtomsTotal() const
         {
             return numRealAtomsTotal_;
@@ -185,9 +185,9 @@ class GridSet
         bool                  haveFep_;
         //! The periodic unit-cell
         matrix                box_;
-        //! The number of local real atoms, local atoms: 0 to numAtomsLocal_
+        //! The number of local real atoms, i.e. without padded atoms, local atoms: 0 to numAtomsLocal_
         int                   numRealAtomsLocal_;
-        //! The total number of real atoms
+        //! The total number of real atoms, i.e. without padded atoms
         int                   numRealAtomsTotal_;
         //! Working data for constructing a single grid, one entry per thread
         std::vector<GridWork> gridWork_;
