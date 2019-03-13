@@ -56,7 +56,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/compat/pointers.h"
-#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrun/legacymdrunoptions.h"

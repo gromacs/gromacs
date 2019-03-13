@@ -51,7 +51,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
@@ -140,10 +140,10 @@ class LegacyMdrunOptions
 
         /*! \brief Command line options, defaults, docs and storage for them to fill. */
         /*! \{ */
-        rvec              realddxyz                                               = {0, 0, 0};
-        const char       *ddrank_opt_choices[static_cast<int>(DdRankOrder::nr)+1] =
+        rvec              realddxyz                                                  = {0, 0, 0};
+        const char       *ddrank_opt_choices[static_cast<int>(DdRankOrder::Count)+1] =
         { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
-        const char       *dddlb_opt_choices[static_cast<int>(DlbOption::nr)+1] =
+        const char       *dddlb_opt_choices[static_cast<int>(DlbOption::Count)+1] =
         { nullptr, "auto", "no", "yes", nullptr };
         const char       *thread_aff_opt_choices[threadaffNR+1] =
         { nullptr, "auto", "on", "off", nullptr };
