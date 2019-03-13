@@ -299,32 +299,30 @@ nbnxn_search_work_t::~nbnxn_search_work_t()
     free_nblist(nbl_fep.get());
 }
 
+nbnxn_search::DomainSetup::DomainSetup(const int                 ePBC,
+                                       const ivec               *numDDCells,
+                                       const gmx_domdec_zones_t *ddZones) :
+    ePBC(ePBC),
+    haveDomDec(numDDCells != nullptr),
+    zones(ddZones)
+{
+    for (int d = 0; d < DIM; d++)
+    {
+        haveDomDecPerDim[d] = (numDDCells != nullptr && (*numDDCells)[d] > 1);
+    }
+}
+
 nbnxn_search::nbnxn_search(const int                 ePBC,
-                           const ivec               *n_dd_cells,
-                           const gmx_domdec_zones_t *zones,
+                           const ivec               *numDDCells,
+                           const gmx_domdec_zones_t *ddZones,
                            const PairlistType        pairlistType,
                            const bool                haveFep,
                            const int                 maxNumThreads) :
-    ePBC(ePBC),
-    zones(zones),
-    gridSet_(n_dd_cells, pairlistType, haveFep, maxNumThreads),
+    domainSetup_(ePBC, numDDCells, ddZones),
+    gridSet_(domainSetup_.haveDomDecPerDim, pairlistType, haveFep, maxNumThreads),
     search_count(0),
     work(maxNumThreads)
 {
-    clear_ivec(dd_dim);
-    DomDec = n_dd_cells != nullptr;
-    if (DomDec)
-    {
-        for (int d = 0; d < DIM; d++)
-        {
-            if ((*n_dd_cells)[d] > 1)
-            {
-                dd_dim[d] = 1;
-            }
-        }
-    }
-
-    /* Initialize detailed nbsearch cycle counting */
     print_cycles = (getenv("GMX_NBNXN_CYCLE") != nullptr);
     nbs_cycle_clear(cc);
 }
@@ -2626,7 +2624,7 @@ static void get_nsubpair_target(const nbnxn_search        *nbs,
     /* The formulas below are a heuristic estimate of the average nsj per si*/
     r_eff_sup = rlist + nbnxn_get_rlist_effective_inc(numAtomsCluster, ls);
 
-    if (!nbs->DomDec || nbs->zones->n == 1)
+    if (!nbs->domainSetup().haveDomDec || nbs->domainSetup().zones->n == 1)
     {
         nsp_est_nl = 0;
     }
@@ -2634,7 +2632,7 @@ static void get_nsubpair_target(const nbnxn_search        *nbs,
     {
         nsp_est_nl =
             gmx::square(dims.atomDensity/numAtomsCluster)*
-            nonlocal_vol2(nbs->zones, ls, r_eff_sup);
+            nonlocal_vol2(nbs->domainSetup().zones, ls, r_eff_sup);
     }
 
     if (iloc == InteractionLocality::Local)
@@ -3324,7 +3322,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
         /* Check if we need periodicity shifts.
          * Without PBC or with domain decomposition we don't need them.
          */
-        if (d >= ePBC2npbcdim(nbs->ePBC) || nbs->dd_dim[d])
+        if (d >= ePBC2npbcdim(nbs->domainSetup().ePBC) ||
+            nbs->domainSetup().haveDomDecPerDim[d])
         {
             shp[d] = 0;
         }
@@ -4068,7 +4067,7 @@ nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality
     }
     else
     {
-        nzi = nbs->zones->nizone;
+        nzi = nbs->domainSetup().zones->nizone;
     }
 
     if (!nbl_list->bSimple && minimumIlistCountForGpuBalancing_ > 0)
@@ -4100,6 +4099,8 @@ nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality
         }
     }
 
+    const gmx_domdec_zones_t *ddZones = nbs->domainSetup().zones;
+
     for (int zi = 0; zi < nzi; zi++)
     {
         const Grid &iGrid = nbs->gridSet().grids()[zi];
@@ -4113,8 +4114,8 @@ nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality
         }
         else
         {
-            zj0 = nbs->zones->izone[zi].j0;
-            zj1 = nbs->zones->izone[zi].j1;
+            zj0 = ddZones->izone[zi].j0;
+            zj1 = ddZones->izone[zi].j1;
             if (zi == 0)
             {
                 zj0++;
@@ -4131,12 +4132,12 @@ nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality
 
             nbs_cycle_start(&nbs->cc[enbsCCsearch]);
 
-            ci_block = get_ci_block_size(iGrid, nbs->DomDec, nnbl);
+            ci_block = get_ci_block_size(iGrid, nbs->domainSetup().haveDomDec, nnbl);
 
             /* With GPU: generate progressively smaller lists for
              * load balancing for local only or non-local with 2 zones.
              */
-            progBal = (iLocality == InteractionLocality::Local || nbs->zones->n <= 2);
+            progBal = (iLocality == InteractionLocality::Local || ddZones->n <= 2);
 
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for (int th = 0; th < nnbl; th++)
@@ -4307,7 +4308,7 @@ nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality
         nbs->search_count++;
     }
     if (nbs->print_cycles &&
-        (!nbs->DomDec || iLocality == InteractionLocality::NonLocal) &&
+        (!nbs->domainSetup().haveDomDec || iLocality == InteractionLocality::NonLocal) &&
         nbs->search_count % 100 == 0)
     {
         nbs_cycle_print(stderr, nbs);
