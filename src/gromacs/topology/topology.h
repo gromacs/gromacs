@@ -171,7 +171,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     std::vector<MoleculeBlockIndices> moleculeBlockIndices;
 };
 
-/* \brief
+/*! \brief
  * The fully written out topology for a domain over its lifetime
  *
  * Also used in some analysis code.
@@ -195,9 +195,15 @@ struct gmx_localtop_t
     bool          useInDomainDecomp_ = false;
 };
 
-/* The old topology struct, completely written out, used in analysis tools */
-typedef struct t_topology
+/*! \brief
+ * The old topology struct, completely written out, used in analysis tools
+ */
+struct t_topology
 {
+    t_topology();
+
+    ~t_topology();
+
     char          **name;                        /* Name of the topology                 */
     t_idef          idef;                        /* The interaction function definition  */
     t_atoms         atoms;                       /* The atoms                            */
@@ -207,11 +213,9 @@ typedef struct t_topology
     gmx_bool        bIntermolecularInteractions; /* Inter.mol. int. ?   */
     t_blocka        excls;                       /* The exclusions                       */
     t_symtab        symtab;                      /* The symbol table                     */
-} t_topology;
+};
 
-void init_top(t_topology *top);
 void done_gmx_groups_t(gmx_groups_t *g);
-void done_top(t_topology *top);
 // Frees both t_topology and gmx_mtop_t when the former has been created from
 // the latter.
 void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
@@ -259,6 +263,9 @@ void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
 
 //! Typedef for gmx_localtop in analysis tools.
 using ExpandedTopologyPtr = std::unique_ptr<gmx_localtop_t>;
+
+//! Typedef for t_topology in file reading and analysis tools.
+using LegacyTopologyPtr = std::unique_ptr<t_topology>;
 
 void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst);
 

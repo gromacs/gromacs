@@ -73,16 +73,15 @@ static void init_groups(gmx_groups_t *groups)
 
 }
 
-void init_top(t_topology *top)
+t_topology::t_topology()
 {
-    top->name = nullptr;
-    init_idef(&top->idef);
-    init_atom(&(top->atoms));
-    init_atomtypes(&(top->atomtypes));
-    init_block(&top->cgs);
-    init_block(&top->mols);
-    init_blocka(&top->excls);
-    open_symtab(&top->symtab);
+    init_idef(&idef);
+    init_atom(&atoms);
+    init_atomtypes(&atomtypes);
+    init_block(&cgs);
+    init_block(&mols);
+    init_blocka(&excls);
+    open_symtab(&symtab);
 }
 
 
@@ -139,18 +138,18 @@ gmx_mtop_t::~gmx_mtop_t()
     done_gmx_groups_t(&groups);
 }
 
-void done_top(t_topology *top)
+t_topology::~t_topology()
 {
-    done_idef(&top->idef);
-    done_atom(&(top->atoms));
+    done_idef(&idef);
+    done_atom(&atoms);
 
     /* For GB */
-    done_atomtypes(&(top->atomtypes));
+    done_atomtypes(&atomtypes);
 
-    done_symtab(&(top->symtab));
-    done_block(&(top->cgs));
-    done_block(&(top->mols));
-    done_blocka(&(top->excls));
+    done_symtab(&symtab);
+    done_block(&cgs);
+    done_block(&mols);
+    done_blocka(&excls);
 }
 
 void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
@@ -159,16 +158,9 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     {
         if (top != nullptr)
         {
-            done_idef(&top->idef);
-            done_atom(&top->atoms);
-            done_block(&top->cgs);
-            done_blocka(&top->excls);
-            done_block(&top->mols);
-            done_symtab(&top->symtab);
+            top->~t_topology();
             open_symtab(&mtop->symtab);
-            done_atomtypes(&(top->atomtypes));
         }
-
         // Note that the rest of mtop will be freed by the destructor
     }
 }
