@@ -77,10 +77,10 @@ class GridSet
 {
     public:
         //! Constructs a grid set for 1 or multiple DD zones, when numDDCells!=nullptr
-        GridSet(const ivec   *numDDCells,
-                PairlistType  pairlistType,
-                bool          haveFep,
-                int           numThreads);
+        GridSet(const std::array<bool, DIM> &haveDomDecPerDim,
+                PairlistType                 pairlistType,
+                bool                         haveFep,
+                int                          numThreads);
 
         //! Puts the atoms in \p ddZone on the grid and copies the coordinates to \p nbat
         void putOnGrid(const matrix                    box,
