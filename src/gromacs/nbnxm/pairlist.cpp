@@ -504,16 +504,18 @@ clusterBoundingBoxDistance2_xxxx_simd4_inner(const float      *bb_i,
                                              const Simd4Float  yj_h,
                                              const Simd4Float  zj_h)
 {
+    constexpr int    stride = c_packedBoundingBoxesDimSize;
+
     const int        shi  = boundingBoxStart*Nbnxm::c_numBoundingBoxBounds1D*DIM;
 
     const Simd4Float zero = setZero();
 
-    const Simd4Float xi_l = load4(bb_i + shi + 0*STRIDE_PBB);
-    const Simd4Float yi_l = load4(bb_i + shi + 1*STRIDE_PBB);
-    const Simd4Float zi_l = load4(bb_i + shi + 2*STRIDE_PBB);
-    const Simd4Float xi_h = load4(bb_i + shi + 3*STRIDE_PBB);
-    const Simd4Float yi_h = load4(bb_i + shi + 4*STRIDE_PBB);
-    const Simd4Float zi_h = load4(bb_i + shi + 5*STRIDE_PBB);
+    const Simd4Float xi_l = load4(bb_i + shi + 0*stride);
+    const Simd4Float yi_l = load4(bb_i + shi + 1*stride);
+    const Simd4Float zi_l = load4(bb_i + shi + 2*stride);
+    const Simd4Float xi_h = load4(bb_i + shi + 3*stride);
+    const Simd4Float yi_h = load4(bb_i + shi + 4*stride);
+    const Simd4Float zi_h = load4(bb_i + shi + 5*stride);
 
     const Simd4Float dx_0 = xi_l - xj_h;
     const Simd4Float dy_0 = yi_l - yj_h;
@@ -548,27 +550,29 @@ clusterBoundingBoxDistance2_xxxx_simd4(const float *bb_j,
                                        const float *bb_i,
                                        float       *d2)
 {
+    constexpr int    stride = c_packedBoundingBoxesDimSize;
+
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
     using namespace gmx;
 
-    const Simd4Float xj_l = Simd4Float(bb_j[0*STRIDE_PBB]);
-    const Simd4Float yj_l = Simd4Float(bb_j[1*STRIDE_PBB]);
-    const Simd4Float zj_l = Simd4Float(bb_j[2*STRIDE_PBB]);
-    const Simd4Float xj_h = Simd4Float(bb_j[3*STRIDE_PBB]);
-    const Simd4Float yj_h = Simd4Float(bb_j[4*STRIDE_PBB]);
-    const Simd4Float zj_h = Simd4Float(bb_j[5*STRIDE_PBB]);
+    const Simd4Float xj_l = Simd4Float(bb_j[0*stride]);
+    const Simd4Float yj_l = Simd4Float(bb_j[1*stride]);
+    const Simd4Float zj_l = Simd4Float(bb_j[2*stride]);
+    const Simd4Float xj_h = Simd4Float(bb_j[3*stride]);
+    const Simd4Float yj_h = Simd4Float(bb_j[4*stride]);
+    const Simd4Float zj_h = Simd4Float(bb_j[5*stride]);
 
-    /* Here we "loop" over si (0,STRIDE_PBB) from 0 to nsi with step STRIDE_PBB.
+    /* Here we "loop" over si (0,stride) from 0 to nsi with step stride.
      * But as we know the number of iterations is 1 or 2, we unroll manually.
      */
     clusterBoundingBoxDistance2_xxxx_simd4_inner<0>(bb_i, d2,
                                                     xj_l, yj_l, zj_l,
                                                     xj_h, yj_h, zj_h);
-    if (STRIDE_PBB < nsi)
+    if (stride < nsi)
     {
-        clusterBoundingBoxDistance2_xxxx_simd4_inner<STRIDE_PBB>(bb_i, d2,
-                                                                 xj_l, yj_l, zj_l,
-                                                                 xj_h, yj_h, zj_h);
+        clusterBoundingBoxDistance2_xxxx_simd4_inner<stride>(bb_i, d2,
+                                                             xj_l, yj_l, zj_l,
+                                                             xj_h, yj_h, zj_h);
     }
 }
 
@@ -1239,7 +1243,8 @@ static void make_cluster_list_supersub(const Grid         &iGrid,
 
 #if NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SIMD4 */
-        clusterBoundingBoxDistance2_xxxx_simd4(jGrid.packedBoundingBoxes().data() + (cj >> STRIDE_PBB_2LOG)*NNBSBB_XXXX + (cj & (STRIDE_PBB-1)),
+        const int offset = packedBoundingBoxesIndex(cj) + (cj & (c_packedBoundingBoxesDimSize - 1));
+        clusterBoundingBoxDistance2_xxxx_simd4(jGrid.packedBoundingBoxes().data() + offset,
                                                ci1, pbb_ci, d2l);
         *numDistanceChecks += c_nbnxnGpuClusterSize*2;
 #endif
@@ -2365,17 +2370,19 @@ static void set_icell_bbxxxx_supersub(gmx::ArrayRef<const float> bb,
                                       real shx, real shy, real shz,
                                       float *bb_ci)
 {
-    int ia = ci*(c_gpuNumClusterPerCell >> STRIDE_PBB_2LOG)*NNBSBB_XXXX;
-    for (int m = 0; m < (c_gpuNumClusterPerCell >> STRIDE_PBB_2LOG)*NNBSBB_XXXX; m += NNBSBB_XXXX)
+    constexpr int cellBBStride = packedBoundingBoxesIndex(c_gpuNumClusterPerCell);
+    constexpr int pbbStride    = c_packedBoundingBoxesDimSize;
+    const int     ia           = ci*cellBBStride;
+    for (int m = 0; m < cellBBStride; m += c_packedBoundingBoxesSize)
     {
-        for (int i = 0; i < STRIDE_PBB; i++)
+        for (int i = 0; i < pbbStride; i++)
         {
-            bb_ci[m+0*STRIDE_PBB+i] = bb[ia+m+0*STRIDE_PBB+i] + shx;
-            bb_ci[m+1*STRIDE_PBB+i] = bb[ia+m+1*STRIDE_PBB+i] + shy;
-            bb_ci[m+2*STRIDE_PBB+i] = bb[ia+m+2*STRIDE_PBB+i] + shz;
-            bb_ci[m+3*STRIDE_PBB+i] = bb[ia+m+3*STRIDE_PBB+i] + shx;
-            bb_ci[m+4*STRIDE_PBB+i] = bb[ia+m+4*STRIDE_PBB+i] + shy;
-            bb_ci[m+5*STRIDE_PBB+i] = bb[ia+m+5*STRIDE_PBB+i] + shz;
+            bb_ci[m + 0*pbbStride + i] = bb[ia + m + 0*pbbStride + i] + shx;
+            bb_ci[m + 1*pbbStride + i] = bb[ia + m + 1*pbbStride + i] + shy;
+            bb_ci[m + 2*pbbStride + i] = bb[ia + m + 2*pbbStride + i] + shz;
+            bb_ci[m + 3*pbbStride + i] = bb[ia + m + 3*pbbStride + i] + shx;
+            bb_ci[m + 4*pbbStride + i] = bb[ia + m + 4*pbbStride + i] + shy;
+            bb_ci[m + 5*pbbStride + i] = bb[ia + m + 5*pbbStride + i] + shz;
         }
     }
 }
