@@ -177,7 +177,7 @@ gmx_check_if_changed(_cuda_nvcc_executable_or_flags_changed CUDA_NVCC_EXECUTABLE
 # code. Set the CMake variable GMX_NVCC_WORKS on if you want to
 # bypass this check.
 if((_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT GMX_NVCC_WORKS) AND NOT WIN32)
-    message(STATUS "Check for working NVCC/C compiler combination")
+    message(STATUS "Check for working NVCC/C compiler combination with nvcc '${CUDA_NVCC_EXECUTABLE}'")
     execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -ccbin ${CUDA_HOST_COMPILER} -c ${CUDA_NVCC_FLAGS} ${CUDA_NVCC_FLAGS_${_build_type}} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
         RESULT_VARIABLE _cuda_test_res
         OUTPUT_VARIABLE _cuda_test_out
