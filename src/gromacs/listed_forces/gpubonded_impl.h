@@ -79,7 +79,8 @@ class GpuBonded::Impl
     public:
         //! Constructor
         Impl(const gmx_ffparams_t &ffparams,
-             void                 *streamPtr);
+             void                 *streamPtr,
+             void                 *fshiftDevice);
         /*! \brief Destructor, non-default needed for freeing
          * device-side buffers */
         ~Impl();
@@ -93,8 +94,7 @@ class GpuBonded::Impl
         void updateInteractionListsAndDeviceBuffers(ArrayRef<const int>  nbnxnAtomOrder,
                                                     const t_idef        &idef,
                                                     void                *xqDevice,
-                                                    void                *forceDevice,
-                                                    void                *fshiftDevice);
+                                                    void                *forceDevice);
 
         /*! \brief Launches bonded kernels on a GPU */
         template <bool calcVir, bool calcEner>

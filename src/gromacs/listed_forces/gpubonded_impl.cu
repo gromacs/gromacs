@@ -65,10 +65,11 @@ namespace gmx
 // ---- GpuBonded::Impl
 
 GpuBonded::Impl::Impl(const gmx_ffparams_t &ffparams,
-                      void                 *streamPtr)
+                      void                 *streamPtr,
+                      void                 *fshiftDevicePtr)
+    : stream       = *static_cast<CommandStream*>(streamPtr),
+      fshiftDevice = static_cast<fvec *>(fshiftDevicePtr)
 {
-    stream = *static_cast<CommandStream*>(streamPtr);
-
     allocateDeviceBuffer(&forceparamsDevice, ffparams.numTypes(), nullptr);
     // This could be an async transfer (if the source is pinned), so
     // long as it uses the same stream as the kernels and we are happy
@@ -148,8 +149,7 @@ void
 GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>  nbnxnAtomOrder,
                                                         const t_idef        &idef,
                                                         void                *xqDevicePtr,
-                                                        void                *forceDevicePtr,
-                                                        void                *fshiftDevicePtr)
+                                                        void                *forceDevicePtr)
 {
     // TODO wallcycle sub start
     haveInteractions_ = false;
@@ -193,7 +193,6 @@ GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>  nbn
 
     xqDevice     = static_cast<float4 *>(xqDevicePtr);
     forceDevice  = static_cast<fvec *>(forceDevicePtr);
-    fshiftDevice = static_cast<fvec *>(fshiftDevicePtr);
     // TODO wallcycle sub stop
 }
 
@@ -261,11 +260,10 @@ void
 GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>  nbnxnAtomOrder,
                                                   const t_idef        &idef,
                                                   void                *xqDevice,
-                                                  void                *forceDevice,
-                                                  void                *fshiftDevice)
+                                                  void                *forceDevice)
 {
     impl_->updateInteractionListsAndDeviceBuffers
-        (nbnxnAtomOrder, idef, xqDevice, forceDevice, fshiftDevice);
+        (nbnxnAtomOrder, idef, xqDevice, forceDevice);
 }
 
 bool

@@ -2362,13 +2362,20 @@ void init_forcerec(FILE                             *fp,
 
         if (useGpuForBonded)
         {
+            // TODO the streams are shared resources, so should be
+            // maintained by something at a higher level than Nbnxm
+            // module.
             auto stream = DOMAINDECOMP(cr) ?
                 Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::NonLocal) :
                 Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, Nbnxm::InteractionLocality::Local);
             // TODO the heap allocation is only needed while
             // t_forcerec lacks a constructor.
+            // TODO the fshift buffer is a shared resource, so should be
+            // maintained by something at a higher level than Nbnxm
+            // module.
             fr->gpuBonded = new gmx::GpuBonded(mtop->ffparams,
-                                               stream);
+                                               stream,
+                                               Nbnxm::gpu_get_fshift(fr->nbv->gpu_nbv));
         }
     }
 

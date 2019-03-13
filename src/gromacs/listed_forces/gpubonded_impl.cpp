@@ -169,7 +169,8 @@ class GpuBonded::Impl
 };
 
 GpuBonded::GpuBonded(const gmx_ffparams_t & /* ffparams */,
-                     void                 * /*streamPtr */)
+                     void                 * /* streamPtr */,
+                     void                 * /* fshiftDevice */)
     : impl_(nullptr)
 {
 }
@@ -180,8 +181,7 @@ void
 GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>   /* nbnxnAtomOrder */,
                                                   const t_idef        & /* idef */,
                                                   void                * /* xqDevice */,
-                                                  void                * /* forceDevice */,
-                                                  void                * /* fshiftDevice */)
+                                                  void                * /* forceDevice */)
 {
 }
 

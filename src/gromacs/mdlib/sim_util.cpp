@@ -1006,8 +1006,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                 fr->gpuBonded->updateInteractionListsAndDeviceBuffers(nbnxn_get_gridindices(fr->nbv->nbs.get()),
                                                                       top->idef,
                                                                       Nbnxm::gpu_get_xq(nbv->gpu_nbv),
-                                                                      Nbnxm::gpu_get_f(nbv->gpu_nbv),
-                                                                      Nbnxm::gpu_get_fshift(nbv->gpu_nbv));
+                                                                      Nbnxm::gpu_get_f(nbv->gpu_nbv));
             }
 
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);

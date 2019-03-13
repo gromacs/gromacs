@@ -110,9 +110,10 @@ bool inputSupportsGpuBondeds(const t_inputrec &ir,
 class GpuBonded
 {
     public:
-        //! Construct the manager with constant data and the stream to use.
+        //! Construct the manager with constant data, stream, and (constant) shift-force device buffer to use.
         GpuBonded(const gmx_ffparams_t &ffparams,
-                  void                 *streamPtr);
+                  void                 *streamPtr,
+                  void                 *fshiftDevice);
         //! Destructor
         ~GpuBonded();
 
@@ -126,8 +127,7 @@ class GpuBonded
         void updateInteractionListsAndDeviceBuffers(ArrayRef<const int>  nbnxnAtomOrder,
                                                     const t_idef        &idef,
                                                     void                *xqDevice,
-                                                    void                *forceDevice,
-                                                    void                *fshiftDevice);
+                                                    void                *forceDevice);
         /*! \brief Returns whether there are bonded interactions
          * assigned to the GPU */
         bool haveInteractions() const;
