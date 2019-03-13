@@ -961,13 +961,13 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params *params,
 
 /* Sets all required atom parameter data in nbnxn_atomdata_t */
 void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
-                        const nbnxn_search  *nbs,
+                        const PairSearch    &pairSearch,
                         const t_mdatoms     *mdatoms,
                         const int           *atinfo)
 {
     nbnxn_atomdata_t::Params &params = nbat->paramsDeprecated();
 
-    const Nbnxm::GridSet     &gridSet = nbs->gridSet();
+    const Nbnxm::GridSet     &gridSet = pairSearch.gridSet();
 
     nbnxn_atomdata_set_atomtypes(&params, gridSet, mdatoms->typeA);
 
@@ -999,17 +999,17 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          bDynamicBox,
 }
 
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
-void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search       *nbs,
+void nbnxn_atomdata_copy_x_to_nbat_x(const PairSearch         &pairSearch,
                                      const Nbnxm::AtomLocality locality,
                                      gmx_bool                  FillLocal,
-                                     rvec                     *x,
+                                     const rvec               *x,
                                      nbnxn_atomdata_t         *nbat,
                                      gmx_wallcycle            *wcycle)
 {
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
 
-    const Nbnxm::GridSet &gridSet = nbs->gridSet();
+    const Nbnxm::GridSet &gridSet = pairSearch.gridSet();
 
     int                   gridBegin = 0;
     int                   gridEnd   = 0;
@@ -1478,9 +1478,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
 
-    const Nbnxm::GridSet &gridSet = nbs->gridSet();
-
-    nbs_cycle_start(&nbs->cc[enbsCCreducef]);
+    const Nbnxm::GridSet &gridSet = pairSearch_->gridSet();
 
     int a0 = 0;
     int na = 0;
@@ -1536,8 +1534,6 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-
-    nbs_cycle_stop(&nbs->cc[enbsCCreducef]);
 
     wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);

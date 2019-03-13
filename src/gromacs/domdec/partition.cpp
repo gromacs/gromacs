@@ -2792,7 +2792,7 @@ static void dd_sort_order(const gmx_domdec_t *dd,
 static void dd_sort_order_nbnxn(const t_forcerec          *fr,
                                 std::vector<gmx_cgsort_t> *sort)
 {
-    gmx::ArrayRef<const int> atomOrder = nbnxn_get_atomorder(fr->nbv->nbs.get());
+    gmx::ArrayRef<const int> atomOrder = fr->nbv->getLocalAtomOrder();
 
     /* Using push_back() instead of this resize results in much slower code */
     sort->resize(atomOrder.size());

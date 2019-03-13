@@ -979,7 +979,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
 
-        nbnxn_atomdata_set(nbv->nbat.get(), nbv->nbs.get(), mdatoms, fr->cginfo);
+        nbv->setAtomProperties(*mdatoms, *fr->cginfo);
 
         wallcycle_stop(wcycle, ewcNS);
 
@@ -1002,13 +1002,12 @@ static void do_force_cutsVERLET(FILE *fplog,
                 // TODO the xq, f, and fshift buffers are now shared
                 // resources, so they should be maintained by a
                 // higher-level object than the nb module.
-                fr->gpuBonded->updateInteractionListsAndDeviceBuffers(nbnxn_get_gridindices(fr->nbv->nbs.get()),
+                fr->gpuBonded->updateInteractionListsAndDeviceBuffers(nbv->getGridIndices(),
                                                                       top->idef,
                                                                       Nbnxm::gpu_get_xq(nbv->gpu_nbv),
                                                                       Nbnxm::gpu_get_f(nbv->gpu_nbv),
                                                                       Nbnxm::gpu_get_fshift(nbv->gpu_nbv));
             }
-
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
 
@@ -1037,9 +1036,8 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxm::AtomLocality::Local,
-                                        FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                        nbv->nbat.get(), wcycle);
+        nbv->setCoordinates(Nbnxm::AtomLocality::Local, false,
+                            x.unpaddedArrayRef(), wcycle);
     }
 
     if (bUseGPU)
@@ -1100,9 +1098,8 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), Nbnxm::AtomLocality::NonLocal,
-                                            FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
-                                            nbv->nbat.get(), wcycle);
+            nbv->setCoordinates(Nbnxm::AtomLocality::NonLocal, false,
+                                x.unpaddedArrayRef(), wcycle);
         }
 
         if (bUseGPU)
