@@ -49,7 +49,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/pointers.h"
-#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/mdrunoptions.h"

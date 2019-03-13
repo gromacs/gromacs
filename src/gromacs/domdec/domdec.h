@@ -86,8 +86,9 @@ class t_state;
 namespace gmx
 {
 class MDLogger;
-struct MdrunOptions;
 class LocalAtomSetManager;
+struct DomdecOptions;
+struct MdrunOptions;
 } // namespace
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
@@ -146,63 +147,11 @@ int dd_pme_maxshift_x(const gmx_domdec_t *dd);
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim y */
 int dd_pme_maxshift_y(const gmx_domdec_t *dd);
 
-/*! \brief The options for the domain decomposition MPI task ordering. */
-enum class DdRankOrder
-{
-    select,     //!< First value (needed to cope with command-line parsing)
-    interleave, //!< Interleave the PP and PME ranks
-    pp_pme,     //!< First all PP ranks, all PME rank at the end
-    cartesian,  //!< Use Cartesian communicators for PP, PME and PP-PME
-    nr          //!< The number of options
-};
-
-/*! \brief The options for the dynamic load balancing. */
-enum class DlbOption
-{
-    select,           //!< First value (needed to cope with command-line parsing)
-    turnOnWhenUseful, //!< Turn on DLB when we think it would improve performance
-    no,               //!< Never turn on DLB
-    yes,              //!< Turn on DLB from the start and keep it on
-    nr                //!< The number of options
-};
-
-/*! \libinternal \brief Structure containing all (command line) options for the domain decomposition */
-struct DomdecOptions
-{
-    //! If true, check that all bonded interactions have been assigned to exactly one domain/rank.
-    gmx_bool          checkBondedInteractions = TRUE;
-    //! If true, don't communicate all atoms between the non-bonded cut-off and the larger bonded cut-off, but only those that have non-local bonded interactions. This significantly reduces the communication volume.
-    gmx_bool          useBondedCommunication = TRUE;
-    //! The domain decomposition grid cell count, 0 means let domdec choose based on the number of ranks.
-    ivec              numCells = {0};
-    //! The number of separate PME ranks requested, -1 = auto.
-    int               numPmeRanks = -1;
-    //! Ordering of the PP and PME ranks, values from enum above.
-    DdRankOrder       rankOrder = DdRankOrder::interleave;
-    //! The minimum communication range, used for extended the communication range for bonded interactions (nm).
-    real              minimumCommunicationRange = 0;
-    //! Communication range for atom involved in constraints (P-LINCS) (nm).
-    real              constraintCommunicationRange = 0;
-    //! Dynamic load balancing option, values from enum above.
-    DlbOption         dlbOption = DlbOption::turnOnWhenUseful;
-    /*! \brief Fraction in (0,1) by whose reciprocal the initial
-     * DD cell size will be increased in order to provide a margin
-     * in which dynamic load balancing can act, while preserving
-     * the minimum cell size. */
-    real              dlbScaling = 0.8;
-    //! String containing a vector of the relative sizes in the x direction of the corresponding DD cells.
-    const char       *cellSizeX = nullptr;
-    //! String containing a vector of the relative sizes in the y direction of the corresponding DD cells.
-    const char       *cellSizeY = nullptr;
-    //! String containing a vector of the relative sizes in the z direction of the corresponding DD cells.
-    const char       *cellSizeZ = nullptr;
-};
-
 /*! \brief Initialized the domain decomposition, chooses the DD grid and PME ranks, return the DD struct */
 gmx_domdec_t *
 init_domain_decomposition(const gmx::MDLogger            &mdlog,
                           t_commrec                      *cr,
-                          const DomdecOptions            &options,
+                          const gmx::DomdecOptions       &options,
                           const gmx::MdrunOptions        &mdrunOptions,
                           const gmx_mtop_t               *mtop,
                           const t_inputrec               *ir,

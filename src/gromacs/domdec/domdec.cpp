@@ -55,6 +55,7 @@
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -105,6 +106,11 @@
 #include "domdec_vsite.h"
 #include "redistribute.h"
 #include "utility.h"
+
+// TODO remove this when moving domdec into gmx namespace
+using gmx::DdRankOrder;
+using gmx::DlbOption;
+using gmx::DomdecOptions;
 
 static const char *edlbs_names[int(DlbState::nr)] = { "off", "auto", "locked", "on", "on" };
 
