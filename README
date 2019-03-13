@@ -31,8 +31,9 @@ To push to this branch, use
 
   git push ssh://USER@gerrit.gromacs.org HEAD:refs/heads/sandbox-puregpu
 
-The gerrit server will require a ChangeId exists, but otherwise ignore
-the change. Do not push to refs/for/sandbox-puregpu, because that is
+The gerrit server will not require that a ChangeId exists, so you do
+not need the usual GROMACS git post-commit hook installed to work with
+this branch. Do not push to refs/for/sandbox-puregpu, because that is
 the invocation that opens a patch set for review for this branch,
 which we do not intend to do.
 
