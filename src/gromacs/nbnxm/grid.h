@@ -152,6 +152,8 @@ struct BoundingBox1D
 /*! \brief The number of bounds along one dimension of a bounding box */
 static constexpr int c_numBoundingBoxBounds1D = 2;
 
+} // namespace Nbnxm
+
 #ifndef DOXYGEN
 
 // TODO: Convert macros to constexpr int
@@ -162,12 +164,8 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
  */
 #if GMX_SIMD4_HAVE_FLOAT
 #    define NBNXN_SEARCH_BB_SIMD4      1
-/* Memory alignment in bytes as required by SIMD aligned loads/stores */
-#    define NBNXN_SEARCH_BB_MEM_ALIGN  (GMX_SIMD4_WIDTH*sizeof(float))
 #else
 #    define NBNXN_SEARCH_BB_SIMD4      0
-/* No alignment required, but set it so we can call the same routines */
-#    define NBNXN_SEARCH_BB_MEM_ALIGN  32
 #endif
 
 
@@ -184,23 +182,25 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
 /* The packed bounding box coordinate stride is always set to 4.
  * With AVX we could use 8, but that turns out not to be faster.
  */
-#    define STRIDE_PBB       GMX_SIMD4_WIDTH
-#    define STRIDE_PBB_2LOG  2
+static constexpr int STRIDE_PBB      = GMX_SIMD4_WIDTH;
+static constexpr int STRIDE_PBB_2LOG = 2;
 
 /* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
 #    define NBNXN_BBXXXX  1
 /* Size of a quadruplet of bounding boxes, each 2 corners, stored packed */
-#    define NNBSBB_XXXX  (STRIDE_PBB*DIM*Nbnxm::c_numBoundingBoxBounds1D)
+static constexpr int NNBSBB_XXXX = STRIDE_PBB*DIM*Nbnxm::c_numBoundingBoxBounds1D;
 
 #else  /* NBNXN_SEARCH_BB_SIMD4 */
 
 #    define NBNXN_SEARCH_SIMD4_FLOAT_X_BB  0
-#    define NBNXN_BBXXXX                   0
+static constexpr int NNBSBB_XXXX = 0;
 
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
 
 #endif // !DOXYGEN
 
+namespace Nbnxm
+{
 
 /*! \internal
  * \brief Helper struct to pass data that is shared over all grids
