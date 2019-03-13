@@ -118,9 +118,9 @@ struct gmx_mtop_t;
 struct gmx_wallcycle;
 struct interaction_const_t;
 struct nbnxn_pairlist_set_t;
-struct nbnxn_search;
 struct nonbonded_verlet_t;
 enum class PairlistType;
+class PairSearch;
 struct t_blocka;
 struct t_commrec;
 struct t_lambda;
@@ -254,7 +254,7 @@ struct nonbonded_verlet_t
 
                 //! Construct the pairlist set for the given locality
                 void construct(Nbnxm::InteractionLocality  iLocality,
-                               nbnxn_search               *nbs,
+                               PairSearch                 *pairSearch,
                                nbnxn_atomdata_t           *nbat,
                                const t_blocka             *excl,
                                Nbnxm::KernelType           kernelbType,
@@ -347,8 +347,8 @@ struct nonbonded_verlet_t
         };
 
         //! Constructs an object from its components
-        nonbonded_verlet_t(std::unique_ptr<PairlistSets>      pairlistSets_,
-                           std::unique_ptr<nbnxn_search>      nbs,
+        nonbonded_verlet_t(std::unique_ptr<PairlistSets>      pairlistSets,
+                           std::unique_ptr<PairSearch>        pairSearch,
                            std::unique_ptr<nbnxn_atomdata_t>  nbat,
                            const Nbnxm::KernelSetup          &kernelSetup,
                            gmx_nbnxn_gpu_t                   *gpu_nbv);
@@ -376,14 +376,30 @@ struct nonbonded_verlet_t
         //! Initialize the pair list sets, TODO this should be private
         void initPairlistSets(bool haveMultipleDomains);
 
+        //! Returns the order of the local atoms on the grid
+        gmx::ArrayRef<const int> getLocalAtomOrder() const;
+    
         //! Sets the order of the local atoms to the order grid atom ordering
         void setLocalAtomOrder();
+
+        //! Returns the index position of the atoms on the search grid
+        gmx::ArrayRef<const int> getGridIndices() const;
 
         //! Constructs the pairlist for the given locality
         void constructPairlist(Nbnxm::InteractionLocality  iLocality,
                                const t_blocka             *excl,
                                int64_t                     step,
                                t_nrnb                     *nrnb);
+ 
+        //! Updates all the atom properties in Nbnxm
+        void setAtomProperties(const t_mdatoms &mdatoms,
+                               const int       &atinfo); 
+
+        //! Updates the coordinates in Nbnxm for the given locality
+        void setCoordinates(Nbnxm::AtomLocality             locality,
+                            bool                            fillLocal,
+                            gmx::ArrayRef<const gmx::RVec>  x,
+                            gmx_wallcycle                  *wcycle);
 
         //! Returns a reference to the pairlist sets
         const PairlistSets &pairlistSets() const
@@ -446,7 +462,7 @@ struct nonbonded_verlet_t
         //! All data related to the pair lists
         std::unique_ptr<PairlistSets>     pairlistSets_;
         //! Working data for constructing the pairlists
-        std::unique_ptr<nbnxn_search>     nbs;
+        std::unique_ptr<PairSearch>       pairSearch_;
         //! Atom data
         std::unique_ptr<nbnxn_atomdata_t> nbat;
     private:
@@ -508,13 +524,4 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nb_verlet,
                                 const int                       *atinfo,
                                 gmx::ArrayRef<const gmx::RVec>   x);
 
-/*! \brief Returns the order indices of the atoms on the pairlist search grid */
-gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search* nbs);
-
-/*! \brief Renumbers the atom indices on the grid to consecutive order */
-void nbnxn_set_atomorder(nbnxn_search *nbs);
-
-/*! \brief Returns the index position of the atoms on the pairlist search grid */
-gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs);
-
-#endif // GMX_NBNXN_NBNXN_H
+#endif // GMX_NBNXN_NBNXM_H

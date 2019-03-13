@@ -68,23 +68,34 @@ using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
 
 
 /* Local cycle count struct for profiling */
-typedef struct {
-    int          count;
-    gmx_cycles_t c;
-    gmx_cycles_t start;
-} nbnxn_cycle_t;
-
-/* Local cycle count enum for profiling */
-enum {
-    enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCreducef, enbsCCnr
+struct nbnxn_cycle_t
+{
+    int          count = 0;
+    gmx_cycles_t c     = 0;
+    gmx_cycles_t start = 0;
 };
 
-/* Thread-local work struct, contains working data for Grid */
-struct nbnxn_search_work_t
-{
-    nbnxn_search_work_t();
+// TODO: Move nbnxn_search_work_t definition to its own file
 
-    ~nbnxn_search_work_t();
+/* Thread-local work struct, contains working data for Grid */
+struct PairsearchWork
+{
+    PairsearchWork();
+
+    ~PairsearchWork();
+
+    //! Start the pair search cycle counter
+    void startCycleCounter()
+    {
+        cc.start = gmx_cycles_read();
+    }
+
+    //! Stop the pair search cycle counter
+    void stopCycleCounter()
+    {
+
+        cc.count++;
+    }
 
     gmx_cache_protect_t       cp0;          /* Buffer to avoid cache polution */
 
@@ -97,85 +108,147 @@ struct nbnxn_search_work_t
 
     std::unique_ptr<t_nblist> nbl_fep;      /* Temporary FEP list for load balancing */
 
-    nbnxn_cycle_t             cc[enbsCCnr]; /* Counters for thread-local cycles */
+    nbnxn_cycle_t             cc;           /* Counter for thread-local cycles */
 
     gmx_cache_protect_t       cp1;          /* Buffer to avoid cache polution */
 };
 
 /* Main pair-search struct, contains the grid(s), not the pair-list(s) */
-struct nbnxn_search
+class PairSearch
 {
-    /*! \internal
-     * \brief Description of the domain setup: PBC and the connections between domains
-     */
-    struct DomainSetup
-    {
-        //! Constructor, without DD \p numDDCells and \p ddZones should be nullptr
-        DomainSetup(const int                 ePBC,
-                    const ivec               *numDDCells,
-                    const gmx_domdec_zones_t *ddZones);
+    public:
+        /*! \internal
+         * \brief Description of the domain setup: PBC and the connections between domains
+         */
+        struct DomainSetup
+        {
+            /*! \internal
+             * \brief Description of the domain setup: PBC and the connections between domains
+             */
+            //! Constructor, without DD \p numDDCells and \p ddZones should be nullptr
+            DomainSetup(const int                 ePBC,
+                        const ivec               *numDDCells,
+                        const gmx_domdec_zones_t *ddZones);
 
-        //! The type of PBC
-        int                       ePBC;
-        //! Tells whether we are using domain decomposition
-        bool                      haveDomDec;
-        //! Tells whether we are using domain decomposition per dimension
-        std::array<bool, DIM>     haveDomDecPerDim;
-        //! The domain decomposition zone setup
-        const gmx_domdec_zones_t *zones;
-    };
+            //! The type of PBC
+            int                       ePBC;
+            //! Tells whether we are using domain decomposition
+            bool                      haveDomDec;
+            //! Tells whether we are using domain decomposition per dimension
+            std::array<bool, DIM>     haveDomDecPerDim;
+            //! The domain decomposition zone setup
+            const gmx_domdec_zones_t *zones;
+        };
 
-    /* \brief Constructor
-     *
-     * \param[in] ePBC            The periodic boundary conditions
-     * \param[in] numDDCells      The number of domain decomposition cells per dimension, without DD nullptr should be passed
-     * \param[in] zones           The domain decomposition zone setup, without DD nullptr should be passed
-     * \param[in] haveFep         Tells whether non-bonded interactions are perturbed
-     * \param[in] maxNumThreads   The maximum number of threads used in the search
-     */
-    nbnxn_search(int                       ePBC,
-                 const ivec               *numDDCells,
-                 const gmx_domdec_zones_t *zones,
-                 PairlistType              pairlistType,
-                 bool                      haveFep,
-                 int                       maxNumthreads);
+        //! Local cycle count enum for profiling different parts of search
+        enum {
+            enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCnr
+        };
 
-    const DomainSetup domainSetup() const
-    {
-        return domainSetup_;
-    }
+        struct SearchCycleCounting
+        {
+            //! Start a pair search cycle counter
+            void start(const int enbsCC)
+            {
+                cc_[enbsCC].start = gmx_cycles_read();
+            }
 
-    const Nbnxm::GridSet &gridSet() const
-    {
-        return gridSet_;
-    }
+            //! Stop a pair search cycle counter
+            void stop(const int enbsCC)
+            {
+                nbnxn_cycle_t &cc = cc_[enbsCC];
+                cc.c += gmx_cycles_read() - cc.start;
+                cc.count++;
+            }
 
-    //! The domain setup
-    DomainSetup          domainSetup_;
+            //! Print the cycle counts to \p fp
+            void printCycles(FILE                               *fp,
+                             gmx::ArrayRef<const PairsearchWork> work) const;
 
-    //! The local and non-local grids
-    Nbnxm::GridSet       gridSet_;
+            bool          recordCycles_ = false;
+            int           searchCount_  = 0;
+            nbnxn_cycle_t cc_[enbsCCnr];
+        };
 
-    gmx_bool             print_cycles;
-    int                  search_count;
-    nbnxn_cycle_t        cc[enbsCCnr];
+        //! Puts the atoms in \p ddZone on the grid and copies the coordinates to \p nbat
+        void putOnGrid(const matrix                    box,
+                       int                             ddZone,
+                       const rvec                      lowerCorner,
+                       const rvec                      upperCorner,
+                       const gmx::UpdateGroupsCog     *updateGroupsCog,
+                       int                             atomStart,
+                       int                             atomEnd,
+                       real                            atomDensity,
+                       const int                      *atinfo,
+                       gmx::ArrayRef<const gmx::RVec>  x,
+                       int                             numAtomsMoved,
+                       const int                      *move,
+                       nbnxn_atomdata_t               *nbat)
+        {
+            cycleCounting_.start(enbsCCgrid);
 
-    /* Thread-local work data */
-    mutable std::vector<nbnxn_search_work_t> work; /* Work array, one entry for each thread */
+            gridSet_.putOnGrid(box, ddZone, lowerCorner, upperCorner,
+                               updateGroupsCog, atomStart, atomEnd, atomDensity,
+                               atinfo, x, numAtomsMoved, move, nbat);
+
+            cycleCounting_.stop(enbsCCgrid);
+        };
+
+        /* \brief Constructor
+         *
+         * \param[in] ePBC            The periodic boundary conditions
+         * \param[in] numDDCells      The number of domain decomposition cells per dimension, without DD nullptr should be passed
+         * \param[in] zones           The domain decomposition zone setup, without DD nullptr should be passed
+         * \param[in] haveFep         Tells whether non-bonded interactions are perturbed
+         * \param[in] maxNumThreads   The maximum number of threads used in the search
+         */
+        PairSearch(int                       ePBC,
+                   const ivec               *numDDCells,
+                   const gmx_domdec_zones_t *zones,
+                   PairlistType              pairlistType,
+                   bool                      haveFep,
+                   int                       maxNumthreads);
+
+        //! Sets the order of the local atoms to the order grid atom ordering
+        void setLocalAtomOrder()
+        {
+            gridSet_.setLocalAtomOrder();
+        }
+
+        const DomainSetup domainSetup() const
+        {
+            return domainSetup_;
+        }
+
+        //! Returns the set of search grids
+        const Nbnxm::GridSet &gridSet() const
+        {
+            return gridSet_;
+        }
+
+        //! Returns the list of thread-local work objects
+        gmx::ArrayRef<const PairsearchWork> work() const
+        {
+            return work_;
+        }
+
+        //! Returns the list of thread-local work objects
+        gmx::ArrayRef<PairsearchWork> work()
+        {
+            return work_;
+        }
+
+    private:
+        //! The domain setup
+        DomainSetup                         domainSetup_;
+        //! The set of search grids
+        Nbnxm::GridSet                      gridSet_;
+        //! Work objects, one entry for each thread
+        mutable std::vector<PairsearchWork> work_;
+
+    public:
+        //! Cycle counting for measuring components of the search
+        SearchCycleCounting  cycleCounting_;
 };
-
-
-/*! \brief Start an nbnxn cycle counter */
-static inline void nbs_cycle_start(nbnxn_cycle_t *cc)
-{
-    cc->start = gmx_cycles_read();
-}
-
-/*! \brief Stop an nbnxn cycle counter */
-static inline void nbs_cycle_stop(nbnxn_cycle_t *cc)
-{
-    cc->c += gmx_cycles_read() - cc->start;
-    cc->count++;
-}
 
 #endif

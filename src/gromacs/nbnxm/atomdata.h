@@ -53,8 +53,8 @@ class MDLogger;
 
 struct gmx_wallcycle;
 struct nbnxn_atomdata_t;
-struct nbnxn_search;
 struct nonbonded_verlet_t;
+class  PairSearch;
 struct t_mdatoms;
 struct tMPI_Atomic;
 
@@ -296,7 +296,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          int nout);
 
 void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
-                        const nbnxn_search  *nbs,
+                        const PairSearch    &pairSearch,
                         const t_mdatoms     *mdatoms,
                         const int           *atinfo);
 
@@ -308,12 +308,12 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          dynamic_box,
 /* Copy x to nbat->x.
  * FillLocal tells if the local filler particle coordinates should be zeroed.
  */
-void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
-                                     Nbnxm::AtomLocality  locality,
-                                     gmx_bool             FillLocal,
-                                     rvec                *x,
-                                     nbnxn_atomdata_t    *nbat,
-                                     gmx_wallcycle       *wcycle);
+void nbnxn_atomdata_copy_x_to_nbat_x(const PairSearch     &pairSearch,
+                                     Nbnxm::AtomLocality   locality,
+                                     gmx_bool              FillLocal,
+                                     const rvec           *x,
+                                     nbnxn_atomdata_t     *nbat,
+                                     gmx_wallcycle        *wcycle);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
