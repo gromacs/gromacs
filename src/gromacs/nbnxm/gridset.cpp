@@ -57,30 +57,26 @@
 namespace Nbnxm
 {
 
-//! Returns the number of DD zones or 1 when \p numDDCells = nullptr
-static int numDDZones(const ivec *numDDCells)
+//! Returns the number of DD zones
+static int numDDZones(const std::array<bool, DIM> &haveDomDecPerDim)
 {
     int  numDDZones = 1;
-    bool haveDomDec = (numDDCells != nullptr);
-    if (haveDomDec)
+    for (auto haveDD : haveDomDecPerDim)
     {
-        for (int d = 0; d < DIM; d++)
+        if (haveDD)
         {
-            if ((*numDDCells)[d] > 1)
-            {
-                numDDZones *= 2;
-            }
+            numDDZones *= 2;
         }
     }
 
     return numDDZones;
 }
 
-GridSet::GridSet(const ivec         *numDDCells,
-                 const PairlistType  pairlistType,
-                 const bool          haveFep,
-                 const int           numThreads) :
-    grids_(numDDZones(numDDCells), pairlistType),
+GridSet::GridSet(const std::array<bool, DIM> &haveDomDecPerDim,
+                 const PairlistType           pairlistType,
+                 const bool                   haveFep,
+                 const int                    numThreads) :
+    grids_(numDDZones(haveDomDecPerDim), pairlistType),
     haveFep_(haveFep),
     numRealAtomsLocal_(0),
     numRealAtomsTotal_(0),
