@@ -105,30 +105,53 @@ struct nbnxn_search_work_t
 /* Main pair-search struct, contains the grid(s), not the pair-list(s) */
 struct nbnxn_search
 {
+    /*! \internal
+     * \brief Description of the domain setup: PBC and the connections between domains
+     */
+    struct DomainSetup
+    {
+        //! Constructor, without DD \p numDDCells and \p ddZones should be nullptr
+        DomainSetup(int                       ePBC,
+                    const ivec               *numDDCells,
+                    const gmx_domdec_zones_t *ddZones);
+
+        //! The type of PBC
+        int                       ePBC;
+        //! Tells whether we are using domain decomposition
+        bool                      haveDomDec;
+        //! Tells whether we are using domain decomposition per dimension
+        std::array<bool, DIM>     haveDomDecPerDim;
+        //! The domain decomposition zone setup
+        const gmx_domdec_zones_t *zones;
+    };
+
     /* \brief Constructor
      *
      * \param[in] ePBC            The periodic boundary conditions
-     * \param[in] n_dd_cells      The number of domain decomposition cells per dimension, without DD nullptr should be passed
+     * \param[in] numDDCells      The number of domain decomposition cells per dimension, without DD nullptr should be passed
      * \param[in] zones           The domain decomposition zone setup, without DD nullptr should be passed
      * \param[in] haveFep         Tells whether non-bonded interactions are perturbed
      * \param[in] maxNumThreads   The maximum number of threads used in the search
      */
     nbnxn_search(int                       ePBC,
-                 const ivec               *n_dd_cells,
+                 const ivec               *numDDCells,
                  const gmx_domdec_zones_t *zones,
                  PairlistType              pairlistType,
                  bool                      haveFep,
                  int                       maxNumthreads);
+
+    const DomainSetup &domainSetup() const
+    {
+        return domainSetup_;
+    }
 
     const Nbnxm::GridSet &gridSet() const
     {
         return gridSet_;
     }
 
-    int                        ePBC;            /* PBC type enum                              */
-    gmx_bool                   DomDec;          /* Are we doing domain decomposition?         */
-    ivec                       dd_dim;          /* Are we doing DD in x,y,z?                  */
-    const gmx_domdec_zones_t  *zones;           /* The domain decomposition zones        */
+    //! The domain setup
+    DomainSetup          domainSetup_;
 
     //! The local and non-local grids
     Nbnxm::GridSet       gridSet_;
