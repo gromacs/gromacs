@@ -46,13 +46,10 @@
 
 #include "gridset.h"
 
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/updategroupscog.h"
-#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "internal.h"
 
 namespace Nbnxm
 {
@@ -214,83 +211,3 @@ void GridSet::putOnGrid(const matrix                    box,
 }
 
 } // namespace Nbnxm
-
-// TODO: Move this function to a proper location after refactoring nbnxn_search
-void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
-                       const matrix                    box,
-                       int                             ddZone,
-                       const rvec                      lowerCorner,
-                       const rvec                      upperCorner,
-                       const gmx::UpdateGroupsCog     *updateGroupsCog,
-                       int                             atomStart,
-                       int                             atomEnd,
-                       real                            atomDensity,
-                       const int                      *atinfo,
-                       gmx::ArrayRef<const gmx::RVec>  x,
-                       int                             numAtomsMoved,
-                       const int                      *move)
-{
-    nbnxn_search &nbs = *nb_verlet->nbs;
-
-    nbs_cycle_start(&nbs.cc[enbsCCgrid]);
-
-    nbs.gridSet_.putOnGrid(box, ddZone, lowerCorner, upperCorner,
-                           updateGroupsCog, atomStart, atomEnd, atomDensity,
-                           atinfo, x, numAtomsMoved, move,
-                           nb_verlet->nbat.get());
-
-    nbs_cycle_stop(&nbs.cc[enbsCCgrid]);
-}
-
-/* Calls nbnxn_put_on_grid for all non-local domains */
-void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nbv,
-                                const struct gmx_domdec_zones_t *zones,
-                                const int                       *atinfo,
-                                gmx::ArrayRef<const gmx::RVec>   x)
-{
-    for (int zone = 1; zone < zones->n; zone++)
-    {
-        rvec c0, c1;
-        for (int d = 0; d < DIM; d++)
-        {
-            c0[d] = zones->size[zone].bb_x0[d];
-            c1[d] = zones->size[zone].bb_x1[d];
-        }
-
-        nbnxn_put_on_grid(nbv, nullptr,
-                          zone, c0, c1,
-                          nullptr,
-                          zones->cg_range[zone],
-                          zones->cg_range[zone+1],
-                          -1,
-                          atinfo,
-                          x,
-                          0, nullptr);
-    }
-}
-
-gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search *nbs)
-{
-    /* Return the atom order for the home cell (index 0) */
-    const Nbnxm::Grid &grid       = nbs->gridSet().grids()[0];
-
-    const int          numIndices = grid.atomIndexEnd() - grid.firstAtomInColumn(0);
-
-    return gmx::constArrayRefFromArray(nbs->gridSet().atomIndices().data(), numIndices);
-}
-
-void nonbonded_verlet_t::setLocalAtomOrder()
-{
-    nbs->gridSet_.setLocalAtomOrder();
-}
-
-void nonbonded_verlet_t::getLocalNumCells(int *numCellsX,
-                                          int *numCellsY) const
-{
-    nbs->gridSet().getLocalNumCells(numCellsX, numCellsY);
-}
-
-gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs)
-{
-    return nbs->gridSet().cells();
-}
