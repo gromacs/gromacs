@@ -152,9 +152,9 @@ struct BoundingBox1D
 /*! \brief The number of bounds along one dimension of a bounding box */
 static constexpr int c_numBoundingBoxBounds1D = 2;
 
-#ifndef DOXYGEN
+} // namespace Nbnxm
 
-// TODO: Convert macros to constexpr int
+#ifndef DOXYGEN
 
 /* Bounding box calculations are (currently) always in single precision, so
  * we only need to check for single precision support here.
@@ -162,12 +162,8 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
  */
 #if GMX_SIMD4_HAVE_FLOAT
 #    define NBNXN_SEARCH_BB_SIMD4      1
-/* Memory alignment in bytes as required by SIMD aligned loads/stores */
-#    define NBNXN_SEARCH_BB_MEM_ALIGN  (GMX_SIMD4_WIDTH*sizeof(float))
 #else
 #    define NBNXN_SEARCH_BB_SIMD4      0
-/* No alignment required, but set it so we can call the same routines */
-#    define NBNXN_SEARCH_BB_MEM_ALIGN  32
 #endif
 
 
@@ -181,16 +177,25 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
 #        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB  0
 #    endif
 
-/* The packed bounding box coordinate stride is always set to 4.
+/* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz
+ *
+ * The packed bounding box coordinate stride is always set to 4.
  * With AVX we could use 8, but that turns out not to be faster.
  */
-#    define STRIDE_PBB       GMX_SIMD4_WIDTH
-#    define STRIDE_PBB_2LOG  2
-
-/* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
 #    define NBNXN_BBXXXX  1
-/* Size of a quadruplet of bounding boxes, each 2 corners, stored packed */
-#    define NNBSBB_XXXX  (STRIDE_PBB*DIM*Nbnxm::c_numBoundingBoxBounds1D)
+
+//! The number of bounding boxes in a pack, also the size of a pack along one dimension
+static constexpr int c_packedBoundingBoxesDimSize = GMX_SIMD4_WIDTH;
+
+//! Total number of corners (floats) in a pack of bounding boxes
+static constexpr int c_packedBoundingBoxesSize    =
+    c_packedBoundingBoxesDimSize*DIM*Nbnxm::c_numBoundingBoxBounds1D;
+
+//! Returns the starting index of the bouding box pack that contains the given cluster
+static constexpr inline int packedBoundingBoxesIndex(int clusterIndex)
+{
+    return (clusterIndex/c_packedBoundingBoxesDimSize)*c_packedBoundingBoxesSize;
+}
 
 #else  /* NBNXN_SEARCH_BB_SIMD4 */
 
@@ -201,6 +206,8 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
 
 #endif // !DOXYGEN
 
+namespace Nbnxm
+{
 
 /*! \internal
  * \brief Helper struct to pass data that is shared over all grids

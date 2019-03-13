@@ -101,7 +101,7 @@ struct NbnxnPairlistGpuWork
         ISuperClusterData() :
             bb(c_gpuNumClusterPerCell),
 #if NBNXN_SEARCH_BB_SIMD4
-            bbPacked(c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX),
+            bbPacked(c_gpuNumClusterPerCell/c_packedBoundingBoxesDimSize*c_packedBoundingBoxesSize),
 #endif
             x(c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize*DIM),
             xSimd(c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize*DIM)
