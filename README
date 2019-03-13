@@ -27,6 +27,15 @@ server currently does not do any verification on this branch, so it
 will not be as stable or widely useful as GROMACS master branch. This
 branch will not be mirrored on the GROMACS github.
 
+To push to this branch, use
+
+  git push ssh://USER@gerrit.gromacs.org HEAD:refs/heads/sandbox-puregpu
+
+The gerrit server will require a ChangeId exists, but otherwise ignore
+the change. Do not push to refs/for/sandbox-puregpu, because that is
+the invocation that opens a patch set for review for this branch,
+which we do not intend to do.
+
 Code will be extracted from this branch in manageable chunks and
 proposed for integration in master branch in the usual way for
 GROMACS. This branch merely provides convenient context for reviewers
