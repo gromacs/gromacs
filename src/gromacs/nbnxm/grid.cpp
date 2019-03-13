@@ -205,7 +205,7 @@ void Grid::setDimensions(const int           ddZone,
     else
     {
 #if NBNXN_BBXXXX
-        pbb_.resize(maxNumCells*c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX);
+        pbb_.resize(packedBoundingBoxesIndex(maxNumCells*c_gpuNumClusterPerCell));
 #else
         bb_.resize(maxNumCells*c_gpuNumClusterPerCell);
 #endif
@@ -584,12 +584,12 @@ static void calc_bounding_box_xxxx(int na, int stride, const real *x, float *bb)
         i += stride;
     }
     /* Note: possible double to float conversion here */
-    bb[0*STRIDE_PBB] = R2F_D(xl);
-    bb[1*STRIDE_PBB] = R2F_D(yl);
-    bb[2*STRIDE_PBB] = R2F_D(zl);
-    bb[3*STRIDE_PBB] = R2F_U(xh);
-    bb[4*STRIDE_PBB] = R2F_U(yh);
-    bb[5*STRIDE_PBB] = R2F_U(zh);
+    bb[0*c_packedBoundingBoxesDimSize] = R2F_D(xl);
+    bb[1*c_packedBoundingBoxesDimSize] = R2F_D(yl);
+    bb[2*c_packedBoundingBoxesDimSize] = R2F_D(zl);
+    bb[3*c_packedBoundingBoxesDimSize] = R2F_U(xh);
+    bb[4*c_packedBoundingBoxesDimSize] = R2F_U(yh);
+    bb[5*c_packedBoundingBoxesDimSize] = R2F_U(zh);
 }
 
 #endif /* NBNXN_BBXXXX */
@@ -629,12 +629,12 @@ static void calc_bounding_box_xxxx_simd4(int na, const float *x,
 {
     calc_bounding_box_simd4(na, x, bb_work_aligned);
 
-    bb[0*STRIDE_PBB] = bb_work_aligned->lower.x;
-    bb[1*STRIDE_PBB] = bb_work_aligned->lower.y;
-    bb[2*STRIDE_PBB] = bb_work_aligned->lower.z;
-    bb[3*STRIDE_PBB] = bb_work_aligned->upper.x;
-    bb[4*STRIDE_PBB] = bb_work_aligned->upper.y;
-    bb[5*STRIDE_PBB] = bb_work_aligned->upper.z;
+    bb[0*c_packedBoundingBoxesDimSize] = bb_work_aligned->lower.x;
+    bb[1*c_packedBoundingBoxesDimSize] = bb_work_aligned->lower.y;
+    bb[2*c_packedBoundingBoxesDimSize] = bb_work_aligned->lower.z;
+    bb[3*c_packedBoundingBoxesDimSize] = bb_work_aligned->upper.x;
+    bb[4*c_packedBoundingBoxesDimSize] = bb_work_aligned->upper.y;
+    bb[5*c_packedBoundingBoxesDimSize] = bb_work_aligned->upper.z;
 }
 
 #endif /* NBNXN_BBXXXX */
@@ -724,16 +724,17 @@ static void print_bbsizes_supersub(FILE       *fp,
     for (int c = 0; c < grid.numCells(); c++)
     {
 #if NBNXN_BBXXXX
-        for (int s = 0; s < grid.numClustersPerCell()[c]; s += STRIDE_PBB)
+        for (int s = 0; s < grid.numClustersPerCell()[c]; s += c_packedBoundingBoxesDimSize)
         {
-            int cs_w = (c*c_gpuNumClusterPerCell + s)/STRIDE_PBB;
-            for (int i = 0; i < STRIDE_PBB; i++)
+            int  cs_w          = (c*c_gpuNumClusterPerCell + s)/c_packedBoundingBoxesDimSize;
+            auto boundingBoxes = grid.packedBoundingBoxes().subArray(cs_w*c_packedBoundingBoxesSize, c_packedBoundingBoxesSize);
+            for (int i = 0; i < c_packedBoundingBoxesDimSize; i++)
             {
                 for (int d = 0; d < DIM; d++)
                 {
                     ba[d] +=
-                        grid.packedBoundingBoxes()[cs_w*NNBSBB_XXXX + (DIM + d)*STRIDE_PBB + i] -
-                        grid.packedBoundingBoxes()[cs_w*NNBSBB_XXXX +        d *STRIDE_PBB + i];
+                        boundingBoxes[(DIM + d)*c_packedBoundingBoxesDimSize + i] -
+                        boundingBoxes[(0   + d)*c_packedBoundingBoxesDimSize + i];
                 }
             }
         }
@@ -925,10 +926,11 @@ void Grid::fillCell(const GridSetData              &gridSetData,
         /* Store the bounding boxes in a format convenient
          * for SIMD4 calculations: xxxxyyyyzzzz...
          */
-        float *pbb_ptr =
+        const int clusterIndex    = ((atomStart - cellOffset_*geometry_.numAtomsPerCell) >> geometry_.numAtomsICluster2Log);
+        float    *pbb_ptr         =
             pbb_.data() +
-            ((atomStart - cellOffset_*geometry_.numAtomsPerCell) >> (geometry_.numAtomsICluster2Log + STRIDE_PBB_2LOG))*NNBSBB_XXXX +
-            (((atomStart - cellOffset_*geometry_.numAtomsPerCell) >> geometry_.numAtomsICluster2Log) & (STRIDE_PBB - 1));
+            packedBoundingBoxesIndex(clusterIndex) +
+            (clusterIndex & (c_packedBoundingBoxesDimSize - 1));
 
 #if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
         if (nbat->XFormat == nbatXYZQ)
@@ -946,9 +948,9 @@ void Grid::fillCell(const GridSetData              &gridSetData,
         {
             fprintf(debug, "cell %4d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
                     atomToCluster(atomStart),
-                    pbb_ptr[0*STRIDE_PBB], pbb_ptr[3*STRIDE_PBB],
-                    pbb_ptr[1*STRIDE_PBB], pbb_ptr[4*STRIDE_PBB],
-                    pbb_ptr[2*STRIDE_PBB], pbb_ptr[5*STRIDE_PBB]);
+                    pbb_ptr[0*c_packedBoundingBoxesDimSize], pbb_ptr[3*c_packedBoundingBoxesDimSize],
+                    pbb_ptr[1*c_packedBoundingBoxesDimSize], pbb_ptr[4*c_packedBoundingBoxesDimSize],
+                    pbb_ptr[2*c_packedBoundingBoxesDimSize], pbb_ptr[5*c_packedBoundingBoxesDimSize]);
         }
     }
 #endif
