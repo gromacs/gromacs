@@ -323,9 +323,7 @@ void do_force_lowlevel(t_forcerec                   *fr,
      * listed interactions or when correcting for exclusions (for the Group scheme with RF) */
     if (fr->bMolPBC)
     {
-        // TODO: if all listed forces are offloaded to the GPU, both PBC calls below could be skipped.
-        // TODO: after rebase add && haveCpuListedForces(*fr, idef, *fcd) to the condition
-        const auto needPbcForListedForces = bool(flags & GMX_FORCE_LISTED);
+        const auto needPbcForListedForces = bool(flags & GMX_FORCE_LISTED) && haveCpuListedForces(*fr, *idef, *fcd);
         if (needPbcForListedForces || useRfWithGroupScheme)
         {
             /* Since all atoms are in the rectangular or triclinic unit-cell,
