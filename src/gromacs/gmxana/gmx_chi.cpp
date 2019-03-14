@@ -1442,15 +1442,13 @@ int gmx_chi(int argc, char *argv[])
     nbin     = 360/ndeg;
 
     /* Find the chi angles using atoms struct and a list of amino acids */
-    t_topology *top;
-    snew(top, 1);
-    read_tps_conf(ftp2fn(efSTX, NFILE, fnm), top, &ePBC, &x, nullptr, box, FALSE);
-    t_atoms    &atoms = top->atoms;
+    auto        pair  = read_tps_conf(ftp2fn(efSTX, NFILE, fnm), &ePBC, &x, nullptr, box, FALSE);
+    t_atoms    &atoms = pair.first->atoms;
     if (atoms.pdbinfo == nullptr)
     {
         snew(atoms.pdbinfo, atoms.nr);
     }
-    fprintf(log, "Title: %s\n", *top->name);
+    fprintf(log, "Title: %s\n", *pair.first->name);
 
     ResidueType rt;
     dlist = mk_dlist(log, &atoms, &nlist, bPhi, bPsi, bChi, bHChi, maxchi, r0, &rt);

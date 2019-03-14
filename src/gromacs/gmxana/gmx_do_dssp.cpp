@@ -547,7 +547,6 @@ int gmx_do_dssp(int argc, char *argv[])
     FILE              *ss, *acc, *fTArea, *tmpf;
     const char        *fnSCount, *fnArea, *fnTArea, *fnAArea;
     const char        *leg[] = { "Phobic", "Phylic" };
-    t_topology         top;
     int                ePBC;
     t_atoms           *atoms;
     t_matrix           mat;
@@ -594,8 +593,8 @@ int gmx_do_dssp(int argc, char *argv[])
     fnAArea    = opt2fn_null("-aa", NFILE, fnm);
     bDoAccSurf = ((fnArea != nullptr) || (fnTArea != nullptr) || (fnAArea != nullptr));
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, FALSE);
-    atoms = &(top.atoms);
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &xp, nullptr, box, FALSE);
+    atoms = &(pair.first->atoms);
     check_oo(atoms);
     bPhbres = bPhobics(atoms);
 
@@ -706,7 +705,7 @@ int gmx_do_dssp(int argc, char *argv[])
     accr  = nullptr;
     naccr = 0;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&pair.first->idef, ePBC, natoms);
     do
     {
         t = output_env_conv_time(oenv, t);

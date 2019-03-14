@@ -239,13 +239,12 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
 
 
 
-t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
-                      const char *topfile, t_xrama *xr, int mult)
+std::unique_ptr<t_topology> init_rama(gmx_output_env_t *oenv, const char *infile,
+                                      const char *topfile, t_xrama *xr, int mult)
 {
-    t_topology *top;
-    real        t;
+    real                        t;
 
-    top = read_top(topfile, &xr->ePBC);
+    std::unique_ptr<t_topology> top = read_top(topfile, &xr->ePBC);
 
     /*get_dih2(xr,top->idef.functype,&(top->idef.bondeds),&(top->atoms));*/
     get_dih(xr, &(top->atoms));

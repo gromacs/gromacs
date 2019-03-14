@@ -87,12 +87,12 @@ void list_tpx(const char *fn,
               gmx_bool    bSysTop,
               gmx_bool    bOriginalInputrec)
 {
-    FILE         *gp;
-    int           indent, i, j, **gcount, atot;
-    t_state       state;
-    t_tpxheader   tpx;
-    gmx_mtop_t    mtop;
-    t_topology    top;
+    FILE                       *gp;
+    int                         indent, i, j, **gcount, atot;
+    t_state                     state;
+    t_tpxheader                 tpx;
+    gmx_mtop_t                  mtop;
+    std::unique_ptr<t_topology> top;
 
     read_tpxheader(fn, &tpx, TRUE);
     t_inputrec     ir;
@@ -133,7 +133,7 @@ void list_tpx(const char *fn,
             }
             else
             {
-                pr_top(stdout, indent, "topology", &(top), bShowNumbers, bShowParameters);
+                pr_top(stdout, indent, "topology", top.get(), bShowNumbers, bShowParameters);
             }
 
             pr_rvecs(stdout, indent, "box", tpx.bBox ? state.box : nullptr, DIM);

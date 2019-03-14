@@ -860,54 +860,54 @@ int gmx_trjconv(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE             *out    = nullptr;
-    t_trxstatus      *trxout = nullptr;
-    t_trxstatus      *trxin;
-    int               file_nr;
-    t_trxframe        fr, frout;
-    int               flags;
-    rvec             *xmem  = nullptr, *vmem = nullptr, *fmem = nullptr;
-    rvec             *xp    = nullptr, x_shift, hbox;
-    real             *w_rls = nullptr;
-    int               m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
+    FILE                       *out    = nullptr;
+    t_trxstatus                *trxout = nullptr;
+    t_trxstatus                *trxin;
+    int                         file_nr;
+    t_trxframe                  fr, frout;
+    int                         flags;
+    rvec                       *xmem  = nullptr, *vmem = nullptr, *fmem = nullptr;
+    rvec                       *xp    = nullptr, x_shift, hbox;
+    real                       *w_rls = nullptr;
+    int                         m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
 #define SKIP 10
-    t_topology       *top   = nullptr;
-    gmx_conect        gc    = nullptr;
-    int               ePBC  = -1;
-    t_atoms          *atoms = nullptr, useatoms;
-    matrix            top_box;
-    int              *index = nullptr, *cindex = nullptr;
-    char             *grpnm = nullptr;
-    int              *frindex, nrfri;
-    char             *frname;
-    int               ifit, my_clust = -1;
-    int              *ind_fit;
-    char             *gn_fit;
-    t_cluster_ndx    *clust           = nullptr;
-    t_trxstatus     **clust_status    = nullptr;
-    int              *clust_status_id = nullptr;
-    int               ntrxopen        = 0;
-    int              *nfwritten       = nullptr;
-    int               ndrop           = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
-    double          **dropval;
-    real              tshift = 0, dt = -1, prec;
-    gmx_bool          bFit, bPFit, bReset;
-    int               nfitdim;
-    gmx_rmpbc_t       gpbc = nullptr;
-    gmx_bool          bRmPBC, bPBCWhole, bPBCcomRes, bPBCcomMol, bPBCcomAtom, bPBC, bNoJump, bCluster;
-    gmx_bool          bCopy, bDoIt, bIndex, bTDump, bSetTime, bTPS = FALSE, bDTset = FALSE;
-    gmx_bool          bExec, bTimeStep = FALSE, bDumpFrame = FALSE, bSetXtcPrec, bNeedPrec;
-    gmx_bool          bHaveFirstFrame, bHaveNextFrame, bSetBox, bSetUR, bSplit = FALSE;
-    gmx_bool          bSubTraj = FALSE, bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
-    gmx_bool          bWriteFrame, bSplitHere;
-    const char       *top_file, *in_file, *out_file = nullptr;
-    char              out_file2[256], *charpt;
-    char             *outf_base = nullptr;
-    const char       *outf_ext  = nullptr;
-    char              top_title[256], timestr[32], stepstr[32], filemode[5];
-    gmx_output_env_t *oenv;
+    std::unique_ptr<t_topology> top;
+    gmx_conect                  gc    = nullptr;
+    int                         ePBC  = -1;
+    t_atoms                    *atoms = nullptr, useatoms;
+    matrix                      top_box;
+    int                        *index = nullptr, *cindex = nullptr;
+    char                       *grpnm = nullptr;
+    int                        *frindex, nrfri;
+    char                       *frname;
+    int                         ifit, my_clust = -1;
+    int                        *ind_fit;
+    char                       *gn_fit;
+    t_cluster_ndx              *clust           = nullptr;
+    t_trxstatus               **clust_status    = nullptr;
+    int                        *clust_status_id = nullptr;
+    int                         ntrxopen        = 0;
+    int                        *nfwritten       = nullptr;
+    int                         ndrop           = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
+    double                    **dropval;
+    real                        tshift = 0, dt = -1, prec;
+    gmx_bool                    bFit, bPFit, bReset;
+    int                         nfitdim;
+    gmx_rmpbc_t                 gpbc = nullptr;
+    gmx_bool                    bRmPBC, bPBCWhole, bPBCcomRes, bPBCcomMol, bPBCcomAtom, bPBC, bNoJump, bCluster;
+    gmx_bool                    bCopy, bDoIt, bIndex, bTDump, bSetTime, bTPS = FALSE, bDTset = FALSE;
+    gmx_bool                    bExec, bTimeStep = FALSE, bDumpFrame = FALSE, bSetXtcPrec, bNeedPrec;
+    gmx_bool                    bHaveFirstFrame, bHaveNextFrame, bSetBox, bSetUR, bSplit = FALSE;
+    gmx_bool                    bSubTraj = FALSE, bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
+    gmx_bool                    bWriteFrame, bSplitHere;
+    const char                 *top_file, *in_file, *out_file = nullptr;
+    char                        out_file2[256], *charpt;
+    char                       *outf_base = nullptr;
+    const char                 *outf_ext  = nullptr;
+    char                        top_title[256], timestr[32], stepstr[32], filemode[5];
+    gmx_output_env_t           *oenv;
 
-    t_filenm          fnm[] = {
+    t_filenm                    fnm[] = {
         { efTRX, "-f",   nullptr,      ffREAD  },
         { efTRO, "-o",   nullptr,      ffWRITE },
         { efTPS, nullptr,   nullptr,      ffOPTRD },
@@ -1097,9 +1097,9 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bTPS)
         {
-            snew(top, 1);
-            read_tps_conf(top_file, top, &ePBC, &xp, nullptr, top_box,
-                          bReset || bPBCcomRes);
+            auto pair = read_tps_conf(top_file, &ePBC, &xp, nullptr, top_box,
+                                      bReset || bPBCcomRes);
+            top = std::move(pair.first);
             std::strncpy(top_title, *top->name, 255);
             top_title[255] = '\0';
             atoms          = &top->atoms;
@@ -1127,7 +1127,7 @@ int gmx_trjconv(int argc, char *argv[])
 
             if (bCONECT)
             {
-                gc = gmx_conect_generate(top);
+                gc = gmx_conect_generate(top.get());
             }
             if (bRmPBC)
             {
@@ -1534,7 +1534,7 @@ int gmx_trjconv(int argc, char *argv[])
                 }
                 else if (bCluster)
                 {
-                    calc_pbc_cluster(ecenter, ifit, top, ePBC, fr.x, ind_fit, fr.box);
+                    calc_pbc_cluster(ecenter, ifit, top.get(), ePBC, fr.x, ind_fit, fr.box);
                 }
 
                 if (bPFit)
@@ -1981,11 +1981,6 @@ int gmx_trjconv(int argc, char *argv[])
         }
     }
 
-    if (bTPS)
-    {
-        done_top(top);
-        sfree(top);
-    }
     sfree(xp);
     sfree(xmem);
     sfree(vmem);

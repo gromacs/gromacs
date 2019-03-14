@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1425,7 +1425,6 @@ int gmx_cluster(int argc, char *argv[])
     t_clusters         clust;
     t_mat             *rms, *orig = nullptr;
     real              *eigenvalues;
-    t_topology         top;
     int                ePBC;
     t_atoms            useatoms;
     t_matrix          *readmat = nullptr;
@@ -1631,25 +1630,26 @@ int gmx_cluster(int argc, char *argv[])
         gmx_fatal(FARGS, "skip (%d) should be >= 1", skip);
     }
 
+    std::pair<std::unique_ptr<t_topology>, bool> topologyPair;
     /* get input */
     if (bReadTraj)
     {
         /* don't read mass-database as masses (and top) are not used */
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtps, nullptr, box,
-                      TRUE);
+        topologyPair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &xtps, nullptr, box,
+                                     TRUE);
         if (bPBC)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+            gpbc = gmx_rmpbc_init(&topologyPair.first->idef, ePBC, topologyPair.first->atoms.nr);
         }
 
         fprintf(stderr, "\nSelect group for least squares fit%s:\n",
                 bReadMat ? "" : " and RMSD calculation");
-        get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
+        get_index(&(topologyPair.first->atoms), ftp2fn_null(efNDX, NFILE, fnm),
                   1, &ifsize, &fitidx, &grpname);
         if (trx_out_fn)
         {
             fprintf(stderr, "\nSelect group for output:\n");
-            get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
+            get_index(&(topologyPair.first->atoms), ftp2fn_null(efNDX, NFILE, fnm),
                       1, &iosize, &outidx, &grpname);
             /* merge and convert both index groups: */
             /* first copy outidx to index. let outidx refer to elements in index */
@@ -1704,7 +1704,7 @@ int gmx_cluster(int argc, char *argv[])
             snew(mass, isize);
             for (i = 0; i < ifsize; i++)
             {
-                mass[fitidx[i]] = top.atoms.atom[index[fitidx[i]]].m;
+                mass[fitidx[i]] = topologyPair.first->atoms.atom[index[fitidx[i]]].m;
             }
             if (bFit)
             {
@@ -1915,11 +1915,11 @@ int gmx_cluster(int argc, char *argv[])
         }
         init_t_atoms(&useatoms, isize, FALSE);
         snew(usextps, isize);
-        useatoms.resinfo = top.atoms.resinfo;
+        useatoms.resinfo = topologyPair.first->atoms.resinfo;
         for (i = 0; i < isize; i++)
         {
-            useatoms.atomname[i]    = top.atoms.atomname[index[i]];
-            useatoms.atom[i].resind = top.atoms.atom[index[i]].resind;
+            useatoms.atomname[i]    = topologyPair.first->atoms.atomname[index[i]];
+            useatoms.atom[i].resind = topologyPair.first->atoms.atom[index[i]].resind;
             useatoms.nres           = std::max(useatoms.nres, useatoms.atom[i].resind+1);
             copy_rvec(xtps[index[i]], usextps[i]);
         }

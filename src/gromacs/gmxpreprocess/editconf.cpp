@@ -701,25 +701,25 @@ int gmx_editconf(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE             *out;
-    const char       *infile, *outfile;
-    int               outftp, inftp, natom, i, j, n_bfac, itype, ntype;
-    double           *bfac    = nullptr, c6, c12;
-    int              *bfac_nr = nullptr;
-    t_topology       *top     = nullptr;
-    char             *grpname, *sgrpname, *agrpname;
-    int               isize, ssize, numAlignmentAtoms;
-    int              *index, *sindex, *aindex;
-    rvec             *x, *v, gc, rmin, rmax, size;
-    int               ePBC;
-    matrix            box, rotmatrix, trans;
-    rvec              princd, tmpvec;
-    gmx_bool          bIndex, bSetSize, bSetAng, bDist, bSetCenter, bAlign;
-    gmx_bool          bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
-    real              diam = 0, mass = 0, d, vdw;
-    gmx_conect        conect;
-    gmx_output_env_t *oenv;
-    t_filenm          fnm[] =
+    FILE                       *out;
+    const char                 *infile, *outfile;
+    int                         outftp, inftp, natom, i, j, n_bfac, itype, ntype;
+    double                     *bfac    = nullptr, c6, c12;
+    int                        *bfac_nr = nullptr;
+    std::unique_ptr<t_topology> top;
+    char                       *grpname, *sgrpname, *agrpname;
+    int                         isize, ssize, numAlignmentAtoms;
+    int                        *index, *sindex, *aindex;
+    rvec                       *x, *v, gc, rmin, rmax, size;
+    int                         ePBC;
+    matrix                      box, rotmatrix, trans;
+    rvec                        princd, tmpvec;
+    gmx_bool                    bIndex, bSetSize, bSetAng, bDist, bSetCenter, bAlign;
+    gmx_bool                    bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
+    real                        diam = 0, mass = 0, d, vdw;
+    gmx_conect                  conect;
+    gmx_output_env_t           *oenv;
+    t_filenm                    fnm[] =
     {
         { efSTX, "-f", nullptr, ffREAD },
         { efNDX, "-n", nullptr, ffOPTRD },
@@ -794,9 +794,9 @@ int gmx_editconf(int argc, char *argv[])
                   " when using the -mead option\n");
     }
 
-    t_topology top_tmp;
-    read_tps_conf(infile, &top_tmp, &ePBC, &x, &v, box, FALSE);
-    t_atoms   &atoms = top_tmp.atoms;
+    auto                        pair    = read_tps_conf(infile, &ePBC, &x, &v, box, FALSE);
+    std::unique_ptr<t_topology> top_tmp = std::move(pair.first);
+    t_atoms                    &atoms   = top_tmp->atoms;
     natom = atoms.nr;
     if (atoms.pdbinfo == nullptr)
     {
@@ -1232,7 +1232,7 @@ int gmx_editconf(int argc, char *argv[])
     }
     if (bCONECT && (outftp == efPDB) && (inftp == efTPR))
     {
-        conect = gmx_conect_generate(top);
+        conect = gmx_conect_generate(top.get());
     }
     else
     {
@@ -1266,12 +1266,12 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, FALSE);
+            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, FALSE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, *top_tmp.name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
         }
     }
     else
@@ -1321,7 +1321,7 @@ int gmx_editconf(int argc, char *argv[])
             {
                 index[i] = i;
             }
-            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
+            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
                                   outftp == efPQR);
             sfree(index);
             if (bLegend)
@@ -1337,10 +1337,9 @@ int gmx_editconf(int argc, char *argv[])
         }
         else
         {
-            write_sto_conf(outfile, *top_tmp.name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
+            write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
         }
     }
-    done_top(&top_tmp);
     if (x)
     {
         sfree(x);

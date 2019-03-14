@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -259,7 +259,6 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
                                   const gmx_output_env_t *oenv)
 {
     FILE        *fpsg = nullptr, *fpsk = nullptr;
-    t_topology   top;
     int          ePBC;
     t_trxstatus *status;
     int          natoms;
@@ -274,8 +273,8 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     gmx_rmpbc_t  gpbc = nullptr;
 
 
-    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, FALSE);
-
+    auto pair = read_tps_conf(fnTPS, &ePBC, &xtop, nullptr, box, FALSE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
     snew(sg_slice, nslice);
     snew(sk_slice, nslice);
     snew(sg_slice_tot, nslice);
@@ -286,14 +285,14 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     snew(grpname, ng);
     snew(index, ng);
     snew(isize, ng);
-    get_index(&top.atoms, fnNDX, ng, isize, index, grpname);
+    get_index(&top->atoms, fnNDX, ng, isize, index, grpname);
 
     /* Analyze trajectory */
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > top->atoms.nr)
     {
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
-                  top.atoms.nr, natoms);
+                  top->atoms.nr, natoms);
     }
     check_index(nullptr, ng, index[0], nullptr, natoms);
 
@@ -303,7 +302,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
                     oenv);
 
     /* loop over frames */
-    gpbc    = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc    = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     nframes = 0;
     do
     {
@@ -946,12 +945,12 @@ int gmx_order(int argc, char *argv[])
     int                ngrps,                         /* nr. of groups              */
                        i,
                        axis = 0;                      /* normal axis                */
-    t_topology       *top;                            /* topology         */
-    int               ePBC;
-    int              *index,                          /* indices for a              */
+    std::unique_ptr<t_topology> top;                  /* topology         */
+    int                         ePBC;
+    int                        *index,                /* indices for a              */
     *a;                                               /* atom numbers in each group */
-    t_blocka         *block;                          /* data from index file       */
-    t_filenm          fnm[] = {                       /* files for g_order    */
+    t_blocka                   *block;                /* data from index file       */
+    t_filenm                    fnm[] = {             /* files for g_order    */
         { efTRX, "-f", nullptr,  ffREAD },            /* trajectory file              */
         { efNDX, "-n", nullptr,  ffREAD },            /* index file           */
         { efNDX, "-nr", nullptr,  ffOPTRD },          /* index for radial axis calculation */
@@ -965,11 +964,11 @@ int gmx_order(int argc, char *argv[])
         { efXVG, "-Sgsl", "sg-ang-slice", ffOPTWR },  /* xvgr output file           */
         { efXVG, "-Sksl", "sk-dist-slice", ffOPTWR }, /* xvgr output file           */
     };
-    gmx_bool          bSliced = FALSE;                /* True if box is sliced      */
+    gmx_bool                    bSliced = FALSE;      /* True if box is sliced      */
 #define NFILE asize(fnm)
-    real            **distvals = nullptr;
-    const char       *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
-    gmx_output_env_t *oenv;
+    real                      **distvals = nullptr;
+    const char                 *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
+    gmx_output_env_t           *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
@@ -1078,11 +1077,11 @@ int gmx_order(int argc, char *argv[])
         }
 
         /* show atomtypes, to check if index file is correct */
-        print_types(index, a, ngrps, grpname, top);
+        print_types(index, a, ngrps, grpname, top.get());
 
         calc_order(ftp2fn(efTRX, NFILE, fnm), index, a, &order,
                    &slOrder, &slWidth, nslices, bSliced, bUnsat,
-                   top, ePBC, ngrps, axis, permolecule, radial, distcalc, opt2fn_null("-nr", NFILE, fnm), &distvals, oenv);
+                   top.get(), ePBC, ngrps, axis, permolecule, radial, distcalc, opt2fn_null("-nr", NFILE, fnm), &distvals, oenv);
 
         if (radial)
         {
@@ -1102,7 +1101,7 @@ int gmx_order(int argc, char *argv[])
             }
             else
             {
-                write_bfactors(fnm, NFILE, index, a, nslices, ngrps, slOrder, top, distvals, oenv);
+                write_bfactors(fnm, NFILE, index, a, nslices, ngrps, slOrder, top.get(), distvals, oenv);
             }
         }
 

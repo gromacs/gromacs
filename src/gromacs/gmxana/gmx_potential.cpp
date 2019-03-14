@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -452,7 +452,6 @@ int gmx_potential(int argc, char *argv[])
                        slWidth;                /* width of one slice         */
     char      **grpname;                       /* groupnames                 */
     int        *ngx;                           /* sizes of groups            */
-    t_topology *top;                           /* topology        */
     int         ePBC;
     int       **index;                         /* indices for all groups     */
     t_filenm    fnm[] = {                      /* files for g_order       */
@@ -476,7 +475,7 @@ int gmx_potential(int argc, char *argv[])
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
+    std::unique_ptr<t_topology> top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
     snew(grpname, ngrps);
     snew(index, ngrps);
@@ -487,7 +486,7 @@ int gmx_potential(int argc, char *argv[])
 
     calc_potential(ftp2fn(efTRX, NFILE, fnm), index, ngx,
                    &potential, &charge, &field,
-                   &nslices, top, ePBC, axis, ngrps, &slWidth, fudge_z,
+                   &nslices, top.get(), ePBC, axis, ngrps, &slWidth, fudge_z,
                    bSpherical, bCorrect, oenv);
 
     plot_potential(potential, charge, field, opt2fn("-o", NFILE, fnm),

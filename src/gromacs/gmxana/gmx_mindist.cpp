@@ -655,7 +655,7 @@ static void dump_res(FILE *out, int nres, int *resindex, int index[])
 
 int gmx_mindist(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char                 *desc[] = {
         "[THISMODULE] computes the distance between one group and a number of",
         "other groups. Both the minimum distance",
         "(between any pair of atoms from the respective groups)",
@@ -677,12 +677,12 @@ int gmx_mindist(int argc, char *argv[])
         "Also [gmx-distance] and [gmx-pairdist] calculate distances."
     };
 
-    gmx_bool          bMat             = FALSE, bPI = FALSE, bSplit = FALSE, bMax = FALSE, bPBC = TRUE;
-    gmx_bool          bGroup           = FALSE;
-    real              rcutoff          = 0.6;
-    int               ng               = 1;
-    gmx_bool          bEachResEachTime = FALSE, bPrintResName = FALSE;
-    t_pargs           pa[]             = {
+    gmx_bool                    bMat             = FALSE, bPI = FALSE, bSplit = FALSE, bMax = FALSE, bPBC = TRUE;
+    gmx_bool                    bGroup           = FALSE;
+    real                        rcutoff          = 0.6;
+    int                         ng               = 1;
+    gmx_bool                    bEachResEachTime = FALSE, bPrintResName = FALSE;
+    t_pargs                     pa[]             = {
         { "-matrix", FALSE, etBOOL, {&bMat},
           "Calculate half a matrix of group-group distances" },
         { "-max",    FALSE, etBOOL, {&bMax},
@@ -704,19 +704,19 @@ int gmx_mindist(int argc, char *argv[])
         { "-printresname",  FALSE, etBOOL, {&bPrintResName},
           "Write residue names" }
     };
-    gmx_output_env_t *oenv;
-    t_topology       *top  = nullptr;
-    int               ePBC = -1;
-    rvec             *x    = nullptr;
-    matrix            box;
-    gmx_bool          bTop = FALSE;
+    gmx_output_env_t           *oenv;
+    std::unique_ptr<t_topology> top;
+    int                         ePBC = -1;
+    rvec                       *x    = nullptr;
+    matrix                      box;
+    gmx_bool                    bTop = FALSE;
 
-    int               i, nres = 0;
-    const char       *trxfnm, *tpsfnm, *ndxfnm, *distfnm, *numfnm, *atmfnm, *oxfnm, *resfnm;
-    char            **grpname;
-    int              *gnx;
-    int             **index, *residues = nullptr;
-    t_filenm          fnm[] = {
+    int                         i, nres = 0;
+    const char                 *trxfnm, *tpsfnm, *ndxfnm, *distfnm, *numfnm, *atmfnm, *oxfnm, *resfnm;
+    char                      **grpname;
+    int                        *gnx;
+    int                       **index, *residues = nullptr;
+    t_filenm                    fnm[] = {
         { efTRX, "-f",  nullptr,      ffREAD },
         { efTPS,  nullptr, nullptr,      ffOPTRD },
         { efNDX,  nullptr, nullptr,      ffOPTRD },
@@ -773,8 +773,9 @@ int gmx_mindist(int argc, char *argv[])
 
     if (tpsfnm || resfnm || !ndxfnm)
     {
-        snew(top, 1);
-        bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
+        auto pair = read_tps_conf(tpsfnm, &ePBC, &x, nullptr, box, FALSE);
+        top  = std::move(pair.first);
+        bTop = pair.second;
         if (bPI && !bTop)
         {
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");
@@ -817,7 +818,7 @@ int gmx_mindist(int argc, char *argv[])
 
     if (bPI)
     {
-        periodic_mindist_plot(trxfnm, distfnm, top, ePBC, gnx[0], index[0], bSplit, oenv);
+        periodic_mindist_plot(trxfnm, distfnm, top.get(), ePBC, gnx[0], index[0], bSplit, oenv);
     }
     else
     {
@@ -834,7 +835,6 @@ int gmx_mindist(int argc, char *argv[])
     }
 
     output_env_done(oenv);
-    done_top(top);
     for (int i = 0; i < ng; i++)
     {
         sfree(index[i]);
@@ -843,7 +843,6 @@ int gmx_mindist(int argc, char *argv[])
     sfree(gnx);
     sfree(x);
     sfree(grpname);
-    sfree(top);
 
     return 0;
 }

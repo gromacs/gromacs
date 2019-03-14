@@ -666,7 +666,6 @@ int gmx_densorder(int argc, char *argv[])
      */
 
     gmx_output_env_t  *oenv;
-    t_topology        *top;
     char             **grpname;
     int                ePBC, *ngx;
     static real        binw      = 0.2;
@@ -744,7 +743,7 @@ int gmx_densorder(int argc, char *argv[])
     bRawOut  = opt2bSet("-or", NFILE, fnm);
     bGraph   = opt2bSet("-og", NFILE, fnm);
     bOut     = opt2bSet("-o", NFILE, fnm);
-    top      = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    std::unique_ptr<t_topology> top      = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
     snew(grpname, 1);
     snew(index, 1);
     snew(ngx, 1);
@@ -754,7 +753,7 @@ int gmx_densorder(int argc, char *argv[])
 
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname);
 
-    density_in_time(ftp2fn(efTRX, NFILE, fnm), index, ngx, binw, binwz, nsttblock, &Densmap, &xslices, &yslices, &zslices, &tblock, top, ePBC, axis, bCenter, b1d, oenv);
+    density_in_time(ftp2fn(efTRX, NFILE, fnm), index, ngx, binw, binwz, nsttblock, &Densmap, &xslices, &yslices, &zslices, &tblock, top.get(), ePBC, axis, bCenter, b1d, oenv);
 
     if (ftorder > 0)
     {

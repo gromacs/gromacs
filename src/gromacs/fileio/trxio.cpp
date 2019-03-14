@@ -1121,17 +1121,15 @@ void rewind_trj(t_trxstatus *status)
 
 /***** T O P O L O G Y   S T U F F ******/
 
-t_topology *read_top(const char *fn, int *ePBC)
+std::unique_ptr<t_topology> read_top(const char *fn, int *ePBC)
 {
-    int         epbc, natoms;
-    t_topology *top;
+    int         natoms;
 
-    snew(top, 1);
-    epbc = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
+    auto        pair = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr);
     if (ePBC)
     {
-        *ePBC = epbc;
+        *ePBC = pair.second;
     }
-
+    std::unique_ptr<t_topology> top = std::move(pair.first);
     return top;
 }

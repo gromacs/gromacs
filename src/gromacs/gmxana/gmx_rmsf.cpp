@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -237,7 +237,6 @@ int gmx_rmsf(int argc, char *argv[])
     int               i, m, teller = 0;
     real              t, *w_rls;
 
-    t_topology        top;
     int               ePBC;
     t_atoms          *pdbatoms, *refatoms;
 
@@ -294,17 +293,18 @@ int gmx_rmsf(int argc, char *argv[])
     devfn    = opt2fn_null("-od", NFILE, fnm);
     dirfn    = opt2fn_null("-dir", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, nullptr, box, TRUE);
-    const char *title = *top.name;
-    snew(w_rls, top.atoms.nr);
+    auto                        pair  = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &xref, nullptr, box, TRUE);
+    std::unique_ptr<t_topology> top   = std::move(pair.first);
+    const char                 *title = *top->name;
+    snew(w_rls, top->atoms.nr);
 
     fprintf(stderr, "Select group(s) for root mean square calculation\n");
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
+    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
 
     /* Set the weight */
     for (i = 0; i < isize; i++)
     {
-        w_rls[index[i]] = top.atoms.atom[index[i]].m;
+        w_rls[index[i]] = top->atoms.atom[index[i]].m;
     }
 
     /* Malloc the rmsf arrays */
@@ -319,27 +319,30 @@ int gmx_rmsf(int argc, char *argv[])
     {
         snew(rmsd_x, isize);
     }
-
+    /* We need to keep the topology objects valid because the pointers to the atoms would
+     * otherwise be invalidated the moment we free the object through the destructor ...
+     */
+    std::unique_ptr<t_topology> top_pdb1;
+    std::unique_ptr<t_topology> top_pdb2;
     if (bReadPDB)
     {
-        t_topology *top_pdb;
-        snew(top_pdb, 1);
         /* Read coordinates twice */
-        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, nullptr, nullptr, pdbbox, FALSE);
+        auto pair = read_tps_conf(opt2fn("-q", NFILE, fnm), nullptr, nullptr, nullptr, pdbbox, FALSE);
+        top_pdb1 = std::move(pair.first);
         snew(pdbatoms, 1);
-        *pdbatoms = top_pdb->atoms;
-        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, &pdbx, nullptr, pdbbox, FALSE);
+        *pdbatoms = top_pdb1->atoms;
+        pair      = read_tps_conf(opt2fn("-q", NFILE, fnm), nullptr, &pdbx, nullptr, pdbbox, FALSE);
         /* TODO Should this assert that top_pdb->atoms.nr == top.atoms.nr?
          * See discussion at https://gerrit.gromacs.org/#/c/6430/1 */
-        title = *top_pdb->name;
+        top_pdb2 = std::move(pair.first);
+        title    = *top_pdb2->name;
         snew(refatoms, 1);
-        *refatoms = top_pdb->atoms;
-        sfree(top_pdb);
+        *refatoms = top_pdb2->atoms;
     }
     else
     {
-        pdbatoms  = &top.atoms;
-        refatoms  = &top.atoms;
+        pdbatoms  = &top->atoms;
+        refatoms  = &top->atoms;
         pdbx      = xref;
         snew(pdbatoms->pdbinfo, pdbatoms->nr);
         pdbatoms->havePdbInfo = TRUE;
@@ -348,14 +351,14 @@ int gmx_rmsf(int argc, char *argv[])
 
     if (bFit)
     {
-        sub_xcm(xref, isize, index, top.atoms.atom, xcm, FALSE);
+        sub_xcm(xref, isize, index, top->atoms.atom, xcm, FALSE);
     }
 
     natom = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
     if (bFit)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natom);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natom);
     }
 
     /* Now read the trj again to compute fluctuations */
@@ -368,7 +371,7 @@ int gmx_rmsf(int argc, char *argv[])
             gmx_rmpbc(gpbc, natom, box, x);
 
             /* Set center of mass to zero */
-            sub_xcm(x, isize, index, top.atoms.atom, xcm, FALSE);
+            sub_xcm(x, isize, index, top->atoms.atom, xcm, FALSE);
 
             /* Fit to reference structure */
             do_fit(natom, w_rls, xref, x);
@@ -427,10 +430,10 @@ int gmx_rmsf(int argc, char *argv[])
             {
                 U[i][d*DIM + m] = U[i][d*DIM + m]*invcount
                     - xav[i*DIM + d]*xav[i*DIM + m];
-                Uaver[3*d+m] += top.atoms.atom[index[i]].m*U[i][d*DIM + m];
+                Uaver[3*d+m] += top->atoms.atom[index[i]].m*U[i][d*DIM + m];
             }
         }
-        totmass += top.atoms.atom[index[i]].m;
+        totmass += top->atoms.atom[index[i]].m;
     }
     for (d = 0; d < DIM*DIM; d++)
     {
@@ -441,7 +444,7 @@ int gmx_rmsf(int argc, char *argv[])
     {
         for (d = 0; d < DIM*DIM; d++)
         {
-            average_residues(nullptr, U, d, isize, index, w_rls, &top.atoms);
+            average_residues(nullptr, U, d, isize, index, w_rls, &top->atoms);
         }
     }
 
@@ -498,14 +501,14 @@ int gmx_rmsf(int argc, char *argv[])
         for (i = 0; (i < isize); i++)
         {
             if (!bRes || i+1 == isize ||
-                top.atoms.atom[index[i]].resind != top.atoms.atom[index[i+1]].resind)
+                top->atoms.atom[index[i]].resind != top->atoms.atom[index[i+1]].resind)
             {
-                resind    = top.atoms.atom[index[i]].resind;
-                pdb_bfac  = find_pdb_bfac(pdbatoms, &top.atoms.resinfo[resind],
-                                          *(top.atoms.atomname[index[i]]));
+                resind    = top->atoms.atom[index[i]].resind;
+                pdb_bfac  = find_pdb_bfac(pdbatoms, &top->atoms.resinfo[resind],
+                                          *(top->atoms.atomname[index[i]]));
 
                 fprintf(fp, "%5d  %10.5f  %10.5f\n",
-                        bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, rmsf[i]*bfac,
+                        bRes ? top->atoms.resinfo[top->atoms.atom[index[i]].resind].nr : index[i]+1, rmsf[i]*bfac,
                         pdb_bfac);
             }
         }
@@ -517,10 +520,10 @@ int gmx_rmsf(int argc, char *argv[])
         for (i = 0; i < isize; i++)
         {
             if (!bRes || i+1 == isize ||
-                top.atoms.atom[index[i]].resind != top.atoms.atom[index[i+1]].resind)
+                top->atoms.atom[index[i]].resind != top->atoms.atom[index[i+1]].resind)
             {
                 fprintf(fp, "%5d %8.4f\n",
-                        bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, std::sqrt(rmsf[i]));
+                        bRes ? top->atoms.resinfo[top->atoms.atom[index[i]].resind].nr : index[i]+1, std::sqrt(rmsf[i]));
             }
         }
         xvgrclose(fp);
@@ -539,17 +542,17 @@ int gmx_rmsf(int argc, char *argv[])
         }
         if (bRes)
         {
-            average_residues(rmsf, nullptr, 0, isize, index, w_rls, &top.atoms);
+            average_residues(rmsf, nullptr, 0, isize, index, w_rls, &top->atoms);
         }
         /* Write RMSD output */
         fp = xvgropen(devfn, "RMS Deviation", label, "(nm)", oenv);
         for (i = 0; i < isize; i++)
         {
             if (!bRes || i+1 == isize ||
-                top.atoms.atom[index[i]].resind != top.atoms.atom[index[i+1]].resind)
+                top->atoms.atom[index[i]].resind != top->atoms.atom[index[i+1]].resind)
             {
                 fprintf(fp, "%5d %8.4f\n",
-                        bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, std::sqrt(rmsf[i]));
+                        bRes ? top->atoms.resinfo[top->atoms.atom[index[i]].resind].nr : index[i]+1, std::sqrt(rmsf[i]));
             }
         }
         xvgrclose(fp);
@@ -568,7 +571,7 @@ int gmx_rmsf(int argc, char *argv[])
     if (opt2bSet("-ox", NFILE, fnm))
     {
         rvec *bFactorX;
-        snew(bFactorX, top.atoms.nr);
+        snew(bFactorX, top->atoms.nr);
         for (i = 0; i < isize; i++)
         {
             for (d = 0; d < DIM; d++)
