@@ -75,6 +75,8 @@ namespace gmx
 //! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
 {
+    auto                     mdModules = std::make_unique<MDModules>();
+
     std::vector<const char *>desc = {
         "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
@@ -243,7 +245,8 @@ int gmx_mdrun(int argc, char *argv[])
      * We would prefer to rebuild resources only as necessary, but we defer such
      * details to future optimizations.
      */
-    auto builder = MdrunnerBuilder(compat::not_null<decltype( &simulationContext)>(&simulationContext));
+    auto builder = MdrunnerBuilder(std::move(mdModules),
+                                   compat::not_null<decltype( &simulationContext)>(&simulationContext));
     builder.addSimulationMethod(options.mdrunOptions, options.pforce);
     builder.addDomainDecomposition(options.domdecOptions);
     // \todo pass by value

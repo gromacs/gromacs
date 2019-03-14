@@ -52,6 +52,7 @@
 #include "gromacs/domdec/options.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -188,13 +189,8 @@ class Mdrunner
         Mdrunner cloneOnSpawnedThread() const;
 
     private:
-        /*! \brief Constructor.
-         *
-         * Note that when member variables are not present in the constructor
-         * member initialization list (which is true for the default constructor),
-         * then they are initialized with any default member initializer specified
-         * when they were declared, or default initialized. */
-        Mdrunner() = default;
+        /*! \brief Constructor. */
+        explicit Mdrunner(std::unique_ptr<MDModules> mdModules);
 
         //! Parallelism-related user options.
         gmx_hw_opt_t             hw_opt;
@@ -279,6 +275,8 @@ class Mdrunner
          * We do not need a full type specification here, so we use an opaque pointer.
          */
         std::unique_ptr<StopHandlerBuilder>    stopHandlerBuilder_;
+        //! The modules that comprise mdrun.
+        std::unique_ptr<MDModules>             mdModules_;
 };
 
 /*! \libinternal
@@ -328,7 +326,8 @@ class MdrunnerBuilder final
         /*!
          * \brief Constructor requires a handle to a SimulationContext to share.
          *
-         * \param context handle to run-time resources and execution environment details.
+         * \param mdModules  The handle to the set of modules active in mdrun
+         * \param context    The handle to run-time resources and execution environment details.
          *
          * The calling code must guarantee that the
          * pointer remains valid for the lifetime of the builder, and that the
@@ -341,7 +340,8 @@ class MdrunnerBuilder final
          * instead of a pointer.
          * Ref e.g. https://redmine.gromacs.org/issues/2587
          */
-        explicit MdrunnerBuilder(compat::not_null<SimulationContext*> context);
+        explicit MdrunnerBuilder(std::unique_ptr<MDModules>           mdModules,
+                                 compat::not_null<SimulationContext*> context);
 
         //! \cond
         MdrunnerBuilder() = delete;

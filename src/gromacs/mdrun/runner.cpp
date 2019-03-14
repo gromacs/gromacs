@@ -167,7 +167,7 @@ static void threadMpiMdrunnerAccessBarrier()
 
 Mdrunner Mdrunner::cloneOnSpawnedThread() const
 {
-    auto newRunner = Mdrunner();
+    auto newRunner = Mdrunner(std::make_unique<MDModules>());
 
     // All runners in the same process share a restraint manager resource because it is
     // part of the interface to the client code, which is associated only with the
@@ -574,7 +574,6 @@ int Mdrunner::mdrunner()
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
-    std::unique_ptr<gmx::MDModules> mdModules(new gmx::MDModules);
     t_inputrec                      inputrecInstance;
     t_inputrec                     *inputrec = &inputrecInstance;
     gmx_mtop_t                      mtop;
@@ -847,17 +846,17 @@ int Mdrunner::mdrunner()
     // TODO: hide restraint implementation details from Mdrunner.
     // There is nothing unique about restraints at this point as far as the
     // Mdrunner is concerned. The Mdrunner should just be getting a sequence of
-    // factory functions from the SimulationContext on which to call mdModules->add().
+    // factory functions from the SimulationContext on which to call mdModules_->add().
     // TODO: capture all restraints into a single RestraintModule, passed to the runner builder.
     for (auto && restraint : restraintManager_->getRestraints())
     {
         auto module = RestraintMDModule::create(restraint,
                                                 restraint->sites());
-        mdModules->add(std::move(module));
+        mdModules_->add(std::move(module));
     }
 
     // TODO: Error handling
-    mdModules->assignOptionsToModules(*inputrec->params, nullptr);
+    mdModules_->assignOptionsToModules(*inputrec->params, nullptr);
 
     if (fplog != nullptr)
     {
@@ -1327,7 +1326,7 @@ int Mdrunner::mdrunner()
     {
         /* Initiate forcerecord */
         fr                 = new t_forcerec;
-        fr->forceProviders = mdModules->initForceProviders();
+        fr->forceProviders = mdModules_->initForceProviders();
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
                       opt2fn("-table", filenames.size(), filenames.data()),
@@ -1536,7 +1535,7 @@ int Mdrunner::mdrunner()
             vsite.get(), constr.get(),
             enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
             deform.get(),
-            mdModules->outputProvider(),
+            mdModules_->outputProvider(),
             inputrec, &mtop,
             fcd,
             globalState.get(),
@@ -1593,7 +1592,7 @@ int Mdrunner::mdrunner()
     // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
-    mdModules.reset(nullptr);   // destruct force providers here as they might also use the GPU
+    mdModules_.reset(nullptr);   // destruct force providers here as they might also use the GPU
 
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
     free_gpu_resources(fr, physicalNodeComm);
@@ -1671,6 +1670,11 @@ void Mdrunner::addPotential(std::shared_ptr<gmx::IRestraintPotential> puller,
                                  std::move(name));
 }
 
+Mdrunner::Mdrunner(std::unique_ptr<MDModules> mdModules)
+    : mdModules_(std::move(mdModules))
+{
+}
+
 Mdrunner::Mdrunner(Mdrunner &&) noexcept = default;
 
 //NOLINTNEXTLINE(performance-noexcept-move-constructor) working around GCC bug 58265
@@ -1680,7 +1684,8 @@ class Mdrunner::BuilderImplementation
 {
     public:
         BuilderImplementation() = delete;
-        explicit BuilderImplementation(SimulationContext* context);
+        BuilderImplementation(std::unique_ptr<MDModules> mdModules,
+                              SimulationContext        * context);
         ~BuilderImplementation();
 
         BuilderImplementation &setExtraMdrunOptions(const MdrunOptions &options,
@@ -1713,6 +1718,7 @@ class Mdrunner::BuilderImplementation
         Mdrunner build();
 
     private:
+
         // Default parameters copied from runner.h
         // \todo Clarify source(s) of default parameters.
 
@@ -1735,6 +1741,9 @@ class Mdrunner::BuilderImplementation
 
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real forceWarningThreshold_ = -1;
+
+        //! The modules that comprise the functionality of mdrun.
+        std::unique_ptr<MDModules> mdModules_;
 
         /*! \brief  Non-owning pointer to SimulationContext (owned and managed by client)
          *
@@ -1775,7 +1784,9 @@ class Mdrunner::BuilderImplementation
         std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_ = nullptr;
 };
 
-Mdrunner::BuilderImplementation::BuilderImplementation(SimulationContext* context) :
+Mdrunner::BuilderImplementation::BuilderImplementation(std::unique_ptr<MDModules> mdModules,
+                                                       SimulationContext        * context) :
+    mdModules_(std::move(mdModules)),
     context_(context)
 {
     GMX_ASSERT(context_, "Bug found. It should not be possible to construct builder without a valid context.");
@@ -1814,7 +1825,7 @@ void Mdrunner::BuilderImplementation::addMultiSim(gmx_multisim_t* multisim)
 
 Mdrunner Mdrunner::BuilderImplementation::build()
 {
-    auto newRunner = Mdrunner();
+    auto newRunner = Mdrunner(std::move(mdModules_));
 
     GMX_ASSERT(context_, "Bug found. It should not be possible to call build() without a valid context.");
 
@@ -1942,8 +1953,9 @@ void Mdrunner::BuilderImplementation::addStopHandlerBuilder(std::unique_ptr<Stop
     stopHandlerBuilder_ = std::move(builder);
 }
 
-MdrunnerBuilder::MdrunnerBuilder(compat::not_null<SimulationContext*> context) :
-    impl_ {std::make_unique<Mdrunner::BuilderImplementation>(context)}
+MdrunnerBuilder::MdrunnerBuilder(std::unique_ptr<MDModules>           mdModules,
+                                 compat::not_null<SimulationContext*> context) :
+    impl_ {std::make_unique<Mdrunner::BuilderImplementation>(std::move(mdModules), context)}
 {
 }
 

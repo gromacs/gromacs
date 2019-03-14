@@ -150,6 +150,8 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             strcpy(argv[argvIndex], mdArg.c_str());
         }
 
+        auto mdModules = std::make_unique<MDModules>();
+
         // pointer-to-t_commrec is the de facto handle type for communications record.
         // Complete shared / borrowed ownership requires a reference to this stack variable
         // (or pointer-to-pointer-to-t_commrec) since borrowing code may update the pointer.
@@ -176,7 +178,8 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
 
         auto simulationContext = createSimulationContext(options_.cr);
 
-        auto builder = MdrunnerBuilder(compat::not_null<decltype( &simulationContext)>(&simulationContext));
+        auto builder = MdrunnerBuilder(std::move(mdModules),
+                                       compat::not_null<decltype( &simulationContext)>(&simulationContext));
         builder.addSimulationMethod(options_.mdrunOptions, options_.pforce);
         builder.addDomainDecomposition(options_.domdecOptions);
         // \todo pass by value
