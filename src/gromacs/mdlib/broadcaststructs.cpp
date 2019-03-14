@@ -127,6 +127,32 @@ static void bc_strings(const t_commrec *cr, t_symtab *symtab, int nr, char ****n
     sfree(handle);
 }
 
+static void bc_strings_container(const t_commrec      *cr,
+                                 t_symtab             *symtab,
+                                 int                   nr,
+                                 std::vector<char **> *nm)
+{
+    std::vector<int> handle;
+    if (MASTER(cr))
+    {
+        for (int i = 0; (i < nr); i++)
+        {
+            handle.emplace_back(lookup_symtab(symtab, (*nm)[i]));
+        }
+    }
+    block_bc(cr, nr);
+    nblock_abc(cr, nr, &handle);
+
+    if (!MASTER(cr))
+    {
+        nm->resize(nr);
+        for (int i = 0; (i < nr); i++)
+        {
+            (*nm)[i] = get_symtab_handle(symtab, handle[i]);
+        }
+    }
+}
+
 static void bc_strings_resinfo(const t_commrec *cr, t_symtab *symtab,
                                int nr, t_resinfo *resinfo)
 {
@@ -196,15 +222,13 @@ static void bc_blocka(const t_commrec *cr, t_blocka *block)
     }
 }
 
-static void bc_grps(const t_commrec *cr, t_grps grps[])
+static void bc_grps(const t_commrec *cr, gmx::ArrayRef<t_grps> grps)
 {
-    int i;
-
-    for (i = 0; (i < egcNR); i++)
+    for (auto &group : grps)
     {
-        block_bc(cr, grps[i].nr);
-        snew_bc(cr, grps[i].nm_ind, grps[i].nr);
-        nblock_bc(cr, grps[i].nr, grps[i].nm_ind);
+        block_bc(cr, group.nr);
+        snew_bc(cr, group.nm_ind, group.nr);
+        nblock_bc(cr, group.nr, group.nm_ind);
     }
 }
 
@@ -224,18 +248,17 @@ static void bc_atoms(const t_commrec *cr, t_symtab *symtab, t_atoms *atoms)
 }
 
 static void bc_groups(const t_commrec *cr, t_symtab *symtab,
-                      int natoms, gmx_groups_t *groups)
+                      int natoms, SimulationGroups *groups)
 {
-    int g, n;
+    int n;
 
-    bc_grps(cr, groups->grps);
-    block_bc(cr, groups->ngrpname);
-    bc_strings(cr, symtab, groups->ngrpname, &groups->grpname);
-    for (g = 0; g < egcNR; g++)
+    bc_grps(cr, groups->groups);
+    bc_strings_container(cr, symtab, groups->groupNames.size(), &groups->groupNames);
+    for (auto group : gmx::keysOf(groups->groups))
     {
         if (MASTER(cr))
         {
-            if (groups->grpnr[g])
+            if (!groups->groupNumbers[group].empty())
             {
                 n = natoms;
             }
@@ -245,14 +268,9 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
             }
         }
         block_bc(cr, n);
-        if (n == 0)
+        if (n != 0)
         {
-            groups->grpnr[g] = nullptr;
-        }
-        else
-        {
-            snew_bc(cr, groups->grpnr[g], n);
-            nblock_bc(cr, n, groups->grpnr[g]);
+            nblock_abc(cr, n, &groups->groupNumbers[group]);
         }
     }
     if (debug)

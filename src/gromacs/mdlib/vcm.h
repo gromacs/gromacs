@@ -46,7 +46,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_groups_t;
+struct SimulationGroups;
 struct t_inputrec;
 struct t_mdatoms;
 
@@ -78,7 +78,7 @@ struct t_vcm
     ivec                     *nFreeze;    /* Tells whether dimensions are frozen per freeze group */
     std::vector<t_vcm_thread> thread_vcm; /* Temporary data per thread and group */
 
-    t_vcm(const gmx_groups_t &groups, const t_inputrec &ir);
+    t_vcm(const SimulationGroups &groups, const t_inputrec &ir);
     ~t_vcm();
 };
 

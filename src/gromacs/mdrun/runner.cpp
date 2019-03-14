@@ -1506,7 +1506,7 @@ int Mdrunner::mdrunner()
         /* Energy terms and groups */
         gmx_enerdata_t *enerd;
         snew(enerd, 1);
-        init_enerdata(mtop.groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+        init_enerdata(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].nr, inputrec->fepvals->n_lambda, enerd);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1598,7 +1598,7 @@ int Mdrunner::mdrunner()
     free_gpu_resources(fr, physicalNodeComm);
     free_gpu(nonbondedDeviceInfo);
     free_gpu(pmeDeviceInfo);
-    done_forcerec(fr, mtop.molblock.size(), mtop.groups.grps[egcENER].nr);
+    done_forcerec(fr, mtop.molblock.size(), mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].nr);
     sfree(fcd);
 
     if (doMembed)

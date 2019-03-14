@@ -77,15 +77,15 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void ns(FILE               *fp,
-        t_forcerec         *fr,
-        matrix              box,
-        const gmx_groups_t *groups,
-        gmx_localtop_t     *top,
-        const t_mdatoms    *md,
-        const t_commrec    *cr,
-        t_nrnb             *nrnb,
-        gmx_bool            bFillGrid)
+void ns(FILE                      *fp,
+        t_forcerec                *fr,
+        matrix                     box,
+        const SimulationGroups    *groups,
+        gmx_localtop_t            *top,
+        const t_mdatoms           *md,
+        const t_commrec           *cr,
+        t_nrnb                    *nrnb,
+        gmx_bool                   bFillGrid)
 {
     int     nsearch;
 

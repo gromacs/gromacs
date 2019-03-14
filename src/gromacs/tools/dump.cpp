@@ -96,7 +96,7 @@ void list_tpr(const char *fn,
               gmx_bool    bOriginalInputrec)
 {
     FILE         *gp;
-    int           indent, i, j, **gcount, atot;
+    int           indent, atot;
     t_state       state;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
@@ -158,35 +158,33 @@ void list_tpr(const char *fn,
             pr_rvecs(stdout, indent, "v", tpx.bV ? state.v.rvec_array() : nullptr, state.natoms);
         }
 
-        const gmx_groups_t &groups = mtop.groups;
+        const SimulationGroups &groups = mtop.groups;
 
-        snew(gcount, egcNR);
-        for (i = 0; (i < egcNR); i++)
+        gmx::EnumerationArray < SimulationAtomGroupType, std::vector < int>> gcount;
+        for (auto group : keysOf(gcount))
         {
-            snew(gcount[i], groups.grps[i].nr);
+            gcount[group].resize(groups.groups[group].nr);
         }
 
-        for (i = 0; (i < mtop.natoms); i++)
+        for (int i = 0; (i < mtop.natoms); i++)
         {
-            for (j = 0; (j < egcNR); j++)
+            for (auto group : keysOf(gcount))
             {
-                gcount[j][getGroupType(groups, j, i)]++;
+                gcount[group][getGroupType(groups, group, i)]++;
             }
         }
         printf("Group statistics\n");
-        for (i = 0; (i < egcNR); i++)
+        for (auto group : keysOf(gcount))
         {
             atot = 0;
-            printf("%-12s: ", gtypes[i]);
-            for (j = 0; (j < groups.grps[i].nr); j++)
+            printf("%-12s: ", shortName(group));
+            for (int j = 0; (j < groups.groups[group].nr); j++)
             {
-                printf("  %5d", gcount[i][j]);
-                atot += gcount[i][j];
+                printf("  %5d", gcount[group][j]);
+                atot += gcount[group][j];
             }
             printf("  (total %d atoms)\n", atot);
-            sfree(gcount[i]);
         }
-        sfree(gcount);
     }
 }
 

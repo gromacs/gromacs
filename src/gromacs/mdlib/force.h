@@ -45,7 +45,7 @@ class DDBalanceRegionHandler;
 struct gmx_edsam;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
-struct gmx_groups_t;
+struct SimulationGroups;
 struct gmx_grppairener_t;
 struct gmx_localtop_t;
 struct gmx_multisim_t;
@@ -89,38 +89,38 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot);
 void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda *fepvals);
 /* Sum the free energy contributions */
 
-void do_force(FILE                                     *log,
-              const t_commrec                          *cr,
-              const gmx_multisim_t                     *ms,
-              const t_inputrec                         *inputrec,
-              gmx::Awh                                 *awh,
-              gmx_enfrot                               *enforcedRotation,
-              int64_t                                   step,
-              t_nrnb                                   *nrnb,
-              gmx_wallcycle                            *wcycle,
+void do_force(FILE                                            *log,
+              const t_commrec                                 *cr,
+              const gmx_multisim_t                            *ms,
+              const t_inputrec                                *inputrec,
+              gmx::Awh                                        *awh,
+              gmx_enfrot                                      *enforcedRotation,
+              int64_t                                          step,
+              t_nrnb                                          *nrnb,
+              gmx_wallcycle                                   *wcycle,
               // TODO top can be const when the group scheme no longer
               // builds exclusions during neighbor searching within
               // do_force_cutsGROUP.
-              gmx_localtop_t                           *top,
-              const gmx_groups_t                       *groups,
-              matrix                                    box,
-              gmx::ArrayRefWithPadding<gmx::RVec>       coordinates,
-              history_t                                *hist,
-              gmx::ArrayRefWithPadding<gmx::RVec>       force,
-              tensor                                    vir_force,
-              const t_mdatoms                          *mdatoms,
-              gmx_enerdata_t                           *enerd,
-              t_fcdata                                 *fcd,
-              gmx::ArrayRef<real>                       lambda,
-              t_graph                                  *graph,
-              t_forcerec                               *fr,
-              gmx::PpForceWorkload                     *ppForceWorkload,
-              const gmx_vsite_t                        *vsite,
-              rvec                                      mu_tot,
-              double                                    t,
-              gmx_edsam                                *ed,
-              int                                       flags,
-              const DDBalanceRegionHandler             &ddBalanceRegionHandler);
+              gmx_localtop_t                                  *top,
+              const SimulationGroups                          *groups,
+              matrix                                           box,
+              gmx::ArrayRefWithPadding<gmx::RVec>              coordinates,
+              history_t                                       *hist,
+              gmx::ArrayRefWithPadding<gmx::RVec>              force,
+              tensor                                           vir_force,
+              const t_mdatoms                                 *mdatoms,
+              gmx_enerdata_t                                  *enerd,
+              t_fcdata                                        *fcd,
+              gmx::ArrayRef<real>                              lambda,
+              t_graph                                         *graph,
+              t_forcerec                                      *fr,
+              gmx::PpForceWorkload                            *ppForceWorkload,
+              const gmx_vsite_t                               *vsite,
+              rvec                                             mu_tot,
+              double                                           t,
+              gmx_edsam                                       *ed,
+              int                                              flags,
+              const DDBalanceRegionHandler                    &ddBalanceRegionHandler);
 
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
@@ -131,15 +131,15 @@ void do_force(FILE                                     *log,
  * f is always required.
  */
 
-void ns(FILE               *fplog,
-        t_forcerec         *fr,
-        matrix              box,
-        const gmx_groups_t *groups,
-        gmx_localtop_t     *top,
-        const t_mdatoms    *md,
-        const t_commrec    *cr,
-        t_nrnb             *nrnb,
-        gmx_bool            bFillGrid);
+void ns(FILE                      *fplog,
+        t_forcerec                *fr,
+        matrix                     box,
+        const SimulationGroups    *groups,
+        gmx_localtop_t            *top,
+        const t_mdatoms           *md,
+        const t_commrec           *cr,
+        t_nrnb                    *nrnb,
+        gmx_bool                   bFillGrid);
 /* Call the neighborsearcher */
 
 void do_force_lowlevel(t_forcerec   *fr,

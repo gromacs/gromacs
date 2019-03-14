@@ -137,7 +137,6 @@ void
 Integrator::do_tpi()
 {
     gmx_localtop_t          top;
-    gmx_groups_t           *groups;
     PaddedVector<gmx::RVec> f {};
     real                    lambda, t, temp, beta, drmax, epot;
     double                  embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
@@ -188,7 +187,7 @@ Integrator::do_tpi()
 
     gmx_mtop_generate_local_top(*top_global, &top, inputrec->efep != efepNO);
 
-    groups = &top_global->groups;
+    SimulationGroups *groups = &top_global->groups;
 
     bCavity = (inputrec->eI == eiTPIC);
     if (bCavity)
@@ -347,7 +346,7 @@ Integrator::do_tpi()
         }
     }
 
-    ngid   = groups->grps[egcENER].nr;
+    ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].nr;
     gid_tp = GET_CGINFO_GID(fr->cginfo[cg_tp]);
     nener  = 1 + ngid;
     if (bDispCorr)
@@ -395,7 +394,7 @@ Integrator::do_tpi()
         for (i = 0; i < ngid; i++)
         {
             sprintf(str, "f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
-                    *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
+                    *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[i]]));
             leg[e++] = gmx_strdup(str);
         }
         if (bDispCorr)
@@ -408,7 +407,7 @@ Integrator::do_tpi()
             for (i = 0; i < ngid; i++)
             {
                 sprintf(str, "f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
-                        *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
+                        *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[i]]));
                 leg[e++] = gmx_strdup(str);
             }
             if (bRFExcl)

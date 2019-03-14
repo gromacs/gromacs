@@ -2190,16 +2190,18 @@ static void do_atom(t_fileio *fio, t_atom *atom, gmx_bool bRead)
     }
 }
 
-static void do_grps(t_fileio *fio, int ngrp, t_grps grps[], gmx_bool bRead)
+static void do_grps(t_fileio             *fio,
+                    gmx::ArrayRef<t_grps> grps,
+                    gmx_bool              bRead)
 {
-    for (int j = 0; j < ngrp; j++)
+    for (auto &group : grps)
     {
-        gmx_fio_do_int(fio, grps[j].nr);
+        gmx_fio_do_int(fio, group.nr);
         if (bRead)
         {
-            snew(grps[j].nm_ind, grps[j].nr);
+            snew(group.nm_ind, group.nr);
         }
-        gmx_fio_ndo_int(fio, grps[j].nm_ind, grps[j].nr);
+        gmx_fio_ndo_int(fio, group.nm_ind, group.nr);
     }
 }
 
@@ -2292,35 +2294,28 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     do_resinfo(fio, atoms->nres, atoms->resinfo, bRead, symtab, file_version);
 }
 
-static void do_groups(t_fileio *fio, gmx_groups_t *groups,
+static void do_groups(t_fileio *fio, SimulationGroups *groups,
                       gmx_bool bRead, t_symtab *symtab)
 {
-    int      g;
-
-    do_grps(fio, egcNR, groups->grps, bRead);
-    gmx_fio_do_int(fio, groups->ngrpname);
+    do_grps(fio, groups->groups, bRead);
+    int numberOfGroupNames = groups->groupNames.size();
+    gmx_fio_do_int(fio, numberOfGroupNames);
     if (bRead)
     {
-        snew(groups->grpname, groups->ngrpname);
+        groups->groupNames.resize(numberOfGroupNames);
     }
-    do_strstr(fio, groups->ngrpname, groups->grpname, bRead, symtab);
-    for (g = 0; g < egcNR; g++)
+    do_strstr(fio, numberOfGroupNames, groups->groupNames.data(), bRead, symtab);
+    for (auto group : gmx::keysOf(groups->groupNumbers))
     {
-        gmx_fio_do_int(fio, groups->ngrpnr[g]);
-        if (groups->ngrpnr[g] == 0)
+        int numberOfGroupNumbers = groups->numberOfGroupNumbers(group);
+        gmx_fio_do_int(fio, numberOfGroupNumbers);
+        if (numberOfGroupNumbers != 0)
         {
             if (bRead)
             {
-                groups->grpnr[g] = nullptr;
+                groups->groupNumbers[group].resize(numberOfGroupNumbers);
             }
-        }
-        else
-        {
-            if (bRead)
-            {
-                snew(groups->grpnr[g], groups->ngrpnr[g]);
-            }
-            gmx_fio_ndo_uchar(fio, groups->grpnr[g], groups->ngrpnr[g]);
+            gmx_fio_ndo_uchar(fio, groups->groupNumbers[group].data(), numberOfGroupNumbers);
         }
     }
 }

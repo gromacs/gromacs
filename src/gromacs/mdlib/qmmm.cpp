@@ -353,15 +353,15 @@ t_QMMMrec *mk_QMMMrec()
 
 std::vector<int> qmmmAtomIndices(const t_inputrec &ir, const gmx_mtop_t &mtop)
 {
-    const int           numQmmmGroups = ir.opts.ngQM;
-    const gmx_groups_t &groups        = mtop.groups;
-    std::vector<int>    qmmmAtoms;
+    const int                  numQmmmGroups = ir.opts.ngQM;
+    const SimulationGroups    &groups        = mtop.groups;
+    std::vector<int>           qmmmAtoms;
     for (int i = 0; i < numQmmmGroups; i++)
     {
         for (const AtomProxy atomP : AtomRange(mtop))
         {
             int index = atomP.globalAtomNumber();
-            if (getGroupType(groups, egcQMMM, index) == i)
+            if (getGroupType(groups, SimulationAtomGroupType::QuantumMechanics, index) == i)
             {
                 qmmmAtoms.push_back(index);
             }
@@ -382,9 +382,9 @@ std::vector<int> qmmmAtomIndices(const t_inputrec &ir, const gmx_mtop_t &mtop)
                     const int vsite = atomOffset + ilist.iatoms[j  ]; /* the vsite         */
                     const int ai    = atomOffset + ilist.iatoms[j+1]; /* constructing atom */
                     const int aj    = atomOffset + ilist.iatoms[j+2]; /* constructing atom */
-                    if (getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, ai)
+                    if (getGroupType(groups, SimulationAtomGroupType::QuantumMechanics, vsite) == getGroupType(groups, SimulationAtomGroupType::QuantumMechanics, ai)
                         &&
-                        getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, aj))
+                        getGroupType(groups, SimulationAtomGroupType::QuantumMechanics, vsite) == getGroupType(groups, SimulationAtomGroupType::QuantumMechanics, aj))
                     {
                         /* this dummy link atom needs to be removed from qmmmAtoms
                          * before making the QMrec of this layer!

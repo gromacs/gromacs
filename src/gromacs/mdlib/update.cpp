@@ -917,7 +917,7 @@ doSDUpdateGeneral(const gmx_stochd_t &sd,
                   const rvec x[], rvec xprime[], rvec v[], const rvec f[],
                   int64_t step, int seed, const int *gatindex)
 {
-    // cTC, cACC and cFreeze can be nullptr any time, but various
+    // cTC, cACC and cFREEZE can be nullptr any time, but various
     // instantiations do not make sense with particular pointer
     // values.
     if (updateType == SDUpdate::ForcesOnly)

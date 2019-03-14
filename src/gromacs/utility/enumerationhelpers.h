@@ -32,8 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
- * \file
+/*! \file
  * \brief Defines helper types for class enumerations.
  *
  * These helper types facilitate iterating over class enums, and
@@ -294,6 +293,8 @@ struct EnumerationArray final
 
     //! Returns a const raw pointer to the contents of the array.
     const_pointer data() const { return &m_elements[0]; }
+    //! Returns a raw pointer to the contents of the array.
+    pointer data() { return &m_elements[0]; }
 };
 
 /*! \brief Returns an object that provides iterators over the keys

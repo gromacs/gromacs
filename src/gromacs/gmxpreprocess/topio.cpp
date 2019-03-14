@@ -1313,7 +1313,7 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp *wi, GmxQmmmMode q
     int              index_offset = 0;
     int              qm_nr        = 0;
 
-    grpnr = sys->groups.grpnr[egcQMMM];
+    grpnr = sys->groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].data();
 
     for (size_t mb = 0; mb < sys->molblock.size(); mb++)
     {

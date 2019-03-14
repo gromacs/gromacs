@@ -1728,9 +1728,9 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
                              ir->eI == eiBD);
 
     /* In parallel, store we need to extract localWeights from weights at DD time */
-    std::vector<real>  &weights = ((cr && PAR(cr)) ? pg->globalWeights : pg->localWeights);
+    std::vector<real>         &weights = ((cr && PAR(cr)) ? pg->globalWeights : pg->localWeights);
 
-    const gmx_groups_t &groups  = mtop->groups;
+    const SimulationGroups    &groups  = mtop->groups;
 
     /* Count frozen dimensions and (weighted) mass */
     int    nfrozen = 0;
@@ -1746,7 +1746,7 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
             for (int d = 0; d < DIM; d++)
             {
                 if (pulldim_con[d] == 1 &&
-                    ir->opts.nFreeze[getGroupType(groups, egcFREEZE, ii)][d])
+                    ir->opts.nFreeze[getGroupType(groups, SimulationAtomGroupType::Freeze, ii)][d])
                 {
                     nfrozen++;
                 }
@@ -1786,13 +1786,13 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
             }
             else
             {
-                if (groups.grpnr[egcTC] == nullptr)
+                if (groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling].empty())
                 {
                     mbd = ir->delta_t/ir->opts.tau_t[0];
                 }
                 else
                 {
-                    mbd = ir->delta_t/ir->opts.tau_t[groups.grpnr[egcTC][ii]];
+                    mbd = ir->delta_t/ir->opts.tau_t[groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ii]];
                 }
             }
             w                   *= m/mbd;

@@ -46,7 +46,7 @@
 class DDBalanceRegionHandler;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
-struct gmx_groups_t;
+struct SimulationGroups;
 struct gmx_multisim_t;
 struct gmx_shellfc_t;
 struct gmx_mtop_t;
@@ -75,34 +75,34 @@ void make_local_shells(const t_commrec *cr,
                        gmx_shellfc_t   *shfc);
 
 /* Optimize shell positions */
-void relax_shell_flexcon(FILE                                     *log,
-                         const t_commrec                          *cr,
-                         const gmx_multisim_t                     *ms,
-                         gmx_bool                                  bVerbose,
-                         gmx_enfrot                               *enforcedRotation,
-                         int64_t                                   mdstep,
-                         const t_inputrec                         *inputrec,
-                         gmx_bool                                  bDoNS,
-                         int                                       force_flags,
-                         gmx_localtop_t                           *top,
-                         gmx::Constraints                         *constr,
-                         gmx_enerdata_t                           *enerd,
-                         t_fcdata                                 *fcd,
-                         t_state                                  *state,
-                         gmx::ArrayRefWithPadding<gmx::RVec>       f,
-                         tensor                                    force_vir,
-                         const t_mdatoms                          *md,
-                         t_nrnb                                   *nrnb,
-                         gmx_wallcycle_t                           wcycle,
-                         t_graph                                  *graph,
-                         const gmx_groups_t                       *groups,
-                         gmx_shellfc_t                            *shfc,
-                         t_forcerec                               *fr,
-                         gmx::PpForceWorkload                     *ppForceWorkload,
-                         double                                    t,
-                         rvec                                      mu_tot,
-                         const gmx_vsite_t                        *vsite,
-                         const DDBalanceRegionHandler             &ddBalanceRegionHandler);
+void relax_shell_flexcon(FILE                                            *log,
+                         const t_commrec                                 *cr,
+                         const gmx_multisim_t                            *ms,
+                         gmx_bool                                         bVerbose,
+                         gmx_enfrot                                      *enforcedRotation,
+                         int64_t                                          mdstep,
+                         const t_inputrec                                *inputrec,
+                         gmx_bool                                         bDoNS,
+                         int                                              force_flags,
+                         gmx_localtop_t                                  *top,
+                         gmx::Constraints                                *constr,
+                         gmx_enerdata_t                                  *enerd,
+                         t_fcdata                                        *fcd,
+                         t_state                                         *state,
+                         gmx::ArrayRefWithPadding<gmx::RVec>              f,
+                         tensor                                           force_vir,
+                         const t_mdatoms                                 *md,
+                         t_nrnb                                          *nrnb,
+                         gmx_wallcycle_t                                  wcycle,
+                         t_graph                                         *graph,
+                         const SimulationGroups                          *groups,
+                         gmx_shellfc_t                                   *shfc,
+                         t_forcerec                                      *fr,
+                         gmx::PpForceWorkload                            *ppForceWorkload,
+                         double                                           t,
+                         rvec                                             mu_tot,
+                         const gmx_vsite_t                               *vsite,
+                         const DDBalanceRegionHandler                    &ddBalanceRegionHandler);
 
 /* Print some final output */
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, int64_t numSteps);

@@ -43,7 +43,7 @@ class energyhistory_t;
 struct ener_file;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
-struct gmx_groups_t;
+struct SimulationGroups;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_ebin;
@@ -144,7 +144,7 @@ class EnergyOutput
                                    int64_t step, double time,
                                    int mode,
                                    t_fcdata *fcd,
-                                   gmx_groups_t *groups, t_grpopts *opts,
+                                   SimulationGroups *groups, t_grpopts *opts,
                                    gmx::Awh *awh);
         /*! \brief Get the number of energy terms recorded.
          *

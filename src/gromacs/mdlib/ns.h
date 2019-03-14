@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_groups_t;
+struct SimulationGroups;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_ns_t;
@@ -86,15 +86,15 @@ void init_ns(FILE *fplog, const t_commrec *cr,
 //! Destructor.
 void done_ns(gmx_ns_t *ns, int numEnergyGroups);
 
-int search_neighbours(FILE               *log,
-                      t_forcerec         *fr,
-                      matrix              box,
-                      gmx_localtop_t     *top,
-                      const gmx_groups_t *groups,
-                      const t_commrec    *cr,
-                      t_nrnb             *nrnb,
-                      const t_mdatoms    *md,
-                      gmx_bool            bFillGrid);
+int search_neighbours(FILE                      *log,
+                      t_forcerec                *fr,
+                      matrix                     box,
+                      gmx_localtop_t            *top,
+                      const SimulationGroups    *groups,
+                      const t_commrec           *cr,
+                      t_nrnb                    *nrnb,
+                      const t_mdatoms           *md,
+                      gmx_bool                   bFillGrid);
 
 
 /* Debugging routines from wnblist.c */

@@ -2104,7 +2104,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
                   nr_in_cg, maxcg);
     }
 
-    ngid = mtop->groups.grps[egcENER].nr;
+    ngid = mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].nr;
     snew(ns->bExcludeAlleg, ngid);
     for (i = 0; i < ngid; i++)
     {
@@ -2221,15 +2221,15 @@ void done_ns(gmx_ns_t *ns, int numEnergyGroups)
     sfree(ns);
 }
 
-int search_neighbours(FILE               *log,
-                      t_forcerec         *fr,
-                      matrix              box,
-                      gmx_localtop_t     *top,
-                      const gmx_groups_t *groups,
-                      const t_commrec    *cr,
-                      t_nrnb             *nrnb,
-                      const t_mdatoms    *md,
-                      gmx_bool            bFillGrid)
+int search_neighbours(FILE                      *log,
+                      t_forcerec                *fr,
+                      matrix                     box,
+                      gmx_localtop_t            *top,
+                      const SimulationGroups    *groups,
+                      const t_commrec           *cr,
+                      t_nrnb                    *nrnb,
+                      const t_mdatoms           *md,
+                      gmx_bool                   bFillGrid)
 {
     const t_block      *cgs = &(top->cgs);
     rvec                box_size, grid_x0, grid_x1;
@@ -2247,7 +2247,7 @@ int search_neighbours(FILE               *log,
 
     /* Set some local variables */
     bGrid = fr->bGrid;
-    ngid  = groups->grps[egcENER].nr;
+    ngid  = groups->groups[SimulationAtomGroupType::EnergyOutput].nr;
 
     for (m = 0; (m < DIM); m++)
     {

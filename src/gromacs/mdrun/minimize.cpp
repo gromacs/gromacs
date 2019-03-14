@@ -920,14 +920,13 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
 } // namespace
 
 //! Parallel utility summing energies and forces
-static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
+static double reorder_partsum(const t_commrec *cr, t_grpopts *opts,
                               gmx_mtop_t *top_global,
                               em_state_t *s_min, em_state_t *s_b)
 {
     t_block       *cgs_gl;
     int            ncg, *cg_gl, *index, c, cg, i, a0, a1, a, gf, m;
     double         partsum;
-    unsigned char *grpnrFREEZE;
 
     if (debug)
     {
@@ -969,7 +968,7 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *m
     partsum     = 0;
     i           = 0;
     gf          = 0;
-    grpnrFREEZE = top_global->groups.grpnr[egcFREEZE];
+    gmx::ArrayRef<unsigned char> grpnrFREEZE = top_global->groups.groupNumbers[SimulationAtomGroupType::Freeze];
     for (c = 0; c < ncg; c++)
     {
         cg = cg_gl[c];
@@ -977,7 +976,7 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *m
         a1 = index[cg+1];
         for (a = a0; a < a1; a++)
         {
-            if (mdatoms->cFREEZE && grpnrFREEZE)
+            if (!grpnrFREEZE.empty())
             {
                 gf = grpnrFREEZE[i];
             }
@@ -1038,7 +1037,7 @@ static real pr_beta(const t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
     else
     {
         /* We need to reorder cgs while summing */
-        sum = reorder_partsum(cr, opts, mdatoms, top_global, s_min, s_b);
+        sum = reorder_partsum(cr, opts, top_global, s_min, s_b);
     }
     if (PAR(cr))
     {
