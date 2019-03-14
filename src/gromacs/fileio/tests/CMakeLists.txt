@@ -35,6 +35,7 @@
 set(test_sources
     confio.cpp
     filemd5.cpp
+    mrcserializer.cpp
     readinp.cpp
     )
 if (GMX_USE_TNG)
