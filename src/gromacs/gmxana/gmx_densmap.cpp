@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -131,7 +131,6 @@ int gmx_densmap(int argc, char *argv[])
     gmx_bool           bXmin, bXmax, bRadial;
     FILE              *fp;
     t_trxstatus       *status;
-    t_topology         top;
     int                ePBC = -1;
     rvec              *x, xcom[2], direction, center, dx;
     matrix             box;
@@ -194,11 +193,11 @@ int gmx_densmap(int argc, char *argv[])
         nmpower = 0;
         unit    = "count";
     }
-
+    std::pair<std::unique_ptr<t_topology>, bool> topologyPair;
     if (ftp2bSet(efTPS, NFILE, fnm) || !ftp2bSet(efNDX, NFILE, fnm))
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box,
-                      bRadial);
+        topologyPair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &x, nullptr, box,
+                                     bRadial);
     }
     if (!bRadial)
     {
@@ -214,7 +213,7 @@ int gmx_densmap(int argc, char *argv[])
     snew(gnx, ngrps);
     snew(grpname, ngrps);
     snew(ind, ngrps);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, gnx, ind, grpname);
+    get_index(&topologyPair.first->atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, gnx, ind, grpname);
     anagrp = ngrps - 1;
     nindex = gnx[anagrp];
     index  = ind[anagrp];
@@ -334,7 +333,7 @@ int gmx_densmap(int argc, char *argv[])
                     for (j = 0; j < gnx[i]; j++)
                     {
                         k = ind[i][j];
-                        m = top.atoms.atom[k].m;
+                        m = topologyPair.first->atoms.atom[k].m;
                         for (l = 0; l < DIM; l++)
                         {
                             xcom[i][l] += m*x[k][l];

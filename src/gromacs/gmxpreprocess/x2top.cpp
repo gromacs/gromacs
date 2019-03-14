@@ -498,10 +498,9 @@ int gmx_x2top(int argc, char *argv[])
     mymol.nr   = 1;
 
     /* Read coordinates */
-    t_topology *top;
-    snew(top, 1);
-    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
-    t_atoms  *atoms = &top->atoms;
+    auto                        pair  = read_tps_conf(opt2fn("-f", NFILE, fnm), &epbc, &x, nullptr, box, FALSE);
+    std::unique_ptr<t_topology> top   = std::move(pair.first);
+    t_atoms                    *atoms = &top->atoms;
     natoms = atoms->nr;
     if (atoms->pdbinfo == nullptr)
     {

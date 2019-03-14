@@ -252,7 +252,6 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
                                        gmx_output_env_t *oenv)
 {
     FILE         *fpsg   = nullptr, *fpsk = nullptr;
-    t_topology    top;
     int           ePBC;
     t_trxstatus  *status;
     int           natoms;
@@ -272,7 +271,8 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
      * i.e 1D Row-major order in (t,x,y) */
 
 
-    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, FALSE);
+    auto pair = read_tps_conf(fnTPS, &ePBC, &xtop, nullptr, box, FALSE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
 
     *nslicex = static_cast<int>(box[XX][XX]/binw + onehalf); /*Calculate slicenr from binwidth*/
     *nslicey = static_cast<int>(box[YY][YY]/binw + onehalf);
@@ -286,14 +286,14 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     snew(grpname, ng);
     snew(index, ng);
     snew(isize, ng);
-    get_index(&top.atoms, fnNDX, ng, isize, index, grpname);
+    get_index(&top->atoms, fnNDX, ng, isize, index, grpname);
 
     /* Analyze trajectory */
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > top->atoms.nr)
     {
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
-                  top.atoms.nr, natoms);
+                  top->atoms.nr, natoms);
     }
     check_index(nullptr, ng, index[0], nullptr, natoms);
 
@@ -339,7 +339,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
             }
         }
 
-        find_tetra_order_grid(top, ePBC, natoms, box, x, isize[0], index[0],
+        find_tetra_order_grid(*top, ePBC, natoms, box, x, isize[0], index[0],
                               &sg, &sk, *nslicex, *nslicey, nslicez, sg_grid, sk_grid);
         GMX_RELEASE_ASSERT(sk_fravg != nullptr, "Trying to dereference NULL sk_fravg pointer");
         for (i = 0; i < *nslicex; i++)

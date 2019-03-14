@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,7 +204,6 @@ int gmx_mdmat(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     FILE             *out = nullptr, *fp;
-    t_topology        top;
     int               ePBC;
     t_atoms           useatoms;
     int               isize;
@@ -241,10 +240,11 @@ int gmx_mdmat(int argc, char *argv[])
         fprintf(stderr, "Will calculate number of different contacts\n");
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, FALSE);
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &x, nullptr, box, FALSE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
 
     fprintf(stderr, "Select group for analysis\n");
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
     natoms = isize;
     snew(useatoms.atom, natoms);
@@ -253,22 +253,22 @@ int gmx_mdmat(int argc, char *argv[])
     useatoms.nres = 0;
     snew(useatoms.resinfo, natoms);
 
-    prevres = top.atoms.atom[index[0]].resind;
+    prevres = top->atoms.atom[index[0]].resind;
     newres  = 0;
     for (i = 0; (i < isize); i++)
     {
         int ii = index[i];
-        useatoms.atomname[i] = top.atoms.atomname[ii];
-        if (top.atoms.atom[ii].resind != prevres)
+        useatoms.atomname[i] = top->atoms.atomname[ii];
+        if (top->atoms.atom[ii].resind != prevres)
         {
-            prevres = top.atoms.atom[ii].resind;
+            prevres = top->atoms.atom[ii].resind;
             newres++;
-            useatoms.resinfo[i] = top.atoms.resinfo[prevres];
+            useatoms.resinfo[i] = top->atoms.resinfo[prevres];
             if (debug)
             {
                 fprintf(debug, "New residue: atom %5s %5s %6d, index entry %5d, newres %5d\n",
-                        *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
-                        *(top.atoms.atomname[ii]),
+                        *(top->atoms.resinfo[top->atoms.atom[ii].resind].name),
+                        *(top->atoms.atomname[ii]),
                         ii, i, newres);
             }
         }
@@ -308,7 +308,7 @@ int gmx_mdmat(int argc, char *argv[])
     rlo.r = 1.0; rlo.g = 1.0; rlo.b = 1.0;
     rhi.r = 0.0; rhi.g = 0.0; rhi.b = 0.0;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, trxnat);
 
     if (bFrames)
     {

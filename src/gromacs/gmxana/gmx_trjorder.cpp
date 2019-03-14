@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -126,7 +126,6 @@ int gmx_trjorder(int argc, char *argv[])
     t_trxstatus      *out;
     t_trxstatus      *status;
     gmx_bool          bNShell, bPDBout;
-    t_topology        top;
     int               ePBC;
     rvec             *x, *xsol, xcom, dx;
     matrix            box;
@@ -153,7 +152,8 @@ int gmx_trjorder(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, TRUE);
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &x, nullptr, box, TRUE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
     sfree(x);
 
     /* get index groups */
@@ -162,7 +162,7 @@ int gmx_trjorder(int argc, char *argv[])
     snew(grpname, 2);
     snew(index, 2);
     snew(isize, 2);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), bZ ? 1 : 2,
+    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), bZ ? 1 : 2,
               isize, index, grpname);
 
     if (!bZ)
@@ -179,7 +179,7 @@ int gmx_trjorder(int argc, char *argv[])
     }
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
-    if (natoms > top.atoms.nr)
+    if (natoms > top->atoms.nr)
     {
         gmx_fatal(FARGS, "Number of atoms in the run input file is larger than in the trjactory");
     }
@@ -230,14 +230,14 @@ int gmx_trjorder(int argc, char *argv[])
     if (!bNShell || opt2bSet("-o", NFILE, fnm))
     {
         bPDBout = (fn2ftp(opt2fn("-o", NFILE, fnm)) == efPDB);
-        if (bPDBout && !top.atoms.pdbinfo)
+        if (bPDBout && !top->atoms.pdbinfo)
         {
             fprintf(stderr, "Creating pdbfino records\n");
-            snew(top.atoms.pdbinfo, top.atoms.nr);
+            snew(top->atoms.pdbinfo, top->atoms.nr);
         }
         out = open_trx(opt2fn("-o", NFILE, fnm), "w");
     }
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     do
     {
         gmx_rmpbc(gpbc, natoms, box, x);
@@ -253,7 +253,7 @@ int gmx_trjorder(int argc, char *argv[])
                 for (j = 0; j < na; j++)
                 {
                     sa       = ind_sol[i*na+j];
-                    mass     = top.atoms.atom[sa].m;
+                    mass     = top->atoms.atom[sa].m;
                     totmass += mass;
                     for (d = 0; d < DIM; d++)
                     {
@@ -287,7 +287,7 @@ int gmx_trjorder(int argc, char *argv[])
             clear_rvec(xcom);
             for (i = 0; i < isize_ref; i++)
             {
-                mass     = top.atoms.atom[ind_ref[i]].m;
+                mass     = top->atoms.atom[ind_ref[i]].m;
                 totmass += mass;
                 for (j = 0; j < DIM; j++)
                 {
@@ -358,11 +358,11 @@ int gmx_trjorder(int argc, char *argv[])
                 {
                     for (j = 0; (j < na); j++)
                     {
-                        top.atoms.pdbinfo[order[i].i+j].bfac = std::sqrt(order[i].d2);
+                        top->atoms.pdbinfo[order[i].i+j].bfac = std::sqrt(order[i].d2);
                     }
                 }
             }
-            write_trx(out, natoms, swi, &top.atoms, 0, t, box, x, nullptr, nullptr);
+            write_trx(out, natoms, swi, &top->atoms, 0, t, box, x, nullptr, nullptr);
         }
     }
     while (read_next_x(oenv, status, &t, x, box));

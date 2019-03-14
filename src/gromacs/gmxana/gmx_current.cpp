@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -804,7 +804,6 @@ int gmx_current(int argc, char *argv[])
     };
 
     gmx_output_env_t      *oenv;
-    t_topology             top;
     char                 **grpname = nullptr;
     const char            *indexfn;
     t_trxframe             fr;
@@ -888,21 +887,22 @@ int gmx_current(int argc, char *argv[])
     bACF = opt2bSet("-caf", NFILE, fnm);
     bINT = opt2bSet("-mc", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, nullptr, nullptr, box, TRUE);
 
+    std::unique_ptr<t_topology> top = std::move(pair.first);
     indexfn = ftp2fn_null(efNDX, NFILE, fnm);
     snew(grpname, 1);
 
-    get_index(&(top.atoms), indexfn, 1, &isize, &index0, grpname);
+    get_index(&(top->atoms), indexfn, 1, &isize, &index0, grpname);
 
     flags = flags | TRX_READ_X | TRX_READ_V;
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
 
-    snew(mass2, top.atoms.nr);
-    snew(qmol, top.atoms.nr);
+    snew(mass2, top->atoms.nr);
+    snew(qmol, top->atoms.nr);
 
-    precalc(top, mass2, qmol);
+    precalc(*top, mass2, qmol);
 
 
     snew(indexm, isize);
@@ -915,7 +915,7 @@ int gmx_current(int argc, char *argv[])
     nmols = isize;
 
 
-    index_atom2mol(&nmols, indexm, &top.mols);
+    index_atom2mol(&nmols, indexm, &top->mols);
 
     if (fr.bV)
     {
@@ -958,7 +958,7 @@ int gmx_current(int argc, char *argv[])
     /* System information is read and prepared, dielectric() processes the frames
      * and calculates the requested quantities */
 
-    dielectric(fmj, fmd, outf, fcur, mcor, fmjdsp, bNoJump, bACF, bINT, ePBC, top, fr,
+    dielectric(fmj, fmd, outf, fcur, mcor, fmjdsp, bNoJump, bACF, bINT, ePBC, *top, fr,
                temp, bfit, efit, bvit, evit, status, isize, nmols, nshift,
                index0, indexm, mass2, qmol, eps_rf, oenv);
 

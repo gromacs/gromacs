@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -227,7 +227,6 @@ int gmx_bundle(int argc, char *argv[])
     FILE             *fkink = nullptr, *fkinkr = nullptr, *fkinkl = nullptr;
     t_trxstatus      *status;
     t_trxstatus      *fpdb;
-    t_topology        top;
     int               ePBC;
     rvec             *xtop;
     matrix            box;
@@ -269,7 +268,7 @@ int gmx_bundle(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, TRUE);
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &xtop, nullptr, box, TRUE);
 
     bKink = opt2bSet("-ok", NFILE, fnm) || opt2bSet("-okr", NFILE, fnm)
         || opt2bSet("-okl", NFILE, fnm);
@@ -288,7 +287,7 @@ int gmx_bundle(int argc, char *argv[])
         fprintf(stderr, "and a group of kink ");
     }
     fprintf(stderr, "atoms\n");
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), bun.nend,
+    get_index(&pair.first->atoms, ftp2fn_null(efNDX, NFILE, fnm), bun.nend,
               gnx, index, grpname);
 
     if (n <= 0 || gnx[0] % n || gnx[1] % n || (bKink && gnx[2] % n))
@@ -354,12 +353,12 @@ int gmx_bundle(int argc, char *argv[])
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, TRX_NEED_X);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
+    gpbc = gmx_rmpbc_init(&pair.first->idef, ePBC, fr.natoms);
 
     do
     {
         gmx_rmpbc_trxfr(gpbc, &fr);
-        calc_axes(fr.x, top.atoms.atom, gnx, index, !bZ, &bun);
+        calc_axes(fr.x, pair.first->atoms.atom, gnx, index, !bZ, &bun);
         t = output_env_conv_time(oenv, fr.time);
         fprintf(flen, " %10g", t);
         fprintf(fdist, " %10g", t);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,7 +123,6 @@ int gmx_sans(int argc, char *argv[])
     FILE                                 *fp;
     const char                           *fnTPX, *fnTRX, *fnDAT = nullptr;
     t_trxstatus                          *status;
-    t_topology                           *top  = nullptr;
     gmx_rmpbc_t                           gpbc = nullptr;
     gmx_bool                              bFFT = FALSE, bDEBYE = FALSE;
     gmx_bool                              bMC  = FALSE;
@@ -223,16 +222,16 @@ int gmx_sans(int argc, char *argv[])
     gnsf = gmx_neutronstructurefactors_init(fnDAT);
     fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n", gnsf->nratoms, fnDAT);
 
-    snew(top, 1);
     snew(grpname, 1);
     snew(index, 1);
 
-    read_tps_conf(fnTPX, top, &ePBC, &x, nullptr, box, TRUE);
+    auto pair = read_tps_conf(fnTPX, &ePBC, &x, nullptr, box, TRUE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
 
     printf("\nPlease select group for SANS spectra calculation:\n");
     get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname);
 
-    gsans = gmx_sans_init(top, gnsf);
+    gsans = gmx_sans_init(top.get(), gnsf);
 
     /* Prepare reference frame */
     if (bPBC)

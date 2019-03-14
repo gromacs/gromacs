@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -228,7 +228,6 @@ int gmx_rms(int argc, char *argv[])
     real            t, *w_rls, *w_rms, *w_rls_m = nullptr, *w_rms_m = nullptr;
     gmx_bool        bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
     gmx_bool        bFit, bReset;
-    t_topology      top;
     int             ePBC;
     t_iatom        *iatom = nullptr;
 
@@ -357,11 +356,12 @@ int gmx_rms(int argc, char *argv[])
             bFile2 = FALSE;
         }
     }
-
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp,
-                         nullptr, box, TRUE);
-    snew(w_rls, top.atoms.nr);
-    snew(w_rms, top.atoms.nr);
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &xp,
+                              nullptr, box, TRUE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
+    bTop = pair.second;
+    snew(w_rls, top->atoms.nr);
+    snew(w_rms, top->atoms.nr);
 
     if (!bTop && bBond)
     {
@@ -375,7 +375,7 @@ int gmx_rms(int argc, char *argv[])
     {
         fprintf(stderr, "Select group for %s fit\n", bFit ? "least squares"
                 : "translational");
-        get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &ifit,
+        get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &ifit,
                   &ind_fit, &gn_fit);
     }
     else
@@ -395,13 +395,13 @@ int gmx_rms(int argc, char *argv[])
         {
             if (bMassWeighted)
             {
-                w_rls[ind_fit[i]] = top.atoms.atom[ind_fit[i]].m;
+                w_rls[ind_fit[i]] = top->atoms.atom[ind_fit[i]].m;
             }
             else
             {
                 w_rls[ind_fit[i]] = 1;
             }
-            bMass = bMass || (top.atoms.atom[ind_fit[i]].m != 0);
+            bMass = bMass || (top->atoms.atom[ind_fit[i]].m != 0);
         }
         if (!bMass)
         {
@@ -424,7 +424,7 @@ int gmx_rms(int argc, char *argv[])
 
     fprintf(stderr, "Select group%s for %s calculation\n",
             (nrms > 1) ? "s" : "", whatname[ewhat]);
-    get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
+    get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm),
               nrms, irms, ind_rms, gn_rms);
 
     if (bNorm)
@@ -452,13 +452,13 @@ int gmx_rms(int argc, char *argv[])
         {
             if (bMassWeighted)
             {
-                w_rms[ind_rms[j][i]] = top.atoms.atom[ind_rms[j][i]].m;
+                w_rms[ind_rms[j][i]] = top->atoms.atom[ind_rms[j][i]].m;
             }
             else
             {
                 w_rms[ind_rms[j][i]] = 1.0;
             }
-            bMass = bMass || (top.atoms.atom[ind_rms[j][i]].m != 0);
+            bMass = bMass || (top->atoms.atom[ind_rms[j][i]].m != 0);
         }
         if (!bMass)
         {
@@ -472,18 +472,18 @@ int gmx_rms(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
-        gmx_rmpbc(gpbc, top.atoms.nr, box, xp);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+        gmx_rmpbc(gpbc, top->atoms.nr, box, xp);
     }
     if (bReset)
     {
-        reset_x(ifit, ind_fit, top.atoms.nr, nullptr, xp, w_rls);
+        reset_x(ifit, ind_fit, top->atoms.nr, nullptr, xp, w_rls);
     }
     if (bMirror)
     {
         /* generate reference structure mirror image: */
-        snew(xm, top.atoms.nr);
-        for (i = 0; i < top.atoms.nr; i++)
+        snew(xm, top->atoms.nr);
+        for (i = 0; i < top->atoms.nr; i++)
         {
             copy_rvec(xp[i], xm[i]);
             xm[i][XX] = -xm[i][XX];
@@ -491,18 +491,18 @@ int gmx_rms(int argc, char *argv[])
     }
     if (ewhat == ewRhoSc)
     {
-        norm_princ(&top.atoms, ifit, ind_fit, top.atoms.nr, xp);
+        norm_princ(&top->atoms, ifit, ind_fit, top->atoms.nr, xp);
     }
 
     /* read first frame */
     natoms_trx = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
-    if (natoms_trx != top.atoms.nr)
+    if (natoms_trx != top->atoms.nr)
     {
         fprintf(stderr,
                 "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
-                top.atoms.nr, natoms_trx);
+                top->atoms.nr, natoms_trx);
     }
-    natoms = std::min(top.atoms.nr, natoms_trx);
+    natoms = std::min(top->atoms.nr, natoms_trx);
     if (bMat || bBond || bPrev)
     {
         snew(mat_x, NFRAME);
@@ -565,7 +565,7 @@ int gmx_rms(int argc, char *argv[])
         {
             if (IS_CHEMBOND(k))
             {
-                ncons += top.idef.il[k].nr/3;
+                ncons += top->idef.il[k].nr/3;
             }
         }
         fprintf(stderr, "Found %d bonds in topology\n", ncons);
@@ -576,8 +576,8 @@ int gmx_rms(int argc, char *argv[])
         {
             if (IS_CHEMBOND(k))
             {
-                iatom = top.idef.il[k].iatoms;
-                ncons = top.idef.il[k].nr/3;
+                iatom = top->idef.il[k].iatoms;
+                ncons = top->idef.il[k].nr/3;
                 for (i = 0; i < ncons; i++)
                 {
                     bA1 = FALSE;
@@ -626,7 +626,7 @@ int gmx_rms(int argc, char *argv[])
         }
         if (ewhat == ewRhoSc)
         {
-            norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
+            norm_princ(&top->atoms, ifit, ind_fit, natoms, x);
         }
 
         if (bFit)
@@ -757,7 +757,7 @@ int gmx_rms(int argc, char *argv[])
             }
             if (ewhat == ewRhoSc)
             {
-                norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
+                norm_princ(&top->atoms, ifit, ind_fit, natoms, x);
             }
 
             if (bFit)

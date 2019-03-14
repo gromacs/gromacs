@@ -383,7 +383,6 @@ int gmx_genion(int argc, char *argv[])
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [REF].tpr[ref] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
         { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
     };
-    t_topology         top;
     rvec              *x, *v;
     real               vol;
     matrix             box;
@@ -421,8 +420,9 @@ int gmx_genion(int argc, char *argv[])
     }
 
     /* Read atom positions and charges */
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, &x, &v, box, FALSE);
-    atoms = top.atoms;
+    auto pair = read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &ePBC, &x, &v, box, FALSE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
+    atoms = top->atoms;
 
     /* Compute total charge */
     double qtot = 0;
@@ -551,7 +551,7 @@ int gmx_genion(int argc, char *argv[])
         sfree(atoms.pdbinfo);
         atoms.pdbinfo = nullptr;
     }
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, nullptr, ePBC, box);
+    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top->name, &atoms, x, nullptr, ePBC, box);
 
     return 0;
 }

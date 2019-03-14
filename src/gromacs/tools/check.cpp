@@ -431,7 +431,6 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
 static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
 {
     int            natom, i, j, k;
-    t_topology     top;
     int            ePBC;
     t_atoms       *atoms;
     rvec          *x, *v;
@@ -443,8 +442,9 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     real          *atom_vdw;
 
     fprintf(stderr, "Checking coordinate file %s\n", fn);
-    read_tps_conf(fn, &top, &ePBC, &x, &v, box, TRUE);
-    atoms = &top.atoms;
+    auto pair = read_tps_conf(fn, &ePBC, &x, &v, box, TRUE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
+    atoms = &top->atoms;
     natom = atoms->nr;
     fprintf(stderr, "%d atoms in file\n", atoms->nr);
 

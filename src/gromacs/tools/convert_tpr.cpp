@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -262,53 +262,52 @@ static void reduce_ilist(const int invindex[], const gmx_bool bKeep[],
 static void reduce_topology_x(int gnx, int index[],
                               gmx_mtop_t *mtop, rvec x[], rvec v[])
 {
-    t_topology   top;
-    gmx_bool    *bKeep;
-    int         *invindex;
-    int          i;
+    gmx_bool                   *bKeep;
+    int                        *invindex;
+    int                         i;
 
-    top      = gmx_mtop_t_to_t_topology(mtop, false);
-    bKeep    = bKeepIt(gnx, top.atoms.nr, index);
-    invindex = invind(gnx, top.atoms.nr, index);
+    std::unique_ptr<t_topology> top = gmx_mtop_t_to_t_topology(mtop, false);
+    bKeep    = bKeepIt(gnx, top->atoms.nr, index);
+    invindex = invind(gnx, top->atoms.nr, index);
 
-    reduce_block(bKeep, &(top.cgs), "cgs");
-    reduce_block(bKeep, &(top.mols), "mols");
-    reduce_blocka(invindex, bKeep, &(top.excls), "excls");
+    reduce_block(bKeep, &(top->cgs), "cgs");
+    reduce_block(bKeep, &(top->mols), "mols");
+    reduce_blocka(invindex, bKeep, &(top->excls), "excls");
     reduce_rvec(gnx, index, x);
     reduce_rvec(gnx, index, v);
-    reduce_atom(gnx, index, top.atoms.atom, top.atoms.atomname,
-                &(top.atoms.nres), top.atoms.resinfo);
+    reduce_atom(gnx, index, top->atoms.atom, top->atoms.atomname,
+                &(top->atoms.nres), top->atoms.resinfo);
 
     for (i = 0; (i < F_NRE); i++)
     {
-        reduce_ilist(invindex, bKeep, &(top.idef.il[i]),
+        reduce_ilist(invindex, bKeep, &(top->idef.il[i]),
                      interaction_function[i].nratoms,
                      interaction_function[i].name);
     }
 
-    top.atoms.nr = gnx;
+    top->atoms.nr = gnx;
 
     mtop->moltype.resize(1);
     mtop->moltype[0].name  = mtop->name;
-    mtop->moltype[0].atoms = top.atoms;
+    mtop->moltype[0].atoms = top->atoms;
     for (i = 0; i < F_NRE; i++)
     {
         InteractionList &ilist =  mtop->moltype[0].ilist[i];
-        ilist.iatoms.resize(top.idef.il[i].nr);
-        for (int j = 0; j < top.idef.il[i].nr; j++)
+        ilist.iatoms.resize(top->idef.il[i].nr);
+        for (int j = 0; j < top->idef.il[i].nr; j++)
         {
-            ilist.iatoms[j] = top.idef.il[i].iatoms[j];
+            ilist.iatoms[j] = top->idef.il[i].iatoms[j];
         }
     }
-    mtop->moltype[0].atoms = top.atoms;
-    mtop->moltype[0].cgs   = top.cgs;
-    mtop->moltype[0].excls = top.excls;
+    mtop->moltype[0].atoms = top->atoms;
+    mtop->moltype[0].cgs   = top->cgs;
+    mtop->moltype[0].excls = top->excls;
 
     mtop->molblock.resize(1);
     mtop->molblock[0].type = 0;
     mtop->molblock[0].nmol = 1;
 
-    mtop->natoms           = top.atoms.nr;
+    mtop->natoms           = top->atoms.nr;
 }
 
 static void zeroq(const int index[], gmx_mtop_t *mtop)

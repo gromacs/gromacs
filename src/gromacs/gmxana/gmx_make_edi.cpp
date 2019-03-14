@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -399,12 +399,11 @@ static void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
 
 static int read_conffile(const char *confin, rvec **x)
 {
-    t_topology  top;
     matrix      box;
     printf("read coordnumber from file %s\n", confin);
-    read_tps_conf(confin, &top, nullptr, x, nullptr, box, FALSE);
-    printf("number of coordinates in file %d\n", top.atoms.nr);
-    return top.atoms.nr;
+    auto        pair = read_tps_conf(confin, nullptr, x, nullptr, box, FALSE);
+    printf("number of coordinates in file %d\n", pair.first->atoms.nr);
+    return pair.first->atoms.nr;
 }
 
 
@@ -761,7 +760,6 @@ int gmx_make_edi(int argc, char *argv[])
     gmx_output_env_t *oenv;
 
     /*to read topology file*/
-    t_topology  top;
     int         ePBC;
     matrix      topbox;
     rvec       *xtop;
@@ -862,9 +860,10 @@ int gmx_make_edi(int argc, char *argv[])
     read_eigenvectors(EigvecFile, &nav, &bFit1,
                       &xref1, &edi_params.fitmas, &xav1, &edi_params.pcamas, &nvec1, &eignr1, &eigvec1, &eigval1);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                  &top, &ePBC, &xtop, nullptr, topbox, false);
-    atoms = &top.atoms;
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
+                              &ePBC, &xtop, nullptr, topbox, false);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
+    atoms = &top->atoms;
 
 
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n", nav);
