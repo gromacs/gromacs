@@ -57,6 +57,7 @@
 #include "gromacs/utility/arrayref.h"
 
 #include "grid.h"
+#include "gridsetdata.h"
 
 
 struct nbnxn_atomdata_t;
@@ -144,13 +145,13 @@ class GridSet
         //! Returns the grid atom indices covering all grids
         gmx::ArrayRef<const int> cells() const
         {
-            return cells_;
+            return gridSetData_.cells;
         }
 
         //! Returns the grid atom indices covering all grids
         gmx::ArrayRef<const int> atomIndices() const
         {
-            return atomIndices_;
+            return gridSetData_.atomIndices;
         }
 
         //! Returns whether we have perturbed non-bonded interactions
@@ -166,23 +167,15 @@ class GridSet
         }
 
     private:
-        //! Returns collection of the data that covers all grids
-        const GridSetData getGridSetData()
-        {
-            GridSetData gridSetData = { cells_, atomIndices_, haveFep_ };
-
-            return gridSetData;
-        }
-
         /* Data members */
-        //! The search grids
-        std::vector<Grid>     grids_;
-        //! The actual cell indices for all atoms, covering all grids
-        std::vector<int>      cells_;
-        //! The actual array of atom indices, covering all grids
-        std::vector<int>      atomIndices_;
         //! Tells whether we have perturbed non-bonded interactions
         bool                  haveFep_;
+        //! The search grids
+        std::vector<Grid>     grids_;
+        //! The cell and atom index data which runs over all grids
+        GridSetData           gridSetData_;
+        //! The actual array of atom indices, covering all grids
+        std::vector<int>      atomIndices_;
         //! The periodic unit-cell
         matrix                box_;
         //! The number of local real atoms, i.e. without padded atoms, local atoms: 0 to numAtomsLocal_

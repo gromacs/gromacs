@@ -76,18 +76,23 @@ static int numDDZones(const ivec *numDDCells)
     return numDDZones;
 }
 
+#ifndef DOXYGEN
+
 GridSet::GridSet(const ivec         *numDDCells,
                  const PairlistType  pairlistType,
                  const bool          haveFep,
                  const int           numThreads) :
-    grids_(numDDZones(numDDCells), pairlistType),
     haveFep_(haveFep),
+    grids_(numDDZones(numDDCells), { pairlistType, haveFep_ }
+           ),
     numRealAtomsLocal_(0),
     numRealAtomsTotal_(0),
     gridWork_(numThreads)
 {
     clear_mat(box_);
 }
+
+#endif // !DOXYGEN
 
 void GridSet::setLocalAtomOrder()
 {
@@ -101,8 +106,8 @@ void GridSet::setLocalAtomOrder()
         int       cellIndex = grid.firstCellInColumn(cxy)*grid.geometry().numAtomsPerCell;
         for (int i = 0; i < numAtoms; i++)
         {
-            atomIndices_[cellIndex] = atomIndex;
-            cells_[atomIndex]       = cellIndex;
+            gridSetData_.atomIndices[cellIndex] = atomIndex;
+            gridSetData_.cells[atomIndex]       = cellIndex;
             atomIndex++;
             cellIndex++;
         }
@@ -182,7 +187,7 @@ void GridSet::putOnGrid(const matrix                    box,
     }
 
     /* Make space for the new cell indices */
-    cells_.resize(atomEnd);
+    gridSetData_.cells.resize(atomEnd);
 
     const int nthread = gmx_omp_nthreads_get(emntPairsearch);
 
@@ -195,15 +200,14 @@ void GridSet::putOnGrid(const matrix                    box,
                                     updateGroupsCog,
                                     atomStart, atomEnd, x,
                                     ddZone, move, thread, nthread,
-                                    cells_, gridWork_[thread].numAtomsPerColumn);
+                                    gridSetData_.cells,
+                                    gridWork_[thread].numAtomsPerColumn);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
-    GridSetData gridSetData = getGridSetData();
-
     /* Copy the already computed cell indices to the grid and sort, when needed */
-    grid.setCellIndices(ddZone, cellOffset, &gridSetData, gridWork_,
+    grid.setCellIndices(ddZone, cellOffset, &gridSetData_, gridWork_,
                         atomStart, atomEnd, atinfo, x, numAtomsMoved, nbat);
 
     if (ddZone == 0)
