@@ -173,7 +173,6 @@ void gmx::Integrator::do_md()
     PaddedVector<gmx::RVec> f {};
     gmx_global_stat_t       gstat;
     t_graph                *graph = nullptr;
-    gmx_groups_t           *groups;
     gmx_shellfc_t          *shellfc;
     gmx_bool                bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     gmx_bool                bTemp, bPres, bTrotter;
@@ -232,7 +231,7 @@ void gmx::Integrator::do_md()
     nstglobalcomm   = check_nstglobalcomm(mdlog, nstglobalcomm, ir, cr);
     bGStatEveryStep = (nstglobalcomm == 1);
 
-    groups = &top_global->groups;
+    GmxGroups *groups = &top_global->groups;
 
     std::unique_ptr<EssentialDynamics> ed = nullptr;
     if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
@@ -260,7 +259,7 @@ void gmx::Integrator::do_md()
 
     /* Energy terms and groups */
     snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
+    init_enerdata(top_global->groups.groups[static_cast<int>(SimulationGroups::g_ENER)].nr, ir->fepvals->n_lambda,
                   enerd);
 
     /* Kinetic energy data */
@@ -278,7 +277,7 @@ void gmx::Integrator::do_md()
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
 
     {
-        double io = compute_io(ir, top_global->natoms, groups, energyOutput.numEnergyTerms(), 1);
+        double io = compute_io(ir, top_global->natoms, *groups, energyOutput.numEnergyTerms(), 1);
         if ((io > 2000) && MASTER(cr))
         {
             fprintf(stderr,

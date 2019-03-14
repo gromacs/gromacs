@@ -138,7 +138,6 @@ void
 Integrator::do_tpi()
 {
     gmx_localtop_t          top;
-    gmx_groups_t           *groups;
     gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
     real                    lambda, t, temp, beta, drmax, epot;
@@ -190,7 +189,7 @@ Integrator::do_tpi()
 
     gmx_mtop_generate_local_top(*top_global, &top, inputrec->efep != efepNO);
 
-    groups = &top_global->groups;
+    GmxGroups *groups = &top_global->groups;
 
     bCavity = (inputrec->eI == eiTPIC);
     if (bCavity)
@@ -268,7 +267,7 @@ Integrator::do_tpi()
     update_mdatoms(mdatoms, inputrec->fepvals->init_lambda);
 
     snew(enerd, 1);
-    init_enerdata(groups->grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    init_enerdata(groups->groups[static_cast<int>(SimulationGroups::g_ENER)].nr, inputrec->fepvals->n_lambda, enerd);
     f.resizeWithPadding(top_global->natoms);
 
     /* Print to log file  */
@@ -351,7 +350,7 @@ Integrator::do_tpi()
         }
     }
 
-    ngid   = groups->grps[egcENER].nr;
+    ngid   = groups->groups[static_cast<int>(SimulationGroups::g_ENER)].nr;
     gid_tp = GET_CGINFO_GID(fr->cginfo[cg_tp]);
     nener  = 1 + ngid;
     if (bDispCorr)
@@ -399,7 +398,7 @@ Integrator::do_tpi()
         for (i = 0; i < ngid; i++)
         {
             sprintf(str, "f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
-                    *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
+                    *(groups->groupNames[groups->groups[static_cast<int>(SimulationGroups::g_ENER)].nm_ind[i]]));
             leg[e++] = gmx_strdup(str);
         }
         if (bDispCorr)
@@ -412,7 +411,7 @@ Integrator::do_tpi()
             for (i = 0; i < ngid; i++)
             {
                 sprintf(str, "f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
-                        *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
+                        *(groups->groupNames[groups->groups[static_cast<int>(SimulationGroups::g_ENER)].nm_ind[i]]));
                 leg[e++] = gmx_strdup(str);
             }
             if (bRFExcl)

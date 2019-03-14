@@ -154,7 +154,6 @@ void gmx::Integrator::do_mimic()
     PaddedVector<gmx::RVec>  f {};
     gmx_global_stat_t        gstat;
     t_graph                 *graph = nullptr;
-    gmx_groups_t            *groups;
     gmx_shellfc_t           *shellfc;
 
     double                   cycles;
@@ -223,7 +222,7 @@ void gmx::Integrator::do_mimic()
     }
 
     ir->nstxout_compressed                   = 0;
-    groups                                   = &top_global->groups;
+    GmxGroups *groups                        = &top_global->groups;
     top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
@@ -235,7 +234,7 @@ void gmx::Integrator::do_mimic()
 
     /* Energy terms and groups */
     snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
+    init_enerdata(top_global->groups.groups[static_cast<int>(SimulationGroups::g_ENER)].nr, ir->fepvals->n_lambda,
                   enerd);
 
     /* Kinetic energy data */
@@ -253,7 +252,7 @@ void gmx::Integrator::do_mimic()
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
 
     {
-        double io = compute_io(ir, top_global->natoms, groups, energyOutput.numEnergyTerms(), 1);
+        double io = compute_io(ir, top_global->natoms, *groups, energyOutput.numEnergyTerms(), 1);
         if ((io > 2000) && MASTER(cr))
         {
             fprintf(stderr,

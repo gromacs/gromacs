@@ -202,7 +202,7 @@ void init_orires(FILE                 *fplog,
     od->nref = 0;
     for (int i = 0; i < mtop->natoms; i++)
     {
-        if (getGroupType(mtop->groups, egcORFIT, i) == 0)
+        if (getGroupType(mtop->groups, SimulationGroups::g_ORFIT, i) == 0)
         {
             od->nref++;
         }
@@ -225,8 +225,8 @@ void init_orires(FILE                 *fplog,
     {
         const t_atom &local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
-        if (mtop->groups.grpnr[egcORFIT] == nullptr ||
-            mtop->groups.grpnr[egcORFIT][i] == 0)
+        if (mtop->groups.groupNumbers[static_cast<int>(SimulationGroups::g_ORFIT)].empty() ||
+            mtop->groups.groupNumbers[static_cast<int>(SimulationGroups::g_ORFIT)][i] == 0)
         {
             /* Not correct for free-energy with changing masses */
             od->mref[j] = local.m;

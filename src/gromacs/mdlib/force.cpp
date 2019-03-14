@@ -80,7 +80,7 @@
 void ns(FILE               *fp,
         t_forcerec         *fr,
         matrix              box,
-        const gmx_groups_t *groups,
+        const GmxGroups    *groups,
         gmx_localtop_t     *top,
         const t_mdatoms    *md,
         const t_commrec    *cr,

@@ -1590,7 +1590,7 @@ int Mdrunner::mdrunner()
     free_gpu_resources(fr, physicalNodeComm);
     free_gpu(nonbondedDeviceInfo);
     free_gpu(pmeDeviceInfo);
-    done_forcerec(fr, mtop.molblock.size(), mtop.groups.grps[egcENER].nr);
+    done_forcerec(fr, mtop.molblock.size(), mtop.groups.groups[static_cast<int>(SimulationGroups::g_ENER)].nr);
     sfree(fcd);
 
     if (doMembed)

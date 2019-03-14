@@ -46,7 +46,7 @@
 class DDBalanceRegionHandler;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
-struct gmx_groups_t;
+struct GmxGroups;
 struct gmx_multisim_t;
 struct gmx_shellfc_t;
 struct gmx_mtop_t;
@@ -95,7 +95,7 @@ void relax_shell_flexcon(FILE                                     *log,
                          t_nrnb                                   *nrnb,
                          gmx_wallcycle_t                           wcycle,
                          t_graph                                  *graph,
-                         const gmx_groups_t                       *groups,
+                         const GmxGroups                          *groups,
                          gmx_shellfc_t                            *shfc,
                          t_forcerec                               *fr,
                          gmx::PpForceWorkload                     *ppForceWorkload,

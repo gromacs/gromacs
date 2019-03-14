@@ -2190,7 +2190,7 @@ static void do_atom(t_fileio *fio, t_atom *atom, gmx_bool bRead)
     }
 }
 
-static void do_grps(t_fileio *fio, int ngrp, t_grps grps[], gmx_bool bRead)
+static void do_grps(t_fileio *fio, int ngrp, gmx::ArrayRef<t_grps> grps, gmx_bool bRead)
 {
     for (int j = 0; j < ngrp; j++)
     {
@@ -2292,35 +2292,28 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     do_resinfo(fio, atoms->nres, atoms->resinfo, bRead, symtab, file_version);
 }
 
-static void do_groups(t_fileio *fio, gmx_groups_t *groups,
+static void do_groups(t_fileio *fio, GmxGroups *groups,
                       gmx_bool bRead, t_symtab *symtab)
 {
-    int      g;
-
-    do_grps(fio, egcNR, groups->grps, bRead);
-    gmx_fio_do_int(fio, groups->ngrpname);
+    do_grps(fio, static_cast<int>(SimulationGroups::Count), groups->groups, bRead);
+    int numberOfGroupNames = groups->numberOfGroupNames();
+    gmx_fio_do_int(fio, numberOfGroupNames);
     if (bRead)
     {
-        snew(groups->grpname, groups->ngrpname);
+        groups->groupNames.resize(numberOfGroupNames);
     }
-    do_strstr(fio, groups->ngrpname, groups->grpname, bRead, symtab);
-    for (g = 0; g < egcNR; g++)
+    do_strstr(fio, numberOfGroupNames, groups->groupNames.data(), bRead, symtab);
+    for (int g = 0; g < static_cast<int>(SimulationGroups::Count); g++)
     {
-        gmx_fio_do_int(fio, groups->ngrpnr[g]);
-        if (groups->ngrpnr[g] == 0)
+        int numberOfGroupNumbers = groups->numberOfGroupNumbers(g);
+        gmx_fio_do_int(fio, numberOfGroupNumbers);
+        if (numberOfGroupNumbers != 0)
         {
             if (bRead)
             {
-                groups->grpnr[g] = nullptr;
+                groups->groupNumbers[g].resize(numberOfGroupNumbers);
             }
-        }
-        else
-        {
-            if (bRead)
-            {
-                snew(groups->grpnr[g], groups->ngrpnr[g]);
-            }
-            gmx_fio_ndo_uchar(fio, groups->grpnr[g], groups->ngrpnr[g]);
+            gmx_fio_ndo_uchar(fio, groups->groupNumbers[g].data(), numberOfGroupNumbers);
         }
     }
 }

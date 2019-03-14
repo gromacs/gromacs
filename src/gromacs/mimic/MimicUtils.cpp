@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,9 +39,9 @@
 
 std::vector<int> genQmmmIndices(const gmx_mtop_t &mtop)
 {
-    std::vector<int> output;
-    int              global_at = 0;
-    unsigned char   *grpnr     = mtop.groups.grpnr[egcQMMM];
+    std::vector<int>       output;
+    int                    global_at = 0;
+    const unsigned char   *grpnr     = mtop.groups.groupNumbers[static_cast<int>(SimulationGroups::g_QMMM)].data();
     for (const gmx_molblock_t &molb : mtop.molblock)
     {
         for (int mol = 0; mol < molb.nmol; ++mol)

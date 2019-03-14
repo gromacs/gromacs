@@ -2104,7 +2104,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
                   nr_in_cg, maxcg);
     }
 
-    ngid = mtop->groups.grps[egcENER].nr;
+    ngid = mtop->groups.groups[static_cast<int>(SimulationGroups::g_ENER)].nr;
     snew(ns->bExcludeAlleg, ngid);
     for (i = 0; i < ngid; i++)
     {
@@ -2225,7 +2225,7 @@ int search_neighbours(FILE               *log,
                       t_forcerec         *fr,
                       matrix              box,
                       gmx_localtop_t     *top,
-                      const gmx_groups_t *groups,
+                      const GmxGroups    *groups,
                       const t_commrec    *cr,
                       t_nrnb             *nrnb,
                       const t_mdatoms    *md,
@@ -2247,7 +2247,7 @@ int search_neighbours(FILE               *log,
 
     /* Set some local variables */
     bGrid = fr->bGrid;
-    ngid  = groups->grps[egcENER].nr;
+    ngid  = groups->groups[static_cast<int>(SimulationGroups::g_ENER)].nr;
 
     for (m = 0; (m < DIM); m++)
     {

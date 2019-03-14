@@ -201,7 +201,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         "Barostat"
     };
 
-    const gmx_groups_t *groups;
+    const GmxGroups    *groups;
     char              **gnm;
     char                buf[256];
     const char         *bufi;
@@ -449,8 +449,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             md->nEc++;
         }
     }
-
-    n       = groups->grps[egcENER].nr;
+    int enerGroupNumber = static_cast<int>(SimulationGroups::g_ENER);
+    n       = groups->groups[enerGroupNumber].nr;
     md->nEg = n;
     md->nE  = (n*(n+1))/2;
 
@@ -463,18 +463,18 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             snew(gnm[k], STRLEN);
         }
-        for (i = 0; (i < groups->grps[egcENER].nr); i++)
+        for (i = 0; (i < groups->groups[enerGroupNumber].nr); i++)
         {
-            ni = groups->grps[egcENER].nm_ind[i];
-            for (j = i; (j < groups->grps[egcENER].nr); j++)
+            ni = groups->groups[enerGroupNumber].nm_ind[i];
+            for (j = i; (j < groups->groups[enerGroupNumber].nr); j++)
             {
-                nj = groups->grps[egcENER].nm_ind[j];
+                nj = groups->groups[enerGroupNumber].nm_ind[j];
                 for (k = kk = 0; (k < egNR); k++)
                 {
                     if (md->bEInd[k])
                     {
                         sprintf(gnm[kk], "%s:%s-%s", egrp_nm[k],
-                                *(groups->grpname[ni]), *(groups->grpname[nj]));
+                                *(groups->groupNames[ni]), *(groups->groupNames[nj]));
                         kk++;
                     }
                 }
@@ -495,7 +495,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
     }
 
-    md->nTC  = isRerun ? 0 : groups->grps[egcTC].nr;
+    int tcGroupNumber = static_cast<int>(SimulationGroups::g_TC);
+    md->nTC  = isRerun ? 0 : groups->groups[tcGroupNumber].nr;
     md->nNHC = ir->opts.nhchainlength; /* shorthand for number of NH chains */
     if (md->bMTTK)
     {
@@ -534,8 +535,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     for (i = 0; (i < md->nTC); i++)
     {
-        ni = groups->grps[egcTC].nm_ind[i];
-        sprintf(buf, "T-%s", *(groups->grpname[ni]));
+        ni = groups->groups[tcGroupNumber].nm_ind[i];
+        sprintf(buf, "T-%s", *(groups->groupNames[ni]));
         grpnms[i] = gmx_strdup(buf);
     }
     md->itemp = get_ebin_space(md->ebin, md->nTC, grpnms,
@@ -549,8 +550,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             {
                 for (i = 0; (i < md->nTC); i++)
                 {
-                    ni   = groups->grps[egcTC].nm_ind[i];
-                    bufi = *(groups->grpname[ni]);
+                    ni   = groups->groups[tcGroupNumber].nm_ind[i];
+                    bufi = *(groups->groupNames[ni]);
                     for (j = 0; (j < md->nNHC); j++)
                     {
                         sprintf(buf, "Xi-%d-%s", j, bufi);
@@ -582,8 +583,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             {
                 for (i = 0; (i < md->nTC); i++)
                 {
-                    ni   = groups->grps[egcTC].nm_ind[i];
-                    bufi = *(groups->grpname[ni]);
+                    ni   = groups->groups[tcGroupNumber].nm_ind[i];
+                    bufi = *(groups->groupNames[ni]);
                     sprintf(buf, "Xi-%s", bufi);
                     grpnms[2*i] = gmx_strdup(buf);
                     sprintf(buf, "vXi-%s", bufi);
@@ -599,8 +600,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     {
         for (i = 0; (i < md->nTC); i++)
         {
-            ni = groups->grps[egcTC].nm_ind[i];
-            sprintf(buf, "Lamb-%s", *(groups->grpname[ni]));
+            ni = groups->groups[tcGroupNumber].nm_ind[i];
+            sprintf(buf, "Lamb-%s", *(groups->groupNames[ni]));
             grpnms[i] = gmx_strdup(buf);
         }
         md->itc = get_ebin_space(md->ebin, md->mde_n, grpnms, "");
@@ -612,18 +613,19 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
     sfree(grpnms);
 
-    md->nU = groups->grps[egcACC].nr;
+    int accGroupNumber = static_cast<int>(SimulationGroups::g_ACC);
+    md->nU = groups->groups[accGroupNumber].nr;
     if (md->nU > 1)
     {
         snew(grpnms, 3*md->nU);
         for (i = 0; (i < md->nU); i++)
         {
-            ni = groups->grps[egcACC].nm_ind[i];
-            sprintf(buf, "Ux-%s", *(groups->grpname[ni]));
+            ni = groups->groups[accGroupNumber].nm_ind[i];
+            sprintf(buf, "Ux-%s", *(groups->groupNames[ni]));
             grpnms[3*i+XX] = gmx_strdup(buf);
-            sprintf(buf, "Uy-%s", *(groups->grpname[ni]));
+            sprintf(buf, "Uy-%s", *(groups->groupNames[ni]));
             grpnms[3*i+YY] = gmx_strdup(buf);
-            sprintf(buf, "Uz-%s", *(groups->grpname[ni]));
+            sprintf(buf, "Uz-%s", *(groups->groupNames[ni]));
             grpnms[3*i+ZZ] = gmx_strdup(buf);
         }
         md->iu = get_ebin_space(md->ebin, 3*md->nU, grpnms, unit_vel);
@@ -1319,7 +1321,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 int64_t step, double time,
                 int mode,
                 t_mdebin *md, t_fcdata *fcd,
-                gmx_groups_t *groups, t_grpopts *opts,
+                GmxGroups *groups, t_grpopts *opts,
                 gmx::Awh *awh)
 {
     /*static char **grpnms=NULL;*/
@@ -1482,7 +1484,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 if (opts->annealing[i] != eannNO)
                 {
                     fprintf(log, "Current ref_t for group %s: %8.1f\n",
-                            *(groups->grpname[groups->grps[egcTC].nm_ind[i]]),
+                            *(groups->groupNames[groups->groups[static_cast<int>(SimulationGroups::g_TC)].nm_ind[i]]),
                             opts->ref_t[i]);
                 }
             }
@@ -1534,14 +1536,15 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 {
                     snew(md->print_grpnms, md->nE);
                     n = 0;
+                    int enerGroupNumber = static_cast<int>(SimulationGroups::g_ENER);
                     for (i = 0; (i < md->nEg); i++)
                     {
-                        ni = groups->grps[egcENER].nm_ind[i];
+                        ni = groups->groups[enerGroupNumber].nm_ind[i];
                         for (j = i; (j < md->nEg); j++)
                         {
-                            nj = groups->grps[egcENER].nm_ind[j];
-                            sprintf(buf, "%s-%s", *(groups->grpname[ni]),
-                                    *(groups->grpname[nj]));
+                            nj = groups->groups[enerGroupNumber].nm_ind[j];
+                            sprintf(buf, "%s-%s", *(groups->groupNames[ni]),
+                                    *(groups->groupNames[nj]));
                             md->print_grpnms[n++] = gmx_strdup(buf);
                         }
                     }
@@ -1575,8 +1578,8 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                         "Group", "Ux", "Uy", "Uz");
                 for (i = 0; (i < md->nU); i++)
                 {
-                    ni = groups->grps[egcACC].nm_ind[i];
-                    fprintf(log, "%15s", *groups->grpname[ni]);
+                    ni = groups->groups[static_cast<int>(SimulationGroups::g_ACC)].nm_ind[i];
+                    fprintf(log, "%15s", *groups->groupNames[ni]);
                     pr_ebin(log, md->ebin, md->iu+3*i, 3, 3, mode, FALSE);
                 }
                 fprintf(log, "\n");
@@ -1712,7 +1715,7 @@ void EnergyOutput::printStepToEnergyFile(ener_file *fp_ene, bool bEne, bool bDR,
                                          int64_t step, double time,
                                          int mode,
                                          t_fcdata *fcd,
-                                         gmx_groups_t *groups, t_grpopts *opts,
+                                         GmxGroups *groups, t_grpopts *opts,
                                          gmx::Awh *awh)
 {
     print_ebin(fp_ene, bEne, bDR, bOR, log, step, time, mode,

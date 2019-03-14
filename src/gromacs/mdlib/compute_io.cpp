@@ -58,7 +58,7 @@ static int div_nsteps(int nsteps, int nst)
     }
 }
 
-double compute_io(const t_inputrec *ir, int natoms, const gmx_groups_t *groups,
+double compute_io(const t_inputrec *ir, int natoms, const GmxGroups &groups,
                   int nrener, int nrepl)
 {
 
@@ -71,11 +71,13 @@ double compute_io(const t_inputrec *ir, int natoms, const gmx_groups_t *groups,
     nstv   = div_nsteps(nsteps, ir->nstvout);
     nstf   = div_nsteps(nsteps, ir->nstfout);
     nstxtc = div_nsteps(nsteps, ir->nstxout_compressed);
+    int compressedXGroupNumber = static_cast<int>(SimulationGroups::g_CompressedX);
     if (ir->nstxout_compressed > 0)
     {
-        for (i = 0; i < natoms; i++)
+        for (int i = 0; i < natoms; i++)
         {
-            if (groups->grpnr[egcCompressedX] == nullptr || groups->grpnr[egcCompressedX][i] == 0)
+            if (groups.groupNumbers[compressedXGroupNumber].empty() ||
+                groups.groupNumbers[compressedXGroupNumber][i] == 0)
             {
                 nxtcatoms++;
             }

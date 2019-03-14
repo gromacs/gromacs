@@ -45,7 +45,7 @@ class DDBalanceRegionHandler;
 struct gmx_edsam;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
-struct gmx_groups_t;
+struct GmxGroups;
 struct gmx_grppairener_t;
 struct gmx_localtop_t;
 struct gmx_multisim_t;
@@ -102,7 +102,7 @@ void do_force(FILE                                     *log,
               // builds exclusions during neighbor searching within
               // do_force_cutsGROUP.
               gmx_localtop_t                           *top,
-              const gmx_groups_t                       *groups,
+              const GmxGroups                          *groups,
               matrix                                    box,
               gmx::ArrayRefWithPadding<gmx::RVec>       coordinates,
               history_t                                *hist,
@@ -134,7 +134,7 @@ void do_force(FILE                                     *log,
 void ns(FILE               *fplog,
         t_forcerec         *fr,
         matrix              box,
-        const gmx_groups_t *groups,
+        const GmxGroups    *groups,
         gmx_localtop_t     *top,
         const t_mdatoms    *md,
         const t_commrec    *cr,

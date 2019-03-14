@@ -203,10 +203,10 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
             {
                 /* Get the energy group of the first atom in this charge group */
                 firstj  = astart + molt->cgs.index[cg];
-                firsteg = getGroupType(mtop->groups, egcENER, firstj);
+                firsteg = getGroupType(mtop->groups, SimulationGroups::g_ENER, firstj);
                 for (j = molt->cgs.index[cg]+1; j < molt->cgs.index[cg+1]; j++)
                 {
-                    eg = getGroupType(mtop->groups, egcENER, astart+j);
+                    eg = getGroupType(mtop->groups, SimulationGroups::g_ENER, astart+j);
                     if (eg != firsteg)
                     {
                         gmx_fatal(FARGS, "atoms %d and %d in charge group %d of molecule type '%s' are in different energy groups",
@@ -815,7 +815,7 @@ static void cont_status(const char *slog, const char *ener,
 
     if ((ir->epc != epcNO  || ir->etc == etcNOSEHOOVER) && ener)
     {
-        get_enx_state(ener, use_time, &sys->groups, ir, state);
+        get_enx_state(ener, use_time, sys->groups, ir, state);
         preserve_box_shape(ir, state->box_rel, state->boxv);
     }
 }
@@ -2292,7 +2292,7 @@ int gmx_grompp(int argc, char *argv[])
 
     {
         char   warn_buf[STRLEN];
-        double cio = compute_io(ir, sys.natoms, &sys.groups, F_NRE, 1);
+        double cio = compute_io(ir, sys.natoms, sys.groups, F_NRE, 1);
         sprintf(warn_buf, "This run will generate roughly %.0f Mb of data", cio);
         if (cio > 2000)
         {

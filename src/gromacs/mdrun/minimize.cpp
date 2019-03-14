@@ -927,7 +927,6 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *m
     t_block       *cgs_gl;
     int            ncg, *cg_gl, *index, c, cg, i, a0, a1, a, gf, m;
     double         partsum;
-    unsigned char *grpnrFREEZE;
 
     if (debug)
     {
@@ -969,7 +968,7 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *m
     partsum     = 0;
     i           = 0;
     gf          = 0;
-    grpnrFREEZE = top_global->groups.grpnr[egcFREEZE];
+    std::vector<unsigned char> grpnrFREEZE = top_global->groups.groupNumbers[static_cast<int>(SimulationGroups::g_FREEZE)];
     for (c = 0; c < ncg; c++)
     {
         cg = cg_gl[c];
@@ -977,7 +976,7 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *m
         a1 = index[cg+1];
         for (a = a0; a < a1; a++)
         {
-            if (mdatoms->cFREEZE && grpnrFREEZE)
+            if (mdatoms->cFREEZE && !grpnrFREEZE.empty())
             {
                 gf = grpnrFREEZE[i];
             }
@@ -1111,7 +1110,7 @@ Integrator::do_cg()
             nfile, fnm);
     gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    init_enerdata(top_global->groups.groups[static_cast<int>(SimulationGroups::g_ENER)].nr, inputrec->fepvals->n_lambda, enerd);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
@@ -1755,7 +1754,7 @@ Integrator::do_lbfgs()
             nfile, fnm);
     gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    init_enerdata(top_global->groups.groups[static_cast<int>(SimulationGroups::g_ENER)].nr, inputrec->fepvals->n_lambda, enerd);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
@@ -2456,7 +2455,7 @@ Integrator::do_steep()
             nfile, fnm);
     gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    init_enerdata(top_global->groups.groups[static_cast<int>(SimulationGroups::g_ENER)].nr, inputrec->fepvals->n_lambda, enerd);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
@@ -2714,7 +2713,7 @@ Integrator::do_nm()
             nfile, fnm);
     gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    init_enerdata(top_global->groups.groups[static_cast<int>(SimulationGroups::g_ENER)].nr, inputrec->fepvals->n_lambda, enerd);
 
     std::vector<int>       atom_index = get_atom_index(top_global);
     std::vector<gmx::RVec> fneg(atom_index.size(), {0, 0, 0});

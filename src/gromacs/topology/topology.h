@@ -47,17 +47,18 @@
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/unique_cptr.h"
 
-enum
+enum class SimulationGroups : int
 {
-    egcTC,    egcENER,   egcACC, egcFREEZE,
-    egcUser1, egcUser2,  egcVCM, egcCompressedX,
-    egcORFIT, egcQMMM,
-    egcNR
+    g_TC,    g_ENER,   g_ACC, g_FREEZE,
+    g_User1, g_User2,  g_VCM, g_CompressedX,
+    g_ORFIT, g_QMMM,
+    Count
 };
-/* Names corresponding to groups */
-extern const char *gtypes[egcNR+1];
+
+extern gmx::EnumerationArray<SimulationGroups, const char *> groupTypes;
 
 /*! \brief Molecules type data: atoms, interactions and exclusions */
 struct gmx_moltype_t
@@ -99,14 +100,28 @@ struct MoleculeBlockIndices
     int     moleculeIndexStart;  /**< Global molecule indexing starts from this value */
 };
 
-typedef struct gmx_groups_t
+/*! \brief Constainer for groups of entries */
+struct GmxGroups
 {
-    t_grps            grps[egcNR];  /* Groups of things                     */
-    int               ngrpname;     /* Number of groupnames                 */
-    char           ***grpname;      /* Names of the groups                  */
-    int               ngrpnr[egcNR];
-    unsigned char    *grpnr[egcNR]; /* Group numbers or NULL                */
-} gmx_groups_t;
+    GmxGroups();
+
+    ~GmxGroups();
+
+    //! Groups of things
+    std::array<t_grps, static_cast<int>(SimulationGroups::Count)>                     groups;
+    //! Names of groups, with pointers stored in symbol table.
+    std::vector<char **>                                                              groupNames;
+    //! Group numbers or nullptr.
+    std::array<std::vector<unsigned char>, static_cast<int>(SimulationGroups::Count)> groupNumbers;
+    //! Number of groupnames
+    int                                                                               numberOfGroupNames() const { return groupNames.size(); }
+    /*! \brief
+     * Number of group numbers for a single SimulationGroup.
+     *
+     * \param[in] group Integer value for the group type.
+     */
+    int numberOfGroupNumbers(int group) const { return groupNumbers[group].size(); }
+};
 
 /*! \brief
  * Returns group number of an input group for a given atom.
@@ -118,7 +133,7 @@ typedef struct gmx_groups_t
  * \param[in] type  Type of group to check.
  * \param[in] atom  Atom to check if it has an entry.
  */
-int getGroupType (const gmx_groups_t &group, int type, int atom);
+int getGroupType (const GmxGroups &group, SimulationGroups type, int atom);
 
 /* The global, complete system topology struct, based on molecule types.
  * This structure should contain no data that is O(natoms) in memory.
@@ -156,7 +171,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     //! Atomtype properties
     t_atomtypes                       atomtypes;
     //! Groups of atoms for different purposes
-    gmx_groups_t                      groups;
+    GmxGroups                         groups;
     //! The symbol table
     t_symtab                          symtab;
     //! Tells whether we have valid molecule indices
@@ -171,7 +186,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     std::vector<MoleculeBlockIndices> moleculeBlockIndices;
 };
 
-/* \brief
+/*! \brief
  * The fully written out topology for a domain over its lifetime
  *
  * Also used in some analysis code.
@@ -210,7 +225,6 @@ typedef struct t_topology
 } t_topology;
 
 void init_top(t_topology *top);
-void done_gmx_groups_t(gmx_groups_t *g);
 void done_top(t_topology *top);
 // Frees both t_topology and gmx_mtop_t when the former has been created from
 // the latter.
@@ -254,7 +268,7 @@ void compareMtopAB(FILE *fp, const gmx_mtop_t &mtop1, real relativeTolerance, re
  * \param[in] natoms0 Number of atoms for first group.
  * \param[in] natoms1 Number of atoms for second group.
  */
-void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
+void compareAtomGroups(FILE *fp, const GmxGroups &g0, const GmxGroups &g1,
                        int natoms0, int natoms1);
 
 //! Typedef for gmx_localtop in analysis tools.

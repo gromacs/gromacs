@@ -79,6 +79,8 @@ namespace gmx
 namespace
 {
 
+EnumerationWrapper<SimulationGroups> groupIterator;
+
 //! Dump a TPR file
 void list_tpx(const char *fn,
               gmx_bool    bShowNumbers,
@@ -88,7 +90,7 @@ void list_tpx(const char *fn,
               gmx_bool    bOriginalInputrec)
 {
     FILE         *gp;
-    int           indent, i, j, **gcount, atot;
+    int           indent, atot;
     t_state       state;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
@@ -150,35 +152,34 @@ void list_tpx(const char *fn,
             pr_rvecs(stdout, indent, "v", tpx.bV ? state.v.rvec_array() : nullptr, state.natoms);
         }
 
-        const gmx_groups_t &groups = mtop.groups;
+        const GmxGroups &groups = mtop.groups;
 
-        snew(gcount, egcNR);
-        for (i = 0; (i < egcNR); i++)
+        std::array<std::vector<int>, static_cast<int>(SimulationGroups::Count)> gcount;
+        for (int i = 0; (i < static_cast<int>(SimulationGroups::Count)); i++)
         {
-            snew(gcount[i], groups.grps[i].nr);
+            gcount[i].resize(groups.groups[i].nr);
         }
 
-        for (i = 0; (i < mtop.natoms); i++)
+        for (int i = 0; (i < mtop.natoms); i++)
         {
-            for (j = 0; (j < egcNR); j++)
+            for (SimulationGroups group : groupIterator)
             {
-                gcount[j][getGroupType(groups, j, i)]++;
+                int j = static_cast<int>(group);
+                gcount[j][getGroupType(groups, group, i)]++;
             }
         }
         printf("Group statistics\n");
-        for (i = 0; (i < egcNR); i++)
+        for (int i = 0; (i < static_cast<int>(SimulationGroups::Count)); i++)
         {
             atot = 0;
-            printf("%-12s: ", gtypes[i]);
-            for (j = 0; (j < groups.grps[i].nr); j++)
+            printf("%-12s: ", groupTypes[i]);
+            for (int j = 0; (j < groups.groups[i].nr); j++)
             {
                 printf("  %5d", gcount[i][j]);
                 atot += gcount[i][j];
             }
             printf("  (total %d atoms)\n", atot);
-            sfree(gcount[i]);
         }
-        sfree(gcount);
     }
 }
 
