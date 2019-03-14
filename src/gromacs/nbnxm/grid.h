@@ -202,34 +202,8 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
 #endif // !DOXYGEN
 
 
-/*! \internal
- * \brief Helper struct to pass data that is shared over all grids
- *
- * To enable a single coordinate and force array, a single cell range
- * is needed which covers all grids. This helper struct contains
- * references to the index lists mapping both ways, as well as
- * the free-energy boolean, which is the same for all grids.
- */
-struct GridSetData
-{
-    //! The cell indices for all atoms
-    std::vector<int> &cells;
-    //! The atom indices for all atoms stored in cell order
-    std::vector<int> &atomIndices;
-    //! Tells whether we are have perturbed non-bonded interations
-    const bool        haveFep;
-};
-
-/*! \internal
- * \brief Working arrays for constructing a grid
- */
-struct GridWork
-{
-    //! Number of atoms for each grid column
-    std::vector<int> numAtomsPerColumn;
-    //! Buffer for sorting integers
-    std::vector<int> sortBuffer;
-};
+struct GridSetData;
+struct GridWork;
 
 /*! \internal
  * \brief A pair-search grid object for one domain decomposition zone
