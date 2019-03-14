@@ -322,9 +322,7 @@ void do_force_lowlevel(t_forcerec                   *fr,
     const bool needPbcForGroupScheme =
         (fr->cutoff_scheme == ecutsGROUP) &&
         (EEL_RF(fr->ic->eeltype) || EEL_FULL(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype));
-    // TODO: if all listed forces are offloaded to the GPU, both PBC calls below could be skipped.
-    // TODO: after rebase add && haveCpuListedForces(*fr, idef, *fcd) to the condition
-    const auto needPbcForListedForces = bool(flags & GMX_FORCE_LISTED);
+    const auto needPbcForListedForces = bool(flags & GMX_FORCE_LISTED) && haveCpuListedForces(*fr, *idef, *fcd);
     /* Check whether we need to do listed interactions or correct for exclusions (for the Group scheme) */
     if (fr->bMolPBC == TRUE)
     {
