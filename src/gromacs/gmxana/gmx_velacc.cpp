@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,7 +178,7 @@ static void calc_spectrum(int n, const real c[], real dt, const char *fn,
 
 int gmx_velacc(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char                 *desc[] = {
         "[THISMODULE] computes the velocity autocorrelation function.",
         "When the [TT]-m[tt] option is used, the momentum autocorrelation",
         "function is calculated.[PAR]",
@@ -194,8 +194,8 @@ int gmx_velacc(int argc, char *argv[])
         "much shorter than the time scale of the autocorrelation."
     };
 
-    static gmx_bool bMass = FALSE, bMol = FALSE, bRecip = TRUE;
-    t_pargs         pa[]  = {
+    static gmx_bool             bMass = FALSE, bMol = FALSE, bRecip = TRUE;
+    t_pargs                     pa[]  = {
         { "-m", FALSE, etBOOL, {&bMass},
           "Calculate the momentum autocorrelation function" },
         { "-recip", FALSE, etBOOL, {&bRecip},
@@ -204,14 +204,14 @@ int gmx_velacc(int argc, char *argv[])
           "Calculate the velocity acf of molecules" }
     };
 
-    t_topology      top;
-    int             ePBC = -1;
-    t_trxframe      fr;
-    matrix          box;
-    gmx_bool        bTPS = FALSE, bTop = FALSE;
-    int             gnx;
-    int            *index;
-    char           *grpname;
+    std::unique_ptr<t_topology> top;
+    int                         ePBC = -1;
+    t_trxframe                  fr;
+    matrix                      box;
+    gmx_bool                    bTPS = FALSE, bTop = FALSE;
+    int                         gnx;
+    int                        *index;
+    char                       *grpname;
     /* t0, t1 are the beginning and end time respectively.
      * dt is the time step, mass is temp variable for atomic mass.
      */
@@ -253,9 +253,10 @@ int gmx_velacc(int argc, char *argv[])
 
     if (bTPS)
     {
-        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box,
-                             TRUE);
-        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
+        auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, nullptr, nullptr, box, TRUE);
+        top  = std::move(pair.first);
+        bTop = pair.second;
+        get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
     }
     else
     {
@@ -268,9 +269,9 @@ int gmx_velacc(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Need a topology to determine the molecules");
         }
-        snew(normm, top.atoms.nr);
-        precalc(top, normm);
-        index_atom2mol(&gnx, index, &top.mols);
+        snew(normm, top->atoms.nr);
+        precalc(*top, normm);
+        index_atom2mol(&gnx, index, &top->mols);
     }
 
     /* Correlation stuff */
@@ -301,13 +302,13 @@ int gmx_velacc(int argc, char *argv[])
             for (i = 0; i < gnx; i++)
             {
                 clear_rvec(mv_mol);
-                k = top.mols.index[index[i]];
-                l = top.mols.index[index[i]+1];
+                k = top->mols.index[index[i]];
+                l = top->mols.index[index[i]+1];
                 for (j = k; j < l; j++)
                 {
                     if (bMass)
                     {
-                        mass = top.atoms.atom[j].m;
+                        mass = top->atoms.atom[j].m;
                     }
                     else
                     {
@@ -328,7 +329,7 @@ int gmx_velacc(int argc, char *argv[])
             {
                 if (bMass)
                 {
-                    mass = top.atoms.atom[index[i]].m;
+                    mass = top->atoms.atom[index[i]].m;
                 }
                 else
                 {

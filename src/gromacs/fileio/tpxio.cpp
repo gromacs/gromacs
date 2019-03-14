@@ -3015,18 +3015,19 @@ int read_tpx(const char *fn,
     return ePBC;
 }
 
-int read_tpx_top(const char *fn,
-                 t_inputrec *ir, matrix box, int *natoms,
-                 rvec *x, rvec *v, t_topology *top)
+std::pair<std::unique_ptr<t_topology>, int>
+read_tpx_top(const char *fn,
+             t_inputrec *ir, matrix box, int *natoms,
+             rvec *x, rvec *v)
 {
     gmx_mtop_t  mtop;
     int         ePBC;
 
     ePBC = read_tpx(fn, ir, box, natoms, x, v, &mtop);
 
-    *top = gmx_mtop_t_to_t_topology(&mtop, true);
+    std::unique_ptr<t_topology> top = gmx_mtop_t_to_t_topology(&mtop, true);
 
-    return ePBC;
+    return std::make_pair(std::move(top), ePBC);
 }
 
 gmx_bool fn2bTPX(const char *file)

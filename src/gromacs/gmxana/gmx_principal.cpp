@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,6 @@ int gmx_principal(int argc, char *argv[])
         { "-foo",      FALSE, etBOOL, {&foo}, "Dummy option to avoid empty array" }
     };
     t_trxstatus      *status;
-    t_topology        top;
     int               ePBC;
     real              t;
     rvec        *     x;
@@ -156,19 +155,20 @@ int gmx_principal(int argc, char *argv[])
     }
     sfree(legend);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, nullptr, nullptr, box, TRUE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
 
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
+    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
     do
     {
         gmx_rmpbc(gpbc, natoms, box, x);
 
-        calc_principal_axes(&top, x, index, gnx, axes, moi);
+        calc_principal_axes(top.get(), x, index, gnx, axes, moi);
 
         fprintf(axis1, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][XX], axes[XX][YY], axes[XX][ZZ]);
         fprintf(axis2, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[YY][XX], axes[YY][YY], axes[YY][ZZ]);

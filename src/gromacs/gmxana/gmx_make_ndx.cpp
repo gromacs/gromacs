@@ -1586,12 +1586,12 @@ int gmx_make_ndx(int argc, char *argv[])
         gmx_fatal(FARGS, "No input files (structure or index)");
     }
 
+    std::unique_ptr<t_topology> top;
     if (stxfile)
     {
-        t_topology *top;
-        snew(top, 1);
         fprintf(stderr, "\nReading structure file\n");
-        read_tps_conf(stxfile, top, &ePBC, &x, &v, box, FALSE);
+        auto pair = read_tps_conf(stxfile, &ePBC, &x, &v, box, FALSE);
+        top   = std::move(pair.first);
         atoms = &top->atoms;
         if (atoms->pdbinfo == nullptr)
         {

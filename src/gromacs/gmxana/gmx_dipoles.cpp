@@ -1610,7 +1610,6 @@ int gmx_dipoles(int argc, char *argv[])
 #define NFILE asize(fnm)
     int               npargs;
     t_pargs          *ppa;
-    t_topology       *top;
     int               ePBC;
     int               k, natoms;
     matrix            box;
@@ -1667,9 +1666,10 @@ int gmx_dipoles(int argc, char *argv[])
         }
     }
 
-    snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box,
-                        &natoms, nullptr, nullptr, top);
+    auto pair = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box,
+                             &natoms, nullptr, nullptr);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
+    ePBC = pair.second;
 
     snew(gnx, ncos);
     snew(grpname, ncos);
@@ -1683,7 +1683,7 @@ int gmx_dipoles(int argc, char *argv[])
     }
     nFF[0] = nFA;
     nFF[1] = nFB;
-    do_dip(top, ePBC, det(box), ftp2fn(efTRX, NFILE, fnm),
+    do_dip(top.get(), ePBC, det(box), ftp2fn(efTRX, NFILE, fnm),
            opt2fn("-o", NFILE, fnm), opt2fn("-eps", NFILE, fnm),
            opt2fn("-a", NFILE, fnm), opt2fn("-d", NFILE, fnm),
            opt2fn_null("-cos", NFILE, fnm),

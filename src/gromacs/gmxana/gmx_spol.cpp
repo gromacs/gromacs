@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -150,7 +150,6 @@ static void spol_atom2molindex(int *n, int *index, const t_block *mols)
 
 int gmx_spol(int argc, char *argv[])
 {
-    t_topology  *top;
     t_atom      *atom;
     t_trxstatus *status;
     int          nrefat, natoms, nf, ntot;
@@ -220,12 +219,12 @@ int gmx_spol(int argc, char *argv[])
         return 0;
     }
 
-    snew(top, 1);
     // TODO: Only ePBC is used, not the full inputrec.
-    t_inputrec  irInstance;
-    t_inputrec *ir = &irInstance;
-    read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
-                 ir, box, &natoms, nullptr, nullptr, top);
+    t_inputrec                  irInstance;
+    t_inputrec                 *ir   = &irInstance;
+    auto                        pair = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
+                                                    ir, box, &natoms, nullptr, nullptr);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
 
     /* get index groups */
     printf("Select a group of reference particles and a solvent group:\n");
@@ -285,7 +284,7 @@ int gmx_spol(int argc, char *argv[])
         set_pbc(&pbc, ir->ePBC, box);
         if (bCom)
         {
-            calc_com_pbc(nrefat, top, x, &pbc, index[0], xref, ir->ePBC);
+            calc_com_pbc(nrefat, top.get(), x, &pbc, index[0], xref, ir->ePBC);
         }
 
         for (m = 0; m < isize[1]; m++)

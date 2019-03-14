@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -269,7 +269,6 @@ int gmx_mk_angndx(int argc, char *argv[])
 
     gmx_output_env_t  *oenv;
     FILE              *out;
-    t_topology        *top;
     int                i, j, ntype;
     int                nft = 0, *ft, mult = 0;
     int              **index;
@@ -292,7 +291,7 @@ int gmx_mk_angndx(int argc, char *argv[])
 
     ft = select_ftype(opt[0], &nft, &mult);
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), nullptr);
+    std::unique_ptr<t_topology> top = read_top(ftp2fn(efTPR, NFILE, fnm), nullptr);
 
     ntype = calc_ntype(nft, ft, &(top->idef));
     snew(grpnames, ntype);
@@ -301,7 +300,7 @@ int gmx_mk_angndx(int argc, char *argv[])
 
     snew(nr, ntype);
     snew(index, ntype);
-    fill_ang(nft, ft, mult, nr, index, ft_ind, top, !bH, hq);
+    fill_ang(nft, ft, mult, nr, index, ft_ind, top.get(), !bH, hq);
 
     out = ftp2FILE(efNDX, NFILE, fnm, "w");
     for (i = 0; (i < ntype); i++)

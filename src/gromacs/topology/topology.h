@@ -195,19 +195,34 @@ struct gmx_localtop_t
     bool          useInDomainDecomp_ = false;
 };
 
-/* The old topology struct, completely written out, used in analysis tools */
-typedef struct t_topology
+/*! \brief
+ * The old topology struct, completely written out, used in analysis tools
+ */
+struct t_topology
 {
-    char          **name;                        /* Name of the topology                 */
-    t_idef          idef;                        /* The interaction function definition  */
-    t_atoms         atoms;                       /* The atoms                            */
-    t_atomtypes     atomtypes;                   /* Atomtype properties                  */
-    t_block         cgs;                         /* The charge groups                    */
-    t_block         mols;                        /* The molecules                        */
-    gmx_bool        bIntermolecularInteractions; /* Inter.mol. int. ?   */
-    t_blocka        excls;                       /* The exclusions                       */
-    t_symtab        symtab;                      /* The symbol table                     */
-} t_topology;
+    t_topology();
+
+    ~t_topology();
+
+    //! Name of the topology
+    char          **name;
+    //! The interaction function definition
+    t_idef          idef;
+    //! The atoms.
+    t_atoms         atoms;
+    //! Atomtype properties
+    t_atomtypes     atomtypes;
+    //! The charge groups
+    t_block         cgs;
+    //! The molecules
+    t_block         mols;
+    //! Do we have inter molecular interactions?
+    bool            bIntermolecularInteractions;
+    //! The exclusions
+    t_blocka        excls;
+    //! The symbol table
+    t_symtab        symtab;
+};
 
 void init_top(t_topology *top);
 void done_gmx_groups_t(gmx_groups_t *g);
