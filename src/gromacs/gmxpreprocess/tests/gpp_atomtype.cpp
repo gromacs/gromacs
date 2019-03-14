@@ -50,17 +50,31 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
+namespace gmx
+{
+namespace
+{
+
 class PreprocessingAtomTypesTest : public ::testing::Test
 {
     public:
-        PreprocessingAtomTypesTest()
+        PreprocessingAtomTypesTest() :
+            nb_({}, {})
         {
             open_symtab(&symtab_);
         }
 
         int addType(const char *name,
                     int         bondAtomType,
-                    int         atomNumber);
+                    int         atomNumber)
+        {
+            return atypes_.addType(&symtab_,
+                                   atom_,
+                                   name,
+                                   nb_,
+                                   bondAtomType,
+                                   atomNumber);
+        }
 
         ~PreprocessingAtomTypesTest() override
         {
@@ -70,20 +84,8 @@ class PreprocessingAtomTypesTest : public ::testing::Test
         PreprocessingAtomTypes atypes_;
         t_symtab               symtab_;
         t_atom                 atom_;
-        t_param                nb_;
+        InteractionType        nb_;
 };
-
-int PreprocessingAtomTypesTest::addType(const char *name,
-                                        int         bondAtomType,
-                                        int         atomNumber)
-{
-    return atypes_.addType(&symtab_,
-                           atom_,
-                           name,
-                           &nb_,
-                           bondAtomType,
-                           atomNumber);
-}
 
 TEST_F(PreprocessingAtomTypesTest, EmptyOnCreate)
 {
@@ -150,3 +152,6 @@ TEST_F(PreprocessingAtomTypesTest, NoNameFromIncorrectTypeNumber)
 {
     EXPECT_EQ(atypes_.atomNameFromAtomType(-1), nullptr);
 }
+
+} // namespace
+} // namespace gmx
