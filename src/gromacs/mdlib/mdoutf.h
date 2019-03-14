@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 #include <stdio.h>
 
 #include "gromacs/fileio/enxio.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
@@ -46,6 +47,7 @@
 class energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct MdrunOptions;
 struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
@@ -54,7 +56,6 @@ struct t_inputrec;
 namespace gmx
 {
 class IMDOutputProvider;
-struct MdrunOptions;
 }
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
@@ -64,16 +65,16 @@ typedef struct gmx_mdoutf *gmx_mdoutf_t;
  * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
-gmx_mdoutf_t init_mdoutf(FILE                    *fplog,
-                         int                      nfile,
-                         const t_filenm           fnm[],
-                         const gmx::MdrunOptions &mdrunOptions,
-                         const t_commrec         *cr,
-                         gmx::IMDOutputProvider  *outputProvider,
-                         const t_inputrec        *ir,
-                         gmx_mtop_t              *mtop,
-                         const gmx_output_env_t  *oenv,
-                         gmx_wallcycle_t          wcycle);
+gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
+                         int                     nfile,
+                         const t_filenm          fnm[],
+                         const MdrunOptions     &mdrunOptions,
+                         const t_commrec        *cr,
+                         gmx::IMDOutputProvider *outputProvider,
+                         const t_inputrec       *ir,
+                         gmx_mtop_t             *mtop,
+                         const gmx_output_env_t *oenv,
+                         gmx_wallcycle_t         wcycle);
 
 /*! \brief Getter for file pointer */
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);

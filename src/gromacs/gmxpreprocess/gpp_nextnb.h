@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,13 +38,9 @@
 #ifndef GMX_GMXPREPROCESS_GPP_NEXTNB_H
 #define GMX_GMXPREPROCESS_GPP_NEXTNB_H
 
-#include "gromacs/utility/arrayref.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 
-struct t_blocka;
-struct InteractionTypeParameters;
-
-struct t_nextnb
-{
+typedef struct {
     int nr;     /* nr atoms (0 <= i < nr) (atoms->nr)	        */
     int nrex;   /* with nrex lists of neighbours		*/
     /* respectively containing zeroth, first	*/
@@ -52,7 +48,7 @@ struct t_nextnb
     int  **nrexcl; /* with (0 <= nrx < nrexcl[i][nre]) neigbours    */
     /* per list stored in one 2d array of lists	*/
     int ***a;      /* like this: a[i][nre][nrx]			*/
-};
+} t_nextnb;
 
 void init_nnb(t_nextnb *nnb, int nr, int nrex);
 /* Initiate the arrays for nnb (see above) */
@@ -68,7 +64,7 @@ void print_nnb(t_nextnb *nnb, char *s);
 #define print_nnb(nnb, s)
 #endif
 
-void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionTypeParameters> plist);
+void gen_nnb(t_nextnb *nnb, t_params plist[]);
 /* Generate a t_nextnb structure from bond information.
  * With the structure you can either generate exclusions
  * or generate angles and dihedrals. The structure must be
@@ -76,7 +72,7 @@ void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionTypeParameters> plist);
  */
 
 void generate_excl (int nrexcl, int nratoms,
-                    gmx::ArrayRef<InteractionTypeParameters> plist, t_nextnb *nnb, t_blocka *excl);
+                    t_params plist[], t_nextnb *nnb, t_blocka *excl);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,8 @@ namespace
 
 TEST(EmptyArrayRefWithPaddingTest, IsEmpty)
 {
-    ArrayRefWithPadding<real> empty;
+    EmptyArrayRef             emptyArray = {};
+    ArrayRefWithPadding<real> empty(emptyArray);
 
     EXPECT_EQ(0U, empty.size());
     EXPECT_TRUE(empty.empty());
@@ -67,7 +68,8 @@ TEST(EmptyArrayRefWithPaddingTest, IsEmpty)
 
 TEST(EmptyConstArrayRefWithPaddingTest, IsEmpty)
 {
-    ArrayRefWithPadding<const real> empty;
+    EmptyArrayRef                   emptyArray = {};
+    ArrayRefWithPadding<const real> empty(emptyArray);
 
     EXPECT_EQ(0U, empty.size());
     EXPECT_TRUE(empty.empty());

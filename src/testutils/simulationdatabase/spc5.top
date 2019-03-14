@@ -1,9 +1,0 @@
-#include "oplsaa.ff/forcefield.itp"
-#include "oplsaa.ff/spc.itp"
-
-[ system ]
-water
-
-[ molecules ]
-sol 5
-

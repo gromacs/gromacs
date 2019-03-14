@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,8 +97,8 @@ void gmx::MimicCommunicator::init()
     return MCL_init_client(path);
 }
 
-void gmx::MimicCommunicator::sendInitData(gmx_mtop_t                  *mtop,
-                                          PaddedHostVector<gmx::RVec>  coords)
+void gmx::MimicCommunicator::sendInitData(gmx_mtop_t                 *mtop,
+                                          HostVector<gmx::RVec>       coords)
 {
     MCL_send(&mtop->natoms, 1, TYPE_INT, 0);
     MCL_send(&mtop->atomtypes.nr, 1, TYPE_INT, 0);
@@ -239,7 +239,7 @@ int64_t gmx::MimicCommunicator::getStepNumber()
     return steps;
 }
 
-void gmx::MimicCommunicator::getCoords(PaddedHostVector<RVec> *x, const int natoms)
+void gmx::MimicCommunicator::getCoords(HostVector<RVec> *x, const int natoms)
 {
     std::vector<double> coords(natoms * 3);
     MCL_receive(&*coords.begin(), 3 * natoms, TYPE_DOUBLE, 0);

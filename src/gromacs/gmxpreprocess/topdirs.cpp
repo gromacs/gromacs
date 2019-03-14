@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,67 +41,60 @@
 #include <cstdarg>
 #include <cstdio>
 
-#include <algorithm>
-
-#include "gromacs/topology/idef.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Must correspond to the Directive enum in grompp_impl.h */
-static gmx::EnumerationArray<Directive, const char *> directive_names
-    = { {
-            "defaults",
-            "atomtypes",
-            "bondtypes",
-            "constrainttypes",
-            "pairtypes",
-            "angletypes",
-            "dihedraltypes",
-            "nonbond_params",
-            "implicit_genborn_params",
-            "implicit_surface_params",
-            "cmaptypes",
-            /* All the directives above can not appear after moleculetype */
-            "moleculetype",
-            "atoms",
-            "virtual_sites2",
-            "virtual_sites3",
-            "virtual_sites4",
-            "virtual_sitesn",
-            "bonds",
-            "exclusions",
-            "pairs",
-            "pairs_nb",
-            "angles",
-            "dihedrals",
-            "constraints",
-            "settles",
-            "polarization",
-            "water_polarization",
-            "thole_polarization",
-            "system",
-            "molecules",
-            "position_restraints",
-            "angle_restraints",
-            "angle_restraints_z",
-            "distance_restraints",
-            "orientation_restraints",
-            "dihedral_restraints",
-            "cmap",
-            "intermolecular_interactions",
-            "maxdirs",
-            "invalid",
-            "none"
-        }};
+/* Must correspond to the directive enum in grompp-impl.h */
+static const char *directive_names[d_maxdir+1] = {
+    "defaults",
+    "atomtypes",
+    "bondtypes",
+    "constrainttypes",
+    "pairtypes",
+    "angletypes",
+    "dihedraltypes",
+    "nonbond_params",
+    "implicit_genborn_params",
+    "implicit_surface_params",
+    "cmaptypes",
+    /* All the directives above can not appear after moleculetype */
+    "moleculetype",
+    "atoms",
+    "virtual_sites2",
+    "virtual_sites3",
+    "virtual_sites4",
+    "virtual_sitesn",
+    "bonds",
+    "exclusions",
+    "pairs",
+    "pairs_nb",
+    "angles",
+    "dihedrals",
+    "constraints",
+    "settles",
+    "polarization",
+    "water_polarization",
+    "thole_polarization",
+    "system",
+    "molecules",
+    "position_restraints",
+    "angle_restraints",
+    "angle_restraints_z",
+    "distance_restraints",
+    "orientation_restraints",
+    "dihedral_restraints",
+    "cmap",
+    "intermolecular_interactions",
+    "invalid"
+};
 
-int ifunc_index(Directive d, int type)
+int ifunc_index(directive d, int type)
 {
     switch (d)
     {
-        case Directive::d_bondtypes:
-        case Directive::d_bonds:
+        case d_bondtypes:
+        case d_bonds:
             switch (type)
             {
                 case 1:
@@ -127,8 +120,8 @@ int ifunc_index(Directive d, int type)
                 default:
                     gmx_fatal(FARGS, "Invalid bond type %d", type);
             }
-        case Directive::d_angles:
-        case Directive::d_angletypes:
+        case d_angles:
+        case d_angletypes:
             switch (type)
             {
                 case 1:
@@ -152,9 +145,9 @@ int ifunc_index(Directive d, int type)
                 default:
                     gmx_fatal(FARGS, "Invalid angle type %d", type);
             }
-        case Directive::d_pairs:
-        case Directive::d_pairtypes:
-            if (type == 1 || (d == Directive::d_pairtypes && type == 2))
+        case d_pairs:
+        case d_pairtypes:
+            if (type == 1 || (d == d_pairtypes && type == 2))
             {
                 return F_LJ14;
             }
@@ -166,10 +159,10 @@ int ifunc_index(Directive d, int type)
             {
                 gmx_fatal(FARGS, "Invalid pairs type %d", type);
             }
-        case Directive::d_pairs_nb:
+        case d_pairs_nb:
             return F_LJC_PAIRS_NB;
-        case Directive::d_dihedrals:
-        case Directive::d_dihedraltypes:
+        case d_dihedrals:
+        case d_dihedraltypes:
             switch (type)
             {
                 case 1:
@@ -193,11 +186,11 @@ int ifunc_index(Directive d, int type)
                 default:
                     gmx_fatal(FARGS, "Invalid dihedral type %d", type);
             }
-        case Directive::d_cmaptypes:
-        case Directive::d_cmap:
+        case d_cmaptypes:
+        case d_cmap:
             return F_CMAP;
 
-        case Directive::d_nonbond_params:
+        case d_nonbond_params:
             if (type == 1)
             {
                 return F_LJ;
@@ -206,9 +199,9 @@ int ifunc_index(Directive d, int type)
             {
                 return F_BHAM;
             }
-        case Directive::d_vsites2:
+        case d_vsites2:
             return F_VSITE2;
-        case Directive::d_vsites3:
+        case d_vsites3:
             switch (type)
             {
                 case 1:
@@ -222,7 +215,7 @@ int ifunc_index(Directive d, int type)
                 default:
                     gmx_fatal(FARGS, "Invalid vsites3 type %d", type);
             }
-        case Directive::d_vsites4:
+        case d_vsites4:
             switch (type)
             {
                 case 1:
@@ -232,10 +225,10 @@ int ifunc_index(Directive d, int type)
                 default:
                     gmx_fatal(FARGS, "Invalid vsites4 type %d", type);
             }
-        case Directive::d_vsitesn:
+        case d_vsitesn:
             return F_VSITEN;
-        case Directive::d_constraints:
-        case Directive::d_constrainttypes:
+        case d_constraints:
+        case d_constrainttypes:
             switch (type)
             {
                 case 1:
@@ -245,9 +238,9 @@ int ifunc_index(Directive d, int type)
                 default:
                     gmx_fatal(FARGS, "Invalid constraints type %d", type);
             }
-        case Directive::d_settles:
+        case d_settles:
             return F_SETTLE;
-        case Directive::d_position_restraints:
+        case d_position_restraints:
             switch (type)
             {
                 case 1:
@@ -257,7 +250,7 @@ int ifunc_index(Directive d, int type)
                 default:
                     gmx_fatal(FARGS, "Invalid position restraint type %d", type);
             }
-        case Directive::d_polarization:
+        case d_polarization:
             switch (type)
             {
                 case 1:
@@ -267,19 +260,19 @@ int ifunc_index(Directive d, int type)
                 default:
                     gmx_fatal(FARGS, "Invalid polarization type %d", type);
             }
-        case Directive::d_thole_polarization:
+        case d_thole_polarization:
             return F_THOLE_POL;
-        case Directive::d_water_polarization:
+        case d_water_polarization:
             return F_WATER_POL;
-        case Directive::d_angle_restraints:
+        case d_angle_restraints:
             return F_ANGRES;
-        case Directive::d_angle_restraints_z:
+        case d_angle_restraints_z:
             return F_ANGRESZ;
-        case Directive::d_distance_restraints:
+        case d_distance_restraints:
             return F_DISRES;
-        case Directive::d_orientation_restraints:
+        case d_orientation_restraints:
             return F_ORIRES;
-        case Directive::d_dihedral_restraints:
+        case d_dihedral_restraints:
             return F_DIHRES;
         default:
             gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%d)",
@@ -287,14 +280,21 @@ int ifunc_index(Directive d, int type)
     }
 }
 
-const char *dir2str (Directive d)
+const char *dir2str (directive d)
 {
-    int index = static_cast<int>(d);
-    return directive_names[index];
+    if (d < d_maxdir)
+    {
+        return directive_names[d];
+    }
+    else
+    {
+        return directive_names[d_maxdir];
+    }
 }
 
-Directive str2dir (char *dstr)
+directive str2dir (char *dstr)
 {
+    int  d;
     char buf[STRLEN], *ptr;
 
     /* Hack to be able to read old topologies */
@@ -308,49 +308,52 @@ Directive str2dir (char *dstr)
         ptr = dstr;
     }
 
-    for (auto d : gmx::EnumerationWrapper<Directive>())
+    for (d = 0; (d < d_maxdir); d++)
     {
-        if (gmx_strcasecmp_min(ptr, dir2str(static_cast<Directive>(d))) == 0)
+        if (gmx_strcasecmp_min(ptr, dir2str(static_cast<directive>(d))) == 0)
         {
-            return static_cast<Directive>(d);
+            return static_cast<directive>(d);
         }
     }
 
-    return Directive::d_invalid;
+    return d_invalid;
 }
 
-static gmx::EnumerationArray<Directive, Directive *> necessary = {{ nullptr }};
+static directive **necessary = nullptr;
 
-static void set_nec(Directive **n, ...)
+static void set_nec(directive **n, ...)
 /* Must always have at least one extra argument */
 {
     va_list   ap;
     int       ind = 0;
-    Directive d;
+    directive d;
 
     va_start(ap, n);
     do
     {
-        d = static_cast<Directive>(va_arg(ap, int));
+        d = static_cast<directive>(va_arg(ap, int));
         srenew(*n, ++ind);
         (*n)[ind-1] = d;
     }
-    while (d != Directive::d_none);
+    while (d != d_none);
     va_end(ap);
 }
 
 void DS_Init(DirStack **DS)
 {
-    if (necessary[0] == nullptr)
+    if (necessary == nullptr)
     {
-        set_nec(&(necessary[Directive::d_defaults]), Directive::d_none);
-        set_nec(&(necessary[Directive::d_atomtypes]), Directive::d_defaults, Directive::d_none);
-        set_nec(&(necessary[Directive::d_bondtypes]), Directive::d_atomtypes, Directive::d_none);
-        set_nec(&(necessary[Directive::d_constrainttypes]), Directive::d_atomtypes, Directive::d_none);
-        set_nec(&(necessary[Directive::d_pairtypes]), Directive::d_atomtypes, Directive::d_none);
-        set_nec(&(necessary[Directive::d_angletypes]), Directive::d_atomtypes, Directive::d_none);
-        set_nec(&(necessary[Directive::d_dihedraltypes]), Directive::d_atomtypes, Directive::d_none);
-        set_nec(&(necessary[Directive::d_nonbond_params]), Directive::d_atomtypes, Directive::d_none);
+        int i;
+
+        snew(necessary, d_maxdir);
+        set_nec(&(necessary[d_defaults]), d_none);
+        set_nec(&(necessary[d_atomtypes]), d_defaults, d_none);
+        set_nec(&(necessary[d_bondtypes]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_constrainttypes]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_pairtypes]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_angletypes]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_dihedraltypes]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_nonbond_params]), d_atomtypes, d_none);
         // Note that the content of the next two directives are
         // ignored, but if grompp reads them in old force field files,
         // it still needs to understand that they are in a valid place
@@ -358,36 +361,50 @@ void DS_Init(DirStack **DS)
         // be in the same place that was valid in old versions (ie. child
         // directive of [atomtypes]) but any relevant case will
         // satisfy that.
-        set_nec(&(necessary[Directive::d_implicit_genborn_params]), Directive::d_atomtypes, Directive::d_none);
-        set_nec(&(necessary[Directive::d_implicit_surface_params]), Directive::d_atomtypes, Directive::d_none);
-        set_nec(&(necessary[Directive::d_cmaptypes]), Directive::d_atomtypes, Directive::d_none);
-        set_nec(&(necessary[Directive::d_moleculetype]), Directive::d_atomtypes, Directive::d_none);
-        set_nec(&(necessary[Directive::d_atoms]), Directive::d_moleculetype, Directive::d_none);
-        set_nec(&(necessary[Directive::d_vsites2]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_vsites3]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_vsites4]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_vsitesn]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_bonds]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_exclusions]), Directive::d_bonds, Directive::d_constraints, Directive::d_settles, Directive::d_none);
-        set_nec(&(necessary[Directive::d_pairs]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_pairs_nb]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_angles]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_polarization]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_water_polarization]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_thole_polarization]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_dihedrals]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_constraints]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_settles]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_system]), Directive::d_moleculetype, Directive::d_none);
-        set_nec(&(necessary[Directive::d_molecules]), Directive::d_system, Directive::d_none);
-        set_nec(&(necessary[Directive::d_position_restraints]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_angle_restraints]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_angle_restraints_z]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_distance_restraints]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_orientation_restraints]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_dihedral_restraints]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_cmap]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_intermolecular_interactions]), Directive::d_molecules, Directive::d_none);
+        set_nec(&(necessary[d_implicit_genborn_params]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_implicit_surface_params]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_cmaptypes]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_moleculetype]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_atoms]), d_moleculetype, d_none);
+        set_nec(&(necessary[d_vsites2]), d_atoms, d_none);
+        set_nec(&(necessary[d_vsites3]), d_atoms, d_none);
+        set_nec(&(necessary[d_vsites4]), d_atoms, d_none);
+        set_nec(&(necessary[d_vsitesn]), d_atoms, d_none);
+        set_nec(&(necessary[d_bonds]), d_atoms, d_none);
+        set_nec(&(necessary[d_exclusions]), d_bonds, d_constraints, d_settles, d_none);
+        set_nec(&(necessary[d_pairs]), d_atoms, d_none);
+        set_nec(&(necessary[d_pairs_nb]), d_atoms, d_none);
+        set_nec(&(necessary[d_angles]), d_atoms, d_none);
+        set_nec(&(necessary[d_polarization]), d_atoms, d_none);
+        set_nec(&(necessary[d_water_polarization]), d_atoms, d_none);
+        set_nec(&(necessary[d_thole_polarization]), d_atoms, d_none);
+        set_nec(&(necessary[d_dihedrals]), d_atoms, d_none);
+        set_nec(&(necessary[d_constraints]), d_atoms, d_none);
+        set_nec(&(necessary[d_settles]), d_atoms, d_none);
+        set_nec(&(necessary[d_system]), d_moleculetype, d_none);
+        set_nec(&(necessary[d_molecules]), d_system, d_none);
+        set_nec(&(necessary[d_position_restraints]), d_atoms, d_none);
+        set_nec(&(necessary[d_angle_restraints]), d_atoms, d_none);
+        set_nec(&(necessary[d_angle_restraints_z]), d_atoms, d_none);
+        set_nec(&(necessary[d_distance_restraints]), d_atoms, d_none);
+        set_nec(&(necessary[d_orientation_restraints]), d_atoms, d_none);
+        set_nec(&(necessary[d_dihedral_restraints]), d_atoms, d_none);
+        set_nec(&(necessary[d_cmap]), d_atoms, d_none);
+        set_nec(&(necessary[d_intermolecular_interactions]), d_molecules, d_none);
+
+        for (i = 0; (i < d_maxdir); i++)
+        {
+            if (necessary[i])
+            {
+                directive d;
+                int       j = 0;
+                do
+                {
+                    d = necessary[i][j++];
+                }
+                while (d != d_none);
+            }
+        }
     }
     *DS = nullptr;
 
@@ -405,7 +422,7 @@ void DS_Done (DirStack **DS)
     }
 }
 
-void DS_Push (DirStack **DS, Directive d)
+void DS_Push (DirStack **DS, directive d)
 {
     DirStack *D;
 
@@ -415,7 +432,7 @@ void DS_Push (DirStack **DS, Directive d)
     *DS     = D;
 }
 
-int DS_Search(DirStack *DS, Directive d)
+int DS_Search(DirStack *DS, directive d)
 {
     DirStack *D;
 
@@ -428,19 +445,19 @@ int DS_Search(DirStack *DS, Directive d)
     return static_cast<int>(D != nullptr);
 }
 
-int DS_Check_Order(DirStack *DS, Directive d)
+int DS_Check_Order(DirStack *DS, directive d)
 {
-    Directive d0;
+    directive d0;
     int       i = 0;
 
     /* Check if parameter definitions appear after a moleculetype directive */
-    if (d < Directive::d_moleculetype && DS_Search(DS, Directive::d_moleculetype))
+    if (d < d_moleculetype && DS_Search(DS, d_moleculetype))
     {
         return FALSE;
     }
 
     /* Check if all the necessary directives have appeared before directive d */
-    if (necessary[d][0] == Directive::d_none)
+    if (necessary[d][0] == d_none)
     {
         return TRUE;
     }
@@ -454,7 +471,7 @@ int DS_Check_Order(DirStack *DS, Directive d)
                 return TRUE;
             }
         }
-        while (d0 != Directive::d_none);
+        while (d0 != d_none);
     }
     return FALSE;
 }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
 
 #include "nonbonded.h"
 
+#include "config.h"
+
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -49,7 +51,7 @@
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic_cg.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/listed_forces/bonded.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -67,14 +69,161 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+/* Different default (c) and SIMD instructions interaction-specific kernels */
+#if !GMX_CLANG_ANALYZER
+#include "gromacs/gmxlib/nonbonded/nb_kernel_c/nb_kernel_c.h"
+#endif
+
+#if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_single/nb_kernel_sse2_single.h"
+#endif
+#if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_single/nb_kernel_sse4_1_single.h"
+#endif
+#if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
+#endif
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
+#endif
+#if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_double/nb_kernel_sse2_double.h"
+#endif
+#if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
+#endif
+#if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
+#endif
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
+#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
+#endif
+
+static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+static gmx_bool            nonbonded_setup_done  = FALSE;
+
+
 void
-gmx_nonbonded_set_kernel_pointers(t_nblist *nl)
+gmx_nonbonded_setup(t_forcerec *   fr,
+                    gmx_bool       bGenericKernelOnly)
+{
+    tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
+    /* Here we are guaranteed only one thread made it. */
+    if (!nonbonded_setup_done)
+    {
+        if (!bGenericKernelOnly)
+        {
+            /* Add the generic kernels to the structure stored statically in nb_kernel.c */
+#if !GMX_CLANG_ANALYZER
+            nb_kernel_list_add_kernels(kernellist_c, kernellist_c_size);
+#endif
+
+            if (!(fr != nullptr && !fr->use_simd_kernels))
+            {
+                /* Add interaction-specific kernels for different architectures */
+                /* Single precision */
+#if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
+                nb_kernel_list_add_kernels(kernellist_sse2_single, kernellist_sse2_single_size);
+#endif
+#if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
+                nb_kernel_list_add_kernels(kernellist_sse4_1_single, kernellist_sse4_1_single_size);
+#endif
+#if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
+                nb_kernel_list_add_kernels(kernellist_avx_128_fma_single, kernellist_avx_128_fma_single_size);
+#endif
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
+                nb_kernel_list_add_kernels(kernellist_avx_256_single, kernellist_avx_256_single_size);
+#endif
+                /* Double precision */
+#if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
+                nb_kernel_list_add_kernels(kernellist_sse2_double, kernellist_sse2_double_size);
+#endif
+#if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
+                nb_kernel_list_add_kernels(kernellist_sse4_1_double, kernellist_sse4_1_double_size);
+#endif
+#if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
+                nb_kernel_list_add_kernels(kernellist_avx_128_fma_double, kernellist_avx_128_fma_double_size);
+#endif
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
+                nb_kernel_list_add_kernels(kernellist_avx_256_double, kernellist_avx_256_double_size);
+#endif
+                ; /* empty statement to avoid a completely empty block */
+            }
+        }
+        /* Create a hash for faster lookups */
+        nb_kernel_list_hash_init();
+
+        nonbonded_setup_done = TRUE;
+    }
+    tMPI_Thread_mutex_unlock(&nonbonded_setup_mutex);
+}
+
+
+
+void
+gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwSwitchDiffers)
 {
     const char *     elec;
     const char *     elec_mod;
     const char *     vdw;
     const char *     vdw_mod;
     const char *     geom;
+    const char *     other;
+
+    struct
+    {
+        const char *  arch;
+        int           simd_padding_width;
+    }
+    arch_and_padding[] =
+    {
+        /* Single precision */
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
+        { "avx_256_single", 8 },
+#endif
+#if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
+        { "avx_128_fma_single", 4 },
+#endif
+#if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
+        { "sse4_1_single", 4 },
+#endif
+#if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
+        { "sse2_single", 4 },
+#endif
+        /* Double precision */
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
+        { "avx_256_double", 4 },
+#endif
+#if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
+        /* Sic. Double precision 2-way SIMD does not require neighbor list padding,
+         * since the kernels execute a loop unrolled a factor 2, followed by
+         * a possible single odd-element epilogue.
+         */
+        { "avx_128_fma_double", 1 },
+#endif
+#if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
+        /* No padding - see comment above */
+        { "sse2_double", 1 },
+#endif
+#if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
+        /* No padding - see comment above */
+        { "sse4_1_double", 1 },
+#endif
+        { "c", 1 },
+    };
+    int              narch = asize(arch_and_padding);
+    int              i;
+
+    if (!nonbonded_setup_done)
+    {
+        /* We typically call this setup routine before starting timers,
+         * but if that has not been done for whatever reason we do it now.
+         */
+        gmx_nonbonded_setup(nullptr, FALSE);
+    }
+
+    /* Not used yet */
+    other = "";
 
     nl->kernelptr_vf = nullptr;
     nl->kernelptr_v  = nullptr;
@@ -100,11 +249,50 @@ gmx_nonbonded_set_kernel_pointers(t_nblist *nl)
     }
     else
     {
-        /* "Pick" the only remaining kernel, the generic one.
+        /* Try to find a specific kernel first */
+
+        for (i = 0; i < narch && nl->kernelptr_vf == nullptr; i++)
+        {
+            nl->kernelptr_vf       = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
+            nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
+        }
+        for (i = 0; i < narch && nl->kernelptr_f == nullptr; i++)
+        {
+            nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force"));
+            nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
+
+            /* If there is not force-only optimized kernel, is there a potential & force one? */
+            if (nl->kernelptr_f == nullptr)
+            {
+                nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
+                nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
+            }
+        }
+
+        /* For now, the accelerated kernels cannot handle the combination of switch functions for both
+         * electrostatics and VdW that use different switch radius or switch cutoff distances
+         * (both of them enter in the switch function calculation). This would require
+         * us to evaluate two completely separate switch functions for every interaction.
+         * Instead, we disable such kernels by setting the pointer to NULL.
+         * This will cause the generic kernel (which can handle it) to be called instead.
+         *
+         * Note that we typically already enable tabulated coulomb interactions for this case,
+         * so this is mostly a safe-guard to make sure we call the generic kernel if the
+         * tables are disabled.
+         */
+        if ((nl->ielec != GMX_NBKERNEL_ELEC_NONE) && (nl->ielecmod == eintmodPOTSWITCH) &&
+            (nl->ivdw  != GMX_NBKERNEL_VDW_NONE)  && (nl->ivdwmod  == eintmodPOTSWITCH) &&
+            bElecAndVdwSwitchDiffers)
+        {
+            nl->kernelptr_vf = nullptr;
+            nl->kernelptr_f  = nullptr;
+        }
+
+        /* Give up, pick a generic one instead.
          * We only do this for particle-particle kernels; by leaving the water-optimized kernel
          * pointers to NULL, the water optimization will automatically be disabled for this interaction.
          */
-        if (!gmx_strcasecmp_min(geom, "Particle-Particle"))
+        if (nl->kernelptr_vf == nullptr && !gmx_strcasecmp_min(geom, "Particle-Particle"))
         {
             nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_generic_kernel);
             nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_generic_kernel);
@@ -145,6 +333,11 @@ void do_nonbonded(const t_forcerec  *fr,
     kernel_data.exclusions              = excl;
     kernel_data.lambda                  = lambda;
     kernel_data.dvdl                    = dvdl;
+
+    if (fr->bAllvsAll)
+    {
+        gmx_incons("All-vs-all kernels have not been implemented in version 4.6");
+    }
 
     if (eNL >= 0)
     {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,10 +41,10 @@
 #include <cstring>
 
 #include <algorithm>
-#include <memory>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -582,7 +582,7 @@ read_mtop_for_tng(const char *tps_file,
         efTNG == fn2ftp(output_file))
     {
         int temp_natoms = -1;
-        mtop = std::make_unique<gmx_mtop_t>();
+        mtop = gmx::compat::make_unique<gmx_mtop_t>();
         read_tpx(tps_file, nullptr, nullptr, &temp_natoms,
                  nullptr, nullptr, mtop.get());
     }
@@ -824,7 +824,8 @@ int gmx_trjconv(int argc, char *argv[])
           "Fit molecule to ref structure in the structure file" },
         { "-ndec", FALSE, etINT,
           { &ndec },
-          "Number of decimal places to write to .xtc output" },
+          "Precision for .xtc and .gro writing in number of "
+          "decimal places" },
         { "-vel", FALSE, etBOOL,
           { &bVels }, "Read and write velocities if possible" },
         { "-force", FALSE, etBOOL,
@@ -896,7 +897,7 @@ int gmx_trjconv(int argc, char *argv[])
     gmx_rmpbc_t       gpbc = nullptr;
     gmx_bool          bRmPBC, bPBCWhole, bPBCcomRes, bPBCcomMol, bPBCcomAtom, bPBC, bNoJump, bCluster;
     gmx_bool          bCopy, bDoIt, bIndex, bTDump, bSetTime, bTPS = FALSE, bDTset = FALSE;
-    gmx_bool          bExec, bTimeStep = FALSE, bDumpFrame = FALSE, bSetXtcPrec, bNeedPrec;
+    gmx_bool          bExec, bTimeStep = FALSE, bDumpFrame = FALSE, bSetPrec, bNeedPrec;
     gmx_bool          bHaveFirstFrame, bHaveNextFrame, bSetBox, bSetUR, bSplit = FALSE;
     gmx_bool          bSubTraj = FALSE, bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
     gmx_bool          bWriteFrame, bSplitHere;
@@ -927,7 +928,7 @@ int gmx_trjconv(int argc, char *argv[])
         return 0;
     }
     fprintf(stdout, "Note that major changes are planned in future for "
-            "trjconv, to improve usability and utility.\n");
+            "trjconv, to improve usability and utility.");
 
     top_file = ftp2fn(efTPS, NFILE, fnm);
 
@@ -941,17 +942,17 @@ int gmx_trjconv(int argc, char *argv[])
     else
     {
         /* mark active cmdline options */
-        bSetBox     = opt2parg_bSet("-box", NPA, pa);
-        bSetTime    = opt2parg_bSet("-t0", NPA, pa);
-        bSetXtcPrec = opt2parg_bSet("-ndec", NPA, pa);
-        bSetUR      = opt2parg_bSet("-ur", NPA, pa);
-        bExec       = opt2parg_bSet("-exec", NPA, pa);
-        bTimeStep   = opt2parg_bSet("-timestep", NPA, pa);
-        bTDump      = opt2parg_bSet("-dump", NPA, pa);
-        bDropUnder  = opt2parg_bSet("-dropunder", NPA, pa);
-        bDropOver   = opt2parg_bSet("-dropover", NPA, pa);
-        bTrans      = opt2parg_bSet("-trans", NPA, pa);
-        bSplit      = (split_t != 0);
+        bSetBox    = opt2parg_bSet("-box", NPA, pa);
+        bSetTime   = opt2parg_bSet("-t0", NPA, pa);
+        bSetPrec   = opt2parg_bSet("-ndec", NPA, pa);
+        bSetUR     = opt2parg_bSet("-ur", NPA, pa);
+        bExec      = opt2parg_bSet("-exec", NPA, pa);
+        bTimeStep  = opt2parg_bSet("-timestep", NPA, pa);
+        bTDump     = opt2parg_bSet("-dump", NPA, pa);
+        bDropUnder = opt2parg_bSet("-dropunder", NPA, pa);
+        bDropOver  = opt2parg_bSet("-dropover", NPA, pa);
+        bTrans     = opt2parg_bSet("-trans", NPA, pa);
+        bSplit     = (split_t != 0);
 
         /* parse enum options */
         fit_enum      = nenum(fit);
@@ -1005,7 +1006,7 @@ int gmx_trjconv(int argc, char *argv[])
                       "results!");
         }
 
-        /* ndec for XTC writing is in nr of decimal places, prec is a multiplication factor: */
+        /* ndec is in nr of decimal places, prec is a multiplication factor: */
         prec = 1;
         for (i = 0; i < ndec; i++)
         {
@@ -1019,7 +1020,7 @@ int gmx_trjconv(int argc, char *argv[])
         out_file = opt2fn("-o", NFILE, fnm);
         int ftp  = fn2ftp(out_file);
         fprintf(stderr, "Will write %s: %s\n", ftp2ext(ftp), ftp2desc(ftp));
-        bNeedPrec = (ftp == efXTC);
+        bNeedPrec = (ftp == efXTC || ftp == efGRO);
         int ftpin = fn2ftp(in_file);
         if (bVels)
         {
@@ -1297,7 +1298,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         if (bNeedPrec)
         {
-            if (bSetXtcPrec || !fr.bPrec)
+            if (bSetPrec || !fr.bPrec)
             {
                 fprintf(stderr, "\nSetting output precision to %g (nm)\n", 1/prec);
             }
@@ -1721,7 +1722,7 @@ int gmx_trjconv(int argc, char *argv[])
                         frout.bV     = (frout.bV && bVels);
                         frout.bF     = (frout.bF && bForce);
                         frout.natoms = nout;
-                        if (bNeedPrec && (bSetXtcPrec || !fr.bPrec))
+                        if (bNeedPrec && (bSetPrec || !fr.bPrec))
                         {
                             frout.bPrec = TRUE;
                             frout.prec  = prec;
@@ -1885,7 +1886,7 @@ int gmx_trjconv(int argc, char *argv[])
                                             model_nr++;
                                         }
                                         write_pdbfile(out, title.c_str(), &useatoms, frout.x,
-                                                      frout.ePBC, frout.box, ' ', model_nr, gc);
+                                                      frout.ePBC, frout.box, ' ', model_nr, gc, TRUE);
                                         break;
                                     case efG96:
                                         const char *outputTitle = "";

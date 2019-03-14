@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,9 +34,6 @@
 
 import os.path
 
-# Policy global variables
-use_stdlib_through_env_vars = False
-
 # These are accessible later in the script, just like other
 # declared options, via e.g. context.opts.release.
 extra_options = {
@@ -50,7 +47,6 @@ extra_options = {
     'tng' : Option.bool,
     'mkl': Option.simple,
     'fftpack': Option.simple,
-    'buildfftw': Option.simple,
     'double': Option.simple,
     'thread-mpi': Option.bool,
     'clang_cuda': Option.bool,
@@ -70,9 +66,6 @@ def do_build(context):
     cmake_opts['GMX_DEFAULT_SUFFIX'] = 'OFF'
     cmake_opts['CMAKE_BUILD_TYPE'] = 'Debug'
     cmake_opts['GMX_USE_RDTSCP'] = 'DETECT'
-
-    if not context.opts.msvc and not context.opts.mdrun_only and not context.opts.static:
-        cmake_opts['GMXAPI'] = 'ON'
 
     if context.opts.reference:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'Reference'
@@ -126,22 +119,12 @@ def do_build(context):
         cmake_opts['GMX_FFT_LIBRARY'] = 'mkl'
     elif context.opts.fftpack:
         cmake_opts['GMX_FFT_LIBRARY'] = 'fftpack'
-    elif context.opts.buildfftw:
-        cmake_opts['GMX_BUILD_OWN_FFTW'] = 'ON'
-        cmake_opts['GMX_BUILD_OWN_FFTW_URL'] = 'ftp://ftp.gromacs.org/misc/fftw-3.3.8.tar.gz'
-        cmake_opts['GMX_BUILD_OWN_FFTW_MD5'] = '8aac833c943d8e90d51b697b27d4384d'
-    if context.opts.mkl or context.opts.atlas or context.opts.armpl:
+    if context.opts.mkl or context.opts.atlas:
         cmake_opts['GMX_EXTERNAL_BLAS'] = 'ON'
         cmake_opts['GMX_EXTERNAL_LAPACK'] = 'ON'
     if context.opts.clFFT:
         cmake_opts['GMX_EXTERNAL_CLFFT'] = 'ON'
         cmake_opts['clFFT_ROOT'] = context.env.clFFT_root
-
-    if context.opts.armpl:
-        cmake_opts['FFTWF_LIBRARY']     = os.path.join(context.env.armpl_dir, 'lib/libarmpl_lp64.so')
-        cmake_opts['FFTWF_INCLUDE_DIR'] = os.path.join(context.env.armpl_dir, 'include')
-        cmake_opts['GMX_BLAS_USER']     = os.path.join(context.env.armpl_dir, 'lib/libarmpl_lp64.so')
-        cmake_opts['GMX_LAPACK_USER']   = os.path.join(context.env.armpl_dir, 'lib/libarmpl_lp64.so')
 
     if context.opts.hwloc is False:
         cmake_opts['GMX_HWLOC'] = 'OFF'
@@ -169,22 +152,6 @@ def do_build(context):
     else:
         if context.opts.mdrun_only:
             cmake_opts['GMX_BUILD_MDRUN_ONLY'] = 'ON'
-
-    # The build configuration has constructed the environment of the
-    # context so that a particular c++ standard library can be used,
-    # which may come from a different installation of gcc. Here, we
-    # tell CMake how to react to this.
-    #
-    # TODO Once gerrit 9051 and 9053 are both submitted on master,
-    # remove the hasattr part of the predicate, which will then be
-    # redundant.
-    if hasattr(context.env, 'gcc_exe') and context.env.gcc_exe is not None:
-        cmake_opts['GMX_GPLUSPLUS_PATH'] = context.env.gcc_exe
-        # TODO are these needed?
-        # gcc_exe_dirname = os.path.dirname(self.gcc_exe)
-        # gcc_toolchain_path = os.path.join(gcc_exe_dirname, '..')
-        # format_for_linker_flags="-Wl,-rpath,{gcctoolchain}/lib64 -L{gcctoolchain}/lib64"
-        # cmake_opts['CMAKE_CXX_LINK_FLAGS'] = format_for_linker_flags.format(gcctoolchain=gcc_toolchain_path)
 
     context.env.set_env_var('GMX_NO_TERM', '1')
 

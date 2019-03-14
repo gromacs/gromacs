@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/awh/read_params.h"
+#include "gromacs/awh/read-params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
@@ -60,7 +60,7 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull_params.h"
+#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -1531,6 +1531,12 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
         expand->nstexpanded = fep->nstdhdl;
         /* if you don't specify nstexpanded when doing expanded ensemble free energy calcs, it is set to nstdhdl */
     }
+    if ((expand->nstexpanded < 0) && ir->bSimTemp)
+    {
+        expand->nstexpanded = 2*static_cast<int>(ir->opts.tau_t[0]/ir->delta_t);
+        /* if you don't specify nstexpanded when doing expanded ensemble simulated tempering, it is set to
+           2*tau_t just to be careful so it's not to frequent  */
+    }
 }
 
 
@@ -2640,7 +2646,7 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
     }
 
     snew(grps->nm_ind, groupsFromMdpFile.size()+1); /* +1 for possible rest group */
-    for (int i = 0; i != groupsFromMdpFile.ssize(); ++i)
+    for (int i = 0; i != groupsFromMdpFile.size(); ++i)
     {
         /* Lookup the group name in the block structure */
         gid = search_string(groupsFromMdpFile[i].c_str(), block->nr, gnames);
@@ -2658,7 +2664,7 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
             /* Range checking */
             if ((aj < 0) || (aj >= natoms))
             {
-                gmx_fatal(FARGS, "Invalid atom number %d in indexfile", aj + 1);
+                gmx_fatal(FARGS, "Invalid atom number %d in indexfile", aj);
             }
             /* Lookup up the old group number */
             ognr = cbuf[aj];
@@ -2754,11 +2760,13 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
 static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 {
     t_grpopts              *opts;
+    const gmx_groups_t     *groups;
     pull_params_t          *pull;
     int                     natoms, ai, aj, i, j, d, g, imin, jmin;
     int                    *nrdf2, *na_vcm, na_tot;
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
     ivec                   *dof_vcm;
+    gmx_mtop_atomloop_all_t aloop;
     int                     mol, ftype, as;
 
     /* Calculate nrdf.
@@ -2770,24 +2778,24 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 
     opts = &ir->opts;
 
-    const gmx_groups_t &groups = mtop->groups;
+    groups = &mtop->groups;
     natoms = mtop->natoms;
 
     /* Allocate one more for a possible rest group */
     /* We need to sum degrees of freedom into doubles,
      * since floats give too low nrdf's above 3 million atoms.
      */
-    snew(nrdf_tc, groups.grps[egcTC].nr+1);
-    snew(nrdf_vcm, groups.grps[egcVCM].nr+1);
-    snew(dof_vcm, groups.grps[egcVCM].nr+1);
-    snew(na_vcm, groups.grps[egcVCM].nr+1);
-    snew(nrdf_vcm_sub, groups.grps[egcVCM].nr+1);
+    snew(nrdf_tc, groups->grps[egcTC].nr+1);
+    snew(nrdf_vcm, groups->grps[egcVCM].nr+1);
+    snew(dof_vcm, groups->grps[egcVCM].nr+1);
+    snew(na_vcm, groups->grps[egcVCM].nr+1);
+    snew(nrdf_vcm_sub, groups->grps[egcVCM].nr+1);
 
-    for (i = 0; i < groups.grps[egcTC].nr; i++)
+    for (i = 0; i < groups->grps[egcTC].nr; i++)
     {
         nrdf_tc[i] = 0;
     }
-    for (i = 0; i < groups.grps[egcVCM].nr+1; i++)
+    for (i = 0; i < groups->grps[egcVCM].nr+1; i++)
     {
         nrdf_vcm[i]     = 0;
         clear_ivec(dof_vcm[i]);
@@ -2796,15 +2804,15 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     }
 
     snew(nrdf2, natoms);
-    for (const AtomProxy atomP : AtomRange(*mtop))
+    aloop = gmx_mtop_atomloop_all_init(mtop);
+    const t_atom *atom;
+    while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
     {
-        const t_atom &local = atomP.atom();
-        int           i     = atomP.globalAtomNumber();
         nrdf2[i] = 0;
-        if (local.ptype == eptAtom || local.ptype == eptNucleus)
+        if (atom->ptype == eptAtom || atom->ptype == eptNucleus)
         {
             g = getGroupType(groups, egcFREEZE, i);
-            for (int d = 0; d < DIM; d++)
+            for (d = 0; d < DIM; d++)
             {
                 if (opts->nFreeze[g][d] == 0)
                 {
@@ -2823,7 +2831,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
         const gmx_moltype_t &molt = mtop->moltype[molb.type];
-        const t_atom        *atom = molt.atoms.atom;
+        atom = molt.atoms.atom;
         for (mol = 0; mol < molb.nmol; mol++)
         {
             for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
@@ -2924,7 +2932,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                     nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
                     if (nrdf_tc[getGroupType(groups, egcTC, ai)] < 0)
                     {
-                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups.grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]);
+                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]);
                     }
                 }
                 else
@@ -2947,7 +2955,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
          * the number of degrees of freedom in each vcm group when COM
          * translation is removed and 6 when rotation is removed as well.
          */
-        for (j = 0; j < groups.grps[egcVCM].nr+1; j++)
+        for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
         {
             switch (ir->comm_mode)
             {
@@ -2970,10 +2978,10 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             }
         }
 
-        for (i = 0; i < groups.grps[egcTC].nr; i++)
+        for (i = 0; i < groups->grps[egcTC].nr; i++)
         {
             /* Count the number of atoms of TC group i for every VCM group */
-            for (j = 0; j < groups.grps[egcVCM].nr+1; j++)
+            for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
             {
                 na_vcm[j] = 0;
             }
@@ -2991,7 +2999,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
              */
             nrdf_uc    = nrdf_tc[i];
             nrdf_tc[i] = 0;
-            for (j = 0; j < groups.grps[egcVCM].nr+1; j++)
+            for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
             {
                 if (nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {
@@ -3001,7 +3009,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             }
         }
     }
-    for (i = 0; (i < groups.grps[egcTC].nr); i++)
+    for (i = 0; (i < groups->grps[egcTC].nr); i++)
     {
         opts->nrdf[i] = nrdf_tc[i];
         if (opts->nrdf[i] < 0)
@@ -3010,7 +3018,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
         }
         fprintf(stderr,
                 "Number of degrees of freedom in T-Coupling group %s is %.2f\n",
-                gnames[groups.grps[egcTC].nm_ind[i]], opts->nrdf[i]);
+                gnames[groups->grps[egcTC].nm_ind[i]], opts->nrdf[i]);
     }
 
     sfree(nrdf2);
@@ -3677,17 +3685,6 @@ void do_index(const char* mdparin, const char *ndx,
         gmx_fatal(FARGS, "Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
     }
 
-    /* final check before going out of scope if simulated tempering variables
-     * need to be set to default values.
-     */
-    if ((ir->expandedvals->nstexpanded < 0) && ir->bSimTemp)
-    {
-        ir->expandedvals->nstexpanded = 2*static_cast<int>(ir->opts.tau_t[0]/ir->delta_t);
-        warning(wi, gmx::formatString("the value for nstexpanded was not specified for "
-                                      " expanded ensemble simulated tempering. It is set to 2*tau_t (%d) "
-                                      "by default, but it is recommended to set it to an explicit value!",
-                                      ir->expandedvals->nstexpanded));
-    }
     for (i = 0; (i < grps->nr); i++)
     {
         sfree(gnames[i]);
@@ -3957,6 +3954,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     real                     *mgrp, mt;
     rvec                      acc;
     gmx_mtop_atomloop_block_t aloopb;
+    gmx_mtop_atomloop_all_t   aloop;
     ivec                      AbsRef;
     char                      warn_buf[STRLEN];
 
@@ -4145,11 +4143,11 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     {
         clear_rvec(acc);
         snew(mgrp, sys->groups.grps[egcACC].nr);
-        for (const AtomProxy atomP : AtomRange(*sys))
+        aloop = gmx_mtop_atomloop_all_init(sys);
+        const t_atom *atom;
+        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
-            const t_atom &local = atomP.atom();
-            int           i     = atomP.globalAtomNumber();
-            mgrp[getGroupType(sys->groups, egcACC, i)] += local.m;
+            mgrp[getGroupType(&sys->groups, egcACC, i)] += atom->m;
         }
         mt = 0.0;
         for (i = 0; (i < sys->groups.grps[egcACC].nr); i++)

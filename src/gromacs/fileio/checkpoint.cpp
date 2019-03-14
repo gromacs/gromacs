@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,17 +55,18 @@
 #include <memory>
 
 #include "buildinfo.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/gmxfio_xdr.h"
+#include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/awh_correlation_history.h"
-#include "gromacs/mdtypes/awh_history.h"
+#include "gromacs/mdtypes/awh-correlation-history.h"
+#include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/edsamhistory.h"
@@ -1226,7 +1227,7 @@ static int do_cpt_state(XDR *xd,
                 case estDISRE_RM3TAV: ret         = do_cpte_n_reals(xd, part, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
                 case estORIRE_INITF:  ret         = do_cpte_real (xd, part, i, sflags, &state->hist.orire_initf, list); break;
                 case estORIRE_DTAV:   ret         = do_cpte_n_reals(xd, part, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
-                case estPULLCOMPREVSTEP:      ret = doVector<double>(xd, part, i, sflags, &state->pull_com_prev_step, list); break;
+                case estPREVSTEPCOM:  ret         = doVector<double>(xd, part, i, sflags, &state->com_prev_step, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown state entry %d\n"
                               "You are reading a checkpoint file written by different code, which is not supported", i);
@@ -1464,7 +1465,7 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
                     {
                         if (deltaH == nullptr)
                         {
-                            enerhist->deltaHForeignLambdas = std::make_unique<delta_h_history_t>();
+                            enerhist->deltaHForeignLambdas = gmx::compat::make_unique<delta_h_history_t>();
                             deltaH = enerhist->deltaHForeignLambdas.get();
                         }
                         deltaH->dh.resize(numDeltaH);
@@ -1943,7 +1944,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
         if (bRead)
         {
             do_cpt_string_err(xd, "output filename", buf, list);
-            std::copy(std::begin(buf), std::end(buf), std::begin(outputfile.filename));
+            std::strncpy(outputfile.filename, buf.data(), buf.size()-1);
 
             if (do_cpt_int(xd, "file_offset_high", &offset_high, list) != 0)
             {
@@ -2579,7 +2580,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
 
     if (headerContents->flags_enh && observablesHistory->energyHistory == nullptr)
     {
-        observablesHistory->energyHistory = std::make_unique<energyhistory_t>();
+        observablesHistory->energyHistory = gmx::compat::make_unique<energyhistory_t>();
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           headerContents->flags_enh, observablesHistory->energyHistory.get(), nullptr);
@@ -2592,7 +2593,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
     {
         if (observablesHistory->pullHistory == nullptr)
         {
-            observablesHistory->pullHistory = std::make_unique<PullHistory>();
+            observablesHistory->pullHistory = gmx::compat::make_unique<PullHistory>();
         }
         ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE,
                             headerContents->flagsPullHistory, observablesHistory->pullHistory.get(), StatePart::pullHistory, nullptr);
@@ -2615,7 +2616,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
 
     if (headerContents->nED > 0 && observablesHistory->edsamHistory == nullptr)
     {
-        observablesHistory->edsamHistory = std::make_unique<edsamhistory_t>(edsamhistory_t {});
+        observablesHistory->edsamHistory = gmx::compat::make_unique<edsamhistory_t>(edsamhistory_t {});
     }
     ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents->nED, observablesHistory->edsamHistory.get(), nullptr);
     if (ret)
@@ -2636,7 +2637,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
 
     if (headerContents->eSwapCoords != eswapNO && observablesHistory->swapHistory == nullptr)
     {
-        observablesHistory->swapHistory = std::make_unique<swaphistory_t>(swaphistory_t {});
+        observablesHistory->swapHistory = gmx::compat::make_unique<swaphistory_t>(swaphistory_t {});
     }
     ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents->eSwapCoords, observablesHistory->swapHistory.get(), nullptr);
     if (ret)

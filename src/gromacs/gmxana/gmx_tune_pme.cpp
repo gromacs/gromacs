@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -1076,8 +1075,9 @@ static void make_benchmark_tprs(
         info->fsz[j]       = fac*fourierspacing;
 
         /* Write the benchmark tpr file */
-        fn_bench_tprs[j] = gmx_strdup(gmx::Path::concatenateBeforeExtension(fn_sim_tpr, gmx::formatString("_bench%.2d", j)).c_str());
-
+        std::strncpy(fn_bench_tprs[j], fn_sim_tpr, std::strlen(fn_sim_tpr)-std::strlen(".tpr"));
+        sprintf(buf, "_bench%.2d.tpr", j);
+        std::strcat(fn_bench_tprs[j], buf);
         fprintf(stdout, "Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
         fprintf(stdout, "%" PRId64, ir->nsteps);
         if (j > 0)
@@ -2169,7 +2169,7 @@ int gmx_tune_pme(int argc, char *argv[])
         { efLOG, "-err",    "bencherr", ffWRITE },
         { efTPR, "-so",     "tuned",    ffWRITE },
         /* mdrun: */
-        { efTPR, "-s",      nullptr,       ffREAD },
+        { efTPR, nullptr,      nullptr,       ffREAD },
         { efTRN, "-o",      nullptr,       ffWRITE },
         { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
         { efCPT, "-cpi",    nullptr,       ffOPTRD },
@@ -2187,6 +2187,8 @@ int gmx_tune_pme(int argc, char *argv[])
         { efXVG, "-tpid",   "tpidist",  ffOPTWR },
         { efEDI, "-ei",     "sam",      ffOPTRD },
         { efXVG, "-eo",     "edsam",    ffOPTWR },
+        { efXVG, "-devout", "deviatie", ffOPTWR },
+        { efXVG, "-runav",  "runaver",  ffOPTWR },
         { efXVG, "-px",     "pullx",    ffOPTWR },
         { efXVG, "-pf",     "pullf",    ffOPTWR },
         { efXVG, "-ro",     "rotation", ffOPTWR },

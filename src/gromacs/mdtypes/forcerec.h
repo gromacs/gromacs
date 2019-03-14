@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,6 @@
 #define GMX_MDTYPES_TYPES_FORCEREC_H
 
 #include <array>
-#include <memory>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -54,15 +53,11 @@ struct gmx_ns_t;
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
+struct GpuBondedLists;
 struct t_forcetable;
 struct t_nblist;
 struct t_nblists;
 struct t_QMMMrec;
-
-namespace gmx
-{
-class GpuBonded;
-}
 
 /* macros for the cginfo data in forcerec
  *
@@ -126,17 +121,17 @@ struct gmx_ewald_tab_t;
 struct ewald_corr_thread_t;
 
 struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
-    struct interaction_const_t *ic = nullptr;
+    struct interaction_const_t *ic;
 
     /* PBC stuff */
-    int                         ePBC = 0;
+    int                         ePBC;
     //! Whether PBC must be considered for bonded interactions.
-    gmx_bool                    bMolPBC     = FALSE;
-    int                         rc_scaling  = 0;
-    rvec                        posres_com  = { 0 };
-    rvec                        posres_comB = { 0 };
+    gmx_bool                    bMolPBC;
+    int                         rc_scaling;
+    rvec                        posres_com;
+    rvec                        posres_comB;
 
-    gmx_bool                    use_simd_kernels = FALSE;
+    gmx_bool                    use_simd_kernels;
 
     /* Interaction for calculated in kernels. In many cases this is similar to
      * the electrostatics settings in the inputrecord, but the difference is that
@@ -147,182 +142,182 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
      * tabulated we already included the inputrec modification there, so the kernel
      * modification setting will say 'none' in that case.
      */
-    int nbkernel_elec_interaction = 0;
-    int nbkernel_vdw_interaction  = 0;
-    int nbkernel_elec_modifier    = 0;
-    int nbkernel_vdw_modifier     = 0;
+    int nbkernel_elec_interaction;
+    int nbkernel_vdw_interaction;
+    int nbkernel_elec_modifier;
+    int nbkernel_vdw_modifier;
+
+    /* Use special N*N kernels? */
+    gmx_bool bAllvsAll;
+    /* Private work data */
+    void    *AllvsAll_work;
 
     /* Cut-Off stuff.
      * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
      */
-    real rlist = 0;
+    real rlist;
 
     /* Parameters for generalized reaction field */
-    real zsquare = 0;
-    real temp    = 0;
+    real zsquare, temp;
 
     /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
-    double qsum[2]   = { 0 };
-    double q2sum[2]  = { 0 };
-    double c6sum[2]  = { 0 };
-    rvec   mu_tot[2] = { { 0 } };
+    double qsum[2];
+    double q2sum[2];
+    double c6sum[2];
+    rvec   mu_tot[2];
 
     /* Dispersion correction stuff */
-    int                  eDispCorr = 0;
-    int                  numAtomsForDispersionCorrection = 0;
-    struct t_forcetable *dispersionCorrectionTable       = nullptr;
+    int                  eDispCorr;
+    int                  numAtomsForDispersionCorrection;
+    struct t_forcetable *dispersionCorrectionTable;
 
     /* The shift of the shift or user potentials */
-    real enershiftsix    = 0;
-    real enershifttwelve = 0;
+    real enershiftsix;
+    real enershifttwelve;
     /* Integrated differces for energy and virial with cut-off functions */
-    real enerdiffsix    = 0;
-    real enerdifftwelve = 0;
-    real virdiffsix     = 0;
-    real virdifftwelve  = 0;
+    real enerdiffsix;
+    real enerdifftwelve;
+    real virdiffsix;
+    real virdifftwelve;
     /* Constant for long range dispersion correction (average dispersion)
      * for topology A/B ([0]/[1]) */
-    real avcsix[2] = { 0 };
+    real avcsix[2];
     /* Constant for long range repulsion term. Relative difference of about
      * 0.1 percent with 0.8 nm cutoffs. But hey, it's cheap anyway...
      */
-    real avctwelve[2] = { 0 };
+    real avctwelve[2];
 
     /* Fudge factors */
-    real fudgeQQ = 0;
+    real fudgeQQ;
 
     /* Table stuff */
-    gmx_bool             bcoultab = FALSE;
-    gmx_bool             bvdwtab  = FALSE;
+    gmx_bool             bcoultab;
+    gmx_bool             bvdwtab;
     /* The normal tables are in the nblists struct(s) below */
 
     struct t_forcetable *pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* Free energy */
-    int      efep          = 0;
-    real     sc_alphavdw   = 0;
-    real     sc_alphacoul  = 0;
-    int      sc_power      = 0;
-    real     sc_r_power    = 0;
-    real     sc_sigma6_def = 0;
-    real     sc_sigma6_min = 0;
+    int      efep;
+    real     sc_alphavdw;
+    real     sc_alphacoul;
+    int      sc_power;
+    real     sc_r_power;
+    real     sc_sigma6_def;
+    real     sc_sigma6_min;
 
     /* NS Stuff */
-    int  cg0 = 0;
-    int  hcg = 0;
+    int  cg0, hcg;
     /* solvent_opt contains the enum for the most common solvent
      * in the system, which will be optimized.
      * It can be set to esolNO to disable all water optimization */
-    int                 solvent_opt                  = 0;
-    int                 nWatMol                      = 0;
-    gmx_bool            bGrid                        = FALSE;
-    gmx_bool            bExcl_IntraCGAll_InterCGNone = FALSE;
-    struct cginfo_mb_t *cginfo_mb                    = nullptr;
-    int                *cginfo                       = nullptr;
-    rvec               *cg_cm                        = nullptr;
-    int                 cg_nalloc                    = 0;
-    rvec               *shift_vec                    = nullptr;
+    int                 solvent_opt;
+    int                 nWatMol;
+    gmx_bool            bGrid;
+    gmx_bool            bExcl_IntraCGAll_InterCGNone;
+    struct cginfo_mb_t *cginfo_mb;
+    int                *cginfo;
+    rvec               *cg_cm;
+    int                 cg_nalloc;
+    rvec               *shift_vec;
 
     /* The neighborlists including tables */
-    int                        nnblists    = 0;
-    int                       *gid2nblists = nullptr;
-    struct t_nblists          *nblists     = nullptr;
+    int                        nnblists;
+    int                       *gid2nblists;
+    struct t_nblists          *nblists;
 
-    int                        cutoff_scheme = 0;     /* group- or Verlet-style cutoff */
-    gmx_bool                   bNonbonded    = FALSE; /* true if nonbonded calculations are *not* turned off */
-
-    /* The Nbnxm Verlet non-bonded machinery */
-    std::unique_ptr<nonbonded_verlet_t> nbv;
+    int                        cutoff_scheme; /* group- or Verlet-style cutoff */
+    gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
+    struct nonbonded_verlet_t *nbv;
 
     /* The wall tables (if used) */
-    int                    nwall    = 0;
-    struct t_forcetable ***wall_tab = nullptr;
+    int                    nwall;
+    struct t_forcetable ***wall_tab;
 
     /* The number of charge groups participating in do_force_lowlevel */
-    int ncg_force = 0;
+    int ncg_force;
     /* The number of atoms participating in do_force_lowlevel */
-    int natoms_force = 0;
+    int natoms_force;
     /* The number of atoms participating in force and constraints */
-    int natoms_force_constr = 0;
+    int natoms_force_constr;
     /* The allocation size of vectors of size natoms_force */
-    int nalloc_force = 0;
+    int nalloc_force;
 
     /* Forces that should not enter into the coord x force virial summation:
      * PPPM/PME/Ewald/posres/ForceProviders
      */
     /* True when we have contributions that are directly added to the virial */
-    gmx_bool                 haveDirectVirialContributions = FALSE;
+    gmx_bool                 haveDirectVirialContributions;
     /* TODO: Replace the pointer by an object once we got rid of C */
-    std::vector<gmx::RVec>  *forceBufferForDirectVirialContributions = nullptr;
+    std::vector<gmx::RVec>  *forceBufferForDirectVirialContributions;
 
     /* Data for PPPM/PME/Ewald */
-    struct gmx_pme_t *pmedata                = nullptr;
-    int               ljpme_combination_rule = 0;
+    struct gmx_pme_t *pmedata;
+    int               ljpme_combination_rule;
 
     /* PME/Ewald stuff */
-    struct gmx_ewald_tab_t *ewald_table = nullptr;
+    struct gmx_ewald_tab_t *ewald_table;
 
     /* Shift force array for computing the virial */
-    rvec *fshift = nullptr;
+    rvec *fshift;
 
     /* Non bonded Parameter lists */
-    int      ntype        = 0; /* Number of atom types */
-    gmx_bool bBHAM        = FALSE;
-    real    *nbfp         = nullptr;
-    real    *ljpme_c6grid = nullptr; /* C6-values used on grid in LJPME */
+    int      ntype; /* Number of atom types */
+    gmx_bool bBHAM;
+    real    *nbfp;
+    real    *ljpme_c6grid; /* C6-values used on grid in LJPME */
 
     /* Energy group pair flags */
-    int *egp_flags = nullptr;
+    int *egp_flags;
 
     /* Shell molecular dynamics flexible constraints */
-    real fc_stepsize = 0;
+    real fc_stepsize;
 
     /* If > 0 signals Test Particle Insertion,
      * the value is the number of atoms of the molecule to insert
      * Only the energy difference due to the addition of the last molecule
      * should be calculated.
      */
-    int n_tpi = 0;
+    int n_tpi;
 
     /* Neighbor searching stuff */
-    struct gmx_ns_t *ns = nullptr;
+    struct gmx_ns_t *ns;
 
     /* QMMM stuff */
-    gmx_bool          bQMMM = FALSE;
-    struct t_QMMMrec *qr    = nullptr;
+    gmx_bool          bQMMM;
+    struct t_QMMMrec *qr;
 
     /* QM-MM neighborlists */
-    struct t_nblist        *QMMMlist = nullptr;
+    struct t_nblist        *QMMMlist;
 
     /* Limit for printing large forces, negative is don't print */
-    real print_force = 0;
+    real print_force;
 
     /* coarse load balancing time measurement */
-    double t_fnbf    = 0;
-    double t_wait    = 0;
-    int    timesteps = 0;
+    double t_fnbf;
+    double t_wait;
+    int    timesteps;
 
     /* User determined parameters, copied from the inputrec */
-    int  userint1  = 0;
-    int  userint2  = 0;
-    int  userint3  = 0;
-    int  userint4  = 0;
-    real userreal1 = 0;
-    real userreal2 = 0;
-    real userreal3 = 0;
-    real userreal4 = 0;
+    int  userint1;
+    int  userint2;
+    int  userint3;
+    int  userint4;
+    real userreal1;
+    real userreal2;
+    real userreal3;
+    real userreal4;
 
     /* Pointer to struct for managing threading of bonded force calculation */
-    struct bonded_threading_t *bondedThreading = nullptr;
+    struct bonded_threading_t *bondedThreading;
 
-    /* TODO: Replace the pointer by an object once we got rid of C */
-    gmx::GpuBonded *gpuBonded = nullptr;
+    GpuBondedLists            *gpuBondedLists;
 
     /* Ewald correction thread local virial and energy data */
-    int                         nthread_ewc = 0;
-    struct ewald_corr_thread_t *ewc_t       = nullptr;
+    int                         nthread_ewc;
+    struct ewald_corr_thread_t *ewc_t;
 
-    struct ForceProviders      *forceProviders = nullptr;
+    struct ForceProviders      *forceProviders;
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,48 +39,36 @@
 #include <cassert>
 #include <cstdio>
 
-#include <algorithm>
-#include <iterator>
-#include <string>
-
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-//! Definition for residue type that is not known.
-const std::string c_undefinedResidueType = "Other";
+const char gmx_residuetype_undefined[] = "Other";
 
-//! Single ResidueType entry object
-struct ResidueTypeEntry
+struct gmx_residuetype_t
 {
-    //! Default constructor creates complete object.
-    ResidueTypeEntry(const std::string &rName, const std::string &rType)
-        : residueName(rName), residueType(rType)
-    {}
-    //! Name of the residue in the entry.
-    std::string residueName;
-    //! Type of the residue in the entry.
-    std::string residueType;
+    int      n;
+    char **  resname;
+    char **  restype;
 };
 
-//! Implementation detail for ResidueTypes
-class ResidueType::Impl
-{
-    public:
-        //! Storage object for entries.
-        std::vector<ResidueTypeEntry> entry;
-};
-
-ResidueType::ResidueType()
-    : impl_(new Impl)
+int
+gmx_residuetype_init(gmx_residuetype_t **prt)
 {
     char                    line[STRLEN];
     char                    resname[STRLEN], restype[STRLEN], dum[STRLEN];
+    gmx_residuetype_t      *rt;
 
-    gmx::FilePtr            db = gmx::openLibraryFile("residuetypes.dat");
+    snew(rt, 1);
+    *prt = rt;
+
+    rt->n        = 0;
+    rt->resname  = nullptr;
+    rt->restype  = nullptr;
+
+    gmx::FilePtr db = gmx::openLibraryFile("residuetypes.dat");
 
     while (get_a_line(db.get(), line, STRLEN))
     {
@@ -90,100 +78,184 @@ ResidueType::ResidueType()
         {
             if (sscanf(line, "%1000s %1000s %1000s", resname, restype, dum) != 2)
             {
-                gmx_fatal(FARGS, "Incorrect number of columns (2 expected) for line in residuetypes.dat  ");
+                gmx_fatal(FARGS, "Incorrect number of columns (2 expected) for line in residuetypes.dat");
             }
-            addResidue(resname, restype);
+            gmx_residuetype_add(rt, resname, restype);
         }
     }
+
+    return 0;
 }
 
-ResidueType::~ResidueType()
+int
+gmx_residuetype_destroy(gmx_residuetype_t *rt)
 {
+    int i;
+
+    for (i = 0; i < rt->n; i++)
+    {
+        sfree(rt->resname[i]);
+        sfree(rt->restype[i]);
+    }
+    sfree(rt->resname);
+    sfree(rt->restype);
+    sfree(rt);
+
+    return 0;
 }
 
-/*! \brief
- * Find a residue entry by the residue name.
- *
- * \param[in] entries Currently registered residue entries in the database.
- * \param[in] residueName Name of a residue to compare to database.
- * \returns A pointer to the entry that was found, or nullptr.
+/* Return 0 if the name was found, otherwise -1.
+ * p_restype is set to a pointer to the type name, or 'Other' if we did not find it.
  */
-static gmx::ArrayRef<const ResidueTypeEntry>::iterator
-residueEntryByResidueName(gmx::ArrayRef<const ResidueTypeEntry> entries, const std::string &residueName)
+int
+gmx_residuetype_get_type(gmx_residuetype_t *rt, const char * resname, const char ** p_restype)
 {
-    return std::find_if(entries.begin(), entries.end(),
-                        [&residueName](const ResidueTypeEntry &old)
-                        { return gmx::equalCaseInsensitive(residueName, old.residueName); });
-}
+    int    i, rc;
 
-bool ResidueType::nameIndexedInResidueTypes(const std::string &residueName)
-{
-    // Temp so we can compare the iterator
-    gmx::ArrayRef<const ResidueTypeEntry> entry(impl_->entry);
-    return residueEntryByResidueName(impl_->entry, residueName) != entry.end();
-}
-
-void ResidueType::addResidue(const std::string &residueName, const std::string &residueType)
-{
-    gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
-    auto found = residueEntryByResidueName(temp, residueName);
-
-    if (found != temp.end())
+    rc = -1;
+    for (i = 0; i < rt->n && rc; i++)
     {
-        if (!gmx::equalCaseInsensitive(found->residueType, residueType))
+        rc = gmx_strcasecmp(rt->resname[i], resname);
+    }
+
+    *p_restype = (rc == 0) ? rt->restype[i-1] : gmx_residuetype_undefined;
+
+    return rc;
+}
+
+int
+gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype)
+{
+    bool          found;
+    const char *  p_oldtype;
+
+    found = (gmx_residuetype_get_type(rt, newresname, &p_oldtype) == 0);
+
+    if (found && gmx_strcasecmp(p_oldtype, newrestype))
+    {
+        fprintf(stderr, "Warning: Residue '%s' already present with type '%s' in database, ignoring new type '%s'.",
+                newresname, p_oldtype, newrestype);
+    }
+
+    if (!found)
+    {
+        srenew(rt->resname, rt->n+1);
+        srenew(rt->restype, rt->n+1);
+        rt->resname[rt->n] = gmx_strdup(newresname);
+        rt->restype[rt->n] = gmx_strdup(newrestype);
+        rt->n++;
+    }
+
+    return 0;
+}
+
+int
+gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
+                             const char ***       p_typenames,
+                             int *                ntypes)
+{
+    int          n           = 0;
+    const char **my_typename = nullptr;
+
+    if (rt->n > 0)
+    {
+        int         i = 0;
+        const char *p = rt->restype[i];
+        snew(my_typename, n+1);
+        my_typename[n] = p;
+        n              = 1;
+
+        for (i = 1; i < rt->n; i++)
         {
-            fprintf(stderr, "Warning: Residue '%s' already present with type '%s' in database, ignoring new type '%s'.\n",
-                    residueName.c_str(), found->residueType.c_str(), residueType.c_str());
+            p = rt->restype[i];
+            bool bFound = false;
+            for (int j = 0; j < n && !bFound; j++)
+            {
+                bFound = (gmx_strcasecmp(p, my_typename[j]) == 0);
+            }
+            if (!bFound)
+            {
+                srenew(my_typename, n+1);
+                my_typename[n] = p;
+                n++;
+            }
         }
     }
+    *ntypes      = n;
+    *p_typenames = my_typename;
+
+    return 0;
+}
+
+gmx_bool
+gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm)
+{
+    gmx_bool    rc;
+    const char *p_type;
+
+    rc = gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
+        gmx_strcasecmp(p_type, "Protein") == 0;
+    return rc;
+}
+
+gmx_bool
+gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm)
+{
+    gmx_bool    rc;
+    const char *p_type;
+
+    rc = gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
+        gmx_strcasecmp(p_type, "DNA") == 0;
+    return rc;
+}
+
+gmx_bool
+gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm)
+{
+    gmx_bool    rc;
+    const char *p_type;
+
+    rc = gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
+        gmx_strcasecmp(p_type, "RNA") == 0;
+    return rc;
+}
+
+/* Return the size of the arrays */
+int
+gmx_residuetype_get_size(gmx_residuetype_t *rt)
+{
+    return rt->n;
+}
+
+/* Search for a residuetype with name resnm within the
+ * gmx_residuetype database. Return the index if found,
+ * otherwise -1.
+ */
+int
+gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm)
+{
+    int i, rc;
+
+    rc = -1;
+    for (i = 0; i < rt->n && rc; i++)
+    {
+        rc = gmx_strcasecmp(rt->resname[i], resnm);
+    }
+
+    return (0 == rc) ? i-1 : -1;
+}
+
+/* Return the name of the residuetype with the given index, or
+ * NULL if not found. */
+const char *
+gmx_residuetype_get_name(gmx_residuetype_t *rt, int index)
+{
+    if (index >= 0 && index < rt->n)
+    {
+        return rt->resname[index];
+    }
     else
     {
-        impl_->entry.emplace_back(residueName, residueType);
-    }
-}
-
-bool ResidueType::namedResidueHasType(const std::string &residueName, const std::string &residueType)
-{
-    gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
-    auto found = residueEntryByResidueName(temp, residueName);
-    return  ((found != temp.end()) &&
-             gmx::equalCaseInsensitive(residueType, found->residueType));
-}
-
-int ResidueType::numberOfEntries() const
-{
-    return impl_->entry.size();
-}
-
-int ResidueType::indexFromResidueName(const std::string &residueName) const
-{
-    gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
-    auto found = residueEntryByResidueName(temp, residueName);
-    return (found != temp.end()) ? std::distance(temp.begin(), found) : -1;
-}
-
-const std::string ResidueType::nameFromResidueIndex(int index) const
-{
-    if (index >= 0 && index < gmx::ssize(impl_->entry))
-    {
-        return impl_->entry[index].residueName;
-    }
-    else
-    {
-        return "";
-    }
-}
-
-const std::string ResidueType::typeNameForIndexedResidue(const std::string &residueName)
-{
-    gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
-    auto found = residueEntryByResidueName(temp, residueName);
-    if (found != temp.end())
-    {
-        return found->residueType;
-    }
-    else
-    {
-        return c_undefinedResidueType;
+        return nullptr;
     }
 }

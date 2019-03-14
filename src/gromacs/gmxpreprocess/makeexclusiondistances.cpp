@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,14 +36,13 @@
 
 #include "makeexclusiondistances.h"
 
-#include <string>
 #include <vector>
 
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 
 std::vector<real>
-makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
+makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
                        real defaultDistance, real scaleFactor)
 {
     std::vector<real> exclusionDistances;
@@ -53,10 +52,10 @@ makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
         exclusionDistances.reserve(a->nr);
         for (int i = 0; i < a->nr; ++i)
         {
-            real        value;
-            if (!aps->setAtomProperty(epropVDW,
-                                      std::string(*(a->resinfo[a->atom[i].resind].name)),
-                                      std::string(*(a->atomname[i])), &value))
+            real value;
+            if (!gmx_atomprop_query(aps, epropVDW,
+                                    *(a->resinfo[a->atom[i].resind].name),
+                                    *(a->atomname[i]), &value))
             {
                 value = defaultDistance;
             }

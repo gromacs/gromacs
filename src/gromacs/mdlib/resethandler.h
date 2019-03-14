@@ -89,7 +89,7 @@ namespace gmx
  */
 enum class ResetSignal
 {
-    noSignal = 0, doResetCounters = 1
+    noSignal, doResetCounters
 };
 
 /*! \libinternal

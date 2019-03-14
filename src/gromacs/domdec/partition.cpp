@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,6 +70,8 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdsetup.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -78,7 +80,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
@@ -455,7 +456,7 @@ static void restoreAtomGroups(gmx_domdec_t *dd,
     /* Copy back the global charge group indices from state
      * and rebuild the local charge group to atom index.
      */
-    for (gmx::index i = 0; i < atomGroupsState.ssize(); i++)
+    for (gmx::index i = 0; i < atomGroupsState.size(); i++)
     {
         const int atomGroupGlobal  = atomGroupsState[i];
         const int groupSize        = gcgs_index[atomGroupGlobal + 1] - gcgs_index[atomGroupGlobal];
@@ -878,7 +879,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
 
     for (int d = dd->ndim - 1; d >= 0; d--)
     {
-        const DDCellsizesWithDlb *cellsizes = (isDlbOn(dd->comm) ? &comm->cellsizesWithDlb[d] : nullptr);
+        const DDCellsizesWithDlb &cellsizes = comm->cellsizesWithDlb[d];
         const int                 dim       = dd->dim[d];
         /* Check if we participate in the communication in this dimension */
         if (d == dd->ndim-1 ||
@@ -887,7 +888,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
             load = &comm->load[d];
             if (isDlbOn(dd->comm))
             {
-                cell_frac = cellsizes->fracUpper - cellsizes->fracLower;
+                cell_frac = cellsizes.fracUpper - cellsizes.fracLower;
             }
             int pos = 0;
             if (d == dd->ndim-1)
@@ -900,8 +901,8 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                     sbuf[pos++] = cell_frac;
                     if (d > 0)
                     {
-                        sbuf[pos++] = cellsizes->fracLowerMax;
-                        sbuf[pos++] = cellsizes->fracUpperMin;
+                        sbuf[pos++] = cellsizes.fracLowerMax;
+                        sbuf[pos++] = cellsizes.fracUpperMin;
                     }
                 }
                 if (bSepPME)
@@ -921,8 +922,8 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                     sbuf[pos++] = comm->load[d+1].flags;
                     if (d > 0)
                     {
-                        sbuf[pos++] = cellsizes->fracLowerMax;
-                        sbuf[pos++] = cellsizes->fracUpperMin;
+                        sbuf[pos++] = cellsizes.fracLowerMax;
+                        sbuf[pos++] = cellsizes.fracUpperMin;
                     }
                 }
                 if (bSepPME)
@@ -947,7 +948,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
 
                 if (isDlbOn(comm))
                 {
-                    rowMaster = cellsizes->rowMaster.get();
+                    rowMaster = cellsizes.rowMaster.get();
                 }
                 load->sum      = 0;
                 load->max      = 0;
@@ -1089,7 +1090,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         float imbalance = comm->load_max*numPpRanks/comm->load_sum - 1;
         lossFraction    = dd_force_imb_perf_loss(dd);
 
-        std::string msg         = "\nDynamic load balancing report:\n";
+        std::string msg         = "\n Dynamic load balancing report:\n";
         std::string dlbStateStr;
 
         switch (dd->comm->dlbState)
@@ -1126,7 +1127,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         msg += gmx::formatString(" Part of the total run time spent waiting due to load imbalance: %.1f%%.\n",
                                  lossFraction*100);
         fprintf(fplog, "%s", msg.c_str());
-        fprintf(stderr, "\n%s", msg.c_str());
+        fprintf(stderr, "%s", msg.c_str());
     }
 
     /* Print during what percentage of steps the  load balancing was limited */
@@ -1175,30 +1176,19 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
 
     if (lossFraction >= DD_PERF_LOSS_WARN)
     {
-        std::string message = gmx::formatString(
-                    "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
-                    "      in the domain decomposition.\n", lossFraction*100);
-
-        bool hadSuggestion = false;
+        sprintf(buf,
+                "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
+                "      in the domain decomposition.\n", lossFraction*100);
         if (!isDlbOn(comm))
         {
-            message      += "      You might want to use dynamic load balancing (option -dlb.)\n";
-            hadSuggestion = true;
+            sprintf(buf+strlen(buf), "      You might want to use dynamic load balancing (option -dlb.)\n");
         }
         else if (dlbWasLimited)
         {
-            message      += "      You might want to decrease the cell size limit (options -rdd, -rcon and/or -dds).\n";
-            hadSuggestion = true;
+            sprintf(buf+strlen(buf), "      You might want to decrease the cell size limit (options -rdd, -rcon and/or -dds).\n");
         }
-        message += gmx::formatString(
-                    "      You can %sconsider manually changing the decomposition (option -dd);\n"
-                    "      e.g. by using fewer domains along the box dimension in which there is\n"
-                    "      considerable inhomogeneity in the simulated system.",
-                    hadSuggestion ? "also " : "");
-
-
-        fprintf(fplog, "%s\n", message.c_str());
-        fprintf(stderr, "%s\n", message.c_str());
+        fprintf(fplog, "%s\n", buf);
+        fprintf(stderr, "%s\n", buf);
     }
     if (numPmeRanks > 0 && std::fabs(lossFractionPme) >= DD_PERF_LOSS_WARN)
     {
@@ -2111,7 +2101,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                     cg0 = cg1 - cd->ind[p-1].nrecv[zone];
                 }
 
-                const int numThreads = gmx::ssize(comm->dth);
+                const int numThreads = static_cast<int>(comm->dth.size());
 #pragma omp parallel for num_threads(numThreads) schedule(static)
                 for (int th = 0; th < numThreads; th++)
                 {
@@ -2631,7 +2621,7 @@ orderVector(gmx::ArrayRef<const gmx_cgsort_t>  sort,
             gmx::ArrayRef<T>                   vectorToSort,
             std::vector<T>                    *workVector)
 {
-    if (gmx::index(workVector->size()) < sort.ssize())
+    if (gmx::index(workVector->size()) < sort.size())
     {
         workVector->resize(sort.size());
     }
@@ -2709,11 +2699,8 @@ static void dd_sort_order(const gmx_domdec_t *dd,
 
     const int  movedValue = NSGRID_SIGNAL_MOVED_FAC*fr->ns->grid->ncells;
 
-    if (ncg_home_old >= 0 && !sort->sorted.empty())
+    if (ncg_home_old >= 0)
     {
-        GMX_RELEASE_ASSERT(sort->sorted.size() == static_cast<size_t>(ncg_home_old),
-                           "The sorting buffer should contain the old home charge group indices");
-
         std::vector<gmx_cgsort_t> &stationary = sort->stationary;
         std::vector<gmx_cgsort_t> &moved      = sort->moved;
 
@@ -2846,7 +2833,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
 
     /* Reorder the state */
     gmx::ArrayRef<const gmx_cgsort_t> cgsort = sort->sorted;
-    GMX_RELEASE_ASSERT(cgsort.ssize() == dd->ncg_home, "We should sort all the home atom groups");
+    GMX_RELEASE_ASSERT(cgsort.size() == dd->ncg_home, "We should sort all the home atom groups");
 
     if (state->flags & (1 << estX))
     {
@@ -2901,7 +2888,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     else
     {
         /* Copy the sorted ns cell indices back to the ns grid struct */
-        for (gmx::index i = 0; i < cgsort.ssize(); i++)
+        for (gmx::index i = 0; i < cgsort.size(); i++)
         {
             fr->ns->grid->cell_index[i] = cgsort[i].nsc;
         }
@@ -3004,7 +2991,7 @@ void dd_partition_system(FILE                    *fplog,
                          gmx_bool                 bMasterState,
                          int                      nstglobalcomm,
                          t_state                 *state_global,
-                         const gmx_mtop_t        &top_global,
+                         const gmx_mtop_t        *top_global,
                          const t_inputrec        *ir,
                          t_state                 *state_local,
                          PaddedVector<gmx::RVec> *f,
@@ -3245,7 +3232,7 @@ void dd_partition_system(FILE                    *fplog,
                   true, xGlobal,
                   &ddbox);
 
-        distributeState(mdlog, dd, top_global, state_global, ddbox, state_local, f);
+        distributeState(mdlog, dd, *top_global, state_global, ddbox, state_local, f);
 
         dd_make_local_cgs(dd, &top_local->cgs);
 
@@ -3415,7 +3402,7 @@ void dd_partition_system(FILE                    *fplog,
             case ecutsVERLET:
                 set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
 
-                nbnxn_put_on_grid(fr->nbv.get(), state_local->box,
+                nbnxn_put_on_grid(fr->nbv->nbs.get(), fr->ePBC, state_local->box,
                                   0,
                                   comm->zones.size[0].bb_x0,
                                   comm->zones.size[0].bb_x1,
@@ -3424,7 +3411,9 @@ void dd_partition_system(FILE                    *fplog,
                                   comm->zones.dens_zone0,
                                   fr->cginfo,
                                   state_local->x,
-                                  ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr);
+                                  ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr,
+                                  fr->nbv->grp[eintLocal].kernel_type,
+                                  fr->nbv->nbat);
 
                 nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_new[XX], &ncells_new[YY]);
                 break;
@@ -3466,16 +3455,6 @@ void dd_partition_system(FILE                    *fplog,
         ncgindex_set = 0;
 
         wallcycle_sub_stop(wcycle, ewcsDD_GRID);
-    }
-    else
-    {
-        /* With the group scheme the sorting array is part of the DD state,
-         * but it just got out of sync, so mark as invalid by emptying it.
-         */
-        if (ir->cutoff_scheme == ecutsGROUP)
-        {
-            comm->sort->sorted.clear();
-        }
     }
 
     if (comm->useUpdateGroups)
@@ -3546,7 +3525,7 @@ void dd_partition_system(FILE                    *fplog,
                 if (dd->splitConstraints || dd->splitSettles)
                 {
                     /* Only for inter-cg constraints we need special code */
-                    n = dd_make_local_constraints(dd, n, &top_global, fr->cginfo,
+                    n = dd_make_local_constraints(dd, n, top_global, fr->cginfo,
                                                   constr, ir->nProjOrder,
                                                   top_local->idef.il);
                 }
@@ -3650,7 +3629,7 @@ void dd_partition_system(FILE                    *fplog,
     if (comm->nstDDDump > 0 && step % comm->nstDDDump == 0)
     {
         dd_move_x(dd, state_local->box, state_local->x, nullWallcycle);
-        write_dd_pdb("dd_dump", step, "dump", &top_global, cr,
+        write_dd_pdb("dd_dump", step, "dump", top_global, cr,
                      -1, state_local->x.rvec_array(), state_local->box);
     }
 
@@ -3672,7 +3651,7 @@ void dd_partition_system(FILE                    *fplog,
     if (comm->DD_debug > 0)
     {
         /* Set the env var GMX_DD_DEBUG if you suspect corrupted indices */
-        check_index_consistency(dd, top_global.natoms, ncg_mtop(&top_global),
+        check_index_consistency(dd, top_global->natoms, ncg_mtop(top_global),
                                 "after partitioning");
     }
 

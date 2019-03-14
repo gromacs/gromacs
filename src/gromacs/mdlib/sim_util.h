@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,15 +38,17 @@
 #define GMX_MDLIB_SIM_UTIL_H
 
 #include "gromacs/fileio/enxio.h"
+#include "gromacs/mdlib/mdebin.h"
+#include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_ekindata_t;
-struct gmx_enerdata_t;
 struct gmx_output_env_t;
 struct gmx_pme_t;
+struct gmx_update_t;
+struct MdrunOptions;
 struct nonbonded_verlet_t;
 struct t_forcerec;
 struct t_mdatoms;
@@ -56,13 +58,17 @@ namespace gmx
 {
 class BoxDeformation;
 class Constraints;
-class EnergyOutput;
 class IMDOutputProvider;
 class MDLogger;
-class Update;
 }
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
+
+void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
+                       const gmx_mtop_t *mtop, rvec x[]);
+
+void do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
+                 const gmx_mtop_t *mtop, rvec x[]);
 
 /*! \brief Parallellizes put_atoms_in_box()
  *
@@ -98,24 +104,70 @@ bool do_per_step(int64_t step, int64_t nstep);
 
 /* ROUTINES from sim_util.c */
 
-/*! \brief Fills fep_state, lambda, and lam0 if needed
+void print_time(FILE *out, gmx_walltime_accounting_t walltime_accounting,
+                int64_t step, const t_inputrec *ir, const t_commrec *cr);
+
+/*! \brief Print date, time, MPI rank and a description of this point
+ * in time.
  *
- * If FEP or simulated tempering is in use:
- *
- *    fills non-null lam0 with the initial lambda values, and
- *    on master rank fills fep_state and lambda.
- *
- * Reports the initial lambda state to the log file. */
-void initialize_lambdas(FILE               *fplog,
-                        const t_inputrec   &ir,
-                        bool                isMaster,
-                        int                *fep_state,
-                        gmx::ArrayRef<real> lambda,
-                        double             *lam0);
+ * \param[in] log       logfile, or NULL to suppress output
+ * \param[in] rank      MPI rank to include in the output
+ * \param[in] title     Description to include in the output
+ * \param[in] the_time  Seconds since the epoch, e.g. as reported by gmx_gettime
+ */
+void print_date_and_time(FILE *log, int rank, const char *title,
+                         double the_time);
+
+void print_start(FILE *fplog, const t_commrec *cr,
+                 gmx_walltime_accounting_t walltime_accounting,
+                 const char *name);
+
+void finish_run(FILE *log, const gmx::MDLogger &mdlog, const t_commrec *cr,
+                const t_inputrec *inputrec,
+                t_nrnb nrnb[], gmx_wallcycle_t wcycle,
+                gmx_walltime_accounting_t walltime_accounting,
+                nonbonded_verlet_t *nbv,
+                const gmx_pme_t *pme,
+                gmx_bool bWriteStat);
+
+void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
+
+void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
+                   const matrix box, real lambda, tensor pres, tensor virial,
+                   real *prescorr, real *enercorr, real *dvdlcorr);
+
+void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayRef<real> lambda, double *lam0);
 
 void do_constrain_first(FILE *log, gmx::Constraints *constr,
                         const t_inputrec *inputrec, const t_mdatoms *md,
                         t_state *state);
+
+void init_md(FILE *fplog,
+             const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+             t_inputrec *ir, const gmx_output_env_t *oenv,
+             const MdrunOptions &mdrunOptions,
+             double *t, double *t0,
+             t_state *globalState, double *lam0,
+             t_nrnb *nrnb, gmx_mtop_t *mtop,
+             gmx_update_t **upd,
+             gmx::BoxDeformation *deform,
+             int nfile, const t_filenm fnm[],
+             gmx_mdoutf_t *outf, t_mdebin **mdebin,
+             tensor force_vir, tensor shake_vir,
+             tensor total_vir, tensor pres,
+             rvec mu_tot,
+             gmx_bool *bSimAnn, t_vcm **vcm,
+             gmx_wallcycle_t wcycle);
+
+void init_rerun(FILE *fplog,
+                const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+                t_inputrec *ir, const gmx_output_env_t *oenv,
+                const MdrunOptions &mdrunOptions,
+                t_state *globalState, double *lam0,
+                t_nrnb *nrnb, gmx_mtop_t *mtop,
+                int nfile, const t_filenm fnm[],
+                gmx_mdoutf_t *outf, t_mdebin **mdebin,
+                gmx_wallcycle_t wcycle);
 
 /* Routine in sim_util.c */
 

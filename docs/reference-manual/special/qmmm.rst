@@ -1,5 +1,3 @@
-.. _qmmm:
-
 Mixed Quantum-Classical simulation techniques
 ---------------------------------------------
 

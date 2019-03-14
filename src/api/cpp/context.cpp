@@ -54,6 +54,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/logging.h"
@@ -70,9 +71,9 @@
 #include "gmxapi/status.h"
 #include "gmxapi/version.h"
 
-#include "context_impl.h"
+#include "context-impl.h"
 #include "createsession.h"
-#include "session_impl.h"
+#include "session-impl.h"
 #include "workflow.h"
 
 namespace gmxapi
@@ -171,7 +172,9 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             options_.logFileGuard = openLogFile(ftp2fn(efLOG,
                                                        options_.filenames.size(),
                                                        options_.filenames.data()),
-                                                options_.mdrunOptions.continuationOptions.appendFiles);
+                                                options_.mdrunOptions.continuationOptions.appendFiles,
+                                                options_.cr->nodeid,
+                                                options_.cr->nnodes);
         }
 
         auto simulationContext = createSimulationContext(options_.cr);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,8 @@
 #include <cmath>
 #include <cstring>
 
-#include <memory>
-
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
@@ -107,12 +105,13 @@ static void set_ljparams(int comb, double reppow, double v, double w,
  */
 static int
 assign_param(t_functype ftype, t_iparams *newparam,
-             gmx::ArrayRef<const real> old, int comb, double reppow)
+             real old[MAXFORCEPARAM], int comb, double reppow)
 {
-    bool     all_param_zero = true;
+    int      i, j;
+    bool     all_param_zero = TRUE;
 
     /* Set to zero */
-    for (int j = 0; (j < MAXFORCEPARAM); j++)
+    for (j = 0; (j < MAXFORCEPARAM); j++)
     {
         newparam->generic.buf[j] = 0.0;
         /* If all parameters are zero we might not add some interaction types (selected below).
@@ -193,7 +192,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             break;
         case F_QUARTIC_ANGLES:
             newparam->qangle.theta = old[0];
-            for (int i = 0; i < 5; i++)
+            for (i = 0; i < 5; i++)
             {
                 newparam->qangle.c[i] = old[i+1];
             }
@@ -364,14 +363,14 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->dihres.kfacB  = old[5];
             break;
         case F_RBDIHS:
-            for (int i = 0; (i < NR_RBDIHS); i++)
+            for (i = 0; (i < NR_RBDIHS); i++)
             {
                 newparam->rbdihs.rbcA[i] = old[i];
                 newparam->rbdihs.rbcB[i] = old[NR_RBDIHS+i];
             }
             break;
         case F_CBTDIHS:
-            for (int i = 0; (i < NR_CBTDIHS); i++)
+            for (i = 0; (i < NR_CBTDIHS); i++)
             {
                 newparam->cbtdihs.cbtcA[i] = old[i];
             }
@@ -446,7 +445,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
 }
 
 static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
-                        gmx::ArrayRef<const real> forceparams, int comb, real reppow,
+                        real forceparams[MAXFORCEPARAM], int comb, real reppow,
                         int start, bool bAppend)
 {
     t_iparams newparam;
@@ -487,44 +486,47 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
 }
 
 static void append_interaction(InteractionList *ilist,
-                               int type, gmx::ArrayRef<const int> a)
+                               int type, int nral, const int a[MAXATOMLIST])
 {
     ilist->iatoms.push_back(type);
-    for (const auto &atom : a)
+    for (int i = 0; (i < nral); i++)
     {
-        ilist->iatoms.push_back(atom);
+        ilist->iatoms.push_back(a[i]);
     }
 }
 
-static void enter_function(const InteractionTypeParameters *p, t_functype ftype, int comb, real reppow,
+static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
                            gmx_ffparams_t *ffparams, InteractionList *il,
                            bool bNB, bool bAppend)
 {
-    int start = ffparams->numTypes();
+    int     k, type, nr, nral, start;
 
-    for (auto &parm : p->interactionTypes)
+    start = ffparams->numTypes();
+    nr    = p->nr;
+
+    for (k = 0; k < nr; k++)
     {
-        int type = enter_params(ffparams, ftype, parm.forceParam(), comb, reppow, start, bAppend);
+        type = enter_params(ffparams, ftype, p->param[k].c, comb, reppow, start, bAppend);
         /* Type==-1 is used as a signal that this interaction is all-zero and should not be added. */
         if (!bNB && type >= 0)
         {
-            GMX_RELEASE_ASSERT(il, "Need valid interaction list");
-            GMX_RELEASE_ASSERT(parm.atoms().ssize() == NRAL(ftype), "Need to have correct number of atoms for the parameter");
-            append_interaction(il, type, parm.atoms());
+            assert(il);
+            nral  = NRAL(ftype);
+            append_interaction(il, type, nral, p->param[k].a);
         }
     }
 }
 
-void convertInteractionTypeParameters(int atnr, gmx::ArrayRef<const InteractionTypeParameters> nbtypes,
-                                      gmx::ArrayRef<const MoleculeInformation> mi,
-                                      const MoleculeInformation *intermolecular_interactions,
-                                      int comb, double reppow, real fudgeQQ,
-                                      gmx_mtop_t *mtop)
+void convert_params(int atnr, t_params nbtypes[],
+                    t_molinfo *mi, t_molinfo *intermolecular_interactions,
+                    int comb, double reppow, real fudgeQQ,
+                    gmx_mtop_t *mtop)
 {
     int             i;
     unsigned long   flags;
     gmx_ffparams_t *ffp;
     gmx_moltype_t  *molt;
+    t_params       *plist;
 
     ffp           = &mtop->ffparams;
     ffp->atnr     = atnr;
@@ -544,7 +546,7 @@ void convertInteractionTypeParameters(int atnr, gmx::ArrayRef<const InteractionT
         {
             molt->ilist[i].iatoms.clear();
 
-            gmx::ArrayRef<const InteractionTypeParameters> plist = mi[mt].plist;
+            plist = mi[mt].plist;
 
             flags = interaction_function[i].flags;
             if ((i != F_LJ) && (i != F_BHAM) && ((flags & IF_BOND) ||
@@ -562,15 +564,15 @@ void convertInteractionTypeParameters(int atnr, gmx::ArrayRef<const InteractionT
     if (intermolecular_interactions != nullptr)
     {
         /* Process the intermolecular interaction list */
-        mtop->intermolecular_ilist = std::make_unique<InteractionLists>();
+        mtop->intermolecular_ilist = gmx::compat::make_unique<InteractionLists>();
 
         for (i = 0; (i < F_NRE); i++)
         {
             (*mtop->intermolecular_ilist)[i].iatoms.clear();
 
-            gmx::ArrayRef<const InteractionTypeParameters> plist = intermolecular_interactions->plist;
+            plist = intermolecular_interactions->plist;
 
-            if (!plist[i].interactionTypes.empty())
+            if (plist[i].nr > 0)
             {
                 flags = interaction_function[i].flags;
                 /* For intermolecular interactions we (currently)

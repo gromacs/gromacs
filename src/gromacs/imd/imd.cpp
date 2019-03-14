@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,12 +72,11 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -979,11 +978,11 @@ static void imd_readcommand(t_gmx_IMD_setup *IMDsetup)
  *
  * Call on master only.
  */
-static FILE *open_imd_out(const char                     *fn,
-                          t_gmx_IMD_setup                *IMDsetup,
-                          int                             nat_total,
-                          const gmx_output_env_t         *oenv,
-                          const gmx::ContinuationOptions &continuationOptions)
+static FILE *open_imd_out(const char                *fn,
+                          t_gmx_IMD_setup           *IMDsetup,
+                          int                        nat_total,
+                          const gmx_output_env_t    *oenv,
+                          const ContinuationOptions &continuationOptions)
 {
     FILE       *fp;
 
@@ -1283,17 +1282,17 @@ static void imd_check_integrator_parallel(t_inputrec *ir, const t_commrec *cr)
     }
 }
 
-void init_IMD(t_inputrec              *ir,
-              const t_commrec         *cr,
-              const gmx_multisim_t    *ms,
-              const gmx_mtop_t        *top_global,
-              FILE                    *fplog,
-              int                      defnstimd,
-              const rvec               x[],
-              int                      nfile,
-              const t_filenm           fnm[],
-              const gmx_output_env_t  *oenv,
-              const gmx::MdrunOptions &mdrunOptions)
+void init_IMD(t_inputrec             *ir,
+              const t_commrec        *cr,
+              const gmx_multisim_t   *ms,
+              const gmx_mtop_t       *top_global,
+              FILE                   *fplog,
+              int                     defnstimd,
+              const rvec              x[],
+              int                     nfile,
+              const t_filenm          fnm[],
+              const gmx_output_env_t *oenv,
+              const MdrunOptions     &mdrunOptions)
 {
     int              i;
     int              nat_total;
@@ -1311,7 +1310,7 @@ void init_IMD(t_inputrec              *ir,
     // user asked for should be handled with a fatal error, not just a
     // warning.
 
-    const auto &options = mdrunOptions.imdOptions;
+    const ImdOptions &options = mdrunOptions.imdOptions;
 
     /* It seems we have a .tpr file that defines an IMD group and thus allows IMD sessions.
      * Check whether we can actually provide the IMD functionality for this setting: */

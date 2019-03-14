@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,16 +54,15 @@
 #include <cstring>
 
 #include <algorithm>
-#include <memory>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/localatomsetmanager.h"
-#include "gromacs/domdec/partition.h"
-#include "gromacs/ewald/ewald_utils.h"
+#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme_gpu_program.h"
+#include "gromacs/ewald/pme-gpu-program.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
@@ -75,42 +74,41 @@
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/printhardware.h"
-#include "gromacs/listed_forces/disre.h"
-#include "gromacs/listed_forces/gpubonded.h"
-#include "gromacs/listed_forces/orires.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/boxdeformation.h"
-#include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/makeconstraints.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/membed.h"
-#include "gromacs/mdlib/ppforceworkload.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/nbnxn_tuning.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/stophandler.h"
+#include "gromacs/mdrun/legacymdrunoptions.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
 #include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/nbnxm/gpu_data_mgmt.h"
-#include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/pairlist_tuning.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
@@ -123,9 +121,7 @@
 #include "gromacs/taskassignment/resourcedivision.h"
 #include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/taskassignment/usergpuids.h"
-#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/timing/wallcyclereporting.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/basenetwork.h"
@@ -172,7 +168,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     // part of the interface to the client code, which is associated only with the
     // original thread. Handles to the same resources can be obtained by copy.
     {
-        newRunner.restraintManager_ = std::make_unique<RestraintManager>(*restraintManager_);
+        newRunner.restraintManager_ = compat::make_unique<RestraintManager>(*restraintManager_);
     }
 
     // Copy original cr pointer before master thread can pass the thread barrier
@@ -195,7 +191,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.replExParams        = replExParams;
     newRunner.pforce              = pforce;
     newRunner.ms                  = ms;
-    newRunner.stopHandlerBuilder_ = std::make_unique<StopHandlerBuilder>(*stopHandlerBuilder_);
+    newRunner.stopHandlerBuilder_ = compat::make_unique<StopHandlerBuilder>(*stopHandlerBuilder_);
 
     threadMpiMdrunnerAccessBarrier();
 
@@ -283,8 +279,8 @@ static void prepare_verlet_scheme(FILE                           *fplog,
         ListSetupType      listType  = (makeGpuPairList ? ListSetupType::Gpu : ListSetupType::CpuSimdWhenSupported);
         VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
-        const real         rlist_new =
-            calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
+        real               rlist_new;
+        calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1, -1, &listSetup, nullptr, &rlist_new);
 
         if (rlist_new != ir->rlist)
         {
@@ -420,142 +416,6 @@ static TaskTarget findTaskTarget(const char *optionString)
     return returnValue;
 }
 
-//! Finish run, aggregate data to print performance info.
-static void finish_run(FILE *fplog,
-                       const gmx::MDLogger &mdlog,
-                       const t_commrec *cr,
-                       const t_inputrec *inputrec,
-                       t_nrnb nrnb[], gmx_wallcycle_t wcycle,
-                       gmx_walltime_accounting_t walltime_accounting,
-                       nonbonded_verlet_t *nbv,
-                       const gmx_pme_t *pme,
-                       gmx_bool bWriteStat)
-{
-    t_nrnb *nrnb_tot = nullptr;
-    double  delta_t  = 0;
-    double  nbfs     = 0, mflop = 0;
-    double  elapsed_time,
-            elapsed_time_over_all_ranks,
-            elapsed_time_over_all_threads,
-            elapsed_time_over_all_threads_over_all_ranks;
-    /* Control whether it is valid to print a report. Only the
-       simulation master may print, but it should not do so if the run
-       terminated e.g. before a scheduled reset step. This is
-       complicated by the fact that PME ranks are unaware of the
-       reason why they were sent a pmerecvqxFINISH. To avoid
-       communication deadlocks, we always do the communication for the
-       report, even if we've decided not to write the report, because
-       how long it takes to finish the run is not important when we've
-       decided not to report on the simulation performance.
-
-       Further, we only report performance for dynamical integrators,
-       because those are the only ones for which we plan to
-       consider doing any optimizations. */
-    bool printReport = EI_DYNAMICS(inputrec->eI) && SIMMASTER(cr);
-
-    if (printReport && !walltime_accounting_get_valid_finish(walltime_accounting))
-    {
-        GMX_LOG(mdlog.warning).asParagraph().appendText("Simulation ended prematurely, no performance report will be written.");
-        printReport = false;
-    }
-
-    if (cr->nnodes > 1)
-    {
-        snew(nrnb_tot, 1);
-#if GMX_MPI
-        MPI_Allreduce(nrnb->n, nrnb_tot->n, eNRNB, MPI_DOUBLE, MPI_SUM,
-                      cr->mpi_comm_mysim);
-#endif
-    }
-    else
-    {
-        nrnb_tot = nrnb;
-    }
-
-    elapsed_time                  = walltime_accounting_get_time_since_reset(walltime_accounting);
-    elapsed_time_over_all_threads = walltime_accounting_get_time_since_reset_over_all_threads(walltime_accounting);
-    if (cr->nnodes > 1)
-    {
-#if GMX_MPI
-        /* reduce elapsed_time over all MPI ranks in the current simulation */
-        MPI_Allreduce(&elapsed_time,
-                      &elapsed_time_over_all_ranks,
-                      1, MPI_DOUBLE, MPI_SUM,
-                      cr->mpi_comm_mysim);
-        elapsed_time_over_all_ranks /= cr->nnodes;
-        /* Reduce elapsed_time_over_all_threads over all MPI ranks in the
-         * current simulation. */
-        MPI_Allreduce(&elapsed_time_over_all_threads,
-                      &elapsed_time_over_all_threads_over_all_ranks,
-                      1, MPI_DOUBLE, MPI_SUM,
-                      cr->mpi_comm_mysim);
-#endif
-    }
-    else
-    {
-        elapsed_time_over_all_ranks                  = elapsed_time;
-        elapsed_time_over_all_threads_over_all_ranks = elapsed_time_over_all_threads;
-    }
-
-    if (printReport)
-    {
-        print_flop(fplog, nrnb_tot, &nbfs, &mflop);
-    }
-    if (cr->nnodes > 1)
-    {
-        sfree(nrnb_tot);
-    }
-
-    if (thisRankHasDuty(cr, DUTY_PP) && DOMAINDECOMP(cr))
-    {
-        print_dd_statistics(cr, inputrec, fplog);
-    }
-
-    /* TODO Move the responsibility for any scaling by thread counts
-     * to the code that handled the thread region, so that there's a
-     * mechanism to keep cycle counting working during the transition
-     * to task parallelism. */
-    int nthreads_pp  = gmx_omp_nthreads_get(emntNonbonded);
-    int nthreads_pme = gmx_omp_nthreads_get(emntPME);
-    wallcycle_scale_by_num_threads(wcycle, thisRankHasDuty(cr, DUTY_PME) && !thisRankHasDuty(cr, DUTY_PP), nthreads_pp, nthreads_pme);
-    auto cycle_sum(wallcycle_sum(cr, wcycle));
-
-    if (printReport)
-    {
-        auto                    nbnxn_gpu_timings = (use_GPU(nbv) && nbv != nullptr) ? Nbnxm::gpu_get_timings(nbv->gpu_nbv) : nullptr;
-        gmx_wallclock_gpu_pme_t pme_gpu_timings   = {};
-        if (pme_gpu_task_enabled(pme))
-        {
-            pme_gpu_get_timings(pme, &pme_gpu_timings);
-        }
-        wallcycle_print(fplog, mdlog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
-                        elapsed_time_over_all_ranks,
-                        wcycle, cycle_sum,
-                        nbnxn_gpu_timings,
-                        &pme_gpu_timings);
-
-        if (EI_DYNAMICS(inputrec->eI))
-        {
-            delta_t = inputrec->delta_t;
-        }
-
-        if (fplog)
-        {
-            print_perf(fplog, elapsed_time_over_all_threads_over_all_ranks,
-                       elapsed_time_over_all_ranks,
-                       walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
-                       delta_t, nbfs, mflop);
-        }
-        if (bWriteStat)
-        {
-            print_perf(stderr, elapsed_time_over_all_threads_over_all_ranks,
-                       elapsed_time_over_all_ranks,
-                       walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
-                       delta_t, nbfs, mflop);
-        }
-    }
-}
-
 int Mdrunner::mdrunner()
 {
     matrix                    box;
@@ -567,8 +427,11 @@ int Mdrunner::mdrunner()
     int                       nChargePerturbed = -1, nTypePerturbed = 0;
     gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = nullptr;
-    gmx_membed_t *            membed              = nullptr;
-    gmx_hw_info_t            *hwinfo              = nullptr;
+    int                       rc;
+    int64_t                   reset_counters;
+    int                       nthreads_pme = 1;
+    gmx_membed_t *            membed       = nullptr;
+    gmx_hw_info_t            *hwinfo       = nullptr;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -586,14 +449,27 @@ int Mdrunner::mdrunner()
     std::vector<int>    gpuIdsAvailable;
     try
     {
-        gpuIdsAvailable = parseUserGpuIdString(hw_opt.gpuIdsAvailable);
+        gpuIdsAvailable = parseUserGpuIds(hw_opt.gpuIdsAvailable);
+        // TODO We could put the GPU IDs into a std::map to find
+        // duplicates, but for the small numbers of IDs involved, this
+        // code is simple and fast.
+        for (size_t i = 0; i != gpuIdsAvailable.size(); ++i)
+        {
+            for (size_t j = i+1; j != gpuIdsAvailable.size(); ++j)
+            {
+                if (gpuIdsAvailable[i] == gpuIdsAvailable[j])
+                {
+                    GMX_THROW(InvalidInputError(formatString("The string of available GPU device IDs '%s' may not contain duplicate device IDs", hw_opt.gpuIdsAvailable.c_str())));
+                }
+            }
+        }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     std::vector<int> userGpuTaskAssignment;
     try
     {
-        userGpuTaskAssignment = parseUserTaskAssignmentString(hw_opt.userGpuTaskAssignment);
+        userGpuTaskAssignment = parseUserGpuIds(hw_opt.userGpuTaskAssignment);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     auto       nonbondedTarget = findTaskTarget(nbpu_opt);
@@ -675,7 +551,7 @@ int Mdrunner::mdrunner()
     if (SIMMASTER(cr))
     {
         /* Only the master rank has the global state */
-        globalState = std::make_unique<t_state>();
+        globalState = compat::make_unique<t_state>();
 
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()), inputrec, globalState.get(), &mtop);
@@ -737,16 +613,16 @@ int Mdrunner::mdrunner()
             // If the user specified the number of ranks, then we must
             // respect that, but in default mode, we need to allow for
             // the number of GPUs to choose the number of ranks.
-            auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
+
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
-                    canUseGpuForNonbonded,
                     inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
+            auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
                     (useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment,
-                    *hwinfo, *inputrec, mtop, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
+                    canUseGpuForPme, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
 
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -795,7 +671,7 @@ int Mdrunner::mdrunner()
     //
     // Note that when bonded interactions run on a GPU they always run
     // alongside a nonbonded task, so do not influence task assignment
-    // even though they affect the force calculation workload.
+    // even though they affect the force calculation schedule.
     bool useGpuForNonbonded = false;
     bool useGpuForPme       = false;
     bool useGpuForBonded    = false;
@@ -805,18 +681,15 @@ int Mdrunner::mdrunner()
         // different nodes, which is the user's responsibilty to
         // handle. If unsuitable, we will notice that during task
         // assignment.
-        bool gpusWereDetected      = hwinfo->ngpu_compatible_tot > 0;
-        bool usingVerletScheme     = inputrec->cutoff_scheme == ecutsVERLET;
-        auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
+        bool gpusWereDetected  = hwinfo->ngpu_compatible_tot > 0;
+        bool usingVerletScheme = inputrec->cutoff_scheme == ecutsVERLET;
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
-                                                                emulateGpuNonbonded,
-                                                                canUseGpuForNonbonded,
-                                                                usingVerletScheme,
+                                                                emulateGpuNonbonded, usingVerletScheme,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
+        auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
-                                                    *hwinfo, *inputrec, mtop,
-                                                    cr->nnodes, domdecOptions.numPmeRanks,
+                                                    canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
         auto canUseGpuForBonded = buildSupportsGpuBondeds(nullptr) && inputSupportsGpuBondeds(*inputrec, mtop, nullptr);
         useGpuForBonded =
@@ -876,7 +749,7 @@ int Mdrunner::mdrunner()
     {
         if (!MASTER(cr))
         {
-            globalState = std::make_unique<t_state>();
+            globalState = compat::make_unique<t_state>();
         }
         broadcastStateWithoutDynamics(cr, globalState.get());
     }
@@ -905,6 +778,11 @@ int Mdrunner::mdrunner()
         (EI_ENERGY_MINIMIZATION(inputrec->eI) || eiNM == inputrec->eI))
     {
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
+    }
+
+    if (can_use_allvsall(inputrec, TRUE, cr, fplog) && DOMAINDECOMP(cr))
+    {
+        gmx_fatal(FARGS, "All-vs-all loops do not work with domain decomposition, use a single MPI rank");
     }
 
     if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)))
@@ -991,7 +869,7 @@ int Mdrunner::mdrunner()
         {
             // Now we can start normal logging to the truncated log file.
             fplog    = gmx_fio_getfp(logFileHandle);
-            prepareLogAppending(fplog);
+            prepareLogAppending(cr->nodeid, cr->nnodes, fplog);
             logOwner = buildLogger(fplog, cr);
             mdlog    = logOwner.logger();
         }
@@ -1257,12 +1135,23 @@ int Mdrunner::mdrunner()
         }
     }
 
-    /* getting number of PP/PME threads on this MPI / tMPI rank.
+    /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
      */
-    const int numThreadsOnThisRank =
-        thisRankHasDuty(cr, DUTY_PP) ? gmx_omp_nthreads_get(emntNonbonded) : gmx_omp_nthreads_get(emntPME);
+    nthreads_pme = gmx_omp_nthreads_get(emntPME);
+
+    int numThreadsOnThisRank;
+    /* threads on this MPI process or TMPI thread */
+    if (thisRankHasDuty(cr, DUTY_PP))
+    {
+        numThreadsOnThisRank = gmx_omp_nthreads_get(emntNonbonded);
+    }
+    else
+    {
+        numThreadsOnThisRank = nthreads_pme;
+    }
+
     checkHardwareOversubscription(numThreadsOnThisRank, cr->nodeid,
                                   *hwinfo->hardwareTopology,
                                   physicalNodeComm, mdlog);
@@ -1297,7 +1186,7 @@ int Mdrunner::mdrunner()
     {
         /* Master synchronizes its value of reset_counters with all nodes
          * including PME only nodes */
-        int64_t reset_counters = wcycle_get_reset_counters(wcycle);
+        reset_counters = wcycle_get_reset_counters(wcycle);
         gmx_bcast_sim(sizeof(reset_counters), &reset_counters, cr);
         wcycle_set_reset_counters(wcycle, reset_counters);
     }
@@ -1324,7 +1213,7 @@ int Mdrunner::mdrunner()
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Initiate forcerecord */
-        fr                 = new t_forcerec;
+        fr                 = mk_forcerec();
         fr->forceProviders = mdModules->initForceProviders();
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
@@ -1427,7 +1316,7 @@ int Mdrunner::mdrunner()
                                        mtop.natoms, nChargePerturbed != 0, nTypePerturbed != 0,
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
-                                       gmx_omp_nthreads_get(emntPME),
+                                       nthreads_pme,
                                        pmeRunMode, nullptr,
                                        pmeDeviceInfo, pmeGpuProgram.get(), mdlog);
             }
@@ -1500,7 +1389,7 @@ int Mdrunner::mdrunner()
                                     || observablesHistory.edsamHistory);
         auto constr              = makeConstraints(mtop, *inputrec, doEssentialDynamics,
                                                    fplog, *mdAtoms->mdatoms(),
-                                                   cr, ms, nrnb, wcycle, fr->bMolPBC);
+                                                   cr, *ms, nrnb, wcycle, fr->bMolPBC);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1512,13 +1401,6 @@ int Mdrunner::mdrunner()
                             domdecOptions.checkBondedInteractions,
                             fr->cginfo_mb);
         }
-
-        // TODO This is not the right place to manage the lifetime of
-        // this data structure, but currently it's the easiest way to
-        // make it work. Later, it should probably be made/updated
-        // after the workload for the lifetime of a PP domain is
-        // understood.
-        PpForceWorkload ppForceWorkload;
 
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to integrator.");
         /* Now do whatever the user wants us to do (how flexible...) */
@@ -1535,7 +1417,6 @@ int Mdrunner::mdrunner()
             globalState.get(),
             &observablesHistory,
             mdAtoms.get(), nrnb, wcycle, fr,
-            &ppForceWorkload,
             replExParams,
             membed,
             walltime_accounting,
@@ -1564,12 +1445,9 @@ int Mdrunner::mdrunner()
      */
     finish_run(fplog, mdlog, cr,
                inputrec, nrnb, wcycle, walltime_accounting,
-               fr ? fr->nbv.get() : nullptr,
+               fr ? fr->nbv : nullptr,
                pmedata,
                EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
-
-    // clean up cycle counter
-    wallcycle_destroy(wcycle);
 
     // Free PME data
     if (pmedata)
@@ -1618,7 +1496,7 @@ int Mdrunner::mdrunner()
         gmx_fedisableexcept();
     }
 
-    auto rc = static_cast<int>(gmx_get_stop_condition());
+    rc = static_cast<int>(gmx_get_stop_condition());
 
 #if GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they
@@ -1626,11 +1504,11 @@ int Mdrunner::mdrunner()
        wait for that. */
     if (PAR(cr) && MASTER(cr))
     {
+        done_commrec(cr);
         tMPI_Finalize();
     }
-    //TODO free commrec in MPI simulations
-    done_commrec(cr);
 #endif
+
     return rc;
 }
 
@@ -1800,7 +1678,7 @@ void Mdrunner::BuilderImplementation::addReplicaExchange(const ReplicaExchangePa
 
 void Mdrunner::BuilderImplementation::addMultiSim(gmx_multisim_t* multisim)
 {
-    multisim_ = std::make_unique<gmx_multisim_t*>(multisim);
+    multisim_ = compat::make_unique<gmx_multisim_t*>(multisim);
 }
 
 Mdrunner Mdrunner::BuilderImplementation::build()
@@ -1877,7 +1755,7 @@ Mdrunner Mdrunner::BuilderImplementation::build()
         GMX_THROW(gmx::APIError("MdrunnerBuilder::addBondedTaskAssignment() is required before build()"));
     }
 
-    newRunner.restraintManager_ = std::make_unique<gmx::RestraintManager>();
+    newRunner.restraintManager_ = compat::make_unique<gmx::RestraintManager>();
 
     if (stopHandlerBuilder_)
     {
@@ -1885,7 +1763,7 @@ Mdrunner Mdrunner::BuilderImplementation::build()
     }
     else
     {
-        newRunner.stopHandlerBuilder_ = std::make_unique<StopHandlerBuilder>();
+        newRunner.stopHandlerBuilder_ = compat::make_unique<StopHandlerBuilder>();
     }
 
     return newRunner;
@@ -1934,7 +1812,7 @@ void Mdrunner::BuilderImplementation::addStopHandlerBuilder(std::unique_ptr<Stop
 }
 
 MdrunnerBuilder::MdrunnerBuilder(compat::not_null<SimulationContext*> context) :
-    impl_ {std::make_unique<Mdrunner::BuilderImplementation>(context)}
+    impl_ {gmx::compat::make_unique<Mdrunner::BuilderImplementation>(context)}
 {
 }
 

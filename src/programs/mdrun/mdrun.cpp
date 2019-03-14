@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,13 +52,13 @@
  */
 #include "gmxpre.h"
 
-#include <memory>
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdrun/legacymdrunoptions.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/runner.h"
@@ -237,7 +237,9 @@ int gmx_mdrun(int argc, char *argv[])
         options.logFileGuard = openLogFile(ftp2fn(efLOG,
                                                   options.filenames.size(),
                                                   options.filenames.data()),
-                                           options.mdrunOptions.continuationOptions.appendFiles);
+                                           options.mdrunOptions.continuationOptions.appendFiles,
+                                           options.cr->nodeid,
+                                           options.cr->nnodes);
     }
 
     /* The SimulationContext is a resource owned by the client code.

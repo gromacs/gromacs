@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,7 +109,7 @@ static const char *wcn[ewcNR] =
     "PME redist. X/F", "PME spread", "PME gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
     "PME wait for PP", "Wait + Recv. PME F",
     "Wait PME GPU spread", "PME 3D-FFT", "PME solve", /* the strings for FFT/solve are repeated here for mixed mode counters */
-    "Wait PME GPU gather", "Wait Bonded GPU", "Reduce GPU PME F",
+    "Wait PME GPU gather", "Reduce GPU PME F",
     "Wait GPU NB nonloc.", "Wait GPU NB local", "NB X/F buffer ops.",
     "Vsite spread", "COM pull force", "AWH",
     "Write traj.", "Update", "Constraints", "Comm. energies",
@@ -128,13 +128,10 @@ static const char *wcsn[ewcsNR] =
     "Nonbonded pruning",
     "Nonbonded F",
     "Launch NB GPU tasks",
-    "Launch Bonded GPU tasks",
     "Launch PME GPU tasks",
     "Ewald F correction",
     "NB X buffer ops.",
     "NB F buffer ops.",
-    "Clear force buffer",
-    "Test subcounter",
 };
 
 /* PME GPU timing events' names - correspond to the enum in the gpu_timing.h */
@@ -207,8 +204,9 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
     return wc;
 }
 
-void wallcycle_destroy(gmx_wallcycle_t wc)
-{
+/* TODO: Should be called from finish_run() or runner()
+   void wallcycle_destroy(gmx_wallcycle_t wc)
+   {
     if (wc == nullptr)
     {
         return;
@@ -227,7 +225,8 @@ void wallcycle_destroy(gmx_wallcycle_t wc)
         sfree(wc->wcsc);
     }
     sfree(wc);
-}
+   }
+ */
 
 static void wallcycle_all_start(gmx_wallcycle_t wc, int ewc, gmx_cycles_t cycle)
 {

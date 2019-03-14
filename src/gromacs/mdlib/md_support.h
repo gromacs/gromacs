@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,6 @@ struct gmx_signalling_t;
 struct t_extmass;
 struct t_forcerec;
 struct t_grpopts;
-struct t_inputrec;
 struct t_lambda;
 struct t_nrnb;
 class t_state;
@@ -96,8 +95,7 @@ class SimulationSignaller;
  * inputrec and the value of mdrun -gcom. */
 int check_nstglobalcomm(const gmx::MDLogger &mdlog,
                         int                  nstglobalcomm,
-                        t_inputrec          *ir,
-                        const t_commrec    * cr);
+                        t_inputrec          *ir);
 
 /*! \brief Return true if the \p value is equal across the set of multi-simulations
  *
@@ -107,9 +105,6 @@ bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bLastStep);
-
-//! \brief Allocate and initialize node-local state entries
-void set_state_entries(t_state *state, const t_inputrec *ir);
 
 /* Set the lambda values in the global state from a frame read with rerun */
 void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,

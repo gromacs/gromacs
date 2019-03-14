@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,12 +48,6 @@ namespace gmx
 class RangePartitioning;
 } // namespace gmx
 
-namespace Nbnxm
-{
-enum class KernelType;
-} // namespace Nbnxm
-
-
 struct VerletbufListSetup
 {
     int  cluster_size_i;  /* Cluster pair-list i-cluster size atom count */
@@ -74,7 +68,7 @@ static const real verlet_buffer_ratio_NVE_T0     = 0.10;
 
 /* Returns the pair-list setup for the given nbnxn kernel type.
  */
-VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType);
+VerletbufListSetup verletbufGetListSetup(int nbnxnKernelType);
 
 /* Enum for choosing the list type for verletbufGetSafeListSetup() */
 enum class ListSetupType
@@ -90,38 +84,27 @@ enum class ListSetupType
  */
 VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType);
 
-/* Returns the non-bonded pair-list radius including computed buffer
- *
- * Calculate the non-bonded pair-list buffer size for the Verlet list
+/* Calculate the non-bonded pair-list buffer size for the Verlet list
  * based on the particle masses, temperature, LJ types, charges
  * and constraints as well as the non-bonded force behavior at the cut-off.
  * The pair list update frequency and the list lifetime, which is nstlist-1
  * for normal pair-list buffering, are passed separately, as in some cases
  * we want an estimate for different values than the ones set in the inputrec.
- * If referenceTemperature < 0, the maximum coupling temperature will be used.
+ * If reference_temperature < 0, the maximum coupling temperature will be used.
  * The target is a maximum average energy jump per atom of
- * inputrec.verletbuf_tol*nstlist*inputrec.delta_t over the lifetime of the list.
- *
- * \note For non-linear virtual sites it can be problematic to determine their
- *       contribution to the drift exaclty, so we approximate.
- *
- * \param[in] mtop          The system topology
- * \param[in] boxVolume     The volume of the unit cell
- * \param[in] inputrec      The input record
- * \param[in] nstlist       The pair list update frequency in steps (is not taken from \p inputrec)
- * \param[in] listLifetime  The lifetime of the pair-list, usually nstlist-1, but could be different for dynamic pruning
- * \param[in] referenceTemperature  The reference temperature for the ensemble
- * \param[in] listSetup     The pair-list setup
- * \returns The computed pair-list radius including buffer
+ * ir->verletbuf_tol*nstlist*ir->delta_t over the lifetime of the list.
+ * Returns the number of non-linear virtual sites. For these it's difficult
+ * to determine their contribution to the drift exaclty, so we approximate.
+ * Returns the pair-list cut-off.
  */
-real
-calcVerletBufferSize(const gmx_mtop_t         &mtop,
-                     real                      boxVolume,
-                     const t_inputrec         &inputrec,
-                     int                       nstlist,
-                     int                       listLifetime,
-                     real                      referenceTemperature,
-                     const VerletbufListSetup &listSetup);
+void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
+                             const t_inputrec *ir,
+                             int               nstlist,
+                             int               list_lifetime,
+                             real reference_temperature,
+                             const VerletbufListSetup *list_setup,
+                             int *n_nonlin_vsite,
+                             real *rlist);
 
 /* Convenience type */
 using PartitioningPerMoltype = gmx::ArrayRef<const gmx::RangePartitioning>;

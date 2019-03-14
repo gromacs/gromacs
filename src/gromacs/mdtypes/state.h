@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,10 +73,6 @@ namespace gmx
 struct AwhHistory;
 }
 
-//! Convenience alias for until all is moved in the gmx namespace
-template <class T>
-using PaddedHostVector = gmx::PaddedHostVector<T>;
-
 /*
  * The t_state struct should contain all the (possibly) non-static
  * information required to define the state of the system.
@@ -98,7 +94,7 @@ enum {
     estORIRE_INITF, estORIRE_DTAV,
     estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
     estFEPSTATE, estMC_RNG_NOTSUPPORTED, estMC_RNGI_NOTSUPPORTED,
-    estBAROS_INT, estPULLCOMPREVSTEP,
+    estBAROS_INT, estPREVSTEPCOM,
     estNR
 };
 
@@ -193,43 +189,43 @@ class t_state
         t_state();
 
         // All things public
-        int                         natoms;         //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
-        int                         ngtc;           //!< The number of temperature coupling groups
-        int                         nnhpres;        //!< The NH-chain length for the MTTK barostat
-        int                         nhchainlength;  //!< The NH-chain length for temperature coupling
-        int                         flags;          //!< Set of bit-flags telling which entries are present, see enum at the top of the file
-        int                         fep_state;      //!< indicates which of the alchemical states we are in
-        std::array<real, efptNR>    lambda;         //!< Free-energy lambda vector
-        matrix                      box;            //!< Matrix of box vectors
-        matrix                      box_rel;        //!< Relative box vectors to preserve box shape
-        matrix                      boxv;           //!< Box velocities for Parrinello-Rahman P-coupling
-        matrix                      pres_prev;      //!< Pressure of the previous step for pcoupl
-        matrix                      svir_prev;      //!< Shake virial for previous step for pcoupl
-        matrix                      fvir_prev;      //!< Force virial of the previous step for pcoupl
-        std::vector<double>         nosehoover_xi;  //!< Nose-Hoover coordinates (ngtc)
-        std::vector<double>         nosehoover_vxi; //!< Nose-Hoover velocities (ngtc)
-        std::vector<double>         nhpres_xi;      //!< Pressure Nose-Hoover coordinates
-        std::vector<double>         nhpres_vxi;     //!< Pressure Nose-Hoover velocities
-        std::vector<double>         therm_integral; //!< Work exterted N-H/V-rescale T-coupling (ngtc)
-        double                      baros_integral; //!< For Berendsen P-coupling conserved quantity
-        real                        veta;           //!< Trotter based isotropic P-coupling
-        real                        vol0;           //!< Initial volume,required for computing MTTK conserved quantity
-        PaddedHostVector<gmx::RVec> x;              //!< The coordinates (natoms)
-        PaddedVector<gmx::RVec>     v;              //!< The velocities (natoms)
-        PaddedVector<gmx::RVec>     cg_p;           //!< p vector for conjugate gradient minimization
+        int                        natoms;         //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
+        int                        ngtc;           //!< The number of temperature coupling groups
+        int                        nnhpres;        //!< The NH-chain length for the MTTK barostat
+        int                        nhchainlength;  //!< The NH-chain length for temperature coupling
+        int                        flags;          //!< Set of bit-flags telling which entries are present, see enum at the top of the file
+        int                        fep_state;      //!< indicates which of the alchemical states we are in
+        std::array<real, efptNR>   lambda;         //!< Free-energy lambda vector
+        matrix                     box;            //!< Matrix of box vectors
+        matrix                     box_rel;        //!< Relative box vectors to preserve box shape
+        matrix                     boxv;           //!< Box velocities for Parrinello-Rahman P-coupling
+        matrix                     pres_prev;      //!< Pressure of the previous step for pcoupl
+        matrix                     svir_prev;      //!< Shake virial for previous step for pcoupl
+        matrix                     fvir_prev;      //!< Force virial of the previous step for pcoupl
+        std::vector<double>        nosehoover_xi;  //!< Nose-Hoover coordinates (ngtc)
+        std::vector<double>        nosehoover_vxi; //!< Nose-Hoover velocities (ngtc)
+        std::vector<double>        nhpres_xi;      //!< Pressure Nose-Hoover coordinates
+        std::vector<double>        nhpres_vxi;     //!< Pressure Nose-Hoover velocities
+        std::vector<double>        therm_integral; //!< Work exterted N-H/V-rescale T-coupling (ngtc)
+        double                     baros_integral; //!< For Berendsen P-coupling conserved quantity
+        real                       veta;           //!< Trotter based isotropic P-coupling
+        real                       vol0;           //!< Initial volume,required for computing MTTK conserved quantity
+        gmx::HostVector<gmx::RVec> x;              //!< The coordinates (natoms)
+        PaddedVector<gmx::RVec>    v;              //!< The velocities (natoms)
+        PaddedVector<gmx::RVec>    cg_p;           //!< p vector for conjugate gradient minimization
 
-        ekinstate_t                 ekinstate;      //!< The state of the kinetic energy
+        ekinstate_t                ekinstate;      //!< The state of the kinetic energy
 
         /* History for special algorithms, should be moved to a history struct */
-        history_t                         hist;               //!< Time history for restraints
-        df_history_t                     *dfhist;             //!< Free-energy history for free energy analysis
-        std::shared_ptr<gmx::AwhHistory>  awhHistory;         //!< Accelerated weight histogram history
+        history_t                         hist;            //!< Time history for restraints
+        df_history_t                     *dfhist;          //!< Free-energy history for free energy analysis
+        std::shared_ptr<gmx::AwhHistory>  awhHistory;      //!< Accelerated weight histogram history
 
-        int                               ddp_count;          //!< The DD partitioning count for this state
-        int                               ddp_count_cg_gl;    //!< The DD partitioning count for index_gl
-        std::vector<int>                  cg_gl;              //!< The global cg number of the local cgs
+        int                               ddp_count;       //!< The DD partitioning count for this state
+        int                               ddp_count_cg_gl; //!< The DD partitioning count for index_gl
+        std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
 
-        std::vector<double>               pull_com_prev_step; //!< The COM of the previous step of each pull group
+        std::vector<double>               com_prev_step;   //!< The COM of the previous step of each pull group
 };
 
 #ifndef DOXYGEN
@@ -237,13 +233,13 @@ class t_state
  * TODO: Move the next two structs out of state.h.
  */
 
-struct t_extmass
+typedef struct t_extmass
 {
-    std::vector<double> Qinv;  /* inverse mass of thermostat -- computed from inputs, but a good place to store */
-    std::vector<double> QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */
-    double              Winv;  /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
-    tensor              Winvm; /* inverse pressure mass tensor, computed       */
-};
+    double *Qinv;  /* inverse mass of thermostat -- computed from inputs, but a good place to store */
+    double *QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */
+    double  Winv;  /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
+    tensor  Winvm; /* inverse pressure mass tensor, computed       */
+} t_extmass;
 
 
 typedef struct
@@ -311,7 +307,7 @@ positionsFromStatePointer(const t_state *state)
     }
     else
     {
-        return {};
+        return gmx::EmptyArrayRef();
     }
 };
 

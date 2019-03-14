@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/shake.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -71,7 +72,6 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -104,7 +104,7 @@ class Constraints::Impl
              FILE                 *log_p,
              const t_mdatoms      &md_p,
              const t_commrec      *cr_p,
-             const gmx_multisim_t *ms,
+             const gmx_multisim_t &ms,
              t_nrnb               *nrnb,
              gmx_wallcycle        *wcycle_p,
              bool                  pbcHandlingRequired,
@@ -171,7 +171,7 @@ class Constraints::Impl
         //! Communication support.
         const t_commrec      *cr = nullptr;
         //! Multi-sim support.
-        const gmx_multisim_t *ms = nullptr;
+        const gmx_multisim_t &ms;
         /*!\brief Input options.
          *
          * \todo Replace with IMdpOptions */
@@ -187,23 +187,6 @@ Constraints::~Constraints() = default;
 int Constraints::numFlexibleConstraints() const
 {
     return impl_->nflexcon;
-}
-
-bool Constraints::havePerturbedConstraints() const
-{
-    const gmx_ffparams_t &ffparams = impl_->mtop.ffparams;
-
-    for (size_t i = 0; i < ffparams.functype.size(); i++)
-    {
-        if ((ffparams.functype[i] == F_CONSTR ||
-             ffparams.functype[i] == F_CONSTRNC) &&
-            ffparams.iparams[i].constr.dA != ffparams.iparams[i].constr.dB)
-        {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 //! Clears constraint quantities for atoms in nonlocal region.
@@ -728,7 +711,7 @@ ArrayRef<real> Constraints::rmsdData() const
     }
     else
     {
-        return {};
+        return EmptyArrayRef();
     }
 }
 
@@ -975,7 +958,7 @@ Constraints::Constraints(const gmx_mtop_t     &mtop,
                          FILE                 *log,
                          const t_mdatoms      &md,
                          const t_commrec      *cr,
-                         const gmx_multisim_t *ms,
+                         const gmx_multisim_t &ms,
                          t_nrnb               *nrnb,
                          gmx_wallcycle        *wcycle,
                          bool                  pbcHandlingRequired,
@@ -1000,7 +983,7 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
                         FILE                 *log_p,
                         const t_mdatoms      &md_p,
                         const t_commrec      *cr_p,
-                        const gmx_multisim_t *ms_p,
+                        const gmx_multisim_t &ms_p,
                         t_nrnb               *nrnb_p,
                         gmx_wallcycle        *wcycle_p,
                         bool                  pbcHandlingRequired,
@@ -1139,22 +1122,6 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
 
 Constraints::Impl::~Impl()
 {
-    for (auto blocka : at2con_mt)
-    {
-        done_blocka(&blocka);
-    }
-    if (bSettleErrorHasOccurred != nullptr)
-    {
-        sfree(bSettleErrorHasOccurred);
-    }
-    if (vir_r_m_dr_th != nullptr)
-    {
-        sfree(vir_r_m_dr_th);
-    }
-    if (settled != nullptr)
-    {
-        settle_free(settled);
-    }
     done_lincs(lincsd);
 }
 

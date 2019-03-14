@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,8 +44,7 @@
 
 #include "config.h"
 
-#include <memory>
-
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
 
@@ -188,8 +187,8 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD (
 {
     if (!GMX_THREAD_MPI || isMaster)
     {
-        // Using shared ptr because move-only callable not supported by std::function.
-        // Would require replacement such as fu2::function or cxx_function.
+        // TODO: Use unique_ptr once we switch to C++14 (unique_ptr can not easily be
+        //       captured in lambda functions in C++11)
         auto stopConditionSignal = std::make_shared<StopConditionSignal>(
                     nstList, makeBinaryReproducibleSimulation, nstSignalComm);
         registerStopCondition(
@@ -199,6 +198,8 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD (
 
     if (isMaster && maximumHoursToRun > 0)
     {
+        // TODO: Use unique_ptr once we switch to C++14 (unique_ptr can not easily be
+        //       captured in lambda functions in C++11)
         auto stopConditionTime = std::make_shared<StopConditionTime>(
                     nstList, maximumHoursToRun, nstSignalComm);
         registerStopCondition(
@@ -206,7 +207,7 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD (
                 {return stopConditionTime->getSignal(bNS, step, fplog, walltime_accounting); });
     }
 
-    return std::make_unique<StopHandler>(
+    return compat::make_unique<StopHandler>(
             signal, simulationShareState, stopConditions_, neverUpdateNeighborList);
 }
 

@@ -10,7 +10,6 @@ This work orginated from "Kokkos" and is distributed under the BSD license as
 stated in COPYING.
 
 The following modifications were carried out:
-* Add extensions.h with further mdspan functionality from the GROMACS team
 * reformatted code with uncrustify
 * added GROMACS header to all files
 * added doxygen comments to all files
@@ -19,12 +18,3 @@ The following modifications were carried out:
 * use minimial includes in all header files instead of just including mdspan
 * move tests into a subdirectory tests and rename test_foo.cpp to foo.cpp
 * renamed tests and test fixture class to match GROMACS conventions
-* changed variable signature to match proposal P0009r8 where reference
-  implementation differed, (const to const & in constructors of basic_mdspan)
-* Updated the mdspan test to a typed test
-* added test for basic accessor policy
-* added test for mdspan declaration
-* added sliced_extents to to extents.h to enable compile-time determination of 
-  exents for slice operator, preferred integration into extents_analyse_t over
-  external extension for compilation efficiency
-* added bracket operator [] to basic_mdspan for slicing

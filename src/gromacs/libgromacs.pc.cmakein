@@ -6,6 +6,6 @@ URL: http://www.gromacs.org
 Version: @GMX_VERSION_STRING@
 Requires: @PKG_FFT@ @PKG_XML@
 Libs.private: @CMAKE_THREAD_LIBS_INIT@ @PKG_DL_LIBS@ @OpenMP_LINKER_FLAGS@
-Libs: -L${libdir} -lgromacs@GMX_LIBS_SUFFIX@ @PKG_FFT_LIBS@ -lm
+Libs: -L${libdir} -lgromacs@GMX_LIBS_SUFFIX@ @PKG_FFT_LIBS@ -lm @GMX_STDLIB_LIBRARIES@
 Cflags: @PKG_CFLAGS@
 

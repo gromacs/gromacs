@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull_params.h"
+#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
@@ -76,7 +76,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
-#include "gromacs/utility/path.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -1263,15 +1262,17 @@ static void copy_pullgrp_to_synthwindow(t_UmbrellaWindow *synthWindow,
 static void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
                              t_UmbrellaOptions *opt, const char *fnhist, const char *xlabel)
 {
-    int         i, j, k, nbin;
-    double      last;
-    std::string fn;
-    FILE       *fp = nullptr;
+    int    i, j, k, nbin;
+    double last;
+    char  *fn = nullptr, *buf = nullptr;
+    FILE  *fp = nullptr;
 
     if (opt->bs_verbose)
     {
-        fn = gmx::Path::concatenateBeforeExtension(fnhist, "_cumul");
-        fp = xvgropen(fn.c_str(), "CDFs of umbrella windows", xlabel, "CDF", opt->oenv);
+        snew(fn, std::strlen(fnhist)+10);
+        snew(buf, std::strlen(fnhist)+10);
+        sprintf(fn, "%s_cumul.xvg", std::strncpy(buf, fnhist, std::strlen(fnhist)-4));
+        fp = xvgropen(fn, "CDFs of umbrella windows", xlabel, "CDF", opt->oenv);
     }
 
     nbin = opt->bins;
@@ -1311,8 +1312,10 @@ static void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
             }
             fprintf(fp, "\n");
         }
-        printf("Wrote cumulative distribution functions to %s\n", fn.c_str());
+        printf("Wrote cumulative distribution functions to %s\n", fn);
         xvgrclose(fp);
+        sfree(fn);
+        sfree(buf);
     }
 }
 
@@ -1502,22 +1505,24 @@ static void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWind
 static void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindows,
                              int bs_index, t_UmbrellaOptions *opt, const char *xlabel)
 {
-    std::string fn, title;
-    FILE       *fp;
-    int         bins, l, i, j;
+    char *fn = nullptr, *buf = nullptr, title[256];
+    FILE *fp;
+    int   bins, l, i, j;
 
     if (bs_index >= 0)
     {
-        fn    = gmx::Path::concatenateBeforeExtension(fnhist, gmx::formatString("_bs%d", bs_index));
-        title = gmx::formatString("Umbrella histograms. Bootstrap #%d", bs_index);
+        snew(fn, std::strlen(fnhist)+10);
+        snew(buf, std::strlen(fnhist)+1);
+        sprintf(fn, "%s_bs%d.xvg", std::strncpy(buf, fnhist, std::strlen(fnhist)-4), bs_index);
+        sprintf(title, "Umbrella histograms. Bootstrap #%d", bs_index);
     }
     else
     {
-        fn    = gmx_strdup(fnhist);
-        title = gmx::formatString("Umbrella histograms");
+        fn = gmx_strdup(fnhist);
+        std::strcpy(title, "Umbrella histograms");
     }
 
-    fp   = xvgropen(fn.c_str(), title.c_str(), xlabel, "count", opt->oenv);
+    fp   = xvgropen(fn, title, xlabel, "count", opt->oenv);
     bins = opt->bins;
 
     /* Write histograms */
@@ -1535,7 +1540,12 @@ static void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int 
     }
 
     xvgrclose(fp);
-    printf("Wrote %s\n", fn.c_str());
+    printf("Wrote %s\n", fn);
+    if (bs_index >= 0)
+    {
+        sfree(buf);
+    }
+    sfree(fn);
 }
 
 //! Make random weights for histograms for the Bayesian bootstrap of complete histograms)

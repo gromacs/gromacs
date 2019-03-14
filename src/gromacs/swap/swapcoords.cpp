@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,10 +47,10 @@
 #include <cstdlib>
 #include <ctime>
 
-#include <memory>
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
@@ -60,11 +60,11 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/swaphistory.h"
@@ -1286,7 +1286,7 @@ static void init_swapstate(
         copy_rvecn(x, x_pbc, 0, mtop->natoms);
 
         /* This can only make individual molecules whole, not multimers */
-        do_pbc_mtop(ir->ePBC, box, mtop, x_pbc);
+        do_pbc_mtop(nullptr, ir->ePBC, box, mtop, x_pbc);
 
         /* Output the starting structure? */
         outputStartStructureIfWanted(mtop, x_pbc, ir->ePBC, box);
@@ -1462,7 +1462,7 @@ void init_swapcoords(
         t_commrec                *cr,
         gmx::LocalAtomSetManager *atomSets,
         const gmx_output_env_t   *oenv,
-        const gmx::MdrunOptions  &mdrunOptions)
+        const MdrunOptions       &mdrunOptions)
 {
     t_swapcoords          *sc;
     t_swap                *s;
@@ -1559,7 +1559,7 @@ void init_swapcoords(
     {
         if (oh->swapHistory == nullptr)
         {
-            oh->swapHistory = std::make_unique<swaphistory_t>(swaphistory_t {});
+            oh->swapHistory = gmx::compat::make_unique<swaphistory_t>(swaphistory_t {});
         }
         swapstate = oh->swapHistory.get();
 

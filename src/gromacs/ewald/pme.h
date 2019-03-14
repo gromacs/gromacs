@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,6 @@ struct t_nrnb;
 struct PmeGpu;
 struct gmx_wallclock_gpu_pme_t;
 struct gmx_device_info_t;
-struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_pme_t;
 struct gmx_wallcycle;
@@ -252,21 +251,13 @@ void gmx_pme_reinit_atoms(const gmx_pme_t *pme, int nAtoms, const real *charges)
  * pme_gpu_check_restrictions(), except that works with a
  * formed gmx_pme_t structure. Should that one go away/work with inputrec?
  *
- * \param[out] error   If non-null, the error message when PME is not supported on GPU.
- *
- * \returns true if PME can run on GPU on this build, false otherwise.
- */
-bool pme_gpu_supports_build(std::string *error);
-
-/*! \brief Checks whether the detected (GPU) hardware allows to run PME on GPU.
- *
  * \param[in]  hwinfo  Information about the detected hardware
  * \param[out] error   If non-null, the error message when PME is not supported on GPU.
  *
  * \returns true if PME can run on GPU on this build, false otherwise.
  */
-bool pme_gpu_supports_hardware(const gmx_hw_info_t &hwinfo,
-                               std::string         *error);
+bool pme_gpu_supports_build(const gmx_hw_info_t &hwinfo,
+                            std::string         *error);
 
 /*! \brief Checks whether the input system allows to run PME on GPU.
  * TODO: this partly duplicates an internal PME assert function
@@ -379,6 +370,21 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t        *GPU_FUNC_A
                                               PmeForceOutputHandling  GPU_FUNC_ARGUMENT(forceTreatment)) GPU_FUNC_TERM
 
 /*! \brief
+ * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
+ * (if they were to be computed).
+ *
+ * \param[in]  pme            The PME data structure.
+ * \param[out] wcycle         The wallclock counter.
+ * \param[out] forces         The output forces.
+ * \param[out] virial         The output virial matrix.
+ * \param[out] energy         The output energy.
+ */
+GPU_FUNC_QUALIFIER void pme_gpu_wait_finish_task(const gmx_pme_t                *GPU_FUNC_ARGUMENT(pme),
+                                                 gmx_wallcycle                  *GPU_FUNC_ARGUMENT(wcycle),
+                                                 gmx::ArrayRef<const gmx::RVec> *GPU_FUNC_ARGUMENT(forces),
+                                                 matrix                          GPU_FUNC_ARGUMENT(virial),
+                                                 real                           *GPU_FUNC_ARGUMENT(energy)) GPU_FUNC_TERM
+/*! \brief
  * Attempts to complete PME GPU tasks.
  *
  * The \p completionKind argument controls whether the function blocks until all
@@ -388,42 +394,23 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t        *GPU_FUNC_A
  * by assigning the ArrayRef to the \p forces pointer passed in.
  * Virial/energy are also outputs if they were to be computed.
  *
+ * Note: also launches the reinitalization of the PME output buffers.
+ * TODO: this should be moved out to avoid miscounting its wall-time (as wait iso launch).
+ *
  * \param[in]  pme            The PME data structure.
- * \param[in]  flags          The combination of flags to affect this PME computation.
- *                            The flags are the GMX_PME_ flags from pme.h.
  * \param[in]  wcycle         The wallclock counter.
- * \param[out] forceWithVirial The output force and virial
- * \param[out] enerd           The output energies
- * \param[in] flags            The combination of flags to affect this PME computation.
- *                             The flags are the GMX_PME_ flags from pme.h.
+ * \param[out] forces         The output forces.
+ * \param[out] virial         The output virial matrix.
+ * \param[out] energy         The output energy.
  * \param[in]  completionKind  Indicates whether PME task completion should only be checked rather than waited for
  * \returns                   True if the PME GPU tasks have completed
  */
-GPU_FUNC_QUALIFIER bool
-pme_gpu_try_finish_task(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
-                        int                   GPU_FUNC_ARGUMENT(flags),
-                        gmx_wallcycle        *GPU_FUNC_ARGUMENT(wcycle),
-                        gmx::ForceWithVirial *GPU_FUNC_ARGUMENT(forceWithVirial),
-                        gmx_enerdata_t       *GPU_FUNC_ARGUMENT(enerd),
-                        GpuTaskCompletion     GPU_FUNC_ARGUMENT(completionKind)) GPU_FUNC_TERM_WITH_RETURN(false)
-
-/*! \brief
- * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
- * (if they were to be computed).
- *
- * \param[in]  pme             The PME data structure.
- * \param[in]  flags           The combination of flags to affect this PME computation.
- *                             The flags are the GMX_PME_ flags from pme.h.
- * \param[in]  wcycle          The wallclock counter.
- * \param[out] forceWithVirial The output force and virial
- * \param[out] enerd           The output energies
- */
-GPU_FUNC_QUALIFIER void
-pme_gpu_wait_and_reduce(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
-                        int                   GPU_FUNC_ARGUMENT(flags),
-                        gmx_wallcycle        *GPU_FUNC_ARGUMENT(wcycle),
-                        gmx::ForceWithVirial *GPU_FUNC_ARGUMENT(forceWithVirial),
-                        gmx_enerdata_t       *GPU_FUNC_ARGUMENT(enerd)) GPU_FUNC_TERM
+GPU_FUNC_QUALIFIER bool pme_gpu_try_finish_task(const gmx_pme_t                *GPU_FUNC_ARGUMENT(pme),
+                                                gmx_wallcycle                  *GPU_FUNC_ARGUMENT(wcycle),
+                                                gmx::ArrayRef<const gmx::RVec> *GPU_FUNC_ARGUMENT(forces),
+                                                matrix                          GPU_FUNC_ARGUMENT(virial),
+                                                real                           *GPU_FUNC_ARGUMENT(energy),
+                                                GpuTaskCompletion               GPU_FUNC_ARGUMENT(completionKind)) GPU_FUNC_TERM_WITH_RETURN(false)
 
 /*! \brief
  * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.

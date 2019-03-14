@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,9 +41,9 @@
 #include <cstdio>
 
 #include <algorithm>
-#include <memory>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
@@ -758,7 +758,7 @@ static void spread_vsite2(const t_iatom ia[], real a,
 void constructVsitesGlobal(const gmx_mtop_t         &mtop,
                            gmx::ArrayRef<gmx::RVec>  x)
 {
-    GMX_ASSERT(x.ssize() >= mtop.natoms, "x should contain the whole system");
+    GMX_ASSERT(x.size() >= static_cast<gmx::index>(mtop.natoms), "x should contain the whole system");
     GMX_ASSERT(!mtop.moleculeBlockIndices.empty(), "molblock indices are needed in constructVsitesGlobal");
 
     for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
@@ -1844,27 +1844,6 @@ static std::vector<int> atom2cg(const t_block &chargeGroups)
     return a2cg;
 }
 
-int countNonlinearVsites(const gmx_mtop_t &mtop)
-{
-    int numNonlinearVsites = 0;
-    for (const gmx_molblock_t &molb : mtop.molblock)
-    {
-        const gmx_moltype_t &molt = mtop.moltype[molb.type];
-
-        for (const auto &ilist : extractILists(molt.ilist, IF_VSITE))
-        {
-            if (ilist.functionType != F_VSITE2 &&
-                ilist.functionType != F_VSITE3 &&
-                ilist.functionType != F_VSITEN)
-            {
-                numNonlinearVsites += molb.nmol*ilist.iatoms.size()/(1 + NRAL(ilist.functionType));
-            }
-        }
-    }
-
-    return numNonlinearVsites;
-}
-
 int count_intercg_vsites(const gmx_mtop_t *mtop)
 {
     int n_intercg_vsite = 0;
@@ -2060,7 +2039,7 @@ initVsite(const gmx_mtop_t &mtop,
         return vsite;
     }
 
-    vsite = std::make_unique<gmx_vsite_t>();
+    vsite = gmx::compat::make_unique<gmx_vsite_t>();
 
     vsite->n_intercg_vsite   = count_intercg_vsites(&mtop);
 
@@ -2089,7 +2068,7 @@ initVsite(const gmx_mtop_t &mtop,
                                                       molt.cgs);
         }
 
-        vsite->vsite_pbc_loc = std::make_unique<VsitePbc>();
+        vsite->vsite_pbc_loc = gmx::compat::make_unique<VsitePbc>();
     }
 
     vsite->nthreads = gmx_omp_nthreads_get(emntVSITE);
@@ -2103,7 +2082,7 @@ initVsite(const gmx_mtop_t &mtop,
         {
             try
             {
-                vsite->tData[thread] = std::make_unique<VsiteThread>();
+                vsite->tData[thread] = gmx::compat::make_unique<VsiteThread>();
 
                 InterdependentTask &idTask = vsite->tData[thread]->idTask;
                 idTask.nuse                = 0;
@@ -2113,7 +2092,7 @@ initVsite(const gmx_mtop_t &mtop,
         }
         if (vsite->nthreads > 1)
         {
-            vsite->tData[vsite->nthreads] = std::make_unique<VsiteThread>();
+            vsite->tData[vsite->nthreads] = gmx::compat::make_unique<VsiteThread>();
         }
     }
 
@@ -2615,7 +2594,7 @@ void set_vsite_top(gmx_vsite_t          *vsite,
 {
     if (vsite->n_intercg_vsite > 0 && vsite->bHaveChargeGroups)
     {
-        vsite->vsite_pbc_loc  = std::make_unique<VsitePbc>();
+        vsite->vsite_pbc_loc  = gmx::compat::make_unique<VsitePbc>();
         *vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
                                               top->idef.il, nullptr, md,
                                               top->cgs);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,9 @@ class MDLogger;
 class PhysicalNodeCommunicator;
 }
 
+/*! \brief Create a new forcerec structure */
+t_forcerec *mk_forcerec();
+
 //! Destroy a forcerec.
 void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups);
 
@@ -98,6 +101,7 @@ void init_interaction_const_tables(FILE                   *fp,
 
 /*! \brief Initialize forcerec structure.
  *
+ * The Force rec struct must be created with mk_forcerec.
  * \param[in]  fplog       File for printing
  * \param[in]  mdlog       File for printing
  * \param[out] fr          The forcerec
@@ -149,11 +153,30 @@ void forcerec_set_excl_load(t_forcerec           *fr,
  */
 void update_forcerec(t_forcerec *fr, matrix box);
 
-gmx_bool uses_simple_tables(int                       cutoff_scheme,
-                            const nonbonded_verlet_t *nbv);
+gmx_bool uses_simple_tables(int                 cutoff_scheme,
+                            nonbonded_verlet_t *nbv,
+                            int                 group);
 /* Returns whether simple tables (i.e. not for use with GPUs) are used
  * with the type of kernel indicated.
  */
+
+gmx_bool can_use_allvsall(const t_inputrec *ir,
+                          gmx_bool bPrintNote, const t_commrec *cr, FILE *fp);
+/* Returns if we can use all-vs-all loops.
+ * If bPrintNote==TRUE, prints a note, if necessary, to stderr
+ * and fp (if !=NULL) on the master node.
+ */
+
+gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
+                              const t_inputrec    *ir);
+/* Return if CPU SIMD support exists for the given inputrec
+ * If the return value is FALSE and fplog/cr != NULL, prints a fallback
+ * message to fplog/stderr.
+ */
+
+/* Compute the average C6 and C12 params for LJ corrections */
+void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
+                      const gmx_mtop_t *mtop);
 
 void free_gpu_resources(t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);

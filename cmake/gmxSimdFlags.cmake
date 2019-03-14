@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -58,27 +58,19 @@ macro(find_power_vsx_toolchain_flags TOOLCHAIN_C_FLAGS_VARIABLE TOOLCHAIN_CXX_FL
         # VSX uses the same function API as Altivec/VMX, so make sure we tune for the current CPU and not VMX.
         # By putting these flags here rather than in the general compiler flags file we can safely assume
         # that we are at least on Power7 since that is when VSX appeared.
-
-        # NOTE:  Enabling instruction fusion on Power8/9 using -mpower8-fusion/-mpower9-fusion
-        #        seems to produce buggy code (see #2747, #2746, #2734).
-        #        Note that instruction fusion does have considerable performance benefits
-        #        (up to 8% measured with gcc 8) if the issue is resolved the flag can be re-enabled.
         gmx_run_cpu_detection(brand)
         if(CPU_DETECTION_BRAND MATCHES "POWER7")
             gmx_test_cflag(GNU_C_VSX_POWER7   "-mcpu=power7 -mtune=power7" ${TOOLCHAIN_C_FLAGS_VARIABLE})
             gmx_test_cflag(GNU_CXX_VSX_POWER7 "-mcpu=power7 -mtune=power7" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
-        elseif(CPU_DETECTION_BRAND MATCHES "POWER8")
-            # Enable power8 vector extensions on such platforms.
-            gmx_test_cflag(GNU_C_VSX_POWER8   "-mcpu=power8 -mpower8-vector" ${TOOLCHAIN_C_FLAGS_VARIABLE})
-            gmx_test_cflag(GNU_CXX_VSX_POWER8 "-mcpu=power8 -mpower8-vector" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
-        elseif(CPU_DETECTION_BRAND MATCHES "POWER9")
-            # Enable power9 vector extensions on such platforms.
-            # TODO consider whether adding " -mpower9-vector -mpower9-fusion"
-            # is an advantage.
-            gmx_test_cflag(GNU_C_VSX_POWER9   "-mcpu=power9 -mtune=power9" ${TOOLCHAIN_C_FLAGS_VARIABLE})
-            gmx_test_cflag(GNU_CXX_VSX_POWER9 "-mcpu=power9 -mtune=power9" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
         else()
-            # Don't add arch-specific flags for unknown architectures.
+            # Enable power8 vector extensions on all platforms except old Power7.
+            gmx_test_cflag(GNU_C_VSX_POWER8   "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" ${TOOLCHAIN_C_FLAGS_VARIABLE})
+            gmx_test_cflag(GNU_CXX_VSX_POWER8 "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
+        endif()
+        # Altivec was originally single-only, and it took a while for compilers
+        # to support the double-precision features in VSX.
+        if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+            message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
         endif()
     endif()
     if(${CMAKE_CXX_COMPILER_ID} MATCHES "XL" OR ${CMAKE_C_COMPILER_ID} MATCHES "XL")
@@ -132,6 +124,30 @@ endfunction()
 # AVX, but using only 128-bit instructions and FMA (AMD XOP processors)
 function(gmx_find_simd_avx_128_fma_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
     find_x86_toolchain_flags(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
+
+    # We don't have the full compiler version string yet (BUILD_C_COMPILER),
+    # so we can't distinguish vanilla from Apple clang versions, but catering for a few rare AMD
+    # hackintoshes is not worth the effort.
+    if (APPLE AND (CMAKE_C_COMPILER_ID STREQUAL "Clang" OR
+                CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
+        message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA SIMD.")
+    endif()
+
+    # clang <=3.2 contains a bug that causes incorrect code to be generated for the
+    # vfmaddps instruction and therefore the bug is triggered with AVX_128_FMA.
+    # (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
+    # We can work around this by not using the integrated assembler (except on OS X
+    # which has an outdated assembler that does not support AVX instructions).
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.3")
+        # we assume that we have an external assembler that supports AVX
+        message(STATUS "Clang ${CMAKE_C_COMPILER_VERSION} detected, enabling FMA bug workaround")
+        set(TOOLCHAIN_C_FLAGS "${TOOLCHAIN_C_FLAGS} -no-integrated-as")
+    endif()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
+        # we assume that we have an external assembler that supports AVX
+        message(STATUS "Clang ${CMAKE_CXX_COMPILER_VERSION} detected, enabling FMA bug workaround")
+        set(TOOLCHAIN_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS} -no-integrated-as")
+    endif()
 
     # AVX128/FMA on AMD is a bit complicated. We need to do detection in three stages:
     # 1) Find the flags required for generic AVX support

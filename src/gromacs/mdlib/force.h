@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,11 +37,12 @@
 #ifndef GMX_MDLIB_FORCE_H
 #define GMX_MDLIB_FORCE_H
 
+#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
-class DDBalanceRegionHandler;
 struct gmx_edsam;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
@@ -66,7 +67,6 @@ struct t_nrnb;
 namespace gmx
 {
 class Awh;
-class PpForceWorkload;
 class ForceWithVirial;
 class MDLogger;
 }
@@ -114,13 +114,13 @@ void do_force(FILE                                     *log,
               gmx::ArrayRef<real>                       lambda,
               t_graph                                  *graph,
               t_forcerec                               *fr,
-              gmx::PpForceWorkload                     *ppForceWorkload,
               const gmx_vsite_t                        *vsite,
               rvec                                      mu_tot,
               double                                    t,
               gmx_edsam                                *ed,
               int                                       flags,
-              const DDBalanceRegionHandler             &ddBalanceRegionHandler);
+              DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+              DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
 
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
@@ -163,8 +163,7 @@ void do_force_lowlevel(t_forcerec   *fr,
                        const t_blocka *excl,
                        rvec         mu_tot[2],
                        int          flags,
-                       float        *cycles_pme,
-                       const DDBalanceRegionHandler &ddBalanceRegionHandler);
+                       float        *cycles_pme);
 /* Call all the force routines */
 
 #endif

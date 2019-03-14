@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,25 +38,20 @@
 #ifndef GMX_GMXPREPROCESS_GEN_VSITE_H
 #define GMX_GMXPREPROCESS_GEN_VSITE_H
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/utility/real.h"
-
-class PreprocessingAtomTypes;
-struct t_atoms;
-struct InteractionTypeParameters;
-struct PreprocessResidue;
-struct t_symtab;
 
 /* stuff for pdb2gmx */
 
-void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtomTypes *atype,
-               t_atoms *at, t_symtab *symtab, std::vector<gmx::RVec> *x,
-               gmx::ArrayRef<InteractionTypeParameters> plist, int *dummy_type[], int *cgnr[],
+void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
+               t_atoms *at, struct t_symtab *symtab, rvec *x[],
+               t_params plist[], int *dummy_type[], int *cgnr[],
                real mHmult, bool bVSiteAromatics,
                const char *ffdir);
 
-void do_h_mass(InteractionTypeParameters *psb, int vsite_type[], t_atoms *at, real mHmult,
+void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
                bool bDeuterate);
 
 #endif

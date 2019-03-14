@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -101,26 +101,11 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
                 set(FFT_WARNING_MESSAGE "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with --enable-sse2 and --enable-avx (and --enable-avx2 or --enable-avx512 if supported).")
             endif()
         endif()
-
-        find_path(ARMPL_INCLUDE_DIR "armpl.h" HINTS ${${FFTW}_INCLUDE_DIRS}
-            NO_DEFAULT_PATH
-            NO_CMAKE_ENVIRONMENT_PATH
-            NO_CMAKE_PATH
-            NO_SYSTEM_ENVIRONMENT_PATH
-            NO_CMAKE_SYSTEM_PATH)
-        mark_as_advanced(ARMPL_INCLUDE_DIR)
-        if (ARMPL_INCLUDE_DIR)
-            set(GMX_FFT_ARMPL_FFTW3 1)
-            set(FFT_STATUS_MESSAGE "Using external FFT library - ARM Performance Library (FFTW3 compatibility mode)")
-        else()
-            set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
-        endif()
-    endif()
-    if (NOT GMX_FFT_ARMPL_FFTW3)
-        set(GMX_FFT_FFTW3 1)
+        set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
     endif()
 
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
+    set(GMX_FFT_FFTW3 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     # Intel 11 and up makes life somewhat easy if you just want to use
     # all their stuff. It's not easy if you only want some of their

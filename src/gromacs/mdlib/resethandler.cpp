@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,32 +46,18 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme_load_balancing.h"
+#include "gromacs/ewald/pme-load-balancing.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
 namespace gmx
 {
-
-/*! \brief Convert signed char (as used by SimulationSignal) to ResetSignal enum
- *
- * Expected values are
- *   \p sig == 0 -- no signal
- *   \p sig >= 1 -- signal received
- */
-static inline ResetSignal convertToResetSignal(signed char sig)
-{
-    GMX_ASSERT(sig >= 0, "Unexpected reset signal < 0 received");
-    return sig >= 1 ? ResetSignal::doResetCounters : ResetSignal::noSignal;
-}
-
 ResetHandler::ResetHandler(
         compat::not_null<SimulationSignal*> signal,
         bool                                simulationsShareState,
@@ -146,8 +132,8 @@ bool ResetHandler::resetCountersImpl(
         gmx_wallcycle_t             wcycle,
         gmx_walltime_accounting_t   walltime_accounting)
 {
-    /* Reset either if signal has been passed, or if reset step has been reached */
-    if (convertToResetSignal(signal_.set) == ResetSignal::doResetCounters ||
+    /* Reset either if signal has been passed,  */
+    if (static_cast<ResetSignal>(signal_.set) == ResetSignal::doResetCounters ||
         step_rel == wcycle_get_reset_counters(wcycle))
     {
         if (pme_loadbal_is_active(pme_loadbal))
@@ -176,7 +162,7 @@ bool ResetHandler::resetCountersImpl(
 
         if (use_GPU(nbv))
         {
-            Nbnxm::gpu_reset_timings(nbv);
+            nbnxn_gpu_reset_timings(nbv);
         }
 
         if (pme_gpu_task_enabled(pme))

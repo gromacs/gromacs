@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,10 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-cmake_minimum_required(VERSION 3.9.6)
-if(POLICY CMP0074) #3.12
-    cmake_policy(SET CMP0074 NEW)
-endif()
+cmake_minimum_required(VERSION 3.4.3)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -43,17 +40,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_
 
 project(Gromacs)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 include(gmxManageCcache)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-find_package(LibStdCpp)
 
 # Set up common version variables, as well as general information about
 # the build tree (whether the build is from a source package or from a git
@@ -148,6 +139,40 @@ endif()
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
 
+# Permit the user to specify a particular standard library, e.g. compiling
+# with "-stdlib=libc++" and linking with "-lc++abi -lc++" to get clang's libcxx.
+set(GMX_STDLIB_CXX_FLAGS "" CACHE STRING "Compiler flag for a C++ standard library flavour")
+set(GMX_STDLIB_LIBRARIES "" CACHE STRING "Linker libraries for a particular C++ standard library")
+mark_as_advanced(GMX_STDLIB_CXX_FLAGS)
+mark_as_advanced(GMX_STDLIB_LIBRARIES)
+
+########################################################################
+# Detect CXX11 support and flags
+########################################################################
+# The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
+# are used with permission from CMake v3.0.0 so that GROMACS can detect
+# invalid options with the Intel Compilers, and we have added a line
+# to detect warnings with the Fujitsu compilers on K computer and ICC.
+# CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
+# a semicolon. Since this is also used as a separator in lists inside CMake,
+# that string ends up being split into two separate patterns, and the last
+# part is just a single word that also matches other messages. We solved this
+# by replacing the semicolon with a period that matches any character.
+#
+# These files should be removed from the source tree when a CMake version that
+# includes the features in question becomes required for building GROMACS.
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+# This must come early, since some of our configuration flag tests
+# depend on being able to compile C++11 source files.
+include(gmxTestCXX11)
+gmx_test_cxx11(GMX_CXX11_FLAGS GMX_STDLIB_CXX_FLAGS GMX_STDLIB_LIBRARIES)
+
+# Make sure all C++ code will be compiled in C++11 mode, with the
+# expected standard library.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX11_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
+
 ########################################################################
 # User input options                                                   #
 ########################################################################
@@ -181,14 +206,18 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
-# The earliest version of the CUDA toolkit that supports c++14 is 9.0
-set(REQUIRED_CUDA_VERSION 9.0)
+# Decide on GPU settings based on user-settings and GPU/CUDA
+# detection. VS2017 requires CUDA 9.0, for the other arch/compilers
+# rest we require CUDA 7.0 or later (including for clang-CUDA).
+if(MSVC)
+    set(REQUIRED_CUDA_VERSION 9.0)
+else()
+    set(REQUIRED_CUDA_VERSION 7.0)
+endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.0)
 
 # OpenCL required version: 1.2 or newer
-set(REQUIRED_OPENCL_MIN_VERSION_MAJOR 1)
-set(REQUIRED_OPENCL_MIN_VERSION_MINOR 2)
-set(REQUIRED_OPENCL_MIN_VERSION ${REQUIRED_OPENCL_MIN_VERSION_MAJOR}.${REQUIRED_OPENCL_MIN_VERSION_MINOR})
+set(REQUIRED_OPENCL_MIN_VERSION 1.2)
 
 if(NOT GMX_USE_OPENCL)
     # CUDA detection is done only if GMX_USE_OPENCL is OFF.
@@ -360,6 +389,10 @@ check_include_files(time.h       HAVE_TIME_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
+
+check_include_files(regex.h      HAVE_POSIX_REGEX)
+# TODO: It could be nice to inform the user if no regex support is found,
+# as selections won't be fully functional.
 
 include(CheckCXXSymbolExists)
 check_cxx_symbol_exists(gettimeofday      sys/time.h   HAVE_GETTIMEOFDAY)
@@ -655,6 +688,8 @@ gmx_test_sigusr1(HAVE_SIGUSR1)
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
+check_include_file_cxx(regex     HAVE_CXX11_REGEX)
+
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 # Darwin has system XDR, but it uses a three-argument flavour of
@@ -776,6 +811,17 @@ else()
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
     message("CMAKE_SHARED_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
 endif()
+
+if(NOT GMX_OPENMP)
+    #Unset all OpenMP flags in case OpenMP was disabled either by the user
+    #or because it was only partially detected (e.g. only for C but not C++ compiler)
+    unset(OpenMP_C_FLAGS CACHE)
+    unset(OpenMP_CXX_FLAGS CACHE)
+else()
+    set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS})
+    set(GMX_SHARED_LINKER_FLAGS ${GMX_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS})
+endif()
+
 
 ########################################################################
 # Specify install locations

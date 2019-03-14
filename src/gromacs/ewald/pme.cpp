@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@
 #include <list>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/ewald/ewald_utils.h"
+#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
@@ -115,15 +115,15 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
 
-#include "calculate_spline_moduli.h"
-#include "pme_gather.h"
-#include "pme_gpu_internal.h"
-#include "pme_grid.h"
-#include "pme_internal.h"
-#include "pme_redistribute.h"
-#include "pme_solve.h"
-#include "pme_spline_work.h"
-#include "pme_spread.h"
+#include "calculate-spline-moduli.h"
+#include "pme-gather.h"
+#include "pme-gpu-internal.h"
+#include "pme-grid.h"
+#include "pme-internal.h"
+#include "pme-redistribute.h"
+#include "pme-solve.h"
+#include "pme-spline-work.h"
+#include "pme-spread.h"
 
 /*! \brief Help build a descriptive message in \c error if there are
  * \c errorReasons why PME on GPU is not supported.
@@ -133,48 +133,33 @@ static bool
 addMessageIfNotSupported(const std::list<std::string> &errorReasons,
                          std::string                  *error)
 {
-    bool isSupported = errorReasons.empty();
-    if (!isSupported && error)
+    bool foundErrorReasons = errorReasons.empty();
+    if (!foundErrorReasons && error)
     {
         std::string regressionTestMarker = "PME GPU does not support";
         // this prefix is tested for in the regression tests script gmxtest.pl
-        *error = regressionTestMarker;
-        if (errorReasons.size() == 1)
-        {
-            *error += " " + errorReasons.back();
-        }
-        else
-        {
-            *error += ": " + gmx::joinStrings(errorReasons, "; ");
-        }
-        *error += ".";
+        *error = regressionTestMarker + ": " + gmx::joinStrings(errorReasons, "; ") + ".";
     }
-    return isSupported;
+    return foundErrorReasons;
 }
 
-bool pme_gpu_supports_build(std::string *error)
+bool pme_gpu_supports_build(const gmx_hw_info_t &hwinfo,
+                            std::string         *error)
 {
     std::list<std::string> errorReasons;
     if (GMX_DOUBLE)
     {
-        errorReasons.emplace_back("a double-precision build");
+        errorReasons.emplace_back("double precision");
     }
     if (GMX_GPU == GMX_GPU_NONE)
     {
-        errorReasons.emplace_back("a non-GPU build");
+        errorReasons.emplace_back("non-GPU build of GROMACS");
     }
-    return addMessageIfNotSupported(errorReasons, error);
-}
-
-bool pme_gpu_supports_hardware(const gmx_hw_info_t &hwinfo,
-                               std::string         *error)
-{
-    std::list<std::string> errorReasons;
     if (GMX_GPU == GMX_GPU_OPENCL)
     {
         if (!areAllGpuDevicesFromAmd(hwinfo.gpu_info))
         {
-            errorReasons.emplace_back("non-AMD devices");
+            errorReasons.emplace_back("only AMD devices are supported");
         }
     }
     return addMessageIfNotSupported(errorReasons, error);
@@ -1139,7 +1124,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     real                *grid       = nullptr;
     rvec                *f_d;
     real                *coefficient = nullptr;
-    PmeOutput            output[2]; // The second is used for the B state with FEP
+    real                 energy_AB[4];
+    matrix               vir_AB[4];
     real                 scale, lambda;
     gmx_bool             bClearF;
     gmx_parallel_3dfft_t pfft_setup;
@@ -1454,11 +1440,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
              */
             if (grid_index < 2)
             {
-                get_pme_ener_vir_q(pme->solve_work, pme->nthread, &output[grid_index % 2]);
+                get_pme_ener_vir_q(pme->solve_work, pme->nthread, &energy_AB[grid_index], vir_AB[grid_index]);
             }
             else
             {
-                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output[grid_index % 2]);
+                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy_AB[grid_index], vir_AB[grid_index]);
             }
         }
         bFirst = FALSE;
@@ -1634,7 +1620,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 /* This should only be called on the master thread and
                  * after the threads have synchronized.
                  */
-                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output[fep_state]);
+                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy_AB[2+fep_state], vir_AB[2+fep_state]);
             }
 
             if (bBackFFT)
@@ -1754,19 +1740,19 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         {
             if (!pme->bFEP_q)
             {
-                *energy_q = output[0].coulombEnergy_;
-                m_add(vir_q, output[0].coulombVirial_, vir_q);
+                *energy_q = energy_AB[0];
+                m_add(vir_q, vir_AB[0], vir_q);
             }
             else
             {
-                *energy_q       = (1.0-lambda_q)*output[0].coulombEnergy_ + lambda_q*output[1].coulombEnergy_;
-                *dvdlambda_q   += output[1].coulombEnergy_ - output[0].coulombEnergy_;
+                *energy_q       = (1.0-lambda_q)*energy_AB[0] + lambda_q*energy_AB[1];
+                *dvdlambda_q   += energy_AB[1] - energy_AB[0];
                 for (i = 0; i < DIM; i++)
                 {
                     for (j = 0; j < DIM; j++)
                     {
-                        vir_q[i][j] += (1.0-lambda_q)*output[0].coulombVirial_[i][j] +
-                            lambda_q*output[1].coulombVirial_[i][j];
+                        vir_q[i][j] += (1.0-lambda_q)*vir_AB[0][i][j] +
+                            lambda_q*vir_AB[1][i][j];
                     }
                 }
             }
@@ -1784,18 +1770,18 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         {
             if (!pme->bFEP_lj)
             {
-                *energy_lj = output[0].lennardJonesEnergy_;
-                m_add(vir_lj, output[0].lennardJonesVirial_, vir_lj);
+                *energy_lj = energy_AB[2];
+                m_add(vir_lj, vir_AB[2], vir_lj);
             }
             else
             {
-                *energy_lj     = (1.0-lambda_lj)*output[0].lennardJonesEnergy_ + lambda_lj*output[1].lennardJonesEnergy_;
-                *dvdlambda_lj += output[1].lennardJonesEnergy_ - output[0].lennardJonesEnergy_;
+                *energy_lj     = (1.0-lambda_lj)*energy_AB[2] + lambda_lj*energy_AB[3];
+                *dvdlambda_lj += energy_AB[3] - energy_AB[2];
                 for (i = 0; i < DIM; i++)
                 {
                     for (j = 0; j < DIM; j++)
                     {
-                        vir_lj[i][j] += (1.0-lambda_lj)*output[0].lennardJonesVirial_[i][j] + lambda_lj*output[1].lennardJonesVirial_[i][j];
+                        vir_lj[i][j] += (1.0-lambda_lj)*vir_AB[2][i][j] + lambda_lj*vir_AB[3][i][j];
                     }
                 }
             }

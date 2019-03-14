@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,76 +35,43 @@
 #ifndef GMX_TOPOLOGY_RESIDUETYPES_H
 #define GMX_TOPOLOGY_RESIDUETYPES_H
 
-#include <string>
-
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/classhelpers.h"
 
-struct ResidueTypeEntry;
+typedef struct gmx_residuetype_t gmx_residuetype_t;
 
-class ResidueType
-{
-    public:
-        //! Default constructor.
-        ResidueType();
-        //! Default destructor.
-        ~ResidueType();
+int
+gmx_residuetype_init(gmx_residuetype_t **rt);
 
-        //! Get handle to underlying residue type data.
-        ResidueTypeEntry *ResidueTypes();
+int
+gmx_residuetype_destroy(gmx_residuetype_t *rt);
 
-        //! Get number of entries in ResidueTypes.
-        int numberOfEntries() const;
-        /*! \brief
-         * Return true if residue \p residueName is found or false otherwise.
-         *
-         * \param[in] residueName Residue name to search database for.
-         * \returns true if successful.
-         */
-        bool nameIndexedInResidueTypes(const std::string &residueName);
-        /*! \brief
-         * Add entry to ResidueTypes if unique.
-         *
-         * \param[in] residueName Name of new residue.
-         * \param[in] residueType Type of new residue.
-         */
-        void addResidue(const std::string &residueName, const std::string &residueType);
-        /*! \brief
-         * Checks if the indicated \p residueName if of \p residueType.
-         *
-         * \param[in] residueName Residue that should be checked.
-         * \param[in] residueType Which ResidueType the residue should have.
-         * \returns If the check was successful.
-         */
-        bool namedResidueHasType(const std::string &residueName, const std::string &residueType);
-        /*! \brief
-         * Get index to entry in ResidueTypes with name \p residueName.
-         *
-         * \param[in] residueName Name of the residue being searched.
-         * \returns The index or -1 if not found.
-         */
-        int indexFromResidueName(const std::string &residueName) const;
-        /*! \brief
-         * Get the name of the entry in ResidueTypes with \p index.
-         *
-         * \param[in] index Which entry should be returned.
-         * \returns The name of the entry at \p index, or nullptr.
-         */
-        const std::string nameFromResidueIndex(int index) const;
-        /*! \brief
-         * Get name of residue type for already defined residue.
-         *
-         *
-         * \param[in] residueName Name of the residue to search for.
-         * \returns Type name or UndefineResidueName if not found.
-         */
-        const std::string typeNameForIndexedResidue(const std::string &residueName);
+int
+gmx_residuetype_get_type(gmx_residuetype_t *rt, const char *resname, const char **p_restype);
 
-    private:
-        //! Implementation pointer.
-        class Impl;
+int
+gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype);
 
-        gmx::PrivateImplPointer<Impl> impl_;
-};
+int
+gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
+                             const char        ***p_typenames,
+                             int                 *ntypes);
+
+gmx_bool
+gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm);
+
+gmx_bool
+gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm);
+
+gmx_bool
+gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm);
+
+int
+gmx_residuetype_get_size(gmx_residuetype_t *rt);
+
+int
+gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm);
+
+const char *
+gmx_residuetype_get_name(gmx_residuetype_t *rt, int index);
 
 #endif

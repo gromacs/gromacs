@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,7 @@ copyMovedAtomsToBufferPerAtom(gmx::ArrayRef<const int> move,
 {
     int pos_vec[DIM*2] = { 0 };
 
-    for (int g = 0; g < move.ssize(); g++)
+    for (int g = 0; g < move.size(); g++)
     {
         const auto atomGroup = atomGroups.block(g);
         /* Skip moved atoms */
@@ -110,14 +110,13 @@ copyMovedAtomsToBufferPerAtom(gmx::ArrayRef<const int> move,
 }
 
 static void
-copyMovedChargeGroupCogs(gmx::ArrayRef<const int> move,
-                         const gmx::RangePartitioning &atomGroups,
-                         int nvec, const rvec *src,
-                         gmx_domdec_comm_t *comm)
+copyMovedAtomsToBufferPerChargeGroup(gmx::ArrayRef<const int> move,
+                                     const gmx::RangePartitioning &atomGroups,
+                                     int nvec, rvec *src, gmx_domdec_comm_t *comm)
 {
     int pos_vec[DIM*2] = { 0 };
 
-    for (int g = 0; g < move.ssize(); g++)
+    for (int g = 0; g < move.size(); g++)
     {
         const auto atomGroup = atomGroups.block(g);
         /* Skip moved atoms */
@@ -131,29 +130,6 @@ copyMovedChargeGroupCogs(gmx::ArrayRef<const int> move,
     }
 }
 
-static void
-copyMovedUpdateGroupCogs(gmx::ArrayRef<const int> move,
-                         int nvec, gmx::ArrayRef<const gmx::RVec> coordinates,
-                         gmx_domdec_comm_t *comm)
-{
-    int pos_vec[DIM*2] = { 0 };
-
-    for (int g = 0; g < move.ssize(); g++)
-    {
-        /* Skip moved atoms */
-        const int m = move[g];
-        if (m >= 0)
-        {
-            /* Copy to the communication buffer */
-            const gmx::RVec &cog = (comm->useUpdateGroups ?
-                                    comm->updateGroupsCog->cogForAtom(g) :
-                                    coordinates[g]);
-            copy_rvec(cog, comm->cgcm_state[m][pos_vec[m]]);
-            pos_vec[m] += 1 + nvec;
-        }
-    }
-}
-
 static void clear_and_mark_ind(gmx::ArrayRef<const int>      move,
                                gmx::ArrayRef<const int>      globalAtomGroupIndices,
                                const gmx::RangePartitioning &atomGroups,
@@ -162,7 +138,7 @@ static void clear_and_mark_ind(gmx::ArrayRef<const int>      move,
                                char                         *bLocalCG,
                                int                          *cell_index)
 {
-    for (int g = 0; g < move.ssize(); g++)
+    for (int g = 0; g < move.size(); g++)
     {
         if (move[g] >= 0)
         {
@@ -185,7 +161,7 @@ static void clear_and_mark_ind(gmx::ArrayRef<const int>      move,
 }
 
 static void print_cg_move(FILE *fplog,
-                          const gmx_domdec_t *dd,
+                          gmx_domdec_t *dd,
                           int64_t step, int cg, int dim, int dir,
                           gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
@@ -235,7 +211,7 @@ static void print_cg_move(FILE *fplog,
 
 [[ noreturn ]]
 static void cg_move_error(FILE *fplog,
-                          const gmx_domdec_t *dd,
+                          gmx_domdec_t *dd,
                           int64_t step, int cg, int dim, int dir,
                           gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
@@ -514,8 +490,8 @@ struct PbcAndFlag
  * Also updates the COGs and coordinates for jumps over periodic boundaries.
  */
 static void calcGroupMove(FILE *fplog, int64_t step,
-                          const gmx_domdec_t *dd,
-                          const t_state *state,
+                          gmx_domdec_t *dd,
+                          t_state *state,
                           const ivec tric_dir, matrix tcm,
                           const rvec cell_x0, const rvec cell_x1,
                           const MoveLimits &moveLimits,
@@ -799,16 +775,16 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
             /* Recalculating cg_cm might be cheaper than communicating,
              * but that could give rise to rounding issues.
              */
-            copyMovedChargeGroupCogs(move, dd->atomGrouping(),
-                                     nvec, cg_cm, comm);
+            copyMovedAtomsToBufferPerChargeGroup(move, dd->atomGrouping(),
+                                                 nvec, cg_cm, comm);
             break;
         case ecutsVERLET:
-            /* With update groups we send over their COGs.
-             * Without update groups we send the moved atom coordinates
-             * over twice. This is so the code further down can be used
-             * without many conditionals both with and without update groups.
+            /* Without charge groups we send the moved atom coordinates
+             * over twice. This is so the code below can be used without
+             * many conditionals for both for with and without charge groups.
              */
-            copyMovedUpdateGroupCogs(move, nvec, state->x, comm);
+            copyMovedAtomsToBufferPerChargeGroup(move, dd->atomGrouping(),
+                                                 nvec, state->x.rvec_array(), comm);
             break;
         default:
             gmx_incons("unimplemented");
@@ -907,25 +883,25 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
             dd_resize_state(state, f, home_pos_at + ncg_recv*MAX_CGCGSIZE);
         }
 
-        /* Process the received charge or update groups */
+        /* Process the received charge groups */
         int buf_pos = 0;
         for (int cg = 0; cg < ncg_recv; cg++)
         {
-            /* Extract the move flags and COG for the charge or update group */
-            int              flag = flagBuffer.buffer[cg*DD_CGIBS + 1];
-            const gmx::RVec &cog  = rvecBuffer.buffer[buf_pos];
+            int   flag = flagBuffer.buffer[cg*DD_CGIBS + 1];
+            rvec &pos  = as_rvec_array(rvecBuffer.buffer.data())[buf_pos];
 
             if (dim >= npbcdim && dd->nc[dim] > 2)
             {
+                rvec &pos = as_rvec_array(rvecBuffer.buffer.data())[buf_pos];
+
                 /* No pbc in this dim and more than one domain boundary.
                  * We do a separate check if a charge group didn't move too far.
                  */
                 if (((flag & DD_FLAG_FW(d)) &&
-                     cog[dim] > cell_x1[dim]) ||
+                     pos[dim] > cell_x1[dim]) ||
                     ((flag & DD_FLAG_BW(d)) &&
-                     cog[dim] < cell_x0[dim]))
+                     pos[dim] < cell_x0[dim]))
                 {
-                    rvec pos = { cog[0], cog[1], cog[2] };
                     cg_move_error(fplog, dd, step, cg, dim,
                                   (flag & DD_FLAG_FW(d)) ? 1 : 0,
                                   fr->cutoff_scheme == ecutsGROUP, 0,
@@ -947,9 +923,9 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                          * this cg should go.
                          */
                         const int dim2 = dd->dim[d2];
-                        /* The DD grid is not staggered at the box boundaries,
-                         * so we do not need to handle boundary crossings.
-                         * This also means we do not have to handle PBC here.
+                        /* If this cg crosses the box boundary in dimension d2
+                         * we can use the communicated flag, so we do not
+                         * have to worry about pbc.
                          */
                         if (!((dd->ci[dim2] == dd->nc[dim2]-1 &&
                                (flag & DD_FLAG_FW(d2))) ||
@@ -961,30 +937,40 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                             /* Determine the location of this cg
                              * in lattice coordinates
                              */
-                            real pos_d = cog[dim2];
+                            real pos_d = rvecBuffer.buffer[buf_pos][dim2];
                             if (tric_dir[dim2])
                             {
                                 for (int d3 = dim2+1; d3 < DIM; d3++)
                                 {
-                                    pos_d += cog[d3]*tcm[d3][dim2];
+                                    pos_d += pos[d3]*tcm[d3][dim2];
                                 }
                             }
 
-                            GMX_ASSERT(dim2 >= 0 && dim2 < DIM, "Keep the static analyzer happy");
-
-                            /* Check if we need to move this group
-                             * to an adjacent cell because of the
-                             * staggering.
+                            /* Without update groups we can put atoms or
+                             * charge groups exactly in their domain
+                             * decomposition cell, although this is likely
+                             * not necessary and we can just completely
+                             * remove the code within the conditional below.
                              */
-                            if (pos_d >= cell_x1[dim2] &&
-                                dd->ci[dim2] != dd->nc[dim2]-1)
+                            if (!comm->useUpdateGroups)
                             {
-                                flag |= DD_FLAG_FW(d2);
-                            }
-                            else if (pos_d < cell_x0[dim2] &&
-                                     dd->ci[dim2] != 0)
-                            {
-                                flag |= DD_FLAG_BW(d2);
+                                GMX_ASSERT(dim2 >= 0 && dim2 < DIM, "Keep the static analyzer happy");
+
+                                /* Check if we are at/across the box edge.
+                                 * pbc is only handled in the first step above,
+                                 * but this check can move over pbc while
+                                 * the first step did not due to different rounding.
+                                 */
+                                if (pos_d >= cell_x1[dim2] &&
+                                    dd->ci[dim2] != dd->nc[dim2]-1)
+                                {
+                                    flag |= DD_FLAG_FW(d2);
+                                }
+                                else if (pos_d < cell_x0[dim2] &&
+                                         dd->ci[dim2] != 0)
+                                {
+                                    flag |= DD_FLAG_BW(d2);
+                                }
                             }
 
                             flagBuffer.buffer[cg*DD_CGIBS + 1] = flag;
@@ -1020,7 +1006,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                 if (fr->cutoff_scheme == ecutsGROUP)
                 {
                     cg_cm = fr->cg_cm;
-                    copy_rvec(cog, cg_cm[home_pos_cg]);
+                    copy_rvec(pos, cg_cm[home_pos_cg]);
                 }
                 buf_pos++;
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,14 +42,13 @@
 #include <cstdio>
 
 #include <algorithm>
-#include <memory>
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/listed_forces/disre.h"
-#include "gromacs/listed_forces/orires.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/paddedvector.h"
@@ -59,6 +58,7 @@
 #include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -84,65 +84,38 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-struct gmx_sd_const_t {
+typedef struct {
     double em;
-};
+} gmx_sd_const_t;
 
-struct gmx_sd_sigma_t {
+typedef struct {
     real V;
-};
+} gmx_sd_sigma_t;
 
-struct gmx_stochd_t
-{
+typedef struct {
     /* BD stuff */
-    std::vector<real>           bd_rf;
+    real           *bd_rf;
     /* SD stuff */
-    std::vector<gmx_sd_const_t> sdc;
-    std::vector<gmx_sd_sigma_t> sdsig;
+    gmx_sd_const_t *sdc;
+    gmx_sd_sigma_t *sdsig;
     /* andersen temperature control stuff */
-    std::vector<bool>           randomize_group;
-    std::vector<real>           boltzfac;
+    gmx_bool       *randomize_group;
+    real           *boltzfac;
+} gmx_stochd_t;
 
-    explicit gmx_stochd_t(const t_inputrec *ir);
+struct gmx_update_t
+{
+    gmx_stochd_t           *sd;
+    /* xprime for constraint algorithms */
+    PaddedVector<gmx::RVec> xp;
+
+    /* Variables for the deform algorithm */
+    int64_t           deformref_step;
+    matrix            deformref_box;
+
+    //! Box deformation handler (or nullptr if inactive).
+    gmx::BoxDeformation *deform;
 };
-
-//! pImpled implementation for Update
-class Update::Impl
-{
-    public:
-        //! Constructor
-        Impl(const t_inputrec    *ir, BoxDeformation *boxDeformation);
-        //! Destructor
-        ~Impl() = default;
-        //! stochastic dynamics struct
-        std::unique_ptr<gmx_stochd_t> sd;
-        //! xprime for constraint algorithms
-        PaddedVector<RVec>            xp;
-        //! Box deformation handler (or nullptr if inactive).
-        BoxDeformation               *deform = nullptr;
-};
-
-Update::Update(const t_inputrec    *ir, BoxDeformation *boxDeformation)
-    : impl_(new Impl(ir, boxDeformation))
-{};
-
-Update::~Update()
-{};
-
-gmx_stochd_t* Update::sd() const
-{
-    return impl_->sd.get();
-}
-
-PaddedVector<RVec> * Update::xp()
-{
-    return &impl_->xp;
-}
-
-BoxDeformation * Update::deform() const
-{
-    return impl_->deform;
-}
 
 static bool isTemperatureCouplingStep(int64_t step, const t_inputrec *ir)
 {
@@ -240,18 +213,18 @@ enum class ApplyParrinelloRahmanVScaling
 template<NumTempScaleValues            numTempScaleValues,
          ApplyParrinelloRahmanVScaling applyPRVScaling>
 static void
-updateMDLeapfrogSimple(int                               start,
-                       int                               nrend,
-                       real                              dt,
-                       real                              dtPressureCouple,
-                       const rvec * gmx_restrict         invMassPerDim,
-                       gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                       const unsigned short            * cTC,
-                       const rvec                        pRVScaleMatrixDiagonal,
-                       const rvec * gmx_restrict         x,
-                       rvec       * gmx_restrict         xprime,
-                       rvec       * gmx_restrict         v,
-                       const rvec * gmx_restrict         f)
+updateMDLeapfrogSimple(int                       start,
+                       int                       nrend,
+                       real                      dt,
+                       real                      dtPressureCouple,
+                       const rvec * gmx_restrict invMassPerDim,
+                       const t_grp_tcstat      * tcstat,
+                       const unsigned short    * cTC,
+                       const rvec                pRVScaleMatrixDiagonal,
+                       const rvec * gmx_restrict x,
+                       rvec       * gmx_restrict xprime,
+                       rvec       * gmx_restrict v,
+                       const rvec * gmx_restrict f)
 {
     real lambdaGroup;
 
@@ -364,15 +337,15 @@ static inline void simdStoreRvecs(rvec     *r,
  * \param[in]    f                      Forces
  */
 static void
-updateMDLeapfrogSimpleSimd(int                               start,
-                           int                               nrend,
-                           real                              dt,
-                           const real * gmx_restrict         invMass,
-                           gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                           const rvec * gmx_restrict         x,
-                           rvec       * gmx_restrict         xprime,
-                           rvec       * gmx_restrict         v,
-                           const rvec * gmx_restrict         f)
+updateMDLeapfrogSimpleSimd(int                       start,
+                           int                       nrend,
+                           real                      dt,
+                           const real * gmx_restrict invMass,
+                           const t_grp_tcstat      * tcstat,
+                           const rvec * gmx_restrict x,
+                           rvec       * gmx_restrict xprime,
+                           rvec       * gmx_restrict v,
+                           const rvec * gmx_restrict f)
 {
     SimdReal                  timestep(dt);
     SimdReal                  lambdaSystem(tcstat[0].lambda);
@@ -461,20 +434,19 @@ updateMDLeapfrogGeneral(int                         start,
      * Holian et al. Phys Rev E 52(3) : 2338, 1995
      */
 
-    gmx::ArrayRef<const t_grp_tcstat> tcstat        = ekind->tcstat;
-    gmx::ArrayRef<const t_grp_acc>    grpstat       = ekind->grpstat;
-    const unsigned short            * cTC           = md->cTC;
-    const unsigned short            * cACC          = md->cACC;
-    const rvec                      * accel         = ir->opts.acc;
+    const unsigned short    * cTC           = md->cTC;
+    const t_grp_tcstat      * tcstat        = ekind->tcstat;
 
-    const rvec * gmx_restrict         invMassPerDim = md->invMassPerDim;
+    const unsigned short    * cACC          = md->cACC;
+    const rvec              * accel         = ir->opts.acc;
+    const t_grp_acc         * grpstat       = ekind->grpstat;
+
+    const rvec * gmx_restrict invMassPerDim = md->invMassPerDim;
 
     /* Initialize group values, changed later when multiple groups are used */
     int  ga       = 0;
     int  gt       = 0;
     real factorNH = 0;
-
-    real omega_Z  = 2*static_cast<real>(M_PI)/box[ZZ][ZZ];
 
     for (int n = start; n < nrend; n++)
     {
@@ -503,7 +475,7 @@ updateMDLeapfrogGeneral(int                         start,
                 rvec_sub(v[n], grpstat[ga].u, vRel);
                 break;
             case AccelerationType::cosine:
-                cosineZ = std::cos(x[n][ZZ]*omega_Z);
+                cosineZ = std::cos(x[n][ZZ]*static_cast<real>(M_PI)/box[ZZ][ZZ]);
                 vCosine = cosineZ*ekind->cosacc.vcos;
                 /* Avoid scaling the cosine profile velocity */
                 copy_rvec(v[n], vRel);
@@ -630,9 +602,9 @@ static void do_update_md(int                         start,
         bool haveSingleTempScaleValue = (!doTempCouple || ekind->ngtc == 1);
 
         /* Extract some pointers needed by all cases */
-        const unsigned short             *cTC           = md->cTC;
-        gmx::ArrayRef<const t_grp_tcstat> tcstat        = ekind->tcstat;
-        const rvec                       *invMassPerDim = md->invMassPerDim;
+        const unsigned short *cTC           = md->cTC;
+        const t_grp_tcstat   *tcstat        = ekind->tcstat;
+        const rvec           *invMassPerDim = md->invMassPerDim;
 
         if (doParrinelloRahman)
         {
@@ -791,19 +763,25 @@ static void do_update_vv_pos(int start, int nrend, real dt,
     }
 } /* do_update_vv_pos */
 
-gmx_stochd_t::gmx_stochd_t(const t_inputrec *ir)
+static gmx_stochd_t *init_stochd(const t_inputrec *ir)
 {
+    gmx_stochd_t   *sd;
+
+    snew(sd, 1);
+
     const t_grpopts *opts = &ir->opts;
-    const int        ngtc = opts->ngtc;
+    int              ngtc = opts->ngtc;
 
     if (ir->eI == eiBD)
     {
-        bd_rf.resize(ngtc);
+        snew(sd->bd_rf, ngtc);
     }
     else if (EI_SD(ir->eI))
     {
-        sdc.resize(ngtc);
-        sdsig.resize(ngtc);
+        snew(sd->sdc, ngtc);
+        snew(sd->sdsig, ngtc);
+
+        gmx_sd_const_t *sdc = sd->sdc;
 
         for (int gt = 0; gt < ngtc; gt++)
         {
@@ -820,8 +798,8 @@ gmx_stochd_t::gmx_stochd_t(const t_inputrec *ir)
     }
     else if (ETC_ANDERSEN(ir->etc))
     {
-        randomize_group.resize(ngtc);
-        boltzfac.resize(ngtc);
+        snew(sd->randomize_group, ngtc);
+        snew(sd->boltzfac, ngtc);
 
         /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
         /* since constraint groups don't necessarily match up with temperature groups! This is checked in readir.c */
@@ -831,18 +809,20 @@ gmx_stochd_t::gmx_stochd_t(const t_inputrec *ir)
             real reft = std::max<real>(0, opts->ref_t[gt]);
             if ((opts->tau_t[gt] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
             {
-                randomize_group[gt] = true;
-                boltzfac[gt]        = BOLTZ*opts->ref_t[gt];
+                sd->randomize_group[gt] = TRUE;
+                sd->boltzfac[gt]        = BOLTZ*opts->ref_t[gt];
             }
             else
             {
-                randomize_group[gt] = false;
+                sd->randomize_group[gt] = FALSE;
             }
         }
     }
+
+    return sd;
 }
 
-void update_temperature_constants(gmx_stochd_t *sd, const t_inputrec *ir)
+void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
 {
     if (ir->eI == eiBD)
     {
@@ -850,14 +830,14 @@ void update_temperature_constants(gmx_stochd_t *sd, const t_inputrec *ir)
         {
             for (int gt = 0; gt < ir->opts.ngtc; gt++)
             {
-                sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]/(ir->bd_fric*ir->delta_t));
+                upd->sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]/(ir->bd_fric*ir->delta_t));
             }
         }
         else
         {
             for (int gt = 0; gt < ir->opts.ngtc; gt++)
             {
-                sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]);
+                upd->sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]);
             }
         }
     }
@@ -867,23 +847,35 @@ void update_temperature_constants(gmx_stochd_t *sd, const t_inputrec *ir)
         {
             real kT = BOLTZ*ir->opts.ref_t[gt];
             /* The mass is accounted for later, since this differs per atom */
-            sd->sdsig[gt].V  = std::sqrt(kT*(1 - sd->sdc[gt].em * sd->sdc[gt].em));
+            upd->sd->sdsig[gt].V  = std::sqrt(kT*(1 - upd->sd->sdc[gt].em*upd->sd->sdc[gt].em));
         }
     }
 }
 
-Update::Impl::Impl(const t_inputrec    *ir, BoxDeformation *boxDeformation)
+gmx_update_t *init_update(const t_inputrec    *ir,
+                          gmx::BoxDeformation *deform)
 {
-    sd = std::make_unique<gmx_stochd_t>(ir);
-    update_temperature_constants(sd.get(), ir);
-    xp.resizeWithPadding(0);
-    deform = boxDeformation;
+    gmx_update_t *upd = new(gmx_update_t);
+
+    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
+    {
+        upd->sd    = init_stochd(ir);
+    }
+
+    update_temperature_constants(upd, ir);
+
+    upd->xp.resizeWithPadding(0);
+
+    upd->deform = deform;
+
+    return upd;
 }
 
-void Update::setNumAtoms(int nAtoms)
+void update_realloc(gmx_update_t *upd, int natoms)
 {
+    GMX_ASSERT(upd, "upd must be allocated before its fields can be reallocated");
 
-    impl_->xp.resizeWithPadding(nAtoms);
+    upd->xp.resizeWithPadding(natoms);
 }
 
 /*! \brief Sets the SD update type */
@@ -907,7 +899,7 @@ enum class SDUpdate : int
  * two with only one contribution, and one with both contributions. */
 template <SDUpdate updateType>
 static void
-doSDUpdateGeneral(const gmx_stochd_t &sd,
+doSDUpdateGeneral(gmx_stochd_t *sd,
                   int start, int nrend, real dt,
                   const rvec accel[], const ivec nFreeze[],
                   const real invmass[], const unsigned short ptype[],
@@ -938,6 +930,9 @@ doSDUpdateGeneral(const gmx_stochd_t &sd,
     gmx::ThreeFry2x64<0> rng(seed, gmx::RandomDomain::UpdateCoordinates);
     gmx::TabulatedNormalDistribution<real, 14> dist;
 
+    gmx_sd_const_t *sdc = sd->sdc;
+    gmx_sd_sigma_t *sig = sd->sdsig;
+
     for (int n = start; n < nrend; n++)
     {
         int globalAtomIndex = gatindex ? gatindex[n] : n;
@@ -965,8 +960,8 @@ doSDUpdateGeneral(const gmx_stochd_t &sd,
                 else if (updateType == SDUpdate::FrictionAndNoiseOnly)
                 {
                     real vn      = v[n][d];
-                    v[n][d]      = (vn*sd.sdc[temperatureGroup].em +
-                                    invsqrtMass*sd.sdsig[temperatureGroup].V*dist(rng));
+                    v[n][d]      = (vn*sdc[temperatureGroup].em +
+                                    invsqrtMass*sig[temperatureGroup].V*dist(rng));
                     // The previous phase already updated the
                     // positions with a full v*dt term that must
                     // now be half removed.
@@ -975,8 +970,8 @@ doSDUpdateGeneral(const gmx_stochd_t &sd,
                 else
                 {
                     real vn      = v[n][d] + (inverseMass*f[n][d] + accel[accelerationGroup][d])*dt;
-                    v[n][d]      = (vn*sd.sdc[temperatureGroup].em +
-                                    invsqrtMass*sd.sdsig[temperatureGroup].V*dist(rng));
+                    v[n][d]      = (vn*sdc[temperatureGroup].em +
+                                    invsqrtMass*sig[temperatureGroup].V*dist(rng));
                     // Here we include half of the friction+noise
                     // update of v into the position update.
                     xprime[n][d] = x[n][d] + 0.5*(vn + v[n][d])*dt;
@@ -1067,10 +1062,10 @@ static void do_update_bd(int start, int nrend, real dt,
 static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_mdatoms *md,
                                 gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
-    int                         g;
-    gmx::ArrayRef<t_grp_tcstat> tcstat  = ekind->tcstat;
-    gmx::ArrayRef<t_grp_acc>    grpstat = ekind->grpstat;
-    int                         nthread, thread;
+    int           g;
+    t_grp_tcstat *tcstat  = ekind->tcstat;
+    t_grp_acc    *grpstat = ekind->grpstat;
+    int           nthread, thread;
 
     /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
        an option, but not supported now.
@@ -1185,15 +1180,15 @@ static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
                               gmx_ekindata_t *ekind,
                               t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
-    int                         start = 0, homenr = md->homenr;
-    int                         g, d, n, m, gt = 0;
-    rvec                        v_corrt;
-    real                        hm;
-    gmx::ArrayRef<t_grp_tcstat> tcstat = ekind->tcstat;
-    t_cos_acc                  *cosacc = &(ekind->cosacc);
-    real                        dekindl;
-    real                        fac, cosz;
-    double                      mvcos;
+    int           start = 0, homenr = md->homenr;
+    int           g, d, n, m, gt = 0;
+    rvec          v_corrt;
+    real          hm;
+    t_grp_tcstat *tcstat = ekind->tcstat;
+    t_cos_acc    *cosacc = &(ekind->cosacc);
+    real          dekindl;
+    real          fac, cosz;
+    double        mvcos;
 
     for (g = 0; g < opts->ngtc; g++)
     {
@@ -1492,15 +1487,15 @@ void constrain_velocities(int64_t                        step,
     }
 }
 
-void constrain_coordinates(int64_t           step,
-                           real             *dvdlambda, /* the contribution to be added to the bonded interactions */
-                           t_state          *state,
-                           tensor            vir_part,
-                           Update           *upd,
-                           gmx::Constraints *constr,
-                           gmx_bool          bCalcVir,
-                           bool              do_log,
-                           bool              do_ene)
+void constrain_coordinates(int64_t                        step,
+                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
+                           t_state                       *state,
+                           tensor                         vir_part,
+                           gmx_update_t                  *upd,
+                           gmx::Constraints              *constr,
+                           gmx_bool                       bCalcVir,
+                           bool                           do_log,
+                           bool                           do_ene)
 {
     if (!constr)
     {
@@ -1516,7 +1511,7 @@ void constrain_coordinates(int64_t           step,
         /* Constrain the coordinates upd->xp */
         constr->apply(do_log, do_ene,
                       step, 1, 1.0,
-                      state->x.rvec_array(), upd->xp()->rvec_array(), nullptr,
+                      state->x.rvec_array(), upd->xp.rvec_array(), nullptr,
                       state->box,
                       state->lambda[efptBONDED], dvdlambda,
                       as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr, ConstraintVariable::Positions);
@@ -1529,18 +1524,18 @@ void constrain_coordinates(int64_t           step,
 }
 
 void
-update_sd_second_half(int64_t           step,
-                      real             *dvdlambda, /* the contribution to be added to the bonded interactions */
-                      const t_inputrec *inputrec,  /* input record and box stuff	*/
-                      const t_mdatoms  *md,
-                      t_state          *state,
-                      const t_commrec  *cr,
-                      t_nrnb           *nrnb,
-                      gmx_wallcycle_t   wcycle,
-                      Update           *upd,
-                      gmx::Constraints *constr,
-                      bool              do_log,
-                      bool              do_ene)
+update_sd_second_half(int64_t                        step,
+                      real                          *dvdlambda,   /* the contribution to be added to the bonded interactions */
+                      const t_inputrec              *inputrec,    /* input record and box stuff	*/
+                      const t_mdatoms               *md,
+                      t_state                       *state,
+                      const t_commrec               *cr,
+                      t_nrnb                        *nrnb,
+                      gmx_wallcycle_t                wcycle,
+                      gmx_update_t                  *upd,
+                      gmx::Constraints              *constr,
+                      bool                           do_log,
+                      bool                           do_ene)
 {
     if (!constr)
     {
@@ -1573,12 +1568,12 @@ update_sd_second_half(int64_t           step,
                 getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
                 doSDUpdateGeneral<SDUpdate::FrictionAndNoiseOnly>
-                    (*upd->sd(),
+                    (upd->sd,
                     start_th, end_th, dt,
                     inputrec->opts.acc, inputrec->opts.nFreeze,
                     md->invmass, md->ptype,
                     md->cFREEZE, nullptr, md->cTC,
-                    state->x.rvec_array(), upd->xp()->rvec_array(),
+                    state->x.rvec_array(), upd->xp.rvec_array(),
                     state->v.rvec_array(), nullptr,
                     step, inputrec->ld_seed,
                     DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
@@ -1591,21 +1586,21 @@ update_sd_second_half(int64_t           step,
         /* Constrain the coordinates upd->xp for half a time step */
         constr->apply(do_log, do_ene,
                       step, 1, 0.5,
-                      state->x.rvec_array(), upd->xp()->rvec_array(), nullptr,
+                      state->x.rvec_array(), upd->xp.rvec_array(), nullptr,
                       state->box,
                       state->lambda[efptBONDED], dvdlambda,
                       as_rvec_array(state->v.data()), nullptr, ConstraintVariable::Positions);
     }
 }
 
-void finish_update(const t_inputrec       *inputrec, /* input record and box stuff	*/
-                   const t_mdatoms        *md,
-                   t_state                *state,
-                   const t_graph          *graph,
-                   t_nrnb                 *nrnb,
-                   gmx_wallcycle_t         wcycle,
-                   Update                 *upd,
-                   const gmx::Constraints *constr)
+void finish_update(const t_inputrec              *inputrec,  /* input record and box stuff	*/
+                   const t_mdatoms               *md,
+                   t_state                       *state,
+                   const t_graph                 *graph,
+                   t_nrnb                        *nrnb,
+                   gmx_wallcycle_t                wcycle,
+                   gmx_update_t                  *upd,
+                   const gmx::Constraints        *constr)
 {
     int homenr = md->homenr;
 
@@ -1638,7 +1633,7 @@ void finish_update(const t_inputrec       *inputrec, /* input record and box stu
             }
             if (partialFreezeAndConstraints)
             {
-                auto xp = makeArrayRef(*upd->xp()).subArray(0, homenr);
+                auto xp = makeArrayRef(upd->xp).subArray(0, homenr);
                 auto x  = makeConstArrayRef(state->x).subArray(0, homenr);
                 for (int i = 0; i < homenr; i++)
                 {
@@ -1657,7 +1652,7 @@ void finish_update(const t_inputrec       *inputrec, /* input record and box stu
 
         if (graph && (graph->nnodes > 0))
         {
-            unshift_x(graph, state->box, state->x.rvec_array(), upd->xp()->rvec_array());
+            unshift_x(graph, state->box, state->x.rvec_array(), upd->xp.rvec_array());
             if (TRICLINIC(state->box))
             {
                 inc_nrnb(nrnb, eNR_SHIFTX, 2*graph->nnodes);
@@ -1669,7 +1664,7 @@ void finish_update(const t_inputrec       *inputrec, /* input record and box stu
         }
         else
         {
-            auto           xp = makeConstArrayRef(*upd->xp()).subArray(0, homenr);
+            auto           xp = makeConstArrayRef(upd->xp).subArray(0, homenr);
             auto           x  = makeArrayRef(state->x).subArray(0, homenr);
 #ifndef __clang_analyzer__
             int gmx_unused nth = gmx_omp_nthreads_get(emntUpdate);
@@ -1696,7 +1691,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       const matrix      parrinellorahmanMu,
                                       t_state          *state,
                                       t_nrnb           *nrnb,
-                                      Update           *upd)
+                                      gmx_update_t     *upd)
 {
     int  start  = 0;
     int  homenr = md->homenr;
@@ -1778,10 +1773,10 @@ void update_pcouple_after_coordinates(FILE             *fplog,
             break;
     }
 
-    if (upd->deform())
+    if (upd->deform)
     {
         auto localX = makeArrayRef(state->x).subArray(start, homenr);
-        upd->deform()->apply(localX, state->box, step);
+        upd->deform->apply(localX, state->box, step);
     }
 }
 
@@ -1793,7 +1788,7 @@ void update_coords(int64_t                             step,
                    const t_fcdata                     *fcd,
                    const gmx_ekindata_t               *ekind,
                    const matrix                        M,
-                   Update                             *upd,
+                   gmx_update_t                       *upd,
                    int                                 UpdatePart,
                    const t_commrec                    *cr, /* these shouldn't be here -- need to think about it */
                    const gmx::Constraints             *constr)
@@ -1834,7 +1829,7 @@ void update_coords(int64_t                             step,
             getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
             const rvec *x_rvec  = state->x.rvec_array();
-            rvec       *xp_rvec = upd->xp()->rvec_array();
+            rvec       *xp_rvec = upd->xp.rvec_array();
             rvec       *v_rvec  = state->v.rvec_array();
             const rvec *f_rvec  = as_rvec_array(f.unpaddedArrayRef().data());
 
@@ -1851,7 +1846,7 @@ void update_coords(int64_t                             step,
                     {
                         // With constraints, the SD update is done in 2 parts
                         doSDUpdateGeneral<SDUpdate::ForcesOnly>
-                            (*upd->sd(),
+                            (upd->sd,
                             start_th, end_th, dt,
                             inputrec->opts.acc, inputrec->opts.nFreeze,
                             md->invmass, md->ptype,
@@ -1862,7 +1857,7 @@ void update_coords(int64_t                             step,
                     else
                     {
                         doSDUpdateGeneral<SDUpdate::Combined>
-                            (*upd->sd(),
+                            (upd->sd,
                             start_th, end_th, dt,
                             inputrec->opts.acc, inputrec->opts.nFreeze,
                             md->invmass, md->ptype,
@@ -1878,7 +1873,7 @@ void update_coords(int64_t                             step,
                                  md->cFREEZE, md->cTC,
                                  x_rvec, xp_rvec, v_rvec, f_rvec,
                                  inputrec->bd_fric,
-                                 upd->sd()->bd_rf.data(),
+                                 upd->sd->bd_rf,
                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
                     break;
                 case (eiVV):
@@ -1923,7 +1918,7 @@ void update_coords(int64_t                             step,
 extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
                                             const t_mdatoms *md,
                                             gmx::ArrayRef<gmx::RVec> v,
-                                            const Update *upd,
+                                            const gmx_update_t *upd,
                                             const gmx::Constraints *constr)
 {
 
@@ -1945,8 +1940,7 @@ extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, 
     if ((ir->etc == etcANDERSEN) || do_per_step(step, roundToInt(1.0/rate)))
     {
         andersen_tcoupl(ir, step, cr, md, v, rate,
-                        upd->sd()->randomize_group,
-                        upd->sd()->boltzfac);
+                        upd->sd->randomize_group, upd->sd->boltzfac);
         return TRUE;
     }
     return FALSE;

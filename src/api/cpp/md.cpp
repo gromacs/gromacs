@@ -36,13 +36,14 @@
 
 #include <memory>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/keyvaluetree.h"
 
 #include "gmxapi/gmxapi.h"
 #include "gmxapi/md/mdmodule.h"
 
-#include "md_impl.h"
+#include "md-impl.h"
 
 namespace gmxapi
 {
@@ -69,7 +70,7 @@ class MDWorkSpec::Impl
 //! \endcond
 
 MDWorkSpec::MDWorkSpec() :
-    impl_ {std::make_unique<Impl>()}
+    impl_ {gmx::compat::make_unique<Impl>()}
 {
     GMX_ASSERT(impl_, "Expected non-null implementation object.");
 }

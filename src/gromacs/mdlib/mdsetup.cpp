@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/listed_forces/manage_threading.h"
+#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
@@ -59,16 +59,17 @@
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
-                               const t_inputrec *ir,
-                               const gmx_mtop_t &top_global,
-                               gmx_localtop_t   *top,
-                               t_forcerec       *fr,
-                               t_graph         **graph,
-                               gmx::MDAtoms     *mdAtoms,
-                               gmx::Constraints *constr,
-                               gmx_vsite_t      *vsite,
-                               gmx_shellfc_t    *shellfc)
+
+void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
+                               const t_inputrec  *ir,
+                               const gmx_mtop_t  *top_global,
+                               gmx_localtop_t    *top,
+                               t_forcerec        *fr,
+                               t_graph          **graph,
+                               gmx::MDAtoms      *mdAtoms,
+                               gmx::Constraints  *constr,
+                               gmx_vsite_t       *vsite,
+                               gmx_shellfc_t     *shellfc)
 {
     bool  usingDomDec = DOMAINDECOMP(cr);
 
@@ -85,9 +86,9 @@ void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
     {
         numAtomIndex = -1;
         atomIndex    = nullptr;
-        numHomeAtoms = top_global.natoms;
+        numHomeAtoms = top_global->natoms;
     }
-    atoms2md(&top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdAtoms);
+    atoms2md(top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdAtoms);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
@@ -96,7 +97,14 @@ void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
     }
     else
     {
-        gmx_mtop_generate_local_top(top_global, top, ir->efep != efepNO);
+        /* Currently gmx_generate_local_top allocates and returns a pointer.
+         * We should implement a more elegant solution.
+         */
+        gmx_localtop_t *tmpTop;
+
+        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
+        *top   = *tmpTop;
+        sfree(tmpTop);
     }
 
     if (vsite)
@@ -119,7 +127,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
     {
         GMX_ASSERT(graph != nullptr, "We use a graph with PBC (no periodic mols) and without DD");
 
-        *graph = mk_graph(nullptr, &(top->idef), 0, top_global.natoms, FALSE, FALSE);
+        *graph = mk_graph(nullptr, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
     }
     else if (graph != nullptr)
     {
@@ -136,7 +144,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
 
     setup_bonded_threading(fr->bondedThreading,
                            fr->natoms_force,
-                           fr->gpuBonded != nullptr,
+                           fr->gpuBondedLists != nullptr,
                            top->idef);
 
     gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);

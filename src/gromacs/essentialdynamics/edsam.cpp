@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,9 +43,8 @@
 #include <cstring>
 #include <ctime>
 
-#include <memory>
-
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -59,6 +58,7 @@
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -1128,7 +1128,7 @@ static std::unique_ptr<gmx::EssentialDynamics> ed_open(
         const gmx_output_env_t *oenv,
         const t_commrec        *cr)
 {
-    auto        edHandle = std::make_unique<gmx::EssentialDynamics>();
+    auto        edHandle = gmx::compat::make_unique<gmx::EssentialDynamics>();
     auto        ed       = edHandle->getLegacyED();
     /* We want to perform ED (this switch might later be upgraded to EssentialDynamicsType::Flooding) */
     ed->eEDtype = EssentialDynamicsType::EDSampling;
@@ -1138,7 +1138,7 @@ static std::unique_ptr<gmx::EssentialDynamics> ed_open(
         // If we start from a checkpoint file, we already have an edsamHistory struct
         if (oh->edsamHistory == nullptr)
         {
-            oh->edsamHistory = std::make_unique<edsamhistory_t>(edsamhistory_t {});
+            oh->edsamHistory = gmx::compat::make_unique<edsamhistory_t>(edsamhistory_t {});
         }
         edsamhistory_t *EDstate = oh->edsamHistory.get();
 
@@ -2361,7 +2361,7 @@ static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam &ed, edsamhistory_
         }
     }
 
-    if (gmx::ssize(ed.edpar) != EDstate->nED)
+    if (static_cast<int>(ed.edpar.size()) != EDstate->nED)
     {
         gmx_fatal(FARGS, "The number of essential dynamics / flooding groups is not consistent.\n"
                   "There are %d ED groups in the .cpt file, but %zu in the .edi file!\n"

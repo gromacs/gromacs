@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -119,13 +119,12 @@ else()
     elseif(NOT SPHINX_FOUND)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
         set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx has not been found and is needed to create the LaTex input files")
-    elseif(NOT PDFLATEX_COMPILER)
+    elseif(NOT PDFLATEX_COMPILER OR NOT IMAGE_CONVERT_POSSIBLE)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
-        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex is not available")
-    elseif(NOT IMAGE_CONVERT_POSSIBLE)
-        set(MANUAL_BUILD_IS_POSSIBLE OFF)
-        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "a working form of ImageMagick convert is not available")
-        set(NO_IMAGE_CONVERT_REASON "Can not convert files for online or pdf manual")
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex or some other dependency (ImageMagick convert) is not available")
+        if (NOT IMAGE_CONVERT_POSSIBLE)
+            set(NO_IMAGE_CONVERT_REASON "Can not convert files for online or pdf manual")
+        endif()
         # TODO Later, identify other dependencies like bibtex,
         # make_index, date, some graphics conversion program,
         # etc. Perhaps patch UseLATEX.cmake and contribute upstream.
@@ -230,7 +229,6 @@ if (SPHINX_FOUND)
         reference-manual/special/qmmm.rst
         reference-manual/special/vmd-imd.rst
         reference-manual/special/membrane-embedding.rst
-        reference-manual/special/mimic-qmmm.rst
         # Analysis chapter
         reference-manual/analysis.rst
         reference-manual/analysis/using-groups.rst
@@ -245,7 +243,6 @@ if (SPHINX_FOUND)
         reference-manual/analysis/rmsd.rst
         reference-manual/analysis/covariance-analysis.rst
         reference-manual/analysis/dihedral-pca.rst
-        reference-manual/analysis/hydrogen-bonds.rst
         reference-manual/analysis/protein-related.rst
         reference-manual/analysis/interface-related.rst)
     # The image files have also been ordered by the respective
@@ -348,7 +345,6 @@ if (SPHINX_FOUND)
         dev-manual/includestyle.rst
         dev-manual/index.rst
         dev-manual/jenkins.rst
-        dev-manual/known-issues.rst
         dev-manual/language-features.rst
         dev-manual/naming.rst
         dev-manual/overview.rst
@@ -368,17 +364,15 @@ if (SPHINX_FOUND)
         how-to/visualize.rst
         install-guide/index.rst
         release-notes/index.rst
-        release-notes/2020/major/highlights.rst
-        release-notes/2020/major/features.rst
-        release-notes/2020/major/performance.rst
-        release-notes/2020/major/tools.rst
-        release-notes/2020/major/bugs-fixed.rst
-        release-notes/2020/major/removed-functionality.rst
-        release-notes/2020/major/deprecated-functionality.rst
-        release-notes/2020/major/portability.rst
-        release-notes/2020/major/miscellaneous.rst
-        release-notes/2019/2019.2.rst
-        release-notes/2019/2019.1.rst
+        release-notes/highlights.rst
+        release-notes/features.rst
+        release-notes/performance.rst
+        release-notes/tools.rst
+        release-notes/bugs-fixed.rst
+        release-notes/removed-functionality.rst
+        release-notes/deprecated-functionality.rst
+        release-notes/portability.rst
+        release-notes/miscellaneous.rst
         release-notes/2019/major/highlights.rst
         release-notes/2019/major/features.rst
         release-notes/2019/major/performance.rst
@@ -388,7 +382,6 @@ if (SPHINX_FOUND)
         release-notes/2019/major/deprecated-functionality.rst
         release-notes/2019/major/portability.rst
         release-notes/2019/major/miscellaneous.rst
-        release-notes/2018/2018.6.rst
         release-notes/2018/2018.5.rst
         release-notes/2018/2018.4.rst
         release-notes/2018/2018.3.rst
@@ -546,7 +539,7 @@ if (SPHINX_FOUND)
     add_custom_target(install-guide
         COMMAND
             ${SPHINX_EXECUTABLE}
-            -q -b text
+            -q -E -b text
             -w sphinx-install.log
             -d ${CMAKE_CURRENT_BINARY_DIR}/install-guide/_doctrees
             -c ${SPHINX_INPUT_DIR}
@@ -569,13 +562,12 @@ if (SPHINX_FOUND)
     add_custom_target(webpage-sphinx
         DEPENDS sphinx-programs
         DEPENDS sphinx-input
-        DEPENDS sphinx-image-conversion
-        DEPENDS manual 
+        DEPENDS sphinx-image-conversion 
         COMMAND
             ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
         COMMAND
             ${SPHINX_EXECUTABLE}
-            -q -b html
+            -q -E -b html
             -w sphinx-html.log
             -d "${SPHINX_CACHE_DIR}"
             "${SPHINX_INPUT_DIR}"
@@ -589,7 +581,7 @@ if (SPHINX_FOUND)
     add_custom_target(man
         COMMAND
             ${SPHINX_EXECUTABLE}
-            -q -b man
+            -q -E -b man
             -w sphinx-man.log
             -d ${SPHINX_CACHE_DIR}
             -t do_man

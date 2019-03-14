@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -71,7 +72,7 @@
 #include "parser.h"
 #include "poscalc.h"
 #include "scanner.h"
-#include "selectioncollection_impl.h"
+#include "selectioncollection-impl.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"
@@ -91,7 +92,7 @@ SelectionCollection::Impl::Impl()
     sc_.top       = nullptr;
     gmx_ana_index_clear(&sc_.gall);
     sc_.mempool   = nullptr;
-    sc_.symtab    = std::make_unique<SelectionParserSymbolTable>();
+    sc_.symtab    = compat::make_unique<SelectionParserSymbolTable>();
     gmx_ana_index_clear(&requiredAtoms_);
     gmx_ana_selmethod_register_defaults(sc_.symtab.get());
 }
@@ -725,7 +726,7 @@ std::unique_ptr<TextWriter> initStatusWriter(TextOutputStream *statusStream)
     std::unique_ptr<TextWriter> statusWriter;
     if (statusStream != nullptr)
     {
-        statusWriter = std::make_unique<TextWriter>(statusStream);
+        statusWriter = compat::make_unique<TextWriter>(statusStream);
         statusWriter->wrapperSettings().setLineLength(78);
     }
     return statusWriter;

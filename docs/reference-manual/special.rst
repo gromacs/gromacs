@@ -20,7 +20,6 @@ the use of |Gromacs| for specific scientific problems.
    special/viscosity-calculation
    special/tabulated-interaction-functions
    special/qmmm
-   special/mimic-qmmm
    special/vmd-imd
    special/membrane-embedding
 

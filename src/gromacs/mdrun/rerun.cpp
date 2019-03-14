@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,21 +53,21 @@
 
 #include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/collect.h"
-#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme_load_balancing.h"
+#include "gromacs/ewald/pme-load-balancing.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/listed_forces/manage_threading.h"
+#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -76,16 +76,19 @@
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
-#include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/expanded.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/membed.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/resethandler.h"
 #include "gromacs/mdlib/shellfc.h"
@@ -98,9 +101,8 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdrunutility/printtime.h"
-#include "gromacs/mdtypes/awh_history.h"
-#include "gromacs/mdtypes/awh_params.h"
+#include "gromacs/mdtypes/awh-history.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -111,7 +113,6 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mimic/MimicUtils.h"
@@ -194,6 +195,7 @@ void gmx::Integrator::do_rerun()
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
     t_inputrec             *ir   = inputrec;
+    gmx_mdoutf             *outf = nullptr;
     int64_t                 step, step_rel;
     double                  t, lam0[efptNR];
     bool                    isLastStep               = false;
@@ -203,12 +205,14 @@ void gmx::Integrator::do_rerun()
     t_trxstatus            *status;
     rvec                    mu_tot;
     t_trxframe              rerun_fr;
-    gmx_localtop_t          top;
+    gmx_localtop_t         *top;
+    t_mdebin               *mdebin   = nullptr;
     gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
     gmx_global_stat_t       gstat;
     t_graph                *graph = nullptr;
     gmx_groups_t           *groups;
+    gmx_ekindata_t         *ekind;
     gmx_shellfc_t          *shellfc;
 
     double                  cycles;
@@ -232,13 +236,6 @@ void gmx::Integrator::do_rerun()
                    "be available in a different form in a future version of GROMACS, "
                    "e.g. gmx rerun -f.");
 
-    if (ir->efep != efepNO && (mdAtoms->mdatoms()->nMassPerturbed > 0 ||
-                               (constr && constr->havePerturbedConstraints())))
-    {
-        gmx_fatal(FARGS, "Perturbed masses or constraints are not supported by rerun. "
-                  "Either make a .tpr without mass and constraint perturbation, "
-                  "or use GROMACS 2018.4, 2018.5 or later 2018 version.");
-    }
     if (ir->bExpanded)
     {
         gmx_fatal(FARGS, "Expanded ensemble not supported by rerun.");
@@ -298,11 +295,10 @@ void gmx::Integrator::do_rerun()
         top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
     }
 
-    initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
-    init_nrnb(nrnb);
-    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
-    gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, mdoutf_get_fp_dhdl(outf), true);
+    /* Initial values */
+    init_rerun(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
+               state_global, lam0, nrnb, top_global,
+               nfile, fnm, &outf, &mdebin, wcycle);
 
     /* Energy terms and groups */
     snew(enerd, 1);
@@ -310,8 +306,7 @@ void gmx::Integrator::do_rerun()
                   enerd);
 
     /* Kinetic energy data */
-    std::unique_ptr<gmx_ekindata_t> eKinData = std::make_unique<gmx_ekindata_t>();
-    gmx_ekindata_t                 *ekind    = eKinData.get();
+    snew(ekind, 1);
     init_ekindata(fplog, top_global, &(ir->opts), ekind);
     /* Copy the cos acceleration to the groups struct */
     ekind->cosacc.cos_accel = ir->cos_accel;
@@ -324,7 +319,7 @@ void gmx::Integrator::do_rerun()
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
 
     {
-        double io = compute_io(ir, top_global->natoms, groups, energyOutput.numEnergyTerms(), 1);
+        double io = compute_io(ir, top_global->natoms, groups, mdebin->ebin->nener, 1);
         if ((io > 2000) && MASTER(cr))
         {
             fprintf(stderr,
@@ -339,16 +334,16 @@ void gmx::Integrator::do_rerun()
 
     if (DOMAINDECOMP(cr))
     {
-        dd_init_local_top(*top_global, &top);
+        top = dd_init_local_top(top_global);
 
-        stateInstance = std::make_unique<t_state>();
+        stateInstance = compat::make_unique<t_state>();
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
-                            state_global, *top_global, ir,
-                            state, &f, mdAtoms, &top, fr,
+                            state_global, top_global, ir,
+                            state, &f, mdAtoms, top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
@@ -363,7 +358,8 @@ void gmx::Integrator::do_rerun()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr,
+        snew(top, 1);
+        mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
                                   &graph, mdAtoms, constr, vsite, shellfc);
     }
 
@@ -392,7 +388,7 @@ void gmx::Integrator::do_rerun()
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
     }
     checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                    top_global, &top, state,
+                                    top_global, top, state,
                                     &shouldCheckNumberOfBondedInteractions);
 
     if (MASTER(cr))
@@ -479,7 +475,8 @@ void gmx::Integrator::do_rerun()
     // we don't do counter resetting in rerun - finish will always be valid
     walltime_accounting_set_valid_finish(walltime_accounting);
 
-    const DDBalanceRegionHandler ddBalanceRegionHandler(cr);
+    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
+    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
 
     step     = ir->init_step;
     step_rel = 0;
@@ -517,7 +514,7 @@ void gmx::Integrator::do_rerun()
                 gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented with domain decomposition, "
                           "use a single rank");
             }
-            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top.idef, ir->delta_t, *fr, graph);
+            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top->idef, ir->delta_t, *fr, graph);
         }
 
         isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
@@ -528,8 +525,8 @@ void gmx::Integrator::do_rerun()
             const bool bMasterState = true;
             dd_partition_system(fplog, mdlog, step, cr,
                                 bMasterState, nstglobalcomm,
-                                state_global, *top_global, ir,
-                                state, &f, mdAtoms, &top, fr,
+                                state_global, top_global, ir,
+                                state, &f, mdAtoms, top, fr,
                                 vsite, constr,
                                 nrnb, wcycle,
                                 mdrunOptions.verbose);
@@ -558,13 +555,13 @@ void gmx::Integrator::do_rerun()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose,
                                 enforcedRotation, step,
-                                ir, bNS, force_flags, &top,
+                                ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
                                 state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
-                                shellfc, fr, ppForceWorkload, t, mu_tot,
+                                shellfc, fr, t, mu_tot,
                                 vsite,
-                                ddBalanceRegionHandler);
+                                ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
         else
         {
@@ -576,13 +573,13 @@ void gmx::Integrator::do_rerun()
             Awh       *awh = nullptr;
             gmx_edsam *ed  = nullptr;
             do_force(fplog, cr, ms, ir, awh, enforcedRotation,
-                     step, nrnb, wcycle, &top, groups,
+                     step, nrnb, wcycle, top, groups,
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
-                     fr, ppForceWorkload, vsite, mu_tot, t, ed,
+                     fr, vsite, mu_tot, t, ed,
                      GMX_FORCE_NS | force_flags,
-                     ddBalanceRegionHandler);
+                     ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
 
         /* Now we have the energies and forces corresponding to the
@@ -595,7 +592,7 @@ void gmx::Integrator::do_rerun()
             do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                      ir, state, state_global, observablesHistory,
                                      top_global, fr,
-                                     outf, energyOutput, ekind, f,
+                                     outf, mdebin, ekind, f,
                                      isCheckpointingStep, doRerun, isLastStep,
                                      mdrunOptions.writeConfout,
                                      bSumEkinhOld);
@@ -617,7 +614,7 @@ void gmx::Integrator::do_rerun()
                 shift_self(graph, state->box, as_rvec_array(state->x.data()));
             }
             construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, as_rvec_array(state->v.data()),
-                             top.idef.iparams, top.idef.il,
+                             top->idef.iparams, top->idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
 
             if (graph != nullptr)
@@ -643,7 +640,7 @@ void gmx::Integrator::do_rerun()
                             | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                             );
             checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                            top_global, &top, state,
+                                            top_global, top, state,
                                             &shouldCheckNumberOfBondedInteractions);
         }
 
@@ -663,11 +660,11 @@ void gmx::Integrator::do_rerun()
         if (MASTER(cr))
         {
             const bool bCalcEnerStep = true;
-            energyOutput.addDataAtEnergyStep(doFreeEnergyPerturbation, bCalcEnerStep,
-                                             t, mdatoms->tmass, enerd, state,
-                                             ir->fepvals, ir->expandedvals, state->box,
-                                             shake_vir, force_vir, total_vir, pres,
-                                             ekind, mu_tot, constr);
+            upd_mdebin(mdebin, doFreeEnergyPerturbation, bCalcEnerStep,
+                       t, mdatoms->tmass, enerd, state,
+                       ir->fepvals, ir->expandedvals, rerun_fr.box,
+                       shake_vir, force_vir, total_vir, pres,
+                       ekind, mu_tot, constr);
 
             const bool do_ene = true;
             const bool do_log = true;
@@ -675,10 +672,9 @@ void gmx::Integrator::do_rerun()
             const bool do_dr  = ir->nstdisreout != 0;
             const bool do_or  = ir->nstorireout != 0;
 
-            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
-                                               do_log ? fplog : nullptr,
-                                               step, t,
-                                               eprNORMAL, fcd, groups, &(ir->opts), awh);
+            print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : nullptr,
+                       step, t,
+                       eprNORMAL, mdebin, fcd, groups, &(ir->opts), awh);
 
             if (do_per_step(step, ir->nstlog))
             {
@@ -758,6 +754,7 @@ void gmx::Integrator::do_rerun()
         gmx_pme_send_finish(cr);
     }
 
+    done_mdebin(mdebin);
     done_mdoutf(outf);
 
     done_shellfc(fplog, shellfc, step_rel);
@@ -772,4 +769,5 @@ void gmx::Integrator::do_rerun()
 
     destroy_enerdata(enerd);
     sfree(enerd);
+    sfree(top);
 }

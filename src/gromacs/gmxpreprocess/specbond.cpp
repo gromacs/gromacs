@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,15 +52,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-struct SpecialBond
-{
-    std::string firstResidue, secondResidue;
-    std::string firstAtomName, secondAtomName;
-    std::string newFirstResidue, newSecondResidue;
-    int         firstBondNumber, secondBondNumber;
-    real        length;
-};
-
 bool yesno()
 {
     char c;
@@ -74,18 +65,25 @@ bool yesno()
     return (c == 'Y');
 }
 
-std::vector<SpecialBond> generateSpecialBonds()
+t_specbond *get_specbonds(int *nspecbond)
 {
-    const char              *sbfile = "specbond.dat";
+    const char  *sbfile = "specbond.dat";
 
-    std::vector<SpecialBond> specialBonds;
-    char                     r1buf[32], r2buf[32], a1buf[32], a2buf[32], nr1buf[32], nr2buf[32];
-    double                   length;
-    int                      nb1, nb2;
-    char                   **lines;
+    t_specbond  *sb = nullptr;
+    char         r1buf[32], r2buf[32], a1buf[32], a2buf[32], nr1buf[32], nr2buf[32];
+    double       length;
+    int          nb1, nb2;
+    char       **lines;
+    int          nlines, i, n;
 
-    int nlines = get_lines(sbfile, &lines);
-    for (int i = 0; (i < nlines); i++)
+    nlines = get_lines(sbfile, &lines);
+    if (nlines > 0)
+    {
+        snew(sb, nlines);
+    }
+
+    n = 0;
+    for (i = 0; (i < nlines); i++)
     {
         if (sscanf(lines[i], "%s%s%d%s%s%d%lf%s%s",
                    r1buf, a1buf, &nb1, r2buf, a2buf, &nb2, &length, nr1buf, nr2buf) != 9)
@@ -94,18 +92,16 @@ std::vector<SpecialBond> generateSpecialBonds()
         }
         else
         {
-            SpecialBond newBond;
-
-            newBond.firstResidue     = r1buf;
-            newBond.secondResidue    = r2buf;
-            newBond.newFirstResidue  = nr1buf;
-            newBond.newSecondResidue = nr2buf;
-            newBond.firstAtomName    = a1buf;
-            newBond.secondAtomName   = a2buf;
-            newBond.firstBondNumber  = nb1;
-            newBond.secondBondNumber = nb2;
-            newBond.length           = length;
-            specialBonds.push_back(newBond);
+            sb[n].res1    = gmx_strdup(r1buf);
+            sb[n].res2    = gmx_strdup(r2buf);
+            sb[n].newres1 = gmx_strdup(nr1buf);
+            sb[n].newres2 = gmx_strdup(nr2buf);
+            sb[n].atom1   = gmx_strdup(a1buf);
+            sb[n].atom2   = gmx_strdup(a2buf);
+            sb[n].nbond1  = nb1;
+            sb[n].nbond2  = nb2;
+            sb[n].length  = length;
+            n++;
         }
         sfree(lines[i]);
     }
@@ -113,20 +109,39 @@ std::vector<SpecialBond> generateSpecialBonds()
     {
         sfree(lines);
     }
-    fprintf(stderr, "%zu out of %d lines of %s converted successfully\n",
-            specialBonds.size(), nlines, sbfile);
+    fprintf(stderr, "%d out of %d lines of %s converted successfully\n",
+            n, nlines, sbfile);
 
-    return specialBonds;
+    *nspecbond = n;
+
+    return sb;
 }
 
-static bool is_special(gmx::ArrayRef<const SpecialBond> sb, const char *res, const char *atom)
+void done_specbonds(int nsb, t_specbond sb[])
 {
-    for (const auto &bond : sb)
+    int i;
+
+    for (i = 0; (i < nsb); i++)
     {
-        if (((strncmp(bond.firstResidue.c_str(), res, 3) == 0) &&
-             (gmx::equalCaseInsensitive(bond.firstAtomName, atom))) ||
-            ((strncmp(bond.secondResidue.c_str(), res, 3) == 0) &&
-             (gmx::equalCaseInsensitive(bond.secondAtomName, atom))))
+        sfree(sb[i].res1);
+        sfree(sb[i].res2);
+        sfree(sb[i].atom1);
+        sfree(sb[i].atom2);
+        sfree(sb[i].newres1);
+        sfree(sb[i].newres2);
+    }
+}
+
+static bool is_special(int nsb, t_specbond sb[], char *res, char *atom)
+{
+    int i;
+
+    for (i = 0; (i < nsb); i++)
+    {
+        if (((strncmp(sb[i].res1, res, 3) == 0) &&
+             (gmx_strcasecmp(sb[i].atom1, atom) == 0)) ||
+            ((strncmp(sb[i].res2, res, 3) == 0) &&
+             (gmx_strcasecmp(sb[i].atom2, atom) == 0)))
         {
             return TRUE;
         }
@@ -134,46 +149,47 @@ static bool is_special(gmx::ArrayRef<const SpecialBond> sb, const char *res, con
     return FALSE;
 }
 
-static bool is_bond(gmx::ArrayRef<const SpecialBond> sb, t_atoms *pdba, int a1, int a2,
+static bool is_bond(int nsb, t_specbond sb[], t_atoms *pdba, int a1, int a2,
                     real d, int *index_sb, bool *bSwap)
 {
-    const char *at1  = *pdba->atomname[a1];
-    const char *at2  = *pdba->atomname[a2];
-    const char *res1 = *pdba->resinfo[pdba->atom[a1].resind].name;
-    const char *res2 = *pdba->resinfo[pdba->atom[a2].resind].name;
+    int   i;
+    char *at1, *at2, *res1, *res2;
 
-    int         i = 0;
-    for (const auto &bond : sb)
+    at1  = *pdba->atomname[a1];
+    at2  = *pdba->atomname[a2];
+    res1 = *pdba->resinfo[pdba->atom[a1].resind].name;
+    res2 = *pdba->resinfo[pdba->atom[a2].resind].name;
+
+    for (i = 0; (i < nsb); i++)
     {
         *index_sb = i;
-        if (((strncmp(bond.firstResidue.c_str(), res1, 3) == 0)  &&
-             (gmx::equalCaseInsensitive(bond.firstAtomName, at1)) &&
-             (strncmp(bond.secondResidue.c_str(), res2, 3) == 0)  &&
-             (gmx::equalCaseInsensitive(bond.secondAtomName, at2))))
+        if (((strncmp(sb[i].res1, res1, 3) == 0)  &&
+             (gmx_strcasecmp(sb[i].atom1, at1) == 0) &&
+             (strncmp(sb[i].res2, res2, 3) == 0)  &&
+             (gmx_strcasecmp(sb[i].atom2, at2) == 0)))
         {
             *bSwap = FALSE;
-            if ((0.9*bond.length < d) && (1.1*bond.length > d))
+            if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
             {
                 return TRUE;
             }
         }
-        if (((strncmp(bond.firstResidue.c_str(), res2, 3) == 0)  &&
-             (gmx::equalCaseInsensitive(bond.firstAtomName, at2)) &&
-             (strncmp(bond.secondResidue.c_str(), res1, 3) == 0)  &&
-             (gmx::equalCaseInsensitive(bond.secondAtomName, at1))))
+        if (((strncmp(sb[i].res1, res2, 3) == 0)  &&
+             (gmx_strcasecmp(sb[i].atom1, at2) == 0) &&
+             (strncmp(sb[i].res2, res1, 3) == 0)  &&
+             (gmx_strcasecmp(sb[i].atom2, at1) == 0)))
         {
             *bSwap = TRUE;
-            if ((0.9*bond.length < d) && (1.1*bond.length > d))
+            if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
             {
                 return TRUE;
             }
         }
-        i++;
     }
     return FALSE;
 }
 
-static void rename_1res(t_atoms *pdba, int resind, const char *newres, bool bVerbose)
+static void rename_1res(t_atoms *pdba, int resind, char *newres, bool bVerbose)
 {
     if (bVerbose)
     {
@@ -187,54 +203,59 @@ static void rename_1res(t_atoms *pdba, int resind, const char *newres, bool bVer
     *pdba->resinfo[resind].rtp = gmx_strdup(newres);
 }
 
-std::vector<DisulfideBond> makeDisulfideBonds(t_atoms *pdba,
-                                              rvec     x[],
-                                              bool     bInteractive,
-                                              bool     bVerbose)
+int mk_specbonds(t_atoms *pdba, rvec x[], bool bInteractive,
+                 t_ssbond **specbonds, bool bVerbose)
 {
-    std::vector<SpecialBond>   specialBonds = generateSpecialBonds();
-    std::vector<DisulfideBond> bonds;
-    bool                       bSwap;
-    int                        index_sb;
-    char                       buf[10];
+    t_specbond *sb    = nullptr;
+    t_ssbond   *bonds = nullptr;
+    int         nsb;
+    int         nspec, nbonds;
+    int        *specp, *sgp;
+    bool        bDoit, bSwap;
+    int         i, j, b, e, e2;
+    int         ai, aj, index_sb;
+    real      **d;
+    char        buf[10];
 
+    nbonds = 0;
+    sb     = get_specbonds(&nsb);
 
-    if (!specialBonds.empty())
+    if (nsb > 0)
     {
-        std::vector<int> specialBondResIdxs;
-        std::vector<int> specialBondAtomIdxs;
+        snew(specp, pdba->nr);
+        snew(sgp, pdba->nr);
 
-        for (int i = 0; (i < pdba->nr); i++)
+        nspec = 0;
+        for (i = 0; (i < pdba->nr); i++)
         {
             /* Check if this atom is special and if it is not a double atom
              * in the input that still needs to be removed.
              */
-            int prevAtom = -1;
-            if (!specialBondAtomIdxs.empty())
-            {
-                prevAtom = specialBondAtomIdxs.back();
-            }
-            if (is_special(specialBonds, *pdba->resinfo[pdba->atom[i].resind].name,
+            if (is_special(nsb, sb, *pdba->resinfo[pdba->atom[i].resind].name,
                            *pdba->atomname[i]) &&
-                !(!specialBondAtomIdxs.empty() &&
-                  pdba->atom[prevAtom].resind == pdba->atom[i].resind &&
-                  gmx_strcasecmp(*pdba->atomname[prevAtom],
+                !(nspec > 0 &&
+                  pdba->atom[sgp[nspec-1]].resind == pdba->atom[i].resind &&
+                  gmx_strcasecmp(*pdba->atomname[sgp[nspec-1]],
                                  *pdba->atomname[i]) == 0))
             {
-                specialBondResIdxs.push_back(pdba->atom[i].resind);
-                specialBondAtomIdxs.push_back(i);
+                specp[nspec] = pdba->atom[i].resind;
+                sgp[nspec]   = i;
+                nspec++;
             }
         }
         /* distance matrix d[nspec][nspec] */
-        int nspec = specialBondAtomIdxs.size();
-        std::vector < std::vector < real>> d(nspec);
-        for (int i = 0; (i < nspec); i++)
+        snew(d, nspec);
+        for (i = 0; (i < nspec); i++)
         {
-            d[i].resize(nspec);
-            int ai = specialBondAtomIdxs[i];
-            for (int j = 0; (j < nspec); j++)
+            snew(d[i], nspec);
+        }
+
+        for (i = 0; (i < nspec); i++)
+        {
+            ai = sgp[i];
+            for (j = 0; (j < nspec); j++)
             {
-                int aj      = specialBondAtomIdxs[j];
+                aj      = sgp[j];
                 d[i][j] = std::sqrt(distance2(x[ai], x[aj]));
             }
         }
@@ -242,38 +263,38 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms *pdba,
         {
 #define MAXCOL 7
             fprintf(stderr, "Special Atom Distance matrix:\n");
-            for (int b = 0; (b < nspec); b += MAXCOL)
+            for (b = 0; (b < nspec); b += MAXCOL)
             {
                 /* print resname/number column headings */
                 fprintf(stderr, "%8s%8s", "", "");
-                int e = std::min(b+MAXCOL, nspec-1);
-                for (int i = b; (i < e); i++)
+                e = std::min(b+MAXCOL, nspec-1);
+                for (i = b; (i < e); i++)
                 {
-                    sprintf(buf, "%s%d", *pdba->resinfo[pdba->atom[specialBondAtomIdxs[i]].resind].name,
-                            pdba->resinfo[specialBondResIdxs[i]].nr);
+                    sprintf(buf, "%s%d", *pdba->resinfo[pdba->atom[sgp[i]].resind].name,
+                            pdba->resinfo[specp[i]].nr);
                     fprintf(stderr, "%8s", buf);
                 }
                 fprintf(stderr, "\n");
                 /* print atomname/number column headings */
                 fprintf(stderr, "%8s%8s", "", "");
                 e = std::min(b+MAXCOL, nspec-1);
-                for (int i = b; (i < e); i++)
+                for (i = b; (i < e); i++)
                 {
-                    std::string buf = gmx::formatString("%s%d", *pdba->atomname[specialBondAtomIdxs[i]], specialBondAtomIdxs[i]+1);
+                    std::string buf = gmx::formatString("%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
                     fprintf(stderr, "%8s", buf.c_str());
                 }
                 fprintf(stderr, "\n");
                 /* print matrix */
                 e = std::min(b+MAXCOL, nspec);
-                for (int i = b+1; (i < nspec); i++)
+                for (i = b+1; (i < nspec); i++)
                 {
-                    std::string buf = gmx::formatString("%s%d", *pdba->resinfo[pdba->atom[specialBondAtomIdxs[i]].resind].name,
-                                                        pdba->resinfo[specialBondResIdxs[i]].nr);
+                    std::string buf = gmx::formatString("%s%d", *pdba->resinfo[pdba->atom[sgp[i]].resind].name,
+                                                        pdba->resinfo[specp[i]].nr);
                     fprintf(stderr, "%8s", buf.c_str());
-                    buf = gmx::formatString("%s%d", *pdba->atomname[specialBondAtomIdxs[i]], specialBondAtomIdxs[i]+1);
+                    buf = gmx::formatString("%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
                     fprintf(stderr, "%8s", buf.c_str());
-                    int e2 = std::min(i, e);
-                    for (int j = b; (j < e2); j++)
+                    e2 = std::min(i, e);
+                    for (j = b; (j < e2); j++)
                     {
                         fprintf(stderr, " %7.3f", d[i][j]);
                     }
@@ -282,57 +303,65 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms *pdba,
             }
         }
 
-        for (int i = 0; (i < nspec); i++)
+        snew(bonds, nspec);
+
+        for (i = 0; (i < nspec); i++)
         {
-            int ai = specialBondAtomIdxs[i];
-            for (int j = i+1; (j < nspec); j++)
+            ai = sgp[i];
+            for (j = i+1; (j < nspec); j++)
             {
-                int aj = specialBondAtomIdxs[j];
+                aj = sgp[j];
                 /* Ensure creation of at most nspec special bonds to avoid overflowing bonds[] */
-                if (bonds.size() < specialBondAtomIdxs.size() &&
-                    is_bond(specialBonds, pdba, ai, aj, d[i][j], &index_sb, &bSwap))
+                if (nbonds < nspec && is_bond(nsb, sb, pdba, ai, aj, d[i][j], &index_sb, &bSwap))
                 {
                     fprintf(stderr, "%s %s-%d %s-%d and %s-%d %s-%d%s",
                             bInteractive ? "Link" : "Linking",
                             *pdba->resinfo[pdba->atom[ai].resind].name,
-                            pdba->resinfo[specialBondResIdxs[i]].nr,
+                            pdba->resinfo[specp[i]].nr,
                             *pdba->atomname[ai], ai+1,
                             *pdba->resinfo[pdba->atom[aj].resind].name,
-                            pdba->resinfo[specialBondResIdxs[j]].nr,
+                            pdba->resinfo[specp[j]].nr,
                             *pdba->atomname[aj], aj+1,
                             bInteractive ? " (y/n) ?" : "...\n");
-                    bool bDoit = bInteractive ? yesno() : true;
+                    bDoit = bInteractive ? yesno() : TRUE;
 
                     if (bDoit)
                     {
-                        DisulfideBond newBond;
                         /* Store the residue numbers in the bonds array */
-                        newBond.firstResidue  = specialBondResIdxs[i];
-                        newBond.secondResidue = specialBondResIdxs[j];
-                        newBond.firstAtom     = *pdba->atomname[ai];
-                        newBond.secondAtom    = *pdba->atomname[aj];
-                        bonds.push_back(newBond);
+                        bonds[nbonds].res1 = specp[i];
+                        bonds[nbonds].res2 = specp[j];
+                        bonds[nbonds].a1   = gmx_strdup(*pdba->atomname[ai]);
+                        bonds[nbonds].a2   = gmx_strdup(*pdba->atomname[aj]);
                         /* rename residues */
                         if (bSwap)
                         {
-                            rename_1res(pdba, specialBondResIdxs[i],
-                                        specialBonds[index_sb].newSecondResidue.c_str(), bVerbose);
-                            rename_1res(pdba, specialBondResIdxs[j],
-                                        specialBonds[index_sb].newFirstResidue.c_str(), bVerbose);
+                            rename_1res(pdba, specp[i], sb[index_sb].newres2, bVerbose);
+                            rename_1res(pdba, specp[j], sb[index_sb].newres1, bVerbose);
                         }
                         else
                         {
-                            rename_1res(pdba, specialBondResIdxs[i],
-                                        specialBonds[index_sb].newFirstResidue.c_str(), bVerbose);
-                            rename_1res(pdba, specialBondResIdxs[j],
-                                        specialBonds[index_sb].newSecondResidue.c_str(), bVerbose);
+                            rename_1res(pdba, specp[i], sb[index_sb].newres1, bVerbose);
+                            rename_1res(pdba, specp[j], sb[index_sb].newres2, bVerbose);
                         }
+                        nbonds++;
                     }
                 }
             }
         }
 
+        for (i = 0; (i < nspec); i++)
+        {
+            sfree(d[i]);
+        }
+        sfree(d);
+        sfree(sgp);
+        sfree(specp);
+
+        done_specbonds(nsb, sb);
+        sfree(sb);
     }
 
-    return bonds;
+    *specbonds = bonds;
+
+    return nbonds;
 }

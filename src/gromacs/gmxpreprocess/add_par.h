@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,40 +38,34 @@
 #ifndef GMX_GMXPREPROCESS_ADD_PAR_H
 #define GMX_GMXPREPROCESS_ADD_PAR_H
 
-#include "gromacs/utility/arrayref.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/utility/real.h"
 
-struct InteractionTypeParameters;
-struct PreprocessResidue;
+void add_param(t_params *ps, int ai, int aj, const real *c, char *s);
 
-void add_param(InteractionTypeParameters *ps,
-               int                        ai,
-               int                        aj,
-               gmx::ArrayRef<const real>  c,
-               const char                *s);
+void add_imp_param(t_params *ps, int ai, int aj, int ak, int al,
+                   real c0, real c1, char *s);
 
-void add_imp_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
-                   real c0, real c1, const char *s);
+void add_dih_param(t_params *ps, int ai, int aj, int ak, int al,
+                   real c0, real c1, real c2, char *s);
 
-void add_dih_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
-                   real c0, real c1, real c2, const char *s);
+void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am,
+                    char *s);
 
-void add_cmap_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, int am,
-                    const char *s);
+void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak);
 
-void add_vsite2_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak);
-
-void add_vsite3_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al,
                       bool bSwapParity);
 
-void add_vsite2_param(InteractionTypeParameters *ps, int ai, int aj, int ak, real c0);
+void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0);
 
-void add_vsite3_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
                       real c0, real c1);
 
-void add_vsite4_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al,
                       int am);
 
-int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool bFirstRes);
+int search_jtype(t_restp *rp, char *name, bool bFirstRes);
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme_gpu_internal.h"
+#include "gromacs/ewald/pme-gpu-internal.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -100,6 +100,8 @@ enum class PmeSolveAlgorithm
     Coulomb,
     LennardJones,
 };
+//! PME solver results - reciprocal energy and virial
+typedef std::tuple<real, Matrix3x3> PmeSolveOutput;
 
 // Misc.
 
@@ -173,8 +175,8 @@ SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t *pme, CodePath mode);
 SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath mode,
                                                 GridOrdering gridOrdering);
 //! Getting the reciprocal energy and virial
-PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
-                                          PmeSolveAlgorithm method);
+PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
+                                               PmeSolveAlgorithm method);
 }  // namespace test
 }  // namespace gmx
 

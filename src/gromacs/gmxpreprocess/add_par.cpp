@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,94 +43,183 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxpreprocess/grompp_impl.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "hackblock.h"
-
-void add_param(InteractionTypeParameters *ps,
-               int                        ai,
-               int                        aj,
-               gmx::ArrayRef<const real>  c,
-               const char                *s)
+static void clear_atom_list(int i0, int a[])
 {
+    int i;
+
+    for (i = i0; i < MAXATOMLIST; i++)
+    {
+        a[i] = -1;
+    }
+}
+
+static void clear_force_param(int i0, real c[])
+{
+    int i;
+
+    for (i = i0; i < MAXFORCEPARAM; i++)
+    {
+        c[i] = NOTSET;
+    }
+}
+
+void add_param(t_params *ps, int ai, int aj, const real *c, char *s)
+{
+    int i;
+
     if ((ai < 0) || (aj < 0))
     {
         gmx_fatal(FARGS, "Trying to add impossible atoms: ai=%d, aj=%d", ai, aj);
     }
-    std::vector<int>  atoms = {ai, aj};
-    std::vector<real> forceParm(c.begin(), c.end());
-
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm, s ? s : ""));
+    pr_alloc(1, ps);
+    ps->param[ps->nr].ai() = ai;
+    ps->param[ps->nr].aj() = aj;
+    clear_atom_list(2, ps->param[ps->nr].a);
+    if (c == nullptr)
+    {
+        clear_force_param(0, ps->param[ps->nr].c);
+    }
+    else
+    {
+        for (i = 0; (i < MAXFORCEPARAM); i++)
+        {
+            ps->param[ps->nr].c[i] = c[i];
+        }
+    }
+    set_p_string(&(ps->param[ps->nr]), s);
+    ps->nr++;
 }
 
-void add_imp_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, real c0, real c1,
-                   const char *s)
+void add_imp_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
+                   char *s)
 {
-    std::vector<int>  atoms     = {ai, aj, ak, al};
-    std::vector<real> forceParm = {c0, c1};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm, s ? s : ""));
+    pr_alloc(1, ps);
+    ps->param[ps->nr].ai() = ai;
+    ps->param[ps->nr].aj() = aj;
+    ps->param[ps->nr].ak() = ak;
+    ps->param[ps->nr].al() = al;
+    clear_atom_list  (4, ps->param[ps->nr].a);
+    ps->param[ps->nr].c0() = c0;
+    ps->param[ps->nr].c1() = c1;
+    clear_force_param(2, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), s);
+    ps->nr++;
 }
 
-void add_dih_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, real c0, real c1,
-                   real c2, const char *s)
+void add_dih_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
+                   real c2, char *s)
 {
-    std::vector<int>  atoms     = {ai, aj, ak, al};
-    std::vector<real> forceParm = {c0, c1, c2};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm, s ? s : ""));
+    pr_alloc(1, ps);
+    ps->param[ps->nr].ai() = ai;
+    ps->param[ps->nr].aj() = aj;
+    ps->param[ps->nr].ak() = ak;
+    ps->param[ps->nr].al() = al;
+    clear_atom_list  (4, ps->param[ps->nr].a);
+    ps->param[ps->nr].c0() = c0;
+    ps->param[ps->nr].c1() = c1;
+    ps->param[ps->nr].c2() = c2;
+    clear_force_param(3, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), s);
+    ps->nr++;
 }
 
-void add_cmap_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, int am, const char *s)
+void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am, char *s)
 {
-    std::vector<int> atoms = {ai, aj, ak, al, am};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, {}, s ? s : ""));
+    pr_alloc(1, ps);
+    ps->param[ps->nr].ai() = ai;
+    ps->param[ps->nr].aj() = aj;
+    ps->param[ps->nr].ak() = ak;
+    ps->param[ps->nr].al() = al;
+    ps->param[ps->nr].am() = am;
+    clear_atom_list(5, ps->param[ps->nr].a);
+    clear_force_param(0, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), s);
+    ps->nr++;
 }
 
-void add_vsite2_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak)
+void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak)
 {
-    std::vector<int> atoms = {ai, aj, ak};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, {}));
+    pr_alloc(1, ps);
+    ps->param[ps->nr].ai() = ai;
+    ps->param[ps->nr].aj() = aj;
+    ps->param[ps->nr].ak() = ak;
+    clear_atom_list  (3, ps->param[ps->nr].a);
+    clear_force_param(0, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), "");
+    ps->nr++;
 }
 
-void add_vsite2_param(InteractionTypeParameters *ps, int ai, int aj, int ak, real c0)
+void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0)
 {
-    std::vector<int>  atoms     = {ai, aj, ak};
-    std::vector<real> forceParm = {c0};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm));
+    pr_alloc(1, ps);
+    ps->param[ps->nr].ai() = ai;
+    ps->param[ps->nr].aj() = aj;
+    ps->param[ps->nr].ak() = ak;
+    clear_atom_list  (3, ps->param[ps->nr].a);
+    ps->param[ps->nr].c0() = c0;
+    clear_force_param(1, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), "");
+    ps->nr++;
 }
 
-void add_vsite3_param(InteractionTypeParameters *ps, int ai, int aj, int ak, int al,
+void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
                       real c0, real c1)
 {
-    std::vector<int>  atoms     = {ai, aj, ak, al};
-    std::vector<real> forceParm = {c0, c1};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, forceParm));
+    pr_alloc(1, ps);
+    ps->param[ps->nr].ai() = ai;
+    ps->param[ps->nr].aj() = aj;
+    ps->param[ps->nr].ak() = ak;
+    ps->param[ps->nr].al() = al;
+    clear_atom_list  (4, ps->param[ps->nr].a);
+    ps->param[ps->nr].c0() = c0;
+    ps->param[ps->nr].c1() = c1;
+    clear_force_param(2, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), "");
+    ps->nr++;
 }
 
-void add_vsite3_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, bool bSwapParity)
+void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, bool bSwapParity)
 {
-    std::vector<int>  atoms = {ai, aj, ak, al};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, {}));
-
+    pr_alloc(1, ps);
+    ps->param[ps->nr].ai() = ai;
+    ps->param[ps->nr].aj() = aj;
+    ps->param[ps->nr].ak() = ak;
+    ps->param[ps->nr].al() = al;
+    clear_atom_list  (4, ps->param[ps->nr].a);
+    clear_force_param(0, ps->param[ps->nr].c);
     if (bSwapParity)
     {
-        ps->interactionTypes.back().setForceParameter(1, -1);
+        ps->param[ps->nr].c1() = -1;
     }
+    set_p_string(&(ps->param[ps->nr]), "");
+    ps->nr++;
 }
 
-void add_vsite4_atoms(InteractionTypeParameters *ps, int ai, int aj, int ak, int al, int am)
+void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
 {
-    std::vector<int> atoms = {ai, aj, ak, al, am};
-    ps->interactionTypes.emplace_back(InteractionType(atoms, {}));
+    pr_alloc(1, ps);
+    ps->param[ps->nr].ai() = ai;
+    ps->param[ps->nr].aj() = aj;
+    ps->param[ps->nr].ak() = ak;
+    ps->param[ps->nr].al() = al;
+    ps->param[ps->nr].am() = am;
+    clear_atom_list  (5, ps->param[ps->nr].a);
+    clear_force_param(0, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), "");
+    ps->nr++;
 }
 
-int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool bNterm)
+int search_jtype(t_restp *rtp, char *name, bool bNterm)
 {
-    int    niter, jmax;
+    int    niter, iter, j, jmax;
     size_t k, kmax, minstrlen;
     char  *rtpname, searchname[12];
 
@@ -150,16 +239,16 @@ int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool
     }
     kmax = 0;
     jmax = -1;
-    for (int iter = 0; (iter < niter && jmax == -1); iter++)
+    for (iter = 0; (iter < niter && jmax == -1); iter++)
     {
         if (iter == 1)
         {
             /* Try without the hydrogen number in the N-terminus */
             searchname[1] = '\0';
         }
-        for (int j = 0; (j < localPpResidue.natom()); j++)
+        for (j = 0; (j < rtp->natom); j++)
         {
-            rtpname = *(localPpResidue.atomname[j]);
+            rtpname = *(rtp->atomname[j]);
             if (gmx_strcasecmp(searchname, rtpname) == 0)
             {
                 jmax = j;
@@ -187,13 +276,13 @@ int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool
     if (jmax == -1)
     {
         gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s",
-                  searchname, localPpResidue.resname.c_str());
+                  searchname, rtp->resname);
     }
     if (kmax != strlen(searchname))
     {
         gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s, "
                   "it looks a bit like %s",
-                  searchname, localPpResidue.resname.c_str(), *(localPpResidue.atomname[jmax]));
+                  searchname, rtp->resname, *(rtp->atomname[jmax]));
     }
     return jmax;
 }

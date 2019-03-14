@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -169,21 +169,7 @@ inline bool thisRankHasDuty(const t_commrec *cr, int duty)
  * PAR(cr) and DOMAINDECOMP(cr) are not universally synonymous. In
  * particular, DOMAINDECOMP(cr) == true indicates that there is more
  * than one domain, not just that the dd algorithm is active. */
-#define DOMAINDECOMP(cr)   (((cr)->dd != nullptr) && PAR(cr))
-
-/*! \brief Returns whether we have actual domain decomposition for the particle-particle interactions
- *
- * Will return false when we use 1 rank for PP and 1 for PME
- */
-static bool inline havePPDomainDecomposition(const t_commrec *cr)
-{
-    /* NOTE: It would be better to use cr->dd->nnodes, but we do not want
-     *       to pull in a dependency on domdec.h into this file.
-     */
-    return (cr != nullptr &&
-            cr->dd != nullptr &&
-            cr->nnodes - cr->npmenodes > 1);
-}
+#define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
 
 //! Are we doing multiple independent simulations?
 static bool inline isMultiSim(const gmx_multisim_t *ms)

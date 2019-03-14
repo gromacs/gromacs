@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,39 +38,41 @@
 #ifndef GMX_GMXPREPROCESS_TOPUTIL_H
 #define GMX_GMXPREPROCESS_TOPUTIL_H
 
-#include <cstdio>
-
-#include "gromacs/utility/arrayref.h"
-
-#include "gromacs/utility/arrayref.h"
-
-enum class Directive : int;
-class PreprocessingAtomTypes;
-struct t_atoms;
-struct t_blocka;
-struct t_excls;
-struct MoleculeInformation;
-class InteractionType;
-struct InteractionTypeParameters;
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 
 /* UTILITIES */
 
 int name2index(char *str, char ***typenames, int ntypes);
 
-void add_param_to_list(InteractionTypeParameters *list, const InteractionType &b);
+void pr_alloc (int extra, t_params *pr);
 
+void set_p_string(t_param *p, const char *s);
 
+void cp_param(t_param *dest, t_param *src);
+
+void add_param_to_list(t_params *list, t_param *b);
+
+/* INITIATE */
+
+void init_plist(t_params plist[]);
+void done_plist(t_params *plist);
+
+void init_molinfo(t_molinfo *mol);
+
+/* FREE */
+void done_mi(t_molinfo *mi);
 
 /* PRINTING */
 
 void print_blocka(FILE *out, const char *szName, const char *szIndex,
                   const char *szA, t_blocka *block);
 
-void print_atoms(FILE *out, PreprocessingAtomTypes *atype, t_atoms *at, int *cgnr,
+void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                  bool bRTPresname);
 
-void print_bondeds(FILE *out, int natoms, Directive d,
-                   int ftype, int fsubtype, gmx::ArrayRef<const InteractionTypeParameters> plist);
+void print_bondeds(FILE *out, int natoms, directive d,
+                   int ftype, int fsubtype, t_params plist[]);
 
 void print_excl(FILE *out, int natoms, t_excls excls[]);
 

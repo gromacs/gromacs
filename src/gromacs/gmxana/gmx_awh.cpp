@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include <string>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
@@ -60,7 +61,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/units.h"
-#include "gromacs/mdtypes/awh_params.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -439,7 +440,7 @@ AwhReader::AwhReader(const AwhParams  *awhParams,
         std::unique_ptr<OutputFile> frictionOutputFile;
         if (outputFriction)
         {
-            frictionOutputFile = std::make_unique<OutputFile>(opt2fn("-fric", numFileOptions, filenames), "Friction tensor", awhParams->numBias, k);
+            frictionOutputFile = gmx::compat::make_unique<OutputFile>(opt2fn("-fric", numFileOptions, filenames), "Friction tensor", awhParams->numBias, k);
 
             frictionOutputFile->initializeFrictionOutputFile(subblockStart, numSubBlocks, awhBiasParams, energyUnit, kT);
         }
@@ -639,11 +640,11 @@ int gmx_awh(int argc, char *argv[])
                 AwhGraphSelection awhGraphSelection = (moreGraphs ? AwhGraphSelection::All : AwhGraphSelection::Pmf);
                 EnergyUnit        energyUnit        = (kTUnit ? EnergyUnit::KT : EnergyUnit::KJPerMol);
                 awhReader =
-                    std::make_unique<AwhReader>(ir.awhParams,
-                                                nfile, fnm,
-                                                awhGraphSelection,
-                                                energyUnit, BOLTZ*ir.opts.ref_t[0],
-                                                block);
+                    gmx::compat::make_unique<AwhReader>(ir.awhParams,
+                                                        nfile, fnm,
+                                                        awhGraphSelection,
+                                                        energyUnit, BOLTZ*ir.opts.ref_t[0],
+                                                        block);
             }
 
             awhReader->processAwhFrame(*block, frame->t, oenv);

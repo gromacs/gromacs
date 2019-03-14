@@ -1,19 +1,18 @@
 # Order (or more generally, edge selection) is significant (see gmxtree.md);
 # "moduleA -> moduleB" means that moduleA should not depend on moduleB, and is
 # a problem to be addressed at some point.
+compat -> utility
 domdec -> imd
 domdec -> ewald
 domdec -> mdlib
 domdec -> pulling
 fileio -> gmxlib
-gmxlib -> listed_forces
+gmxlib -> listed-forces
 mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
 mdlib -> awh
-nbnxm -> domdec
-nbnxm -> mdlib
 simd -> hardware
 gpu_utils -> hardware
-listed_forces -> mdlib
+listed-forces -> mdlib

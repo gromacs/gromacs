@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,6 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -67,7 +66,6 @@
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #define NTROTTERPARTS 3
@@ -113,7 +111,9 @@ static void NHC_trotter(const t_grpopts *opts, int nvar, const gmx_ekindata_t *e
     int           i, j, mi, mj;
     double        Ekin, Efac, reft, kT, nd;
     double        dt;
+    t_grp_tcstat *tcstat;
     double       *ivxi, *ixi;
+    double       *iQinv;
     double       *GQ;
     gmx_bool      bBarostat;
     int           mstepsi, mstepsj;
@@ -139,18 +139,17 @@ static void NHC_trotter(const t_grpopts *opts, int nvar, const gmx_ekindata_t *e
 
         ivxi = &vxi[i*nh];
         ixi  = &xi[i*nh];
-        gmx::ArrayRef<const double> iQinv;
         if (bBarostat)
         {
-            iQinv = gmx::arrayRefFromArray(&MassQ->QPinv[i*nh], nh);
+            iQinv = &(MassQ->QPinv[i*nh]);
             nd    = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
             reft  = std::max<real>(0, opts->ref_t[0]);
             Ekin  = gmx::square(*veta)/MassQ->Winv;
         }
         else
         {
-            iQinv  = gmx::arrayRefFromArray(&MassQ->Qinv[i*nh], nh);
-            const t_grp_tcstat *tcstat = &ekind->tcstat[i];
+            iQinv  = &(MassQ->Qinv[i*nh]);
+            tcstat = &ekind->tcstat[i];
             nd     = opts->nrdf[i];
             reft   = std::max<real>(0, opts->ref_t[i]);
             if (bEkinAveVel)
@@ -737,7 +736,7 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
     inc_nrnb(nrnb, eNR_PCOUPL, nr_atoms);
 }
 
-void berendsen_tcoupl(const t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
+void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt,
                       std::vector<double> &therm_integral)
 {
     const t_grpopts *opts = &ir->opts;
@@ -782,8 +781,7 @@ void berendsen_tcoupl(const t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
 void andersen_tcoupl(const t_inputrec *ir, int64_t step,
                      const t_commrec *cr, const t_mdatoms *md,
                      gmx::ArrayRef<gmx::RVec> v,
-                     real rate, const std::vector<bool> &randomize,
-                     gmx::ArrayRef<const real> boltzfac)
+                     real rate, const gmx_bool *randomize, const real *boltzfac)
 {
     const int                                 *gatindex = (DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
     int                                        i;
@@ -857,8 +855,7 @@ void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real 
 void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
                     const gmx_enerdata_t *enerd, t_state *state,
                     const tensor vir, const t_mdatoms *md,
-                    const t_extmass *MassQ, gmx::ArrayRef < std::vector < int>> trotter_seqlist,
-                    int trotter_seqno)
+                    const t_extmass *MassQ, const int * const *trotter_seqlist, int trotter_seqno)
 {
 
     int              n, i, d, ngtc, gc = 0, t;
@@ -867,6 +864,7 @@ void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
     int64_t          step_eff;
     real             dt;
     double          *scalefac, dtc;
+    const int       *trotter_seq;
     rvec             sumv = {0, 0, 0};
     gmx_bool         bCouple;
 
@@ -885,7 +883,7 @@ void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
     bCouple = (ir->nsttcouple == 1 ||
                do_per_step(step_eff+ir->nsttcouple, ir->nsttcouple));
 
-    const gmx::ArrayRef<const int> trotter_seq = trotter_seqlist[trotter_seqno];
+    trotter_seq = trotter_seqlist[trotter_seqno];
 
     if ((trotter_seq[0] == etrtSKIPALL) || (!bCouple))
     {
@@ -989,7 +987,7 @@ extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *Mas
     {
         if (bInit)
         {
-            MassQ->Qinv.resize(ngtc);
+            snew(MassQ->Qinv, ngtc);
         }
         for (i = 0; (i < ngtc); i++)
         {
@@ -1035,7 +1033,7 @@ extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *Mas
         /* Allocate space for thermostat variables */
         if (bInit)
         {
-            MassQ->Qinv.resize(ngtc * nh);
+            snew(MassQ->Qinv, ngtc*nh);
         }
 
         /* now, set temperature variables */
@@ -1070,12 +1068,12 @@ extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *Mas
     }
 }
 
-std::array < std::vector < int>, ettTSEQMAX> init_npt_vars(const t_inputrec *ir, t_state *state,
-                                                           t_extmass *MassQ, gmx_bool bTrotter)
+int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
 {
     int              i, j, nnhpres, nh;
     const t_grpopts *opts;
     real             bmass, qmass, reft, kT;
+    int            **trotter_seq;
 
     opts    = &(ir->opts); /* just for ease of referencing */
     nnhpres = state->nnhpres;
@@ -1089,10 +1087,14 @@ std::array < std::vector < int>, ettTSEQMAX> init_npt_vars(const t_inputrec *ir,
     init_npt_masses(ir, state, MassQ, TRUE);
 
     /* first, initialize clear all the trotter calls */
-    std::array < std::vector < int>, ettTSEQMAX> trotter_seq;
+    snew(trotter_seq, ettTSEQMAX);
     for (i = 0; i < ettTSEQMAX; i++)
     {
-        trotter_seq[i].resize(NTROTTERPARTS, etrtNONE);
+        snew(trotter_seq[i], NTROTTERPARTS);
+        for (j = 0; j < NTROTTERPARTS; j++)
+        {
+            trotter_seq[i][j] = etrtNONE;
+        }
         trotter_seq[i][0] = etrtSKIPALL;
     }
 
@@ -1218,7 +1220,7 @@ std::array < std::vector < int>, ettTSEQMAX> init_npt_vars(const t_inputrec *ir,
             bmass = DIM*DIM; /* recommended mass parameters for isotropic barostat */
     }
 
-    MassQ->QPinv.resize(nnhpres*opts->nhchainlength);
+    snew(MassQ->QPinv, nnhpres*opts->nhchainlength);
 
     /* barostat temperature */
     if ((ir->tau_p > 0) && (opts->ref_t[0] > 0))
@@ -1566,18 +1568,19 @@ void vrescale_tcoupl(const t_inputrec *ir, int64_t step,
 void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
                         int start, int end, rvec v[])
 {
+    t_grp_acc      *gstat;
+    t_grp_tcstat   *tcstat;
     unsigned short *cACC, *cTC;
     int             ga, gt, n, d;
     real            lg;
     rvec            vrel;
 
+    tcstat = ekind->tcstat;
     cTC    = mdatoms->cTC;
-
-    gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
 
     if (ekind->bNEMD)
     {
-        gmx::ArrayRef<const t_grp_acc> gstat = ekind->grpstat;
+        gstat  = ekind->grpstat;
         cACC   = mdatoms->cACC;
 
         ga = 0;
@@ -1619,29 +1622,9 @@ void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
     }
 }
 
-// TODO If we keep simulated annealing, make a proper module that
-// does not rely on changing inputrec.
-bool initSimulatedAnnealing(t_inputrec  *ir,
-                            gmx::Update *upd)
-{
-    bool doSimulatedAnnealing = false;
-    for (int i = 0; i < ir->opts.ngtc; i++)
-    {
-        /* set bSimAnn if any group is being annealed */
-        if (ir->opts.annealing[i] != eannNO)
-        {
-            doSimulatedAnnealing = true;
-        }
-    }
-    if (doSimulatedAnnealing)
-    {
-        update_annealing_target_temp(ir, ir->init_t, upd);
-    }
-    return doSimulatedAnnealing;
-}
 
 /* set target temperatures if we are annealing */
-void update_annealing_target_temp(t_inputrec *ir, real t, gmx::Update *upd)
+void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t *upd)
 {
     int  i, j, n, npoints;
     real pert, thist = 0, x;
@@ -1701,26 +1684,5 @@ void update_annealing_target_temp(t_inputrec *ir, real t, gmx::Update *upd)
         }
     }
 
-    update_temperature_constants(upd->sd(), ir);
-}
-
-void pleaseCiteCouplingAlgorithms(FILE             *fplog,
-                                  const t_inputrec &ir)
-{
-    if (EI_DYNAMICS(ir.eI))
-    {
-        if (ir.etc == etcBERENDSEN)
-        {
-            please_cite(fplog, "Berendsen84a");
-        }
-        if (ir.etc == etcVRESCALE)
-        {
-            please_cite(fplog, "Bussi2007a");
-        }
-        // TODO this is actually an integrator, not a coupling algorithm
-        if (ir.eI == eiSD1)
-        {
-            please_cite(fplog, "Goga2012");
-        }
-    }
+    update_temperature_constants(upd, ir);
 }

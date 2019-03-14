@@ -55,7 +55,7 @@ Quick and dirty cluster installation
 
 On a cluster where users are expected to be running across multiple
 nodes using MPI, make one installation similar to the above, and
-another using ``-DGMX_MPI=on`` and which is `building only
+another using an MPI wrapper compiler and which is `building only
 mdrun`_, because that is the only component of |Gromacs| that uses
 MPI. The latter will install a single simulation engine binary,
 i.e. ``mdrun_mpi`` when the default suffix is used. Hence it is safe
@@ -83,6 +83,18 @@ appropriate value instead of ``xxx`` :
 * ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw3``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
 * ``-DCMAKE_BUILD_TYPE=Debug`` to build |Gromacs| in debug mode
 
+Building with MiMiC QM/MM support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MiMiC QM/MM interface integration will require linking against MiMiC
+communication library, that establishes the communication channel between
+|Gromacs| and CPMD. Check that the installation folder of the library
+is added to CMAKE_PREFIX_PATH if it is installed in non-standard location.
+Building QM/MM-capable version requires double-precision version of |Gromacs|
+compiled with MPI support:
+
+* ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
+
 Building older versions
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -104,51 +116,59 @@ PowerPC including POWER8, ARM v7, ARM v8, and SPARC VIII.
 Compiler
 ^^^^^^^^
 
-|Gromacs| can be compiled on any platform with ANSI C99 and C++14
+|Gromacs| can be compiled on any platform with ANSI C99 and C++11
 compilers, and their respective standard C/C++ libraries. Good
 performance on an OS and architecture requires choosing a good
 compiler. We recommend gcc, because it is free, widely available and
 frequently provides the best performance.
 
 You should strive to use the most recent version of your
-compiler. Since we require full C++14 support the minimum supported
+compiler. Since we require full C++11 support the minimum supported
 compiler versions are
 
-* GNU (gcc) 5.1
+* GNU (gcc) 4.8.1
 * Intel (icc) 17.0.1
-* LLVM (clang) 3.6
-* Microsoft (MSVC) 2017
+* LLVM (clang) 3.3
+* Microsoft (MSVC) 2017 (C++14 is used)
 
 Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
 the performance with C++ is very bad.
 
-The xlc compiler is not supported and version 16.1 does not compile on
-POWER architectures for |Gromacs|\ -\ |version|. We recommend to use
-the gcc compiler instead, as it is being extensively tested.
+The xlc compiler is not supported and has not been tested on POWER
+architectures for |Gromacs|\ -\ |version|. We recommend to use the gcc
+compiler instead, as it is being extensively tested.
 
 You may also need the most recent version of other compiler toolchain
 components beside the compiler itself (e.g. assembler or linker);
 these are often shipped by your OS distribution's binutils package.
 
-C++14 support requires adequate support in both the compiler and the
+C++11 support requires adequate support in both the compiler and the
 C++ library. The gcc and MSVC compilers include their own standard
-libraries and require no further configuration. If your vendor's
-compiler also manages the standard library library via compiler flags,
-these will be honored. For configuration of other compilers, read on.
+libraries and require no further configuration. For configuration of
+other compilers, read on.
 
 On Linux, both the Intel and clang compiler use the libstdc++ which
 comes with gcc as the default C++ library. For |Gromacs|, we require
-the compiler to support libstc++ version 5.1 or higher. To select a
-particular libstdc++ library, provide the path to g++ with
-``-DGMX_GPLUSPLUS_PATH=/path/to/g++``.
+the compiler to support libstc++ version 4.8.1 or higher. To select a
+particular libstdc++ library, use:
+
+* For Intel: ``-DGMX_STDLIB_CXX_FLAGS=-gcc-name=/path/to/gcc/binary``
+  or make sure that the correct gcc version is first in path (e.g. by
+  loading the gcc module). It can also be useful to add
+  ``-DCMAKE_CXX_LINK_FLAGS="-Wl,-rpath,/path/to/gcc/lib64
+  -L/path/to/gcc/lib64"`` to ensure linking works correctly.
+* For clang:
+  ``-DCMAKE_CXX_FLAGS=--gcc-toolchain=/path/to/gcc/folder``. This
+  folder should contain ``include/c++``.
 
 On Windows with the Intel compiler, the MSVC standard library is used,
 and at least MSVC 2017 is required. Load the enviroment variables with
 vcvarsall.bat.
 
-To build with clang and llvm's libcxx standard library, use
-``-DCMAKE_CXX_FLAGS=-stdlib=libc++``.
+To build with any compiler and clang's libcxx standard library, use
+``-DGMX_STDLIB_CXX_FLAGS=-stdlib=libc++
+-DGMX_STDLIB_LIBRARIES='-lc++abi -lc++'``.
 
 If you are running on Mac OS X, the best option is the Intel
 compiler. Both clang and gcc will work, but they produce lower
@@ -172,14 +192,13 @@ For maximum performance you will need to examine how you will use
 parallelism is an advantage for |Gromacs|, but support for this is
 generally built into your compiler and detected automatically.
 
-.. _gmx-gpu-support:
-
 GPU support
 ~~~~~~~~~~~
 
 |Gromacs| has excellent support for NVIDIA GPUs supported via CUDA.
 On Linux, NVIDIA CUDA_ toolkit with minimum version |REQUIRED_CUDA_VERSION|
-is required, and the latest version is strongly encouraged. NVIDIA GPUs with at
+is required, and the latest version is strongly encouraged. Using
+Microsoft MSVC compiler requires version 9.0. NVIDIA GPUs with at
 least NVIDIA compute capability |REQUIRED_CUDA_COMPUTE_CAPABILITY| are
 required. You are strongly recommended to
 get the latest CUDA version and driver that supports your hardware, but
@@ -194,8 +213,7 @@ version for |Gromacs| code as used as the host compiler for nvcc.
 
 To make it possible to use other accelerators, |Gromacs| also includes
 OpenCL_ support. The minimum OpenCL version required is
-|REQUIRED_OPENCL_MIN_VERSION| and only 64-bit implementations are supported.
-The current OpenCL implementation is recommended for
+|REQUIRED_OPENCL_MIN_VERSION|. The current OpenCL implementation is recommended for
 use with GCN-based AMD GPUs, and on Linux we recommend the ROCm runtime.
 Intel integrated GPUs are supported with the Neo drivers.
 OpenCL is also supported with NVIDIA GPUs, but using
@@ -204,8 +222,7 @@ recommended. Also note that there are performance limitations (inherent
 to the NVIDIA OpenCL runtime).
 It is not possible to configure both CUDA and OpenCL
 support in the same build of |Gromacs|, nor to support both
-Intel and other vendors' GPUs with OpenCL. A 64-bit implementation
-of OpenCL is required and therefore OpenCL is only supported on 64-bit platforms.
+Intel and other vendors' GPUs with OpenCL.
 
 .. _mpi-support:
 
@@ -222,11 +239,6 @@ you will need to have
 * an MPI library installed that supports the MPI 1.3
   standard, and
 * wrapper compilers that will compile code using that library.
-
-To compile with MPI set your compiler to the normal (non-MPI) compiler
-and add ``-DGMX_MPI=on`` to the cmake options. It is possible to set
-the compiler to the MPI compiler wrapper but it is neither necessary
-nor recommended.
 
 The |Gromacs| team recommends OpenMPI_ version
 1.6 (or higher), MPICH_ version 1.4.1 (or
@@ -321,24 +333,6 @@ If you need to customize this further, use
           -DMKL_INCLUDE_DIR="/full/path/to/mkl/include"
 
 The full list and order(!) of libraries you require are found in Intel's MKL documentation for your system.
-
-Using ARM Performance Libraries
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The ARM Performance Libraries provides FFT transforms implementation for ARM
-architectures.
-Preliminary support is provided for ARMPL in |Gromacs| through its FFTW-compatible API.
-Assuming that the ARM HPC toolchain environment including the ARMPL paths
-are set up (e.g. through loading the appropriate modules like
-``module load Module-Prefix/arm-hpc-compiler-X.Y/armpl/X.Y``) use the following cmake
-options:
-
-::
-
-    cmake -DGMX_FFT_LIBRARY=fftw3 \
-          -DFFTWF_LIBRARY="${ARMPL_DIR}/lib/libarmpl_lp64.so" \
-          -DFFTWF_INCLUDE_DIR=${ARMPL_DIR}/include
-
 
 Other optional build components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -500,8 +494,6 @@ easier next time. You can also do this kind of thing with ``ccmake``,
 but you should avoid this, because the options set with ``-D`` will not
 be able to be changed interactively in that run of ``ccmake``.
 
-.. _gmx-simd-support:
-
 SIMD support
 ~~~~~~~~~~~~
 
@@ -562,7 +554,7 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors
 10. ``Sparc64_HPC_ACE`` Fujitsu machines like the K computer have this.
 11. ``IBM_VMX`` Power6 and similar Altivec processors have this.
-12. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
+12. ``IBM_VSX`` Power7, Power8 and later have this.
 13. ``ARM_NEON`` 32-bit ARMv7 with NEON support.
 14. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
 
@@ -665,8 +657,8 @@ best-tested and supported of these. Linux running on POWER 8, ARM v7 and v8
 CPUs also works well.
 
 Experimental support is available for compiling CUDA code, both for host and
-device, using clang (version 6.0 or later).
-A CUDA toolkit is still required but it is used only for GPU device code
+device, using clang (version 3.9 or later).
+A CUDA toolkit (>= v7.0) is still required but it is used only for GPU device code
 generation and to link against the CUDA runtime library.
 The clang CUDA support simplifies compilation and provides benefits for development
 (e.g. allows the use code sanitizers in CUDA host-code).
@@ -679,7 +671,7 @@ virtual architecture code is always embedded for all requested architectures
 Note that this is mainly a developer-oriented feature and it is not recommended
 for production use as the performance can be significantly lower than that
 of code compiled with nvcc (and it has also received less testing).
-However, note that since clang 5.0 the performance gap is only moderate
+However, note that with clang 5.0 the performance gap is significantly narrowed
 (at the time of writing, about 20% slower GPU kernels), so this version
 could be considered in non performance-critical use-cases.
 
@@ -829,8 +821,7 @@ is found, and otherwise fall back on a version of BLAS internal to
 accordingly. The internal versions are fine for normal use. If you
 need to specify a non-standard path to search, use
 ``-DCMAKE_PREFIX_PATH=/path/to/search``. If you need to specify a
-library with a non-standard name (e.g. ESSL on Power machines
-or ARMPL on ARM machines), then
+library with a non-standard name (e.g. ESSL on Power machines), then
 set ``-DGMX_BLAS_USER=/path/to/reach/lib/libwhatever.a``.
 
 If you are using Intel MKL_ for FFT, then the BLAS and
@@ -840,22 +831,6 @@ over-ridden with ``GMX_BLAS_USER``, etc.
 On Apple platforms where the Accelerate Framework is available, these
 will be automatically used for BLAS and LAPACK. This could be
 over-ridden with ``GMX_BLAS_USER``, etc.
-
-.. _installing with MiMiC:
-
-Building with MiMiC QM/MM support
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-MiMiC QM/MM interface integration will require linking against MiMiC
-communication library, that establishes the communication channel
-between |Gromacs| and CPMD. The MiMiC Communication library can be
-downloaded `here <https://gitlab.com/MiMiC-projects/CommLib>`__.
-Compile and install it. Check that the installation folder of the
-MiMiC library is added to CMAKE_PREFIX_PATH if it is installed in
-non-standard location. Building QM/MM-capable version requires
-double-precision version of |Gromacs| compiled with MPI support:
-
-* ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
 
 Changing the names of |Gromacs| binaries and libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1257,12 +1232,11 @@ much everywhere, it is important that we tell you where we really know
 it works because we have tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code repository
-is currently tested on x86 with a number of gcc versions ranging from 5.1
-through 8.1, version 19 of the Intel compiler, and Clang
-versions 3.6 through 7. For this, we use a variety of GNU/Linux
+is currently tested on x86 with a number of gcc versions ranging from 4.8.1
+through 7, versions 16 and 18 of the Intel compiler, and Clang
+versions 3.4 through 5. For this, we use a variety of GNU/Linux
 flavors and versions as well as recent versions of Windows. Under
 Windows, we test both MSVC 2017 and version 16 of the Intel compiler.
-Other compiler, library, and OS versions are tested less frequently.
 For details, you can
 have a look at the `continuous integration server used by GROMACS`_,
 which runs Jenkins_.

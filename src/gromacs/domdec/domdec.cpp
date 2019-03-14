@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,8 @@
 #include <cstring>
 
 #include <algorithm>
-#include <memory>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/dlb.h"
 #include "gromacs/domdec/dlbtiming.h"
@@ -60,17 +60,17 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/listed_forces/manage_threading.h"
+#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/constraintrange.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -1167,7 +1167,7 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
             if (dd->ci[dim] == dd->master_ci[dim])
             {
                 /* This is the root process of this row */
-                cellsizes.rowMaster  = std::make_unique<RowMaster>();
+                cellsizes.rowMaster  = gmx::compat::make_unique<RowMaster>();
 
                 RowMaster &rowMaster = *cellsizes.rowMaster;
                 rowMaster.cellFrac.resize(ddCellFractionBufferSize(dd, dim_ind));
@@ -1770,9 +1770,9 @@ static void make_dd_communicators(const gmx::MDLogger &mdlog,
     /* We can not use DDMASTER(dd), because dd->masterrank is set later */
     if (MASTER(cr))
     {
-        dd->ma = std::make_unique<AtomDistribution>(dd->nc,
-                                                    comm->cgs_gl.nr,
-                                                    comm->cgs_gl.index[comm->cgs_gl.nr]);
+        dd->ma = gmx::compat::make_unique<AtomDistribution>(dd->nc,
+                                                            comm->cgs_gl.nr,
+                                                            comm->cgs_gl.index[comm->cgs_gl.nr]);
     }
 }
 
@@ -1934,7 +1934,7 @@ static DlbState forceDlbOffOrBail(DlbState             cmdlineDlbState,
  */
 static DlbState determineInitialDlbState(const gmx::MDLogger &mdlog,
                                          DlbOption dlbOption, gmx_bool bRecordLoad,
-                                         const gmx::MdrunOptions &mdrunOptions,
+                                         const MdrunOptions &mdrunOptions,
                                          const t_inputrec *ir)
 {
     DlbState dlbState = DlbState::offCanTurnOn;
@@ -2106,10 +2106,10 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
          */
         int homeAtomCountEstimate =  mtop.natoms/numMpiRanksTotal;
         comm->updateGroupsCog =
-            std::make_unique<gmx::UpdateGroupsCog>(mtop,
-                                                   comm->updateGroupingPerMoleculetype,
-                                                   maxReferenceTemperature(inputrec),
-                                                   homeAtomCountEstimate);
+            gmx::compat::make_unique<gmx::UpdateGroupsCog>(mtop,
+                                                           comm->updateGroupingPerMoleculetype,
+                                                           maxReferenceTemperature(inputrec),
+                                                           homeAtomCountEstimate);
 
         /* To use update groups, the large domain-to-domain cutoff distance
          * should be compatible with the box size.
@@ -2137,7 +2137,7 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
 static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                    t_commrec *cr, gmx_domdec_t *dd,
                                    const DomdecOptions &options,
-                                   const gmx::MdrunOptions &mdrunOptions,
+                                   const MdrunOptions &mdrunOptions,
                                    const gmx_mtop_t *mtop,
                                    const t_inputrec *ir,
                                    const matrix box,
@@ -2173,7 +2173,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     comm->bPMELoadBalDLBLimits = FALSE;
 
     /* Allocate the charge group/atom sorting struct */
-    comm->sort = std::make_unique<gmx_domdec_sort_t>();
+    comm->sort = gmx::compat::make_unique<gmx_domdec_sort_t>();
 
     comm->bCGs = (ncg_mtop(mtop) < mtop->natoms);
 
@@ -2953,7 +2953,7 @@ static void set_dd_envvar_options(const gmx::MDLogger &mdlog,
 gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
                                         t_commrec                     *cr,
                                         const DomdecOptions           &options,
-                                        const gmx::MdrunOptions       &mdrunOptions,
+                                        const MdrunOptions            &mdrunOptions,
                                         const gmx_mtop_t              *mtop,
                                         const t_inputrec              *ir,
                                         const matrix                   box,

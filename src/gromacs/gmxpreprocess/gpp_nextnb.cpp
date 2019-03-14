@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,6 @@
 
 #include <cstdlib>
 
-#include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
@@ -340,13 +339,15 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
 
 }
 
-static void add_b(InteractionTypeParameters *bonds, int *nrf, sortable *s)
+static void add_b(t_params *bonds, int *nrf, sortable *s)
 {
-    int i = 0;
-    for (const auto &bond : bonds->interactionTypes)
+    int i;
+    int ai, aj;
+
+    for (i = 0; (i < bonds->nr); i++)
     {
-        int ai = bond.ai();
-        int aj = bond.aj();
+        ai = bonds->param[i].ai();
+        aj = bonds->param[i].aj();
         if ((ai < 0) || (aj < 0))
         {
             gmx_fatal(FARGS, "Impossible atom numbers in bond %d: ai=%d, aj=%d",
@@ -357,29 +358,28 @@ static void add_b(InteractionTypeParameters *bonds, int *nrf, sortable *s)
         s[(*nrf)++].aj = aj;
         s[(*nrf)].aj   = ai;
         s[(*nrf)++].ai = aj;
-        i++;
     }
 }
 
-void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionTypeParameters> plist)
+void gen_nnb(t_nextnb *nnb, t_params plist[])
 {
     sortable *s;
-    int       nrbonds, nrf;
+    int       i, nrbonds, nrf;
 
     nrbonds = 0;
-    for (int i = 0; (i < F_NRE); i++)
+    for (i = 0; (i < F_NRE); i++)
     {
         if (IS_CHEMBOND(i))
         {
             /* we need every bond twice (bidirectional) */
-            nrbonds += 2*plist[i].size();
+            nrbonds += 2*plist[i].nr;
         }
     }
 
     snew(s, nrbonds);
 
     nrf = 0;
-    for (int i = 0; (i < F_NRE); i++)
+    for (i = 0; (i < F_NRE); i++)
     {
         if (IS_CHEMBOND(i))
         {
@@ -440,9 +440,7 @@ sort_and_purge_nnb(t_nextnb *nnb)
 }
 
 
-void generate_excl (int nrexcl,
-                    int nratoms,
-                    gmx::ArrayRef<InteractionTypeParameters> plist, t_nextnb *nnb, t_blocka *excl)
+void generate_excl (int nrexcl, int nratoms, t_params plist[], t_nextnb *nnb, t_blocka *excl)
 {
     if (nrexcl < 0)
     {

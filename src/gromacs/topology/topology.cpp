@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,6 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -173,23 +172,30 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     }
 }
 
-gmx_localtop_t::gmx_localtop_t()
+void init_localtop(gmx_localtop_t *top)
 {
-    init_block_null(&cgs);
-    init_blocka_null(&excls);
-    init_idef(&idef);
-    init_atomtypes(&atomtypes);
+    init_block(&top->cgs);
+    init_blocka(&top->excls);
+    init_idef(&top->idef);
+    init_atomtypes(&top->atomtypes);
 }
 
-gmx_localtop_t::~gmx_localtop_t()
+void done_localtop(gmx_localtop_t *top)
 {
-    if (!useInDomainDecomp_)
+    if (top == nullptr)
     {
-        done_idef(&idef);
-        done_block(&cgs);
-        done_blocka(&excls);
-        done_atomtypes(&atomtypes);
+        return;
     }
+    done_idef(&top->idef);
+    done_block(&top->cgs);
+    done_blocka(&top->excls);
+    done_atomtypes(&top->atomtypes);
+}
+
+void done_and_sfree_localtop(gmx_localtop_t *top)
+{
+    done_localtop(top);
+    sfree(top);
 }
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
@@ -413,8 +419,33 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
     }
 }
 
+static void cmp_ilist(FILE *fp, int ftype, const t_ilist *il1, const t_ilist *il2)
+{
+    int  i;
+    char buf[256];
+
+    fprintf(fp, "comparing ilist %s\n", interaction_function[ftype].name);
+    sprintf(buf, "%s->nr", interaction_function[ftype].name);
+    cmp_int(fp, buf, -1, il1->nr, il2->nr);
+    sprintf(buf, "%s->iatoms", interaction_function[ftype].name);
+    if (((il1->nr > 0) && (!il1->iatoms)) ||
+        ((il2->nr > 0) && (!il2->iatoms)) ||
+        ((il1->nr != il2->nr)))
+    {
+        fprintf(fp, "Comparing radically different topologies - %s is different\n",
+                buf);
+    }
+    else
+    {
+        for (i = 0; (i < il1->nr); i++)
+        {
+            cmp_int(fp, buf, i, il1->iatoms[i], il2->iatoms[i]);
+        }
+    }
+}
+
 static void cmp_iparm(FILE *fp, const char *s, t_functype ft,
-                      const t_iparams &ip1, const t_iparams &ip2, real relativeTolerance, real absoluteTolerance)
+                      const t_iparams &ip1, const t_iparams &ip2, real ftol, real abstol)
 {
     int      i;
     gmx_bool bDiff;
@@ -422,7 +453,7 @@ static void cmp_iparm(FILE *fp, const char *s, t_functype ft,
     bDiff = FALSE;
     for (i = 0; i < MAXFORCEPARAM && !bDiff; i++)
     {
-        bDiff = !equal_real(ip1.generic.buf[i], ip2.generic.buf[i], relativeTolerance, absoluteTolerance);
+        bDiff = !equal_real(ip1.generic.buf[i], ip2.generic.buf[i], ftol, abstol);
     }
     if (bDiff)
     {
@@ -434,7 +465,7 @@ static void cmp_iparm(FILE *fp, const char *s, t_functype ft,
 }
 
 static void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft,
-                         const t_iparams &ip1, real relativeTolerance, real absoluteTolerance)
+                         const t_iparams &ip1, real ftol, real abstol)
 {
     int      nrfpA, nrfpB, p0, i;
     gmx_bool bDiff;
@@ -456,7 +487,7 @@ static void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft,
     bDiff = FALSE;
     for (i = 0; i < nrfpB && !bDiff; i++)
     {
-        bDiff = !equal_real(ip1.generic.buf[p0+i], ip1.generic.buf[nrfpA+i], relativeTolerance, absoluteTolerance);
+        bDiff = !equal_real(ip1.generic.buf[p0+i], ip1.generic.buf[nrfpA+i], ftol, abstol);
     }
     if (bDiff)
     {
@@ -465,7 +496,7 @@ static void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft,
     }
 }
 
-static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2, real relativeTolerance, real absoluteTolerance)
+static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2, real ftol, real abstol)
 {
     int cmap1_ngrid = (cmap1 ? cmap1->cmapdata.size() : 0);
     int cmap2_ngrid = (cmap2 ? cmap2->cmapdata.size() : 0);
@@ -489,8 +520,42 @@ static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2,
 
             for (i = 0; i < 4*cmap1->grid_spacing*cmap1->grid_spacing; i++)
             {
-                cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i], relativeTolerance, absoluteTolerance);
+                cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i], ftol, abstol);
             }
+        }
+    }
+}
+
+static void cmp_idef(FILE *fp, const t_idef *id1, const t_idef *id2, real ftol, real abstol)
+{
+    int  i;
+    char buf1[64], buf2[64];
+
+    fprintf(fp, "comparing idef\n");
+    if (id2)
+    {
+        cmp_int(fp, "idef->ntypes", -1, id1->ntypes, id2->ntypes);
+        cmp_int(fp, "idef->atnr",  -1, id1->atnr, id2->atnr);
+        for (i = 0; (i < std::min(id1->ntypes, id2->ntypes)); i++)
+        {
+            sprintf(buf1, "idef->functype[%d]", i);
+            sprintf(buf2, "idef->iparam[%d]", i);
+            cmp_int(fp, buf1, i, static_cast<int>(id1->functype[i]), static_cast<int>(id2->functype[i]));
+            cmp_iparm(fp, buf2, id1->functype[i],
+                      id1->iparams[i], id2->iparams[i], ftol, abstol);
+        }
+        cmp_real(fp, "fudgeQQ", -1, id1->fudgeQQ, id2->fudgeQQ, ftol, abstol);
+        cmp_cmap(fp, id1->cmap_grid, id2->cmap_grid, ftol, abstol);
+        for (i = 0; (i < F_NRE); i++)
+        {
+            cmp_ilist(fp, i, &(id1->il[i]), &(id2->il[i]));
+        }
+    }
+    else
+    {
+        for (i = 0; (i < id1->ntypes); i++)
+        {
+            cmp_iparm_AB(fp, "idef->iparam", id1->functype[i], id1->iparams[i], ftol, abstol);
         }
     }
 }
@@ -515,180 +580,49 @@ static void cmp_blocka(FILE *fp, const t_blocka *b1, const t_blocka *b2, const c
     cmp_int(fp, buf, -1, b1->nra, b2->nra);
 }
 
-static void compareFfparams(FILE *fp, const gmx_ffparams_t &ff1, const gmx_ffparams_t &ff2, real relativeTolerance, real absoluteTolerance)
+void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol)
 {
-    fprintf(fp, "comparing force field parameters\n");
-    cmp_int(fp, "numTypes", -1, ff1.numTypes(), ff2.numTypes());
-    cmp_int(fp, "atnr", -1, ff1.atnr, ff1.atnr);
-    cmp_double(fp, "reppow", -1, ff1.reppow, ff2.reppow, relativeTolerance, absoluteTolerance);
-    cmp_real(fp, "fudgeQQ", -1, ff1.fudgeQQ, ff2.fudgeQQ, relativeTolerance, absoluteTolerance);
-    cmp_cmap(fp, &ff1.cmap_grid, &ff2.cmap_grid, relativeTolerance, absoluteTolerance);
-    for (int i = 0; i < std::min(ff1.numTypes(), ff2.numTypes()); i++)
+    fprintf(fp, "comparing top\n");
+    if (t2)
     {
-        std::string buf = gmx::formatString("ffparams->functype[%d]", i);
-        cmp_int(fp, buf.c_str(), i, ff1.functype[i], ff2.functype[i]);
-        buf = gmx::formatString("ffparams->iparams[%d]", i);
-        cmp_iparm(fp, buf.c_str(), ff1.functype[i], ff1.iparams[i], ff2.iparams[i], relativeTolerance, absoluteTolerance);
+        cmp_idef(fp, &(t1->idef), &(t2->idef), ftol, abstol);
+        cmp_atoms(fp, &(t1->atoms), &(t2->atoms), ftol, abstol);
+        cmp_block(fp, &t1->cgs, &t2->cgs, "cgs");
+        cmp_block(fp, &t1->mols, &t2->mols, "mols");
+        cmp_bool(fp, "bIntermolecularInteractions", -1, t1->bIntermolecularInteractions, t2->bIntermolecularInteractions);
+        cmp_blocka(fp, &t1->excls, &t2->excls, "excls");
     }
-
-}
-
-static void compareFfparamAB(FILE *fp, const gmx_ffparams_t &ff1, real relativeTolerance,   real absoluteTolerance)
-{
-    fprintf(fp, "comparing free energy parameters\n");
-    for (int i = 0; i < ff1.numTypes(); i++)
+    else
     {
-        std::string buf = gmx::formatString("ffparams->iparams[%d]", i);
-        cmp_iparm_AB(fp, buf.c_str(), ff1.functype[i], ff1.iparams[i], relativeTolerance, absoluteTolerance);
-    }
-}
-static void compareInteractionLists(FILE *fp, const InteractionLists *il1, const InteractionLists *il2)
-{
-    fprintf(fp, "comparing InteractionLists\n");
-    if ((il1 || il2) && (!il1 || !il2))
-    {
-        fprintf(fp, "InteractionLists are present in topology %d but not in the other\n", il1 ? 1 : 2);
-    }
-    if (il1 && il2)
-    {
-        for (int i = 0; i < F_NRE; i++)
-        {
-            cmp_int(fp, "InteractionList size", i, il1->at(i).size(), il2->at(i).size());
-            int nr = std::min(il1->at(i).size(), il2->at(i).size());
-            for (int j = 0; j < nr; j++)
-            {
-                cmp_int(fp, "InteractionList entry", j, il1->at(i).iatoms.at(j), il2->at(i).iatoms.at(j));
-            }
-        }
+        cmp_idef(fp, &(t1->idef), nullptr, ftol, abstol);
+        cmp_atoms(fp, &(t1->atoms), nullptr, ftol, abstol);
     }
 }
 
-static void compareMoltypes(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, gmx::ArrayRef<const gmx_moltype_t> mt2, real relativeTolerance, real absoluteTolerance)
+void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
+                int natoms0, int natoms1)
 {
-    fprintf(fp, "comparing molecule types\n");
-    cmp_int(fp, "moltype size", -1, mt1.size(), mt2.size());
-    for (int i = 0; i < std::min(mt1.ssize(), mt2.ssize()); i++)
-    {
-        cmp_str(fp, "Name", i, *mt1[i].name, *mt2[i].name);
-        compareAtoms(fp, &mt1[i].atoms, &mt2[i].atoms, relativeTolerance, absoluteTolerance);
-        compareInteractionLists(fp, &mt1[i].ilist, &mt2[i].ilist);
-        std::string buf = gmx::formatString("cgs[%d]", i);
-        cmp_block(fp, &mt1[i].cgs, &mt2[i].cgs, buf.c_str());
-        buf = gmx::formatString("excls[%d]", i);
-        cmp_blocka(fp, &mt1[i].excls, &mt2[i].excls, buf.c_str());
-    }
-}
+    char buf[32];
 
-static void compareMoletypeAB(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, real relativeTolerance, real absoluteTolerance)
-{
-    fprintf(fp, "comparing free energy molecule types\n");
-    for (int i = 0; i < mt1.ssize(); i++)
-    {
-        compareAtoms(fp, &mt1[i].atoms, nullptr, relativeTolerance, absoluteTolerance);
-    }
-}
-static void compareMolblocks(FILE *fp, gmx::ArrayRef<const gmx_molblock_t> mb1, gmx::ArrayRef<const gmx_molblock_t> mb2)
-{
-    fprintf(fp, "comparing molecule blocks\n");
-    cmp_int(fp, "molblock size", -1, mb1.size(), mb2.size());
-    int nr = std::min(mb1.size(), mb2.size());
-    for (int i = 0; i < nr; i++)
-    {
-        cmp_int(fp, "type", i, mb1[i].type, mb2[i].type);
-        cmp_int(fp, "nmol", i, mb1[i].nmol, mb2[i].nmol);
-        // Only checking size of restraint vectors for now
-        cmp_int(fp, "posres_xA size", i, mb1[i].posres_xA.size(), mb2[i].posres_xA.size());
-        cmp_int(fp, "posres_xB size", i, mb1[i].posres_xB.size(), mb2[i].posres_xB.size());
-    }
-
-}
-
-static void compareAtomtypes(FILE *fp, const t_atomtypes &at1, const t_atomtypes &at2)
-{
-    fprintf(fp, "comparing atomtypes\n");
-    cmp_int(fp, "nr", -1, at1.nr, at2.nr);
-    int nr = std::min(at1.nr, at2.nr);
-    for (int i = 0; i < nr; i++)
-    {
-        cmp_int(fp, "atomtype", i, at1.atomnumber[i], at2.atomnumber[i]);
-    }
-}
-
-static void compareIntermolecularExclusions(FILE *fp, gmx::ArrayRef<const int> ime1, gmx::ArrayRef<const int> ime2)
-{
-    fprintf(fp, "comparing intermolecular exclusions\n");
-    cmp_int(fp, "exclusion number", -1, ime1.size(), ime2.size());
-    int nr = std::min(ime1.size(), ime2.size());
-    for (int i = 0; i < nr; i++)
-    {
-        cmp_int(fp, "exclusion", i, ime1[i], ime2[i]);
-    }
-}
-
-static void compareBlockIndices(FILE *fp, gmx::ArrayRef<const MoleculeBlockIndices> mbi1, gmx::ArrayRef<const MoleculeBlockIndices> mbi2)
-{
-    fprintf(fp, "comparing moleculeBlockIndices\n");
-    cmp_int(fp, "size", -1, mbi1.size(), mbi2.size());
-    int nr = std::min(mbi1.size(), mbi2.size());
-    for (int i = 0; i < nr; i++)
-    {
-        cmp_int(fp, "numAtomsPerMolecule", i, mbi1[i].numAtomsPerMolecule, mbi2[i].numAtomsPerMolecule);
-        cmp_int(fp, "globalAtomStart", i, mbi1[i].globalAtomStart, mbi2[i].globalAtomStart);
-        cmp_int(fp, "globalAtomEnd", i, mbi1[i].globalAtomEnd, mbi2[i].globalAtomEnd);
-        cmp_int(fp, "globalResidueStart", i, mbi1[i].globalResidueStart, mbi2[i].globalResidueStart);
-        cmp_int(fp, "moleculeIndexStart", i, mbi1[i].moleculeIndexStart, mbi2[i].moleculeIndexStart);
-    }
-}
-
-void compareMtop(FILE *fp, const gmx_mtop_t &mtop1, const gmx_mtop_t &mtop2, real relativeTolerance, real absoluteTolerance)
-{
-    fprintf(fp, "comparing mtop topology\n");
-    cmp_str(fp, "Name", -1, *mtop1.name, *mtop2.name);
-    cmp_int(fp, "natoms", -1, mtop1.natoms, mtop2.natoms);
-    cmp_int(fp, "maxres_renum", -1, mtop1.maxres_renum, mtop2.maxres_renum);
-    cmp_int(fp, "maxresnr", -1, mtop1.maxresnr, mtop2.maxresnr);
-    cmp_bool(fp, "bIntermolecularInteractions", -1, mtop1.bIntermolecularInteractions, mtop2.bIntermolecularInteractions);
-    cmp_bool(fp, "haveMoleculeIndices", -1, mtop1.haveMoleculeIndices, mtop2.haveMoleculeIndices);
-
-    compareFfparams(fp, mtop1.ffparams, mtop2.ffparams, relativeTolerance, absoluteTolerance);
-    compareMoltypes(fp, mtop1.moltype, mtop2.moltype, relativeTolerance, absoluteTolerance);
-    compareMolblocks(fp, mtop1.molblock, mtop2.molblock);
-    compareInteractionLists(fp, mtop1.intermolecular_ilist.get(), mtop2.intermolecular_ilist.get());
-    compareAtomtypes(fp, mtop1.atomtypes, mtop2.atomtypes);
-    compareAtomGroups(fp, mtop1.groups, mtop2.groups, mtop1.natoms, mtop2.natoms);
-    compareIntermolecularExclusions(fp, mtop1.intermolecularExclusionGroup, mtop2.intermolecularExclusionGroup);
-    compareBlockIndices(fp, mtop1.moleculeBlockIndices, mtop2.moleculeBlockIndices);
-}
-
-void compareMtopAB(FILE *fp, const gmx_mtop_t &mtop1, real relativeTolerance, real absoluteTolerance)
-{
-    fprintf(fp, "comparing topAB\n");
-    compareFfparamAB(fp, mtop1.ffparams, relativeTolerance, absoluteTolerance);
-    compareMoletypeAB(fp, mtop1.moltype, relativeTolerance, absoluteTolerance);
-}
-
-void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
-                       int natoms0, int natoms1)
-{
     fprintf(fp, "comparing groups\n");
 
     for (int i = 0; i < egcNR; i++)
     {
-        std::string buf = gmx::formatString("grps[%d].nr", i);
-        cmp_int(fp, buf.c_str(), -1, g0.grps[i].nr, g1.grps[i].nr);
-        if (g0.grps[i].nr == g1.grps[i].nr)
+        sprintf(buf, "grps[%d].nr", i);
+        cmp_int(fp, buf, -1, g0->grps[i].nr, g1->grps[i].nr);
+        if (g0->grps[i].nr == g1->grps[i].nr)
         {
-            for (int j = 0; j < g0.grps[i].nr; j++)
+            for (int j = 0; j < g0->grps[i].nr; j++)
             {
-                buf = gmx::formatString("grps[%d].name[%d]", i, j);
-                cmp_str(fp, buf.c_str(), -1,
-                        *g0.grpname[g0.grps[i].nm_ind[j]],
-                        *g1.grpname[g1.grps[i].nm_ind[j]]);
+                sprintf(buf, "grps[%d].name[%d]", i, j);
+                cmp_str(fp, buf, -1,
+                        *g0->grpname[g0->grps[i].nm_ind[j]],
+                        *g1->grpname[g1->grps[i].nm_ind[j]]);
             }
         }
-        cmp_int(fp, "ngrpnr", i, g0.ngrpnr[i], g1.ngrpnr[i]);
-        if (g0.ngrpnr[i] == g1.ngrpnr[i] && natoms0 == natoms1 &&
-            (g0.grpnr[i] != nullptr || g1.grpnr[i] != nullptr))
+        cmp_int(fp, "ngrpnr", i, g0->ngrpnr[i], g1->ngrpnr[i]);
+        if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1 &&
+            (g0->grpnr[i] != nullptr || g1->grpnr[i] != nullptr))
         {
             for (int j = 0; j < natoms0; j++)
             {
@@ -701,9 +635,9 @@ void compareAtomGroups(FILE *fp, const gmx_groups_t &g0, const gmx_groups_t &g1,
      */
 }
 
-int getGroupType(const gmx_groups_t &group, int type, int atom)
+int getGroupType(const gmx_groups_t *group, int type, int atom)
 {
-    return (group.grpnr[type] ? group.grpnr[type][atom] : 0);
+    return (group->grpnr[type] ? group->grpnr[type][atom] : 0);
 }
 
 void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 
 #include <memory>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
@@ -114,7 +115,7 @@ std::unique_ptr<MDAtoms>
 makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
             const bool rankHasPmeGpuTask)
 {
-    auto       mdAtoms = std::make_unique<MDAtoms>();
+    auto       mdAtoms = compat::make_unique<MDAtoms>();
     // GPU transfers may want to use a suitable pinning mode.
     if (rankHasPmeGpuTask)
     {
@@ -128,7 +129,7 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     md->bVCMgrps = FALSE;
     for (int i = 0; i < mtop.natoms; i++)
     {
-        if (getGroupType(mtop.groups, egcVCM, i) > 0)
+        if (getGroupType(&mtop.groups, egcVCM, i) > 0)
         {
             md->bVCMgrps = TRUE;
         }
@@ -206,15 +207,16 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 {
     gmx_bool              bLJPME;
     const t_grpopts      *opts;
+    const gmx_groups_t   *groups;
     int                   nthreads gmx_unused;
 
     bLJPME = EVDW_PME(ir->vdwtype);
 
     opts = &ir->opts;
 
-    const gmx_groups_t &groups = mtop->groups;
+    groups = &mtop->groups;
 
-    auto                md = mdAtoms->mdatoms();
+    auto md = mdAtoms->mdatoms();
     /* nindex>=0 indicates DD where we use an index */
     if (nindex >= 0)
     {
@@ -367,7 +369,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 else
                 {
                     /* The friction coefficient is mass/tau_t */
-                    fac = ir->delta_t/opts->tau_t[md->cTC ? groups.grpnr[egcTC][ag] : 0];
+                    fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
                     mA  = 0.5*atom.m*fac;
                     mB  = 0.5*atom.mB*fac;
                 }
@@ -464,16 +466,16 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             md->ptype[i]    = atom.ptype;
             if (md->cTC)
             {
-                md->cTC[i]    = groups.grpnr[egcTC][ag];
+                md->cTC[i]    = groups->grpnr[egcTC][ag];
             }
             md->cENER[i]    = getGroupType(groups, egcENER, ag);
             if (md->cACC)
             {
-                md->cACC[i]   = groups.grpnr[egcACC][ag];
+                md->cACC[i]   = groups->grpnr[egcACC][ag];
             }
             if (md->cVCM)
             {
-                md->cVCM[i]       = groups.grpnr[egcVCM][ag];
+                md->cVCM[i]       = groups->grpnr[egcVCM][ag];
             }
             if (md->cORF)
             {
@@ -482,17 +484,17 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
             if (md->cU1)
             {
-                md->cU1[i]        = groups.grpnr[egcUser1][ag];
+                md->cU1[i]        = groups->grpnr[egcUser1][ag];
             }
             if (md->cU2)
             {
-                md->cU2[i]        = groups.grpnr[egcUser2][ag];
+                md->cU2[i]        = groups->grpnr[egcUser2][ag];
             }
 
             if (ir->bQMMM)
             {
-                if (groups.grpnr[egcQMMM] == nullptr ||
-                    groups.grpnr[egcQMMM][ag] < groups.grps[egcQMMM].nr-1)
+                if (groups->grpnr[egcQMMM] == nullptr ||
+                    groups->grpnr[egcQMMM][ag] < groups->grps[egcQMMM].nr-1)
                 {
                     md->bQM[i]      = TRUE;
                 }

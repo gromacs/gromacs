@@ -1,8 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006 - 2014, The GROMACS development team.
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,9 +50,9 @@
 #include <cstring>
 
 #include <algorithm>
-#include <memory>
 #include <string>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
@@ -615,7 +614,7 @@ static int make_reverse_ilist(const InteractionLists &ilist,
     low_make_reverse_ilist(ilist, atoms->atom, vsitePbc,
                            count,
                            bConstr, bSettle, bBCheck,
-                           {}, {},
+                           gmx::EmptyArrayRef(), gmx::EmptyArrayRef(),
                            bLinkToAllAtoms, FALSE);
 
     ril_mt->index.push_back(0);
@@ -705,7 +704,7 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         *nint +=
             make_reverse_ilist(*mtop->intermolecular_ilist,
                                &atoms_global,
-                               {},
+                               gmx::EmptyArrayRef(),
                                rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
                                &rt.ril_intermol);
     }
@@ -739,7 +738,7 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     {
         for (thread_work_t &th_work : rt.th_work)
         {
-            th_work.vsitePbc = std::make_unique<VsitePbc>();
+            th_work.vsitePbc = gmx::compat::make_unique<VsitePbc>();
         }
     }
 
@@ -936,7 +935,7 @@ static void add_posres(int mol, int a_mol, int numAtomsInMolecule,
 
     /* Get the position restraint coordinates from the molblock */
     a_molb = mol*numAtomsInMolecule + a_mol;
-    GMX_ASSERT(a_molb < ssize(molb->posres_xA), "We need a sufficient number of position restraint coordinates");
+    GMX_ASSERT(a_molb < static_cast<int>(molb->posres_xA.size()), "We need a sufficient number of position restraint coordinates");
     ip->posres.pos0A[XX] = molb->posres_xA[a_molb][XX];
     ip->posres.pos0A[YY] = molb->posres_xA[a_molb][YY];
     ip->posres.pos0A[ZZ] = molb->posres_xA[a_molb][ZZ];
@@ -980,7 +979,7 @@ static void add_fbposres(int mol, int a_mol, int numAtomsInMolecule,
 
     /* Get the position restraint coordinats from the molblock */
     a_molb = mol*numAtomsInMolecule + a_mol;
-    GMX_ASSERT(a_molb < ssize(molb->posres_xA), "We need a sufficient number of position restraint coordinates");
+    GMX_ASSERT(a_molb < static_cast<int>(molb->posres_xA.size()), "We need a sufficient number of position restraint coordinates");
     /* Take reference positions from A position of normal posres */
     ip->fbposres.pos0[XX] = molb->posres_xA[a_molb][XX];
     ip->fbposres.pos0[YY] = molb->posres_xA[a_molb][YY];
@@ -1141,7 +1140,7 @@ static void combine_blocka(t_blocka                           *dest,
         dest->nalloc_a = over_alloc_large(dest->nra+na);
         srenew(dest->a, dest->nalloc_a);
     }
-    for (gmx::index s = 1; s < src.ssize(); s++)
+    for (gmx::index s = 1; s < src.size(); s++)
     {
         for (int i = dest->nr + 1; i < src[s].excl.nr + 1; i++)
         {
@@ -1168,7 +1167,7 @@ static void combine_idef(t_idef                             *dest,
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
         int n = 0;
-        for (gmx::index s = 1; s < src.ssize(); s++)
+        for (gmx::index s = 1; s < src.size(); s++)
         {
             n += src[s].idef.il[ftype].nr;
         }
@@ -1190,7 +1189,7 @@ static void combine_idef(t_idef                             *dest,
             const int  nral1 = 1 + NRAL(ftype);
             const int  ftv   = ftype - c_ftypeVsiteStart;
 
-            for (gmx::index s = 1; s < src.ssize(); s++)
+            for (gmx::index s = 1; s < src.size(); s++)
             {
                 const t_ilist &ils = src[s].idef.il[ftype];
 
@@ -1226,12 +1225,12 @@ static void combine_idef(t_idef                             *dest,
                 }
 
                 /* Set nposres to the number of original position restraints in dest */
-                for (gmx::index s = 1; s < src.ssize(); s++)
+                for (gmx::index s = 1; s < src.size(); s++)
                 {
                     nposres -= src[s].idef.il[ftype].nr/2;
                 }
 
-                for (gmx::index s = 1; s < src.ssize(); s++)
+                for (gmx::index s = 1; s < src.size(); s++)
                 {
                     const t_iparams *iparams_src = (ftype == F_POSRES ? src[s].idef.iparams_posres : src[s].idef.iparams_fbposres);
 
@@ -1788,7 +1787,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
         if (isExcludedAtom)
         {
-            if (n + intermolecularExclusionGroup.ssize() > lexcls->nalloc_a)
+            if (n + intermolecularExclusionGroup.size() > lexcls->nalloc_a)
             {
                 lexcls->nalloc_a =
                     over_alloc_large(n + intermolecularExclusionGroup.size());
@@ -2070,7 +2069,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        t_forcerec *fr,
                        rvec *cgcm_or_x,
                        gmx_vsite_t *vsite,
-                       const gmx_mtop_t &mtop, gmx_localtop_t *ltop)
+                       const gmx_mtop_t *mtop, gmx_localtop_t *ltop)
 {
     gmx_bool bRCheckMB, bRCheck2B;
     real     rc = -1;
@@ -2140,7 +2139,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     }
 
     dd->nbonded_local =
-        make_local_bondeds_excls(dd, zones, &mtop, fr->cginfo,
+        make_local_bondeds_excls(dd, zones, mtop, fr->cginfo,
                                  bRCheckMB, rcheck, bRCheck2B, rc,
                                  dd->localAtomGroupFromAtom.data(),
                                  pbc_null, cgcm_or_x,
@@ -2157,7 +2156,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
         dd->nbonded_local += nexcl;
     }
 
-    ltop->atomtypes  = mtop.atomtypes;
+    ltop->atomtypes  = mtop->atomtypes;
 }
 
 void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
@@ -2173,20 +2172,24 @@ void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
     }
 }
 
-void dd_init_local_top(const gmx_mtop_t &top_global,
-                       gmx_localtop_t   *top)
+gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 {
-    /* TODO: Get rid of the const casts below, e.g. by using a reference */
-    top->idef.ntypes     = top_global.ffparams.numTypes();
-    top->idef.atnr       = top_global.ffparams.atnr;
-    top->idef.functype   = const_cast<t_functype *>(top_global.ffparams.functype.data());
-    top->idef.iparams    = const_cast<t_iparams *>(top_global.ffparams.iparams.data());
-    top->idef.fudgeQQ    = top_global.ffparams.fudgeQQ;
-    top->idef.cmap_grid  = new gmx_cmap_t;
-    *top->idef.cmap_grid = top_global.ffparams.cmap_grid;
+    gmx_localtop_t *top;
 
-    top->idef.ilsort        = ilsortUNKNOWN;
-    top->useInDomainDecomp_ = true;
+    snew(top, 1);
+
+    /* TODO: Get rid of the const casts below, e.g. by using a reference */
+    top->idef.ntypes     = top_global->ffparams.numTypes();
+    top->idef.atnr       = top_global->ffparams.atnr;
+    top->idef.functype   = const_cast<t_functype *>(top_global->ffparams.functype.data());
+    top->idef.iparams    = const_cast<t_iparams *>(top_global->ffparams.iparams.data());
+    top->idef.fudgeQQ    = top_global->ffparams.fudgeQQ;
+    top->idef.cmap_grid  = new gmx_cmap_t;
+    *top->idef.cmap_grid = top_global->ffparams.cmap_grid;
+
+    top->idef.ilsort     = ilsortUNKNOWN;
+
+    return top;
 }
 
 void dd_init_local_state(gmx_domdec_t *dd,
@@ -2285,7 +2288,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
         make_reverse_ilist(*mtop->intermolecular_ilist,
                            &atoms,
-                           {},
+                           gmx::EmptyArrayRef(),
                            FALSE, FALSE, FALSE, TRUE, &ril_intermol);
     }
 
@@ -2313,7 +2316,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
          * The constraints are discarded here.
          */
         reverse_ilist_t ril;
-        make_reverse_ilist(molt.ilist, &molt.atoms, {},
+        make_reverse_ilist(molt.ilist, &molt.atoms, gmx::EmptyArrayRef(),
                            FALSE, FALSE, FALSE, TRUE, &ril);
 
         cgi_mb = &cginfo_mb[mb];

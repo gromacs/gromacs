@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
@@ -61,13 +62,13 @@
 
 #include "testutils/mpitest.h"
 #include "testutils/refdata.h"
-#include "testutils/simulationdatabase.h"
 #include "testutils/testasserts.h"
 #include "testutils/xvgtest.h"
 
 #include "energycomparison.h"
 #include "energyreader.h"
 #include "moduletest.h"
+#include "simulationdatabase.h"
 
 namespace gmx
 {
@@ -123,6 +124,7 @@ TEST_P(NormalModesTest, WithinTolerances)
     // prepare the .tpr file
     {
         CommandLine caller;
+        caller.append("grompp");
         runner_.useTopG96AndNdxFromDatabase(simulationName);
         runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
         EXPECT_EQ(0, runner_.callGrompp(caller));
@@ -130,6 +132,7 @@ TEST_P(NormalModesTest, WithinTolerances)
     // Do mdrun, preparing to check the normal modes later
     {
         CommandLine mdrunCaller;
+        mdrunCaller.append("mdrun");
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
     }
     // Now run gmx nmeig and check the output
@@ -147,7 +150,7 @@ TEST_P(NormalModesTest, WithinTolerances)
 
 //! Containers of systems and integrators to test.
 //! \{
-std::vector<std::string> systemsToTest_g     = { "scaled-water", "villin", "spc-dimer", "one-tip5p", "sw-dimer" };
+std::vector<std::string> systemsToTest_g     = { "scaled-water" };
 std::vector<std::string> integratorsToTest_g = { "nm" };
 
 //! \}

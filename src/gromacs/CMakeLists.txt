@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -95,9 +95,8 @@ endfunction()
 
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
-add_subdirectory(applied_forces)
-add_subdirectory(listed_forces)
-add_subdirectory(nbnxm)
+add_subdirectory(applied-forces)
+add_subdirectory(listed-forces)
 add_subdirectory(commandline)
 add_subdirectory(domdec)
 add_subdirectory(ewald)
@@ -229,17 +228,6 @@ if (GMX_USE_OPENCL)
             message(FATAL_ERROR "Did not find required external clFFT library, consider setting clFFT_ROOT_DIR")
         endif()
 
-        if(MSVC)
-            message(FATAL_ERROR
-"An OpenCL build was requested with Visual Studio compiler, but GROMACS
-requires clFFT, which was not found on your system. GROMACS does bundle
-clFFT to help with building for OpenCL, but that clFFT has not yet been
-ported to the more recent versions of that compiler that GROMACS itself
-requires. Thus for now, OpenCL is not available with MSVC and the internal
-build of clFFT in GROMACS 2019. Either change compiler, try installing
-a clFFT package, or use the latest GROMACS 2018 point release.")
-        endif()
-
         # Fall back on the internal version
         set (_clFFT_dir ../external/clFFT/src)
         add_subdirectory(${_clFFT_dir} clFFT-build)
@@ -282,7 +270,7 @@ endif()
 # source files, and issue warnings about that. Remove the use of
 # -Wno-missing-prototypes here and above when the group scheme is
 # removed.
-if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
 endif()
 if (HAS_NO_MSVC_UNUSED)
@@ -309,17 +297,15 @@ target_link_libraries(libgromacs
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS}
                       ${OpenCL_LIBRARIES}
+                      ${GMX_STDLIB_LIBRARIES}
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}
                       )
-if (GMX_OPENMP)
-    target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
-endif()
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
-                      )
+                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
@@ -413,35 +399,35 @@ if(GMX_USE_OPENCL)
         DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/pbcutil
         COMPONENT libraries)
 
-    # Install the NBNXM source and headers
+    # Install the NB source and headers
     file(GLOB OPENCL_INSTALLED_FILES
-        nbnxm/constants.h
+        mdlib/nbnxn_consts.h
         )
     install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/nbnxm
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib
         COMPONENT libraries)
     file(GLOB OPENCL_INSTALLED_FILES
-        nbnxm/opencl/nbnxm_ocl_kernels.cl
-        nbnxm/opencl/nbnxm_ocl_kernel.clh
-        nbnxm/opencl/nbnxm_ocl_kernel_pruneonly.clh
-        nbnxm/opencl/nbnxm_ocl_kernels.clh
-        nbnxm/opencl/nbnxm_ocl_kernels_fastgen.clh
-        nbnxm/opencl/nbnxm_ocl_kernels_fastgen_add_twincut.clh
-        nbnxm/opencl/nbnxm_ocl_kernel_utils.clh
-        nbnxm/opencl/nbnxm_ocl_consts.h
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.cl
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_pruneonly.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen_add_twincut.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_utils.clh
+        mdlib/nbnxn_ocl/nbnxn_ocl_consts.h
         )
     install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/nbnxm/opencl
+        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib/nbnxn_ocl
         COMPONENT libraries)
 
     # Install the PME source and headers
     file(GLOB OPENCL_INSTALLED_FILES
-        ewald/pme_spread.clh
-        ewald/pme_solve.clh
-        ewald/pme_gather.clh
-        ewald/pme_gpu_utils.clh
-        ewald/pme_program.cl
-        ewald/pme_gpu_types.h
+        ewald/pme-spread.clh
+        ewald/pme-solve.clh
+        ewald/pme-gather.clh
+        ewald/pme-gpu-utils.clh
+        ewald/pme-program.cl
+        ewald/pme-gpu-types.h
         )
     install(FILES ${OPENCL_INSTALLED_FILES}
         DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/ewald

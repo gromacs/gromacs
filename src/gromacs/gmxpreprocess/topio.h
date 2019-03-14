@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,20 +38,15 @@
 #ifndef GMX_GMXPREPROCESS_TOPIO_H
 #define GMX_GMXPREPROCESS_TOPIO_H
 
-#include <memory>
 #include <vector>
 
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/real.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 
 struct gmx_molblock_t;
 struct gmx_mtop_t;
-class PreprocessingAtomTypes;
 struct t_gromppopts;
 struct t_inputrec;
-struct MoleculeInformation;
-struct InteractionTypeParameters;
-struct t_symtab;
 struct warninp;
 enum struct GmxQmmmMode;
 typedef warninp *warninp_t;
@@ -59,23 +54,24 @@ typedef warninp *warninp_t;
 double check_mol(const gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */
 
-char **do_top(bool                                                         bVerbose,
-              const char                                                  *topfile,
-              const char                                                  *topppfile,
-              t_gromppopts                                                *opts,
-              bool                                                         bZero,
-              t_symtab                                                    *symtab,
-              gmx::ArrayRef<InteractionTypeParameters>                     plist,
-              int                                                         *combination_rule,
-              double                                                      *repulsion_power,
-              real                                                        *fudgeQQ,
-              PreprocessingAtomTypes                                      *atype,
-              std::vector<MoleculeInformation>                            *molinfo,
-              std::unique_ptr<MoleculeInformation>                        *intermolecular_interactions,
-              const t_inputrec                                            *ir,
-              std::vector<gmx_molblock_t>                                 *molblock,
-              bool                                                        *ffParametrizedWithHBondConstraints,
-              warninp_t                                                    wi);
+char **do_top(bool                          bVerbose,
+              const char                   *topfile,
+              const char                   *topppfile,
+              t_gromppopts                 *opts,
+              bool                          bZero,
+              struct t_symtab              *symtab,
+              t_params                      plist[],
+              int                          *combination_rule,
+              double                       *repulsion_power,
+              real                         *fudgeQQ,
+              gpp_atomtype_t                atype,
+              int                          *nrmols,
+              t_molinfo                   **molinfo,
+              t_molinfo                   **intermolecular_interactions,
+              const t_inputrec             *ir,
+              std::vector<gmx_molblock_t>  *molblock,
+              bool                         *ffParametrizedWithHBondConstraints,
+              warninp_t                     wi);
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
 void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t wi, GmxQmmmMode qmmmMode);

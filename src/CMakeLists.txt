@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -88,6 +88,9 @@ if (GMX_CLANG_TIDY)
    if(NOT CLANG_TIDY_EXE)
        message(FATAL_ERROR "clang-tidy not found.")
    endif()
+   if(CMAKE_VERSION VERSION_LESS "3.6")
+       message(FATAL_ERROR "clang-tidy support requires cmake 3.6.")
+   endif()
 endif()
 #####
 
@@ -112,7 +115,7 @@ if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY OR NOT BUILD_SHARED_LIBS)
     # GMXAPI requires position-independent code
     set(_GMXAPI_DEFAULT OFF)
 else()
-    set(_GMXAPI_DEFAULT OFF)
+    set(_GMXAPI_DEFAULT ON)
 endif()
 option(GMXAPI "Experimental external interfaces" ${_GMXAPI_DEFAULT})
 if (GMXAPI)

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2016,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -66,20 +66,20 @@ function(gmx_manage_lmfit)
         # would not convey the right information.
         add_library(lmfit INTERFACE)
         target_sources(lmfit INTERFACE $<TARGET_OBJECTS:lmfit_objlib>)
-        target_include_directories(lmfit SYSTEM INTERFACE $<BUILD_INTERFACE:${BUNDLED_LMFIT_DIR}>)
+        target_include_directories(lmfit INTERFACE $<BUILD_INTERFACE:${BUNDLED_LMFIT_DIR}>)
         # Add the lmfit interface library to the libgromacs Export name, even though
         # we will not be installing any content.
         install(TARGETS lmfit EXPORT libgromacs)
 
-        set(HAVE_LMFIT 1 CACHE INTERNAL "Is lmfit found?")
+        set(HAVE_LMFIT_VALUE TRUE)
     elseif(GMX_USE_LMFIT STREQUAL "EXTERNAL")
         # Find an external lmfit library.
-        find_package(Lmfit ${GMX_LMFIT_REQUIRED_VERSION})
-        if(NOT LMFIT_FOUND OR LMFIT_VERSION VERSION_LESS GMX_LMFIT_REQUIRED_VERSION)
-            message(FATAL_ERROR "External lmfit >= ${GMX_LMFIT_REQUIRED_VERSION} could not be found, please adjust your pkg-config path to include the lmfit.pc file")
+        find_package(Lmfit ${GMX_LMFIT_MINIMUM_REQUIRED_VERSION})
+        if(NOT LMFIT_FOUND)
+            message(FATAL_ERROR "External lmfit could not be found, please adjust your pkg-config path to include the lmfit.pc file")
         endif()
 
-        set(HAVE_LMFIT 1 CACHE INTERNAL "Is lmfit found?")
+        set(HAVE_LMFIT_VALUE TRUE)
     else()
         # Create a dummy link target so the calling code doesn't need to know
         # whether lmfit support is being compiled.
@@ -88,6 +88,6 @@ function(gmx_manage_lmfit)
         # we will not be installing any content.
         install(TARGETS lmfit EXPORT libgromacs)
 
-        set(HAVE_LMFIT 0 CACHE INTERNAL "Is lmfit found?")
+        set(HAVE_LMFIT_VALUE FALSE)
     endif()
 endfunction()

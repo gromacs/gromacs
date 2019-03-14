@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,59 +44,156 @@
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/topology/atoms.h"
-#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
 const int   btsNiatoms[ebtsNR] = { 2,       3,        4,           4,           2,             5 };
 
-MoleculePatchType MoleculePatch::type() const
+static void free_t_bonded(t_rbonded *rb)
 {
-    if (oname.empty() && !nname.empty())
+    int i;
+
+    for (i = 0; i < MAXATOMLIST; i++)
     {
-        return MoleculePatchType::Add;
+        sfree(rb->a[i]);
     }
-    else if (!oname.empty() && nname.empty())
+    sfree(rb->s);
+}
+
+static void free_t_bondeds(t_rbondeds *rbs)
+{
+    int i;
+
+    for (i = 0; i < rbs->nb; i++)
     {
-        return MoleculePatchType::Delete;
+        free_t_bonded(&rbs->b[i]);
     }
-    else if (!oname.empty() && !nname.empty())
+    sfree(rbs->b);
+    rbs->b  = nullptr;
+    rbs->nb = 0;
+}
+
+void free_t_restp(int nrtp, t_restp **rtp)
+{
+    int i, j;
+
+    for (i = 0; i < nrtp; i++)
     {
-        return MoleculePatchType::Replace;
+        sfree((*rtp)[i].resname);
+        sfree((*rtp)[i].atom);
+        for (j = 0; j < (*rtp)[i].natom; j++)
+        {
+            sfree(*(*rtp)[i].atomname[j]);
+            sfree((*rtp)[i].atomname[j]);
+        }
+        sfree((*rtp)[i].atomname);
+        sfree((*rtp)[i].cgnr);
+        for (j = 0; j < ebtsNR; j++)
+        {
+            free_t_bondeds(&(*rtp)[i].rb[j]);
+        }
     }
-    else
+    sfree(*rtp);
+}
+
+void free_t_hack(int nh, t_hack **h)
+{
+    int i, j;
+
+    for (i = 0; i < nh; i++)
     {
-        GMX_THROW(gmx::InvalidInputError("Unknown type of atom modification"));
+        sfree((*h)[i].oname);
+        sfree((*h)[i].nname);
+        sfree((*h)[i].atom);
+        for (j = 0; j < 4; j++)
+        {
+            sfree((*h)[i].a[j]);
+        }
+    }
+    sfree(*h);
+    *h = nullptr;
+}
+
+void free_t_hackblock(int nhb, t_hackblock **hb)
+{
+    int i, j;
+
+    for (i = 0; i < nhb; i++)
+    {
+        sfree((*hb)[i].name);
+        free_t_hack((*hb)[i].nhack, &(*hb)[i].hack);
+        for (j = 0; j < ebtsNR; j++)
+        {
+            free_t_bondeds(&(*hb)[i].rb[j]);
+        }
+    }
+    sfree(*hb);
+}
+
+void clear_t_hackblock(t_hackblock *hb)
+{
+    int i;
+
+    hb->name    = nullptr;
+    hb->nhack   = 0;
+    hb->maxhack = 0;
+    hb->hack    = nullptr;
+    for (i = 0; i < ebtsNR; i++)
+    {
+        hb->rb[i].nb = 0;
+        hb->rb[i].b  = nullptr;
     }
 }
 
-void clearModificationBlock(MoleculePatchDatabase *globalPatches)
+void clear_t_hack(t_hack *hack)
 {
-    globalPatches->name.clear();
-    globalPatches->hack.clear();
-    for (int i = 0; i < ebtsNR; i++)
+    int i;
+
+    hack->nr    = 0;
+    hack->oname = nullptr;
+    hack->nname = nullptr;
+    hack->atom  = nullptr;
+    hack->cgnr  = NOTSET;
+    hack->tp    = 0;
+    hack->nctl  = 0;
+    for (i = 0; i < 4; i++)
     {
-        globalPatches->rb[i].b.clear();
+        hack->a[i]  = nullptr;
+    }
+    for (i = 0; i < DIM; i++)
+    {
+        hack->newx[i] = NOTSET;
     }
 }
 
 #define safe_strdup(str) (((str) != NULL) ? gmx_strdup(str) : NULL)
 
-static bool contains_char(const BondedInteraction &s, char c)
+static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
 {
+    int i;
 
-    bool bRet = false;
-    for (int i = 0; i < MAXATOMLIST; i++)
+    for (i = 0; i < MAXATOMLIST; i++)
     {
-        if (!s.a[i].empty() && s.a[i][0] == c)
+        d->a[i] = safe_strdup(s->a[i]);
+    }
+    d->s     = safe_strdup(s->s);
+    d->match = s->match;
+}
+
+static bool contains_char(t_rbonded *s, char c)
+{
+    int      i;
+    bool     bRet;
+
+    bRet = FALSE;
+    for (i = 0; i < MAXATOMLIST; i++)
+    {
+        if (s->a[i] && s->a[i][0] == c)
         {
-            bRet = true;
+            bRet = TRUE;
         }
     }
 
@@ -104,36 +201,38 @@ static bool contains_char(const BondedInteraction &s, char c)
 }
 
 static int
-rbonded_find_atoms_in_list(const BondedInteraction &b, gmx::ArrayRef<const BondedInteraction> blist, int natoms)
+rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
 {
+    int      i, k;
     int      foundPos = -1;
+    bool     atomsMatch;
 
-    for (auto it = blist.begin(); (it != blist.end()) && ( foundPos < 0); it++)
+    for (i = 0; i < nlist && foundPos < 0; i++)
     {
-        bool atomsMatch = true;
-        for (int k = 0; k < natoms && atomsMatch; k++)
+        atomsMatch = TRUE;
+        for (k = 0; k < natoms && atomsMatch; k++)
         {
-            atomsMatch = atomsMatch && (b.a[k] == it->a[k]);
+            atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[k]) == 0);
         }
         /* Try reverse if forward match did not work */
         if (!atomsMatch)
         {
-            atomsMatch = true;
-            for (int k = 0; k < natoms && atomsMatch; k++)
+            atomsMatch = TRUE;
+            for (k = 0; k < natoms && atomsMatch; k++)
             {
-                atomsMatch = atomsMatch && (b.a[k] == it->a[natoms-1-k]);
+                atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[natoms-1-k]) == 0);
             }
         }
         if (atomsMatch)
         {
-            foundPos = std::distance(blist.begin(), it);
+            foundPos = i;
             /* If all the atoms AND all the parameters match, it is likely that
              * the user made a copy-and-paste mistake (since it would be much cheaper
              * to just bump the force constant 2x if you really want it twice).
              * Since we only have the unparsed string here we can only detect
              * EXACT matches (including identical whitespace).
              */
-            if (b.s != it->s)
+            if (!strcmp(b->s, blist[i].s))
             {
                 gmx_warning("Duplicate line found in or between hackblock and rtp entries");
             }
@@ -142,15 +241,17 @@ rbonded_find_atoms_in_list(const BondedInteraction &b, gmx::ArrayRef<const Bonde
     return foundPos;
 }
 
-bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
-                                gmx::ArrayRef<BondedInteractionList>       d,
-                                bool                                       bMin,
-                                bool                                       bPlus)
+bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], bool bMin, bool bPlus)
 {
-    bool bBondsRemoved = false;
-    for (int i = 0; i < ebtsNR; i++)
+    int      i, j;
+    bool     bBondsRemoved;
+    int      nbHackblockStart;
+    int      index;
+
+    bBondsRemoved = FALSE;
+    for (i = 0; i < ebtsNR; i++)
     {
-        if (!s[i].b.empty())
+        if (s[i].nb > 0)
         {
             /* Record how many bonds we have in the destination when we start.
              *
@@ -167,15 +268,17 @@ bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
              * it is a hackblock entry meant to override the main rtp, and then
              * we don't add the main rtp one.
              */
-            int nbHackblockStart = d[i].b.size();
+            nbHackblockStart = d[i].nb;
 
-            for (const auto &b : s[i].b)
+            /* make space */
+            srenew(d[i].b, d[i].nb + s[i].nb);
+            for (j = 0; j < s[i].nb; j++)
             {
                 /* Check if this bonded string already exists before adding.
                  * We are merging from the main RTP to the hackblocks, so this
                  * will mean the hackblocks overwrite the man RTP, as intended.
                  */
-                int index = rbonded_find_atoms_in_list(b, d[i].b, btsNiatoms[i]);
+                index = rbonded_find_atoms_in_list(&s[i].b[j], d[i].b, d[i].nb, btsNiatoms[i]);
                 /* - If we did not find this interaction at all, the index will be -1,
                  *   and then we should definitely add it to the merged hackblock and rtp.
                  *
@@ -194,14 +297,15 @@ bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
                  */
                 if (index < 0 || index >= nbHackblockStart)
                 {
-                    if (!(bMin && contains_char(b, '-'))
-                        && !(bPlus && contains_char(b, '+')))
+                    if (!(bMin && contains_char(&s[i].b[j], '-'))
+                        && !(bPlus && contains_char(&s[i].b[j], '+')))
                     {
-                        d[i].b.push_back(b);
+                        copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
+                        d[i].nb++;
                     }
                     else if (i == ebtsBONDS)
                     {
-                        bBondsRemoved = true;
+                        bBondsRemoved = TRUE;
                     }
                 }
                 else
@@ -216,56 +320,146 @@ bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
     return bBondsRemoved;
 }
 
-void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d, t_symtab *symtab)
+void copy_t_restp(t_restp *s, t_restp *d)
 {
-    *d         = s;
-    d->atom.clear();
-    for (const auto &a : s.atom)
+    int i;
+
+    *d         = *s;
+    d->resname = safe_strdup(s->resname);
+    snew(d->atom, s->natom);
+    for (i = 0; i < s->natom; i++)
     {
-        d->atom.push_back(a);
+        d->atom[i] = s->atom[i];
     }
-    d->atomname.clear();
-    for (const auto &a : s.atomname)
+    snew(d->atomname, s->natom);
+    for (i = 0; i < s->natom; i++)
     {
-        d->atomname.push_back(put_symtab(symtab, *a));
+        snew(d->atomname[i], 1);
+        *d->atomname[i] = safe_strdup(*s->atomname[i]);
     }
-    d->cgnr.clear();
-    for (const auto &c : s.cgnr)
+    snew(d->cgnr, s->natom);
+    for (i = 0; i < s->natom; i++)
     {
-        d->cgnr.push_back(c);
+        d->cgnr[i] = s->cgnr[i];
     }
-    for (int i = 0; i < ebtsNR; i++)
+    for (i = 0; i < ebtsNR; i++)
     {
-        d->rb[i].type = s.rb[i].type;
-        d->rb[i].b.clear();
+        d->rb[i].type = s->rb[i].type;
+        d->rb[i].nb   = 0;
+        d->rb[i].b    = nullptr;
     }
-    mergeBondedInteractionList(s.rb, d->rb, FALSE, FALSE);
+    merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
 }
 
-void mergeAtomModifications(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)
+void copy_t_hack(t_hack *s, t_hack *d)
 {
-    for (const auto &h : s.hack)
+    int i;
+
+    *d       = *s;
+    d->oname = safe_strdup(s->oname);
+    d->nname = safe_strdup(s->nname);
+    if (s->atom)
     {
-        d->hack.push_back(h);
+        snew(d->atom, 1);
+        *(d->atom) = *(s->atom);
+    }
+    else
+    {
+        d->atom = nullptr;
+    }
+    for (i = 0; i < 4; i++)
+    {
+        d->a[i] = safe_strdup(s->a[i]);
+    }
+    copy_rvec(s->newx, d->newx);
+}
+
+void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d)
+{
+    int i;
+
+    if (ns)
+    {
+        srenew(*d, *nd + ns);
+        for (i = 0; i < ns; i++)
+        {
+            copy_t_hack(&s[i], &(*d)[*nd + i]);
+        }
+        (*nd) += ns;
     }
 }
 
-void mergeAtomAndBondModifications(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)
+void merge_hacks(t_hackblock *s, t_hackblock *d)
 {
-    mergeAtomModifications(s, d);
-    mergeBondedInteractionList(s.rb, d->rb, FALSE, FALSE);
+    merge_hacks_lo(s->nhack, s->hack, &d->nhack, &d->hack);
 }
 
-void copyModificationBlocks(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)
+void merge_t_hackblock(t_hackblock *s, t_hackblock *d)
 {
-    *d       = s;
-    d->name  = s.name;
-    d->hack.clear();
-    for (int i = 0; i < ebtsNR; i++)
+    merge_hacks(s, d);
+    merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
+}
+
+void copy_t_hackblock(t_hackblock *s, t_hackblock *d)
+{
+    int i;
+
+    *d       = *s;
+    d->name  = safe_strdup(s->name);
+    d->nhack = 0;
+    d->hack  = nullptr;
+    for (i = 0; i < ebtsNR; i++)
     {
-        d->rb[i].b.clear();
+        d->rb[i].nb = 0;
+        d->rb[i].b  = nullptr;
     }
-    mergeAtomAndBondModifications(s, d);
+    merge_t_hackblock(s, d);
 }
 
 #undef safe_strdup
+
+void dump_hb(FILE *out, int nres, t_hackblock hb[])
+{
+    int i, j, k, l;
+
+#define SS(s) (s) ? (s) : "-"
+#define SA(s) (s) ? "+" : ""
+    fprintf(out, "t_hackblock\n");
+    for (i = 0; i < nres; i++)
+    {
+        fprintf(out, "%3d %4s %2d %2d\n",
+                i, SS(hb[i].name), hb[i].nhack, hb[i].maxhack);
+        if (hb[i].nhack)
+        {
+            for (j = 0; j < hb[i].nhack; j++)
+            {
+                fprintf(out, "%d: %d %4s %4s %1s %2d %d %4s %4s %4s %4s\n",
+                        j, hb[i].hack[j].nr,
+                        SS(hb[i].hack[j].oname), SS(hb[i].hack[j].nname),
+                        SA(hb[i].hack[j].atom), hb[i].hack[j].tp, hb[i].hack[j].cgnr,
+                        SS(hb[i].hack[j].ai()), SS(hb[i].hack[j].aj()),
+                        SS(hb[i].hack[j].ak()), SS(hb[i].hack[j].al()) );
+            }
+        }
+        for (j = 0; j < ebtsNR; j++)
+        {
+            if (hb[i].rb[j].nb)
+            {
+                fprintf(out, " %c %d:", btsNames[j][0], hb[i].rb[j].nb);
+                for (k = 0; k < hb[i].rb[j].nb; k++)
+                {
+                    fprintf(out, " [");
+                    for (l = 0; l < btsNiatoms[j]; l++)
+                    {
+                        fprintf(out, " %s", hb[i].rb[j].b[k].a[l]);
+                    }
+                    fprintf(out, " %s]", SS(hb[i].rb[j].b[k].s));
+                }
+                fprintf(out, " Entry matched: %s\n", yesno_names[hb[i].rb[j].b[k].match]);
+            }
+        }
+        fprintf(out, "\n");
+    }
+#undef SS
+#undef SA
+}

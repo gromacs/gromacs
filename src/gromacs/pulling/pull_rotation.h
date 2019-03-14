@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,7 @@ struct gmx_domdec_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct MdrunOptions;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
@@ -69,8 +70,6 @@ class t_state;
 namespace gmx
 {
 class LocalAtomSetManager;
-struct MdrunOptions;
-
 class EnforcedRotation
 {
     public:
@@ -112,7 +111,7 @@ class EnforcedRotation
 std::unique_ptr<gmx::EnforcedRotation>
 init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
          const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
-         const gmx::MdrunOptions &mdrunOptions);
+         const MdrunOptions &mdrunOptions);
 
 /*! \brief Calculates the enforced rotation potential(s).
  *

@@ -58,7 +58,6 @@ locations in the developer guide.
    documentation-generation
    style
    tools
-   known-issues
 
 *********************
 Doxygen documentation

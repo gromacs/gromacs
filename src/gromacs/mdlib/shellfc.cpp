@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,10 +58,10 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -304,6 +304,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     gmx_shellfc_t            *shfc;
     t_shell                  *shell;
     int                      *shell_index = nullptr, *at2cg;
+    const t_atom             *atom;
 
     int                       ns, nshell, nsi;
     int                       i, j, type, a_offset, cg, mol, ftype, nra;
@@ -311,6 +312,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     int                       aS, aN = 0; /* Shell and nucleus */
     int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
+    gmx_mtop_atomloop_all_t   aloop;
     const gmx_ffparams_t     *ffparams;
 
     std::array<int, eptNR>    n = countPtypes(fplog, mtop);
@@ -352,12 +354,11 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     /* Global system sized array, this should be avoided */
     snew(shell_index, mtop->natoms);
 
+    aloop  = gmx_mtop_atomloop_all_init(mtop);
     nshell = 0;
-    for (const AtomProxy atomP : AtomRange(*mtop))
+    while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
     {
-        const t_atom &local = atomP.atom();
-        int           i     = atomP.globalAtomNumber();
-        if (local.ptype == eptShell)
+        if (atom->ptype == eptShell)
         {
             shell_index[i] = nshell++;
         }
@@ -399,7 +400,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
             }
         }
 
-        const t_atom *atom = molt->atoms.atom;
+        atom = molt->atoms.atom;
         for (mol = 0; mol < molb->nmol; mol++)
         {
             for (j = 0; (j < NBT); j++)
@@ -575,7 +576,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
         {
             if (fplog)
             {
-                fprintf(fplog, "\nNOTE: there are shells that are connected to particles outside their own charge group, will not predict shells positions during the run\n\n");
+                fprintf(fplog, "\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
             }
             /* Prediction improves performance, so we should implement either:
              * 1. communication for the atoms needed for prediction
@@ -855,7 +856,22 @@ static real rms_force(const t_commrec *cr, gmx::ArrayRef<const gmx::RVec> force,
     return (ntot ? std::sqrt(buf[0]/ntot) : 0);
 }
 
-static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> f, real ftol, int ns, t_shell s[])
+static void check_pbc(FILE *fp, gmx::ArrayRef<gmx::RVec> x, int shell)
+{
+    int m, now;
+
+    now = shell-4;
+    for (m = 0; (m < DIM); m++)
+    {
+        if (std::fabs(x[shell][m]-x[now][m]) > 0.3)
+        {
+            pr_rvecs(fp, 0, "SHELL-X", as_rvec_array(x.data())+now, 5);
+            break;
+        }
+    }
+}
+
+static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> x, gmx::ArrayRef<gmx::RVec> f, real ftol, int ns, t_shell s[])
 {
     int  i, shell;
     real ft2, ff2;
@@ -871,6 +887,7 @@ static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> f, real ftol, int ns,
             fprintf(fp, "SHELL %5d, force %10.5f  %10.5f  %10.5f, |f| %10.5f\n",
                     shell, f[shell][XX], f[shell][YY], f[shell][ZZ], std::sqrt(ff2));
         }
+        check_pbc(fp, x, shell);
     }
 }
 
@@ -986,11 +1003,11 @@ void relax_shell_flexcon(FILE                                     *fplog,
                          const gmx_groups_t                       *groups,
                          gmx_shellfc_t                            *shfc,
                          t_forcerec                               *fr,
-                         gmx::PpForceWorkload                     *ppForceWorkload,
                          double                                    t,
                          rvec                                      mu_tot,
                          const gmx_vsite_t                        *vsite,
-                         const DDBalanceRegionHandler             &ddBalanceRegionHandler)
+                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
     int           nshell;
     t_shell      *shell;
@@ -1128,9 +1145,9 @@ void relax_shell_flexcon(FILE                                     *fplog,
              state->box, state->x.arrayRefWithPadding(), &state->hist,
              forceWithPadding[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
-             fr, ppForceWorkload, vsite, mu_tot, t, nullptr,
+             fr, vsite, mu_tot, t, nullptr,
              (bDoNS ? GMX_FORCE_NS : 0) | shellfc_flags,
-             ddBalanceRegionHandler);
+             ddOpenBalanceRegion, ddCloseBalanceRegion);
 
     sf_dir = 0;
     if (nflexcon)
@@ -1238,9 +1255,9 @@ void relax_shell_flexcon(FILE                                     *fplog,
                  top, groups, state->box, posWithPadding[Try], &state->hist,
                  forceWithPadding[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
-                 fr, ppForceWorkload, vsite, mu_tot, t, nullptr,
+                 fr, vsite, mu_tot, t, nullptr,
                  shellfc_flags,
-                 ddBalanceRegionHandler);
+                 ddOpenBalanceRegion, ddCloseBalanceRegion);
         sum_epot(&(enerd->grpp), enerd->term);
         if (gmx_debug_at)
         {
@@ -1281,7 +1298,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
             if (gmx_debug_at)
             {
                 fprintf(debug, "SHELL ITER %d\n", count);
-                dump_shells(debug, force[Try], ftol, nshell, shell);
+                dump_shells(debug, pos[Try], force[Try], ftol, nshell, shell);
             }
         }
 

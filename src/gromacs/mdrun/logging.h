@@ -63,13 +63,17 @@ using LogFilePtr = std::unique_ptr < t_fileio, functor_wrapper < t_fileio, close
  *
  * \throws FileIOError when the log file cannot be opened. */
 LogFilePtr openLogFile(const char *lognm,
-                       bool        appendFiles);
+                       bool        appendFiles,
+                       int         rankIndex,
+                       int         numRanks);
 
 /*! \brief Prepare to use the open log file when appending.
  *
  * Does not throw.
  */
-void prepareLogAppending(FILE *fplog);
+void prepareLogAppending(int   rankIndex,
+                         int   numRanks,
+                         FILE *fplog);
 
 }    // namespace gmx
 

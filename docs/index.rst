@@ -10,39 +10,25 @@ Welcome to the |Gromacs| documentation!
 
 .. only:: html
 
-        The complete documentation is also available as a `printable PDF here`_. The documentation
-        for other versions of |GROMACS| can be found at http://manual.gromacs.org/documentation
+        The complete documentation is also available as a `printable PDF here`_.
 
-        .. toctree::
-           :maxdepth: 1
-        
-           download
-           release-notes/index
-           install-guide/index
-           user-guide/index
-           how-to/index
-           reference-manual/index
-           dev-manual/index
-        
-        ==================
-        Indices and tables
-        ==================
-        
-        * :ref:`genindex`
 
-.. only:: latex
+.. toctree::
+   :maxdepth: 1
 
-      The release notes can be found online at http://manual.gromacs.org/current/release-notes/index.html
+   download
+   release-notes/index
+   install-guide/index
+   user-guide/index
+   how-to/index
+   reference-manual/index
+   dev-manual/index
 
-         .. toctree::
-            :maxdepth: 1
-         
-            download
-            install-guide/index
-            user-guide/index
-            how-to/index
-            reference-manual/index
-            dev-manual/index
+==================
+Indices and tables
+==================
+
+* :ref:`genindex`
 
 
 .. _printable PDF here: `gmx-manual`_

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,10 +36,9 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   alignedallocator.cpp
                   arrayref.cpp
                   bitmask32.cpp bitmask64.cpp bitmask128.cpp
-                  defaultinitializationallocator.cpp
-                  enumerationhelpers.cpp
                   keyvaluetreeserializer.cpp
                   keyvaluetreetransform.cpp
+                  gmxregex.cpp
                   logger.cpp
                   mutex.cpp
                   path.cpp
@@ -51,5 +50,5 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   )
 
 gmx_add_mpi_unit_test(UtilityMpiUnitTests utility-mpi-test 4
-                  physicalnodecommunicator_mpi.cpp
+                  physicalnodecommunicator-mpi.cpp
                   )

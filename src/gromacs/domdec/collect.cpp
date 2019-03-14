@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -119,7 +119,7 @@ static void dd_collect_cg(gmx_domdec_t  *dd,
             fprintf(debug, "Initial charge group distribution: ");
             for (int rank = 0; rank < dd->nnodes; rank++)
             {
-                fprintf(debug, " %td", ma->domainGroups[rank].atomGroups.ssize());
+                fprintf(debug, " %td", ma->domainGroups[rank].atomGroups.size());
             }
             fprintf(debug, "\n");
         }
@@ -301,22 +301,21 @@ void dd_collect_state(gmx_domdec_t *dd,
                 state->nhpres_vxi[i*nh+j]       = state_local->nhpres_vxi[i*nh+j];
             }
         }
-        state->baros_integral      = state_local->baros_integral;
-        state->pull_com_prev_step  = state_local->pull_com_prev_step;
+        state->baros_integral = state_local->baros_integral;
     }
     if (state_local->flags & (1 << estX))
     {
-        auto globalXRef = state ? state->x : gmx::ArrayRef<gmx::RVec>();
-        dd_collect_vec(dd, state_local, state_local->x, globalXRef);
+        gmx::ArrayRef<gmx::RVec> globalXRef = state ? makeArrayRef(state->x) : gmx::EmptyArrayRef();
+        dd_collect_vec(dd, state_local, makeConstArrayRef(state_local->x), globalXRef);
     }
     if (state_local->flags & (1 << estV))
     {
-        auto globalVRef = state ? state->v : gmx::ArrayRef<gmx::RVec>();
-        dd_collect_vec(dd, state_local, state_local->v, globalVRef);
+        gmx::ArrayRef<gmx::RVec> globalVRef = state ? makeArrayRef(state->v) : gmx::EmptyArrayRef();
+        dd_collect_vec(dd, state_local, makeConstArrayRef(state_local->v), globalVRef);
     }
     if (state_local->flags & (1 << estCGP))
     {
-        auto globalCgpRef = state ? state->cg_p : gmx::ArrayRef<gmx::RVec>();
-        dd_collect_vec(dd, state_local, state_local->cg_p, globalCgpRef);
+        gmx::ArrayRef<gmx::RVec> globalCgpRef = state ? makeArrayRef(state->cg_p) : gmx::EmptyArrayRef();
+        dd_collect_vec(dd, state_local, makeConstArrayRef(state_local->cg_p), globalCgpRef);
     }
 }

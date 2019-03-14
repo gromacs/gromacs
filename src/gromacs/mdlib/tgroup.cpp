@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,24 +56,41 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
+{
+    int i;
+
+    for (i = 0; (i < ngtc); i++)
+    {
+        tcstat[i].T = 0;
+        clear_mat(tcstat[i].ekinh);
+        clear_mat(tcstat[i].ekinh_old);
+        clear_mat(tcstat[i].ekinf);
+    }
+}
+
 static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 {
+    const gmx_groups_t     *groups;
+    gmx_mtop_atomloop_all_t aloop;
+    int                     i, grp;
+    const t_atom           *atom;
+
     if (ngacc > 0)
     {
-        const gmx_groups_t    &groups = mtop->groups;
-        for (const AtomProxy atomP : AtomRange(*mtop))
+        groups = &mtop->groups;
+        aloop  = gmx_mtop_atomloop_all_init(mtop);
+        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
-            const t_atom &local = atomP.atom();
-            int           i     = atomP.globalAtomNumber();
-            int           grp   = getGroupType(groups, egcACC, i);
+            grp = getGroupType(groups, egcACC, i);
             if ((grp < 0) && (grp >= ngacc))
             {
                 gmx_incons("Input for acceleration groups wrong");
             }
             gstat[grp].nat++;
             /* This will not work for integrator BD */
-            gstat[grp].mA += local.m;
-            gstat[grp].mB += local.mB;
+            gstat[grp].mA += atom->m;
+            gstat[grp].mB += atom->mB;
         }
     }
 }
@@ -92,7 +109,8 @@ void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts
     ekind->bNEMD = (opts->ngacc > 1 || norm2(opts->acc[0]) > 0);
 
     ekind->ngtc = opts->ngtc;
-    ekind->tcstat.resize(opts->ngtc);
+    snew(ekind->tcstat, opts->ngtc);
+    init_grptcstat(opts->ngtc, ekind->tcstat);
     /* Set Berendsen tcoupl lambda's to 1,
      * so runs without Berendsen coupling are not affected.
      */
@@ -104,8 +122,8 @@ void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts
         ekind->tcstat[i].ekinscalef_nhc = 1.0;
     }
 
-    nthread         = gmx_omp_nthreads_get(emntUpdate);
-    ekind->nthreads = nthread;
+    nthread = gmx_omp_nthreads_get(emntUpdate);
+
     snew(ekind->ekin_work_alloc, nthread);
     snew(ekind->ekin_work, nthread);
     snew(ekind->dekindl_work, nthread);
@@ -133,8 +151,8 @@ void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts
     }
 
     ekind->ngacc = opts->ngacc;
-    ekind->grpstat.resize(opts->ngacc);
-    init_grpstat(mtop, opts->ngacc, ekind->grpstat.data());
+    snew(ekind->grpstat, opts->ngacc);
+    init_grpstat(mtop, opts->ngacc, ekind->grpstat);
 }
 
 void accumulate_u(const t_commrec *cr, const t_grpopts *opts, gmx_ekindata_t *ekind)
