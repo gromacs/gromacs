@@ -44,9 +44,6 @@
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
 
-// TODO This include file can go away once we push the branch on
-// useGpuXBufOps into atomdata.cpp
-#include "gpu_types.h"
 #include "locality.h"
 
 namespace gmx
@@ -58,7 +55,6 @@ struct gmx_wallcycle;
 struct nbnxn_atomdata_t;
 struct nbnxn_search;
 struct nonbonded_verlet_t;
-struct t_commrec;
 struct t_mdatoms;
 struct tMPI_Atomic;
 
@@ -318,45 +314,6 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
                                      rvec                *x,
                                      nbnxn_atomdata_t    *nbat,
                                      gmx_wallcycle       *wcycle);
-
-/*! \brief Outer body of function to perform initialization for X buffer operations on GPU.
- * Called on the NS step and performs (re-)allocations and memory copies.
- *
- * GPU version of nbnxn_atomdata_copy_x_to_nbat_x */
-void nbnxn_atomdata_init_copy_x_to_nbat_x_gpu(const nbnxn_search        *nbs,
-                                              Nbnxm::AtomLocality        locality,
-                                              bool                       FillLocal,
-                                              nbnxn_atomdata_t          *nbat,
-                                              gmx_nbnxn_gpu_t           *gpu_nbv,
-                                              Nbnxm::InteractionLocality iloc);
-
-/*! \brief Outer body of X buffer operations on GPU: performs conversion from rvec to nb format.
- */
-void nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search        *nbs,
-                                         Nbnxm::AtomLocality        locality,
-                                         bool                       FillLocal,
-                                         nbnxn_atomdata_t          *nbat,
-                                         gmx_nbnxn_gpu_t           *gpu_nbv,
-                                         void                      *xPmeDevicePtr,
-                                         Nbnxm::InteractionLocality iloc,
-                                         rvec                      *x);
-
-/*! \brief Outer body of function to perform initialization for F buffer operations on GPU. */
-void nbnxn_atomdata_init_add_nbat_f_to_f_gpu(nbnxn_search           *nbs,
-                                             Nbnxm::AtomLocality     locality,
-                                             const nbnxn_atomdata_t *nbat,
-                                             gmx_nbnxn_gpu_t        *gpu_nbv,
-                                             gmx_wallcycle          *wcycle);
-
-/*! \brief Outer body of F buffer operations on GPU: adds nb format force to rvec format copy. */
-void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search           *nbs,
-                                        Nbnxm::AtomLocality     locality,
-                                        const nbnxn_atomdata_t *nbat,
-                                        gmx_nbnxn_gpu_t        *gpu_nbv,
-                                        void                   *fPmeDevicePtr,
-                                        rvec                   *f,
-                                        gmx_wallcycle          *wcycle,
-                                        const t_commrec        *cr);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,

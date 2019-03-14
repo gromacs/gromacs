@@ -95,7 +95,7 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
                                        matrix box, rvec gmx_unused *x,
                                        real lambda_q, real lambda_lj,
                                        int maxshift_x, int maxshift_y,
-                                       int64_t step, bool bNS)
+                                       int64_t step)
 {
     gmx_domdec_t         *dd;
     gmx_pme_comm_n_box_t *cnb;
@@ -142,11 +142,6 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
         }
 #if GMX_MPI
         MPI_Isend(cnb, sizeof(*cnb), MPI_BYTE,
-                  dd->pme_nodeid, eCommType_CNB, cr->mpi_comm_mysim,
-                  &dd->req_pme[dd->nreq_pme++]);
-
-        /* Send flag on whether this is a neighbour search step */
-        MPI_Isend(&bNS, sizeof(gmx_bool), MPI_BYTE,
                   dd->pme_nodeid, eCommType_CNB, cr->mpi_comm_mysim,
                   &dd->req_pme[dd->nreq_pme++]);
 #endif
@@ -202,15 +197,9 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
         }
         if (flags & PP_PME_COORD)
         {
-
-            //TODO cover case when PME is not active on GPU. Need "useGpuForPme" bool here.
-            //if(!useGpuForPme || bNS){
-            if (bNS)  //else data transfers done directly between GPUs.
-            {
-                MPI_Isend(x[0], n*sizeof(rvec), MPI_BYTE,
-                          dd->pme_nodeid, eCommType_COORD, cr->mpi_comm_mysim,
-                          &dd->req_pme[dd->nreq_pme++]);
-            }
+            MPI_Isend(x[0], n*sizeof(rvec), MPI_BYTE,
+                      dd->pme_nodeid, eCommType_COORD, cr->mpi_comm_mysim,
+                      &dd->req_pme[dd->nreq_pme++]);
         }
     }
 #endif
@@ -252,13 +241,13 @@ void gmx_pme_send_parameters(const t_commrec *cr,
     gmx_pme_send_coeffs_coords(cr, flags,
                                chargeA, chargeB,
                                sqrt_c6A, sqrt_c6B, sigmaA, sigmaB,
-                               nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1, 0);
+                               nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1);
 }
 
 void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              int64_t step, gmx_wallcycle *wcycle, bool bNS)
+                              int64_t step, gmx_wallcycle *wcycle)
 {
     wallcycle_start(wcycle, ewcPP_PMESENDX);
 
@@ -268,7 +257,7 @@ void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
         flags |= PP_PME_ENER_VIR;
     }
     gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-                               box, x, lambda_q, lambda_lj, 0, 0, step, bNS);
+                               box, x, lambda_q, lambda_lj, 0, 0, step);
 
     wallcycle_stop(wcycle, ewcPP_PMESENDX);
 }
@@ -277,7 +266,7 @@ void gmx_pme_send_finish(const t_commrec *cr)
 {
     unsigned int flags = PP_PME_FINISH;
 
-    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, -1, 0);
+    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, -1);
 }
 
 void gmx_pme_send_switchgrid(const t_commrec *cr,
@@ -375,7 +364,7 @@ void gmx_pme_receive_f(const t_commrec *cr,
                        gmx::ForceWithVirial *forceWithVirial,
                        real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
-                       float *pme_cycles, bool bNS)
+                       float *pme_cycles)
 {
     if (c_useDelayedWait)
     {
@@ -391,20 +380,11 @@ void gmx_pme_receive_f(const t_commrec *cr,
         srenew(cr->dd->pme_recv_f_buf, cr->dd->pme_recv_f_alloc);
     }
 
-    receive_virial_energy(cr, forceWithVirial, energy_q, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
-
 #if GMX_MPI
-    //TODO cover case when PME is not active on GPU. Need "useGpuForPme" bool here.
-    //if(!useGpuForPme || bNS){
-    if (bNS)  //else data transfers done directly between GPUs.
-
-    {
-        MPI_Recv(cr->dd->pme_recv_f_buf[0],
-                 natoms*sizeof(rvec), MPI_BYTE,
-                 cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
-                 MPI_STATUS_IGNORE);
-    }
-
+    MPI_Recv(cr->dd->pme_recv_f_buf[0],
+             natoms*sizeof(rvec), MPI_BYTE,
+             cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
+             MPI_STATUS_IGNORE);
 #endif
 
     int nt = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, natoms);
@@ -419,12 +399,7 @@ void gmx_pme_receive_f(const t_commrec *cr,
     {
         for (int i = 0; i < natoms; i++)
         {
-            //TODO cover case when PME is not active on GPU. Need "useGpuForPme" bool here.
-            //if(!useGpuForPme || bNS){
-            if (bNS)  //else PME force added directly on GPU
-            {
-                rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
-            }
+            rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
         }
     }
     else
@@ -432,13 +407,9 @@ void gmx_pme_receive_f(const t_commrec *cr,
 #pragma omp parallel for num_threads(nt) schedule(static)
         for (int i = 0; i < natoms; i++)
         {
-            //TODO cover case when PME is not active on GPU. Need "useGpuForPme" bool here.
-            //if(!useGpuForPme || bNS){
-            if (bNS)  //else PME force added directly on GPU
-            {
-                rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
-            }
+            rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
         }
     }
 
+    receive_virial_energy(cr, forceWithVirial, energy_q, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
 }

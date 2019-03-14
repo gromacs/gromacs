@@ -53,23 +53,17 @@
 
 #include "nbnxm_cuda.h"
 
-#include "gromacs/domdec/domdec.h"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_common.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
-#include "gromacs/nbnxm/internal.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist.h"
-#include "gromacs/nbnxm/cuda/gpuD2DCUDA.h"
-#include "gromacs/nbnxm/cuda/nbnxm_buffer_ops_kernels.cuh"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/gmxmpi.h"
 
 #include "nbnxm_cuda_types.h"
 
@@ -277,39 +271,6 @@ static inline int calc_shmem_required_nonbonded(const int num_threads_z, const g
     return shmem;
 }
 
-/*! \brief Sync the nonlocal stream with dependent tasks in the local queue.
- *
- *  As the point where the local stream tasks can be considered complete happens
- *  at the same call point where the nonlocal stream should be synced with the
- *  the local, this function recrds the event if called with the local stream as
- *  argument and inserts in the GPU stream a wait on the event on the nonlocal.
- */
-static void insertNonlocalGpuDependency(const gmx_nbnxn_cuda_t   *nb,
-                                        const InteractionLocality interactionLocality)
-{
-    cudaStream_t stream  = nb->stream[interactionLocality];
-
-    /* When we get here all misc operations issued in the local stream as well as
-       the local xq H2D are done,
-       so we record that in the local stream and wait for it in the nonlocal one.
-       This wait needs to precede any PP tasks, bonded or nonbonded, that may
-       compute on interactions between local and nonlocal atoms.
-     */
-    if (nb->bUseTwoStreams)
-    {
-        if (interactionLocality == InteractionLocality::Local)
-        {
-            cudaError_t stat = cudaEventRecord(nb->misc_ops_and_local_H2D_done, stream);
-            CU_RET_ERR(stat, "cudaEventRecord on misc_ops_and_local_H2D_done failed");
-        }
-        else
-        {
-            cudaError_t stat = cudaStreamWaitEvent(stream, nb->misc_ops_and_local_H2D_done, 0);
-            CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_and_local_H2D_done failed");
-        }
-    }
-}
-
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
 void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
                         const nbnxn_atomdata_t *nbatom,
@@ -358,14 +319,15 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
         adat_len    = adat->natoms - adat->natoms_local;
     }
 
-    /* HtoD x, q */
     /* beginning of timed HtoD section */
     if (bDoTime)
     {
         t->xf[atomLocality].nb_h2d.openTimingRegion(stream);
     }
 
-    cu_copy_H2D_async(adat->xq + adat_begin, static_cast<const void *>(nbatom->x().data() + adat_begin * 4),
+    /* HtoD x, q */
+    cu_copy_H2D_async(adat->xq + adat_begin,
+                      static_cast<const void *>(nbatom->x().data() + adat_begin * 4),
                       adat_len * sizeof(*adat->xq), stream);
 
     if (bDoTime)
@@ -379,7 +341,19 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
        This wait needs to precede any PP tasks, bonded or nonbonded, that may
        compute on interactions between local and nonlocal atoms.
      */
-    insertNonlocalGpuDependency(nb, iloc);
+    if (nb->bUseTwoStreams)
+    {
+        if (iloc == InteractionLocality::Local)
+        {
+            cudaError_t stat = cudaEventRecord(nb->misc_ops_and_local_H2D_done, stream);
+            CU_RET_ERR(stat, "cudaEventRecord on misc_ops_and_local_H2D_done failed");
+        }
+        else
+        {
+            cudaError_t stat = cudaStreamWaitEvent(stream, nb->misc_ops_and_local_H2D_done, 0);
+            CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_and_local_H2D_done failed");
+        }
+    }
 }
 
 /*! As we execute nonbonded workload in separate streams, before launching
@@ -745,260 +719,6 @@ void cuda_set_cacheconfig()
             CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
         }
     }
-}
-
-/* X buffer operations on GPU: performs conversion from rvec to nb format. */
-bool nbnxn_gpu_x_to_nbat_x(int                              ncxy,
-                           int                              g,
-                           bool                             FillLocal,
-                           const int                        nCopyAtoms,
-                           const int                        copyAtomStart,
-                           gmx_nbnxn_gpu_t                 *gpu_nbv,
-                           void                            *xPmeDevicePtr,
-                           int                              cell0,
-                           int                              na_sc,
-                           int                              na_round_max,
-                           const Nbnxm::AtomLocality        locality,
-                           const Nbnxm::InteractionLocality iloc,
-                           rvec                            *x)
-{
-
-
-    /* CUDA kernel launch-related stuff */
-    dim3           dim_block, dim_grid;
-
-    cu_atomdata_t *adat    = gpu_nbv->atdat;
-    cudaStream_t   stream  = gpu_nbv->stream[iloc];
-
-    bool           bDoTime = gpu_nbv->bDoTime;
-
-
-    // FIXME: need to either let the local stream get to the
-    // insertNonlocalGpuDependency call or call it separately here
-    if (nCopyAtoms == 0) // empty domain
-    {
-        if (iloc == Nbnxm::InteractionLocality::Local)
-        {
-            insertNonlocalGpuDependency(gpu_nbv, iloc);
-        }
-
-        // FIXME: this should not be set here!
-        gpu_nbv->bGpuBufferOps = false;
-        return false;
-    }
-
-    // FIXME: this should not be set here either.
-    gpu_nbv->bGpuBufferOps = true;
-
-
-    const rvec *x_d;
-
-    // copy of coordinates will be required if null pointer has been
-    // passed to function
-    // TODO improve this mechanism
-    bool        copyCoord = (xPmeDevicePtr == nullptr);
-
-    // copy X-coordinate data to device
-    if (copyCoord)
-    {
-        if (bDoTime)
-        {
-            gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
-        }
-
-        // FIXME: use copyToDeviceBuffer wrapper
-        // There still exist issues with host buffer not being pinned
-        // and another problem with wrong size being picked up by API
-        // auto devicePtr = &gpu_nbv->xrvec[copyAtomStart][0];
-        // copyToDeviceBuffer(&devicePtr, &x[copyAtomStart][0], 0, nCopyAtoms,
-        //                    stream, GpuApiCallBehavior::Async, nullptr);
-        cudaError_t stat = cudaMemcpyAsync(&gpu_nbv->xrvec[copyAtomStart][0], &x[copyAtomStart][0],
-                                           nCopyAtoms*sizeof(rvec), cudaMemcpyHostToDevice, stream);
-        CU_RET_ERR(stat, "cudaMemcpy failed on gpu_nbv->xrvec");
-
-
-        if (bDoTime)
-        {
-            gpu_nbv->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
-        }
-
-        x_d = gpu_nbv->xrvec;
-    }
-    else //coordinates have already been copied by PME stream
-    {
-        x_d = (rvec*) xPmeDevicePtr;
-    }
-
-    /* launch kernel on GPU */
-    const int          threadsPerBlock = 128;
-
-    KernelLaunchConfig config;
-    config.blockSize[0]     = threadsPerBlock;
-    config.blockSize[1]     = 1;
-    config.blockSize[2]     = 1;
-    config.gridSize[0]      = ((na_round_max+1)+threadsPerBlock-1)/threadsPerBlock;
-    config.gridSize[1]      = ncxy;
-    config.gridSize[2]      = 1;
-    config.sharedMemorySize = 0;
-    config.stream           = stream;
-
-    auto       kernelFn     = nbnxn_gpu_x_to_nbat_x_kernel;
-    float     *xqPtr        = &(adat->xq->x);
-    const int *abufops      = gpu_nbv->abufops;
-    const int *nabufopsPtr  = gpu_nbv->nabufops[locality];
-    const int *cxybufopsPtr = gpu_nbv->cxybufops[locality];
-    const auto kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
-                                                        &ncxy,
-                                                        &xqPtr,
-                                                        &g,
-                                                        &FillLocal,
-                                                        &x_d,
-                                                        &abufops,
-                                                        &nabufopsPtr,
-                                                        &cxybufopsPtr,
-                                                        &cell0,
-                                                        &na_sc);
-    launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
-
-    insertNonlocalGpuDependency(gpu_nbv, iloc);
-
-    return true;
-}
-
-/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format. */
-void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
-                               gmx_nbnxn_gpu_t               *gpu_nbv,
-                               const AtomLocality             locality,
-                               void                          *fPmeDevicePtr,
-                               int                            a0,
-                               int                            a1,
-                               const int                      natoms_local,
-                               rvec                          *f,
-                               const t_commrec               *cr)
-{
-
-
-    cu_atomdata_t       *adat    = gpu_nbv->atdat;
-    cudaStream_t         stream  = gpu_nbv->stream[0];
-
-    bool                 bDoTime = gpu_nbv->bDoTime;
-    cu_timers_t         *t       = gpu_nbv->timers;
-
-    const rvec          *fPmePtr;
-
-    int                  commsize = 1;
-    if (cr)
-    {
-        MPI_Comm_size(cr->mpi_comm_mysim, &commsize);
-    }
-
-    if (fPmeDevicePtr != nullptr)
-    {
-        fPmePtr = (rvec*) fPmeDevicePtr;
-    }
-    else
-    {
-        fPmePtr = gpu_nbv->fpmervec;
-
-        // Recieve PME Force from PME GPU
-        // TODO add support for case when PME is on CPU.
-
-        MPI_Recv((void *)fPmePtr, natoms_local*3, MPI_FLOAT,
-                 cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
-                 MPI_STATUS_IGNORE);
-
-    }
-
-    bool addPmeF = (fPmePtr != nullptr);
-
-    //TODO (AG) enable copyForce=false (and zero device buffer)
-    //when all bonded forces are done on GPU
-    //bool        copyForce = true;
-    bool        copyForce = false;
-    cudaMemset(&gpu_nbv->frvec[a0][0], 0, (a1-a0)*sizeof(rvec));
-
-    if (copyForce)
-    {
-        if (bDoTime)
-        {
-            t->xf[locality].nb_h2d.openTimingRegion(stream);
-        }
-
-        //FIXME: use copyToDeviceBuffer wrapper when multi-GPU pinning issue with f has been resolved
-        //copyToDeviceBuffer(&gpu_nbv->frvec, f, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
-        cudaMemcpyAsync(gpu_nbv->frvec, f, a1*sizeof(rvec), cudaMemcpyHostToDevice, stream);
-
-
-
-        if (bDoTime)
-        {
-            t->xf[locality].nb_h2d.closeTimingRegion(stream);
-        }
-
-    }
-
-    if (commsize == 1)
-    {
-        /* ensure that PME GPU force calculations have completed */
-        cudaDeviceSynchronize();
-    }
-
-    /* launch kernel */
-    const int          threadsPerBlock = 128;
-
-    KernelLaunchConfig config;
-    config.blockSize[0]     = threadsPerBlock;
-    config.blockSize[1]     = 1;
-    config.blockSize[2]     = 1;
-    config.gridSize[0]      = (((a1-a0)+1)+threadsPerBlock-1)/threadsPerBlock;
-    config.gridSize[1]      = 1;
-    config.gridSize[2]      = 1;
-    config.sharedMemorySize = 0;
-    config.stream           = stream;
-
-    auto             kernelFn                = nbnxn_gpu_add_nbat_f_to_f_kernel;
-    const float     *fPtr                    = (float*) adat->f;
-    rvec            *frvec                   = gpu_nbv->frvec;
-    const int       *cell                    = gpu_nbv->cell;
-    int              stride                  = nbat->fstride;
-
-    const auto       kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
-                                                              &fPtr,
-                                                              &fPmePtr,
-                                                              &frvec,
-                                                              &cell,
-                                                              &a0,
-                                                              &a1,
-                                                              &stride,
-                                                              &addPmeF);
-
-    launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
-
-    cudaStreamSynchronize(stream);
-    if (cr && cr->dd && (cr->dd->ndim > 0))
-    {
-        gpuBufferOpsFCommCoord(gpu_nbv->frvec, stream);
-    }
-
-    if (bDoTime)
-    {
-        t->xf[locality].nb_h2d.openTimingRegion(stream);
-    }
-
-    //FIXME: use copyToDeviceBuffer wrapper when multi-GPU pinning issue with f has been resolved
-    //F copyback no longer required since force stays resident on GPU
-    //copyFromDeviceBuffer(f, &gpu_nbv->frvec, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
-    //TODO
-    //cudaMemcpyAsync(f, gpu_nbv->frvec, a1*sizeof(rvec), cudaMemcpyDeviceToHost, stream);
-
-    if (bDoTime)
-    {
-        t->xf[locality].nb_h2d.closeTimingRegion(stream);
-    }
-
-
-    cudaStreamSynchronize(stream);
-    return;
 }
 
 } // namespace Nbnxm

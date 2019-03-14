@@ -84,8 +84,6 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/pleasecite.h"
 
-#include "gromacs/nbnxm/cuda/gpuUpdateConstraintsCUDA.h"
-
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 namespace gmx
@@ -1515,12 +1513,7 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
      * The current constraint to task assignment code can create independent
      * tasks only when not more than two constraints are connected sequentially.
      */
-
-
-    //TODO add appropriate GPU/CPU switch.
-    //li->ntask    = gmx_omp_nthreads_get(emntLINCS);
-    //set ntask to 1 for GPU version
-    li->ntask    = 1;
+    li->ntask    = gmx_omp_nthreads_get(emntLINCS);
     li->bTaskDep = (li->ntask > 1 && bMoreThanTwoSeq);
     if (debug)
     {
@@ -2378,46 +2371,24 @@ bool constrain_lincs(bool computeRmsd,
          */
         bool bWarn = FALSE;
 
-        //TODO add approptiate CPU/GPU switch to this conditional
-        if (gpuUpdateConstraintsGetSize() > 0)
-        {
-#pragma omp barrier
-            if (gmx_omp_get_thread_num() == 0)
-            {
-                do_lincs_gpu((void*) lincsd, pbc, (rvec*) x, (rvec*) xprime,
-                             (rvec*) v, vir_r_m_dr, (real*) md.invmass,
-                             invdt, bCalcVir, cr, box);
-            }
-#pragma omp barrier
-        }
-        else
-        {
-
-            /* The OpenMP parallel region of constrain_lincs for coords */
+        /* The OpenMP parallel region of constrain_lincs for coords */
 #pragma omp parallel num_threads(lincsd->ntask)
+        {
+            try
             {
-                try
-                {
-                    int th = gmx_omp_get_thread_num();
+                int th = gmx_omp_get_thread_num();
 
-                    clear_mat(lincsd->task[th].vir_r_m_dr);
+                clear_mat(lincsd->task[th].vir_r_m_dr);
 
-                    if (gpuUpdateConstraintsGetSize() == 0)
-                    {
-                        do_lincs(x, xprime, box, pbc, lincsd, th,
-                                 md.invmass, cr,
-                                 bCalcDHDL,
-                                 ir.LincsWarnAngle, &bWarn,
-                                 invdt, v, bCalcVir,
-                                 th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
-                    }
-                }
-                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+                do_lincs(x, xprime, box, pbc, lincsd, th,
+                         md.invmass, cr,
+                         bCalcDHDL,
+                         ir.LincsWarnAngle, &bWarn,
+                         invdt, v, bCalcVir,
+                         th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
             }
-
-
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
-
 
         if (debug && lincsd->nc > 0)
         {

@@ -320,27 +320,6 @@ class Grid
             return cxy_na_[columnIndex];
         }
 
-        /*! \brief Returns a view of the number of non-filler, atoms for each grid column
-         *
-         * \todo Needs a useful name. */
-        gmx::ArrayRef<const int> cxy_na() const
-        {
-            return cxy_na_;
-        }
-        /*! \brief Returns a view of the grid-local cell index for each grid column
-         *
-         * \todo Needs a useful name. */
-        gmx::ArrayRef<const int> cxy_ind() const
-        {
-            return cxy_ind_;
-        }
-
-        //! Returns the number of real atoms in the column
-        int numAtomsPerCell() const
-        {
-            return geometry_.numAtomsPerCell;
-        }
-
         //! Returns the number of atoms in the column including padding
         int paddedNumAtomsInColumn(int columnIndex) const
         {
@@ -494,13 +473,9 @@ class Grid
         int        cellOffset_;
 
         /* Grid data */
-        /*! \brief The number of, non-filler, atoms for each grid column.
-         *
-         * \todo Needs a useful name. */
+        //! The number of, non-filler, atoms for each grid column
         std::vector<int> cxy_na_;
-        /*! \brief The grid-local cell index for each grid column
-         *
-         * \todo Needs a useful name. */
+        //! The grid-local cell index for each grid column
         std::vector<int> cxy_ind_;
 
         //! The number of cluster for each cell
