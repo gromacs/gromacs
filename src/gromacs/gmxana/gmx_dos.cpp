@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -266,7 +266,6 @@ int gmx_dos(int argc, char *argv[])
         "This program needs a lot of memory: total usage equals the number of atoms times 3 times number of frames times 4 (or 8 when run in double precision)."
     };
     FILE               *fp, *fplog;
-    t_topology          top;
     int                 ePBC = -1;
     t_trxframe          fr;
     matrix              box;
@@ -339,20 +338,20 @@ int gmx_dos(int argc, char *argv[])
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    auto pair = read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &ePBC, nullptr, nullptr, box, TRUE);
 
     /* Handle index groups */
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
+    get_index(&pair.first->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
 
     V     = det(box);
     tmass = 0;
     for (i = 0; i < grpNatoms; i++)
     {
-        tmass += top.atoms.atom[index[i]].m;
+        tmass += pair.first->atoms.atom[index[i]].m;
     }
 
     Natom = grpNatoms;
-    Nmol  = calcMoleculesInIndexGroup(&top.mols, top.atoms.nr, index, grpNatoms);
+    Nmol  = calcMoleculesInIndexGroup(&pair.first->mols, pair.first->atoms.nr, index, grpNatoms);
     gnx   = Natom*DIM;
 
     /* Correlation stuff */
@@ -443,7 +442,7 @@ int gmx_dos(int argc, char *argv[])
     }
     for (i = 0; (i < gnx); i += DIM)
     {
-        mi = top.atoms.atom[index[i/DIM]].m;
+        mi = pair.first->atoms.atom[index[i/DIM]].m;
         for (j = 0; (j < nframes/2); j++)
         {
             c1j            = (c1[i+XX][j] + c1[i+YY][j] + c1[i+ZZ][j]);
@@ -529,7 +528,7 @@ int gmx_dos(int argc, char *argv[])
     rho   = (tmass*AMU)/(V*NANO*NANO*NANO);
     sigHS = std::cbrt(6*y*V/(M_PI*Natom));
 
-    fprintf(fplog, "System = \"%s\"\n", *top.name);
+    fprintf(fplog, "System = \"%s\"\n", *pair.first->name);
     fprintf(fplog, "Nmol = %d\n", Nmol);
     fprintf(fplog, "Natom = %d\n", Natom);
     fprintf(fplog, "dt = %g ps\n", dt);

@@ -479,7 +479,6 @@ int gmx_nmeig(int argc, char *argv[])
           "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
     };
     FILE                  *out, *qc, *spec;
-    t_topology             top;
     gmx_mtop_t             mtop;
     rvec                  *top_x;
     matrix                 box;
@@ -530,9 +529,9 @@ int gmx_nmeig(int argc, char *argv[])
     {
         nharm = get_nharm(&mtop);
     }
-    std::vector<int> atom_index = get_atom_index(&mtop);
+    std::vector<int>            atom_index = get_atom_index(&mtop);
 
-    top = gmx_mtop_t_to_t_topology(&mtop, true);
+    std::unique_ptr<t_topology> top = gmx_mtop_t_to_t_topology(&mtop, true);
 
     bM       = TRUE;
     int ndim = DIM*atom_index.size();
@@ -604,7 +603,7 @@ int gmx_nmeig(int argc, char *argv[])
         /* Using full matrix storage */
         eigenvectors = allocateEigenvectors(nrow, begin, end, false);
 
-        nma_full_hessian(full_hessian, nrow, bM, &top, atom_index, begin, end,
+        nma_full_hessian(full_hessian, nrow, bM, top.get(), atom_index, begin, end,
                          eigenvalues, eigenvectors);
     }
     else
@@ -613,7 +612,7 @@ int gmx_nmeig(int argc, char *argv[])
         /* Sparse memory storage, allocate memory for eigenvectors */
         eigenvectors = allocateEigenvectors(nrow, begin, end, true);
 
-        nma_sparse_hessian(sparse_hessian, bM, &top, atom_index, end, eigenvalues, eigenvectors);
+        nma_sparse_hessian(sparse_hessian, bM, top.get(), atom_index, end, eigenvalues, eigenvectors);
     }
 
     /* check the output, first 6 eigenvalues should be reasonably small */
@@ -788,7 +787,7 @@ int gmx_nmeig(int argc, char *argv[])
 
     if (begin == 1)
     {
-        analyzeThermochemistry(stdout, top, top_x, atom_index, eigenvalues,
+        analyzeThermochemistry(stdout, *top, top_x, atom_index, eigenvalues,
                                T, P, sigma_r, scale_factor, linear_toler);
         please_cite(stdout, "Spoel2018a");
     }

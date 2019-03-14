@@ -304,7 +304,7 @@ gmx::RangePartitioning gmx_mtop_molecules(const gmx_mtop_t &mtop);
  * If freeMTop == false, mtop and the return value will share some of their
  * memory, and there is currently no way to consistently free all the memory.
  */
-t_topology
+std::unique_ptr<t_topology>
 gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop);
 
 /*! \brief Get vector of atoms indices from topology

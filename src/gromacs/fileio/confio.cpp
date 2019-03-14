@@ -430,15 +430,16 @@ void readConfAndTopology(const char *infile,
     }
 }
 
-gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
-                       rvec **x, rvec **v, matrix box, gmx_bool requireMasses)
+std::pair<std::unique_ptr<t_topology>, bool>
+read_tps_conf(const char *infile, int *ePBC,
+              rvec **x, rvec **v, matrix box, gmx_bool requireMasses)
 {
     bool        haveTopology;
     gmx_mtop_t  mtop;
 
     readConfAndTopology(infile, &haveTopology, &mtop, ePBC, x, v, box);
 
-    *top = gmx_mtop_t_to_t_topology(&mtop, true);
+    std::unique_ptr<t_topology> top = gmx_mtop_t_to_t_topology(&mtop, true);
 
     tpx_make_chain_identifiers(&top->atoms, &top->mols);
 
@@ -452,5 +453,5 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
         }
     }
 
-    return haveTopology;
+    return std::make_pair(std::move(top), haveTopology);
 }

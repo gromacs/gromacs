@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,14 +91,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         }
         ~StructureIORoundtripTest() override
         {
-            if (testTop_ != nullptr)
-            {
-                done_top(testTop_);
-                sfree(testTop_);
-            }
             sfree(testX_);
-            done_top(refTop_);
-            sfree(refTop_);
         }
 
         void writeReferenceFile()
@@ -110,10 +103,10 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
 
         void readReferenceFileTps()
         {
-            snew(testTop_, 1);
             int  ePBC = -2;
-            read_tps_conf(referenceFilename_.c_str(), testTop_,
-                          &ePBC, &testX_, nullptr, testBox_, FALSE);
+            auto pair = read_tps_conf(referenceFilename_.c_str(),
+                                      &ePBC, &testX_, nullptr, testBox_, FALSE);
+            testTop_ = std::move(pair.first);
         }
 
         void testTopologies()
@@ -136,7 +129,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
 
         void generateReferenceTopology()
         {
-            snew(refTop_, 1);
+            refTop_ = std::make_unique<t_topology>();
             open_symtab(&refTop_->symtab);
             if (GetParam() == efESP)
             {
@@ -188,10 +181,10 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         gmx::test::TestFileManager      fileManager_;
         std::string                     referenceFilename_;
         std::string                     testFilename_;
-        t_topology                     *refTop_;
+        std::unique_ptr<t_topology>     refTop_;
         std::vector<gmx::RVec>          refX_;
         matrix                          refBox_;
-        t_topology                     *testTop_;
+        std::unique_ptr<t_topology>     testTop_;
         rvec                           *testX_;
         matrix                          testBox_;
 };

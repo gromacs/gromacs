@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,7 +133,6 @@ int gmx_vanhove(int argc, char *argv[])
 
     gmx_output_env_t *oenv;
     const char       *matfile, *otfile, *orfile;
-    t_topology        top;
     int               ePBC;
     matrix            boxtop, box, *sbox, avbox, corr;
     rvec             *xtop, *x, **sx;
@@ -181,9 +180,10 @@ int gmx_vanhove(int argc, char *argv[])
         exit(0);
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, boxtop,
-                  FALSE);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &xtop, nullptr, boxtop,
+                              FALSE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
+    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
     nalloc = 0;
     time   = nullptr;

@@ -156,13 +156,13 @@ int gmx_genrestr(int argc, char *argv[])
         gmx_fatal(FARGS, "disre_dist should be >= 0");
     }
 
-    const char *title = "";
+    const char                 *title = "";
+    std::unique_ptr<t_topology> top;
     if (xfn != nullptr)
     {
         fprintf(stderr, "\nReading structure file\n");
-        t_topology *top = nullptr;
-        snew(top, 1);
-        read_tps_conf(xfn, top, nullptr, &x, &v, box, FALSE);
+        auto pair = read_tps_conf(xfn, nullptr, &x, &v, box, FALSE);
+        top   = std::move(pair.first);
         title = *top->name;
         atoms = &top->atoms;
         if (atoms->pdbinfo == nullptr)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -659,7 +659,6 @@ int gmx_rmsdist(int argc, char *argv[])
     int               i, teller;
     real              t;
 
-    t_topology        top;
     int               ePBC;
     t_atoms          *atoms;
     matrix            box;
@@ -736,13 +735,14 @@ int gmx_rmsdist(int argc, char *argv[])
     }
 
     /* get topology and index */
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, FALSE);
+    auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &x, nullptr, box, FALSE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
 
     if (!bPBC)
     {
         ePBC = epbcNONE;
     }
-    atoms = &(top.atoms);
+    atoms = &(top->atoms);
 
     get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 

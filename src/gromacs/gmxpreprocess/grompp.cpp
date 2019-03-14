@@ -725,11 +725,10 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "processing coordinates...\n");
     }
 
-    t_topology *conftop;
-    rvec       *x = nullptr;
-    rvec       *v = nullptr;
-    snew(conftop, 1);
-    read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
+    rvec                       *x       = nullptr;
+    rvec                       *v       = nullptr;
+    auto                        pair    = read_tps_conf(confin, nullptr, &x, &v, state->box, FALSE);
+    std::unique_ptr<t_topology> conftop = std::move(pair.first);
     state->natoms = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
     {
@@ -757,8 +756,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     set_box_rel(ir, state);
 
     nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
-    done_top(conftop);
-    sfree(conftop);
 
     if (nmismatch)
     {
@@ -946,22 +943,19 @@ static void read_posres(gmx_mtop_t *mtop,
                         rvec com,
                         warninp *wi)
 {
-    gmx_bool           *hadAtom;
-    rvec               *x, *v;
-    dvec                sum;
-    double              totmass;
-    t_topology         *top;
-    matrix              box, invbox;
-    int                 natoms, npbcdim = 0;
-    char                warn_buf[STRLEN];
-    int                 a, nat_molb;
-    t_atom             *atom;
+    gmx_bool                   *hadAtom;
+    rvec                       *x, *v;
+    dvec                        sum;
+    double                      totmass;
+    matrix                      box, invbox;
+    int                         natoms, npbcdim = 0;
+    char                        warn_buf[STRLEN];
+    int                         a, nat_molb;
+    t_atom                     *atom;
 
-    snew(top, 1);
-    read_tps_conf(fn, top, nullptr, &x, &v, box, FALSE);
+    auto                        pair = read_tps_conf(fn, nullptr, &x, &v, box, FALSE);
+    std::unique_ptr<t_topology> top  = std::move(pair.first);
     natoms = top->atoms.nr;
-    done_top(top);
-    sfree(top);
     if (natoms != mtop->natoms)
     {
         sprintf(warn_buf, "The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.", fn, natoms, mtop->natoms, std::min(mtop->natoms, natoms), fn);

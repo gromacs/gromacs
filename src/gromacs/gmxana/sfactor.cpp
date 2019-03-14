@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -445,7 +445,6 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     t_trxstatus            *status;
     char                  **grpname;
     int                   **index;
-    t_topology              top;
     int                     ePBC;
     t_trxframe              fr;
     reduced_atom_t        **red;
@@ -470,7 +469,8 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     sf->energy = energy;
 
     /* Read the topology informations */
-    read_tps_conf (fnTPS, &top, &ePBC, &xtop, nullptr, box, TRUE);
+    auto pair = read_tps_conf (fnTPS, &ePBC, &xtop, nullptr, box, TRUE);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
     sfree (xtop);
 
     /* groups stuff... */
@@ -482,7 +482,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
              ng == 1 ? "" : "s");
     if (fnTPS)
     {
-        get_index (&top.atoms, fnNDX, ng, isize, index, grpname);
+        get_index (&top->atoms, fnNDX, ng, isize, index, grpname);
     }
     else
     {
@@ -512,7 +512,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     for (i = 0; i < ng; i++)
     {
         snew (red[i], isize[i]);
-        rearrange_atoms (red[i], &fr, index[i], isize[i], &top, TRUE, gmx_sf);
+        rearrange_atoms (red[i], &fr, index[i], isize[i], top.get(), TRUE, gmx_sf);
         index_atp[i] = create_indexed_atom_type (red[i], isize[i]);
     }
 
@@ -526,7 +526,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
         sf->nSteps++;
         for (i = 0; i < ng; i++)
         {
-            rearrange_atoms (red[i], &fr, index[i], isize[i], &top, FALSE, gmx_sf);
+            rearrange_atoms (red[i], &fr, index[i], isize[i], top.get(), FALSE, gmx_sf);
 
             compute_structure_factor (static_cast<structure_factor_t *>(sf), box, red[i], isize[i],
                                       start_q, end_q, i, sf_table);

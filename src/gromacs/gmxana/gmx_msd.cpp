@@ -1109,7 +1109,6 @@ int gmx_msd(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    t_topology        top;
     int               ePBC;
     matrix            box;
     const char       *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
@@ -1185,7 +1184,9 @@ int gmx_msd(int argc, char *argv[])
         gmx_fatal(FARGS, "Can only calculate the full tensor for 3D msd");
     }
 
-    bTop = read_tps_conf(tps_file, &top, &ePBC, &xdum, nullptr, box, bMW || bRmCOMM);
+    auto pair = read_tps_conf(tps_file, &ePBC, &xdum, nullptr, box, bMW || bRmCOMM);
+    std::unique_ptr<t_topology> top = std::move(pair.first);
+    bTop = pair.second;
     if (mol_file && !bTop)
     {
         gmx_fatal(FARGS,
@@ -1194,10 +1195,9 @@ int gmx_msd(int argc, char *argv[])
     }
 
     do_corr(trx_file, ndx_file, msd_file, mol_file, pdb_file, t_pdb, ngroup,
-            &top, ePBC, bTen, bMW, bRmCOMM, type, dim_factor, axis, dt, beginfit, endfit,
+            top.get(), ePBC, bTen, bMW, bRmCOMM, type, dim_factor, axis, dt, beginfit, endfit,
             oenv);
 
-    done_top(&top);
     view_all(oenv, NFILE, fnm);
 
     return 0;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,38 +115,38 @@ static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
 
 int gmx_sorient(int argc, char *argv[])
 {
-    t_topology        top;
-    int               ePBC = -1;
-    t_trxstatus      *status;
-    int               natoms;
-    real              t;
-    rvec             *xtop, *x;
-    matrix            box;
+    std::unique_ptr<t_topology> top;
+    int                         ePBC = -1;
+    t_trxstatus                *status;
+    int                         natoms;
+    real                        t;
+    rvec                       *xtop, *x;
+    matrix                      box;
 
-    FILE             *fp;
-    int               i, p, sa0, sa1, sa2, n, ntot, nf, m, *hist1, *hist2, *histn, nbin1, nbin2, nrbin;
-    real             *histi1, *histi2, invbw, invrbw;
-    double            sum1, sum2;
-    int              *isize, nrefgrp, nrefat;
-    int             **index;
-    char            **grpname;
-    real              inp, outp, nav, normfac, rmin2, rmax2, rcut, rcut2, r2, r;
-    real              c1, c2;
-    char              str[STRLEN];
-    gmx_bool          bTPS;
-    rvec              xref, dx, dxh1, dxh2, outer;
-    gmx_rmpbc_t       gpbc = nullptr;
-    t_pbc             pbc;
-    const char       *legr[] = {
+    FILE                       *fp;
+    int                         i, p, sa0, sa1, sa2, n, ntot, nf, m, *hist1, *hist2, *histn, nbin1, nbin2, nrbin;
+    real                       *histi1, *histi2, invbw, invrbw;
+    double                      sum1, sum2;
+    int                        *isize, nrefgrp, nrefat;
+    int                       **index;
+    char                      **grpname;
+    real                        inp, outp, nav, normfac, rmin2, rmax2, rcut, rcut2, r2, r;
+    real                        c1, c2;
+    char                        str[STRLEN];
+    gmx_bool                    bTPS;
+    rvec                        xref, dx, dxh1, dxh2, outer;
+    gmx_rmpbc_t                 gpbc = nullptr;
+    t_pbc                       pbc;
+    const char                 *legr[] = {
         "<cos(\\8q\\4\\s1\\N)>",
         "<3cos\\S2\\N(\\8q\\4\\s2\\N)-1>"
     };
-    const char       *legc[] = {
+    const char                 *legc[] = {
         "cos(\\8q\\4\\s1\\N)",
         "3cos\\S2\\N(\\8q\\4\\s2\\N)-1"
     };
 
-    const char       *desc[] = {
+    const char                 *desc[] = {
         "[THISMODULE] analyzes solvent orientation around solutes.",
         "It calculates two angles between the vector from one or more",
         "reference positions to the first atom of each solvent molecule:",
@@ -171,10 +171,10 @@ int gmx_sorient(int argc, char *argv[])
         "[TT]-rc[tt]: the distribution of the solvent molecules as a function of r"
     };
 
-    gmx_output_env_t *oenv;
-    static gmx_bool   bCom = FALSE, bVec23 = FALSE, bPBC = FALSE;
-    static real       rmin = 0.0, rmax = 0.5, binwidth = 0.02, rbinw = 0.02;
-    t_pargs           pa[] = {
+    gmx_output_env_t           *oenv;
+    static gmx_bool             bCom = FALSE, bVec23 = FALSE, bPBC = FALSE;
+    static real                 rmin = 0.0, rmax = 0.5, binwidth = 0.02, rbinw = 0.02;
+    t_pargs                     pa[] = {
         { "-com",  FALSE, etBOOL,  {&bCom},
           "Use the center of mass as the reference position" },
         { "-v23",  FALSE, etBOOL,  {&bVec23},
@@ -186,7 +186,7 @@ int gmx_sorient(int argc, char *argv[])
         { "-pbc",   FALSE, etBOOL, {&bPBC}, "Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules." }
     };
 
-    t_filenm          fnm[] = {
+    t_filenm                    fnm[] = {
         { efTRX, nullptr,  nullptr,  ffREAD },
         { efTPS, nullptr,  nullptr,  ffREAD },
         { efNDX, nullptr,  nullptr,  ffOPTRD },
@@ -207,8 +207,9 @@ int gmx_sorient(int argc, char *argv[])
     bTPS = (opt2bSet("-s", NFILE, fnm) || !opt2bSet("-n", NFILE, fnm) || bCom);
     if (bTPS)
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box,
-                      bCom);
+        auto pair = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC, &xtop, nullptr, box,
+                                  bCom);
+        top = std::move(pair.first);
     }
 
     /* get index groups */
@@ -218,7 +219,7 @@ int gmx_sorient(int argc, char *argv[])
     snew(isize, 2);
     if (bTPS)
     {
-        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpname);
+        get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpname);
     }
     else
     {
@@ -279,7 +280,7 @@ int gmx_sorient(int argc, char *argv[])
     if (bTPS)
     {
         /* make molecules whole again */
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     }
     /* start analysis of trajectory */
     do
@@ -297,7 +298,7 @@ int gmx_sorient(int argc, char *argv[])
         {
             if (bCom)
             {
-                calc_com_pbc(nrefat, &top, x, &pbc, index[0], xref, bPBC);
+                calc_com_pbc(nrefat, top.get(), x, &pbc, index[0], xref, bPBC);
             }
             else
             {

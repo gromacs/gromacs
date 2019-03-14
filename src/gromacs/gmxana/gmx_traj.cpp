@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -649,7 +649,6 @@ int gmx_traj(int argc, char *argv[])
     };
     FILE             *outx   = nullptr, *outv = nullptr, *outf = nullptr, *outb = nullptr, *outt = nullptr;
     FILE             *outekt = nullptr, *outekr = nullptr;
-    t_topology        top;
     int               ePBC;
     real             *mass, time;
     const char       *indexfn;
@@ -737,10 +736,11 @@ int gmx_traj(int argc, char *argv[])
         sprintf(sffmt, "\t%%g");
     }
     std::string sffmt6 = gmx::formatString("%s%s%s%s%s%s", sffmt, sffmt, sffmt, sffmt, sffmt, sffmt);
-
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC,
-                         &xtop, nullptr, topbox,
-                         bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
+    auto        pair   = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &ePBC,
+                                       &xtop, nullptr, topbox,
+                                       bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
+    std::unique_ptr<t_topology> top = std::move(pair.first);
+    bTop = pair.second;
     sfree(xtop);
     if ((bMol || bCV || bCF) && !bTop)
     {
@@ -763,11 +763,11 @@ int gmx_traj(int argc, char *argv[])
     snew(grpname, ngroups);
     snew(isize0, ngroups);
     snew(index0, ngroups);
-    get_index(&(top.atoms), indexfn, ngroups, isize0, index0, grpname);
+    get_index(&(top->atoms), indexfn, ngroups, isize0, index0, grpname);
 
     if (bMol)
     {
-        mols    = &(top.mols);
+        mols    = &(top->mols);
         atndx   = mols->index;
         ngroups = isize0[0];
         snew(isize, ngroups);
@@ -794,10 +794,10 @@ int gmx_traj(int argc, char *argv[])
     }
     if (bCom)
     {
-        snew(mass, top.atoms.nr);
-        for (i = 0; i < top.atoms.nr; i++)
+        snew(mass, top->atoms.nr);
+        for (i = 0; i < top->atoms.nr; i++)
         {
-            mass[i] = top.atoms.atom[i].m;
+            mass[i] = top->atoms.atom[i].m;
         }
     }
     else
@@ -920,7 +920,7 @@ int gmx_traj(int argc, char *argv[])
 
     if (bCom && bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, fr.natoms);
     }
 
     do
@@ -962,7 +962,7 @@ int gmx_traj(int argc, char *argv[])
             t_trxframe frout = fr;
             if (!frout.bAtoms)
             {
-                frout.atoms  = &top.atoms;
+                frout.atoms  = &top->atoms;
                 frout.bAtoms = TRUE;
             }
             frout.bV = FALSE;
@@ -1110,14 +1110,14 @@ int gmx_traj(int argc, char *argv[])
     if (bCV)
     {
         write_pdb_bfac(opt2fn("-cv", NFILE, fnm),
-                       opt2fn("-av", NFILE, fnm), "average velocity", &(top.atoms),
+                       opt2fn("-av", NFILE, fnm), "average velocity", &(top->atoms),
                        ePBC, topbox, isize[0], index[0], nr_xfr, sumx,
                        nr_vfr, sumv, bDim, scale, oenv);
     }
     if (bCF)
     {
         write_pdb_bfac(opt2fn("-cf", NFILE, fnm),
-                       opt2fn("-af", NFILE, fnm), "average force", &(top.atoms),
+                       opt2fn("-af", NFILE, fnm), "average force", &(top->atoms),
                        ePBC, topbox, isize[0], index[0], nr_xfr, sumx,
                        nr_ffr, sumf, bDim, scale, oenv);
     }
@@ -1125,7 +1125,6 @@ int gmx_traj(int argc, char *argv[])
     /* view it */
     view_all(oenv, NFILE, fnm);
 
-    done_top(&top);
     // Free index and isize only if they are distinct from index0 and isize0
     if (bMol)
     {

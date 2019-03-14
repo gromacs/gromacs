@@ -1209,11 +1209,12 @@ static void gen_t_topology(const gmx_mtop_t &mtop,
     top->symtab                      = mtop.symtab;
 }
 
-t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
+std::unique_ptr<t_topology>
+gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
 {
-    t_topology     top;
+    std::unique_ptr<t_topology> top = std::make_unique<t_topology>();
 
-    gen_t_topology(*mtop, false, false, &top);
+    gen_t_topology(*mtop, false, false, top.get());
 
     if (freeMTop)
     {
