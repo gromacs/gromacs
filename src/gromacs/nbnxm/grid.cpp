@@ -61,6 +61,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 
+#include "gridsetdata.h"
 #include "pairlistparams.h"
 
 namespace Nbnxm
@@ -75,8 +76,10 @@ Grid::Geometry::Geometry(const PairlistType pairlistType) :
 {
 }
 
-Grid::Grid(const PairlistType pairlistType) :
-    geometry_(pairlistType)
+Grid::Grid(const PairlistType  pairlistType,
+           const bool         &haveFep) :
+    geometry_(pairlistType),
+    haveFep_(haveFep)
 {
 }
 
@@ -847,7 +850,7 @@ static void sort_cluster_on_flag(int                 numAtomsInCluster,
  *
  * Potentially sorts atoms and sets the interaction flags.
  */
-void Grid::fillCell(const GridSetData              &gridSetData,
+void Grid::fillCell(GridSetData                    *gridSetData,
                     nbnxn_atomdata_t               *nbat,
                     int                             atomStart,
                     int                             atomEnd,
@@ -857,8 +860,8 @@ void Grid::fillCell(const GridSetData              &gridSetData,
 {
     const int                 numAtoms = atomEnd - atomStart;
 
-    const gmx::ArrayRef<int> &cells       = gridSetData.cells;
-    const gmx::ArrayRef<int> &atomIndices = gridSetData.atomIndices;
+    const gmx::ArrayRef<int> &cells       = gridSetData->cells;
+    const gmx::ArrayRef<int> &atomIndices = gridSetData->atomIndices;
 
     if (geometry_.isSimple)
     {
@@ -870,7 +873,7 @@ void Grid::fillCell(const GridSetData              &gridSetData,
                              flags_.data() + atomToCluster(atomStart) - cellOffset_);
     }
 
-    if (gridSetData.haveFep)
+    if (haveFep_)
     {
         /* Set the fep flag for perturbed atoms in this (sub-)cell */
 
@@ -979,7 +982,7 @@ void Grid::fillCell(const GridSetData              &gridSetData,
     }
 }
 
-void Grid::sortColumnsCpuGeometry(const GridSetData &gridSetData,
+void Grid::sortColumnsCpuGeometry(GridSetData *gridSetData,
                                   int dd_zone,
                                   int atomStart, int atomEnd,
                                   const int *atinfo,
@@ -1008,7 +1011,7 @@ void Grid::sortColumnsCpuGeometry(const GridSetData &gridSetData,
         /* Sort the atoms within each x,y column on z coordinate */
         sort_atoms(ZZ, FALSE, dd_zone,
                    relevantAtomsAreWithinGridBounds,
-                   gridSetData.atomIndices.data() + atomOffset, numAtoms, x,
+                   gridSetData->atomIndices.data() + atomOffset, numAtoms, x,
                    dimensions_.lowerCorner[ZZ],
                    1.0/dimensions_.gridSize[ZZ], numCellsZ*numAtomsPerCell,
                    sort_work);
@@ -1042,13 +1045,13 @@ void Grid::sortColumnsCpuGeometry(const GridSetData &gridSetData,
         /* Set the unused atom indices to -1 */
         for (int ind = numAtoms; ind < numCellsZ*numAtomsPerCell; ind++)
         {
-            gridSetData.atomIndices[atomOffset + ind] = -1;
+            gridSetData->atomIndices[atomOffset + ind] = -1;
         }
     }
 }
 
 /* Spatially sort the atoms within one grid column */
-void Grid::sortColumnsGpuGeometry(const GridSetData &gridSetData,
+void Grid::sortColumnsGpuGeometry(GridSetData *gridSetData,
                                   int dd_zone,
                                   int atomStart, int atomEnd,
                                   const int *atinfo,
@@ -1075,7 +1078,7 @@ void Grid::sortColumnsGpuGeometry(const GridSetData &gridSetData,
     const int  subdiv_z = c_gpuNumClusterPerCellY*subdiv_y;
 
     /* Extract the atom index array that will be filled here */
-    const gmx::ArrayRef<int> &atomIndices = gridSetData.atomIndices;
+    const gmx::ArrayRef<int> &atomIndices = gridSetData->atomIndices;
 
     /* Sort the atoms within each x,y column in 3 dimensions.
      * Loop over all columns on the x/y grid.
@@ -1420,14 +1423,14 @@ void Grid::setCellIndices(int                             ddZone,
             int columnEnd   = ((thread + 1)*numColumns())/nthread;
             if (geometry_.isSimple)
             {
-                sortColumnsCpuGeometry(*gridSetData, ddZone,
+                sortColumnsCpuGeometry(gridSetData, ddZone,
                                        atomStart, atomEnd, atinfo, x, nbat,
                                        columnStart, columnEnd,
                                        gridWork[thread].sortBuffer);
             }
             else
             {
-                sortColumnsGpuGeometry(*gridSetData, ddZone,
+                sortColumnsGpuGeometry(gridSetData, ddZone,
                                        atomStart, atomEnd, atinfo, x, nbat,
                                        columnStart, columnEnd,
                                        gridWork[thread].sortBuffer);

@@ -57,6 +57,7 @@
 #include "gromacs/utility/arrayref.h"
 
 #include "grid.h"
+#include "gridsetdata.h"
 
 
 struct nbnxn_atomdata_t;
@@ -149,7 +150,7 @@ class GridSet
             /* Return the atom order for the home cell (index 0) */
             const int numIndices = grids_[0].atomIndexEnd() - grids_[0].firstAtomInColumn(0);
 
-            return gmx::constArrayRefFromArray(atomIndices_.data(), numIndices);
+            return gmx::constArrayRefFromArray(atomIndices().data(), numIndices);
         }
 
         //! Sets the order of the local atoms to the order grid atom ordering
@@ -164,13 +165,13 @@ class GridSet
         //! Returns the grid atom indices covering all grids
         gmx::ArrayRef<const int> cells() const
         {
-            return cells_;
+            return gridSetData_.cells;
         }
 
         //! Returns the grid atom indices covering all grids
         gmx::ArrayRef<const int> atomIndices() const
         {
-            return atomIndices_;
+            return gridSetData_.atomIndices;
         }
 
         //! Returns whether we have perturbed non-bonded interactions
@@ -198,23 +199,13 @@ class GridSet
         }
 
     private:
-        //! Returns collection of the data that covers all grids
-        const GridSetData getGridSetData()
-        {
-            GridSetData gridSetData = { cells_, atomIndices_, haveFep_ };
-
-            return gridSetData;
-        }
-
         /* Data members */
         //! The domain setup
         DomainSetup           domainSetup_;
         //! The search grids
         std::vector<Grid>     grids_;
-        //! The actual cell indices for all atoms, covering all grids
-        std::vector<int>      cells_;
-        //! The actual array of atom indices, covering all grids
-        std::vector<int>      atomIndices_;
+        //! The cell and atom index data which runs over all grids
+        GridSetData           gridSetData_;
         //! Tells whether we have perturbed non-bonded interactions
         bool                  haveFep_;
         //! The periodic unit-cell
