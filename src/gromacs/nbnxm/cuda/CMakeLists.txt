@@ -39,7 +39,11 @@ if(GMX_USE_CUDA)
                 nbnxm_cuda_kernel_F_prune.cu
                 nbnxm_cuda_kernel_VF_noprune.cu
                 nbnxm_cuda_kernel_VF_prune.cu
-                nbnxm_cuda_kernel_pruneonly.cu)
+                nbnxm_cuda_kernel_pruneonly.cu
+		gpuUpdateConstraintsCUDA.cu
+		gpuD2DCUDA.cu
+		gpuD2DConstraintsCUDA.cu
+		)
     endif()
 
     file(GLOB NBNXM_CUDA_SOURCES

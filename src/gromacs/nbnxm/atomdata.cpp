@@ -68,6 +68,7 @@
 
 #include "grid.h"
 #include "internal.h"
+#include "nbnxm_gpu.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
@@ -1725,7 +1726,8 @@ void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search            *nbs,
                                         gmx_nbnxn_gpu_t         *gpu_nbv,
                                         void                    *fPmeDevicePtr,
                                         rvec                    *f,
-                                        gmx_wallcycle           *wcycle)
+                                        gmx_wallcycle           *wcycle,
+                                        const t_commrec         *cr)
 {
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
@@ -1764,7 +1766,9 @@ void nbnxn_atomdata_add_nbat_f_to_f_gpu(nbnxn_search            *nbs,
                               locality,
                               fPmeDevicePtr,
                               a0, a0+na,
-                              f);
+                              nbs->natoms_local,
+                              f,
+                              cr);
 
     wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);

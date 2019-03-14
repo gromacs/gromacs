@@ -216,7 +216,10 @@ struct gmx_nbnxn_cuda_t
     bool                                                            bGpuBufferOps;  /**< true if doing buffer ops on GPU                      */
     cu_atomdata_t                                                  *atdat;          /**< atom data                                            */
     rvec                                                           *xrvec;          /**< coordinates in rvec format                           */
+    rvec                                                           *xprvec;         /**< updated coordinates in rvec format                   */
+    rvec                                                           *vrvec;          /**< velocity in rvec format                              */
     rvec                                                           *frvec;          /**< force in rvec format                                 */
+    rvec                                                           *fpmervec;       /**< pme force buffer in rvec format                      */
     int                                                            *abufops;        /**< x buf ops input buffer index mapping                 */
     gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               nabufops;       /**< x buf ops num of atoms (local and non-local)         */
     gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               cxybufops;      /**< x buf ops cell index mapping (local and non-local)   */

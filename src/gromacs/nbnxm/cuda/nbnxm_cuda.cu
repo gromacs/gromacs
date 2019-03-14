@@ -53,18 +53,23 @@
 
 #include "nbnxm_cuda.h"
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_common.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/internal.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist.h"
+#include "gromacs/nbnxm/cuda/gpuD2DCUDA.h"
 #include "gromacs/nbnxm/cuda/nbnxm_buffer_ops_kernels.cuh"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxmpi.h"
 
 #include "nbnxm_cuda_types.h"
 
@@ -867,7 +872,9 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
                                void                          *fPmeDevicePtr,
                                int                            a0,
                                int                            a1,
-                               rvec                          *f)
+                               const int                      natoms_local,
+                               rvec                          *f,
+                               const t_commrec               *cr)
 {
 
 
@@ -877,11 +884,38 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
     bool                 bDoTime = gpu_nbv->bDoTime;
     cu_timers_t         *t       = gpu_nbv->timers;
 
-    bool                 addPmeF = (fPmeDevicePtr != nullptr);
+    const rvec          *fPmePtr;
+
+    int                  commsize = 1;
+    if (cr)
+    {
+        MPI_Comm_size(cr->mpi_comm_mysim, &commsize);
+    }
+
+    if (fPmeDevicePtr != nullptr)
+    {
+        fPmePtr = (rvec*) fPmeDevicePtr;
+    }
+    else
+    {
+        fPmePtr = gpu_nbv->fpmervec;
+
+        // Recieve PME Force from PME GPU
+        // TODO add support for case when PME is on CPU.
+
+        MPI_Recv((void *)fPmePtr, natoms_local*3, MPI_FLOAT,
+                 cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
+                 MPI_STATUS_IGNORE);
+
+    }
+
+    bool addPmeF = (fPmePtr != nullptr);
 
     //TODO (AG) enable copyForce=false (and zero device buffer)
     //when all bonded forces are done on GPU
-    bool        copyForce = true;
+    //bool        copyForce = true;
+    bool        copyForce = false;
+    cudaMemset(&gpu_nbv->frvec[a0][0], 0, (a1-a0)*sizeof(rvec));
 
     if (copyForce)
     {
@@ -890,8 +924,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
             t->xf[locality].nb_h2d.openTimingRegion(stream);
         }
 
-        // FIXME: use copyToDeviceBuffer wrapper
-        // There still exist issues with host buffer not being pinned
+        //FIXME: use copyToDeviceBuffer wrapper when multi-GPU pinning issue with f has been resolved
         //copyToDeviceBuffer(&gpu_nbv->frvec, f, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
         cudaMemcpyAsync(gpu_nbv->frvec, f, a1*sizeof(rvec), cudaMemcpyHostToDevice, stream);
 
@@ -904,8 +937,11 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
 
     }
 
-    /* ensure that PME GPU force calculations have completed */
-    cudaDeviceSynchronize();
+    if (commsize == 1)
+    {
+        /* ensure that PME GPU force calculations have completed */
+        cudaDeviceSynchronize();
+    }
 
     /* launch kernel */
     const int          threadsPerBlock = 128;
@@ -922,10 +958,9 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
 
     auto             kernelFn                = nbnxn_gpu_add_nbat_f_to_f_kernel;
     const float     *fPtr                    = (float*) adat->f;
-    const rvec      *fPmePtr                 = (rvec*) fPmeDevicePtr;
     rvec            *frvec                   = gpu_nbv->frvec;
     const int       *cell                    = gpu_nbv->cell;
-    const int        stride                  = nbat->fstride;
+    int              stride                  = nbat->fstride;
 
     const auto       kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
                                                               &fPtr,
@@ -939,15 +974,22 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t        *nbat,
 
     launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
 
+    cudaStreamSynchronize(stream);
+    if (cr && cr->dd && (cr->dd->ndim > 0))
+    {
+        gpuBufferOpsFCommCoord(gpu_nbv->frvec, stream);
+    }
+
     if (bDoTime)
     {
         t->xf[locality].nb_h2d.openTimingRegion(stream);
     }
 
-    // FIXME: use copyToDeviceBuffer wrapper
-    // There still exist issues with host buffer not being pinned
+    //FIXME: use copyToDeviceBuffer wrapper when multi-GPU pinning issue with f has been resolved
+    //F copyback no longer required since force stays resident on GPU
     //copyFromDeviceBuffer(f, &gpu_nbv->frvec, 0, a1, stream, GpuApiCallBehavior::Async, nullptr);
-    cudaMemcpyAsync(f, gpu_nbv->frvec, a1*sizeof(rvec), cudaMemcpyDeviceToHost, stream);
+    //TODO
+    //cudaMemcpyAsync(f, gpu_nbv->frvec, a1*sizeof(rvec), cudaMemcpyDeviceToHost, stream);
 
     if (bDoTime)
     {

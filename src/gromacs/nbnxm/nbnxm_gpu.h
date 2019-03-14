@@ -52,6 +52,7 @@
 #include "locality.h"
 
 struct nbnxn_atomdata_t;
+struct t_commrec;
 enum class GpuTaskCompletion;
 
 namespace Nbnxm
@@ -258,7 +259,9 @@ void nbnxn_gpu_add_nbat_f_to_f(const nbnxn_atomdata_t       gmx_unused *nbat,
                                void                         gmx_unused *fPmeDevicePtr,
                                int                          gmx_unused  a0,
                                int                          gmx_unused  a1,
-                               rvec                         gmx_unused *f) CUDA_FUNC_TERM
+                               int                          gmx_unused  natoms_local,
+                               rvec                         gmx_unused *f,
+                               const t_commrec              gmx_unused *cr) CUDA_FUNC_TERM
 
 } // namespace Nbnxm
 
