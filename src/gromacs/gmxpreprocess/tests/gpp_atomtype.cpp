@@ -70,7 +70,8 @@ class PreprocessingAtomTypesTest : public ::testing::Test
         PreprocessingAtomTypes atypes_;
         t_symtab               symtab_;
         t_atom                 atom_;
-        t_param                nb_;
+        std::array<real, MAXFORCEPARAM> forceParam_ = {0.0};
+        InteractionType        nonbondedInteraction_ = { {}, forceParam_};
 };
 
 int PreprocessingAtomTypesTest::addType(const char *name,
@@ -80,7 +81,7 @@ int PreprocessingAtomTypesTest::addType(const char *name,
     return atypes_.addType(&symtab_,
                            atom_,
                            name,
-                           &nb_,
+                           nonbondedInteraction_,
                            bondAtomType,
                            atomNumber);
 }
