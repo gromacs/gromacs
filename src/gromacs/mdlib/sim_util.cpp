@@ -65,6 +65,7 @@
 #include "gromacs/listed_forces/bonded.h"
 #include "gromacs/listed_forces/disre.h"
 #include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/manage_threading.h"
 #include "gromacs/listed_forces/orires.h"
 #include "gromacs/math/arrayrefwithpadding.h"
@@ -466,6 +467,26 @@ static void checkPotentialEnergyValidity(int64_t               step,
     }
 }
 
+/*! \brief Return true if there are special forces computed this step.
+ *
+ * The conditionals exactly correspond to those in computeSpecialForces().
+ */
+static bool
+haveSpecialForces(const t_inputrec              *inputrec,
+                  ForceProviders                *forceProviders,
+                  int                            forceFlags,
+                  const gmx_edsam               *ed)
+{
+    const bool computeForces = (forceFlags & GMX_FORCE_FORCES) != 0;
+
+    return
+        ((computeForces && forceProviders->hasForceProvider()) ||         // forceProviders
+         (inputrec->bPull && pull_have_potential(inputrec->pull_work)) || // pull
+         inputrec->bRot ||                                                // enforced rotation
+         (ed != nullptr) ||                                               // flooding
+         (inputrec->bIMD && computeForces));                              // IMD
+}
+
 /*! \brief Compute forces and/or energies for special algorithms
  *
  * The intention is to collect all calls to algorithms that compute
@@ -758,6 +779,31 @@ setupForceOutputs(const t_forcerec                    *fr,
 }
 
 
+/*! \brief Set up flags that indicate what type of work is there to compute.
+ *
+ * Currently we only update it at search steps,
+ * but some properties may change more frequently (e.g. virial/non-virial step),
+ * so when including those either the frequency of update (per-step) or the scope
+ * of a flag will change (i.e. a set of flags for nstlist steps).
+ *
+ */
+static void
+setupForceWorkload(gmx::PpForceWorkload *forceWork,
+                   const t_inputrec     *inputrec,
+                   const t_forcerec     *fr,
+                   const gmx_edsam      *ed,
+                   const t_idef         &idef,
+                   const t_fcdata       *fcd,
+                   const int             forceFlags
+                   )
+{
+    forceWork->haveSpecialForces      = haveSpecialForces(inputrec, fr->forceProviders, forceFlags, ed);
+    forceWork->haveCpuBondedWork      = haveCpuBondeds(*fr);
+    forceWork->haveGpuBondedWork      = ((fr->gpuBonded != nullptr) && fr->gpuBonded->haveInteractions());
+    forceWork->haveRestraintsWork     = havePositionRestraints(idef, *fcd);
+    forceWork->haveCpuListedForceWork = haveCpuListedForces(*fr, idef, *fcd);
+}
+
 static void do_force_cutsVERLET(FILE *fplog,
                                 const t_commrec *cr,
                                 const gmx_multisim_t *ms,
@@ -936,47 +982,51 @@ static void do_force_cutsVERLET(FILE *fplog,
         nbnxn_atomdata_set(nbv->nbat.get(), nbv->nbs.get(), mdatoms, fr->cginfo);
 
         wallcycle_stop(wcycle, ewcNS);
-    }
 
-    /* initialize the GPU atom data and copy shift vector */
-    if (bUseGPU)
-    {
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-
-        if (bNS)
+        /* initialize the GPU nbnxm atom data and bonded data structures */
+        if (bUseGPU)
         {
+            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+
+            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             Nbnxm::gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat.get());
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+
+            if (fr->gpuBonded)
+            {
+                /* Now we put all atoms on the grid, we can assign bonded
+                 * interactions to the GPU, where the grid order is
+                 * needed. Also the xq, f and fshift device buffers have
+                 * been reallocated if needed, so the bonded code can
+                 * learn about them. */
+                // TODO the xq, f, and fshift buffers are now shared
+                // resources, so they should be maintained by a
+                // higher-level object than the nb module.
+                fr->gpuBonded->updateInteractionListsAndDeviceBuffers(nbnxn_get_gridindices(fr->nbv->nbs.get()),
+                                                                      top->idef,
+                                                                      Nbnxm::gpu_get_xq(nbv->gpu_nbv),
+                                                                      Nbnxm::gpu_get_f(nbv->gpu_nbv),
+                                                                      Nbnxm::gpu_get_fshift(nbv->gpu_nbv));
+            }
+
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
 
-        Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat.get());
-
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-
-        if (bNS && fr->gpuBonded)
-        {
-            /* Now we put all atoms on the grid, we can assign bonded
-             * interactions to the GPU, where the grid order is
-             * needed. Also the xq, f and fshift device buffers have
-             * been reallocated if needed, so the bonded code can
-             * learn about them. */
-            // TODO the xq, f, and fshift buffers are now shared
-            // resources, so they should be maintained by a
-            // higher-level object than the nb module.
-            fr->gpuBonded->updateInteractionListsAndDeviceBuffers(nbnxn_get_gridindices(fr->nbv->nbs.get()),
-                                                                  top->idef,
-                                                                  Nbnxm::gpu_get_xq(nbv->gpu_nbv),
-                                                                  Nbnxm::gpu_get_f(nbv->gpu_nbv),
-                                                                  Nbnxm::gpu_get_fshift(nbv->gpu_nbv));
-            ppForceWorkload->haveGpuBondedWork = fr->gpuBonded->haveInteractions();
-        }
-
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+        // Need to run after the GPU-offload bonded interaction lists
+        // are set up to be able to determine whether there is bonded work.
+        setupForceWorkload(ppForceWorkload,
+                           inputrec,
+                           fr,
+                           ed,
+                           top->idef,
+                           fcd,
+                           flags);
     }
 
     /* do local pair search */
     if (bNS)
     {
+        // TODO: fuse this branch with the above bNS block
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
         /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
@@ -999,6 +1049,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
         wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat.get());
         Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(),
                                   Nbnxm::AtomLocality::Local,
                                   ppForceWorkload->haveGpuBondedWork);
@@ -1036,6 +1087,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         if (bNS)
         {
+            // TODO: fuse this branch with the above large bNS block
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
