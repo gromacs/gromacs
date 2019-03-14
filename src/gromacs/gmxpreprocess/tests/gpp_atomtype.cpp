@@ -53,7 +53,8 @@
 class PreprocessingAtomTypesTest : public ::testing::Test
 {
     public:
-        PreprocessingAtomTypesTest()
+        PreprocessingAtomTypesTest() :
+            nb_({}, {})
         {
             open_symtab(&symtab_);
         }
@@ -70,7 +71,7 @@ class PreprocessingAtomTypesTest : public ::testing::Test
         PreprocessingAtomTypes atypes_;
         t_symtab               symtab_;
         t_atom                 atom_;
-        t_param                nb_;
+        InteractionType        nb_;
 };
 
 int PreprocessingAtomTypesTest::addType(const char *name,
@@ -80,7 +81,7 @@ int PreprocessingAtomTypesTest::addType(const char *name,
     return atypes_.addType(&symtab_,
                            atom_,
                            name,
-                           &nb_,
+                           nb_,
                            bondAtomType,
                            atomNumber);
 }
