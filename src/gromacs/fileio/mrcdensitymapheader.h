@@ -132,7 +132,7 @@ struct MrcDensityMapHeader{
     //! Data mode, currently only mode 2 is supported
     MrcDataMode                  dataMode_   = MrcDataMode::float32;
     //! Identifies file format, expected to be "MAP "
-    std::array<unsigned char, 4> formatIdentifier_ = {'M', 'A', 'P', ' '};
+    std::array<unsigned char, 4> formatIdentifier_ = {{'M', 'A', 'P', ' ' }};
     //! 15 unspecified float numbers
     std::array<float, 15>        userDefinedFloat_ = {};
 
@@ -140,12 +140,12 @@ struct MrcDensityMapHeader{
     CrystallographicLabels      labels_ = {};
 
     //! Length of the crystallographic unit cell in Ångström
-    std::array<float, DIM> cellLength_ = {1., 1., 1.};
+    std::array<float, DIM> cellLength_ = {{1., 1., 1. }};
     //! crystallographic unit cell angles
-    std::array<float, DIM> cellAngles_ = {90., 90., 90.};
+    std::array<float, DIM> cellAngles_ = {{90., 90., 90. }};
 
     //! Data axis order with columns varying the fastest, and sections the slowest.
-    std::array<int32_t, DIM>      columnRowSectionToXyz_ = {0, 1, 2};
+    std::array<int32_t, DIM>      columnRowSectionToXyz_ = {{0, 1, 2 }};
 
     std::array<int32_t, DIM>      numColumnRowSection_ = {};   //!< Column, row and section count
     std::array<int32_t, DIM>      columnRowSectionStart_ = {}; //!< Start of values in grid

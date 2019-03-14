@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,52 +34,29 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares a generic serialization interface that supports both directions.
+ * Serialization routines for volume data format mrc.
  *
- * \todo Generalize and transfer serialization functionality used in
- *       mrc density file header serialization to here.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inlibraryapi
- * \ingroup module_utility
+ * \author Christian Blau <cblau@gwdg.de>
+ * \ingroup module_fileio
  */
-#ifndef GMX_UTILITY_ISERIALIZER_H
-#define GMX_UTILITY_ISERIALIZER_H
 
-#include <string>
-
-#include "gromacs/utility/basedefinitions.h"
-
+#ifndef GMX_FILEIO_MRCSERIALIZER_H
+#define GMX_FILEIO_MRCSERIALIZER_H
 namespace gmx
 {
+class ISerializer;
+struct MrcDensityMapHeader;
 
-/*! \libinternal
- * \brief Interface for types that convert standard data types into a
- * form suitable for storage or transfer.
- *
- * Different implementations could suit MPI, file I/O, or in-memory
- * conversion. */
-class ISerializer
-{
-    public:
-        virtual ~ISerializer() {}
-        /*! \brief Returns whether the serializer is reading or
-         * writing, because details like memory management vary
-         * accordingly. */
-        virtual bool reading() const = 0;
-        //! \brief Serialize values of different types.
-        ///@{
-        virtual void doBool(bool *value)           = 0;
-        virtual void doUChar(unsigned char *value) = 0;
-        virtual void doInt(int *value)             = 0;
-        virtual void doInt32(int32_t *value)       = 0;
-        virtual void doInt64(int64_t *value)       = 0;
-        virtual void doFloat(float *value)         = 0;
-        virtual void doDouble(double *value)       = 0;
-        virtual void doString(std::string *value)  = 0;
-        ///@}
-};
-
-} // namespace gmx
-
-#endif
+/*! \brief Serializes an MrcDensityMapHeader from a given serializer.
+ * \param[in] serializer the serializer
+ * \param[in] mrcHeader file header to be serialized
+ */
+void serializeMrcDensityMapHeader(ISerializer               *serializer,
+                                  const MrcDensityMapHeader &mrcHeader);
+/*! \brief Deserializes an MrcDensityMapHeader from a given serializer.
+ * \param[in] serializer the serializer
+ * \returns mrc density map header
+ */
+MrcDensityMapHeader deserializeMrcDensityMapHeader(ISerializer *serializer);
+}      // namespace gmx
+#endif /* end of include guard: GMX_FILEIO_MRCSERIALIZER_H */
