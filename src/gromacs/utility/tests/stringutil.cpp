@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -161,6 +161,15 @@ TEST(StringUtilityTest, SplitAndTrimDelimitedString)
     EXPECT_THAT(splitAndTrimDelimitedString(" foo  ;  bar ; ", ';'), ElementsAre("foo", "bar", ""));
     EXPECT_THAT(splitAndTrimDelimitedString(" ;  foo\n ;  bar ;  ", ';'), ElementsAre("", "foo", "bar", ""));
     EXPECT_THAT(splitAndTrimDelimitedString(" foo  ; ; \tbar", ';'), ElementsAre("foo", "", "bar"));
+}
+
+TEST(StringUtilityTest, CanCompareCaseInSensitive)
+{
+    EXPECT_TRUE(equalCaseInsensitive("foo", "foo"));
+    EXPECT_FALSE(equalCaseInsensitive("foo", "bar"));
+    EXPECT_TRUE(equalCaseInsensitive("foo", "FOO"));
+    EXPECT_FALSE(equalCaseInsensitive("foo", "foobar"));
+    EXPECT_FALSE(equalCaseInsensitive("foobar", "foo"));
 }
 
 /********************************************************************
