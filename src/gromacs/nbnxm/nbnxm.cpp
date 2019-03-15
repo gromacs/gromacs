@@ -49,7 +49,7 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
 
-#include "internal.h"
+#include "pairsearch.h"
 
 /*! \cond INTERNAL */
 

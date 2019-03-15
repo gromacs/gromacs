@@ -63,7 +63,7 @@
 
 #include "gpu_types.h"
 #include "grid.h"
-#include "internal.h"
+#include "pairsearch.h"
 
 namespace Nbnxm
 {

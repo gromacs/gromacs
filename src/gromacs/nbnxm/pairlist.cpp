@@ -70,9 +70,9 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "grid.h"
-#include "internal.h"
+#include "gridset.h"
 #include "pairlistwork.h"
+#include "pairsearch.h"
 
 using namespace gmx;                        // TODO: Remove when this file is moved into gmx namespace
 
@@ -89,33 +89,6 @@ using InteractionLocality = Nbnxm::InteractionLocality;
  * We do this to get more balanced pair lists.
  */
 constexpr bool c_pbcShiftBackward = true;
-
-
-void PairSearch::SearchCycleCounting::printCycles(FILE                               *fp,
-                                                  gmx::ArrayRef<const PairsearchWork> work) const
-{
-    fprintf(fp, "\n");
-    fprintf(fp, "ns %4d grid %4.1f search %4.1f",
-            cc_[enbsCCgrid].count(),
-            cc_[enbsCCgrid].averageMCycles(),
-            cc_[enbsCCsearch].averageMCycles());
-
-    if (work.size() > 1)
-    {
-        if (cc_[enbsCCcombine].count() > 0)
-        {
-            fprintf(fp, " comb %5.2f",
-                    cc_[enbsCCcombine].averageMCycles());
-        }
-        fprintf(fp, " s. th");
-        for (const PairsearchWork &workEntry : work)
-        {
-            fprintf(fp, " %4.1f",
-                    workEntry.cycleCounter.averageMCycles());
-        }
-    }
-    fprintf(fp, "\n");
-}
 
 /* Layout for the nonbonded NxN pair lists */
 enum class NbnxnLayout
@@ -231,8 +204,8 @@ static inline int xIndexFromCj(int cj)
 }
 #endif //GMX_SIMD
 
-/* Initializes a single nbnxn_pairlist_t data structure */
-static void nbnxn_init_pairlist_fep(t_nblist *nl)
+
+void nbnxn_init_pairlist_fep(t_nblist *nl)
 {
     nl->type        = GMX_NBLIST_INTERACTION_FREE_ENERGY;
     nl->igeometry   = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
@@ -253,62 +226,6 @@ static void nbnxn_init_pairlist_fep(t_nblist *nl)
     nl->jjnr        = nullptr;
     nl->excl_fep    = nullptr;
 
-}
-
-static void free_nblist(t_nblist *nl)
-{
-    sfree(nl->iinr);
-    sfree(nl->gid);
-    sfree(nl->shift);
-    sfree(nl->jindex);
-    sfree(nl->jjnr);
-    sfree(nl->excl_fep);
-}
-
-PairsearchWork::PairsearchWork() :
-    cp0({{0}}
-        ),
-    buffer_flags({0, nullptr, 0}),
-    ndistc(0),
-    nbl_fep(new t_nblist),
-    cp1({{0}})
-{
-    nbnxn_init_pairlist_fep(nbl_fep.get());
-}
-
-PairsearchWork::~PairsearchWork()
-{
-    sfree(buffer_flags.flag);
-
-    free_nblist(nbl_fep.get());
-}
-
-// TODO: Move to pairsearch.cpp
-PairSearch::DomainSetup::DomainSetup(const int                 ePBC,
-                                     const ivec               *numDDCells,
-                                     const gmx_domdec_zones_t *ddZones) :
-    ePBC(ePBC),
-    haveDomDec(numDDCells != nullptr),
-    zones(ddZones)
-{
-    for (int d = 0; d < DIM; d++)
-    {
-        haveDomDecPerDim[d] = (numDDCells != nullptr && (*numDDCells)[d] > 1);
-    }
-}
-
-// TODO: Move to pairsearch.cpp
-PairSearch::PairSearch(const int                 ePBC,
-                       const ivec               *numDDCells,
-                       const gmx_domdec_zones_t *ddZones,
-                       const PairlistType        pairlistType,
-                       const bool                haveFep,
-                       const int                 maxNumThreads) :
-    domainSetup_(ePBC, numDDCells, ddZones),
-    gridSet_(domainSetup_.haveDomDecPerDim, pairlistType, haveFep, maxNumThreads),
-    work_(maxNumThreads)
-{
-    cycleCounting_.recordCycles_ = (getenv("GMX_NBNXN_CYCLE") != nullptr);
 }
 
 static void init_buffer_flags(nbnxn_buffer_flags_t *flags,

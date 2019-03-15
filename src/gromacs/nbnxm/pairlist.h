@@ -285,4 +285,7 @@ struct nbnxn_pairlist_set_t
     std::vector<t_nblist *> nbl_fep;               /* List of free-energy atom pair interactions */
 };
 
+//! Initializes a free-energy pair-list
+void nbnxn_init_pairlist_fep(t_nblist *nl);
+
 #endif

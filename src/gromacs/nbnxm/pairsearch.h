@@ -35,15 +35,20 @@
 
 /*! \internal \file
  *
- * \brief Declares internal nbnxm module details
+ * \brief Declares the PairSearch class and helper structs
+ *
+ * The PairSearch class holds the domain setup, the search grids
+ * and helper object for the pair search. It manages the search work.
+ * The actual gridding and pairlist generation is performeed by the
+ * GridSet/Grid and PairlistSet/Pairlist classes, respectively.
  *
  * \author Berk Hess <hess@kth.se>
  *
  * \ingroup module_nbnxm
  */
 
-#ifndef GMX_NBNXM_INTERNAL_H
-#define GMX_NBNXM_INTERNAL_H
+#ifndef GMX_NBNXM_PAIRSEARCH_H
+#define GMX_NBNXM_PAIRSEARCH_H
 
 #include <memory>
 #include <vector>
