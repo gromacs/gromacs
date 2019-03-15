@@ -1143,10 +1143,8 @@ static bool atomname_cmp_nr(const char *anm, const MoleculePatch *patch, int *nr
         }
         else
         {
-            std::string tmp = anm;
-            tmp.erase(tmp.end() - 1);
-            return (tmp.length() == patch->nname.length() &&
-                    gmx::equalCaseInsensitive(tmp, patch->nname));
+            return (strlen(anm) == patch->nname.length() + 1 &&
+                    gmx_strncasecmp(anm, patch->nname.c_str(), patch->nname.length()) == 0);
         }
     }
 }

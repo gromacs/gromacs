@@ -433,7 +433,7 @@ void readResidueDatabase(const std::string &rrdb, std::vector<PreprocessResidue>
 
         auto found = std::find_if(rtpDBEntry->begin(), rtpDBEntry->end()-1,
                                   [&res](const PreprocessResidue &entry)
-                                  { return gmx::equalCaseInsensitive(res->resname, entry.resname); });
+                                  { return gmx::equalCaseInsensitive(entry.resname, res->resname); });
 
         if (found == rtpDBEntry->end() - 1)
         {

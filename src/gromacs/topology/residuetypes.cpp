@@ -113,7 +113,7 @@ residueEntryByResidueName(gmx::ArrayRef<const ResidueTypeEntry> entries, const s
 {
     return std::find_if(entries.begin(), entries.end(),
                         [&residueName](const ResidueTypeEntry &old)
-                        { return gmx::equalCaseInsensitive(residueName, old.residueName); });
+                        { return gmx::equalCaseInsensitive(old.residueName, residueName); });
 }
 
 bool ResidueType::nameIndexedInResidueTypes(const std::string &residueName)
