@@ -1547,7 +1547,7 @@ convertYesNos(warninp_t /*wi*/, gmx::ArrayRef<const std::string> inputs, const c
     int i = 0;
     for (const auto &input : inputs)
     {
-        outputs[i] = (gmx_strncasecmp(input.c_str(), "Y", 1) == 0);
+        outputs[i] = gmx::equalCaseInsensitive(input, "Y", 1);
         ++i;
     }
 }
@@ -3308,7 +3308,7 @@ void do_index(const char* mdparin, const char *ndx,
     /* Simulated annealing for each group. There are nr groups */
     auto simulatedAnnealingGroupNames = gmx::splitString(is->anneal);
     if (simulatedAnnealingGroupNames.size() == 1 &&
-        gmx_strncasecmp(simulatedAnnealingGroupNames[0].c_str(), "N", 1) == 0)
+        gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[0], "N", 1))
     {
         simulatedAnnealingGroupNames.resize(0);
     }
@@ -3336,16 +3336,16 @@ void do_index(const char* mdparin, const char *ndx,
             bAnneal = FALSE;
             for (i = 0; i < nr; i++)
             {
-                if (gmx_strncasecmp(simulatedAnnealingGroupNames[i].c_str(), "N", 1) == 0)
+                if (gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[i], "N", 1))
                 {
                     ir->opts.annealing[i] = eannNO;
                 }
-                else if (gmx_strncasecmp(simulatedAnnealingGroupNames[i].c_str(), "S", 1) == 0)
+                else if (gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[i], "S", 1))
                 {
                     ir->opts.annealing[i] = eannSINGLE;
                     bAnneal               = TRUE;
                 }
-                else if (gmx_strncasecmp(simulatedAnnealingGroupNames[i].c_str(), "P", 1) == 0)
+                else if (gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[i], "P", 1))
                 {
                     ir->opts.annealing[i] = eannPERIODIC;
                     bAnneal               = TRUE;
@@ -3512,10 +3512,10 @@ void do_index(const char* mdparin, const char *ndx,
     {
         for (j = 0; (j < DIM); j++, k++)
         {
-            ir->opts.nFreeze[i][j] = static_cast<int>(gmx_strncasecmp(freezeDims[k].c_str(), "Y", 1) == 0);
+            ir->opts.nFreeze[i][j] = static_cast<int>(gmx::equalCaseInsensitive(freezeDims[k], "Y", 1));
             if (!ir->opts.nFreeze[i][j])
             {
-                if (gmx_strncasecmp(freezeDims[k].c_str(), "N", 1) != 0)
+                if (!gmx::equalCaseInsensitive(freezeDims[k], "N", 1))
                 {
                     sprintf(warnbuf, "Please use Y(ES) or N(O) for freezedim only "
                             "(not %s)", freezeDims[k].c_str());

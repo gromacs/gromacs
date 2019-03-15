@@ -611,7 +611,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                 get_nbparm(nb_str, comb_str, &nb_funct, combination_rule, wi);
                                 if (nscan >= 3)
                                 {
-                                    bGenPairs = (gmx_strncasecmp(genpairs, "Y", 1) == 0);
+                                    bGenPairs = (gmx::equalCaseInsensitive(genpairs, "Y", 1));
                                     if (nb_funct != eNBF_LJ && bGenPairs)
                                     {
                                         gmx_fatal(FARGS, "Generating pair parameters is only supported with LJ non-bonded interactions");

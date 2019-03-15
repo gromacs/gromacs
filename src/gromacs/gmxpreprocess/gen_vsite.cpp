@@ -1689,9 +1689,9 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, PreprocessingAtom
 
                 cmplength = bPartial[j] ? strlen(resnm)-1 : strlen(resnm);
 
-                bFound = ((gmx_strncasecmp(resnm, resnms[j], cmplength) == 0) ||
-                          (gmx_strncasecmp(resnm, resnmsN[j], cmplength) == 0) ||
-                          (gmx_strncasecmp(resnm, resnmsC[j], cmplength) == 0));
+                bFound = ((gmx::equalCaseInsensitive(resnm, resnms[j], cmplength)) ||
+                          (gmx::equalCaseInsensitive(resnm, resnmsN[j], cmplength)) ||
+                          (gmx::equalCaseInsensitive(resnm, resnmsC[j], cmplength)));
 
                 if (bFound)
                 {

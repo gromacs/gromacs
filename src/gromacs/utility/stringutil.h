@@ -443,6 +443,27 @@ std::string replaceAllWords(const std::string &input,
 bool equalCaseInsensitive(const std::string &source,
                           const std::string &target);
 
+/*! \brief
+ * Checks if at most \p maxLengthOfComparison characters of two strings match case insensitive.
+ *
+ * The function tests two strings \p source and \p target to see if at most
+ * \p maxLengthOfComparison characters match between the two. If fewer characters are present
+ * in \p source, only the maximum number of characters in \p source will be compared instead.
+ * In this case both \p source and \p target also need to have the same length, or the strings will
+ * compare as false, even if \p target matches \p source over the length of \p source.
+ *
+ * If \p maxLengthOfComparison is 0, the function always returns true.
+ * Characters are converted by using std::tolower.
+ *
+ * \param[in] source Search string to compare against \p target.
+ * \param[in] target String to be matched to \p source.
+ * \param[in] maxLengthOfComparison The maximum string length to compare.
+ * \returns True if the strings match.
+ */
+bool equalCaseInsensitive(const std::string &source,
+                          const std::string &target,
+                          size_t             maxLengthOfComparison);
+
 class TextLineWrapper;
 
 /*! \brief

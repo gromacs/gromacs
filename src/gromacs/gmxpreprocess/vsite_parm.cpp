@@ -376,10 +376,10 @@ static bool calc_vsite3_param(PreprocessingAtomTypes *atypes,
     /* check if this is part of a NH3 , NH2-umbrella or CH3 group,
      * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
     bXH3 =
-        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MNH", 3) == 0) &&
-          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MNH", 3) == 0) ) ||
-        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MCH3", 4) == 0) &&
-          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MCH3", 4) == 0) );
+        ( (gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MNH", 3)) &&
+          (gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MNH", 3)) ) ||
+        ( (gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MCH3", 4)) &&
+          (gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MCH3", 4)) );
 
     bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
     bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
@@ -515,10 +515,10 @@ static bool calc_vsite3out_param(PreprocessingAtomTypes *atypes,
     /* check if this is part of a NH2-umbrella, NH3 or CH3 group,
      * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
     bXH3 =
-        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MNH", 3) == 0) &&
-          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MNH", 3) == 0) ) ||
-        ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MCH3", 4) == 0) &&
-          (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MCH3", 4) == 0) );
+        ( (gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MNH", 3)) &&
+          (gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MNH", 3)) ) ||
+        ( (gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[param->ak()], atypes), "MCH3", 4)) &&
+          (gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[param->al()], atypes), "MCH3", 4)) );
 
     /* check if construction parity must be swapped */
     bSwapParity = ( param->c1() == -1 );

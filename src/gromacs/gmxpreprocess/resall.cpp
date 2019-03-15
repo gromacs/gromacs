@@ -333,7 +333,7 @@ void readResidueDatabase(const std::string &rrdb, std::vector<PreprocessResidue>
     {
         gmx_fatal(FARGS, "in .rtp file at line:\n%s\n", line);
     }
-    if (gmx_strncasecmp("bondedtypes", header, 5) == 0)
+    if (gmx::equalCaseInsensitive("bondedtypes", header, 5))
     {
         get_a_line(in, line, STRLEN);
         if ((nparam = sscanf(line, "%d %d %d %d %d %d %d %d",
@@ -406,7 +406,7 @@ void readResidueDatabase(const std::string &rrdb, std::vector<PreprocessResidue>
                     /* header is an bonded directive */
                     bError = !read_bondeds(bt, in, line, res);
                 }
-                else if (gmx_strncasecmp("atoms", header, 5) == 0)
+                else if (gmx::equalCaseInsensitive("atoms", header, 5))
                 {
                     /* header is the atoms directive */
                     bError = !read_atoms(in, line, res, tab, atype);
@@ -503,7 +503,7 @@ static int neq_str_sign(const char *a1, const char *a2)
     if (lm >= 1 &&
         ((l1 == l2+1 && is_sign(a1[l1-1])) ||
          (l2 == l1+1 && is_sign(a2[l2-1]))) &&
-        gmx_strncasecmp(a1, a2, lm) == 0)
+        gmx::equalCaseInsensitive(a1, a2, lm))
     {
         return lm;
     }

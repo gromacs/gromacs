@@ -101,11 +101,11 @@ static void process_pull_dim(char *dim_buf, ivec dim, const t_pull_coord *pcrd)
                       dim_buf);
         }
 
-        if (gmx_strncasecmp(pulldim1, "N", 1) == 0)
+        if (gmx::equalCaseInsensitive(pulldim1, "N", 1))
         {
             dim[d] = 0;
         }
-        else if (gmx_strncasecmp(pulldim1, "Y", 1) == 0)
+        else if (gmx::equalCaseInsensitive(pulldim1, "Y", 1))
         {
             dim[d] = 1;
             ndim++;
