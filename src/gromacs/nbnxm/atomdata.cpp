@@ -57,7 +57,6 @@
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
@@ -67,7 +66,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "grid.h"
-#include "internal.h"
+#include "gridset.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
@@ -960,14 +959,12 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params *params,
 }
 
 /* Sets all required atom parameter data in nbnxn_atomdata_t */
-void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
-                        const PairSearch    &pairSearch,
-                        const t_mdatoms     *mdatoms,
-                        const int           *atinfo)
+void nbnxn_atomdata_set(nbnxn_atomdata_t     *nbat,
+                        const Nbnxm::GridSet &gridSet,
+                        const t_mdatoms      *mdatoms,
+                        const int            *atinfo)
 {
     nbnxn_atomdata_t::Params &params = nbat->paramsDeprecated();
-
-    const Nbnxm::GridSet     &gridSet = pairSearch.gridSet();
 
     nbnxn_atomdata_set_atomtypes(&params, gridSet, mdatoms->typeA);
 
@@ -999,20 +996,14 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          bDynamicBox,
 }
 
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
-void nbnxn_atomdata_copy_x_to_nbat_x(const PairSearch         &pairSearch,
+void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
                                      const Nbnxm::AtomLocality locality,
                                      gmx_bool                  FillLocal,
                                      const rvec               *x,
-                                     nbnxn_atomdata_t         *nbat,
-                                     gmx_wallcycle            *wcycle)
+                                     nbnxn_atomdata_t         *nbat)
 {
-    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-    wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-
-    const Nbnxm::GridSet &gridSet = pairSearch.gridSet();
-
-    int                   gridBegin = 0;
-    int                   gridEnd   = 0;
+    int gridBegin = 0;
+    int gridEnd   = 0;
     switch (locality)
     {
         case Nbnxm::AtomLocality::All:
@@ -1076,9 +1067,6 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const PairSearch         &pairSearch,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-
-    wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-    wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }
 
 static void
@@ -1463,25 +1451,13 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t *nbat,
 }
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
-void
-nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality,
-                                             rvec                      *f,
-                                             gmx_wallcycle             *wcycle)
+void reduceForces(nbnxn_atomdata_t          *nbat,
+                  const Nbnxm::AtomLocality  locality,
+                  const Nbnxm::GridSet      &gridSet,
+                  rvec                      *f)
 {
-    /* Skip the non-local reduction if there was no non-local work to do */
-    if (locality == Nbnxm::AtomLocality::NonLocal &&
-        pairlistSets().pairlistSet(Nbnxm::InteractionLocality::NonLocal).nblGpu[0]->sci.empty())
-    {
-        return;
-    }
-
-    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-    wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-
-    const Nbnxm::GridSet &gridSet = pairSearch_->gridSet();
-
-    int                   a0 = 0;
-    int                   na = 0;
+    int a0 = 0;
+    int na = 0;
     switch (locality)
     {
         case Nbnxm::AtomLocality::All:
@@ -1513,11 +1489,11 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
          */
         if (nbat->bUseTreeReduce)
         {
-            nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbat.get(), nth);
+            nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbat, nth);
         }
         else
         {
-            nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat.get(), nth);
+            nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat, nth);
         }
     }
 #pragma omp parallel for num_threads(nth) schedule(static)
@@ -1525,7 +1501,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
     {
         try
         {
-            nbnxn_atomdata_add_nbat_f_to_f_part(gridSet, nbat.get(),
+            nbnxn_atomdata_add_nbat_f_to_f_part(gridSet, nbat,
                                                 nbat->out,
                                                 1,
                                                 a0+((th+0)*na)/nth,
@@ -1534,12 +1510,8 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-
-    wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-    wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }
 
-/* Adds the shift forces from nbnxn_atomdata_t to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift)
 {

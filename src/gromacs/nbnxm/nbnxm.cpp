@@ -47,6 +47,7 @@
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/nbnxm/atomdata.h"
+#include "gromacs/timing/wallcycle.h"
 
 #include "internal.h"
 
@@ -117,7 +118,7 @@ void nonbonded_verlet_t::setLocalAtomOrder()
 void nonbonded_verlet_t::setAtomProperties(const t_mdatoms &mdatoms,
                                            const int       &atinfo)
 {
-    nbnxn_atomdata_set(nbat.get(), *pairSearch_, &mdatoms, &atinfo);
+    nbnxn_atomdata_set(nbat.get(), pairSearch_->gridSet(), &mdatoms, &atinfo);
 }
 
 void nonbonded_verlet_t::setCoordinates(const Nbnxm::AtomLocality       locality,
@@ -125,9 +126,15 @@ void nonbonded_verlet_t::setCoordinates(const Nbnxm::AtomLocality       locality
                                         gmx::ArrayRef<const gmx::RVec>  x,
                                         gmx_wallcycle                  *wcycle)
 {
-    nbnxn_atomdata_copy_x_to_nbat_x(*pairSearch_, locality, fillLocal,
+    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
+
+    nbnxn_atomdata_copy_x_to_nbat_x(pairSearch_->gridSet(), locality, fillLocal,
                                     as_rvec_array(x.data()),
-                                    nbat.get(), wcycle);
+                                    nbat.get());
+
+    wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
+    wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }
 
 void nonbonded_verlet_t::getLocalNumCells(int *numCellsX,
@@ -139,6 +146,27 @@ void nonbonded_verlet_t::getLocalNumCells(int *numCellsX,
 gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
 {
     return pairSearch_->gridSet().cells();
+}
+
+void
+nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality,
+                                             rvec                      *f,
+                                             gmx_wallcycle             *wcycle)
+{
+    /* Skip the non-local reduction if there was no non-local work to do */
+    if (locality == Nbnxm::AtomLocality::NonLocal &&
+        pairlistSets().pairlistSet(Nbnxm::InteractionLocality::NonLocal).nblGpu[0]->sci.empty())
+    {
+        return;
+    }
+
+    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+
+    reduceForces(nbat.get(), locality, pairSearch_->gridSet(), f);
+
+    wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
+    wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }
 
 /*! \endcond */
