@@ -117,10 +117,10 @@ struct gmx_hw_info_t;
 struct gmx_mtop_t;
 struct gmx_wallcycle;
 struct interaction_const_t;
-struct nbnxn_pairlist_set_t;
 struct nonbonded_verlet_t;
 enum class PairlistType;
 class PairSearch;
+class PairlistSet;
 struct t_blocka;
 struct t_commrec;
 struct t_lambda;
@@ -150,10 +150,12 @@ struct NbnxnListParameters
     /*! \brief Constructor producing a struct with dynamic pruning disabled
      */
     NbnxnListParameters(Nbnxm::KernelType kernelType,
+                        bool              haveFep,
                         real              rlist,
                         bool              haveMultipleDomains);
 
     PairlistType pairlistType;           //!< The type of cluster-pair list
+    bool         haveFep;                //!< Tells whether we have perturbed interactions
     real         rlistOuter;             //!< Cut-off of the larger, outer pair-list
     real         rlistInner;             //!< Cut-off of the smaller, inner pair-list
     bool         haveMultipleDomains;    //!< True when using DD with multiple domains
@@ -224,7 +226,7 @@ enum {
  */
 void nbnxn_make_pairlist(nonbonded_verlet_t         *nbv,
                          Nbnxm::InteractionLocality  iLocality,
-                         nbnxn_pairlist_set_t       *pairlistSet,
+                         PairlistSet                *pairlistSet,
                          const t_blocka             *excl,
                          int64_t                     step,
                          t_nrnb                     *nrnb);
@@ -235,7 +237,7 @@ void nbnxn_make_pairlist(nonbonded_verlet_t         *nbv,
  * pairs beyond the pairlist inner radius and writes the result to a list that is
  * to be consumed by the non-bonded kernel.
  */
-void NbnxnDispatchPruneKernel(nbnxn_pairlist_set_t   *pairlistSet,
+void NbnxnDispatchPruneKernel(PairlistSet            *pairlistSet,
                               Nbnxm::KernelType       kernelType,
                               const nbnxn_atomdata_t *nbat,
                               const rvec             *shift_vec);
@@ -306,7 +308,7 @@ struct nonbonded_verlet_t
                 }
 
                 //! Returns the pair-list set for the given locality
-                const nbnxn_pairlist_set_t &pairlistSet(Nbnxm::InteractionLocality iLocality) const
+                const PairlistSet &pairlistSet(Nbnxm::InteractionLocality iLocality) const
                 {
                     if (iLocality == Nbnxm::InteractionLocality::Local)
                     {
@@ -321,7 +323,7 @@ struct nonbonded_verlet_t
 
             private:
                 //! Returns the pair-list set for the given locality
-                nbnxn_pairlist_set_t &pairlistSet(Nbnxm::InteractionLocality iLocality)
+                PairlistSet &pairlistSet(Nbnxm::InteractionLocality iLocality)
                 {
                     if (iLocality == Nbnxm::InteractionLocality::Local)
                     {
@@ -339,9 +341,9 @@ struct nonbonded_verlet_t
                 //! Pair list balancing parameter for use with GPU
                 int                                   minimumIlistCountForGpuBalancing_;
                 //! Local pairlist set
-                std::unique_ptr<nbnxn_pairlist_set_t> localSet_;
+                std::unique_ptr<PairlistSet>          localSet_;
                 //! Non-local pairlist set
-                std::unique_ptr<nbnxn_pairlist_set_t> nonlocalSet_;
+                std::unique_ptr<PairlistSet>          nonlocalSet_;
                 //! MD step at with the outer lists in pairlistSets_ were created
                 int64_t                               outerListCreationStep_;
         };

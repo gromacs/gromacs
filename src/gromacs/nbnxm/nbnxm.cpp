@@ -154,8 +154,9 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
                                              gmx_wallcycle             *wcycle)
 {
     /* Skip the non-local reduction if there was no non-local work to do */
-    if (locality == Nbnxm::AtomLocality::NonLocal &&
-        pairlistSets().pairlistSet(Nbnxm::InteractionLocality::NonLocal).nblGpu[0]->sci.empty())
+    if (!pairlistIsSimple() &&
+        locality == Nbnxm::AtomLocality::NonLocal &&
+        pairlistSets().pairlistSet(Nbnxm::InteractionLocality::NonLocal).gpuList()->sci.empty())
     {
         return;
     }

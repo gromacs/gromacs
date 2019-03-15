@@ -50,11 +50,15 @@
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "pairlistwork.h"
+
 /*! \cond INTERNAL */
 
 NbnxnListParameters::NbnxnListParameters(const Nbnxm::KernelType kernelType,
+                                         const bool              haveFep,
                                          const real              rlist,
                                          const bool              haveMultipleDomains) :
+    haveFep(haveFep),
     rlistOuter(rlist),
     rlistInner(rlist),
     haveMultipleDomains(haveMultipleDomains),
@@ -86,11 +90,6 @@ NbnxnListParameters::NbnxnListParameters(const Nbnxm::KernelType kernelType,
     }
 }
 
-nbnxn_pairlist_set_t::nbnxn_pairlist_set_t(const NbnxnListParameters &listParams) :
-    params(listParams)
-{
-    // TODO move this into this constructor
-    nbnxn_init_pairlist_set(this);
-}
+PairlistSet::~PairlistSet() = default;
 
 /*! \endcond */

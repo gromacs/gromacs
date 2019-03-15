@@ -299,11 +299,13 @@ nonbonded_verlet_t::PairlistSets::PairlistSets(const NbnxnListParameters &listPa
     params_(listParams),
     minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
 {
-    localSet_ = std::make_unique<nbnxn_pairlist_set_t>(params_);
+    localSet_ = std::make_unique<PairlistSet>(Nbnxm::InteractionLocality::Local,
+                                              params_);
 
     if (haveMultipleDomains)
     {
-        nonlocalSet_ = std::make_unique<nbnxn_pairlist_set_t>(params_);
+        nonlocalSet_ = std::make_unique<PairlistSet>(Nbnxm::InteractionLocality::NonLocal,
+                                                     params_);
     }
 }
 
@@ -382,6 +384,7 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
     const bool          haveMultipleDomains = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
 
     NbnxnListParameters listParams(kernelSetup.kernelType,
+                                   bFEP_NonBonded,
                                    ir->rlist,
                                    havePPDomainDecomposition(cr));
 

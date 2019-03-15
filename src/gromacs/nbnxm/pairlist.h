@@ -52,9 +52,15 @@
 // to include it during OpenCL jitting without including config.h
 #include "gromacs/nbnxm/constants.h"
 
+#include "locality.h"
+
 struct NbnxnListParameters;
 struct NbnxnPairlistCpuWork;
 struct NbnxnPairlistGpuWork;
+struct nbnxn_atomdata_t;
+class PairSearch;
+struct t_blocka;
+struct t_nrnb;
 
 namespace Nbnxm
 {
@@ -212,6 +218,8 @@ struct nbnxn_excl_t
 /* Cluster pairlist type for use on CPUs */
 struct NbnxnPairlistCpu
 {
+    NbnxnPairlistCpu();
+
     gmx_cache_protect_t     cp0;
 
     int                     na_ci;       /* The number of atoms per i-cluster        */
@@ -226,9 +234,10 @@ struct NbnxnPairlistCpu
 
     int                     nci_tot;     /* The total number of i clusters           */
 
-    NbnxnPairlistCpuWork   *work;
+    /* Working data storage for list construction */
+    std::unique_ptr<NbnxnPairlistCpuWork> work;
 
-    gmx_cache_protect_t     cp1;
+    gmx_cache_protect_t                   cp1;
 };
 
 /* Cluster pairlist type, with extra hierarchies, for on the GPU
@@ -260,29 +269,94 @@ struct NbnxnPairlistGpu
     // The total number of i-clusters
     int                            nci_tot;
 
-    NbnxnPairlistGpuWork          *work;
+    /* Working data storage for list construction */
+    std::unique_ptr<NbnxnPairlistGpuWork> work;
 
-    gmx_cache_protect_t            cp1;
+    gmx_cache_protect_t                   cp1;
 };
 
-struct nbnxn_pairlist_set_t
+/*! \internal
+ * \brief An object that holds the local or non-local pairlists
+ */
+class PairlistSet
 {
-    nbnxn_pairlist_set_t(const NbnxnListParameters &listParams);
+    public:
+        //! Constructor: initializes the pairlist set as empty
+        PairlistSet(Nbnxm::InteractionLocality  locality,
+                    const NbnxnListParameters  &listParams);
 
-    int                         nnbl;         /* number of lists */
-    NbnxnPairlistCpu          **nbl;          /* lists for CPU */
-    NbnxnPairlistCpu          **nbl_work;     /* work space for rebalancing lists */
-    NbnxnPairlistGpu          **nblGpu;       /* lists for GPU */
-    const NbnxnListParameters  &params;       /* Pairlist parameters desribing setup and ranges */
-    gmx_bool                    bCombined;    /* TRUE if lists get combined into one (the 1st) */
-    gmx_bool                    bSimple;      /* TRUE if the list of of type "simple"
-                                                 (na_sc=na_s, no super-clusters used) */
+        ~PairlistSet();
 
-    /* Counts for debug printing */
-    int                     natpair_ljq;           /* Total number of atom pairs for LJ+Q kernel */
-    int                     natpair_lj;            /* Total number of atom pairs for LJ kernel   */
-    int                     natpair_q;             /* Total number of atom pairs for Q kernel    */
-    std::vector<t_nblist *> nbl_fep;               /* List of free-energy atom pair interactions */
+        //! Constructs the pairlists in the set using the coordinates in \p nbat
+        void constructPairlists(PairSearch        *pairSearch,
+                                nbnxn_atomdata_t  *nbat,
+                                const t_blocka    *excl,
+                                Nbnxm::KernelType  kernelType,
+                                int                minimumIlistCountForGpuBalancing,
+                                t_nrnb            *nrnb);
+
+        //! Dispatch the kernel for dynamic pairlist pruning
+        void dispatchPruneKernel(const nbnxn_atomdata_t *nbat,
+                                 const rvec             *shift_vec,
+                                 Nbnxm::KernelType       kernelType);
+
+        //! Returns the locality
+        Nbnxm::InteractionLocality locality() const
+        {
+            return locality_;
+        }
+
+        //! Returns the lists of CPU pairlists
+        gmx::ArrayRef<const NbnxnPairlistCpu> cpuLists() const
+        {
+            return cpuLists_;
+        }
+
+        //! Returns a pointer to the GPU pairlist, nullptr when not present
+        const NbnxnPairlistGpu *gpuList() const
+        {
+            if (!gpuLists_.empty())
+            {
+                return &gpuLists_[0];
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+
+        //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
+        gmx::ArrayRef<t_nblist const * const> fepLists() const
+        {
+            return fepLists_;
+        }
+
+    private:
+        //! The locality of the pairlist set
+        Nbnxm::InteractionLocality     locality_;
+        //! List of pairlists in CPU layout
+        std::vector<NbnxnPairlistCpu>  cpuLists_;
+        //! List of working list for rebalancing CPU lists
+        std::vector<NbnxnPairlistCpu>  cpuListsWork_;
+        //! List of pairlists in GPU layout
+        std::vector<NbnxnPairlistGpu>  gpuLists_;
+        //! Pairlist parameters describing setup and ranges
+        const NbnxnListParameters     &params_;
+        //! Tells whether multiple lists get merged into one (the first) after creation
+        bool                           combineLists_;
+        //! Tells whether the lists is of CPU type, otherwise GPU type
+        gmx_bool                       isCpuType_;
+        //! Lists for perturbed interactions in simple atom-atom layout
+        std::vector<t_nblist *>        fepLists_;
+
+    public:
+        /* Pair counts for flop counting */
+        //! Total number of atom pairs for LJ+Q kernel
+        int natpair_ljq_;
+        //! Total number of atom pairs for LJ kernel
+        int natpair_lj_;
+        //! Total number of atom pairs for Q kernel
+        int natpair_q_;
 };
 
 //! Initializes a free-energy pair-list
