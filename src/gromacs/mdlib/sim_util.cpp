@@ -702,7 +702,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
     }
 }
 
-/*! \brief Hack structure with force ouput buffers for do_force */
+/*! \brief Hack structure with force ouput buffers for do_force for the home atoms for this domain */
 struct ForceOutputs
 {
     //! Constructor
@@ -710,9 +710,9 @@ struct ForceOutputs
         f(f),
         forceWithVirial(forceWithVirial) {}
 
-    //! Force output buffer used by legacy modules
+    //! Force output buffer used by legacy modules (without SIMD padding)
     rvec                 *const f;
-    //! Force with direct virial contribution (if there are any)
+    //! Force with direct virial contribution (if there are any; without SIMD padding)
     gmx::ForceWithVirial        forceWithVirial;
 };
 
