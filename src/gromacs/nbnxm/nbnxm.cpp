@@ -49,6 +49,7 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
 
+#include "pairlistsets.h"
 #include "pairsearch.h"
 
 /*! \cond INTERNAL */
@@ -98,6 +99,16 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nbv,
                           x,
                           0, nullptr);
     }
+}
+
+bool nonbonded_verlet_t::isDynamicPruningStepCpu(int64_t step) const
+{
+    return pairlistSets_->isDynamicPruningStepCpu(step);
+}
+
+bool nonbonded_verlet_t::isDynamicPruningStepGpu(int64_t step) const
+{
+    return pairlistSets_->isDynamicPruningStepGpu(step);
 }
 
 gmx::ArrayRef<const int> nonbonded_verlet_t::getLocalAtomOrder() const
@@ -168,6 +179,22 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
 
     wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+}
+
+real nonbonded_verlet_t::pairlistInnerRadius() const
+{
+    return pairlistSets_->params().rlistInner;
+}
+
+real nonbonded_verlet_t::pairlistOuterRadius() const
+{
+    return pairlistSets_->params().rlistOuter;
+}
+
+void nonbonded_verlet_t::changePairlistRadii(real rlistOuter,
+                                             real rlistInner)
+{
+    pairlistSets_->changePairlistRadii(rlistOuter, rlistInner);
 }
 
 /*! \endcond */

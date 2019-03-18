@@ -329,7 +329,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         /* When dynamic pair-list  pruning is requested, we need to prune
          * at nstlistPrune steps.
          */
-        if (nbv->pairlistSets().isDynamicPruningStepCpu(step))
+        if (nbv->isDynamicPruningStepCpu(step))
         {
             /* Prune the pair-list beyond fr->ic->rlistPrune using
              * the current coordinates of the atoms.
@@ -1393,7 +1393,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, flags);
 
-        if (nbv->pairlistSets().isDynamicPruningStepGpu(step))
+        if (nbv->isDynamicPruningStepGpu(step))
         {
             nbv->dispatchPruneKernelGpu(step);
         }

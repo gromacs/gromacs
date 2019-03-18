@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,7 +35,7 @@
 
 /*! \internal \file
  * \brief
- * Implements functionality for PairlistSet.
+ * Implements the PairlistParams constructor
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
@@ -43,8 +43,45 @@
 
 #include "gmxpre.h"
 
-#include "pairlistset.h"
+#include "pairlistparams.h"
 
-#include "pairlistwork.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_geometry.h"
+#include "gromacs/utility/gmxassert.h"
 
-PairlistSet::~PairlistSet() = default;
+
+PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
+                               const bool              haveFep,
+                               const real              rlist,
+                               const bool              haveMultipleDomains) :
+    haveFep(haveFep),
+    rlistOuter(rlist),
+    rlistInner(rlist),
+    haveMultipleDomains(haveMultipleDomains),
+    useDynamicPruning(false),
+    nstlistPrune(-1),
+    numRollingPruningParts(1),
+    lifetime(-1)
+{
+    if (!Nbnxm::kernelTypeUsesSimplePairlist(kernelType))
+    {
+        pairlistType = PairlistType::HierarchicalNxN;
+    }
+    else
+    {
+        switch (Nbnxm::JClusterSizePerKernelType[kernelType])
+        {
+            case 2:
+                pairlistType = PairlistType::Simple4x2;
+                break;
+            case 4:
+                pairlistType = PairlistType::Simple4x4;
+                break;
+            case 8:
+                pairlistType = PairlistType::Simple4x8;
+                break;
+            default:
+                GMX_RELEASE_ASSERT(false, "Kernel type does not have a pairlist type");
+        }
+    }
+}

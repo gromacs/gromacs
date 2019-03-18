@@ -54,10 +54,10 @@
 
 #include "locality.h"
 
-struct NbnxnListParameters;
 struct NbnxnPairlistCpuWork;
 struct NbnxnPairlistGpuWork;
 struct nbnxn_atomdata_t;
+struct PairlistParams;
 class PairSearch;
 struct t_blocka;
 struct t_nrnb;
@@ -298,7 +298,7 @@ class PairlistSet
     public:
         //! Constructor: initializes the pairlist set as empty
         PairlistSet(Nbnxm::InteractionLocality  locality,
-                    const NbnxnListParameters  &listParams);
+                    const PairlistParams       &listParams);
 
         ~PairlistSet();
 
@@ -356,7 +356,7 @@ class PairlistSet
         //! List of pairlists in GPU layout
         std::vector<NbnxnPairlistGpu>  gpuLists_;
         //! Pairlist parameters describing setup and ranges
-        const NbnxnListParameters     &params_;
+        const PairlistParams          &params_;
         //! Tells whether multiple lists get merged into one (the first) after creation
         bool                           combineLists_;
         //! Tells whether the lists is of CPU type, otherwise GPU type

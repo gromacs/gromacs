@@ -71,6 +71,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "gridset.h"
+#include "pairlistsets.h"
 #include "pairlistwork.h"
 #include "pairsearch.h"
 
@@ -683,9 +684,9 @@ NbnxnPairlistGpu::NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy) :
 
 // TODO: Move to pairlistset.cpp
 PairlistSet::PairlistSet(const Nbnxm::InteractionLocality  locality,
-                         const NbnxnListParameters        &listParams) :
+                         const PairlistParams             &pairlistParams) :
     locality_(locality),
-    params_(listParams)
+    params_(pairlistParams)
 {
     isCpuType_ =
         (params_.pairlistType == PairlistType::Simple4x2 ||
@@ -4244,13 +4245,13 @@ PairlistSet::constructPairlists(PairSearch                *pairSearch,
 }
 
 void
-nonbonded_verlet_t::PairlistSets::construct(const InteractionLocality  iLocality,
-                                            PairSearch                *pairSearch,
-                                            nbnxn_atomdata_t          *nbat,
-                                            const t_blocka            *excl,
-                                            const Nbnxm::KernelType    kernelType,
-                                            const int64_t              step,
-                                            t_nrnb                    *nrnb)
+PairlistSets::construct(const InteractionLocality  iLocality,
+                        PairSearch                *pairSearch,
+                        nbnxn_atomdata_t          *nbat,
+                        const t_blocka            *excl,
+                        const Nbnxm::KernelType    kernelType,
+                        const int64_t              step,
+                        t_nrnb                    *nrnb)
 {
     pairlistSet(iLocality).constructPairlists(pairSearch, nbat, excl, kernelType, minimumIlistCountForGpuBalancing_, nrnb);
 

@@ -118,9 +118,8 @@ struct gmx_mtop_t;
 struct gmx_wallcycle;
 struct interaction_const_t;
 struct nonbonded_verlet_t;
-enum class PairlistType;
 class PairSearch;
-class PairlistSet;
+class PairlistSets;
 struct t_blocka;
 struct t_commrec;
 struct t_lambda;
@@ -139,39 +138,6 @@ namespace Nbnxm
 {
 enum class KernelType;
 }
-
-/*! \libinternal
- * \brief The setup for generating and pruning the nbnxn pair list.
- *
- * Without dynamic pruning rlistOuter=rlistInner.
- */
-struct NbnxnListParameters
-{
-    /*! \brief Constructor producing a struct with dynamic pruning disabled
-     */
-    NbnxnListParameters(Nbnxm::KernelType kernelType,
-                        bool              haveFep,
-                        real              rlist,
-                        bool              haveMultipleDomains);
-
-    PairlistType pairlistType;           //!< The type of cluster-pair list
-    bool         haveFep;                //!< Tells whether we have perturbed interactions
-    real         rlistOuter;             //!< Cut-off of the larger, outer pair-list
-    real         rlistInner;             //!< Cut-off of the smaller, inner pair-list
-    bool         haveMultipleDomains;    //!< True when using DD with multiple domains
-    bool         useDynamicPruning;      //!< Are we using dynamic pair-list pruning
-    int          nstlistPrune;           //!< Pair-list dynamic pruning interval
-    int          numRollingPruningParts; //!< The number parts to divide the pair-list into for rolling pruning, a value of 1 gives no rolling pruning
-    int          lifetime;               //!< Lifetime in steps of the pair-list
-};
-
-/*! \brief Resources that can be used to execute non-bonded kernels on */
-enum class NonbondedResource : int
-{
-    Cpu,
-    Gpu,
-    EmulateGpu
-};
 
 namespace Nbnxm
 {
@@ -220,134 +186,11 @@ enum {
     enbvClearFNo, enbvClearFYes
 };
 
-/*! \brief Generates a pair-list for the given locality.
- *
- * With perturbed particles, also a group scheme style nbl_fep list is made.
- */
-void nbnxn_make_pairlist(nonbonded_verlet_t         *nbv,
-                         Nbnxm::InteractionLocality  iLocality,
-                         PairlistSet                *pairlistSet,
-                         const t_blocka             *excl,
-                         int64_t                     step,
-                         t_nrnb                     *nrnb);
-
-/*! \brief Prune all pair-lists with given locality (currently CPU only)
- *
- * For all pair-lists with given locality, takes the outer list and prunes out
- * pairs beyond the pairlist inner radius and writes the result to a list that is
- * to be consumed by the non-bonded kernel.
- */
-void NbnxnDispatchPruneKernel(PairlistSet            *pairlistSet,
-                              Nbnxm::KernelType       kernelType,
-                              const nbnxn_atomdata_t *nbat,
-                              const rvec             *shift_vec);
-
 /*! \libinternal
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 struct nonbonded_verlet_t
 {
     public:
-        class PairlistSets
-        {
-            public:
-                PairlistSets(const NbnxnListParameters  &listParams,
-                             bool                        haveMultipleDomains,
-                             int                         minimumIlistCountForGpuBalancing);
-
-                //! Construct the pairlist set for the given locality
-                void construct(Nbnxm::InteractionLocality  iLocality,
-                               PairSearch                 *pairSearch,
-                               nbnxn_atomdata_t           *nbat,
-                               const t_blocka             *excl,
-                               Nbnxm::KernelType           kernelbType,
-                               int64_t                     step,
-                               t_nrnb                     *nrnb);
-
-                //! Dispatches the dynamic pruning kernel for the given locality
-                void dispatchPruneKernel(Nbnxm::InteractionLocality  iLocality,
-                                         const nbnxn_atomdata_t     *nbat,
-                                         const rvec                 *shift_vec,
-                                         Nbnxm::KernelType           kernelbType);
-
-                //! Returns the pair list parameters
-                const NbnxnListParameters &params() const
-                {
-                    return params_;
-                }
-
-                //! Returns the number of steps performed with the current pair list
-                int numStepsWithPairlist(int64_t step) const
-                {
-                    return step - outerListCreationStep_;
-                }
-
-                //! Returns whether step is a dynamic list pruning step, for CPU lists
-                bool isDynamicPruningStepCpu(int64_t step) const
-                {
-                    return (params_.useDynamicPruning &&
-                            numStepsWithPairlist(step) % params_.nstlistPrune == 0);
-                }
-
-                //! Returns whether step is a dynamic list pruning step, for GPU lists
-                bool isDynamicPruningStepGpu(int64_t step) const
-                {
-                    const int age = numStepsWithPairlist(step);
-
-                    return (params_.useDynamicPruning &&
-                            age > 0 &&
-                            age < params_.lifetime &&
-                            (params_.haveMultipleDomains || age % 2 == 0));
-                }
-
-                //! Changes the pair-list outer and inner radius
-                void changeRadii(real rlistOuter,
-                                 real rlistInner)
-                {
-                    params_.rlistOuter = rlistOuter;
-                    params_.rlistInner = rlistInner;
-                }
-
-                //! Returns the pair-list set for the given locality
-                const PairlistSet &pairlistSet(Nbnxm::InteractionLocality iLocality) const
-                {
-                    if (iLocality == Nbnxm::InteractionLocality::Local)
-                    {
-                        return *localSet_;
-                    }
-                    else
-                    {
-                        GMX_ASSERT(nonlocalSet_, "Need a non-local set when requesting access");
-                        return *nonlocalSet_;
-                    }
-                }
-
-            private:
-                //! Returns the pair-list set for the given locality
-                PairlistSet &pairlistSet(Nbnxm::InteractionLocality iLocality)
-                {
-                    if (iLocality == Nbnxm::InteractionLocality::Local)
-                    {
-                        return *localSet_;
-                    }
-                    else
-                    {
-                        GMX_ASSERT(nonlocalSet_, "Need a non-local set when requesting access");
-                        return *nonlocalSet_;
-                    }
-                }
-
-                //! Parameters for the search and list pruning setup
-                NbnxnListParameters                   params_;
-                //! Pair list balancing parameter for use with GPU
-                int                                   minimumIlistCountForGpuBalancing_;
-                //! Local pairlist set
-                std::unique_ptr<PairlistSet>          localSet_;
-                //! Non-local pairlist set
-                std::unique_ptr<PairlistSet>          nonlocalSet_;
-                //! MD step at with the outer lists in pairlistSets_ were created
-                int64_t                               outerListCreationStep_;
-        };
-
         //! Constructs an object from its components
         nonbonded_verlet_t(std::unique_ptr<PairlistSets>      pairlistSets,
                            std::unique_ptr<PairSearch>        pairSearch,
@@ -409,19 +252,18 @@ struct nonbonded_verlet_t
             return *pairlistSets_;
         }
 
+        //! Returns whether step is a dynamic list pruning step, for CPU lists
+        bool isDynamicPruningStepCpu(int64_t step) const;
+
+        //! Returns whether step is a dynamic list pruning step, for GPU lists
+        bool isDynamicPruningStepGpu(int64_t step) const;
+
         //! Dispatches the dynamic pruning kernel for the given locality, for CPU lists
         void dispatchPruneKernelCpu(Nbnxm::InteractionLocality  iLocality,
                                     const rvec                 *shift_vec);
 
         //! Dispatches the dynamic pruning kernel for GPU lists
-        void dispatchPruneKernelGpu(int64_t step)
-        {
-            const bool stepIsEven = (pairlistSets().numStepsWithPairlist(step) % 2 == 0);
-
-            Nbnxm::gpu_launch_kernel_pruneonly(gpu_nbv,
-                                               stepIsEven ? Nbnxm::InteractionLocality::Local : Nbnxm::InteractionLocality::NonLocal,
-                                               pairlistSets().params().numRollingPruningParts);
-        }
+        void dispatchPruneKernelGpu(int64_t step);
 
         //! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU
         void dispatchNonbondedKernel(Nbnxm::InteractionLocality  iLocality,
@@ -458,6 +300,17 @@ struct nonbonded_verlet_t
         /*! \brief Returns the number of x and y cells in the local grid */
         void getLocalNumCells(int *numCellsX,
                               int *numCellsY) const;
+
+
+        //! Returns the outer radius for the pair list
+        real pairlistInnerRadius() const;
+
+        //! Returns the outer radius for the pair list
+        real pairlistOuterRadius() const;
+
+        //! Changes the pair-list outer and inner radius
+        void changePairlistRadii(real rlistOuter,
+                                 real rlistInner);
 
         // TODO: Make all data members private
     public:

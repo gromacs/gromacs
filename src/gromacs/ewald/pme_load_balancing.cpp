@@ -177,7 +177,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       const t_inputrec          &ir,
                       const matrix               box,
                       const interaction_const_t &ic,
-                      const NbnxnListParameters &listParams,
+                      const nonbonded_verlet_t  &nbv,
                       gmx_pme_t                 *pmedata,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting)
@@ -206,10 +206,10 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     pme_lb->cutoff_scheme     = ir.cutoff_scheme;
 
-    pme_lb->rbufOuter_coulomb = listParams.rlistOuter - ic.rcoulomb;
-    pme_lb->rbufOuter_vdw     = listParams.rlistOuter - ic.rvdw;
-    pme_lb->rbufInner_coulomb = listParams.rlistInner - ic.rcoulomb;
-    pme_lb->rbufInner_vdw     = listParams.rlistInner - ic.rvdw;
+    pme_lb->rbufOuter_coulomb = nbv.pairlistOuterRadius() - ic.rcoulomb;
+    pme_lb->rbufOuter_vdw     = nbv.pairlistOuterRadius() - ic.rvdw;
+    pme_lb->rbufInner_coulomb = nbv.pairlistInnerRadius() - ic.rcoulomb;
+    pme_lb->rbufInner_vdw     = nbv.pairlistInnerRadius() - ic.rvdw;
 
     /* Scale box with Ewald wall factor; note that we pmedata->boxScaler
      * can't always usedd as it's not available with separate PME ranks.
@@ -224,8 +224,8 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     pme_lb->cur                      = 0;
     pme_lb->setup[0].rcut_coulomb    = ic.rcoulomb;
-    pme_lb->setup[0].rlistOuter      = listParams.rlistOuter;
-    pme_lb->setup[0].rlistInner      = listParams.rlistInner;
+    pme_lb->setup[0].rlistOuter      = nbv.pairlistOuterRadius();
+    pme_lb->setup[0].rlistInner      = nbv.pairlistInnerRadius();
     pme_lb->setup[0].grid[XX]        = ir.nkx;
     pme_lb->setup[0].grid[YY]        = ir.nky;
     pme_lb->setup[0].grid[ZZ]        = ir.nkz;
@@ -794,7 +794,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     set = &pme_lb->setup[pme_lb->cur];
 
     ic->rcoulomb           = set->rcut_coulomb;
-    nbv->pairlistSets_->changeRadii(set->rlistOuter, set->rlistInner);
+    nbv->changePairlistRadii(set->rlistOuter, set->rlistInner);
     ic->ewaldcoeff_q       = set->ewaldcoeff_q;
     /* TODO: centralize the code that sets the potentials shifts */
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
@@ -822,7 +822,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     /* We always re-initialize the tables whether they are used or not */
     init_interaction_const_tables(nullptr, ic, rtab);
 
-    Nbnxm::gpu_pme_loadbal_update_param(nbv, ic, &nbv->pairlistSets().params());
+    Nbnxm::gpu_pme_loadbal_update_param(nbv, ic);
 
     if (!pme_lb->bSepPMERanks)
     {
@@ -994,7 +994,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
              * This also ensures that we won't disable the currently
              * optimal setting during a second round of PME balancing.
              */
-            set_dd_dlb_max_cutoff(cr, fr->nbv->pairlistSets().params().rlistOuter);
+            set_dd_dlb_max_cutoff(cr, fr->nbv->pairlistOuterRadius());
         }
     }
 
@@ -1011,7 +1011,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
                          step);
 
         /* Update deprecated rlist in forcerec to stay in sync with fr->nbv */
-        fr->rlist         = fr->nbv->pairlistSets().params().rlistOuter;
+        fr->rlist         = fr->nbv->pairlistOuterRadius();
 
         if (ir.eDispCorr != edispcNO)
         {

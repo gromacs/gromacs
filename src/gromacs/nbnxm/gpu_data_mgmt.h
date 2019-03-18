@@ -55,7 +55,7 @@
 struct nonbonded_verlet_group_t;
 struct NbnxnPairlistGpu;
 struct nbnxn_atomdata_t;
-struct NbnxnListParameters;
+struct PairlistParams;
 struct gmx_wallclock_gpu_nbnxn_t;
 struct gmx_gpu_info_t;
 struct gmx_device_info_t;
@@ -68,7 +68,7 @@ GPU_FUNC_QUALIFIER
 gmx_nbnxn_gpu_t *
 gpu_init(const gmx_device_info_t gmx_unused     *deviceInfo,
          const interaction_const_t gmx_unused   *ic,
-         const NbnxnListParameters gmx_unused   *listParams,
+         const PairlistParams gmx_unused        &listParams,
          const nbnxn_atomdata_t gmx_unused      *nbat,
          int gmx_unused                          rank,
          /* true if both local and non-local are done on GPU */
@@ -90,8 +90,7 @@ void gpu_init_atomdata(gmx_nbnxn_gpu_t gmx_unused               *nb,
  */
 GPU_FUNC_QUALIFIER
 void gpu_pme_loadbal_update_param(const struct nonbonded_verlet_t gmx_unused *nbv,
-                                  const interaction_const_t gmx_unused       *ic,
-                                  const NbnxnListParameters gmx_unused       *listParams) GPU_FUNC_TERM
+                                  const interaction_const_t gmx_unused       *ic) GPU_FUNC_TERM
 
 /** Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
 GPU_FUNC_QUALIFIER

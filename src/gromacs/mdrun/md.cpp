@@ -413,7 +413,7 @@ void gmx::Integrator::do_md()
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, *ir, state->box,
-                         *fr->ic, fr->nbv->pairlistSets().params(), fr->pmedata, fr->nbv->useGpu(),
+                         *fr->ic, *fr->nbv, fr->pmedata, fr->nbv->useGpu(),
                          &bPMETunePrinting);
     }
 

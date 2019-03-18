@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,17 +34,54 @@
  */
 
 /*! \internal \file
+ *
  * \brief
- * Implements functionality for PairlistSet.
+ * Declares the PairlistParams class
+ *
+ * This class holds the Nbnxm pairlist parameters.
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
  */
 
-#include "gmxpre.h"
+#ifndef GMX_NBNXM_PAIRLISTPARAMS_H
+#define GMX_NBNXM_PAIRLISTPARAMS_H
 
-#include "pairlistset.h"
+#include "gromacs/utility/real.h"
 
-#include "pairlistwork.h"
+#include "locality.h"
 
-PairlistSet::~PairlistSet() = default;
+enum class PairlistType;
+
+namespace Nbnxm
+{
+enum class KernelType;
+}
+
+
+/*! \internal
+ * \brief The setup for generating and pruning the nbnxn pair list.
+ *
+ * Without dynamic pruning rlistOuter=rlistInner.
+ */
+struct PairlistParams
+{
+    /*! \brief Constructor producing a struct with dynamic pruning disabled
+     */
+    PairlistParams(Nbnxm::KernelType kernelType,
+                   bool              haveFep,
+                   real              rlist,
+                   bool              haveMultipleDomains);
+
+    PairlistType pairlistType;           //!< The type of cluster-pair list
+    bool         haveFep;                //!< Tells whether we have perturbed interactions
+    real         rlistOuter;             //!< Cut-off of the larger, outer pair-list
+    real         rlistInner;             //!< Cut-off of the smaller, inner pair-list
+    bool         haveMultipleDomains;    //!< True when using DD with multiple domains
+    bool         useDynamicPruning;      //!< Are we using dynamic pair-list pruning
+    int          nstlistPrune;           //!< Pair-list dynamic pruning interval
+    int          numRollingPruningParts; //!< The number parts to divide the pair-list into for rolling pruning, a value of 1 gives no rolling pruning
+    int          lifetime;               //!< Lifetime in steps of the pair-list
+};
+
+#endif

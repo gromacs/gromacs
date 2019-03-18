@@ -58,7 +58,7 @@ class MDLogger;
 
 struct gmx_mtop_t;
 struct interaction_const_t;
-struct NbnxnListParameters;
+struct PairlistParams;
 struct t_commrec;
 struct t_inputrec;
 
@@ -94,6 +94,6 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
                                  const gmx_mtop_t          *mtop,
                                  matrix                     box,
                                  const interaction_const_t *ic,
-                                 NbnxnListParameters       *listParams);
+                                 PairlistParams            *listParams);
 
 #endif /* NBNXM_PAIRLIST_TUNING_H */

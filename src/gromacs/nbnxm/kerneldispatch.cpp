@@ -58,6 +58,7 @@
 #include "gromacs/utility/real.h"
 
 #include "kernel_common.h"
+#include "pairlistsets.h"
 #define INCLUDE_KERNELFUNCTION_TABLES
 #include "gromacs/nbnxm/kernels_reference/kernel_ref.h"
 #ifdef GMX_NBNXN_SIMD_2XNN

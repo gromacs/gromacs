@@ -60,6 +60,7 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -203,7 +204,7 @@ static int pick_ewald_kernel_type(bool                     bTwinCut)
 /*! Copies all parameters related to the cut-off from ic to nbp */
 static void set_cutoff_parameters(cu_nbparam_t              *nbp,
                                   const interaction_const_t *ic,
-                                  const NbnxnListParameters *listParams)
+                                  const PairlistParams      &listParams)
 {
     nbp->ewald_beta        = ic->ewaldcoeff_q;
     nbp->sh_ewald          = ic->sh_ewald;
@@ -212,9 +213,9 @@ static void set_cutoff_parameters(cu_nbparam_t              *nbp,
     nbp->c_rf              = ic->c_rf;
     nbp->rvdw_sq           = ic->rvdw * ic->rvdw;
     nbp->rcoulomb_sq       = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlistOuter_sq     = listParams->rlistOuter * listParams->rlistOuter;
-    nbp->rlistInner_sq     = listParams->rlistInner * listParams->rlistInner;
-    nbp->useDynamicPruning = listParams->useDynamicPruning;
+    nbp->rlistOuter_sq     = listParams.rlistOuter * listParams.rlistOuter;
+    nbp->rlistInner_sq     = listParams.rlistInner * listParams.rlistInner;
+    nbp->useDynamicPruning = listParams.useDynamicPruning;
 
     nbp->sh_lj_ewald       = ic->sh_lj_ewald;
     nbp->ewaldcoeff_lj     = ic->ewaldcoeff_lj;
@@ -228,7 +229,7 @@ static void set_cutoff_parameters(cu_nbparam_t              *nbp,
 /*! Initializes the nonbonded parameter data structure. */
 static void init_nbparam(cu_nbparam_t                   *nbp,
                          const interaction_const_t      *ic,
-                         const NbnxnListParameters      *listParams,
+                         const PairlistParams           &listParams,
                          const nbnxn_atomdata_t::Params &nbatParams)
 {
     int         ntypes;
@@ -339,8 +340,7 @@ static void init_nbparam(cu_nbparam_t                   *nbp,
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed. */
 void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
-                                  const interaction_const_t   *ic,
-                                  const NbnxnListParameters   *listParams)
+                                  const interaction_const_t   *ic)
 {
     if (!nbv || !nbv->useGpu())
     {
@@ -348,7 +348,7 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
     }
     cu_nbparam_t *nbp   = nbv->gpu_nbv->nbparam;
 
-    set_cutoff_parameters(nbp, ic, listParams);
+    set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
 
@@ -405,7 +405,7 @@ static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 /*! Initializes simulation constant data. */
 static void cuda_init_const(gmx_nbnxn_cuda_t               *nb,
                             const interaction_const_t      *ic,
-                            const NbnxnListParameters      *listParams,
+                            const PairlistParams           &listParams,
                             const nbnxn_atomdata_t::Params &nbatParams)
 {
     init_atomdata_first(nb->atdat, nbatParams.numTypes);
@@ -418,7 +418,7 @@ static void cuda_init_const(gmx_nbnxn_cuda_t               *nb,
 gmx_nbnxn_cuda_t *
 gpu_init(const gmx_device_info_t   *deviceInfo,
          const interaction_const_t *ic,
-         const NbnxnListParameters *listParams,
+         const PairlistParams      &listParams,
          const nbnxn_atomdata_t    *nbat,
          int                        /*rank*/,
          gmx_bool                   bLocalAndNonlocal)
