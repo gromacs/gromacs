@@ -58,12 +58,14 @@ struct NbnxnPairlistCpuWork;
 struct NbnxnPairlistGpuWork;
 struct nbnxn_atomdata_t;
 struct PairlistParams;
-class PairSearch;
+struct PairsearchWork;
+struct SearchCycleCounting;
 struct t_blocka;
 struct t_nrnb;
 
 namespace Nbnxm
 {
+class GridSet;
 enum class KernelType;
 }
 
@@ -303,12 +305,14 @@ class PairlistSet
         ~PairlistSet();
 
         //! Constructs the pairlists in the set using the coordinates in \p nbat
-        void constructPairlists(PairSearch        *pairSearch,
-                                nbnxn_atomdata_t  *nbat,
-                                const t_blocka    *excl,
-                                Nbnxm::KernelType  kernelType,
-                                int                minimumIlistCountForGpuBalancing,
-                                t_nrnb            *nrnb);
+        void constructPairlists(const Nbnxm::GridSet          &gridSet,
+                                gmx::ArrayRef<PairsearchWork>  searchWork,
+                                nbnxn_atomdata_t              *nbat,
+                                const t_blocka                *excl,
+                                Nbnxm::KernelType              kernelType,
+                                int                            minimumIlistCountForGpuBalancing,
+                                t_nrnb                        *nrnb,
+                                SearchCycleCounting           *searchCycleCounting);
 
         //! Dispatch the kernel for dynamic pairlist pruning
         void dispatchPruneKernel(const nbnxn_atomdata_t *nbat,

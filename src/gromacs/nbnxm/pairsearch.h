@@ -110,6 +110,40 @@ class nbnxn_cycle_t
         gmx_cycles_t start_  = 0;
 };
 
+//! Local cycle count enum for profiling different parts of search
+enum {
+    enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCnr
+};
+
+/*! \internal
+ * \brief Struct for collecting detailed cycle counts for the search
+ */
+struct SearchCycleCounting
+{
+    //! Start a pair search cycle counter
+    void start(const int enbsCC)
+    {
+        cc_[enbsCC].start();
+    }
+
+    //! Stop a pair search cycle counter
+    void stop(const int enbsCC)
+    {
+        cc_[enbsCC].stop();
+    }
+
+    //! Print the cycle counts to \p fp
+    void printCycles(FILE                               *fp,
+                     gmx::ArrayRef<const PairsearchWork> work) const;
+
+    //! Tells whether we record cycles
+    bool          recordCycles_ = false;
+    //! The number of times pairsearching has been performed, local+non-local count as 1
+    int           searchCount_  = 0;
+    //! The set of cycle counters
+    nbnxn_cycle_t cc_[enbsCCnr];
+};
+
 // TODO: Move nbnxn_search_work_t definition to its own file
 
 /* Thread-local work struct, contains working data for Grid */
@@ -139,57 +173,6 @@ struct PairsearchWork
 class PairSearch
 {
     public:
-        /*! \internal
-         * \brief Description of the domain setup: PBC and the connections between domains
-         */
-        struct DomainSetup
-        {
-            /*! \internal
-             * \brief Description of the domain setup: PBC and the connections between domains
-             */
-            //! Constructor, without DD \p numDDCells and \p ddZones should be nullptr
-            DomainSetup(int                       ePBC,
-                        const ivec               *numDDCells,
-                        const gmx_domdec_zones_t *ddZones);
-
-            //! The type of PBC
-            int                       ePBC;
-            //! Tells whether we are using domain decomposition
-            bool                      haveDomDec;
-            //! Tells whether we are using domain decomposition per dimension
-            std::array<bool, DIM>     haveDomDecPerDim;
-            //! The domain decomposition zone setup
-            const gmx_domdec_zones_t *zones;
-        };
-
-        //! Local cycle count enum for profiling different parts of search
-        enum {
-            enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCnr
-        };
-
-        struct SearchCycleCounting
-        {
-            //! Start a pair search cycle counter
-            void start(const int enbsCC)
-            {
-                cc_[enbsCC].start();
-            }
-
-            //! Stop a pair search cycle counter
-            void stop(const int enbsCC)
-            {
-                cc_[enbsCC].stop();
-            }
-
-            //! Print the cycle counts to \p fp
-            void printCycles(FILE                               *fp,
-                             gmx::ArrayRef<const PairsearchWork> work) const;
-
-            bool          recordCycles_ = false;
-            int           searchCount_  = 0;
-            nbnxn_cycle_t cc_[enbsCCnr];
-        };
-
         //! Puts the atoms in \p ddZone on the grid and copies the coordinates to \p nbat
         void putOnGrid(const matrix                    box,
                        int                             ddZone,
@@ -235,11 +218,6 @@ class PairSearch
             gridSet_.setLocalAtomOrder();
         }
 
-        const DomainSetup domainSetup() const
-        {
-            return domainSetup_;
-        }
-
         //! Returns the set of search grids
         const Nbnxm::GridSet &gridSet() const
         {
@@ -259,8 +237,6 @@ class PairSearch
         }
 
     private:
-        //! The domain setup
-        DomainSetup                 domainSetup_;
         //! The set of search grids
         Nbnxm::GridSet              gridSet_;
         //! Work objects, one entry for each thread
@@ -268,7 +244,7 @@ class PairSearch
 
     public:
         //! Cycle counting for measuring components of the search
-        SearchCycleCounting  cycleCounting_;
+        SearchCycleCounting         cycleCounting_;
 };
 
 #endif

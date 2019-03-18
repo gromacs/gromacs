@@ -55,10 +55,10 @@ namespace Nbnxm
 {
 
 //! Returns the number of DD zones
-static int numDDZones(const std::array<bool, DIM> &haveDomDecPerDim)
+static int numDDZones(const std::array<bool, DIM> &haveMultipleDomainsPerDim)
 {
     int  numDDZones = 1;
-    for (auto haveDD : haveDomDecPerDim)
+    for (auto haveDD : haveMultipleDomainsPerDim)
     {
         if (haveDD)
         {
@@ -69,11 +69,27 @@ static int numDDZones(const std::array<bool, DIM> &haveDomDecPerDim)
     return numDDZones;
 }
 
-GridSet::GridSet(const std::array<bool, DIM> &haveDomDecPerDim,
-                 const PairlistType           pairlistType,
-                 const bool                   haveFep,
-                 const int                    numThreads) :
-    grids_(numDDZones(haveDomDecPerDim), pairlistType),
+GridSet::DomainSetup::DomainSetup(const int                 ePBC,
+                                  const ivec               *numDDCells,
+                                  const gmx_domdec_zones_t *ddZones) :
+    ePBC(ePBC),
+    haveMultipleDomains(numDDCells != nullptr),
+    zones(ddZones)
+{
+    for (int d = 0; d < DIM; d++)
+    {
+        haveMultipleDomainsPerDim[d] = (numDDCells != nullptr && (*numDDCells)[d] > 1);
+    }
+}
+
+GridSet::GridSet(const int                 ePBC,
+                 const ivec               *numDDCells,
+                 const gmx_domdec_zones_t *ddZones,
+                 const PairlistType        pairlistType,
+                 const bool                haveFep,
+                 const int                 numThreads) :
+    domainSetup_(ePBC, numDDCells, ddZones),
+    grids_(numDDZones(domainSetup_.haveMultipleDomainsPerDim), pairlistType),
     haveFep_(haveFep),
     numRealAtomsLocal_(0),
     numRealAtomsTotal_(0),

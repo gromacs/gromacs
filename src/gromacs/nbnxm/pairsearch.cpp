@@ -49,8 +49,8 @@
 #include "gromacs/utility/smalloc.h"
 
 
-void PairSearch::SearchCycleCounting::printCycles(FILE                               *fp,
-                                                  gmx::ArrayRef<const PairsearchWork> work) const
+void SearchCycleCounting::printCycles(FILE                               *fp,
+                                      gmx::ArrayRef<const PairsearchWork> work) const
 {
     fprintf(fp, "\n");
     fprintf(fp, "ns %4d grid %4.1f search %4.1f",
@@ -108,27 +108,13 @@ PairsearchWork::~PairsearchWork()
     free_nblist(nbl_fep.get());
 }
 
-PairSearch::DomainSetup::DomainSetup(const int                 ePBC,
-                                     const ivec               *numDDCells,
-                                     const gmx_domdec_zones_t *ddZones) :
-    ePBC(ePBC),
-    haveDomDec(numDDCells != nullptr),
-    zones(ddZones)
-{
-    for (int d = 0; d < DIM; d++)
-    {
-        haveDomDecPerDim[d] = (numDDCells != nullptr && (*numDDCells)[d] > 1);
-    }
-}
-
 PairSearch::PairSearch(const int                 ePBC,
                        const ivec               *numDDCells,
                        const gmx_domdec_zones_t *ddZones,
                        const PairlistType        pairlistType,
                        const bool                haveFep,
                        const int                 maxNumThreads) :
-    domainSetup_(ePBC, numDDCells, ddZones),
-    gridSet_(domainSetup_.haveDomDecPerDim, pairlistType, haveFep, maxNumThreads),
+    gridSet_(ePBC, numDDCells, ddZones, pairlistType, haveFep, maxNumThreads),
     work_(maxNumThreads)
 {
     cycleCounting_.recordCycles_ = (getenv("GMX_NBNXN_CYCLE") != nullptr);

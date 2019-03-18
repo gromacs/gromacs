@@ -71,16 +71,38 @@ namespace Nbnxm
 {
 
 /*! \internal
- * \brief An object holding a set of search grids for the local + non-local DD zones
+ * \brief Holds a set of search grids for the local + non-local DD zones
  */
 class GridSet
 {
     public:
+        /*! \internal
+         * \brief Description of the domain setup: PBC and the connections between domains
+         */
+        struct DomainSetup
+        {
+            //! Constructor, without DD \p numDDCells and \p ddZones should be nullptr
+            DomainSetup(int                       ePBC,
+                        const ivec               *numDDCells,
+                        const gmx_domdec_zones_t *ddZones);
+
+            //! The type of PBC
+            int                       ePBC;
+            //! Are there multiple domains?
+            bool                      haveMultipleDomains;
+            //! Are there multiple domains along each dimension?
+            std::array<bool, DIM>     haveMultipleDomainsPerDim;
+            //! The domain decomposition zone setup
+            const gmx_domdec_zones_t *zones;
+        };
+
         //! Constructs a grid set for 1 or multiple DD zones, when numDDCells!=nullptr
-        GridSet(const std::array<bool, DIM> &haveDomDecPerDim,
-                PairlistType                 pairlistType,
-                bool                         haveFep,
-                int                          numThreads);
+        GridSet(int                       ePBC,
+                const ivec               *numDDCells,
+                const gmx_domdec_zones_t *ddZones,
+                PairlistType              pairlistType,
+                bool                      haveFep,
+                int                       numThreads);
 
         //! Puts the atoms in \p ddZone on the grid and copies the coordinates to \p nbat
         void putOnGrid(const matrix                    box,
@@ -96,6 +118,12 @@ class GridSet
                        int                             numAtomsMoved,
                        const int                      *move,
                        nbnxn_atomdata_t               *nbat);
+
+        //! Returns the domain setup
+        const DomainSetup domainSetup() const
+        {
+            return domainSetup_;
+        }
 
         //! Returns the number of cells along x and y for the local grid
         void getLocalNumCells(int *numCellsX,
@@ -175,6 +203,8 @@ class GridSet
         }
 
         /* Data members */
+        //! The domain setup
+        DomainSetup           domainSetup_;
         //! The search grids
         std::vector<Grid>     grids_;
         //! The actual cell indices for all atoms, covering all grids
