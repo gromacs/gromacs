@@ -56,13 +56,13 @@
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
-#include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
 #include "gpu_types.h"
 #include "grid.h"
+#include "pairlistset.h"
 #include "pairlistsets.h"
 #include "pairsearch.h"
 

@@ -49,6 +49,7 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
 
+#include "pairlistset.h"
 #include "pairlistsets.h"
 #include "pairsearch.h"
 

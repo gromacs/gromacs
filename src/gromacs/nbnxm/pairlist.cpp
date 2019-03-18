@@ -59,7 +59,6 @@
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
-#include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
@@ -71,6 +70,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "gridset.h"
+#include "pairlistset.h"
 #include "pairlistsets.h"
 #include "pairlistwork.h"
 #include "pairsearch.h"

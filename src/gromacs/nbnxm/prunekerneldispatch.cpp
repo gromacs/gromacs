@@ -37,9 +37,9 @@
 
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "pairlistset.h"
 #include "pairlistsets.h"
 #include "kernels_reference/kernel_ref_prune.h"
 #include "kernels_simd_2xmm/kernel_prune.h"

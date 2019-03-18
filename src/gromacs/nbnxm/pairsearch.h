@@ -65,6 +65,7 @@
 #include "gridset.h"
 
 struct gmx_domdec_zones_t;
+struct PairsearchWork;
 
 
 /*! \brief Convenience declaration for an std::vector with aligned memory */

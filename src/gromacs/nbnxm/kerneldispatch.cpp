@@ -51,13 +51,13 @@
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/nbnxm/kernels_reference/kernel_gpu_ref.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 #include "kernel_common.h"
+#include "pairlistset.h"
 #include "pairlistsets.h"
 #define INCLUDE_KERNELFUNCTION_TABLES
 #include "gromacs/nbnxm/kernels_reference/kernel_ref.h"
