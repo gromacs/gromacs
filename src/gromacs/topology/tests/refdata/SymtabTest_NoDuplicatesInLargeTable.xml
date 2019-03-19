@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Complete dump of SymbolTable">
+    <Int Name="Length">15</Int>
+    <String>Symtab[0]="0"</String>
+    <String>Symtab[1]="1"</String>
+    <String>Symtab[2]="2"</String>
+    <String>Symtab[3]="3"</String>
+    <String>Symtab[4]="4"</String>
+    <String>Symtab[5]="5"</String>
+    <String>Symtab[6]="6"</String>
+    <String>Symtab[7]="baz"</String>
+    <String>Symtab[8]="7"</String>
+    <String>Symtab[9]="8"</String>
+    <String>Symtab[10]="9"</String>
+    <String>Symtab[11]="10"</String>
+    <String>Symtab[12]="11"</String>
+    <String>Symtab[13]="12"</String>
+    <String>Symtab[14]="13"</String>
+  </Sequence>
+</ReferenceData>
