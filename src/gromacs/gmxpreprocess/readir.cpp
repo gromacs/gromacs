@@ -3324,9 +3324,9 @@ void do_index(const char* mdparin, const char *ndx,
         simulatedAnnealingGroupNames.resize(0);
     }
     if (!simulatedAnnealingGroupNames.empty() &&
-        simulatedAnnealingGroupNames.size() != size_t(nr))
+        gmx::ssize(simulatedAnnealingGroupNames) != nr)
     {
-        gmx_fatal(FARGS, "Not enough annealing values: %zu (for %d groups)\n",
+        gmx_fatal(FARGS, "Wrong number of annealing values: %zu (for %d groups)\n",
                   simulatedAnnealingGroupNames.size(), nr);
     }
     else
@@ -3372,7 +3372,8 @@ void do_index(const char* mdparin, const char *ndx,
                               simulatedAnnealingPoints.size(), simulatedAnnealingGroupNames.size());
                 }
                 convertInts(wi, simulatedAnnealingPoints, "annealing points", ir->opts.anneal_npoints);
-                for (k = 0, i = 0; i < nr; i++)
+                size_t numSimulatedAnnealingFields = 0;
+                for (i = 0; i < nr; i++)
                 {
                     if (ir->opts.anneal_npoints[i] == 1)
                     {
@@ -3380,28 +3381,33 @@ void do_index(const char* mdparin, const char *ndx,
                     }
                     snew(ir->opts.anneal_time[i], ir->opts.anneal_npoints[i]);
                     snew(ir->opts.anneal_temp[i], ir->opts.anneal_npoints[i]);
-                    k += ir->opts.anneal_npoints[i];
+                    numSimulatedAnnealingFields += ir->opts.anneal_npoints[i];
                 }
 
                 auto simulatedAnnealingTimes = gmx::splitString(is->anneal_time);
-                if (simulatedAnnealingTimes.size() != size_t(k))
+
+                if (simulatedAnnealingTimes.size() != numSimulatedAnnealingFields)
                 {
-                    gmx_fatal(FARGS, "Found %zu annealing-time values, wanted %d\n",
-                              simulatedAnnealingTimes.size(), k);
+                    gmx_fatal(FARGS, "Found %zu annealing-time values, wanted %zu\n",
+                              simulatedAnnealingTimes.size(), numSimulatedAnnealingFields);
                 }
                 auto simulatedAnnealingTemperatures = gmx::splitString(is->anneal_temp);
-                if (simulatedAnnealingTemperatures.size() != size_t(k))
+                if (simulatedAnnealingTemperatures.size() != numSimulatedAnnealingFields)
                 {
-                    gmx_fatal(FARGS, "Found %zu annealing-temp values, wanted %d\n",
-                              simulatedAnnealingTemperatures.size(), k);
+                    gmx_fatal(FARGS, "Found %zu annealing-temp values, wanted %zu\n",
+                              simulatedAnnealingTemperatures.size(), numSimulatedAnnealingFields);
                 }
 
-                convertReals(wi, simulatedAnnealingTimes, "anneal-time", ir->opts.anneal_time[i]);
-                convertReals(wi, simulatedAnnealingTemperatures, "anneal-temp", ir->opts.anneal_temp[i]);
+                std::vector<real> allSimulatedAnnealingTimes(numSimulatedAnnealingFields);
+                std::vector<real> allSimulatedAnnealingTemperatures(numSimulatedAnnealingFields);
+                convertReals(wi, simulatedAnnealingTimes, "anneal-time", allSimulatedAnnealingTimes.data());
+                convertReals(wi, simulatedAnnealingTemperatures, "anneal-temp", allSimulatedAnnealingTemperatures.data());
                 for (i = 0, k = 0; i < nr; i++)
                 {
                     for (j = 0; j < ir->opts.anneal_npoints[i]; j++)
                     {
+                        ir->opts.anneal_time[i][j] = allSimulatedAnnealingTimes[k];
+                        ir->opts.anneal_temp[i][j] = allSimulatedAnnealingTemperatures[k];
                         if (j == 0)
                         {
                             if (ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
@@ -3426,7 +3432,7 @@ void do_index(const char* mdparin, const char *ndx,
                     }
                 }
                 /* Print out some summary information, to make sure we got it right */
-                for (i = 0, k = 0; i < nr; i++)
+                for (i = 0; i < nr; i++)
                 {
                     if (ir->opts.annealing[i] != eannNO)
                     {

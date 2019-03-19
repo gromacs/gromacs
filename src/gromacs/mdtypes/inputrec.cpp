@@ -307,6 +307,11 @@ void done_inputrec(t_inputrec *ir)
 {
     sfree(ir->opts.nrdf);
     sfree(ir->opts.ref_t);
+    for (int i = 0; i < ir->opts.ngtc; i++)
+    {
+        sfree(ir->opts.anneal_time[i]);
+        sfree(ir->opts.anneal_temp[i]);
+    }
     sfree(ir->opts.annealing);
     sfree(ir->opts.anneal_npoints);
     sfree(ir->opts.anneal_time);
