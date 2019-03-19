@@ -32,7 +32,32 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+from pytesthelpers import withmpi_only
+
+@withmpi_only
+@pytest.mark.skipif(not has_feature('fr22'),
+                   reason="Feature level not met.")
+def test_fr22():
+    """FR22: MPI-based ensemble management from Python
+
+    gmx.context can own an MPI communicator and run ensembles of simulations.
+    """
+    from mpi4py import MPI
+    comm_world = MPI.COMM_WORLD
+
+    group2 = comm_world.Get_group().Incl([0,1])
+    ensemble_comm = comm_world.Create_group(group2)
+
+    md = gmx.mdrun([tpr_filename for _ in range(2)])
+
+    with gmx.get_context(md, communicator=ensemble_comm) as session:
+        session.run()
+
+    ensemble_comm.Free()

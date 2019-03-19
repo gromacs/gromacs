@@ -32,7 +32,28 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+@pytest.mark.skipif(not has_feature('fr12'),
+                   reason="Feature level not met.")
+def test_fr12():
+    """FR12: Simulation checkpoint handling
+
+    * gmx.mdrun is properly restartable
+
+    This should be invisible to the user, and requires introspection and testing infrastructure to properly test (TBD).
+    """
+    from gmxapi import testsupport
+
+    simulation_input = gmx.read_tpr(initial_tpr)
+    md = gmx.mdrun(simulation_input, label='md')
+    interrupting_context = testsupport.interrupted_md(md)
+    with interrupting_context as session:
+        first_half_md = session.md.run()
+    md = gmx.mdrun(first_half_md, context=testsupport.inspect)
+    testsupport.verify_restart(md)

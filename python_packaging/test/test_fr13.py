@@ -32,7 +32,25 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+@pytest.mark.skipif(not has_feature('fr13'),
+                   reason="Feature level not met.")
+def test_fr13():
+    """FR13: ``run`` module function simplifies user experience
+
+    * gmx.run finds and runs operations to produce expected output files
+    * gmx.run handles ensemble work topologies
+    * gmx.run handles multi-process execution
+    * gmx.run safety checks to avoid data loss / corruption
+    """
+    # commandline_operation helper creates a set of operations
+    # that includes the discovery and execution of the program
+    # named in `executable`.
+    md = gmx.mdrun([tprfilename, tprfilename])
+    gmx.run()

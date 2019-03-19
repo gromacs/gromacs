@@ -32,7 +32,20 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+@pytest.mark.skipif(not has_feature('fr18'),
+                   reason="Feature level not met.")
+def test_fr18():
+    """FR18: GROMACS CLI tools receive improved Python-level support over generic commandline_operations
+
+    * gmx.tool provides wrapping of unmigrated gmx CLI tools
+    """
+    rmsf = gmx.tool.rmsf(trajectory=md.output.trajectory,
+                         structure=initial_tpr)
+    output_files = gmx.gather(rmsf.output.file).result()

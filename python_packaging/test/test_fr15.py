@@ -32,7 +32,29 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+@pytest.mark.skipif(not has_feature('fr15'),
+                   reason="Feature level not met.")
+def test_fr15():
+    """FR15: Simulation input modification.
+
+    * *gmx.modify_input produces new (tpr) simulation input in data flow operation*
+      (requires interaction with library development)
+    * gmx.make_input dispatches appropriate preprocessing for file or in-memory simulation input.
+    """
+    initial_input = gmx.read_tpr([tpr_filename for _ in range(10)])
+    tau_t = list([i/10. for i in range(10)])
+    param_sweep = gmx.modify_input(input=initial_input,
+                                   parameters={
+                                       'tau_t': tau_t
+                                   }
+                                   )
+    md = gmx.mdrun(param_sweep)
+    for tau_expected, tau_actual in zip(tau_t, md.output.params['tau_t'].extract()):
+        assert tau_expected == tau_actual

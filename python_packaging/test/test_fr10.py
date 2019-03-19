@@ -32,7 +32,36 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+@pytest.mark.skipif(not has_feature('fr10'),
+                   reason="Feature level not met.")
+def test_fr10():
+    """FR10: 10: fused operations for use in looping constructs
+
+    * gmx.subgraph fuses operations
+    * gmx.while creates an operation wrapping a dynamic number of iterations of a subgraph
+    """
+    train = gmx.subgraph(variables={'conformation': initial_input})
+    with train:
+        myplugin.training_restraint(
+            label='training_potential',
+            params=my_dict_params)
+        modified_input = gmx.modify_input(
+            input=initial_input, structure=train.conformation)
+        md = gmx.mdrun(input=modified_input, potential=train.training_potential)
+        # Alternate syntax to facilitate adding multiple potentials:
+        # md.interface.potential.add(train.training_potential)
+        brer_tools.training_analyzer(
+            label='is_converged',
+            params=train.training_potential.output.alpha)
+        train.conformation = md.output.conformation
+
+    train_loop = gmx.while_loop(
+        operation=train,
+        condition=gmx.logical_not(train.is_converged))

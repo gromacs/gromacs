@@ -32,7 +32,31 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+@pytest.mark.skipif(not has_feature('fr1'),
+                   reason="Feature level not met.")
+def test_fr1():
+    """FR1: Wrap importable Python code.
+
+    gmxapi compatible operations are implemented with simple machinery that allows
+    compartmentalized progress on functionality to be highly decoupled from
+    implementing user-facing tools. Tools are provided in `gmx.operation` and
+    demonstrated by implementing `gmx.commandline_operation`.
+    """
+    # commandline_operation helper creates a set of operations
+    # that includes the discovery and execution of the program
+    # named in `executable`.
+    operation = gmx.commandline_operation(executable='true')
+    operation.run()
+    # assert operation.output.returncode.result() == 0
+    assert operation.output.returncode == 0
+
+    operation = gmx.commandline_operation(executable='false')
+    operation.run()
+    assert operation.output.returncode == 1

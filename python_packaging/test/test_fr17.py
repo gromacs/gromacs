@@ -32,7 +32,21 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+@pytest.mark.skipif(not has_feature('fr17'),
+                   reason="Feature level not met.")
+def test_fr17():
+    """FR17: Prepare simulation input from multiple sources
+
+    gmx.write_tpr (a facility used to implement higher-level functionality)
+    merges tpr data (e.g. inputrec, structure, topology) into new file(s)
+    """
+    gmx.fileio.write_tpr(filename=managed_filename, input=stage2_input)
+    for key, value in gmx.fileio.read_tpr(managed_filename)['input']:
+        assert stage2_input[key] == value

@@ -32,7 +32,26 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+@pytest.mark.skipif(not has_feature('fr16'),
+                   reason="Feature level not met.")
+def test_fr16():
+    """FR16: Create simulation input from simulation output.
+
+    *gmx.make_input handles state from checkpoints*
+    (requires interaction with library development)
+    """
+    initial_input = gmx.read_tpr(tpr_filename)
+    md = gmx.mdrun(initial_input)
+    stage2_input = gmx.make_input(topology=initial_input,
+                                  conformation=md.output,
+                                  parameters=stage2_params,
+                                  simulation_state=md.output)
+    md = gmx.mdrun(stage2_input)
+    md.run()

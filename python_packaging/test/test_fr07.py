@@ -32,7 +32,21 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Note: pytest complains if there are no tests to run.
-# TODO: (FR1) remove when there is something else to test
-def test_import():
-    import gmxapi
+"""Test gmxapi functionality described in roadmap.rst."""
+
+import pytest
+
+import gmxapi as gmx
+from gmxapi.version import has_feature
+
+@pytest.mark.skipif(not has_feature('fr7'),
+                   reason="Feature level not met.")
+def test_fr7():
+    """FR7: Python bindings for launching simulations.
+
+    gmx.mdrun uses bindings to C++ API to launch simulations.
+    """
+    md = gmx.mdrun(tprfilename)
+    md.run()
+    # Note: can't verify that this is accomplished with C++ integration without
+    # exploring implementation details.
