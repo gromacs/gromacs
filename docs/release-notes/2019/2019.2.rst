@@ -35,3 +35,12 @@ physical properties, such as the density, might be off from the intended values.
 
 :issue:`2884`
 
+Prevented internal build of FFTW with clang and AVX-512 SIMD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Prevented the internal build of FFTW with clang from attempting to
+configure FFTW to compile with AVX-512 support. That SIMD level is not
+supported by FFTW with the clang compiler, and compilation fails.
+
+:issue:`2892`
+
