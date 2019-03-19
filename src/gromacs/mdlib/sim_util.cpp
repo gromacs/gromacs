@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "sim_util.h"
-
 #include "config.h"
 
 #include <cmath>
@@ -892,7 +890,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
         if (bCalcCGCM)
         {
-            put_atoms_in_box_omp(fr->ePBC, box, x.unpaddedArrayRef().subArray(0, homenr));
+            put_atoms_in_box_omp(fr->ePBC, box, x.unpaddedArrayRef().subArray(0, homenr), gmx_omp_nthreads_get(emntDefault));
             inc_nrnb(nrnb, eNR_SHIFTX, homenr);
         }
         else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
@@ -1868,23 +1866,4 @@ void do_force(FILE                                     *fplog,
      * the balance timing, which is ok as most tasks do communication.
      */
     ddBalanceRegionHandler.openBeforeForceComputationCpu(DdAllowBalanceRegionReopen::no);
-}
-
-void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x)
-{
-    int t, nth;
-    nth = gmx_omp_nthreads_get(emntDefault);
-
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (t = 0; t < nth; t++)
-    {
-        try
-        {
-            size_t natoms = x.size();
-            size_t offset = (natoms*t    )/nth;
-            size_t len    = (natoms*(t + 1))/nth - offset;
-            put_atoms_in_box(ePBC, box, x.subArray(offset, len));
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
 }

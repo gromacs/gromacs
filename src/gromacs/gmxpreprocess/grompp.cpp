@@ -80,7 +80,6 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdlib/qmmm.h"
-#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"

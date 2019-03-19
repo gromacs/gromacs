@@ -90,7 +90,6 @@
 #include "gromacs/mdlib/resethandler.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
-#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/stophandler.h"

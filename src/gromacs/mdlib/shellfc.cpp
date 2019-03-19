@@ -58,8 +58,8 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -1059,7 +1059,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             auto xRef = state->x.arrayRefWithPadding().paddedArrayRef();
-            put_atoms_in_box_omp(fr->ePBC, state->box, xRef.subArray(0, md->homenr));
+            put_atoms_in_box_omp(fr->ePBC, state->box, xRef.subArray(0, md->homenr), gmx_omp_nthreads_get(emntDefault));
         }
         else
         {

@@ -1471,6 +1471,24 @@ void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x)
     }
 }
 
+void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x, gmx_unused int nth)
+{
+    int t;
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (t = 0; t < nth; t++)
+    {
+        try
+        {
+            size_t natoms = x.size();
+            size_t offset = (natoms*t    )/nth;
+            size_t len    = (natoms*(t + 1))/nth - offset;
+            put_atoms_in_box(ePBC, box, x.subArray(offset, len));
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+}
+
 void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
                                      gmx::ArrayRef<gmx::RVec> x)
 {
