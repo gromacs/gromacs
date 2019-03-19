@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@ class InMemorySerializer : public ISerializer
         void doBool(bool *value) override;
         void doUChar(unsigned char *value) override;
         void doInt(int *value) override;
+        void doInt32(int32_t *value) override;
         void doInt64(int64_t *value) override;
         void doFloat(float *value) override;
         void doDouble(double *value) override;
@@ -86,6 +87,7 @@ class InMemoryDeserializer : public ISerializer
         void doBool(bool *value) override;
         void doUChar(unsigned char *value) override;
         void doInt(int *value) override;
+        void doInt32(int32_t *value) override;
         void doInt64(int64_t *value) override;
         void doFloat(float *value) override;
         void doDouble(double *value) override;

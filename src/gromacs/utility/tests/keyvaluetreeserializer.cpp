@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,6 +70,10 @@ class RefDataSerializer : public gmx::ISerializer
         {
             checker_.checkInteger(*value, nullptr);
         }
+        void doInt32(int32_t *value) override
+        {
+            checker_.checkInt32(*value, nullptr);
+        }
         void doInt64(int64_t *value) override
         {
             checker_.checkInt64(*value, nullptr);
@@ -132,6 +136,8 @@ TEST_F(KeyValueTreeSerializerTest, EmptyTree)
 TEST_F(KeyValueTreeSerializerTest, SimpleObject)
 {
     builder_.rootObject().addValue<int>("foo", 1);
+    builder_.rootObject().addValue<int32_t>("foo32", 1);
+    builder_.rootObject().addValue<int64_t>("foo64", 1);
     builder_.rootObject().addValue<std::string>("bar", "a");
     builder_.rootObject().addValue<float>("f", 1.5);
     builder_.rootObject().addValue<double>("d", 2.5);

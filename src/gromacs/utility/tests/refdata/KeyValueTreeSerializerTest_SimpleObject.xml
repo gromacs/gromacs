@@ -3,15 +3,23 @@
 <ReferenceData>
   <Object Name="Input">
     <Int Name="foo">1</Int>
+    <Int Name="foo32">1</Int>
+    <Int64 Name="foo64">1</Int64>
     <String Name="bar">a</String>
     <Real Name="f">1.5</Real>
     <Real Name="d">2.5</Real>
   </Object>
   <SerializedData Name="Stream">
-    <Int>4</Int>
+    <Int>6</Int>
     <String>foo</String>
     <UChar>105</UChar>
     <Int>1</Int>
+    <String>foo32</String>
+    <UChar>105</UChar>
+    <Int>1</Int>
+    <String>foo64</String>
+    <UChar>108</UChar>
+    <Int64>1</Int64>
     <String>bar</String>
     <UChar>115</UChar>
     <String>a</String>

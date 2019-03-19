@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,13 +67,11 @@ int xdr_real(XDR *xdrs, real *r);
 int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision);
 
 
+//! Read or write a int32_t value.
+int xdr_int32(XDR *xdrs, int32_t *i);
+
+//! Read or write a int64_t value.
 int xdr_int64(XDR *xdrs, int64_t *i);
-/* Read or write a int64_t value.
- * When warn!=NULL a warning will be written to stderr
- * when a value does not fit,
- * the first line is:
- * "WARNING during %s:", where warn is printed in %s.
- */
 
 int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeekForwardOnly);
 

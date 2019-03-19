@@ -67,6 +67,8 @@ gmx_bool gmx_fio_doe_gmx_bool(struct t_fileio *fio, gmx_bool *item,
                               const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_doe_int(struct t_fileio *fio, int *item,
                          const char *desc, const char *srcfile, int line);
+gmx_bool gmx_fio_doe_int32(struct t_fileio *fio, int32_t *item,
+                           const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_doe_int64(struct t_fileio *fio, int64_t *item,
                            const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_doe_uchar(struct t_fileio *fio, unsigned char *item,
@@ -91,6 +93,9 @@ gmx_bool gmx_fio_ndoe_gmx_bool(struct t_fileio *fio, gmx_bool *item, int n,
                                const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_ndoe_int(struct t_fileio *fio, int *item, int n,
                           const char *desc, const char *srcfile, int line);
+gmx_bool gmx_fio_ndoe_int32(struct t_fileio *fio, int32_t *item, int n,
+                            const char *desc, const char *srcfile,
+                            int line);
 gmx_bool gmx_fio_ndoe_int64(struct t_fileio *fio, int64_t *item, int n,
                             const char *desc, const char *srcfile,
                             int line);
@@ -115,6 +120,7 @@ gmx_bool gmx_fio_ndoe_string(struct t_fileio *fio, char *item[], int n,
 #define gmx_fio_do_double(fio, item)            gmx_fio_doe_double(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_gmx_bool(fio, item)          gmx_fio_doe_gmx_bool(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_int(fio, item)               gmx_fio_doe_int(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_int32(fio, item)             gmx_fio_doe_int32(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_int64(fio, item)             gmx_fio_doe_int64(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_uchar(fio, item)             gmx_fio_doe_uchar(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_ushort(fio, item)            gmx_fio_doe_ushort(fio, &(item), (#item), __FILE__, __LINE__)
@@ -128,6 +134,7 @@ gmx_bool gmx_fio_ndoe_string(struct t_fileio *fio, char *item[], int n,
 #define gmx_fio_ndo_double(fio, item, n)            gmx_fio_ndoe_double(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_gmx_bool(fio, item, n)          gmx_fio_ndoe_gmx_bool(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_int(fio, item, n)               gmx_fio_ndoe_int(fio, item, n, (#item), __FILE__, __LINE__)
+#define gmx_fio_ndo_int32(fio, item, n)             gmx_fio_ndoe_int32(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_int64(fio, item, n)             gmx_fio_ndoe_int64(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_uchar(fio, item, n)             gmx_fio_ndoe_uchar(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_ushort(fio, item, n)            gmx_fio_ndoe_ushort(fio, item, n, (#item), __FILE__, __LINE__)
@@ -148,6 +155,7 @@ class FileIOXdrSerializer : public ISerializer
         void doBool(bool *value) override;
         void doUChar(unsigned char *value) override;
         void doInt(int *value) override;
+        void doInt32(int32_t *value) override;
         void doInt64(int64_t *value) override;
         void doFloat(float *value) override;
         void doDouble(double *value) override;
