@@ -207,7 +207,7 @@ class PairSearch
                                atinfo, x, numAtomsMoved, move, nbat);
 
             cycleCounting_.stop(enbsCCgrid);
-        };
+        }
 
         /* \brief Constructor
          *
