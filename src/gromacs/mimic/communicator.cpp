@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "MimicCommunicator.h"
+#include "communicator.h"
 
 #include "config.h"
 
