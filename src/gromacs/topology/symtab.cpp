@@ -35,6 +35,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Implements new and legacy symbol table routines.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \ingroup module_topology
+ */
 #include "gmxpre.h"
 
 #include "symtab.h"
@@ -46,22 +54,130 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/txtdump.h"
 
-constexpr int c_trimSize   = 1024;
+StringTableEntry StringTableBuilder::addString(const std::string& theString)
+{
+    int         size     = map_.size();
+    std::string stripped = gmx::stripString(theString);
+
+    const auto foundEntry = map_.insert(StringTablePair(stripped, size));
+    return StringTableEntry(foundEntry.first->first, foundEntry.first->second);
+}
+
+int StringTableBuilder::findEntryByName(const std::string& name) const
+{
+    auto foundEntry = map_.find(name);
+    if (foundEntry != map_.end())
+    {
+        return foundEntry->second;
+    }
+    else
+    {
+        GMX_THROW(gmx::InternalError(
+                gmx::formatString("Could not find string \"%s\" in SymbolTable", name.c_str())));
+    }
+}
+
+StringTable StringTableBuilder::build()
+{
+    std::vector<std::string> table(map_.size());
+    for (const auto& entry : map_)
+    {
+        table[entry.second] = entry.first;
+    }
+    map_.clear();
+    return StringTable(table);
+}
+
+void StringTable::printStringTableStorageToFile(FILE* fp, int indent, const char* title) const
+{
+    indent = pr_title_n(fp, indent, title, table_.size());
+    int i  = 0;
+    for (const auto& entry : table_)
+    {
+        pr_indent(fp, indent);
+        fprintf(fp, "%s[%d]=\"%s\"\n", title, i++, entry.c_str());
+    }
+}
+
+StringTable::StringTable(gmx::ISerializer* serializer)
+{
+    GMX_RELEASE_ASSERT(serializer->reading(),
+                       "Can not use writing serializer to read string table");
+    int nr = 0;
+    serializer->doInt(&nr);
+    table_.resize(nr);
+    for (auto& entry : table_)
+    {
+        serializer->doString(&entry);
+    }
+}
+
+void StringTable::serializeStringTable(gmx::ISerializer* serializer)
+{
+    GMX_RELEASE_ASSERT(!serializer->reading(),
+                       "Can not use reading serializer to write string table");
+    int nr = table_.size();
+    serializer->doInt(&nr);
+    for (auto& entry : table_)
+    {
+        serializer->doString(&entry);
+    }
+}
+
+StringTableEntry StringTable::at(gmx::index index) const
+{
+    if (index >= gmx::ssize(table_))
+    {
+        GMX_THROW(gmx::InternalError("Can't read beyond last entry"));
+    }
+    return StringTableEntry(table_[index], index);
+}
+
+StringTableEntry StringTable::operator[](gmx::index index) const
+{
+    GMX_ASSERT(index < gmx::ssize(table_), "Can't read beyond last entry");
+    return StringTableEntry(table_[index], index);
+}
+
+void StringTableEntry::serialize(gmx::ISerializer* serializer) const
+{
+    GMX_RELEASE_ASSERT(!serializer->reading(),
+                       "Can not use reading serializer to write string index");
+    int entry = tableIndex_;
+    serializer->doInt(&entry);
+}
+
+StringTableEntry readStringTableEntry(gmx::ISerializer* serializer, const StringTable& table)
+{
+    GMX_RELEASE_ASSERT(serializer->reading(),
+                       "Can not use writing serializer to read string index");
+    int entry = 0;
+    serializer->doInt(&entry);
+    return table.at(entry);
+}
+
+// Old code for legacy data structure starts below.
+//! Maximum size of character string in table.
+constexpr int c_trimSize = 1024;
+//! Maximum number of entries in each element of the linked list.
 constexpr int c_maxBufSize = 5;
 
-static char* trim_string(const char* s, char* out, int maxlen)
-/*
- * Returns a pointer to a static area which contains a copy
- * of s without leading or trailing spaces. Strings are
- * truncated to c_trimSize positions.
+/*! \brief
+ * Remove leading and trailing whitespace from string and enforce maximum length.
  *
- * TODO This partially duplicates code in trim(), but perhaps
- * replacing symtab with a std::map is a better fix.
+ * \param[in]    s      String to trim.
+ * \param[inout] out    String to return.
+ * \param[in]    maxlen Maximum string length to use.
+ * \returns New pruned string.
  */
+static char* trim_string(const char* s, char* out, int maxlen)
 {
     int len, i;
 
@@ -133,6 +249,7 @@ char** get_symtab_handle(t_symtab* symtab, int name)
     gmx_fatal(FARGS, "symtab get_symtab_handle %d not found", name);
 }
 
+//! Returns a new initialized entry into the symtab linked list.
 static t_symbuf* new_symbuf()
 {
     t_symbuf* symbuf;
@@ -145,6 +262,13 @@ static t_symbuf* new_symbuf()
     return symbuf;
 }
 
+/*! \brief
+ * Low level function to enter new string into legacy symtab.
+ *
+ * \param[inout] symtab Symbol table to add entry to.
+ * \param[in]    name   New string to add to symtab.
+ * \returns Pointer to new entry in the legacy symbol table, or to existing entry if it already existed.
+ */
 static char** enter_buf(t_symtab* symtab, char* name)
 {
     int       i;

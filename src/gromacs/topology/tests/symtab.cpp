@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,10 +46,15 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
 
 #include "testutils/refdata.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -57,14 +62,338 @@ namespace gmx
 namespace test
 {
 
+class StringTableTest : public ::testing::Test
+{
+public:
+    StringTableTest() {}
+    //! Get handle to symbol table.
+    StringTableBuilder& builder() { return stringTableBuilder_; }
+    /* \brief
+     * Check human readable format of the table.
+     * \todo change when table writing to users is done also with serializer.
+     * \parm[in] table The string table to check the serialization.
+     */
+    void checkTable(const StringTable& table);
+
+private:
+    //! Get reference checker using lazy initialization
+    TestReferenceChecker* checker()
+    {
+        if (!checker_)
+        {
+            checker_ = std::make_unique<TestReferenceChecker>(data_.rootChecker());
+        }
+        return checker_.get();
+    }
+    //! Symbol table for testing purposes.
+    StringTableBuilder stringTableBuilder_;
+    //! Handler for reference data.
+    TestReferenceData data_;
+    //! Handler for checking reference data.
+    std::unique_ptr<TestReferenceChecker> checker_;
+};
+
+void StringTableTest::checkTable(const StringTable& table)
+{
+    TestFileManager files;
+    std::string     filename(files.getTemporaryFilePath("table.txt"));
+    FILE*           fp = fopen(filename.c_str(), "w");
+    table.printStringTableStorageToFile(fp, 4, "Test title");
+    fclose(fp);
+    const std::string text = TextReader::readFileToString(filename);
+    checker()->checkTextBlock(text, "Output");
+}
+
+/*! \brief
+ *  Check that symbols obtained from symtab compare correctly.
+ *
+ *  Helper function to find out if two entries obtained by a symtab lookup
+ *  are equivalent or not, according to testing criteria.
+ *  Checks that the indices match before finalizing storage.
+ *
+ *  \param[in] builder     StringTableBuilder table that contains the entries to validate.
+ *  \param[in] firstSymbol Handle into \p builder obtained from placing string in \p builder.
+ *  \param[in] otherSymbol Other handle from obtained from separate string deposit.
+ *  \param[in] expectedOutcome If the handles should result in equal entries or not.
+ */
+static void compareDifferentIndices(const StringTableBuilder& builder,
+                                    const StringTableEntry&   firstSymbol,
+                                    const StringTableEntry&   otherSymbol,
+                                    bool                      expectedOutcome)
+{
+    EXPECT_EQ(expectedOutcome, (firstSymbol == otherSymbol));
+    auto firstIndex = builder.findEntryByName(*firstSymbol);
+    auto otherIndex = builder.findEntryByName(*otherSymbol);
+    EXPECT_EQ(expectedOutcome, (firstIndex == otherIndex))
+            << "Expected was " << expectedOutcome << " firstIndex is " << firstIndex
+            << " otherIndex is " << otherIndex;
+}
+
+/*! \brief
+ * Helper to obtain the integer index from an entry.
+ *
+ * As the index is only used during (de-) serialization, use this machinery
+ * to obtain it.
+ *
+ * \param[in] symbol Single StringTableEntry to obtain the index of.
+ * \returns Integer index to be used to obtain value from StringTable.
+ */
+static int readIndexFromSerializer(const StringTableEntry& symbol)
+{
+    gmx::InMemorySerializer writer;
+    symbol.serialize(&writer);
+    auto                      buffer = writer.finishAndGetBuffer();
+    gmx::InMemoryDeserializer reader(buffer, false);
+    int                       index = 0;
+    reader.doInt(&index);
+    return index;
+}
+
+/*! \brief
+ * Helper function to check that a string in matches when looked up in non finalized table.
+ *
+ * Checks that a string looked up by using the index in the symbol table matches
+ * the string stored in the wrapper object obtained by entering a string.
+ *
+ * \param[in] symtab Symbol table that contains the entries.
+ * \param[in] symbol The entry obtained from placing a string in the symbol table.
+ * \param[in] string The string the entry should match.
+ */
+static void stringMatches(const StringTable& symtab, const StringTableEntry& symbol, const char* string)
+{
+    int  index          = readIndexFromSerializer(symbol);
+    auto entryFromIndex = symtab.at(index);
+
+    EXPECT_EQ(*entryFromIndex, string)
+            << "Index is " << index << " Entry from index is " << entryFromIndex->c_str();
+}
+
+
+TEST_F(StringTableTest, AddSingleEntry)
+{
+    builder().addString("foo");
+    StringTable table = builder().build();
+    checkTable(table);
+}
+
+TEST_F(StringTableTest, CanAccessWithAt)
+{
+    builder().addString("foo");
+    StringTable table = builder().build();
+    EXPECT_NO_THROW(table.at(0));
+    checkTable(table);
+}
+
+TEST_F(StringTableTest, CanAccessWithBracket)
+{
+    builder().addString("foo");
+    StringTable table = builder().build();
+    checkTable(table);
+    auto entry = table[0];
+    EXPECT_EQ(*entry, "foo");
+}
+
+TEST_F(StringTableTest, ThrowsOutOfRange)
+{
+    builder().addString("foo");
+    StringTable table = builder().build();
+    EXPECT_THROW(table.at(1), InternalError);
+    checkTable(table);
+}
+
+TEST_F(StringTableTest, StringCompareIsCorrect)
+{
+    auto        fooSymbol = builder().addString("foo");
+    StringTable table     = builder().build();
+    stringMatches(table, fooSymbol, "foo");
+    checkTable(table);
+}
+
+TEST_F(StringTableTest, AddTwoDistinctEntries)
+{
+    auto fooSymbol = builder().addString("foo");
+    auto barSymbol = builder().addString("Bar");
+
+    EXPECT_FALSE(fooSymbol == barSymbol);
+    compareDifferentIndices(builder(), fooSymbol, barSymbol, false);
+    EXPECT_TRUE("foo" == *fooSymbol);
+    EXPECT_TRUE("Bar" == *barSymbol);
+    auto table = builder().build();
+    stringMatches(table, fooSymbol, "foo");
+    stringMatches(table, barSymbol, "Bar");
+    checkTable(table);
+}
+
+TEST_F(StringTableTest, TryToAddDuplicates)
+{
+    auto fooSymbol = builder().addString("foo");
+    auto barSymbol = builder().addString("Bar");
+
+    EXPECT_FALSE(fooSymbol == barSymbol);
+    EXPECT_FALSE(fooSymbol->empty());
+    compareDifferentIndices(builder(), fooSymbol, barSymbol, false);
+    EXPECT_TRUE("foo" == *fooSymbol);
+    EXPECT_TRUE("Bar" == *barSymbol);
+
+    // Insert a duplicate element
+    auto anotherFooSymbol = builder().addString("foo");
+    // Insert element with different case
+    auto capitalFooSymbol = builder().addString("Foo");
+
+    // Check that no duplicate is made
+    EXPECT_TRUE(fooSymbol == anotherFooSymbol);
+    // Check case sensitivity
+    EXPECT_FALSE(fooSymbol == capitalFooSymbol);
+
+    // Check that underlying representation is same
+    EXPECT_TRUE("foo" == *anotherFooSymbol);
+    EXPECT_TRUE("foo" == *fooSymbol);
+    EXPECT_FALSE(*fooSymbol == *capitalFooSymbol);
+    EXPECT_TRUE("Bar" == *barSymbol);
+
+    // Check for correct behaviours with new and old symbols
+    compareDifferentIndices(builder(), fooSymbol, anotherFooSymbol, true);
+    compareDifferentIndices(builder(), barSymbol, anotherFooSymbol, false);
+    compareDifferentIndices(builder(), fooSymbol, barSymbol, false);
+    compareDifferentIndices(builder(), fooSymbol, capitalFooSymbol, false);
+    auto table = builder().build();
+    checkTable(table);
+}
+
+TEST_F(StringTableTest, AddLargeNumberOfEntries)
+{
+    int                           numStringsToAdd = 7; // Random number of strings.
+    std::vector<StringTableEntry> symbolsAdded;
+    symbolsAdded.reserve(numStringsToAdd);
+    for (int i = 0; i < numStringsToAdd; ++i)
+    {
+        symbolsAdded.push_back(builder().addString(toString(i)));
+    }
+    for (int i = 0; i < numStringsToAdd; ++i)
+    {
+        EXPECT_TRUE(toString(i) == *symbolsAdded[i]) << "index is " << i;
+    }
+    // Add something unrelated and check that indices still work afterward.
+    builder().addString("foobar");
+    for (int i = 0; i < numStringsToAdd; ++i)
+    {
+        EXPECT_TRUE(toString(i) == *symbolsAdded[i]) << "index is " << i;
+    }
+    auto table = builder().build();
+    for (int i = 0; i < numStringsToAdd; ++i)
+    {
+        stringMatches(table, symbolsAdded[i], toString(i).c_str());
+    }
+    checkTable(table);
+}
+
+TEST_F(StringTableTest, NoDuplicatesInLargeTable)
+{
+    int                           halfOfStringsToAdd   = 7; // Random number of strings.
+    int                           totalNumStringsToAdd = 2 * halfOfStringsToAdd;
+    std::vector<StringTableEntry> symbolsAdded;
+    symbolsAdded.reserve(halfOfStringsToAdd);
+    for (int i = 0; i < halfOfStringsToAdd; ++i)
+    {
+        symbolsAdded.push_back(builder().addString(toString(i)));
+    }
+
+    // We now try to mess around in the symtab.
+    auto bazSymbol = builder().addString("baz");
+
+    // Now try to add more symbols, also including those that are already there.
+    for (int i = 0; i < totalNumStringsToAdd; i++)
+    {
+        symbolsAdded.push_back(builder().addString(toString(i)));
+    }
+
+    //! Check that entries that should be equal are, and new ones are not.
+    for (int i = 0; i < halfOfStringsToAdd; i++)
+    {
+        compareDifferentIndices(builder(), symbolsAdded[i], symbolsAdded[halfOfStringsToAdd + i], true);
+        compareDifferentIndices(builder(), symbolsAdded[i], symbolsAdded[2 * halfOfStringsToAdd + i], false);
+        compareDifferentIndices(builder(), symbolsAdded[i], bazSymbol, false);
+    }
+    EXPECT_TRUE("baz" == *bazSymbol);
+    symbolsAdded.emplace_back(bazSymbol);
+    auto table = builder().build();
+    checkTable(table);
+}
+
+TEST_F(StringTableTest, CanWriteToBuffer)
+{
+    builder().addString("foo");
+    builder().addString("bar");
+    builder().addString("baz");
+    auto               finalTable = builder().build();
+    InMemorySerializer writer;
+    finalTable.serializeStringTable(&writer);
+
+    auto buffer = writer.finishAndGetBuffer();
+    EXPECT_EQ(buffer.size(), 37); // 4 (size) + 3*(8 (string size) + 3*1 (char size) )
+}
+
+TEST_F(StringTableTest, Roundtrip)
+{
+    // First generate a buffer from a string table
+    builder().addString("foo");
+    builder().addString("bar");
+    builder().addString("baz");
+    auto               finalTable = builder().build();
+    InMemorySerializer writer;
+    finalTable.serializeStringTable(&writer);
+
+    auto buffer = writer.finishAndGetBuffer();
+    EXPECT_EQ(buffer.size(), 37); // 4 (size) + 3*(8 (string size) + 3*1 (char size) )
+
+    // Now try to make a new table from it.
+    InMemoryDeserializer reader(buffer, false);
+    StringTable          readInTable(&reader);
+    EXPECT_EQ(*(finalTable.at(0)), *(readInTable.at(0)));
+    EXPECT_EQ(*(finalTable.at(1)), *(readInTable.at(1)));
+    EXPECT_EQ(*(finalTable.at(2)), *(readInTable.at(2)));
+}
+
+TEST_F(StringTableTest, RoundtripWithCorrectStringIndices)
+{
+    std::vector<StringTableEntry> testEntries;
+    // First generate a buffer from a string table
+    testEntries.emplace_back(builder().addString("foo"));
+    testEntries.emplace_back(builder().addString("bar"));
+    testEntries.emplace_back(builder().addString("baz"));
+    auto               finalTable = builder().build();
+    InMemorySerializer writer;
+    finalTable.serializeStringTable(&writer);
+    for (const auto& stringEntry : testEntries)
+    {
+        stringEntry.serialize(&writer);
+    }
+
+    auto buffer = writer.finishAndGetBuffer();
+    EXPECT_EQ(buffer.size(), 49); // 4 (size) + 3*(8 (string size) + 3*1 (char size) + 3*4 (int size))
+
+    // Now try to make a new table from it.
+    InMemoryDeserializer          reader(buffer, false);
+    StringTable                   readInTable(&reader);
+    std::vector<StringTableEntry> deserializedEntries;
+    for (index gmx_unused i = 0; i < gmx::ssize(testEntries); i++)
+    {
+        deserializedEntries.emplace_back(readStringTableEntry(&reader, readInTable));
+    }
+    EXPECT_EQ(*(finalTable.at(0)), *(deserializedEntries[0]));
+    EXPECT_EQ(*(finalTable.at(1)), *(deserializedEntries[1]));
+    EXPECT_EQ(*(finalTable.at(2)), *(deserializedEntries[2]));
+}
+
+
 namespace
 {
 
-class SymtabTest : public ::testing::Test
+class LegacySymtabTest : public ::testing::Test
 {
 public:
-    SymtabTest() { open_symtab(&symtab_); }
-    ~SymtabTest() override
+    LegacySymtabTest() { open_symtab(&symtab_); }
+    ~LegacySymtabTest() override
     {
         done_symtab(&symtab_);
         EXPECT_EQ(symtab_.nr, 0);
@@ -94,7 +423,7 @@ private:
     std::unique_ptr<TestReferenceChecker> checker_;
 };
 
-void SymtabTest::dumpSymtab()
+void LegacySymtabTest::dumpSymtab()
 {
     int                      nr     = symtab_.nr;
     t_symbuf*                symbuf = symtab_.symbuf;
@@ -161,13 +490,13 @@ void compareDifferentHandles(t_symtab* symtab, char** firstSymbol, char** otherS
     EXPECT_EQ(expectedOutcome, entriesAreEqual(symtab, otherSymbol, firstIndex));
 }
 
-TEST_F(SymtabTest, EmptyOnOpen)
+TEST_F(LegacySymtabTest, EmptyOnOpen)
 {
     ASSERT_EQ(0, symtab()->nr);
     ASSERT_EQ(nullptr, symtab()->symbuf);
 }
 
-TEST_F(SymtabTest, AddSingleEntry)
+TEST_F(LegacySymtabTest, AddSingleEntry)
 {
     auto fooSymbol = put_symtab(symtab(), "Foo");
     ASSERT_EQ(1, symtab()->nr);
@@ -175,7 +504,7 @@ TEST_F(SymtabTest, AddSingleEntry)
     EXPECT_STREQ("Foo", *fooSymbol);
 }
 
-TEST_F(SymtabTest, AddTwoDistinctEntries)
+TEST_F(LegacySymtabTest, AddTwoDistinctEntries)
 {
     auto fooSymbol = put_symtab(symtab(), "Foo");
     auto barSymbol = put_symtab(symtab(), "Bar");
@@ -190,7 +519,7 @@ TEST_F(SymtabTest, AddTwoDistinctEntries)
     EXPECT_STREQ("Bar", *barSymbol);
 }
 
-TEST_F(SymtabTest, TryToAddDuplicates)
+TEST_F(LegacySymtabTest, TryToAddDuplicates)
 {
     auto fooSymbol = put_symtab(symtab(), "Foo");
     auto barSymbol = put_symtab(symtab(), "Bar");
@@ -220,7 +549,7 @@ TEST_F(SymtabTest, TryToAddDuplicates)
     compareDifferentHandles(symtab(), fooSymbol, barSymbol, false);
 }
 
-TEST_F(SymtabTest, AddLargeNumberOfEntries)
+TEST_F(LegacySymtabTest, AddLargeNumberOfEntries)
 {
     int                 numStringsToAdd = 7; // Larger than c_maxBufSize limit for size of symbuf.
     std::vector<char**> symbolsAdded;
@@ -249,7 +578,7 @@ TEST_F(SymtabTest, AddLargeNumberOfEntries)
     dumpSymtab();
 }
 
-TEST_F(SymtabTest, NoDuplicatesInLargeTable)
+TEST_F(LegacySymtabTest, NoDuplicatesInLargeTable)
 {
     int halfOfStringsToAdd   = 7; // Larger than c_maxBufSize limit for size of symbuf.
     int totalNumStringsToAdd = 2 * halfOfStringsToAdd;
