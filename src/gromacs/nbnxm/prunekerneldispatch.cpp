@@ -39,6 +39,7 @@
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "clusterdistancekerneltype.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"
 #include "kernels_reference/kernel_ref_prune.h"
@@ -48,16 +49,14 @@
 void
 PairlistSets::dispatchPruneKernel(const Nbnxm::InteractionLocality  iLocality,
                                   const nbnxn_atomdata_t           *nbat,
-                                  const rvec                       *shift_vec,
-                                  const Nbnxm::KernelType           kernelType)
+                                  const rvec                       *shift_vec)
 {
-    pairlistSet(iLocality).dispatchPruneKernel(nbat, shift_vec, kernelType);
+    pairlistSet(iLocality).dispatchPruneKernel(nbat, shift_vec);
 }
 
 void
 PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t  *nbat,
-                                 const rvec              *shift_vec,
-                                 const Nbnxm::KernelType  kernelType)
+                                 const rvec              *shift_vec)
 {
     const real rlistInner = params_.rlistInner;
 
@@ -72,15 +71,15 @@ PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t  *nbat,
     {
         NbnxnPairlistCpu *nbl = &cpuLists_[i];
 
-        switch (kernelType)
+        switch (getClusterDistanceKernelType(params_.pairlistType, *nbat))
         {
-            case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
+            case ClusterDistanceKernelType::CpuSimd_4xM:
                 nbnxn_kernel_prune_4xn(nbl, nbat, shift_vec, rlistInner);
                 break;
-            case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
+            case ClusterDistanceKernelType::CpuSimd_2xMM:
                 nbnxn_kernel_prune_2xnn(nbl, nbat, shift_vec, rlistInner);
                 break;
-            case Nbnxm::KernelType::Cpu4x4_PlainC:
+            case ClusterDistanceKernelType::CpuPlainC:
                 nbnxn_kernel_prune_ref(nbl, nbat, shift_vec, rlistInner);
                 break;
             default:
@@ -93,7 +92,7 @@ void
 nonbonded_verlet_t::dispatchPruneKernelCpu(const Nbnxm::InteractionLocality  iLocality,
                                            const rvec                       *shift_vec)
 {
-    pairlistSets_->dispatchPruneKernel(iLocality, nbat.get(), shift_vec, kernelSetup_.kernelType);
+    pairlistSets_->dispatchPruneKernel(iLocality, nbat.get(), shift_vec);
 }
 
 void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)

@@ -61,6 +61,8 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 
+#include "pairlistparams.h"
+
 namespace Nbnxm
 {
 

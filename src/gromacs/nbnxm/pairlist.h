@@ -36,8 +36,6 @@
 #ifndef GMX_NBNXM_PAIRLIST_H
 #define GMX_NBNXM_PAIRLIST_H
 
-#include "config.h"
-
 #include <cstddef>
 
 #include "gromacs/gpu_utils/hostallocator.h"
@@ -53,6 +51,7 @@
 #include "gromacs/nbnxm/constants.h"
 
 #include "locality.h"
+#include "pairlistparams.h"
 
 struct NbnxnPairlistCpuWork;
 struct NbnxnPairlistGpuWork;
@@ -65,58 +64,6 @@ using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
 /* Convenience type for vector that avoids initialization at resize() */
 template<typename T>
 using FastVector = std::vector < T, gmx::DefaultInitializationAllocator < T>>;
-
-/* With CPU kernels the i-cluster size is always 4 atoms. */
-static constexpr int c_nbnxnCpuIClusterSize = 4;
-
-/* With GPU kernels the i and j cluster size is 8 atoms for CUDA and can be set at compile time for OpenCL */
-#if GMX_GPU == GMX_GPU_OPENCL
-static constexpr int c_nbnxnGpuClusterSize = GMX_OPENCL_NB_CLUSTER_SIZE;
-#else
-static constexpr int c_nbnxnGpuClusterSize = 8;
-#endif
-
-/* The number of clusters in a pair-search cell, used for GPU */
-static constexpr int c_gpuNumClusterPerCellZ = 2;
-static constexpr int c_gpuNumClusterPerCellY = 2;
-static constexpr int c_gpuNumClusterPerCellX = 2;
-static constexpr int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ*c_gpuNumClusterPerCellY*c_gpuNumClusterPerCellX;
-
-
-/* In CUDA the number of threads in a warp is 32 and we have cluster pairs
- * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves.
- */
-static constexpr int c_nbnxnGpuClusterpairSplit = 2;
-
-/* The fixed size of the exclusion mask array for a half cluster pair */
-static constexpr int c_nbnxnGpuExclSize = c_nbnxnGpuClusterSize*c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit;
-
-//! The available pair list types
-enum class PairlistType : int
-{
-    Simple4x2,
-    Simple4x4,
-    Simple4x8,
-    HierarchicalNxN,
-    Count
-};
-
-//! Gives the i-cluster size for each pairlist type
-static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType =
-{ {
-      c_nbnxnCpuIClusterSize,
-      c_nbnxnCpuIClusterSize,
-      c_nbnxnCpuIClusterSize,
-      c_nbnxnGpuClusterSize
-  } };
-//! Gives the j-cluster size for each pairlist type
-static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType =
-{ {
-      2,
-      4,
-      8,
-      c_nbnxnGpuClusterSize
-  } };
 
 /* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs

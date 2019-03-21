@@ -36,9 +36,7 @@
 /*! \internal \file
  *
  * \brief
- * Declares the PairlistParams class
- *
- * This class holds the Nbnxm pairlist parameters.
+ * Declares the PairlistType enum and PairlistParams class
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
@@ -47,17 +45,74 @@
 #ifndef GMX_NBNXM_PAIRLISTPARAMS_H
 #define GMX_NBNXM_PAIRLISTPARAMS_H
 
+#include "config.h"
+
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 #include "locality.h"
-
-enum class PairlistType;
 
 namespace Nbnxm
 {
 enum class KernelType;
 }
 
+//! The i-cluster size for CPU kernels, always 4 atoms
+static constexpr int c_nbnxnCpuIClusterSize = 4;
+
+//! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at compile time for OpenCL
+#if GMX_GPU == GMX_GPU_OPENCL
+static constexpr int c_nbnxnGpuClusterSize = GMX_OPENCL_NB_CLUSTER_SIZE;
+#else
+static constexpr int c_nbnxnGpuClusterSize = 8;
+#endif
+
+//! The number of clusters along Z in a pair-search grid cell for GPU lists
+static constexpr int c_gpuNumClusterPerCellZ = 2;
+//! The number of clusters along Y in a pair-search grid cell for GPU lists
+static constexpr int c_gpuNumClusterPerCellY = 2;
+//! The number of clusters along X in a pair-search grid cell for GPU lists
+static constexpr int c_gpuNumClusterPerCellX = 2;
+//! The number of clusters in a pair-search grid cell for GPU lists
+static constexpr int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ*c_gpuNumClusterPerCellY*c_gpuNumClusterPerCellX;
+
+
+/*! \brief The number of sub-parts used for data storage for a GPU cluster pair
+ *
+ * In CUDA the number of threads in a warp is 32 and we have cluster pairs
+ * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves.
+ */
+static constexpr int c_nbnxnGpuClusterpairSplit = 2;
+
+//! The fixed size of the exclusion mask array for a half GPU cluster pair
+static constexpr int c_nbnxnGpuExclSize = c_nbnxnGpuClusterSize*c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit;
+
+//! The available pair list types
+enum class PairlistType : int
+{
+    Simple4x2,
+    Simple4x4,
+    Simple4x8,
+    HierarchicalNxN,
+    Count
+};
+
+//! Gives the i-cluster size for each pairlist type
+static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType =
+{ {
+      c_nbnxnCpuIClusterSize,
+      c_nbnxnCpuIClusterSize,
+      c_nbnxnCpuIClusterSize,
+      c_nbnxnGpuClusterSize
+  } };
+//! Gives the j-cluster size for each pairlist type
+static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType =
+{ {
+      2,
+      4,
+      8,
+      c_nbnxnGpuClusterSize
+  } };
 
 /*! \internal
  * \brief The setup for generating and pruning the nbnxn pair list.

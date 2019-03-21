@@ -59,11 +59,6 @@ class PairSearch;
 struct t_blocka;
 struct t_nrnb;
 
-namespace Nbnxm
-{
-enum class KernelType;
-}
-
 
 class PairlistSets
 {
@@ -77,15 +72,13 @@ class PairlistSets
                        PairSearch                 *pairSearch,
                        nbnxn_atomdata_t           *nbat,
                        const t_blocka             *excl,
-                       Nbnxm::KernelType           kernelbType,
                        int64_t                     step,
                        t_nrnb                     *nrnb);
 
         //! Dispatches the dynamic pruning kernel for the given locality
         void dispatchPruneKernel(Nbnxm::InteractionLocality  iLocality,
                                  const nbnxn_atomdata_t     *nbat,
-                                 const rvec                 *shift_vec,
-                                 Nbnxm::KernelType           kernelType);
+                                 const rvec                 *shift_vec);
 
         //! Returns the pair list parameters
         const PairlistParams &params() const

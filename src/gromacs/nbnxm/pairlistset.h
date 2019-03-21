@@ -50,16 +50,17 @@
 #define GMX_NBNXM_PAIRLISTSET_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #include "locality.h"
 
+struct nbnxn_atomdata_t;
 struct PairlistParams;
 struct PairsearchWork;
 struct SearchCycleCounting;
+struct t_blocka;
 struct t_nrnb;
 
 namespace Nbnxm
@@ -84,15 +85,13 @@ class PairlistSet
                                 gmx::ArrayRef<PairsearchWork>  searchWork,
                                 nbnxn_atomdata_t              *nbat,
                                 const t_blocka                *excl,
-                                Nbnxm::KernelType              kernelType,
                                 int                            minimumIlistCountForGpuBalancing,
                                 t_nrnb                        *nrnb,
                                 SearchCycleCounting           *searchCycleCounting);
 
         //! Dispatch the kernel for dynamic pairlist pruning
         void dispatchPruneKernel(const nbnxn_atomdata_t *nbat,
-                                 const rvec             *shift_vec,
-                                 Nbnxm::KernelType       kernelType);
+                                 const rvec             *shift_vec);
 
         //! Returns the locality
         Nbnxm::InteractionLocality locality() const
