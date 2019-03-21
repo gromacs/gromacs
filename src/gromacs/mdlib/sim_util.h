@@ -40,8 +40,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
-struct nonbonded_verlet_t;
-
 /*! \brief Parallellizes put_atoms_in_box()
  *
  * This wrapper function around put_atoms_in_box() with the ugly manual
@@ -52,9 +50,5 @@ struct nonbonded_verlet_t;
  * \param[inout] x      The coordinates of the atoms
  */
 void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x);
-
-/* Routine in sim_util.c */
-
-gmx_bool use_GPU(const nonbonded_verlet_t *nbv);
 
 #endif

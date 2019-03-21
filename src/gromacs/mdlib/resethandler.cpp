@@ -49,10 +49,10 @@
 #include "gromacs/ewald/pme_load_balancing.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -174,7 +174,7 @@ bool ResetHandler::resetCountersImpl(
                 "step %s: resetting all time and cycle counters",
                 gmx_step_str(step, sbuf));
 
-        if (use_GPU(nbv))
+        if (nbv && nbv->useGpu())
         {
             Nbnxm::gpu_reset_timings(nbv);
         }
@@ -184,7 +184,7 @@ bool ResetHandler::resetCountersImpl(
             pme_gpu_reset_timings(pme);
         }
 
-        if (use_GPU(nbv) || pme_gpu_task_enabled(pme))
+        if ((nbv && nbv->useGpu()) || pme_gpu_task_enabled(pme))
         {
             resetGpuProfiler();
         }

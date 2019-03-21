@@ -93,7 +93,6 @@
 #include "gromacs/mdlib/ppforceworkload.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sighandler.h"
-#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
@@ -522,8 +521,9 @@ static void finish_run(FILE *fplog,
 
     if (printReport)
     {
-        auto                    nbnxn_gpu_timings = (use_GPU(nbv) && nbv != nullptr) ? Nbnxm::gpu_get_timings(nbv->gpu_nbv) : nullptr;
+        auto                    nbnxn_gpu_timings = (nbv != nullptr && nbv->useGpu()) ? Nbnxm::gpu_get_timings(nbv->gpu_nbv) : nullptr;
         gmx_wallclock_gpu_pme_t pme_gpu_timings   = {};
+
         if (pme_gpu_task_enabled(pme))
         {
             pme_gpu_get_timings(pme, &pme_gpu_timings);
