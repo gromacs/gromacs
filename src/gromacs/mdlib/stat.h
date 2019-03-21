@@ -34,27 +34,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MDLIB_SIM_UTIL_H
-#define GMX_MDLIB_SIM_UTIL_H
+
+#ifndef GMX_MDLIB_STAT_H
+#define GMX_MDLIB_STAT_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
 
-struct nonbonded_verlet_t;
+struct gmx_ekindata_t;
+struct gmx_enerdata_t;
+struct t_vcm;
+struct t_inputrec;
+struct t_commrec;
 
-/*! \brief Parallellizes put_atoms_in_box()
- *
- * This wrapper function around put_atoms_in_box() with the ugly manual
- * workload splitting is needed to avoid silently introducing multithreading
- * in tools.
- * \param[in]    ePBC   The pbc type
- * \param[in]    box    The simulation box
- * \param[inout] x      The coordinates of the atoms
- */
-void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x);
+namespace gmx
+{
+class Constraints;
+}
 
-/* Routine in sim_util.c */
+typedef struct gmx_global_stat *gmx_global_stat_t;
 
-gmx_bool use_GPU(const nonbonded_verlet_t *nbv);
+gmx_global_stat_t global_stat_init(const t_inputrec *ir);
 
-#endif
+void global_stat_destroy(gmx_global_stat_t gs);
+
+/*! \brief All-reduce energy-like quantities over cr->mpi_comm_mysim  */
+void global_stat(const gmx_global_stat *gs,
+                 const t_commrec *cr, gmx_enerdata_t *enerd,
+                 tensor fvir, tensor svir, rvec mu_tot,
+                 const t_inputrec *inputrec,
+                 gmx_ekindata_t *ekind,
+                 const gmx::Constraints *constr, t_vcm *vcm,
+                 int nsig, real *sig,
+                 int *totalNumberOfBondedInteractions,
+                 gmx_bool bSumEkinhOld, int flags);
+
+/*! \brief Returns TRUE if io should be done */
+inline bool do_per_step(int64_t step, int64_t nstep)
+{
+    if (nstep != 0)
+    {
+        return (step % nstep) == 0;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+#endif //GMX_MDLIB_STAT_H

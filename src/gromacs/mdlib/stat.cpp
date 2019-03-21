@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "stat.h"
+
 #include <cstdio>
 #include <cstring>
 
@@ -49,7 +51,6 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/rbin.h"
-#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -377,17 +378,5 @@ void global_stat(const gmx_global_stat *gs,
     if (nsig > 0)
     {
         extract_binr(rb, isig, nsig, sig);
-    }
-}
-
-bool do_per_step(int64_t step, int64_t nstep)
-{
-    if (nstep != 0)
-    {
-        return (step % nstep) == 0;
-    }
-    else
-    {
-        return false;
     }
 }
