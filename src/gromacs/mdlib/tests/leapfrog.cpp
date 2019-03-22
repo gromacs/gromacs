@@ -139,6 +139,9 @@ class IntegratorTest : public ::testing::TestWithParam<IntegratorTestParameters>
             v_.resize(numAtoms_);
             f_.resize(numAtoms_);
             inverseMasses_.resize(numAtoms_);
+
+            mdAtoms_.nr = numAtoms_;
+
             for (unsigned i = 0; i < x_.size(); i++)
             {
                 // Typical PBC box size is tens of nanometers
@@ -160,7 +163,6 @@ class IntegratorTest : public ::testing::TestWithParam<IntegratorTestParameters>
                 // Atom masses are ~1-100 g/mol
                 inverseMasses_[i] = 1.0/(1.0 + i%100);
             }
-
             mdAtoms_.invmass = inverseMasses_.data();
         }
 
@@ -188,22 +190,27 @@ TEST_P(IntegratorTest, SimpleIntegration){
 
     init(numAtoms, timestep, v0, f0);
 
-    std::unique_ptr<LeapFrogCuda> integrator = std::make_unique<LeapFrogCuda>(numAtoms);
+    std::unique_ptr<LeapFrogCuda> integrator = std::make_unique<LeapFrogCuda>();
 
     integrator->set(mdAtoms_);
-    integrator->copyCoordinatesToGpu((rvec*)(x_.data()));
-    integrator->copyVelocitiesToGpu((rvec*)(v_.data()));
-    integrator->copyForcesToGpu((rvec*)(f_.data()));
 
     for (int step = 0; step < nStep; step++)
     {
-        integrator->integrate(timestep_);
-        integrator->copyCoordinatesFromGpu((rvec*)(xPrime_.data()));
-        integrator->copyCoordinatesToGpu((rvec*)(xPrime_.data()));
-    }
+        integrator->copyIntegrateCopy(numAtoms,
+                                      (rvec*)(x_.data()),
+                                      (rvec*)(xPrime_.data()),
+                                      (rvec*)(v_.data()),
+                                      (rvec*)(f_.data()),
+                                      timestep_);
 
-    integrator->copyCoordinatesFromGpu((rvec*)(xPrime_.data()));
-    integrator->copyVelocitiesFromGpu((rvec*)(v_.data()));
+        for (int i = 0; i < numAtoms; i++)
+        {
+            for (int d = 0; d < DIM; d++)
+            {
+                x_.at(i)[d] = xPrime_.at(i)[d];
+            }
+        }
+    }
 
     real totalTime = nStep*timestep;
     // TODO For the case of constant force, the numerical scheme is exact and

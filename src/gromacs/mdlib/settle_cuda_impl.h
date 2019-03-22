@@ -143,6 +143,7 @@ static void initializeProjectionMatrix(const real invmO, const real invmH,
  * \param[in]  dOH  Target O-H bond length
  * \param[in]  dHH  Target H-H bond length
  */
+gmx_unused // Temporary solution to keep clang happy
 static void initSettleParameters(SettleCuda::SettleParameters *p,
                                  const real mO,  const real mH,
                                  const real dOH, const real dHH)
@@ -190,29 +191,22 @@ class SettleCuda::Impl
          *  from the topology data (mtop), check their values for consistency and calls the
          *  following constructor.
          *
-         * \param[in] numAtoms  Number of atoms that will be handles by SETTLE.
-         *                      Used to compute the memory size in allocations and copy.
          * \param[in] mtop      Topology of the system to gen the masses for O and H atoms and
          *                      target O-H and H-H distances. These values are also checked for
          *                      consistency.
          */
-        Impl(const int          numAtoms,
-             const gmx_mtop_t  &mtop);
+        Impl(const gmx_mtop_t  &mtop);
 
         /*! \brief Create SETTLE object
          *
-         * \param[in] numAtoms  Number of atoms that will be handles by SETTLE.
-         *                      Used to compute the memory size in allocations and copy.
          * \param[in] mO        Mass of the oxygen atom.
          * \param[in] mH        Mass of the hydrogen atom.
          * \param[in] dOH       Target distance for O-H bonds.
          * \param[in] dHH       Target for the distance between two hydrogen atoms.
          */
-        Impl(const int numAtoms,
-             const real mO,  const real mH,
+        Impl(const real mO,  const real mH,
              const real dOH, const real dHH);
 
-        /*! \brief Destructor.*/
         ~Impl();
 
         /*! \brief Apply SETTLE.
@@ -223,16 +217,56 @@ class SettleCuda::Impl
          * memory. Method uses this class data structures which should be
          * updated when needed using update method.
          *
-         * \param[in] updateVelocities  If the velocities should be constrained.
-         * \param[in] invdt             Recirocal timestep (to scale Lagrange
-         *                              multipliers when velocities are updated)
-         * \param[in] computeVirial     If virial should be updated.
-         * \param[in,out] virialScaled  Scaled virial tensor to be updated.
+         * \param[in]     d_x               Coordinates before timestep (in GPU memory)
+         * \param[in,out] d_xp              Coordinates after timestep (in GPU memory). The
+         *                                  resulting constrained codrdinates will be saved here.
+         * \param[in]     updateVelocities  If the velocities should be updated.
+         * \param[in,out] d_v               Velocities to update (in GPU memory, can be nullptr
+         *                                  if not updated)
+         * \param[in]     invdt             Reciprocal timestep (to scale Lagrange
+         *                                  multipliers when velocities are updated)
+         * \param[in]     computeVirial     If virial should be updated.
+         * \param[in,out] virialScaled      Scaled virial tensor to be updated.
          */
-        void apply(const bool       updateVelocities,
-                   const real       invdt,
-                   const bool       computeVirial,
-                   tensor           virialScaled);
+        void apply(const float3 *d_x,
+                   float3       *d_xp,
+                   const bool    updateVelocities,
+                   float3       *d_v,
+                   const real    invdt,
+                   const bool    computeVirial,
+                   tensor        virialScaled);
+
+        /*! \brief Apply SETTLE to the coordinates/velocities stored in CPU memory.
+         *
+         * This method should not be used in any code-path, where performance is of any value.
+         * Only suitable for test and will be removed in future patch sets.
+         * Allocates GPU memory, copies data from CPU, applies SETTLE to coordinates and,
+         * if requested, to velocities, copies the results back, frees GPU memory.
+         * Method uses this class data structures which should be filled with set() and setPbc()
+         * methods.
+         *
+         * \todo Remove this method
+         *
+         * \param[in]     numAtoms          Number of atoms
+         * \param[in]     h_x               Coordinates before timestep (in CPU memory)
+         * \param[in,out] h_xp              Coordinates after timestep (in CPU memory). The
+         *                                  resulting constrained coordinates will be saved here.
+         * \param[in]     updateVelocities  If the velocities should be updated.
+         * \param[in,out] h_v               Velocities to update (in CPU memory, can be nullptr
+         *                                  if not updated)
+         * \param[in]     invdt             Reciprocal timestep (to scale Lagrange
+         *                                  multipliers when velocities are updated)
+         * \param[in]     computeVirial     If virial should be updated.
+         * \param[in,out] virialScaled      Scaled virial tensor to be updated.
+         */
+        void copyApplyCopy(const int   numAtoms,
+                           const rvec *h_x,
+                           rvec       *h_xp,
+                           const bool  updateVelocities,
+                           rvec       *h_v,
+                           const real  invdt,
+                           const bool  computeVirial,
+                           tensor      virialScaled);
 
         /*! \brief
          * Update data-structures (e.g. after NB search step).
@@ -261,58 +295,6 @@ class SettleCuda::Impl
          */
         void setPbc(const t_pbc *pbc);
 
-        /*! \brief
-         * Copy coordinates from provided CPU location to GPU.
-         *
-         * Copies the coordinates before the integration step (x) and coordinates
-         * after the integration step (xp) from the provided CPU location to GPU.
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_x  CPU pointer where coordinates should be copied from.
-         * \param[in] h_xp CPU pointer where coordinates should be copied from.
-         */
-        void copyCoordinatesToGpu(const rvec *h_x, const rvec *h_xp);
-
-        /*! \brief
-         * Copy velocities from provided CPU location to GPU.
-         *
-         * Nothing is done if the argument is a nullptr.
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  CPU pointer where velocities should be copied from.
-         */
-        void copyVelocitiesToGpu(const rvec *h_v);
-
-        /*! \brief
-         * Copy coordinates from GPU to provided CPU location.
-         *
-         * Copies the constrained coordinates to the provided location. The coordinates
-         * are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[out] h_xp CPU pointer where coordinates should be copied to.
-         */
-        void copyCoordinatesFromGpu(rvec *h_xp);
-
-        /*! \brief
-         * Copy velocities from GPU to provided CPU location.
-         *
-         * The velocities are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  Pointer to velocities data.
-         */
-        void copyVelocitiesFromGpu(rvec *h_v);
-
-        /*! \brief
-         * Set the GPU-memory x, xprime and v pointers.
-         *
-         * Data is not copied. The data are assumed to be in float3/fvec format
-         * (float3 is used internally, but the data layout should be identical).
-         *
-         * \param[in] d_x  Pointer to the coordinates before integrator update (on GPU)
-         * \param[in] d_xp Pointer to the coordinates after integrator update, before update (on GPU)
-         * \param[in] d_v  Pointer to the velocities before integrator update (on GPU)
-         */
-        void setXVPointers(rvec *d_x, rvec *d_xp, rvec *d_v);
 
     private:
 
@@ -320,16 +302,6 @@ class SettleCuda::Impl
         cudaStream_t        stream_;
         //! Periodic boundary data
         PbcAiuc             pbcAiuc_;
-
-        //! Number of atoms
-        int                 numAtoms_;
-
-        //! Coordinates before the timestep (in the GPU memory)
-        float3             *d_x_;
-        //! Coordinates after the timestep, before constraining (on GPU).
-        float3             *d_xp_;
-        //! Velocities of atoms (on GPU)
-        float3             *d_v_;
 
         //! Scaled virial tensor (9 reals, GPU)
         std::vector<float>  h_virialScaled_;

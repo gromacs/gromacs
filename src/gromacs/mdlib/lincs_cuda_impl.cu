@@ -40,9 +40,9 @@
  * using CUDA, including class initialization, data-structures management
  * and GPU kernel.
  *
- * \note Management of coordinates, velocities, CUDA stream and periodic boundary exists here as a temporary
- *       scaffolding to allow this class to be used as a stand-alone unit. The scaffolding is intended to be
- *       removed once constraints are integrated with update module.
+ * \note Management of CUDA stream and periodic boundary exists here as a temporary
+ *       scaffolding to allow this class to be used as a stand-alone unit. The scaffolding
+ *        is intended to be removed once constraints are fully integrated with update module.
  * \todo Reconsider naming, i.e. "cuda" suffics should be changed to "gpu".
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
@@ -101,6 +101,8 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  *        4. Introduce mapping of thread id to both single constraint and single atom, thus designating
  *           Nth threads to deal with Nat <= Nth coupled atoms and Nc <= Nth coupled constraints.
  *       See Redmine issue #2885 for details (https://redmine.gromacs.org/issues/2885)
+ * \todo The use of __restrict__  for gm_xp and gm_v causes failure, probably because of the atomic
+         operations. Investigate this issue further.
  *
  * \param[in,out] kernelParams  All parameters and pointers for the kernel condensed in single struct.
  * \param[in]     invdt         Inverse timestep (needed to update velocities).
@@ -108,14 +110,15 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
 template <bool updateVelocities, bool computeVirial>
 __launch_bounds__(c_maxThreadsPerBlock)
 __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
+                             const float3* __restrict__  gm_x,
+                             float3*                     gm_xp,
+                             float3*                     gm_v,
                              const float                 invdt)
 {
     const PbcAiuc               pbcAiuc                     = kernelParams.pbcAiuc;
     const int                   numConstraintsThreads       = kernelParams.numConstraintsThreads;
     const int                   numIterations               = kernelParams.numIterations;
     const int                   expansionOrder              = kernelParams.expansionOrder;
-    const float3* __restrict__  gm_x                        = kernelParams.d_x;
-    float3*                     gm_xp                       = kernelParams.d_xp;
     const int2*   __restrict__  gm_constraints              = kernelParams.d_constraints;
     const float*  __restrict__  gm_constraintsTargetLengths = kernelParams.d_constraintsTargetLengths;
     const int*    __restrict__  gm_coupledConstraintsCounts = kernelParams.d_coupledConstraintsCounts;
@@ -123,7 +126,6 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
     const float*  __restrict__  gm_massFactors              = kernelParams.d_massFactors;
     float*  __restrict__        gm_matrixA                  = kernelParams.d_matrixA;
     const float*  __restrict__  gm_inverseMasses            = kernelParams.d_inverseMasses;
-    float3*                     gm_v                        = kernelParams.d_v;
     float*  __restrict__        gm_virialScaled             = kernelParams.d_virialScaled;
 
     int threadIndex                                         = blockIdx.x*blockDim.x+threadIdx.x;
@@ -429,24 +431,13 @@ inline auto getLincsKernelPtr(const bool  updateVelocities,
     return kernelPtr;
 }
 
-/*! \brief Apply LINCS.
- *
- * Applies LINCS to coordinates and velocities, stored on GPU.
- * Data at pointers xPrime and v (class fields) change in the GPU
- * memory. The results are not automatically copied back to the CPU
- * memory. Method uses this class data structures which should be
- * updated when needed using update method.
- *
- * \param[in] updateVelocities  If the velocities should be constrained.
- * \param[in] invdt             Reciprocal timestep (to scale Lagrange
- *                              multipliers when velocities are updated)
- * \param[in] computeVirial     If virial should be updated.
- * \param[in,out] virialScaled  Scaled virial tensor to be updated.
- */
-void LincsCuda::Impl::apply(const bool  updateVelocities,
-                            const real  invdt,
-                            const bool  computeVirial,
-                            tensor      virialScaled)
+void LincsCuda::Impl::apply(const float3 *d_x,
+                            float3       *d_xp,
+                            const bool    updateVelocities,
+                            float3       *d_v,
+                            const real    invdt,
+                            const bool    computeVirial,
+                            tensor        virialScaled)
 {
     ensureNoPendingCudaError("In CUDA version of LINCS");
 
@@ -484,9 +475,16 @@ void LincsCuda::Impl::apply(const bool  updateVelocities,
     }
     config.stream           = stream_;
 
+    // This is to satisfy prepareGpuKernelArguments(...)
+    // It there a better way?
+    const float3 * gm_x  = d_x;
+    float3       * gm_xp = d_xp;
+    float3       * gm_v  = d_v;
+
     const auto     kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                           &kernelParams_,
-                                                          &invdt);
+                                                          &gm_x, &gm_xp,
+                                                          &gm_v, &invdt);
 
     launchGpuKernel(kernelPtr, config, nullptr,
                     "lincs_kernel<updateVelocities, computeVirial>", kernelArgs);
@@ -515,17 +513,45 @@ void LincsCuda::Impl::apply(const bool  updateVelocities,
     return;
 }
 
-/*! \brief Create LINCS object
- *
- * \param[in] numAtoms        Number of atoms that will be handles by LINCS.
- *                            Used to compute the memory size in allocations and copy.
- * \param[in] numIterations   Number of iterations used to compute inverse matrix.
- * \param[in] expansionOrder  LINCS projection order for correcting the direction of constraint.
- */
-LincsCuda::Impl::Impl(int numAtoms,
-                      int numIterations,
+void LincsCuda::Impl::copyApplyCopy(const int   numAtoms,
+                                    const rvec *h_x,
+                                    rvec       *h_xp,
+                                    bool        updateVelocities,
+                                    rvec       *h_v,
+                                    real        invdt,
+                                    bool        computeVirial,
+                                    tensor      virialScaled)
+{
+
+    float3 *d_x, *d_xp, *d_v;
+
+    allocateDeviceBuffer(&d_x,  numAtoms, nullptr);
+    allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
+    allocateDeviceBuffer(&d_v,  numAtoms, nullptr);
+
+    copyToDeviceBuffer(&d_x, (float3*)h_x, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_xp, (float3*)h_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    if (updateVelocities)
+    {
+        copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    }
+    apply(d_x, d_xp,
+          updateVelocities, d_v, invdt,
+          computeVirial, virialScaled);
+
+    copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    if (updateVelocities)
+    {
+        copyFromDeviceBuffer((float3*)h_v, &d_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    }
+
+    freeDeviceBuffer(&d_x);
+    freeDeviceBuffer(&d_xp);
+    freeDeviceBuffer(&d_v);
+}
+
+LincsCuda::Impl::Impl(int numIterations,
                       int expansionOrder)
-    : numAtoms_(numAtoms)
 {
     kernelParams_.numIterations              = numIterations;
     kernelParams_.expansionOrder             = expansionOrder;
@@ -534,11 +560,6 @@ LincsCuda::Impl::Impl(int numAtoms,
                   "Real numbers should be in single precision in GPU code.");
     static_assert(c_threadsPerBlock > 0 && ((c_threadsPerBlock & (c_threadsPerBlock - 1)) == 0),
                   "Number of threads per block should be a power of two in order for reduction to work.");
-
-    // This is temporary. LINCS should not manage coordinates.
-    allocateDeviceBuffer(&kernelParams_.d_x,  numAtoms, nullptr);
-    allocateDeviceBuffer(&kernelParams_.d_xp, numAtoms, nullptr);
-    allocateDeviceBuffer(&kernelParams_.d_v,  numAtoms, nullptr);
 
     allocateDeviceBuffer(&kernelParams_.d_virialScaled, 6, nullptr);
     h_virialScaled_.resize(6);
@@ -553,9 +574,6 @@ LincsCuda::Impl::Impl(int numAtoms,
 
 LincsCuda::Impl::~Impl()
 {
-    freeDeviceBuffer(&kernelParams_.d_x);
-    freeDeviceBuffer(&kernelParams_.d_xp);
-    freeDeviceBuffer(&kernelParams_.d_v);
     freeDeviceBuffer(&kernelParams_.d_virialScaled);
 
     if (maxConstraintsNumberSoFar_ > 0)
@@ -608,29 +626,10 @@ inline int countCoupled(int a, std::vector<int> *spaceNeeded,
     return counted;
 }
 
-/*! \brief
- * Update data-structures (e.g. after NB search step).
- *
- * Updates the constraints data and copies it to the GPU. Should be
- * called if the particles were sorted, redistributed between domains, etc.
- * This version uses common data formats so it can be called from anywhere
- * in the code. Does not recycle the data preparation routines from the CPU
- * version. Works only with simple case when all the constraints in idef are
- * are handled by a single GPU. Triangles are not handled as special case.
- *
- * Information about constraints is taken from:
- *     idef.il[F_CONSTR].iatoms  --- type (T) of constraint and two atom indexes (i1, i2)
- *     idef.iparams[T].constr.dA --- target length for constraint of type T
- * From t_mdatom, the code takes:
- *     md.invmass  --- array of inverse square root of masses for each atom in the system.
- *
- * \param[in] idef  Local topology data to get information on constraints from.
- * \param[in] md    Atoms data to get atom masses from.
- */
 void LincsCuda::Impl::set(const t_idef    &idef,
                           const t_mdatoms &md)
 {
-
+    int                 numAtoms = md.nr;
     // List of constrained atoms (CPU memory)
     std::vector<int2>   constraintsHost;
     // Equilibrium distances for the constraints (CPU)
@@ -647,7 +646,7 @@ void LincsCuda::Impl::set(const t_idef    &idef,
     const int stride         = NRAL(F_CONSTR) + 1;
     const int numConstraints = idef.il[F_CONSTR].nr/stride;
     // Constructing adjacency list --- usefull intermediate structure
-    std::vector<std::vector<std::tuple<int, int, int> > > atomsAdjacencyList(numAtoms_);
+    std::vector<std::vector<std::tuple<int, int, int> > > atomsAdjacencyList(numAtoms);
     for (int c = 0; c < numConstraints; c++)
     {
         int a1     = iatoms[stride*c + 1];
@@ -831,7 +830,9 @@ void LincsCuda::Impl::set(const t_idef    &idef,
         }
         maxConstraintsNumberSoFar_ = numConstraints;
 
-        allocateDeviceBuffer(&kernelParams_.d_inverseMasses, numAtoms_, nullptr);
+        // TODO: The masses should be reallocated when numAtoms change, not when number of constraints change.
+        //       Will be needed for domain decomposition support.
+        allocateDeviceBuffer(&kernelParams_.d_inverseMasses, numAtoms, nullptr);
 
         allocateDeviceBuffer(&kernelParams_.d_constraints, kernelParams_.numConstraintsThreads, nullptr);
         allocateDeviceBuffer(&kernelParams_.d_constraintsTargetLengths, kernelParams_.numConstraintsThreads, nullptr);
@@ -862,116 +863,36 @@ void LincsCuda::Impl::set(const t_idef    &idef,
 
     GMX_RELEASE_ASSERT(md.invmass != nullptr, "Masses of attoms should be specified.\n");
     copyToDeviceBuffer(&kernelParams_.d_inverseMasses, md.invmass,
-                       0, numAtoms_,
+                       0, numAtoms,
                        stream_, GpuApiCallBehavior::Sync, nullptr);
 
 }
 
-/*! \brief
- * Update PBC data.
- *
- * Converts pbc data from t_pbc into the PbcAiuc format and stores the latter.
- *
- * \param[in] pbc  The PBC data in t_pbc format.
- */
 void LincsCuda::Impl::setPbc(const t_pbc *pbc)
 {
     setPbcAiuc(pbc->ndim_ePBC, pbc->box, &kernelParams_.pbcAiuc);
 }
 
-/*! \brief
- * Copy coordinates from provided CPU location to GPU.
- *
- * Copies the coordinates before the integration step (x) and coordinates
- * after the integration step (xp) from the provided CPU location to GPU.
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_x   CPU pointer where coordinates should be copied from.
- * \param[in] h_xp  CPU pointer where coordinates should be copied from.
- */
-void LincsCuda::Impl::copyCoordinatesToGpu(const rvec *h_x, const rvec *h_xp)
-{
-    copyToDeviceBuffer(&kernelParams_.d_x, (float3*)h_x, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&kernelParams_.d_xp, (float3*)h_xp, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Copy velocities from provided CPU location to GPU.
- *
- * Nothing is done if the argument provided is a nullptr.
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_v  CPU pointer where velocities should be copied from.
- */
-void LincsCuda::Impl::copyVelocitiesToGpu(const rvec *h_v)
-{
-    if (h_v != nullptr)
-    {
-        copyToDeviceBuffer(&kernelParams_.d_v, (float3*)h_v, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-    }
-}
-
-/*! \brief
- * Copy coordinates from GPU to provided CPU location.
- *
- * Copies the constrained coordinates to the provided location. The coordinates
- * are assumed to be in float3/fvec format (single precision).
- *
- * \param[out] h_xp  CPU pointer where coordinates should be copied to.
- */
-void LincsCuda::Impl::copyCoordinatesFromGpu(rvec *h_xp)
-{
-    copyFromDeviceBuffer((float3*)h_xp, &kernelParams_.d_xp, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Copy velocities from GPU to provided CPU location.
- *
- * The velocities are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_v  Pointer to velocities data.
- */
-void LincsCuda::Impl::copyVelocitiesFromGpu(rvec *h_v)
-{
-    copyFromDeviceBuffer((float3*)h_v, &kernelParams_.d_v, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Set the internal GPU-memory x, xprime and v pointers.
- *
- * Data is not copied. The data are assumed to be in float3/fvec format
- * (float3 is used internally, but the data layout should be identical).
- *
- * \param[in] d_x   Pointer to the coordinates before integrator update (on GPU)
- * \param[in] d_xp  Pointer to the coordinates after integrator update, before update (on GPU)
- * \param[in] d_v   Pointer to the velocities before integrator update (on GPU)
- */
-void LincsCuda::Impl::setXVPointers(rvec *d_x, rvec *d_xp, rvec *d_v)
-{
-    kernelParams_.d_x  = (float3*)d_x;
-    kernelParams_.d_xp = (float3*)d_xp;
-    kernelParams_.d_v  = (float3*)d_v;
-}
-
-
-LincsCuda::LincsCuda(const int numAtoms,
-                     const int numIterations,
+LincsCuda::LincsCuda(const int numIterations,
                      const int expansionOrder)
-    : impl_(new Impl(numAtoms, numIterations, expansionOrder))
+    : impl_(new Impl(numIterations, expansionOrder))
 {
 }
 
 LincsCuda::~LincsCuda() = default;
 
-void LincsCuda::apply(const bool  updateVelocities,
-                      const real  invdt,
-                      const bool  computeVirial,
-                      tensor      virialScaled)
+void LincsCuda::copyApplyCopy(const int   numAtoms,
+                              const rvec *h_x,
+                              rvec       *h_xp,
+                              const bool  updateVelocities,
+                              rvec       *h_v,
+                              const real  invdt,
+                              const bool  computeVirial,
+                              tensor      virialScaled)
 {
-    impl_->apply(updateVelocities,
-                 invdt,
-                 computeVirial,
-                 virialScaled);
+    impl_->copyApplyCopy(numAtoms, h_x, h_xp,
+                         updateVelocities, h_v, invdt,
+                         computeVirial, virialScaled);
 }
 
 void LincsCuda::setPbc(const t_pbc *pbc)
@@ -983,31 +904,6 @@ void LincsCuda::set(const t_idef    &idef,
                     const t_mdatoms &md)
 {
     impl_->set(idef, md);
-}
-
-void LincsCuda::copyCoordinatesToGpu(const rvec *h_x, const rvec *h_xp)
-{
-    impl_->copyCoordinatesToGpu(h_x, h_xp);
-}
-
-void LincsCuda::copyVelocitiesToGpu(const rvec *h_v)
-{
-    impl_->copyVelocitiesToGpu(h_v);
-}
-
-void LincsCuda::copyCoordinatesFromGpu(rvec *h_xp)
-{
-    impl_->copyCoordinatesFromGpu(h_xp);
-}
-
-void LincsCuda::copyVelocitiesFromGpu(rvec *h_v)
-{
-    impl_->copyVelocitiesFromGpu(h_v);
-}
-
-void LincsCuda::setXVPointers(rvec *d_x, rvec *d_xp, rvec *d_v)
-{
-    impl_->setXVPointers(d_x, d_xp, d_v);
 }
 
 } // namespace gmx

@@ -40,9 +40,9 @@
  * using CUDA, including class initialization, data-structures management
  * and GPU kernel.
  *
- * \note Management of coordinates, velocities, CUDA stream and periodic boundary exists here as a temporary
- *       scaffolding to allow this class to be used as a stand-alone unit. The scaffolding is intended to be
- *       removed once constraints are integrated with update module.
+ * \note Management of CUDA stream and periodic boundary exists here as a temporary
+ *       scaffolding to allow this class to be used as a stand-alone unit. The scaffolding
+ *       is intended to be removed once constraints are fully integrated with update module.
  * \todo Reconsider naming to use "gpu" suffix instead of "cuda".
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
@@ -412,23 +412,13 @@ inline auto getSettleKernelPtr(const bool  updateVelocities,
     return kernelPtr;
 }
 
-/*! \brief Apply SETTLE.
- *
- * Applies SETTLE to coordinates and velocities, stored on GPU.
- * Data at pointers xPrime and v (class fields) change in the GPU
- * memory. The results are not automatically copied back to the CPU
- * memory.
- *
- * \param[in] updateVelocities  If the velocities should be constrained.
- * \param[in] invdt             Reciprocal timestep (to scale Lagrange
- *                              multipliers when velocities are updated)
- * \param[in] computeVirial     If virial should be updated.
- * \param[in,out] virialScaled  Scaled virial tensor to be updated.
- */
-void SettleCuda::Impl::apply(const bool       updateVelocities,
-                             const real       invdt,
-                             const bool       computeVirial,
-                             tensor           virialScaled)
+void SettleCuda::Impl::apply(const float3 *d_x,
+                             float3       *d_xp,
+                             const bool    updateVelocities,
+                             float3       *d_v,
+                             const real    invdt,
+                             const bool    computeVirial,
+                             tensor        virialScaled)
 {
 
     ensureNoPendingCudaError("In CUDA version SETTLE");
@@ -460,29 +450,29 @@ void SettleCuda::Impl::apply(const bool       updateVelocities,
     }
     config.stream           = stream_;
 
-    const int3    *d_atomIds                  = d_atomIds_;
-    const float3  *d_x                        = d_x_;
-    float3        *d_xp                       = d_xp_;
-    float3        *d_v                        = d_v_;
-    float         *d_virialScaled             = d_virialScaled_;
+    const int3    *gm_atomIds                  = d_atomIds_;
+    const float3  *gm_x                        = d_x;
+    float3        *gm_xp                       = d_xp;
+    float3        *gm_v                        = d_v;
+    float         *gm_virialScaled             = d_virialScaled_;
 
     const auto     kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                           &numSettles_,
-                                                          &d_atomIds,
+                                                          &gm_atomIds,
                                                           &settleParameters_,
-                                                          &d_x,
-                                                          &d_xp,
+                                                          &gm_x,
+                                                          &gm_xp,
                                                           &pbcAiuc_,
                                                           &invdt,
-                                                          &d_v,
-                                                          &d_virialScaled);
+                                                          &gm_v,
+                                                          &gm_virialScaled);
 
     launchGpuKernel(kernelPtr, config, nullptr,
                     "settle_kernel<updateVelocities, computeVirial>", kernelArgs);
 
     if (computeVirial)
     {
-        copyFromDeviceBuffer(h_virialScaled_.data(), &d_virialScaled,
+        copyFromDeviceBuffer(h_virialScaled_.data(), &d_virialScaled_,
                              0, 6,
                              stream_, GpuApiCallBehavior::Sync, nullptr);
 
@@ -503,21 +493,43 @@ void SettleCuda::Impl::apply(const bool       updateVelocities,
     return;
 }
 
-/*! \brief Create SETTLE object
- *
- *  Extracts masses for oxygen and hydrogen as well as the O-H and H-H target distances
- *  from the topology data (mtop), check their values for consistency and calls the
- *  following constructor.
- *
- * \param[in] numAtoms  Number of atoms that will be handles by SETTLE.
- *                      Used to compute the memory size in allocations and copy.
- * \param[in] mtop      Topology of the system to get the masses for O and H atoms and
- *                      target O-H and H-H distances. These values are also checked for
- *                      consistency.
- */
-SettleCuda::Impl::Impl(const int         numAtoms,
-                       const gmx_mtop_t &mtop)
-    : numAtoms_(numAtoms)
+void SettleCuda::Impl::copyApplyCopy(const int   numAtoms,
+                                     const rvec *h_x,
+                                     rvec       *h_xp,
+                                     const bool  updateVelocities,
+                                     rvec       *h_v,
+                                     const real  invdt,
+                                     const bool  computeVirial,
+                                     tensor      virialScaled)
+{
+    float3 *d_x, *d_xp, *d_v;
+
+    allocateDeviceBuffer(&d_x,  numAtoms, nullptr);
+    allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
+    allocateDeviceBuffer(&d_v,  numAtoms, nullptr);
+
+    copyToDeviceBuffer(&d_x, (float3*)h_x, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_xp, (float3*)h_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    if (updateVelocities)
+    {
+        copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    }
+    apply(d_x, d_xp,
+          updateVelocities, d_v, invdt,
+          computeVirial, virialScaled);
+
+    copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    if (updateVelocities)
+    {
+        copyFromDeviceBuffer((float3*)h_v, &d_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    }
+
+    freeDeviceBuffer(&d_x);
+    freeDeviceBuffer(&d_xp);
+    freeDeviceBuffer(&d_v);
+}
+
+SettleCuda::Impl::Impl(const gmx_mtop_t &mtop)
 {
     static_assert(sizeof(real) == sizeof(float),
                   "Real numbers should be in single precision in GPU code.");
@@ -596,11 +608,6 @@ SettleCuda::Impl::Impl(const int         numAtoms,
 
     initSettleParameters(&settleParameters_, mO, mH, dOH, dHH);
 
-    // This is temporary. SETTLE should not manage coordinates.
-    allocateDeviceBuffer(&d_x_, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_xp_, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v_, numAtoms, nullptr);
-
     allocateDeviceBuffer(&d_virialScaled_, 6, nullptr);
     h_virialScaled_.resize(6);
 
@@ -609,30 +616,14 @@ SettleCuda::Impl::Impl(const int         numAtoms,
 
 }
 
-/*! \brief Create SETTLE object
- *
- * \param[in] numAtoms  Number of atoms that will be handles by SETTLE.
- *                      Used to compute the memory size in allocations and copy.
- * \param[in] mO        Mass of the oxygen atom.
- * \param[in] mH        Mass of the hydrogen atom.
- * \param[in] dOH       Target distance for O-H bonds.
- * \param[in] dHH       Target for the distance between two hydrogen atoms.
- */
-SettleCuda::Impl::Impl(const int  numAtoms,
-                       const real mO,  const real mH,
+SettleCuda::Impl::Impl(const real mO,  const real mH,
                        const real dOH, const real dHH)
-    : numAtoms_(numAtoms)
 {
     static_assert(sizeof(real) == sizeof(float), "Real numbers should be in single precision in GPU code.");
     static_assert(c_threadsPerBlock > 0 && ((c_threadsPerBlock & (c_threadsPerBlock - 1)) == 0),
                   "Number of threads per block should be a power of two in order for reduction to work.");
 
     initSettleParameters(&settleParameters_, mO, mH, dOH, dHH);
-
-    // This is temporary. SETTLE should not manage coordinates.
-    allocateDeviceBuffer(&d_x_,  numAtoms, nullptr);
-    allocateDeviceBuffer(&d_xp_, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v_,  numAtoms, nullptr);
 
     allocateDeviceBuffer(&d_virialScaled_, 6, nullptr);
     h_virialScaled_.resize(6);
@@ -644,9 +635,6 @@ SettleCuda::Impl::Impl(const int  numAtoms,
 
 SettleCuda::Impl::~Impl()
 {
-    freeDeviceBuffer(&d_x_);
-    freeDeviceBuffer(&d_xp_);
-    freeDeviceBuffer(&d_v_);
     freeDeviceBuffer(&d_virialScaled_);
     if (h_atomIds_.size() > 0)
     {
@@ -655,19 +643,6 @@ SettleCuda::Impl::~Impl()
 }
 
 
-/*! \brief
- * Update data-structures (e.g. after NB search step).
- *
- * Updates the constraints data and copies it to the GPU. Should be
- * called if the particles were sorted, redistributed between domains, etc.
- * Does not recycle the data preparation routines from the CPU version.
- * All three atoms from single water molecule should be handled by the same GPU.
- *
- * SETTLEs atom ID's are taken from idef.il[F_SETTLE].iatoms.
- *
- * \param[in] idef    System topology
- * \param[in] md      Atoms data. Can be used to update masses if needed (not used now).
- */
 void SettleCuda::Impl::set(const t_idef               &idef,
                            const t_mdatoms gmx_unused &md)
 {
@@ -698,119 +673,36 @@ void SettleCuda::Impl::set(const t_idef               &idef,
 
 }
 
-/*! \brief
- * Update PBC data.
- *
- * Converts pbc data from t_pbc into the PbcAiuc format and stores the latter.
- *
- * \todo PBC should not be handled by constraints.
- *
- * \param[in] pbc  The PBC data in t_pbc format.
- */
 void SettleCuda::Impl::setPbc(const t_pbc *pbc)
 {
     setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
 }
 
-/*! \brief
- * Copy coordinates from provided CPU location to GPU.
- *
- * Copies the coordinates before the integration step (x) and coordinates
- * after the integration step (xp) from the provided CPU location to GPU.
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_x   CPU pointer where coordinates should be copied from.
- * \param[in] h_xp  CPU pointer where coordinates should be copied from.
- */
-void SettleCuda::Impl::copyCoordinatesToGpu(const rvec *h_x, const rvec *h_xp)
-{
-    copyToDeviceBuffer(&d_x_,  (float3*)h_x,  0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_xp_, (float3*)h_xp, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Copy velocities from provided CPU location to GPU.
- *
- * Nothing is done if the argument is a nullptr.
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_v  CPU pointer where velocities should be copied from.
- */
-void SettleCuda::Impl::copyVelocitiesToGpu(const rvec *h_v)
-{
-    if (h_v != nullptr)
-    {
-        copyToDeviceBuffer(&d_v_, (float3*)h_v, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-    }
-}
-
-/*! \brief
- * Copy coordinates from GPU to provided CPU location.
- *
- * Copies the constrained coordinates to the provided location. The coordinates
- * are assumed to be in float3/fvec format (single precision).
- *
- * \param[out] h_xp  CPU pointer where coordinates should be copied to.
- */
-void SettleCuda::Impl::copyCoordinatesFromGpu(rvec *h_xp)
-{
-    copyFromDeviceBuffer((float3*)h_xp, &d_xp_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Copy velocities from GPU to provided CPU location.
- *
- * The velocities are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_v  Pointer to velocities data.
- */
-void SettleCuda::Impl::copyVelocitiesFromGpu(rvec *h_v)
-{
-    copyFromDeviceBuffer((float3*)h_v, &d_v_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Set the internal GPU-memory x, xprime and v pointers.
- *
- * Data is not copied. The data are assumed to be in float3/fvec format
- * (float3 is used internally, but the data layout should be identical).
- *
- * \param[in] d_x   Pointer to the coordinates before integrator update (on GPU)
- * \param[in] d_xp  Pointer to the coordinates after integrator update, before update (on GPU)
- * \param[in] d_v   Pointer to the velocities before integrator update (on GPU)
- */
-void SettleCuda::Impl::setXVPointers(rvec *d_x, rvec *d_xp, rvec *d_v)
-{
-    d_x_  = (float3*)d_x;
-    d_xp_ = (float3*)d_xp;
-    d_v_  = (float3*)d_v;
-}
-
-
-SettleCuda::SettleCuda(const int         numAtoms,
-                       const gmx_mtop_t &mtop)
-    : impl_(new Impl(numAtoms, mtop))
+SettleCuda::SettleCuda(const gmx_mtop_t &mtop)
+    : impl_(new Impl(mtop))
 {
 }
 
-SettleCuda::SettleCuda(const int numAtoms,
-                       const real mO,  const real mH,
+SettleCuda::SettleCuda(const real mO,  const real mH,
                        const real dOH, const real dHH)
-    : impl_(new Impl(numAtoms, mO, mH, dOH, dHH))
+    : impl_(new Impl(mO, mH, dOH, dHH))
 {
 }
 
 SettleCuda::~SettleCuda() = default;
 
-void SettleCuda::apply(const bool  updateVelocities,
-                       const real  invdt,
-                       const bool  computeVirial,
-                       tensor      virialScaled)
+void SettleCuda::copyApplyCopy(const int   numAtoms,
+                               const rvec *h_x,
+                               rvec       *h_xp,
+                               const bool  updateVelocities,
+                               rvec       *h_v,
+                               const real  invdt,
+                               const bool  computeVirial,
+                               tensor      virialScaled)
 {
-    impl_->apply(updateVelocities,
-                 invdt,
-                 computeVirial,
-                 virialScaled);
+    impl_->copyApplyCopy(numAtoms, h_x, h_xp,
+                         updateVelocities, h_v, invdt,
+                         computeVirial, virialScaled);
 }
 
 void SettleCuda::setPbc(const t_pbc *pbc)
@@ -822,31 +714,6 @@ void SettleCuda::set(const t_idef    &idef,
                      const t_mdatoms &md)
 {
     impl_->set(idef, md);
-}
-
-void SettleCuda::copyCoordinatesToGpu(const rvec *h_x, const rvec *h_xp)
-{
-    impl_->copyCoordinatesToGpu(h_x, h_xp);
-}
-
-void SettleCuda::copyVelocitiesToGpu(const rvec *h_v)
-{
-    impl_->copyVelocitiesToGpu(h_v);
-}
-
-void SettleCuda::copyCoordinatesFromGpu(rvec *h_xp)
-{
-    impl_->copyCoordinatesFromGpu(h_xp);
-}
-
-void SettleCuda::copyVelocitiesFromGpu(rvec *h_v)
-{
-    impl_->copyVelocitiesFromGpu(h_v);
-}
-
-void SettleCuda::setXVPointers(rvec *d_x, rvec *d_xp, rvec *d_v)
-{
-    impl_->setXVPointers(d_x, d_xp, d_v);
 }
 
 } // namespace gmx

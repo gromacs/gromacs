@@ -51,12 +51,10 @@
 namespace gmx
 {
 
-/*!\brief Impl class stub. */
 class UpdateConstrainCuda::Impl
 {
 };
 
-/*!\brief Constructor stub. */
 UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused int                   numAtoms,
                                          gmx_unused const t_inputrec     &ir,
                                          gmx_unused const gmx_mtop_t     &mtop)
@@ -67,7 +65,6 @@ UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused int                   numAto
 
 UpdateConstrainCuda::~UpdateConstrainCuda() = default;
 
-/*!\brief integrate stub. */
 void UpdateConstrainCuda::integrate(gmx_unused const real  dt,
                                     gmx_unused const bool  updateVelocities,
                                     gmx_unused const bool  computeVirial,
@@ -76,56 +73,47 @@ void UpdateConstrainCuda::integrate(gmx_unused const real  dt,
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-/*!\brief Set method stub. */
 void UpdateConstrainCuda::set(gmx_unused const t_idef     &idef,
                               gmx_unused const t_mdatoms  &md)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-/*!\brief Set PBC stub. */
 void UpdateConstrainCuda::setPbc(gmx_unused const t_pbc *pbc)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-/*! \brief Copy coordinates from provided CPU location to GPU stub. */
 void UpdateConstrainCuda::copyCoordinatesToGpu(gmx_unused const rvec *h_x)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-/*! \brief Copy velocities from provided CPU location to GPU stub. */
 void UpdateConstrainCuda::copyVelocitiesToGpu(gmx_unused const rvec *h_v)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-/*! \brief Copy forces from CPU to GPU stub. */
 void UpdateConstrainCuda::copyForcesToGpu(gmx_unused const rvec *h_f)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-/*! \brief Copy coordinates from GPU to provided CPU location stub. */
 void UpdateConstrainCuda::copyCoordinatesFromGpu(gmx_unused rvec *h_xp)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-/*! \brief Copy velocities from GPU to provided CPU location stub. */
 void UpdateConstrainCuda::copyVelocitiesFromGpu(gmx_unused rvec *h_v)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-/*! \brief Copy forces from GPU to CPU stub. */
 void UpdateConstrainCuda::copyForcesFromGpu(gmx_unused rvec *h_f)
 {
     GMX_ASSERT(false, "A CPU stub for UpdateConstrain was called insted of the correct implementation.");
 }
 
-/*! \brief Set the internal GPU-memory x, xprime and v pointers stub. */
 void UpdateConstrainCuda::setXVFPointers(gmx_unused rvec *d_x,
                                          gmx_unused rvec *d_xp,
                                          gmx_unused rvec *d_v,

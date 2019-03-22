@@ -36,8 +36,7 @@
  *
  * \brief Declaration of high-level functions of CUDA implementation of SETTLE.
  *
- * \todo This should only list interfaces needed for libgromacs clients (e.g.
- *       management of coordinates and velocities should not be here).
+ * \todo This should only list interfaces needed for libgromacs clients.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
@@ -62,39 +61,96 @@ class SettleCuda
 
     public:
 
+        /*! \brief Structure containing parameters for settles.
+         *
+         * Contains masses of atoms, distances between them and their pre-computed
+         * derivatives (to avoid recomputing them for each water molecule).
+         */
         struct SettleParameters;
 
-        SettleCuda(int               nAtom,
-                   const gmx_mtop_t &mtop);
+        /*! \brief Create SETTLE object
+         *
+         *  Extracts masses for oxygen and hydrogen as well as the O-H and H-H target distances
+         *  from the topology data (mtop), check their values for consistency and calls the
+         *  following constructor.
+         *
+         * \param[in] mtop      Topology of the system to get the masses for O and H atoms and
+         *                      target O-H and H-H distances. These values are also checked for
+         *                      consistency.
+         */
+        SettleCuda(const gmx_mtop_t &mtop);
 
-        SettleCuda(int  nAtom,
-                   real mO,  real mH,
+        /*! \brief Create SETTLE object
+         *
+         * \param[in] mO        Mass of the oxygen atom.
+         * \param[in] mH        Mass of the hydrogen atom.
+         * \param[in] dOH       Target distance for O-H bonds.
+         * \param[in] dHH       Target for the distance between two hydrogen atoms.
+         */
+        SettleCuda(real mO,  real mH,
                    real dOH, real dHH);
 
         ~SettleCuda();
 
-        void apply(bool       updateVelocities,
-                   real       invdt,
-                   bool       computeVirial,
-                   tensor     virialScaled);
+        /*! \brief Apply SETTLE to the coordinates/velocities stored in CPU memory.
+         *
+         * This method should not be used in any code-path, where performance is of any value.
+         * Only suitable for test and will be removed in future patch sets.
+         * Allocates GPU memory, copies data from CPU, applies SETTLE to coordinates and,
+         * if requested, to velocities, copies the results back, frees GPU memory.
+         * Method uses this class data structures which should be filled with set() and setPbc()
+         * methods.
+         *
+         * \todo Remove this method
+         *
+         * \param[in]     numAtoms          Number of atoms
+         * \param[in]     h_x               Coordinates before timestep (in CPU memory)
+         * \param[in,out] h_xp              Coordinates after timestep (in CPU memory). The
+         *                                  resulting constrained coordinates will be saved here.
+         * \param[in]     updateVelocities  If the velocities should be updated.
+         * \param[in,out] h_v               Velocities to update (in CPU memory, can be nullptr
+         *                                  if not updated)
+         * \param[in]     invdt             Reciprocal timestep (to scale Lagrange
+         *                                  multipliers when velocities are updated)
+         * \param[in]     computeVirial     If virial should be updated.
+         * \param[in,out] virialScaled      Scaled virial tensor to be updated.
+         */
+        void copyApplyCopy(int         numAtoms,
+                           const rvec *h_x,
+                           rvec       *h_xp,
+                           bool        updateVelocities,
+                           rvec       *h_v,
+                           real        invdt,
+                           bool        computeVirial,
+                           tensor      virialScaled);
 
+        /*! \brief
+         * Update data-structures (e.g. after NB search step).
+         *
+         * Updates the constraints data and copies it to the GPU. Should be
+         * called if the particles were sorted, redistributed between domains, etc.
+         * Does not recycle the data preparation routines from the CPU version.
+         * All three atoms from single water molecule should be handled by the same GPU.
+         *
+         * SETTLEs atom ID's are taken from idef.il[F_SETTLE].iatoms.
+         *
+         * \param[in] idef    System topology
+         * \param[in] md      Atoms data. Can be used to update masses if needed (not used now).
+         */
         void set(const t_idef     &idef,
                  const t_mdatoms  &md);
 
+        /*! \brief
+         * Update PBC data.
+         *
+         * \param[in] pbc  The PBC data in t_pbc format.
+         */
         void setPbc(const t_pbc *pbc);
 
-        void copyCoordinatesToGpu(const rvec * h_x, const rvec * h_xp);
-
-        void copyVelocitiesToGpu(const rvec * h_v);
-
-        void copyCoordinatesFromGpu(rvec * h_xp);
-
-        void copyVelocitiesFromGpu(rvec * h_v);
-
-        void setXVPointers(rvec * d_x, rvec * d_xp, rvec * d_v);
+        /*! \brief Class with hardware-specific interfaces and implementations.*/
+        class Impl;
 
     private:
-        class Impl;
         gmx::PrivateImplPointer<Impl> impl_;
 
 

@@ -64,27 +64,17 @@
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/leapfrog_cuda.h"
-#include "gromacs/mdlib/lincs_cuda.h"
-#include "gromacs/mdlib/settle_cuda.h"
 #include "gromacs/mdlib/update_constrain_cuda.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 
+#include "leapfrog_cuda_impl.h"
+#include "lincs_cuda_impl.h"
+#include "settle_cuda_impl.h"
+
 namespace gmx
 {
 
-/*! \brief Integrate
- *
- * Integrates the equation of motion using Leap-Frog algorithm and applies
- * LINCS and SETTLE constraints.
- * Updates d_xp_ and d_v_ fields of this object.
- *
- * \param[in] dt                Timestep
- * \param[in] updateVelocities  If the velocities should be constrained.
- * \param[in] computeVirial     If virial should be updated.
- * \param[out] virial           Place to save virial tensor.
- */
 void UpdateConstrainCuda::Impl::integrate(const real  dt,
                                           const bool  updateVelocities,
                                           const bool  computeVirial,
@@ -94,9 +84,13 @@ void UpdateConstrainCuda::Impl::integrate(const real  dt,
     // TODO There is no point in having saparate virial matrix for constraints
     clear_mat(virial);
 
-    integrator_->integrate(dt);
-    lincsCuda_->apply(updateVelocities, 1.0/dt, computeVirial, virial);
-    settleCuda_->apply(updateVelocities, 1.0/dt, computeVirial, virial);
+    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt);
+    lincsCuda_->apply(d_x_, d_xp_,
+                      updateVelocities, d_v_, 1.0/dt,
+                      computeVirial, virial);
+    settleCuda_->apply(d_x_, d_xp_,
+                       updateVelocities, d_v_, 1.0/dt,
+                       computeVirial, virial);
 
     // scaledVirial -> virial (methods above returns scaled values)
     float scaleFactor = 0.5f/(dt*dt);
@@ -111,14 +105,6 @@ void UpdateConstrainCuda::Impl::integrate(const real  dt,
     return;
 }
 
-/*! \brief Create Update-Constrain object
- *
- * \param[in] numAtoms  Number of atoms.
- * \param[in] ir        Input record data: LINCS takes number of iterations and order of
- *                      projection from it.
- * \param[in] mtop      Topology of the system: SETTLE gets the masses for O and H atoms
- *                      and target O-H and H-H distances from this object.
- */
 UpdateConstrainCuda::Impl::Impl(int                numAtoms,
                                 const t_inputrec  &ir,
                                 const gmx_mtop_t  &mtop)
@@ -134,25 +120,16 @@ UpdateConstrainCuda::Impl::Impl(int                numAtoms,
     stream_ = nullptr;
 
     GMX_RELEASE_ASSERT(numAtoms == mtop.natoms, "State and topology number of atoms should be the same.");
-    integrator_ = std::make_unique<LeapFrogCuda>(numAtoms);
-    lincsCuda_  = std::make_unique<LincsCuda>(mtop.natoms, ir.nLincsIter, ir.nProjOrder);
-    settleCuda_ = std::make_unique<SettleCuda>(mtop.natoms, mtop);
+    integrator_ = std::make_unique<LeapFrogCuda::Impl>();
+    lincsCuda_  = std::make_unique<LincsCuda::Impl>(ir.nLincsIter, ir.nProjOrder);
+    settleCuda_ = std::make_unique<SettleCuda::Impl>(mtop);
 
-    integrator_->setXVFPointers((rvec*)d_x_, (rvec*)d_xp_, (rvec*)d_v_, (rvec*)d_f_);
-    lincsCuda_->setXVPointers((rvec*)d_x_, (rvec*)d_xp_, (rvec*)d_v_);
-    settleCuda_->setXVPointers((rvec*)d_x_, (rvec*)d_xp_,  (rvec*)d_v_);
 }
 
 UpdateConstrainCuda::Impl::~Impl()
 {
 }
 
-/*! \brief
- * Update data-structures (e.g. after NB search step).
- *
- * \param[in] idef    System topology
- * \param[in] md      Atoms data.
- */
 void UpdateConstrainCuda::Impl::set(const t_idef      &idef,
                                     const t_mdatoms   &md)
 {
@@ -162,13 +139,6 @@ void UpdateConstrainCuda::Impl::set(const t_idef      &idef,
     settleCuda_->set(idef, md);
 }
 
-/*! \brief
- * Update PBC data.
- *
- * Converts pbc data from t_pbc into the PbcAiuc format and stores the latter.
- *
- * \param[in] pbc The PBC data in t_pbc format.
- */
 void UpdateConstrainCuda::Impl::setPbc(const t_pbc *pbc)
 {
     setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
@@ -177,89 +147,36 @@ void UpdateConstrainCuda::Impl::setPbc(const t_pbc *pbc)
     settleCuda_->setPbc(pbc);
 }
 
-/*! \brief
- * Copy coordinates from CPU to GPU.
- *
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_x  CPU pointer where coordinates should be copied from.
- */
 void UpdateConstrainCuda::Impl::copyCoordinatesToGpu(const rvec *h_x)
 {
     copyToDeviceBuffer(&d_x_, (float3*)h_x, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
-/*! \brief
- * Copy velocities from CPU to GPU.
- *
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_v  CPU pointer where velocities should be copied from.
- */
 void UpdateConstrainCuda::Impl::copyVelocitiesToGpu(const rvec *h_v)
 {
     copyToDeviceBuffer(&d_v_, (float3*)h_v, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
-/*! \brief
- * Copy forces from CPU to GPU.
- *
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_f  CPU pointer where forces should be copied from.
- */
 void UpdateConstrainCuda::Impl::copyForcesToGpu(const rvec *h_f)
 {
     copyToDeviceBuffer(&d_f_, (float3*)h_f, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
-/*! \brief
- * Copy coordinates from GPU to CPU.
- *
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[out] h_xp CPU pointer where coordinates should be copied to.
- */
 void UpdateConstrainCuda::Impl::copyCoordinatesFromGpu(rvec *h_xp)
 {
     copyFromDeviceBuffer((float3*)h_xp, &d_xp_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
-/*! \brief
- * Copy velocities from GPU to CPU.
- *
- * The velocities are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_v  Pointer to velocities data.
- */
 void UpdateConstrainCuda::Impl::copyVelocitiesFromGpu(rvec *h_v)
 {
     copyFromDeviceBuffer((float3*)h_v, &d_v_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
-/*! \brief
- * Copy forces from GPU to CPU.
- *
- * The forces are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_f  Pointer to forces data.
- */
 void UpdateConstrainCuda::Impl::copyForcesFromGpu(rvec *h_f)
 {
     copyFromDeviceBuffer((float3*)h_f, &d_f_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
-/*! \brief
- * Set the internal GPU-memory x, xprime and v pointers.
- *
- * Data is not copied. The data are assumed to be in float3/fvec format
- * (float3 is used internally, but the data layout should be identical).
- *
- * \param[in] d_x  Pointer to the coordinates for the input (on GPU)
- * \param[in] d_xp Pointer to the coordinates for the output (on GPU)
- * \param[in] d_v  Pointer to the velocities (on GPU)
- * \param[in] d_f  Pointer to the forces (on GPU)
- */
 void UpdateConstrainCuda::Impl::setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v, rvec *d_f)
 {
     d_x_  = (float3*)d_x;

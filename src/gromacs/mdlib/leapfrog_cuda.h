@@ -59,21 +59,32 @@ class LeapFrogCuda
 {
 
     public:
-        /*! \brief Creates Leap-Frog object.
-         *
-         * \param[in] numAtoms    Number of atoms
-         */
-        LeapFrogCuda(int numAtoms);
+
+        LeapFrogCuda();
         ~LeapFrogCuda();
 
         /*! \brief Integrate
          *
-         * Integrates the equation of motion using Leap-Frog algorithm.
-         * Updates xpDevice_ and vDevice_ fields of this object.
+         * Copies data from CPU to GPU, integrates the equation of motion
+         * using Leap-Frog algorithm, copies the result back. Should only
+         * be used for testing.
          *
-         * \param[in] dt             Timestep
+         * \todo This is temporary solution and will be removed in the
+         *       following revisions.
+         *
+         * \param[in] numAtoms  Number of atoms.
+         * \param[in]     h_x   Initial coordinates.
+         * \param[out]    h_xp  Place to save the resulting coordinates to.
+         * \param[in,out] h_v   Velocities (will be updated).
+         * \param[in]     h_f   Forces.
+         * \param[in]     dt    Timestep.
          */
-        void integrate(real    dt);
+        void copyIntegrateCopy(int         numAtoms,
+                               const rvec *h_x,
+                               rvec       *h_xp,
+                               rvec       *h_v,
+                               const rvec *h_f,
+                               real        dt);
 
         /*! \brief
          * Update PBC data.
@@ -92,75 +103,10 @@ class LeapFrogCuda
          */
         void set(const t_mdatoms &md);
 
-        /*! \brief
-         * Copy coordinates from CPU to GPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_x  CPU pointer where coordinates should be copied from.
-         */
-        void copyCoordinatesToGpu(const rvec *h_x);
-
-        /*! \brief
-         * Copy velocities from CPU to GPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  CPU pointer where velocities should be copied from.
-         */
-        void copyVelocitiesToGpu(const rvec *h_v);
-
-        /*! \brief
-         * Copy forces from CPU to GPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_f  CPU pointer where forces should be copied from.
-         */
-        void copyForcesToGpu(const rvec *h_f);
-
-        /*! \brief
-         * Copy coordinates from GPU to CPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[out] h_xp CPU pointer where coordinates should be copied to.
-         */
-        void copyCoordinatesFromGpu(rvec *h_xp);
-
-        /*! \brief
-         * Copy velocities from GPU to CPU.
-         *
-         * The velocities are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  Pointer to velocities data.
-         */
-        void copyVelocitiesFromGpu(rvec *h_v);
-
-        /*! \brief
-         * Copy forces from GPU to CPU.
-         *
-         * The forces are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_f  Pointer to forces data.
-         */
-        void copyForcesFromGpu(rvec *h_f);
-
-        /*! \brief
-         * Set the internal GPU-memory x, xprime and v pointers.
-         *
-         * Data is not copied. The data are assumed to be in float3/fvec format
-         * (float3 is used internally, but the data layout should be identical).
-         *
-         * \param[in] d_x  Pointer to the coordinates for the input (on GPU)
-         * \param[in] d_xp Pointer to the coordinates for the output (on GPU)
-         * \param[in] d_v  Pointer to the velocities (on GPU)
-         * \param[in] d_f  Pointer to the forces (on GPU)
-         */
-        void setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v, rvec *d_f);
+        /*! \brief Class with hardware-specific interfaces and implementations.*/
+        class Impl;
 
     private:
-        class Impl;
         gmx::PrivateImplPointer<Impl> impl_;
 
 };

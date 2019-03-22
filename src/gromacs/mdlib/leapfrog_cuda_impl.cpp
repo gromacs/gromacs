@@ -54,13 +54,11 @@
 namespace gmx
 {
 
-/*!\brief Impl class stub. */
 class LeapFrogCuda::Impl
 {
 };
 
-/*!\brief Constructor stub. */
-LeapFrogCuda::LeapFrogCuda(gmx_unused int numAtoms)
+LeapFrogCuda::LeapFrogCuda()
     : impl_(nullptr)
 {
     GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
@@ -68,65 +66,22 @@ LeapFrogCuda::LeapFrogCuda(gmx_unused int numAtoms)
 
 LeapFrogCuda::~LeapFrogCuda() = default;
 
-/*!\brief Apply LINCS stub. */
-void LeapFrogCuda::integrate(gmx_unused const real  dt)
+void LeapFrogCuda::copyIntegrateCopy(gmx_unused const int   numAtoms,
+                                     gmx_unused const rvec *h_x,
+                                     gmx_unused rvec       *h_xp,
+                                     gmx_unused rvec       *h_v,
+                                     gmx_unused const rvec *h_f,
+                                     gmx_unused const real  dt)
 {
     GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
 }
 
-/*!\brief Set PBC stub. */
 void LeapFrogCuda::setPbc(gmx_unused const t_pbc *pbc)
 {
     GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
 }
 
-/*! \brief Copy inverse masses from CPU to GPU stub function. */
 void LeapFrogCuda::set(gmx_unused const t_mdatoms &md)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
-
-/*! \brief Copy coordinates from provided CPU location to GPU stub. */
-void LeapFrogCuda::copyCoordinatesToGpu(gmx_unused const rvec *h_x)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
-
-/*! \brief Copy velocities from provided CPU location to GPU stub. */
-void LeapFrogCuda::copyVelocitiesToGpu(gmx_unused const rvec *h_v)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
-
-/*! \brief Copy forces from CPU to GPU stub. */
-void LeapFrogCuda::copyForcesToGpu(gmx_unused const rvec *h_f)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
-
-/*! \brief Copy coordinates from GPU to provided CPU location stub. */
-void LeapFrogCuda::copyCoordinatesFromGpu(gmx_unused rvec *h_xp)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
-
-/*! \brief Copy velocities from GPU to provided CPU location stub. */
-void LeapFrogCuda::copyVelocitiesFromGpu(gmx_unused rvec *h_v)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
-
-/*! \brief Copy forces from GPU to CPU stub. */
-void LeapFrogCuda::copyForcesFromGpu(gmx_unused rvec *h_f)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
-
-/*! \brief Set the internal GPU-memory x, xprime and v pointers stub. */
-void LeapFrogCuda::setXVFPointers(gmx_unused rvec *d_x,
-                                  gmx_unused rvec *d_xp,
-                                  gmx_unused rvec *d_v,
-                                  gmx_unused rvec *d_f)
 {
     GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
 }

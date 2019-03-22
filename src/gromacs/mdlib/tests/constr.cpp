@@ -590,17 +590,18 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
             GMX_RELEASE_ASSERT(canDetectGpus(&errorMessage),
                                "The test for CUDA version of LINCS was called on host that is not CUDA capable.");
 
-            auto lincsCuda = std::make_unique<LincsCuda>(testData->numAtoms_,
-                                                         testData->ir_.nLincsIter,
+            auto lincsCuda = std::make_unique<LincsCuda>(testData->ir_.nLincsIter,
                                                          testData->ir_.nProjOrder);
             lincsCuda->set(testData->idef_, testData->md_);
             lincsCuda->setPbc(&pbc);
-            lincsCuda->copyCoordinatesToGpu(as_rvec_array(testData->x_.data()),
-                                            as_rvec_array(testData->xPrime_.data()));
-            lincsCuda->copyVelocitiesToGpu(as_rvec_array(testData->v_.data()));
-            lincsCuda->apply(true, testData->invdt_, testData->computeVirial_, testData->virialScaled_);
-            lincsCuda->copyCoordinatesFromGpu(as_rvec_array(testData->xPrime_.data()));
-            lincsCuda->copyVelocitiesFromGpu(as_rvec_array(testData->v_.data()));
+            lincsCuda->copyApplyCopy(testData->numAtoms_,
+                                     as_rvec_array(testData->x_.data()),
+                                     as_rvec_array(testData->xPrime_.data()),
+                                     true,
+                                     as_rvec_array(testData->v_.data()),
+                                     testData->invdt_,
+                                     testData->computeVirial_,
+                                     testData->virialScaled_);
         }
 
         /*! \brief

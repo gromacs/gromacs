@@ -54,99 +54,44 @@
 namespace gmx
 {
 
-/*!\brief Impl class stub */
 class SettleCuda::Impl
 {
 };
 
-/*!\brief Constructor stub */
-SettleCuda::SettleCuda(gmx_unused const int         numAtoms,
-                       gmx_unused const gmx_mtop_t &mtop)
+SettleCuda::SettleCuda(gmx_unused const gmx_mtop_t &mtop)
     : impl_(nullptr)
 {
     GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
 }
 
-SettleCuda::SettleCuda(gmx_unused const int numAtoms,
-                       gmx_unused const real mO,  gmx_unused const real mH,
+SettleCuda::SettleCuda(gmx_unused const real mO,  gmx_unused const real mH,
                        gmx_unused const real dOH, gmx_unused const real dHH)
     : impl_(nullptr)
 {
     GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
 }
 
-/*!\brief Destructor stub */
 SettleCuda::~SettleCuda() = default;
 
-/*!\brief Apply LINCS stub */
-void SettleCuda::apply(gmx_unused const bool  updateVelocities,
-                       gmx_unused const real  invdt,
-                       gmx_unused const bool  computeVirial,
-                       gmx_unused tensor      virialScaled)
+void SettleCuda::copyApplyCopy(gmx_unused int         numAtoms,
+                               gmx_unused const rvec *h_x,
+                               gmx_unused rvec       *h_xp,
+                               gmx_unused bool        updateVelocities,
+                               gmx_unused rvec       *h_v,
+                               gmx_unused real        invdt,
+                               gmx_unused bool        computeVirial,
+                               gmx_unused tensor      virialScaled)
 {
     GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
 }
 
-/*!\brief Set data structures stub */
 void SettleCuda::set(gmx_unused const t_idef     &idef,
                      gmx_unused const t_mdatoms  &md)
 {
     GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
 }
 
-/*!\brief Set PBC stub */
 void SettleCuda::setPbc(gmx_unused const t_pbc *pbc)
-{
-    GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
-}
-
-/*! \brief
- * Copy coordinates from provided CPU location to GPU stub.
- *
- * \param[in] h_x  CPU pointer where coordinates should be copied from.
- * \param[in] h_xp CPU pointer where coordinates should be copied from.
- */
-void SettleCuda::copyCoordinatesToGpu(gmx_unused const rvec *h_x, gmx_unused const rvec *h_xp)
-{
-    GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
-}
-
-/*! \brief
- * Copy velocities from provided CPU location to GPU stub.
- *
- * \param[in] h_v  CPU pointer where velocities should be copied from.
- */
-void SettleCuda::copyVelocitiesToGpu(gmx_unused const rvec *h_v)
-{
-    GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
-}
-
-/*! \brief
- * Copy coordinates from GPU to provided CPU location stub.
- *
- * \param[out] h_xp CPU pointer where coordinates should be copied to.
- */
-void SettleCuda::copyCoordinatesFromGpu(gmx_unused rvec *h_xp)
-{
-    GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
-}
-
-/*! \brief
- * Copy velocities from GPU to provided CPU location stub.
- *
- */
-void SettleCuda::copyVelocitiesFromGpu(gmx_unused rvec *h_v)
-{
-    GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
-}
-
-/*! \brief
- * Set the internal GPU-memory x, xprime and v pointers stub.
- *
- * \param[in] d_xp  Pointer to the coordinates after integrator update, before update (on GPU)
- * \param[in] d_v   Pointer to the velocities before integrator update (on GPU)
- */
-void SettleCuda::setXVPointers(gmx_unused rvec *d_x, gmx_unused rvec *d_xp, gmx_unused rvec *d_v)
 {
     GMX_ASSERT(false, "A CPU stub for SETTLE was called insted of the correct implementation.");
 }

@@ -53,26 +53,54 @@
 namespace gmx
 {
 
-/*! \internal \brief Class with interfaces and data for CUDA version of LINCS. */
+/*! \internal \brief Class with interfaces and data for CUDA version of Leap-Frog. */
 class LeapFrogCuda::Impl
 {
 
     public:
-        /*! \brief Creates Leap-Frog object.
-         *
-         * \param[in] numAtoms    Number of atoms
-         */
-        Impl(int numAtoms);
+
+        Impl();
         ~Impl();
 
-        /*! \brief Integrate
+        /*! \brief Make a numerical integration step on a GPU
          *
          * Integrates the equation of motion using Leap-Frog algorithm.
-         * Updates xpDevice_ and vDevice_ fields of this object.
+         * Updates coordinates and velocities on the GPU.
          *
-         * \param[in] dt             Timestep
+         * \param[in]     d_x   GPU buffer from which the initial coordinates are taken.
+         * \param[out]    d_xp  GPU buffer where the resulting coordinates are written.
+         * \param[in,out] d_v   GPU buffer with current velocities, will be updated for the paricles being integrated.
+         * \param[in]     d_f   GPU buffer with forces that act on particles being integrated.
+         * \param[in]     dt    Timestep.
          */
-        void integrate(real    dt);
+        void integrate(const float3 *d_x,
+                       float3       *d_xp,
+                       float3       *d_v,
+                       const float3 *d_f,
+                       const real    dt);
+
+        /*! \brief Copy data, make a numerical integration step on GPU, copy result back.
+         *
+         * Copies data from CPU to GPU, integrates the equation of motion
+         * using Leap-Frog algorithm, copies the result back. Should only
+         * be used for testing. The H2D and D2H copy is done synchronously.
+         *
+         * \todo This is temporary solution and will be removed in the
+         *       following revisions.
+         *
+         * \param[in] numAtoms  Number of atoms.
+         * \param[in]     h_x   CPU buffer with initial coordinates.
+         * \param[out]    h_xp  CPU buffer to which the final coordinates will be copied.
+         * \param[in,out] h_v   CPU buffer with velocities, that will be updated for the particles being integrated.
+         * \param[in]     h_f   CPU buffer with forces that act on the particles being integrted.
+         * \param[in]     dt    Timestep.
+         */
+        void copyIntegrateCopy(const int   numAtoms,
+                               const rvec *h_x,
+                               rvec       *h_xp,
+                               rvec       *h_v,
+                               const rvec *h_f,
+                               const real  dt);
 
         /*! \brief
          * Update PBC data.
@@ -91,73 +119,6 @@ class LeapFrogCuda::Impl
          */
         void set(const t_mdatoms &md);
 
-        /*! \brief
-         * Copy coordinates from CPU to GPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_x  CPU pointer where coordinates should be copied from.
-         */
-        void copyCoordinatesToGpu(const rvec *h_x);
-
-        /*! \brief
-         * Copy velocities from CPU to GPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  CPU pointer where velocities should be copied from.
-         */
-        void copyVelocitiesToGpu(const rvec *h_v);
-
-        /*! \brief
-         * Copy forces from CPU to GPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_f  CPU pointer where forces should be copied from.
-         */
-        void copyForcesToGpu(const rvec *h_f);
-
-        /*! \brief
-         * Copy coordinates from GPU to CPU.
-         *
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[out] h_xp CPU pointer where coordinates should be copied to.
-         */
-        void copyCoordinatesFromGpu(rvec *h_xp);
-
-        /*! \brief
-         * Copy velocities from GPU to CPU.
-         *
-         * The velocities are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  Pointer to velocities data.
-         */
-        void copyVelocitiesFromGpu(rvec *h_v);
-
-        /*! \brief
-         * Copy forces from GPU to CPU.
-         *
-         * The forces are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_f  Pointer to forces data.
-         */
-        void copyForcesFromGpu(rvec *h_f);
-
-        /*! \brief
-         * Set the internal GPU-memory x, xprime and v pointers.
-         *
-         * Data is not copied. The data are assumed to be in float3/fvec format
-         * (float3 is used internally, but the data layout should be identical).
-         *
-         * \param[in] d_x   Pointer to the coordinates for the input (on GPU)
-         * \param[in] d_xp  Pointer to the coordinates for the output (on GPU)
-         * \param[in] d_v   Pointer to the velocities (on GPU)
-         * \param[in] d_f   Pointer to the forces (on GPU)
-         */
-        void setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v, rvec *d_f);
-
     private:
 
         //! CUDA stream
@@ -166,14 +127,7 @@ class LeapFrogCuda::Impl
         PbcAiuc      pbcAiuc_;
         //! Number of atoms
         int          numAtoms_;
-        //! Coordinates before the timestep (on GPU)
-        float3      *d_x_;
-        //! Coordinates after the timestep (on GPU).
-        float3      *d_xp_;
-        //! Velocities of atoms (on GPU)
-        float3      *d_v_;
-        //! Forces, exerted by atoms (on GPU)
-        float3      *d_f_;
+
         //! 1/mass for all atoms (GPU)
         real        *d_inverseMasses_;
 

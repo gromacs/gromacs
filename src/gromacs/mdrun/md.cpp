@@ -296,6 +296,7 @@ void gmx::Simulator::do_md()
 
     if (DOMAINDECOMP(cr))
     {
+        GMX_RELEASE_ASSERT(!c_useGpuUpdateConstrain, "Domain decomposition is not supported with GPU-based update-constraints.");
         dd_init_local_top(*top_global, &top);
 
         stateInstance = std::make_unique<t_state>();

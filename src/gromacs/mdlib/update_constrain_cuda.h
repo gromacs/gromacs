@@ -165,7 +165,7 @@ class UpdateConstrainCuda
         void copyForcesFromGpu(rvec *h_f);
 
         /*! \brief
-         * Set the internal GPU-memory x, xprime and v pointers.
+         * Set the internal GPU-memory d_x, d_xp and d_v pointers.
          *
          * Data is not copied. The data are assumed to be in float3/fvec format
          * (float3 is used internally, but the data layout should be identical).

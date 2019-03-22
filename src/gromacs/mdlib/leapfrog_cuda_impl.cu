@@ -124,14 +124,11 @@ __global__ void leapfrog_kernel(const int                  numAtoms,
     return;
 }
 
-/*! \brief Integrate
- *
- * Integrates the equation of motion using Leap-Frog algorithm.
- * Updates d_xp_ and d_v_ fields of this object.
- *
- * \param[in] dt             Timestep
- */
-void LeapFrogCuda::Impl::integrate(const real  dt)
+void LeapFrogCuda::Impl::integrate(const float3 *d_x,
+                                   float3       *d_xp,
+                                   float3       *d_v,
+                                   const float3 *d_f,
+                                   const real    dt)
 {
 
     ensureNoPendingCudaError("In CUDA version of Leap-Frog integrator");
@@ -144,36 +141,58 @@ void LeapFrogCuda::Impl::integrate(const real  dt)
     config.sharedMemorySize = 0;
     config.stream           = stream_;
 
-    auto          kernelPtr        = leapfrog_kernel;
-    const float3 *d_x              = d_x_;
-    float3       *d_xp             = d_xp_;
-    float3       *d_v              = d_v_;
-    const float3 *d_f              = d_f_;
-    const float  *d_inverseMasses  = d_inverseMasses_;
+    auto          kernelPtr         = leapfrog_kernel;
+    const float3 *gm_x              = d_x;
+    float3       *gm_xp             = d_xp;
+    float3       *gm_v              = d_v;
+    const float3 *gm_f              = d_f;
+    const float  *gm_inverseMasses  = d_inverseMasses_;
 
     const auto    kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
                                                          &numAtoms_,
-                                                         &d_x, &d_xp,
-                                                         &d_v,
-                                                         &d_f,
-                                                         &d_inverseMasses, &dt);
+                                                         &gm_x, &gm_xp,
+                                                         &gm_v,
+                                                         &gm_f,
+                                                         &gm_inverseMasses, &dt);
     launchGpuKernel(kernelPtr, config, nullptr, "leapfrog_kernel", kernelArgs);
 
     return;
 }
 
-/*! \brief Create Leap-Frog object
- *
- * \param[in] numAtoms  Number of atoms.
- */
-LeapFrogCuda::Impl::Impl(int numAtoms)
-    : numAtoms_(numAtoms)
+void LeapFrogCuda::Impl::copyIntegrateCopy(const int   numAtoms,
+                                           const rvec *h_x,
+                                           rvec       *h_xp,
+                                           rvec       *h_v,
+                                           const rvec *h_f,
+                                           const real  dt)
 {
-    allocateDeviceBuffer(&d_x_,              numAtoms, nullptr);
-    allocateDeviceBuffer(&d_xp_,             numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v_,              numAtoms, nullptr);
-    allocateDeviceBuffer(&d_f_,              numAtoms, nullptr);
-    allocateDeviceBuffer(&d_inverseMasses_,  numAtoms, nullptr);
+    float3 *d_x, *d_xp, *d_v, *d_f;
+
+    allocateDeviceBuffer(&d_x,  numAtoms, nullptr);
+    allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
+    allocateDeviceBuffer(&d_v,  numAtoms, nullptr);
+    allocateDeviceBuffer(&d_f,  numAtoms, nullptr);
+
+    copyToDeviceBuffer(&d_x,  (float3*)h_x,  0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_xp, (float3*)h_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_v,  (float3*)h_v,  0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_f,  (float3*)h_f,  0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+
+    integrate(d_x, d_xp, d_v, d_f, dt);
+
+    copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer((float3*)h_v, &d_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
+
+    freeDeviceBuffer(&d_x);
+    freeDeviceBuffer(&d_xp);
+    freeDeviceBuffer(&d_v);
+    freeDeviceBuffer(&d_f);
+
+}
+
+LeapFrogCuda::Impl::Impl()
+{
+    numAtoms_ = 0;
 
     // TODO When the code will be integrated into the schedule, it will be assigned non-default stream.
     stream_ = nullptr;
@@ -181,140 +200,46 @@ LeapFrogCuda::Impl::Impl(int numAtoms)
 
 LeapFrogCuda::Impl::~Impl()
 {
-    freeDeviceBuffer(&d_x_);
-    freeDeviceBuffer(&d_xp_);
-    freeDeviceBuffer(&d_v_);
-    freeDeviceBuffer(&d_f_);
     freeDeviceBuffer(&d_inverseMasses_);
 
 }
 
-/*! \brief
- * Update PBC data.
- *
- * Converts pbc data from t_pbc into the PbcAiuc format and stores the latter.
- *
- * \param[in] pbc The PBC data in t_pbc format.
- */
 void LeapFrogCuda::Impl::setPbc(const t_pbc *pbc)
 {
     setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
 }
 
-/*! \brief Set the integrator
- *
- * Copies inverse masses from CPU to GPU.
- *
- * \param[in] md    MD atoms, from which inverse masses are taken.
- */
 void LeapFrogCuda::Impl::set(const t_mdatoms &md)
 {
+    if (md.nr > numAtoms_)
+    {
+        if (numAtoms_ > 0)
+        {
+            freeDeviceBuffer(&d_inverseMasses_);
+        }
+        numAtoms_ = md.nr;
+        allocateDeviceBuffer(&d_inverseMasses_,  numAtoms_, nullptr);
+    }
     copyToDeviceBuffer(&d_inverseMasses_, (float*)md.invmass,
                        0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
-/*! \brief
- * Copy coordinates from CPU to GPU.
- *
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_x  CPU pointer where coordinates should be copied from.
- */
-void LeapFrogCuda::Impl::copyCoordinatesToGpu(const rvec *h_x)
-{
-    copyToDeviceBuffer(&d_x_, (float3*)h_x, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
 
-/*! \brief
- * Copy velocities from CPU to GPU.
- *
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_v  CPU pointer where velocities should be copied from.
- */
-void LeapFrogCuda::Impl::copyVelocitiesToGpu(const rvec *h_v)
-{
-    copyToDeviceBuffer(&d_v_, (float3*)h_v, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Copy forces from CPU to GPU.
- *
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_f  CPU pointer where forces should be copied from.
- */
-void LeapFrogCuda::Impl::copyForcesToGpu(const rvec *h_f)
-{
-    copyToDeviceBuffer(&d_f_, (float3*)h_f, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Copy coordinates from GPU to CPU.
- *
- * The data are assumed to be in float3/fvec format (single precision).
- *
- * \param[out] h_xp CPU pointer where coordinates should be copied to.
- */
-void LeapFrogCuda::Impl::copyCoordinatesFromGpu(rvec *h_xp)
-{
-    copyFromDeviceBuffer((float3*)h_xp, &d_xp_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Copy velocities from GPU to CPU.
- *
- * The velocities are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_v  Pointer to velocities data.
- */
-void LeapFrogCuda::Impl::copyVelocitiesFromGpu(rvec *h_v)
-{
-    copyFromDeviceBuffer((float3*)h_v, &d_v_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Copy forces from GPU to CPU.
- *
- * The forces are assumed to be in float3/fvec format (single precision).
- *
- * \param[in] h_f  Pointer to forces data.
- */
-void LeapFrogCuda::Impl::copyForcesFromGpu(rvec *h_f)
-{
-    copyFromDeviceBuffer((float3*)h_f, &d_f_, 0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-/*! \brief
- * Set the internal GPU-memory x, xprime and v pointers.
- *
- * Data is not copied. The data are assumed to be in float3/fvec format
- * (float3 is used internally, but the data layout should be identical).
- *
- * \param[in] d_x  Pointer to the coordinates for the input (on GPU)
- * \param[in] d_xp Pointer to the coordinates for the output (on GPU)
- * \param[in] d_v  Pointer to the velocities (on GPU)
- * \param[in] d_f  Pointer to the forces (on GPU)
- */
-void LeapFrogCuda::Impl::setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v, rvec *d_f)
-{
-    d_x_  = (float3*)d_x;
-    d_xp_ = (float3*)d_xp;
-    d_v_  = (float3*)d_v;
-    d_f_  = (float3*)d_f;
-}
-
-
-LeapFrogCuda::LeapFrogCuda(const int numAtoms)
-    : impl_(new Impl(numAtoms))
+LeapFrogCuda::LeapFrogCuda()
+    : impl_(new Impl())
 {
 }
 
 LeapFrogCuda::~LeapFrogCuda() = default;
 
-void LeapFrogCuda::integrate(const real  dt)
+void LeapFrogCuda::copyIntegrateCopy(const int   numAtoms,
+                                     const rvec *h_x,
+                                     rvec       *h_xp,
+                                     rvec       *h_v,
+                                     const rvec *h_f,
+                                     const real  dt)
 {
-    impl_->integrate(dt);
+    impl_->copyIntegrateCopy(numAtoms, h_x, h_xp, h_v, h_f, dt);
 }
 
 void LeapFrogCuda::setPbc(const t_pbc *pbc)
@@ -325,41 +250,6 @@ void LeapFrogCuda::setPbc(const t_pbc *pbc)
 void LeapFrogCuda::set(const t_mdatoms &md)
 {
     impl_->set(md);
-}
-
-void LeapFrogCuda::copyCoordinatesToGpu(const rvec *h_x)
-{
-    impl_->copyCoordinatesToGpu(h_x);
-}
-
-void LeapFrogCuda::copyVelocitiesToGpu(const rvec *h_v)
-{
-    impl_->copyVelocitiesToGpu(h_v);
-}
-
-void LeapFrogCuda::copyForcesToGpu(const rvec *h_f)
-{
-    impl_->copyForcesToGpu(h_f);
-}
-
-void LeapFrogCuda::copyCoordinatesFromGpu(rvec *h_xp)
-{
-    impl_->copyCoordinatesFromGpu(h_xp);
-}
-
-void LeapFrogCuda::copyVelocitiesFromGpu(rvec *h_v)
-{
-    impl_->copyVelocitiesFromGpu(h_v);
-}
-
-void LeapFrogCuda::copyForcesFromGpu(rvec *h_f)
-{
-    impl_->copyForcesFromGpu(h_f);
-}
-
-void LeapFrogCuda::setXVFPointers(rvec *d_x, rvec *d_xp, rvec *d_v, rvec *d_f)
-{
-    impl_->setXVFPointers(d_x, d_xp, d_v, d_f);
 }
 
 } //namespace gmx

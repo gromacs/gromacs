@@ -55,14 +55,11 @@
 namespace gmx
 {
 
-/*!\brief Impl class stub.*/
 class LincsCuda::Impl
 {
 };
 
-/*!\brief Constructor stub.*/
-LincsCuda::LincsCuda(gmx_unused int numAtoms,
-                     gmx_unused int numIterations,
+LincsCuda::LincsCuda(gmx_unused int numIterations,
                      gmx_unused int expansionOrder)
     : impl_(nullptr)
 {
@@ -71,54 +68,25 @@ LincsCuda::LincsCuda(gmx_unused int numAtoms,
 
 LincsCuda::~LincsCuda() = default;
 
-/*!\brief Apply LINCS stub.*/
-void LincsCuda::apply(gmx_unused const bool  updateVelocities,
-                      gmx_unused const real  invdt,
-                      gmx_unused const bool  computeVirial,
-                      gmx_unused tensor      virialScaled)
+void LincsCuda::copyApplyCopy(gmx_unused int         numAtoms,
+                              gmx_unused const rvec *h_x,
+                              gmx_unused rvec       *h_xp,
+                              gmx_unused bool        updateVelocities,
+                              gmx_unused rvec       *h_v,
+                              gmx_unused real        invdt,
+                              gmx_unused bool        computeVirial,
+                              gmx_unused tensor      virialScaled)
 {
     GMX_ASSERT(false, "A CPU stub for LINCS was called insted of the correct implementation.");
 }
 
-/*!\brief Set data structures stub.*/
 void LincsCuda::set(gmx_unused const t_idef    &idef,
                     gmx_unused const t_mdatoms &md)
 {
     GMX_ASSERT(false, "A CPU stub for LINCS was called insted of the correct implementation.");
 }
 
-/*!\brief Set PBC stub.*/
 void LincsCuda::setPbc(gmx_unused const t_pbc *pbc)
-{
-    GMX_ASSERT(false, "A CPU stub for LINCS was called insted of the correct implementation.");
-}
-
-/*! \brief Copy coordinates from provided CPU location to GPU stub.*/
-void LincsCuda::copyCoordinatesToGpu(gmx_unused const rvec *h_x, gmx_unused const rvec *h_xp)
-{
-    GMX_ASSERT(false, "A CPU stub for LINCS was called insted of the correct implementation.");
-}
-
-/*! \brief Copy velocities from provided CPU location to GPU stub.*/
-void LincsCuda::copyVelocitiesToGpu(gmx_unused const rvec *h_v)
-{
-    GMX_ASSERT(false, "A CPU stub for LINCS was called insted of the correct implementation.");
-}
-
-/*! \brief Copy coordinates from GPU to provided CPU location stub.*/
-void LincsCuda::copyCoordinatesFromGpu(gmx_unused rvec *h_xp)
-{
-    GMX_ASSERT(false, "A CPU stub for LINCS was called insted of the correct implementation.");
-}
-
-/*! \brief Copy velocities from GPU to provided CPU location stub.*/
-void LincsCuda::copyVelocitiesFromGpu(gmx_unused rvec *h_v)
-{
-    GMX_ASSERT(false, "A CPU stub for LINCS was called insted of the correct implementation.");
-}
-
-/*! \brief Set the internal GPU-memory d_x, d_xprime and d_v pointers stub.*/
-void LincsCuda::setXVPointers(gmx_unused rvec *d_x, gmx_unused rvec *d_xp, gmx_unused rvec *d_v)
 {
     GMX_ASSERT(false, "A CPU stub for LINCS was called insted of the correct implementation.");
 }

@@ -70,12 +70,6 @@ struct LincsCudaKernelParameters
     int                 expansionOrder;
     //! Number of iterations used to correct the projection
     int                 numIterations;
-    //! Coordinates before the timestep (in the GPU memory)
-    float3             *d_x;
-    //! Coordinates after the timestep, before constraining (on GPU)
-    float3             *d_xp;
-    //! Velocities of atoms (on GPU)
-    float3             *d_v;
     //! 1/mass for all atoms (GPU)
     float              *d_inverseMasses;
     //! Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ], GPU)
@@ -109,12 +103,10 @@ class LincsCuda::Impl
 
         /*! \brief Constructor.
          *
-         * \param[in] numAtoms         Number of atoms
          * \param[in] numIterations    Number of iteration for the correction of the projection.
          * \param[in] expansionOrder   Order of the matrix inversion algorithm.
          */
-        Impl(int numAtoms,
-             int numIterations,
+        Impl(int numIterations,
              int expansionOrder);
         /*! \brief Destructor.*/
         ~Impl();
@@ -122,21 +114,60 @@ class LincsCuda::Impl
         /*! \brief Apply LINCS.
          *
          * Applies LINCS to coordinates and velocities, stored on GPU.
-         * Data at pointers xPrime and v (class fields) change in the GPU
-         * memory. The results are not automatically copied back to the CPU
-         * memory. Method uses this class data structures which should be
-         * updated when needed using update method.
+         * The results are not automatically copied back to the CPU memory.
+         * Method uses this class data structures which should be updated
+         * when needed using set() and setPbc() method.
          *
-         * \param[in] updateVelocities  If the velocities should be constrained.
-         * \param[in] invdt             Reciprocal timestep (to scale Lagrange
-         *                              multipliers when velocities are updated)
-         * \param[in] computeVirial     If virial should be updated.
-         * \param[in,out] virialScaled  Scaled virial tensor to be updated.
+         * \param[in]     d_x               Coordinates before timestep (in GPU memory)
+         * \param[in,out] d_xp              Coordinates after timestep (in GPU memory). The
+         *                                  resulting constrained coordinates will be saved here.
+         * \param[in]     updateVelocities  If the velocities should be updated.
+         * \param[in,out] d_v               Velocities to update (in GPU memory, can be nullptr
+         *                                  if not updated)
+         * \param[in]     invdt             Reciprocal timestep (to scale Lagrange
+         *                                  multipliers when velocities are updated)
+         * \param[in]     computeVirial     If virial should be updated.
+         * \param[in,out] virialScaled      Scaled virial tensor to be updated.
          */
-        void apply(bool    updateVelocities,
-                   real    invdt,
-                   bool    computeVirial,
-                   tensor  virialScaled);
+        void apply(const float3 *d_x,
+                   float3       *d_xp,
+                   const bool    updateVelocities,
+                   float3       *d_v,
+                   const real    invdt,
+                   const bool    computeVirial,
+                   tensor        virialScaled);
+
+        /*! \brief Apply LINCS to the coordinates/velocities stored in CPU memory.
+         *
+         * This method should not be used in any code-path, where performance is of any value.
+         * Only suitable for test and will be removed in future patch sets.
+         * Allocates GPU memory, copies data from CPU, applies LINCS to coordinates and,
+         * if requested, to velocities, copies the results back, frees GPU memory.
+         * Method uses this class data structures which should be filled with set() and setPbc()
+         * methods.
+         *
+         * \todo Remove this method
+         *
+         * \param[in]     numAtoms          Number of atoms
+         * \param[in]     h_x               Coordinates before timestep (in CPU memory)
+         * \param[in,out] h_xp              Coordinates after timestep (in CPU memory). The
+         *                                  resulting constrained coordinates will be saved here.
+         * \param[in]     updateVelocities  If the velocities should be updated.
+         * \param[in,out] h_v               Velocities to update (in CPU memory, can be nullptr
+         *                                  if not updated)
+         * \param[in]     invdt             Reciprocal timestep (to scale Lagrange
+         *                                  multipliers when velocities are updated)
+         * \param[in]     computeVirial     If virial should be updated.
+         * \param[in,out] virialScaled      Scaled virial tensor to be updated.
+         */
+        void copyApplyCopy(const int   numAtoms,
+                           const rvec *h_x,
+                           rvec       *h_xp,
+                           const bool  updateVelocities,
+                           rvec       *h_v,
+                           const real  invdt,
+                           const bool  computeVirial,
+                           tensor      virialScaled);
 
         /*! \brief
          * Update data-structures (e.g. after NB search step).
@@ -165,62 +196,12 @@ class LincsCuda::Impl
          *
          * Converts pbc data from t_pbc into the PbcAiuc format and stores the latter.
          *
+         * \todo Remove this method. LINCS should not manage PBC.
+         *
          * \param[in] pbc The PBC data in t_pbc format.
          */
         void setPbc(const t_pbc *pbc);
 
-        /*! \brief
-         * Copy coordinates from provided CPU location to GPU.
-         *
-         * Copies the coordinates before the integration step (x) and coordinates
-         * after the integration step (xp) from the provided CPU location to GPU.
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_x   CPU pointer where coordinates should be copied from.
-         * \param[in] h_xp  CPU pointer where coordinates should be copied from.
-         */
-        void copyCoordinatesToGpu(const rvec *h_x, const rvec *h_xp);
-
-        /*! \brief
-         * Copy velocities from provided CPU location to GPU.
-         *
-         * Nothing is done if the argument provided is a nullptr.
-         * The data are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  CPU pointer where velocities should be copied from.
-         */
-        void copyVelocitiesToGpu(const rvec *h_v);
-
-        /*! \brief
-         * Copy coordinates from GPU to provided CPU location.
-         *
-         * Copies the constrained coordinates to the provided location. The coordinates
-         * are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[out] h_xp CPU pointer where coordinates should be copied to.
-         */
-        void copyCoordinatesFromGpu(rvec *h_xp);
-
-        /*! \brief
-         * Copy velocities from GPU to provided CPU location.
-         *
-         * The velocities are assumed to be in float3/fvec format (single precision).
-         *
-         * \param[in] h_v  Pointer to velocities data.
-         */
-        void copyVelocitiesFromGpu(rvec *h_v);
-
-        /*! \brief
-         * Set the internal GPU-memory x, xprime and v pointers.
-         *
-         * Data is not copied. The data are assumed to be in float3/fvec format
-         * (float3 is used internally, but the data layout should be identical).
-         *
-         * \param[in] d_x   Pointer to the coordinates before integrator update (on GPU)
-         * \param[in] d_xp  Pointer to the coordinates after integrator update, before update (on GPU)
-         * \param[in] d_v   Pointer to the velocities before integrator update (on GPU)
-         */
-        void setXVPointers(rvec *d_x, rvec *d_xp, rvec *d_v);
 
     private:
 
@@ -234,13 +215,6 @@ class LincsCuda::Impl
         //! Parameters and pointers, passed to the CUDA kernel
         LincsCudaKernelParameters kernelParams_;
 
-        /*! \brief Number of atoms
-         *
-         * \todo Probably, it should not be stored by this class and passed as an argument when needed.
-         *       This question is coupled with the general relocation of the coordinates and velocities.
-         */
-        int                       numAtoms_;
-
         //! Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ])
         std::vector<float>        h_virialScaled_;
 
@@ -250,6 +224,7 @@ class LincsCuda::Impl
          * reallocated.
          */
         int                       maxConstraintsNumberSoFar_;
+
 };
 
 } // namespace gmx
