@@ -108,11 +108,21 @@ template
     unsigned int Step = 1
 >
 class EnumerationIterator final
-    : public              std::iterator<std::forward_iterator_tag, EnumType>
 {
     public:
         //! Convenience alias
         using IntegerType = typename std::underlying_type<EnumType>::type;
+
+        /*! \name Iterator type traits
+         * Satisfies the requirements for STL forward iterator.
+         * \{
+         */
+        using iterator_category = std::forward_iterator_tag;
+        using value_type        = EnumType;
+        using difference_type   = std::ptrdiff_t;
+        using pointer           = EnumType*;
+        using reference         = EnumType&;
+        //! \}
 
         constexpr EnumerationIterator() noexcept :
         m_current { 0 } // Assumes 0 is the first constant

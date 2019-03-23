@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,9 +142,19 @@ class SelectionParserSymbol
  * \ingroup module_selection
  */
 class SelectionParserSymbolIterator
-    : public std::iterator<std::input_iterator_tag, const SelectionParserSymbol>
 {
     public:
+        /*! \name Iterator type traits
+         * Satisfies the requirements for STL input iterator.
+         * \{
+         */
+        using iterator_category = std::input_iterator_tag;
+        using value_type        = const SelectionParserSymbol;
+        using difference_type   = std::ptrdiff_t;
+        using pointer           = const SelectionParserSymbol*;
+        using reference         = const SelectionParserSymbol&;
+        //! \}
+
         //! Creates an independent copy of an iterator.
         SelectionParserSymbolIterator(const SelectionParserSymbolIterator &other);
         ~SelectionParserSymbolIterator();
