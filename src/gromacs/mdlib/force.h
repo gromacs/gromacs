@@ -163,7 +163,6 @@ void do_force_lowlevel(t_forcerec   *fr,
                        const t_blocka *excl,
                        rvec         mu_tot[2],
                        int          flags,
-                       float        *cycles_pme,
                        const DDBalanceRegionHandler &ddBalanceRegionHandler);
 /* Call all the force routines */
 

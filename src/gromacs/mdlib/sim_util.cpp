@@ -833,12 +833,10 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 const int flags,
                                 const DDBalanceRegionHandler &ddBalanceRegionHandler)
 {
-    int                 cg1, i, j;
+    int                 i, j;
     double              mu[2*DIM];
     gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
-    rvec                vzero, box_diag;
-    float               cycles_pme, cycles_wait_gpu;
     nonbonded_verlet_t *nbv = fr->nbv.get();
 
     bStateChanged = ((flags & GMX_FORCE_STATECHANGED) != 0);
@@ -867,25 +865,10 @@ static void do_force_cutsVERLET(FILE *fplog,
         ddBalanceRegionHandler.openBeforeForceComputationCpu(DdAllowBalanceRegionReopen::yes);
     }
 
-    cycles_wait_gpu = 0;
-
     const int start  = 0;
     const int homenr = mdatoms->homenr;
 
     clear_mat(vir_force);
-
-    if (DOMAINDECOMP(cr))
-    {
-        cg1 = cr->dd->globalAtomGroupIndices.size();
-    }
-    else
-    {
-        cg1 = top->cgs.nr;
-    }
-    if (fr->n_tpi > 0)
-    {
-        cg1--;
-    }
 
     if (bStateChanged)
     {
@@ -955,7 +938,14 @@ static void do_force_cutsVERLET(FILE *fplog,
             mk_mshift(fplog, graph, fr->ePBC, box, as_rvec_array(x.unpaddedArrayRef().data()));
         }
 
+        // TODO
+        // - vzero is constant, do we need to pass it?
+        // - box_diag should be passed directly to nbnxn_put_on_grid
+        //
+        rvec vzero;
         clear_rvec(vzero);
+
+        rvec box_diag;
         box_diag[XX] = box[XX][XX];
         box_diag[YY] = box[YY][YY];
         box_diag[ZZ] = box[ZZ][ZZ];
@@ -1283,7 +1273,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                       as_rvec_array(x.unpaddedArrayRef().data()), hist, forceOut.f, &forceOut.forceWithVirial, enerd, fcd,
                       box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags,
-                      &cycles_pme, ddBalanceRegionHandler);
+                      ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1293,6 +1283,9 @@ static void do_force_cutsVERLET(FILE *fplog,
                          flags, &forceOut.forceWithVirial, enerd,
                          ed, bNS);
 
+    // Will store the amount of cycles spent waiting for the GPU that
+    // will be later used in the DLB accounting.
+    float cycles_wait_gpu = 0;
     if (bUseOrEmulGPU)
     {
         /* wait for non-local forces (or calculate in emulation mode) */
@@ -1522,7 +1515,6 @@ static void do_force_cutsGROUP(FILE *fplog,
     double     mu[2*DIM];
     gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool   bDoForces;
-    float      cycles_pme;
 
     const int  start  = 0;
     const int  homenr = mdatoms->homenr;
@@ -1716,7 +1708,7 @@ static void do_force_cutsGROUP(FILE *fplog,
                       box, inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
                       flags,
-                      &cycles_pme, ddBalanceRegionHandler);
+                      ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);
 

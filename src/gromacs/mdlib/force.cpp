@@ -159,7 +159,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
                        const t_blocka               *excl,
                        rvec                          mu_tot[],
                        int                           flags,
-                       float                        *cycles_pme,
                        const DDBalanceRegionHandler &ddBalanceRegionHandler)
 {
     int         i, j;
@@ -345,8 +344,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
                     flags);
 
 
-    *cycles_pme = 0;
-
     /* Do long-range electrostatics and/or LJ-PME, including related short-range
      * corrections.
      */
@@ -483,7 +480,7 @@ void do_force_lowlevel(t_forcerec                   *fr,
                                         &ewaldOutput.dvdl[efptCOUL],
                                         &ewaldOutput.dvdl[efptVDW],
                                         pme_flags);
-                    *cycles_pme = wallcycle_stop(wcycle, ewcPMEMESH);
+                    wallcycle_stop(wcycle, ewcPMEMESH);
                     if (status != 0)
                     {
                         gmx_fatal(FARGS, "Error %d in reciprocal PME routine", status);
