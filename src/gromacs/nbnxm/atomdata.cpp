@@ -273,8 +273,11 @@ static void set_lj_parameter_data(nbnxn_atomdata_t::Params *params, gmx_bool bSI
             {
                 params->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+0] = params->nbfp[(i*nt+j)*2+0];
                 params->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+1] = params->nbfp[(i*nt+j)*2+1];
-                params->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+2] = 0;
-                params->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+3] = 0;
+                if (c_simdBestPairAlignment > 2)
+                {
+                    params->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+2] = 0;
+                    params->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+3] = 0;
+                }
             }
         }
 #endif

@@ -1786,9 +1786,16 @@ defaultInteractionTypeParameters(int ftype, gmx::ArrayRef<InteractionTypeParamet
              * The rule in that case is that additional matches
              * HAVE to be on adjacent lines!
              */
-            bool bSame = true;
+            bool       bSame = true;
+            //Advance iterator (like std::advance) without incrementing past end (UB)
+            const auto safeAdvance = [](auto &it, auto n, auto end) {
+                    it = end-it > n ? it+n : end;
+                };
             /* Continue from current iterator position */
-            for (auto nextPos = prevPos + 2; (nextPos < bt[ftype].interactionTypes.end()) && bSame; nextPos += 2)
+            auto       nextPos = prevPos;
+            const auto endIter = bt[ftype].interactionTypes.end();
+            safeAdvance(nextPos, 2, endIter);
+            for (; nextPos < endIter && bSame; safeAdvance(nextPos, 2, endIter))
             {
                 bSame = (prevPos->ai() == nextPos->ai() && prevPos->aj() == nextPos->aj() && prevPos->ak() == nextPos->ak() && prevPos->al() == nextPos->al());
                 if (bSame)

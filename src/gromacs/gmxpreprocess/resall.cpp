@@ -376,7 +376,7 @@ void readResidueDatabase(const std::string &rrdb, std::vector<PreprocessResidue>
         print_resall_header(stderr, gmx::arrayRefFromArray(&header_settings, 1));
     }
     /* We don't know the current size of rrtp, but simply realloc immediately */
-    auto oldArrayEnd = rtpDBEntry->end() - 1;
+    auto oldArrayEnd = rtpDBEntry->end();
     while (!feof(in))
     {
         /* Initialise rtp entry structure */

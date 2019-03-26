@@ -1877,7 +1877,7 @@ static void set_matrix_indices(Lincs                *li,
         if (bSortMatrix)
         {
             /* Order the blbnb matrix to optimize memory access */
-            std::sort(&(li->blbnb[li->blnr[b]]), &(li->blbnb[li->blnr[b+1]]));
+            std::sort(li->blbnb.begin()+li->blnr[b], li->blbnb.begin()+li->blnr[b+1]);
         }
     }
 }
