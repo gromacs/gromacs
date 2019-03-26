@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -345,8 +345,11 @@ static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
             {
                 nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+0] = nbat->nbfp[(i*nt+j)*2+0];
                 nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+1] = nbat->nbfp[(i*nt+j)*2+1];
-                nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+2] = 0;
-                nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+3] = 0;
+                if (c_simdBestPairAlignment > 2)
+                {
+                    nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+2] = 0;
+                    nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+3] = 0;
+                }
             }
         }
 #endif
