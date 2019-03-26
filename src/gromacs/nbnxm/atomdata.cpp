@@ -1478,6 +1478,12 @@ void reduceForces(nbnxn_atomdata_t          *nbat,
             break;
     }
 
+    if (na == 0)
+    {
+        /* The are no atoms for this reduction, avoid some overhead */
+        return;
+    }
+
     int nth = gmx_omp_nthreads_get(emntNonbonded);
 
     if (nbat->out.size() > 1)

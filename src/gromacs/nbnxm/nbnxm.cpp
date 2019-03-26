@@ -49,7 +49,6 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
 
-#include "pairlistset.h"
 #include "pairlistsets.h"
 #include "pairsearch.h"
 
@@ -165,14 +164,6 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality  locality
                                              rvec                      *f,
                                              gmx_wallcycle             *wcycle)
 {
-    /* Skip the non-local reduction if there was no non-local work to do */
-    if (!pairlistIsSimple() &&
-        locality == Nbnxm::AtomLocality::NonLocal &&
-        pairlistSets().pairlistSet(Nbnxm::InteractionLocality::NonLocal).gpuList()->sci.empty())
-    {
-        return;
-    }
-
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
 
