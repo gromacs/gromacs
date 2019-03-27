@@ -1156,106 +1156,54 @@ nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
 #endif
 }
 
-/* Add part of the force array(s) from nbnxn_atomdata_t to f */
+/* Add part of the force array(s) from nbnxn_atomdata_t to f
+ *
+ * Note: Adding restrict to f makes this function 50% slower with gcc 7.3
+ */
 static void
-nbnxn_atomdata_add_nbat_f_to_f_part(const Nbnxm::GridSet &gridSet,
-                                    const nbnxn_atomdata_t *nbat,
-                                    gmx::ArrayRef<const nbnxn_atomdata_output_t> out,
-                                    int nfa,
-                                    int a0, int a1,
-                                    rvec *f)
+nbnxn_atomdata_add_nbat_f_to_f_part(const Nbnxm::GridSet          &gridSet,
+                                    const nbnxn_atomdata_t        &nbat,
+                                    const nbnxn_atomdata_output_t &out,
+                                    const int                      a0,
+                                    const int                      a1,
+                                    rvec *                         f)
 {
-    gmx::ArrayRef<const int> cell = gridSet.cells();
+    gmx::ArrayRef<const int>  cell = gridSet.cells();
+    // Note: Using ArrayRef instead makes this code 25% slower with gcc 7.3
+    const real               *fnb  = out.f.data();
 
     /* Loop over all columns and copy and fill */
-    switch (nbat->FFormat)
+    switch (nbat.FFormat)
     {
         case nbatXYZ:
         case nbatXYZQ:
-            if (nfa == 1)
+            for (int a = a0; a < a1; a++)
             {
-                const real *fnb = out[0].f.data();
+                int i = cell[a]*nbat.fstride;
 
-                for (int a = a0; a < a1; a++)
-                {
-                    int i = cell[a]*nbat->fstride;
-
-                    f[a][XX] += fnb[i];
-                    f[a][YY] += fnb[i+1];
-                    f[a][ZZ] += fnb[i+2];
-                }
-            }
-            else
-            {
-                for (int a = a0; a < a1; a++)
-                {
-                    int i = cell[a]*nbat->fstride;
-
-                    for (int fa = 0; fa < nfa; fa++)
-                    {
-                        f[a][XX] += out[fa].f[i];
-                        f[a][YY] += out[fa].f[i+1];
-                        f[a][ZZ] += out[fa].f[i+2];
-                    }
-                }
+                f[a][XX] += fnb[i];
+                f[a][YY] += fnb[i + 1];
+                f[a][ZZ] += fnb[i + 2];
             }
             break;
         case nbatX4:
-            if (nfa == 1)
+            for (int a = a0; a < a1; a++)
             {
-                const real *fnb = out[0].f.data();
+                int i = atom_to_x_index<c_packX4>(cell[a]);
 
-                for (int a = a0; a < a1; a++)
-                {
-                    int i = atom_to_x_index<c_packX4>(cell[a]);
-
-                    f[a][XX] += fnb[i+XX*c_packX4];
-                    f[a][YY] += fnb[i+YY*c_packX4];
-                    f[a][ZZ] += fnb[i+ZZ*c_packX4];
-                }
-            }
-            else
-            {
-                for (int a = a0; a < a1; a++)
-                {
-                    int i = atom_to_x_index<c_packX4>(cell[a]);
-
-                    for (int fa = 0; fa < nfa; fa++)
-                    {
-                        f[a][XX] += out[fa].f[i+XX*c_packX4];
-                        f[a][YY] += out[fa].f[i+YY*c_packX4];
-                        f[a][ZZ] += out[fa].f[i+ZZ*c_packX4];
-                    }
-                }
+                f[a][XX] += fnb[i + XX*c_packX4];
+                f[a][YY] += fnb[i + YY*c_packX4];
+                f[a][ZZ] += fnb[i + ZZ*c_packX4];
             }
             break;
         case nbatX8:
-            if (nfa == 1)
+            for (int a = a0; a < a1; a++)
             {
-                const real *fnb = out[0].f.data();
+                int i = atom_to_x_index<c_packX8>(cell[a]);
 
-                for (int a = a0; a < a1; a++)
-                {
-                    int i = atom_to_x_index<c_packX8>(cell[a]);
-
-                    f[a][XX] += fnb[i+XX*c_packX8];
-                    f[a][YY] += fnb[i+YY*c_packX8];
-                    f[a][ZZ] += fnb[i+ZZ*c_packX8];
-                }
-            }
-            else
-            {
-                for (int a = a0; a < a1; a++)
-                {
-                    int i = atom_to_x_index<c_packX8>(cell[a]);
-
-                    for (int fa = 0; fa < nfa; fa++)
-                    {
-                        f[a][XX] += out[fa].f[i+XX*c_packX8];
-                        f[a][YY] += out[fa].f[i+YY*c_packX8];
-                        f[a][ZZ] += out[fa].f[i+ZZ*c_packX8];
-                    }
-                }
+                f[a][XX] += fnb[i + XX*c_packX8];
+                f[a][YY] += fnb[i + YY*c_packX8];
+                f[a][ZZ] += fnb[i + ZZ*c_packX8];
             }
             break;
         default:
@@ -1510,11 +1458,10 @@ void reduceForces(nbnxn_atomdata_t          *nbat,
     {
         try
         {
-            nbnxn_atomdata_add_nbat_f_to_f_part(gridSet, nbat,
-                                                nbat->out,
-                                                1,
-                                                a0+((th+0)*na)/nth,
-                                                a0+((th+1)*na)/nth,
+            nbnxn_atomdata_add_nbat_f_to_f_part(gridSet, *nbat,
+                                                nbat->out[0],
+                                                a0 + ((th + 0)*na)/nth,
+                                                a0 + ((th + 1)*na)/nth,
                                                 f);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
