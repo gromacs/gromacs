@@ -69,7 +69,7 @@ NbnxnListParameters::NbnxnListParameters(const Nbnxm::KernelType kernelType,
 {
     if (!Nbnxm::kernelTypeUsesSimplePairlist(kernelType))
     {
-        pairlistType = PairlistType::Hierarchical8x8;
+        pairlistType = PairlistType::HierarchicalNxN;
     }
     else
     {

@@ -65,7 +65,7 @@ namespace Nbnxm
 {
 
 Grid::Geometry::Geometry(const PairlistType pairlistType) :
-    isSimple(pairlistType != PairlistType::Hierarchical8x8),
+    isSimple(pairlistType != PairlistType::HierarchicalNxN),
     numAtomsICluster(IClusterSizePerListType[pairlistType]),
     numAtomsJCluster(JClusterSizePerListType[pairlistType]),
     numAtomsPerCell((isSimple ? 1 : c_gpuNumClusterPerCell)*numAtomsICluster),

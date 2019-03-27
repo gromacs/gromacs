@@ -75,18 +75,6 @@ using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
 template<typename T>
 using FastVector = std::vector < T, gmx::DefaultInitializationAllocator < T>>;
 
-enum class PairlistType : int
-{
-    Simple4x2,
-    Simple4x4,
-    Simple4x8,
-    Hierarchical8x8,
-    Count
-};
-
-static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = { { 4, 4, 4, 8 } };
-static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = { { 2, 4, 8, 8 } };
-
 /* With CPU kernels the i-cluster size is always 4 atoms. */
 static constexpr int c_nbnxnCpuIClusterSize = 4;
 
@@ -111,6 +99,33 @@ static constexpr int c_nbnxnGpuClusterpairSplit = 2;
 
 /* The fixed size of the exclusion mask array for a half cluster pair */
 static constexpr int c_nbnxnGpuExclSize = c_nbnxnGpuClusterSize*c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit;
+
+//! The available pair list types
+enum class PairlistType : int
+{
+    Simple4x2,
+    Simple4x4,
+    Simple4x8,
+    HierarchicalNxN,
+    Count
+};
+
+//! Gives the i-cluster size for each pairlist type
+static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType =
+{ {
+      c_nbnxnCpuIClusterSize,
+      c_nbnxnCpuIClusterSize,
+      c_nbnxnCpuIClusterSize,
+      c_nbnxnGpuClusterSize
+  } };
+//! Gives the j-cluster size for each pairlist type
+static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType =
+{ {
+      2,
+      4,
+      8,
+      c_nbnxnGpuClusterSize
+  } };
 
 /* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs
