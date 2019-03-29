@@ -37,6 +37,7 @@
 # Import system facilities
 import logging
 
+# Define `logger` attribute that is used by submodules to create sub-loggers.
 logging.getLogger().addHandler(logging.NullHandler(level=logging.DEBUG))
 logging.getLogger().setLevel(logging.DEBUG)
 logging.getLogger().info("Setting up logging for gmxapi package.")

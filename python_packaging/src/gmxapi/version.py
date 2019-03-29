@@ -41,7 +41,7 @@ Attributes:
 
 """
 
-# TODO: configure with CMake
+# TODO: (pending infrastructure and further discussion) Configure with CMake.
 # __version__ = "@PROJECT_VERSION@"
 # major = @PROJECT_VERSION_MAJOR@
 # minor = @PROJECT_VERSION_MINOR@

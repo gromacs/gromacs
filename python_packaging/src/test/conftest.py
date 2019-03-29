@@ -1,3 +1,4 @@
+#
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2019, by the GROMACS development team, led by
@@ -31,55 +32,32 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""
-Exceptions and Warnings raised by gmxapi module operations
-==========================================================
+"""Configuration and fixtures for pytest."""
 
-Errors, warnings, and other exceptions used in the GROMACS
-Python package are defined in the `exceptions` submodule.
+import pytest
+import tempfile
+import os
 
-The gmxapi Python package defines a root exception,
-exceptions.Error, from which all Exceptions thrown from
-within the module should derive. If a published component of
-the gmxapi package throws an exception that cannot be caught
-as a gmxapi.exceptions.Error, please report the bug.
-"""
+@pytest.fixture()
+def cleandir():
+    """Provide a clean working directory for tests.
 
-__all__ = ['ApiError',
-           'Error',
-           'ProtocolError',
-           'UsageError',
-           'ValueError',
-           'Warning'
-           ]
+    Example usage:
 
+        import os
+        import pytest
 
-class Error(Exception):
-    """Base exception for gmx.exceptions classes."""
+        @pytest.mark.usefixtures("cleandir")
+        class TestDirectoryInit(object):
+            def test_cwd_starts_empty(self):
+                assert os.listdir(os.getcwd()) == []
+                with open("myfile", "w") as f:
+                    f.write("hello")
 
+            def test_cwd_again_starts_empty(self):
+                assert os.listdir(os.getcwd()) == []
 
-class Warning(Warning):
-    """Base warning class for gmx.exceptions."""
-
-
-class ApiError(Error):
-    """An API operation was attempted with an incompatible object."""
-
-
-class ProtocolError(Error):
-    """Unexpected API behavior or protocol violation.
-
-    This exception generally indicates a gmxapi bug, since it should only
-    occur through incorrect assumptions or misuse of API implementation internals.
+    Ref: https://docs.pytest.org/en/latest/fixture.html#using-fixtures-from-classes-modules-or-projects
     """
-
-
-class UsageError(Error):
-    """Unsupported syntax or call signatures.
-
-    Generic usage error for gmxapi module.
-    """
-
-
-class ValueError(Error):
-    """A user-provided value cannot be interpreted or doesn't make sense."""
+    newpath = tempfile.mkdtemp()
+    os.chdir(newpath)
