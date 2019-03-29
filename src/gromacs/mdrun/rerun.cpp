@@ -58,6 +58,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
@@ -84,11 +85,9 @@
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
-#include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/membed.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/resethandler.h"
-#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/stat.h"
@@ -135,6 +134,7 @@
 
 #include "integrator.h"
 #include "replicaexchange.h"
+#include "shellfc.h"
 
 using gmx::SimulationSignaller;
 

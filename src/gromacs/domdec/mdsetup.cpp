@@ -42,7 +42,6 @@
 #include "gromacs/listed_forces/manage_threading.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"

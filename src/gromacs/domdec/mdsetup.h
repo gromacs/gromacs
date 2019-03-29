@@ -32,8 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MDLIB_MDSETUP_H
-#define GMX_MDLIB_MDSETUP_H
+
+/*! \libinternal \file
+ * \brief Contains functions relevant to simulation setup in MD drivers
+ *
+ * \inlibraryapi
+ * \ingroup module_domdec
+ */
+
+#ifndef GMX_DOMDEC_MDSETUP_H
+#define GMX_DOMDEC_MDSETUP_H
 
 struct bonded_threading_t;
 struct gmx_localtop_t;
@@ -44,12 +52,23 @@ struct t_commrec;
 struct t_forcerec;
 struct t_graph;
 struct t_inputrec;
+struct t_mdatoms;
 
 namespace gmx
 {
 class Constraints;
 class MDAtoms;
 }
+
+/*! \brief Gets the local shell with domain decomposition
+ *
+ * \param[in]     cr        Communication record
+ * \param[in]     md        The MD atom data
+ * \param[in,out] shfc      The shell/flexible-constraint data
+ */
+void make_local_shells(const t_commrec *cr,
+                       const t_mdatoms *md,
+                       gmx_shellfc_t   *shfc);
 
 /*! \brief Sets atom data for several MD algorithms
  *

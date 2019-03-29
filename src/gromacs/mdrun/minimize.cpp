@@ -58,6 +58,7 @@
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
@@ -79,9 +80,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/ns.h"
-#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
@@ -106,6 +105,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "integrator.h"
+#include "shellfc.h"
 
 //! Utility structure for manipulating states during EM
 typedef struct {

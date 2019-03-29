@@ -69,11 +69,6 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                   int nstcalcenergy,
                                   bool usingDomainDecomposition);
 
-/* Get the local shell with domain decomposition */
-void make_local_shells(const t_commrec *cr,
-                       const t_mdatoms *md,
-                       gmx_shellfc_t   *shfc);
-
 /* Optimize shell positions */
 void relax_shell_flexcon(FILE                                     *log,
                          const t_commrec                          *cr,
