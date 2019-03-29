@@ -56,6 +56,7 @@ struct t_blocka;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
+struct t_gmx_IMD;
 struct t_graph;
 struct t_idef;
 struct t_inputrec;
@@ -95,6 +96,7 @@ void do_force(FILE                                     *log,
               const t_inputrec                         *inputrec,
               gmx::Awh                                 *awh,
               gmx_enfrot                               *enforcedRotation,
+              t_gmx_IMD                                *imdSession,
               int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle                            *wcycle,

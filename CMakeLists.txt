@@ -341,9 +341,9 @@ endif()
 add_definitions(-DGMX_DOUBLE=${GMX_DOUBLE_VALUE})
 list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}")
 
-if(WIN32)
+option(GMX_IMD "Enable Interactive Molecular Dynamics (IMD) sessions, e.g. with VMD" ON)
+if(GMX_IMD AND WIN32)
     list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
-    add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
 
 

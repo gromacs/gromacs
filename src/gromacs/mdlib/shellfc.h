@@ -51,6 +51,7 @@ struct gmx_shellfc_t;
 struct gmx_mtop_t;
 struct t_forcerec;
 struct t_fcdata;
+struct t_gmx_IMD;
 struct t_graph;
 struct t_inputrec;
 class t_state;
@@ -81,6 +82,7 @@ void relax_shell_flexcon(FILE                                     *log,
                          gmx_enfrot                               *enforcedRotation,
                          int64_t                                   mdstep,
                          const t_inputrec                         *inputrec,
+                         t_gmx_IMD                                *imdSession,
                          gmx_bool                                  bDoNS,
                          int                                       force_flags,
                          gmx_localtop_t                           *top,

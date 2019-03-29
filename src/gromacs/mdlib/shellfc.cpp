@@ -971,6 +971,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
                          gmx_enfrot                               *enforcedRotation,
                          int64_t                                   mdstep,
                          const t_inputrec                         *inputrec,
+                         t_gmx_IMD                                *imdSession,
                          gmx_bool                                  bDoNS,
                          int                                       force_flags,
                          gmx_localtop_t                           *top,
@@ -1123,7 +1124,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
         pr_rvecs(debug, 0, "x b4 do_force", state->x.rvec_array(), homenr);
     }
     int shellfc_flags = force_flags | (bVerbose ? GMX_FORCE_ENERGY : 0);
-    do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation,
+    do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation, imdSession,
              mdstep, nrnb, wcycle, top,
              state->box, state->x.arrayRefWithPadding(), &state->hist,
              forceWithPadding[Min], force_vir, md, enerd, fcd,
@@ -1233,7 +1234,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
             pr_rvecs(debug, 0, "RELAX: pos[Try]  ", as_rvec_array(pos[Try].data()), homenr);
         }
         /* Try the new positions */
-        do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation,
+        do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation, imdSession,
                  1, nrnb, wcycle,
                  top, state->box, posWithPadding[Try], &state->hist,
                  forceWithPadding[Try], force_vir,

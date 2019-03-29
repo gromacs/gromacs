@@ -495,6 +495,7 @@ haveSpecialForces(const t_inputrec              *inputrec,
  * \param[in]     inputrec         The input record
  * \param[in]     awh              The Awh module (nullptr if none in use).
  * \param[in]     enforcedRotation Enforced rotation module.
+ * \param[in]     imdSession       The IMD session
  * \param[in]     step             The current MD step
  * \param[in]     t                The current time
  * \param[in,out] wcycle           Wallcycle accounting struct
@@ -518,6 +519,7 @@ computeSpecialForces(FILE                          *fplog,
                      const t_inputrec              *inputrec,
                      gmx::Awh                      *awh,
                      gmx_enfrot                    *enforcedRotation,
+                     t_gmx_IMD                     *imdSession,
                      int64_t                        step,
                      double                         t,
                      gmx_wallcycle_t                wcycle,
@@ -582,10 +584,10 @@ computeSpecialForces(FILE                          *fplog,
         do_flood(cr, inputrec, as_rvec_array(x.data()), f, ed, box, step, bNS);
     }
 
-    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
+    /* Add forces from interactive molecular dynamics (IMD), if any */
     if (inputrec->bIMD && computeForces)
     {
-        IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
+        IMD_apply_forces(imdSession, cr, f, wcycle);
     }
 }
 
@@ -803,6 +805,7 @@ void do_force(FILE                                     *fplog,
               const t_inputrec                         *inputrec,
               gmx::Awh                                 *awh,
               gmx_enfrot                               *enforcedRotation,
+              t_gmx_IMD                                *imdSession,
               int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle_t                           wcycle,
@@ -1277,7 +1280,7 @@ void do_force(FILE                                     *fplog,
     wallcycle_stop(wcycle, ewcFORCE);
 
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
-                         step, t, wcycle,
+                         imdSession, step, t, wcycle,
                          fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda.data(),
                          flags, &forceOut.forceWithVirial, enerd,
                          ed, bNS);

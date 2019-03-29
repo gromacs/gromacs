@@ -75,6 +75,7 @@
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/printhardware.h"
+#include "gromacs/imd/imd.h"
 #include "gromacs/listed_forces/disre.h"
 #include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/listed_forces/orires.h"
@@ -1498,6 +1499,12 @@ int Mdrunner::mdrunner()
         snew(enerd, 1);
         init_enerdata(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].nr, inputrec->fepvals->n_lambda, enerd);
 
+        /* Set up interactive MD (IMD) */
+        t_gmx_IMD *imdSession =
+            init_IMD(inputrec, cr, ms, &mtop, mdlog,
+                     MASTER(cr) ? globalState->x.rvec_array() : nullptr,
+                     filenames.size(), filenames.data(), oenv, mdrunOptions);
+
         if (DOMAINDECOMP(cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
@@ -1526,7 +1533,7 @@ int Mdrunner::mdrunner()
             enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
             deform.get(),
             mdModules_->outputProvider(),
-            inputrec, &mtop,
+            inputrec, imdSession, &mtop,
             fcd,
             globalState.get(),
             &observablesHistory,

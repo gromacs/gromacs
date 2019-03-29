@@ -642,7 +642,7 @@ Integrator::do_tpi()
             // might raise, then restore the old behaviour.
             std::fenv_t floatingPointEnvironment;
             std::feholdexcept(&floatingPointEnvironment);
-            do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
+            do_force(fplog, cr, ms, inputrec, nullptr, nullptr, imdSession,
                      step, nrnb, wcycle, &top,
                      state_global->box, state_global->x.arrayRefWithPadding(), &state_global->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,

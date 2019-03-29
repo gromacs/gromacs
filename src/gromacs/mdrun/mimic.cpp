@@ -65,7 +65,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/imd/imd.h"
 #include "gromacs/listed_forces/manage_threading.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
@@ -269,7 +268,7 @@ void gmx::Integrator::do_mimic()
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
-                            state_global, *top_global, ir,
+                            state_global, *top_global, ir, imdSession,
                             state, &f, mdAtoms, &top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
@@ -400,7 +399,7 @@ void gmx::Integrator::do_mimic()
             const bool bMasterState = true;
             dd_partition_system(fplog, mdlog, step, cr,
                                 bMasterState, nstglobalcomm,
-                                state_global, *top_global, ir,
+                                state_global, *top_global, ir, imdSession,
                                 state, &f, mdAtoms, &top, fr,
                                 vsite, constr,
                                 nrnb, wcycle,
@@ -430,7 +429,7 @@ void gmx::Integrator::do_mimic()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose,
                                 enforcedRotation, step,
-                                ir, bNS, force_flags, &top,
+                                ir, imdSession, bNS, force_flags, &top,
                                 constr, enerd, fcd,
                                 state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph,
@@ -447,7 +446,7 @@ void gmx::Integrator::do_mimic()
              */
             Awh       *awh = nullptr;
             gmx_edsam *ed  = nullptr;
-            do_force(fplog, cr, ms, ir, awh, enforcedRotation,
+            do_force(fplog, cr, ms, ir, awh, enforcedRotation, imdSession,
                      step, nrnb, wcycle, &top,
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,

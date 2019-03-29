@@ -58,6 +58,7 @@ struct gmx_vsite_t;
 struct gmx_wallcycle;
 struct t_commrec;
 struct t_forcerec;
+struct t_gmx_IMD;
 struct t_inputrec;
 struct t_nrnb;
 class t_state;
@@ -95,6 +96,7 @@ void dd_partition_system(FILE                    *fplog,
                          t_state                 *state_global,
                          const gmx_mtop_t        &top_global,
                          const t_inputrec        *ir,
+                         t_gmx_IMD               *imdSession,
                          t_state                 *state_local,
                          PaddedVector<gmx::RVec> *f,
                          gmx::MDAtoms            *mdatoms,
