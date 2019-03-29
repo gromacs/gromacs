@@ -190,9 +190,9 @@ as:
 
 .. math:: V_{dihr}(\phi') ~=~ \left\{
           \begin{array}{lcllll}
-          {\frac{1}{2}}k_{dihr}(\phi'-\phi_0-\Delta\phi)^2      
-                          &\mbox{for}&     \phi' & >   & \Delta\phi       \\[1.5ex]
-          0               &\mbox{for}&     \phi' & \le & \Delta\phi       \\[1.5ex]
+          {\frac{1}{2}}k_{dihr}(\phi'-\Delta\phi)^2      
+                          &\mbox{for}&     \|\phi'\| & >   & \Delta\phi       \\[1.5ex]
+          0               &\mbox{for}&     \|\phi'\| & \le & \Delta\phi       \\[1.5ex]
           \end{array}\right.
           :label: eqndihre
 
