@@ -138,7 +138,6 @@ Integrator::do_tpi()
 {
     gmx_localtop_t          top;
     gmx_groups_t           *groups;
-    gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
     real                    lambda, t, temp, beta, drmax, epot;
     double                  embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
@@ -266,8 +265,6 @@ Integrator::do_tpi()
     atoms2md(top_global, inputrec, -1, nullptr, top_global->natoms, mdAtoms);
     update_mdatoms(mdatoms, inputrec->fepvals->init_lambda);
 
-    snew(enerd, 1);
-    init_enerdata(groups->grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
     f.resizeWithPadding(top_global->natoms);
 
     /* Print to log file  */

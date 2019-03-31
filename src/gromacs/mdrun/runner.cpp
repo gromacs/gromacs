@@ -84,6 +84,7 @@
 #include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/makeconstraints.h"
@@ -101,6 +102,7 @@
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -1502,6 +1504,11 @@ int Mdrunner::mdrunner()
                                                    fplog, *mdAtoms->mdatoms(),
                                                    cr, ms, nrnb, wcycle, fr->bMolPBC);
 
+        /* Energy terms and groups */
+        gmx_enerdata_t *enerd;
+        snew(enerd, 1);
+        init_enerdata(mtop.groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+
         if (DOMAINDECOMP(cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
@@ -1535,6 +1542,7 @@ int Mdrunner::mdrunner()
             globalState.get(),
             &observablesHistory,
             mdAtoms.get(), nrnb, wcycle, fr,
+            enerd,
             &ppForceWorkload,
             replExParams,
             membed,
@@ -1547,7 +1555,8 @@ int Mdrunner::mdrunner()
         {
             finish_pull(inputrec->pull_work);
         }
-
+        destroy_enerdata(enerd);
+        sfree(enerd);
     }
     else
     {

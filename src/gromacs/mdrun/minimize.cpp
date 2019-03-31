@@ -1057,7 +1057,6 @@ Integrator::do_cg()
     const char        *CG = "Polak-Ribiere Conjugate Gradients";
 
     gmx_localtop_t     top;
-    gmx_enerdata_t    *enerd;
     gmx_global_stat_t  gstat;
     t_graph           *graph;
     double             tmp, minstep;
@@ -1109,9 +1108,7 @@ Integrator::do_cg()
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
             nfile, fnm);
-    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
-    snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
@@ -1689,7 +1686,6 @@ Integrator::do_lbfgs()
     static const char *LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
     gmx_localtop_t     top;
-    gmx_enerdata_t    *enerd;
     gmx_global_stat_t  gstat;
     t_graph           *graph;
     int                ncorr, nmaxcorr, point, cp, neval, nminstep;
@@ -1753,9 +1749,7 @@ Integrator::do_lbfgs()
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
             nfile, fnm);
-    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
-    snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
@@ -2424,7 +2418,6 @@ Integrator::do_steep()
 {
     const char       *SD  = "Steepest Descents";
     gmx_localtop_t    top;
-    gmx_enerdata_t   *enerd;
     gmx_global_stat_t gstat;
     t_graph          *graph;
     real              stepsize;
@@ -2454,9 +2447,7 @@ Integrator::do_steep()
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
             nfile, fnm);
-    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
-    snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
 
@@ -2673,7 +2664,6 @@ Integrator::do_nm()
     const char          *NM = "Normal Mode Analysis";
     int                  nnodes, node;
     gmx_localtop_t       top;
-    gmx_enerdata_t      *enerd;
     gmx_global_stat_t    gstat;
     t_graph             *graph;
     tensor               vir, pres;
@@ -2712,9 +2702,7 @@ Integrator::do_nm()
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, &shellfc,
             nfile, fnm);
-    gmx_mdoutf *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
-    snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    gmx_mdoutf            *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
 
     std::vector<int>       atom_index = get_atom_index(top_global);
     std::vector<gmx::RVec> fneg(atom_index.size(), {0, 0, 0});

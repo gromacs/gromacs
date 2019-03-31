@@ -50,6 +50,7 @@
 #include "gromacs/utility/real.h"
 
 class energyhistory_t;
+struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
 struct gmx_membed_t;
@@ -154,6 +155,8 @@ struct Integrator
     gmx_wallcycle                      *wcycle;
     //! Parameters for force calculations.
     t_forcerec                         *fr;
+    //! Data for energy output.
+    gmx_enerdata_t                     *enerd;
     //! Schedule of force-calculation work each step for this task.
     PpForceWorkload                    *ppForceWorkload;
     //! Parameters for replica exchange algorihtms.

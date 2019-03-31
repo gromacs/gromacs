@@ -169,7 +169,6 @@ void gmx::Integrator::do_md()
     matrix                  parrinellorahmanMu, M;
     gmx_repl_ex_t           repl_ex = nullptr;
     gmx_localtop_t          top;
-    gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
     gmx_global_stat_t       gstat;
     t_graph                *graph = nullptr;
@@ -257,11 +256,6 @@ void gmx::Integrator::do_md()
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, mdoutf_get_fp_dhdl(outf));
-
-    /* Energy terms and groups */
-    snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
-                  enerd);
 
     /* Kinetic energy data */
     std::unique_ptr<gmx_ekindata_t> eKinData = std::make_unique<gmx_ekindata_t>();
@@ -1531,9 +1525,6 @@ void gmx::Integrator::do_md()
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 
-    destroy_enerdata(enerd);
-
-    sfree(enerd);
     global_stat_destroy(gstat);
 
 }
