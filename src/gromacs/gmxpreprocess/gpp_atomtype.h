@@ -93,33 +93,17 @@ class PreprocessingAtomTypes
          * Get normal mass of atom from internal atom type number.
          *
          * \param[in] nt Internal number of atom type.
-         * \returns The mass for the atom in state A or NOTSET.
+         * \returns The mass for the atom or NOTSET.
          */
-        real atomMassAFromAtomType(int nt) const;
-
-        /*! \brief
-         * Get mass for B state of atom from internal atom type number.
-         *
-         * \param[in] nt Internal number of atom type.
-         * \returns The mass for the atom in state B or NOTSET.
-         */
-        real atomMassBFromAtomType(int nt) const;
+        real atomMassFromAtomType(int nt) const;
 
         /*! \brief
          * Get normal charge of atom from internal atom type number.
          *
          * \param[in] nt Internal number of atom type.
-         * \returns The charge for the atom in state A or NOTSET.
+         * \returns The charge for the atom or NOTSET.
          */
-        real atomChargeAFromAtomType(int nt) const;
-
-        /*! \brief
-         * Get charge for B state of atom from internal atom type number.
-         *
-         * \param[in] nt Internal number of atom type.
-         * \returns The charge for the atom in state B or NOTSET.
-         */
-        real atomChargeBFromAtomType(int nt) const;
+        real atomChargeFromAtomType(int nt) const;
 
         /*! \brief
          * Get particle type for atom type \p nt

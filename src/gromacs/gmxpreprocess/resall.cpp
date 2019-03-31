@@ -154,7 +154,7 @@ static bool read_atoms(FILE *in, char *line,
                       "database", buf1, r0->resname.c_str());
         }
         r0->atom.back().type = j;
-        r0->atom.back().m    = atype->atomMassAFromAtomType(j);
+        r0->atom.back().m    = atype->atomMassFromAtomType(j);
     }
 
     return TRUE;

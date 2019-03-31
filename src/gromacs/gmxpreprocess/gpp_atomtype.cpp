@@ -120,24 +120,14 @@ const char *PreprocessingAtomTypes::atomNameFromAtomType(int nt) const
     return isSet(nt) ? *(impl_->types[nt].name_) : nullptr;
 }
 
-real PreprocessingAtomTypes::atomMassAFromAtomType(int nt) const
+real PreprocessingAtomTypes::atomMassFromAtomType(int nt) const
 {
     return isSet(nt) ? impl_->types[nt].atom_.m : NOTSET;
 }
 
-real PreprocessingAtomTypes::atomMassBFromAtomType(int nt) const
-{
-    return isSet(nt) ? impl_->types[nt].atom_.mB : NOTSET;
-}
-
-real PreprocessingAtomTypes::atomChargeAFromAtomType(int nt) const
+real PreprocessingAtomTypes::atomChargeFromAtomType(int nt) const
 {
     return isSet(nt) ? impl_->types[nt].atom_.q : NOTSET;
-}
-
-real PreprocessingAtomTypes::atomChargeBFromAtomType(int nt) const
-{
-    return isSet(nt) ? impl_->types[nt].atom_.qB : NOTSET;
 }
 
 int PreprocessingAtomTypes::atomParticleTypeFromAtomType(int nt) const

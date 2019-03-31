@@ -1396,8 +1396,8 @@ void push_atom(t_symtab *symtab, t_block *cgs,
     ptype = atypes->atomParticleTypeFromAtomType(type);
 
     /* Set default from type */
-    q0    = atypes->atomChargeAFromAtomType(type);
-    m0    = atypes->atomMassAFromAtomType(type);
+    q0    = atypes->atomChargeFromAtomType(type);
+    m0    = atypes->atomMassFromAtomType(type);
     typeB = type;
     qB    = q0;
     mB    = m0;
@@ -1420,8 +1420,8 @@ void push_atom(t_symtab *symtab, t_block *cgs,
                     auto message = gmx::formatString("Atomtype %s not found", ctypeB);
                     warning_error_and_exit(wi, message, FARGS);
                 }
-                qB = atypes->atomChargeAFromAtomType(typeB);
-                mB = atypes->atomMassAFromAtomType(typeB);
+                qB = atypes->atomChargeFromAtomType(typeB);
+                mB = atypes->atomMassFromAtomType(typeB);
                 if (nscan > 3)
                 {
                     qB = qb;
