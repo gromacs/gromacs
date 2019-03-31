@@ -210,8 +210,33 @@ static gmx_pme_t *gmx_pmeonly_switch(std::vector<gmx_pme_t *> *pmedata,
     return newStructure;
 }
 
+
+/*! \brief Recieve coordinate data from PP ranks */
+static void recvXFromPP(void* recvbuf, PpRanks sender, gmx_pme_pp *pme_pp, int step,
+                        bool *resetRemotePmeXPtr, int *messages)
+{
+
+    if (c_enableGpuPmePpComms && GMX_THREAD_MPI && (step > 0))
+    {
+        //Recieve directly using CUDA memory copy
+        recvXPmeCudaDirect(recvbuf, sender.rankId,
+                           pme_pp->ppRanks.size(),
+                           resetRemotePmeXPtr);
+    }
+    else
+    {
+#if GMX_MPI
+        //Recieve using MPI
+        MPI_Irecv(recvbuf, sender.numAtoms*sizeof(rvec), MPI_BYTE, sender.rankId,
+                  eCommType_COORD, pme_pp->mpi_comm_mysim, &pme_pp->req[*messages]);
+        *messages = *messages+1;
+#endif
+    }
+
+}
 /*! \brief Called by PME-only ranks to receive coefficients and coordinates
  *
+ * \param[in] pme           PME  structure.
  * \param[in,out] pme_pp    PME-PP communication structure.
  * \param[out] natoms       Number of received atoms.
  * \param[out] box        System box, if received.
@@ -226,13 +251,15 @@ static gmx_pme_t *gmx_pmeonly_switch(std::vector<gmx_pme_t *> *pmedata,
  * \param[out] ewaldcoeff_lj         Ewald cut-off parameter for Lennard-Jones, if received.
  * \param[out] atomSetChanged    Set to true only if the local domain atom data (charges/coefficients)
  *                               has been received (after DD) and should be reinitialized. Otherwise not changed.
+ * \param[out] resetRemotePmeXPtr Set to true if PP pointer to remote PME coordinate buffer requires reset
  *
  * \retval pmerecvqxX             All parameters were set, chargeA and chargeB can be NULL.
  * \retval pmerecvqxFINISH        No parameters were set.
  * \retval pmerecvqxSWITCHGRID    Only grid_size and *ewaldcoeff were set.
  * \retval pmerecvqxRESETCOUNTERS *step was set.
  */
-static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
+static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t  *pme,
+                                      gmx_pme_pp        *pme_pp,
                                       int               *natoms,
                                       matrix             box,
                                       int               *maxshift_x,
@@ -244,7 +271,8 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
                                       ivec              *grid_size,
                                       real              *ewaldcoeff_q,
                                       real              *ewaldcoeff_lj,
-                                      bool              *atomSetChanged)
+                                      bool              *atomSetChanged,
+                                      bool              *resetRemotePmeXPtr)
 {
     int status = -1;
     int nat    = 0;
@@ -301,7 +329,8 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
 
         if (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
         {
-            *atomSetChanged = true;
+            *atomSetChanged     = true;
+            *resetRemotePmeXPtr = true;
 
             /* Receive the send counts from the other PP nodes */
             for (auto &sender : pme_pp->ppRanks)
@@ -417,11 +446,14 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             {
                 if (sender.numAtoms > 0)
                 {
-                    MPI_Irecv(pme_pp->x[nat],
-                              sender.numAtoms*sizeof(rvec),
-                              MPI_BYTE,
-                              sender.rankId, eCommType_COORD,
-                              pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+                    void* recvbuf = reinterpret_cast<void*> (&pme_pp->x[nat][0]);
+                    if (c_enableGpuPmePpComms && (*step > 0))
+                    {
+                        //Recieve X data into GPU memory
+                        rvec* d_x = reinterpret_cast<rvec*> (pme_gpu_get_device_x(pme));
+                        recvbuf = reinterpret_cast<void*> (&d_x[nat]);
+                    }
+                    recvXFromPP(recvbuf, sender, pme_pp, *step, resetRemotePmeXPtr, &messages);
                     nat += sender.numAtoms;
                     if (debug)
                     {
@@ -585,6 +617,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
     init_nrnb(mynrnb);
 
+    // flag to specify if remote location of PME coordinate buffer requires reset
+    // Used for CUDA direct comms between PP and PME tasks
+    bool resetRemotePmeXPtr = true;
+
     count = 0;
     do /****** this is a quasi-loop over time steps! */
     {
@@ -595,7 +631,8 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             ivec newGridSize;
             bool atomSetChanged = false;
             real ewaldcoeff_q   = 0, ewaldcoeff_lj = 0;
-            ret = gmx_pme_recv_coeffs_coords(pme_pp.get(),
+            ret = gmx_pme_recv_coeffs_coords(pme,
+                                             pme_pp.get(),
                                              &natoms,
                                              box,
                                              &maxshift_x, &maxshift_y,
@@ -605,7 +642,8 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                                              &newGridSize,
                                              &ewaldcoeff_q,
                                              &ewaldcoeff_lj,
-                                             &atomSetChanged);
+                                             &atomSetChanged,
+                                             &resetRemotePmeXPtr);
 
             if (ret == pmerecvqxSWITCHGRID)
             {
@@ -655,7 +693,9 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags);
-            pme_gpu_launch_spread(pme, as_rvec_array(pme_pp->x.data()), wcycle);
+            PmeHostDeviceCopy hostDeviceCopy = (!c_enableGpuPmePpComms || (step == 0) ) ?
+                PmeHostDeviceCopy::HostDeviceCopyTrue : PmeHostDeviceCopy::HostDeviceCopyFalse;
+            pme_gpu_launch_spread(pme, as_rvec_array(pme_pp->x.data()), wcycle, hostDeviceCopy);
             pme_gpu_launch_complex_transforms(pme, wcycle);
             PmeDeviceHostCopy deviceHostCopy = (!c_enableGpuPmePpComms || (step == 0) ) ?
                 PmeDeviceHostCopy::DeviceHostCopyTrue : PmeDeviceHostCopy::DeviceHostCopyFalse;

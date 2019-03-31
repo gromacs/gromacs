@@ -114,6 +114,21 @@ enum class PmeDeviceHostCopy
     DeviceHostCopyFalse, /**< Device to host copy shouldn't occur */
 };
 
+//! Specifies whether the host->device copy should occur.
+enum class PmeHostDeviceCopy
+{
+    HostDeviceCopyTrue,  /**< Host to device copy should occur*/
+    HostDeviceCopyFalse, /**< Host to device copy shouldn't occur */
+};
+
+//! Specifies whether coordinates should be send direct from GPU memory
+//! on PP task to PME task
+enum class SendXFromGpu
+{
+    True,  /**< Send X from GPU*/
+    False, /**< Send X from CPU */
+};
+
 /*! \brief Return the smallest allowed PME grid size for \p pmeOrder */
 int minimalPmeGridSize(int pmeOrder);
 
@@ -228,13 +243,15 @@ void gmx_pme_send_parameters(const t_commrec *cr,
                              real *chargeA, real *chargeB,
                              real *sqrt_c6A, real *sqrt_c6B,
                              real *sigmaA, real *sigmaB,
-                             int maxshift_x, int maxshift_y);
+                             int maxshift_x, int maxshift_y, nonbonded_verlet_t *nbv);
 
 /*! \brief Send the coordinates to our PME-only node and request a PME calculation */
 void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
+                              nonbonded_verlet_t *nbv,
+                              SendXFromGpu sendXFromGpu,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              int64_t step, gmx_wallcycle *wcycle);
+                              int64_t step, void *stream, gmx_wallcycle *wcycle);
 
 /*! \brief Tell our PME-only node to finish */
 void gmx_pme_send_finish(const t_commrec *cr);
@@ -369,10 +386,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *GPU_FUNC_ARG
  * \param[in] pme               The PME data structure.
  * \param[in] x                 The array of local atoms' coordinates.
  * \param[in] wcycle            The wallclock counter.
+ * \param[in] hostDeviceCopy    Whether host->device copy of coordinate buffer should occur
  */
-GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t      *GPU_FUNC_ARGUMENT(pme),
-                                              const rvec     *GPU_FUNC_ARGUMENT(x),
-                                              gmx_wallcycle  *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t        *GPU_FUNC_ARGUMENT(pme),
+                                              const rvec       *GPU_FUNC_ARGUMENT(x),
+                                              gmx_wallcycle    *GPU_FUNC_ARGUMENT(wcycle),
+                                              PmeHostDeviceCopy GPU_FUNC_ARGUMENT(hostDeviceCopy)) GPU_FUNC_TERM
 
 /*! \brief
  * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.

@@ -111,7 +111,6 @@
 #include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_pruneonly.cu"
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
-
 namespace Nbnxm
 {
 
@@ -772,7 +771,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     cudaStream_t               stream  = nb->stream[interactionLoc];
 
     // FIXME: need to either let the local stream get to the
-    // insertNonlocalGpuDependency call or call it separately here
+    // nbnxnInsertNonlocalGpuDependency call or call it separately here
     if (nCopyAtoms == 0) // empty domain
     {
         if (interactionLoc == Nbnxm::InteractionLocality::Local)
@@ -812,6 +811,11 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     else //coordinates have already been copied by PME stream
     {
         d_x = (rvec*) xPmeDevicePtr;
+    }
+
+    if ((interactionLoc == Nbnxm::InteractionLocality::Local))
+    {
+        nb->xAvailableOnDevice->markEvent(stream);
     }
 
     /* launch kernel on GPU */
@@ -1003,12 +1007,75 @@ void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused atomLocality,
 
 }
 
-// we get a "function undeclared" compilation error unless we pass at least
-// one argument with Nbnxm::
-// TODO work out why and remove unnecessary locality argument.
-void* nbnxn_get_gpu_fpmervec(gmx_nbnxn_gpu_t *gpu_nbv, Nbnxm::AtomLocality gmx_unused locality)
+void* nbnxn_get_gpu_fpmervec(gmx_nbnxn_gpu_t *gpu_nbv)
 {
     return static_cast<void *> (gpu_nbv->fpmervec);
 }
+
+void nbnxmSendXToPmeCudaDirect(gmx_nbnxn_gpu_t *gpu_nbv, void *sendPtr, int sendSize,
+                               int pmeRank, void *stream)
+{
+
+    cudaError_t  stat;
+    cudaStream_t streamNonLocal = (cudaStream_t) stream;
+
+    // This rank will push data to the PME rank, so needs to recieve the
+    // remote receive address (when it has changed).
+    if (gpu_nbv->resetRemotePmeXPtr)
+    {
+        MPI_Recv(&gpu_nbv->remotePmeXBuffer, sizeof(void*),
+                 MPI_BYTE, pmeRank, 0,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        gpu_nbv->resetRemotePmeXPtr = false;
+    }
+
+    // push data to PME rank
+    stat = cudaMemcpyAsync(gpu_nbv->remotePmeXBuffer, sendPtr,
+                           sendSize*3*sizeof(float), cudaMemcpyDeviceToDevice,
+                           streamNonLocal);
+    CU_RET_ERR(stat, "cudaMemcpyAsync on Send to PME CUDA direct data transfer failed");
+
+
+    // ensure pushed data has arrived before remote PME progresses by recording and sending an event to
+    // be waited on by remote PME task
+    gpu_nbv->xSentToRemotePme->markEvent(streamNonLocal);
+    MPI_Send(&gpu_nbv->xSentToRemotePme, sizeof(GpuEventSynchronizer*), MPI_BYTE,
+             pmeRank, 0, MPI_COMM_WORLD);
+};
+
+
+void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t *gpu_nbv)
+{
+    return static_cast<void *> (gpu_nbv->xrvec);
+}
+
+void nbnxn_wait_x_on_device(gmx_nbnxn_gpu_t *nb)
+{
+    nb->xAvailableOnDevice->waitForEvent();
+}
+
+void nbnxn_stream_wait_x_on_device(const gmx_nbnxn_cuda_t   *nb,
+                                   const InteractionLocality interactionLocality)
+{
+    cudaStream_t stream  = nb->stream[interactionLocality];
+    nb->xAvailableOnDevice->enqueueWaitEvent(stream);
+}
+
+void* nbnxn_get_gpu_stream(gmx_nbnxn_gpu_t *nb, Nbnxm::AtomLocality gmx_unused locality)
+{
+    cudaStream_t         stream  = nullptr;
+    if (nb != nullptr)
+    {
+        stream = locality == AtomLocality::Local ?
+            nb->stream[Nbnxm::InteractionLocality::Local] :
+            nb->stream[Nbnxm::InteractionLocality::NonLocal];
+    }
+    return static_cast<void *> (stream);
+}
+
+void nbnxnSetResetRemotePmeXPtr(gmx_nbnxn_gpu_t *nb, bool value)
+{
+    nb->resetRemotePmeXPtr = value;
+};
 
 } // namespace Nbnxm

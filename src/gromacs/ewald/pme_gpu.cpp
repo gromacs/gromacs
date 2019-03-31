@@ -162,7 +162,8 @@ void pme_gpu_prepare_computation(gmx_pme_t            *pme,
 
 void pme_gpu_launch_spread(gmx_pme_t            *pme,
                            const rvec           *x,
-                           gmx_wallcycle        *wcycle)
+                           gmx_wallcycle        *wcycle,
+                           PmeHostDeviceCopy     hostDeviceCopy)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -172,7 +173,10 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
     wallcycle_start(wcycle, ewcLAUNCH_GPU);
     // The only spot of PME GPU where ewcsLAUNCH_GPU_PME subcounter increases call-count
     wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_PME);
-    pme_gpu_copy_input_coordinates(pmeGpu, x);
+    if (hostDeviceCopy == PmeHostDeviceCopy::HostDeviceCopyTrue)
+    {
+        pme_gpu_copy_input_coordinates(pmeGpu, x);
+    }
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 

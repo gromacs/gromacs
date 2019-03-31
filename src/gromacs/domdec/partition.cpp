@@ -3282,7 +3282,7 @@ void dd_partition_system(FILE                    *fplog,
                                 mdatoms->chargeA, mdatoms->chargeB,
                                 mdatoms->sqrt_c6A, mdatoms->sqrt_c6B,
                                 mdatoms->sigmaA, mdatoms->sigmaB,
-                                dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
+                                dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd), fr->nbv.get());
     }
 
     if (ir->bPull)

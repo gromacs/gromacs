@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
@@ -268,6 +269,12 @@ struct gmx_nbnxn_cuda_t
     //! local and non-local GPU streams
     gmx::EnumerationArray<Nbnxm::InteractionLocality, cudaStream_t> stream;
 
+    //! pointer to remote coordinate PME buffer (when using seperate PP/PME tasks)
+    void                                                           *remotePmeXBuffer;
+    //! flag for when remote pointer to PME coordinate buffer needs reset,
+    //! used for PME/PP comms on seperate tasks
+    bool                                                            resetRemotePmeXPtr;
+
     /** events used for synchronization */
     cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
                                                    is done (and the local transfer can proceed)           */
@@ -283,6 +290,13 @@ struct gmx_nbnxn_cuda_t
     //  local/nonlocal, if there is bonded GPU work, both flags will be true.
     gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork;
 
+    GpuEventSynchronizer                                   *xAvailableOnDevice; /**< event triggered when
+                                                                                   coordinate buffer has been
+                                                                                   copied to device by PP task and
+                                                                                   any dependent task (e.g. transfer of coordinates
+                                                                                   to the PME rank's GPU) can proceed. */
+    GpuEventSynchronizer *xSentToRemotePme;                                     /**< event triggered when remote D2D transfer of
+                                                                                   coordinate buffer has been launched */
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.

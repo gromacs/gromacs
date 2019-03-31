@@ -479,6 +479,9 @@ gpu_init(const gmx_device_info_t   *deviceInfo,
     stat = cudaEventCreateWithFlags(&nb->misc_ops_and_local_H2D_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on misc_ops_and_local_H2D_done failed");
 
+    nb->xAvailableOnDevice = new GpuEventSynchronizer();
+    nb->xSentToRemotePme   = new GpuEventSynchronizer();
+
     /* WARNING: CUDA timings are incorrect with multiple streams.
      *          This is the main reason why they are disabled by default.
      */
@@ -508,6 +511,8 @@ gpu_init(const gmx_device_info_t   *deviceInfo,
     nb->nfrvec_alloc             = 0;
     nb->ncell                    = 0;
     nb->ncell_alloc              = 0;
+    nb->remotePmeXBuffer                              = nullptr;
+    nb->resetRemotePmeXPtr                            = true;
 
     if (debug)
     {

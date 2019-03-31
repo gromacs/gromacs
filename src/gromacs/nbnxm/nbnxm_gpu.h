@@ -220,6 +220,7 @@ CUDA_FUNC_QUALIFIER
 void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused &gridSet,
                                 gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv) CUDA_FUNC_TERM
 
+
 /*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
  */
 CUDA_FUNC_QUALIFIER
@@ -310,10 +311,58 @@ void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused  atomLocality,
                            gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM
 
 
-/*! \brief return GPU pointer to x in rvec format*/
+/*! \brief return GPU pointer to PME force in rvec format
+ * \param[in] nb                   The nonbonded data GPU structure
+ */
 CUDA_FUNC_QUALIFIER
-void* nbnxn_get_gpu_fpmervec(gmx_nbnxn_gpu_t     gmx_unused *gpu_nbv,
-                             Nbnxm::AtomLocality gmx_unused  locality) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+void* nbnxn_get_gpu_fpmervec(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+
+/*! \brief return GPU pointer to x in rvec format
+ * \param[in] nb                   The nonbonded data GPU structure
+ */
+CUDA_FUNC_QUALIFIER
+void* nbnxn_get_gpu_xrvec(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+/*! \brief sync CPU thread on coordinate copy to device
+ * \param[in] nb                   The nonbonded data GPU structure
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxn_wait_x_on_device(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM
+
+/*! \brief sync input stream on coordinate copy to device
+ * \param[in] nb                   The nonbonded data GPU structure
+ * \param[in] interactionLocality  locality for stream to be synced
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxn_stream_wait_x_on_device(const gmx_nbnxn_gpu_t gmx_unused    *nb,
+                                   const InteractionLocality gmx_unused interactionLocality) CUDA_FUNC_TERM
+
+/*! \brief return GPU stream  pointer
+ * \param[in] nb             The nonbonded data GPU structure
+ * \param[in] atomLocality   locality for stream
+ */
+CUDA_FUNC_QUALIFIER
+void* nbnxn_get_gpu_stream(gmx_nbnxn_gpu_t gmx_unused *nb, Nbnxm::AtomLocality gmx_unused atomLocality) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+/*! \brief Set a flag that pointer to remote PME coordinate buffer requires reset
+ * \param[in] nb     The nonbonded data GPU structure
+ * \param[in] value  boolean value to set
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxnSetResetRemotePmeXPtr(gmx_nbnxn_gpu_t gmx_unused *nb, bool gmx_unused value) CUDA_FUNC_TERM
+
+/*! \brief Send coordinate data from PP to PME task directly using CUDA memory copy
+ * \param[in] nb       The nonbonded data GPU structure
+ * \param[in] sendPtr  Pointer to data on GPU to be sent
+ * \param[in] sendSize Numer of atoms to be sent
+ * \param[in] pmeRank  destination PME rank
+ * \param[in] stream   CUDA stream to send data in
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxmSendXToPmeCudaDirect(gmx_nbnxn_gpu_t gmx_unused *nb, void gmx_unused *sendPtr, int gmx_unused sendSize,
+                               int gmx_unused pmeRank, void gmx_unused *stream) CUDA_FUNC_TERM
+
 
 } // namespace Nbnxm
 

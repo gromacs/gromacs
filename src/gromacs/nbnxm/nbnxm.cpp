@@ -254,16 +254,45 @@ void nonbonded_verlet_t::recvFFromPmeCudaDirect(void *recvPtr, int recvSize, int
     Nbnxm::nbnxmRecvFFromPmeCudaDirect(gpu_nbv, recvPtr, recvSize, pmeRank);
 }
 
+
 void nonbonded_verlet_t::wait_stream_gpu(const Nbnxm::AtomLocality locality)
 {
     nbnxn_wait_stream_gpu(locality, gpu_nbv);
 }
+
 void* nonbonded_verlet_t::get_gpu_fpmervec()
 {
-    // we get a "function undeclared" compilation error unless we pass at least
-    // one argument with Nbnxm::
-    // TODO work out why and remove unnecessary locality argument.
-    return nbnxn_get_gpu_fpmervec(gpu_nbv, Nbnxm::AtomLocality::Local);
+    return Nbnxm::nbnxn_get_gpu_fpmervec(gpu_nbv);
+}
+
+void* nonbonded_verlet_t::get_gpu_xrvec()
+{
+    return Nbnxm::nbnxn_get_gpu_xrvec(gpu_nbv);
+}
+
+void nonbonded_verlet_t::wait_x_on_device()
+{
+    Nbnxm::nbnxn_wait_x_on_device(gpu_nbv);
+}
+
+void nonbonded_verlet_t::stream_wait_x_on_device(const Nbnxm::InteractionLocality interactionLocality)
+{
+    Nbnxm::nbnxn_stream_wait_x_on_device(gpu_nbv, interactionLocality);
+}
+
+void* nonbonded_verlet_t::get_gpu_stream(Nbnxm::AtomLocality locality)
+{
+    return nbnxn_get_gpu_stream(gpu_nbv, locality);
+}
+
+void nonbonded_verlet_t::setResetRemotePmeXPtr(bool value)
+{
+    Nbnxm::nbnxnSetResetRemotePmeXPtr(gpu_nbv, value);
+}
+
+void nonbonded_verlet_t::sendXToPmeCudaDirect(void *sendPtr, int sendSize, int pmeRank, void *stream)
+{
+    Nbnxm::nbnxmSendXToPmeCudaDirect(gpu_nbv, sendPtr, sendSize, pmeRank, stream);
 }
 
 /*! \endcond */

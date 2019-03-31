@@ -276,6 +276,26 @@ struct nonbonded_verlet_t
         //! return GPU pointer to pme force in rvec format
         void* get_gpu_fpmervec();
 
+        //! return GPU pointer to x in rvec format
+        void* get_gpu_xrvec();
+
+        //! \brief sync on coordinate copy to device
+        void wait_x_on_device();
+
+        /*! \brief sync input stream on coordinate copy to device
+         * \param[in] interactionLocality  Interaction locality for stream to be synced
+         */
+        void stream_wait_x_on_device(Nbnxm::InteractionLocality interactionLocality);
+
+        //! return GPU pointer to x in rvec format
+        void* get_gpu_stream(Nbnxm::AtomLocality locality);
+
+        //! Set a flag that pointer to remote PME coordinate buffer requires reset
+        void setResetRemotePmeXPtr(bool value);
+
+        //! Send coordinate data from PP to PME task directly using CUDA memory copy
+        void sendXToPmeCudaDirect(void *sendPtr, int sendSize, int pmeRank, void *stream);
+
         //! Returns a reference to the pairlist sets
         const PairlistSets &pairlistSets() const
         {

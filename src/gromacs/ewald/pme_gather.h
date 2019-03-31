@@ -49,4 +49,8 @@ real
 gather_energy_bsplines(struct gmx_pme_t *pme, const real *grid,
                        PmeAtomComm *atc);
 
+CUDA_FUNC_QUALIFIER
+void recvXPmeCudaDirect(void gmx_unused *recvptr, int gmx_unused ppRank, int gmx_unused numPPRanks,
+                        bool gmx_unused *resetRemoteXPtr) CUDA_FUNC_TERM
+
 #endif

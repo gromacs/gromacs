@@ -41,11 +41,16 @@
 
 #include "gmxpre.h"
 
+#include "pme_gather.h"
+
 #include <cassert>
+
+#include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#include "gromacs/utility/gmxmpi.h"
 
 #include "pme.cuh"
 #include "pme_gpu_utils.h"
-
 /*! \brief
  * An inline CUDA function: unroll the dynamic index accesses to the constant grid sizes to avoid local memory operations.
  */
@@ -408,6 +413,36 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
         }
     }
 }
+
+/*! \brief
+ * Receive coordinate data in PME task from P task directly using CUDA memory copy
+ *
+ * \tparam[in]    recvPtr          pointer to buffer in which to recv data from PP rank
+ * \tparam[in]    ppRank           rank of PP task to recieve from
+ * \tparam[in]    numPpRanks       number of PP ranks
+ * \tparam[inout] setRemotePmeXPtr whether remote pme coordinate pointer requires reset
+ *
+ */
+void recvXPmeCudaDirect(void *recvPtr, int ppRank, int numPpRanks, bool *setRemotePmeXPtr)
+{
+
+    // This rank will receive data pushed data from PP rank, so needs to send the
+    // remote receive address (if it has changed).
+    if (*setRemotePmeXPtr)
+    {
+        MPI_Send(&recvPtr, sizeof(void*), MPI_BYTE, ppRank, 0,
+                 MPI_COMM_WORLD);
+        if (ppRank == (numPpRanks-1))
+        {
+            *setRemotePmeXPtr = false;
+        }
+    }
+
+    //ensure pushed data has arrived before PME progresses
+    GpuEventSynchronizer *xSentToRemotePme;
+    MPI_Recv(&xSentToRemotePme, sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    xSentToRemotePme->waitForEvent();
+};
 
 //! Kernel instantiations
 template __global__ void pme_gather_kernel<4, true, true, true>(const PmeGpuCudaKernelParams);

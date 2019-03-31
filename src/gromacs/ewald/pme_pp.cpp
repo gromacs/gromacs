@@ -67,6 +67,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "pme_gather.h"
 #include "pme_internal.h"
 #include "pme_pp_communication.h"
 
@@ -91,20 +92,56 @@ static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t *dd)
     }
 }
 
+/*! \brief Send coordinate data to PME ranks */
+static void sendXToPme(void* sendptr, int n,  nonbonded_verlet_t *nbv, const t_commrec *cr,
+                       SendXFromGpu sendXFromGpu, void *stream, int step)
+{
+    gmx_domdec_t  *dd = cr->dd;
+
+    if (c_enableGpuPmePpComms && GMX_THREAD_MPI && (step > 0) && (nbv != nullptr))
+    {
+        //Send directly using CUDA memory copy
+        nbv->sendXToPmeCudaDirect(sendptr, n, dd->pme_nodeid, stream);
+    }
+    else
+    {
+        //Send using MPI
+        if (sendXFromGpu == SendXFromGpu::True && (nbv != nullptr))
+        {
+            nbv->wait_x_on_device();
+        }
+#if GMX_MPI
+        MPI_Isend(sendptr, n*sizeof(rvec), MPI_BYTE,
+                  dd->pme_nodeid, eCommType_COORD, cr->mpi_comm_mysim,
+                  &dd->req_pme[dd->nreq_pme++]);
+#endif
+    }
+}
+
 /*! \brief Send data to PME ranks */
 static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
                                        real gmx_unused *chargeA, real gmx_unused *chargeB,
                                        real gmx_unused *c6A, real gmx_unused *c6B,
                                        real gmx_unused *sigmaA, real gmx_unused *sigmaB,
                                        matrix box, rvec gmx_unused *x,
+                                       nonbonded_verlet_t *nbv,
+                                       SendXFromGpu sendXFromGpu,
                                        real lambda_q, real lambda_lj,
                                        int maxshift_x, int maxshift_y,
-                                       int64_t step)
+                                       int64_t step, void* stream)
 {
     gmx_domdec_t         *dd;
     gmx_pme_comm_n_box_t *cnb;
     int                   n;
+    bool                  atomSetChanged = static_cast<bool>
+        (flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA));
 
+    if (c_enableGpuPmePpComms && nbv != nullptr && atomSetChanged)
+    {
+        // Flag that pointer to remote PME coordinate buffer requires reset
+        // Used for CUDA direct comms between PP and PME tasks
+        nbv->setResetRemotePmeXPtr(true);
+    }
     dd = cr->dd;
     n  = dd_numHomeAtoms(*dd);
 
@@ -150,7 +187,7 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
                   &dd->req_pme[dd->nreq_pme++]);
 #endif
     }
-    else if (flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
+    else if (atomSetChanged)
     {
 #if GMX_MPI
         /* Communicate only the number of atoms */
@@ -201,9 +238,14 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
         }
         if (flags & PP_PME_COORD)
         {
-            MPI_Isend(x[0], n*sizeof(rvec), MPI_BYTE,
-                      dd->pme_nodeid, eCommType_COORD, cr->mpi_comm_mysim,
-                      &dd->req_pme[dd->nreq_pme++]);
+            void *sendptr = reinterpret_cast<void*>(&x[0][0]);
+            if (sendXFromGpu == SendXFromGpu::True && (nbv != nullptr))
+            {
+                // Send X data directly from GPU memory
+                sendptr = nbv->get_gpu_xrvec();
+            }
+            sendXToPme(sendptr, n, nbv, cr, sendXFromGpu, stream, step);
+
         }
     }
 #endif
@@ -223,7 +265,7 @@ void gmx_pme_send_parameters(const t_commrec *cr,
                              real *chargeA, real *chargeB,
                              real *sqrt_c6A, real *sqrt_c6B,
                              real *sigmaA, real *sigmaB,
-                             int maxshift_x, int maxshift_y)
+                             int maxshift_x, int maxshift_y, nonbonded_verlet_t *nbv)
 {
     unsigned int flags = 0;
 
@@ -245,13 +287,15 @@ void gmx_pme_send_parameters(const t_commrec *cr,
     gmx_pme_send_coeffs_coords(cr, flags,
                                chargeA, chargeB,
                                sqrt_c6A, sqrt_c6B, sigmaA, sigmaB,
-                               nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1);
+                               nullptr, nullptr, nbv, SendXFromGpu::False, 0, 0, maxshift_x, maxshift_y, -1, nullptr);
 }
 
 void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
+                              nonbonded_verlet_t *nbv,
+                              SendXFromGpu sendXFromGpu,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              int64_t step, gmx_wallcycle *wcycle)
+                              int64_t step, void* stream, gmx_wallcycle *wcycle)
 {
     wallcycle_start(wcycle, ewcPP_PMESENDX);
 
@@ -260,8 +304,9 @@ void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
     {
         flags |= PP_PME_ENER_VIR;
     }
+
     gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-                               box, x, lambda_q, lambda_lj, 0, 0, step);
+                               box, x, nbv, sendXFromGpu, lambda_q, lambda_lj, 0, 0, step, stream);
 
     wallcycle_stop(wcycle, ewcPP_PMESENDX);
 }
@@ -270,7 +315,7 @@ void gmx_pme_send_finish(const t_commrec *cr)
 {
     unsigned int flags = PP_PME_FINISH;
 
-    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, -1);
+    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, SendXFromGpu::False, 0, 0, 0, 0, -1, nullptr);
 }
 
 void gmx_pme_send_switchgrid(const t_commrec *cr,

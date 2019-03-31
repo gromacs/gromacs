@@ -615,7 +615,7 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
                                       gmx_wallcycle_t wcycle)
 {
     pme_gpu_prepare_computation(pmedata, (flags & GMX_FORCE_DYNAMICBOX) != 0, box, wcycle, pmeFlags);
-    pme_gpu_launch_spread(pmedata, x, wcycle);
+    pme_gpu_launch_spread(pmedata, x, wcycle, PmeHostDeviceCopy::HostDeviceCopyTrue);
 }
 
 /*! \brief Launch the FFT and gather stages of PME GPU
@@ -943,20 +943,6 @@ void do_force(FILE                                     *fplog,
     nbnxn_atomdata_copy_shiftvec((flags & GMX_FORCE_DYNAMICBOX) != 0,
                                  fr->shift_vec, nbv->nbat.get());
 
-#if GMX_MPI
-    if (!thisRankHasDuty(cr, DUTY_PME))
-    {
-        /* Send particle coordinates to the pme nodes.
-         * Since this is only implemented for domain decomposition
-         * and domain decomposition does not use the graph,
-         * we do not need to worry about shifting.
-         */
-        gmx_pme_send_coordinates(cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
-                                 lambda[efptCOUL], lambda[efptVDW],
-                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
-                                 step, wcycle);
-    }
-#endif /* GMX_MPI */
 
     if (useGpuPme)
     {
@@ -1047,6 +1033,9 @@ void do_force(FILE                                     *fplog,
                            flags);
     }
 
+    SendXFromGpu sendXFromGpu = c_enableGpuPmePpComms && !bNS ?
+        SendXFromGpu::True : SendXFromGpu::False;
+
     /* do local pair search */
     if (bNS)
     {
@@ -1112,6 +1101,36 @@ void do_force(FILE                                     *fplog,
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
+#if GMX_MPI
+    if (!thisRankHasDuty(cr, DUTY_PME))
+    {
+        /* Send particle coordinates to the pme nodes.
+         * Since this is only implemented for domain decomposition
+         * and domain decomposition does not use the graph,
+         * we do not need to worry about shifting.
+         */
+
+        // stream for direct GPU PP/PME communications, only active with thread MPI
+        void* stream = nullptr;
+        if (c_enableGpuPmePpComms && GMX_THREAD_MPI)
+        {
+            if (DOMAINDECOMP(cr)) //use non-local stream for PP/PME comms to get best overlap
+            {
+                stream =  nbv->get_gpu_stream(Nbnxm::AtomLocality::NonLocal);
+                //ensure non-local stream waits until local stream has copied X data to device
+                nbv->stream_wait_x_on_device(Nbnxm::InteractionLocality::NonLocal);
+            }
+            else //use local stream - no need for stream_wait since data has been copied in this stream
+            {
+                nbv->get_gpu_stream(Nbnxm::AtomLocality::Local);
+            }
+        }
+        gmx_pme_send_coordinates(cr, box, as_rvec_array(x.unpaddedArrayRef().data()), nbv, sendXFromGpu,
+                                 lambda[efptCOUL], lambda[efptVDW],
+                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
+                                 step, stream, wcycle);
+    }
+#endif /* GMX_MPI */
 
     if (useGpuPme)
     {
