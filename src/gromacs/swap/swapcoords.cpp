@@ -61,6 +61,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
@@ -99,7 +100,27 @@ enum eDomain {
 };
 static const char* DomainString[eDomainNr] = { "not_assigned", "Domain_A", "Domain_B" }; /**< Name for the domains */
 
+namespace gmx
+{
 
+/*! \internal
+ * \brief Implement Computational Electrophysiology swapping.
+ */
+class SwapCoordinates final : public IMDModule
+{
+    // From IMDModule
+    IMdpOptionProvider *mdpOptionProvider() override { return nullptr; }
+    IMDOutputProvider *outputProvider() override { return nullptr; }
+    void initForceProviders(ForceProviders * /* forceProviders */) override {}
+};
+
+std::unique_ptr<IMDModule> createSwapCoordinatesModule()
+{
+    return std::make_unique<SwapCoordinates>();
+}
+
+
+} // namespace gmx
 
 /*! \internal \brief
  * Structure containing compartment-specific data.

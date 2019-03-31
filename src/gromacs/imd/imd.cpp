@@ -69,6 +69,7 @@
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
@@ -96,7 +97,6 @@ constexpr int c_headerSize = 8;
 
 /*! \brief IMD Protocol Version. */
 constexpr int c_protocolVersion = 2;
-
 
 /*! \internal
  * \brief
@@ -314,6 +314,27 @@ class ImdSession::Impl
         //! Energy output handler
         gmx_enerdata_t  *enerd = nullptr;
 };
+
+/*! \internal
+ * \brief Implement interactive molecular dynamics.
+ *
+ * \todo Some aspects of this module provides forces (when the user
+ * pulls on things in VMD), so in future it should have a class that
+ * models IForceProvider and is contributed to the collection of such
+ * things.
+ */
+class InteractiveMolecularDynamics final : public IMDModule
+{
+    // From IMDModule
+    IMdpOptionProvider *mdpOptionProvider() override { return nullptr; }
+    IMDOutputProvider *outputProvider() override { return nullptr; }
+    void initForceProviders(ForceProviders * /* forceProviders */) override {}
+};
+
+std::unique_ptr<IMDModule> createInteractiveMolecularDynamicsModule()
+{
+    return std::make_unique<InteractiveMolecularDynamics>();
+}
 
 /*! \brief Enum for types of IMD messages.
  *

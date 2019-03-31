@@ -39,6 +39,7 @@
 #include <memory>
 
 #include "gromacs/applied_forces/electricfield.h"
+#include "gromacs/imd/imd.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
@@ -47,6 +48,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/treesupport.h"
+#include "gromacs/swap/swapcoords.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
@@ -60,7 +62,9 @@ class MDModules::Impl : public IMDOutputProvider
     public:
 
         Impl()
-            : field_(createElectricFieldModule())
+            : field_(createElectricFieldModule()),
+              imd_(createInteractiveMolecularDynamicsModule()),
+              swapCoordinates_(createSwapCoordinatesModule())
         {
         }
 
@@ -85,6 +89,8 @@ class MDModules::Impl : public IMDOutputProvider
 
         std::unique_ptr<IMDModule>      field_;
         std::unique_ptr<ForceProviders> forceProviders_;
+        std::unique_ptr<IMDModule>      imd_;
+        std::unique_ptr<IMDModule>      swapCoordinates_;
 
         /*! \brief List of registered MDModules
          *

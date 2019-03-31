@@ -54,6 +54,8 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -70,9 +72,16 @@ struct ObservablesHistory;
 
 namespace gmx
 {
+class IMDModule;
 class LocalAtomSetManager;
 struct MdrunOptions;
-}
+
+/*! \brief
+ * Creates a module for Computational Electrophysiology swapping.
+ */
+std::unique_ptr<IMDModule> createSwapCoordinatesModule();
+
+} // namespace gmx
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *

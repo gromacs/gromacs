@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_mdrunutility
+ * \ingroup module_mdrun
  */
-#ifndef GMX_MDRUNUTILITY_MDMODULES_H
-#define GMX_MDRUNUTILITY_MDMODULES_H
+#ifndef GMX_MDRUN_MDMODULES_H
+#define GMX_MDRUN_MDMODULES_H
 
 #include "gromacs/utility/classhelpers.h"
 

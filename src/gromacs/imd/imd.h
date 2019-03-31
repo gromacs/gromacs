@@ -83,11 +83,18 @@ class t_state;
 
 namespace gmx
 {
+class IMDModule;
 class ImdSession;
+class InteractiveMolecularDynamics;
 class MDLogger;
 struct MdrunOptions;
 
-static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */
+/*! \brief
+ * Creates a module for interactive molecular dynamics.
+ */
+std::unique_ptr<IMDModule> createInteractiveMolecularDynamicsModule();
+
+static const char IMDstr[] = "IMD:"; /**< Tag output from the IMD module with this string. */
 
 /*! \brief Writes out the group of atoms selected for interactive manipulation.
  *
