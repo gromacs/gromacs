@@ -192,8 +192,7 @@ void gmx::Integrator::do_md()
     gmx_bool              bPMETune         = FALSE;
     gmx_bool              bPMETunePrinting = FALSE;
 
-    /* Interactive MD */
-    gmx_bool          bIMDstep = FALSE;
+    bool                  bInteractiveMDstep = false;
 
     /* Domain decomposition could incorrectly miss a bonded
        interaction, but checking for that requires a global
@@ -1050,7 +1049,7 @@ void gmx::Integrator::do_md()
                                  mdrunOptions.writeConfout,
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
-        bIMDstep = do_IMD(imdSession, step, cr, bNS, state->box, state->x.rvec_array(), t, wcycle);
+        bInteractiveMDstep = imdSession->run(step, bNS, state->box, state->x.rvec_array(), t);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
         if (startingFromCheckpoint && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
@@ -1467,7 +1466,7 @@ void gmx::Integrator::do_md()
                 nrnb, fr->pmedata, pme_loadbal, wcycle, walltime_accounting);
 
         /* If bIMD is TRUE, the master updates the IMD energy record and sends positions to VMD client */
-        IMD_prep_energies_send_positions(imdSession, bIMDstep, enerd, step, bCalcEner, wcycle);
+        imdSession->updateEnergyRecordAndSendPositionsAndEnergies(bInteractiveMDstep, step, bCalcEner);
 
     }
     /* End of main MD loop */
@@ -1513,9 +1512,6 @@ void gmx::Integrator::do_md()
     {
         finish_swapcoords(ir->swap);
     }
-
-    /* IMD cleanup, if bIMD is TRUE. */
-    IMD_finalize(imdSession);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 

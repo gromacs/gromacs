@@ -84,6 +84,8 @@ typedef int socklen_t;
 
 #endif
 
+namespace gmx
+{
 
 /*! \internal
  *
@@ -437,3 +439,5 @@ int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec)
 
     return ret;
 }
+
+} // namespace gmx

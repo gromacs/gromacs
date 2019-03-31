@@ -2430,7 +2430,7 @@ int gmx_grompp(int argc, char *argv[])
     write_tpx_state(ftp2fn(efTPR, NFILE, fnm), ir, &state, &sys);
 
     /* Output IMD group, if bIMD is TRUE */
-    write_IMDgroup_to_file(ir->bIMD, ir, &state, &sys, NFILE, fnm);
+    gmx::write_IMDgroup_to_file(ir->bIMD, ir, &state, &sys, NFILE, fnm);
 
     sfree(opts->define);
     sfree(opts->include);

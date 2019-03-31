@@ -353,7 +353,7 @@ static void init_em(FILE *fplog,
                     const char *title,
                     const t_commrec *cr,
                     t_inputrec *ir,
-                    t_gmx_IMD *imdSession,
+                    gmx::ImdSession *imdSession,
                     t_state *state_global, gmx_mtop_t *top_global,
                     em_state_t *ems, gmx_localtop_t *top,
                     t_nrnb *nrnb,
@@ -708,7 +708,7 @@ static void em_dd_partition_system(FILE *fplog,
                                    const gmx::MDLogger &mdlog,
                                    int step, const t_commrec *cr,
                                    gmx_mtop_t *top_global, t_inputrec *ir,
-                                   t_gmx_IMD *imdSession,
+                                   gmx::ImdSession *imdSession,
                                    em_state_t *ems, gmx_localtop_t *top,
                                    gmx::MDAtoms *mdAtoms, t_forcerec *fr,
                                    gmx_vsite_t *vsite, gmx::Constraints *constr,
@@ -770,7 +770,7 @@ class EnergyEvaluator
         //! User input options.
         t_inputrec           *inputrec;
         //! The Interactive Molecular Dynamics session.
-        t_gmx_IMD            *imdSession;
+        gmx::ImdSession      *imdSession;
         //! Manages flop accounting.
         t_nrnb               *nrnb;
         //! Manages wall cycle accounting.
@@ -1570,7 +1570,7 @@ Integrator::do_cg()
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
 
-            IMD_fill_energy_record(imdSession, enerd, step, TRUE);
+            imdSession->fillEnergyRecord(step, TRUE);
 
             if (do_log)
             {
@@ -1582,9 +1582,9 @@ Integrator::do_cg()
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
-        if (MASTER(cr) && do_IMD(imdSession, step, cr, TRUE, state_global->box, state_global->x.rvec_array(), 0, wcycle))
+        if (MASTER(cr) && imdSession->run(step, TRUE, state_global->box, state_global->x.rvec_array(), 0))
         {
-            IMD_send_positions(imdSession);
+            imdSession->sendPositionsAndEnergies();
         }
 
         /* Stop when the maximum force lies below tolerance.
@@ -1593,8 +1593,6 @@ Integrator::do_cg()
         converged = converged || (s_min->fmax < inputrec->em_tol);
 
     }   /* End of the loop */
-
-    IMD_finalize(imdSession);
 
     if (converged)
     {
@@ -2308,7 +2306,7 @@ Integrator::do_lbfgs()
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
 
-            IMD_fill_energy_record(imdSession, enerd, step, TRUE);
+            imdSession->fillEnergyRecord(step, TRUE);
 
             if (do_log)
             {
@@ -2320,9 +2318,9 @@ Integrator::do_lbfgs()
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
-        if (do_IMD(imdSession, step, cr, TRUE, state_global->box, state_global->x.rvec_array(), 0, wcycle) && MASTER(cr))
+        if (imdSession->run(step, TRUE, state_global->box, state_global->x.rvec_array(), 0) && MASTER(cr))
         {
-            IMD_send_positions(imdSession);
+            imdSession->sendPositionsAndEnergies();
         }
 
         // Reset stepsize in we are doing more iterations
@@ -2334,8 +2332,6 @@ Integrator::do_lbfgs()
         converged = converged || (ems.fmax < inputrec->em_tol);
 
     }   /* End of the loop */
-
-    IMD_finalize(imdSession);
 
     if (converged)
     {
@@ -2530,7 +2526,7 @@ Integrator::do_steep()
                                                  mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                                                  nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
-                IMD_fill_energy_record(imdSession, enerd, count, TRUE);
+                imdSession->fillEnergyRecord(count, TRUE);
 
                 const bool do_dr = do_per_step(steps_accepted, inputrec->nstdisreout);
                 const bool do_or = do_per_step(steps_accepted, inputrec->nstorireout);
@@ -2604,18 +2600,16 @@ Integrator::do_steep()
         }
 
         /* Send IMD energies and positions, if bIMD is TRUE. */
-        if (do_IMD(imdSession, count, cr, TRUE, state_global->box,
-                   MASTER(cr) ? state_global->x.rvec_array() : nullptr,
-                   0, wcycle) &&
+        if (imdSession->run(count, TRUE, state_global->box,
+                            MASTER(cr) ? state_global->x.rvec_array() : nullptr,
+                            0) &&
             MASTER(cr))
         {
-            IMD_send_positions(imdSession);
+            imdSession->sendPositionsAndEnergies();
         }
 
         count++;
     }   /* End of the loop  */
-
-    IMD_finalize(imdSession);
 
     /* Print some data...  */
     if (MASTER(cr))

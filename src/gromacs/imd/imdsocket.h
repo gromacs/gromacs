@@ -51,6 +51,9 @@
 #ifndef GMX_IMD_IMDSOCKET_H
 #define GMX_IMD_IMDSOCKET_H
 
+namespace gmx
+{
+
 struct IMDSocket;
 
 
@@ -180,5 +183,7 @@ int imdsock_destroy(IMDSocket *sock);
  *
  */
 int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec);
+
+} // namespace gmx
 
 #endif

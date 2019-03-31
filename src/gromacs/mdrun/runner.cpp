@@ -1500,10 +1500,9 @@ int Mdrunner::mdrunner()
         init_enerdata(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].nr, inputrec->fepvals->n_lambda, enerd);
 
         /* Set up interactive MD (IMD) */
-        t_gmx_IMD *imdSession =
-            init_IMD(inputrec, cr, ms, &mtop, mdlog,
-                     MASTER(cr) ? globalState->x.rvec_array() : nullptr,
-                     filenames.size(), filenames.data(), oenv, mdrunOptions);
+        auto imdSession = makeImdSession(inputrec, cr, wcycle, enerd, ms, &mtop, mdlog,
+                                         MASTER(cr) ? globalState->x.rvec_array() : nullptr,
+                                         filenames.size(), filenames.data(), oenv, mdrunOptions);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1533,7 +1532,7 @@ int Mdrunner::mdrunner()
             enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
             deform.get(),
             mdModules_->outputProvider(),
-            inputrec, imdSession, &mtop,
+            inputrec, imdSession.get(), &mtop,
             fcd,
             globalState.get(),
             &observablesHistory,
@@ -1576,7 +1575,7 @@ int Mdrunner::mdrunner()
     // clean up cycle counter
     wallcycle_destroy(wcycle);
 
-    // Free PME data
+// Free PME data
     if (pmedata)
     {
         gmx_pme_destroy(pmedata);

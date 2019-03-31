@@ -50,9 +50,9 @@
 
 /*! \libinternal \file
  *
- * \brief
- * This file contains datatypes and function declarations necessary for mdrun
- * to interface with VMD via the Interactive Molecular Dynamics protocol.
+ * \brief This file declares the class that coordinates with VMD via
+ * the Interactive Molecular Dynamics protocol, along with supporting
+ * free functions.
  *
  * \author Martin Hoefling, Carsten Kutzner <ckutzne@gwdg.de>
  *
@@ -63,8 +63,11 @@
 #ifndef GMX_IMD_IMD_H
 #define GMX_IMD_IMD_H
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
@@ -74,16 +77,15 @@ struct gmx_output_env_t;
 struct gmx_wallcycle;
 struct t_commrec;
 struct t_filenm;
-struct t_gmx_IMD;
 struct t_IMD;
 struct t_inputrec;
 class t_state;
 
 namespace gmx
 {
+class ImdSession;
 class MDLogger;
 struct MdrunOptions;
-}
 
 static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */
 
@@ -100,31 +102,18 @@ static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with t
  * \param nfile   Number of files.
  * \param fnm     Filename struct.
  */
-void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, const t_state *state,
+void write_IMDgroup_to_file(bool bIMD, t_inputrec *ir, const t_state *state,
                             const gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
 
 
-/*! \brief Make a selection of the home atoms for the IMD group.
- *
- * Should be called at every domain decomposition.
- * Each node checks which of the atoms from "ind" are local and puts its local
- * atom numbers into the "ind_local" array. Furthermore, in "xa_ind" it is
- * stored at which position each local atom belongs in the assembled/collective
- * array, so that on the master node all positions can be merged into the
- * assembled array correctly.
- *
- * \param dd          Structure containing domain decomposition data.
- * \param imdSession  The IMD session
- */
-void dd_make_local_IMD_atoms(const gmx_domdec_t *dd, t_gmx_IMD *imdSession);
-
-
-/*! \brief Returns an initialized IMD session.
+/*! \brief Makes and returns an initialized IMD session, which may be inactive.
  *
  * This function is called before the main MD loop over time steps.
  *
  * \param ir           The inputrec structure containing the MD input parameters
  * \param cr           Information structure for MPI communication.
+ * \param wcycle       Count wallcycles of IMD routines for diagnostic output.
+ * \param enerd        Contains the GROMACS energies for the different interaction types.
  * \param ms           Handler for multi-simulations.
  * \param top_global   The topology of the whole system.
  * \param mdlog        Logger
@@ -133,93 +122,109 @@ void dd_make_local_IMD_atoms(const gmx_domdec_t *dd, t_gmx_IMD *imdSession);
  * \param fnm          Struct containing file names etc.
  * \param oenv         Output options.
  * \param mdrunOptions Options for mdrun.
- *
- * \returns A pointer to an initialized IMD session.
  */
-t_gmx_IMD *init_IMD(const t_inputrec *ir,
-                    const t_commrec *cr,
-                    const gmx_multisim_t *ms,
-                    const gmx_mtop_t *top_global,
-                    const gmx::MDLogger &mdlog,
-                    const rvec x[],
-                    int nfile, const t_filenm fnm[], const gmx_output_env_t *oenv,
-                    const gmx::MdrunOptions &mdrunOptions);
+std::unique_ptr<ImdSession>
+makeImdSession(const t_inputrec *ir,
+               const t_commrec *cr,
+               gmx_wallcycle *wcycle,
+               gmx_enerdata_t *enerd,
+               const gmx_multisim_t *ms,
+               const gmx_mtop_t *top_global,
+               const MDLogger &mdlog,
+               const rvec x[],
+               int nfile, const t_filenm fnm[], const gmx_output_env_t *oenv,
+               const MdrunOptions &mdrunOptions);
 
+class ImdSession
+{
+    private:
+        //! Private constructor, to force the use of makeImdSession()
+        ImdSession(const MDLogger &mdlog);
+    public:
+        ~ImdSession();
 
-/*! \brief IMD required in this time step?
- * Also checks for new IMD connection and syncs the nodes.
- *
- * \param IMDsetup     The IMD session.
- * \param step         The time step.
- * \param cr           Information structure for MPI communication.
- * \param bNS          Is this a neighbor searching step?
- * \param box          The simulation box.
- * \param x            The local atomic positions on this node.
- * \param t            The time.
- * \param wcycle       Count wallcycles of IMD routines for diagnostic output.
- *
- * \returns            Whether or not we have to do IMD communication at this step.
- */
-gmx_bool do_IMD(t_gmx_IMD *IMDsetup, int64_t step, const t_commrec *cr,
-                gmx_bool bNS,
-                const matrix box, const rvec x[], double t,
-                gmx_wallcycle *wcycle);
+        /*! \brief Make a selection of the home atoms for the IMD group.
+         *
+         * Should be called at every domain decomposition.
+         * Each node checks which of the atoms from "ind" are local and puts its local
+         * atom numbers into the "ind_local" array. Furthermore, in "xa_ind" it is
+         * stored at which position each local atom belongs in the assembled/collective
+         * array, so that on the master node all positions can be merged into the
+         * assembled array correctly.
+         *
+         * \param dd          Structure containing domain decomposition data.
+         */
+        void dd_make_local_IMD_atoms(const gmx_domdec_t *dd);
 
+        /*! \brief Prepare to do IMD if required in this time step
+         * Also checks for new IMD connection and syncs the nodes.
+         *
+         * \param step         The time step.
+         * \param bNS          Is this a neighbor searching step?
+         * \param box          The simulation box.
+         * \param x            The local atomic positions on this node.
+         * \param t            The time.
+         *
+         * \returns            Whether or not we have to do IMD communication at this step.
+         */
+        bool run(int64_t      step,
+                 bool         bNS,
+                 const matrix box,
+                 const rvec   x[],
+                 double       t);
 
-/*! \brief Add external forces from a running interactive molecular dynamics session.
- *
- * \param IMDsetup     The IMD session.
- * \param cr           Information structure for MPI communication.
- * \param f            The forces.
- * \param wcycle       Count wallcycles of IMD routines for diagnostic output.
- */
-void IMD_apply_forces(t_gmx_IMD *IMDsetup,
-                      const t_commrec *cr, rvec *f,
-                      gmx_wallcycle *wcycle);
+        /*! \brief Add external forces from a running interactive molecular dynamics session.
+         *
+         * \param f            The forces.
+         */
+        void applyForces(rvec *f);
 
+        /*! \brief Copy energies and convert to float from enerdata to the IMD energy record.
+         *
+         * We do no conversion, so units in client are SI!
+         *
+         * \param step             The time step.
+         * \param bHaveNewEnergies Only copy energies if we have done global summing of them before.
+         */
+        void fillEnergyRecord(int64_t step,
+                              bool    bHaveNewEnergies);
 
-/*! \brief Copy energies and convert to float from enerdata to the IMD energy record.
- *
- * We do no conversion, so units in client are SI!
- *
- * \param IMDsetup         The IMD session.
- * \param enerd            Contains the GROMACS energies for the different interaction types.
- * \param step             The time step.
- * \param bHaveNewEnergies Only copy energies if we have done global summing of them before.
- *
- */
-void IMD_fill_energy_record(t_gmx_IMD *IMDsetup, const gmx_enerdata_t *enerd,
-                            int64_t step, gmx_bool bHaveNewEnergies);
+        /*! \brief Send positions and energies to the client. */
+        void sendPositionsAndEnergies();
 
+        /*! \brief Updates the energy record sent to VMD if needed, and sends positions and energies.
+         *
+         * \param bIMDstep         If true, transfer the positions. Otherwise just update the time step and potentially the energy record.
+         * \param step             The time step.
+         * \param bHaveNewEnergies Update the energy record if we have done global summing of the energies.
+         */
+        void updateEnergyRecordAndSendPositionsAndEnergies(bool    bIMDstep,
+                                                           int64_t step,
+                                                           bool    bHaveNewEnergies);
 
-/*! \brief Send positions and energies to the client.
- *
- * \param IMDsetup         The IMD session.
- */
-void IMD_send_positions(t_gmx_IMD *IMDsetup);
+    private:
+        //! Implementation type.
+        class Impl;
+        //! Implementation object.
+        PrivateImplPointer<Impl> impl_;
 
+    public:
+        // Befriend the factory function.
+        friend std::unique_ptr<ImdSession>
+        makeImdSession(const t_inputrec       *ir,
+                       const t_commrec        *cr,
+                       gmx_wallcycle          *wcycle,
+                       gmx_enerdata_t         *enerd,
+                       const gmx_multisim_t   *ms,
+                       const gmx_mtop_t       *top_global,
+                       const MDLogger         &mdlog,
+                       const rvec              x[],
+                       int                     nfile,
+                       const t_filenm          fnm[],
+                       const gmx_output_env_t *oenv,
+                       const MdrunOptions     &mdrunOptions);
+};
 
-/*! \brief Calls IMD_prepare_energies() and then IMD_send_positions().
- *
- * \param IMDsetup         The IMD session.
- * \param bIMDstep         If true, transfer the positions. Otherwise just update the time step and potentially the energy record.
- * \param enerd            Contains the GROMACS energies for the different interaction types.
- * \param step             The time step.
- * \param bHaveNewEnergies Only update the energy record if we have done global summing of the energies.
- * \param wcycle           Count wallcycles of IMD routines for diagnostic output.
- *
- */
-void IMD_prep_energies_send_positions(t_gmx_IMD *IMDsetup, gmx_bool bIMDstep,
-                                      const gmx_enerdata_t *enerd,
-                                      int64_t step, gmx_bool bHaveNewEnergies,
-                                      gmx_wallcycle *wcycle);
-
-/*! \brief Finalize IMD and do some cleaning up.
- *
- * Currently, IMD finalize closes the force output file.
- *
- * \param IMDsetup     The IMD session.
- */
-void IMD_finalize(t_gmx_IMD *IMDsetup);
+} // namespace gmx
 
 #endif

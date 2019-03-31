@@ -3006,7 +3006,7 @@ void dd_partition_system(FILE                    *fplog,
                          t_state                 *state_global,
                          const gmx_mtop_t        &top_global,
                          const t_inputrec        *ir,
-                         t_gmx_IMD               *imdSession,
+                         gmx::ImdSession         *imdSession,
                          t_state                 *state_local,
                          PaddedVector<gmx::RVec> *f,
                          gmx::MDAtoms            *mdAtoms,
@@ -3633,7 +3633,7 @@ void dd_partition_system(FILE                    *fplog,
     }
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
-    dd_make_local_IMD_atoms(dd, imdSession);
+    imdSession->dd_make_local_IMD_atoms(dd);
 
     add_dd_statistics(dd);
 

@@ -65,7 +65,6 @@ struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
 struct t_filenm;
-struct t_gmx_IMD;
 struct t_inputrec;
 struct t_nrnb;
 class t_state;
@@ -77,6 +76,7 @@ class BoxDeformation;
 class Constraints;
 class PpForceWorkload;
 class IMDOutputProvider;
+class ImdSession;
 class MDLogger;
 class MDAtoms;
 class StopHandlerBuilder;
@@ -141,7 +141,7 @@ struct Integrator
     //! Contains user input mdp options.
     t_inputrec                         *inputrec;
     //! The Interactive Molecular Dynamics session.
-    t_gmx_IMD                          *imdSession;
+    ImdSession                         *imdSession;
     //! Full system topology.
     gmx_mtop_t                         *top_global;
     //! Helper struct for force calculations.

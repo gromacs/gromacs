@@ -519,7 +519,7 @@ computeSpecialForces(FILE                          *fplog,
                      const t_inputrec              *inputrec,
                      gmx::Awh                      *awh,
                      gmx_enfrot                    *enforcedRotation,
-                     t_gmx_IMD                     *imdSession,
+                     gmx::ImdSession               *imdSession,
                      int64_t                        step,
                      double                         t,
                      gmx_wallcycle_t                wcycle,
@@ -587,7 +587,7 @@ computeSpecialForces(FILE                          *fplog,
     /* Add forces from interactive molecular dynamics (IMD), if any */
     if (inputrec->bIMD && computeForces)
     {
-        IMD_apply_forces(imdSession, cr, f, wcycle);
+        imdSession->applyForces(f);
     }
 }
 
@@ -805,7 +805,7 @@ void do_force(FILE                                     *fplog,
               const t_inputrec                         *inputrec,
               gmx::Awh                                 *awh,
               gmx_enfrot                               *enforcedRotation,
-              t_gmx_IMD                                *imdSession,
+              gmx::ImdSession                          *imdSession,
               int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle_t                           wcycle,
