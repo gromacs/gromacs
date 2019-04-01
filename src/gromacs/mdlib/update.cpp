@@ -145,24 +145,6 @@ BoxDeformation * Update::deform() const
     return impl_->deform;
 }
 
-static bool isTemperatureCouplingStep(int64_t step, const t_inputrec *ir)
-{
-    /* We should only couple after a step where energies were determined (for leapfrog versions)
-       or the step energies are determined, for velocity verlet versions */
-    int offset;
-    if (EI_VV(ir->eI))
-    {
-        offset = 0;
-    }
-    else
-    {
-        offset = 1;
-    }
-    return ir->etc != etcNO &&
-           (ir->nsttcouple == 1 ||
-            do_per_step(step + ir->nsttcouple - offset, ir->nsttcouple));
-}
-
 static bool isPressureCouplingStep(int64_t step, const t_inputrec *ir)
 {
     GMX_ASSERT(ir->epc != epcMTTK, "MTTK pressure coupling is not handled here");
@@ -564,9 +546,10 @@ static void do_update_md(int                         start,
                          const matrix                M)
 {
     GMX_ASSERT(nrend == start || xprime != x, "For SIMD optimization certain compilers need to have xprime != x");
+    GMX_ASSERT(ir->eI == eiMD, "Leap-frog integrator was called while another integrator was requested");
 
     /* Note: Berendsen pressure scaling is handled after do_update_md() */
-    bool doTempCouple       = isTemperatureCouplingStep(step, ir);
+    bool doTempCouple       = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
     bool doNoseHoover       = (ir->etc == etcNOSEHOOVER && doTempCouple);
     bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN && isPressureCouplingStep(step, ir));
     bool doPROffDiagonal    = (doParrinelloRahman && (M[YY][XX] != 0 || M[ZZ][XX] != 0 || M[ZZ][YY] != 0));
@@ -1359,19 +1342,35 @@ void update_tcouple(int64_t           step,
                     const t_mdatoms  *md)
 
 {
+    // This condition was explicitly checked in previous version, but should have never been satisfied
+    GMX_ASSERT(!(EI_VV(inputrec->eI) &&
+                 (inputrecNvtTrotter(inputrec) || inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec))),
+               "Temperature coupling was requested with velocity verlet and trotter");
+
     bool doTemperatureCoupling = false;
 
-    /* if using vv with trotter decomposition methods, we do this elsewhere in the code */
-    if (!(EI_VV(inputrec->eI) &&
-          (inputrecNvtTrotter(inputrec) || inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec))))
+    // For VV temperature coupling parameters are updated on the current
+    // step, for the others - one step before.
+    if (inputrec->etc == etcNO)
     {
-        doTemperatureCoupling = isTemperatureCouplingStep(step, inputrec);
+        doTemperatureCoupling = false;
+    }
+    else if (EI_VV(inputrec->eI))
+    {
+        doTemperatureCoupling = do_per_step(step, inputrec->nsttcouple);
+    }
+    else
+    {
+        doTemperatureCoupling = do_per_step(step + inputrec->nsttcouple - 1, inputrec->nsttcouple);
     }
 
     if (doTemperatureCoupling)
     {
         real dttc = inputrec->nsttcouple*inputrec->delta_t;
 
+        //TODO: berendsen_tcoupl(...), nosehoover_tcoupl(...) and vrescale_tcoupl(...) update
+        //      temperature coupling parameters, which should be reflected in the name of these
+        //      subroutines
         switch (inputrec->etc)
         {
             case etcNO:
@@ -1396,7 +1395,8 @@ void update_tcouple(int64_t           step,
     }
     else
     {
-        /* Set the T scaling lambda to 1 to have no scaling */
+        // Set the T scaling lambda to 1 to have no scaling
+        // TODO: Do we have to do it on every non-t-couple step?
         for (int i = 0; (i < inputrec->opts.ngtc); i++)
         {
             ekind->tcstat[i].lambda = 1.0;
