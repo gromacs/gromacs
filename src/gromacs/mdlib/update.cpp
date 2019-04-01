@@ -145,25 +145,6 @@ BoxDeformation * Update::deform() const
     return impl_->deform;
 }
 
-static bool isPressureCouplingStep(int64_t step, const t_inputrec *ir)
-{
-    GMX_ASSERT(ir->epc != epcMTTK, "MTTK pressure coupling is not handled here");
-
-    int offset;
-    if (ir->epc == epcBERENDSEN)
-    {
-        offset = 0;
-    }
-    else
-    {
-        offset = 1;
-    }
-    /* We should only couple after a step where pressures were determined */
-    return ir->epc != etcNO &&
-           (ir->nstpcouple == 1 ||
-            do_per_step(step + ir->nstpcouple - offset, ir->nstpcouple));
-}
-
 /*! \brief Sets the velocities of virtual sites to zero */
 static void clearVsiteVelocities(int                   start,
                                  int                   nrend,
@@ -551,7 +532,7 @@ static void do_update_md(int                         start,
     /* Note: Berendsen pressure scaling is handled after do_update_md() */
     bool doTempCouple       = (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
     bool doNoseHoover       = (ir->etc == etcNOSEHOOVER && doTempCouple);
-    bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN && isPressureCouplingStep(step, ir));
+    bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
     bool doPROffDiagonal    = (doParrinelloRahman && (M[YY][XX] != 0 || M[ZZ][XX] != 0 || M[ZZ][YY] != 0));
 
     real dtPressureCouple   = (doParrinelloRahman ? ir->nstpcouple*dt : 0);
@@ -1442,7 +1423,7 @@ void update_pcouple_before_coordinates(FILE             *fplog,
      * Trotter P-coupling is handled by separate calls to trotter_update().
      */
     if (inputrec->epc == epcPARRINELLORAHMAN &&
-        isPressureCouplingStep(step, inputrec))
+        do_per_step(step + inputrec->nstpcouple - 1, inputrec->nstpcouple))
     {
         real dtpc = inputrec->nstpcouple*inputrec->delta_t;
 
@@ -1712,7 +1693,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
         case (epcNO):
             break;
         case (epcBERENDSEN):
-            if (isPressureCouplingStep(step, inputrec))
+            if (do_per_step(step, inputrec->nstpcouple))
             {
                 real   dtpc = inputrec->nstpcouple*dt;
                 matrix mu;
@@ -1726,7 +1707,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
             }
             break;
         case (epcPARRINELLORAHMAN):
-            if (isPressureCouplingStep(step, inputrec))
+            if (do_per_step(step + inputrec->nstpcouple - 1, inputrec->nstpcouple))
             {
                 /* The box velocities were updated in do_pr_pcoupl,
                  * but we dont change the box vectors until we get here
