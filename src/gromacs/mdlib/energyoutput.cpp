@@ -142,7 +142,6 @@ struct t_mdebin
     int                 nCrmsd;
     gmx_bool            bEner[F_NRE];
     gmx_bool            bEInd[egNR];
-    char              **print_grpnms;
 
     FILE               *fp_dhdl; /* the dhdl.xvg output file */
     double             *dE;      /* energy components for dhdl.xvg output */
@@ -650,8 +649,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         do_enxnms(fp_ene, &md->ebin->nener, &md->ebin->enm);
     }
 
-    md->print_grpnms = nullptr;
-
     /* check whether we're going to write dh histograms */
     md->dhc = nullptr;
     if (ir->fepvals->separate_dhdl_file == esepdhdlfileNO)
@@ -693,14 +690,6 @@ void done_mdebin(t_mdebin *mdebin)
     done_mde_delta_h_coll(mdebin->dhc);
     sfree(mdebin->dE);
     sfree(mdebin->temperatures);
-    if (mdebin->nE > 1 && mdebin->print_grpnms != nullptr)
-    {
-        for (int n = 0; n < mdebin->nE; n++)
-        {
-            sfree(mdebin->print_grpnms[n]);
-        }
-        sfree(mdebin->print_grpnms);
-    }
     sfree(mdebin);
 }
 
@@ -1334,173 +1323,173 @@ void print_ebin_header(FILE *log, int64_t steps, double time)
 namespace
 {
 
-// TODO It is too many responsibilities for this function to handle
-// both .edr and .log output for both per-time and time-average data.
-//! Legacy ebin output function
-void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
-                FILE *log,
-                int64_t step, double time,
-                int mode,
-                t_mdebin *md, t_fcdata *fcd,
-                SimulationGroups *groups, t_grpopts *opts,
-                gmx::Awh *awh)
+/*! \brief Print current values of thermodynamic parameters
+ *
+ * This function only does something useful when bEne || bDR || bOR || log.
+ *
+ * \param[in] fp_ene   Energy file for the output.
+ * \param[in] bEne     If it is a step for energy output or last step.
+ * \param[in] bDR      If it is a step of writing distance restraints.
+ * \param[in] bOR      If it is a step of writing orientation restraints.
+ * \param[in] log      Pointer to the log file.
+ * \param[in] step     Current step.
+ * \param[in] time     Current simulation time.
+ * \param[in] md       Accumulated data for the system.
+ * \param[in] fcd      Bonded force computation data,
+ *                     including orientation and distance restraints.
+ * \param[in] awh      AWH data.
+ */
+void printCurrentValues(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
+                        FILE *log,
+                        int64_t step, double time,
+                        t_mdebin *md, t_fcdata *fcd,
+                        gmx::Awh *awh)
 {
-    /*static char **grpnms=NULL;*/
-    char         buf[246];
-    int          i, j, n, ni, nj, b;
-    int          ndisre = 0;
-
+    t_enxframe   fr;
+    init_enxframe(&fr);
+    fr.t            = time;
+    fr.step         = step;
+    fr.nsteps       = md->ebin->nsteps;
+    fr.dt           = md->delta_t;
+    fr.nsum         = md->ebin->nsum;
+    fr.nre          = (bEne) ? md->ebin->nener : 0;
+    fr.ener         = md->ebin->e;
+    int ndisre          = bDR ? fcd->disres.npair : 0;
     /* these are for the old-style blocks (1 subblock, only reals), because
        there can be only one per ID for these */
     int          nr[enxNR];
     int          id[enxNR];
     real        *block[enxNR];
-
-    t_enxframe   fr;
-
-    if (mode == eprAVER && md->ebin->nsum_sim <= 0)
+    /* Optional additional old-style (real-only) blocks. */
+    for (int i = 0; i < enxNR; i++)
     {
-        if (log)
+        nr[i] = 0;
+    }
+
+    if (bOR && fcd->orires.nr > 0)
+    {
+        diagonalize_orires_tensors(&(fcd->orires));
+        nr[enxOR]     = fcd->orires.nr;
+        block[enxOR]  = fcd->orires.otav;
+        id[enxOR]     = enxOR;
+        nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ?
+            fcd->orires.nr : 0;
+        block[enxORI] = fcd->orires.oinsl;
+        id[enxORI]    = enxORI;
+        nr[enxORT]    = fcd->orires.nex*12;
+        block[enxORT] = fcd->orires.eig;
+        id[enxORT]    = enxORT;
+    }
+
+    /* whether we are going to write anything out: */
+    if (fr.nre || ndisre || nr[enxOR] || nr[enxORI])
+    {
+        /* the old-style blocks go first */
+        fr.nblock = 0;
+        for (int i = 0; i < enxNR; i++)
         {
-            fprintf(log, "Not enough data recorded to report energy averages\n");
+            if (nr[i] > 0)
+            {
+                fr.nblock = i + 1;
+            }
         }
-        return;
-    }
+        add_blocks_enxframe(&fr, fr.nblock);
+        for (int b = 0; b < fr.nblock; b++)
+        {
+            add_subblocks_enxblock(&(fr.block[b]), 1);
+            fr.block[b].id        = id[b];
+            fr.block[b].sub[0].nr = nr[b];
+#if !GMX_DOUBLE
+            fr.block[b].sub[0].type = xdr_datatype_float;
+            fr.block[b].sub[0].fval = block[b];
+#else
+            fr.block[b].sub[0].type = xdr_datatype_double;
+            fr.block[b].sub[0].dval = block[b];
+#endif
+        }
 
-    switch (mode)
+        /* check for disre block & fill it. */
+        if (ndisre > 0)
+        {
+            int db = fr.nblock;
+            fr.nblock += 1;
+            add_blocks_enxframe(&fr, fr.nblock);
+
+            add_subblocks_enxblock(&(fr.block[db]), 2);
+            fr.block[db].id        = enxDISRE;
+            fr.block[db].sub[0].nr = ndisre;
+            fr.block[db].sub[1].nr = ndisre;
+#if !GMX_DOUBLE
+            fr.block[db].sub[0].type = xdr_datatype_float;
+            fr.block[db].sub[1].type = xdr_datatype_float;
+            fr.block[db].sub[0].fval = fcd->disres.rt;
+            fr.block[db].sub[1].fval = fcd->disres.rm3tav;
+#else
+            fr.block[db].sub[0].type = xdr_datatype_double;
+            fr.block[db].sub[1].type = xdr_datatype_double;
+            fr.block[db].sub[0].dval = fcd->disres.rt;
+            fr.block[db].sub[1].dval = fcd->disres.rm3tav;
+#endif
+        }
+        /* here we can put new-style blocks */
+
+        /* Free energy perturbation blocks */
+        if (md->dhc)
+        {
+            mde_delta_h_coll_handle_block(md->dhc, &fr, fr.nblock);
+        }
+
+        /* we can now free & reset the data in the blocks */
+        if (md->dhc)
+        {
+            mde_delta_h_coll_reset(md->dhc);
+        }
+
+        /* AWH bias blocks. */
+        if (awh != nullptr)  // TODO: add boolean in t_mdebin. See in mdebin.h.
+        {
+            awh->writeToEnergyFrame(step, &fr);
+        }
+
+        /* do the actual I/O */
+        do_enx(fp_ene, &fr);
+        if (fr.nre)
+        {
+            /* We have stored the sums, so reset the sum history */
+            reset_ebin_sums(md->ebin);
+        }
+    }
+    free_enxframe(&fr);
+    if (log)
     {
-        case eprNORMAL:
-            init_enxframe(&fr);
-            fr.t            = time;
-            fr.step         = step;
-            fr.nsteps       = md->ebin->nsteps;
-            fr.dt           = md->delta_t;
-            fr.nsum         = md->ebin->nsum;
-            fr.nre          = (bEne) ? md->ebin->nener : 0;
-            fr.ener         = md->ebin->e;
-            ndisre          = bDR ? fcd->disres.npair : 0;
-            /* Optional additional old-style (real-only) blocks. */
-            for (i = 0; i < enxNR; i++)
-            {
-                nr[i] = 0;
-            }
-            if (bOR && fcd->orires.nr > 0)
-            {
-                diagonalize_orires_tensors(&(fcd->orires));
-                nr[enxOR]     = fcd->orires.nr;
-                block[enxOR]  = fcd->orires.otav;
-                id[enxOR]     = enxOR;
-                nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ?
-                    fcd->orires.nr : 0;
-                block[enxORI] = fcd->orires.oinsl;
-                id[enxORI]    = enxORI;
-                nr[enxORT]    = fcd->orires.nex*12;
-                block[enxORT] = fcd->orires.eig;
-                id[enxORT]    = enxORT;
-            }
+        if (bOR && fcd->orires.nr > 0)
+        {
+            print_orires_log(log, &(fcd->orires));
+        }
 
-            /* whether we are going to wrte anything out: */
-            if (fr.nre || ndisre || nr[enxOR] || nr[enxORI])
-            {
-
-                /* the old-style blocks go first */
-                fr.nblock = 0;
-                for (i = 0; i < enxNR; i++)
-                {
-                    if (nr[i] > 0)
-                    {
-                        fr.nblock = i + 1;
-                    }
-                }
-                add_blocks_enxframe(&fr, fr.nblock);
-                for (b = 0; b < fr.nblock; b++)
-                {
-                    add_subblocks_enxblock(&(fr.block[b]), 1);
-                    fr.block[b].id        = id[b];
-                    fr.block[b].sub[0].nr = nr[b];
-#if !GMX_DOUBLE
-                    fr.block[b].sub[0].type = xdr_datatype_float;
-                    fr.block[b].sub[0].fval = block[b];
-#else
-                    fr.block[b].sub[0].type = xdr_datatype_double;
-                    fr.block[b].sub[0].dval = block[b];
-#endif
-                }
-
-                /* check for disre block & fill it. */
-                if (ndisre > 0)
-                {
-                    int db = fr.nblock;
-                    fr.nblock += 1;
-                    add_blocks_enxframe(&fr, fr.nblock);
-
-                    add_subblocks_enxblock(&(fr.block[db]), 2);
-                    fr.block[db].id        = enxDISRE;
-                    fr.block[db].sub[0].nr = ndisre;
-                    fr.block[db].sub[1].nr = ndisre;
-#if !GMX_DOUBLE
-                    fr.block[db].sub[0].type = xdr_datatype_float;
-                    fr.block[db].sub[1].type = xdr_datatype_float;
-                    fr.block[db].sub[0].fval = fcd->disres.rt;
-                    fr.block[db].sub[1].fval = fcd->disres.rm3tav;
-#else
-                    fr.block[db].sub[0].type = xdr_datatype_double;
-                    fr.block[db].sub[1].type = xdr_datatype_double;
-                    fr.block[db].sub[0].dval = fcd->disres.rt;
-                    fr.block[db].sub[1].dval = fcd->disres.rm3tav;
-#endif
-                }
-                /* here we can put new-style blocks */
-
-                /* Free energy perturbation blocks */
-                if (md->dhc)
-                {
-                    mde_delta_h_coll_handle_block(md->dhc, &fr, fr.nblock);
-                }
-
-                /* we can now free & reset the data in the blocks */
-                if (md->dhc)
-                {
-                    mde_delta_h_coll_reset(md->dhc);
-                }
-
-                /* AWH bias blocks. */
-                if (awh != nullptr)  // TODO: add boolean in t_mdebin. See in mdebin.h.
-                {
-                    awh->writeToEnergyFrame(step, &fr);
-                }
-
-                /* do the actual I/O */
-                do_enx(fp_ene, &fr);
-                if (fr.nre)
-                {
-                    /* We have stored the sums, so reset the sum history */
-                    reset_ebin_sums(md->ebin);
-                }
-            }
-            free_enxframe(&fr);
-            break;
-        case eprAVER:
-            if (log)
-            {
-                pprint(log, "A V E R A G E S", md);
-            }
-            break;
-        case eprRMS:
-            if (log)
-            {
-                pprint(log, "R M S - F L U C T U A T I O N S", md);
-            }
-            break;
-        default:
-            gmx_fatal(FARGS, "Invalid print mode (%d)", mode);
+        fprintf(log, "   Energies (%s)\n", unit_energy);
+        pr_ebin(log, md->ebin, md->ie, md->f_nre+md->nCrmsd, 5, eprNORMAL, TRUE);
+        fprintf(log, "\n");
     }
+}
 
+/*! \brief Print reference temperatures for annealing groups.
+ *
+ * This does something only when log is not nullptr.
+ *
+ * \param[in] log     Log file to print to.
+ * \param[in] groups  Information on atom groups.
+ * \param[in] opts    Atom temperature coupling groups options
+ *                    (annealing is done by groups).
+ *
+ */
+void printAnnealingReferenceTemperatures(FILE *log, SimulationGroups *groups, t_grpopts *opts)
+{
     if (log)
     {
         if (opts)
         {
-            for (i = 0; i < opts->ngtc; i++)
+            for (int i = 0; i < opts->ngtc; i++)
             {
                 if (opts->annealing[i] != eannNO)
                 {
@@ -1509,102 +1498,171 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                             opts->ref_t[i]);
                 }
             }
+            fprintf(log, "\n");
         }
-        if (mode == eprNORMAL && bOR && fcd->orires.nr > 0)
+    }
+}
+
+/*! \brief Prints average values
+ *
+ * This is called at the end of the simulation run to print accumulated average values.
+ *
+ * \param[in]   log      Where to print.
+ * \param[in]   md       Accumulated data for the system.
+ * \param[in]   groups   Atom groups.
+ */
+void printAverageValues(FILE             *log,
+                        t_mdebin         *md,
+                        SimulationGroups *groups)
+{
+    if (md->ebin->nsum_sim <= 0)
+    {
+        if (log)
         {
-            print_orires_log(log, &(fcd->orires));
+            fprintf(log, "Not enough data recorded to report energy averages\n");
         }
+        return;
+    }
+    if (log)
+    {
+        pprint(log, "A V E R A G E S", md);
+
         fprintf(log, "   Energies (%s)\n", unit_energy);
-        pr_ebin(log, md->ebin, md->ie, md->f_nre+md->nCrmsd, 5, mode, TRUE);
+        pr_ebin(log, md->ebin, md->ie, md->f_nre+md->nCrmsd, 5, eprAVER, TRUE);
         fprintf(log, "\n");
 
-        if (mode == eprAVER)
+        if (md->bDynBox)
         {
-            if (md->bDynBox)
-            {
-                pr_ebin(log, md->ebin, md->ib, md->bTricl ? NTRICLBOXS : NBOXS, 5,
-                        mode, TRUE);
-                fprintf(log, "\n");
-            }
-            if (md->bConstrVir)
-            {
-                fprintf(log, "   Constraint Virial (%s)\n", unit_energy);
-                pr_ebin(log, md->ebin, md->isvir, 9, 3, mode, FALSE);
-                fprintf(log, "\n");
-                fprintf(log, "   Force Virial (%s)\n", unit_energy);
-                pr_ebin(log, md->ebin, md->ifvir, 9, 3, mode, FALSE);
-                fprintf(log, "\n");
-            }
-            if (md->bPres)
-            {
-                fprintf(log, "   Total Virial (%s)\n", unit_energy);
-                pr_ebin(log, md->ebin, md->ivir, 9, 3, mode, FALSE);
-                fprintf(log, "\n");
-                fprintf(log, "   Pressure (%s)\n", unit_pres_bar);
-                pr_ebin(log, md->ebin, md->ipres, 9, 3, mode, FALSE);
-                fprintf(log, "\n");
-            }
-            if (md->bMu)
-            {
-                fprintf(log, "   Total Dipole (%s)\n", unit_dipole_D);
-                pr_ebin(log, md->ebin, md->imu, 3, 3, mode, FALSE);
-                fprintf(log, "\n");
-            }
-
-            if (md->nE > 1)
-            {
-                if (md->print_grpnms == nullptr)
-                {
-                    snew(md->print_grpnms, md->nE);
-                    n = 0;
-                    for (i = 0; (i < md->nEg); i++)
-                    {
-                        ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
-                        for (j = i; (j < md->nEg); j++)
-                        {
-                            nj = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
-                            sprintf(buf, "%s-%s", *(groups->groupNames[ni]),
-                                    *(groups->groupNames[nj]));
-                            md->print_grpnms[n++] = gmx_strdup(buf);
-                        }
-                    }
-                }
-                sprintf(buf, "Epot (%s)", unit_energy);
-                fprintf(log, "%15s   ", buf);
-                for (i = 0; (i < egNR); i++)
-                {
-                    if (md->bEInd[i])
-                    {
-                        fprintf(log, "%12s   ", egrp_nm[i]);
-                    }
-                }
-                fprintf(log, "\n");
-                for (i = 0; (i < md->nE); i++)
-                {
-                    fprintf(log, "%15s", md->print_grpnms[i]);
-                    pr_ebin(log, md->ebin, md->igrp[i], md->nEc, md->nEc, mode,
-                            FALSE);
-                }
-                fprintf(log, "\n");
-            }
-            if (md->nTC > 1)
-            {
-                pr_ebin(log, md->ebin, md->itemp, md->nTC, 4, mode, TRUE);
-                fprintf(log, "\n");
-            }
-            if (md->nU > 1)
-            {
-                fprintf(log, "%15s   %12s   %12s   %12s\n",
-                        "Group", "Ux", "Uy", "Uz");
-                for (i = 0; (i < md->nU); i++)
-                {
-                    ni = groups->groups[SimulationAtomGroupType::Acceleration][i];
-                    fprintf(log, "%15s", *groups->groupNames[ni]);
-                    pr_ebin(log, md->ebin, md->iu+3*i, 3, 3, mode, FALSE);
-                }
-                fprintf(log, "\n");
-            }
+            pr_ebin(log, md->ebin, md->ib, md->bTricl ? NTRICLBOXS : NBOXS, 5,
+                    eprAVER, TRUE);
+            fprintf(log, "\n");
         }
+        if (md->bConstrVir)
+        {
+            fprintf(log, "   Constraint Virial (%s)\n", unit_energy);
+            pr_ebin(log, md->ebin, md->isvir, 9, 3, eprAVER, FALSE);
+            fprintf(log, "\n");
+            fprintf(log, "   Force Virial (%s)\n", unit_energy);
+            pr_ebin(log, md->ebin, md->ifvir, 9, 3, eprAVER, FALSE);
+            fprintf(log, "\n");
+        }
+        if (md->bPres)
+        {
+            fprintf(log, "   Total Virial (%s)\n", unit_energy);
+            pr_ebin(log, md->ebin, md->ivir, 9, 3, eprAVER, FALSE);
+            fprintf(log, "\n");
+            fprintf(log, "   Pressure (%s)\n", unit_pres_bar);
+            pr_ebin(log, md->ebin, md->ipres, 9, 3, eprAVER, FALSE);
+            fprintf(log, "\n");
+        }
+        if (md->bMu)
+        {
+            fprintf(log, "   Total Dipole (%s)\n", unit_dipole_D);
+            pr_ebin(log, md->ebin, md->imu, 3, 3, eprAVER, FALSE);
+            fprintf(log, "\n");
+        }
+
+        if (md->nE > 1)
+        {
+            int padding = 8 - strlen(unit_energy);
+            fprintf(log, "%*sEpot (%s)   ", padding, "", unit_energy);
+            for (int i = 0; (i < egNR); i++)
+            {
+                if (md->bEInd[i])
+                {
+                    fprintf(log, "%12s   ", egrp_nm[i]);
+                }
+            }
+            fprintf(log, "\n");
+
+            int n = 0;
+            for (int i = 0; (i < md->nEg); i++)
+            {
+                int ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
+                for (int j = i; (j < md->nEg); j++)
+                {
+                    int nj      = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
+                    int padding = 14 - (strlen(*(groups->groupNames[ni])) +
+                                        strlen(*(groups->groupNames[nj])));
+                    fprintf(log, "%*s%s-%s", padding, "",
+                            *(groups->groupNames[ni]),
+                            *(groups->groupNames[nj]));
+                    pr_ebin(log, md->ebin, md->igrp[n], md->nEc, md->nEc, eprAVER,
+                            FALSE);
+                    n++;
+                }
+            }
+            fprintf(log, "\n");
+        }
+        if (md->nTC > 1)
+        {
+            pr_ebin(log, md->ebin, md->itemp, md->nTC, 4, eprAVER, TRUE);
+            fprintf(log, "\n");
+        }
+        if (md->nU > 1)
+        {
+            fprintf(log, "%15s   %12s   %12s   %12s\n",
+                    "Group", "Ux", "Uy", "Uz");
+            for (int i = 0; (i < md->nU); i++)
+            {
+                int ni = groups->groups[SimulationAtomGroupType::Acceleration][i];
+                fprintf(log, "%15s", *groups->groupNames[ni]);
+                pr_ebin(log, md->ebin, md->iu+3*i, 3, 3, eprAVER, FALSE);
+            }
+            fprintf(log, "\n");
+        }
+    }
+}
+
+/*! \brief Legacy ebin output function.
+ *
+ * The function dispatches the printing according to what is to be printed
+ *
+ * TODO It is too many responsibilities for this function to handle
+ *      both .edr and .log output for both per-time and time-average data.
+ * TODO The split between average and current outputs is to be done into two separate
+ *      methods of the EnergyOutput class. This function will then be removed.
+ *
+ * \param[in] fp_ene   Energy file for the output.
+ * \param[in] bEne     If it is a step for energy output or last step.
+ * \param[in] bDR      If it is a step of writing distance restraints.
+ * \param[in] bOR      If it is a step of writing orientation restraints.
+ * \param[in] log      Pointer to the log file.
+ * \param[in] step     Current step.
+ * \param[in] time     Current simulation time.
+ * \param[in] mode     eprNORMAL to output current values,
+ *                     eprAVER to output collected averages.
+ * \param[in] md       Accumulated data for the system.
+ * \param[in] fcd      Bonded force computation data,
+ *                     including orientation and distance restraints.
+ * \param[in] groups   Information on atom groups.
+ * \param[in] opts     Atom groups.
+ * \param[in] awh      AWH data.
+ */
+void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
+                FILE *log,
+                int64_t step, double time,
+                int mode,
+                t_mdebin *md, t_fcdata *fcd,
+                SimulationGroups *groups, t_grpopts *opts,
+                gmx::Awh *awh)
+{
+    printAnnealingReferenceTemperatures(log, groups, opts);
+
+    if (mode == eprNORMAL)
+    {
+        printCurrentValues(fp_ene, bEne, bDR, bOR,
+                           log,
+                           step, time,
+                           md,   fcd,
+                           awh);
+    }
+
+    if (mode == eprAVER)
+    {
+        printAverageValues(log,
+                           md,
+                           groups);
     }
 
 }

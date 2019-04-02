@@ -58,7 +58,7 @@ struct t_ebin
 };
 
 enum {
-    eprNORMAL, eprAVER, eprRMS, eprNR
+    eprNORMAL, eprAVER, eprNR
 };
 
 t_ebin *mk_ebin();
@@ -104,7 +104,7 @@ void reset_ebin_sums(t_ebin *eb);
  *
  * We will print nperline entries on a text line (advisory <=
  * 5). prmode may be any of the above listed enum values. tsteps is
- * used only when eprAVER or eprRMS is set. If bPrHead than the
+ * used only when eprAVER is set. If bPrHead than the
  * header is printed.
  *
  * \c entryIndex and \c nener must be in [0, eb->nener), except that \c

@@ -4370,6 +4370,7 @@
   <Int Name="Number of Energy Terms">97</Int>
   <String Name="log">Current ref_t for group Water:     25.7
 Current ref_t for group Lipid:     25.8
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
@@ -4384,6 +4385,7 @@ Current ref_t for group Lipid:     25.8
 
 Current ref_t for group Water:     43.1
 Current ref_t for group Lipid:     43.2
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     2.89000e+01    2.90000e+01    2.77000e+01    2.99000e+01    2.78000e+01
@@ -4398,6 +4400,7 @@ Current ref_t for group Lipid:     43.2
 
 Current ref_t for group Water:     60.5
 Current ref_t for group Lipid:     60.6
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     4.63000e+01    4.64000e+01    4.51000e+01    4.73000e+01    4.52000e+01
@@ -4412,6 +4415,7 @@ Current ref_t for group Lipid:     60.6
 
 Current ref_t for group Water:     77.9
 Current ref_t for group Lipid:     78.0
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     6.37000e+01    6.38000e+01    6.25000e+01    6.47000e+01    6.26000e+01
@@ -4426,6 +4430,7 @@ Current ref_t for group Lipid:     78.0
 
 Current ref_t for group Water:     95.3
 Current ref_t for group Lipid:     95.4
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     8.11000e+01    8.12000e+01    7.99000e+01    8.21000e+01    8.00000e+01
@@ -4440,6 +4445,7 @@ Current ref_t for group Lipid:     95.4
 
 Current ref_t for group Water:    112.7
 Current ref_t for group Lipid:    112.8
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     9.85000e+01    9.86000e+01    9.73000e+01    9.95000e+01    9.74000e+01
@@ -4454,6 +4460,7 @@ Current ref_t for group Lipid:    112.8
 
 Current ref_t for group Water:    130.1
 Current ref_t for group Lipid:    130.2
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.15900e+02    1.16000e+02    1.14700e+02    1.16900e+02    1.14800e+02
@@ -4468,6 +4475,7 @@ Current ref_t for group Lipid:    130.2
 
 Current ref_t for group Water:    147.5
 Current ref_t for group Lipid:    147.6
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.33300e+02    1.33400e+02    1.32100e+02    1.34300e+02    1.32200e+02
@@ -4482,6 +4490,7 @@ Current ref_t for group Lipid:    147.6
 
 Current ref_t for group Water:    164.9
 Current ref_t for group Lipid:    165.0
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.50700e+02    1.50800e+02    1.49500e+02    1.51700e+02    1.49600e+02
@@ -4496,6 +4505,7 @@ Current ref_t for group Lipid:    165.0
 
 Current ref_t for group Water:    182.3
 Current ref_t for group Lipid:    182.4
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.68100e+02    1.68200e+02    1.66900e+02    1.69100e+02    1.67000e+02
@@ -4508,14 +4518,15 @@ Current ref_t for group Lipid:    182.4
  dVrestraint/dl   Constr. rmsd
     1.68800e+02    0.00000e+00
 
+Current ref_t for group Water:    182.3
+Current ref_t for group Lipid:    182.4
+
 	&lt;======  ###############  ==&gt;
 	&lt;====  A V E R A G E S  ====&gt;
 	&lt;==  ###############  ======&gt;
 
 	Statistics over 10 steps using 10 frames
 
-Current ref_t for group Water:    182.3
-Current ref_t for group Lipid:    182.4
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     8.98000e+01    8.99000e+01    8.86000e+01    9.08000e+01    8.87000e+01

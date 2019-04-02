@@ -853,6 +853,7 @@
   <Int Name="Number of Energy Terms">104</Int>
   <String Name="log">Current ref_t for group Water:     25.7
 Current ref_t for group Lipid:     25.8
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
@@ -865,14 +866,15 @@ Current ref_t for group Lipid:     25.8
     dVbonded/dl dVrestraint/dl   Constr. rmsd
     1.21000e+01    1.22000e+01    0.00000e+00
 
+Current ref_t for group Water:     25.7
+Current ref_t for group Lipid:     25.8
+
 	&lt;======  ###############  ==&gt;
 	&lt;====  A V E R A G E S  ====&gt;
 	&lt;==  ###############  ======&gt;
 
 	Statistics over 1 steps using 1 frames
 
-Current ref_t for group Water:     25.7
-Current ref_t for group Lipid:     25.8
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
