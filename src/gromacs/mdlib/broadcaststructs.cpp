@@ -222,13 +222,13 @@ static void bc_blocka(const t_commrec *cr, t_blocka *block)
     }
 }
 
-static void bc_grps(const t_commrec *cr, gmx::ArrayRef<t_grps> grps)
+static void bc_grps(const t_commrec *cr, gmx::ArrayRef<AtomGroupIndices> grps)
 {
     for (auto &group : grps)
     {
-        block_bc(cr, group.nr);
-        snew_bc(cr, group.nm_ind, group.nr);
-        nblock_bc(cr, group.nr, group.nm_ind);
+        int size = group.size();
+        block_bc(cr, size);
+        nblock_abc(cr, size, &group);
     }
 }
 

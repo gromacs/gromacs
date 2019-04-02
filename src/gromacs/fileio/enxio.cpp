@@ -1208,7 +1208,7 @@ void get_enx_state(const char *fn, real t, const SimulationGroups &groups, t_inp
 
         for (i = 0; i < state->ngtc; i++)
         {
-            ni   = groups.groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[i];
+            ni   = groups.groups[SimulationAtomGroupType::TemperatureCoupling][i];
             bufi = *(groups.groupNames[ni]);
             for (j = 0; (j < state->nhchainlength); j++)
             {

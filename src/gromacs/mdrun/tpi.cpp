@@ -348,7 +348,7 @@ Integrator::do_tpi()
         }
     }
 
-    ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].nr;
+    ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
     // TODO: Figure out which energy group to use
 #if 0
     gid_tp = GET_CGINFO_GID(fr->cginfo[cg_tp]);
@@ -400,7 +400,7 @@ Integrator::do_tpi()
         for (i = 0; i < ngid; i++)
         {
             sprintf(str, "f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
-                    *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[i]]));
+                    *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]]));
             leg[e++] = gmx_strdup(str);
         }
         if (bDispCorr)
@@ -413,7 +413,7 @@ Integrator::do_tpi()
             for (i = 0; i < ngid; i++)
             {
                 sprintf(str, "f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
-                        *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[i]]));
+                        *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]]));
                 leg[e++] = gmx_strdup(str);
             }
             if (bRFExcl)

@@ -643,7 +643,7 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
 
     /* The name of the TNG molecule containing the selection group is the
      * same as the name of the selection group. */
-    nameIndex = *mtop->groups.groups[SimulationAtomGroupType::CompressedPositionOutput].nm_ind;
+    nameIndex = mtop->groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
     groupName = *mtop->groups.groupNames[nameIndex];
 
     tng_molecule_alloc(tng, &mol);

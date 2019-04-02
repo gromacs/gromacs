@@ -267,7 +267,7 @@ static int init_ins_at(t_block *ins_at, t_block *rest_at, t_state *state, pos_in
     for (i = 0; i < state->natoms; i++)
     {
         gid = groups->groupNumbers[SimulationAtomGroupType::Freeze][i];
-        if (groups->groups[SimulationAtomGroupType::Freeze].nm_ind[gid] == ins_grp_id)
+        if (groups->groups[SimulationAtomGroupType::Freeze][gid] == ins_grp_id)
         {
             xmin = std::min(xmin, x[i][XX]);
             xmax = std::max(xmax, x[i][XX]);
@@ -1127,7 +1127,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
         for (i = 0; i < inputrec->opts.ngfrz; i++)
         {
-            tmp_id = mtop->groups.groups[SimulationAtomGroupType::Freeze].nm_ind[i];
+            tmp_id = mtop->groups.groups[SimulationAtomGroupType::Freeze][i];
             if (ins_grp_id == tmp_id)
             {
                 fr_id = tmp_id;
@@ -1148,7 +1148,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
             }
         }
 
-        ng = groups->groups[SimulationAtomGroupType::EnergyOutput].nr;
+        ng = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
         if (ng == 1)
         {
             gmx_input("No energy groups defined. This is necessary for energy exclusion in the freeze group");
@@ -1161,12 +1161,12 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
                 if (inputrec->opts.egp_flags[ng*i+j] == EGP_EXCL)
                 {
                     bExcl = TRUE;
-                    if ( (groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[i] != ins_grp_id) ||
-                         (groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[j] != ins_grp_id) )
+                    if ( (groups->groups[SimulationAtomGroupType::EnergyOutput][i] != ins_grp_id) ||
+                         (groups->groups[SimulationAtomGroupType::EnergyOutput][j] != ins_grp_id) )
                     {
                         gmx_fatal(FARGS, "Energy exclusions \"%s\" and  \"%s\" do not match the group "
-                                  "to embed \"%s\"", *groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[i]],
-                                  *groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[j]], ins);
+                                  "to embed \"%s\"", *groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]],
+                                  *groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][j]], ins);
                     }
                 }
             }

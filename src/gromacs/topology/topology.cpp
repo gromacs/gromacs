@@ -74,16 +74,6 @@ const char *shortName(SimulationAtomGroupType type)
     return c_simulationAtomGroupTypeShortNames[type];
 }
 
-SimulationGroups::SimulationGroups()
-{
-    for (auto group : keysOf(groups))
-    {
-        groups[group].nr     = 0;
-        groups[group].nm_ind = nullptr;
-    }
-
-}
-
 void init_top(t_topology *top)
 {
     top->name = nullptr;
@@ -110,18 +100,6 @@ gmx_moltype_t::~gmx_moltype_t()
     done_atom(&atoms);
     done_block(&cgs);
     done_blocka(&excls);
-}
-
-SimulationGroups::~SimulationGroups()
-{
-    for (auto group : keysOf(groups))
-    {
-        if (nullptr != groups[group].nm_ind)
-        {
-            sfree(groups[group].nm_ind);
-            groups[group].nm_ind = nullptr;
-        }
-    }
 }
 
 gmx_mtop_t::gmx_mtop_t()
@@ -245,18 +223,18 @@ bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
     return mtop->moltype.empty() || mtop->moltype[0].atoms.havePdbInfo;
 }
 
-static void pr_grps(FILE                       *fp,
-                    const char                 *title,
-                    gmx::ArrayRef<const t_grps> grps,
-                    char                     ***grpname)
+static void pr_grps(FILE                                 *fp,
+                    const char                           *title,
+                    gmx::ArrayRef<const AtomGroupIndices> grps,
+                    char                               ***grpname)
 {
     int index = 0;
     for (const auto &group : grps)
     {
-        fprintf(fp, "%s[%-12s] nr=%d, name=[", title, c_simulationAtomGroupTypeShortNames[index], group.nr);
-        for (int j = 0; (j < group.nr); j++)
+        fprintf(fp, "%s[%-12s] nr=%zu, name=[", title, c_simulationAtomGroupTypeShortNames[index], group.size());
+        for (const auto &entry : group)
         {
-            fprintf(fp, " %s", *(grpname[group.nm_ind[j]]));
+            fprintf(fp, " %s", *(grpname[entry]));
         }
         fprintf(fp, "]\n");
         index++;
@@ -678,15 +656,15 @@ void compareAtomGroups(FILE *fp, const SimulationGroups &g0, const SimulationGro
     for (auto group : keysOf(g0.groups))
     {
         std::string buf = gmx::formatString("grps[%d].nr", static_cast<int>(group));
-        cmp_int(fp, buf.c_str(), -1, g0.groups[group].nr, g1.groups[group].nr);
-        if (g0.groups[group].nr == g1.groups[group].nr)
+        cmp_int(fp, buf.c_str(), -1, g0.groups[group].size(), g1.groups[group].size());
+        if (g0.groups[group].size() == g1.groups[group].size())
         {
-            for (int j = 0; j < g0.groups[group].nr; j++)
+            for (int j = 0; j < gmx::ssize(g0.groups[group]); j++)
             {
                 buf = gmx::formatString("grps[%d].name[%d]", static_cast<int>(group), j);
                 cmp_str(fp, buf.c_str(), -1,
-                        *g0.groupNames[g0.groups[group].nm_ind[j]],
-                        *g1.groupNames[g1.groups[group].nm_ind[j]]);
+                        *g0.groupNames[g0.groups[group][j]],
+                        *g1.groupNames[g1.groups[group][j]]);
             }
         }
         cmp_int(fp, "ngrpnr", static_cast<int>(group), g0.numberOfGroupNumbers(group), g1.numberOfGroupNumbers(group));

@@ -2190,18 +2190,19 @@ static void do_atom(t_fileio *fio, t_atom *atom, gmx_bool bRead)
     }
 }
 
-static void do_grps(t_fileio             *fio,
-                    gmx::ArrayRef<t_grps> grps,
-                    gmx_bool              bRead)
+static void do_grps(t_fileio                       *fio,
+                    gmx::ArrayRef<AtomGroupIndices> grps,
+                    gmx_bool                        bRead)
 {
     for (auto &group : grps)
     {
-        gmx_fio_do_int(fio, group.nr);
+        int size = group.size();
+        gmx_fio_do_int(fio, size);
         if (bRead)
         {
-            snew(group.nm_ind, group.nr);
+            group.resize(size);
         }
-        gmx_fio_ndo_int(fio, group.nm_ind, group.nr);
+        gmx_fio_ndo_int(fio, group.data(), size);
     }
 }
 

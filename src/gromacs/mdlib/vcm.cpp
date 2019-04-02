@@ -68,7 +68,7 @@ t_vcm::t_vcm(const SimulationGroups &groups, const t_inputrec &ir)
 
     if (mode != ecmNO)
     {
-        nr = groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nr;
+        nr = groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size();
         /* Allocate one extra for a possible rest group */
         size = nr + 1;
         /* We need vcm->nr+1 elements per thread, but to avoid cache
@@ -93,7 +93,7 @@ t_vcm::t_vcm(const SimulationGroups &groups, const t_inputrec &ir)
         for (int g = 0; (g < nr); g++)
         {
             group_ndf[g]  = ir.opts.nrdf[g];
-            group_name[g] = *groups.groupNames[groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nm_ind[g]];
+            group_name[g] = *groups.groupNames[groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval][g]];
 
         }
 

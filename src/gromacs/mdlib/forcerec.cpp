@@ -202,8 +202,8 @@ check_solvent_cg(const gmx_moltype_t    *molt,
                  int                     cg0,
                  int                     nmol,
                  const unsigned char    *qm_grpnr,
-                 const t_grps           *qm_grps,
-                 t_forcerec   *          fr,
+                 const AtomGroupIndices *qm_grps,
+                 t_forcerec             *fr,
                  int                    *n_solvent_parameters,
                  solvent_parameters_t  **solvent_parameters_p,
                  int                     cginfo,
@@ -276,7 +276,7 @@ check_solvent_cg(const gmx_moltype_t    *molt,
     {
         for (j = j0; j < j1 && !qm; j++)
         {
-            qm = (qm_grpnr[j] < qm_grps->nr - 1);
+            qm = (qm_grpnr[j] < qm_grps->size() - 1);
         }
     }
     /* Cannot use solvent optimization with QM */
@@ -1624,7 +1624,7 @@ void init_forcerec(FILE                             *fp,
     gmx_bool       bGenericKernelOnly;
     gmx_bool       needGroupSchemeTables, bSomeNormalNbListsAreInUse;
     gmx_bool       bFEP_NonBonded;
-    int           *nm_ind, egp_flags;
+    int            egp_flags;
 
 
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
@@ -2173,7 +2173,7 @@ void init_forcerec(FILE                             *fp,
         if (negptable > 0)
         {
             /* Read the special tables for certain energy group pairs */
-            nm_ind = mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].nm_ind;
+            gmx::ArrayRef<const int> nm_ind = mtop->groups.groups[SimulationAtomGroupType::EnergyOutput];
             for (egi = 0; egi < negp_pp; egi++)
             {
                 for (egj = egi; egj < negp_pp; egj++)
@@ -2277,7 +2277,7 @@ void init_forcerec(FILE                             *fp,
 
     /* Initialize the thread working data for bonded interactions */
     fr->bondedThreading =
-        init_bonded_threading(fp, mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].nr);
+        init_bonded_threading(fp, mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].size());
 
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);

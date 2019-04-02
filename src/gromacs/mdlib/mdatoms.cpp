@@ -124,7 +124,7 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     snew(md, 1);
     mdAtoms->mdatoms_.reset(md);
 
-    md->nenergrp = mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].nr;
+    md->nenergrp = mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size();
     md->bVCMgrps = FALSE;
     for (int i = 0; i < mtop.natoms; i++)
     {
@@ -493,7 +493,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             if (ir->bQMMM)
             {
                 if (groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].empty() ||
-                    groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics][ag] < groups.groups[SimulationAtomGroupType::QuantumMechanics].nr-1)
+                    groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics][ag] < groups.groups[SimulationAtomGroupType::QuantumMechanics].size()-1)
                 {
                     md->bQM[i]      = TRUE;
                 }

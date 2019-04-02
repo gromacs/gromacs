@@ -117,14 +117,10 @@ struct MoleculeBlockIndices
  */
 struct SimulationGroups
 {
-    SimulationGroups();
-
-    ~SimulationGroups();
-
     //! Groups of particles
-    gmx::EnumerationArray<SimulationAtomGroupType, t_grps>                     groups;
+    gmx::EnumerationArray<SimulationAtomGroupType, AtomGroupIndices>                     groups;
     //! Names of groups, stored as pointer to the entries in the symbol table.
-    std::vector<char **>                                                       groupNames;
+    std::vector<char **>                                                                 groupNames;
     //! Group numbers for the different SimulationAtomGroupType groups.
     gmx::EnumerationArray < SimulationAtomGroupType, std::vector < unsigned char>> groupNumbers;
 

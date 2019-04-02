@@ -1672,15 +1672,14 @@ static void add_wall_energrps(SimulationGroups *groups, int nwall, t_symtab *sym
 {
     if (nwall > 0)
     {
-        t_grps *grps = &(groups->groups[SimulationAtomGroupType::EnergyOutput]);
-        srenew(grps->nm_ind, grps->nr+nwall);
+        AtomGroupIndices *grps = &(groups->groups[SimulationAtomGroupType::EnergyOutput]);
         for (int i = 0; i < nwall; i++)
         {
             groups->groupNames.emplace_back(
                     put_symtab(
                             symtab,
                             gmx::formatString("wall%d", i).c_str()));
-            grps->nm_ind[grps->nr++] = groups->groupNames.size() - 1;
+            grps->emplace_back(groups->groupNames.size() - 1);
         }
     }
 }
@@ -2626,12 +2625,12 @@ static bool do_numbering(int natoms, SimulationGroups *groups,
                          int grptp, bool bVerbose,
                          warninp_t wi)
 {
-    unsigned short *cbuf;
-    t_grps         *grps = &(groups->groups[gtype]);
-    int             j, gid, aj, ognr, ntot = 0;
-    const char     *title;
-    bool            bRest;
-    char            warn_buf[STRLEN];
+    unsigned short           *cbuf;
+    AtomGroupIndices         *grps = &(groups->groups[gtype]);
+    int                       j, gid, aj, ognr, ntot = 0;
+    const char               *title;
+    bool                      bRest;
+    char                      warn_buf[STRLEN];
 
     title = shortName(gtype);
 
@@ -2642,14 +2641,13 @@ static bool do_numbering(int natoms, SimulationGroups *groups,
         cbuf[i] = NOGID;
     }
 
-    snew(grps->nm_ind, groupsFromMdpFile.size()+1); /* +1 for possible rest group */
     for (int i = 0; i != groupsFromMdpFile.ssize(); ++i)
     {
         /* Lookup the group name in the block structure */
         gid = search_string(groupsFromMdpFile[i].c_str(), block->nr, gnames);
         if ((grptp != egrptpONE) || (i == 0))
         {
-            grps->nm_ind[grps->nr++] = gid;
+            grps->emplace_back(gid);
         }
 
         /* Now go over the atoms in the group */
@@ -2706,7 +2704,7 @@ static bool do_numbering(int natoms, SimulationGroups *groups,
         {
             if (cbuf[j] == NOGID)
             {
-                cbuf[j] = grps->nr;
+                cbuf[j] = grps->size();
                 bRest   = TRUE;
             }
         }
@@ -2719,21 +2717,21 @@ static bool do_numbering(int natoms, SimulationGroups *groups,
                         title, natoms-ntot);
             }
             /* Add group name "rest" */
-            grps->nm_ind[grps->nr] = restnm;
+            grps->emplace_back(restnm);
 
             /* Assign the rest name to all atoms not currently assigned to a group */
             for (j = 0; (j < natoms); j++)
             {
                 if (cbuf[j] == NOGID)
                 {
-                    cbuf[j] = grps->nr;
+                    // group size was not updated before this here, so need to use -1.
+                    cbuf[j] = grps->size() - 1;
                 }
             }
-            grps->nr++;
         }
     }
 
-    if (grps->nr == 1 && (ntot == 0 || ntot == natoms))
+    if (grps->size() == 1 && (ntot == 0 || ntot == natoms))
     {
         /* All atoms are part of one (or no) group, no index required */
         groups->groupNumbers[gtype].clear();
@@ -2777,17 +2775,17 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     /* We need to sum degrees of freedom into doubles,
      * since floats give too low nrdf's above 3 million atoms.
      */
-    snew(nrdf_tc, groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr+1);
-    snew(nrdf_vcm, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nr+1);
-    snew(dof_vcm, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nr+1);
-    snew(na_vcm, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nr+1);
-    snew(nrdf_vcm_sub, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nr+1);
+    snew(nrdf_tc, groups.groups[SimulationAtomGroupType::TemperatureCoupling].size()+1);
+    snew(nrdf_vcm, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size()+1);
+    snew(dof_vcm, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size()+1);
+    snew(na_vcm, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size()+1);
+    snew(nrdf_vcm_sub, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size()+1);
 
-    for (int i = 0; i < groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr; i++)
+    for (int i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
     {
         nrdf_tc[i] = 0;
     }
-    for (int i = 0; i < groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nr+1; i++)
+    for (int i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; i++)
     {
         nrdf_vcm[i]     = 0;
         clear_ivec(dof_vcm[i]);
@@ -2923,7 +2921,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                     nrdf_vcm[getGroupType(groups, SimulationAtomGroupType::MassCenterVelocityRemoval, ai)] -= 0.5*imin;
                     if (nrdf_tc[getGroupType(groups, SimulationAtomGroupType::TemperatureCoupling, ai)] < 0)
                     {
-                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups.groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[getGroupType(groups, SimulationAtomGroupType::TemperatureCoupling, ai)]]);
+                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups.groups[SimulationAtomGroupType::TemperatureCoupling][getGroupType(groups, SimulationAtomGroupType::TemperatureCoupling, ai)]]);
                     }
                 }
                 else
@@ -2946,7 +2944,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
          * the number of degrees of freedom in each vcm group when COM
          * translation is removed and 6 when rotation is removed as well.
          */
-        for (int j = 0; j < groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nr+1; j++)
+        for (int j = 0; j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; j++)
         {
             switch (ir->comm_mode)
             {
@@ -2969,10 +2967,10 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             }
         }
 
-        for (int i = 0; i < groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr; i++)
+        for (int i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
         {
             /* Count the number of atoms of TC group i for every VCM group */
-            for (int j = 0; j < groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nr+1; j++)
+            for (int j = 0; j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; j++)
             {
                 na_vcm[j] = 0;
             }
@@ -2990,7 +2988,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
              */
             nrdf_uc    = nrdf_tc[i];
             nrdf_tc[i] = 0;
-            for (int j = 0; j < groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].nr+1; j++)
+            for (int j = 0; j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval])+1; j++)
             {
                 if (nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {
@@ -3000,7 +2998,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             }
         }
     }
-    for (int i = 0; (i < groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr); i++)
+    for (int i = 0; (i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling])); i++)
     {
         opts->nrdf[i] = nrdf_tc[i];
         if (opts->nrdf[i] < 0)
@@ -3009,7 +3007,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
         }
         fprintf(stderr,
                 "Number of degrees of freedom in T-Coupling group %s is %.2f\n",
-                gnames[groups.groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[i]], opts->nrdf[i]);
+                gnames[groups.groups[SimulationAtomGroupType::TemperatureCoupling][i]], opts->nrdf[i]);
     }
 
     sfree(nrdf2);
@@ -3036,14 +3034,14 @@ static bool do_egp_flag(t_inputrec *ir, SimulationGroups *groups,
     {
         gmx_fatal(FARGS, "The number of groups for %s is odd", option);
     }
-    nr   = groups->groups[SimulationAtomGroupType::EnergyOutput].nr;
+    nr   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
     bSet = FALSE;
     for (size_t i = 0; i < names.size() / 2; i++)
     {
         // TODO this needs to be replaced by a solution using std::find_if
         j = 0;
         while ((j < nr) &&
-               gmx_strcasecmp(names[2*i].c_str(), *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[j]])))
+               gmx_strcasecmp(names[2*i].c_str(), *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][j]])))
         {
             j++;
         }
@@ -3054,7 +3052,7 @@ static bool do_egp_flag(t_inputrec *ir, SimulationGroups *groups,
         }
         k = 0;
         while ((k < nr) &&
-               gmx_strcasecmp(names[2*i+1].c_str(), *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[k]])))
+               gmx_strcasecmp(names[2*i+1].c_str(), *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][k]])))
         {
             k++;
         }
@@ -3205,7 +3203,7 @@ void do_index(const char* mdparin, const char *ndx,
     do_numbering(natoms, groups, temperatureCouplingGroupNames, defaultIndexGroups, gnames,
                  SimulationAtomGroupType::TemperatureCoupling,
                  restnm, useReferenceTemperature ? egrptpALL : egrptpALL_GENREST, bVerbose, wi);
-    nr            = groups->groups[SimulationAtomGroupType::TemperatureCoupling].nr;
+    nr            = groups->groups[SimulationAtomGroupType::TemperatureCoupling].size();
     ir->opts.ngtc = nr;
     snew(ir->opts.nrdf, nr);
     snew(ir->opts.tau_t, nr);
@@ -3431,7 +3429,7 @@ void do_index(const char* mdparin, const char *ndx,
                 {
                     if (ir->opts.annealing[i] != eannNO)
                     {
-                        j = groups->groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[i];
+                        j = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
                         fprintf(stderr, "Simulated annealing for group %s: %s, %d timepoints\n",
                                 *(groups->groupNames[j]), eann_names[ir->opts.annealing[i]],
                                 ir->opts.anneal_npoints[i]);
@@ -3495,7 +3493,7 @@ void do_index(const char* mdparin, const char *ndx,
     do_numbering(natoms, groups, accelerationGroupNames, defaultIndexGroups, gnames,
                  SimulationAtomGroupType::Acceleration,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nr = groups->groups[SimulationAtomGroupType::Acceleration].nr;
+    nr = groups->groups[SimulationAtomGroupType::Acceleration].size();
     snew(ir->opts.acc, nr);
     ir->opts.ngacc = nr;
 
@@ -3511,7 +3509,7 @@ void do_index(const char* mdparin, const char *ndx,
     do_numbering(natoms, groups, freezeGroupNames, defaultIndexGroups, gnames,
                  SimulationAtomGroupType::Freeze,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nr             = groups->groups[SimulationAtomGroupType::Freeze].nr;
+    nr             = groups->groups[SimulationAtomGroupType::Freeze].size();
     ir->opts.ngfrz = nr;
     snew(ir->opts.nFreeze, nr);
     for (i = k = 0; (size_t(i) < freezeGroupNames.size()); i++)
@@ -3543,7 +3541,7 @@ void do_index(const char* mdparin, const char *ndx,
                  SimulationAtomGroupType::EnergyOutput,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
     add_wall_energrps(groups, ir->nwall, symtab);
-    ir->opts.ngener = groups->groups[SimulationAtomGroupType::EnergyOutput].nr;
+    ir->opts.ngener = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
     auto vcmGroupNames = gmx::splitString(is->vcm);
     bRest           =
         do_numbering(natoms, groups, vcmGroupNames, defaultIndexGroups, gnames,
@@ -3658,16 +3656,16 @@ void do_index(const char* mdparin, const char *ndx,
     {
         for (auto group : gmx::keysOf(groups->groups))
         {
-            fprintf(stderr, "%-16s has %d element(s):", shortName(group), groups->groups[group].nr);
-            for (int j = 0; (j < groups->groups[group].nr); j++)
+            fprintf(stderr, "%-16s has %zu element(s):", shortName(group), groups->groups[group].size());
+            for (const auto &entry : groups->groups[group])
             {
-                fprintf(stderr, " %s", *(groups->groupNames[groups->groups[group].nm_ind[j]]));
+                fprintf(stderr, " %s", *(groups->groupNames[entry]));
             }
             fprintf(stderr, "\n");
         }
     }
 
-    nr = groups->groups[SimulationAtomGroupType::EnergyOutput].nr;
+    nr = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
     snew(ir->opts.egp_flags, nr*nr);
 
     bExcl = do_egp_flag(ir, groups, "energygrp-excl", is->egpexcl, EGP_EXCL);
@@ -4142,7 +4140,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     }
 
     bAcc = FALSE;
-    for (int i = 0; (i < sys->groups.groups[SimulationAtomGroupType::Acceleration].nr); i++)
+    for (int i = 0; (i < gmx::ssize(sys->groups.groups[SimulationAtomGroupType::Acceleration])); i++)
     {
         for (m = 0; (m < DIM); m++)
         {
@@ -4155,7 +4153,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     if (bAcc)
     {
         clear_rvec(acc);
-        snew(mgrp, sys->groups.groups[SimulationAtomGroupType::Acceleration].nr);
+        snew(mgrp, sys->groups.groups[SimulationAtomGroupType::Acceleration].size());
         for (const AtomProxy atomP : AtomRange(*sys))
         {
             const t_atom &local = atomP.atom();
@@ -4163,7 +4161,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
             mgrp[getGroupType(sys->groups, SimulationAtomGroupType::Acceleration, i)] += local.m;
         }
         mt = 0.0;
-        for (i = 0; (i < sys->groups.groups[SimulationAtomGroupType::Acceleration].nr); i++)
+        for (i = 0; (i < gmx::ssize(sys->groups.groups[SimulationAtomGroupType::Acceleration])); i++)
         {
             for (m = 0; (m < DIM); m++)
             {
@@ -4182,7 +4180,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                 if (ir->nstcomm != 0 && m < ndof_com(ir))
                 {
                     acc[m] /= mt;
-                    for (i = 0; (i < sys->groups.groups[SimulationAtomGroupType::Acceleration].nr); i++)
+                    for (i = 0; (i < gmx::ssize(sys->groups.groups[SimulationAtomGroupType::Acceleration])); i++)
                     {
                         ir->opts.acc[i][m] -= acc[m];
                     }

@@ -64,11 +64,10 @@ void make_wall_tables(FILE *fplog,
                       t_forcerec *fr)
 {
     int           negp_pp;
-    int          *nm_ind;
     char          buf[STRLEN];
 
     negp_pp = ir->opts.ngener - ir->nwall;
-    nm_ind  = groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind;
+    gmx::ArrayRef<const int> nm_ind  = groups->groups[SimulationAtomGroupType::EnergyOutput];
 
     if (fplog)
     {

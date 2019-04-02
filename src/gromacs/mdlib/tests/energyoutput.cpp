@@ -323,42 +323,36 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
                 mtop_.groups.groupNames.emplace_back(&handle);
             }
 
-            mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nr = 3;
-            snew(mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nm_ind,
-                 mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nr);
-            mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nm_ind[0] = 0;
-            mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nm_ind[1] = 1;
-            mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nm_ind[2] = 2;
+            mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].resize(3);
+            mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput][0] = 0;
+            mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput][1] = 1;
+            mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput][2] = 2;
 
-            mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr = 3;
-            snew(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind,
-                 mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr);
-            mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[0] = 0;
-            mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[1] = 1;
-            mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[2] = 2;
+            mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].resize(3);
+            mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling][0] = 0;
+            mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling][1] = 1;
+            mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling][2] = 2;
 
-            mtop_.groups.groups[SimulationAtomGroupType::Acceleration].nr = 2;
-            snew(mtop_.groups.groups[SimulationAtomGroupType::Acceleration].nm_ind,
-                 mtop_.groups.groups[SimulationAtomGroupType::Acceleration].nr);
-            mtop_.groups.groups[SimulationAtomGroupType::Acceleration].nm_ind[0] = 0;
-            mtop_.groups.groups[SimulationAtomGroupType::Acceleration].nm_ind[1] = 2;
+            mtop_.groups.groups[SimulationAtomGroupType::Acceleration].resize(2);
+            mtop_.groups.groups[SimulationAtomGroupType::Acceleration][0] = 0;
+            mtop_.groups.groups[SimulationAtomGroupType::Acceleration][1] = 2;
 
             // Nose-Hoover chains
             inputrec_.bPrintNHChains     = true;
             inputrec_.opts.nhchainlength = 2;
-            state_.nosehoover_xi.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr*inputrec_.opts.nhchainlength);
-            state_.nosehoover_vxi.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr*inputrec_.opts.nhchainlength);
+            state_.nosehoover_xi.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].size()*inputrec_.opts.nhchainlength);
+            state_.nosehoover_vxi.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].size()*inputrec_.opts.nhchainlength);
 
             // This will be needed only with MTTK barostat
             state_.nhpres_xi.resize(1*inputrec_.opts.nhchainlength);
             state_.nhpres_vxi.resize(1*inputrec_.opts.nhchainlength);
 
             // Group pairs
-            enerdata_ = std::make_unique<gmx_enerdata_t>(mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nr, 0);
+            enerdata_ = std::make_unique<gmx_enerdata_t>(mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].size(), 0);
 
             // Kinetic energy and related data
-            ekindata_.tcstat.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr);
-            ekindata_.grpstat.resize(mtop_.groups.groups[SimulationAtomGroupType::Acceleration].nr);
+            ekindata_.tcstat.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].size());
+            ekindata_.grpstat.resize(mtop_.groups.groups[SimulationAtomGroupType::Acceleration].size());
 
             // This is needed so that the ebin space will be allocated
             inputrec_.cos_accel = 1.0;
@@ -449,12 +443,12 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
             }
 
             // Kinetic energy and related data
-            for (int i = 0; i < mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr; i++)
+            for (int i = 0; i < gmx::ssize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
             {
                 ekindata_.tcstat[i].T      = (*testValue += 0.1);
                 ekindata_.tcstat[i].lambda = (*testValue += 0.1);
             }
-            for (int i = 0; i < mtop_.groups.groups[SimulationAtomGroupType::Acceleration].nr; i++)
+            for (int i = 0; i < gmx::ssize(mtop_.groups.groups[SimulationAtomGroupType::Acceleration]); i++)
             {
                 ekindata_.grpstat[i].u[XX] = (*testValue += 0.1);
                 ekindata_.grpstat[i].u[YY] = (*testValue += 0.1);
@@ -548,7 +542,7 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
                 inputrec_.opts.ref_t[i] = (*testValue += 0.1);
             }
 
-            for (int k = 0; k < mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr*inputrec_.opts.nhchainlength; k++)
+            for (int k = 0; k < gmx::ssize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling])*inputrec_.opts.nhchainlength; k++)
             {
                 state_.nosehoover_xi[k]  = (*testValue += 0.1);
                 state_.nosehoover_vxi[k] = (*testValue += 0.1);

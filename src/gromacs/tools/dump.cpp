@@ -163,7 +163,7 @@ void list_tpr(const char *fn,
         gmx::EnumerationArray < SimulationAtomGroupType, std::vector < int>> gcount;
         for (auto group : keysOf(gcount))
         {
-            gcount[group].resize(groups.groups[group].nr);
+            gcount[group].resize(groups.groups[group].size());
         }
 
         for (int i = 0; (i < mtop.natoms); i++)
@@ -178,10 +178,10 @@ void list_tpr(const char *fn,
         {
             atot = 0;
             printf("%-12s: ", shortName(group));
-            for (int j = 0; (j < groups.groups[group].nr); j++)
+            for (const auto &entry : gcount[group])
             {
-                printf("  %5d", gcount[group][j]);
-                atot += gcount[group][j];
+                printf("  %5d", entry);
+                atot += entry;
             }
             printf("  (total %d atoms)\n", atot);
         }

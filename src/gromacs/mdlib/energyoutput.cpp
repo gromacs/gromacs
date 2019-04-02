@@ -450,7 +450,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             md->nEc++;
         }
     }
-    n       = groups->groups[SimulationAtomGroupType::EnergyOutput].nr;
+    n       = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
     md->nEg = n;
     md->nE  = (n*(n+1))/2;
 
@@ -463,12 +463,12 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             snew(gnm[k], STRLEN);
         }
-        for (i = 0; (i < groups->groups[SimulationAtomGroupType::EnergyOutput].nr); i++)
+        for (i = 0; (i < gmx::ssize(groups->groups[SimulationAtomGroupType::EnergyOutput])); i++)
         {
-            ni = groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[i];
-            for (j = i; (j < groups->groups[SimulationAtomGroupType::EnergyOutput].nr); j++)
+            ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
+            for (j = i; (j < gmx::ssize(groups->groups[SimulationAtomGroupType::EnergyOutput])); j++)
             {
-                nj = groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[j];
+                nj = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
                 for (k = kk = 0; (k < egNR); k++)
                 {
                     if (md->bEInd[k])
@@ -495,7 +495,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
     }
 
-    md->nTC  = isRerun ? 0 : groups->groups[SimulationAtomGroupType::TemperatureCoupling].nr;
+    md->nTC  = isRerun ? 0 : groups->groups[SimulationAtomGroupType::TemperatureCoupling].size();
     md->nNHC = ir->opts.nhchainlength; /* shorthand for number of NH chains */
     if (md->bMTTK)
     {
@@ -535,7 +535,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     for (i = 0; (i < md->nTC); i++)
     {
-        ni = groups->groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[i];
+        ni = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
         sprintf(buf, "T-%s", *(groups->groupNames[ni]));
         grpnms[i] = gmx_strdup(buf);
     }
@@ -555,7 +555,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             {
                 for (i = 0; (i < md->nTC); i++)
                 {
-                    ni   = groups->groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[i];
+                    ni   = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
                     bufi = *(groups->groupNames[ni]);
                     for (j = 0; (j < md->nNHC); j++)
                     {
@@ -590,7 +590,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             {
                 for (i = 0; (i < md->nTC); i++)
                 {
-                    ni   = groups->groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[i];
+                    ni   = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
                     bufi = *(groups->groupNames[ni]);
                     sprintf(buf, "Xi-%s", bufi);
                     grpnms[2*i] = gmx_strdup(buf);
@@ -608,7 +608,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     {
         for (i = 0; (i < md->nTC); i++)
         {
-            ni = groups->groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[i];
+            ni = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
             sprintf(buf, "Lamb-%s", *(groups->groupNames[ni]));
             grpnms[i] = gmx_strdup(buf);
         }
@@ -622,14 +622,14 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
     sfree(grpnms);
 
-    md->nU = groups->groups[SimulationAtomGroupType::Acceleration].nr;
+    md->nU = groups->groups[SimulationAtomGroupType::Acceleration].size();
     snew(md->tmp_v, md->nU);
     if (md->nU > 1)
     {
         snew(grpnms, 3*md->nU);
         for (i = 0; (i < md->nU); i++)
         {
-            ni = groups->groups[SimulationAtomGroupType::Acceleration].nm_ind[i];
+            ni = groups->groups[SimulationAtomGroupType::Acceleration][i];
             sprintf(buf, "Ux-%s", *(groups->groupNames[ni]));
             grpnms[3*i+XX] = gmx_strdup(buf);
             sprintf(buf, "Uy-%s", *(groups->groupNames[ni]));
@@ -1505,7 +1505,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 if (opts->annealing[i] != eannNO)
                 {
                     fprintf(log, "Current ref_t for group %s: %8.1f\n",
-                            *(groups->groupNames[groups->groups[SimulationAtomGroupType::TemperatureCoupling].nm_ind[i]]),
+                            *(groups->groupNames[groups->groups[SimulationAtomGroupType::TemperatureCoupling][i]]),
                             opts->ref_t[i]);
                 }
             }
@@ -1559,10 +1559,10 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                     n = 0;
                     for (i = 0; (i < md->nEg); i++)
                     {
-                        ni = groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[i];
+                        ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
                         for (j = i; (j < md->nEg); j++)
                         {
-                            nj = groups->groups[SimulationAtomGroupType::EnergyOutput].nm_ind[j];
+                            nj = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
                             sprintf(buf, "%s-%s", *(groups->groupNames[ni]),
                                     *(groups->groupNames[nj]));
                             md->print_grpnms[n++] = gmx_strdup(buf);
@@ -1598,7 +1598,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                         "Group", "Ux", "Uy", "Uz");
                 for (i = 0; (i < md->nU); i++)
                 {
-                    ni = groups->groups[SimulationAtomGroupType::Acceleration].nm_ind[i];
+                    ni = groups->groups[SimulationAtomGroupType::Acceleration][i];
                     fprintf(log, "%15s", *groups->groupNames[ni]);
                     pr_ebin(log, md->ebin, md->iu+3*i, 3, 3, mode, FALSE);
                 }

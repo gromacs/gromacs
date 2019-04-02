@@ -1500,7 +1500,7 @@ int Mdrunner::mdrunner()
                                                    cr, ms, nrnb, wcycle, fr->bMolPBC);
 
         /* Energy terms and groups */
-        gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].nr, inputrec->fepvals->n_lambda);
+        gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(), inputrec->fepvals->n_lambda);
 
         /* Set up interactive MD (IMD) */
         auto imdSession = makeImdSession(inputrec, cr, wcycle, &enerd, ms, &mtop, mdlog,
