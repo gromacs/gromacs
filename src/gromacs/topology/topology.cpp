@@ -54,7 +54,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
 
-gmx::EnumerationArray<SimulationAtomGroupType, const char *>
+static gmx::EnumerationArray<SimulationAtomGroupType, const char *>
 c_simulationAtomGroupTypeShortNames
     = { {
             "T-Coupling",
