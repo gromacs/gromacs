@@ -433,7 +433,7 @@ void gmx::Integrator::do_mimic()
                                 ir, bNS, force_flags, &top,
                                 constr, enerd, fcd,
                                 state, f.arrayRefWithPadding(), force_vir, mdatoms,
-                                nrnb, wcycle, graph, groups,
+                                nrnb, wcycle, graph,
                                 shellfc, fr, ppForceWorkload, t, mu_tot,
                                 vsite,
                                 ddBalanceRegionHandler);
@@ -448,7 +448,7 @@ void gmx::Integrator::do_mimic()
             Awh       *awh = nullptr;
             gmx_edsam *ed  = nullptr;
             do_force(fplog, cr, ms, ir, awh, enforcedRotation,
-                     step, nrnb, wcycle, &top, groups,
+                     step, nrnb, wcycle, &top,
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,

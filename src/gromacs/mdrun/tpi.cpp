@@ -643,7 +643,7 @@ Integrator::do_tpi()
             std::fenv_t floatingPointEnvironment;
             std::feholdexcept(&floatingPointEnvironment);
             do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
-                     step, nrnb, wcycle, &top, &top_global->groups,
+                     step, nrnb, wcycle, &top,
                      state_global->box, state_global->x.arrayRefWithPadding(), &state_global->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state_global->lambda,

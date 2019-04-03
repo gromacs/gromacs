@@ -848,7 +848,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
      * We do not unshift, so molecules are always whole in congrad.c
      */
     do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
-             count, nrnb, wcycle, top, &top_global->groups,
+             count, nrnb, wcycle, top,
              ems->s.box, ems->s.x.arrayRefWithPadding(), &ems->s.hist,
              ems->f.arrayRefWithPadding(), force_vir, mdAtoms->mdatoms(), enerd, fcd,
              ems->s.lambda, graph, fr, ppForceWorkload, vsite, mu_tot, t, nullptr,
@@ -2858,7 +2858,6 @@ Integrator::do_nm()
                                         nrnb,
                                         wcycle,
                                         graph,
-                                        &top_global->groups,
                                         shellfc,
                                         fr,
                                         ppForceWorkload,

@@ -797,41 +797,47 @@ setupForceWorkload(gmx::PpForceWorkload *forceWork,
     forceWork->haveCpuListedForceWork = haveCpuListedForces(*fr, idef, *fcd);
 }
 
-static void do_force_cutsVERLET(FILE *fplog,
-                                const t_commrec *cr,
-                                const gmx_multisim_t *ms,
-                                const t_inputrec *inputrec,
-                                gmx::Awh *awh,
-                                gmx_enfrot *enforcedRotation,
-                                int64_t step,
-                                t_nrnb *nrnb,
-                                gmx_wallcycle_t wcycle,
-                                const gmx_localtop_t *top,
-                                const SimulationGroups * /* groups */,
-                                matrix box, gmx::ArrayRefWithPadding<gmx::RVec> x,
-                                history_t *hist,
-                                gmx::ArrayRefWithPadding<gmx::RVec> force,
-                                tensor vir_force,
-                                const t_mdatoms *mdatoms,
-                                gmx_enerdata_t *enerd, t_fcdata *fcd,
-                                real *lambda,
-                                t_graph *graph,
-                                t_forcerec *fr,
-                                gmx::PpForceWorkload *ppForceWorkload,
-                                interaction_const_t *ic,
-                                const gmx_vsite_t *vsite,
-                                rvec mu_tot,
-                                double t,
-                                gmx_edsam *ed,
-                                const int flags,
-                                const DDBalanceRegionHandler &ddBalanceRegionHandler)
+void do_force(FILE                                     *fplog,
+              const t_commrec                          *cr,
+              const gmx_multisim_t                     *ms,
+              const t_inputrec                         *inputrec,
+              gmx::Awh                                 *awh,
+              gmx_enfrot                               *enforcedRotation,
+              int64_t                                   step,
+              t_nrnb                                   *nrnb,
+              gmx_wallcycle_t                           wcycle,
+              const gmx_localtop_t                     *top,
+              matrix                                    box,
+              gmx::ArrayRefWithPadding<gmx::RVec>       x,     //NOLINT(performance-unnecessary-value-param)
+              history_t                                *hist,
+              gmx::ArrayRefWithPadding<gmx::RVec>       force, //NOLINT(performance-unnecessary-value-param)
+              tensor                                    vir_force,
+              const t_mdatoms                          *mdatoms,
+              gmx_enerdata_t                           *enerd,
+              t_fcdata                                 *fcd,
+              gmx::ArrayRef<real>                       lambda,
+              t_graph                                  *graph,
+              t_forcerec                               *fr,
+              gmx::PpForceWorkload                     *ppForceWorkload,
+              const gmx_vsite_t                        *vsite,
+              rvec                                      mu_tot,
+              double                                    t,
+              gmx_edsam                                *ed,
+              int                                       flags,
+              const DDBalanceRegionHandler             &ddBalanceRegionHandler)
 {
-    int                 i, j;
-    double              mu[2*DIM];
-    gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
-    gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
-    nonbonded_verlet_t *nbv = fr->nbv.get();
+    int                  i, j;
+    double               mu[2*DIM];
+    gmx_bool             bStateChanged, bNS, bFillGrid, bCalcCGCM;
+    gmx_bool             bDoForces, bUseGPU, bUseOrEmulGPU;
+    nonbonded_verlet_t  *nbv = fr->nbv.get();
+    interaction_const_t *ic  = fr->ic;
 
+    /* modify force flag if not doing nonbonded */
+    if (!fr->bNonbonded)
+    {
+        flags &= ~GMX_FORCE_NONBONDED;
+    }
     bStateChanged = ((flags & GMX_FORCE_STATECHANGED) != 0);
     bNS           = ((flags & GMX_FORCE_NS) != 0);
     bFillGrid     = (bNS && bStateChanged);
@@ -1213,14 +1219,14 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
         nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::Local,
                                       fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, *mdatoms,
-                                      inputrec->fepvals, lambda,
+                                      inputrec->fepvals, lambda.data(),
                                       enerd, flags, nrnb);
 
         if (havePPDomainDecomposition(cr))
         {
             nbv->dispatchFreeEnergyKernel(Nbnxm::InteractionLocality::NonLocal,
                                           fr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, *mdatoms,
-                                          inputrec->fepvals, lambda,
+                                          inputrec->fepvals, lambda.data(),
                                           enerd, flags, nrnb);
         }
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
@@ -1264,7 +1270,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.unpaddedArrayRef().data()), hist, forceOut.f, &forceOut.forceWithVirial, enerd, fcd,
-                      box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
+                      box, inputrec->fepvals, lambda.data(), graph, &(top->excls), fr->mu_tot,
                       flags,
                       ddBalanceRegionHandler);
 
@@ -1272,7 +1278,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
                          step, t, wcycle,
-                         fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
+                         fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda.data(),
                          flags, &forceOut.forceWithVirial, enerd,
                          ed, bNS);
 
@@ -1473,390 +1479,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             checkPotentialEnergyValidity(step, *enerd, *inputrec);
         }
-    }
-}
-
-static void do_force_cutsGROUP(FILE *fplog,
-                               const t_commrec *cr,
-                               const gmx_multisim_t *ms,
-                               const t_inputrec *inputrec,
-                               gmx::Awh *awh,
-                               gmx_enfrot *enforcedRotation,
-                               int64_t step,
-                               t_nrnb *nrnb,
-                               gmx_wallcycle_t wcycle,
-                               gmx_localtop_t *top,
-                               const SimulationGroups *groups,
-                               matrix box, gmx::ArrayRefWithPadding<gmx::RVec> x,
-                               history_t *hist,
-                               gmx::ArrayRefWithPadding<gmx::RVec> force,
-                               tensor vir_force,
-                               const t_mdatoms *mdatoms,
-                               gmx_enerdata_t *enerd,
-                               t_fcdata *fcd,
-                               real *lambda,
-                               t_graph *graph,
-                               t_forcerec *fr,
-                               const gmx_vsite_t *vsite,
-                               rvec mu_tot,
-                               double t,
-                               gmx_edsam *ed,
-                               int flags,
-                               const DDBalanceRegionHandler &ddBalanceRegionHandler)
-{
-    int        cg0, cg1, i, j;
-    double     mu[2*DIM];
-    gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM;
-    gmx_bool   bDoForces;
-
-    const int  start  = 0;
-    const int  homenr = mdatoms->homenr;
-
-    clear_mat(vir_force);
-
-    cg0 = 0;
-    if (DOMAINDECOMP(cr))
-    {
-        cg1 = cr->dd->globalAtomGroupIndices.size();
-    }
-    else
-    {
-        cg1 = top->cgs.nr;
-    }
-    if (fr->n_tpi > 0)
-    {
-        cg1--;
-    }
-
-    bStateChanged  = ((flags & GMX_FORCE_STATECHANGED) != 0);
-    bNS            = ((flags & GMX_FORCE_NS) != 0);
-    /* Should we perform the long-range nonbonded evaluation inside the neighborsearching? */
-    bFillGrid      = (bNS && bStateChanged);
-    bCalcCGCM      = (bFillGrid && !DOMAINDECOMP(cr));
-    bDoForces      = ((flags & GMX_FORCE_FORCES) != 0);
-
-    if (bStateChanged)
-    {
-        update_forcerec(fr, box);
-
-        if (inputrecNeedMutot(inputrec))
-        {
-            /* Calculate total (local) dipole moment in a temporary common array.
-             * This makes it possible to sum them over nodes faster.
-             */
-            calc_mu(start, homenr,
-                    x.unpaddedArrayRef(), mdatoms->chargeA, mdatoms->chargeB, mdatoms->nChargePerturbed,
-                    mu, mu+DIM);
-        }
-    }
-
-    if (fr->ePBC != epbcNONE)
-    {
-        /* Compute shift vectors every step,
-         * because of pressure coupling or box deformation!
-         */
-        if ((flags & GMX_FORCE_DYNAMICBOX) && bStateChanged)
-        {
-            calc_shifts(box, fr->shift_vec);
-        }
-
-        if (bCalcCGCM)
-        {
-            put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, box,
-                                     &(top->cgs), as_rvec_array(x.unpaddedArrayRef().data()), fr->cg_cm);
-            inc_nrnb(nrnb, eNR_CGCM, homenr);
-            inc_nrnb(nrnb, eNR_RESETX, cg1-cg0);
-        }
-        else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
-        {
-            unshift_self(graph, box, as_rvec_array(x.unpaddedArrayRef().data()));
-        }
-    }
-    else if (bCalcCGCM)
-    {
-        calc_cgcm(fplog, cg0, cg1, &(top->cgs), as_rvec_array(x.unpaddedArrayRef().data()), fr->cg_cm);
-        inc_nrnb(nrnb, eNR_CGCM, homenr);
-    }
-
-    if (bCalcCGCM && gmx_debug_at)
-    {
-        pr_rvecs(debug, 0, "cgcm", fr->cg_cm, top->cgs.nr);
-    }
-
-#if GMX_MPI
-    if (!thisRankHasDuty(cr, DUTY_PME))
-    {
-        /* Send particle coordinates to the pme nodes.
-         * Since this is only implemented for domain decomposition
-         * and domain decomposition does not use the graph,
-         * we do not need to worry about shifting.
-         */
-        gmx_pme_send_coordinates(cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
-                                 lambda[efptCOUL], lambda[efptVDW],
-                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
-                                 step, wcycle);
-    }
-#endif /* GMX_MPI */
-
-    /* Communicate coordinates and sum dipole if necessary */
-    if (DOMAINDECOMP(cr))
-    {
-        dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
-
-        /* No GPU support, no move_x overlap, so reopen the balance region here */
-        ddBalanceRegionHandler.reopenRegionCpu();
-    }
-
-    if (inputrecNeedMutot(inputrec))
-    {
-        if (bStateChanged)
-        {
-            if (PAR(cr))
-            {
-                gmx_sumd(2*DIM, mu, cr);
-
-                ddBalanceRegionHandler.reopenRegionCpu();
-            }
-            for (i = 0; i < 2; i++)
-            {
-                for (j = 0; j < DIM; j++)
-                {
-                    fr->mu_tot[i][j] = mu[i*DIM + j];
-                }
-            }
-        }
-        if (fr->efep == efepNO)
-        {
-            copy_rvec(fr->mu_tot[0], mu_tot);
-        }
-        else
-        {
-            for (j = 0; j < DIM; j++)
-            {
-                mu_tot[j] =
-                    (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] + lambda[efptCOUL]*fr->mu_tot[1][j];
-            }
-        }
-    }
-
-    /* Reset energies */
-    reset_enerdata(enerd);
-    clear_rvecs(SHIFTS, fr->fshift);
-
-    if (bNS)
-    {
-        wallcycle_start(wcycle, ewcNS);
-
-        if (graph && bStateChanged)
-        {
-            /* Calculate intramolecular shift vectors to make molecules whole */
-            mk_mshift(fplog, graph, fr->ePBC, box, as_rvec_array(x.unpaddedArrayRef().data()));
-        }
-
-        /* Do the actual neighbour searching */
-        ns(fplog, fr, box,
-           groups, top, mdatoms,
-           cr, nrnb, bFillGrid);
-
-        wallcycle_stop(wcycle, ewcNS);
-    }
-
-    if (DOMAINDECOMP(cr) && !thisRankHasDuty(cr, DUTY_PME))
-    {
-        wallcycle_start(wcycle, ewcPPDURINGPME);
-        dd_force_flop_start(cr->dd, nrnb);
-    }
-
-    if (inputrec->bRot)
-    {
-        wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.unpaddedArrayRef().data()), t, step, bNS);
-        wallcycle_stop(wcycle, ewcROT);
-    }
-
-
-    /* Start the force cycle counter.
-     * Note that a different counter is used for dynamic load balancing.
-     */
-    wallcycle_start(wcycle, ewcFORCE);
-
-    // set up and clear force outputs
-    struct ForceOutputs forceOut = setupForceOutputs(fr, *inputrec, force, bDoForces, ((flags & GMX_FORCE_VIRIAL) != 0), wcycle);
-
-    if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
-    {
-        clear_pull_forces(inputrec->pull_work);
-    }
-
-    /* update QMMMrec, if necessary */
-    if (fr->bQMMM)
-    {
-        update_QMMMrec(cr, fr, as_rvec_array(x.unpaddedArrayRef().data()), mdatoms, box);
-    }
-
-    /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fr, inputrec, &(top->idef),
-                      cr, ms, nrnb, wcycle, mdatoms,
-                      as_rvec_array(x.unpaddedArrayRef().data()), hist, forceOut.f, &forceOut.forceWithVirial, enerd, fcd,
-                      box, inputrec->fepvals, lambda,
-                      graph, &(top->excls), fr->mu_tot,
-                      flags,
-                      ddBalanceRegionHandler);
-
-    wallcycle_stop(wcycle, ewcFORCE);
-
-    if (DOMAINDECOMP(cr))
-    {
-        dd_force_flop_stop(cr->dd, nrnb);
-
-        ddBalanceRegionHandler.closeAfterForceComputationCpu();
-    }
-
-    computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
-                         step, t, wcycle,
-                         fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
-                         flags, &forceOut.forceWithVirial, enerd,
-                         ed, bNS);
-
-    if (bDoForces)
-    {
-        /* Communicate the forces */
-        if (DOMAINDECOMP(cr))
-        {
-            dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
-            /* Do we need to communicate the separate force array
-             * for terms that do not contribute to the single sum virial?
-             * Position restraints and electric fields do not introduce
-             * inter-cg forces, only full electrostatics methods do.
-             * When we do not calculate the virial, fr->f_novirsum = forceOut.f,
-             * so we have already communicated these forces.
-             */
-            if (EEL_FULL(fr->ic->eeltype) && cr->dd->n_intercg_excl &&
-                (flags & GMX_FORCE_VIRIAL))
-            {
-                dd_move_f(cr->dd, forceOut.forceWithVirial.force_, nullptr, wcycle);
-            }
-        }
-
-        /* If we have NoVirSum forces, but we do not calculate the virial,
-         * we sum fr->f_novirsum=forceOut.f later.
-         */
-        if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
-        {
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, fr->fshift, FALSE, nullptr, nrnb,
-                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
-        }
-
-        if (flags & GMX_FORCE_VIRIAL)
-        {
-            /* Calculation of the virial must be done after vsites! */
-            calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f,
-                        vir_force, graph, box, nrnb, fr, inputrec->ePBC);
-        }
-    }
-
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME))
-    {
-        /* In case of node-splitting, the PP nodes receive the long-range
-         * forces, virial and energy from the PME nodes here.
-         */
-        pme_receive_force_ener(cr, &forceOut.forceWithVirial, enerd, wcycle);
-    }
-
-    if (bDoForces)
-    {
-        post_process_forces(cr, step, nrnb, wcycle,
-                            top, box, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f, &forceOut.forceWithVirial,
-                            vir_force, mdatoms, graph, fr, vsite,
-                            flags);
-    }
-
-    if (flags & GMX_FORCE_ENERGY)
-    {
-        /* Sum the potential energy terms from group contributions */
-        sum_epot(&(enerd->grpp), enerd->term);
-
-        if (!EI_TPI(inputrec->eI))
-        {
-            checkPotentialEnergyValidity(step, *enerd, *inputrec);
-        }
-    }
-
-}
-
-void do_force(FILE                                            *fplog,
-              const t_commrec                                 *cr,
-              const gmx_multisim_t                            *ms,
-              const t_inputrec                                *inputrec,
-              gmx::Awh                                        *awh,
-              gmx_enfrot                                      *enforcedRotation,
-              int64_t                                          step,
-              t_nrnb                                          *nrnb,
-              gmx_wallcycle_t                                  wcycle,
-              gmx_localtop_t                                  *top,
-              const SimulationGroups                          *groups,
-              matrix                                           box,
-              gmx::ArrayRefWithPadding<gmx::RVec>              x,     //NOLINT(performance-unnecessary-value-param)
-              history_t                                       *hist,
-              gmx::ArrayRefWithPadding<gmx::RVec>              force, //NOLINT(performance-unnecessary-value-param)
-              tensor                                           vir_force,
-              const t_mdatoms                                 *mdatoms,
-              gmx_enerdata_t                                  *enerd,
-              t_fcdata                                        *fcd,
-              gmx::ArrayRef<real>                              lambda,
-              t_graph                                         *graph,
-              t_forcerec                                      *fr,
-              gmx::PpForceWorkload                            *ppForceWorkload,
-              const gmx_vsite_t                               *vsite,
-              rvec                                             mu_tot,
-              double                                           t,
-              gmx_edsam                                       *ed,
-              int                                              flags,
-              const DDBalanceRegionHandler                    &ddBalanceRegionHandler)
-{
-    /* modify force flag if not doing nonbonded */
-    if (!fr->bNonbonded)
-    {
-        flags &= ~GMX_FORCE_NONBONDED;
-    }
-
-    switch (inputrec->cutoff_scheme)
-    {
-        case ecutsVERLET:
-            do_force_cutsVERLET(fplog, cr, ms, inputrec,
-                                awh, enforcedRotation, step, nrnb, wcycle,
-                                top,
-                                groups,
-                                box, x, hist,
-                                force, vir_force,
-                                mdatoms,
-                                enerd, fcd,
-                                lambda.data(), graph,
-                                fr,
-                                ppForceWorkload,
-                                fr->ic,
-                                vsite, mu_tot,
-                                t, ed,
-                                flags,
-                                ddBalanceRegionHandler);
-            break;
-        case ecutsGROUP:
-            do_force_cutsGROUP(fplog, cr, ms, inputrec,
-                               awh, enforcedRotation, step, nrnb, wcycle,
-                               top,
-                               groups,
-                               box, x, hist,
-                               force, vir_force,
-                               mdatoms,
-                               enerd, fcd,
-                               lambda.data(), graph,
-                               fr, vsite, mu_tot,
-                               t, ed,
-                               flags,
-                               ddBalanceRegionHandler);
-            break;
-        default:
-            gmx_incons("Invalid cut-off scheme passed!");
     }
 
     /* In case we don't have constraints and are using GPUs, the next balancing

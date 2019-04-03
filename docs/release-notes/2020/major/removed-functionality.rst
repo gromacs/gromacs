@@ -7,6 +7,16 @@ Removed functionality
    Also, please use the syntax :issue:`number` to reference issues on redmine, without the
    a space between the colon and number!
 
+Group cut-off scheme
+""""""""""""""""""""
+
+The group cut-off scheme has been removed. Several kinds of simulation
+that depend on it no longer work.
+
+.. TODO list those (Mark has other work incoming that does so)
+
+:issue:`1852`
+
 gmx anadock
 """""""""""
 The gmx anadock tool was removed since it does not belong in gromacs

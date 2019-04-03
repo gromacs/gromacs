@@ -845,7 +845,7 @@ void gmx::Integrator::do_md()
                                 ir, bNS, force_flags, &top,
                                 constr, enerd, fcd,
                                 state, f.arrayRefWithPadding(), force_vir, mdatoms,
-                                nrnb, wcycle, graph, groups,
+                                nrnb, wcycle, graph,
                                 shellfc, fr, ppForceWorkload, t, mu_tot,
                                 vsite,
                                 ddBalanceRegionHandler);
@@ -871,7 +871,7 @@ void gmx::Integrator::do_md()
              * Check comments in sim_util.c
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation,
-                     step, nrnb, wcycle, &top, groups,
+                     step, nrnb, wcycle, &top,
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
