@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2143,15 +2143,15 @@ Integrator::do_lbfgs()
                 {
                     /* Replace c endpoint with b */
                     c   = b;
-                    /* swap states b and c */
-                    swap_em_state(&sb, &sc);
+                    /* copy state b to c */
+                    *sc = *sb;
                 }
                 else
                 {
                     /* Replace a endpoint with b */
                     a   = b;
-                    /* swap states a and b */
-                    swap_em_state(&sa, &sb);
+                    /* copy state b to a */
+                    *sa = *sb;
                 }
 
                 /*
@@ -2353,7 +2353,7 @@ Integrator::do_lbfgs()
         }
 
         // Reset stepsize in we are doing more iterations
-        stepsize = 1.0/ems.fnorm;
+        stepsize = 1.0;
 
         /* Stop when the maximum force lies below tolerance.
          * If we have reached machine precision, converged is already set to true.

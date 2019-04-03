@@ -6,7 +6,7 @@
       <Energy Name="Potential">
         <Real Name="Time 0.000000 Step 0 in frame 0">2195.7786482024485</Real>
         <Real Name="Time 0.000000 Step 0 in frame 1">1848.1873657020258</Real>
-        <Real Name="Time 4.000000 Step 4 in frame 2">1847.227343785434</Real>
+        <Real Name="Time 4.000000 Step 4 in frame 2">561.1160975330763</Real>
       </Energy>
     </Minimizer>
   </Simulation>
