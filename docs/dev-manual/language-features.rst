@@ -57,6 +57,10 @@ a release.
 * Use ``not_null<T>`` pointers wherever possible to convey the
   semantics that a pointer to a valid is required, and a reference
   is inappropriate. See also |linkrefnotnull|.
+* Use ``string_view`` in cases where you want to only use a read-only-sequence
+  of characters instead of using ``const std::string &``. See also |linkrefstringview|.
+  Because null termination expected by some C APIs (e.g. fopen, fputs, fprintf)
+  is not guaranteed, string_view should not be used in such cases.
 * Don't use C-style casts; use ``const_cast``, ``static_cast`` or
   ``reinterpret_cast as appropriate``. See the point on RTTI for
   ``dynamic_cast``. For emphasizing type (e.g. intentional integer division)
@@ -146,6 +150,9 @@ a release.
 .. |linkref8| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Renum-class>`__
 .. |linkref9| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rc-explicit>`__
 .. |linkrefnotnull| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Ri-nullptr> and here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-nullptr>`__
+.. |linkrefstringview| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines.html#Rstr-view>`__
+
+
 
 .. _implementing exceptions:
 
