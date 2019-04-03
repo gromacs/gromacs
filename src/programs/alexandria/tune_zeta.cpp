@@ -78,6 +78,7 @@ class OptZeta : public MolGen
         gmx_bool       bFullTensor_;
         gmx_bool       bCharge_;
         gmx_bool       bFitAlpha_;
+        gmx_bool       bSameZeta_;
 
         Bayes <double> TuneZeta_;
         param_type     param_, lower_, upper_, best_;
@@ -91,7 +92,8 @@ class OptZeta : public MolGen
               bQuadrupole_(false),
               bFullTensor_(false),
               bCharge_(false),
-              bFitAlpha_(false)
+              bFitAlpha_(false),
+              bSameZeta_(false)
         {}
 
         ~OptZeta() {}
@@ -101,6 +103,8 @@ class OptZeta : public MolGen
         gmx_bool quadrupole() const { return bQuadrupole_; }
 
         gmx_bool fullTensor() const { return bFullTensor_; }
+
+        gmx_bool samezeta() const {return bSameZeta_; }
 
         void add_pargs(std::vector<t_pargs> *pargs)
         {
@@ -114,6 +118,8 @@ class OptZeta : public MolGen
                   "Calibrate parameters to reproduce quadrupole tensor." },
                 { "-fitalpha", FALSE, etBOOL, {&bFitAlpha_},
                   "Calibrate atomic polarizability." },
+                { "-samezeta", FALSE, etBOOL, {&bSameZeta_},
+                  "Use the same zeta for both the core and the shell of the Drude model." },
                 { "-charge", FALSE, etBOOL, {&bCharge_},
                   "Calibrate parameters to keep reasonable charges (do not use with ESP)." },
             };
@@ -162,7 +168,7 @@ void OptZeta::polData2TuneZeta()
             auto ei    = pd.findEem(iChargeDistributionModel(), ai->name());
             GMX_RELEASE_ASSERT(ei != pd.EndEemprops(), "Cannot find eemprops");
             auto nzeta = ei->getNzeta();
-            auto zeta  = ei->getZeta(nzeta-1);
+            auto zeta  = ei->getZeta(nzeta-1); // only optimize zeta for the shell of the polarizable model
             if (0 != zeta)
             {
                 param_.push_back(std::move(zeta));
@@ -201,6 +207,9 @@ void OptZeta::tuneZeta2PolData()
     char     z_sig[STRLEN];
     char     buf[STRLEN];
     char     buf_sig[STRLEN];
+    
+    double   zeta  = 0;
+    double   sigma = 0;
 
     Poldata &pd    = poldata();
     auto    *ic    = indexCount();
@@ -214,45 +223,62 @@ void OptZeta::tuneZeta2PolData()
             std::string rowstr = ei->getRowstr();
             zstr[0]  = '\0';
             z_sig[0] = '\0';
+
+            // Begin to add  optimized zeta to poldata
             if (iChargeDistributionModel() == eqdAXps || iChargeDistributionModel() == eqdAXpg)
             {
-                auto   nzeta   = ei->getNzeta();
-                double zeta    = ei->getZeta(0);
-                double sigma   = 0;
-                for (auto i = 0; i < nzeta; i++)
+                if (bSameZeta_)
                 {
-                    if (i > 0)
-                    {
-                        zeta   = param_[n];
-                        sigma  = psigma_[n++];
-                    }
-                    sprintf(buf, "%g ", zeta);
-                    sprintf(buf_sig, "%g ", sigma);
+                    zeta   = param_[n]; // Same zeta will be used for both core and shell
+                    sigma  = psigma_[n++];
+
+                    sprintf(buf, "%g %g ", zeta, zeta);
+                    sprintf(buf_sig, "%g %g ", sigma, sigma);
                     strcat(zstr, buf);
                     strcat(z_sig, buf_sig);
                 }
-                ei->setRowZetaQ(rowstr, zstr, qstr);
-                ei->setZetastr(zstr);
-                ei->setZeta_sigma(z_sig);
+                else
+                {
+                    zeta    = ei->getZeta(0); //zeta for core read from poldata
+                    sigma   = 0;
+                    for (auto i = 0; i < ei->getNzeta(); i++)
+                    {
+                        if (i > 0)
+                        {
+                            zeta   = param_[n]; // zeta for shell from param_ vector
+                            sigma  = psigma_[n++];
+                        }
+                        sprintf(buf, "%g ", zeta);
+                        sprintf(buf_sig, "%g ", sigma);
+                        strcat(zstr, buf);
+                        strcat(z_sig, buf_sig);
+                    }
+                }
             }
             else
             {
-                auto nzeta  = ei->getNzeta();
-                auto zeta   = param_[n];
-                auto sigma  = psigma_[n++];
-                for (auto i = 0; i < nzeta; i++)
+                zeta   = param_[n];
+                sigma  = psigma_[n++];
+                for (auto i = 0; i < ei->getNzeta(); i++)
                 {
                     sprintf(buf, "%g ", zeta);
                     sprintf(buf_sig, "%g ", sigma);
                     strcat(zstr, buf);
                     strcat(z_sig, buf_sig);
                 }
-                ei->setRowZetaQ(rowstr, zstr, qstr);
-                ei->setZetastr(zstr);
-                ei->setZeta_sigma(z_sig);
             }
+            ei->setRowZetaQ(rowstr, zstr, qstr);
+            ei->setZetastr(zstr);
+            ei->setZeta_sigma(z_sig);
+            // End to add  optimized zeta to poldata
+
+            // Begin to add optimized alpha to poldata
             if (bFitAlpha_)
             {
+
+
+
+
                 std::string ptype;
                 if (pd.atypeToPtype(ai->name(), ptype))
                 {
@@ -264,6 +290,7 @@ void OptZeta::tuneZeta2PolData()
                     gmx_fatal(FARGS, "No Ptype for atom type %s\n", ai->name().c_str());
                 }
             }
+            // End to add optimized alpha to poldata
         }
     }
 }
@@ -575,6 +602,7 @@ int alex_tune_zeta(int argc, char *argv[])
     real                        dip_toler     = 0.5;
     real                        quad_toler    = 5;
     real                        alpha_toler   = 3;
+    real                        isopol_toler  = 2;
     real                        factor        = 0.8;
     real                        efield        = 1;
     char                       *opt_elem      = nullptr;
@@ -603,7 +631,9 @@ int alex_tune_zeta(int argc, char *argv[])
         { "-quad_toler", FALSE, etREAL, {&quad_toler},
           "Tolerance (Buckingham) for marking quadrupole as an outlier in the log file" },
         { "-alpha_toler", FALSE, etREAL, {&alpha_toler},
-          "Tolerance (A^3) for marking polarizability as an outlier in the log file" },
+          "Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file" },
+        { "-isopol_toler", FALSE, etREAL, {&isopol_toler},
+          "Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file" },
         { "-th_toler", FALSE, etREAL, {&th_toler},
           "Minimum angle to be considered a linear A-B-C bond" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
@@ -730,6 +760,7 @@ int alex_tune_zeta(int argc, char *argv[])
                              dip_toler,
                              quad_toler,
                              alpha_toler,
+                             isopol_toler,
                              oenv,
                              bPolar,
                              opt.dipole(),

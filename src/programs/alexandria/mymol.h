@@ -274,6 +274,7 @@ class MyMol
         double                         isoPol_calc_   = 0;
         double                         anisoPol_elec_ = 0;
         double                         anisoPol_calc_ = 0;
+        double                         mpad_          = 0; //molecular polarizability anisotropy difference (mpad)
         tensor                         alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         tensor                         alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         eSupport                       eSupp_;
@@ -520,6 +521,7 @@ class MyMol
          * \param[out] anisoPol  Anisotropic polarizability
          */
         void CalcAnisoPolarizability(tensor polar, double *anisoPol);
+        
 
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule

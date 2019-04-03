@@ -78,7 +78,8 @@ void xvgr_symbolize(FILE                   *xvgf,
 void print_polarizability(FILE              *fp,
                           alexandria::MyMol *mol,
                           char              *calc_name,
-                          real               q_toler);
+                          real               alpha_toler,
+                          real               isopol_toler);
 
 void print_dipole(FILE                      *fp,
                   alexandria::MyMol         *mol,
@@ -117,6 +118,7 @@ void print_electric_props(FILE                           *fp,
                           real                            dip_toler,
                           real                            quad_toler,
                           real                            alpha_toler,
+                          real                            isopol_toler,
                           const gmx_output_env_t         *oenv,
                           bool                            bPolar,
                           bool                            bDipole,

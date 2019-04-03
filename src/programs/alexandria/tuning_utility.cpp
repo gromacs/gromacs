@@ -111,10 +111,12 @@ void xvgr_symbolize(FILE                   *xvgf,
 void print_polarizability(FILE              *fp,
                           alexandria::MyMol *mol,
                           char              *calc_name,
-                          real               q_toler)
+                          real               alpha_toler,
+                          real               isopol_toler)
 {
     tensor dalpha;
     real   delta = 0;
+    real   diso_pol = 0;
 
     if (nullptr != calc_name)
     {
@@ -123,17 +125,22 @@ void print_polarizability(FILE              *fp,
             m_sub(mol->alpha_elec_, mol->alpha_calc_, dalpha);
             delta = sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+gmx::square(dalpha[XX][ZZ])+
                          gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
+            diso_pol = std::abs(mol->isoPol_elec_ - mol->isoPol_calc_);
             fprintf(fp,
                     "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
                     "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
                     "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
                     calc_name,
                     mol->alpha_calc_[XX][XX], mol->alpha_calc_[XX][YY], mol->alpha_calc_[XX][ZZ],
-                    dalpha[XX][XX], dalpha[XX][YY], dalpha[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
+                    dalpha[XX][XX], dalpha[XX][YY], dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "YYY" : "",
                     "", mol->alpha_calc_[YY][YY], mol->alpha_calc_[YY][ZZ],
                     "", dalpha[YY][YY], dalpha[YY][ZZ],
                     "", "", mol->alpha_calc_[ZZ][ZZ],
                     "", "", dalpha[ZZ][ZZ]);
+            fprintf(fp, 
+                    "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n\n",
+                    mol->molProp()->getMolname().c_str(), mol->isoPol_elec_, mol->isoPol_calc_, diso_pol, (diso_pol > isopol_toler) ? "ZZZ" : "");
+                    
         }
         else
         {
@@ -252,6 +259,7 @@ void print_electric_props(FILE                           *fp,
                           real                            dip_toler,
                           real                            quad_toler,
                           real                            alpha_toler,
+                          real                            isopol_toler,
                           const gmx_output_env_t         *oenv,
                           bool                            bPolar,
                           bool                            bDipole,
@@ -372,13 +380,16 @@ void print_electric_props(FILE                           *fp,
                 mol.CalcPolarizability(efield, cr, nullptr);
                 if (check_polarizability(mol.alpha_calc_))
                 {
-                    print_polarizability(fp, &mol, (char *)"Electronic", alpha_toler);
-                    print_polarizability(fp, &mol, (char *)"Calculated", alpha_toler);
-                    gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_,       0, 0);
-                    gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
-                    for (mm = 0; mm < DIM; mm++)
+                    print_polarizability(fp, &mol, (char *)"Electronic", alpha_toler, isopol_toler);
+                    print_polarizability(fp, &mol, (char *)"Calculated", alpha_toler, isopol_toler);
+                    if (std::abs(mol.isoPol_elec_ - mol.isoPol_calc_) <= isopol_toler)
                     {
-                        gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
+                        gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_,       0, 0);
+                        gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
+                        for (mm = 0; mm < DIM; mm++)
+                        {
+                            gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);                            
+                        }
                     }
                 }
             }
@@ -547,7 +558,7 @@ void print_electric_props(FILE                           *fp,
     }
 
     // List outliers based on the deviation in the total dipole moment
-    sigma = sqrt(sse/n);   
+    sigma = sqrt(sse/n); 
     fprintf(fp, "Overview of dipole moment outliers (> %.3f off)\n", 2*sigma);
     fprintf(fp, "----------------------------------\n");
     fprintf(fp, "%-20s  %12s  %12s  %12s\n", "Name", "Calc", "Electronic", "Deviation (Debye)");

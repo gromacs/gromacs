@@ -78,6 +78,7 @@ class OptACM : public MolGen
         gmx_bool       bFullTensor_;
         gmx_bool       bFitAlpha_;
         gmx_bool       bFitZeta_;
+        gmx_bool       bSameZeta_;
         gmx_bool       bFitChi_;
         gmx_bool       bUseCM5_;
 
@@ -94,6 +95,7 @@ class OptACM : public MolGen
               bFullTensor_(false),
               bFitAlpha_(false),
               bFitZeta_(false),
+              bSameZeta_(false),
               bFitChi_(true),
               bUseCM5_(false),
               penalty_(0)
@@ -110,6 +112,8 @@ class OptACM : public MolGen
         gmx_bool fullTensor() const { return bFullTensor_; }
 
         gmx_bool fitZeta() const { return bFitZeta_; }
+       
+        gmx_bool sameZeta() const { return bSameZeta_; }
         
         gmx_bool fitChi() const { return bFitChi_; }
 
@@ -127,6 +131,8 @@ class OptACM : public MolGen
                   "Calibrate atomic polarizability." },
                 { "-fitzeta", FALSE, etBOOL, {&bFitZeta_},
                   "Calibrate orbital exponent." },
+                { "-samezeta", FALSE, etBOOL, {&bSameZeta_},
+                  "Use the same zeta for both the core and the shell of the Drude model." },
                 { "-fitchi", FALSE, etBOOL, {&bFitChi_},
                   "Calibrate electronegativity and hardness." },
                 { "-penalty", FALSE, etREAL, {&penalty_},
@@ -480,28 +486,34 @@ void OptACM::TuneACM2PolData()
                 z_sig[0]           = '\0';
                 std::string qstr   = ei->getQstr();
                 std::string rowstr = ei->getRowstr();
-                if (iChargeDistributionModel() == eqdAXps ||
-                    iChargeDistributionModel() == eqdAXpg)
+                if (iChargeDistributionModel() == eqdAXps || iChargeDistributionModel() == eqdAXpg)
                 {
-                    for (auto i = 0; i < ei->getNzeta(); i++)
+                    if (bSameZeta_)
                     {
-                        /*We optimize zeta for the shell, only.*/
-                        zeta  = ei->getZeta(i); //core
-                        sigma = 0;
-                        if (i > 0)
-                        {
-                            zeta   = param_[n]; // shell
-                            sigma  = psigma_[n++];
-                            
-                            if (iChargeDistributionModel() == eqdAXps)
-                            {
-                                zeta = nearbyint(zeta);
-                            }
-                        }
-                        sprintf(buf, "%g ", zeta);
-                        sprintf(buf_sig, "%g ", sigma);
+                        zeta   = param_[n]; // Same zeta will be used for both core and shell
+                        sigma  = psigma_[n++];
+
+                        sprintf(buf, "%g %g ", zeta, zeta);
+                        sprintf(buf_sig, "%g %g ", sigma, sigma);
                         strcat(zstr, buf);
                         strcat(z_sig, buf_sig);
+                    }
+                    else
+                    {
+                        for (auto i = 0; i < ei->getNzeta(); i++)
+                        {   
+                            zeta  = ei->getZeta(i); //zeta for core read from poladata
+                            sigma = 0;
+                            if (i > 0)
+                            {
+                                zeta   = param_[n]; //zeta for shell taken from param_ vector
+                                sigma  = psigma_[n++];
+                            }
+                            sprintf(buf, "%g ", zeta);
+                            sprintf(buf_sig, "%g ", sigma);
+                            strcat(zstr, buf);
+                            strcat(z_sig, buf_sig);
+                        }
                     }
                 }
                 else
@@ -510,11 +522,6 @@ void OptACM::TuneACM2PolData()
                     {
                         zeta   = param_[n];
                         sigma  = psigma_[n++];
-                        
-                        if (iChargeDistributionModel() == eqdAXs)
-                        {
-                            zeta = nearbyint(zeta);
-                        }
                         
                         sprintf(buf, "%g ", zeta);
                         sprintf(buf_sig, "%g ", sigma);
@@ -841,6 +848,7 @@ int alex_tune_eem(int argc, char *argv[])
     real                        dip_toler     = 0.5;
     real                        quad_toler    = 5;
     real                        alpha_toler   = 3;
+    real                        isopol_toler  = 2;
     real                        factor        = 0.8;
     real                        efield        = 10;
     char                       *opt_elem      = nullptr;
@@ -872,7 +880,9 @@ int alex_tune_eem(int argc, char *argv[])
         { "-quad_toler", FALSE, etREAL, {&quad_toler},
           "Tolerance (Buckingham) for marking quadrupole as an outlier in the log file" },
         { "-alpha_toler", FALSE, etREAL, {&alpha_toler},
-          "Tolerance (A^3) for marking polarizability as an outlier in the log file" },
+          "Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file" },
+        { "-isopol_toler", FALSE, etREAL, {&isopol_toler},
+          "Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file" },
         { "-th_toler", FALSE, etREAL, {&th_toler},
           "Minimum angle to be considered a linear A-B-C bond" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
@@ -1008,6 +1018,7 @@ int alex_tune_eem(int argc, char *argv[])
                              dip_toler,
                              quad_toler,
                              alpha_toler,
+                             isopol_toler,
                              oenv,
                              bPolar,
                              opt.dipole(),
