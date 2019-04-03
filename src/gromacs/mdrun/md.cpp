@@ -160,7 +160,7 @@ void gmx::Integrator::do_md()
     // will go away eventually.
     t_inputrec             *ir   = inputrec;
     int64_t                 step, step_rel;
-    double                  t = ir->init_t, t0 = ir->init_t, lam0[efptNR];
+    double                  t, t0 = ir->init_t, lam0[efptNR];
     gmx_bool                bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
     gmx_bool                bNS, bNStList, bStopCM,
                             bFirstStep, bInitStep, bLastStep = FALSE;
@@ -807,7 +807,7 @@ void gmx::Integrator::do_md()
 
         if (MASTER(cr) && do_log)
         {
-            print_ebin_header(fplog, step, t); /* can we improve the information printed here? */
+            energyOutput.printHeader(fplog, step, t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != efepNO)
@@ -1407,10 +1407,11 @@ void gmx::Integrator::do_md()
             gmx_bool do_dr  = do_per_step(step, ir->nstdisreout);
             gmx_bool do_or  = do_per_step(step, ir->nstorireout);
 
+            energyOutput.printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
                                                do_log ? fplog : nullptr,
                                                step, t,
-                                               eprNORMAL, fcd, groups, &(ir->opts), awh.get());
+                                               fcd, awh.get());
 
             if (ir->bPull)
             {
@@ -1544,9 +1545,8 @@ void gmx::Integrator::do_md()
     {
         if (ir->nstcalcenergy > 0)
         {
-            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE,
-                                               fplog, step, t,
-                                               eprAVER, fcd, groups, &(ir->opts), awh.get());
+            energyOutput.printAnnealingTemperatures(fplog, groups, &(ir->opts));
+            energyOutput.printAverages(fplog, groups);
         }
     }
     done_mdoutf(outf);

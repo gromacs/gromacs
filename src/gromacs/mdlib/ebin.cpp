@@ -236,15 +236,15 @@ void add_ebin_indexed(t_ebin *eb, int entryIndex, gmx::ArrayRef<bool> shouldUse,
     }
 }
 
-void ebin_increase_count(t_ebin *eb, gmx_bool bSum)
+void ebin_increase_count(int increment, t_ebin *eb, gmx_bool bSum)
 {
-    eb->nsteps++;
-    eb->nsteps_sim++;
+    eb->nsteps     += increment;
+    eb->nsteps_sim += increment;
 
     if (bSum)
     {
-        eb->nsum++;
-        eb->nsum_sim++;
+        eb->nsum     += increment;
+        eb->nsum_sim += increment;
     }
 }
 

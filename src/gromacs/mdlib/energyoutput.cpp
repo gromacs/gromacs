@@ -1168,7 +1168,7 @@ void upd_mdebin(t_mdebin               *md,
         add_ebin(md->ebin, md->iu, 3*md->nU, md->tmp_v[0], bSum);
     }
 
-    ebin_increase_count(md->ebin, bSum);
+    ebin_increase_count(1, md->ebin, bSum);
 
     /* BAR + thermodynamic integration values */
     if ((md->fp_dhdl || md->dhc) && bDoDHDL)
@@ -1272,7 +1272,7 @@ void upd_mdebin(t_mdebin               *md,
 
 void EnergyOutput::recordNonEnergyStep()
 {
-    ebin_increase_count(mdebin->ebin, false);
+    ebin_increase_count(1, mdebin->ebin, false);
 }
 
 namespace
@@ -1309,8 +1309,7 @@ void pprint(FILE *log, const char *s, t_mdebin *md)
     fprintf(log, "\n");
 }
 
-}   // namespace
-
+//! Legacy code to print header
 void print_ebin_header(FILE *log, int64_t steps, double time)
 {
     char buf[22];
@@ -1320,25 +1319,7 @@ void print_ebin_header(FILE *log, int64_t steps, double time)
             "Step", "Time", gmx_step_str(steps, buf), time);
 }
 
-namespace
-{
-
-/*! \brief Print current values of thermodynamic parameters
- *
- * This function only does something useful when bEne || bDR || bOR || log.
- *
- * \param[in] fp_ene   Energy file for the output.
- * \param[in] bEne     If it is a step for energy output or last step.
- * \param[in] bDR      If it is a step of writing distance restraints.
- * \param[in] bOR      If it is a step of writing orientation restraints.
- * \param[in] log      Pointer to the log file.
- * \param[in] step     Current step.
- * \param[in] time     Current simulation time.
- * \param[in] md       Accumulated data for the system.
- * \param[in] fcd      Bonded force computation data,
- *                     including orientation and distance restraints.
- * \param[in] awh      AWH data.
- */
+//! Legacy code to print current thermodynamical values
 void printCurrentValues(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                         FILE *log,
                         int64_t step, double time,
@@ -1473,16 +1454,7 @@ void printCurrentValues(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_boo
     }
 }
 
-/*! \brief Print reference temperatures for annealing groups.
- *
- * This does something only when log is not nullptr.
- *
- * \param[in] log     Log file to print to.
- * \param[in] groups  Information on atom groups.
- * \param[in] opts    Atom temperature coupling groups options
- *                    (annealing is done by groups).
- *
- */
+//! Legacy code to print reference temperatures in annealing
 void printAnnealingReferenceTemperatures(FILE *log, SimulationGroups *groups, t_grpopts *opts)
 {
     if (log)
@@ -1503,14 +1475,7 @@ void printAnnealingReferenceTemperatures(FILE *log, SimulationGroups *groups, t_
     }
 }
 
-/*! \brief Prints average values
- *
- * This is called at the end of the simulation run to print accumulated average values.
- *
- * \param[in]   log      Where to print.
- * \param[in]   md       Accumulated data for the system.
- * \param[in]   groups   Atom groups.
- */
+//! Legacy code to print averages
 void printAverageValues(FILE             *log,
                         t_mdebin         *md,
                         SimulationGroups *groups)
@@ -1614,59 +1579,6 @@ void printAverageValues(FILE             *log,
     }
 }
 
-/*! \brief Legacy ebin output function.
- *
- * The function dispatches the printing according to what is to be printed
- *
- * TODO It is too many responsibilities for this function to handle
- *      both .edr and .log output for both per-time and time-average data.
- * TODO The split between average and current outputs is to be done into two separate
- *      methods of the EnergyOutput class. This function will then be removed.
- *
- * \param[in] fp_ene   Energy file for the output.
- * \param[in] bEne     If it is a step for energy output or last step.
- * \param[in] bDR      If it is a step of writing distance restraints.
- * \param[in] bOR      If it is a step of writing orientation restraints.
- * \param[in] log      Pointer to the log file.
- * \param[in] step     Current step.
- * \param[in] time     Current simulation time.
- * \param[in] mode     eprNORMAL to output current values,
- *                     eprAVER to output collected averages.
- * \param[in] md       Accumulated data for the system.
- * \param[in] fcd      Bonded force computation data,
- *                     including orientation and distance restraints.
- * \param[in] groups   Information on atom groups.
- * \param[in] opts     Atom groups.
- * \param[in] awh      AWH data.
- */
-void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
-                FILE *log,
-                int64_t step, double time,
-                int mode,
-                t_mdebin *md, t_fcdata *fcd,
-                SimulationGroups *groups, t_grpopts *opts,
-                gmx::Awh *awh)
-{
-    printAnnealingReferenceTemperatures(log, groups, opts);
-
-    if (mode == eprNORMAL)
-    {
-        printCurrentValues(fp_ene, bEne, bDR, bOR,
-                           log,
-                           step, time,
-                           md,   fcd,
-                           awh);
-    }
-
-    if (mode == eprAVER)
-    {
-        printAverageValues(log,
-                           md,
-                           groups);
-    }
-
-}
-
 //! Legacy update function
 void update_energyhistory(energyhistory_t * enerhist, const t_mdebin * mdebin)
 {
@@ -1763,11 +1675,6 @@ EnergyOutput::~EnergyOutput()
     done_mdebin(mdebin);
 }
 
-t_ebin *EnergyOutput::getEbin()
-{
-    return mdebin->ebin;
-}
-
 void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                                        bool                    bSum,
                                        double                  time,
@@ -1792,13 +1699,24 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
 void EnergyOutput::printStepToEnergyFile(ener_file *fp_ene, bool bEne, bool bDR, bool bOR,
                                          FILE *log,
                                          int64_t step, double time,
-                                         int mode,
                                          t_fcdata *fcd,
-                                         SimulationGroups *groups, t_grpopts *opts,
                                          gmx::Awh *awh)
 {
-    print_ebin(fp_ene, bEne, bDR, bOR, log, step, time, mode,
-               mdebin, fcd, groups, opts, awh);
+    printCurrentValues(fp_ene, bEne, bDR, bOR,
+                       log,
+                       step, time,
+                       mdebin, fcd,
+                       awh);
+}
+
+void EnergyOutput::printAnnealingTemperatures(FILE *log, SimulationGroups *groups, t_grpopts *opts)
+{
+    printAnnealingReferenceTemperatures(log, groups, opts);
+}
+
+void EnergyOutput::printAverages(FILE *log, SimulationGroups *groups)
+{
+    printAverageValues(log, mdebin, groups);
 }
 
 int EnergyOutput::numEnergyTerms() const
@@ -1814,6 +1732,11 @@ void EnergyOutput::fillEnergyHistory(energyhistory_t *enerhist) const
 void EnergyOutput::restoreFromEnergyHistory(const energyhistory_t &enerhist)
 {
     restore_energyhistory_from_state(mdebin, &enerhist);
+}
+
+void EnergyOutput::printHeader(FILE *log, int64_t steps, double time)
+{
+    print_ebin_header(log, steps, time);
 }
 
 } // namespace gmx

@@ -183,7 +183,7 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
         t_commrec                           cr_;
         //! Constraints object (for constraints RMSD output in case of LINCS)
         std::unique_ptr<Constraints>        constraints_;
-        //! \brief Temporary output filename
+        //! Temporary output filename
         std::string                         logFilename_;
         //! Temporary energy output filename
         std::string                         edrFilename_;
@@ -552,6 +552,7 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
                 state_.nhpres_xi[k]  = (*testValue += 0.1);
                 state_.nhpres_vxi[k] = (*testValue += 0.1);
             }
+
         }
 
         /*! \brief Check if the contents of the .edr file correspond to the reference data.
@@ -645,15 +646,15 @@ TEST_P(EnergyOutputTest, CheckOutput)
                                           constraintsVirial_, forceVirial_, totalVirial_, pressure_,
                                           &ekindata_, muTotal_, constraints_.get());
 
+        energyOutput_.printAnnealingTemperatures(log_, &mtop_.groups, &inputrec_.opts);
         energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
-                                            100*frame, time_, eprNORMAL,
-                                            nullptr,  &mtop_.groups, &inputrec_.opts, nullptr);
+                                            100*frame, time_,
+                                            nullptr, nullptr);
         time_ += 1.0;
     }
 
-    energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
-                                        100, time_, eprAVER,
-                                        nullptr,  &mtop_.groups, &inputrec_.opts, nullptr);
+    energyOutput_.printAnnealingTemperatures(log_, &mtop_.groups, &inputrec_.opts);
+    energyOutput_.printAverages(log_, &mtop_.groups);
 
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);

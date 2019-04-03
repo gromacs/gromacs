@@ -1156,10 +1156,10 @@ Integrator::do_cg()
                                          mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                                          nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
-        print_ebin_header(fplog, step, step);
+        energyOutput.printHeader(fplog, step, step);
         energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE,
-                                           fplog, step, step, eprNORMAL,
-                                           fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+                                           fplog, step, step,
+                                           fcd, nullptr);
     }
 
     /* Estimate/guess the initial stepsize */
@@ -1590,11 +1590,11 @@ Integrator::do_cg()
 
             if (do_log)
             {
-                print_ebin_header(fplog, step, step);
+                energyOutput.printHeader(fplog, step, step);
             }
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
-                                               do_log ? fplog : nullptr, step, step, eprNORMAL,
-                                               fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+                                               do_log ? fplog : nullptr, step, step,
+                                               fcd, nullptr);
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
@@ -1633,14 +1633,14 @@ Integrator::do_cg()
         if (!do_log)
         {
             /* Write final value to log since we didn't do anything the last step */
-            print_ebin_header(fplog, step, step);
+            energyOutput.printHeader(fplog, step, step);
         }
         if (!do_ene || !do_log)
         {
             /* Write final energy file entries */
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
-                                               !do_log ? fplog : nullptr, step, step, eprNORMAL,
-                                               fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+                                               !do_log ? fplog : nullptr, step, step,
+                                               fcd, nullptr);
         }
     }
 
@@ -1833,10 +1833,10 @@ Integrator::do_lbfgs()
                                          mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                                          nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
-        print_ebin_header(fplog, step, step);
+        energyOutput.printHeader(fplog, step, step);
         energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE,
-                                           fplog, step, step, eprNORMAL,
-                                           fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+                                           fplog, step, step,
+                                           fcd, nullptr);
     }
 
     /* Set the initial step.
@@ -2328,11 +2328,11 @@ Integrator::do_lbfgs()
 
             if (do_log)
             {
-                print_ebin_header(fplog, step, step);
+                energyOutput.printHeader(fplog, step, step);
             }
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
-                                               do_log ? fplog : nullptr, step, step, eprNORMAL,
-                                               fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+                                               do_log ? fplog : nullptr, step, step,
+                                               fcd, nullptr);
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
@@ -2371,13 +2371,13 @@ Integrator::do_lbfgs()
      */
     if (!do_log) /* Write final value to log since we didn't do anythin last step */
     {
-        print_ebin_header(fplog, step, step);
+        energyOutput.printHeader(fplog, step, step);
     }
     if (!do_ene || !do_log) /* Write final energy file entries */
     {
         energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
-                                           !do_log ? fplog : nullptr, step, step, eprNORMAL,
-                                           fcd, &(top_global->groups), &(inputrec->opts), nullptr);
+                                           !do_log ? fplog : nullptr, step, step,
+                                           fcd, nullptr);
     }
 
     /* Print some stuff... */
@@ -2519,7 +2519,7 @@ Integrator::do_steep()
 
         if (MASTER(cr))
         {
-            print_ebin_header(fplog, count, count);
+            energyOutput.printHeader(fplog, count, count);
         }
 
         if (count == 0)
@@ -2552,9 +2552,8 @@ Integrator::do_steep()
                 const bool do_or = do_per_step(steps_accepted, inputrec->nstorireout);
                 energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE,
                                                    do_dr, do_or,
-                                                   fplog, count, count, eprNORMAL,
-                                                   fcd, &(top_global->groups),
-                                                   &(inputrec->opts), nullptr);
+                                                   fplog, count, count,
+                                                   fcd, nullptr);
                 fflush(fplog);
             }
         }
