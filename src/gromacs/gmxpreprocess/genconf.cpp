@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -120,7 +121,6 @@ int gmx_genconf(int argc, char *argv[])
     };
 
     int               vol;
-    t_atoms          *atoms;      /* list with all atoms */
     rvec             *x, *xx, *v; /* coordinates? */
     real              t;
     vec4             *xrot, *vrot;
@@ -180,14 +180,14 @@ int gmx_genconf(int argc, char *argv[])
 
     vol = nx*ny*nz; /* calculate volume in grid points (= nr. molecules) */
 
-    t_topology *top;
-    snew(top, 1);
-    atoms = &top->atoms;
-    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &ePBC, &x, &v, box, FALSE);
-    natoms = atoms->nr;
-    nres   = atoms->nres;          /* nr of residues in one element? */
+    gmx_mtop_t mtop;
+    bool       haveTop = false;
+    readConfAndTopology(opt2fn("-f", NFILE, fnm), &haveTop, &mtop, &ePBC, &x, &v, box);
+    t_atoms    atoms = gmx_mtop_global_atoms(&mtop);
+    natoms = atoms.nr;
+    nres   = atoms.nres;          /* nr of residues in one element? */
     /* make space for all the atoms */
-    add_t_atoms(atoms, natoms*(vol-1), nres*(vol-1));
+    add_t_atoms(&atoms, natoms*(vol-1), nres*(vol-1));
     srenew(x, natoms*vol);         /* get space for coordinates of all atoms */
     srenew(v, natoms*vol);         /* velocities. not really needed? */
     snew(xrot, natoms);            /* get space for rotation matrix? */
@@ -259,16 +259,16 @@ int gmx_genconf(int argc, char *argv[])
                     {
                         x[ndx+l][m] += shift[m];
                     }
-                    atoms->atom[ndx+l].resind = nrdx + atoms->atom[l].resind;
-                    atoms->atomname[ndx+l]    = atoms->atomname[l];
+                    atoms.atom[ndx+l].resind = nrdx + atoms.atom[l].resind;
+                    atoms.atomname[ndx+l]    = atoms.atomname[l];
                 }
 
                 for (l = 0; (l < nres); l++)
                 {
-                    atoms->resinfo[nrdx+l] = atoms->resinfo[l];
+                    atoms.resinfo[nrdx+l] = atoms.resinfo[l];
                     if (bRenum)
                     {
-                        atoms->resinfo[nrdx+l].nr += nrdx;
+                        atoms.resinfo[nrdx+l].nr += nrdx;
                     }
                 }
                 if (bTRX)
@@ -304,21 +304,20 @@ int gmx_genconf(int argc, char *argv[])
     /*depending on how you look at it, this is either a nasty hack or the way it should work*/
     if (bRenum)
     {
-        for (i = 0; i < atoms->nres; i++)
+        for (i = 0; i < atoms.nres; i++)
         {
-            atoms->resinfo[i].nr = i+1;
+            atoms.resinfo[i].nr = i+1;
         }
     }
 
-    write_sto_conf(opt2fn("-o", NFILE, fnm), *top->name, atoms, x, v, ePBC, box);
+    write_sto_conf(opt2fn("-o", NFILE, fnm), *mtop.name, &atoms, x, v, ePBC, box);
 
     sfree(x);
     sfree(v);
     sfree(xrot);
     sfree(vrot);
     sfree(xx);
-    done_top(top);
-    sfree(top);
+    done_atom(&atoms);
     output_env_done(oenv);
 
     return 0;
