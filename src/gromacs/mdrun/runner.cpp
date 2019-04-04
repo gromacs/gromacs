@@ -697,17 +697,7 @@ int Mdrunner::mdrunner()
 
         if (inputrec->cutoff_scheme != ecutsVERLET)
         {
-            if (nstlist_cmdline > 0)
-            {
-                gmx_fatal(FARGS, "Can not set nstlist with the group cut-off scheme");
-            }
-
-            if (!compatibleGpus.empty())
-            {
-                GMX_LOG(mdlog.warning).asParagraph().appendText(
-                        "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
-                        "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
-            }
+            gmx_fatal(FARGS, "This group-scheme .tpr file can no longer be run by mdrun. Please update to the Verlet scheme, or use an earlier version of GROMACS if necessary.");
         }
     }
 
