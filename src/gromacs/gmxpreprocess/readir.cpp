@@ -227,18 +227,12 @@ static int lcd(int n1, int n2)
     return d;
 }
 
-static void process_interaction_modifier(const t_inputrec *ir, int *eintmod)
+//! Convert legacy mdp entries to modern ones.
+static void process_interaction_modifier(int *eintmod)
 {
-    if (*eintmod == eintmodPOTSHIFT_VERLET)
+    if (*eintmod == eintmodPOTSHIFT_VERLET_UNSUPPORTED)
     {
-        if (ir->cutoff_scheme == ecutsVERLET)
-        {
-            *eintmod = eintmodPOTSHIFT;
-        }
-        else
-        {
-            *eintmod = eintmodNONE;
-        }
+        *eintmod = eintmodPOTSHIFT;
     }
 }
 
@@ -286,8 +280,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     sprintf(err_buf, "nstlist can not be smaller than 0. (If you were trying to use the heuristic neighbour-list update scheme for efficient buffering for improved energy conservation, please use the Verlet cut-off scheme instead.)");
     CHECK(ir->nstlist < 0);
 
-    process_interaction_modifier(ir, &ir->coulomb_modifier);
-    process_interaction_modifier(ir, &ir->vdw_modifier);
+    process_interaction_modifier(&ir->coulomb_modifier);
+    process_interaction_modifier(&ir->vdw_modifier);
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
@@ -350,7 +344,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         if (!(ir->coulomb_modifier == eintmodNONE ||
               ir->coulomb_modifier == eintmodPOTSHIFT))
         {
-            sprintf(warn_buf, "coulomb_modifier=%s is not supported with the Verlet cut-off scheme", eintmod_names[ir->coulomb_modifier]);
+            sprintf(warn_buf, "coulomb_modifier=%s is not supported", eintmod_names[ir->coulomb_modifier]);
             warning_error(wi, warn_buf);
         }
 

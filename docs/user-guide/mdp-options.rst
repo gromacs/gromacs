@@ -704,11 +704,6 @@ Electrostatics
 
 .. mdp:: coulomb-modifier
 
-   .. mdp-value:: Potential-shift-Verlet
-
-      Selects Potential-shift with the Verlet cutoff-scheme, as it is
-      (nearly) free; selects None with the group cutoff-scheme.
-
    .. mdp-value:: Potential-shift
 
       Shift the Coulomb potential by a constant such that it is zero
@@ -718,9 +713,8 @@ Electrostatics
 
    .. mdp-value:: None
 
-      Use an unmodified Coulomb potential. With the group scheme this
-      means no exact cut-off is used, energies and forces are
-      calculated for all pairs in the pair list.
+      Use an unmodified Coulomb potential. This can be useful
+      when comparing energies with those computed with other software.
 
 .. mdp:: rcoulomb-switch
 
@@ -808,11 +802,6 @@ Van der Waals
 
 .. mdp:: vdw-modifier
 
-   .. mdp-value:: Potential-shift-Verlet
-
-      Selects Potential-shift with the Verlet cutoff-scheme, as it is
-      (nearly) free; selects None with the group cutoff-scheme.
-
    .. mdp-value:: Potential-shift
 
       Shift the Van der Waals potential by a constant such that it is
@@ -822,9 +811,8 @@ Van der Waals
 
    .. mdp-value:: None
 
-      Use an unmodified Van der Waals potential. With the group scheme
-      this means no exact cut-off is used, energies and forces are
-      calculated for all pairs in the pair list.
+      Use an unmodified Van der Waals potential. This can be useful
+      when comparing energies with those computed with other software.
 
    .. mdp-value:: Force-switch
 

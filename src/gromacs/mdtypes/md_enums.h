@@ -148,11 +148,11 @@ extern const char *ecutscheme_names[ecutsNR+1];
 
 /*! \brief Coulomb / VdW interaction modifiers.
  *
- * grompp replaces eintmodPOTSHIFT_VERLET by eintmodPOTSHIFT or eintmodNONE.
+ * grompp replaces eintmodPOTSHIFT_VERLET_UNSUPPORTED by eintmodPOTSHIFT.
  * Exactcutoff is only used by Reaction-field-zero, and is not user-selectable.
  */
 enum eintmod {
-    eintmodPOTSHIFT_VERLET, eintmodPOTSHIFT, eintmodNONE, eintmodPOTSWITCH, eintmodEXACTCUTOFF, eintmodFORCESWITCH, eintmodNR
+    eintmodPOTSHIFT_VERLET_UNSUPPORTED, eintmodPOTSHIFT, eintmodNONE, eintmodPOTSWITCH, eintmodEXACTCUTOFF, eintmodFORCESWITCH, eintmodNR
 };
 //! String corresponding to interaction modifiers
 extern const char *eintmod_names[eintmodNR+1];
