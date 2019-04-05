@@ -43,6 +43,12 @@ Other options:
 ``-int`` <int>
     Integer option
 
+Known Issues
+------------
+
+* Known issue for ``test module``.
+* With another bug for ``test module``.
+
 .. only:: man
 
    See also

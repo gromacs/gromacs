@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="HelpText"><![CDATA[
+SYNOPSIS
+
+gmx [-int <int>]
+
+OPTIONS
+
+Other options:
+
+ -int    <int>              (2)
+           Integer option
+
+KNOWN ISSUES
+
+* This is a bug.
+* And this is another one.
+]]></String>
+</ReferenceData>

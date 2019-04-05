@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,6 +92,15 @@ class ICommandLineOptionsModuleSettings
            \endcode
          */
         virtual void setHelpText(const ArrayRef<const char *const> &help) = 0;
+        /*! \brief
+         * Set text indicating buggy behaviour of a module from string array.
+         *
+         * \param[in] bug String array to set as the bug text.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * Formatting for the text is described on \ref page_onlinehelp.
+         */
+        virtual void setBugText(const ArrayRef<const char *const> &bug) = 0;
         /*! \brief
          * Adds an option behavior that performs actions before
          * ICommandLineOptionsModule::run() is called.

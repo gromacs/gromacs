@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,9 +78,16 @@ class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSetting
 
         const std::string &helpText() const { return helpText_; }
 
+        ArrayRef<const std::string> bugText() const { return bugText_; }
+
         void setHelpText(const ArrayRef<const char *const> &help) override
         {
             helpText_ = joinStrings(help, "\n");
+        }
+
+        void setBugText(const ArrayRef<const char *const> &bug) override
+        {
+            bugText_ = std::vector<std::string>(bug.begin(), bug.end());
         }
         void addOptionsBehavior(const OptionsBehaviorPointer &behavior) override
         {
@@ -89,6 +96,7 @@ class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSetting
 
     private:
         std::string                helpText_;
+        std::vector<std::string>   bugText_;
         OptionsBehaviorCollection &behaviors_;
 };
 
@@ -161,6 +169,7 @@ void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) 
     module->initOptions(&options, &settings);
     CommandLineHelpWriter(options)
         .setHelpText(settings.helpText())
+        .setKnownIssues(settings.bugText())
         .writeHelp(context);
 }
 

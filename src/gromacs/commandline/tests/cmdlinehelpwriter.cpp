@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -327,6 +327,26 @@ TEST_F(CommandLineHelpWriterTest, HandlesHelpText)
 
     gmx::CommandLineHelpWriter writer(options);
     writer.setHelpText(help);
+    checkHelp(&writer);
+}
+
+/*
+ * Test known issue output.
+ */
+TEST_F(CommandLineHelpWriterTest, HandlesKnownIssues)
+{
+    const char *const bugs[] = {
+        "This is a bug.",
+        "And this is another one."
+    };
+    using gmx::IntegerOption;
+
+    gmx::Options options;
+    options.addOption(IntegerOption("int").description("Integer option")
+                          .defaultValue(2));
+
+    gmx::CommandLineHelpWriter writer(options);
+    writer.setKnownIssues(bugs);
     checkHelp(&writer);
 }
 

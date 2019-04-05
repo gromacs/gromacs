@@ -675,6 +675,11 @@ void Dump::initOptions(IOptionsContainer                 *options,
         "problems."
     };
     settings->setHelpText(desc);
+
+    const char *bugs[] = {
+        "The [REF].mdp[ref] file produced by [TT]-om[tt] can not be read by grompp."
+    };
+    settings->setBugText(bugs);
     // TODO If this ancient note acknowledging a bug is still true,
     // fix it or block that run path:
     //   Position restraint output from -sys -s is broken
