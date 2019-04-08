@@ -44,8 +44,6 @@ Files
   particular compiler that had problems with this, and a workaround is
   possible if/when that starts to affect more than a few of the test files).
 
-.. TODO: Consider usage of underscores vs dashes in file names.
-
 Common guidelines for C and C++ code
 ------------------------------------
 
