@@ -38,6 +38,11 @@ procedures. The code has been fixed to allow the generation of those files again
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix error in AVX 512 detection code
+"""""""""""""""""""""""""""""""""""
+
+The CMake detection code had a typo that could lead to wrong detection results.
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

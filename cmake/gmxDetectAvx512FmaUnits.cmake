@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017, by the GROMACS development team, led by
+# Copyright (c) 2017,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ function(gmx_detect_avx_512_fma_units RESULT)
                         ERROR_QUIET)
                     if (RESULT_VAR EQUAL 0)
                         string(STRIP "${OUTPUT_VAR_TEMP}" OUTPUT_VAR)
-                        set(${RESULT} ${OUTPUT_VAR_TEMP} CACHE INTERNAL "Result of test for number of AVX-512 FMA units")
+                        set(${RESULT} ${OUTPUT_VAR} CACHE INTERNAL "Result of test for number of AVX-512 FMA units")
                     else()
                         message(STATUS "Could not identify number of AVX-512 units - detection program did run successfully")
                         set(${RESULT} -1 CACHE INTERNAL "Result of test for number of AVX-512 FMA units")
