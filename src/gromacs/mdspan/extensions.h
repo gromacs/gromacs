@@ -77,6 +77,9 @@ end(const BasicMdspan &basicMdspan)
     return basicMdspan.data() + basicMdspan.mapping().required_span_size();
 }
 
+//! Convenience type for often-used three dimensional extents
+using dynamicExtents3D = extents<dynamic_extent, dynamic_extent, dynamic_extent>;
+
 }      // namespace gmx
 
 #endif // GMX_MDSPAN_EXTENSIONS_H_

@@ -37,9 +37,9 @@
  * Implements Gaussian function evaluations on lattices and related functionality
  *
  * \author Christian Blau <blau@kth.se>
+ *
  * \ingroup module_math
  */
-
 #include "gmxpre.h"
 
 #include "gausstransform.h"
@@ -47,9 +47,12 @@
 #include <cmath>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
+
+#include "multidimarray.h"
 
 namespace gmx
 {
@@ -197,4 +200,199 @@ GaussianOn1DLattice::GaussianOn1DLattice(GaussianOn1DLattice &&) noexcept = defa
 
 GaussianOn1DLattice &GaussianOn1DLattice::operator=(GaussianOn1DLattice &&) noexcept = default;
 
-}    // namespace gmx
+namespace
+{
+
+//! rounds real-valued coordinate to the closest integer values
+IVec closestIntegerPoint(const RVec &coordinate)
+{
+    return {
+               roundToInt(coordinate[XX]),
+               roundToInt(coordinate[YY]),
+               roundToInt(coordinate[ZZ])
+    };
+}
+
+/*! \brief Substracts a range from a three-dimensional integer coordinate and ensures
+ * the resulting coordinate is within a lattice.
+ * \param[in] index point in lattice
+ * \param[in] range to be shifted
+ * \returns Shifted index or zero if shifted index is smaller than zero.
+ */
+IVec rangeBeginWithinLattice(const IVec &index, int range)
+{
+    return {
+               std::max(0, index[XX] - range),
+               std::max(0, index[YY] - range),
+               std::max(0, index[ZZ] - range)
+    };
+}
+
+/*! \brief Adds a range from a three-dimensional integer coordinate and ensures
+ * the resulting coordinate is within a lattice.
+ * \param[in] index point in lattice
+ * \param[in] extents extent of the lattice
+ * \param[in] range to be shifted
+ * \returns Shifted index or the lattice extent if shifted index is larger than the extent
+ */
+IVec rangeEndWithinLattice(const IVec &index, const dynamicExtents3D &extents, int range)
+{
+    return {
+               std::min(static_cast<int>(extents.extent(XX)), index[XX] + range),
+               std::min(static_cast<int>(extents.extent(YY)), index[YY] + range),
+               std::min(static_cast<int>(extents.extent(ZZ)), index[ZZ] + range)
+    };
+}
+
+}   // namespace
+
+/********************************************************************
+ * OuterProductEvaluator
+ */
+
+mdspan<const float, dynamic_extent, dynamic_extent>
+OuterProductEvaluator::operator()(ArrayRef<const float> x, ArrayRef<const float> y)
+{
+    data_.resize(ssize(x), ssize(y));
+    for (int xIndex = 0; xIndex < ssize(x); ++xIndex)
+    {
+        const auto xValue = x[xIndex];
+        std::transform(std::begin(y), std::end(y), begin(data_.asView()[xIndex]),
+                       [xValue](float yValue) { return xValue * yValue; });
+    }
+    return data_.asConstView();
+}
+
+/********************************************************************
+ * IntegerBox
+ */
+
+IntegerBox::IntegerBox(const IVec &begin, const IVec &end) : begin_ {begin}, end_ {
+    end
+}
+{}
+
+const IVec &IntegerBox::begin() const{return begin_; }
+const IVec &IntegerBox::end() const { return end_; }
+
+bool IntegerBox::empty() const { return !((begin_[XX] < end_[XX] ) && (begin_[YY] < end_[YY]) && (begin_[ZZ] < end_[ZZ])); }
+
+IntegerBox spreadRangeWithinLattice(const IVec &center, dynamicExtents3D extent, int range)
+{
+    const IVec begin = rangeBeginWithinLattice(center, range);
+    const IVec end   = rangeEndWithinLattice(center, extent, range);
+    return {begin, end};
+}
+
+/********************************************************************
+ * GaussTransform3D::Impl
+ */
+
+/*! \internal \brief
+ * Private implementation class for GaussTransform3D.
+ */
+class GaussTransform3D::Impl
+{
+    public:
+        //! Construct from extent and spreading width and range
+        Impl(const dynamicExtents3D &extent,
+             float sigma, float nSigma);
+        ~Impl(){}
+        //! Add another gaussian
+        void add(const RVec &coordinate, float amplitude);
+        //! The width of the Gaussian in lattice spacing units
+        double                sigma_;
+        //! The spread range in lattice points
+        int                   spreadRange_;
+        //! The result of the Gauss transform
+        MultiDimArray<std::vector<float>, dynamicExtents3D> data_;
+        //! The outer product of a Gaussian along the z and y dimension
+        OuterProductEvaluator                               outerProductZY_;
+        //! The three one-dimensional Gaussians, whose outer product is added to the Gauss transform
+        std::array<GaussianOn1DLattice, DIM>                gauss1d_;
+};
+
+GaussTransform3D::Impl::Impl(const dynamicExtents3D &extent,
+                             float sigma, float nSigma)
+    : sigma_ {sigma},
+spreadRange_ {
+    static_cast<int>(std::ceil(sigma * nSigma))
+},
+data_ {
+    extent
+}, gauss1d_( {GaussianOn1DLattice(spreadRange_, sigma_),
+              GaussianOn1DLattice(spreadRange_, sigma_),
+              GaussianOn1DLattice(spreadRange_, sigma_) })
+{
+}
+
+void GaussTransform3D::Impl::add(const RVec &coordinate, float amplitude)
+{
+    const IVec closestLatticePoint = closestIntegerPoint(coordinate);
+    const auto spreadRange         = spreadRangeWithinLattice(closestLatticePoint, data_.asView().extents(), spreadRange_);
+
+    // do nothing if the added Gaussian will never reach the lattice
+    if (spreadRange.empty())
+    {
+        return;
+    }
+
+    for (int dimension = XX; dimension <= ZZ; ++dimension)
+    {
+        // multiply with amplitude so that Gauss3D = (amplitude * Gauss_x) * Gauss_y * Gauss_z
+        const float gauss1DAmplitude = dimension > XX ? 1.0 : amplitude;
+        gauss1d_[dimension].spread(gauss1DAmplitude, coordinate[dimension] - closestLatticePoint[dimension]);
+    }
+
+    const auto spreadZY         = outerProductZY_(gauss1d_[ZZ].view(), gauss1d_[YY].view());
+    const auto spreadX          = gauss1d_[XX].view();
+    const IVec spreadGridOffset = {spreadRange_ - closestLatticePoint[XX], spreadRange_ - closestLatticePoint[YY], spreadRange_ - closestLatticePoint[ZZ]};
+
+    // \todo optimize these loops if performance critical
+    // The looping strategy uses that the last, x-dimension is contiguous in the memory layout
+    for (int zLatticeIndex = spreadRange.begin()[ZZ]; zLatticeIndex < spreadRange.end()[ZZ]; ++zLatticeIndex)
+    {
+        const auto zSlice = data_.asView()[zLatticeIndex];
+
+        for (int yLatticeIndex = spreadRange.begin()[YY]; yLatticeIndex < spreadRange.end()[YY]; ++yLatticeIndex)
+        {
+            const auto  ySlice      = zSlice[yLatticeIndex];
+            const float zyPrefactor = spreadZY(zLatticeIndex + spreadGridOffset[ZZ], yLatticeIndex + spreadGridOffset[YY]);
+
+            for (int xLatticeIndex = spreadRange.begin()[XX]; xLatticeIndex < spreadRange.end()[XX]; ++xLatticeIndex)
+            {
+                const float xPrefactor = spreadX[xLatticeIndex + spreadGridOffset[XX]];
+                ySlice[xLatticeIndex] += zyPrefactor * xPrefactor;
+            }
+        }
+    }
+}
+
+/********************************************************************
+ * GaussTransform3D
+ */
+
+GaussTransform3D::GaussTransform3D(const dynamicExtents3D &extent,
+                                   real sigma, real nSigma) : impl_(new Impl(extent, sigma, nSigma))
+{
+}
+
+void GaussTransform3D::add(const RVec &center, float amplitude)
+{
+    impl_->add(center, amplitude);
+}
+
+void GaussTransform3D::setZero()
+{
+    std::fill(begin(impl_->data_), end(impl_->data_), 0.);
+}
+
+const basic_mdspan<const float, dynamicExtents3D> GaussTransform3D::view()
+{
+    return impl_->data_.asConstView();
+}
+
+GaussTransform3D::~GaussTransform3D()
+{ }
+
+} // namespace gmx

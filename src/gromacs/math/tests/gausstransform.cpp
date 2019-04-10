@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Tests canonical vector basis
+ * Tests for Gaussian spreading
  *
  * \author Christian Blau <blau@kth.se>
  * \ingroup module_math
@@ -45,9 +45,13 @@
 
 #include <array>
 #include <numeric>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "gromacs/math/vec.h"
+#include "gromacs/mdspan/extensions.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
@@ -157,6 +161,99 @@ TEST(GaussianOn1DLattice, doesNotOverflowForLargeRange)
     {
         EXPECT_FLOAT_EQ(0, viewOnResult[i]);
     }
+}
+
+class GaussTransformTest : public ::testing::Test
+{
+    public:
+        void isZeroWithinFloatTolerance()
+        {
+            for (const auto &x : gaussTransform_.view())
+            {
+                EXPECT_FLOAT_EQ_TOL(0, x, tolerance_);
+            }
+        }
+    protected:
+        extents<dynamic_extent, dynamic_extent, dynamic_extent> latticeExtent_ = {3, 3, 3 };
+        float                        sigma_          = 1;
+        float                        nSigma_         = 5;
+        GaussTransform3D             gaussTransform_ = {latticeExtent_, sigma_, nSigma_};
+        test::FloatingPointTolerance tolerance_      = test::defaultFloatTolerance();
+        const RVec                   latticeCenter_  = {1, 1, 1};
+};
+
+TEST_F(GaussTransformTest, isZeroUponConstruction)
+{
+    isZeroWithinFloatTolerance();
+}
+
+TEST_F(GaussTransformTest, isZeroAddingZeroAmplitudeGauss)
+{
+    gaussTransform_.add(latticeCenter_, 0.);
+    isZeroWithinFloatTolerance();
+}
+
+TEST_F(GaussTransformTest, isZeroAfterSettingZero)
+{
+    gaussTransform_.add(latticeCenter_, 1.);
+    for (const auto value : gaussTransform_.view())
+    {
+        EXPECT_GT(value, 0);
+    }
+    gaussTransform_.setZero();
+    isZeroWithinFloatTolerance();
+}
+
+TEST_F(GaussTransformTest, isZeroWhenOutsideRangeinX)
+{
+    gaussTransform_.add({-nSigma_  * sigma_, 0, 0}, 1.);
+    isZeroWithinFloatTolerance();
+}
+
+TEST_F(GaussTransformTest, isZeroWhenOutsideRangeinY)
+{
+    gaussTransform_.add({0, -nSigma_ * sigma_, 0}, 1.);
+    isZeroWithinFloatTolerance();
+}
+
+TEST_F(GaussTransformTest, isZeroWhenOutsideRangeinZ)
+{
+    gaussTransform_.add({0, 0, -nSigma_ * sigma_}, 1.);
+    isZeroWithinFloatTolerance();
+}
+
+TEST_F(GaussTransformTest, complementaryGaussAddToZero)
+{
+    gaussTransform_.add(latticeCenter_, -2.0);
+    gaussTransform_.add(latticeCenter_,  0.8);
+    gaussTransform_.add(latticeCenter_,  1.2);
+    isZeroWithinFloatTolerance();
+}
+
+TEST_F(GaussTransformTest, centerGaussianInCubeHasExpectedValues)
+{
+    gaussTransform_.add(latticeCenter_, 1);
+    const float        center         = 0.0634936392307281494140625;      // center
+    const float        f              = 0.0385108403861522674560546875;   // face
+    const float        e              = 0.0233580060303211212158203125;   // edge
+    const float        c              = 0.014167346991598606109619140625; // corner
+    std::vector<float> expectedValues = {
+        c, e, c,
+        e, f, e,
+        c, e, c,
+
+        e, f, e,
+        f, center, f,
+        e, f, e,
+
+        c, e, c,
+        e, f, e,
+        c, e, c
+    };
+    // This assignment to std::vector is needed because the view() on the GaussTransform (aka basic_mdspan) does not provide size() needed by Pointwise
+    std::vector<float> gaussTransformVector;
+    gaussTransformVector.assign(gaussTransform_.view().data(), gaussTransform_.view().data() + gaussTransform_.view().mapping().required_span_size());
+    EXPECT_THAT(expectedValues, testing::Pointwise(FloatEq(tolerance_), gaussTransformVector));
 }
 
 } // namespace
