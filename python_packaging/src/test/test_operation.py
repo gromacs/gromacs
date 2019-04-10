@@ -33,6 +33,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+"""Tests the interfaces defined in operation.py and behavior of simple operations.
+
+See also test_commandline.py for integration tests.
+"""
+
 import unittest
 
 import gmxapi as gmx

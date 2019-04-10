@@ -34,14 +34,31 @@
 """Define gmxapi-compliant Operations
 
 Provide decorators and base classes to generate and validate gmxapi Operations.
+
+Nodes in a work graph are created as instances of Operations. An Operation factory
+accepts well-defined inputs as key word arguments. The object returned by such
+a factory is a handle to the node in the work graph. It's ``output`` attribute
+is a collection of the Operation's results.
+
+function_wrapper(...) produces a wrapper that converts a function to an Operation
+factory. The Operation is defined when the wrapper is called. The Operation is
+instantiated when the factory is called. The function is executed when the Operation
+instance is run.
+
+The framework ensures that an Operation instance is executed no more than once.
 """
 
+import collections
+from contextlib import contextmanager
 import functools
 import inspect
+import weakref
 
 __all__ = ['computed_result',
            'append_list',
-           'concatenate_lists'
+           'concatenate_lists',
+           'function_wrapper',
+           'make_constant',
            ]
 
 from gmxapi import exceptions
@@ -174,10 +191,8 @@ def concatenate_lists(sublists: list = ()):
     """
     if isinstance(sublists, (str, bytes)):
         raise exceptions.ValueError('Input must be a list of lists.')
-    if len(sublists) == 1:
-        return make_constant(sublists[0])
-    if len(sublists) == 2:
-        return append_list(sublists[0], sublists[1])
+    if len(sublists) == 0:
+        return []
     else:
         return append_list(sublists[0], concatenate_lists(sublists[1:]))
 
@@ -195,3 +210,395 @@ def make_constant(value):
     """
     # TODO: (FR4+) Manage type compatibility with gmxapi data interfaces.
     return type(value)(value)
+
+# In the longer term, Contexts could provide metaclasses that allow transformation or dispatching
+# of the basic aspects of the operation protocols between Contexts or from a result handle into a
+# new context, based on some attribute or behavior in the result handle.
+
+# TODO: For outputs, distinguish between "results" and "events".
+#  Both are published to the resource manager in the same way, but the relationship
+#  with subscribers is potentially different.
+def function_wrapper(output=None):
+    """Generate a decorator for wrapped functions with signature manipulation.
+
+    New function accepts the same arguments, with additional arguments required by
+    the API.
+
+    The new function returns an object with an `output` attribute containing the named outputs.
+
+    Example:
+        @function_wrapper(output={'spam': str, 'foo': str})
+        def myfunc(parameter: str = None, output=None):
+            output.spam = parameter
+            output.foo = parameter + ' ' + parameter
+
+        operation1 = myfunc(parameter='spam spam')
+        assert operation1.output.spam.result() == 'spam spam'
+        assert operation1.output.foo.result() == 'spam spam spam spam'
+    """
+    # TODO: more flexibility to capture return value by default?
+    #     If 'output' is provided to the wrapper, a data structure will be passed to
+    #     the wrapped functions with the named attributes so that the function can easily
+    #     publish multiple named results. Otherwise, the `output` of the generated operation
+    #     will just capture the return value of the wrapped function.
+    # For now, this behavior is obtained with @computed_result
+
+    # TODO: (FR5+) gmxapi operations need to allow a context-dependent way to generate an implementation with input.
+    # This function wrapper reproduces the wrapped function's kwargs, but does not allow chaining a
+    # dynamic `input` kwarg and does not dispatch according to a `context` kwarg. We should allow
+    # a default implementation and registration of alternate implementations. We don't have to do that
+    # with functools.singledispatch, but we could, if we add yet another layer to generate a wrapper
+    # that takes the context as the first argument. (`singledispatch` inspects the first argument rather
+    # that a named argument)
+
+    # Implementation note: The closure of the current function is used to
+    # dynamically define several classes that support the operation to be
+    # created by the returned decorator.
+
+    # Encapsulate the description of the input data flow.
+    PyFuncInput = collections.namedtuple('Input', ('args', 'kwargs', 'dependencies'))
+
+    # Encapsulate the description of a data output.
+    Output = collections.namedtuple('Output', ('name', 'dtype', 'done', 'data'))
+
+    class Publisher(object):
+        """Data descriptor for write access to a specific named data resource.
+
+        For a wrapped function receiving an ``output`` argument, provides the
+        accessors for an attribute on the object passed as ``output``. Maps
+        read and write access by the wrapped function to appropriate details of
+        the resource manager.
+
+        Used internally to implement settable attributes on PublishingDataProxy.
+        Allows PublishingDataProxy to be dynamically defined in the scope of the
+        operation.function_wrapper closure. Each named output is represented by
+        an instance of Publisher in the PublishingDataProxy class definition for
+        the operation.
+
+        Ref: https://docs.python.org/3/reference/datamodel.html#implementing-descriptors
+
+        Collaborations:
+        Relies on implementation details of ResourceManager.
+        """
+        def __init__(self, name, dtype):
+            self.name = name
+            self.dtype = dtype
+
+        def __get__(self, instance, owner):
+            if instance is None:
+                # Access through class attribute of owner class
+                return self
+            resource_manager = instance._instance
+            return getattr(resource_manager._data, self.name)
+
+        def __set__(self, instance, value):
+            resource_manager = instance._instance
+            resource_manager.set_result(self.name, value)
+
+        def __repr__(self):
+            return 'Publisher(name={}, dtype={})'.format(self.name, self.dtype.__qualname__)
+
+    class DataProxyBase(object):
+        """Limited interface to managed resources.
+
+        Inherit from DataProxy to specialize an interface to an ``instance``.
+        In the derived class, either do not define ``__init__`` or be sure to
+        initialize the super class (DataProxy) with an instance of the object
+        to be proxied.
+
+        Acts as an owning handle to ``instance``, preventing the reference count
+        of ``instance`` from going to zero for the lifetime of the proxy object.
+        """
+        def __init__(self, instance):
+            self._instance = instance
+
+    # Dynamically define a type for the PublishingDataProxy using a descriptor for each attribute.
+    # TODO: Encapsulate this bit of script in a metaclass definition.
+    namespace = {}
+    for name, dtype in output.items():
+        namespace[name] = Publisher(name, dtype)
+    namespace['__doc__'] = "Handler for write access to the `output` of an operation.\n\n" + \
+                           "Acts as a sort of PublisherCollection."
+    PublishingDataProxy = type('PublishingDataProxy', (DataProxyBase,), namespace)
+
+    class ResourceManager(object):
+        """Provides data publication and subscription services.
+
+        Owns the data published by the operation implementation or served to consumers.
+        Mediates read and write access to the managed data streams.
+
+        This ResourceManager implementation is defined in conjunction with a
+        run-time definition of an Operation that wraps a Python callable (function).
+        ResourceManager is instantiated with a reference to the callable.
+
+        When the Operation is run, the resource manager prepares resources for the wrapped
+        function. Inputs provided to the Operation factory are provided to the
+        function as keyword arguments. The wrapped function publishes its output
+        through the (additional) ``output`` key word argument. This argument is
+        a short-lived resource, prepared by the ResourceManager, with writable
+        attributes named in the call to function_wrapper().
+
+        After the Operation has run and the outputs published, the data managed
+        by the ResourceManager is marked "done."
+
+        Protocols:
+
+        The data() method produces a read-only collection of outputs named for
+        the Operation when the Operation's ``output`` attribute is accessed.
+
+        publishing_resources() can be called once during the ResourceManager lifetime
+        to provide the ``output`` object for the wrapped function. (Used by update_output().)
+
+        update_output() brings the managed output data up-to-date with the input
+        when the Operation results are needed. If the Operation has not run, an
+        execution session is prepared with input and output arguments for the
+        wrapped Python callable. Output is publishable only during this session.
+
+        TODO: This functionality should evolve to be a facet of Context implementations.
+         There should be no more than one ResourceManager instance per work graph
+         node in a Context. This will soon be at odds with letting the ResourceManager
+         be owned by an operation instance handle.
+        TODO: The publisher and data objects can be more strongly defined through
+         interaction between the Context and clients.
+        """
+
+        @contextmanager
+        def __publishing_context(self):
+            """Get a context manager for resolving the data dependencies of this node.
+
+            The returned object is a Python context manager (used to open a `with` block)
+            to define the scope in which the operation's output can be published.
+            'output' type resources can be published exactly once, and only while the
+            publishing context is active. (See operation.function_wrapper())
+
+            Used internally to implement ResourceManager.publishing_resources()
+
+            Responsibilities of the context manager are to:
+                * (TODO) Make sure dependencies are resolved.
+                * Make sure outputs are marked 'done' when leaving the context.
+
+            """
+
+            # TODO:
+            # if self._data.done():
+            #     raise exceptions.ProtocolError('Resources have already been published.')
+            resource = PublishingDataProxy(weakref.proxy(self))
+            # ref: https://docs.python.org/3/library/contextlib.html#contextlib.contextmanager
+            try:
+                yield resource
+            except Exception as e:
+                message = 'Uncaught exception while providing output-publishing resources for {}.'.format(self._runner)
+                raise exceptions.ApiError(message) from e
+            finally:
+                self.done = True
+
+        def __init__(self, input_fingerprint=None, runner=None):
+            """Initialize a resource manager for the inputs and outputs of an operation.
+
+            Arguments:
+                runner : callable to be called once to set output data
+                input_fingerprint : Uniquely identifiable input data description
+
+            """
+            assert callable(runner)
+            assert input_fingerprint is not None
+
+            # Note: This implementation assumes there is one ResourceManager instance per data source,
+            # so we only stash the inputs and dependency information for a single set of resources.
+            # TODO: validate input_fingerprint as its interface becomes clear.
+            self._input_fingerprint = input_fingerprint
+
+            self._data = {name: Output(name=name, dtype=dtype, done=False, data=None)
+                          for name, dtype in output.items()}
+
+            # TODO: reimplement as a data descriptor
+            #  so that Publisher does not need a bound circular reference.
+            self._publisher = PublishingDataProxy(weakref.proxy(self))
+            self.__publishing_resources = [self.__publishing_context()]
+
+            self.done = False
+            self._runner = runner
+            self.__operation_entrance_counter = 0
+
+        def set_result(self, name, value):
+            if type(value) == list:
+                for item in value:
+                    # In this specification, it is antithetical to publish Futures.
+                    assert not hasattr(item, 'result')
+            self._data[name] = Output(name=name,
+                                      dtype=self._data[name].dtype,
+                                      done=True,
+                                      data=self._data[name].dtype(value))
+
+        def update_output(self):
+            """Bring the output of the bound operation up to date.
+
+            Execute the bound operation once if and only if it has not
+            yet been run in the lifetime of this resource manager.
+
+            Used internally to implement Futures for the local operation
+            associated with this resource manager.
+
+            TODO: We need a different implementation for an operation whose output
+             is served by multiple resource managers. E.g. an operation whose output
+             is available across the ensemble, but which should only be executed on
+             a single ensemble member.
+            """
+            # This code is not intended to be reentrant. We make a modest attempt to
+            # catch unexpected reentrance, but this is not (yet) intended to be a thread-safe
+            # resource manager implementation.
+            if not self.done:
+                self.__operation_entrance_counter += 1
+                if self.__operation_entrance_counter > 1:
+                    raise exceptions.ProtocolError('Bug detected: resource manager tried to execute operation twice.')
+                if not self.done:
+                    input = self._input_fingerprint
+                    # TODO: Allow both structured and singular output.
+                    #  For simple functions, just capture and publish the return value.
+                    with self.publishing_resources() as output:
+                        self._runner(*input.args, output=output, **input.kwargs)
+
+        def data(self):
+            """Get an adapter to the output resources to access results."""
+            names = list(self._data.keys())
+            OutputDataProxy = collections.namedtuple('OutputDataProxy', names)
+            data_dict = {name: value.data for name, value in self._data.items()}
+            output = OutputDataProxy(**data_dict)
+            return output
+
+        def publishing_resources(self):
+            """Get a context manager for resolving the data dependencies of this node.
+
+            Use the returned object as a Python context manager.
+            'output' type resources can be published exactly once, and only while the
+            publishing context is active.
+
+            Write access to publishing resources can be granted exactly once during the
+            resource manager lifetime and conveys exclusive access.
+            """
+            return self.__publishing_resources.pop()
+
+        ###
+        # TODO: Need a facility to resolve inputs, chasing dependencies...
+        ###
+
+
+    def decorator(function):
+        @functools.wraps(function)
+        def factory(**kwargs):
+
+            def get_resource_manager(instance):
+                """Provide a reference to a resource manager for the dynamically defined Operation.
+
+                Initial Operation implementation must own ResourceManager. As more formal Context is
+                developed, this can be changed to a weak reference. A distinction can also be developed
+                between the facet of the Context-level resource manager to which the Operation has access
+                and the whole of the managed resources.
+                """
+                return ResourceManager(input_fingerprint=instance._input, runner=function)
+
+            class Operation(object):
+                """Dynamically defined Operation implementation.
+
+                Define a gmxapi Operation for the functionality being wrapped by the enclosing code.
+                """
+                signature = inspect.signature(function)
+
+                def __init__(self, **kwargs):
+                    """Initialization defines the unique input requirements of a work graph node.
+
+                    Initialization parameters map to the parameters of the wrapped function with
+                    addition(s) to support gmxapi data flow and deferred execution.
+
+                    If provided, an ``input`` keyword argument is interpreted as a parameter pack
+                    of base input. Inputs also present as standalone keyword arguments override
+                    values in ``input``.
+
+                    Inputs that are handles to gmxapi operations or outputs induce data flow
+                    dependencies that the framework promises to satisfy before the Operation
+                    executes and produces output.
+                    """
+                    ## Define the unique identity and data flow constraints of this work graph node.
+                    # TODO: (FR3) generalize
+                    input_dependencies = []
+
+                    # TODO: Make allowed input strongly specified in the Operation definition.
+                    # TODO: Resolve execution dependencies at run() and make non-data
+                    #  execution `dependencies` just another input that takes the default
+                    #  output of an operation and doesn't do anything with it.
+
+                    # If present, kwargs['input'] is treated as an input "pack" providing _default_ values.
+                    input_kwargs = {}
+                    for key in kwargs:
+                        if key in self.signature.parameters:
+                            input_kwargs[key] = kwargs[key]
+                        else:
+                            raise exceptions.UsageError('Unexpected keyword argument: {}'.format(key))
+
+                    # TODO: Check input types
+
+                    self.__input = PyFuncInput(args=[],
+                                         kwargs=input_kwargs,
+                                         dependencies=input_dependencies)
+                    ##
+
+                    # TODO: (FR5+) Split the definition of the resource structure
+                    #  and the resource initialization.
+                    # Resource structure definition logic can be moved to the level
+                    # of the class definition. We need knowledge of the inputs to
+                    # uniquely identify the resources for this operation instance.
+                    # Implementation suggestion: Context-provided metaclass defines
+                    # resource manager interface for this Operation. Factory function
+                    # initializes compartmentalized resource management at object creation.
+                    self.__resource_manager = get_resource_manager(self)
+
+                @property
+                def _input(self):
+                    """Internal interface to support data flow and execution management."""
+                    return self.__input
+
+                @property
+                def output(self):
+                    # Note: if we define Operation classes exclusively in the scope
+                    # of Context instances, we could elegantly have a single _resource_manager
+                    # handle instance per Operation type per Context instance.
+                    # That could make it easier to implement library-level optimizations
+                    # for managing hardware resources or data placement for operations
+                    # implemented in the same librarary. That would be well in the future,
+                    # though, and could also be accomplished with other means,
+                    # so here we assume one resource manager handle instance
+                    # per Operation handle instance.
+                    #
+                    # TODO: Allow both structured and singular output.
+                    #  Either return self._resource_manager.data or self._resource_manager.data.output
+                    # TODO: We can configure `output` as a data descriptor
+                    #  instead of a property so that we can get more information
+                    #  from the class attribute before creating an instance.
+                    # The C++ equivalence would probably be a templated free function for examining traits.
+                    return self.__resource_manager.data()
+
+                def run(self):
+                    """Make a single attempt to resolve data flow conditions.
+
+                    `run()` is also useful internally as a facade to the Context implementation details
+                    that allow `result()` calls to ask for their data dependencies to be resolved.
+                    Typically, `run()` will cause results to be published to subscribing operations as
+                    they are calculated, so the `run()` hook allows execution dependency to be slightly
+                    decoupled from data dependency, as well as to allow some optimizations or to allow
+                    data flow to be resolved opportunistically. `result()` should not call `run()`
+                    directly, but should cause the resource manager / Context implementation to process
+                    the data flow graph.
+
+                    In one conception, `run()` can have a return value that supports control flow
+                    by itself being either runnable or not. The idea would be to support
+                    fault tolerance, implementations that require multiple iterations / triggers
+                    to complete, or looping operations.
+                    """
+                    self.__resource_manager.update_output()
+
+            operation = Operation(**kwargs)
+            return operation
+
+        return factory
+
+    return decorator
