@@ -36,6 +36,7 @@ gmx_add_unit_test(MathUnitTests math-test
                   arrayrefwithpadding.cpp
                   dofit.cpp
                   functions.cpp
+                  gausstransform.cpp
                   invertmatrix.cpp
                   matrix.cpp
                   multidimarray.cpp
