@@ -736,6 +736,20 @@ ImdSession::Impl::copyToMDForces()
 }
 
 
+/*! \brief Returns true if any component of the two rvecs differs. */
+static inline bool rvecs_differ(const rvec v1, const rvec v2)
+{
+    for (int i = 0; i < DIM; i++)
+    {
+        if (v1[i] != v2[i])
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool
 ImdSession::Impl::bForcesChanged() const
 {
@@ -754,19 +768,10 @@ ImdSession::Impl::bForcesChanged() const
         }
     }
 
-    // TODO replace this with rvecs_differ
     /* Third, check whether all forces are the same */
     for (int i = 0; i < nforces; i++)
     {
-        if (f[i][XX] != old_forces[i][XX])
-        {
-            return true;
-        }
-        if (f[i][YY] != old_forces[i][YY])
-        {
-            return true;
-        }
-        if (f[i][ZZ] != old_forces[i][ZZ])
+        if (rvecs_differ(f[i], old_forces[i]))
         {
             return true;
         }
@@ -787,21 +792,6 @@ ImdSession::Impl::keepOldValues()
         old_f_ind[i] = f_ind[i];
         copy_rvec(f[i], old_forces[i]);
     }
-}
-
-
-/*! \brief Returns true if any component of the two rvecs differs. */
-static inline bool rvecs_differ(const rvec v1, const rvec v2)
-{
-    for (int i = 0; i < DIM; i++)
-    {
-        if (v1[i] != v2[i])
-        {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 
