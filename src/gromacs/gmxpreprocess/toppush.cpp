@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -497,7 +497,14 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
 
     if ((nr = get_atomtype_type(type, at)) != NOTSET)
     {
-        auto message = gmx::formatString("Overriding atomtype %s", type);
+        auto message = gmx::formatString
+                ("Atomtype %s was defined previously (e.g. in the forcefield files), "
+                "and has now been defined again. This could happen e.g. if you would "
+                "use a self-contained molecule .itp file that duplicates or replaces "
+                "the contents of the standard force-field files. You should check "
+                "the contents of your files and remove such repetition. If you know "
+                "you should override the previous definition, then you could choose "
+                "to suppress this warning with -maxwarn.", type);
         warning(wi, message);
         if ((nr = set_atomtype(nr, at, symtab, atom, type, param, batype_nr,
                                atomnr)) == NOTSET)
@@ -602,7 +609,13 @@ static void push_bondtype(t_params     *       bt,
                 else if (!haveWarned)
                 {
                     auto message = gmx::formatString
-                            ("Overriding %s parameters.%s",
+                            ("Bondtype %s was defined previously (e.g. in the forcefield files), "
+                            "and has now been defined again. This could happen e.g. if you would "
+                            "use a self-contained molecule .itp file that duplicates or replaces "
+                            "the contents of the standard force-field files. You should check "
+                            "the contents of your files and remove such repetition. If you know "
+                            "you should override the previous definition, then you could choose "
+                            "to suppress this warning with -maxwarn.%s",
                             interaction_function[ftype].longname,
                             (ftype == F_PDIHS) ?
                             "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive "
@@ -1041,7 +1054,14 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
         }
         if (!bId)
         {
-            auto message = gmx::formatString("Overriding non-bonded parameters,");
+            auto message = gmx::formatString
+                    ("Non-bonded parameters were defined previously (e.g. in the forcefield files), "
+                    "and have now been defined again. This could happen e.g. if you would "
+                    "use a self-contained molecule .itp file that duplicates or replaces "
+                    "the contents of the standard force-field files. You should check "
+                    "the contents of your files and remove such repetition. If you know "
+                    "you should override the previous definitions, then you could choose "
+                    "to suppress this warning with -maxwarn.");
             warning(wi, message);
             fprintf(stderr, "  old:");
             for (i = 0; i < nrfp; i++)
