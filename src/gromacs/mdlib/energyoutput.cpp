@@ -529,8 +529,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     snew(md->tmp_r, md->mde_n);
     snew(md->tmp_v, md->mde_n);
+    // TODO redo the group name memory management to make it more clear
     char **grpnms;
-    snew(grpnms, md->mde_n);
+    snew(grpnms, std::max(md->mde_n, md->mdeb_n)); // Just in case md->mdeb_n > md->mde_n
 
     for (i = 0; (i < md->nTC); i++)
     {
@@ -540,7 +541,12 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
     md->itemp = get_ebin_space(md->ebin, md->nTC, grpnms,
                                unit_temp_K);
+    for (i = 0; i < md->nTC; i++)
+    {
+        sfree(grpnms[i]);
+    }
 
+    int allocated = 0;
     if (md->etc == etcNOSEHOOVER)
     {
         if (md->bPrintNHChains)
@@ -561,6 +567,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
                                          grpnms, unit_invtime);
+                allocated = md->mde_n;
                 if (md->bMTTK)
                 {
                     for (i = 0; (i < md->nTCP); i++)
@@ -576,6 +583,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     }
                     md->itcb = get_ebin_space(md->ebin, md->mdeb_n,
                                               grpnms, unit_invtime);
+                    allocated = md->mdeb_n;
                 }
             }
             else
@@ -591,6 +599,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
                                          grpnms, unit_invtime);
+                allocated = md->mde_n;
             }
         }
     }
@@ -603,10 +612,11 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             sprintf(buf, "Lamb-%s", *(groups->groupNames[ni]));
             grpnms[i] = gmx_strdup(buf);
         }
-        md->itc = get_ebin_space(md->ebin, md->mde_n, grpnms, "");
+        md->itc   = get_ebin_space(md->ebin, md->mde_n, grpnms, "");
+        allocated = md->mde_n;
     }
 
-    for (i = 0; i < md->mde_n; i++)
+    for (i = 0; i < allocated; i++)
     {
         sfree(grpnms[i]);
     }
@@ -627,6 +637,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             grpnms[3*i+ZZ] = gmx_strdup(buf);
         }
         md->iu = get_ebin_space(md->ebin, 3*md->nU, grpnms, unit_vel);
+        for (i = 0; i < 3*md->nU; i++)
+        {
+            sfree(grpnms[i]);
+        }
         sfree(grpnms);
     }
 
@@ -678,6 +692,14 @@ void done_mdebin(t_mdebin *mdebin)
     done_mde_delta_h_coll(mdebin->dhc);
     sfree(mdebin->dE);
     sfree(mdebin->temperatures);
+    if (mdebin->nE > 1 && mdebin->print_grpnms != nullptr)
+    {
+        for (int n = 0; n < mdebin->nE; n++)
+        {
+            sfree(mdebin->print_grpnms[n]);
+        }
+        sfree(mdebin->print_grpnms);
+    }
     sfree(mdebin);
 }
 
