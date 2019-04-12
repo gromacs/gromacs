@@ -248,7 +248,7 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
 
         if (clearF == enbvClearFYes)
         {
-            clear_f(nbat, nb, out->f.data());
+            clearForceBuffer(nbat, nb);
         }
 
         real *fshift_p;

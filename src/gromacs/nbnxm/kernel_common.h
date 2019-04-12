@@ -102,11 +102,14 @@ enum {
 /*! \brief Clears the force buffer.
  *
  * Either the whole buffer is cleared or only the parts used
- * by the current thread when nbat->bUseBufferFlags is set.
- * In the latter case output_index is the task/thread list/buffer index.
+ * by thread/task \p outputIndex when nbat->bUseBufferFlags is set.
+ *
+ * \param[in,out] nbat         The Nbnxm atom data
+ * \param[in]     outputIndex  The index of the output object to clear
  */
 void
-clear_f(const nbnxn_atomdata_t *nbat, int output_index, real *f);
+clearForceBuffer(nbnxn_atomdata_t *nbat,
+                 int               outputIndex);
 
 /*! \brief Clears the shift forces.
  */

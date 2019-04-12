@@ -32,6 +32,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+/*! \internal \file
+ *
+ * \brief
+ * Implements utility functions used by all nbnxm CPU kernels.
+ *
+ * \author Berk Hess <hess@kth.se>
+ */
+
 #include "gmxpre.h"
 
 #include "kernel_common.h"
@@ -39,48 +48,55 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/gmxassert.h"
 
+//! Clears all elements of buffer
 static void
-clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
+clearBufferAll(gmx::ArrayRef<real> buffer)
 {
-    for (int i = 0; i < nbat->numAtoms()*nbat->fstride; i++)
+    for (real &elem : buffer)
     {
-        f[i] = 0;
+        elem = 0;
     }
 }
 
+/*! \brief Clears elements of size and stride \p numComponentsPerElement
+ *
+ * Only elements with flags in \p nbat set for index \p outputIndex
+ * are cleared.
+ */
+template <int numComponentsPerElement>
 static void
-clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
+clearBufferFlagged(const nbnxn_atomdata_t &nbat,
+                   int                     outputIndex,
+                   gmx::ArrayRef<real>     buffer)
 {
-    GMX_ASSERT(nbat->fstride == DIM, "For performance we use compile time constant DIM instead of nbat->fstride");
-
-    const nbnxn_buffer_flags_t &flags = nbat->buffer_flags;
+    const nbnxn_buffer_flags_t &flags = nbat.buffer_flags;
     gmx_bitmask_t               our_flag;
-    bitmask_init_bit(&our_flag, output_index);
+    bitmask_init_bit(&our_flag, outputIndex);
+
+    constexpr size_t numComponentsPerBlock = NBNXN_BUFFERFLAG_SIZE*numComponentsPerElement;
 
     for (int b = 0; b < flags.nflag; b++)
     {
         if (!bitmask_is_disjoint(flags.flag[b], our_flag))
         {
-            int a0 = b*NBNXN_BUFFERFLAG_SIZE;
-            int a1 = a0 + NBNXN_BUFFERFLAG_SIZE;
-            for (int i = a0*DIM; i < a1*DIM; i++)
-            {
-                f[i] = 0;
-            }
+            clearBufferAll(buffer.subArray(b*numComponentsPerBlock, numComponentsPerBlock));
         }
     }
 }
 
 void
-clear_f(const nbnxn_atomdata_t *nbat, int output_index, real *f)
+clearForceBuffer(nbnxn_atomdata_t *nbat,
+                 int               outputIndex)
 {
     if (nbat->bUseBufferFlags)
     {
-        clear_f_flagged(nbat, output_index, f);
+        GMX_ASSERT(nbat->fstride == DIM, "Only fstride=3 is currently handled here");
+
+        clearBufferFlagged<DIM>(*nbat, outputIndex, nbat->out[outputIndex].f);
     }
     else
     {
-        clear_f_all(nbat, f);
+        clearBufferAll(nbat->out[outputIndex].f);
     }
 }
 
