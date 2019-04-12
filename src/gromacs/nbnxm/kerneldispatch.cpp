@@ -252,9 +252,6 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
             clear_fshift(out->fshift.data());
         }
 
-        // TODO: Remove this temporary solution when passing out to kernels
-        real *fshift_p = out->fshift.data();
-
         // TODO: Change to reference
         const NbnxnPairlistCpu *pairlist = &pairlists[nb];
 
@@ -267,16 +264,14 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
                     nbnxn_kernel_noener_ref[coulkt][vdwkt](pairlist, nbat,
                                                            &ic,
                                                            shiftVectors,
-                                                           out->f.data(),
-                                                           fshift_p);
+                                                           out);
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
                     nbnxm_kernel_noener_simd_2xmm[coulkt][vdwkt](pairlist, nbat,
                                                                  &ic,
                                                                  shiftVectors,
-                                                                 out->f.data(),
-                                                                 fshift_p);
+                                                                 out);
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -284,8 +279,7 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
                     nbnxm_kernel_noener_simd_4xm[coulkt][vdwkt](pairlist, nbat,
                                                                 &ic,
                                                                 shiftVectors,
-                                                                out->f.data(),
-                                                                fshift_p);
+                                                                out);
                     break;
 #endif
                 default:
@@ -304,20 +298,14 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
                     nbnxn_kernel_ener_ref[coulkt][vdwkt](pairlist, nbat,
                                                          &ic,
                                                          shiftVectors,
-                                                         out->f.data(),
-                                                         fshift_p,
-                                                         out->Vvdw.data(),
-                                                         out->Vc.data());
+                                                         out);
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
                     nbnxm_kernel_ener_simd_2xmm[coulkt][vdwkt](pairlist, nbat,
                                                                &ic,
                                                                shiftVectors,
-                                                               out->f.data(),
-                                                               fshift_p,
-                                                               out->Vvdw.data(),
-                                                               out->Vc.data());
+                                                               out);
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -325,10 +313,7 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
                     nbnxm_kernel_ener_simd_4xm[coulkt][vdwkt](pairlist, nbat,
                                                               &ic,
                                                               shiftVectors,
-                                                              out->f.data(),
-                                                              fshift_p,
-                                                              out->Vvdw.data(),
-                                                              out->Vc.data());
+                                                              out);
                     break;
 #endif
                 default:
@@ -349,10 +334,7 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
                     nbnxn_kernel_energrp_ref[coulkt][vdwkt](pairlist, nbat,
                                                             &ic,
                                                             shiftVectors,
-                                                            out->f.data(),
-                                                            fshift_p,
-                                                            out->Vvdw.data(),
-                                                            out->Vc.data());
+                                                            out);
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
@@ -360,10 +342,7 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
                     nbnxm_kernel_energrp_simd_2xmm[coulkt][vdwkt](pairlist, nbat,
                                                                   &ic,
                                                                   shiftVectors,
-                                                                  out->f.data(),
-                                                                  fshift_p,
-                                                                  out->VSvdw.data(),
-                                                                  out->VSc.data());
+                                                                  out);
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -372,10 +351,7 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
                     nbnxm_kernel_energrp_simd_4xm[coulkt][vdwkt](pairlist, nbat,
                                                                  &ic,
                                                                  shiftVectors,
-                                                                 out->f.data(),
-                                                                 fshift_p,
-                                                                 out->VSvdw.data(),
-                                                                 out->VSc.data());
+                                                                 out);
                     break;
 #endif
                 default:

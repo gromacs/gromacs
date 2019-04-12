@@ -36,6 +36,20 @@
 
 {
     using namespace gmx;
+
+    /* Unpack pointers for output */
+    real               *f      = out->f.data();
+    real               *fshift = out->fshift.data();
+#ifdef CALC_ENERGIES
+#ifdef ENERGY_GROUPS
+    real               *Vvdw   = out->VSvdw.data();
+    real               *Vc     = out->VSc.data();
+#else
+    real               *Vvdw   = out->Vvdw.data();
+    real               *Vc     = out->Vc.data();
+#endif
+#endif
+
     const nbnxn_cj_t   *l_cj;
     int                 ci, ci_sh;
     int                 ish, ish3;

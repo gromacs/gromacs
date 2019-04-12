@@ -66,19 +66,15 @@ void
 nbnxm_kernel_ElecEw_VdwLJCombGeom_VgrpF_2xmm(const NbnxnPairlistCpu    gmx_unused *nbl,
                                              const nbnxn_atomdata_t    gmx_unused *nbat,
                                              const interaction_const_t gmx_unused *ic,
-                                             rvec                      gmx_unused *shift_vec,
-                                             real                      gmx_unused *f,
-                                             real                      gmx_unused *fshift,
-                                             real                      gmx_unused *Vvdw,
-                                             real                      gmx_unused *Vc)
+                                             const rvec                gmx_unused *shift_vec,
+                                             nbnxn_atomdata_output_t   gmx_unused *out)
 #else /* CALC_ENERGIES */
 void
 nbnxm_kernel_ElecEw_VdwLJCombGeom_VgrpF_2xmm(const NbnxnPairlistCpu    gmx_unused *nbl,
                                              const nbnxn_atomdata_t    gmx_unused *nbat,
                                              const interaction_const_t gmx_unused *ic,
-                                             rvec                      gmx_unused *shift_vec,
-                                             real                      gmx_unused *f,
-                                             real                      gmx_unused *fshift)
+                                             const rvec                gmx_unused *shift_vec,
+                                             nbnxn_atomdata_output_t   gmx_unused *out)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_2XNN
 #include "gromacs/nbnxm/kernels_simd_2xmm/kernel_outer.h"

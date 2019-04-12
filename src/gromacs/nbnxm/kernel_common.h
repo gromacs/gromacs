@@ -52,16 +52,15 @@
 
 struct interaction_const_t;
 
+// TODO: Consider using one nbk_func type now ener and noener are identical
+
 /*! \brief Pair-interaction kernel type that also calculates energies.
  */
 typedef void (nbk_func_ener)(const NbnxnPairlistCpu     *nbl,
                              const nbnxn_atomdata_t     *nbat,
                              const interaction_const_t  *ic,
-                             rvec                       *shift_vec,
-                             real                       *f,
-                             real                       *fshift,
-                             real                       *Vvdw,
-                             real                       *Vc);
+                             const rvec                 *shift_vec,
+                             nbnxn_atomdata_output_t    *out);
 
 /*! \brief Pointer to \p nbk_func_ener.
  */
@@ -72,9 +71,8 @@ typedef nbk_func_ener *p_nbk_func_ener;
 typedef void (nbk_func_noener)(const NbnxnPairlistCpu     *nbl,
                                const nbnxn_atomdata_t     *nbat,
                                const interaction_const_t  *ic,
-                               rvec                       *shift_vec,
-                               real                       *f,
-                               real                       *fshift);
+                               const rvec                 *shift_vec,
+                               nbnxn_atomdata_output_t    *out);
 
 /*! \brief Pointer to \p nbk_func_noener.
  */
