@@ -1473,15 +1473,6 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
 {
     gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers = nbat->out;
 
-    if (outputBuffers.size() == 1)
-    {
-        /* When there is a single output object, with CPU or GPU, shift forces
-         * have been written directly to the main buffer instead of to the
-         * (single) thread local output object. There is nothing to reduce.
-         */
-        return;
-    }
-
     for (int s = 0; s < SHIFTS; s++)
     {
         rvec sum;

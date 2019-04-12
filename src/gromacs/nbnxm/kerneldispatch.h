@@ -63,7 +63,6 @@ struct nonbonded_verlet_group_t;
  * \param[in]     shiftVectors  The PBC shift vectors
  * \param[in]     forceFlags    Flags that tell what to compute
  * \param[in]     clearF        Enum that tells if to clear the force output buffer
- * \param[out]    fshift        Shift force output buffer
  * \param[out]    vCoulomb      Output buffer for Coulomb energies
  * \param[out]    vVdw          Output buffer for Van der Waals energies
  */
@@ -74,7 +73,6 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                  rvec                      *shiftVectors,
                  int                        forceFlags,
                  int                        clearF,
-                 real                      *fshift,
                  real                      *vCoulomb,
                  real                      *vVdw);
 

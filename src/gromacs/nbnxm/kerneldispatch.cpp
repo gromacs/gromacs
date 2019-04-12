@@ -143,7 +143,6 @@ reduceGroupEnergySimdBuffers(int                       numGroups,
  * \param[in]     shiftVectors  The PBC shift vectors
  * \param[in]     forceFlags    Flags that tell what to compute
  * \param[in]     clearF        Enum that tells if to clear the force output buffer
- * \param[out]    fshift        Shift force output buffer
  * \param[out]    vCoulomb      Output buffer for Coulomb energies
  * \param[out]    vVdw          Output buffer for Van der Waals energies
  */
@@ -155,7 +154,6 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
                  rvec                           *shiftVectors,
                  int                             forceFlags,
                  int                             clearF,
-                 real                           *fshift,
                  real                           *vCoulomb,
                  real                           *vVdw)
 {
@@ -250,22 +248,12 @@ nbnxn_kernel_cpu(const PairlistSet              &pairlistSet,
         if (clearF == enbvClearFYes)
         {
             clearForceBuffer(nbat, nb);
+
+            clear_fshift(out->fshift.data());
         }
 
-        real *fshift_p;
-        if ((forceFlags & GMX_FORCE_VIRIAL) && pairlists.ssize() == 1)
-        {
-            fshift_p = fshift;
-        }
-        else
-        {
-            fshift_p = out->fshift.data();
-
-            if (clearF == enbvClearFYes)
-            {
-                clear_fshift(fshift_p);
-            }
-        }
+        // TODO: Remove this temporary solution when passing out to kernels
+        real *fshift_p = out->fshift.data();
 
         // TODO: Change to reference
         const NbnxnPairlistCpu *pairlist = &pairlists[nb];
@@ -508,7 +496,6 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
                              fr->shift_vec,
                              forceFlags,
                              clearF,
-                             fr->fshift[0],
                              enerd->grpp.ener[egCOULSR],
                              fr->bBHAM ?
                              enerd->grpp.ener[egBHAMSR] :
