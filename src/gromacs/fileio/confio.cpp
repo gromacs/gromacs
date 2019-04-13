@@ -237,64 +237,107 @@ static void get_stx_coordnum(const char *infile, int *natoms)
     }
 }
 
-// TODO molecule index handling is suspected of being broken here
-static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
+//! Constructs plausible chain IDs for multi-molecule systems, e.g. when read from .tpr files
+class ChainIdFiller
 {
-    /* We always assign a new chain number, but save the chain id characters
-     * for larger molecules.
-     */
-    const int chainMinAtoms = 15;
+    public:
+        //! Fill in the chain ID for the indicated atom range, which might be a molecule.
+        void fill(t_atoms  *atoms,
+                  int       startAtomIndex,
+                  int       endAtomIndex);
+        //! If only one chain was found, we don't add a chain ID.
+        void clearIfNeeded(t_atoms *atoms) const;
 
-    int       chainnum = 0;
-    char      chainid  = 'A';
-    bool      outOfIds = false;
-    for (int m = 0; m < mols->nr; m++)
+    private:
+        //! Minimum size for a chain worth giving an ID
+        static constexpr int s_chainMinAtoms = 15;
+
+        //! The number of the next chain that will be assigned.
+        int  nextChainNumber_ = 0;
+        //! The chain ID of the next chain that will be assigned.
+        char nextChainId_ = 'A';
+        //! Whether the set of chain IDs (ie. upper- and lower-case letters and single digits) is exhausted.
+        bool outOfIds_ = false;
+};
+
+void
+ChainIdFiller::fill(t_atoms  *atoms,
+                    const int startAtomIndex,
+                    const int endAtomIndex)
+{
+    // TODO remove these some time, extra braces added for review convenience
     {
-        int a0 = mols->index[m];
-        int a1 = mols->index[m+1];
-        int c;
-        if (a1 - a0 >= chainMinAtoms && !outOfIds)
+        // We always assign a new chain number, but only assign a chain id
+        // characters for larger molecules.
+        int chainIdToAssign;
+        if (endAtomIndex - startAtomIndex >= s_chainMinAtoms && !outOfIds_)
         {
             /* Set the chain id for the output */
-            c = chainid;
+            chainIdToAssign = nextChainId_;
             /* Here we allow for the max possible 2*26+10=62 chain ids */
-            if (chainid == 'Z')
+            if (nextChainId_ == 'Z')
             {
-                chainid = 'a';
+                nextChainId_ = 'a';
             }
-            else if (chainid == 'z')
+            else if (nextChainId_ == 'z')
             {
-                chainid = '0';
+                nextChainId_ = '0';
             }
-            else if (chainid == '9')
+            else if (nextChainId_ == '9')
             {
-                outOfIds = true;
+                outOfIds_ = true;
             }
             else
             {
-                chainid++;
+                nextChainId_++;
             }
         }
         else
         {
-            c = ' ';
+            chainIdToAssign = ' ';
         }
-        for (int a = a0; a < a1; a++)
+        for (int a = startAtomIndex; a < endAtomIndex; a++)
         {
-            atoms->resinfo[atoms->atom[a].resind].chainnum = chainnum;
-            atoms->resinfo[atoms->atom[a].resind].chainid  = c;
+            atoms->resinfo[atoms->atom[a].resind].chainnum = nextChainNumber_;
+            atoms->resinfo[atoms->atom[a].resind].chainid  = chainIdToAssign;
         }
-        chainnum++;
+        nextChainNumber_++;
     }
+}
 
+void
+ChainIdFiller::clearIfNeeded(t_atoms *atoms) const
+{
     /* Blank out the chain id if there was only one chain */
-    if (chainid == 'B')
+    if (nextChainId_ == 'B')
     {
         for (int r = 0; r < atoms->nres; r++)
         {
             atoms->resinfo[r].chainid = ' ';
         }
     }
+}
+
+//! Make chain IDs in the t_atoms for a gmx_mtop_t built from a .tpr file
+static void makeChainIdentifiersAfterTprReading(t_atoms *atoms, const gmx::RangePartitioning &mols)
+{
+    ChainIdFiller filler;
+    for (auto m = 0; m != mols.numBlocks(); ++m)
+    {
+        filler.fill(atoms, mols.block(m).begin(), mols.block(m).end());
+    }
+    filler.clearIfNeeded(atoms);
+}
+
+//! Make chain IDs in the t_atoms for a legacy t_topology built from a .tpr file
+static void tpx_make_chain_identifiers(t_atoms *atoms, const t_block *mols)
+{
+    ChainIdFiller filler;
+    for (int m = 0; m < mols->nr; m++)
+    {
+        filler.fill(atoms, mols->index[m], mols->index[m+1]);
+    }
+    filler.clearIfNeeded(atoms);
 }
 
 static void read_stx_conf(const char *infile,
@@ -355,6 +398,29 @@ void readConfAndAtoms(const char *infile,
                       int *ePBC,
                       rvec **x, rvec **v, matrix box)
 {
+    GMX_RELEASE_ASSERT(infile, "Need a valid file name string");
+
+    if (fn2ftp(infile) == efTPR)
+    {
+        bool       haveTopology;
+        gmx_mtop_t mtop;
+        readConfAndTopology(infile, &haveTopology, &mtop, ePBC, x, v, box);
+        *symtab = mtop.symtab;
+        *name   = gmx_strdup(*mtop.name);
+        *atoms  = gmx_mtop_global_atoms(&mtop);
+        gmx::RangePartitioning molecules = gmx_mtop_molecules(mtop);
+        makeChainIdentifiersAfterTprReading(atoms, molecules);
+
+        /* Inelegant solution to avoid all char pointers in atoms becoming
+         * invalid after destruction of mtop.
+         * This will be fixed soon by converting t_symtab to C++.
+         */
+        mtop.symtab.symbuf = nullptr;
+        mtop.symtab.nr     = 0;
+
+        return;
+    }
+
     int natoms;
     get_stx_coordnum(infile, &natoms);
 

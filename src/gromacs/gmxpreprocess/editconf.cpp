@@ -792,9 +792,11 @@ int gmx_editconf(int argc, char *argv[])
                   " when using the -mead or -connect options\n");
     }
 
-    t_topology top_tmp;
-    read_tps_conf(infile, &top_tmp, &ePBC, &x, &v, box, FALSE);
-    t_atoms   &atoms = top_tmp.atoms;
+    t_symtab  symtab;
+    char     *name;
+    t_atoms   atoms;
+    open_symtab(&symtab);
+    readConfAndAtoms(infile, &symtab, &name, &atoms, &ePBC, &x, &v, box);
     natom = atoms.nr;
     if (atoms.pdbinfo == nullptr)
     {
@@ -1264,12 +1266,12 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, FALSE);
+            write_pdbfile_indexed(out, name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, FALSE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, *top_tmp.name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
         }
     }
     else
@@ -1319,7 +1321,7 @@ int gmx_editconf(int argc, char *argv[])
             {
                 index[i] = i;
             }
-            write_pdbfile_indexed(out, *top_tmp.name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
+            write_pdbfile_indexed(out, name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
                                   outftp == efPQR);
             sfree(index);
             if (bLegend)
@@ -1335,10 +1337,12 @@ int gmx_editconf(int argc, char *argv[])
         }
         else
         {
-            write_sto_conf(outfile, *top_tmp.name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
+            write_sto_conf(outfile, name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
         }
     }
-    done_top(&top_tmp);
+    done_atom(&atoms);
+    done_symtab(&symtab);
+    sfree(name);
     if (x)
     {
         sfree(x);
