@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -794,10 +794,11 @@ int gmx_editconf(int argc, char *argv[])
                   " when using the -mead option\n");
     }
 
-    t_topology *top_tmp;
-    snew(top_tmp, 1);
-    read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
-    t_atoms  &atoms = top_tmp->atoms;
+    t_symtab  symtab;
+    char     *name;
+    t_atoms   atoms;
+    open_symtab(&symtab);
+    readConfAndAtoms(infile, &symtab, &name, &atoms, &ePBC, &x, &v, box);
     natom = atoms.nr;
     if (atoms.pdbinfo == nullptr)
     {
@@ -1267,12 +1268,12 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
+            write_pdbfile_indexed(out, name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
         }
     }
     else
@@ -1322,7 +1323,7 @@ int gmx_editconf(int argc, char *argv[])
             {
                 index[i] = i;
             }
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
+            write_pdbfile_indexed(out, name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
                                   TRUE, outftp == efPQR);
             sfree(index);
             if (bLegend)
@@ -1338,7 +1339,7 @@ int gmx_editconf(int argc, char *argv[])
         }
         else
         {
-            write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
+            write_sto_conf(outfile, name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
         }
     }
     gmx_atomprop_destroy(aps);

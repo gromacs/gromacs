@@ -34,6 +34,23 @@ This could lead to incorrect behavior or a cryptic error message.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+gmx editconf -f in.pdb -o out.pdb again preserves chain IDs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This had been inadvertently broken and is now fixed.
+
+:issue:`2900`
+
+
+Tools again accept .tpr files as input
+"""""""""""""""""""""""""""""""""""""""
+
+The pdb2gmx, solvate, and insert-molecules tools could no longer
+accept input configurations contained in .tpr format files. This
+is now fixed.
+
+:issue:`2900`
+
 Fix segmentation fault when preparing simulated annealing inputs
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
