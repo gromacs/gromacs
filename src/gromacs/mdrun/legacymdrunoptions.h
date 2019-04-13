@@ -161,7 +161,7 @@ class LegacyMdrunOptions
 
         ImdOptions       &imdOptions = mdrunOptions.imdOptions;
 
-        t_pargs           pa[48] = {
+        t_pargs           pa[47] = {
 
             { "-dd",      FALSE, etRVEC, {&realddxyz},
               "Domain decomposition grid, 0 is optimize" },
@@ -212,8 +212,6 @@ class LegacyMdrunOptions
               "HIDDENA string containing a vector of the relative sizes in the z "
               "direction of the corresponding DD cells. Only effective with static "
               "load balancing." },
-            { "-gcom",    FALSE, etINT, {&mdrunOptions.globalCommunicationInterval},
-              "Global communication frequency" },
             { "-nb",      FALSE, etENUM, {nbpu_opt_choices},
               "Calculate non-bonded interactions on" },
             { "-nstlist", FALSE, etINT, {&nstlist_cmdline},

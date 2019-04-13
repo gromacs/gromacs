@@ -319,21 +319,6 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     }
 }
 
-/* check whether an 'nst'-style parameter p is a multiple of nst, and
-   set it to be one if not, with a warning. */
-static void check_nst_param(const gmx::MDLogger &mdlog,
-                            const char *desc_nst, int nst,
-                            const char *desc_p, int *p)
-{
-    if (*p > 0 && *p % nst != 0)
-    {
-        /* Round up to the next multiple of nst */
-        *p = ((*p)/nst + 1)*nst;
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "NOTE: %s changes %s to %d", desc_nst, desc_p, *p);
-    }
-}
-
 void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
                             const t_trxframe *rerun_fr, const double *lam0,
                             t_state *globalState)
@@ -446,14 +431,11 @@ static int lcd4(int i1, int i2, int i3, int i4)
     return nst;
 }
 
-int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputrec *ir, const t_commrec * cr)
+int computeGlobalCommunicationPeriod(const gmx::MDLogger &mdlog,
+                                     t_inputrec          *ir,
+                                     const t_commrec     *cr)
 {
-    if (!EI_DYNAMICS(ir->eI))
-    {
-        nstglobalcomm = 1;
-    }
-
-    if (nstglobalcomm == -1)
+    int nstglobalcomm;
     {
         // Set up the default behaviour
         if (!(ir->nstcalcenergy > 0 ||
@@ -487,40 +469,9 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
                                  ir->epc != epcNO ? ir->nstpcouple : 0);
         }
     }
-    else
-    {
-        // Check that the user's choice of mdrun -gcom will work
-        if (ir->nstlist > 0 &&
-            nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
-        {
-            nstglobalcomm = (nstglobalcomm / ir->nstlist)*ir->nstlist;
-            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d",
-                    nstglobalcomm);
-        }
-        if (ir->nstcalcenergy > 0)
-        {
-            check_nst_param(mdlog, "-gcom", nstglobalcomm,
-                            "nstcalcenergy", &ir->nstcalcenergy);
-        }
-        if (ir->etc != etcNO && ir->nsttcouple > 0)
-        {
-            check_nst_param(mdlog, "-gcom", nstglobalcomm,
-                            "nsttcouple", &ir->nsttcouple);
-        }
-        if (ir->epc != epcNO && ir->nstpcouple > 0)
-        {
-            check_nst_param(mdlog, "-gcom", nstglobalcomm,
-                            "nstpcouple", &ir->nstpcouple);
-        }
 
-        check_nst_param(mdlog, "-gcom", nstglobalcomm,
-                        "nstenergy", &ir->nstenergy);
-
-        check_nst_param(mdlog, "-gcom", nstglobalcomm,
-                        "nstlog", &ir->nstlog);
-    }
-
+    // TODO change this behaviour. Instead grompp should print
+    // a (performance) note and mdrun should not change ir.
     if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm)
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(

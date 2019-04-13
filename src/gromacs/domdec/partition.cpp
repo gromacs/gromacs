@@ -3307,7 +3307,10 @@ void dd_partition_system(FILE                    *fplog,
         clearDDStateIndices(dd, dd->ncg_home, comm->atomRanges.numHomeAtoms());
         ncgindex_set = 0;
 
-        /* Avoid global communication for dim's without pbc and -gcom */
+        /* To avoid global communication, we do not recompute the extent
+         * of the system for dims without pbc. Therefore we need to copy
+         * the previously computed values when we do not communicate.
+         */
         if (!bNStGlobalComm)
         {
             copy_rvec(comm->box0, ddbox.box0    );
@@ -3319,7 +3322,7 @@ void dd_partition_system(FILE                    *fplog,
         bBoxChanged = TRUE;
         bRedist     = TRUE;
     }
-    /* For dim's without pbc and -gcom */
+    /* Copy needed for dim's without pbc when avoiding communication */
     copy_rvec(ddbox.box0, comm->box0    );
     copy_rvec(ddbox.box_size, comm->box_size);
 

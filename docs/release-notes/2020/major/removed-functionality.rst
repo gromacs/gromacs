@@ -31,3 +31,11 @@ gmx morph
 """""""""
 The gmx morph tool was removed since it yields non-physical structures
 that can easily be done by a script.
+
+gmx mdrun -gcom
+"""""""""""""""
+
+This feature sometimes overrode the effects of various .mdp settings
+in a way that was difficult to understand and report. A user who wants
+to do communication between PP ranks less often should choose their
+``nst*`` mdp options accordingly.

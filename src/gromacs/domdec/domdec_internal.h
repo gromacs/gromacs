@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -453,8 +453,8 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     real PMELoadBal_max_cutoff;
 
     ivec tric_dir;                /**< tric_dir from \p gmx_ddbox_t is only stored here because dd_get_ns_ranges needs it */
-    rvec box0;                    /**< box lower corner, required with dim's without pbc and -gcom */
-    rvec box_size;                /**< box size, required with dim's without pbc and -gcom */
+    rvec box0;                    /**< box lower corner, required with dim's without pbc when avoiding communication */
+    rvec box_size;                /**< box size, required with dim's without pbc when avoiding communication */
 
     rvec cell_x0;                 /**< The DD cell lower corner, in triclinic space */
     rvec cell_x1;                 /**< The DD cell upper corner, in triclinic space */

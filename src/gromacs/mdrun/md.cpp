@@ -224,9 +224,8 @@ void gmx::Integrator::do_md()
     bTrotter = (EI_VV(ir->eI) && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir)));
 
     const bool bRerunMD      = false;
-    int        nstglobalcomm = mdrunOptions.globalCommunicationInterval;
 
-    nstglobalcomm   = check_nstglobalcomm(mdlog, nstglobalcomm, ir, cr);
+    int        nstglobalcomm = computeGlobalCommunicationPeriod(mdlog, ir, cr);
     bGStatEveryStep = (nstglobalcomm == 1);
 
     SimulationGroups                  *groups = &top_global->groups;

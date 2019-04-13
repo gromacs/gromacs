@@ -880,12 +880,18 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     /* COMM STUFF */
     if (ir->nstcomm == 0)
     {
+        // TODO Change this behaviour. There should be exactly one way
+        // to turn off an algorithm.
         ir->comm_mode = ecmNO;
     }
     if (ir->comm_mode != ecmNO)
     {
         if (ir->nstcomm < 0)
         {
+            // TODO Such input was once valid. Now that we've been
+            // helpful for a few years, we should reject such input,
+            // lest we have to support every historical decision
+            // forever.
             warning(wi, "If you want to remove the rotation around the center of mass, you should set comm_mode = Angular instead of setting nstcomm < 0. nstcomm is modified to its absolute value");
             ir->nstcomm = abs(ir->nstcomm);
         }
