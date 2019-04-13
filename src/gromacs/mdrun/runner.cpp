@@ -1478,12 +1478,14 @@ int Mdrunner::mdrunner()
                                         mdrunOptions);
         }
 
+        t_swap *swap = nullptr;
         if (inputrec->eSwapCoords != eswapNO)
         {
             /* Initialize ion swapping code */
-            init_swapcoords(fplog, inputrec, opt2fn_master("-swap", filenames.size(), filenames.data(), cr),
-                            &mtop, globalState.get(), &observablesHistory,
-                            cr, &atomSets, oenv, mdrunOptions);
+            swap = init_swapcoords(fplog, inputrec,
+                                   opt2fn_master("-swap", filenames.size(), filenames.data(), cr),
+                                   &mtop, globalState.get(), &observablesHistory,
+                                   cr, &atomSets, oenv, mdrunOptions);
         }
 
         /* Let makeConstraints know whether we have essential dynamics constraints.
@@ -1533,7 +1535,7 @@ int Mdrunner::mdrunner()
             enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
             deform.get(),
             mdModules_->outputProvider(),
-            inputrec, imdSession.get(), &mtop,
+            inputrec, imdSession.get(), swap, &mtop,
             fcd,
             globalState.get(),
             &observablesHistory,
@@ -1553,6 +1555,7 @@ int Mdrunner::mdrunner()
         }
         destroy_enerdata(enerd);
         sfree(enerd);
+        finish_swapcoords(swap);
     }
     else
     {

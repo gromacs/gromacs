@@ -67,6 +67,7 @@ struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
 struct t_nrnb;
+struct t_swap;
 class t_state;
 
 namespace gmx
@@ -142,6 +143,8 @@ struct Integrator
     t_inputrec                         *inputrec;
     //! The Interactive Molecular Dynamics session.
     ImdSession                         *imdSession;
+    //! The coordinate-swapping session.
+    t_swap                             *swap;
     //! Full system topology.
     gmx_mtop_t                         *top_global;
     //! Helper struct for force calculations.

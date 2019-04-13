@@ -67,6 +67,7 @@ struct swaphistory_t;
 struct t_commrec;
 struct t_inputrec;
 class t_state;
+struct t_swap;
 struct t_swapcoords;
 struct ObservablesHistory;
 
@@ -86,7 +87,7 @@ std::unique_ptr<IMDModule> createSwapCoordinatesModule();
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *
  * This routine does the memory allocation for various helper arrays, opens
- * the output file, sets up swap data checkpoint writing, etc.
+ * the output file, sets up swap data checkpoint writing, etc. and returns it.
  *
  * \param[in] fplog         General output file, normally md.log.
  * \param[in] ir            Structure containing MD input parameters, among those
@@ -100,9 +101,9 @@ std::unique_ptr<IMDModule> createSwapCoordinatesModule();
  * \param[in] oenv          Needed to open the swap output XVGR file.
  * \param[in] mdrunOptions  Options for mdrun.
  */
-void init_swapcoords(
+t_swap *init_swapcoords(
         FILE                     *fplog,
-        t_inputrec               *ir,
+        const t_inputrec         *ir,
         const char               *fn,
         gmx_mtop_t               *mtop,
         const t_state            *globalState,
@@ -113,11 +114,11 @@ void init_swapcoords(
         const gmx::MdrunOptions  &mdrunOptions);
 
 
-/*! \brief Finalizes ion / water position swapping.
+/*! \brief Finalizes ion / water position swapping, if it was active.
  *
- * \param[in] sc            Pointer to swap data.
+ * \param[in] s             Pointer to swap data.
  */
-void finish_swapcoords(t_swapcoords *sc);
+void finish_swapcoords(t_swap *s);
 
 
 /*! \brief "Computational Electrophysiology" main routine within MD loop.
@@ -125,8 +126,8 @@ void finish_swapcoords(t_swapcoords *sc);
  * \param[in] cr       Pointer to MPI communication data.
  * \param[in] step     The number of the MD time step.
  * \param[in] t        The time.
- * \param[in] ir       Structure containing MD input parameters, among those
- *                     also the structure needed for position swapping.
+ * \param[in] ir       Structure containing MD input parameters
+ * \param[in,out] s    The structure needed for position swapping.
  * \param[in] wcycle   Count wallcycles of swap routines for diagnostic output.
  * \param[in] x        Positions of home particles this node owns.
  * \param[in] box      The simulation box.
@@ -140,6 +141,7 @@ gmx_bool do_swapcoords(
         int64_t           step,
         double            t,
         t_inputrec       *ir,
+        t_swap           *s,
         gmx_wallcycle    *wcycle,
         rvec              x[],
         matrix            box,

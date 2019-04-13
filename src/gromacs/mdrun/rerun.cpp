@@ -699,7 +699,7 @@ void gmx::Integrator::do_rerun()
             do_per_step(step, ir->swap->nstswap))
         {
             const bool doRerun = true;
-            do_swapcoords(cr, step, t, ir, wcycle,
+            do_swapcoords(cr, step, t, ir, swap, wcycle,
                           rerun_fr.x,
                           rerun_fr.box,
                           MASTER(cr) && mdrunOptions.verbose,
@@ -753,12 +753,6 @@ void gmx::Integrator::do_rerun()
     done_mdoutf(outf);
 
     done_shellfc(fplog, shellfc, step_rel);
-
-    // Clean up swapcoords
-    if (ir->eSwapCoords != eswapNO)
-    {
-        finish_swapcoords(ir->swap);
-    }
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 }

@@ -117,7 +117,6 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
-#include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/atoms.h"
@@ -627,12 +626,6 @@ void gmx::Integrator::do_mimic()
     done_mdoutf(outf);
 
     done_shellfc(fplog, shellfc, step_rel);
-
-    // Clean up swapcoords
-    if (ir->eSwapCoords != eswapNO)
-    {
-        finish_swapcoords(ir->swap);
-    }
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 }

@@ -1393,7 +1393,7 @@ void gmx::Integrator::do_md()
         if ((ir->eSwapCoords != eswapNO) && (step > 0) && !bLastStep &&
             do_per_step(step, ir->swap->nstswap))
         {
-            bNeedRepartition = do_swapcoords(cr, step, t, ir, wcycle,
+            bNeedRepartition = do_swapcoords(cr, step, t, ir, swap, wcycle,
                                              as_rvec_array(state->x.data()),
                                              state->box,
                                              MASTER(cr) && mdrunOptions.verbose,
@@ -1504,12 +1504,6 @@ void gmx::Integrator::do_md()
     if (useReplicaExchange && MASTER(cr))
     {
         print_replica_exchange_statistics(fplog, repl_ex);
-    }
-
-    // Clean up swapcoords
-    if (ir->eSwapCoords != eswapNO)
-    {
-        finish_swapcoords(ir->swap);
     }
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);

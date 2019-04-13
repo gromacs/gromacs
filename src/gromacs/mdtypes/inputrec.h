@@ -53,7 +53,6 @@ struct gmx_enfrot;
 struct gmx_enfrotgrp;
 struct pull_params_t;
 struct pull_t;
-typedef struct t_swap *gmx_swapcoords_t;
 
 namespace gmx
 {
@@ -323,8 +322,6 @@ struct t_swapcoords
     int                      ngrp;
     //! All swap groups, including split and solvent
     t_swapGroup             *grp;
-    //! Swap private data accessible in swapcoords.cpp
-    gmx_swapcoords_t         si_priv;
 };
 
 struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
