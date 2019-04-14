@@ -252,7 +252,7 @@ void gmx::Integrator::do_md()
     init_nrnb(nrnb);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, mdoutf_get_fp_dhdl(outf));
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, pull_work, mdoutf_get_fp_dhdl(outf));
 
     /* Kinetic energy data */
     std::unique_ptr<gmx_ekindata_t> eKinData = std::make_unique<gmx_ekindata_t>();
@@ -293,6 +293,7 @@ void gmx::Integrator::do_md()
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
                             state_global, *top_global, ir, imdSession,
+                            pull_work,
                             state, &f, mdAtoms, &top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
@@ -377,12 +378,12 @@ void gmx::Integrator::do_md()
         energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
     }
 
-    preparePrevStepPullCom(ir, mdatoms, state, state_global, cr, startingFromCheckpoint);
+    preparePrevStepPullCom(ir, pull_work, mdatoms, state, state_global, cr, startingFromCheckpoint);
 
     // TODO: Remove this by converting AWH into a ForceProvider
     auto awh = prepareAwhModule(fplog, *ir, state_global, cr, ms, startingFromCheckpoint,
                                 shellfc != nullptr,
-                                opt2fn("-awh", nfile, fnm), ir->pull_work);
+                                opt2fn("-awh", nfile, fnm), pull_work);
 
     const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
     if (useReplicaExchange && MASTER(cr))
@@ -754,6 +755,7 @@ void gmx::Integrator::do_md()
                 dd_partition_system(fplog, mdlog, step, cr,
                                     bMasterState, nstglobalcomm,
                                     state_global, *top_global, ir, imdSession,
+                                    pull_work,
                                     state, &f, mdAtoms, &top, fr,
                                     vsite, constr,
                                     nrnb, wcycle,
@@ -835,7 +837,7 @@ void gmx::Integrator::do_md()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose,
                                 enforcedRotation, step,
-                                ir, imdSession, bNS, force_flags, &top,
+                                ir, imdSession, pull_work, bNS, force_flags, &top,
                                 constr, enerd, fcd,
                                 state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph,
@@ -864,6 +866,7 @@ void gmx::Integrator::do_md()
              * Check comments in sim_util.c
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation, imdSession,
+                     pull_work,
                      step, nrnb, wcycle, &top,
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
@@ -1156,7 +1159,7 @@ void gmx::Integrator::do_md()
 
         if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
         {
-            updatePrevStepPullCom(ir->pull_work, state);
+            updatePrevStepPullCom(pull_work, state);
         }
 
         if (ir->eI == eiVVAK)
@@ -1357,7 +1360,7 @@ void gmx::Integrator::do_md()
 
             if (ir->bPull)
             {
-                pull_print_output(ir->pull_work, step, t);
+                pull_print_output(pull_work, step, t);
             }
 
             if (do_per_step(step, ir->nstlog))
@@ -1418,6 +1421,7 @@ void gmx::Integrator::do_md()
         {
             dd_partition_system(fplog, mdlog, step, cr, TRUE, 1,
                                 state_global, *top_global, ir, imdSession,
+                                pull_work,
                                 state, &f, mdAtoms, &top, fr,
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);

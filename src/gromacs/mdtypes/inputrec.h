@@ -52,7 +52,6 @@
 struct gmx_enfrot;
 struct gmx_enfrotgrp;
 struct pull_params_t;
-struct pull_t;
 
 namespace gmx
 {
@@ -531,9 +530,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool       bPull;
     //! The data for center of mass pulling
     pull_params_t *pull;
-    // TODO: Remove this by converting pull into a ForceProvider
-    //! The COM pull force calculation data structure
-    pull_t *pull_work;
 
     /* AWH bias data */
     //! Whether to use AWH biasing for PMF calculations

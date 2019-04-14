@@ -159,6 +159,7 @@ static void pull_potential_wrapper(const t_commrec *cr,
                                    gmx::ForceWithVirial *force,
                                    const t_mdatoms *mdatoms,
                                    gmx_enerdata_t *enerd,
+                                   pull_t *pull_work,
                                    const real *lambda,
                                    double t,
                                    gmx_wallcycle_t wcycle)
@@ -173,7 +174,7 @@ static void pull_potential_wrapper(const t_commrec *cr,
     set_pbc(&pbc, ir->ePBC, box);
     dvdl                     = 0;
     enerd->term[F_COM_PULL] +=
-        pull_potential(ir->pull_work, mdatoms, &pbc,
+        pull_potential(pull_work, mdatoms, &pbc,
                        cr, t, lambda[efptRESTRAINT], as_rvec_array(x.data()), force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     wallcycle_stop(wcycle, ewcPULLPOT);
@@ -468,6 +469,7 @@ static void checkPotentialEnergyValidity(int64_t               step,
 static bool
 haveSpecialForces(const t_inputrec              *inputrec,
                   ForceProviders                *forceProviders,
+                  const pull_t                  *pull_work,
                   int                            forceFlags,
                   const gmx_edsam               *ed)
 {
@@ -475,7 +477,7 @@ haveSpecialForces(const t_inputrec              *inputrec,
 
     return
         ((computeForces && forceProviders->hasForceProvider()) ||         // forceProviders
-         (inputrec->bPull && pull_have_potential(inputrec->pull_work)) || // pull
+         (inputrec->bPull && pull_have_potential(pull_work)) ||           // pull
          inputrec->bRot ||                                                // enforced rotation
          (ed != nullptr) ||                                               // flooding
          (inputrec->bIMD && computeForces));                              // IMD
@@ -497,6 +499,7 @@ haveSpecialForces(const t_inputrec              *inputrec,
  * \param[in]     awh              The Awh module (nullptr if none in use).
  * \param[in]     enforcedRotation Enforced rotation module.
  * \param[in]     imdSession       The IMD session
+ * \param[in]     pull_work        The pull work structure.
  * \param[in]     step             The current MD step
  * \param[in]     t                The current time
  * \param[in,out] wcycle           Wallcycle accounting struct
@@ -521,6 +524,7 @@ computeSpecialForces(FILE                          *fplog,
                      gmx::Awh                      *awh,
                      gmx_enfrot                    *enforcedRotation,
                      gmx::ImdSession               *imdSession,
+                     pull_t                        *pull_work,
                      int64_t                        step,
                      double                         t,
                      gmx_wallcycle_t                wcycle,
@@ -549,11 +553,11 @@ computeSpecialForces(FILE                          *fplog,
         forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
     }
 
-    if (inputrec->bPull && pull_have_potential(inputrec->pull_work))
+    if (inputrec->bPull && pull_have_potential(pull_work))
     {
         pull_potential_wrapper(cr, inputrec, box, x,
                                forceWithVirial,
-                               mdatoms, enerd, lambda, t,
+                               mdatoms, enerd, pull_work, lambda, t,
                                wcycle);
 
         if (awh)
@@ -715,6 +719,7 @@ struct ForceOutputs
 /*! \brief Set up the different force buffers; also does clearing.
  *
  * \param[in] fr        force record pointer
+ * \param[in] pull_work The pull work object.
  * \param[in] inputrec  input record
  * \param[in] force     force array
  * \param[in] bDoForces True if force are computed this step
@@ -725,6 +730,7 @@ struct ForceOutputs
  */
 static ForceOutputs
 setupForceOutputs(const t_forcerec                    *fr,
+                  pull_t                              *pull_work,
                   const t_inputrec                    &inputrec,
                   gmx::ArrayRefWithPadding<gmx::RVec>  force,
                   const bool                           bDoForces,
@@ -764,9 +770,9 @@ setupForceOutputs(const t_forcerec                    *fr,
         clear_rvecs_omp(forceWithVirial.force_.size(), as_rvec_array(forceWithVirial.force_.data()));
     }
 
-    if (inputrec.bPull && pull_have_constraint(inputrec.pull_work))
+    if (inputrec.bPull && pull_have_constraint(pull_work))
     {
-        clear_pull_forces(inputrec.pull_work);
+        clear_pull_forces(pull_work);
     }
 
     wallcycle_sub_stop(wcycle, ewcsCLEAR_FORCE_BUFFER);
@@ -787,13 +793,14 @@ static void
 setupForceWorkload(gmx::PpForceWorkload *forceWork,
                    const t_inputrec     *inputrec,
                    const t_forcerec     *fr,
+                   const pull_t         *pull_work,
                    const gmx_edsam      *ed,
                    const t_idef         &idef,
                    const t_fcdata       *fcd,
                    const int             forceFlags
                    )
 {
-    forceWork->haveSpecialForces      = haveSpecialForces(inputrec, fr->forceProviders, forceFlags, ed);
+    forceWork->haveSpecialForces      = haveSpecialForces(inputrec, fr->forceProviders, pull_work, forceFlags, ed);
     forceWork->haveCpuBondedWork      = haveCpuBondeds(*fr);
     forceWork->haveGpuBondedWork      = ((fr->gpuBonded != nullptr) && fr->gpuBonded->haveInteractions());
     forceWork->haveRestraintsWork     = havePositionRestraints(idef, *fcd);
@@ -807,6 +814,7 @@ void do_force(FILE                                     *fplog,
               gmx::Awh                                 *awh,
               gmx_enfrot                               *enforcedRotation,
               gmx::ImdSession                          *imdSession,
+              pull_t                                   *pull_work,
               int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle_t                           wcycle,
@@ -1009,6 +1017,7 @@ void do_force(FILE                                     *fplog,
         setupForceWorkload(ppForceWorkload,
                            inputrec,
                            fr,
+                           pull_work,
                            ed,
                            top->idef,
                            fcd,
@@ -1199,7 +1208,8 @@ void do_force(FILE                                     *fplog,
     wallcycle_start(wcycle, ewcFORCE);
 
     // set up and clear force outputs
-    struct ForceOutputs forceOut = setupForceOutputs(fr, *inputrec, force, bDoForces, ((flags & GMX_FORCE_VIRIAL) != 0), wcycle);
+    struct ForceOutputs forceOut = setupForceOutputs(fr, pull_work, *inputrec, force, bDoForces,
+                                                     ((flags & GMX_FORCE_VIRIAL) != 0), wcycle);
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
      * We do this before calling do_force_lowlevel, because in that
@@ -1281,7 +1291,7 @@ void do_force(FILE                                     *fplog,
     wallcycle_stop(wcycle, ewcFORCE);
 
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
-                         imdSession, step, t, wcycle,
+                         imdSession, pull_work, step, t, wcycle,
                          fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda.data(),
                          flags, &forceOut.forceWithVirial, enerd,
                          ed, bNS);

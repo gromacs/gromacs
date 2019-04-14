@@ -46,6 +46,7 @@ struct gmx_enerdata_t;
 struct SimulationGroups;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct pull_t;
 struct t_ebin;
 struct t_expanded;
 struct t_fcdata;
@@ -104,6 +105,7 @@ class EnergyOutput
         void prepare(ener_file        *fp_ene,
                      const gmx_mtop_t *mtop,
                      const t_inputrec *ir,
+                     const pull_t     *pull_work,
                      FILE             *fp_dhdl,
                      bool              isRerun = false);
         ~EnergyOutput();

@@ -1016,7 +1016,7 @@ void updatePrevStepPullCom(struct pull_t *pull, t_state *state)
     }
 }
 
-void allocStatePrevStepPullCom(t_state *state, pull_t *pull)
+void allocStatePrevStepPullCom(t_state *state, const pull_t *pull)
 {
     if (!pull)
     {

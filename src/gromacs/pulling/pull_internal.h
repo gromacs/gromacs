@@ -213,6 +213,8 @@ struct pull_comm_t
     std::vector<double>                   cylinderBuffer; /* cylinder ref. groups calculation buffer */
 };
 
+// The COM pull force calculation data structure
+// TODO Convert this into a ForceProvider
 struct pull_t
 {
     /* Global parameters */
@@ -271,7 +273,7 @@ void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state);
  * \param[in]   state The global state container
  * \param[in]   pull  The COM pull force calculation data structure
  */
-void allocStatePrevStepPullCom(t_state *state, pull_t *pull);
+void allocStatePrevStepPullCom(t_state *state, const pull_t *pull);
 
 
 #endif

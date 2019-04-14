@@ -354,6 +354,7 @@ static void init_em(FILE *fplog,
                     const t_commrec *cr,
                     t_inputrec *ir,
                     gmx::ImdSession *imdSession,
+                    pull_t *pull_work,
                     t_state *state_global, gmx_mtop_t *top_global,
                     em_state_t *ems, gmx_localtop_t *top,
                     t_nrnb *nrnb,
@@ -409,7 +410,7 @@ static void init_em(FILE *fplog,
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
-                            state_global, *top_global, ir, imdSession,
+                            state_global, *top_global, ir, imdSession, pull_work,
                             &ems->s, &ems->f, mdAtoms, top,
                             fr, vsite, constr,
                             nrnb, nullptr, FALSE);
@@ -709,6 +710,7 @@ static void em_dd_partition_system(FILE *fplog,
                                    int step, const t_commrec *cr,
                                    gmx_mtop_t *top_global, t_inputrec *ir,
                                    gmx::ImdSession *imdSession,
+                                   pull_t *pull_work,
                                    em_state_t *ems, gmx_localtop_t *top,
                                    gmx::MDAtoms *mdAtoms, t_forcerec *fr,
                                    gmx_vsite_t *vsite, gmx::Constraints *constr,
@@ -716,7 +718,7 @@ static void em_dd_partition_system(FILE *fplog,
 {
     /* Repartition the domain decomposition */
     dd_partition_system(fplog, mdlog, step, cr, FALSE, 1,
-                        nullptr, *top_global, ir, imdSession,
+                        nullptr, *top_global, ir, imdSession, pull_work,
                         &ems->s, &ems->f,
                         mdAtoms, top, fr, vsite, constr,
                         nrnb, wcycle, FALSE);
@@ -771,6 +773,8 @@ class EnergyEvaluator
         t_inputrec           *inputrec;
         //! The Interactive Molecular Dynamics session.
         gmx::ImdSession      *imdSession;
+        //! The pull work object.
+        pull_t               *pull_work;
         //! Manages flop accounting.
         t_nrnb               *nrnb;
         //! Manages wall cycle accounting.
@@ -835,6 +839,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     {
         /* Repartition the domain decomposition */
         em_dd_partition_system(fplog, mdlog, count, cr, top_global, inputrec, imdSession,
+                               pull_work,
                                ems, top, mdAtoms, fr, vsite, constr,
                                nrnb, wcycle);
     }
@@ -844,6 +849,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
      * We do not unshift, so molecules are always whole in congrad.c
      */
     do_force(fplog, cr, ms, inputrec, nullptr, nullptr, imdSession,
+             pull_work,
              count, nrnb, wcycle, top,
              ems->s.box, ems->s.x.arrayRefWithPadding(), &ems->s.hist,
              ems->f.arrayRefWithPadding(), force_vir, mdAtoms->mdatoms(), enerd, fcd,
@@ -1099,12 +1105,13 @@ Integrator::do_cg()
 
     /* Init em and store the local state in s_min */
     init_em(fplog, mdlog, CG, cr, inputrec, imdSession,
+            pull_work,
             state_global, top_global, s_min, &top,
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1124,7 +1131,7 @@ Integrator::do_cg()
     EnergyEvaluator energyEvaluator {
         fplog, mdlog, cr, ms,
         top_global, &top,
-        inputrec, imdSession, nrnb, wcycle, gstat,
+        inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
         mdAtoms, fr, ppForceWorkload, enerd
     };
@@ -1297,6 +1304,7 @@ Integrator::do_cg()
         if (DOMAINDECOMP(cr) && s_min->s.ddp_count < cr->dd->ddp_count)
         {
             em_dd_partition_system(fplog, mdlog, step, cr, top_global, inputrec, imdSession,
+                                   pull_work,
                                    s_min, &top, mdAtoms, fr, vsite, constr,
                                    nrnb, wcycle);
         }
@@ -1402,6 +1410,7 @@ Integrator::do_cg()
                 {
                     /* Reload the old state */
                     em_dd_partition_system(fplog, mdlog, -1, cr, top_global, inputrec, imdSession,
+                                           pull_work,
                                            s_min, &top, mdAtoms, fr, vsite, constr,
                                            nrnb, wcycle);
                 }
@@ -1735,12 +1744,13 @@ Integrator::do_lbfgs()
 
     /* Init em */
     init_em(fplog, mdlog, LBFGS, cr, inputrec, imdSession,
+            pull_work,
             state_global, top_global, &ems, &top,
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr);
 
     start = 0;
     end   = mdatoms->homenr;
@@ -1801,7 +1811,7 @@ Integrator::do_lbfgs()
     EnergyEvaluator energyEvaluator {
         fplog, mdlog, cr, ms,
         top_global, &top,
-        inputrec, imdSession, nrnb, wcycle, gstat,
+        inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
         mdAtoms, fr, ppForceWorkload, enerd
     };
@@ -2428,12 +2438,13 @@ Integrator::do_steep()
 
     /* Init em and store the local state in s_try */
     init_em(fplog, mdlog, SD, cr, inputrec, imdSession,
+            pull_work,
             state_global, top_global, s_try, &top,
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, nullptr);
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
@@ -2459,7 +2470,7 @@ Integrator::do_steep()
     EnergyEvaluator energyEvaluator {
         fplog, mdlog, cr, ms,
         top_global, &top,
-        inputrec, imdSession, nrnb, wcycle, gstat,
+        inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
         mdAtoms, fr, ppForceWorkload, enerd
     };
@@ -2576,6 +2587,7 @@ Integrator::do_steep()
             {
                 /* Reload the old state */
                 em_dd_partition_system(fplog, mdlog, count, cr, top_global, inputrec, imdSession,
+                                       pull_work,
                                        s_min, &top, mdAtoms, fr, vsite, constr,
                                        nrnb, wcycle);
             }
@@ -2678,6 +2690,7 @@ Integrator::do_nm()
 
     /* Init em and store the local state in state_minimum */
     init_em(fplog, mdlog, NM, cr, inputrec, imdSession,
+            pull_work,
             state_global, top_global, &state_work, &top,
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, &shellfc);
@@ -2758,7 +2771,7 @@ Integrator::do_nm()
     EnergyEvaluator energyEvaluator {
         fplog, mdlog, cr, ms,
         top_global, &top,
-        inputrec, imdSession, nrnb, wcycle, gstat,
+        inputrec, imdSession, pull_work, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
         mdAtoms, fr, ppForceWorkload, enerd
     };
@@ -2826,6 +2839,7 @@ Integrator::do_nm()
                                         step,
                                         inputrec,
                                         imdSession,
+                                        pull_work,
                                         bNS,
                                         force_flags,
                                         &top,

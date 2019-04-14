@@ -101,6 +101,7 @@ class Constraints::Impl
     public:
         Impl(const gmx_mtop_t     &mtop_p,
              const t_inputrec     &ir_p,
+             pull_t               *pull_work,
              FILE                 *log_p,
              const t_mdatoms      &md_p,
              const t_commrec      *cr_p,
@@ -172,6 +173,8 @@ class Constraints::Impl
         const t_commrec      *cr = nullptr;
         //! Multi-sim support.
         const gmx_multisim_t *ms = nullptr;
+        //! Pulling code object, if any.
+        pull_t               *pull_work = nullptr;
         /*!\brief Input options.
          *
          * \todo Replace with IMdpOptions */
@@ -675,7 +678,7 @@ Constraints::Impl::apply(bool                  bLog,
 
     if (econq == ConstraintVariable::Positions)
     {
-        if (ir.bPull && pull_have_constraint(ir.pull_work))
+        if (ir.bPull && pull_have_constraint(pull_work))
         {
             if (EI_DYNAMICS(ir.eI))
             {
@@ -686,7 +689,7 @@ Constraints::Impl::apply(bool                  bLog,
                 t = ir.init_t;
             }
             set_pbc(&pbc, ir.ePBC, box);
-            pull_constraint(ir.pull_work, &md, &pbc, cr, ir.delta_t, t, x, xprime, v, *vir);
+            pull_constraint(pull_work, &md, &pbc, cr, ir.delta_t, t, x, xprime, v, *vir);
         }
         if (ed && delta_step > 0)
         {
@@ -972,6 +975,7 @@ makeAtomToConstraintMappings(const gmx_mtop_t            &mtop,
 
 Constraints::Constraints(const gmx_mtop_t     &mtop,
                          const t_inputrec     &ir,
+                         pull_t               *pull_work,
                          FILE                 *log,
                          const t_mdatoms      &md,
                          const t_commrec      *cr,
@@ -983,6 +987,7 @@ Constraints::Constraints(const gmx_mtop_t     &mtop,
                          int                   numSettles)
     : impl_(new Impl(mtop,
                      ir,
+                     pull_work,
                      log,
                      md,
                      cr,
@@ -997,6 +1002,7 @@ Constraints::Constraints(const gmx_mtop_t     &mtop,
 
 Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
                         const t_inputrec     &ir_p,
+                        pull_t               *pull_work,
                         FILE                 *log_p,
                         const t_mdatoms      &md_p,
                         const t_commrec      *cr_p,
@@ -1013,6 +1019,7 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
       log(log_p),
       cr(cr_p),
       ms(ms_p),
+      pull_work(pull_work),
       ir(ir_p),
       nrnb(nrnb_p),
       wcycle(wcycle_p)

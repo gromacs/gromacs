@@ -98,8 +98,8 @@ class EnergyOutputTest : public ::testing::Test
             log_(std::fopen(logFilename_.c_str(), "w")), logFileGuard_(log_),
             checker_(refData_.rootChecker())
         {
-            energyOutput_.prepare(nullptr, &mtop_, &inputrec_, nullptr, false);
-            constraints_ = makeConstraints(mtop_, inputrec_, false, log_, mdatoms_, nullptr,
+            energyOutput_.prepare(nullptr, &mtop_, &inputrec_, nullptr, nullptr, false);
+            constraints_ = makeConstraints(mtop_, inputrec_, nullptr, false, log_, mdatoms_, nullptr,
                                            nullptr, nullptr, nullptr, false);
         }
         //! Helper function to generate synthetic data to output

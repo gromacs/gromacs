@@ -2265,13 +2265,15 @@ static void destroy_pull(struct pull_t *pull)
     delete pull;
 }
 
-void preparePrevStepPullCom(const t_inputrec *ir, const t_mdatoms *md, t_state *state, const t_state *state_global, const t_commrec *cr, bool startingFromCheckpoint)
+void preparePrevStepPullCom(const t_inputrec *ir, pull_t *pull_work,
+                            const t_mdatoms *md, t_state *state, const t_state *state_global,
+                            const t_commrec *cr, bool startingFromCheckpoint)
 {
     if (!ir->pull || !ir->pull->bSetPbcRefToPrevStepCOM)
     {
         return;
     }
-    allocStatePrevStepPullCom(state, ir->pull_work);
+    allocStatePrevStepPullCom(state, pull_work);
     if (startingFromCheckpoint)
     {
         if (MASTER(cr))
@@ -2283,14 +2285,14 @@ void preparePrevStepPullCom(const t_inputrec *ir, const t_mdatoms *md, t_state *
             /* Only the master rank has the checkpointed COM from the previous step */
             gmx_bcast(sizeof(double) * state->pull_com_prev_step.size(), &state->pull_com_prev_step[0], cr);
         }
-        setPrevStepPullComFromState(ir->pull_work, state);
+        setPrevStepPullComFromState(pull_work, state);
     }
     else
     {
         t_pbc pbc;
         set_pbc(&pbc, ir->ePBC, state->box);
-        initPullComFromPrevStep(cr, ir->pull_work, md, &pbc, state->x.rvec_array());
-        updatePrevStepPullCom(ir->pull_work, state);
+        initPullComFromPrevStep(cr, pull_work, md, &pbc, state->x.rvec_array());
+        updatePrevStepPullCom(pull_work, state);
     }
 }
 

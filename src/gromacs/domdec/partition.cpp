@@ -2856,6 +2856,7 @@ void dd_partition_system(FILE                    *fplog,
                          const gmx_mtop_t        &top_global,
                          const t_inputrec        *ir,
                          gmx::ImdSession         *imdSession,
+                         pull_t                  *pull_work,
                          t_state                 *state_local,
                          PaddedVector<gmx::RVec> *f,
                          gmx::MDAtoms            *mdAtoms,
@@ -3431,7 +3432,7 @@ void dd_partition_system(FILE                    *fplog,
     if (ir->bPull)
     {
         /* Update the local pull groups */
-        dd_make_local_pull_groups(cr, ir->pull_work);
+        dd_make_local_pull_groups(cr, pull_work);
     }
 
     if (dd->atomSets != nullptr)

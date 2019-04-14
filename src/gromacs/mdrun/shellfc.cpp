@@ -974,6 +974,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
                          int64_t                                   mdstep,
                          const t_inputrec                         *inputrec,
                          gmx::ImdSession                          *imdSession,
+                         pull_t                                   *pull_work,
                          gmx_bool                                  bDoNS,
                          int                                       force_flags,
                          gmx_localtop_t                           *top,
@@ -1127,6 +1128,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
     }
     int shellfc_flags = force_flags | (bVerbose ? GMX_FORCE_ENERGY : 0);
     do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation, imdSession,
+             pull_work,
              mdstep, nrnb, wcycle, top,
              state->box, state->x.arrayRefWithPadding(), &state->hist,
              forceWithPadding[Min], force_vir, md, enerd, fcd,
@@ -1237,6 +1239,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
         }
         /* Try the new positions */
         do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation, imdSession,
+                 pull_work,
                  1, nrnb, wcycle,
                  top, state->box, posWithPadding[Try], &state->hist,
                  forceWithPadding[Try], force_vir,

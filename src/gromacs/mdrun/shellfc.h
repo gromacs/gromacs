@@ -49,6 +49,7 @@ struct gmx_enfrot;
 struct gmx_multisim_t;
 struct gmx_shellfc_t;
 struct gmx_mtop_t;
+struct pull_t;
 struct t_forcerec;
 struct t_fcdata;
 struct t_graph;
@@ -78,6 +79,7 @@ void relax_shell_flexcon(FILE                                     *log,
                          int64_t                                   mdstep,
                          const t_inputrec                         *inputrec,
                          gmx::ImdSession                          *imdSession,
+                         pull_t                                   *pull_work,
                          gmx_bool                                  bDoNS,
                          int                                       force_flags,
                          gmx_localtop_t                           *top,

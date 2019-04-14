@@ -51,6 +51,7 @@ struct gmx_multisim_t;
 struct gmx_vsite_t;
 struct gmx_wallcycle;
 class history_t;
+struct pull_t;
 struct t_blocka;
 struct t_commrec;
 struct t_fcdata;
@@ -78,6 +79,7 @@ void do_force(FILE                                     *log,
               gmx::Awh                                 *awh,
               gmx_enfrot                               *enforcedRotation,
               gmx::ImdSession                          *imdSession,
+              pull_t                                   *pull_work,
               int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle                            *wcycle,

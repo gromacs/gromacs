@@ -1439,6 +1439,7 @@ int Mdrunner::mdrunner()
         signal_handler_install();
     }
 
+    pull_t *pull_work = nullptr;
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Assumes uniform use of the number of OpenMP threads */
@@ -1447,16 +1448,16 @@ int Mdrunner::mdrunner()
         if (inputrec->bPull)
         {
             /* Initialize pull code */
-            inputrec->pull_work =
+            pull_work =
                 init_pull(fplog, inputrec->pull, inputrec,
                           &mtop, cr, &atomSets, inputrec->fepvals->init_lambda);
             if (inputrec->pull->bXOutAverage || inputrec->pull->bFOutAverage)
             {
-                initPullHistory(inputrec->pull_work, &observablesHistory);
+                initPullHistory(pull_work, &observablesHistory);
             }
             if (EI_DYNAMICS(inputrec->eI) && MASTER(cr))
             {
-                init_pull_output_files(inputrec->pull_work,
+                init_pull_output_files(pull_work,
                                        filenames.size(), filenames.data(), oenv,
                                        continuationOptions);
             }
@@ -1493,7 +1494,7 @@ int Mdrunner::mdrunner()
          */
         bool doEssentialDynamics = (opt2fn_null("-ei", filenames.size(), filenames.data()) != nullptr
                                     || observablesHistory.edsamHistory);
-        auto constr              = makeConstraints(mtop, *inputrec, doEssentialDynamics,
+        auto constr              = makeConstraints(mtop, *inputrec, pull_work, doEssentialDynamics,
                                                    fplog, *mdAtoms->mdatoms(),
                                                    cr, ms, nrnb, wcycle, fr->bMolPBC);
 
@@ -1535,7 +1536,7 @@ int Mdrunner::mdrunner()
             enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
             deform.get(),
             mdModules_->outputProvider(),
-            inputrec, imdSession.get(), swap, &mtop,
+            inputrec, imdSession.get(), pull_work, swap, &mtop,
             fcd,
             globalState.get(),
             &observablesHistory,
@@ -1551,7 +1552,7 @@ int Mdrunner::mdrunner()
 
         if (inputrec->bPull)
         {
-            finish_pull(inputrec->pull_work);
+            finish_pull(pull_work);
         }
         destroy_enerdata(enerd);
         sfree(enerd);

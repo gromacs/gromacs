@@ -227,7 +227,7 @@ void gmx::Integrator::do_mimic()
 
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
     gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, mdoutf_get_fp_dhdl(outf), true);
+    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, pull_work, mdoutf_get_fp_dhdl(outf), true);
 
     /* Kinetic energy data */
     std::unique_ptr<gmx_ekindata_t> eKinData = std::make_unique<gmx_ekindata_t>();
@@ -268,6 +268,7 @@ void gmx::Integrator::do_mimic()
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
                             state_global, *top_global, ir, imdSession,
+                            pull_work,
                             state, &f, mdAtoms, &top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
@@ -399,6 +400,7 @@ void gmx::Integrator::do_mimic()
             dd_partition_system(fplog, mdlog, step, cr,
                                 bMasterState, nstglobalcomm,
                                 state_global, *top_global, ir, imdSession,
+                                pull_work,
                                 state, &f, mdAtoms, &top, fr,
                                 vsite, constr,
                                 nrnb, wcycle,
@@ -428,7 +430,7 @@ void gmx::Integrator::do_mimic()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose,
                                 enforcedRotation, step,
-                                ir, imdSession, bNS, force_flags, &top,
+                                ir, imdSession, pull_work, bNS, force_flags, &top,
                                 constr, enerd, fcd,
                                 state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph,
@@ -446,6 +448,7 @@ void gmx::Integrator::do_mimic()
             Awh       *awh = nullptr;
             gmx_edsam *ed  = nullptr;
             do_force(fplog, cr, ms, ir, awh, enforcedRotation, imdSession,
+                     pull_work,
                      step, nrnb, wcycle, &top,
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,

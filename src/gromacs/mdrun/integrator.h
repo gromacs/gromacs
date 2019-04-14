@@ -60,6 +60,7 @@ struct gmx_vsite_t;
 struct gmx_wallcycle;
 struct gmx_walltime_accounting;
 struct ObservablesHistory;
+struct pull_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
 struct t_fcdata;
@@ -143,6 +144,8 @@ struct Integrator
     t_inputrec                         *inputrec;
     //! The Interactive Molecular Dynamics session.
     ImdSession                         *imdSession;
+    //! The pull work object.
+    pull_t                             *pull_work;
     //! The coordinate-swapping session.
     t_swap                             *swap;
     //! Full system topology.

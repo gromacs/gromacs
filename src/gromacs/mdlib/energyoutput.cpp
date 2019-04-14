@@ -161,6 +161,7 @@ namespace
 t_mdebin *init_mdebin(ener_file_t       fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
+                      const pull_t     *pull_work,
                       FILE             *fp_dhdl,
                       bool              isRerun)
 {
@@ -334,7 +335,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
         else if (i == F_COM_PULL)
         {
-            md->bEner[i] = ((ir->bPull && pull_have_potential(ir->pull_work)) ||
+            md->bEner[i] = ((ir->bPull && pull_have_potential(pull_work)) ||
                             ir->bRot);
         }
         else if (i == F_ECONSERVED)
@@ -1669,10 +1670,11 @@ EnergyOutput::EnergyOutput()
 void EnergyOutput::prepare(ener_file        *fp_ene,
                            const gmx_mtop_t *mtop,
                            const t_inputrec *ir,
+                           const pull_t     *pull_work,
                            FILE             *fp_dhdl,
                            bool              isRerun)
 {
-    mdebin = init_mdebin(fp_ene, mtop, ir, fp_dhdl, isRerun);
+    mdebin = init_mdebin(fp_ene, mtop, ir, pull_work, fp_dhdl, isRerun);
 }
 
 EnergyOutput::~EnergyOutput()
