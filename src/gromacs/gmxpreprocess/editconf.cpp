@@ -210,9 +210,7 @@ static void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac
     fprintf(stderr, "Reading %d B-factors from %s\n", *n_bfac, fn);
     for (i = 0; (i < *n_bfac); i++)
     {
-        /*fprintf(stderr, "Line %d: %s",i,bfac_lines[i]);*/
         sscanf(bfac_lines[i], "%d %lf", &(*bfac_nr)[i], &(*bfac_val)[i]);
-        /*fprintf(stderr," nr %d val %g\n",(*bfac_nr)[i],(*bfac_val)[i]);*/
     }
 
 }
@@ -783,15 +781,15 @@ int gmx_editconf(int argc, char *argv[])
         printf("Incompatible options -mead and -grasp. Turning off -grasp\n");
         bGrasp = FALSE;
     }
-    if (bGrasp && (outftp != efPDB))
+    if ((bGrasp || bCONECT) && (outftp != efPDB))
     {
         gmx_fatal(FARGS, "Output file should be a .pdb file"
-                  " when using the -grasp option\n");
+                  " when using the -grasp or -connect options\n");
     }
-    if ((bMead || bGrasp) && (fn2ftp(infile) != efTPR))
+    if ((bMead || bGrasp || bCONECT) && (fn2ftp(infile) != efTPR))
     {
         gmx_fatal(FARGS, "Input file should be a .tpr file"
-                  " when using the -mead option\n");
+                  " when using the -mead or -connect options\n");
     }
 
     t_topology top_tmp;
