@@ -95,3 +95,10 @@ Updated performance guide for recent Intel processors with AVX512 instruction su
 Noted the tradeoffs between CPU frequency and SIMD throughput and advising users to
 prefer AVX2 over AVX512 in GPU-offload or highly parallel MPI cases.
 
+Updated release notes for 2019.1
+""""""""""""""""""""""""""""""""
+
+A :ref:`fix <release-notes-2019-1-gpu>` made to GPU kernels in 2019.1 was
+thought to resolve :issue:`2845` but further investigation suggests that
+the real cause is not yet known. 
+

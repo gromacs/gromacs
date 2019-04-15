@@ -19,6 +19,8 @@ has shifted too much .." when a cell size was limited.
 
 :issue:`2830`
 
+.. _release-notes-2019-1-gpu:
+
 Fix incorrect LJ repulsion force switching on GPUs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -26,9 +28,9 @@ When using a CUDA or OpenCL GPU, the coefficient for the second order
 term for the LJ repulsion in the force switching function, called 'A'
 in the manual, had the wrong sign. This lead to very small errors in
 the forces and the pressure. Note that the dispersion force switching
-was correct. Although the effect on individual atoms pairs was negligible,
-their combined effect on the pressure could lead to deformation of
-CHARMM membrane systems, where LJ force switching is regularly applied.
+was correct. The effects of this bug on any physical results seems to
+be negligible. Note that force switching is usually only used in
+combination with the CHARMM force field.
 
 :issue:`2845`
 
