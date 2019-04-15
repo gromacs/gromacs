@@ -1273,7 +1273,7 @@ void do_force(FILE                                     *fplog,
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.unpaddedArrayRef().data()), hist, forceOut.f, &forceOut.forceWithVirial, enerd, fcd,
-                      box, inputrec->fepvals, lambda.data(), graph, &(top->excls), fr->mu_tot,
+                      box, lambda.data(), graph, &(top->excls), fr->mu_tot,
                       flags,
                       ddBalanceRegionHandler);
 

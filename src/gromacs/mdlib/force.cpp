@@ -52,7 +52,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
@@ -67,6 +66,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -116,7 +116,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
                        gmx_enerdata_t               *enerd,
                        t_fcdata                     *fcd,
                        matrix                        box,
-                       t_lambda                     *fepvals,
                        real                         *lambda,
                        const t_graph                *graph,
                        const t_blocka               *excl,
@@ -124,21 +123,9 @@ void do_force_lowlevel(t_forcerec                   *fr,
                        int                           flags,
                        const DDBalanceRegionHandler &ddBalanceRegionHandler)
 {
-    int         i, j;
-    int         donb_flags;
-    int         pme_flags;
-    real        dvdl_dum[efptNR], dvdl_nb[efptNR];
-
 #if GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
 #endif
-
-    /* reset free energy components */
-    for (i = 0; i < efptNR; i++)
-    {
-        dvdl_nb[i]  = 0;
-        dvdl_dum[i] = 0;
-    }
 
     /* do QMMM first if requested */
     if (fr->bQMMM)
@@ -167,58 +154,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
     }
 
-    /* We only do non-bonded calculation with group scheme here, the verlet
-     * calls are done from do_force_cutsVERLET(). */
-    if (fr->cutoff_scheme == ecutsGROUP && (flags & GMX_FORCE_NONBONDED))
-    {
-        donb_flags = 0;
-        /* Add short-range interactions */
-        donb_flags |= GMX_NONBONDED_DO_SR;
-
-        /* Currently all group scheme kernels always calculate (shift-)forces */
-        if (flags & GMX_FORCE_FORCES)
-        {
-            donb_flags |= GMX_NONBONDED_DO_FORCE;
-        }
-        if (flags & GMX_FORCE_VIRIAL)
-        {
-            donb_flags |= GMX_NONBONDED_DO_SHIFTFORCE;
-        }
-        if (flags & GMX_FORCE_ENERGY)
-        {
-            donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
-        }
-
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        do_nonbonded(fr, x, forceForUseWithShiftForces, md, excl,
-                     &enerd->grpp, nrnb,
-                     lambda, dvdl_nb, -1, -1, donb_flags);
-
-        /* If we do foreign lambda and we have soft-core interactions
-         * we have to recalculate the (non-linear) energies contributions.
-         */
-        if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
-        {
-            for (i = 0; i < enerd->n_lambda; i++)
-            {
-                real lam_i[efptNR];
-
-                for (j = 0; j < efptNR; j++)
-                {
-                    lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
-                }
-                reset_foreign_enerdata(enerd);
-                do_nonbonded(fr, x, forceForUseWithShiftForces, md, excl,
-                             &(enerd->foreign_grpp), nrnb,
-                             lam_i, dvdl_dum, -1, -1,
-                             (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);
-                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
-                enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
-            }
-        }
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-    }
-
 #if GMX_MPI
     if (TAKETIME)
     {
@@ -226,32 +161,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
         fr->t_fnbf += t1-t0;
     }
 #endif
-
-    if (fepvals->sc_alpha != 0)
-    {
-        enerd->dvdl_nonlin[efptVDW] += dvdl_nb[efptVDW];
-    }
-    else
-    {
-        enerd->dvdl_lin[efptVDW] += dvdl_nb[efptVDW];
-    }
-
-    if (fepvals->sc_alpha != 0)
-
-    /* even though coulomb part is linear, we already added it, beacuse we
-       need to go through the vdw calculation anyway */
-    {
-        enerd->dvdl_nonlin[efptCOUL] += dvdl_nb[efptCOUL];
-    }
-    else
-    {
-        enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
-    }
-
-    if (debug)
-    {
-        pr_rvecs(debug, 0, "fshift after SR", fr->fshift, SHIFTS);
-    }
 
     /* Shift the coordinates. Must be done before listed forces and PPPM,
      * but is also necessary for SHAKE and update, therefore it can NOT
@@ -280,14 +189,13 @@ void do_force_lowlevel(t_forcerec                   *fr,
         }
     }
 
-    t_pbc      pbc;
-    const bool useRfWithGroupScheme = (fr->cutoff_scheme == ecutsGROUP) && EEL_RF(fr->ic->eeltype);
-    /* Check whether we need to take into account PBC in the following force tasks:
-     * listed interactions or when correcting for exclusions (for the Group scheme with RF) */
-    if (fr->bMolPBC)
     {
-        const auto needPbcForListedForces = bool(flags & GMX_FORCE_LISTED) && haveCpuListedForces(*fr, *idef, *fcd);
-        if (needPbcForListedForces || useRfWithGroupScheme)
+        t_pbc      pbc;
+
+        /* Check whether we need to take into account PBC in the following force tasks:
+         * listed interactions. */
+        const auto needPbcForListedForces = fr->bMolPBC && bool(flags & GMX_FORCE_LISTED) && haveCpuListedForces(*fr, *idef, *fcd);
+        if (needPbcForListedForces)
         {
             /* Since all atoms are in the rectangular or triclinic unit-cell,
              * only single box vector shifts (2 in x) are required.
@@ -295,14 +203,14 @@ void do_force_lowlevel(t_forcerec                   *fr,
             set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : nullptr,
                        TRUE, box);
         }
-    }
 
-    do_force_listed(wcycle, box, ir->fepvals, cr, ms,
-                    idef, x, hist,
-                    forceForUseWithShiftForces, forceWithVirial,
-                    fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
-                    DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
-                    flags);
+        do_force_listed(wcycle, box, ir->fepvals, cr, ms,
+                        idef, x, hist,
+                        forceForUseWithShiftForces, forceWithVirial,
+                        fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
+                        DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
+                        flags);
+    }
 
 
     /* Do long-range electrostatics and/or LJ-PME, including related short-range
@@ -401,7 +309,7 @@ void do_force_lowlevel(t_forcerec                   *fr,
                 assert(fr->n_tpi >= 0);
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
-                    pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
+                    int pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
 
                     if (flags & GMX_FORCE_FORCES)
                     {
@@ -502,23 +410,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
             fprintf(debug, "Vlr_lj: %g, Vcorr_lj = %g, Vlr_corr_lj = %g\n",
                     Vlr_lj, ewaldOutput.Vcorr_lj, enerd->term[F_LJ_RECIP]);
             pr_rvecs(debug, 0, "vir_lj_recip after corr", ewaldOutput.vir_lj, DIM);
-        }
-    }
-    else
-    {
-        /* Is there a reaction-field exclusion correction needed?
-         * With the Verlet scheme, exclusion forces are calculated
-         * in the non-bonded kernel.
-         */
-        if (useRfWithGroupScheme)
-        {
-            real dvdl_rf_excl      = 0;
-            enerd->term[F_RF_EXCL] =
-                RF_excl_correction(fr, graph, md, excl, DOMAINDECOMP(cr),
-                                   x, forceForUseWithShiftForces,
-                                   fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
-
-            enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
         }
     }
 
