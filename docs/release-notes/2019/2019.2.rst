@@ -41,6 +41,14 @@ of the simulation under certain conditions.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+gmx cluster -clndx indices now correct
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The reported indices of trajectory frames in clusters were
+too small by one.
+
+:issue:`2926`
+
 gmx editconf -f in.pdb -o out.pdb again preserves chain IDs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
