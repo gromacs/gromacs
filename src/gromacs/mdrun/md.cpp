@@ -76,6 +76,7 @@
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/expanded.h"
 #include "gromacs/mdlib/force.h"

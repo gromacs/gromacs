@@ -72,6 +72,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"

@@ -40,6 +40,7 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"

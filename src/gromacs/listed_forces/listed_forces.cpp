@@ -58,6 +58,7 @@
 #include "gromacs/listed_forces/pairs.h"
 #include "gromacs/listed_forces/position_restraints.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/commrec.h"

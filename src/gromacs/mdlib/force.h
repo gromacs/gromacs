@@ -46,7 +46,6 @@ struct gmx_edsam;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct SimulationGroups;
-struct gmx_grppairener_t;
 struct gmx_localtop_t;
 struct gmx_multisim_t;
 struct gmx_vsite_t;
@@ -71,24 +70,6 @@ class ImdSession;
 class PpForceWorkload;
 class MDLogger;
 }
-
-void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
-/* Intializes the energy storage struct */
-
-void destroy_enerdata(gmx_enerdata_t *enerd);
-/* Free all memory associated with enerd */
-
-void reset_foreign_enerdata(gmx_enerdata_t *enerd);
-/* Resets only the foreign energy data */
-
-void reset_enerdata(gmx_enerdata_t *enerd);
-/* Resets the energy data */
-
-void sum_epot(gmx_grppairener_t *grpp, real *epot);
-/* Locally sum the non-bonded potential energy terms */
-
-void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda *fepvals);
-/* Sum the free energy contributions */
 
 void do_force(FILE                                     *log,
               const t_commrec                          *cr,

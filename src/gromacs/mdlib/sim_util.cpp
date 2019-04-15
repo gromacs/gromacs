@@ -74,6 +74,7 @@
 #include "gromacs/mdlib/calcmu.h"
 #include "gromacs/mdlib/calcvir.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
