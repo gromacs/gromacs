@@ -55,6 +55,7 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -110,13 +111,13 @@ struct ConstraintsTestData
         real                  dHdLambda_;               //!< For free energy computation
         real                  dHdLambdaRef_;            //!< For free energy computation (reference value)
 
-        std::vector<RVec>     x_;                       //!< Coordinates before the timestep
-        std::vector<RVec>     xPrime_;                  //!< Coordinates after timestep, output for the constraints
-        std::vector<RVec>     xPrime0_;                 //!< Backup for coordinates (for reset)
-        std::vector<RVec>     xPrime2_;                 //!< Intermediate set of coordinates used by LINCS and
+        PaddedVector<RVec>    x_;                       //!< Coordinates before the timestep
+        PaddedVector<RVec>    xPrime_;                  //!< Coordinates after timestep, output for the constraints
+        PaddedVector<RVec>    xPrime0_;                 //!< Backup for coordinates (for reset)
+        PaddedVector<RVec>    xPrime2_;                 //!< Intermediate set of coordinates used by LINCS and
                                                         //!< SHAKE for different purposes
-        std::vector<RVec>     v_;                       //!< Velocities
-        std::vector<RVec>     v0_;                      //!< Backup for velocities (for reset)
+        PaddedVector<RVec>    v_;                       //!< Velocities
+        PaddedVector<RVec>    v0_;                      //!< Backup for velocities (for reset)
 
         // Fields to store constraints data for testing
         std::vector<int>      constraints_;             //!< Constraints data (type1-i1-j1-type2-i2-j2-...)
@@ -298,13 +299,21 @@ struct ConstraintsTestData
             mtop_.bIntermolecularInteractions = false;
 
             // Coordinates and velocities
-            x_       = x;
-            xPrime_  = xPrime;
-            xPrime0_ = xPrime;
-            xPrime2_ = xPrime;
+            x_.resizeWithPadding(nAtom_);
+            xPrime_.resizeWithPadding(nAtom_);
+            xPrime0_.resizeWithPadding(nAtom_);
+            xPrime2_.resizeWithPadding(nAtom_);
 
-            v_  = v;
-            v0_ = v;
+            v_.resizeWithPadding(nAtom_);
+            v0_.resizeWithPadding(nAtom_);
+
+            std::copy(x.begin(), x.end(), x_.begin());
+            std::copy(xPrime.begin(), xPrime.end(), xPrime_.begin());
+            std::copy(xPrime.begin(), xPrime.end(), xPrime0_.begin());
+            std::copy(xPrime.begin(), xPrime.end(), xPrime2_.begin());
+
+            std::copy(v.begin(), v.end(), v_.begin());
+            std::copy(v.begin(), v.end(), v0_.begin());
 
             // SHAKE-specific parameters
             ir_.shake_tol           = shakeTolerance;
