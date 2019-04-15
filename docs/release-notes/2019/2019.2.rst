@@ -89,3 +89,9 @@ supported by FFTW with the clang compiler, and compilation fails.
 
 :issue:`2892`
 
+Updated performance guide for recent Intel processors with AVX512 instruction support
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Noted the tradeoffs between CPU frequency and SIMD throughput and advising users to
+prefer AVX2 over AVX512 in GPU-offload or highly parallel MPI cases.
+
