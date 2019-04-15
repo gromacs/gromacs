@@ -377,11 +377,6 @@ void gpu_launch_kernel(gmx_nbnxn_cuda_t          *nb,
                        const int                  flags,
                        const InteractionLocality  iloc)
 {
-    /* CUDA kernel launch-related stuff */
-    int                  nblock;
-    dim3                 dim_block, dim_grid;
-    nbnxn_cu_kfunc_ptr_t nb_kernel = nullptr; /* fn pointer to the nonbonded kernel */
-
     cu_atomdata_t       *adat    = nb->atdat;
     cu_nbparam_t        *nbp     = nb->nbparam;
     cu_plist_t          *plist   = nb->plist[iloc];
@@ -429,13 +424,6 @@ void gpu_launch_kernel(gmx_nbnxn_cuda_t          *nb,
         t->interaction[iloc].nb_k.openTimingRegion(stream);
     }
 
-    /* get the pointer to the kernel flavor we need to use */
-    nb_kernel = select_nbnxn_kernel(nbp->eeltype,
-                                    nbp->vdwtype,
-                                    bCalcEner,
-                                    (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune),
-                                    nb->dev_info);
-
     /* Kernel launch config:
      * - The thread block dimensions match the size of i-clusters, j-clusters,
      *   and j-cluster concurrency, in x, y, and z, respectively.
@@ -446,7 +434,8 @@ void gpu_launch_kernel(gmx_nbnxn_cuda_t          *nb,
     {
         num_threads_z = 2;
     }
-    nblock    = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
+    int nblock    = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
+
 
     KernelLaunchConfig config;
     config.blockSize[0]     = c_clSize;
@@ -467,9 +456,14 @@ void gpu_launch_kernel(gmx_nbnxn_cuda_t          *nb,
                 config.sharedMemorySize);
     }
 
-    auto      *timingEvent = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
-    const auto kernelArgs  = prepareGpuKernelArguments(nb_kernel, config, adat, nbp, plist, &bCalcFshift);
-    launchGpuKernel(nb_kernel, config, timingEvent, "k_calc_nb", kernelArgs);
+    auto       *timingEvent = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
+    const auto  kernel      = select_nbnxn_kernel(nbp->eeltype,
+                                                  nbp->vdwtype,
+                                                  bCalcEner,
+                                                  (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune),
+                                                  nb->dev_info);
+    const auto kernelArgs  = prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &bCalcFshift);
+    launchGpuKernel(kernel, config, timingEvent, "k_calc_nb", kernelArgs);
 
     if (bDoTime)
     {
@@ -590,7 +584,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t          *nb,
 
     auto          *timingEvent  = bDoTime ? timer->fetchNextEvent() : nullptr;
     constexpr char kernelName[] = "k_pruneonly";
-    const auto    &kernel       = plist->haveFreshList ? nbnxn_kernel_prune_cuda<true> : nbnxn_kernel_prune_cuda<false>;
+    const auto     kernel       = plist->haveFreshList ? nbnxn_kernel_prune_cuda<true> : nbnxn_kernel_prune_cuda<false>;
     const auto     kernelArgs   = prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &numParts, &part);
     launchGpuKernel(kernel, config, timingEvent, kernelName, kernelArgs);
 
