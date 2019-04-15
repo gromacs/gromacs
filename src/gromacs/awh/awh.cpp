@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -162,6 +162,7 @@ Awh::Awh(FILE                 *fplog,
             const AwhDimParams &awhDimParams      = awhBiasParams.dimParams[d];
             GMX_RELEASE_ASSERT(awhDimParams.eCoordProvider == eawhcoordproviderPULL, "Currently only the pull code is supported as coordinate provider");
             const t_pull_coord &pullCoord         = inputRecord.pull->coord[awhDimParams.coordIndex];
+            GMX_RELEASE_ASSERT(pullCoord.eGeom != epullgDIRPBC, "Pull geometry 'direction-periodic' is not supported by AWH");
             double              conversionFactor  = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
             dimParams.emplace_back(conversionFactor, awhDimParams.forceConstant, beta);
 

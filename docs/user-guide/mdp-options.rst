@@ -1917,7 +1917,7 @@ AWH adaptive biasing
       multidimensional and is defined by mapping each dimension to a pull coordinate index.
       This is only allowed if :mdp-value:`pull-coord1-type=external-potential` and
       :mdp:`pull-coord1-potential-provider` = ``awh`` for the concerned pull coordinate
-      indices.
+      indices. Pull geometry 'direction-periodic' is not supported by AWH.
 
 .. mdp:: awh-potential
 

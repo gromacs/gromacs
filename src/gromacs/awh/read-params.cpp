@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -553,69 +553,14 @@ AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> *inp, const t_inputrec *
 /*! \brief
  * Gets the period of a pull coordinate.
  *
- * \param[in] pull_params      Pull parameters.
- * \param[in] coord_ind        Pull coordinate index.
- * \param[in] box              Box vectors.
+ * \param[in] pullCoordParams   The parameters for the pull coordinate.
  * \returns the period (or 0 if not periodic).
  */
-static double get_pull_coord_period(const pull_params_t *pull_params,
-                                    int                  coord_ind,
-                                    const matrix         box)
+static double get_pull_coord_period(const t_pull_coord &pullCoordParams)
 {
     double        period;
-    t_pull_coord *pcrd_params = &pull_params->coord[coord_ind];
 
-    if (pcrd_params->eGeom == epullgDIRPBC)
-    {
-        /* For direction periodic, we need the pull vector to be one of the box vectors
-           (or more generally I guess it could be an integer combination of boxvectors).
-           This boxvector should to be orthogonal to the (periodic) plane spanned by the other two box vectors.
-           Here we assume that the pull vector is either x, y or z.
-         * E.g. for pull vec = (1, 0, 0) the box vector tensor should look like:
-         * | x 0 0 |
-         * | 0 a c |
-         * | 0 b d |
-         *
-           The period is then given by the box length x.
-
-           Note: we make these checks here for AWH and not in pull because we allow pull to be more general.
-         */
-        int m_pullvec = -1, count_nonzeros = 0;
-
-        /* Check that pull vec has only one component and which component it is. This component gives the relevant box vector */
-        for (int m = 0; m < DIM; m++)
-        {
-            if (pcrd_params->vec[m] != 0)
-            {
-                m_pullvec = m;
-                count_nonzeros++;
-            }
-        }
-        if (count_nonzeros != 1)
-        {
-            gmx_fatal(FARGS, "For AWH biasing pull coordinate %d with pull geometry %s, the pull vector needs to be parallel to "
-                      "a box vector that is parallel to either the x, y or z axis and is orthogonal to the other box vectors.",
-                      coord_ind + 1, EPULLGEOM(epullgDIRPBC));
-        }
-
-        /* Check that there is a box vec parallel to pull vec and that this boxvec is orthogonal to the other box vectors */
-        for (int m = 0; m < DIM; m++)
-        {
-            for (int n = 0; n < DIM; n++)
-            {
-                if ((n != m) && (n == m_pullvec || m == m_pullvec) && box[m][n] > 0)
-                {
-                    gmx_fatal(FARGS, "For AWH biasing pull coordinate %d with pull geometry %s, there needs to be a box vector parallel to the pull vector that is "
-                              "orthogonal to the other box vectors.",
-                              coord_ind + 1, EPULLGEOM(epullgDIRPBC));
-                }
-            }
-        }
-
-        /* If this box vector only has one component as we assumed the norm should be equal to the absolute value of that component */
-        period = static_cast<double>(norm(box[m_pullvec]));
-    }
-    else if (pcrd_params->eGeom == epullgDIHEDRAL)
+    if (pullCoordParams.eGeom == epullgDIHEDRAL)
     {
         /* The dihedral angle is periodic in -180 to 180 deg */
         period = 360;
@@ -761,17 +706,26 @@ void setStateDependentAwhParams(AwhParams *awhParams,
         AwhBiasParams *awhBiasParams = &awhParams->awhBiasParams[k];
         for (int d = 0; d < awhBiasParams->ndim; d++)
         {
-            AwhDimParams *dimParams = &awhBiasParams->dimParams[d];
+            AwhDimParams       *dimParams       = &awhBiasParams->dimParams[d];
+            const t_pull_coord &pullCoordParams = pull_params->coord[dimParams->coordIndex];
 
-            /* The periodiciy of the AWH grid in certain cases depends on the simulation box */
-            dimParams->period = get_pull_coord_period(pull_params, dimParams->coordIndex, box);
+            if (pullCoordParams.eGeom == epullgDIRPBC)
+            {
+                gmx_fatal(FARGS, "AWH does not support pull geometry '%s'. "
+                          "If the maximum distance between the groups is always less than half the box size, "
+                          "you can use geometry '%s' instead.",
+                          EPULLGEOM(epullgDIRPBC),
+                          EPULLGEOM(epullgDIR));
+
+            }
+
+            dimParams->period = get_pull_coord_period(pullCoordParams);
 
             /* The initial coordinate value, converted to external user units. */
             dimParams->coordValueInit =
                 get_pull_coord_value(pull_work, dimParams->coordIndex, &pbc);
 
-            t_pull_coord *pullCoord = &pull_params->coord[dimParams->coordIndex];
-            dimParams->coordValueInit *= pull_conversion_factor_internal2userinput(pullCoord);
+            dimParams->coordValueInit *= pull_conversion_factor_internal2userinput(&pullCoordParams);
         }
     }
     checkInputConsistencyInterval(awhParams, wi);

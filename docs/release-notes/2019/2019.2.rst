@@ -23,6 +23,13 @@ The minimizer could fail on a number of systems.
 
 :issue:`2641`
 
+Disallow pull geometry direction-periodic with AWH
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This could lead to incorrect behavior or a cryptic error message.
+
+:issue:`2923`
+
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -34,7 +41,7 @@ grompp was unable to prepare tpr files for inputs containing simulated annealing
 procedures. The code has been fixed to allow the generation of those files again.
 
 :issue:`2871`
-
+       
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
