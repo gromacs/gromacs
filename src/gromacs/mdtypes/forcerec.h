@@ -299,11 +299,6 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     /* Limit for printing large forces, negative is don't print */
     real print_force = 0;
 
-    /* coarse load balancing time measurement */
-    double t_fnbf    = 0;
-    double t_wait    = 0;
-    int    timesteps = 0;
-
     /* User determined parameters, copied from the inputrec */
     int  userint1  = 0;
     int  userint2  = 0;

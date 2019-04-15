@@ -2327,11 +2327,6 @@ void init_forcerec(FILE                             *fp,
     fr->print_force = print_force;
 
 
-    /* coarse load balancing vars */
-    fr->t_fnbf    = 0.;
-    fr->t_wait    = 0.;
-    fr->timesteps = 0;
-
     /* Initialize neighbor search */
     snew(fr->ns, 1);
     init_ns(fp, cr, fr->ns, fr, mtop);

@@ -38,8 +38,6 @@
 
 #include "force.h"
 
-#include "config.h"
-
 #include <cassert>
 #include <cmath>
 #include <cstring>
@@ -71,7 +69,6 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -123,10 +120,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
                        int                           flags,
                        const DDBalanceRegionHandler &ddBalanceRegionHandler)
 {
-#if GMX_MPI
-    double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
-#endif
-
     /* do QMMM first if requested */
     if (fr->bQMMM)
     {
@@ -134,16 +127,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
     }
 
     /* Call the short range functions all in one go. */
-
-#if GMX_MPI
-    /*#define TAKETIME ((cr->npmenodes) && (fr->timesteps < 12))*/
-#define TAKETIME FALSE
-    if (TAKETIME)
-    {
-        MPI_Barrier(cr->mpi_comm_mygroup);
-        t0 = MPI_Wtime();
-    }
-#endif
 
     if (ir->nwall)
     {
@@ -153,14 +136,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
                                    enerd->grpp.ener[egLJSR], nrnb);
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
     }
-
-#if GMX_MPI
-    if (TAKETIME)
-    {
-        t1          = MPI_Wtime();
-        fr->t_fnbf += t1-t0;
-    }
-#endif
 
     /* Shift the coordinates. Must be done before listed forces and PPPM,
      * but is also necessary for SHAKE and update, therefore it can NOT
@@ -192,8 +167,7 @@ void do_force_lowlevel(t_forcerec                   *fr,
     {
         t_pbc      pbc;
 
-        /* Check whether we need to take into account PBC in the following force tasks:
-         * listed interactions. */
+        /* Check whether we need to take into account PBC in listed interactions. */
         const auto needPbcForListedForces = fr->bMolPBC && bool(flags & GMX_FORCE_LISTED) && haveCpuListedForces(*fr, *idef, *fcd);
         if (needPbcForListedForces)
         {
@@ -417,25 +391,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
     {
         print_nrnb(debug, nrnb);
     }
-
-#if GMX_MPI
-    if (TAKETIME)
-    {
-        t2 = MPI_Wtime();
-        MPI_Barrier(cr->mpi_comm_mygroup);
-        t3          = MPI_Wtime();
-        fr->t_wait += t3-t2;
-        if (fr->timesteps == 11)
-        {
-            char buf[22];
-            fprintf(stderr, "* PP load balancing info: rank %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n",
-                    cr->nodeid, gmx_step_str(fr->timesteps, buf),
-                    100*fr->t_wait/(fr->t_wait+fr->t_fnbf),
-                    (fr->t_fnbf+fr->t_wait)/fr->t_fnbf);
-        }
-        fr->timesteps++;
-    }
-#endif
 
     if (debug)
     {
