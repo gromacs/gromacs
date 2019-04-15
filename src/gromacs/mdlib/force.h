@@ -129,16 +129,6 @@ void do_force(FILE                                     *log,
  * f is always required.
  */
 
-void ns(FILE                      *fplog,
-        t_forcerec                *fr,
-        matrix                     box,
-        const SimulationGroups    *groups,
-        gmx_localtop_t            *top,
-        const t_mdatoms           *md,
-        const t_commrec           *cr,
-        t_nrnb                    *nrnb,
-        gmx_bool                   bFillGrid);
-/* Call the neighborsearcher */
 
 void do_force_lowlevel(t_forcerec   *fr,
                        const t_inputrec *ir,

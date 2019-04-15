@@ -58,7 +58,6 @@
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec_threading.h"
-#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/wall.h"
@@ -76,42 +75,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-
-void ns(FILE                      *fp,
-        t_forcerec                *fr,
-        matrix                     box,
-        const SimulationGroups    *groups,
-        gmx_localtop_t            *top,
-        const t_mdatoms           *md,
-        const t_commrec           *cr,
-        t_nrnb                    *nrnb,
-        gmx_bool                   bFillGrid)
-{
-    int     nsearch;
-
-
-    if (!fr->ns->nblist_initialized)
-    {
-        init_neighbor_list(fp, fr, md->homenr);
-    }
-
-    nsearch = search_neighbours(fp, fr, box, top, groups, cr, nrnb, md,
-                                bFillGrid);
-    if (debug)
-    {
-        fprintf(debug, "nsearch = %d\n", nsearch);
-    }
-
-    /* Check whether we have to do dynamic load balancing */
-    /*if ((nsb->nstDlb > 0) && (mod(step,nsb->nstDlb) == 0))
-       count_nb(cr,nsb,&(top->blocks[ebCGS]),nns,fr->nlr,
-       &(top->idef),opts->ngener);
-     */
-    if (fr->ns->dump_nl > 0)
-    {
-        dump_nblist(fp, cr, fr, fr->ns->dump_nl);
-    }
-}
 
 static void clearEwaldThreadOutput(ewald_corr_thread_t *ewc_t)
 {
