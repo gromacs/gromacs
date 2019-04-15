@@ -735,7 +735,7 @@ int gmx_editconf(int argc, char *argv[])
         return 0;
     }
     fprintf(stdout, "Note that major changes are planned in future for "
-            "editconf, to improve usability and utility.");
+            "editconf, to improve usability and utility.\n");
 
     bIndex     = opt2bSet("-n", NFILE, fnm) || bNDEF;
     bMead      = opt2bSet("-mead", NFILE, fnm);
