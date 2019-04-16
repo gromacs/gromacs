@@ -183,7 +183,7 @@ class PairSearch
                        int                             atomStart,
                        int                             atomEnd,
                        real                            atomDensity,
-                       const int                      *atinfo,
+                       gmx::ArrayRef<const int>        atomInfo,
                        gmx::ArrayRef<const gmx::RVec>  x,
                        int                             numAtomsMoved,
                        const int                      *move,
@@ -193,7 +193,7 @@ class PairSearch
 
             gridSet_.putOnGrid(box, ddZone, lowerCorner, upperCorner,
                                updateGroupsCog, atomStart, atomEnd, atomDensity,
-                               atinfo, x, numAtomsMoved, move, nbat);
+                               atomInfo, x, numAtomsMoved, move, nbat);
 
             cycleCounting_.stop(enbsCCgrid);
         }

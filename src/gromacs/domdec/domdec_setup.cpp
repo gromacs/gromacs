@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -609,7 +609,7 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
                             const t_inputrec *ir,
                             gmx_domdec_t *dd,
                             real cellsize_limit, real cutoff,
-                            gmx_bool bInterCGBondeds,
+                            const bool haveInterDomainBondeds,
                             ivec nc)
 {
     int      npp, npme, d, nmax;
@@ -633,7 +633,7 @@ static real optimize_ncells(const gmx::MDLogger &mdlog,
         npme = 0;
     }
 
-    if (bInterCGBondeds)
+    if (haveInterDomainBondeds)
     {
         /* If we can skip PBC for distance calculations in plain-C bondeds,
          * we can save some time (e.g. 3D DD with pbc=xyz).
@@ -725,7 +725,7 @@ real dd_choose_grid(const gmx::MDLogger &mdlog,
                     int nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
-                    gmx_bool bInterCGBondeds)
+                    const bool haveInterDomainBondeds)
 {
     int64_t         nnodes_div, ldiv;
     real            limit;
@@ -802,7 +802,7 @@ real dd_choose_grid(const gmx::MDLogger &mdlog,
                                 bDynLoadBal, dlb_scale,
                                 mtop, box, ddbox, ir, dd,
                                 cellsize_limit, cutoff_dd,
-                                bInterCGBondeds,
+                                haveInterDomainBondeds,
                                 dd->nc);
     }
     else

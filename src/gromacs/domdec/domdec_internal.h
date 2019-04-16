@@ -417,10 +417,8 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     std::unique_ptr<gmx::UpdateGroupsCog> updateGroupsCog;
 
     /* Are there charge groups? */
-    gmx_bool bCGs;                /**< True when there are charge groups */
-
-    gmx_bool bInterCGBondeds;     /**< Are there inter-cg bonded interactions? */
-    gmx_bool bInterCGMultiBody;   /**< Are there inter-cg multi-body interactions? */
+    bool haveInterDomainBondeds;          /**< Are there inter-domain bonded interactions? */
+    bool haveInterDomainMultiBodyBondeds; /**< Are there inter-domain multi-body interactions? */
 
     /* Data for the optional bonded interaction atom communication range */
     gmx_bool  bBondComm;          /**< Only communicate atoms beyond the non-bonded cut-off when they are involved in bonded interactions with non-local atoms */

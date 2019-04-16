@@ -175,7 +175,6 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
 
 gmx_localtop_t::gmx_localtop_t()
 {
-    init_block_null(&cgs);
     init_blocka_null(&excls);
     init_idef(&idef);
     init_atomtypes(&atomtypes);
@@ -186,7 +185,6 @@ gmx_localtop_t::~gmx_localtop_t()
     if (!useInDomainDecomp_)
     {
         done_idef(&idef);
-        done_block(&cgs);
         done_blocka(&excls);
         done_atomtypes(&atomtypes);
     }

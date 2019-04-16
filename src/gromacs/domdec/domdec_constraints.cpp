@@ -234,68 +234,64 @@ static void atoms_to_settles(gmx_domdec_t *dd,
     int                nral  = NRAL(F_SETTLE);
 
     int                mb    = 0;
-    for (int cg = cg_start; cg < cg_end; cg++)
+    for (int a = cg_start; a < cg_end; a++)
     {
-        if (GET_CGINFO_SETTLE(cginfo[cg]))
+        if (GET_CGINFO_SETTLE(cginfo[a]))
         {
-            for (int a : dd->atomGrouping().block(cg))
+            int a_gl = dd->globalAtomIndices[a];
+            int a_mol;
+            mtopGetMolblockIndex(mtop, a_gl, &mb, nullptr, &a_mol);
+
+            const gmx_molblock_t *molb   = &mtop->molblock[mb];
+            int                   settle = at2settle_mt[molb->type][a_mol];
+
+            if (settle >= 0)
             {
-                int a_gl = dd->globalAtomIndices[a];
-                int a_mol;
-                mtopGetMolblockIndex(mtop, a_gl, &mb, nullptr, &a_mol);
+                int        offset  = a_gl - a_mol;
 
-                const gmx_molblock_t *molb   = &mtop->molblock[mb];
-                int                   settle = at2settle_mt[molb->type][a_mol];
+                const int *ia1     = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms.data();
 
-                if (settle >= 0)
+                int        a_gls[3];
+                gmx_bool   bAssign = FALSE;
+                int        nlocal  = 0;
+                for (int sa = 0; sa < nral; sa++)
                 {
-                    int        offset  = a_gl - a_mol;
-
-                    const int *ia1     = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms.data();
-
-                    int        a_gls[3];
-                    gmx_bool   bAssign = FALSE;
-                    int        nlocal  = 0;
-                    for (int sa = 0; sa < nral; sa++)
+                    int a_glsa = offset + ia1[settle*(1+nral)+1+sa];
+                    a_gls[sa]  = a_glsa;
+                    if (ga2la.findHome(a_glsa))
                     {
-                        int a_glsa = offset + ia1[settle*(1+nral)+1+sa];
-                        a_gls[sa]  = a_glsa;
-                        if (ga2la.findHome(a_glsa))
+                        if (nlocal == 0 && a_gl == a_glsa)
                         {
-
-                            if (nlocal == 0 && a_gl == a_glsa)
-                            {
-                                bAssign = TRUE;
-                            }
-                            nlocal++;
+                            bAssign = TRUE;
                         }
+                        nlocal++;
+                    }
+                }
+
+                if (bAssign)
+                {
+                    if (ils_local->nr+1+nral > ils_local->nalloc)
+                    {
+                        ils_local->nalloc = over_alloc_dd(ils_local->nr+1+nral);
+                        srenew(ils_local->iatoms, ils_local->nalloc);
                     }
 
-                    if (bAssign)
+                    ils_local->iatoms[ils_local->nr++] = ia1[settle*4];
+
+                    for (int sa = 0; sa < nral; sa++)
                     {
-                        if (ils_local->nr+1+nral > ils_local->nalloc)
+                        if (const int *a_loc = ga2la.findHome(a_gls[sa]))
                         {
-                            ils_local->nalloc = over_alloc_dd(ils_local->nr+1+nral);
-                            srenew(ils_local->iatoms, ils_local->nalloc);
+                            ils_local->iatoms[ils_local->nr++] = *a_loc;
                         }
-
-                        ils_local->iatoms[ils_local->nr++] = ia1[settle*4];
-
-                        for (int sa = 0; sa < nral; sa++)
+                        else
                         {
-                            if (const int *a_loc = ga2la.findHome(a_gls[sa]))
-                            {
-                                ils_local->iatoms[ils_local->nr++] = *a_loc;
-                            }
-                            else
-                            {
-                                ils_local->iatoms[ils_local->nr++] = -a_gls[sa] - 1;
-                                /* Add this non-home atom to the list */
-                                ireq->push_back(a_gls[sa]);
-                                /* A check on double atom requests is
-                                 * not required for settle.
-                                 */
-                            }
+                            ils_local->iatoms[ils_local->nr++] = -a_gls[sa] - 1;
+                            /* Add this non-home atom to the list */
+                            ireq->push_back(a_gls[sa]);
+                            /* A check on double atom requests is
+                             * not required for settle.
+                             */
                         }
                     }
                 }
@@ -325,75 +321,72 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
 
     int mb    = 0;
     int nhome = 0;
-    for (int cg = 0; cg < dd->ncg_home; cg++)
+    for (int a = 0; a < dd->ncg_home; a++)
     {
-        if (GET_CGINFO_CONSTR(cginfo[cg]))
+        if (GET_CGINFO_CONSTR(cginfo[a]))
         {
-            for (int a : dd->atomGrouping().block(cg))
+            int a_gl = dd->globalAtomIndices[a];
+            int molnr, a_mol;
+            mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
+
+            const gmx_molblock_t     &molb = mtop->molblock[mb];
+
+            gmx::ArrayRef<const int>  ia1 = mtop->moltype[molb.type].ilist[F_CONSTR].iatoms;
+            gmx::ArrayRef<const int>  ia2 = mtop->moltype[molb.type].ilist[F_CONSTRNC].iatoms;
+
+            /* Calculate the global constraint number offset for the molecule.
+             * This is only required for the global index to make sure
+             * that we use each constraint only once.
+             */
+            con_offset =
+                dc->molb_con_offset[mb] + molnr*dc->molb_ncon_mol[mb];
+
+            /* The global atom number offset for this molecule */
+            offset = a_gl - a_mol;
+            at2con = &at2con_mt[molb.type];
+            for (i = at2con->index[a_mol]; i < at2con->index[a_mol+1]; i++)
             {
-                int a_gl = dd->globalAtomIndices[a];
-                int molnr, a_mol;
-                mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
-
-                const gmx_molblock_t     &molb = mtop->molblock[mb];
-
-                gmx::ArrayRef<const int>  ia1 = mtop->moltype[molb.type].ilist[F_CONSTR].iatoms;
-                gmx::ArrayRef<const int>  ia2 = mtop->moltype[molb.type].ilist[F_CONSTRNC].iatoms;
-
-                /* Calculate the global constraint number offset for the molecule.
-                 * This is only required for the global index to make sure
-                 * that we use each constraint only once.
-                 */
-                con_offset =
-                    dc->molb_con_offset[mb] + molnr*dc->molb_ncon_mol[mb];
-
-                /* The global atom number offset for this molecule */
-                offset = a_gl - a_mol;
-                at2con = &at2con_mt[molb.type];
-                for (i = at2con->index[a_mol]; i < at2con->index[a_mol+1]; i++)
+                con            = at2con->a[i];
+                const int *iap = constr_iatomptr(ia1, ia2, con);
+                if (a_mol == iap[1])
                 {
-                    con            = at2con->a[i];
-                    const int *iap = constr_iatomptr(ia1, ia2, con);
-                    if (a_mol == iap[1])
+                    b_mol = iap[2];
+                }
+                else
+                {
+                    b_mol = iap[1];
+                }
+                if (const int *a_loc = ga2la.findHome(offset + b_mol))
+                {
+                    /* Add this fully home constraint at the first atom */
+                    if (a_mol < b_mol)
                     {
-                        b_mol = iap[2];
-                    }
-                    else
-                    {
-                        b_mol = iap[1];
-                    }
-                    if (const int *a_loc = ga2la.findHome(offset + b_mol))
-                    {
-                        /* Add this fully home constraint at the first atom */
-                        if (a_mol < b_mol)
+                        dc->con_gl.push_back(con_offset + con);
+                        dc->con_nlocat.push_back(2);
+                        if (ilc_local->nr + 3 > ilc_local->nalloc)
                         {
-                            dc->con_gl.push_back(con_offset + con);
-                            dc->con_nlocat.push_back(2);
-                            if (ilc_local->nr + 3 > ilc_local->nalloc)
-                            {
-                                ilc_local->nalloc = over_alloc_dd(ilc_local->nr + 3);
-                                srenew(ilc_local->iatoms, ilc_local->nalloc);
-                            }
-                            b_lo = *a_loc;
-                            ilc_local->iatoms[ilc_local->nr++] = iap[0];
-                            ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? a    : b_lo);
-                            ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? b_lo : a   );
-                            dc->ncon++;
-                            nhome++;
+                            ilc_local->nalloc = over_alloc_dd(ilc_local->nr + 3);
+                            srenew(ilc_local->iatoms, ilc_local->nalloc);
                         }
+                        b_lo = *a_loc;
+                        ilc_local->iatoms[ilc_local->nr++] = iap[0];
+                        ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? a    : b_lo);
+                        ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? b_lo : a   );
+                        dc->ncon++;
+                        nhome++;
                     }
-                    else
-                    {
-                        /* We need the nrec constraints coupled to this constraint,
-                         * so we need to walk out of the home cell by nrec+1 atoms,
-                         * since already atom bg is not locally present.
-                         * Therefore we call walk_out with nrec recursions to go
-                         * after this first call.
-                         */
-                        walk_out(con, con_offset, b_mol, offset, nrec,
-                                 ia1, ia2, at2con,
-                                 ga2la, TRUE, dc, dcc, ilc_local, ireq);
-                    }
+                }
+                else
+                {
+                    /* We need the nrec constraints coupled to this constraint,
+                     * so we need to walk out of the home cell by nrec+1 atoms,
+                     * since already atom bg is not locally present.
+                     * Therefore we call walk_out with nrec recursions to go
+                     * after this first call.
+                     */
+                    walk_out(con, con_offset, b_mol, offset, nrec,
+                             ia1, ia2, at2con,
+                             ga2la, TRUE, dc, dcc, ilc_local, ireq);
                 }
             }
         }

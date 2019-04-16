@@ -556,14 +556,6 @@ static void distributeAtomGroups(const gmx::MDLogger &mdlog,
                 bMaster ? ma->atomGroups.data() : nullptr,
                 dd->ncg_home*sizeof(int), dd->globalAtomGroupIndices.data());
 
-    /* Determine the home charge group sizes */
-    const t_block &globalAtomGroups = dd->comm->cgs_gl;
-    dd->atomGrouping_.clear();
-    for (int i = 0; i < dd->ncg_home; i++)
-    {
-        dd->atomGrouping_.appendBlock(globalAtomGroups.blockSize(dd->globalAtomGroupIndices[i]));
-    }
-
     if (debug)
     {
         fprintf(debug, "Home charge groups:\n");

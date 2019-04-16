@@ -113,7 +113,7 @@ class GridSet
                        int                             atomStart,
                        int                             atomEnd,
                        real                            atomDensity,
-                       const int                      *atinfo,
+                       gmx::ArrayRef<const int>        atomInfo,
                        gmx::ArrayRef<const gmx::RVec>  x,
                        int                             numAtomsMoved,
                        const int                      *move,

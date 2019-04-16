@@ -63,21 +63,21 @@ void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
                        int                             atomStart,
                        int                             atomEnd,
                        real                            atomDensity,
-                       const int                      *atinfo,
+                       gmx::ArrayRef<const int>        atomInfo,
                        gmx::ArrayRef<const gmx::RVec>  x,
                        int                             numAtomsMoved,
                        const int                      *move)
 {
     nb_verlet->pairSearch_->putOnGrid(box, ddZone, lowerCorner, upperCorner,
                                       updateGroupsCog, atomStart, atomEnd, atomDensity,
-                                      atinfo, x, numAtomsMoved, move,
+                                      atomInfo, x, numAtomsMoved, move,
                                       nb_verlet->nbat.get());
 }
 
 /* Calls nbnxn_put_on_grid for all non-local domains */
 void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nbv,
                                 const struct gmx_domdec_zones_t *zones,
-                                const int                       *atinfo,
+                                gmx::ArrayRef<const int>         atomInfo,
                                 gmx::ArrayRef<const gmx::RVec>   x)
 {
     for (int zone = 1; zone < zones->n; zone++)
@@ -95,7 +95,7 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nbv,
                           zones->cg_range[zone],
                           zones->cg_range[zone+1],
                           -1,
-                          atinfo,
+                          atomInfo,
                           x,
                           0, nullptr);
     }
@@ -126,10 +126,10 @@ void nonbonded_verlet_t::setLocalAtomOrder()
     pairSearch_->setLocalAtomOrder();
 }
 
-void nonbonded_verlet_t::setAtomProperties(const t_mdatoms &mdatoms,
-                                           const int       &atinfo)
+void nonbonded_verlet_t::setAtomProperties(const t_mdatoms          &mdatoms,
+                                           gmx::ArrayRef<const int>  atomInfo)
 {
-    nbnxn_atomdata_set(nbat.get(), pairSearch_->gridSet(), &mdatoms, &atinfo);
+    nbnxn_atomdata_set(nbat.get(), pairSearch_->gridSet(), &mdatoms, atomInfo.data());
 }
 
 void nonbonded_verlet_t::setCoordinates(const Nbnxm::AtomLocality       locality,

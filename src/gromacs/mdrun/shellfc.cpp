@@ -1006,7 +1006,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
     char          sbuf[22];
     gmx_bool      bCont, bInit, bConverged;
     int           nat, dd_ac0, dd_ac1 = 0, i;
-    int           homenr = md->homenr, end = homenr, cg0, cg1;
+    int           homenr = md->homenr, end = homenr;
     int           nflexcon, number_steps, d, Min = 0, count = 0;
 #define  Try (1-Min)             /* At start Try = 1 */
 
@@ -1059,18 +1059,8 @@ void relax_shell_flexcon(FILE                                     *fplog,
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        if (inputrec->cutoff_scheme == ecutsVERLET)
-        {
-            auto xRef = state->x.arrayRefWithPadding().paddedArrayRef();
-            put_atoms_in_box_omp(fr->ePBC, state->box, xRef.subArray(0, md->homenr), gmx_omp_nthreads_get(emntDefault));
-        }
-        else
-        {
-            cg0 = 0;
-            cg1 = top->cgs.nr;
-            put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
-                                     &(top->cgs), state->x.rvec_array(), fr->cg_cm);
-        }
+        auto xRef = state->x.arrayRefWithPadding().paddedArrayRef();
+        put_atoms_in_box_omp(fr->ePBC, state->box, xRef.subArray(0, md->homenr), gmx_omp_nthreads_get(emntDefault));
 
         if (graph)
         {

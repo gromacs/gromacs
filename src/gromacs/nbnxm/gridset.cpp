@@ -127,7 +127,7 @@ void GridSet::putOnGrid(const matrix                    box,
                         const int                       atomStart,
                         const int                       atomEnd,
                         real                            atomDensity,
-                        const int                      *atinfo,
+                        gmx::ArrayRef<const int>        atomInfo,
                         gmx::ArrayRef<const gmx::RVec>  x,
                         const int                       numAtomsMoved,
                         const int                      *move,
@@ -213,7 +213,7 @@ void GridSet::putOnGrid(const matrix                    box,
 
     /* Copy the already computed cell indices to the grid and sort, when needed */
     grid.setCellIndices(ddZone, cellOffset, &gridSetData, gridWork_,
-                        atomStart, atomEnd, atinfo, x, numAtomsMoved, nbat);
+                        atomStart, atomEnd, atomInfo.data(), x, numAtomsMoved, nbat);
 
     if (ddZone == 0)
     {

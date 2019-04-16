@@ -980,7 +980,7 @@ void do_force(FILE                                     *fplog,
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
 
-        nbv->setAtomProperties(*mdatoms, *fr->cginfo);
+        nbv->setAtomProperties(*mdatoms, fr->cginfo);
 
         wallcycle_stop(wcycle, ewcNS);
 

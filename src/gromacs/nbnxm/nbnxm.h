@@ -237,8 +237,8 @@ struct nonbonded_verlet_t
                                t_nrnb                     *nrnb);
 
         //! Updates all the atom properties in Nbnxm
-        void setAtomProperties(const t_mdatoms &mdatoms,
-                               const int       &atinfo);
+        void setAtomProperties(const t_mdatoms          &mdatoms,
+                               gmx::ArrayRef<const int>  atomInfo);
 
         //! Updates the coordinates in Nbnxm for the given locality
         void setCoordinates(Nbnxm::AtomLocality             locality,
@@ -359,7 +359,7 @@ void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
                        int                             atomStart,
                        int                             atomEnd,
                        real                            atomDensity,
-                       const int                      *atinfo,
+                       gmx::ArrayRef<const int>        atomInfo,
                        gmx::ArrayRef<const gmx::RVec>  x,
                        int                             numAtomsMoved,
                        const int                      *move);
@@ -371,7 +371,7 @@ void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
  */
 void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t              *nb_verlet,
                                 const struct gmx_domdec_zones_t *zones,
-                                const int                       *atinfo,
+                                gmx::ArrayRef<const int>         atomInfo,
                                 gmx::ArrayRef<const gmx::RVec>   x);
 
 #endif // GMX_NBNXN_NBNXM_H

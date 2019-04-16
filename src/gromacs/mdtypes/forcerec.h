@@ -215,9 +215,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool            bGrid                        = FALSE;
     gmx_bool            bExcl_IntraCGAll_InterCGNone = FALSE;
     struct cginfo_mb_t *cginfo_mb                    = nullptr;
-    int                *cginfo                       = nullptr;
-    rvec               *cg_cm                        = nullptr;
-    int                 cg_nalloc                    = 0;
+    std::vector<int>    cginfo;
     rvec               *shift_vec                    = nullptr;
 
     int                 cutoff_scheme = 0;     /* group- or Verlet-style cutoff */

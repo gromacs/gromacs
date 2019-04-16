@@ -925,7 +925,7 @@ Constraints::Impl::setConstraints(const gmx_localtop_t &top,
             {
                 // We are using the local topology, so there are only
                 // F_CONSTR constraints.
-                make_shake_sblock_dd(shaked, &idef->il[F_CONSTR], &top.cgs, cr->dd);
+                make_shake_sblock_dd(shaked, &idef->il[F_CONSTR], cr->dd);
             }
             else
             {

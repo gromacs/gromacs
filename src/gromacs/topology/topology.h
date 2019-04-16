@@ -215,8 +215,6 @@ struct gmx_localtop_t
     t_idef        idef;
     //! Atomtype properties
     t_atomtypes   atomtypes;
-    //! The charge groups
-    t_block       cgs;
     //! The exclusions
     t_blocka      excls;
     //! Flag for domain decomposition so we don't free already freed memory.

@@ -821,15 +821,15 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     return cginfo_mb;
 }
 
-static int *cginfo_expand(int nmb, cginfo_mb_t *cgi_mb)
+static std::vector<int> cginfo_expand(const int          nmb,
+                                      const cginfo_mb_t *cgi_mb)
 {
-    int  ncg, mb, cg;
-    int *cginfo;
+    const int        ncg = cgi_mb[nmb - 1].cg_end;
 
-    ncg = cgi_mb[nmb-1].cg_end;
-    snew(cginfo, ncg);
-    mb = 0;
-    for (cg = 0; cg < ncg; cg++)
+    std::vector<int> cginfo(ncg);
+
+    int              mb = 0;
+    for (int cg = 0; cg < ncg; cg++)
     {
         while (cg >= cgi_mb[mb].cg_end)
         {
@@ -2052,13 +2052,6 @@ void init_forcerec(FILE                             *fp,
         fr->forceBufferForDirectVirialContributions = new std::vector<gmx::RVec>;
     }
 
-    if (fr->cutoff_scheme == ecutsGROUP &&
-        ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))
-    {
-        /* Count the total number of charge groups */
-        fr->cg_nalloc = ncg_mtop(mtop);
-        srenew(fr->cg_cm, fr->cg_nalloc);
-    }
     if (fr->shift_vec == nullptr)
     {
         snew(fr->shift_vec, SHIFTS);
@@ -2285,11 +2278,7 @@ void init_forcerec(FILE                             *fp,
     fr->cginfo_mb = init_cginfo_mb(fp, mtop, fr, bNoSolvOpt,
                                    &bFEP_NonBonded,
                                    &fr->bExcl_IntraCGAll_InterCGNone);
-    if (DOMAINDECOMP(cr))
-    {
-        fr->cginfo = nullptr;
-    }
-    else
+    if (!DOMAINDECOMP(cr))
     {
         fr->cginfo = cginfo_expand(mtop->molblock.size(), fr->cginfo_mb);
     }
@@ -2400,11 +2389,6 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks)
     {
         // PME-only ranks don't have a forcerec
         return;
-    }
-    // cginfo is dynamically allocated if no domain decomposition
-    if (fr->cginfo != nullptr)
-    {
-        sfree(fr->cginfo);
     }
     done_cginfo_mb(fr->cginfo_mb, numMolBlocks);
     sfree(fr->nbfp);

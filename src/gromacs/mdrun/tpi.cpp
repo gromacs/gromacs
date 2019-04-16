@@ -132,6 +132,7 @@ static void realloc_bins(double **bin, int *nbin, int nbin_new)
 namespace gmx
 {
 
+// TODO: Convert to use the nbnxm kernels by putting the system and the teset molecule on two separate search grids
 void
 Integrator::do_tpi()
 {
@@ -143,7 +144,7 @@ Integrator::do_tpi()
     t_trxframe              rerun_fr;
     gmx_bool                bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
     tensor                  force_vir, shake_vir, vir, pres;
-    int                     cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
+    int                     a_tp0, a_tp1, ngid, gid_tp, nener, e;
     rvec                   *x_mol;
     rvec                    mu_tot, x_init, dx, x_tp;
     int                     nnodes, frame;
@@ -271,12 +272,12 @@ Integrator::do_tpi()
     print_start(fplog, cr, walltime_accounting, "Test Particle Insertion");
 
     /* The last charge group is the group to be inserted */
-    cg_tp = top.cgs.nr - 1;
-    a_tp0 = top.cgs.index[cg_tp];
-    a_tp1 = top.cgs.index[cg_tp+1];
+    const t_atoms &atomsToInsert = top_global->moltype[top_global->molblock.back().type].atoms;
+    a_tp0 = top_global->natoms - atomsToInsert.nr;
+    a_tp1 = top_global->natoms;
     if (debug)
     {
-        fprintf(debug, "TPI cg %d, atoms %d-%d\n", cg_tp, a_tp0, a_tp1);
+        fprintf(debug, "TPI atoms %d-%d\n", a_tp0, a_tp1);
     }
 
     GMX_RELEASE_ASSERT(inputrec->rcoulomb <= inputrec->rlist && inputrec->rvdw <= inputrec->rlist, "Twin-range interactions are not supported with TPI");
@@ -296,6 +297,8 @@ Integrator::do_tpi()
     }
     bRFExcl = (bCharge && EEL_RF(fr->ic->eeltype));
 
+    // TODO: Calculate the center of geometry of the molecule to insert
+#if 0
     calc_cgcm(fplog, cg_tp, cg_tp+1, &(top.cgs), state_global->x.rvec_array(), fr->cg_cm);
     if (bCavity)
     {
@@ -313,6 +316,7 @@ Integrator::do_tpi()
             rvec_dec(x_mol[i], fr->cg_cm[cg_tp]);
         }
     }
+#endif
 
     if (fplog)
     {
@@ -346,7 +350,11 @@ Integrator::do_tpi()
     }
 
     ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].nr;
+    // TODO: Figure out which energy group to use
+#if 0
     gid_tp = GET_CGINFO_GID(fr->cginfo[cg_tp]);
+#endif
+    gid_tp = 0;
     nener  = 1 + ngid;
     if (bDispCorr)
     {
@@ -623,8 +631,11 @@ Integrator::do_tpi()
             clear_mat(vir);
             clear_mat(pres);
 
-            /* Set the charge group center of mass of the test particle */
+            /* Set the center of geometry mass of the test molecule */
+            // TODO: Compute and set the COG
+#if 0
             copy_rvec(x_init, fr->cg_cm[top.cgs.nr-1]);
+#endif
 
             /* Calc energy (no forces) on new positions.
              * Since we only need the intermolecular energy

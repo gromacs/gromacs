@@ -1119,7 +1119,6 @@ static void gen_local_top(const gmx_mtop_t  &mtop,
 {
     copyAtomtypesFromMtop(mtop, &top->atomtypes);
     copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
-    copyCgsFromMtop(mtop, &top->cgs);
     copyExclsFromMtop(mtop, &top->excls);
     if (!mtop.intermolecularExclusionGroup.empty())
     {

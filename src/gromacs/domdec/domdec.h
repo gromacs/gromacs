@@ -273,9 +273,6 @@ void dd_make_reverse_top(FILE *fplog,
                          const gmx_vsite_t *vsite,
                          const t_inputrec *ir, gmx_bool bBCheck);
 
-/*! \brief Store the local charge group index in \p lcgs */
-void dd_make_local_cgs(struct gmx_domdec_t *dd, t_block *lcgs);
-
 /*! \brief Generate the local topology and virtual site data */
 void dd_make_local_top(struct gmx_domdec_t       *dd,
                        struct gmx_domdec_zones_t *zones,
