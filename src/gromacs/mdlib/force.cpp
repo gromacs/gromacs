@@ -115,7 +115,6 @@ void do_force_lowlevel(t_forcerec                   *fr,
                        matrix                        box,
                        real                         *lambda,
                        const t_graph                *graph,
-                       const t_blocka               *excl,
                        rvec                          mu_tot[],
                        int                           flags,
                        const DDBalanceRegionHandler &ddBalanceRegionHandler)
@@ -186,11 +185,21 @@ void do_force_lowlevel(t_forcerec                   *fr,
                         flags);
     }
 
+    const bool computePmeOnCpu =
+        (EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) &&
+        thisRankHasDuty(cr, DUTY_PME) &&
+        (pme_run_mode(fr->pmedata) == PmeRunMode::CPU);
 
-    /* Do long-range electrostatics and/or LJ-PME, including related short-range
-     * corrections.
+    const bool haveEwaldSurfaceTerms =
+        EEL_PME_EWALD(fr->ic->eeltype) &&
+        (ir->ewald_geometry != eewg3D || ir->epsilon_surface != 0);
+
+    /* Do long-range electrostatics and/or LJ-PME
+     * and compute PME surface terms when necessary.
      */
-    if (EEL_FULL(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
+    if (computePmeOnCpu ||
+        fr->ic->eeltype == eelEWALD ||
+        haveEwaldSurfaceTerms)
     {
         int  status            = 0;
         real Vlr_q             = 0, Vlr_lj = 0;
@@ -203,17 +212,8 @@ void do_force_lowlevel(t_forcerec                   *fr,
 
         if (EEL_PME_EWALD(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
         {
-            /* With the Verlet scheme exclusion forces are calculated
-             * in the non-bonded kernel.
-             */
-            /* The TPI molecule does not have exclusions with the rest
-             * of the system and no intra-molecular PME grid
-             * contributions will be calculated in
-             * gmx_pme_calc_energy.
-             */
-            if ((ir->cutoff_scheme == ecutsGROUP && fr->n_tpi == 0) ||
-                ir->ewald_geometry != eewg3D ||
-                ir->epsilon_surface != 0)
+            /* Calculate Ewald surface terms, when necessary */
+            if (haveEwaldSurfaceTerms)
             {
                 int nthreads, t;
 
@@ -243,19 +243,14 @@ void do_force_lowlevel(t_forcerec                   *fr,
                          */
                         ewald_LRcorrection(md->homenr, cr, nthreads, t, fr, ir,
                                            md->chargeA, md->chargeB,
-                                           md->sqrt_c6A, md->sqrt_c6B,
-                                           md->sigmaA, md->sigmaB,
-                                           md->sigma3A, md->sigma3B,
-                                           (md->nChargePerturbed != 0) || (md->nTypePerturbed != 0),
-                                           ir->cutoff_scheme != ecutsVERLET,
-                                           excl, x, box, mu_tot,
+                                           (md->nChargePerturbed != 0),
+                                           x, box, mu_tot,
                                            ir->ewald_geometry,
                                            ir->epsilon_surface,
                                            as_rvec_array(forceWithVirial->force_.data()),
-                                           ewc_t.vir_q, ewc_t.vir_lj,
-                                           &ewc_t.Vcorr_q, &ewc_t.Vcorr_lj,
-                                           lambda[efptCOUL], lambda[efptVDW],
-                                           &ewc_t.dvdl[efptCOUL], &ewc_t.dvdl[efptVDW]);
+                                           &ewc_t.Vcorr_q,
+                                           lambda[efptCOUL],
+                                           &ewc_t.dvdl[efptCOUL]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 }
@@ -276,8 +271,7 @@ void do_force_lowlevel(t_forcerec                   *fr,
                                             ewaldOutput.vir_q);
             }
 
-            if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) &&
-                thisRankHasDuty(cr, DUTY_PME) && (pme_run_mode(fr->pmedata) == PmeRunMode::CPU))
+            if (computePmeOnCpu)
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);
@@ -355,7 +349,7 @@ void do_force_lowlevel(t_forcerec                   *fr,
             }
         }
 
-        if (!EEL_PME(fr->ic->eeltype) && EEL_PME_EWALD(fr->ic->eeltype))
+        if (fr->ic->eeltype == eelEWALD)
         {
             Vlr_q = do_ewald(ir, x, as_rvec_array(forceWithVirial->force_.data()),
                              md->chargeA, md->chargeB,

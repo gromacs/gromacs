@@ -52,7 +52,6 @@ struct gmx_vsite_t;
 struct gmx_wallcycle;
 class history_t;
 struct pull_t;
-struct t_blocka;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
@@ -130,7 +129,6 @@ void do_force_lowlevel(t_forcerec   *fr,
                        matrix       box,
                        real         *lambda,
                        const t_graph *graph,
-                       const t_blocka *excl,
                        rvec         mu_tot[2],
                        int          flags,
                        const DDBalanceRegionHandler &ddBalanceRegionHandler);
