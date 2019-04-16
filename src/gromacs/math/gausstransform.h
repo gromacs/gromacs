@@ -124,10 +124,37 @@ class GaussianOn1DLattice
         PrivateImplPointer<Impl> impl_;
 };
 
+/*! \libinternal \brief Parameters for density spreading kernels.
+ */
+struct GaussianSpreadKernelParameters
+{
+    /*! \libinternal \brief Shape parameters for Gaussian spreading kernels describe
+     * the kernel shape.
+     */
+    struct Shape
+    {
+        //! The width of the Gaussian function in lattice spacings
+        real sigma_;
+        //! The range of the spreading function in multiples of sigma
+        real spreadWidthMultiplesOfSigma_;
+        //! The spread range in lattice coordinates
+        int  latticeSpreadRange() const;
+    };
+    /*! \libinternal \brief Parameters that describe the kernel position and amplitude.
+     */
+    struct PositionAndAmplitude
+    {
+        //! position of the kernel to be spread onto the lattice
+        const RVec &coordinate_;
+        //! amplitude of the spread kernel
+        real        amplitude_;
+    };
+};
+
 /*! \libinternal \brief Sums Gaussian values at three dimensional lattice coordinates.
  * The Gaussian is defined as
  * \f[
- *      A * \frac{1}{\sigma^3 \sqrt(2^3*\pi^3)} * \exp(-\frac{x-x0}{2 \sigma}^2)
+ *      A * \frac{1}{\sigma^3 \sqrt(2^3*\pi^3)} * \exp(-\frac{(x-x0)^2}{2 \sigma^2})
  * \f]
  * \verbatim
  *  x0:              X           x
@@ -146,17 +173,15 @@ class GaussTransform3D
          * Transform lattice values will be zero-initialized.
          *
          * \param[in] extent of the spread lattice
-         * \param[in] sigma the width of the Gaussian function in lattice spacings
-         * \param[in] nSigma the range of the spreading function in multiples of sigma
+         * \param[in] globalParameters of the spreading kernel
          */
-        GaussTransform3D(const dynamicExtents3D &extent, real sigma, real nSigma);
+        GaussTransform3D(const dynamicExtents3D &extent, const GaussianSpreadKernelParameters::Shape &globalParameters);
 
         ~GaussTransform3D();
         /*! \brief Add a three dimensional Gaussian with given amplitude at a coordinate.
-         * \param[in] center center of gaussian to be spread onto the lattice
-         * \param[in] amplitude of the Gaussian function
+         * \param[in] localParameters of the spreading kernel
          */
-        void add(const RVec &center, float amplitude);
+        void add(const GaussianSpreadKernelParameters::PositionAndAmplitude &localParameters);
         //! \brief Set all values on the lattice to zero.
         void setZero();
         //! Return a view on the spread lattice.

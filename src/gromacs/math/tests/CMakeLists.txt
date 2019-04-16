@@ -37,6 +37,7 @@ gmx_add_unit_test(MathUnitTests math-test
                   dofit.cpp
                   functions.cpp
                   gausstransform.cpp
+                  densityfittingforce.cpp
                   invertmatrix.cpp
                   matrix.cpp
                   multidimarray.cpp

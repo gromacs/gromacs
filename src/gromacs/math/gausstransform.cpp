@@ -283,6 +283,14 @@ IntegerBox spreadRangeWithinLattice(const IVec &center, dynamicExtents3D extent,
     const IVec end   = rangeEndWithinLattice(center, extent, range);
     return {begin, end};
 }
+/********************************************************************
+ * GaussianSpreadKernel
+ */
+
+int GaussianSpreadKernelParameters::Shape::latticeSpreadRange() const
+{
+    return static_cast<int>(std::ceil(sigma_ * spreadWidthMultiplesOfSigma_));
+}
 
 /********************************************************************
  * GaussTransform3D::Impl
@@ -295,11 +303,11 @@ class GaussTransform3D::Impl
 {
     public:
         //! Construct from extent and spreading width and range
-        Impl(const dynamicExtents3D &extent,
-             float sigma, float nSigma);
+        Impl(const dynamicExtents3D                       &extent,
+             const GaussianSpreadKernelParameters::Shape  &kernelShapeParameters);
         ~Impl(){}
         //! Add another gaussian
-        void add(const RVec &coordinate, float amplitude);
+        void add(const GaussianSpreadKernelParameters::PositionAndAmplitude &localParamters );
         //! The width of the Gaussian in lattice spacing units
         double                sigma_;
         //! The spread range in lattice points
@@ -312,23 +320,24 @@ class GaussTransform3D::Impl
         std::array<GaussianOn1DLattice, DIM>                gauss1d_;
 };
 
-GaussTransform3D::Impl::Impl(const dynamicExtents3D &extent,
-                             float sigma, float nSigma)
-    : sigma_ {sigma},
+GaussTransform3D::Impl::Impl(const dynamicExtents3D                       &extent,
+                             const GaussianSpreadKernelParameters::Shape  &kernelShapeParameters)
+    : sigma_ {kernelShapeParameters.sigma_ },
 spreadRange_ {
-    static_cast<int>(std::ceil(sigma * nSigma))
+    kernelShapeParameters.latticeSpreadRange()
 },
 data_ {
     extent
-}, gauss1d_( {GaussianOn1DLattice(spreadRange_, sigma_),
-              GaussianOn1DLattice(spreadRange_, sigma_),
-              GaussianOn1DLattice(spreadRange_, sigma_) })
+},
+gauss1d_( {GaussianOn1DLattice(spreadRange_, sigma_),
+           GaussianOn1DLattice(spreadRange_, sigma_),
+           GaussianOn1DLattice(spreadRange_, sigma_) } )
 {
 }
 
-void GaussTransform3D::Impl::add(const RVec &coordinate, float amplitude)
+void GaussTransform3D::Impl::add(const GaussianSpreadKernelParameters::PositionAndAmplitude &localParameters)
 {
-    const IVec closestLatticePoint = closestIntegerPoint(coordinate);
+    const IVec closestLatticePoint = closestIntegerPoint(localParameters.coordinate_);
     const auto spreadRange         = spreadRangeWithinLattice(closestLatticePoint, data_.asView().extents(), spreadRange_);
 
     // do nothing if the added Gaussian will never reach the lattice
@@ -340,8 +349,8 @@ void GaussTransform3D::Impl::add(const RVec &coordinate, float amplitude)
     for (int dimension = XX; dimension <= ZZ; ++dimension)
     {
         // multiply with amplitude so that Gauss3D = (amplitude * Gauss_x) * Gauss_y * Gauss_z
-        const float gauss1DAmplitude = dimension > XX ? 1.0 : amplitude;
-        gauss1d_[dimension].spread(gauss1DAmplitude, coordinate[dimension] - closestLatticePoint[dimension]);
+        const float gauss1DAmplitude = dimension > XX ? 1.0 : localParameters.amplitude_;
+        gauss1d_[dimension].spread(gauss1DAmplitude, localParameters.coordinate_[dimension] - closestLatticePoint[dimension]);
     }
 
     const auto spreadZY         = outerProductZY_(gauss1d_[ZZ].view(), gauss1d_[YY].view());
@@ -372,14 +381,14 @@ void GaussTransform3D::Impl::add(const RVec &coordinate, float amplitude)
  * GaussTransform3D
  */
 
-GaussTransform3D::GaussTransform3D(const dynamicExtents3D &extent,
-                                   real sigma, real nSigma) : impl_(new Impl(extent, sigma, nSigma))
+GaussTransform3D::GaussTransform3D(const dynamicExtents3D                       &extent,
+                                   const GaussianSpreadKernelParameters::Shape  &kernelShapeParameters) : impl_(new Impl(extent, kernelShapeParameters))
 {
 }
 
-void GaussTransform3D::add(const RVec &center, float amplitude)
+void GaussTransform3D::add(const GaussianSpreadKernelParameters::PositionAndAmplitude &localParameters)
 {
-    impl_->add(center, amplitude);
+    impl_->add(localParameters);
 }
 
 void GaussTransform3D::setZero()

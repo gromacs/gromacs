@@ -177,7 +177,7 @@ class GaussTransformTest : public ::testing::Test
         extents<dynamic_extent, dynamic_extent, dynamic_extent> latticeExtent_ = {3, 3, 3 };
         float                        sigma_          = 1;
         float                        nSigma_         = 5;
-        GaussTransform3D             gaussTransform_ = {latticeExtent_, sigma_, nSigma_};
+        GaussTransform3D             gaussTransform_ = {latticeExtent_, {sigma_, nSigma_}};
         test::FloatingPointTolerance tolerance_      = test::defaultFloatTolerance();
         const RVec                   latticeCenter_  = {1, 1, 1};
 };
@@ -189,13 +189,13 @@ TEST_F(GaussTransformTest, isZeroUponConstruction)
 
 TEST_F(GaussTransformTest, isZeroAddingZeroAmplitudeGauss)
 {
-    gaussTransform_.add(latticeCenter_, 0.);
+    gaussTransform_.add({latticeCenter_, 0.});
     isZeroWithinFloatTolerance();
 }
 
 TEST_F(GaussTransformTest, isZeroAfterSettingZero)
 {
-    gaussTransform_.add(latticeCenter_, 1.);
+    gaussTransform_.add({latticeCenter_, 1.});
     for (const auto value : gaussTransform_.view())
     {
         EXPECT_GT(value, 0);
@@ -206,33 +206,33 @@ TEST_F(GaussTransformTest, isZeroAfterSettingZero)
 
 TEST_F(GaussTransformTest, isZeroWhenOutsideRangeinX)
 {
-    gaussTransform_.add({-nSigma_  * sigma_, 0, 0}, 1.);
+    gaussTransform_.add({{-nSigma_  * sigma_, 0, 0}, 1.});
     isZeroWithinFloatTolerance();
 }
 
 TEST_F(GaussTransformTest, isZeroWhenOutsideRangeinY)
 {
-    gaussTransform_.add({0, -nSigma_ * sigma_, 0}, 1.);
+    gaussTransform_.add({{0, -nSigma_ * sigma_, 0}, 1.});
     isZeroWithinFloatTolerance();
 }
 
 TEST_F(GaussTransformTest, isZeroWhenOutsideRangeinZ)
 {
-    gaussTransform_.add({0, 0, -nSigma_ * sigma_}, 1.);
+    gaussTransform_.add({{0, 0, -nSigma_ * sigma_}, 1.});
     isZeroWithinFloatTolerance();
 }
 
 TEST_F(GaussTransformTest, complementaryGaussAddToZero)
 {
-    gaussTransform_.add(latticeCenter_, -2.0);
-    gaussTransform_.add(latticeCenter_,  0.8);
-    gaussTransform_.add(latticeCenter_,  1.2);
+    gaussTransform_.add({latticeCenter_, -2.0});
+    gaussTransform_.add({latticeCenter_,  0.8});
+    gaussTransform_.add({latticeCenter_,  1.2});
     isZeroWithinFloatTolerance();
 }
 
 TEST_F(GaussTransformTest, centerGaussianInCubeHasExpectedValues)
 {
-    gaussTransform_.add(latticeCenter_, 1);
+    gaussTransform_.add({latticeCenter_, 1.});
     const float        center         = 0.0634936392307281494140625;      // center
     const float        f              = 0.0385108403861522674560546875;   // face
     const float        e              = 0.0233580060303211212158203125;   // edge
