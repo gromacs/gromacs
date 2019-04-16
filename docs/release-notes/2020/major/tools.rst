@@ -36,3 +36,9 @@ necessary to write :ref:`index <ndx>` files to select certain atoms.
 It is part of the drive to split up the :ref:`trjconv <gmx trjconv>` tool
 into smaller parts.
 
+Added extract-cluster
+"""""""""""""""""""""""""""""""""""""""
+
+Added a dedicated tool to extract trajectory frames corresponding to different clusters obtained
+from :ref:`gmx cluster`. The new :ref:`extract-cluster <gmx extract-cluster>` tool
+generates new trajectories that contain only those frames that correspond to the correct cluster.

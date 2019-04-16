@@ -49,6 +49,7 @@
 #include "modules/angle.h"
 #include "modules/convert_trj.h"
 #include "modules/distance.h"
+#include "modules/extract_cluster.h"
 #include "modules/freevolume.h"
 #include "modules/pairdist.h"
 #include "modules/rdf.h"
@@ -94,6 +95,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<AngleInfo>(manager, group);
     registerModule<ConvertTrjInfo>(manager, group);
     registerModule<DistanceInfo>(manager, group);
+    registerModule<ExtractClusterInfo>(manager, group);
     registerModule<FreeVolumeInfo>(manager, group);
     registerModule<PairDistanceInfo>(manager, group);
     registerModule<RdfInfo>(manager, group);

@@ -532,6 +532,7 @@ void write_tng_frame(t_trxstatus *status,
 int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
 {
     char title[STRLEN];
+    title[0] = '\0';
     real prec;
 
     if (fr->bPrec)
