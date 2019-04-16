@@ -145,8 +145,6 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
         t_inputrec                          inputrec_;
         //! Topology
         gmx_mtop_t                          mtop_;
-        //! Energy output object
-        EnergyOutput                        energyOutput_;
         //! MD atoms
         t_mdatoms                           mdatoms_;
         //! Simulation time
@@ -634,27 +632,27 @@ TEST_P(EnergyOutputTest, CheckOutput)
         inputrec_.ref_p[YY][XX]   = 1.0;
     }
 
-    energyOutput_.prepare(energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun);
+    std::unique_ptr<EnergyOutput> energyOutput = std::make_unique<EnergyOutput>(energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun);
 
     // Add synthetic data for a single step
     double testValue = 10.0;
     for (int frame = 0; frame < parameters.numFrames; frame++)
     {
         setStepData(&testValue);
-        energyOutput_.addDataAtEnergyStep(false, true, time_, tmass_, enerdata_.get(),
+        energyOutput->addDataAtEnergyStep(false, true, time_, tmass_, enerdata_.get(),
                                           &state_, nullptr, nullptr, box_,
                                           constraintsVirial_, forceVirial_, totalVirial_, pressure_,
                                           &ekindata_, muTotal_, constraints_.get());
 
-        energyOutput_.printAnnealingTemperatures(log_, &mtop_.groups, &inputrec_.opts);
-        energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
+        energyOutput->printAnnealingTemperatures(log_, &mtop_.groups, &inputrec_.opts);
+        energyOutput->printStepToEnergyFile(energyFile_, true, false, false, log_,
                                             100*frame, time_,
                                             nullptr, nullptr);
         time_ += 1.0;
     }
 
-    energyOutput_.printAnnealingTemperatures(log_, &mtop_.groups, &inputrec_.opts);
-    energyOutput_.printAverages(log_, &mtop_.groups);
+    energyOutput->printAnnealingTemperatures(log_, &mtop_.groups, &inputrec_.opts);
+    energyOutput->printAverages(log_, &mtop_.groups);
 
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);
@@ -671,7 +669,7 @@ TEST_P(EnergyOutputTest, CheckOutput)
     }
 
     // Test printed values
-    checker_.checkInteger(energyOutput_.numEnergyTerms(), "Number of Energy Terms");
+    checker_.checkInteger(energyOutput->numEnergyTerms(), "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 

@@ -32,6 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief Header for the code that writes energy-like quantities.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
+ * \ingroup module_mdlib
+ * \inlibraryapi
+ */
 #ifndef GMX_MDLIB_ENERGYOUTPUT_H
 #define GMX_MDLIB_ENERGYOUTPUT_H
 
@@ -55,53 +65,51 @@ struct t_inputrec;
 struct t_lambda;
 class t_state;
 
+struct t_mde_delta_h_coll;
+
 namespace gmx
 {
 class Awh;
 class Constraints;
 }
 
+//! \brief Printed names for intergroup energies
 extern const char *egrp_nm[egNR+1];
 
-/* delta_h block type enum: the kinds of energies written out. */
+/* \brief delta_h block type enum: the kinds of energies written out. */
 enum
 {
-    dhbtDH   = 0, /* delta H BAR energy difference*/
-    dhbtDHDL = 1, /* dH/dlambda derivative */
-    dhbtEN,       /* System energy */
-    dhbtPV,       /* pV term */
-    dhbtEXPANDED, /* expanded ensemble statistics */
+    //! Delta H BAR energy difference
+    dhbtDH   = 0,
+    //! dH/dlambda derivative
+    dhbtDHDL = 1,
+    //! System energy
+    dhbtEN,
+    //! pV term
+    dhbtPV,
+    //! Expanded ensemble statistics
+    dhbtEXPANDED,
+    //! Total number of energy types in this enum
     dhbtNR
 };
 
 namespace gmx
 {
 
-// TODO remove use of detail namespace when removing t_mdebin in
-// favour of an Impl class.
-namespace detail
-{
-struct t_mdebin;
-}
-
-/* The functions & data structures here determine the content for outputting
-   the .edr file; the file format and actual writing is done with functions
-   defined in enxio.h */
-
+/* Energy output class
+ *
+ * This is the collection of energy averages collected during mdrun, and to
+ * be written out to the .edr file.
+ *
+ * \todo Use more std containers.
+ * \todo Remove GMX_CONSTRAINTVIR
+ * \todo Write free-energy output also to energy file (after adding more tests)
+ */
 class EnergyOutput
 {
     public:
 
-        EnergyOutput();
-
         /*! \brief Initiate MD energy bin
-         *
-         * This second phase of construction is needed until we have
-         * modules that understand how to request output from
-         * EnergyOutput.
-         *
-         * \todo Refactor to separate a function to write the file header.
-         *       Perhaps transform the remainder into a factory function.
          *
          * \param[in] fp_ene     Energy output file.
          * \param[in] mtop       Topology.
@@ -110,12 +118,13 @@ class EnergyOutput
          * \param[in] fp_dhdl    FEP file.
          * \param[in] isRerun    Is this is a rerun instead of the simulations.
          */
-        void prepare(ener_file        *fp_ene,
+        EnergyOutput(ener_file        *fp_ene,
                      const gmx_mtop_t *mtop,
                      const t_inputrec *ir,
                      const pull_t     *pull_work,
                      FILE             *fp_dhdl,
-                     bool              isRerun = false);
+                     bool              isRerun);
+
         ~EnergyOutput();
 
         /*! \brief Update the averaging structures.
@@ -241,8 +250,139 @@ class EnergyOutput
         void printHeader(FILE *log, int64_t steps, double time);
 
     private:
-        // TODO transform this into an impl class.
-        detail::t_mdebin *mdebin = nullptr;
+        //! Timestep
+        double              delta_t_         = 0;
+
+        //! Structure to store energy components and their running averages
+        t_ebin             *ebin_            = nullptr;
+
+        //! Is the periodic box triclinic
+        bool                bTricl_          = false;
+        //! NHC trotter is used
+        bool                bNHC_trotter_    = false;
+        //! If Nose-Hoover chains should be printed
+        bool                bPrintNHChains_  = false;
+        //! If MTTK integrator was used
+        bool                bMTTK_           = false;
+
+        //! Temperature control scheme
+        int                 etc_             = 0;
+
+        //! Which of the main energy terms should be printed
+        bool                bEner_[F_NRE]    = {false};
+        //! Index for main energy terms
+        int                 ie_              = 0;
+        //! Number of energy terms from F_NRE list to be saved (i.e. number of 'true' in bEner)
+        int                 f_nre_           = 0;
+
+        //! Index for constraints RMSD
+        int                 iconrmsd_        = 0;
+        /* !\brief How many constraints RMSD terms there are.
+         * Usually 1 if LINCS is used and 0 otherwise)
+         * nCrmsd > 0 indicates when constraints RMSD is saves, hence no boolean
+         */
+        int                 nCrmsd_          = 0;
+
+        //! Is the periodic box dynamic
+        bool                bDynBox_         = false;
+        //! Index for box dimensions
+        int                 ib_              = 0;
+        //! Index for box volume
+        int                 ivol_            = 0;
+        //! Index for density
+        int                 idens_           = 0;
+        //! Triclinic box and not a rerun
+        bool                bDiagPres_       = false;
+        //! Reference pressure, averaged over dimensions
+        real                ref_p_           = 0.0;
+        //! Index for thermodynamic work (pV)
+        int                 ipv_             = 0;
+        //! Index for entalpy (pV + total energy)
+        int                 ienthalpy_       = 0;
+
+        /*! \brief If the constraints virial should be printed.
+         * Can only be true if "GMX_CONSTRAINTVIR" environmental variable is set */
+        bool                bConstrVir_      = false;
+        //! Index for constrains virial
+        int                 isvir_           = 0;
+        //! Index for force virial
+        int                 ifvir_           = 0;
+
+        //! If we have pressure computed
+        bool                bPres_           = false;
+        //! Index for total virial
+        int                 ivir_            = 0;
+        //! Index for pressure
+        int                 ipres_           = 0;
+        /*! \brief Index for surface tension
+         * [(pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ]]*/
+        int                 isurft_          = 0;
+
+        //! Pressure control scheme
+        int                 epc_             = 0;
+        //! Index for velocity of the box borders
+        int                 ipc_             = 0;
+
+        //! If dipole was calculated
+        bool                bMu_             = false;
+        //! Index for the dipole
+        int                 imu_             = 0;
+
+        //! Index for coseine acceleration used for viscocity calculation
+        int                 ivcos_           = 0;
+        //! Index for viscocity
+        int                 ivisc_           = 0;
+
+        //! Which energy terms from egNR list should be printed in group-to-group block
+        bool                bEInd_[egNR]     = {false};
+        //! Number of energy terms to be printed (these, for which bEInd[] == true)
+        int                 nEc_             = 0;
+        //! Number of energy output groups
+        int                 nEg_             = 0;
+        //! Number of intergroup energy sets to be printed for each energy term (nE = (nEg*(nEg+1))/2)
+        int                 nE_              = 0;
+        //! Indexes for integroup energy sets (each set with nEc energies)
+        int                *igrp_            = nullptr;
+
+        //! Number of temperature coupling groups
+        int                 nTC_             = 0;
+        //! Index for temperature
+        int                 itemp_           = 0;
+
+        //! Number of Nose-Hoover chains
+        int                 nNHC_            = 0;
+        //! Number of temperature coupling coefficients in case of NH Chains
+        int                 mde_n_           = 0;
+        //! Index for temperature coupling coefficient in case of NH chains
+        int                 itc_             = 0;
+
+        //! Number of temperature coupling terms if the temperature control is dealt by barostat (MTTK case)
+        int                 nTCP_            = 0;
+        //! Scalling factors for temperaturs control in MTTK
+        int                 mdeb_n_          = 0;
+        //! Index for scalling factor of MTTK
+        int                 itcb_            = 0;
+
+        //! Number of acceleration groups
+        int                 nU_              = 0;
+        //! Index for group velocities
+        int                 iu_              = 0;
+
+        //! Array to accumulate values during update
+        real               *tmp_r_           = nullptr;
+        //! Array to accumulate values during update
+        rvec               *tmp_v_           = nullptr;
+
+        //! The dhdl.xvg output file
+        FILE               *fp_dhdl_         = nullptr;
+        //! Energy components for dhdl.xvg output
+        double             *dE_              = nullptr;
+        //! The delta U components (raw data + histogram)
+        t_mde_delta_h_coll *dhc_             = nullptr;
+        //! Temperatures for simulated tempering groups
+        real               *temperatures_    = nullptr;
+        //! Number of temperatures actually saved
+        int                 numTemperatures_ = 0;
 };
 
 } // namespace gmx

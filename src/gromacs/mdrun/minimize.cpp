@@ -1117,8 +1117,7 @@ Integrator::do_cg()
             vsite, constr, nullptr);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle,
                                          StartingBehavior::NewSimulation);
-    gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr, false);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1757,8 +1756,7 @@ Integrator::do_lbfgs()
             vsite, constr, nullptr);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle,
                                          StartingBehavior::NewSimulation);
-    gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr, false);
 
     start = 0;
     end   = mdatoms->homenr;
@@ -2452,8 +2450,7 @@ Integrator::do_steep()
             vsite, constr, nullptr);
     gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle,
                                          StartingBehavior::NewSimulation);
-    gmx::EnergyOutput energyOutput;
-    energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr, false);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
