@@ -3527,7 +3527,7 @@ void dd_partition_system(FILE                    *fplog,
                       comm->cellsize_min, np,
                       fr,
                       fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x.rvec_array(),
-                      vsite, top_global, top_local);
+                      top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
 
@@ -3541,7 +3541,7 @@ void dd_partition_system(FILE                    *fplog,
         switch (range)
         {
             case DDAtomRanges::Type::Vsites:
-                if (vsite && vsite->n_intercg_vsite)
+                if (vsite && vsite->numInterUpdategroupVsites)
                 {
                     n = dd_make_local_vsites(dd, n, top_local->idef.il);
                 }
@@ -3574,7 +3574,7 @@ void dd_partition_system(FILE                    *fplog,
 
     if (fr->haveDirectVirialContributions)
     {
-        if (vsite && vsite->n_intercg_vsite)
+        if (vsite && vsite->numInterUpdategroupVsites)
         {
             nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Vsites);
         }

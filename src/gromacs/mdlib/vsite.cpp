@@ -423,25 +423,18 @@ static int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
 enum class PbcMode
 {
     all,         // Apply normal, simple PBC for all vsites
-    chargeGroup, // Keep vsite in the same periodic image as the rest of it's charge group
     none         // No PBC treatment needed
 };
 
 /*! \brief Returns the PBC mode based on the system PBC and vsite properties
  *
  * \param[in] pbcPtr  A pointer to a PBC struct or nullptr when no PBC treatment is required
- * \param[in] vsite   A pointer to the vsite struct, can be nullptr
  */
-static PbcMode getPbcMode(const t_pbc       *pbcPtr,
-                          const gmx_vsite_t *vsite)
+static PbcMode getPbcMode(const t_pbc *pbcPtr)
 {
     if (pbcPtr == nullptr)
     {
         return PbcMode::none;
-    }
-    else if (vsite != nullptr && vsite->bHaveChargeGroups)
-    {
-        return PbcMode::chargeGroup;
     }
     else
     {
@@ -449,8 +442,7 @@ static PbcMode getPbcMode(const t_pbc       *pbcPtr,
     }
 }
 
-static void construct_vsites_thread(const gmx_vsite_t *vsite,
-                                    rvec x[],
+static void construct_vsites_thread(rvec x[],
                                     real dt, rvec *v,
                                     const t_iparams ip[], const t_ilist ilist[],
                                     const t_pbc *pbc_null)
@@ -465,10 +457,9 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
         inv_dt = 1.0;
     }
 
-    const PbcMode            pbcMode   = getPbcMode(pbc_null, vsite);
+    const PbcMode            pbcMode   = getPbcMode(pbc_null);
     /* We need another pbc pointer, as with charge groups we switch per vsite */
     const t_pbc             *pbc_null2 = pbc_null;
-    gmx::ArrayRef<const int> vsite_pbc;
 
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
@@ -484,11 +475,6 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
 
             const t_iatom *ia = ilist[ftype].iatoms;
 
-            if (pbcMode == PbcMode::chargeGroup)
-            {
-                vsite_pbc = (*vsite->vsite_pbc_loc)[ftype - c_ftypeVsiteStart];
-            }
-
             for (int i = 0; i < nr; )
             {
                 int  tp     = ia[0];
@@ -497,39 +483,6 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
                 int  ai     = ia[2];
                 /* Constants for constructing vsites */
                 real a1     = ip[tp].vsite.a;
-                /* Check what kind of pbc we need to use */
-                int  pbc_atom;
-                rvec xpbc;
-                if (pbcMode == PbcMode::all)
-                {
-                    /* No charge groups, vsite follows its own pbc */
-                    pbc_atom = avsite;
-                    copy_rvec(x[avsite], xpbc);
-                }
-                else if (pbcMode == PbcMode::chargeGroup)
-                {
-                    pbc_atom = vsite_pbc[i/(1 + nra)];
-                    if (pbc_atom > -2)
-                    {
-                        if (pbc_atom >= 0)
-                        {
-                            /* We need to copy the coordinates here,
-                             * single for single atom cg's pbc_atom
-                             * is the vsite itself.
-                             */
-                            copy_rvec(x[pbc_atom], xpbc);
-                        }
-                        pbc_null2 = pbc_null;
-                    }
-                    else
-                    {
-                        pbc_null2 = nullptr;
-                    }
-                }
-                else
-                {
-                    pbc_atom = -2;
-                }
                 /* Copy the old position */
                 rvec xv;
                 copy_rvec(x[avsite], xv);
@@ -594,14 +547,14 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
                                   ftype, __FILE__, __LINE__);
                 }
 
-                if (pbc_atom >= 0)
+                if (pbcMode == PbcMode::all)
                 {
-                    /* Match the pbc of this vsite to the rest of its charge group */
+                    /* Keep the vsite in the same periodic image as before */
                     rvec dx;
-                    int  ishift = pbc_dx_aiuc(pbc_null, x[avsite], xpbc, dx);
+                    int  ishift = pbc_dx_aiuc(pbc_null, x[avsite], xv, dx);
                     if (ishift != CENTRAL)
                     {
-                        rvec_add(xpbc, dx, x[avsite]);
+                        rvec_add(xv, dx, x[avsite]);
                     }
                 }
                 if (v != nullptr)
@@ -641,7 +594,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
      * do not optimize this case.
      */
     if (ePBC != epbcNONE && (useDomdec || bMolPBC) &&
-        !(vsite != nullptr && vsite->n_intercg_vsite == 0))
+        !(vsite != nullptr && vsite->numInterUpdategroupVsites == 0))
     {
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
@@ -664,8 +617,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
 
     if (vsite == nullptr || vsite->nthreads == 1)
     {
-        construct_vsites_thread(vsite,
-                                x, dt, v,
+        construct_vsites_thread(x, dt, v,
                                 ip, ilist,
                                 pbc_null);
     }
@@ -679,8 +631,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
                 const VsiteThread &tData = *vsite->tData[th];
                 GMX_ASSERT(tData.rangeStart >= 0, "The thread data should be initialized before calling construct_vsites");
 
-                construct_vsites_thread(vsite,
-                                        x, dt, v,
+                construct_vsites_thread(x, dt, v,
                                         ip, tData.ilist,
                                         pbc_null);
                 if (tData.useInterdependentTask)
@@ -689,8 +640,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
                      * since both tasks only construct vsites from particles,
                      * or local vsites, not from non-local vsites.
                      */
-                    construct_vsites_thread(vsite,
-                                            x, dt, v,
+                    construct_vsites_thread(x, dt, v,
                                             ip, tData.idTask.ilist,
                                             pbc_null);
                 }
@@ -698,8 +648,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
         /* Now we can construct the vsites that might depend on other vsites */
-        construct_vsites_thread(vsite,
-                                x, dt, v,
+        construct_vsites_thread(x, dt, v,
                                 ip, vsite->tData[vsite->nthreads]->ilist,
                                 pbc_null);
     }
@@ -1488,14 +1437,13 @@ static int vsite_count(const t_ilist *ilist, int ftype)
     }
 }
 
-static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
-                                  const rvec x[],
+static void spread_vsite_f_thread(const rvec x[],
                                   rvec f[], rvec *fshift,
                                   gmx_bool VirCorr, matrix dxdf,
                                   t_iparams ip[], const t_ilist ilist[],
                                   const t_graph *g, const t_pbc *pbc_null)
 {
-    const PbcMode            pbcMode   = getPbcMode(pbc_null, vsite);
+    const PbcMode            pbcMode   = getPbcMode(pbc_null);
     /* We need another pbc pointer, as with charge groups we switch per vsite */
     const t_pbc             *pbc_null2 = pbc_null;
     gmx::ArrayRef<const int> vsite_pbc;
@@ -1520,28 +1468,9 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
             {
                 pbc_null2 = pbc_null;
             }
-            else if (pbcMode == PbcMode::chargeGroup)
-            {
-                if (vsite->vsite_pbc_loc)
-                {
-                    vsite_pbc = (*vsite->vsite_pbc_loc)[ftype - c_ftypeVsiteStart];
-                }
-            }
 
             for (int i = 0; i < nr; )
             {
-                if (!vsite_pbc.empty())
-                {
-                    if (vsite_pbc[i/(1 + nra)] > -2)
-                    {
-                        pbc_null2 = pbc_null;
-                    }
-                    else
-                    {
-                        pbc_null2 = nullptr;
-                    }
-                }
-
                 int tp = ia[0];
 
                 /* Constants for constructing */
@@ -1628,7 +1557,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
     t_pbc pbc, *pbc_null;
 
     /* We only need to do pbc when we have inter-cg vsites */
-    if ((useDomdec || bMolPBC) && vsite->n_intercg_vsite)
+    if ((useDomdec || bMolPBC) && vsite->numInterUpdategroupVsites)
     {
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
@@ -1652,8 +1581,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
         {
             clear_mat(dxdf);
         }
-        spread_vsite_f_thread(vsite,
-                              x, f, fshift,
+        spread_vsite_f_thread(x, f, fshift,
                               VirCorr, dxdf,
                               idef->iparams, idef->il,
                               g, pbc_null);
@@ -1676,8 +1604,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
         {
             clear_mat(vsite->tData[vsite->nthreads]->dxdf);
         }
-        spread_vsite_f_thread(vsite,
-                              x, f, fshift,
+        spread_vsite_f_thread(x, f, fshift,
                               VirCorr, vsite->tData[vsite->nthreads]->dxdf,
                               idef->iparams,
                               vsite->tData[vsite->nthreads]->ilist,
@@ -1728,8 +1655,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                         copy_rvec(f[idTask->vsite[i]],
                                   idTask->force[idTask->vsite[i]]);
                     }
-                    spread_vsite_f_thread(vsite,
-                                          x, as_rvec_array(idTask->force.data()), fshift_t,
+                    spread_vsite_f_thread(x, as_rvec_array(idTask->force.data()), fshift_t,
                                           VirCorr, tData.dxdf,
                                           idef->iparams,
                                           tData.idTask.ilist,
@@ -1770,8 +1696,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                 }
 
                 /* Spread the vsites that spread locally only */
-                spread_vsite_f_thread(vsite,
-                                      x, f, fshift_t,
+                spread_vsite_f_thread(x, f, fshift_t,
                                       VirCorr, tData.dxdf,
                                       idef->iparams,
                                       tData.ilist,
@@ -1826,22 +1751,23 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
     wallcycle_stop(wcycle, ewcVSITESPREAD);
 }
 
-/*! \brief Returns the an array with charge-group indices for each atom
+/*! \brief Returns the an array with group indices for each atom
  *
- * \param[in] chargeGroups  The charge group block struct
+ * \param[in] grouping  The paritioning of the atom range into atom groups
  */
-static std::vector<int> atom2cg(const t_block &chargeGroups)
+static std::vector<int> makeAtomToGroupMapping(const gmx::RangePartitioning &grouping)
 {
-    std::vector<int> a2cg(chargeGroups.index[chargeGroups.nr], 0);
+    std::vector<int> atomToGroup(grouping.fullRange().end(), 0);
 
-    for (int chargeGroup = 0; chargeGroup < chargeGroups.nr; chargeGroup++)
+    for (int group = 0; group < grouping.numBlocks(); group++)
     {
-        std::fill(a2cg.begin() + chargeGroups.index[chargeGroup],
-                  a2cg.begin() + chargeGroups.index[chargeGroup + 1],
-                  chargeGroup);
+        auto block = grouping.block(group);
+        std::fill(atomToGroup.begin() + block.begin(),
+                  atomToGroup.begin() + block.end(),
+                  group);
     }
 
-    return a2cg;
+    return atomToGroup;
 }
 
 int countNonlinearVsites(const gmx_mtop_t &mtop)
@@ -1865,28 +1791,41 @@ int countNonlinearVsites(const gmx_mtop_t &mtop)
     return numNonlinearVsites;
 }
 
-int count_intercg_vsites(const gmx_mtop_t *mtop)
+int countInterUpdategroupVsites(const gmx_mtop_t                            &mtop,
+                                gmx::ArrayRef<const gmx::RangePartitioning>  updateGroupingPerMoleculetype)
 {
     int n_intercg_vsite = 0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
+    for (const gmx_molblock_t &molb : mtop.molblock)
     {
-        const gmx_moltype_t &molt = mtop->moltype[molb.type];
+        const gmx_moltype_t &molt = mtop.moltype[molb.type];
 
-        std::vector<int>     a2cg = atom2cg(molt.cgs);
+        std::vector<int>     atomToGroup;
+        if (!updateGroupingPerMoleculetype.empty())
+        {
+            atomToGroup = makeAtomToGroupMapping(updateGroupingPerMoleculetype[molb.type]);
+        }
         for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
         {
             const int              nral = NRAL(ftype);
             const InteractionList &il   = molt.ilist[ftype];
             for (int i = 0; i < il.size(); i += 1 + nral)
             {
-                int cg = a2cg[il.iatoms[1 + i]];
-                for (int a = 1; a < nral; a++)
+                bool isInterGroup = atomToGroup.empty();
+                if (!isInterGroup)
                 {
-                    if (a2cg[il.iatoms[1 + a]] != cg)
+                    const int group = atomToGroup[il.iatoms[1 + i]];
+                    for (int a = 1; a < nral; a++)
                     {
-                        n_intercg_vsite += molb.nmol;
-                        break;
+                        if (atomToGroup[il.iatoms[1 + a]] != group)
+                        {
+                            isInterGroup = true;
+                            break;
+                        }
                     }
+                }
+                if (isInterGroup)
+                {
+                    n_intercg_vsite += molb.nmol;
                 }
             }
         }
@@ -1894,142 +1833,6 @@ int count_intercg_vsites(const gmx_mtop_t *mtop)
 
     return n_intercg_vsite;
 }
-
-template <typename T>
-static VsitePbc
-get_vsite_pbc(const t_iparams *iparams, const T *ilist,
-              const t_atom *atom, const t_mdatoms *md,
-              const t_block &cgs)
-{
-    /* Make an atom to charge group index */
-    std::vector<int> a2cg = atom2cg(cgs);
-
-    /* Make an array that tells if the pbc of an atom is set */
-    std::vector<bool> pbc_set(cgs.index[cgs.nr], false);
-    /* PBC is set for all non vsites */
-    for (int a = 0; a < cgs.index[cgs.nr]; a++)
-    {
-        if ((atom && atom[a].ptype != eptVSite) ||
-            (md   && md->ptype[a]  != eptVSite))
-        {
-            pbc_set[a] = true;
-        }
-    }
-
-    VsitePbc vsite_pbc;
-
-    for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
-    {
-        {   // TODO remove me
-            int               nral = NRAL(ftype);
-            const T          &il   = ilist[ftype];
-
-            std::vector<int> &vsite_pbc_f = vsite_pbc[ftype - F_VSITE2];
-            vsite_pbc_f.resize(il.size()/(1 + nral));
-
-            int i = 0;
-            while (i < il.size())
-            {
-                int     vsi   = i/(1 + nral);
-                t_iatom vsite = il.iatoms[i + 1];
-                int     cg_v  = a2cg[vsite];
-                /* A value of -2 signals that this vsite and its contructing
-                 * atoms are all within the same cg, so no pbc is required.
-                 */
-                vsite_pbc_f[vsi] = -2;
-                /* Check if constructing atoms are outside the vsite's cg */
-                int nc3 = 0;
-                if (ftype == F_VSITEN)
-                {
-                    nc3 = 3*iparams[il.iatoms[i]].vsiten.n;
-                    for (int j = 0; j < nc3; j += 3)
-                    {
-                        if (a2cg[il.iatoms[i + j + 2]] != cg_v)
-                        {
-                            vsite_pbc_f[vsi] = -1;
-                        }
-                    }
-                }
-                else
-                {
-                    for (int a = 1; a < nral; a++)
-                    {
-                        if (a2cg[il.iatoms[i + 1 + a]] != cg_v)
-                        {
-                            vsite_pbc_f[vsi] = -1;
-                        }
-                    }
-                }
-                if (vsite_pbc_f[vsi] == -1)
-                {
-                    /* Check if this is the first processed atom of a vsite only cg */
-                    gmx_bool bViteOnlyCG_and_FirstAtom = TRUE;
-                    for (int a = cgs.index[cg_v]; a < cgs.index[cg_v + 1]; a++)
-                    {
-                        /* Non-vsites already have pbc set, so simply check for pbc_set */
-                        if (pbc_set[a])
-                        {
-                            bViteOnlyCG_and_FirstAtom = FALSE;
-                            break;
-                        }
-                    }
-                    if (bViteOnlyCG_and_FirstAtom)
-                    {
-                        /* First processed atom of a vsite only charge group.
-                         * The pbc of the input coordinates to construct_vsites
-                         * should be preserved.
-                         */
-                        vsite_pbc_f[vsi] = vsite;
-                    }
-                    else if (cg_v != a2cg[il.iatoms[1 + i + 1]])
-                    {
-                        /* This vsite has a different charge group index
-                         * than it's first constructing atom
-                         * and the charge group has more than one atom,
-                         * search for the first normal particle
-                         * or vsite that already had its pbc defined.
-                         * If nothing is found, use full pbc for this vsite.
-                         */
-                        for (int a = cgs.index[cg_v]; a < cgs.index[cg_v + 1]; a++)
-                        {
-                            if (a != vsite && pbc_set[a])
-                            {
-                                vsite_pbc_f[vsi] = a;
-                                if (gmx_debug_at)
-                                {
-                                    fprintf(debug, "vsite %d match pbc with atom %d\n",
-                                            vsite+1, a+1);
-                                }
-                                break;
-                            }
-                        }
-                        if (gmx_debug_at)
-                        {
-                            fprintf(debug, "vsite atom %d  cg %d - %d pbc atom %d\n",
-                                    vsite+1, cgs.index[cg_v] + 1, cgs.index[cg_v + 1],
-                                    vsite_pbc_f[vsi] + 1);
-                        }
-                    }
-                }
-                if (ftype == F_VSITEN)
-                {
-                    /* The other entries in vsite_pbc_f are not used for center vsites */
-                    i += nc3;
-                }
-                else
-                {
-                    i += 1 + nral;
-                }
-
-                /* This vsite now has its pbc defined */
-                pbc_set[vsite] = true;
-            }
-        }
-    }
-
-    return vsite_pbc;
-}
-
 
 std::unique_ptr<gmx_vsite_t>
 initVsite(const gmx_mtop_t &mtop,
@@ -2062,37 +1865,16 @@ initVsite(const gmx_mtop_t &mtop,
 
     vsite = std::make_unique<gmx_vsite_t>();
 
-    vsite->n_intercg_vsite   = count_intercg_vsites(&mtop);
-
-    vsite->bHaveChargeGroups = (ncg_mtop(&mtop) < mtop.natoms);
-
-    vsite->useDomdec         = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
-
-    /* If we don't have charge groups, the vsite follows its own pbc.
-     *
-     * With charge groups, each vsite needs to follow the pbc of the charge
-     * group. Thus we need to keep track of PBC. Here we assume that without
-     * domain decomposition all molecules are whole (which will not be
-     * the case with periodic molecules).
-     */
-    if (vsite->bHaveChargeGroups &&
-        vsite->n_intercg_vsite > 0 &&
-        DOMAINDECOMP(cr))
+    gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingPerMoleculetype;
+    if (DOMAINDECOMP(cr))
     {
-        vsite->vsite_pbc_molt.resize(mtop.moltype.size());
-        for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
-        {
-            const gmx_moltype_t &molt = mtop.moltype[mt];
-            vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop.ffparams.iparams.data(),
-                                                      molt.ilist.data(),
-                                                      molt.atoms.atom, nullptr,
-                                                      molt.cgs);
-        }
-
-        vsite->vsite_pbc_loc = std::make_unique<VsitePbc>();
+        updateGroupingPerMoleculetype = getUpdateGroupingPerMoleculetype(*cr->dd);
     }
+    vsite->numInterUpdategroupVsites = countInterUpdategroupVsites(mtop, updateGroupingPerMoleculetype);
 
-    vsite->nthreads = gmx_omp_nthreads_get(emntVSITE);
+    vsite->useDomdec                 = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
+
+    vsite->nthreads                  = gmx_omp_nthreads_get(emntVSITE);
 
     if (vsite->nthreads > 1)
     {
@@ -2613,21 +2395,8 @@ void set_vsite_top(gmx_vsite_t          *vsite,
                    const gmx_localtop_t *top,
                    const t_mdatoms      *md)
 {
-    if (vsite->n_intercg_vsite > 0 && vsite->bHaveChargeGroups)
-    {
-        vsite->vsite_pbc_loc  = std::make_unique<VsitePbc>();
-        *vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
-                                              top->idef.il, nullptr, md,
-                                              top->cgs);
-    }
-
     if (vsite->nthreads > 1)
     {
-        if (vsite->bHaveChargeGroups)
-        {
-            gmx_fatal(FARGS, "The combination of threading, virtual sites and charge groups is not implemented");
-        }
-
         split_vsites_over_threads(top->idef.il, top->idef.iparams,
                                   md, vsite);
     }

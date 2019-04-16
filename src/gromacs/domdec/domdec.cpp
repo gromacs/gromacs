@@ -207,6 +207,12 @@ t_block *dd_charge_groups_global(gmx_domdec_t *dd)
     return &dd->comm->cgs_gl;
 }
 
+gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(const gmx_domdec_t &dd)
+{
+    GMX_RELEASE_ASSERT(dd.comm, "Need a valid dd.comm");
+    return dd.comm->updateGroupingPerMoleculetype;
+}
+
 void dd_store_state(gmx_domdec_t *dd, t_state *state)
 {
     int i;
@@ -2660,10 +2666,11 @@ static void writeSettings(gmx::TextWriter       *log,
         log->writeLine();
     }
 
-    gmx_bool bInterCGVsites = count_intercg_vsites(mtop) != 0;
+    const bool haveInterDomainVsites =
+        (countInterUpdategroupVsites(*mtop, comm->updateGroupingPerMoleculetype) != 0);
 
     if (comm->bInterCGBondeds ||
-        bInterCGVsites ||
+        haveInterDomainVsites ||
         dd->splitConstraints || dd->splitSettles)
     {
         std::string decompUnits;
@@ -2709,7 +2716,7 @@ static void writeSettings(gmx::TextWriter       *log,
                                     "multi-body bonded interactions", "(-rdd)",
                                     (comm->bBondComm || isDlbOn(dd->comm)) ? comm->cutoff_mbody : std::min(comm->cutoff, limit));
         }
-        if (bInterCGVsites)
+        if (haveInterDomainVsites)
         {
             log->writeLineFormatted("%40s  %-7s %6.3f nm",
                                     "virtual site constructions", "(-rcon)", limit);

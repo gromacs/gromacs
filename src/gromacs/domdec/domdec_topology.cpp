@@ -62,7 +62,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -161,10 +160,10 @@ static int nral_rt(int ftype)
     nral = NRAL(ftype);
     if (interaction_function[ftype].flags & IF_VSITE)
     {
-        /* With vsites the reverse topology contains
-         * two extra entries for PBC.
+        /* With vsites the reverse topology contains an extra entry
+         * for storing if constructing atoms are vsites.
          */
-        nral += 2;
+        nral += 1;
     }
 
     return nral;
@@ -497,7 +496,6 @@ static void count_excls(const t_block *cgs, const t_blocka *excls,
 /*! \brief Run the reverse ilist generation and store it in r_il when \p bAssign = TRUE */
 static int low_make_reverse_ilist(const InteractionLists &il_mt,
                                   const t_atom *atom,
-                                  gmx::ArrayRef < const std::vector < int>> vsitePbc,
                                   int *count,
                                   gmx_bool bConstr, gmx_bool bSettle,
                                   gmx_bool bBCheck,
@@ -572,9 +570,6 @@ static int low_make_reverse_ilist(const InteractionLists &il_mt,
                                     r_il[r_index[a]+count[a]+2+nral] |= (2<<j);
                                 }
                             }
-                            /* Store vsite pbc atom in a second extra entry */
-                            r_il[r_index[a]+count[a]+2+nral+1] =
-                                (!vsitePbc.empty() ? vsitePbc[ftype-F_VSITE2][i/(1+nral)] : -2);
                         }
                     }
                     else
@@ -601,7 +596,6 @@ static int low_make_reverse_ilist(const InteractionLists &il_mt,
 /*! \brief Make the reverse ilist: a list of bonded interactions linked to atoms */
 static int make_reverse_ilist(const InteractionLists &ilist,
                               const t_atoms *atoms,
-                              gmx::ArrayRef < const std::vector < int>> vsitePbc,
                               gmx_bool bConstr, gmx_bool bSettle,
                               gmx_bool bBCheck,
                               gmx_bool bLinkToAllAtoms,
@@ -612,7 +606,7 @@ static int make_reverse_ilist(const InteractionLists &ilist,
     /* Count the interactions */
     nat_mt = atoms->nr;
     snew(count, nat_mt);
-    low_make_reverse_ilist(ilist, atoms->atom, vsitePbc,
+    low_make_reverse_ilist(ilist, atoms->atom,
                            count,
                            bConstr, bSettle, bBCheck,
                            {}, {},
@@ -628,7 +622,7 @@ static int make_reverse_ilist(const InteractionLists &ilist,
 
     /* Store the interactions */
     nint_mt =
-        low_make_reverse_ilist(ilist, atoms->atom, vsitePbc,
+        low_make_reverse_ilist(ilist, atoms->atom,
                                count,
                                bConstr, bSettle, bBCheck,
                                ril_mt->index, ril_mt->il,
@@ -643,7 +637,6 @@ static int make_reverse_ilist(const InteractionLists &ilist,
 
 /*! \brief Generate the reverse topology */
 static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
-                                          gmx::ArrayRef<const VsitePbc> vsitePbcPerMoltype,
                                           gmx_bool bConstr, gmx_bool bSettle,
                                           gmx_bool bBCheck, int *nint)
 {
@@ -667,13 +660,8 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         }
 
         /* Make the atom to interaction list for this molecule type */
-        gmx::ArrayRef < const std::vector < int>> vsitePbc;
-        if (!vsitePbcPerMoltype.empty())
-        {
-            vsitePbc = gmx::makeConstArrayRef(vsitePbcPerMoltype[mt]);
-        }
         int numberOfInteractions =
-            make_reverse_ilist(molt.ilist, &molt.atoms, vsitePbc,
+            make_reverse_ilist(molt.ilist, &molt.atoms,
                                rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
                                &rt.ril_mt[mt]);
         nint_mt.push_back(numberOfInteractions);
@@ -705,7 +693,6 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         *nint +=
             make_reverse_ilist(*mtop->intermolecular_ilist,
                                &atoms_global,
-                               {},
                                rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
                                &rt.ril_intermol);
     }
@@ -735,13 +722,6 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     }
 
     rt.th_work.resize(gmx_omp_nthreads_get(emntDomdec));
-    if (!vsitePbcPerMoltype.empty())
-    {
-        for (thread_work_t &th_work : rt.th_work)
-        {
-            th_work.vsitePbc = std::make_unique<VsitePbc>();
-        }
-    }
 
     return rt;
 }
@@ -762,15 +742,9 @@ void dd_make_reverse_top(FILE *fplog,
      * the parallel version constraint algorithm(s).
      */
 
-    gmx::ArrayRef<const VsitePbc> vsitePbcPerMoltype;
-    if (vsite)
-    {
-        vsitePbcPerMoltype = gmx::makeConstArrayRef(vsite->vsite_pbc_molt);
-    }
-
     dd->reverse_top  = new gmx_reverse_top_t;
     *dd->reverse_top =
-        make_reverse_top(mtop, ir->efep != efepNO, vsitePbcPerMoltype,
+        make_reverse_top(mtop, ir->efep != efepNO,
                          !dd->splitConstraints, !dd->splitSettles,
                          bBCheck, &dd->nbonded_global);
 
@@ -812,15 +786,15 @@ void dd_make_reverse_top(FILE *fplog,
         }
     }
 
-    if (vsite && vsite->n_intercg_vsite > 0)
+    if (vsite && vsite->numInterUpdategroupVsites > 0)
     {
         if (fplog)
         {
-            fprintf(fplog, "There are %d inter charge-group virtual sites,\n"
+            fprintf(fplog, "There are %d inter update-group virtual sites,\n"
                     "will an extra communication step for selected coordinates and forces\n",
-                    vsite->n_intercg_vsite);
+                    vsite->numInterUpdategroupVsites);
         }
-        init_domdec_vsites(dd, vsite->n_intercg_vsite);
+        init_domdec_vsites(dd, vsite->numInterUpdategroupVsites);
     }
 
     if (dd->splitConstraints || dd->splitSettles)
@@ -999,55 +973,14 @@ static void add_vsite(const gmx_ga2la_t &ga2la,
                       int ftype, int nral,
                       gmx_bool bHomeA, int a, int a_gl, int a_mol,
                       const t_iatom *iatoms,
-                      t_idef *idef,
-                      VsitePbc *vsitePbc)
+                      t_idef *idef)
 {
-    int     k, pbc_a_mol;
+    int     k;
     t_iatom tiatoms[1+MAXATOMLIST];
     int     j, ftype_r, nral_r;
 
     /* Add this interaction to the local topology */
     add_ifunc_for_vsites(tiatoms, ga2la, nral, bHomeA, a, a_gl, a_mol, iatoms, &idef->il[ftype]);
-
-    if (vsitePbc)
-    {
-        std::vector<int> &vsitePbcFtype = (*vsitePbc)[ftype - c_ftypeVsiteStart];
-        const int         vsi           = idef->il[ftype].nr/(1+nral) - 1;
-        if (static_cast<size_t>(vsi) >= vsitePbcFtype.size())
-        {
-            vsitePbcFtype.resize(vsi + 1);
-        }
-        if (bHomeA)
-        {
-            pbc_a_mol = iatoms[1+nral+1];
-            if (pbc_a_mol < 0)
-            {
-                /* The pbc flag is one of the following two options:
-                 * -2: vsite and all constructing atoms are within the same cg, no pbc
-                 * -1: vsite and its first constructing atom are in the same cg, do pbc
-                 */
-                vsitePbcFtype[vsi] = pbc_a_mol;
-            }
-            else
-            {
-                /* Set the pbc atom for this vsite so we can make its pbc
-                 * identical to the rest of the atoms in its charge group.
-                 * Since the order of the atoms does not change within a charge
-                 * group, we do not need the global to local atom index.
-                 */
-                vsitePbcFtype[vsi] = a + pbc_a_mol - iatoms[1];
-            }
-        }
-        else
-        {
-            /* This vsite is non-home (required for recursion),
-             * and therefore there is no charge group to match pbc with.
-             * But we always turn on full_pbc to assure that higher order
-             * recursion works correctly.
-             */
-            vsitePbcFtype[vsi] = -1;
-        }
-    }
 
     if (iatoms[1+nral])
     {
@@ -1075,13 +1008,9 @@ static void add_vsite(const gmx_ga2la_t &ga2la,
                         add_vsite(ga2la, index, rtil, ftype_r, nral_r,
                                   FALSE, -1, a_gl+iatoms[k]-iatoms[1], iatoms[k],
                                   rtil.data() + j,
-                                  idef, vsitePbc);
-                        j += 1 + nral_r + 2;
+                                  idef);
                     }
-                    else
-                    {
-                        j += 1 + nral_r;
-                    }
+                    j += 1 + nral_rt(ftype_r);
                 }
             }
         }
@@ -1156,12 +1085,9 @@ static void combine_blocka(t_blocka                           *dest,
     }
 }
 
-/*! \brief Append t_idef structures 1 to nsrc in src to *dest,
- * virtual sites need special attention, as pbc info differs per vsite.
- */
+/*! \brief Append t_idef structures 1 to nsrc in src to *dest */
 static void combine_idef(t_idef                             *dest,
-                         gmx::ArrayRef<const thread_work_t>  src,
-                         gmx_vsite_t                        *vsite)
+                         gmx::ArrayRef<const thread_work_t>  src)
 {
     int ftype;
 
@@ -1184,12 +1110,6 @@ static void combine_idef(t_idef                             *dest,
                 srenew(ild->iatoms, ild->nalloc);
             }
 
-            const bool vpbc  =
-                (((interaction_function[ftype].flags & IF_VSITE) != 0u) &&
-                 vsite->vsite_pbc_loc);
-            const int  nral1 = 1 + NRAL(ftype);
-            const int  ftv   = ftype - c_ftypeVsiteStart;
-
             for (gmx::index s = 1; s < src.ssize(); s++)
             {
                 const t_ilist &ils = src[s].idef.il[ftype];
@@ -1197,16 +1117,6 @@ static void combine_idef(t_idef                             *dest,
                 for (int i = 0; i < ils.nr; i++)
                 {
                     ild->iatoms[ild->nr + i] = ils.iatoms[i];
-                }
-                if (vpbc)
-                {
-                    const std::vector<int> &pbcSrc  = (*src[s].vsitePbc)[ftv];
-                    std::vector<int>       &pbcDest = (*vsite->vsite_pbc_loc)[ftv];
-                    pbcDest.resize((ild->nr + ils.nr)/nral1);
-                    for (int i = 0; i < ils.nr; i += nral1)
-                    {
-                        pbcDest[(ild->nr + i)/nral1] = pbcSrc[i/nral1];
-                    }
                 }
 
                 ild->nr += ils.nr;
@@ -1269,7 +1179,6 @@ check_assign_interactions_atom(int i, int i_gl,
                                rvec *cg_cm,
                                const t_iparams *ip_in,
                                t_idef *idef,
-                               VsitePbc *vsitePbc,
                                int iz,
                                gmx_bool bBCheck,
                                int *nbonded_local)
@@ -1292,7 +1201,7 @@ check_assign_interactions_atom(int i, int i_gl,
             {
                 add_vsite(*dd->ga2la, index, rtil, ftype, nral,
                           TRUE, i, i_gl, i_mol,
-                          iatoms.data(), idef, vsitePbc);
+                          iatoms.data(), idef);
             }
             j += 1 + nral + 2;
         }
@@ -1486,7 +1395,6 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              int *la2lc, t_pbc *pbc_null, rvec *cg_cm,
                              const t_iparams *ip_in,
                              t_idef *idef,
-                             VsitePbc *vsitePbc,
                              int izone,
                              gmx::RangePartitioning::Block atomRange)
 {
@@ -1521,7 +1429,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                                        pbc_null,
                                        cg_cm,
                                        ip_in,
-                                       idef, vsitePbc,
+                                       idef,
                                        izone,
                                        bBCheck,
                                        &nbonded_local);
@@ -1544,7 +1452,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                                            pbc_null,
                                            cg_cm,
                                            ip_in,
-                                           idef, vsitePbc,
+                                           idef,
                                            izone,
                                            bBCheck,
                                            &nbonded_local);
@@ -1882,7 +1790,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                     gmx_bool bRCheckMB, ivec rcheck, gmx_bool bRCheck2B,
                                     real rc,
                                     int *la2lc, t_pbc *pbc_null, rvec *cg_cm,
-                                    t_idef *idef, gmx_vsite_t *vsite,
+                                    t_idef *idef,
                                     t_blocka *lexcls, int *excl_count)
 {
     int                nzone_bondeds, nzone_excl;
@@ -1957,25 +1865,12 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                     clear_idef(idef_t);
                 }
 
-                VsitePbc *vsitePbc = nullptr;
-                if (vsite && vsite->bHaveChargeGroups && vsite->n_intercg_vsite > 0)
-                {
-                    if (thread == 0)
-                    {
-                        vsitePbc = vsite->vsite_pbc_loc.get();
-                    }
-                    else
-                    {
-                        vsitePbc = rt->th_work[thread].vsitePbc.get();
-                    }
-                }
-
                 rt->th_work[thread].nbonded =
                     make_bondeds_zone(dd, zones,
                                       mtop->molblock,
                                       bRCheckMB, rcheck, bRCheck2B, rc2,
                                       la2lc, pbc_null, cg_cm, idef->iparams,
-                                      idef_t, vsitePbc,
+                                      idef_t,
                                       izone,
                                       dd->atomGrouping().subRange(cg0t, cg1t));
 
@@ -2018,7 +1913,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 
         if (rt->th_work.size() > 1)
         {
-            combine_idef(idef, rt->th_work, vsite);
+            combine_idef(idef, rt->th_work);
         }
 
         for (const thread_work_t &th_work : rt->th_work)
@@ -2069,7 +1964,6 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        rvec cellsize_min, const ivec npulse,
                        t_forcerec *fr,
                        rvec *cgcm_or_x,
-                       gmx_vsite_t *vsite,
                        const gmx_mtop_t &mtop, gmx_localtop_t *ltop)
 {
     gmx_bool bRCheckMB, bRCheck2B;
@@ -2144,7 +2038,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                  bRCheckMB, rcheck, bRCheck2B, rc,
                                  dd->localAtomGroupFromAtom.data(),
                                  pbc_null, cgcm_or_x,
-                                 &ltop->idef, vsite,
+                                 &ltop->idef,
                                  &ltop->excls, &nexcl);
 
     /* The ilist is not sorted yet,
@@ -2285,7 +2179,6 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
         make_reverse_ilist(*mtop->intermolecular_ilist,
                            &atoms,
-                           {},
                            FALSE, FALSE, FALSE, TRUE, &ril_intermol);
     }
 
@@ -2313,7 +2206,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
          * The constraints are discarded here.
          */
         reverse_ilist_t ril;
-        make_reverse_ilist(molt.ilist, &molt.atoms, {},
+        make_reverse_ilist(molt.ilist, &molt.atoms,
                            FALSE, FALSE, FALSE, TRUE, &ril);
 
         cgi_mb = &cginfo_mb[mb];

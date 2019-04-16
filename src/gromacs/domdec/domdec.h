@@ -87,6 +87,7 @@ namespace gmx
 {
 class MDLogger;
 class LocalAtomSetManager;
+class RangePartitioning;
 struct DomdecOptions;
 struct MdrunOptions;
 } // namespace
@@ -101,6 +102,9 @@ int ddglatnr(const gmx_domdec_t *dd, int i);
 
 /*! \brief Return a block struct for the charge groups of the whole system */
 t_block *dd_charge_groups_global(struct gmx_domdec_t *dd);
+
+/*! \brief Returns a list of update group partitioning for each molecule type or empty when update groups are not used */
+gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(const gmx_domdec_t &dd);
 
 /*! \brief Store the global cg indices of the home cgs in state,
  *
@@ -281,7 +285,6 @@ void dd_make_local_top(struct gmx_domdec_t       *dd,
                        const ivec                 npulse,
                        t_forcerec                *fr,
                        rvec                      *cgcm_or_x,
-                       gmx_vsite_t               *vsite,
                        const gmx_mtop_t          &top,
                        gmx_localtop_t            *ltop);
 
