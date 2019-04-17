@@ -716,6 +716,43 @@ static void push_bondtype(InteractionsOfType              *bt,
     }
 }
 
+static std::vector<int> atomTypesFromAtomNames(const PreprocessingAtomTypes    *atomTypes,
+                                               const PreprocessingBondAtomType *bondAtomTypes,
+                                               gmx::ArrayRef<const char[20]>    atomNames,
+                                               warninp                         *wi)
+{
+
+    GMX_RELEASE_ASSERT(!(!atomNames.empty() && !atomTypes && !bondAtomTypes),
+                       "Need to have either valid atomtypes or bondatomtypes object");
+
+    std::vector<int> atomTypesFromAtomNames;
+    for (const auto &name : atomNames)
+    {
+        if (atomTypes != nullptr)
+        {
+            int atomType = atomTypes->atomTypeFromName(name);
+            if (atomType == NOTSET)
+            {
+                auto message = gmx::formatString("Unknown atomtype %s\n", name);
+                warning_error_and_exit(wi, message, FARGS);
+            }
+            atomTypesFromAtomNames.emplace_back(atomType);
+        }
+        else if (bondAtomTypes != nullptr)
+        {
+            int atomType = bondAtomTypes->bondAtomTypeFromName(name);
+            if (atomType == NOTSET)
+            {
+                auto message = gmx::formatString("Unknown bond_atomtype %s\n", name);
+                warning_error_and_exit(wi, message, FARGS);
+            }
+            atomTypesFromAtomNames.emplace_back(atomType);
+        }
+    }
+    return atomTypesFromAtomNames;
+}
+
+
 void push_bt(Directive                                 d,
              gmx::ArrayRef<InteractionsOfType>         bt,
              int                                       nral,
@@ -797,28 +834,16 @@ void push_bt(Directive                                 d,
             }
         }
     }
-    std::vector<int>                atoms;
+    std::vector<int> atomTypes = atomTypesFromAtomNames(at,
+                                                        bondAtomType,
+                                                        gmx::arrayRefFromArray(alc, nral),
+                                                        wi);
     std::array<real, MAXFORCEPARAM> forceParam;
-    for (int i = 0; (i < nral); i++)
-    {
-        int atomNumber;
-        if ((at != nullptr) && ((atomNumber = at->atomTypeFromName(alc[i])) == NOTSET))
-        {
-            auto message = gmx::formatString("Unknown atomtype %s\n", alc[i]);
-            warning_error_and_exit(wi, message, FARGS);
-        }
-        else if ((bondAtomType != nullptr) && ((atomNumber = bondAtomType->bondAtomTypeFromName(alc[i])) == NOTSET))
-        {
-            auto message = gmx::formatString("Unknown bond_atomtype %s\n", alc[i]);
-            warning_error_and_exit(wi, message, FARGS);
-        }
-        atoms.emplace_back(atomNumber);
-    }
     for (int i = 0; (i < nrfp); i++)
     {
         forceParam[i] = c[i];
     }
-    push_bondtype (&(bt[ftype]), InteractionOfType(atoms, forceParam), nral, ftype, FALSE, line, wi);
+    push_bondtype (&(bt[ftype]), InteractionOfType(atomTypes, forceParam), nral, ftype, FALSE, line, wi);
 }
 
 
@@ -1224,22 +1249,8 @@ push_cmaptype(Directive                                 d,
     bt[F_CMAP].cmapAngles++;              /* Since we are incrementing here, we need to subtract later, see (*****) */
     nct                     = (nral+1) * bt[F_CMAP].cmapAngles;
 
-    std::vector<int> atoms;
     for (int i = 0; (i < nral); i++)
     {
-        int atomNumber;
-        if ((atomtypes != nullptr) && ((atomNumber = bondAtomType->bondAtomTypeFromName(alc[i])) == NOTSET))
-        {
-            auto message = gmx::formatString("Unknown atomtype %s\n", alc[i]);
-            warning_error(wi, message);
-        }
-        else if ((bondAtomType != nullptr) && ((atomNumber = bondAtomType->bondAtomTypeFromName(alc[i])) == NOTSET))
-        {
-            auto message = gmx::formatString("Unknown bond_atomtype %s\n", alc[i]);
-            warning_error(wi, message);
-        }
-        atoms.emplace_back(atomNumber);
-
         /* Assign a grid number to each cmap_type */
         GMX_RELEASE_ASSERT(bondAtomType != nullptr, "Need valid PreprocessingBondAtomType object");
         bt[F_CMAP].cmapAtomTypes.emplace_back(bondAtomType->bondAtomTypeFromName(alc[i]));
@@ -1254,11 +1265,14 @@ push_cmaptype(Directive                                 d,
         auto message = gmx::formatString("Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].cmapAngles);
         warning_error(wi, message);
     }
-
+    std::vector<int> atomTypes = atomTypesFromAtomNames(atomtypes,
+                                                        bondAtomType,
+                                                        gmx::constArrayRefFromArray(alc, nral),
+                                                        wi);
     std::array<real, MAXFORCEPARAM> forceParam = {NOTSET};
 
     /* Push the bond to the bondlist */
-    push_bondtype (&(bt[ftype]), InteractionOfType(atoms, forceParam), nral, ftype, FALSE, line, wi);
+    push_bondtype (&(bt[ftype]), InteractionOfType(atomTypes, forceParam), nral, ftype, FALSE, line, wi);
 }
 
 
