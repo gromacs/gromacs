@@ -893,7 +893,7 @@ class VsiteAtomMapping
         //! Get function type.
         const int &functionType() const { return functionType_; }
         //! Get parameter number.
-        const int &interactionIndex() const { return interactionIndex_; };
+        const int &interactionIndex() const { return interactionIndex_; }
     private:
         //! Function type for the linked parameter.
         int functionType_;
