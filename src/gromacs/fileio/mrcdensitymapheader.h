@@ -159,5 +159,12 @@ struct MrcDensityMapHeader{
     std::vector<unsigned char>  extendedHeader_ = {};
 };
 
+/*! \brief Return the number of density data items that are expected
+ *         to follow this header.
+ * \throws InternalError if the number of data items cannot be determined
+ * \returns the number of voxels
+ */
+size_t numberOfExpectedDataItems(const MrcDensityMapHeader &header);
+
 }      // namespace gmx
 #endif /* end of include guard: GMX_FILEIO_MRCDENSITYMAPHEADER_H */
