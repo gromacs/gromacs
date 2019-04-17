@@ -43,68 +43,15 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd)
+gmx_enerdata_t::gmx_enerdata_t(int numEnergyGroups,
+                               int numFepLambdas) :
+    grpp(numEnergyGroups),
+    enerpart_lambda(numFepLambdas == 0 ? 0 : numFepLambdas + 1),
+    foreign_grpp(numEnergyGroups)
 {
-    int i, n2;
-
-    for (i = 0; i < F_NRE; i++)
-    {
-        enerd->term[i]         = 0;
-        enerd->foreign_term[i] = 0;
-    }
-
-
-    for (i = 0; i < efptNR; i++)
-    {
-        enerd->dvdl_lin[i]     = 0;
-        enerd->dvdl_nonlin[i]  = 0;
-    }
-
-    n2 = ngener*ngener;
-    if (debug)
-    {
-        fprintf(debug, "Creating %d sized group matrix for energies\n", n2);
-    }
-    enerd->grpp.nener         = n2;
-    enerd->foreign_grpp.nener = n2;
-    for (i = 0; (i < egNR); i++)
-    {
-        snew(enerd->grpp.ener[i], n2);
-        snew(enerd->foreign_grpp.ener[i], n2);
-    }
-
-    if (n_lambda)
-    {
-        enerd->n_lambda = 1 + n_lambda;
-        snew(enerd->enerpart_lambda, enerd->n_lambda);
-    }
-    else
-    {
-        enerd->n_lambda = 0;
-    }
 }
 
-void destroy_enerdata(gmx_enerdata_t *enerd)
-{
-    int i;
-
-    for (i = 0; (i < egNR); i++)
-    {
-        sfree(enerd->grpp.ener[i]);
-    }
-
-    for (i = 0; (i < egNR); i++)
-    {
-        sfree(enerd->foreign_grpp.ener[i]);
-    }
-
-    if (enerd->n_lambda)
-    {
-        sfree(enerd->enerpart_lambda);
-    }
-}
-
-static real sum_v(int n, const real v[])
+static real sum_v(int n, gmx::ArrayRef<const real> v)
 {
     real t;
     int  i;
@@ -302,13 +249,7 @@ void reset_enerdata(gmx_enerdata_t *enerd)
     enerd->term[F_DVDL_BONDED]     = 0.0;
     enerd->term[F_DVDL_RESTRAINT]  = 0.0;
     enerd->term[F_DKDL]            = 0.0;
-    if (enerd->n_lambda > 0)
-    {
-        for (i = 0; i < enerd->n_lambda; i++)
-        {
-            enerd->enerpart_lambda[i] = 0.0;
-        }
-    }
+    std::fill(enerd->enerpart_lambda.begin(), enerd->enerpart_lambda.end(), 0);
     /* reset foreign energy data - separate function since we also call it elsewhere */
     reset_foreign_enerdata(enerd);
 }

@@ -996,7 +996,7 @@ void upd_mdebin(t_mdebin               *md,
                 rvec                    mu_tot,
                 const gmx::Constraints *constr)
 {
-    int    i, j, k, kk, n, gid;
+    int    j, k, kk, n, gid;
     real   crmsd[2], tmp6[6];
     real   bs[NTRICLBOXS], vol, dens, pv, enthalpy;
     real   eee[egNR];
@@ -1090,7 +1090,7 @@ void upd_mdebin(t_mdebin               *md,
     if (md->nE > 1)
     {
         n = 0;
-        for (i = 0; (i < md->nEg); i++)
+        for (int i = 0; (i < md->nEg); i++)
         {
             for (j = i; (j < md->nEg); j++)
             {
@@ -1110,7 +1110,7 @@ void upd_mdebin(t_mdebin               *md,
 
     if (ekind)
     {
-        for (i = 0; (i < md->nTC); i++)
+        for (int i = 0; (i < md->nTC); i++)
         {
             md->tmp_r[i] = ekind->tcstat[i].T;
         }
@@ -1123,7 +1123,7 @@ void upd_mdebin(t_mdebin               *md,
             {
                 if (md->bNHC_trotter)
                 {
-                    for (i = 0; (i < md->nTC); i++)
+                    for (int i = 0; (i < md->nTC); i++)
                     {
                         for (j = 0; j < md->nNHC; j++)
                         {
@@ -1136,7 +1136,7 @@ void upd_mdebin(t_mdebin               *md,
 
                     if (md->bMTTK)
                     {
-                        for (i = 0; (i < md->nTCP); i++)
+                        for (int i = 0; (i < md->nTCP); i++)
                         {
                             for (j = 0; j < md->nNHC; j++)
                             {
@@ -1150,7 +1150,7 @@ void upd_mdebin(t_mdebin               *md,
                 }
                 else
                 {
-                    for (i = 0; (i < md->nTC); i++)
+                    for (int i = 0; (i < md->nTC); i++)
                     {
                         md->tmp_r[2*i]   = state->nosehoover_xi[i];
                         md->tmp_r[2*i+1] = state->nosehoover_vxi[i];
@@ -1162,7 +1162,7 @@ void upd_mdebin(t_mdebin               *md,
         else if (md->etc == etcBERENDSEN || md->etc == etcYES ||
                  md->etc == etcVRESCALE)
         {
-            for (i = 0; (i < md->nTC); i++)
+            for (int i = 0; (i < md->nTC); i++)
             {
                 md->tmp_r[i] = ekind->tcstat[i].lambda;
             }
@@ -1172,7 +1172,7 @@ void upd_mdebin(t_mdebin               *md,
 
     if (ekind && md->nU > 1)
     {
-        for (i = 0; (i < md->nU); i++)
+        for (int i = 0; (i < md->nU); i++)
         {
             copy_rvec(ekind->grpstat[i].u, md->tmp_v[i]);
         }
@@ -1184,7 +1184,7 @@ void upd_mdebin(t_mdebin               *md,
     /* BAR + thermodynamic integration values */
     if ((md->fp_dhdl || md->dhc) && bDoDHDL)
     {
-        for (i = 0; i < enerd->n_lambda-1; i++)
+        for (gmx::index i = 0; i < static_cast<gmx::index>(enerd->enerpart_lambda.size()) - 1; i++)
         {
             /* zero for simulated tempering */
             md->dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];
@@ -1227,7 +1227,7 @@ void upd_mdebin(t_mdebin               *md,
 
             if (fep->dhdl_derivatives == edhdlderivativesYES)
             {
-                for (i = 0; i < efptNR; i++)
+                for (int i = 0; i < efptNR; i++)
                 {
                     if (fep->separate_dvdl[i])
                     {
@@ -1236,14 +1236,14 @@ void upd_mdebin(t_mdebin               *md,
                     }
                 }
             }
-            for (i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
+            for (int i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
             {
                 fprintf(md->fp_dhdl, " %#.8g", md->dE[i]);
             }
             if (md->bDynBox &&
                 md->bDiagPres &&
                 (md->epc != epcNO) &&
-                (enerd->n_lambda > 0) &&
+                !enerd->enerpart_lambda.empty() &&
                 (fep->init_lambda < 0))
             {
                 fprintf(md->fp_dhdl, " %#.8g", pv);  /* PV term only needed when
@@ -1257,7 +1257,7 @@ void upd_mdebin(t_mdebin               *md,
         if (md->dhc && bDoDHDL)
         {
             int idhdl = 0;
-            for (i = 0; i < efptNR; i++)
+            for (int i = 0; i < efptNR; i++)
             {
                 if (fep->separate_dvdl[i])
                 {

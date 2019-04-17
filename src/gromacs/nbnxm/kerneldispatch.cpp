@@ -472,10 +472,10 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
                              fr->shift_vec,
                              forceFlags,
                              clearF,
-                             enerd->grpp.ener[egCOULSR],
+                             enerd->grpp.ener[egCOULSR].data(),
                              fr->bBHAM ?
-                             enerd->grpp.ener[egBHAMSR] :
-                             enerd->grpp.ener[egLJSR]);
+                             enerd->grpp.ener[egBHAMSR].data() :
+                             enerd->grpp.ener[egLJSR].data());
             break;
 
         case Nbnxm::KernelType::Gpu8x8x8:
@@ -490,10 +490,10 @@ nonbonded_verlet_t::dispatchNonbondedKernel(Nbnxm::InteractionLocality iLocality
                                  clearF,
                                  nbat->out[0].f,
                                  fr->fshift[0],
-                                 enerd->grpp.ener[egCOULSR],
+                                 enerd->grpp.ener[egCOULSR].data(),
                                  fr->bBHAM ?
-                                 enerd->grpp.ener[egBHAMSR] :
-                                 enerd->grpp.ener[egLJSR]);
+                                 enerd->grpp.ener[egBHAMSR].data() :
+                                 enerd->grpp.ener[egLJSR].data());
             break;
 
         default:
@@ -548,8 +548,8 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
     kernel_data.lambda = lambda;
     kernel_data.dvdl   = dvdl_nb;
 
-    kernel_data.energygrp_elec = enerd->grpp.ener[egCOULSR];
-    kernel_data.energygrp_vdw  = enerd->grpp.ener[egLJSR];
+    kernel_data.energygrp_elec = enerd->grpp.ener[egCOULSR].data();
+    kernel_data.energygrp_vdw  = enerd->grpp.ener[egLJSR].data();
 
     GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_fep.ssize(), "Number of lists should be same as number of NB threads");
 
@@ -583,11 +583,11 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
         real lam_i[efptNR];
         kernel_data.flags          = (donb_flags & ~(GMX_NONBONDED_DO_FORCE | GMX_NONBONDED_DO_SHIFTFORCE)) | GMX_NONBONDED_DO_FOREIGNLAMBDA;
         kernel_data.lambda         = lam_i;
-        kernel_data.energygrp_elec = enerd->foreign_grpp.ener[egCOULSR];
-        kernel_data.energygrp_vdw  = enerd->foreign_grpp.ener[egLJSR];
+        kernel_data.energygrp_elec = enerd->foreign_grpp.ener[egCOULSR].data();
+        kernel_data.energygrp_vdw  = enerd->foreign_grpp.ener[egLJSR].data();
         /* Note that we add to kernel_data.dvdl, but ignore the result */
 
-        for (int i = 0; i < enerd->n_lambda; i++)
+        for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
         {
             for (int j = 0; j < efptNR; j++)
             {

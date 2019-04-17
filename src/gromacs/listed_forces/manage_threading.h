@@ -68,8 +68,10 @@ void tear_down_bonded_threading(bonded_threading_t *bt);
  *
  * Allocates and initializes a bonded threading data structure.
  * A pointer to this struct is returned as \p *bb_ptr.
+ *
+ * \todo Avoid explicit pointers by using Impl
  */
-void init_bonded_threading(FILE *fplog, int nenergrp,
-                           bonded_threading_t **bt_ptr);
+bonded_threading_t *init_bonded_threading(FILE *fplog,
+                                          int   nenergrp);
 
 #endif

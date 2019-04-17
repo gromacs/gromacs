@@ -207,15 +207,9 @@ isPairInteraction(int ftype)
 
 /*! \brief Zero thread-local output buffers */
 void
-zero_thread_output(bonded_threading_t *bt, int thread)
+zero_thread_output(f_thread_t *f_t)
 {
-    if (!bt->haveBondeds)
-    {
-        return;
-    }
-
-    f_thread_t *f_t      = &bt->f_t[thread];
-    const int   nelem_fa = sizeof(f_t->f[0])/sizeof(real);
+    constexpr int nelem_fa = sizeof(f_t->f[0])/sizeof(real);
 
     for (int i = 0; i < f_t->nblock_used; i++)
     {
@@ -259,7 +253,7 @@ zero_thread_output(bonded_threading_t *bt, int thread)
 /*! \brief Reduce thread-local force buffers */
 void
 reduce_thread_forces(int n, rvec *f,
-                     bonded_threading_t *bt,
+                     const bonded_threading_t *bt,
                      int nthreads)
 {
     if (nthreads > MAX_BONDED_THREADS)
@@ -290,7 +284,7 @@ reduce_thread_forces(int n, rvec *f,
             {
                 if (bitmask_is_set(bt->mask[ind], ft))
                 {
-                    fp[nfb++] = bt->f_t[ft].f;
+                    fp[nfb++] = bt->f_t[ft]->f;
                 }
             }
             if (nfb > 0)
@@ -317,7 +311,7 @@ reduce_thread_forces(int n, rvec *f,
 void
 reduce_thread_output(int n, rvec *f, rvec *fshift,
                      real *ener, gmx_grppairener_t *grpp, real *dvdl,
-                     bonded_threading_t *bt,
+                     const bonded_threading_t *bt,
                      gmx_bool bCalcEnerVir,
                      gmx_bool bDHDL)
 {
@@ -332,29 +326,29 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
     /* When necessary, reduce energy and virial using one thread only */
     if (bCalcEnerVir && bt->nthreads > 1)
     {
-        f_thread_t *f_t = bt->f_t;
+        gmx::ArrayRef < const std::unique_ptr < f_thread_t>> f_t = bt->f_t;
 
         for (int i = 0; i < SHIFTS; i++)
         {
             for (int t = 1; t < bt->nthreads; t++)
             {
-                rvec_inc(fshift[i], f_t[t].fshift[i]);
+                rvec_inc(fshift[i], f_t[t]->fshift[i]);
             }
         }
         for (int i = 0; i < F_NRE; i++)
         {
             for (int t = 1; t < bt->nthreads; t++)
             {
-                ener[i] += f_t[t].ener[i];
+                ener[i] += f_t[t]->ener[i];
             }
         }
         for (int i = 0; i < egNR; i++)
         {
-            for (int j = 0; j < f_t[1].grpp.nener; j++)
+            for (int j = 0; j < f_t[1]->grpp.nener; j++)
             {
                 for (int t = 1; t < bt->nthreads; t++)
                 {
-                    grpp->ener[i][j] += f_t[t].grpp.ener[i][j];
+                    grpp->ener[i][j] += f_t[t]->grpp.ener[i][j];
                 }
             }
         }
@@ -365,7 +359,7 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
 
                 for (int t = 1; t < bt->nthreads; t++)
                 {
-                    dvdl[i] += f_t[t].dvdl[i];
+                    dvdl[i] += f_t[t]->dvdl[i];
                 }
             }
         }
@@ -377,7 +371,7 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
 real
 calc_one_bond(int thread,
               int ftype, const t_idef *idef,
-              const bonded_threading_t &bondedThreading,
+              const WorkDivision &workDivision,
               const rvec x[], rvec4 f[], rvec fshift[],
               const t_forcerec *fr,
               const t_pbc *pbc, const t_graph *g,
@@ -414,10 +408,11 @@ calc_one_bond(int thread,
     nbonds    = idef->il[ftype].nr/nat1;
     iatoms    = idef->il[ftype].iatoms;
 
-    GMX_ASSERT(fr->gpuBonded != nullptr || bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads + 1) + bondedThreading.nthreads] == idef->il[ftype].nr, "The thread division should match the topology");
+    GMX_ASSERT(fr->gpuBonded != nullptr || workDivision.end(ftype) == idef->il[ftype].nr,
+               "The thread division should match the topology");
 
-    nb0 = bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads+1)+thread];
-    nbn = bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads+1)+thread+1] - nb0;
+    nb0 = workDivision.bound(ftype, thread);
+    nbn = workDivision.bound(ftype, thread + 1) - nb0;
 
     if (!isPairInteraction(ftype))
     {
@@ -545,18 +540,21 @@ calcBondedForces(const t_idef     *idef,
     {
         try
         {
+            f_thread_t        &threadBuffers = *bt->f_t[thread];
             int                ftype;
             real              *epot, v;
             /* thread stuff */
-            rvec4             *ft;
             rvec              *fshift;
             real              *dvdlt;
             gmx_grppairener_t *grpp;
 
-            zero_thread_output(bt, thread);
+            zero_thread_output(&threadBuffers);
 
-            ft = bt->f_t[thread].f;
+            rvec4 *ft = threadBuffers.f;
 
+            /* Thread 0 writes directly to the main output buffers.
+             * We might want to reconsider this.
+             */
             if (thread == 0)
             {
                 fshift = fr->fshift;
@@ -566,10 +564,10 @@ calcBondedForces(const t_idef     *idef,
             }
             else
             {
-                fshift = bt->f_t[thread].fshift;
-                epot   = bt->f_t[thread].ener;
-                grpp   = &bt->f_t[thread].grpp;
-                dvdlt  = bt->f_t[thread].dvdl;
+                fshift = threadBuffers.fshift;
+                epot   = threadBuffers.ener;
+                grpp   = &threadBuffers.grpp;
+                dvdlt  = threadBuffers.dvdl;
             }
             /* Loop over all bonded force types to calculate the bonded forces */
             for (ftype = 0; (ftype < F_NRE); ftype++)
@@ -577,7 +575,7 @@ calcBondedForces(const t_idef     *idef,
                 if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
                 {
                     v = calc_one_bond(thread, ftype, idef,
-                                      *fr->bondedThreading, x,
+                                      fr->bondedThreading->workDivision, x,
                                       ft, fshift, fr, pbc_null, g, grpp,
                                       nrnb, lambda, dvdlt,
                                       md, fcd, bCalcEnerVir,
@@ -743,7 +741,7 @@ void calc_listed_lambda(const t_idef *idef,
     rvec              *fshift;
     const  t_pbc      *pbc_null;
     t_idef             idef_fe;
-    bonded_threading_t bondedThreading;
+    WorkDivision      &workDivision = fr->bondedThreading->foreignLambdaWorkDivision;
 
     if (fr->bMolPBC)
     {
@@ -756,10 +754,9 @@ void calc_listed_lambda(const t_idef *idef,
 
     /* Copy the whole idef, so we can modify the contents locally */
     idef_fe                  = *idef;
-    bondedThreading.nthreads = 1;
-    snew(bondedThreading.il_thread_division, F_NRE*(bondedThreading.nthreads+1));
 
     /* We already have the forces, so we use temp buffers here */
+    // TODO: Get rid of these allocations by using permanent force buffers
     snew(f, fr->natoms_force);
     snew(fshift, SHIFTS);
 
@@ -775,12 +772,12 @@ void calc_listed_lambda(const t_idef *idef,
             ilist_fe.nr_nonperturbed = 0;
             ilist_fe.nr              = ilist.nr - ilist.nr_nonperturbed;
             /* Set the work range of thread 0 to the perturbed bondeds */
-            bondedThreading.il_thread_division[ftype*2 + 0] = 0;
-            bondedThreading.il_thread_division[ftype*2 + 1] = ilist_fe.nr;
+            workDivision.setBound(ftype, 0, 0);
+            workDivision.setBound(ftype, 1, ilist_fe.nr);
 
             if (ilist_fe.nr > 0)
             {
-                v = calc_one_bond(0, ftype, &idef_fe, bondedThreading,
+                v = calc_one_bond(0, ftype, &idef_fe, workDivision,
                                   x, f, fshift, fr, pbc_null, g,
                                   grpp, nrnb, lambda, dvdl_dum,
                                   md, fcd, TRUE,
@@ -792,8 +789,6 @@ void calc_listed_lambda(const t_idef *idef,
 
     sfree(fshift);
     sfree(f);
-
-    sfree(bondedThreading.il_thread_division);
 }
 
 void
@@ -851,7 +846,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
             {
                 gmx_incons("The bonded interactions are not sorted for free energy");
             }
-            for (int i = 0; i < enerd->n_lambda; i++)
+            for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
             {
                 real lam_i[efptNR];
 

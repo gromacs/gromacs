@@ -366,12 +366,12 @@ do_pairs_general(int ftype, int nbonds,
     {
         case F_LJ14:
         case F_LJC14_Q:
-            energygrp_elec = grppener->ener[egCOUL14];
-            energygrp_vdw  = grppener->ener[egLJ14];
+            energygrp_elec = grppener->ener[egCOUL14].data();
+            energygrp_vdw  = grppener->ener[egLJ14].data();
             break;
         case F_LJC_PAIRS_NB:
-            energygrp_elec = grppener->ener[egCOULSR];
-            energygrp_vdw  = grppener->ener[egLJSR];
+            energygrp_elec = grppener->ener[egCOULSR].data();
+            energygrp_vdw  = grppener->ener[egLJSR].data();
             break;
         default:
             energygrp_elec = nullptr; /* Keep compiler happy */

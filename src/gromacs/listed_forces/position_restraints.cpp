@@ -435,7 +435,6 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
                       const t_forcerec     *fr)
 {
     real  v;
-    int   i;
 
     if (0 == idef->il[F_POSRES].nr)
     {
@@ -443,7 +442,7 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
     }
 
     wallcycle_sub_start_nocount(wcycle, ewcsRESTRAINTS);
-    for (i = 0; i < enerd->n_lambda; i++)
+    for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
     {
         real dvdl_dum = 0, lambda_dum;
 

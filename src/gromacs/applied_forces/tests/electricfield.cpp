@@ -122,7 +122,7 @@ class ElectricFieldTest : public ::testing::Test
             // Prepare a ForceProviderOutput
             PaddedVector<RVec>   f = { {0, 0, 0} };
             ForceWithVirial      forceWithVirial(f, true);
-            gmx_enerdata_t       enerdDummy;
+            gmx_enerdata_t       enerdDummy(1, 0);
             ForceProviderOutput  forceProviderOutput(&forceWithVirial, &enerdDummy);
 
             // Use the ForceProviders to calculate forces

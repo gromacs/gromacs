@@ -110,7 +110,7 @@ TEST(DensityFittingTest, Options)
     PaddedVector<gmx::RVec>  f = {{0, 0, 0}};
     gmx::ForceWithVirial     forceWithVirial(f, false);
 
-    gmx_enerdata_t           energyData;
+    gmx_enerdata_t           energyData(1, 0);
     gmx::ForceProviderOutput forceProviderOutput(&forceWithVirial, &energyData);
 
     // update the forces

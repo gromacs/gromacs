@@ -154,7 +154,7 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
         //! Total mass
         real                                tmass_;
         //! Potential energy data
-        gmx_enerdata_t                      enerdata_;
+        std::unique_ptr<gmx_enerdata_t>     enerdata_;
         //! Kinetic energy data (for temperatures output)
         gmx_ekindata_t                      ekindata_;
         //! System state
@@ -354,12 +354,7 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
             state_.nhpres_vxi.resize(1*inputrec_.opts.nhchainlength);
 
             // Group pairs
-            enerdata_.grpp.nener = mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nr*
-                mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nr;
-            for (int k = 0; k < egNR; k++)
-            {
-                snew(enerdata_.grpp.ener[k], enerdata_.grpp.nener);
-            }
+            enerdata_ = std::make_unique<gmx_enerdata_t>(mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].nr, 0);
 
             // Kinetic energy and related data
             ekindata_.tcstat.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].nr);
@@ -402,16 +397,6 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
 
         }
 
-        /*! \brief Destroy created objects.
-         */
-        void TearDown() override
-        {
-            for (int k = 0; k < egNR; k++)
-            {
-                sfree(enerdata_.grpp.ener[k]);
-            }
-        }
-
         /*! \brief Helper function to generate synthetic data to output
          *
          * \param[in,out] testValue    Base value fr energy data.
@@ -419,47 +404,47 @@ class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParamet
         void setStepData(double *testValue)
         {
 
-            time_                            = (*testValue += 0.1);
-            tmass_                           = (*testValue += 0.1);
+            time_                             = (*testValue += 0.1);
+            tmass_                            = (*testValue += 0.1);
 
-            enerdata_.term[F_LJ]             = (*testValue += 0.1);
-            enerdata_.term[F_COUL_SR]        = (*testValue += 0.1);
-            enerdata_.term[F_EPOT]           = (*testValue += 0.1);
-            enerdata_.term[F_EKIN]           = (*testValue += 0.1);
-            enerdata_.term[F_ETOT]           = (*testValue += 0.1);
-            enerdata_.term[F_TEMP]           = (*testValue += 0.1);
-            enerdata_.term[F_PRES]           = (*testValue += 0.1);
+            enerdata_->term[F_LJ]             = (*testValue += 0.1);
+            enerdata_->term[F_COUL_SR]        = (*testValue += 0.1);
+            enerdata_->term[F_EPOT]           = (*testValue += 0.1);
+            enerdata_->term[F_EKIN]           = (*testValue += 0.1);
+            enerdata_->term[F_ETOT]           = (*testValue += 0.1);
+            enerdata_->term[F_TEMP]           = (*testValue += 0.1);
+            enerdata_->term[F_PRES]           = (*testValue += 0.1);
 
-            enerdata_.term[F_BHAM]           = (*testValue += 0.1);
-            enerdata_.term[F_EQM]            = (*testValue += 0.1);
-            enerdata_.term[F_RF_EXCL]        = (*testValue += 0.1);
-            enerdata_.term[F_COUL_RECIP]     = (*testValue += 0.1);
-            enerdata_.term[F_LJ_RECIP]       = (*testValue += 0.1);
-            enerdata_.term[F_LJ14]           = (*testValue += 0.1);
-            enerdata_.term[F_COUL14]         = (*testValue += 0.1);
-            enerdata_.term[F_LJC14_Q]        = (*testValue += 0.1);
-            enerdata_.term[F_LJC_PAIRS_NB]   = (*testValue += 0.1);
+            enerdata_->term[F_BHAM]           = (*testValue += 0.1);
+            enerdata_->term[F_EQM]            = (*testValue += 0.1);
+            enerdata_->term[F_RF_EXCL]        = (*testValue += 0.1);
+            enerdata_->term[F_COUL_RECIP]     = (*testValue += 0.1);
+            enerdata_->term[F_LJ_RECIP]       = (*testValue += 0.1);
+            enerdata_->term[F_LJ14]           = (*testValue += 0.1);
+            enerdata_->term[F_COUL14]         = (*testValue += 0.1);
+            enerdata_->term[F_LJC14_Q]        = (*testValue += 0.1);
+            enerdata_->term[F_LJC_PAIRS_NB]   = (*testValue += 0.1);
 
-            enerdata_.term[F_DVDL_COUL]      = (*testValue += 0.1);
-            enerdata_.term[F_DVDL_VDW]       = (*testValue += 0.1);
-            enerdata_.term[F_DVDL_BONDED]    = (*testValue += 0.1);
-            enerdata_.term[F_DVDL_RESTRAINT] = (*testValue += 0.1);
-            enerdata_.term[F_DKDL]           = (*testValue += 0.1);
-            enerdata_.term[F_DVDL]           = (*testValue += 0.1);
+            enerdata_->term[F_DVDL_COUL]      = (*testValue += 0.1);
+            enerdata_->term[F_DVDL_VDW]       = (*testValue += 0.1);
+            enerdata_->term[F_DVDL_BONDED]    = (*testValue += 0.1);
+            enerdata_->term[F_DVDL_RESTRAINT] = (*testValue += 0.1);
+            enerdata_->term[F_DKDL]           = (*testValue += 0.1);
+            enerdata_->term[F_DVDL]           = (*testValue += 0.1);
 
-            enerdata_.term[F_DISPCORR]       = (*testValue += 0.1);
-            enerdata_.term[F_PDISPCORR]      = (*testValue += 0.1);
-            enerdata_.term[F_DISRESVIOL]     = (*testValue += 0.1);
-            enerdata_.term[F_ORIRESDEV]      = (*testValue += 0.1);
-            enerdata_.term[F_COM_PULL]       = (*testValue += 0.1);
-            enerdata_.term[F_ECONSERVED]     = (*testValue += 0.1);
+            enerdata_->term[F_DISPCORR]       = (*testValue += 0.1);
+            enerdata_->term[F_PDISPCORR]      = (*testValue += 0.1);
+            enerdata_->term[F_DISRESVIOL]     = (*testValue += 0.1);
+            enerdata_->term[F_ORIRESDEV]      = (*testValue += 0.1);
+            enerdata_->term[F_COM_PULL]       = (*testValue += 0.1);
+            enerdata_->term[F_ECONSERVED]     = (*testValue += 0.1);
 
             // Group pairs
-            for (int i = 0; i < enerdata_.grpp.nener; i++)
+            for (int i = 0; i < enerdata_->grpp.nener; i++)
             {
                 for (int k = 0; k < egNR; k++)
                 {
-                    enerdata_.grpp.ener[k][i] = (*testValue += 0.1);
+                    enerdata_->grpp.ener[k][i] = (*testValue += 0.1);
                 }
             }
 
@@ -661,7 +646,7 @@ TEST_P(EnergyOutputTest, CheckOutput)
     for (int frame = 0; frame < parameters.numFrames; frame++)
     {
         setStepData(&testValue);
-        energyOutput_.addDataAtEnergyStep(false, true, time_, tmass_, &enerdata_,
+        energyOutput_.addDataAtEnergyStep(false, true, time_, tmass_, enerdata_.get(),
                                           &state_, nullptr, nullptr, box_,
                                           constraintsVirial_, forceVirial_, totalVirial_, pressure_,
                                           &ekindata_, muTotal_, constraints_.get());

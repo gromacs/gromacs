@@ -46,12 +46,6 @@ struct gmx_enerdata_t;
 struct gmx_grppairener_t;
 struct t_lambda;
 
-void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
-/* Intializes the energy storage struct */
-
-void destroy_enerdata(gmx_enerdata_t *enerd);
-/* Free all memory associated with enerd */
-
 void reset_foreign_enerdata(gmx_enerdata_t *enerd);
 /* Resets only the foreign energy data */
 

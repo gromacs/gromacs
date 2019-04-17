@@ -43,6 +43,8 @@
 #ifndef GMX_LISTED_FORCES_LISTED_INTERNAL_H
 #define GMX_LISTED_FORCES_LISTED_INTERNAL_H
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/topology/idef.h"
@@ -56,47 +58,97 @@
 static const int reduction_block_size = 32; /**< Force buffer block size in atoms*/
 static const int reduction_block_bits =  5; /**< log2(reduction_block_size) */
 
-/*! \internal \brief struct with output for bonded forces, used per thread */
-typedef struct
+/*! \internal \brief The division of bonded interactions of the threads */
+class WorkDivision
 {
-    rvec4            *f;            /**< Force array */
-    int               f_nalloc;     /**< Allocation size of f */
-    gmx_bitmask_t    *mask;         /**< Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t */
-    int               nblock_used;  /**< Number of blocks touched by our thread */
-    int              *block_index;  /**< Index to touched blocks, size nblock_used */
-    int               block_nalloc; /**< Allocation size of f (*reduction_block_size), mask_index, mask */
+    public:
+        //! Constructor
+        WorkDivision(int numThreads) :
+            stride_(numThreads + 1),
+            packedBounds_(F_NRE*stride_)
+        {
+        }
 
-    rvec             *fshift;       /**< Shift force array, size SHIFTS */
-    real              ener[F_NRE];  /**< Energy array */
-    gmx_grppairener_t grpp;         /**< Group pair energy data for pairs */
-    real              dvdl[efptNR]; /**< Free-energy dV/dl output */
-}
-f_thread_t;
+        //! Sets the bound between threads \p boundIndex-1 and \p boundIndex to \p count
+        void setBound(int functionType,
+                      int boundIndex,
+                      int count)
+        {
+            packedBounds_[functionType*stride_ + boundIndex] = count;
+        }
+
+        //! Returns the bound between threads \p boundIndex-1 and \p boundIndex
+        int bound(int functionType,
+                  int boundIndex) const
+        {
+            return packedBounds_[functionType*stride_ + boundIndex];
+        }
+
+        //! Returns the last bound
+        int end(int ftype) const
+        {
+            return bound(ftype, stride_ - 1);
+        }
+
+    private:
+        //! The stride_ between and size of the entries for a function type
+        int              stride_;
+        //! The bounds stored as a flat array for fast access
+        std::vector<int> packedBounds_;
+};
+
+/*! \internal \brief struct with output for bonded forces, used per thread */
+struct f_thread_t
+{
+    //! Constructor
+    f_thread_t(int numEnergyGroups);
+
+    ~f_thread_t();
+
+    rvec4            *f        = nullptr;     /**< Force array */
+    int               f_nalloc = 0;           /**< Allocation size of f */
+    gmx_bitmask_t    *mask     = nullptr;     /**< Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t */
+    int               nblock_used;            /**< Number of blocks touched by our thread */
+    int              *block_index  = nullptr; /**< Index to touched blocks, size nblock_used */
+    int               block_nalloc = 0;       /**< Allocation size of f (*reduction_block_size), mask_index, mask */
+
+    rvec             *fshift;                 /**< Shift force array, size SHIFTS */
+    real              ener[F_NRE];            /**< Energy array */
+    gmx_grppairener_t grpp;                   /**< Group pair energy data for pairs */
+    real              dvdl[efptNR];           /**< Free-energy dV/dl output */
+};
 
 /*! \internal \brief struct contain all data for bonded force threading */
 struct bonded_threading_t
 {
-    /* Thread local force and energy data */
-    int            nthreads;     /**< Number of threads to be used for bondeds */
-    f_thread_t    *f_t;          /**< Force/energy data per thread, size nthreads */
-    int            nblock_used;  /**< The number of force blocks to reduce */
-    int           *block_index;  /**< Index of size nblock_used into mask */
-    gmx_bitmask_t *mask;         /**< Mask array, one element corresponds to a block of reduction_block_size atoms of the force array, bit corresponding to thread indices set if a thread writes to that block */
-    int            block_nalloc; /**< Allocation size of block_index and mask */
+    //! Constructor
+    bonded_threading_t(int numThreads,
+                       int numEnergyGroups);
 
-    bool           haveBondeds;  /**< true if we have and thus need to reduce bonded forces */
+    //! Number of threads to be used for bondeds
+    int                                      nthreads;
+    //! Force/energy data per thread, size nthreads, stored in unique_ptr to allow thread local allocation
+    std::vector < std::unique_ptr < f_thread_t>> f_t;
+    //! The number of force blocks to reduce
+    int                                      nblock_used;
+    //! Index of size nblock_used into mask
+    std::vector<int>                         block_index;
+    //! Mask array, one element corresponds to a block of reduction_block_size atoms of the force array, bit corresponding to thread indices set if a thread writes to that block
+    std::vector<gmx_bitmask_t>               mask;
+    //! true if we have and thus need to reduce bonded forces
+    bool                                     haveBondeds;
 
     /* There are two different ways to distribute the bonded force calculation
      * over the threads. We dedice which to use based on the number of threads.
      */
-    int  max_nthread_uniform;       /**< Maximum thread count for uniform distribution of bondeds over threads */
+    //! Maximum thread count for uniform distribution of bondeds over threads
+    int  max_nthread_uniform;
 
-    int *il_thread_division;        /**< Stores the division of work in the t_list over threads.
-                                     *
-                                     * The division of the normal bonded interactions of threads.
-                                     * il_thread_division[ftype*(nthreads+1)+t] contains an index
-                                     * into il[ftype].iatoms; thread th operates on t=th to t=th+1. */
-    int  il_thread_division_nalloc; /**< Allocation size of the work division, at least F_NRE*(nthreads+1). */
+    //! The division of work in the t_list over threads.
+    WorkDivision workDivision;
+
+    //! Work division for free-energy foreign lambda calculations, always uses 1 thread
+    WorkDivision foreignLambdaWorkDivision;
 };
 
 
