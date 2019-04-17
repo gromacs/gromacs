@@ -45,11 +45,11 @@
  * The minor index of the array goes over both the LJ combination rules,
  * which is only supported by plain cut-off, and the LJ switch/PME functions.
  */
-p_nbk_func_noener nbnxm_kernel_noener_simd_{1}[coulktNR][vdwktNR] =
+static p_nbk_func_noener nbnxm_kernel_noener_simd_{1}[coulktNR][vdwktNR] =
 {2}
-p_nbk_func_ener nbnxm_kernel_ener_simd_{1}[coulktNR][vdwktNR] =
+static p_nbk_func_ener nbnxm_kernel_ener_simd_{1}[coulktNR][vdwktNR] =
 {3}
-p_nbk_func_ener nbnxm_kernel_energrp_simd_{1}[coulktNR][vdwktNR] =
+static p_nbk_func_ener nbnxm_kernel_energrp_simd_{1}[coulktNR][vdwktNR] =
 {4}
 
 #endif /* INCLUDE_KERNELFUNCTION_TABLES */

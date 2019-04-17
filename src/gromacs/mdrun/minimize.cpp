@@ -739,13 +739,10 @@ namespace
  * updated, then the member will be value initialized, which will
  * typically mean initialization to zero.
  *
- * We only want to construct one of these with an initializer list, so
- * we explicitly delete the default constructor. */
+ * Use a braced initializer list to construct one of these. */
 class EnergyEvaluator
 {
     public:
-        //! We only intend to construct such objects with an initializer list.
-        EnergyEvaluator() = delete;
         /*! \brief Evaluates an energy on the state in \c ems.
          *
          * \todo In practice, the same objects mu_tot, vir, and pres

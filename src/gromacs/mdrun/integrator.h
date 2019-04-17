@@ -106,12 +106,7 @@ using IntegratorFunctionType = void();
  * code. Once many of them have become modules, we should change this
  * approach.
  *
- * Note that the presence of const reference members means that the
- * default constructor would be implicitly deleted. But we only want
- * to make one of these when we know how to initialize these members,
- * so that is perfect. To ensure this remains true even if we would
- * remove those members, we explicitly delete this constructor.
- * Other constructors, copies and moves are OK. */
+ * Use a braced initializer list to construct one of these. */
 struct Integrator
 {
     //! Handles logging.
@@ -195,8 +190,6 @@ struct Integrator
     /*! \brief Function to run the correct IntegratorFunctionType,
      * based on the .mdp integrator field. */
     void run(unsigned int ei, bool doRerun);
-    //! We only intend to construct such objects with an initializer list.
-    Integrator() = delete;
 };
 
 }      // namespace gmx
