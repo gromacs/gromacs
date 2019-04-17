@@ -55,8 +55,6 @@ struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
 struct t_forcetable;
-struct t_nblist;
-struct t_nblists;
 struct t_QMMMrec;
 
 namespace gmx
@@ -72,8 +70,6 @@ class GpuBonded;
  * The maximum cg size in cginfo is 63
  * because we only have space for 6 bits in cginfo,
  * this cg size entry is actually only read with domain decomposition.
- * But there is a smaller limit due to the t_excl data structure
- * which is defined in nblist.h.
  */
 #define SET_CGINFO_GID(cgi, gid)     (cgi) = (((cgi)  &  ~255) | (gid))
 #define GET_CGINFO_GID(cgi)        ( (cgi)            &   255)
@@ -196,7 +192,6 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     /* Table stuff */
     gmx_bool             bcoultab = FALSE;
     gmx_bool             bvdwtab  = FALSE;
-    /* The normal tables are in the nblists struct(s) below */
 
     struct t_forcetable *pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
@@ -225,13 +220,8 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     int                 cg_nalloc                    = 0;
     rvec               *shift_vec                    = nullptr;
 
-    /* The neighborlists including tables */
-    int                        nnblists    = 0;
-    int                       *gid2nblists = nullptr;
-    struct t_nblists          *nblists     = nullptr;
-
-    int                        cutoff_scheme = 0;     /* group- or Verlet-style cutoff */
-    gmx_bool                   bNonbonded    = FALSE; /* true if nonbonded calculations are *not* turned off */
+    int                 cutoff_scheme = 0;     /* group- or Verlet-style cutoff */
+    gmx_bool            bNonbonded    = FALSE; /* true if nonbonded calculations are *not* turned off */
 
     /* The Nbnxm Verlet non-bonded machinery */
     std::unique_ptr<nonbonded_verlet_t> nbv;
@@ -285,9 +275,6 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
      * should be calculated.
      */
     int n_tpi = 0;
-
-    /* Neighbor searching stuff */
-    struct gmx_ns_t *ns = nullptr;
 
     /* QMMM stuff */
     gmx_bool          bQMMM = FALSE;

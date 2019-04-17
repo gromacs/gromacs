@@ -6,7 +6,6 @@ domdec -> ewald
 domdec -> mdlib
 domdec -> pulling
 fileio -> gmxlib
-gmxlib -> listed_forces
 mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald

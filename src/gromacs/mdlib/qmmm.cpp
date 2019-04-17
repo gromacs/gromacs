@@ -54,7 +54,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qm_gamess.h"
 #include "gromacs/mdlib/qm_gaussian.h"
 #include "gromacs/mdlib/qm_mopac.h"

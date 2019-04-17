@@ -125,14 +125,6 @@ class GridSet
             return domainSetup_;
         }
 
-        //! Returns the number of cells along x and y for the local grid
-        void getLocalNumCells(int *numCellsX,
-                              int *numCellsY) const
-        {
-            *numCellsX = grids_[0].dimensions().numCells[XX];
-            *numCellsY = grids_[0].dimensions().numCells[YY];
-        }
-
         //! Returns the total number of atoms in the grid set, including padding
         int numGridAtomsTotal() const
         {

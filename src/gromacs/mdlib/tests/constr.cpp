@@ -54,6 +54,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"

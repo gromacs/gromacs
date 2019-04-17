@@ -148,12 +148,6 @@ void nonbonded_verlet_t::setCoordinates(const Nbnxm::AtomLocality       locality
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }
 
-void nonbonded_verlet_t::getLocalNumCells(int *numCellsX,
-                                          int *numCellsY) const
-{
-    pairSearch_->gridSet().getLocalNumCells(numCellsX, numCellsY);
-}
-
 gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
 {
     return pairSearch_->gridSet().cells();

@@ -70,7 +70,6 @@
 #include "gromacs/mdlib/forcerec_threading.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
-#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/wall.h"
@@ -2144,7 +2143,6 @@ void init_forcerec(FILE                             *fp,
     if (!needGroupSchemeTables)
     {
         bSomeNormalNbListsAreInUse = TRUE;
-        fr->nnblists               = 1;
     }
     else
     {
@@ -2167,21 +2165,7 @@ void init_forcerec(FILE                             *fp,
                 }
             }
         }
-        if (bSomeNormalNbListsAreInUse)
-        {
-            fr->nnblists = negptable + 1;
-        }
-        else
-        {
-            fr->nnblists = negptable;
-        }
-        if (fr->nnblists > 1)
-        {
-            snew(fr->gid2nblists, ir->opts.ngener*ir->opts.ngener);
-        }
     }
-
-    snew(fr->nblists, fr->nnblists);
 
     /* This code automatically gives table length tabext without cut-off's,
      * in that case grompp should already have checked that we do not need
@@ -2194,7 +2178,7 @@ void init_forcerec(FILE                             *fp,
         /* make tables for ordinary interactions */
         if (bSomeNormalNbListsAreInUse)
         {
-            make_nbf_tables(fp, ic, rtab, tabfn, nullptr, nullptr, &fr->nblists[0]);
+            make_nbf_tables(fp, ic, rtab, tabfn, nullptr, nullptr, nullptr);
             m = 1;
         }
         else
@@ -2212,20 +2196,12 @@ void init_forcerec(FILE                             *fp,
                     egp_flags = ir->opts.egp_flags[GID(egi, egj, ir->opts.ngener)];
                     if ((egp_flags & EGP_TABLE) && !(egp_flags & EGP_EXCL))
                     {
-                        if (fr->nnblists > 1)
-                        {
-                            fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = m;
-                        }
                         /* Read the table file with the two energy groups names appended */
                         make_nbf_tables(fp, ic, rtab, tabfn,
                                         *mtop->groups.groupNames[nm_ind[egi]],
                                         *mtop->groups.groupNames[nm_ind[egj]],
-                                        &fr->nblists[m]);
+                                        nullptr);
                         m++;
-                    }
-                    else if (fr->nnblists > 1)
-                    {
-                        fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = 0;
                     }
                 }
             }
@@ -2326,11 +2302,6 @@ void init_forcerec(FILE                             *fp,
 
     fr->print_force = print_force;
 
-
-    /* Initialize neighbor search */
-    snew(fr->ns, 1);
-    init_ns(fp, cr, fr->ns, fr, mtop);
-
     /* Initialize the thread working data for bonded interactions */
     init_bonded_threading(fp, mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].nr,
                           &fr->bondedThreading);
@@ -2423,7 +2394,7 @@ void free_gpu_resources(t_forcerec                          *fr,
     }
 }
 
-void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
+void done_forcerec(t_forcerec *fr, int numMolBlocks)
 {
     if (fr == nullptr)
     {
@@ -2440,8 +2411,6 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
     done_interaction_const(fr->ic);
     sfree(fr->shift_vec);
     sfree(fr->fshift);
-    sfree(fr->nblists);
-    done_ns(fr->ns, numEnergyGroups);
     sfree(fr->ewc_t);
     tear_down_bonded_threading(fr->bondedThreading);
     GMX_RELEASE_ASSERT(fr->gpuBonded == nullptr, "Should have been deleted earlier, when used");

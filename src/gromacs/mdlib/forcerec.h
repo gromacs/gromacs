@@ -58,7 +58,7 @@ class PhysicalNodeCommunicator;
 }
 
 //! Destroy a forcerec.
-void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups);
+void done_forcerec(t_forcerec *fr, int numMolBlocks);
 
 /*! \brief Print the contents of the forcerec to a file
  *

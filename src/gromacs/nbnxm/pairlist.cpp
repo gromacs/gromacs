@@ -51,7 +51,6 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/atomdata.h"
@@ -1454,6 +1453,20 @@ static inline void fep_list_new_nri_copy(t_nblist *nlist)
     nlist->shift[nlist->nri]  = nlist->shift[nlist->nri-1];
     nlist->gid[nlist->nri]    = nlist->gid[nlist->nri-1];
     nlist->jindex[nlist->nri] = nlist->nrj;
+}
+
+/* Rellocate FEP list for size nl->maxnri, TODO: replace by C++ */
+static void reallocate_nblist(t_nblist *nl)
+{
+    if (gmx_debug_at)
+    {
+        fprintf(debug, "reallocating neigborlist (ielec=%d, ivdw=%d, igeometry=%d, type=%d), maxnri=%d\n",
+                nl->ielec, nl->ivdw, nl->igeometry, nl->type, nl->maxnri);
+    }
+    srenew(nl->iinr,   nl->maxnri);
+    srenew(nl->gid,    nl->maxnri);
+    srenew(nl->shift,  nl->maxnri);
+    srenew(nl->jindex, nl->maxnri+1);
 }
 
 /* For load balancing of the free-energy lists over threads, we set

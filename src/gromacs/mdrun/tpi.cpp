@@ -71,7 +71,6 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"

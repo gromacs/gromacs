@@ -297,11 +297,6 @@ struct nonbonded_verlet_t
             return kernelSetup_;
         }
 
-        /*! \brief Returns the number of x and y cells in the local grid */
-        void getLocalNumCells(int *numCellsX,
-                              int *numCellsY) const;
-
-
         //! Returns the outer radius for the pair list
         real pairlistInnerRadius() const;
 

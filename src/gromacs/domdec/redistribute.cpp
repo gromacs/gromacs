@@ -834,15 +834,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                                       comm);
     }
 
-    int *moved;
-    if (fr->cutoff_scheme == ecutsVERLET)
-    {
-        moved = getMovedBuffer(comm, 0, dd->ncg_home);
-    }
-    else
-    {
-        moved = fr->ns->grid->cell_index;
-    }
+    int *moved = getMovedBuffer(comm, 0, dd->ncg_home);
 
     clear_and_mark_ind(move,
                        dd->globalAtomGroupIndices, dd->atomGrouping(), dd->globalAtomIndices,

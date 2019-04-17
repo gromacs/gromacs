@@ -86,7 +86,6 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/membed.h"
-#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/resethandler.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/simulationsignal.h"
