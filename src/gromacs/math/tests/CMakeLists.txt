@@ -34,6 +34,7 @@
 
 gmx_add_unit_test(MathUnitTests math-test
                   arrayrefwithpadding.cpp
+                  coordinatetransformation.cpp
                   dofit.cpp
                   functions.cpp
                   gausstransform.cpp
