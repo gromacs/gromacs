@@ -1010,7 +1010,6 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
     switch (locality)
     {
         case Nbnxm::AtomLocality::All:
-        case Nbnxm::AtomLocality::Count:
             gridBegin = 0;
             gridEnd   = gridSet.grids().size();
             break;
@@ -1021,6 +1020,9 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
         case Nbnxm::AtomLocality::NonLocal:
             gridBegin = 1;
             gridEnd   = gridSet.grids().size();
+            break;
+        case Nbnxm::AtomLocality::Count:
+            GMX_ASSERT(false, "Count is invalid locality specifier");
             break;
     }
 
@@ -1412,7 +1414,6 @@ void reduceForces(nbnxn_atomdata_t          *nbat,
     switch (locality)
     {
         case Nbnxm::AtomLocality::All:
-        case Nbnxm::AtomLocality::Count:
             a0 = 0;
             na = gridSet.numRealAtomsTotal();
             break;
@@ -1423,6 +1424,9 @@ void reduceForces(nbnxn_atomdata_t          *nbat,
         case Nbnxm::AtomLocality::NonLocal:
             a0 = gridSet.numRealAtomsLocal();
             na = gridSet.numRealAtomsTotal() - gridSet.numRealAtomsLocal();
+            break;
+        case Nbnxm::AtomLocality::Count:
+            GMX_ASSERT(false, "Count is invalid locality specifier");
             break;
     }
 
