@@ -872,11 +872,9 @@ rvec *gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
 void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
                                 gmx_nbnxn_gpu_t                 *gpu_nbv)
 {
-    cudaError_t                      stat;
     cudaStream_t                     stream    = gpu_nbv->stream[InteractionLocality::Local];
     bool                             bDoTime   = gpu_nbv->bDoTime;
     const int maxNumColumns                    = gridSet.numColumnsMax();
-
 
     reallocateDeviceBuffer(&gpu_nbv->cxy_na, maxNumColumns*gridSet.grids().size(),
                            &gpu_nbv->ncxy_na, &gpu_nbv->ncxy_na_alloc, nullptr);
@@ -900,9 +898,6 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
 
         if (atomIndicesSize > 0)
         {
-            // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
-            stat = cudaHostRegister((void*) atomIndices, atomIndicesSize*sizeof(int), cudaHostRegisterDefault);
-            CU_RET_ERR(stat, "cudaHostRegister failed on atomIndices");
 
             if (bDoTime)
             {
@@ -916,16 +911,10 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
                 gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(stream);
             }
 
-            stat = cudaHostUnregister((void*) atomIndices);
-            CU_RET_ERR(stat, "cudaHostUnRegister failed on atomIndices");
         }
 
         if (numColumns > 0)
         {
-            // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
-            stat = cudaHostRegister((void*) cxy_na, numColumns*sizeof(int), cudaHostRegisterDefault);
-            CU_RET_ERR(stat, "cudaHostRegister failed on cxy_na");
-
             if (bDoTime)
             {
                 gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(stream);
@@ -938,13 +927,6 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
             {
                 gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(stream);
             }
-
-            stat = cudaHostUnregister((void*) cxy_na);
-            CU_RET_ERR(stat, "cudaHostUnRegister failed on cxy_na");
-
-            // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
-            stat = cudaHostRegister((void*) cxy_ind, numColumns*sizeof(int), cudaHostRegisterDefault);
-            CU_RET_ERR(stat, "cudaHostRegister failed on cxy_ind");
 
             if (bDoTime)
             {
@@ -959,8 +941,6 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
                 gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(stream);
             }
 
-            stat = cudaHostUnregister((void*) cxy_ind);
-            CU_RET_ERR(stat, "cudaHostUnRegister failed on cxy_ind");
         }
     }
 

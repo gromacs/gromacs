@@ -182,6 +182,8 @@ void Grid::setDimensions(const int           ddZone,
     /* We need one additional cell entry for particles moved by DD */
     cxy_na_.resize(numColumns() + 1);
     cxy_ind_.resize(numColumns() + 2);
+    changePinningPolicy(&cxy_na_, gmx::PinningPolicy::PinnedIfSupported);
+    changePinningPolicy(&cxy_ind_, gmx::PinningPolicy::PinnedIfSupported);
 
     /* Worst case scenario of 1 atom in each last cell */
     int maxNumCells;

@@ -62,9 +62,9 @@ namespace Nbnxm
 struct GridSetData
 {
     //! The cell indices for all atoms
-    std::vector<int> cells;
+    gmx::HostVector<int> cells;
     //! The atom indices for all atoms stored in cell order
-    std::vector<int> atomIndices;
+    gmx::HostVector<int> atomIndices;
 };
 
 /*! \internal

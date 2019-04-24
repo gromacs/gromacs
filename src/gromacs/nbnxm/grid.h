@@ -56,6 +56,7 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/alignedallocator.h"
@@ -545,11 +546,11 @@ class Grid
         /*! \brief The number of, non-filler, atoms for each grid column.
          *
          * \todo Needs a useful name. */
-        std::vector<int> cxy_na_;
+        gmx::HostVector<int>    cxy_na_;
         /*! \brief The grid-local cell index for each grid column
          *
          * \todo Needs a useful name. */
-        std::vector<int> cxy_ind_;
+        gmx::HostVector<int>    cxy_ind_;
 
         //! The number of cluster for each cell
         std::vector<int> numClusters_;

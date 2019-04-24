@@ -96,6 +96,8 @@ GridSet::GridSet(const int                 ePBC,
     gridWork_(numThreads)
 {
     clear_mat(box_);
+    changePinningPolicy(&gridSetData_.cells, gmx::PinningPolicy::PinnedIfSupported);
+    changePinningPolicy(&gridSetData_.atomIndices, gmx::PinningPolicy::PinnedIfSupported);
 }
 
 void GridSet::setLocalAtomOrder()
