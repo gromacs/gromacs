@@ -106,9 +106,6 @@ static std::array<const char *, 6> boxvel_nm = {
     "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
 };
 
-#define NBOXS asize(boxs_nm)
-#define NTRICLBOXS asize(tricl_boxs_nm)
-
 const char *egrp_nm[egNR+1] = {
     "Coul-SR", "LJ-SR", "Buck-SR",
     "Coul-14", "LJ-14", nullptr
@@ -217,104 +214,57 @@ EnergyOutput::EnergyOutput(ener_file        *fp_ene,
         bEInd_[i] = false;
     }
 
+    // Setting true only to those energy terms, that have active interactions and
+    // are not vsite terms (not VSITE2, VSITE3, VSITE3FD, VSITE3FAD, VSITE3OUT, VSITE4FD, VSITE4FDN, or VSITEN)
     for (i = 0; i < F_NRE; i++)
     {
-        bEner_[i] = false;
-        if (isRerun &&
-            (i == F_EKIN || i == F_ETOT || i == F_ECONSERVED ||
-             i == F_TEMP || i == F_PDISPCORR || i == F_PRES))
-        {
-            continue;
-        }
-        if (i == F_LJ)
-        {
-            bEner_[i] = !bBHAM;
-        }
-        else if (i == F_BHAM)
-        {
-            bEner_[i] = bBHAM;
-        }
-        else if (i == F_EQM)
-        {
-            bEner_[i] = ir->bQMMM;
-        }
-        else if (i == F_RF_EXCL)
-        {
-            bEner_[i] = (EEL_RF(ir->coulombtype) && ir->cutoff_scheme == ecutsGROUP);
-        }
-        else if (i == F_COUL_RECIP)
-        {
-            bEner_[i] = EEL_FULL(ir->coulombtype);
-        }
-        else if (i == F_LJ_RECIP)
-        {
-            bEner_[i] = EVDW_PME(ir->vdwtype);
-        }
-        else if (i == F_LJ14)
-        {
-            bEner_[i] = b14;
-        }
-        else if (i == F_COUL14)
-        {
-            bEner_[i] = b14;
-        }
-        else if (i == F_LJC14_Q || i == F_LJC_PAIRS_NB)
-        {
-            bEner_[i] = false;
-        }
-        else if ((i == F_DVDL_COUL && ir->fepvals->separate_dvdl[efptCOUL]) ||
-                 (i == F_DVDL_VDW  && ir->fepvals->separate_dvdl[efptVDW]) ||
-                 (i == F_DVDL_BONDED && ir->fepvals->separate_dvdl[efptBONDED]) ||
-                 (i == F_DVDL_RESTRAINT && ir->fepvals->separate_dvdl[efptRESTRAINT]) ||
-                 (i == F_DKDL && ir->fepvals->separate_dvdl[efptMASS]) ||
-                 (i == F_DVDL && ir->fepvals->separate_dvdl[efptFEP]))
-        {
-            bEner_[i] = (ir->efep != efepNO);
-        }
-        else if ((interaction_function[i].flags & IF_VSITE) ||
-                 (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
-        {
-            bEner_[i] = false;
-        }
-        else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i == F_EQM))
-        {
-            bEner_[i] = true;
-        }
-        else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
-        {
-            bEner_[i] = EI_DYNAMICS(ir->eI);
-        }
-        else if (i == F_DISPCORR || i == F_PDISPCORR)
-        {
-            bEner_[i] = (ir->eDispCorr != edispcNO);
-        }
-        else if (i == F_DISRESVIOL)
-        {
-            bEner_[i] = (gmx_mtop_ftype_count(mtop, F_DISRES) > 0);
-        }
-        else if (i == F_ORIRESDEV)
-        {
-            bEner_[i] = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
-        }
-        else if (i == F_CONNBONDS)
-        {
-            bEner_[i] = false;
-        }
-        else if (i == F_COM_PULL)
-        {
-            bEner_[i] = ((ir->bPull && pull_have_potential(pull_work)) ||
-                         ir->bRot);
-        }
-        else if (i == F_ECONSERVED)
-        {
-            bEner_[i] = (integratorHasConservedEnergyQuantity(ir));
-        }
-        else
-        {
-            bEner_[i] = (gmx_mtop_ftype_count(mtop, i) > 0);
-        }
+        bEner_[i] = (gmx_mtop_ftype_count(mtop, i) > 0) &&
+            ((interaction_function[i].flags & IF_VSITE) == 0);
     }
 
+    if (!isRerun)
+    {
+        bEner_[F_EKIN]           = EI_DYNAMICS(ir->eI);
+        bEner_[F_ETOT]           = EI_DYNAMICS(ir->eI);
+        bEner_[F_TEMP]           = EI_DYNAMICS(ir->eI);
+
+        bEner_[F_ECONSERVED]     = integratorHasConservedEnergyQuantity(ir);
+        bEner_[F_PDISPCORR]      = (ir->eDispCorr != edispcNO);
+        bEner_[F_PRES]           = true;
+    }
+
+    bEner_[F_LJ]             = !bBHAM;
+    bEner_[F_BHAM]           = bBHAM;
+    bEner_[F_EQM]            = ir->bQMMM;
+    bEner_[F_RF_EXCL]        = (EEL_RF(ir->coulombtype) && ir->cutoff_scheme == ecutsGROUP);
+    bEner_[F_COUL_RECIP]     = EEL_FULL(ir->coulombtype);
+    bEner_[F_LJ_RECIP]       = EVDW_PME(ir->vdwtype);
+    bEner_[F_LJ14]           = b14;
+    bEner_[F_COUL14]         = b14;
+    bEner_[F_LJC14_Q]        = false;
+    bEner_[F_LJC_PAIRS_NB]   = false;
+
+
+    bEner_[F_DVDL_COUL]      = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptCOUL];
+    bEner_[F_DVDL_VDW]       = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptVDW];
+    bEner_[F_DVDL_BONDED]    = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptBONDED];
+    bEner_[F_DVDL_RESTRAINT] = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptRESTRAINT];
+    bEner_[F_DKDL]           = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptMASS];
+    bEner_[F_DVDL]           = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptFEP];
+
+    bEner_[F_CONSTR]         = false;
+    bEner_[F_CONSTRNC]       = false;
+    bEner_[F_SETTLE]         = false;
+
+    bEner_[F_COUL_SR]        = true;
+    bEner_[F_EPOT]           = true;
+
+    bEner_[F_DISPCORR]       = (ir->eDispCorr != edispcNO);
+    bEner_[F_DISRESVIOL]     = (gmx_mtop_ftype_count(mtop, F_DISRES) > 0);
+    bEner_[F_ORIRESDEV]      = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
+    bEner_[F_COM_PULL]       = ((ir->bPull && pull_have_potential(pull_work)) || ir->bRot);
+
+    // Counting the energy terms that will be printed and saving their names
     f_nre_ = 0;
     for (i = 0; i < F_NRE; i++)
     {
