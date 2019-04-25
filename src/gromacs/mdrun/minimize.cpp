@@ -2613,8 +2613,15 @@ Integrator::do_steep()
             }
         }
 
-        /* Determine new step  */
-        stepsize = ustep/s_min->fmax;
+        // If the force is very small after finishing minimization,
+        // we risk dividing by zero when calculating the step size.
+        // So we check first if the minimization has stopped before
+        // trying to obtain a new step size.
+        if (!bDone)
+        {
+            /* Determine new step  */
+            stepsize = ustep/s_min->fmax;
+        }
 
         /* Check if stepsize is too small, with 1 nm as a characteristic length */
 #if GMX_DOUBLE

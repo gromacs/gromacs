@@ -16,6 +16,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix possible floating point exception during minimization.
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It was possible that very small forces during minimization could lead to
+a crash due to a divide by zero error. Fixed by introducing a check.
+
+:issue:`2917`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
