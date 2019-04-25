@@ -176,6 +176,9 @@ bool pme_gpu_supports_hardware(const gmx_hw_info_t &hwinfo,
         {
             errorReasons.emplace_back("non-AMD devices");
         }
+#ifdef __APPLE__
+        errorReasons.emplace_back("Apple OS X operating system");
+#endif
     }
     return addMessageIfNotSupported(errorReasons, error);
 }

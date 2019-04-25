@@ -1082,7 +1082,7 @@ Known limitations
 
 **Please note again the limitations outlined below!**
 
-- Only compilation with CUDA is supported.
+- PME GPU offload is supported on NVIDIA hardware with CUDA and AMD hardware with OpenCL.
 
 - Only a PME order of 4 is supported on GPUs.
 

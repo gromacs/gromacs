@@ -22,6 +22,14 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Disable PME OpenCL on Apple
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Apple OpenCL compilers fail to produce a functional clFFT build.
+The OpenCL PME support is therefore disabled on Apple platforms.
+
+:issue:`2941`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
