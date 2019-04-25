@@ -75,9 +75,9 @@ C code
 C++ code
 --------
 
-* Use CamelCase for all names.  Start types (such as classes, structs, and
-  typedefs) with a capital letter, other names (functions, variables) with a
-  lowercase letter.
+* Use CamelCase for all names.  Start types (such as classes, structs,
+  typedefs and enum values) with a capital letter, other names (functions,
+  variables) with a lowercase letter.
   You may use an all-lowercase name with underscores if your class closely
   resembles an external construct (e.g., a standard library construct) named
   that way.
@@ -102,7 +102,9 @@ C++ code
   variables and an ``e`` prefix for enumerated variables and/or values).
   Instead, make the names long with a good description of what they control,
   typically including a verb for boolean variables, like ``foundAtom``.
-* It is a good idea to include the name of the enum type
+* Prefer class enums over regular ones, so that unexpected conversions to
+  int do not happen.
+* When using a non-class enum, prefer to include the name of the enumeration type
   as a base in the name of enum values, e.g., ``HelpOutputFormat_Console``,
   in particular for settings exposed to other modules.
 * Prefer to use enumerated types and values instead of booleans as control
