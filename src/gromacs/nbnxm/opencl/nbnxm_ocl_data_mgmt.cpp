@@ -488,7 +488,7 @@ static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 static void CL_CALLBACK
 ocl_notify_fn( const char *pErrInfo, const void *, size_t, void *)
 {
-    if (pErrInfo != NULL)
+    if (pErrInfo != nullptr)
     {
         printf("%s\n", pErrInfo ); // Print error/hint
     }
