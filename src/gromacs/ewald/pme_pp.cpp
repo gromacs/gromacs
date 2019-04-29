@@ -61,6 +61,7 @@
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -74,6 +75,9 @@
  * This should be faster with a real non-blocking MPI implementation
  */
 static constexpr bool c_useDelayedWait = false;
+
+/*! \brief environment variable to enable GPU P2P communication */
+static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
 
 /*! \brief Wait for the pending data send requests to PME ranks to complete */
 static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t *dd)
@@ -360,11 +364,34 @@ static void receive_virial_energy(const t_commrec *cr,
     }
 }
 
+
+/*! \brief Send coordinate data to PME ranks */
+static void recvFFromPme(void* recvptr, int n,  nonbonded_verlet_t *nbv, const t_commrec *cr)
+{
+    gmx_domdec_t  *dd = cr->dd;
+
+    if (c_enableGpuPmePpComms && GMX_THREAD_MPI && (nbv != nullptr))
+    {
+        //Send directly using CUDA memory copy
+        nbv->recvFFromPmeCudaDirect(recvptr, n, dd->pme_nodeid);
+    }
+    else
+    {
+#if GMX_MPI
+        MPI_Recv(recvptr, n*sizeof(rvec), MPI_BYTE,
+                 dd->pme_nodeid, 0, cr->mpi_comm_mysim,
+                 MPI_STATUS_IGNORE);
+#endif
+    }
+}
+
+
 void gmx_pme_receive_f(const t_commrec *cr,
                        gmx::ForceWithVirial *forceWithVirial,
+                       void *d_f,
                        real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
-                       float *pme_cycles)
+                       float *pme_cycles, nonbonded_verlet_t *nbv)
 {
     if (c_useDelayedWait)
     {
@@ -381,10 +408,16 @@ void gmx_pme_receive_f(const t_commrec *cr,
     }
 
 #if GMX_MPI
-    MPI_Recv(cr->dd->pme_recv_f_buf[0],
-             natoms*sizeof(rvec), MPI_BYTE,
-             cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
-             MPI_STATUS_IGNORE);
+    void *recvptr;
+    if (d_f == nullptr)
+    {
+        recvptr = reinterpret_cast<void*>(cr->dd->pme_recv_f_buf[0]);
+    }
+    else
+    {
+        recvptr = d_f;
+    }
+    recvFFromPme(recvptr, natoms,  nbv, cr);
 #endif
 
     int nt = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, natoms);
@@ -395,19 +428,22 @@ void gmx_pme_receive_f(const t_commrec *cr,
      * into the omp pragma instead, but then we still take the full
      * omp parallel for overhead (at least with gcc5).
      */
-    if (nt == 1)
+    if (d_f == nullptr) //otherwise this reduction will be done in GPU Buffer Ops
     {
-        for (int i = 0; i < natoms; i++)
+        if (nt == 1)
         {
-            rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
+            for (int i = 0; i < natoms; i++)
+            {
+                rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
+            }
         }
-    }
-    else
-    {
-#pragma omp parallel for num_threads(nt) schedule(static)
-        for (int i = 0; i < natoms; i++)
+        else
         {
-            rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
+#pragma omp parallel for num_threads(nt) schedule(static)
+            for (int i = 0; i < natoms; i++)
+            {
+                rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
+            }
         }
     }
 

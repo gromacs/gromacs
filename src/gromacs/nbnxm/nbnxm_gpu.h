@@ -299,12 +299,22 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality      gmx_unused  atomLocali
                                   gmx_nbnxn_gpu_t         gmx_unused *nb,
                                   rvec                    gmx_unused *f) CUDA_FUNC_TERM
 
+/*! \brief Receive Force data to PP from PME task directly using CUDA memory copy */
+CUDA_FUNC_QUALIFIER
+void nbnxmRecvFFromPmeCudaDirect(gmx_nbnxn_gpu_t gmx_unused *gpu_nbv, void gmx_unused *recvPtr,
+                                 int gmx_unused recvSize, int gmx_unused pmeRank) CUDA_FUNC_TERM
+
 /*! \brief Wait for GPU stream to complete */
 CUDA_FUNC_QUALIFIER
 void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused  atomLocality,
                            gmx_nbnxn_gpu_t         gmx_unused *nb) CUDA_FUNC_TERM
 
 
-}     // namespace Nbnxm
+/*! \brief return GPU pointer to x in rvec format*/
+CUDA_FUNC_QUALIFIER
+void* nbnxn_get_gpu_fpmervec(gmx_nbnxn_gpu_t     gmx_unused *gpu_nbv,
+                             Nbnxm::AtomLocality gmx_unused  locality) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+
+} // namespace Nbnxm
 
 #endif

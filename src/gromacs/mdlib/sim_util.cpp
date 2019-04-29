@@ -125,6 +125,9 @@ static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GP
 // TODO eventially tie this in with other existing GPU flags.
 static const bool c_enableGpuBufOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
 
+/*! \brief environment variable to enable GPU P2P communication */
+static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
+
 static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {
     const int      end = forceToAdd.size();
@@ -186,8 +189,10 @@ static void pull_potential_wrapper(const t_commrec *cr,
 
 static void pme_receive_force_ener(const t_commrec      *cr,
                                    gmx::ForceWithVirial *forceWithVirial,
+                                   void                 *d_f,
                                    gmx_enerdata_t       *enerd,
-                                   gmx_wallcycle_t       wcycle)
+                                   gmx_wallcycle_t       wcycle,
+                                   nonbonded_verlet_t   *nbv)
 {
     real   e_q, e_lj, dvdl_q, dvdl_lj;
     float  cycles_ppdpme, cycles_seppme;
@@ -201,8 +206,8 @@ static void pme_receive_force_ener(const t_commrec      *cr,
     wallcycle_start(wcycle, ewcPP_PMEWAITRECVF);
     dvdl_q  = 0;
     dvdl_lj = 0;
-    gmx_pme_receive_f(cr, forceWithVirial, &e_q, &e_lj, &dvdl_q, &dvdl_lj,
-                      &cycles_seppme);
+    gmx_pme_receive_f(cr, forceWithVirial, d_f, &e_q, &e_lj, &dvdl_q, &dvdl_lj,
+                      &cycles_seppme, nbv);
     enerd->term[F_COUL_RECIP] += e_q;
     enerd->term[F_LJ_RECIP]   += e_lj;
     enerd->dvdl_lin[efptCOUL] += dvdl_q;
@@ -1484,6 +1489,20 @@ void do_force(FILE                                     *fplog,
         pme_gpu_reinit_computation(fr->pmedata, wcycle);
     }
 
+
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME))
+    {
+        /* In case of node-splitting, the PP nodes receive the long-range
+         * forces, virial and energy from the PME nodes here.
+         */
+        void* d_f = nullptr;
+        if ((useGpuFBufOps == BufferOpsUseGpu::True) && c_enableGpuPmePpComms)
+        {
+            d_f = nbv->get_gpu_fpmervec();
+        }
+        pme_receive_force_ener(cr, &forceOut.forceWithVirial, d_f, enerd, wcycle, nbv);
+    }
+
     /* Do the nonbonded GPU (or emulation) force buffer reduction
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
@@ -1493,6 +1512,7 @@ void do_force(FILE                                     *fplog,
         {
             nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
         }
+
         // flag to specify if forces should be accumulated in force
         // buffer ops. For local part, this depends on whether CPU
         // forces are present, or if DD is active (in which case the
@@ -1502,8 +1522,14 @@ void do_force(FILE                                     *fplog,
             (haveCpuForces || DOMAINDECOMP(cr)) ?
             GpuBufferOpsAccumulateForce::True :
             GpuBufferOpsAccumulateForce::False;
+
+        void *pmeFptr = pme_gpu_get_device_f(fr->pmedata);
+        if (!thisRankHasDuty(cr, DUTY_PME) && (useGpuFBufOps == BufferOpsUseGpu::True) && c_enableGpuPmePpComms)
+        {
+            pmeFptr = nbv->get_gpu_fpmervec();
+        }
         nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                      forceOut.f, pme_gpu_get_device_f(fr->pmedata),
+                                      forceOut.f, pmeFptr,
                                       useGpuFBufOps, accumulateForce, wcycle);
         if (useGpuFBufOps == BufferOpsUseGpu::True)
         {
@@ -1566,14 +1592,6 @@ void do_force(FILE                                     *fplog,
             calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()), forceOut.f,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
-    }
-
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME))
-    {
-        /* In case of node-splitting, the PP nodes receive the long-range
-         * forces, virial and energy from the PME nodes here.
-         */
-        pme_receive_force_ener(cr, &forceOut.forceWithVirial, enerd, wcycle);
     }
 
     if (bDoForces)

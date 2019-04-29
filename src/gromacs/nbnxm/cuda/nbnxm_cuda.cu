@@ -67,6 +67,7 @@
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxmpi.h"
 
 #include "nbnxm_cuda_types.h"
 
@@ -970,6 +971,27 @@ void nbnxn_launch_copy_f_from_gpu(const AtomLocality               atomLocality,
     return;
 }
 
+void nbnxmRecvFFromPmeCudaDirect(gmx_nbnxn_gpu_t *gpu_nbv, void *recvPtr, int recvSize,
+                                 int pmeRank)
+{
+    cudaStream_t stream = gpu_nbv->stream[InteractionLocality::Local];
+
+    // This rank will pull data from the PME rank, so needs to recieve the
+    // remote receive address. This Recv also provides required
+    // wait until PME forces have completed on remote GPU
+    void *remotePmeXBuffer;
+    MPI_Recv(&remotePmeXBuffer, sizeof(void*),
+             MPI_BYTE, pmeRank, 0,
+             MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+    // Pull force data from remote GPU
+    cudaError_t stat = cudaMemcpyAsync(recvPtr, remotePmeXBuffer,
+                                       recvSize*3*sizeof(float), cudaMemcpyDefault,
+                                       stream);
+    CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
+}
+
+
 void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused atomLocality,
                            gmx_nbnxn_gpu_t                   *nb)
 {
@@ -979,6 +1001,14 @@ void nbnxn_wait_stream_gpu(const AtomLocality      gmx_unused atomLocality,
 
     cudaStreamSynchronize(stream);
 
+}
+
+// we get a "function undeclared" compilation error unless we pass at least
+// one argument with Nbnxm::
+// TODO work out why and remove unnecessary locality argument.
+void* nbnxn_get_gpu_fpmervec(gmx_nbnxn_gpu_t *gpu_nbv, Nbnxm::AtomLocality gmx_unused locality)
+{
+    return static_cast<void *> (gpu_nbv->fpmervec);
 }
 
 } // namespace Nbnxm

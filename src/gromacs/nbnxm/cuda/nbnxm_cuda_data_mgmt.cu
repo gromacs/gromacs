@@ -971,6 +971,8 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int                *cell,
 
     reallocateDeviceBuffer(&gpu_nbv->frvec, natoms_total, &gpu_nbv->nfrvec, &gpu_nbv->nfrvec_alloc, nullptr);
 
+    reallocateDeviceBuffer(&gpu_nbv->fpmervec, natoms_total, &gpu_nbv->nfpme, &gpu_nbv->nfpme_alloc, nullptr);
+
     if (natoms_total > 0)
     {
         reallocateDeviceBuffer(&gpu_nbv->cell, natoms_total, &gpu_nbv->ncell, &gpu_nbv->ncell_alloc, nullptr);

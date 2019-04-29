@@ -270,6 +270,12 @@ struct nonbonded_verlet_t
         //! Sync the nonlocal GPU stream with dependent tasks in the local queue.
         void insertNonlocalGpuDependency(Nbnxm::InteractionLocality interactionLocality);
 
+        //! Receive force data to PP from PME task directly using CUDA memory copy
+        void recvFFromPmeCudaDirect(void *recvPtr, int recvSize, int pmeRank);
+
+        //! return GPU pointer to pme force in rvec format
+        void* get_gpu_fpmervec();
+
         //! Returns a reference to the pairlist sets
         const PairlistSets &pairlistSets() const
         {

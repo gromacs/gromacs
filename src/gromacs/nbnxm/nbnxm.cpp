@@ -249,9 +249,21 @@ void nonbonded_verlet_t::launch_copy_f_from_gpu(rvec *f, const Nbnxm::AtomLocali
                                  f);
 }
 
+void nonbonded_verlet_t::recvFFromPmeCudaDirect(void *recvPtr, int recvSize, int pmeRank)
+{
+    Nbnxm::nbnxmRecvFFromPmeCudaDirect(gpu_nbv, recvPtr, recvSize, pmeRank);
+}
+
 void nonbonded_verlet_t::wait_stream_gpu(const Nbnxm::AtomLocality locality)
 {
     nbnxn_wait_stream_gpu(locality, gpu_nbv);
+}
+void* nonbonded_verlet_t::get_gpu_fpmervec()
+{
+    // we get a "function undeclared" compilation error unless we pass at least
+    // one argument with Nbnxm::
+    // TODO work out why and remove unnecessary locality argument.
+    return nbnxn_get_gpu_fpmervec(gpu_nbv, Nbnxm::AtomLocality::Local);
 }
 
 /*! \endcond */

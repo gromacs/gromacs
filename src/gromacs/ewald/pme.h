@@ -52,6 +52,7 @@
 
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -244,9 +245,10 @@ void gmx_pme_send_resetcounters(const t_commrec *cr, int64_t step);
 /*! \brief PP nodes receive the long range forces from the PME nodes */
 void gmx_pme_receive_f(const t_commrec *cr,
                        gmx::ForceWithVirial *forceWithVirial,
+                       void *d_f,
                        real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
-                       float *pme_cycles);
+                       float *pme_cycles, nonbonded_verlet_t *nbv);
 
 /*! \brief
  * This function updates the local atom data on GPU after DD (charges, coordinates, etc.).
@@ -460,7 +462,6 @@ pme_gpu_wait_and_reduce(gmx_pme_t            *GPU_FUNC_ARGUMENT(pme),
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme),
                                                    gmx_wallcycle   *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
-
 
 /*! \brief Get pointer to device copy of coordinate data. */
 GPU_FUNC_QUALIFIER void *pme_gpu_get_device_x(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(nullptr)

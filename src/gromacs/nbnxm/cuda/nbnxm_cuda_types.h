@@ -229,6 +229,12 @@ struct gmx_nbnxn_cuda_t
     int                                                             nfrvec;
     //! number of atoms allocated in force buffer
     int                                                             nfrvec_alloc;
+    //! pme force in rvec format
+    rvec                                                           *fpmervec;
+    //! number of atoms in pme force buffer
+    int                                                             nfpme;
+    //! number of atoms allocated in pme force buffer
+    int                                                             nfpme_alloc;
     //! f buf ops cell index mapping
     int                                                            *cell;
     //! number of indices in cell buffer

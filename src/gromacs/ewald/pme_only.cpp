@@ -92,6 +92,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "pme_gather.h"
 #include "pme_gpu_internal.h"
 #include "pme_internal.h"
 #include "pme_pp_communication.h"
@@ -127,6 +128,9 @@ struct gmx_pme_pp {
     std::vector<MPI_Status>  stat;
     //@}
 };
+
+/*! \brief environment variable to enable GPU P2P communication */
+static const bool c_enableGpuPmePpComms = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
 
 /*! \brief Initialize the PME-only side of the PME <-> PP communication */
 static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(const t_commrec *cr)
@@ -461,11 +465,37 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
     return status;
 }
 
+/*! \brief Send force data to PP ranks */
+static void sendFToPP(void* sendbuf, PpRanks receiver, gmx_pme_pp *pme_pp, int *messages)
+{
+
+    if (c_enableGpuPmePpComms && GMX_THREAD_MPI)
+    {
+        // This rank will have data pulled from PP rank, so needs to send the
+        // remote receive address. This also provides sync to ensure force calcs are completed
+#if GMX_MPI
+        MPI_Send(&sendbuf, sizeof(void*), MPI_BYTE, receiver.rankId,
+                 0, pme_pp->mpi_comm_mysim);
+#endif
+    }
+    else
+    {
+#if GMX_MPI
+        //Send using MPI
+        MPI_Isend(sendbuf, receiver.numAtoms*sizeof(rvec), MPI_BYTE, receiver.rankId,
+                  0, pme_pp->mpi_comm_mysim, &pme_pp->req[*messages]);
+        *messages = *messages+1;
+#endif
+    }
+
+}
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
-static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
+static void gmx_pme_send_force_vir_ener(struct gmx_pme_t *pme,
+                                        gmx_pme_pp *pme_pp,
                                         const PmeOutput &output,
                                         real dvdlambda_q, real dvdlambda_lj,
-                                        float cycles)
+                                        float cycles,
+                                        int step)
 {
 #if GMX_MPI
     gmx_pme_comm_vir_ene_t cve;
@@ -479,13 +509,14 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
     {
         ind_start = ind_end;
         ind_end   = ind_start + receiver.numAtoms;
-        if (MPI_Isend(const_cast<void *>(static_cast<const void *>(output.forces_[ind_start])),
-                      (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
-                      receiver.rankId, 0,
-                      pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
+        void *sendbuf = const_cast<void *>(static_cast<const void *>(output.forces_[ind_start]));
+        if (c_enableGpuPmePpComms && (step > 0))
         {
-            gmx_comm("MPI_Isend failed in do_pmeonly");
+            //Do transfers directly on GPU.
+            rvec* d_f = reinterpret_cast<rvec*> (pme_gpu_get_device_f(pme));
+            sendbuf = reinterpret_cast<void*> (&d_f[ind_start]);
         }
+        sendFToPP(sendbuf, receiver, pme_pp, &messages);
     }
 
     /* send virial and energy to our last PP node */
@@ -626,7 +657,9 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags);
             pme_gpu_launch_spread(pme, as_rvec_array(pme_pp->x.data()), wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
-            pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set, PmeDeviceHostCopy::DeviceHostCopyTrue);
+            PmeDeviceHostCopy deviceHostCopy = (!c_enableGpuPmePpComms || (step == 0) ) ?
+                PmeDeviceHostCopy::DeviceHostCopyTrue : PmeDeviceHostCopy::DeviceHostCopyFalse;
+            pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set, deviceHostCopy);
             output = pme_gpu_wait_finish_task(pme, pmeFlags, wcycle);
             pme_gpu_reinit_computation(pme, wcycle);
         }
@@ -648,8 +681,8 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
-        gmx_pme_send_force_vir_ener(pme_pp.get(), output,
-                                    dvdlambda_q, dvdlambda_lj, cycles);
+        gmx_pme_send_force_vir_ener(pme, pme_pp.get(), output,
+                                    dvdlambda_q, dvdlambda_lj, cycles, step);
 
         count++;
     } /***** end of quasi-loop, we stop with the break above */
