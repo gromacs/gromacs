@@ -528,7 +528,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
 
     snew(md->tmp_r, md->mde_n);
-    snew(md->tmp_v, md->mde_n);
+
     // TODO redo the group name memory management to make it more clear
     char **grpnms;
     snew(grpnms, std::max(md->mde_n, md->mdeb_n)); // Just in case md->mdeb_n > md->mde_n
@@ -623,6 +623,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     sfree(grpnms);
 
     md->nU = groups->groups[SimulationAtomGroupType::Acceleration].nr;
+    snew(md->tmp_v, md->nU);
     if (md->nU > 1)
     {
         snew(grpnms, 3*md->nU);

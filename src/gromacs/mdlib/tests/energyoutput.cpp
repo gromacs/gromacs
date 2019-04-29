@@ -36,7 +36,6 @@
  * \brief
  * Tests for energy output to log and .edr files.
  *
- * \todo Annealing tests.
  * \todo Position and orientation restraints tests.
  * \todo Average and sum in edr file test.
  * \todo AWH output tests.
@@ -92,7 +91,50 @@ void fcloseWrapper(FILE *fp)
     fclose(fp);
 }
 
-class EnergyOutputTest : public ::testing::Test
+/*! \brief Test parameters space.
+ *
+ * The test will run on a set of combinations of this steucture parameters.
+ */
+struct EnergyOutputTestParameters
+{
+    //! If output should be initialized as a rerun.
+    bool isRerun;
+    //! Thermostat (enum)
+    int  temperatureCouplingScheme;
+    //! Barostat (enum)
+    int  pressureCouplingScheme;
+    //! Integrator
+    int  integrator;
+    //! Is box triclinic (off-diagonal elements will be printed).
+    bool isBoxTriclinic;
+    //! Number of saved energy frames (to test averages output).
+    int  numFrames;
+};
+
+/*! \brief Sets of parameters on which to run the tests.
+ *
+ * Only several combinations of the parameters are used. Using all possible combinations will require ~10 MB of
+ * test data and ~2 sec to run the tests.
+ */
+const EnergyOutputTestParameters parametersSets[] = {{false, etcNO,         epcNO,               eiMD, false, 1},
+                                                     {true,  etcNO,         epcNO,               eiMD, false, 1},
+                                                     {false, etcNO,         epcNO,               eiMD, true,  1},
+                                                     {false, etcNO,         epcNO,               eiMD, false, 0},
+                                                     {false, etcNO,         epcNO,               eiMD, false, 10},
+                                                     {false, etcVRESCALE,   epcNO,               eiMD, false, 1},
+                                                     {false, etcNOSEHOOVER, epcNO,               eiMD, false, 1},
+                                                     {false, etcNO,         epcPARRINELLORAHMAN, eiMD, false, 1},
+                                                     {false, etcNO,         epcMTTK,             eiMD, false, 1},
+                                                     {false, etcNO,         epcNO,               eiVV, false, 1},
+                                                     {false, etcNO,         epcMTTK,             eiVV, false, 1}};
+
+/*! \brief Test fixture to test energy output.
+ *
+ * The class is initialized to maximize amount of energy terms printed.
+ * The test is run for different combinations of temperature and pressure control
+ * schemes. Different number of printed steps is also tested.
+ */
+class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParameters>
 {
     public:
         //! File manager
@@ -111,21 +153,21 @@ class EnergyOutputTest : public ::testing::Test
         double                              time_;
         //! Total mass
         real                                tmass_;
-        // Potential energy data
+        //! Potential energy data
         gmx_enerdata_t                      enerdata_;
-        // Kinetic energy data (for temperatures output)
+        //! Kinetic energy data (for temperatures output)
         gmx_ekindata_t                      ekindata_;
-        // System state
+        //! System state
         t_state                             state_;
-        // PBC box
+        //! PBC box
         matrix                              box_;
-        // Virial from constraints
+        //! Virial from constraints
         tensor                              constraintsVirial_;
-        // Virial from force computation
+        //! Virial from force computation
         tensor                              forceVirial_;
-        // Total virial
+        //! Total virial
         tensor                              totalVirial_;
-        // Pressure
+        //! Pressure
         tensor                              pressure_;
         //! Names for the groups.
         std::vector<std::string>            groupNameStrings_ = { "Protein", "Water", "Lipid" };
@@ -164,8 +206,6 @@ class EnergyOutputTest : public ::testing::Test
             // Input record
             inputrec_.delta_t = 0.001;
 
-            // Should not be a rerun
-            inputrec_.eI             = eiMD;
             // F_EQM
             inputrec_.bQMMM          = true;
             // F_RF_EXCL will not be tested - group scheme is not supported any more
@@ -190,11 +230,9 @@ class EnergyOutputTest : public ::testing::Test
             inputrec_.bRot            = true;
 
             // F_ECONSERVED
-            inputrec_.epc             = epcBERENDSEN;
             inputrec_.ref_p[YY][XX]   = 0.0;
             inputrec_.ref_p[ZZ][XX]   = 0.0;
             inputrec_.ref_p[ZZ][YY]   = 0.0;
-            inputrec_.etc             = etcNOSEHOOVER;
 
             // Dipole (mu)
             inputrec_.ewald_geometry  = eewg3DC;
@@ -364,6 +402,8 @@ class EnergyOutputTest : public ::testing::Test
 
         }
 
+        /*! \brief Destroy created objects.
+         */
         void TearDown() override
         {
             for (int k = 0; k < egNR; k++)
@@ -597,119 +637,40 @@ class EnergyOutputTest : public ::testing::Test
 
 };
 
-TEST_F(EnergyOutputTest, HandlesEmptyAverages)
+TEST_P(EnergyOutputTest, CheckOutput)
 {
     ASSERT_NE(log_, nullptr);
-
     // Binary output will be written to the temporary location
     energyFile_ = open_enx(edrFilename_.c_str(), "w");
     ASSERT_NE(energyFile_, nullptr);
 
-    energyOutput_.prepare(energyFile_, &mtop_, &inputrec_, nullptr, nullptr, false);
+    EnergyOutputTestParameters parameters = GetParam();
+    inputrec_.etc = parameters.temperatureCouplingScheme;
+    inputrec_.epc = parameters.pressureCouplingScheme;
+    inputrec_.eI  = parameters.integrator;
 
-    // Print data to log and edr files
-    energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
-                                        100, 1.0, eprNORMAL,
-                                        nullptr,  &mtop_.groups, &inputrec_.opts, nullptr);
+    if (parameters.isBoxTriclinic)
+    {
+        inputrec_.ref_p[YY][XX]   = 1.0;
+    }
 
-    // Print data to log and edr files
-    energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
-                                        100, 1.0, eprAVER,
-                                        nullptr,  &mtop_.groups, &inputrec_.opts, nullptr);
-
-    // We need to close the file before the contents are available.
-    logFileGuard_.reset(nullptr);
-
-    done_ener_file(energyFile_);
-
-    // Set tolerance
-    checker_.setDefaultTolerance(relativeToleranceAsFloatingPoint(1.0, 1.0e-5));
-
-    // Test binary output
-    checkEdrFile(edrFilename_.c_str(), 1);
-
-    // Test printed values
-    checker_.checkInteger(energyOutput_.numEnergyTerms(), "Number of Energy Terms");
-    checker_.checkString(TextReader::readFileToString(logFilename_), "log");
-
-}
-
-
-TEST_F(EnergyOutputTest, HandlesSingleStep)
-{
-    ASSERT_NE(log_, nullptr);
-
-    // Binary output will be written to the tempporary location
-    energyFile_ = open_enx(edrFilename_.c_str(), "w");
-    ASSERT_NE(energyFile_, nullptr);
-
-    energyOutput_.prepare(energyFile_, &mtop_, &inputrec_, nullptr, nullptr, false);
+    energyOutput_.prepare(energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun);
 
     // Add synthetic data for a single step
     double testValue = 10.0;
-    setStepData(&testValue);
-    energyOutput_.addDataAtEnergyStep(false, true, time_, tmass_, &enerdata_,
-                                      &state_, nullptr, nullptr, box_,
-                                      constraintsVirial_, forceVirial_, totalVirial_, pressure_,
-                                      &ekindata_, muTotal_, constraints_.get());
+    for (int frame = 0; frame < parameters.numFrames; frame++)
+    {
+        setStepData(&testValue);
+        energyOutput_.addDataAtEnergyStep(false, true, time_, tmass_, &enerdata_,
+                                          &state_, nullptr, nullptr, box_,
+                                          constraintsVirial_, forceVirial_, totalVirial_, pressure_,
+                                          &ekindata_, muTotal_, constraints_.get());
 
-    energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
-                                        100, time_, eprNORMAL,
-                                        nullptr,  &mtop_.groups, &inputrec_.opts, nullptr);
-
-    energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
-                                        100, time_, eprAVER,
-                                        nullptr,  &mtop_.groups, &inputrec_.opts, nullptr);
-
-    // We need to close the file before the contents are available.
-    logFileGuard_.reset(nullptr);
-
-    done_ener_file(energyFile_);
-
-    // Set tolerance
-    checker_.setDefaultTolerance(relativeToleranceAsFloatingPoint(testValue, 1.0e-5));
-
-    // Test binary output
-    checkEdrFile(edrFilename_.c_str(), 1);
-
-    // Test printed values
-    checker_.checkInteger(energyOutput_.numEnergyTerms(), "Number of Energy Terms");
-    checker_.checkString(TextReader::readFileToString(logFilename_), "log");
-
-}
-
-
-TEST_F(EnergyOutputTest, HandlesTwoSteps)
-{
-    ASSERT_NE(log_, nullptr);
-
-    // Binary output will be written to the temporary location
-    energyFile_ = open_enx(edrFilename_.c_str(), "w");
-    ASSERT_NE(energyFile_, nullptr);
-
-    energyOutput_.prepare(energyFile_, &mtop_, &inputrec_, nullptr, nullptr, false);
-
-    double testValue = 1.0;
-    // Add synthetic data for a first step
-    setStepData(&testValue);
-    energyOutput_.addDataAtEnergyStep(false, true, time_, tmass_, &enerdata_,
-                                      &state_, nullptr, nullptr, box_,
-                                      constraintsVirial_, forceVirial_, totalVirial_, pressure_,
-                                      &ekindata_, muTotal_, constraints_.get());
-
-    energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
-                                        100, time_, eprNORMAL,
-                                        nullptr,  &mtop_.groups, &inputrec_.opts, nullptr);
-    // Add synthetic data for a second step
-    setStepData(&testValue);
-    energyOutput_.addDataAtEnergyStep(false, true, time_, tmass_, &enerdata_,
-                                      &state_, nullptr, nullptr, box_,
-                                      constraintsVirial_, forceVirial_, totalVirial_, pressure_,
-                                      &ekindata_, muTotal_, constraints_.get());
-
-    energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
-                                        100, time_, eprNORMAL,
-                                        nullptr,  &mtop_.groups, &inputrec_.opts, nullptr);
+        energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
+                                            100*frame, time_, eprNORMAL,
+                                            nullptr,  &mtop_.groups, &inputrec_.opts, nullptr);
+        time_ += 1.0;
+    }
 
     energyOutput_.printStepToEnergyFile(energyFile_, true, false, false, log_,
                                         100, time_, eprAVER,
@@ -723,13 +684,19 @@ TEST_F(EnergyOutputTest, HandlesTwoSteps)
     // Set tolerance
     checker_.setDefaultTolerance(relativeToleranceAsFloatingPoint(testValue, 1.0e-5));
 
-    // Test binary output
-    checkEdrFile(edrFilename_.c_str(), 2);
+    if (parameters.numFrames > 0)
+    {
+        // Test binary output
+        checkEdrFile(edrFilename_.c_str(), parameters.numFrames);
+    }
 
     // Test printed values
     checker_.checkInteger(energyOutput_.numEnergyTerms(), "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
+
+INSTANTIATE_TEST_CASE_P(WithParameters, EnergyOutputTest,
+                            ::testing::ValuesIn(parametersSets));
 
 }  // namespace
 }  // namespace test
