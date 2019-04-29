@@ -94,7 +94,7 @@ struct LincsCudaKernelParameters
     //! Number of constraints, coupled with the current one (GPU)
     int                *d_coupledConstraintsCounts;
     //! List of coupled with the current one (GPU)
-    int                *d_coupledConstraintsIdxes;
+    int                *d_coupledConstraintsIndices;
     //! Elements of the coupling matrix.
     float              *d_matrixA;
     //! Mass factors (GPU)

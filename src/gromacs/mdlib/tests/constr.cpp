@@ -64,6 +64,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -222,7 +223,7 @@ struct ConstraintsTestData
             }
 
             // Saving constraints to check if they are satisfied after algorithm was applied
-            constraints_   = constraints;   // Constraints indexes (in type-i-j format)
+            constraints_   = constraints;   // Constraints indices (in type-i-j format)
             constraintsR0_ = constraintsR0; // Equilibrium distances for each type of constraint
 
             invdt_  = 1.0/timestep;         // Inverse timestep
@@ -406,6 +407,14 @@ struct ConstraintsTestData
  */
 typedef std::tuple<std::string, std::string> ConstraintsTestParameters;
 
+/*! \brief Names of all availible algorithms
+ *
+ * Constructed from the algorithms_ field of the test class.
+ * Used as the list of values of second parameter in ConstraintsTestParameters.
+ */
+static std::vector<std::string> algorithmsNames;
+
+
 /*! \brief Test fixture for constraints.
  *
  * The fixture uses following test systems:
@@ -465,9 +474,16 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
             algorithms_["LINCS"] = applyLincs;
             // LINCS using CUDA (if CUDA is available)
 #if GMX_GPU == GMX_GPU_CUDA
-            algorithms_["LINCS_CUDA"] = applyLincsCuda;
+            std::string errorMessage;
+            if (canDetectGpus(&errorMessage))
+            {
+                algorithms_["LINCS_CUDA"] = applyLincsCuda;
+            }
 #endif
-
+            for (const auto &algorithm : algorithms_)
+            {
+                algorithmsNames.push_back(algorithm.first);
+            }
         }
 
         /*! \brief
@@ -1146,7 +1162,7 @@ TEST_P(ConstraintsTest, TriangleOfConstraints){
 #if GMX_GPU == GMX_GPU_CUDA
 INSTANTIATE_TEST_CASE_P(WithParameters, ConstraintsTest,
                             ::testing::Combine(::testing::Values("PBCNone", "PBCXYZ"),
-                                                   ::testing::Values("SHAKE", "LINCS", "LINCS_CUDA")));
+                                                   ::testing::ValuesIn(algorithmsNames)));
 #endif
 
 #if GMX_GPU != GMX_GPU_CUDA

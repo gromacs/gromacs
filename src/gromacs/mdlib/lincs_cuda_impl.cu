@@ -78,7 +78,7 @@ namespace gmx
 
 //! Number of CUDA threads in a block
 constexpr static int c_threadsPerBlock = 256;
-//! Maximum number of threads in a block (for __launch_bonds__)
+//! Maximum number of threads in a block (for __launch_bounds__)
 constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
 
 /*! \brief Main kernel for LINCS constraints.
@@ -119,7 +119,7 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
     const int2*   __restrict__  gm_constraints              = kernelParams.d_constraints;
     const float*  __restrict__  gm_constraintsTargetLengths = kernelParams.d_constraintsTargetLengths;
     const int*    __restrict__  gm_coupledConstraintsCounts = kernelParams.d_coupledConstraintsCounts;
-    const int*    __restrict__  gm_coupledConstraintsIdxes  = kernelParams.d_coupledConstraintsIdxes;
+    const int*    __restrict__  gm_coupledConstraintsIdxes  = kernelParams.d_coupledConstraintsIndices;
     const float*  __restrict__  gm_massFactors              = kernelParams.d_massFactors;
     float*  __restrict__        gm_matrixA                  = kernelParams.d_matrixA;
     const float*  __restrict__  gm_inverseMasses            = kernelParams.d_inverseMasses;
@@ -370,10 +370,10 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
         // half of it sums two values. This procedure is repeated until only one thread is left.
         // Only works if the threads per blocks is a power of two (hence static_assert
         // in the beginning of the kernel).
-        for (int divideBy = 2; divideBy <= blockDim.x; divideBy *= 2)
+        for (int divideBy = 2; divideBy <= static_cast<int>(blockDim.x); divideBy *= 2)
         {
             int dividedAt = blockDim.x/divideBy;
-            if (threadIdx.x < dividedAt)
+            if (static_cast<int>(threadIdx.x) < dividedAt)
             {
                 for (int d = 0; d < 6; d++)
                 {
@@ -532,8 +532,8 @@ LincsCuda::Impl::Impl(int numAtoms,
 
     static_assert(sizeof(real) == sizeof(float),
                   "Real numbers should be in single precision in GPU code.");
-    static_assert(c_threadsPerBlock > 0 && !(c_threadsPerBlock & (c_threadsPerBlock - 1) == 0),
-                  "Nmber of threads per block should be a power of two in order for reduction to work.");
+    static_assert(c_threadsPerBlock > 0 && ((c_threadsPerBlock & (c_threadsPerBlock - 1)) == 0),
+                  "Number of threads per block should be a power of two in order for reduction to work.");
 
     // This is temporary. LINCS should not manage coordinates.
     allocateDeviceBuffer(&kernelParams_.d_x,  numAtoms, nullptr);
@@ -621,7 +621,7 @@ void LincsCuda::Impl::set(const t_idef    &idef,
     // Number of constraints, coupled with the current one (CPU)
     std::vector<int>    coupledConstraintsCountsHost;
     // List of coupled with the current one (CPU)
-    std::vector<int>    coupledConstraintsIdxesHost;
+    std::vector<int>    coupledConstraintsIndicesHost;
     // Mass factors (CPU)
     std::vector<float>  massFactorsHost;
 
@@ -708,7 +708,7 @@ void LincsCuda::Impl::set(const t_idef    &idef,
     // The adjacency list of constraints (i.e. the list of coupled constraints for each constraint).
     // We map a single thread to a single constraint, hence each thread 'c' will be using one element from
     // coupledConstraintsCountsHost array, which is the number of constraints coupled to the constraint 'c'.
-    // The coupled constraints indexes are placed into the coupledConstraintsIdxesHost array. Latter is organized
+    // The coupled constraints indexes are placed into the coupledConstraintsIndicesHost array. Latter is organized
     // as a one-dimensional array to ensure good memory alignment. It is addressed as [c + i*numConstraintsThreads],
     // where 'i' goes from zero to the number of constraints coupled to 'c'. 'numConstraintsThreads' is the width of
     // the array --- a number, greater then total number of constraints, taking into account the splits in the
@@ -730,7 +730,7 @@ void LincsCuda::Impl::set(const t_idef    &idef,
     }
 
     coupledConstraintsCountsHost.resize(kernelParams_.numConstraintsThreads, 0);
-    coupledConstraintsIdxesHost.resize(maxCoupledConstraints*kernelParams_.numConstraintsThreads, -1);
+    coupledConstraintsIndicesHost.resize(maxCoupledConstraints*kernelParams_.numConstraintsThreads, -1);
     massFactorsHost.resize(maxCoupledConstraints*kernelParams_.numConstraintsThreads, -1);
 
     for (int c1 = 0; c1 < numConstraints; c1++)
@@ -755,7 +755,7 @@ void LincsCuda::Impl::set(const t_idef    &idef,
             {
                 int index = kernelParams_.numConstraintsThreads*coupledConstraintsCountsHost.at(splitMap.at(c1)) + splitMap.at(c1);
 
-                coupledConstraintsIdxesHost.at(index) = splitMap.at(c2);
+                coupledConstraintsIndicesHost.at(index) = splitMap.at(c2);
 
                 int   center = c1a1;
 
@@ -780,7 +780,7 @@ void LincsCuda::Impl::set(const t_idef    &idef,
             {
                 int index = kernelParams_.numConstraintsThreads*coupledConstraintsCountsHost.at(splitMap.at(c1)) + splitMap.at(c1);
 
-                coupledConstraintsIdxesHost.at(index) = splitMap.at(c2);
+                coupledConstraintsIndicesHost.at(index) = splitMap.at(c2);
 
                 int   center = c1a2;
 
@@ -807,7 +807,7 @@ void LincsCuda::Impl::set(const t_idef    &idef,
             freeDeviceBuffer(&kernelParams_.d_constraintsTargetLengths);
 
             freeDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts);
-            freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIdxes);
+            freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices);
             freeDeviceBuffer(&kernelParams_.d_massFactors);
             freeDeviceBuffer(&kernelParams_.d_matrixA);
 
@@ -820,7 +820,7 @@ void LincsCuda::Impl::set(const t_idef    &idef,
         allocateDeviceBuffer(&kernelParams_.d_constraintsTargetLengths, kernelParams_.numConstraintsThreads, nullptr);
 
         allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts, kernelParams_.numConstraintsThreads, nullptr);
-        allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsIdxes, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
+        allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
         allocateDeviceBuffer(&kernelParams_.d_massFactors, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
         allocateDeviceBuffer(&kernelParams_.d_matrixA, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
 
@@ -836,7 +836,7 @@ void LincsCuda::Impl::set(const t_idef    &idef,
     copyToDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts, coupledConstraintsCountsHost.data(),
                        0, kernelParams_.numConstraintsThreads,
                        stream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&kernelParams_.d_coupledConstraintsIdxes, coupledConstraintsIdxesHost.data(),
+    copyToDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices, coupledConstraintsIndicesHost.data(),
                        0, maxCoupledConstraints*kernelParams_.numConstraintsThreads,
                        stream_, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&kernelParams_.d_massFactors, massFactorsHost.data(),
