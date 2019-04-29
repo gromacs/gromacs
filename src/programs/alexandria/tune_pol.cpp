@@ -681,8 +681,8 @@ int alex_tune_pol(int argc, char *argv[])
         "is determined by the input force field file ([TT]-di[tt] option). All",
         "atomtypes for which the polarizability is zero, and for which",
         "there is sufficient data in the input data file ([TT]-f[tt] option)",
-        "will be used in the least-squares fit (done by matrix inversion).[PAR]"
-        "Bootstrapping can be used to estimate the error in the resulting parameters",
+        "will be used in the least-squares fit (done by Singular Value Decomposition).[PAR]"
+        "Bootstrapping is used to estimate the error in the resulting parameters",
         "and this will be stored in the resulting file such that programs",
         "using the parameters can estimate an error in the polarizability.[PAR]",
         "A selection of molecules into a training set and a test set (or ignore set)",
