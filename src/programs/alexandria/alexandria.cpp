@@ -58,18 +58,18 @@ main(int argc, char *argv[])
         setenv("GMX_NB_GENERIC", "1", 1);
         if (MASTER(cr))
         {
-            printf("\n                   Welcome to Alexandria\n\n");
-            printf("                  Copyright (c) 2014-2019\n\n");
+            printf("\n     Welcome to the Alexandria Chemistry Toolkit\n\n");
+            printf("              Copyright (c) 2014-2019\n\n");
             printf("Mohammad M. Ghahremanpour, Paul J. van Maaren and David van der Spoel\n\n");
             printf("See http://folding.bmc.uu.se/ for details.\n\n");
-            printf("Alexandria is free software under the Gnu Public License v 2.\n");
+            printf("Alexandria Chemistry Toolkit is free software under the Gnu Public License v 2.\n");
             printf("Read more at http://www.gnu.org/licenses/gpl-2.0.html\n\n");
         }
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();
         if (MASTER(cr))
         {
-            printf("\nThanks for using Alexandria.\n");
+            printf("\nThanks for using  the Alexandria Chemistry Toolkit.\n");
         }
         return rc;
     }
