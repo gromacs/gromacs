@@ -141,9 +141,15 @@ void nonbonded_verlet_t::setCoordinates(const Nbnxm::AtomLocality       locality
 {
     wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-    nbnxn_atomdata_copy_x_to_nbat_x(pairSearch_->gridSet(), locality, fillLocal,
-                                    as_rvec_array(x.data()),
-                                    nbat.get(), useGpu, gpu_nbv, xPmeDevicePtr);
+
+    auto fnPtr = useGpu ?
+        nbnxn_atomdata_copy_x_to_nbat_x<true> :
+        nbnxn_atomdata_copy_x_to_nbat_x<false>;
+
+    fnPtr(pairSearch_->gridSet(), locality, fillLocal,
+          as_rvec_array(x.data()),
+          nbat.get(), gpu_nbv, xPmeDevicePtr);
+
     wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }

@@ -999,12 +999,12 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          bDynamicBox,
 }
 
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
+template <bool useGpu>
 void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
                                      const Nbnxm::AtomLocality locality,
                                      gmx_bool                  FillLocal,
                                      const rvec               *x,
                                      nbnxn_atomdata_t         *nbat,
-                                     bool                      useGpu,
                                      gmx_nbnxn_gpu_t          *gpu_nbv,
                                      void                     *xPmeDevicePtr)
 {
@@ -1099,6 +1099,23 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
+
+template
+void nbnxn_atomdata_copy_x_to_nbat_x<true>(const Nbnxm::GridSet &,
+                                           const Nbnxm::AtomLocality,
+                                           gmx_bool,
+                                           const rvec*,
+                                           nbnxn_atomdata_t *,
+                                           gmx_nbnxn_gpu_t*,
+                                           void *);
+template
+void nbnxn_atomdata_copy_x_to_nbat_x<false>(const Nbnxm::GridSet &,
+                                            const Nbnxm::AtomLocality,
+                                            gmx_bool,
+                                            const rvec*,
+                                            nbnxn_atomdata_t *,
+                                            gmx_nbnxn_gpu_t*,
+                                            void *);
 
 static void
 nbnxn_atomdata_clear_reals(gmx::ArrayRef<real> dest,
