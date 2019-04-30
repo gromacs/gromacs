@@ -58,54 +58,54 @@ elseif(GMX_BUILD_MDRUN_ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
             DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime)
 else()
-    file(GLOB GMX_MAIN_SOURCES gmx.cpp legacymodules.cpp)
-    if(GMX_X11)
-        file(GLOB VIEW_SOURCES view/*.cpp)
-    else()
-        file(GLOB VIEW_SOURCES view/view.cpp)
-    endif()
-    add_library(view_objlib OBJECT ${VIEW_SOURCES})
-    add_executable(gmx
-        ${GMX_MAIN_SOURCES}
-        $<TARGET_OBJECTS:mdrun_objlib>
-        $<TARGET_OBJECTS:view_objlib>)
-    target_link_libraries(gmx libgromacs
-        ${GMX_COMMON_LIBRARIES}
-        ${GMX_EXE_LINKER_FLAGS}
-        ${GMX_STDLIB_LIBRARIES})
-    if(GMX_X11)
-        target_link_libraries(gmx ${X11_LIBRARIES})
-    endif()
-    set(BINARY_NAME "gmx${GMX_BINARY_SUFFIX}")
-    set_target_properties(gmx PROPERTIES
-        OUTPUT_NAME "${BINARY_NAME}"
-        COMPILE_FLAGS "${OpenMP_C_FLAGS}")
-    install(TARGETS gmx
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+#    file(GLOB GMX_MAIN_SOURCES gmx.cpp legacymodules.cpp)
+#    if(GMX_X11)
+#        file(GLOB VIEW_SOURCES view/*.cpp)
+#    else()
+#        file(GLOB VIEW_SOURCES view/view.cpp)
+#    endif()
+#    add_library(view_objlib OBJECT ${VIEW_SOURCES})
+#    add_executable(gmx
+#        ${GMX_MAIN_SOURCES}
+#        $<TARGET_OBJECTS:mdrun_objlib>
+#        $<TARGET_OBJECTS:view_objlib>)
+#    target_link_libraries(gmx libgromacs
+#        ${GMX_COMMON_LIBRARIES}
+#        ${GMX_EXE_LINKER_FLAGS}
+#        ${GMX_STDLIB_LIBRARIES})
+#    if(GMX_X11)
+#        target_link_libraries(gmx ${X11_LIBRARIES})
+#    endif()
+#    set(BINARY_NAME "gmx${GMX_BINARY_SUFFIX}")
+#    set_target_properties(gmx PROPERTIES
+#        OUTPUT_NAME "${BINARY_NAME}"
+#        COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+#    install(TARGETS gmx
+#            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
     ########################
     # Completion generation
 
-    include(gmxCustomCommandUtilities)
+#    include(gmxCustomCommandUtilities)
 
     set(COMPLETION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/completion)
     # Using GMX_BUILD_HELP here is somewhat confusing, but the conditions when
     # this can be done are exactly the same (ability to run the compiled
     # binaries).
-    if (GMX_BUILD_HELP)
-        gmx_add_custom_output_target(completion OUTPUT STAMP
-            COMMAND ${CMAKE_COMMAND}
-                -D GMX_EXECUTABLE=$<TARGET_FILE:gmx>
-                -D ERRORS_ARE_FATAL=${GMX_BUILD_HELP_FORCE}
-                -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildCompletions.cmake
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            DEPENDS gmx ${CMAKE_CURRENT_SOURCE_DIR}/BuildCompletions.cmake
-            COMMENT "Generating command-line completions for programs")
-        set_target_properties(completion PROPERTIES EXCLUDE_FROM_ALL OFF)
-        set_directory_properties(PROPERTIES
-            ADDITIONAL_MAKE_CLEAN_FILES "completion")
-        set(COMPLETION_DIR ${CMAKE_CURRENT_BINARY_DIR}/completion)
-    endif()
+#    if (GMX_BUILD_HELP)
+#        gmx_add_custom_output_target(completion OUTPUT STAMP
+#            COMMAND ${CMAKE_COMMAND}
+#                -D GMX_EXECUTABLE=$<TARGET_FILE:gmx>
+#                -D ERRORS_ARE_FATAL=${GMX_BUILD_HELP_FORCE}
+#                -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildCompletions.cmake
+#            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+#            DEPENDS gmx ${CMAKE_CURRENT_SOURCE_DIR}/BuildCompletions.cmake
+#            COMMENT "Generating command-line completions for programs")
+#        set_target_properties(completion PROPERTIES EXCLUDE_FROM_ALL OFF)
+#        set_directory_properties(PROPERTIES
+#            ADDITIONAL_MAKE_CLEAN_FILES "completion")
+#        set(COMPLETION_DIR ${CMAKE_CURRENT_BINARY_DIR}/completion)
+#    endif()
     if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
         install(DIRECTORY ${COMPLETION_DIR}/
                 DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime OPTIONAL)
@@ -116,9 +116,9 @@ else()
     endif()
     gmx_cpack_add_generated_source_directory(completion)
 
-    if(BUILD_TESTING)
-        add_subdirectory(mdrun/tests)
-    endif()
+#    if(BUILD_TESTING)
+#        add_subdirectory(mdrun/tests)
+#    endif()
 endif()
 
 if(GMX_ALEXANDRIA)
