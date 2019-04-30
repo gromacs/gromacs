@@ -52,6 +52,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/tools/convert_tpr.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -218,6 +219,20 @@ int
 SimulationRunner::callGrompp()
 {
     return callGrompp(CommandLine());
+}
+
+int
+SimulationRunner::changeTprNsteps(int nsteps)
+{
+    CommandLine caller;
+    caller.append("convert-tpr");
+    caller.addOption("-nsteps", nsteps);
+    // Because the operation is to change the .tpr, we replace the
+    // file. TODO Do we need to delete an automatic backup?
+    caller.addOption("-s", tprFileName_);
+    caller.addOption("-o", tprFileName_);
+
+    return gmx_convert_tpr(caller.argc(), caller.argv());
 }
 
 int
