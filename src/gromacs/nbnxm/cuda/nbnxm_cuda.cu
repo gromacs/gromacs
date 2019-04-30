@@ -794,16 +794,10 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
             nb->timers->xf[locality].nb_h2d.openTimingRegion(stream);
         }
 
-        // FIXME: use copyToDeviceBuffer wrapper
-        // There still exist issues with host buffer not being pinned
-        // and another problem with wrong size being picked up by API
-        // auto devicePtr = &nb->xrvec[copyAtomStart][0];
-        // copyToDeviceBuffer(&devicePtr, &x[copyAtomStart][0], 0, nCopyAtoms,
-        //                    stream, GpuApiCallBehavior::Async, nullptr);
-        cudaError_t stat = cudaMemcpyAsync(&nb->xrvec[copyAtomStart][0], &x[copyAtomStart][0],
-                                           nCopyAtoms*sizeof(rvec), cudaMemcpyHostToDevice, stream);
-        CU_RET_ERR(stat, "cudaMemcpy failed on nb->xrvec");
-
+        rvec       *devicePtrDest = reinterpret_cast<rvec *> (nb->xrvec[copyAtomStart]);
+        const rvec *devicePtrSrc  = reinterpret_cast<const rvec *> (x[copyAtomStart]);
+        copyToDeviceBuffer(&devicePtrDest, devicePtrSrc, 0, nCopyAtoms,
+                           stream, GpuApiCallBehavior::Async, nullptr);
 
         if (bDoTime)
         {

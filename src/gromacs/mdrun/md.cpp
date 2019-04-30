@@ -293,6 +293,10 @@ void gmx::Integrator::do_md()
 
         stateInstance = std::make_unique<t_state>();
         state         = stateInstance.get();
+        if (fr->nbv->useGpu())
+        {
+            changePinningPolicy(&state->x, gmx::PinningPolicy::PinnedIfSupported);
+        }
         dd_init_local_state(cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
