@@ -516,7 +516,7 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
                                              const int                   forceFlags,
                                              t_nrnb                     *nrnb)
 {
-    const gmx::ArrayRef<t_nblist const * const > nbl_fep = pairlistSets().pairlistSet(iLocality).fepLists();
+    const auto nbl_fep = pairlistSets().pairlistSet(iLocality).fepLists();
 
     /* When the first list is empty, all are empty and there is nothing to do */
     if (!pairlistSets().params().haveFep || nbl_fep[0]->nrj == 0)
@@ -558,7 +558,7 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
     {
         try
         {
-            gmx_nb_free_energy_kernel(nbl_fep[th],
+            gmx_nb_free_energy_kernel(nbl_fep[th].get(),
                                       x, f, fr, &mdatoms, &kernel_data, nrnb);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -599,7 +599,7 @@ nonbonded_verlet_t::dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocali
             {
                 try
                 {
-                    gmx_nb_free_energy_kernel(nbl_fep[th],
+                    gmx_nb_free_energy_kernel(nbl_fep[th].get(),
                                               x, f, fr, &mdatoms, &kernel_data, nrnb);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

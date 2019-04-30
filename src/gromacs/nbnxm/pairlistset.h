@@ -49,6 +49,8 @@
 #ifndef GMX_NBNXM_PAIRLISTSET_H
 #define GMX_NBNXM_PAIRLISTSET_H
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -119,7 +121,7 @@ class PairlistSet
         }
 
         //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
-        gmx::ArrayRef<t_nblist const * const> fepLists() const
+        gmx::ArrayRef < const std::unique_ptr < t_nblist>> fepLists() const
         {
             return fepLists_;
         }
@@ -140,7 +142,7 @@ class PairlistSet
         //! Tells whether the lists is of CPU type, otherwise GPU type
         gmx_bool                       isCpuType_;
         //! Lists for perturbed interactions in simple atom-atom layout
-        std::vector<t_nblist *>        fepLists_;
+        std::vector < std::unique_ptr < t_nblist>> fepLists_;
 
     public:
         /* Pair counts for flop counting */

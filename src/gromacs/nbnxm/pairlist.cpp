@@ -738,8 +738,8 @@ PairlistSet::PairlistSet(const Nbnxm::InteractionLocality  locality,
                  * master thread (but all contained list memory thread local)
                  * impacts performance.
                  */
-                snew(fepLists_[i], 1);
-                nbnxn_init_pairlist_fep(fepLists_[i]);
+                fepLists_[i] = std::make_unique<t_nblist>();
+                nbnxn_init_pairlist_fep(fepLists_[i].get());
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -2740,8 +2740,8 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu>  nbls,
     }
 }
 
-static void balance_fep_lists(gmx::ArrayRef<t_nblist *>      fepLists,
-                              gmx::ArrayRef<PairsearchWork>  work)
+static void balance_fep_lists(gmx::ArrayRef < std::unique_ptr < t_nblist>> fepLists,
+                              gmx::ArrayRef<PairsearchWork>                work)
 {
     const int numLists = fepLists.ssize();
 
@@ -2754,7 +2754,7 @@ static void balance_fep_lists(gmx::ArrayRef<t_nblist *>      fepLists,
     /* Count the total i-lists and pairs */
     int nri_tot = 0;
     int nrj_tot = 0;
-    for (auto list : fepLists)
+    for (const auto &list : fepLists)
     {
         nri_tot += list->nri;
         nrj_tot += list->nrj;
@@ -2797,7 +2797,7 @@ static void balance_fep_lists(gmx::ArrayRef<t_nblist *>      fepLists,
     t_nblist *nbld    = work[th_dest].nbl_fep.get();
     for (int th = 0; th < numLists; th++)
     {
-        t_nblist *nbls = fepLists[th];
+        const t_nblist *nbls = fepLists[th].get();
 
         for (int i = 0; i < nbls->nri; i++)
         {
@@ -2834,9 +2834,7 @@ static void balance_fep_lists(gmx::ArrayRef<t_nblist *>      fepLists,
     /* Swap the list pointers */
     for (int th = 0; th < numLists; th++)
     {
-        t_nblist *nbl_tmp = work[th].nbl_fep.release();
-        work[th].nbl_fep.reset(fepLists[th]);
-        fepLists[th]      = nbl_tmp;
+        fepLists[th].swap(work[th].nbl_fep);
 
         if (debug)
         {
@@ -4012,7 +4010,7 @@ PairlistSet::constructPairlists(const Nbnxm::GridSet          &gridSet,
 
         if (params_.haveFep)
         {
-            clear_pairlist_fep(fepLists_[th]);
+            clear_pairlist_fep(fepLists_[th].get());
         }
     }
 
@@ -4080,7 +4078,7 @@ PairlistSet::constructPairlists(const Nbnxm::GridSet          &gridSet,
 
                     work.cycleCounter.start();
 
-                    t_nblist *fepListPtr = (fepLists_.empty() ? nullptr : fepLists_[th]);
+                    t_nblist *fepListPtr = (fepLists_.empty() ? nullptr : fepLists_[th].get());
 
                     /* Divide the i cells equally over the pairlists */
                     if (isCpuType_)
