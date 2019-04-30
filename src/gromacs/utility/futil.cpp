@@ -367,8 +367,9 @@ static std::string backup_fn(const std::string &file)
 {
     int          count = 1;
 
-    std::string  directory, fn, buf;
-    std::tie(directory, fn) = gmx::Path::getParentPathAndBasename(file);
+    std::string  directory = gmx::Path::getParentPath(file);
+    std::string  fn        = gmx::Path::getFilename(file);
+    std::string  buf;
     if (directory.empty())
     {
         directory = ".";
