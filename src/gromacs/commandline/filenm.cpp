@@ -38,6 +38,7 @@
 
 #include "filenm.h"
 
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 
@@ -252,6 +253,37 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
                for it, just in case... */
             for (std::string &filename : fnm[i].filenames)
             {
+                // mdrun should not generate files like
+                // md.part0002.part0003.log. mdrun should permit users
+                // to name files like md.equil.part0002.log. So,
+                // before we use Path::concatenateBeforeExtension to
+                // add the requested suffix, we need to check for
+                // files matching mdrun's pattern for adding part
+                // numbers. Then we can remove that if needed.
+                for (size_t partPosition; (partPosition = filename.find(".part")) != std::string::npos; )
+                {
+                    if ((filename.length() - partPosition >= 9) &&
+                        (std::isdigit(filename[partPosition + 5])) &&
+                        (std::isdigit(filename[partPosition + 6])) &&
+                        (std::isdigit(filename[partPosition + 7])) &&
+                        (std::isdigit(filename[partPosition + 8])) &&
+                        filename[partPosition + 9] == '.')
+                    {
+                        // Remove the ".partNNNN" that we have found,
+                        // and then run the loop again to make sure
+                        // there isn't another one to remove, somehow.
+                        std::string temporary = filename.substr(0, partPosition);
+                        temporary += filename.substr(partPosition + 9);
+                        filename.swap(temporary);
+                    }
+                    else
+                    {
+                        // The ".part" string wasn't ".partNNNN" like
+                        // mdrun might have generated, so we let the
+                        // user do whatever they are doing.
+                        break;
+                    }
+                }
                 filename = gmx::Path::concatenateBeforeExtension(filename, suffix);
             }
         }

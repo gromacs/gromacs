@@ -74,15 +74,22 @@ TEST(OutputNamesTest, CanHavePartNumberAdded)
         { efLOG, nullptr, nullptr, ffWRITE, {"output.part0002.log"}},
         { efLOG, nullptr, nullptr, ffWRITE, {"output.equil.part0002.log"}},
         { efLOG, nullptr, nullptr, ffWRITE, {"output.part0001.part0002.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.equil.part0001.part0002.log"}}
+        { efLOG, nullptr, nullptr, ffWRITE, {"output.equil.part0001.part0002.log"}},
+        { efLOG, nullptr, nullptr, ffWRITE, {"output.part0002"}},
+        { efLOG, nullptr, nullptr, ffWRITE, {"part0002.log"}},
+        { efLOG, nullptr, nullptr, ffWRITE, {"output.part02.log"}},
+        { efLOG, nullptr, nullptr, ffWRITE, {"output.part002.log"}}
     };
     add_suffix_to_output_names(filenames.data(), filenames.size(), ".part0003");
     EXPECT_EQ(filenames[0].filenames[0], "output.part0003.log");
-    // TODO These should all pass with EXPECT_EQ, but there is a bug to fix.
-    EXPECT_NE(filenames[1].filenames[0], "output.part0003.log");
-    EXPECT_NE(filenames[2].filenames[0], "output.equil.part0003.log");
-    EXPECT_NE(filenames[3].filenames[0], "output.part0003.log");
-    EXPECT_NE(filenames[4].filenames[0], "output.equil.part0003.log");
+    EXPECT_EQ(filenames[1].filenames[0], "output.part0003.log");
+    EXPECT_EQ(filenames[2].filenames[0], "output.equil.part0003.log");
+    EXPECT_EQ(filenames[3].filenames[0], "output.part0003.log");
+    EXPECT_EQ(filenames[4].filenames[0], "output.equil.part0003.log");
+    EXPECT_EQ(filenames[5].filenames[0], "output.part0003.part0002");
+    EXPECT_EQ(filenames[6].filenames[0], "part0002.part0003.log");
+    EXPECT_EQ(filenames[7].filenames[0], "output.part02.part0003.log");
+    EXPECT_EQ(filenames[8].filenames[0], "output.part002.part0003.log");
 }
 
 } // namespace

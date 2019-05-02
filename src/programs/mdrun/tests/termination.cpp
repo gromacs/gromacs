@@ -209,22 +209,16 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0003.edr");
         ASSERT_EQ(0, runner_.callMdrun(thirdPart));
 
-        // TODO This file should be named like ".part0003.log" but
-        // there is a bug to fix.
-        auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0002.part0003.log");
+        auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0003.log");
         EXPECT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
         expectedLogFileName << " was not found";
-        // TODO This file should be named like ".part0003.edr" but
-        // there is a bug to fix.
-        auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0003.part0003.edr");
+        auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0003.edr");
         ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
         expectedEdrFileName << " was not found";
     }
-    // TODO The following test code can be activated once the above bug is fixed
-    /*
-       SCOPED_TRACE("Running the fourth simulation part with default appending");
-       runner_.changeTprNsteps(8);
-       {
+    SCOPED_TRACE("Running the fourth simulation part with default appending");
+    runner_.changeTprNsteps(8);
+    {
         CommandLine fourthPart;
         fourthPart.append("mdrun");
         fourthPart.addOption("-cpi", runner_.cptFileName_);
@@ -241,9 +235,9 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0004.edr");
         ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
         expectedEdrFileName << " was not found";
-       }
-       SCOPED_TRACE("Running the fifth simulation part with no extra steps");
-       {
+    }
+    SCOPED_TRACE("Running the fifth simulation part with no extra steps");
+    {
         CommandLine fifthPart;
         fifthPart.append("mdrun");
         fifthPart.addOption("-cpi", runner_.cptFileName_);
@@ -260,8 +254,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0005.edr");
         ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
         expectedEdrFileName << " was not found";
-       }
-     */
+    }
 }
 
 TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithMissingCheckpointFile)
