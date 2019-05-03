@@ -44,6 +44,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/settle_cuda.h"
@@ -85,19 +86,22 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
 {
     public:
         //! Updated water atom positions to constrain (DIM reals per atom)
-        std::vector<gmx::RVec> updatedPositions_;
+        PaddedVector<gmx::RVec> updatedPositions_;
         //! Water atom velocities to constrain (DIM reals per atom)
-        std::vector<gmx::RVec> velocities_;
+        PaddedVector<gmx::RVec> velocities_;
         //! No periodic boundary conditions
-        t_pbc                  pbcNone_;
+        t_pbc                   pbcNone_;
         //! Rectangular periodic box
-        t_pbc                  pbcXyz_;
+        t_pbc                   pbcXyz_;
 
         SettleTest()
         {
             // Moved these to the constructor body so that uncrustify will not confuse doxygen
-            updatedPositions_ = std::vector<gmx::RVec>(std::begin(c_waterPositions), std::end(c_waterPositions));
-            velocities_       = std::vector<gmx::RVec>(updatedPositions_.size(), { 0, 0, 0 });
+            updatedPositions_.resizeWithPadding(c_waterPositions.size());
+            velocities_.resizeWithPadding(c_waterPositions.size());
+
+            std::copy(c_waterPositions.begin(), c_waterPositions.end(), updatedPositions_.begin());
+
             // No periodic boundary conditions
             set_pbc(&pbcNone_, epbcNONE, g_box);
 
@@ -107,24 +111,25 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
             // Perturb the atom positions, to appear like an
             // "update," and where there is definitely constraining
             // work to do.
-            for (size_t i = 0; i != updatedPositions_.size()*DIM; ++i)
+            for (int i = 0; i < updatedPositions_.size()*DIM; ++i)
             {
                 if (i % 4 == 0)
                 {
-                    updatedPositions_[i / 3][i % 3] += 0.01;
+                    updatedPositions_[i / DIM][i % DIM] += 0.01;
                 }
                 else if (i % 4 == 1)
                 {
-                    updatedPositions_[i / 3][i % 3] -= 0.01;
+                    updatedPositions_[i / DIM][i % DIM] -= 0.01;
                 }
                 else if (i % 4 == 2)
                 {
-                    updatedPositions_[i / 3][i % 3] += 0.02;
+                    updatedPositions_[i / DIM][i % DIM] += 0.02;
                 }
                 else if (i % 4 == 3)
                 {
-                    updatedPositions_[i / 3][i % 3] -= 0.02;
+                    updatedPositions_[i / DIM][i % DIM] -= 0.02;
                 }
+                velocities_[i / DIM][i % DIM] = 0.0;
             }
         }
 };
@@ -194,16 +199,18 @@ TEST_P(SettleTest, SatisfiesConstraints)
     const t_ilist  ilist   = { mtop.moltype[0].ilist[F_SETTLE].size(), 0, mtop.moltype[0].ilist[F_SETTLE].iatoms.data(), 0 };
 
     // Copy the original positions from the array of doubles to a vector of reals
-    std::vector<gmx::RVec> startingPositions(std::begin(c_waterPositions), std::end(c_waterPositions));
+    PaddedVector<gmx::RVec> startingPositions;
+    startingPositions.resizeWithPadding(c_waterPositions.size());
+    std::copy(c_waterPositions.begin(), c_waterPositions.end(), startingPositions.begin());
 
-    const real             reciprocalTimeStep = 1.0/0.002;
-    tensor                 virial             = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    const real              reciprocalTimeStep = 1.0/0.002;
+    tensor                  virial             = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 
 #if GMX_GPU == GMX_GPU_CUDA
     // Make a copy of all data-structures for GPU code testing
-    std::vector<gmx::RVec> updatedPositionsGpu  = updatedPositions_;
-    std::vector<gmx::RVec> velocitiesGpu        = velocities_;
-    tensor                 virialGpu            = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    PaddedVector<gmx::RVec> updatedPositionsGpu   = updatedPositions_;
+    PaddedVector<gmx::RVec> velocitiesGpu         = velocities_;
+    tensor                  virialGpu             = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 #endif
 
     // Finally make the settle data structures
@@ -298,27 +305,27 @@ TEST_P(SettleTest, SatisfiesConstraints)
 
         FloatingPointTolerance toleranceGpuCpu = absoluteTolerance(0.0001);
 
-        for (unsigned i = 0; i < updatedPositionsGpu.size(); i++)
+        for (unsigned i = 0; i < updatedPositionsGpu.size(); ++i)
         {
-            for (int d = 0; d < DIM; d++)
+            for (int d = 0; d < DIM; ++d)
             {
-                EXPECT_REAL_EQ_TOL(updatedPositionsGpu.at(i)[d], updatedPositions_.at(i)[d], toleranceGpuCpu)
+                EXPECT_REAL_EQ_TOL(updatedPositionsGpu[i][d], updatedPositions_[i][d], toleranceGpuCpu)
                 << formatString("Different coordinates in GPU and CPU codes for particle %d component %d ", i, d)
                 << testDescription;
             }
         }
-        for (unsigned i = 0; i < velocitiesGpu.size(); i++)
+        for (unsigned i = 0; i < velocitiesGpu.size(); ++i)
         {
-            for (int d = 0; d < DIM; d++)
+            for (int d = 0; d < DIM; ++d)
             {
-                EXPECT_REAL_EQ_TOL(velocitiesGpu.at(i)[d], velocities_.at(i)[d], toleranceGpuCpu)
+                EXPECT_REAL_EQ_TOL(velocitiesGpu[i][d], velocities_[i][d], toleranceGpuCpu)
                 << formatString("Different velocities in GPU and CPU codes for particle %d component %d ", i, d)
                 << testDescription;
             }
         }
-        for (int d1 = 0; d1 < DIM; d1++)
+        for (int d1 = 0; d1 < DIM; ++d1)
         {
-            for (int d2 = 0; d2 < DIM; d2++)
+            for (int d2 = 0; d2 < DIM; ++d2)
             {
                 EXPECT_REAL_EQ_TOL(virialGpu[d1][d2], virial[d1][d2], toleranceGpuCpu)
                 << formatString("Different virial components in GPU and CPU codes for components %d and %d ", d1, d2)

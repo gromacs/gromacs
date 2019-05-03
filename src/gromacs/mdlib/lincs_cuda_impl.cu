@@ -553,6 +553,23 @@ LincsCuda::Impl::Impl(int numAtoms,
 
 LincsCuda::Impl::~Impl()
 {
+    freeDeviceBuffer(&kernelParams_.d_x);
+    freeDeviceBuffer(&kernelParams_.d_xp);
+    freeDeviceBuffer(&kernelParams_.d_v);
+    freeDeviceBuffer(&kernelParams_.d_virialScaled);
+
+    if (maxConstraintsNumberSoFar_ > 0)
+    {
+        freeDeviceBuffer(&kernelParams_.d_inverseMasses);
+
+        freeDeviceBuffer(&kernelParams_.d_constraints);
+        freeDeviceBuffer(&kernelParams_.d_constraintsTargetLengths);
+
+        freeDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts);
+        freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices);
+        freeDeviceBuffer(&kernelParams_.d_massFactors);
+        freeDeviceBuffer(&kernelParams_.d_matrixA);
+    }
 }
 
 /*! \brief Helper function to go through constraints recursively.

@@ -644,6 +644,14 @@ SettleCuda::Impl::Impl(const int  numAtoms,
 
 SettleCuda::Impl::~Impl()
 {
+    freeDeviceBuffer(&d_x_);
+    freeDeviceBuffer(&d_xp_);
+    freeDeviceBuffer(&d_v_);
+    freeDeviceBuffer(&d_virialScaled_);
+    if (h_atomIds_.size() > 0)
+    {
+        freeDeviceBuffer(&d_atomIds_);
+    }
 }
 
 
@@ -669,7 +677,7 @@ void SettleCuda::Impl::set(const t_idef               &idef,
     numSettles_   = il_settle.nr/nral1;
     if ((int)h_atomIds_.size() < numSettles_)
     {
-        if (h_atomIds_.size() != 0)
+        if (h_atomIds_.size() > 0)
         {
             freeDeviceBuffer(&d_atomIds_);
         }
