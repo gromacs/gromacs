@@ -47,7 +47,9 @@
 #include <array>
 #include <vector>
 
+#include "gromacs/math/coordinatetransformation.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdspan/extensions.h"
 
 namespace gmx
 {
@@ -166,5 +168,26 @@ struct MrcDensityMapHeader{
  */
 size_t numberOfExpectedDataItems(const MrcDensityMapHeader &header);
 
+/*! \brief Extract the transformation into lattice coordinates.
+ * \note Transformation into lattice coordinates is not treated uniformly
+ *       in different implementations for the mrc format,e.g., vmd, pymol and
+ *       chimera have different conventions. Following the vmd implementation here.
+ *
+ * In determining the density origin coordinates, explicit ORIGIN records
+ * (also called origin2k) in the user defined floats 13 - 15, corresponding to
+ * words 50,51 and 52 in the mrc header, precedence over ColumnRowSectionStart.
+ * Only if above values are zero, using the column, row and section start to
+ * determine the translation vector.
+ *
+ * \param[in] header from which the coordinate transformation is to be extracted
+ * \returns a functor that transforms real space coordinates into the lattice
+ */
+TranslateAndScale getCoordinateTransformationToLattice(const MrcDensityMapHeader &header);
+
+/*! \brief Extract the extents of the density data
+ * \param[in] header from which the extents are to be extracted
+ * \returns density data extents in three dimensions.
+ */
+dynamicExtents3D getDynamicExtents3D(const MrcDensityMapHeader &header);
 }      // namespace gmx
 #endif /* end of include guard: GMX_FILEIO_MRCDENSITYMAPHEADER_H */

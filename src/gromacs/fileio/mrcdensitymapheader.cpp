@@ -64,4 +64,41 @@ size_t numberOfExpectedDataItems(const MrcDensityMapHeader &header)
     return header.numColumnRowSection_[XX] * header.numColumnRowSection_[YY] * header.numColumnRowSection_[ZZ];
 }
 
+TranslateAndScale getCoordinateTransformationToLattice(const MrcDensityMapHeader &header)
+{
+    constexpr real c_AAtoNmConversion = 0.1;
+
+    RVec           scale = {
+        header.extent_[XX] / (header.cellLength_[XX] * c_AAtoNmConversion),
+        header.extent_[YY] / (header.cellLength_[YY] * c_AAtoNmConversion),
+        header.extent_[ZZ] / (header.cellLength_[ZZ] * c_AAtoNmConversion)
+    };
+    const RVec     emdbOrigin {
+        header.userDefinedFloat_[12], header.userDefinedFloat_[13], header.userDefinedFloat_[14]
+    };
+    RVec translation;
+    if (emdbOrigin[XX] == 0. && emdbOrigin[YY] == 0. && emdbOrigin[ZZ] == 0.)
+    {
+        translation = RVec {
+            -header.columnRowSectionStart_[XX] / scale[XX],
+            -header.columnRowSectionStart_[YY] / scale[YY],
+            -header.columnRowSectionStart_[ZZ] / scale[ZZ]
+        };
+    }
+    else
+    {
+        translation = {
+            -emdbOrigin[XX] * c_AAtoNmConversion,
+            -emdbOrigin[YY] * c_AAtoNmConversion,
+            -emdbOrigin[ZZ] * c_AAtoNmConversion
+        };
+    }
+    return {scale, translation};
+}
+
+dynamicExtents3D getDynamicExtents3D(const MrcDensityMapHeader &header)
+{
+    return {header.numColumnRowSection_[XX], header.numColumnRowSection_[YY], header.numColumnRowSection_[ZZ]};
+};
+
 } // namespace gmx

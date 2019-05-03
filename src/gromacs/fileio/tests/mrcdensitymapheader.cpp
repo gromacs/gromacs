@@ -44,10 +44,14 @@
 
 #include "gromacs/fileio/mrcdensitymapheader.h"
 
+#include <array>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "testutils/testasserts.h"
+#include "testutils/testmatchers.h"
 
 namespace gmx
 {
@@ -70,6 +74,67 @@ TEST(MrcDensityMapHeaderTest, DataSizeThrowsWhenInvalid)
     MrcDensityMapHeader header;
     header.numColumnRowSection_ = {-1, 2, 3};
     EXPECT_THROW(numberOfExpectedDataItems(header), InternalError);
+}
+TEST(MrcDensityMapHeaderTest, GetsCorrectCoordinateTransformNoOriginGiven)
+{
+    MrcDensityMapHeader header;
+
+    header.extent_                = {100, 200, 300};
+    header.columnRowSectionStart_ = {50, 200, 0};
+    header.cellLength_            = {10, 20, 15};
+
+    std::array<RVec, 2>                 testVectors = {RVec {0., 0., 0.}, RVec {1., 1., 1.}};
+    getCoordinateTransformationToLattice(header)(testVectors);
+
+    std::vector<RVec>                   expectedVectors = {{-50, -200, 0}, {50, -100, 200}};
+    EXPECT_THAT(expectedVectors, testing::Pointwise(test::RVecEq(test::defaultFloatTolerance()), testVectors));
+}
+
+TEST(MrcDensityMapHeaderTest, GetsCorrectCoordinateTransformWithOriginDefined)
+{
+    MrcDensityMapHeader header;
+    header.userDefinedFloat_[12]  = 1.;
+    header.userDefinedFloat_[13]  = 2.;
+    header.userDefinedFloat_[14]  = 3.;
+    header.extent_                = {100, 200, 300};
+    // setting the columnRowSectionStart values that are to be ignored if userDefinedFloat_ is not zero
+    header.columnRowSectionStart_ = {50, 200, 0};
+    header.cellLength_            = {10, 20, 15};
+
+    std::array<RVec, 2>                 testVectors = {RVec {0., 0., 0.}, RVec {1., 1., 1.}};
+    getCoordinateTransformationToLattice(header)(testVectors);
+
+    std::vector<RVec>                   expectedVectors = {{-10, -20, -60}, {90, 80, 140}};
+    EXPECT_THAT(expectedVectors, testing::Pointwise(test::RVecEq(test::defaultFloatTolerance()), testVectors));
+}
+
+TEST(MrcDensityMapHeaderTest, GetsCorrectCoordinateTransformWithStartValues)
+{
+    MrcDensityMapHeader header;
+    header.userDefinedFloat_[12]  = 0;
+    header.userDefinedFloat_[13]  = 0;
+    header.userDefinedFloat_[14]  = 0;
+    header.extent_                = {100, 200, 300};
+    header.columnRowSectionStart_ = {50, 200, 0};
+    header.cellLength_            = {10, 20, 15};
+
+    std::array<RVec, 2>                 testVectors = {RVec {0., 0., 0.}, RVec {1., 1., 1.}};
+    getCoordinateTransformationToLattice(header)(testVectors);
+
+    std::vector<RVec>                   expectedVectors = {{-50, -200, 0}, {50, -100, 200}};
+    EXPECT_THAT(expectedVectors, testing::Pointwise(test::RVecEq(test::defaultFloatTolerance()), testVectors));
+}
+
+TEST(MrcDensityMapHeaderTest, GetsCorrectExtents)
+{
+    MrcDensityMapHeader header;
+    header.numColumnRowSection_ = {100, 200, 300};
+
+    const auto extents = getDynamicExtents3D(header);
+    std::array<std::ptrdiff_t, DIM> expectedExtents = {100, 200, 300};
+    EXPECT_EQ(expectedExtents[XX], extents.extent(XX));
+    EXPECT_EQ(expectedExtents[YY], extents.extent(YY));
+    EXPECT_EQ(expectedExtents[ZZ], extents.extent(ZZ));
 }
 
 } // namespace gmx
