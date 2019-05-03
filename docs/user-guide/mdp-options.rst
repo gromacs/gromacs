@@ -2149,11 +2149,6 @@ AWH adaptive biasing
    (0.0) [nm] or [rad]
    End value defining the sampling interval together with :mdp:`awh1-dim1-start`.
 
-.. mdp:: awh1-dim1-period
-
-   (0.0) [nm] or [rad]
-   The period of this reaction coordinate, use 0 when the coordinate is not periodic.
-
 .. mdp:: awh1-dim1-diffusion
 
    (10\ :sup:`-5`) [nm\ :sup:`2`/ps] or [rad\ :sup:`2`/ps]

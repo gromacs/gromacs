@@ -34,3 +34,8 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Removed non-existent mdp option awh1-dim1-period from user guide
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2940`
+
