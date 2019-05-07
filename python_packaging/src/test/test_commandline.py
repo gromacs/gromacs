@@ -69,7 +69,7 @@ class SimpleCliTestCase(unittest.TestCase):
 
         operation.run()
         # assert operation.output.returncode.result() == 0
-        assert operation.output.returncode == 0
+        assert operation.output.returncode.result() == 0
 
     def test_false_explicit(self):
         """Test a command known to produce a return code of 1."""
@@ -77,14 +77,46 @@ class SimpleCliTestCase(unittest.TestCase):
         operation = commandline.cli(command=[command], shell=False)
         # Explicitly run the operation.
         operation.run()
-        assert operation.output.returncode == 1
+        assert operation.output.returncode.result() == 1
+
+    def test_false_implicit(self):
+        command = shutil.which('false')
+        operation = commandline.cli(command=[command], shell=False)
+        # Allow the operation to be executed implicitly to satisfy data constraint.
+        assert operation.output.returncode.result() == 1
 
     def test_command_with_arguments(self):
         """Test that cli() can wrap a command with arguments."""
         # TODO: (FR5+) do we want to pipeline or checkpoint stdout somehow?
         operation = commandline.cli(command=[shutil.which('echo'), 'hi', 'there'])
-        operation.run()
-        assert operation.output.returncode == 0
+        assert operation.output.returncode.result() == 0
+
+
+class CommandLineOperationSimpleTestCase(unittest.TestCase):
+    """Test the command line wrapper operation factory."""
+
+    def test_true(self):
+        operation = commandline.commandline_operation(executable='true')
+        # Note: 'stdout' and 'stderr' not mapped.
+        # Note: getitem not implemented.
+        # assert not 'stdout' in operation.output
+        # assert not 'stderr' in operation.output
+        assert not hasattr(operation.output, 'stdout')
+        assert not hasattr(operation.output, 'stderr')
+        assert hasattr(operation.output, 'file')
+        assert hasattr(operation.output, 'erroroutput')
+        assert hasattr(operation.output, 'returncode')
+        assert operation.output.returncode.result() == 0
+
+    def test_false(self):
+        operation = commandline.commandline_operation(executable='false')
+        assert operation.output.returncode.result() == 1
+
+    def test_echo(self):
+        # TODO: (FR5+) do we want to pipeline or checkpoint stdout somehow?
+        operation = commandline.commandline_operation(executable='echo',
+                                                      arguments=['hi there'])
+        assert operation.output.returncode.result() == 0
 
 
 if __name__ == '__main__':

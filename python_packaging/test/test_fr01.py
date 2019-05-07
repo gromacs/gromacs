@@ -54,9 +54,8 @@ def test_fr1():
     # named in `executable`.
     operation = gmx.commandline_operation(executable='true')
     operation.run()
-    # assert operation.output.returncode.result() == 0
-    assert operation.output.returncode == 0
+    assert operation.output.returncode.result() == 0
 
     operation = gmx.commandline_operation(executable='false')
     operation.run()
-    assert operation.output.returncode == 1
+    assert operation.output.returncode.result() == 1

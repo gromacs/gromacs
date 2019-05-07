@@ -38,9 +38,14 @@
 See also test_commandline.py for integration tests.
 """
 
+import os
+import shutil
+import stat
+import tempfile
 import unittest
 
 import gmxapi as gmx
+from gmxapi import commandline_operation
 
 
 class ImmediateResultTestCase(unittest.TestCase):
@@ -55,9 +60,9 @@ class ImmediateResultTestCase(unittest.TestCase):
     def test_list(self):
         list_a = [1, 2, 3]
 
-        # TODO: test input validation
+        # TODO: (FR4) test input validation
         list_result = gmx.operation.concatenate_lists(sublists=[list_a])
-        # TODO: should be NDArray
+        # TODO: (FR4) should be NDArray
         assert list_result.dtype == type(list_a)
         # Note: this is specifically for the built-in tuple type.
         # Equality comparison may work differently for different sequence types.
@@ -76,6 +81,82 @@ class ImmediateResultTestCase(unittest.TestCase):
         list_result = gmx.operation.append_list(list_a, list_b)
         assert len(list_result.result()) == len(list_a) + 1
         assert tuple(list_result.result()) == tuple(list(list_a) + [42])
+
+
+class OperationPipelineTestCase(unittest.TestCase):
+    """Test dependent sequence of operations."""
+
+    def test_operation_dependence(self):
+        """Confirm that dependent operations are only executed after their dependencies.
+
+        In a sequence of two operations, write a two-line file one line at a time.
+        Use a user-provided filename as a parameter to each operation.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            fh, filename = tempfile.mkstemp(dir=directory)
+            os.close(fh)
+
+            line1 = 'first line'
+            subcommand = ' '.join(['echo', '"{}"'.format(line1), '>>', filename])
+            commandline = ['-c', subcommand]
+            filewriter1 = commandline_operation('bash', arguments=commandline)
+
+            line2 = 'second line'
+            subcommand = ' '.join(['echo', '"{}"'.format(line2), '>>', filename])
+            commandline = ['-c', subcommand]
+            filewriter2 = commandline_operation('bash', arguments=commandline, input=filewriter1)
+
+            filewriter2.run()
+            # Check that the file has the two expected lines
+            with open(filename, 'r') as fh:
+                lines = [text.rstrip() for text in fh]
+            assert len(lines) == 2
+            assert lines[0] == line1
+            assert lines[1] == line2
+
+    def test_data_dependence(self):
+        """Confirm that data dependencies correctly establish resolvable execution dependencies.
+
+        In a sequence of two operations, write a two-line file one line at a time.
+        Use the output of one operation as the input of another.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            file1 = os.path.join(directory, 'input')
+            file2 = os.path.join(directory, 'output')
+
+            # Make a shell script that acts like the type of tool we are wrapping.
+            scriptname = os.path.join(directory, 'clicommand.sh')
+            with open(scriptname, 'w') as fh:
+                fh.write('\n'.join(['#!' + shutil.which('bash'),
+                                    '# Concatenate an input file and a string argument to an output file.',
+                                    '# Mock a utility with the tested syntax.',
+                                    '#     clicommand.sh "some words" -i inputfile -o outputfile',
+                                    'echo $1 | cat $3 - > $5\n']))
+            os.chmod(scriptname, stat.S_IRWXU)
+
+            line1 = 'first line'
+            filewriter1 = commandline_operation(scriptname,
+                                                arguments=[line1],
+                                                input_files={'-i': os.devnull},
+                                                output_files={'-o': file1})
+
+            line2 = 'second line'
+            filewriter2 = commandline_operation(scriptname,
+                                                arguments=[line2],
+                                                input_files={'-i': filewriter1.output.file['-o']},
+                                                output_files={'-o': file2})
+
+            filewriter2.run()
+            # Check that the files have the expected lines
+            with open(file1, 'r') as fh:
+                lines = [text.rstrip() for text in fh]
+            assert len(lines) == 1
+            assert lines[0] == line1
+            with open(file2, 'r') as fh:
+                lines = [text.rstrip() for text in fh]
+            assert len(lines) == 2
+            assert lines[0] == line1
+            assert lines[1] == line2
 
 
 if __name__ == '__main__':

@@ -35,7 +35,7 @@
 Provide command line operation.
 """
 
-__all__ = []
+__all__ = ['commandline_operation']
 
 import shutil
 import subprocess
@@ -165,3 +165,117 @@ def cli(command: list = None, shell: bool = None, output=None):
     output.returncode = returncode
     # TODO: Handle the file output at the higher level wrapper.
     # output.file = None
+
+
+# TODO: (FR4) Make this a formal operation to properly handle gmxapi data dependencies.
+#  The consumer of this operation has an NDArray input. filemap may contain gmxapi data flow
+#  aspects that we want the framework to handle for us.
+def filemap_to_flag_list(filemap=None):
+    """Convert a map of command line flags and filenames to a list of command line arguments.
+
+    Used to map inputs and outputs of command line tools to and from gmxapi data handles.
+    User provides mappings of flags and filenames so that gmxapi can construct an
+    executable command line.
+
+    Primary use case is implicit. commandline_operation() instantiates this operation based on
+    user input, and sends the output to cli()
+
+    Arguments:
+        filemap : key-value map of command line flags and filename arguments
+
+    Returns:
+        list of strings and/or gmxapi data references
+    """
+    flag_list = []
+    if filemap is not None:
+        for flag, value in filemap.items():
+            flag_list.extend((flag, value))
+    # TODO: (FR4) Should be a NDArray(shape=(1,), dtype=str)
+    return flag_list
+
+
+# TODO: (FR4) Use generating function or decorator that can validate kwargs?
+# TODO: (FR4) Outputs need to be fully formed and typed in the object returned
+#  from the helper (decorated function).
+def commandline_operation(executable=None,
+                          arguments=(),
+                          input_files: dict = None,
+                          output_files: dict = None,
+                          **kwargs):
+    """Helper function to define a new operation that executes a subprocess in gmxapi data flow.
+
+    Define a new Operation for a particular executable and input/output parameter set.
+    Generate a chain of operations to process the named key word arguments and handle
+    input/output data dependencies.
+
+    Arguments:
+        executable : name of an executable on the path
+        arguments : list of positional arguments to insert at argv[1]
+        input_files : mapping of command-line flags to input file names
+        output_files : mapping of command-line flags to output file names
+
+    Output:
+        The output node of the resulting operation handle contains
+        * `file`: the mapping of CLI flags to filename strings resulting from the `output` kwarg
+        * `erroroutput`: A string of error output (if any) if the process failed.
+        * `returncode`: return code of the subprocess.
+
+    """
+
+    # Implementation details: When used in a script, this function returns an
+    # instance of an operation. However, because of the dynamic specification of
+    # inputs and outputs, each invocation may have the overhead of defining new
+    # types to express the data flow topology, regardless of the executable.
+    # If this overhead is problematic, consider exposing the intermediate step
+    # at which the Operation is fully specified to facilitate reuse.
+
+    ##
+    # 1. Define a new operation with outputs from `cli()` plus `file` from `output_files`
+
+    # output_files is essentially passed through, but we need assurance that results
+    # will not be published until the rest of the operation has run (i.e. the cli() executable.)
+
+    @function_wrapper(output={'erroroutput': str, 'returncode': int, 'file': dict})
+    def merged_ops(erroroutput: str = None, returncode: int = None, file: dict = None, output=None):
+        assert erroroutput is not None
+        assert returncode is not None
+        assert file is not None
+        assert output is not None
+        output.file = file
+        output.returncode = returncode
+        output.erroroutput = erroroutput
+
+    ##
+    # 2. Prepare data flow.
+
+    if input_files is None:
+        input_files = {}
+    if output_files is None:
+        output_files = {}
+    command = concatenate_lists([[executable],
+                                 arguments,
+                                 filemap_to_flag_list(input_files),
+                                 filemap_to_flag_list(output_files)])
+    shell = make_constant(False)
+    cli_args = {'command': command,
+                'shell': shell}
+    cli_args.update(**kwargs)
+
+    ##
+    # 3. Merge operations
+    #
+    # Note: Without a `label` argument, repeated calls to cli(**cli_args) should
+    # produce references to the same unique resource. Creating this handle
+    # separately should not be necessary, but we've got a way to go until we have the
+    # fingerprinting and Context resource management we need for that.
+    # TODO: ``label`` kwarg
+    # TODO: input fingerprinting
+    cli_result = cli(**cli_args)
+    merged_result = merged_ops(erroroutput=cli_result.output.erroroutput,
+                               returncode=cli_result.output.returncode,
+                               file=output_files,
+                               **kwargs)
+
+    # Return an object with an OutputCollection granting access to outputs of
+    # cli() and of output_files (as "file")
+    return merged_result

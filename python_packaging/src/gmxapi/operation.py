@@ -1,3 +1,4 @@
+#
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2019, by the GROMACS development team, led by
@@ -176,12 +177,18 @@ def computed_result(function):
 @computed_result
 def append_list(a: list = (), b: list = ()):
     """Operation that consumes two lists and produces a concatenated single list."""
-    # TODO: (FR3) Each sublist or sublist element could be a "future" handle;
-    #  make sure input provider resolves that.
     # TODO: (FR4) Returned list should be an NDArray.
     if isinstance(a, (str, bytes)) or isinstance(b, (str, bytes)):
         raise exceptions.ValueError('Input must be a pair of lists.')
-    return list(a) + list(b)
+    try:
+        list_a = list(a)
+    except TypeError:
+        list_a = list([a])
+    try:
+        list_b = list(b)
+    except TypeError:
+        list_b = list([b])
+    return list_a + list_b
 
 
 def concatenate_lists(sublists: list = ()):
@@ -323,6 +330,84 @@ def function_wrapper(output=None):
                            "Acts as a sort of PublisherCollection."
     PublishingDataProxy = type('PublishingDataProxy', (DataProxyBase,), namespace)
 
+    class ResultGetter(object):
+        """Fetch data to the caller's Context.
+
+        Returns an object of the concrete type specified according to
+        the operation that produces this Result.
+        """
+
+        def __init__(self, resource_manager, name, dtype):
+            self.resource_manager = resource_manager
+            self.name = name
+            self.dtype = dtype
+
+        def __call__(self):
+            self.resource_manager.update_output()
+            assert self.resource_manager._data[self.name].done
+            # Return ownership of concrete data
+            return self.resource_manager._data[self.name].data
+
+    class Future(object):
+        def __init__(self, resource_manager, name, dtype):
+            self.name = name
+            if not isinstance(dtype, type):
+                raise exceptions.ValueError('dtype argument must specify a type.')
+            self.dtype = dtype
+            # This abstraction anticipates that a Future might not retain a strong
+            # reference to the resource_manager, but only to a facility that can resolve
+            # the result() call. Additional aspects of the Future interface can be
+            # developed without coupling to a specific concept of the resource manager.
+            self._result = ResultGetter(resource_manager, name, dtype)
+
+        def result(self):
+            return self._result()
+
+        def __getitem__(self, item):
+            """Get a more limited view on the Future."""
+
+            # TODO: Strict definition of outputs and output types can let us validate this earlier.
+            #  We need AssociativeArray and NDArray so that we can type the elements.
+            #  Allowing a Future with None type is a hack.
+            def result():
+                return self.result()[item]
+
+            future = collections.namedtuple('Future', ('dtype', 'result'))(None, result)
+            return future
+
+    class OutputDescriptor(object):
+        """Read-only data descriptor for proxied output access.
+
+        Knows how to get a Future from the resource manager.
+        """
+
+        def __init__(self, name, dtype):
+            self.name = name
+            self.dtype = dtype
+
+        def __get__(self, proxy, owner):
+            if proxy is None:
+                # Access through class attribute of owner class
+                return self
+            return proxy._instance.future(name=self.name, dtype=self.dtype)
+
+    class OutputDataProxy(DataProxyBase):
+        """Handler for read access to the `output` member of an operation handle.
+
+        Acts as a sort of ResultCollection.
+
+        A ResourceManager creates an OutputDataProxy instance at initialization to
+        provide the ``output`` property of an operation handle.
+        """
+        # TODO: Needs to know the output schema of the operation,
+        #  so type definition is a detail of the operation definition.
+        #  (Could be "templated" on Context type)
+        # TODO: (FR3+) We probably want some other container behavior,
+        #  in addition to the attributes...
+
+    for name, dtype in output.items():
+        setattr(OutputDataProxy, name, OutputDescriptor(name, dtype))
+
     class ResourceManager(object):
         """Provides data publication and subscription services.
 
@@ -454,19 +539,100 @@ def function_wrapper(output=None):
                 if self.__operation_entrance_counter > 1:
                     raise exceptions.ProtocolError('Bug detected: resource manager tried to execute operation twice.')
                 if not self.done:
-                    input = self._input_fingerprint
-                    # TODO: Allow both structured and singular output.
-                    #  For simple functions, just capture and publish the return value.
-                    with self.publishing_resources() as output:
-                        self._runner(*input.args, output=output, **input.kwargs)
+                    with self.local_input() as input:
+                        # Note: Resources are marked "done" by the resource manager
+                        # when the following context manager completes.
+                        # TODO: Allow both structured and singular output.
+                        #  For simple functions, just capture and publish the return value.
+                        with self.publishing_resources() as output:
+                            self._runner(*input.args, output=output, **input.kwargs)
+
+        def future(self, name: str = None, dtype=None):
+            """Retrieve a Future for a named output.
+
+            TODO: (FR5+) Normalize this part of the interface between operation definitions and
+             resource managers.
+            """
+            if not isinstance(name, str) or name not in self._data:
+                raise exceptions.ValueError('"name" argument must name an output.')
+            assert dtype is not None
+            if dtype != self._data[name].dtype:
+                message = 'Requested Future of type {} is not compatible with available type {}.'
+                message = message.format(dtype, self._data[name].dtype)
+                raise exceptions.ApiError(message)
+            return Future(self, name, dtype)
 
         def data(self):
             """Get an adapter to the output resources to access results."""
-            names = list(self._data.keys())
-            OutputDataProxy = collections.namedtuple('OutputDataProxy', names)
-            data_dict = {name: value.data for name, value in self._data.items()}
-            output = OutputDataProxy(**data_dict)
-            return output
+            return OutputDataProxy(self)
+
+        @contextmanager
+        def local_input(self):
+            """In an API session, get a handle to fully resolved locally available input data.
+
+            Execution dependencies are resolved on creation of the context manager. Input data
+            becomes available in the ``as`` object when entering the context manager, which
+            becomes invalid after exiting the context manager. Resources allocated to hold the
+            input data may be released when exiting the context manager.
+
+            It is left as an implementation detail whether the context manager is reusable and
+            under what circumstances one may be obtained.
+            """
+            # Localize data
+            for dependency in self._dependencies:
+                dependency()
+
+            # TODO: (FR3+) be more rigorous.
+            #  This should probably also use a sort of Context-based observer pattern rather than
+            #  the result() method, which is explicitly for moving data across the API boundary.
+            args = []
+            try:
+                for arg in self._input_fingerprint.args:
+                    if hasattr(arg, 'result'):
+                        args.append(arg.result())
+                    else:
+                        args.append(arg)
+            except Exception as E:
+                raise exceptions.ApiError('input_fingerprint not iterating on "args" attr as expected.') from E
+
+            kwargs = {}
+            try:
+                for key, value in self._input_fingerprint.kwargs.items():
+                    if hasattr(value, 'result'):
+                        kwargs[key] = value.result()
+                    else:
+                        kwargs[key] = value
+                    if isinstance(kwargs[key], list):
+                        new_list = []
+                        for item in kwargs[key]:
+                            if hasattr(item, 'result'):
+                                new_list.append(item.result())
+                            else:
+                                new_list.append(item)
+                        kwargs[key] = new_list
+                    try:
+                        for item in kwargs[key]:
+                            # TODO: This should not happen. Need proper tools for NDArray Futures.
+                            # assert not hasattr(item, 'result')
+                            if hasattr(item, 'result'):
+                                kwargs[key][item] = item.result()
+                    except TypeError:
+                        # This is only a test for iterables
+                        pass
+            except Exception as E:
+                raise exceptions.ApiError('input_fingerprint not iterating on "kwargs" attr as expected.') from E
+
+            assert 'input' not in kwargs
+
+            for key, value in kwargs.items():
+                if key == 'command':
+                    if type(value) == list:
+                        for item in value:
+                            assert not hasattr(item, 'result')
+            input_pack = collections.namedtuple('InputPack', ('args', 'kwargs'))(args, kwargs)
+
+            # Prepare input data structure
+            yield input_pack
 
         def publishing_resources(self):
             """Get a context manager for resolving the data dependencies of this node.
@@ -484,6 +650,18 @@ def function_wrapper(output=None):
         # TODO: Need a facility to resolve inputs, chasing dependencies...
         ###
 
+        @property
+        def _dependencies(self):
+            """Generate a sequence of call-backs that notify of the need to satisfy dependencies."""
+            for arg in self._input_fingerprint.args:
+                if hasattr(arg, 'result') and callable(arg.result):
+                    yield arg.result
+            for _, arg in self._input_fingerprint.kwargs.items():
+                if hasattr(arg, 'result') and callable(arg.result):
+                    yield arg.result
+            for item in self._input_fingerprint.dependencies:
+                assert hasattr(item, 'run')
+                yield item.run
 
     def decorator(function):
         @functools.wraps(function)
@@ -533,13 +711,30 @@ def function_wrapper(output=None):
 
                     # If present, kwargs['input'] is treated as an input "pack" providing _default_ values.
                     input_kwargs = {}
+                    if 'input' in kwargs:
+                        provided_input = kwargs.pop('input')
+                        if provided_input is not None:
+                            # Try to determine what 'input' is.
+                            # TODO: (FR5+) handling should be related to Context.
+                            #  The process of accepting input arguments includes resolving placement in
+                            #  a work graph and resolving the Context responsibilities for graph nodes.
+                            if hasattr(provided_input, 'run'):
+                                input_dependencies.append(provided_input)
+                            else:
+                                # Assume a parameter pack is provided.
+                                for key, value in provided_input.items():
+                                    input_kwargs[key] = value
+                    assert 'input' not in kwargs
+                    assert 'input' not in input_kwargs
+
+                    # Merge kwargs and kwargs['input'] (keyword parameters versus parameter pack)
                     for key in kwargs:
                         if key in self.signature.parameters:
                             input_kwargs[key] = kwargs[key]
                         else:
                             raise exceptions.UsageError('Unexpected keyword argument: {}'.format(key))
 
-                    # TODO: Check input types
+                    # TODO: (FR4) Check input types
 
                     self.__input = PyFuncInput(args=[],
                                                kwargs=input_kwargs,
@@ -569,7 +764,7 @@ def function_wrapper(output=None):
                     # for managing hardware resources or data placement for operations
                     # implemented in the same librarary. That would be well in the future,
                     # though, and could also be accomplished with other means,
-                    # so here we assume one resource manager handle instance
+                    # so here I'm assuming one resource manager handle instance
                     # per Operation handle instance.
                     #
                     # TODO: Allow both structured and singular output.
@@ -582,6 +777,13 @@ def function_wrapper(output=None):
 
                 def run(self):
                     """Make a single attempt to resolve data flow conditions.
+
+                    This is a public method, but should not need to be called by users. Instead,
+                    just use the `output` data proxy for result handles, or force data flow to be
+                    resolved with the `result` methods on the result handles.
+
+                    `run()` may be useful to try to trigger computation (such as for remotely
+                    dispatched work) without retrieving results locally right away.
 
                     `run()` is also useful internally as a facade to the Context implementation details
                     that allow `result()` calls to ask for their data dependencies to be resolved.
