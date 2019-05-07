@@ -142,8 +142,11 @@ Alternatives
 https://github.com/gromacs/gromacs. You may wish to fork the project
 under your own GitHub account and make your feature available that
 way. This should help you to generate a following of users that would
-help make the case for contributing the feature to the core. This process
-would then still need to follow the remaining criteria outlined here.
+help make the case for contributing the feature to the core. This
+process would then still need to follow the remaining criteria
+outlined here.  If you fork |Gromacs|, please set the CMake variable
+``GMX_VERSION_STRING_OF_FORK`` to an appropriate descriptive string
+- see cmake/gmxVersionInfo.cmake for details.
 
 There is a project underway to develop a stable API for |Gromacs|,
 which promises to be a great tool for permitting innovation while

@@ -225,6 +225,25 @@ else()
     set(GMX_VERSION "${GMX_VERSION_MAJOR}")
 endif()
 set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
+
+# If you are making a custom fork of GROMACS, please describe your
+# fork, perhaps with its version number, in the value of
+# GMX_VERSION_STRING_OF_FORK here. This string will appear in the
+# header of log files that mdrun writes. This will help you, your
+# users, your system administrators, your maintainers and the
+# maintainers of GROMACS core understand how to troubleshoot and
+# reproduce potential problems.
+#
+# If you are distributing a patch to GROMACS, then this change would
+# be great as part of your patch. Otherwise for personal use, you can
+# also just set a CMake cache variable.
+set(GMX_VERSION_STRING_OF_FORK "" CACHE INTERNAL
+    "Version string for forks of GROMACS to set to describe themselves")
+mark_as_advanced(GMX_VERSION_STRING_OF_FORK)
+if (GMX_VERSION_STRING_OF_FORK)
+    set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-${GMX_VERSION_STRING_OF_FORK}")
+endif()
+
 option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
 mark_as_advanced(GMX_BUILD_TARBALL)
 # If run with cmake -P, the -dev suffix is managed elsewhere.
@@ -258,8 +277,17 @@ endif()
 # from Zenodo for the manual and source code
 # Has to be done by hand before every final release
 # Use force to override anything given as a cmake command line input
-set(GMX_MANUAL_DOI "" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
-set(GMX_SOURCE_DOI "" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
+# Actual input depends on the GMX_VERSION_STRING_OF_FORK variable being set or not.
+# If it is set, we always default to an empty string, otherwise to the value set for the release build.
+if (GMX_VERSION_STRING_OF_FORK)
+    set(GMX_MANUAL_DOI_INTERNAL "")
+    set(GMX_SOURCE_DOI_INTERNAL "")
+else()
+    set(GMX_MANUAL_DOI_INTERNAL "") # Set correct doi string here
+    set(GMX_SOURCE_DOI_INTERNAL "") # Set correct doi string here
+endif()
+set(GMX_MANUAL_DOI ${GMX_MANUAL_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
+set(GMX_SOURCE_DOI ${GMX_SOURCE_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
 
 #####################################################################
 # git version info management
