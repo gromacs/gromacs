@@ -42,11 +42,11 @@ import subprocess
 from os import devnull
 
 from gmxapi import exceptions
-from gmxapi import logging
-from gmxapi.operation import function_wrapper, append_list, concatenate_lists, make_constant
+from gmxapi import logger as root_logger
+from gmxapi.operation import function_wrapper, concatenate_lists, make_constant
 
 # Module-level logger
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 logger.info('Importing gmxapi.commandline_operation')
 
 

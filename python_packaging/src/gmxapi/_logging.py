@@ -32,11 +32,17 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""gmxapi Python package for GROMACS."""
+"""Configure the Python logging facilities."""
 
-__all__ = ['commandline_operation', 'logger', 'operation']
+__all__ = ['logger']
 
-from gmxapi import operation
-from gmxapi._logging import logger
-from gmxapi.commandline import commandline_operation
-from gmxapi import _gmxapi
+# Import system facilities
+from logging import getLogger, DEBUG, NullHandler
+
+# Define `logger` attribute that is used by submodules to create sub-loggers.
+getLogger().addHandler(NullHandler(level=DEBUG))
+getLogger().setLevel(DEBUG)
+getLogger().info("Setting up logging for gmxapi package.")
+logger = getLogger(__name__)
+logger.setLevel(DEBUG)
+logger.info("Importing gmxapi.")
