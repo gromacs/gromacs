@@ -37,9 +37,9 @@ Provide command line operation.
 
 __all__ = []
 
-from os import devnull
 import shutil
 import subprocess
+from os import devnull
 
 from gmxapi import exceptions
 from gmxapi import logging

@@ -34,9 +34,11 @@
 
 """Configuration and fixtures for pytest."""
 
-import pytest
-import tempfile
 import os
+import tempfile
+
+import pytest
+
 
 @pytest.fixture()
 def cleandir():

@@ -48,18 +48,18 @@ instance is run.
 The framework ensures that an Operation instance is executed no more than once.
 """
 
-import collections
-from contextlib import contextmanager
-import functools
-import inspect
-import weakref
-
 __all__ = ['computed_result',
            'append_list',
            'concatenate_lists',
            'function_wrapper',
            'make_constant',
            ]
+
+import collections
+import functools
+import inspect
+import weakref
+from contextlib import contextmanager
 
 from gmxapi import exceptions
 
@@ -211,6 +211,7 @@ def make_constant(value):
     # TODO: (FR4+) Manage type compatibility with gmxapi data interfaces.
     return type(value)(value)
 
+
 # In the longer term, Contexts could provide metaclasses that allow transformation or dispatching
 # of the basic aspects of the operation protocols between Contexts or from a result handle into a
 # new context, based on some attribute or behavior in the result handle.
@@ -309,6 +310,7 @@ def function_wrapper(output=None):
         Acts as an owning handle to ``instance``, preventing the reference count
         of ``instance`` from going to zero for the lifetime of the proxy object.
         """
+
         def __init__(self, instance):
             self._instance = instance
 
@@ -518,8 +520,10 @@ def function_wrapper(output=None):
                     dependencies that the framework promises to satisfy before the Operation
                     executes and produces output.
                     """
-                    ## Define the unique identity and data flow constraints of this work graph node.
-                    # TODO: (FR3) generalize
+                    #
+                    # Define the unique identity and data flow constraints of this work graph node.
+                    #
+                    # TODO: (FR4) generalize
                     input_dependencies = []
 
                     # TODO: Make allowed input strongly specified in the Operation definition.
@@ -538,9 +542,8 @@ def function_wrapper(output=None):
                     # TODO: Check input types
 
                     self.__input = PyFuncInput(args=[],
-                                         kwargs=input_kwargs,
-                                         dependencies=input_dependencies)
-                    ##
+                                               kwargs=input_kwargs,
+                                               dependencies=input_dependencies)
 
                     # TODO: (FR5+) Split the definition of the resource structure
                     #  and the resource initialization.

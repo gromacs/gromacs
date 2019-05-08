@@ -34,13 +34,13 @@
 
 """Test gmxapi functionality described in roadmap.rst."""
 
-import pytest
-
 import gmxapi as gmx
+import pytest
 from gmxapi.version import has_feature
 
+
 @pytest.mark.skipif(not has_feature('fr1'),
-                   reason="Feature level not met.")
+                    reason="Feature level not met.")
 def test_fr1():
     """FR1: Wrap importable Python code.
 

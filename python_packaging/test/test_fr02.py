@@ -37,13 +37,13 @@
 import os
 import tempfile
 
-import pytest
-
 import gmxapi as gmx
+import pytest
 from gmxapi.version import has_feature
 
+
 @pytest.mark.skipif(not has_feature('fr2'),
-                   reason="Feature level not met.")
+                    reason="Feature level not met.")
 def test_fr2():
     """FR2: Output proxy establishes execution dependency.
 
