@@ -110,6 +110,14 @@ TEST(PathTest, SearchOperationsWork)
             checker.checkBoolean(result, "hasExtension");
         }
         {
+            bool result = false;
+            ASSERT_NO_THROW_GMX(result = Path::extensionMatches(input, "pdb"));
+            checker.checkBoolean(result, "extensionMatchesPdb");
+            // The match is exclusive of the dot separator, so no
+            // input string can match.
+            ASSERT_FALSE(Path::extensionMatches(input, ".pdb"));
+        }
+        {
             std::string result;
             ASSERT_NO_THROW_GMX(result = Path::stripExtension(input));
             checker.checkString(result, "stripExtension");

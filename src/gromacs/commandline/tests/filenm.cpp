@@ -67,6 +67,19 @@ TEST(OutputNamesTest, CanBeSuffixed)
     EXPECT_EQ(filenames[2].filenames[0], "output.cpt");
 }
 
+TEST(OutputNamesTest, HasSuffixFromNoAppend)
+{
+    EXPECT_FALSE(hasSuffixFromNoAppend("output"));
+    EXPECT_FALSE(hasSuffixFromNoAppend("output.log"));
+    EXPECT_TRUE(hasSuffixFromNoAppend("output.part0002.log"));
+    EXPECT_TRUE(hasSuffixFromNoAppend("output.equil.part0002.log"));
+    EXPECT_TRUE(hasSuffixFromNoAppend("output.equil.part0001.part0002.log"));
+    EXPECT_FALSE(hasSuffixFromNoAppend("output.part0002"));
+    EXPECT_FALSE(hasSuffixFromNoAppend("part0002.log"));
+    EXPECT_FALSE(hasSuffixFromNoAppend("output.part02.log"));
+    EXPECT_FALSE(hasSuffixFromNoAppend("output.part002.log"));
+}
+
 TEST(OutputNamesTest, CanHavePartNumberAdded)
 {
     std::vector<t_filenm> filenames = {
@@ -78,7 +91,8 @@ TEST(OutputNamesTest, CanHavePartNumberAdded)
         { efLOG, nullptr, nullptr, ffWRITE, {"output.part0002"}},
         { efLOG, nullptr, nullptr, ffWRITE, {"part0002.log"}},
         { efLOG, nullptr, nullptr, ffWRITE, {"output.part02.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.part002.log"}}
+        { efLOG, nullptr, nullptr, ffWRITE, {"output.part002.log"}},
+        { efLOG, nullptr, nullptr, ffWRITE, {"output"}}
     };
     add_suffix_to_output_names(filenames.data(), filenames.size(), ".part0003");
     EXPECT_EQ(filenames[0].filenames[0], "output.part0003.log");
@@ -90,6 +104,7 @@ TEST(OutputNamesTest, CanHavePartNumberAdded)
     EXPECT_EQ(filenames[6].filenames[0], "part0002.part0003.log");
     EXPECT_EQ(filenames[7].filenames[0], "output.part02.part0003.log");
     EXPECT_EQ(filenames[8].filenames[0], "output.part002.part0003.log");
+    EXPECT_EQ(filenames[9].filenames[0], "output.part0003");
 }
 
 } // namespace

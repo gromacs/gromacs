@@ -47,6 +47,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/string_view.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -173,6 +174,12 @@ gmx_bool is_output(const t_filenm *fnm);
 
 //! Returns whether or not this filenm is set.
 gmx_bool is_set(const t_filenm *fnm);
+
+/*! \brief Return whether \c filename might have been produced by mdrun -noappend.
+ *
+ * If so, it must match "prefix.partNNNN.extension", for four decimal
+ * digits N and non-empty prefix and extension. */
+bool hasSuffixFromNoAppend(gmx::compat::string_view filename);
 
 /*! \brief
  * When we do checkpointing, this routine is called to check for previous

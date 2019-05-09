@@ -67,7 +67,6 @@
 #endif
 #endif
 
-#include "gromacs/compat/string_view.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
@@ -290,15 +289,14 @@ compat::string_view getParentPathView(const std::string &input)
  * last directory separator (if one exists).
  *
  * \returns A view of the filename component. */
-compat::string_view getFilenameView(const std::string &input)
+compat::string_view getFilenameView(const compat::string_view input)
 {
-    auto   inputView = compat::to_string_view(input);
-    size_t pos       = inputView.find_last_of(cDirSeparators);
+    size_t pos = input.find_last_of(cDirSeparators);
     if (pos == std::string::npos)
     {
-        return inputView;
+        return input;
     }
-    return inputView.substr(pos+1);
+    return input.substr(pos+1);
 }
 
 /*! \brief Returns a view of the stem of the filename in \c input.
@@ -321,7 +319,7 @@ compat::string_view getStemView(const std::string &input)
  * filename component, ie. omitting any leading directories.
  *
  * \returns  The view of the file extension, or empty if none exists. */
-compat::string_view getExtensionView(const std::string &input)
+compat::string_view getExtensionView(const compat::string_view input)
 {
     auto   filenameView               = getFilenameView(input);
     size_t extensionSeparatorPosition = filenameView.find_last_of('.');
@@ -351,6 +349,14 @@ bool Path::hasExtension(const std::string &input)
     // less efficient than just finding the first of possibly multiple
     // separator characters.
     return getFilenameView(input).find('.') != std::string::npos;
+}
+
+bool Path::extensionMatches(const compat::string_view input,
+                            const compat::string_view extension)
+{
+    auto extensionWithSeparator = getExtensionView(input);
+    return (!extensionWithSeparator.empty() &&
+            extensionWithSeparator.substr(1) == extension);
 }
 
 std::string Path::stripExtension(const std::string &input)

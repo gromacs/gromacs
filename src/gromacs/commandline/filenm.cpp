@@ -42,6 +42,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "gromacs/compat/string_view.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
@@ -243,6 +244,34 @@ gmx_bool is_set(const t_filenm *fnm)
     return ((fnm->flag & ffSET) == ffSET);
 }
 
+namespace
+{
+
+/*! \brief Return the first position within \c filename of the ".partNNNN"
+ * interior sequence produced by mdrun -noappend, or npos if not found. */
+size_t findSuffixFromNoAppendPosition(const gmx::compat::string_view filename)
+{
+    size_t partPosition = filename.find(".part");
+    if ((partPosition != decltype(filename) ::npos) &&
+        (filename.length() - partPosition >= 10) &&
+        (std::isdigit(filename[partPosition + 5])) &&
+        (std::isdigit(filename[partPosition + 6])) &&
+        (std::isdigit(filename[partPosition + 7])) &&
+        (std::isdigit(filename[partPosition + 8])) &&
+        filename[partPosition + 9] == '.')
+    {
+        return partPosition;
+    }
+    return decltype(filename) ::npos;
+}
+
+} // namespace
+
+bool hasSuffixFromNoAppend(const gmx::compat::string_view filename)
+{
+    return (findSuffixFromNoAppendPosition(filename) != decltype(filename) ::npos);
+}
+
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
 {
     for (int i = 0; i < nfile; i++)
@@ -260,29 +289,14 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
                 // add the requested suffix, we need to check for
                 // files matching mdrun's pattern for adding part
                 // numbers. Then we can remove that if needed.
-                for (size_t partPosition; (partPosition = filename.find(".part")) != std::string::npos; )
+                for (size_t partPosition; (partPosition = findSuffixFromNoAppendPosition(filename)) != std::string::npos; )
                 {
-                    if ((filename.length() - partPosition >= 9) &&
-                        (std::isdigit(filename[partPosition + 5])) &&
-                        (std::isdigit(filename[partPosition + 6])) &&
-                        (std::isdigit(filename[partPosition + 7])) &&
-                        (std::isdigit(filename[partPosition + 8])) &&
-                        filename[partPosition + 9] == '.')
-                    {
-                        // Remove the ".partNNNN" that we have found,
-                        // and then run the loop again to make sure
-                        // there isn't another one to remove, somehow.
-                        std::string temporary = filename.substr(0, partPosition);
-                        temporary += filename.substr(partPosition + 9);
-                        filename.swap(temporary);
-                    }
-                    else
-                    {
-                        // The ".part" string wasn't ".partNNNN" like
-                        // mdrun might have generated, so we let the
-                        // user do whatever they are doing.
-                        break;
-                    }
+                    // Remove the ".partNNNN" that we have found,
+                    // and then run the loop again to make sure
+                    // there isn't another one to remove, somehow.
+                    std::string temporary = filename.substr(0, partPosition);
+                    temporary += filename.substr(partPosition + 9);
+                    filename.swap(temporary);
                 }
                 filename = gmx::Path::concatenateBeforeExtension(filename, suffix);
             }

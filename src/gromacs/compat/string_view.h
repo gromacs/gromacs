@@ -40,7 +40,7 @@
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-/*! \libinternal \file
+/*! \file
  * \brief Provides C++14-compatible implementation of std::string_view.
  *
  * This implementation is nearly identical to the reference
@@ -63,7 +63,7 @@
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
  * \ingroup module_compat
- * \inlibraryapi
+ * \inpublicapi
  */
 // GMX Make include guard conform to GROMACS standards.
 #ifndef GMX_COMPAT_STRINGVIEW_H

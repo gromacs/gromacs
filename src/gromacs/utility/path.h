@@ -47,6 +47,8 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/compat/string_view.h"
+
 namespace gmx
 {
 
@@ -78,6 +80,11 @@ class Path
         static std::string getFilename(const std::string &input);
         //! Returns whether an extension is present in \c input.
         static bool hasExtension(const std::string &input);
+        /*! \brief Returns whether the extension present in \c input
+         * matches \c extension (which does not include the separator
+         * character). */
+        static bool extensionMatches(compat::string_view input,
+                                     compat::string_view extension);
         /*! \brief Returns a copy of the input without any trailing
          * extension found in the filename component. */
         static std::string stripExtension(const std::string &input);
