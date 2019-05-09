@@ -24,6 +24,10 @@ a crash due to a divide by zero error. Fixed by introducing a check.
 
 :issue:`2917`
 
+Fix segmentation fault when using membrane embedding
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2947`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
