@@ -305,31 +305,31 @@ which we see:
         atom i, such that angle (n-i-j)=109.5 degrees and dihedral
         (n-i-j-k)=trans.
 
-   #. | *two planar hydrogens*, *e.g.* *ethylene -C=CH*:math:`_2`, *or amide
-        -C(=O)NH*:math:`_2`
+   #. | *two planar hydrogens*, *e.g.* *ethylene -C=CH*\ :math:`_2`, *or amide
+        -C(=O)NH*\ :math:`_2`
       | Two hydrogens (n1,n2) are generated at a distance of 0.1 nm from
         atom i, such that angle (n1-i-j)=(n2-i-j)=120 degrees and
         dihedral (n1-i-j-k)=cis and (n2-i-j-k)=trans, such that names
         are according to IUPAC standards \ :ref:`129 <refiupac70>`.
 
-   #. | *two or three tetrahedral hydrogens*, *e.g.* *-CH*:math:`_3`
+   #. | *two or three tetrahedral hydrogens*, *e.g.* *-CH*\ :math:`_3`
       | Three (n1,n2,n3) or two (n1,n2) hydrogens are generated at a
         distance of 0.1 nm from atom i, such that angle
-        (n1-i-j)=(n2-i-j)=(n3-i-j)=109.47:math:`^{\rm o}`, dihedral
+        (n1-i-j)=(n2-i-j)=(n3-i-j)=109.47\ :math:`^{\rm o}`, dihedral
         (n1-i-j-k)=trans, (n2-i-j-k)=trans+120 and
-        (n3-i-j-k)=trans+240:math:`^{\rm o}`.
+        (n3-i-j-k)=trans+240\ :math:`^{\rm o}`.
 
-   #. | *one tetrahedral hydrogen*, *e.g.* *C*\ :math:`_3`\* CH*
-      | One hydrogen atom (n:math:`^\prime`) is generated at a distance
+   #. | *one tetrahedral hydrogen*, *e.g.* *C*\ :math:`_3`\ *CH*
+      | One hydrogen atom (n\ :math:`^\prime`) is generated at a distance
         of 0.1 nm from atom i in tetrahedral conformation such that
         angle
-        (n:math:`^\prime`-i-j)=(n:math:`^\prime`-i-k)=(n:math:`^\prime`-i-l)=109.47:math:`^{\rm o}`.
+        (n\ :math:`^\prime`-i-j)=(n\ :math:`^\prime`-i-k)=(n\ :math:`^\prime`-i-l)=109.47\ :math:`^{\rm o}`.
 
-   #. | *two tetrahedral hydrogens*, *e.g.* *C-CH*\ :math:`_2`\*-C*
+   #. | *two tetrahedral hydrogens*, *e.g.* *C-CH*\ :math:`_2`\ *-C*
       | Two hydrogen atoms (n1,n2) are generated at a distance of 0.1 nm
         from atom i in tetrahedral conformation on the plane bisecting
         angle j-i-k with angle
-        (n1-i-n2)=(n1-i-j)=(n1-i-k)=109.47:math:`^{\rm o}`.
+        (n1-i-n2)=(n1-i-j)=(n1-i-k)=109.47\ :math:`^{\rm o}`.
 
    #. | *two water hydrogens*
       | Two hydrogens are generated around atom i according to
@@ -459,7 +459,7 @@ For each block the following options are present:
       | Two oxygens (n1,n2) are generated according to rule 3, at
         distances of 0.123 nm and 0.125 nm from atom i for n1 and n2,
         respectively, and angles (n1-i-j)=121 and (n2-i-j)=115 degrees.
-        One hydrogen (n:math:`^\prime`) is generated around n2 according
+        One hydrogen (n\ :math:`^\prime`) is generated around n2 according
         to rule 2, where n-i-j and n-i-j-k should be read as
         n\ :math:`^\prime`-n2-i and n\ :math:`^\prime`-n2-i-j,
         respectively.
@@ -507,7 +507,7 @@ there is one such file for each class of residues in the
 
 The virtual site database is not really a very simple list of
 information. The first couple of sections specify which mass centers
-(typically called MCH\ :math:`_3`/MNH:math:`_3`) to use for
+(typically called MCH\ :math:`_3`/MNH\ :math:`_3`) to use for
 CH\ :math:`_3`, NH\ :math:`_3`, and NH\ :math:`_2` groups. Depending on
 the equilibrium bond lengths and angles between the hydrogens and heavy
 atoms we need to apply slightly different constraint distances between
