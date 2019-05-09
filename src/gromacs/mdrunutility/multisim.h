@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,10 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inlibraryapi
- * \ingroup module_mdrun
+ * \ingroup module_mdrunutility
  */
-#ifndef GMX_MDRUN_MULTISIM_H
-#define GMX_MDRUN_MULTISIM_H
+#ifndef GMX_MDRUNUTILITY_MULTISIM_H
+#define GMX_MDRUNUTILITY_MULTISIM_H
 
 #include <string>
 
@@ -60,5 +60,20 @@ gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
 
 //! Cleans up multi-system handler.
 void done_multisim(gmx_multisim_t *ms);
+
+//! Are we doing multiple independent simulations?
+static bool inline isMultiSim(const gmx_multisim_t *ms)
+{
+    return ms != nullptr;
+}
+
+//! Are we the master simulation of a possible multi-simulation?
+bool isMasterSim(const gmx_multisim_t *ms);
+
+/*! \brief Are we the master rank (of the master simulation, for a multi-sim).
+ *
+ * This rank prints the remaining run time etc. */
+bool isMasterSimMasterRank(const gmx_multisim_t *ms,
+                           bool                  isMaster);
 
 #endif

@@ -37,7 +37,7 @@
  * \brief Implements the multi-simulation support routines.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun
+ * \ingroup module_mdrunutility
  */
 #include "gmxpre.h"
 
@@ -140,4 +140,15 @@ void done_multisim(gmx_multisim_t *ms)
         done_mpi_in_place_buf(ms->mpb);
         delete ms;
     }
+}
+
+bool isMasterSim(const gmx_multisim_t *ms)
+{
+    return !isMultiSim(ms) || ms->sim == 0;
+}
+
+bool isMasterSimMasterRank(const gmx_multisim_t *ms,
+                           const bool            isMaster)
+{
+    return (isMaster && isMasterSim(ms));
 }

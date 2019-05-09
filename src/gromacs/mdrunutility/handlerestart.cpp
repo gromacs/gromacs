@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -250,7 +251,7 @@ handleRestart(t_commrec            *cr,
                              &sim_part_fn, cr,
                              bTryToAppendFiles, NFILE, fnm,
                              part_suffix, &bAddPart, bDoAppendFiles);
-        if (sim_part_fn == 0 && isMasterSimMasterRank(ms, cr))
+        if (sim_part_fn == 0 && isMasterSimMasterRank(ms, MASTER(cr)))
         {
             fprintf(stdout, "No previous checkpoint file present with -cpi option, assuming this is a new run.\n");
         }
@@ -265,7 +266,7 @@ handleRestart(t_commrec            *cr,
         if (isMultiSim(ms) && MASTER(cr))
         {
             // Only the master simulation should report on problems.
-            if (isMasterSimMasterRank(ms, cr))
+            if (isMasterSimMasterRank(ms, MASTER(cr)))
             {
                 /* Log file is not yet available, so if there's a
                  * problem we can only write to stderr. */
@@ -300,7 +301,7 @@ handleRestart(t_commrec            *cr,
         sprintf(suffix, "%s%04d", part_suffix, sim_part_fn);
 
         add_suffix_to_output_names(fnm, NFILE, suffix);
-        if (isMasterSimMasterRank(ms, cr))
+        if (isMasterSimMasterRank(ms, MASTER(cr)))
         {
             fprintf(stdout, "Checkpoint file is from part %d, new output files will be suffixed '%s'.\n", sim_part-1, suffix);
         }

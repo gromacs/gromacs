@@ -43,7 +43,7 @@
 
 #include <map>
 
-#include "gromacs/mdrun/logging.h"
+#include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrun/simulationcontext.h"
 

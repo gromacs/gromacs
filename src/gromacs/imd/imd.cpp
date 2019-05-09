@@ -68,6 +68,7 @@
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stat.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/inputrec.h"

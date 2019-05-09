@@ -42,8 +42,8 @@
 #include <memory>
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/sighandler.h"
-#include "gromacs/mdrun/logging.h"
-#include "gromacs/mdrun/multisim.h"
+#include "gromacs/mdrunutility/logging.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/basenetwork.h"

@@ -185,25 +185,4 @@ static bool inline havePPDomainDecomposition(const t_commrec *cr)
             cr->nnodes - cr->npmenodes > 1);
 }
 
-//! Are we doing multiple independent simulations?
-static bool inline isMultiSim(const gmx_multisim_t *ms)
-{
-    return ms != nullptr;
-}
-
-//! Are we the master simulation of a possible multi-simulation?
-static bool inline isMasterSim(const gmx_multisim_t *ms)
-{
-    return !isMultiSim(ms) || ms->sim == 0;
-}
-
-/*! \brief Are we the master rank (of the master simulation, for a multi-sim).
- *
- * This rank prints the remaining run time etc. */
-static bool inline isMasterSimMasterRank(const gmx_multisim_t *ms,
-                                         const t_commrec      *cr)
-{
-    return (SIMMASTER(cr) && isMasterSim(ms));
-}
-
 #endif

@@ -96,6 +96,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"
@@ -685,7 +686,7 @@ void gmx::Integrator::do_rerun()
         }
 
         /* Print the remaining wall clock time for the run */
-        if (isMasterSimMasterRank(ms, cr) &&
+        if (isMasterSimMasterRank(ms, MASTER(cr)) &&
             (mdrunOptions.verbose || gmx_got_usr_signal()))
         {
             if (shellfc)
