@@ -495,6 +495,19 @@ gpu_init(const gmx_device_info_t   *deviceInfo,
 
     cuda_init_const(nb, ic, listParams, nbat->params());
 
+    nb->natoms                = 0;
+    nb->natoms_alloc          = 0;
+    nb->atomIndicesSize       = 0;
+    nb->atomIndicesSize_alloc = 0;
+    nb->ncxy_na[AtomLocality::Local]                  = 0;
+    nb->ncxy_na[AtomLocality::NonLocal]               = 0;
+    nb->ncxy_na_alloc[AtomLocality::Local]            = 0;
+    nb->ncxy_na_alloc[AtomLocality::NonLocal]         = 0;
+    nb->ncxy_ind[AtomLocality::Local]                 = 0;
+    nb->ncxy_ind[AtomLocality::NonLocal]              = 0;
+    nb->ncxy_ind_alloc[AtomLocality::Local]           = 0;
+    nb->ncxy_ind_alloc[AtomLocality::NonLocal]        = 0;
+
     if (debug)
     {
         fprintf(debug, "Initialized CUDA data structures.\n");
@@ -871,7 +884,6 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
     bool                             bDoTime   = gpu_nbv->bDoTime;
     int                              gridBegin = 0, gridEnd = 0;
 
-
     switch (locality)
     {
         case Nbnxm::AtomLocality::All:
@@ -891,101 +903,73 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
             break;
     }
 
-
-
     for (int g = gridBegin; g < gridEnd; g++)
     {
 
         const Nbnxm::Grid  &grid       = gridSet.grids()[g];
 
-        //TODO improve naming here. Either use the getters straight or
-        //using variables with about the same name as the getters
-        const int           ncxy            = grid.numColumns();
-        const int          *a               = gridSet.atomIndices().data();
-        const int           a_nalloc        = gridSet.atomIndices().size();
-        const int          *na_all          = grid.cxy_na().data();
-        const int          *cxy_ind         = grid.cxy_ind().data();
-        const int           natoms_nonlocal = gridSet.numRealAtomsTotal();
+        const int           numColumns        = grid.numColumns();
+        const int          *atomIndices       = gridSet.atomIndices().data();
+        const int           atomIndicesSize   = gridSet.atomIndices().size();
+        const int          *cxy_na            = grid.cxy_na().data();
+        const int          *cxy_ind           = grid.cxy_ind().data();
+        const int           numRealAtomsTotal = gridSet.numRealAtomsTotal();
 
         if (iloc == Nbnxm::InteractionLocality::Local)
         {
 
-            if (gpu_nbv->xrvec)
-            {
-                freeDeviceBuffer(&gpu_nbv->xrvec);
-            }
-            //TODO replace with reallocateDeviceBuffer
-            allocateDeviceBuffer(&gpu_nbv->xrvec, natoms_nonlocal, nullptr);
+            reallocateDeviceBuffer(&gpu_nbv->xrvec, numRealAtomsTotal, &gpu_nbv->natoms, &gpu_nbv->natoms_alloc, nullptr);
+            reallocateDeviceBuffer(&gpu_nbv->atomIndices, atomIndicesSize, &gpu_nbv->atomIndicesSize, &gpu_nbv->atomIndicesSize_alloc, nullptr);
 
-            if (gpu_nbv->abufops)
-            {
-                freeDeviceBuffer(&gpu_nbv->abufops);
-            }
-            //TODO replace with reallocateDeviceBuffer
-            allocateDeviceBuffer(&gpu_nbv->abufops, a_nalloc, nullptr);
-
-            if (a_nalloc > 0)
+            if (atomIndicesSize > 0)
             {
                 // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
-                stat = cudaHostRegister((void*) a, a_nalloc*sizeof(int), cudaHostRegisterDefault);
-                CU_RET_ERR(stat, "cudaHostRegister failed on a");
+                stat = cudaHostRegister((void*) atomIndices, atomIndicesSize*sizeof(int), cudaHostRegisterDefault);
+                CU_RET_ERR(stat, "cudaHostRegister failed on atomIndices");
 
                 if (bDoTime)
                 {
                     gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
                 }
 
-                copyToDeviceBuffer(&gpu_nbv->abufops, a, 0, a_nalloc, stream, GpuApiCallBehavior::Async, nullptr);
+                copyToDeviceBuffer(&gpu_nbv->atomIndices, atomIndices, 0, atomIndicesSize, stream, GpuApiCallBehavior::Async, nullptr);
 
                 if (bDoTime)
                 {
                     gpu_nbv->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
                 }
 
-                stat = cudaHostUnregister((void*) a);
-                CU_RET_ERR(stat, "cudaHostUnRegister failed on a");
+                stat = cudaHostUnregister((void*) atomIndices);
+                CU_RET_ERR(stat, "cudaHostUnRegister failed on atomIndices");
             }
         }
 
+        reallocateDeviceBuffer(&gpu_nbv->cxy_na[locality], numColumns, &gpu_nbv->ncxy_na[locality], &gpu_nbv->ncxy_na_alloc[locality], nullptr);
+        reallocateDeviceBuffer(&gpu_nbv->cxy_ind[locality], numColumns, &gpu_nbv->ncxy_ind[locality], &gpu_nbv->ncxy_ind_alloc[locality], nullptr);
 
-        if (gpu_nbv->nabufops[locality])
-        {
-            freeDeviceBuffer(&gpu_nbv->nabufops[locality]);
-
-        }
-        //TODO replace with reallocateDeviceBuffer
-        allocateDeviceBuffer(&gpu_nbv->nabufops[locality], ncxy, nullptr);
-
-        if (gpu_nbv->cxybufops[locality])
-        {
-            freeDeviceBuffer(&gpu_nbv->cxybufops[locality]);
-        }
-        //TODO replace with reallocateDeviceBuffer
-        allocateDeviceBuffer(&gpu_nbv->cxybufops[locality], ncxy, nullptr);
-
-        if (ncxy > 0)
+        if (numColumns > 0)
         {
             // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
-            stat = cudaHostRegister((void*) na_all, ncxy*sizeof(int), cudaHostRegisterDefault);
-            CU_RET_ERR(stat, "cudaHostRegister failed on na_all");
+            stat = cudaHostRegister((void*) cxy_na, numColumns*sizeof(int), cudaHostRegisterDefault);
+            CU_RET_ERR(stat, "cudaHostRegister failed on cxy_na");
 
             if (bDoTime)
             {
                 gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
             }
 
-            copyToDeviceBuffer(&gpu_nbv->nabufops[locality], na_all, 0, ncxy, stream, GpuApiCallBehavior::Async, nullptr);
+            copyToDeviceBuffer(&gpu_nbv->cxy_na[locality], cxy_na, 0, numColumns, stream, GpuApiCallBehavior::Async, nullptr);
 
             if (bDoTime)
             {
                 gpu_nbv->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
             }
 
-            stat = cudaHostUnregister((void*) na_all);
-            CU_RET_ERR(stat, "cudaHostUnRegister failed on na_all");
+            stat = cudaHostUnregister((void*) cxy_na);
+            CU_RET_ERR(stat, "cudaHostUnRegister failed on cxy_na");
 
             // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
-            stat = cudaHostRegister((void*) cxy_ind, ncxy*sizeof(int), cudaHostRegisterDefault);
+            stat = cudaHostRegister((void*) cxy_ind, numColumns*sizeof(int), cudaHostRegisterDefault);
             CU_RET_ERR(stat, "cudaHostRegister failed on cxy_ind");
 
             if (bDoTime)
@@ -993,7 +977,7 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
                 gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
             }
 
-            copyToDeviceBuffer(&gpu_nbv->cxybufops[locality], cxy_ind, 0, ncxy, stream, GpuApiCallBehavior::Async, nullptr);
+            copyToDeviceBuffer(&gpu_nbv->cxy_ind[locality], cxy_ind, 0, numColumns, stream, GpuApiCallBehavior::Async, nullptr);
 
             if (bDoTime)
             {

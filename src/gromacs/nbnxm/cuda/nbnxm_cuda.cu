@@ -738,9 +738,8 @@ void cuda_set_cacheconfig()
 }
 
 /* X buffer operations on GPU: performs conversion from rvec to nb format. */
-//TODO improve variable naming for g
 void nbnxn_gpu_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
-                           int                              g,
+                           int                              gridIndex,
                            bool                             FillLocal,
                            gmx_nbnxn_gpu_t                 *nb,
                            void                            *xPmeDevicePtr,
@@ -751,17 +750,14 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
     cu_atomdata_t             *adat    = nb->atdat;
     bool                       bDoTime = nb->bDoTime;
 
-    const Nbnxm::Grid         &grid       = gridSet.grids()[g];
+    const Nbnxm::Grid         &grid       = gridSet.grids()[gridIndex];
 
-    //TODO improve naming here. Either use the getters straight or
-    //using variables with about the same name as the getters (perhaps
-    //nColumns, cellOffset, nNatomsPerCell)
-    const int                  ncxy            = grid.numColumns();
-    const int                  cell0           = grid.cellOffset();
-    const int                  na_sc           = grid.numAtomsPerCell();
-    Nbnxm::InteractionLocality interactionLoc  = Nbnxm::InteractionLocality::Local;
-    int nCopyAtoms                             = gridSet.numRealAtomsLocal();
-    int copyAtomStart                          = 0;
+    const int                  numColumns                = grid.numColumns();
+    const int                  cellOffset                = grid.cellOffset();
+    const int                  numAtomsPerCell           = grid.numAtomsPerCell();
+    Nbnxm::InteractionLocality interactionLoc            = Nbnxm::InteractionLocality::Local;
+    int nCopyAtoms                                       = gridSet.numRealAtomsLocal();
+    int copyAtomStart                                    = 0;
 
     if (locality == Nbnxm::AtomLocality::NonLocal)
     {
@@ -829,27 +825,27 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
     config.blockSize[1]     = 1;
     config.blockSize[2]     = 1;
     config.gridSize[0]      = ((maxAtomsInColumn+1)+threadsPerBlock-1)/threadsPerBlock;
-    config.gridSize[1]      = ncxy;
+    config.gridSize[1]      = numColumns;
     config.gridSize[2]      = 1;
     config.sharedMemorySize = 0;
     config.stream           = stream;
 
-    auto       kernelFn     = nbnxn_gpu_x_to_nbat_x_kernel;
-    float     *xqPtr        = &(adat->xq->x);
-    const int *abufops      = nb->abufops;
-    const int *nabufopsPtr  = nb->nabufops[locality];
-    const int *cxybufopsPtr = nb->cxybufops[locality];
-    const auto kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
-                                                        &ncxy,
-                                                        &xqPtr,
-                                                        &g,
-                                                        &FillLocal,
-                                                        &d_x,
-                                                        &abufops,
-                                                        &nabufopsPtr,
-                                                        &cxybufopsPtr,
-                                                        &cell0,
-                                                        &na_sc);
+    auto       kernelFn           = nbnxn_gpu_x_to_nbat_x_kernel;
+    float     *xqPtr              = &(adat->xq->x);
+    const int *d_atomIndices      = nb->atomIndices;
+    const int *d_cxy_na           = nb->cxy_na[locality];
+    const int *d_cxy_ind          = nb->cxy_ind[locality];
+    const auto kernelArgs         = prepareGpuKernelArguments(kernelFn, config,
+                                                              &numColumns,
+                                                              &xqPtr,
+                                                              &gridIndex,
+                                                              &FillLocal,
+                                                              &d_x,
+                                                              &d_atomIndices,
+                                                              &d_cxy_na,
+                                                              &d_cxy_ind,
+                                                              &cellOffset,
+                                                              &numAtomsPerCell);
     launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
 
     insertNonlocalGpuDependency(nb, interactionLoc);

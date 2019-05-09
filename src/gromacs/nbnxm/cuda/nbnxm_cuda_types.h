@@ -211,18 +211,44 @@ typedef struct Nbnxm::gpu_timers_t cu_timers_t;
  */
 struct gmx_nbnxn_cuda_t
 {
-    const gmx_device_info_t                                        *dev_info;       /**< CUDA device information                              */
-    bool                                                            bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
-    cu_atomdata_t                                                  *atdat;          /**< atom data                                            */
-    rvec                                                           *xrvec;          /**< coordinates in rvec format                           */
-    int                                                            *abufops;        /**< x buf ops input buffer index mapping                 */
-    gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               nabufops;       /**< x buf ops num of atoms (local and non-local)         */
-    gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               cxybufops;      /**< x buf ops cell index mapping (local and non-local)   */
-    cu_nbparam_t                                                   *nbparam;        /**< parameters required for the non-bonded calc.         */
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cu_plist_t *> plist;          /**< pair-list data structures (local and non-local)      */
-    nb_staging_t                                                    nbst;           /**< staging area where fshift/energies get downloaded    */
-
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cudaStream_t> stream;         /**< local and non-local GPU streams                      */
+    //! CUDA device information
+    const gmx_device_info_t                                        *dev_info;
+    //! true if doing both local/non-local NB work on GPU
+    bool                                                            bUseTwoStreams;
+    //! atom data
+    cu_atomdata_t                                                  *atdat;
+    //! coordinates in rvec format
+    rvec                                                           *xrvec;
+    //! number of atoms
+    int                                                             natoms;
+    //! number of atoms allocated in device buffer
+    int                                                             natoms_alloc;
+    //! x buf ops input buffer index mapping
+    int                                                            *atomIndices;
+    //! size of atom indices
+    int                                                             atomIndicesSize;
+    //! size of atom indices allocated in device buffer
+    int                                                             atomIndicesSize_alloc;
+    //! x buf ops num of atoms (local and non-local)
+    gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               cxy_na;
+    //! number of elements in cxy_na
+    gmx::EnumerationArray<Nbnxm::AtomLocality, int >                ncxy_na;
+    //! number of elements allocated allocated in device buffer
+    gmx::EnumerationArray<Nbnxm::AtomLocality, int >                ncxy_na_alloc;
+    //! x buf ops cell index mapping (local and non-local)
+    gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               cxy_ind;
+    //! number of elements in cxy_ind
+    gmx::EnumerationArray<Nbnxm::AtomLocality, int >                ncxy_ind;
+    //! number of elements allocated allocated in device buffer
+    gmx::EnumerationArray<Nbnxm::AtomLocality, int >                ncxy_ind_alloc;
+    //! parameters required for the non-bonded calc.
+    cu_nbparam_t                                                   *nbparam;
+    //! pair-list data structures (local and non-local)
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, cu_plist_t *> plist;
+    //! staging area where fshift/energies get downloaded
+    nb_staging_t                                                    nbst;
+    //! local and non-local GPU streams
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, cudaStream_t> stream;
 
     /** events used for synchronization */
     cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
@@ -236,9 +262,12 @@ struct gmx_nbnxn_cuda_t
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition
      * setting bDoTime needs to be change if this CUDA "feature" gets fixed. */
-    bool                       bDoTime;   /**< True if event-based timing is enabled.               */
-    cu_timers_t               *timers;    /**< CUDA event-based timers.                             */
-    gmx_wallclock_gpu_nbnxn_t *timings;   /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */
+    //! True if event-based timing is enabled.
+    bool                       bDoTime;
+    //! CUDA event-based timers.
+    cu_timers_t               *timers;
+    //! Timing data. TODO: deprecate this and query timers for accumulated data instead
+    gmx_wallclock_gpu_nbnxn_t *timings;
 };
 
 #endif  /* NBNXN_CUDA_TYPES_H */
