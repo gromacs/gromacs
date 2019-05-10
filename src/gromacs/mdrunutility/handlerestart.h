@@ -58,6 +58,7 @@
 #ifndef GMX_MDRUNUTILITY_HANDLERESTART_H
 #define GMX_MDRUNUTILITY_HANDLERESTART_H
 
+#include "gromacs/mdrunutility/logging.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_multisim_t;
@@ -94,16 +95,22 @@ enum class StartingBehavior
  * doing a restart from checkpoint and are not appending.
  *
  * The routine also does communication to coordinate behaviour between
- * all ranks of a simulation, and/or simulations.
+ * all simulations, including for error conditions.
+ *
+ * \throws FileIOError             When the filesystem behavior prevents the
+ *                                 user's choices being implemented.
+ * \throws InconsistentInputError  When the users's choices cannot be implemented.
+ * \throws GromacsException        On ranks upon which the error condition was
+ *                                 not detected.
  *
  * \param[in]    cr                 Communication structure
  * \param[in]    ms                 Handles multi-simulations.
  * \param[in]    appendingBehavior  User choice for appending
  * \param[in]    nfile              Size of fnm struct
  * \param[inout] fnm                Filename parameters to mdrun
- * \returns  Whether the simulation will restart, perhaps with appending.
- */
-StartingBehavior
+ *
+ * \return  Description of how mdrun is starting */
+std::tuple<StartingBehavior, LogFilePtr>
 handleRestart(t_commrec            *cr,
               const gmx_multisim_t *ms,
               AppendingBehavior     appendingBehavior,

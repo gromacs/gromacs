@@ -967,8 +967,6 @@ int Mdrunner::mdrunner()
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
                         &observablesHistory,
-                        startingBehavior,
-                        mdrunOptions.appendingBehavior,
                         mdrunOptions.reproducible);
 
         if (startingBehavior == StartingBehavior::RestartWithAppending && logFileHandle)

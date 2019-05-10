@@ -54,6 +54,7 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 #include "moduletest.h"
@@ -197,7 +198,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         thirdPart.addOption("-cpi", runner_.cptFileName_);
         thirdPart.addOption("-cpo", runner_.cptFileName_);
         thirdPart.append("-append");
-        EXPECT_DEATH_IF_SUPPORTED(runner_.callMdrun(thirdPart), "File appending requested");
+        EXPECT_THROW_GMX(runner_.callMdrun(thirdPart), InconsistentInputError);
     }
     SCOPED_TRACE("Running the third simulation part with -noappend");
     {
@@ -325,14 +326,10 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithAppendAndMissingCheck
         secondPart.append("-append");
 
         // Remove the checkpoint, so this can no longer be a
-        // restart. But it works anyway!
-        //
-        // TODO This is a bug and should be fixed - the user
-        // explicitly asked for appending but did not supply a
-        // checkpoint, so nothing should run.
+        // restart.
         std::remove(runner_.cptFileName_.c_str());
 
-        ASSERT_EQ(0, runner_.callMdrun(secondPart));
+        EXPECT_THROW_GMX(runner_.callMdrun(secondPart), InconsistentInputError);
     }
 }
 

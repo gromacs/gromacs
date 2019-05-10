@@ -168,19 +168,14 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             return nullptr;
         }
 
-        StartingBehavior startingBehavior = handleRestart(options_.cr,
-                                                          options_.ms,
-                                                          options_.mdrunOptions.appendingBehavior,
-                                                          ssize(options_.filenames),
-                                                          options_.filenames.data());
-        if (MASTER(options_.cr))
-        {
-            options_.logFileGuard = openLogFile(ftp2fn(efLOG,
-                                                       options_.filenames.size(),
-                                                       options_.filenames.data()),
-                                                startingBehavior == StartingBehavior::RestartWithAppending);
-        }
-
+        StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
+        LogFilePtr       logFileGuard     = nullptr;
+        std::tie(startingBehavior,
+                 logFileGuard) = handleRestart(options_.cr,
+                                               options_.ms,
+                                               options_.mdrunOptions.appendingBehavior,
+                                               ssize(options_.filenames),
+                                               options_.filenames.data());
         auto simulationContext = createSimulationContext(options_.cr);
 
         auto builder = MdrunnerBuilder(std::move(mdModules),
@@ -205,13 +200,13 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         // \todo Implement lifetime management for gmx_output_env_t.
         // \todo Output environment should be configured outside of Mdrunner and provided as a resource.
         builder.addOutputEnvironment(options_.oenv);
-        builder.addLogFile(options_.logFileGuard.get());
+        builder.addLogFile(logFileGuard.get());
 
         // Note, creation is not mature enough to be exposed in the external API yet.
         launchedSession = createSession(shared_from_this(),
                                         std::move(builder),
                                         simulationContext,
-                                        std::move(options_.logFileGuard),
+                                        std::move(logFileGuard),
                                         options_.ms);
 
         // Clean up argv once builder is no longer in use

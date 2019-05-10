@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -560,6 +560,26 @@ class NotImplementedError : public APIError
     public:
         //! \copydoc FileIOError::FileIOError()
         explicit NotImplementedError(const ExceptionInitializer &details)
+            : APIError(details) {}
+
+        int errorCode() const override;
+};
+
+/*! \brief Exception class for use when ensuring that MPI ranks to throw
+ * in a coordinated fashion.
+ *
+ * Generally all ranks that can throw would need to check for whether
+ * an exception has been caught, communicate whether any rank caught,
+ * then all throw one of these, with either a string that describes
+ * any exception caught on that rank, or a generic string.
+ *
+ * \inpublicapi
+ */
+class ParallelConsistencyError : public APIError
+{
+    public:
+        //! \copydoc FileIOError::FileIOError()
+        explicit ParallelConsistencyError(const ExceptionInitializer &details)
             : APIError(details) {}
 
         int errorCode() const override;

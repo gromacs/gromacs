@@ -245,6 +245,8 @@ class Mdrunner
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real                                    pforce = -1;
 
+        //! Handle to file used for logging.
+        LogFilePtr logFileGuard = nullptr;
         //! \brief Non-owning handle to file used for logging.
         t_fileio                               *logFileHandle = nullptr;
 

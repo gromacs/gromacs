@@ -53,7 +53,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 
 #include "replicaexchange.h"
@@ -137,9 +136,6 @@ class LegacyMdrunOptions
          *
          * \todo Clarify initialization, ownership, and lifetime. */
         gmx_output_env_t                *oenv = nullptr;
-
-        //! Handle to file used for logging.
-        LogFilePtr logFileGuard = nullptr;
 
         /*! \brief Command line options, defaults, docs and storage for them to fill. */
         /*! \{ */

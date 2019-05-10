@@ -54,14 +54,55 @@ struct t_inputrec;
 class t_state;
 struct t_trxframe;
 
-namespace gmx
-{
-enum class AppendingBehavior;
-enum class StartingBehavior;
-}
-
 /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
+
+// TODO Replace this mechanism with std::array<char, 1024> or similar.
+#define CPTSTRLEN 1024
+
+// TODO Expand this into being a container of all data for
+// serialization of a checkpoint, which can be stored by the caller
+// (e.g. so that mdrun doesn't have to open the checkpoint twice).
+// This will separate issues of allocation from those of
+// serialization, help separate comparison from reading, and have
+// better defined transformation functions to/from trajectory frame
+// data structures.
+//
+// Several fields were once written to checkpoint file headers, but
+// have been removed. So that old files can continue to be read,
+// the names of such fields contain the string "_UNUSED" so that it
+// is clear they should not be used.
+struct CheckpointHeaderContents
+{
+    int         file_version;
+    char        version[CPTSTRLEN];
+    char        btime_UNUSED[CPTSTRLEN];
+    char        buser_UNUSED[CPTSTRLEN];
+    char        bhost_UNUSED[CPTSTRLEN];
+    int         double_prec;
+    char        fprog[CPTSTRLEN];
+    char        ftime[CPTSTRLEN];
+    int         eIntegrator;
+    int         simulation_part;
+    int64_t     step;
+    double      t;
+    int         nnodes;
+    ivec        dd_nc;
+    int         npme;
+    int         natoms;
+    int         ngtc;
+    int         nnhpres;
+    int         nhchainlength;
+    int         nlambda;
+    int         flags_state;
+    int         flags_eks;
+    int         flags_enh;
+    int         flagsPullHistory;
+    int         flags_dfh;
+    int         flags_awhh;
+    int         nED;
+    int         eSwapCoords;
+};
 
 /* Write a checkpoint to <fn>.cpt
  * Appends the _step<step>.cpt with bNumberAndKeep,
@@ -80,18 +121,12 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * The master node reads the file
  * and communicates all the modified number of steps,
  * but not the state itself.
- * When appending, lock the log file and truncate the existing output
- * files so they can be appended.
- * When appending is explicitly requested, truncate anyhow if the system does not
- * support file locking.
  * With reproducibilityRequested warns about version, build, #ranks differences.
  */
 void load_checkpoint(const char *fn, t_fileio *logfio,
                      const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      ObservablesHistory *observablesHistory,
-                     gmx::StartingBehavior startingBehavior,
-                     gmx::AppendingBehavior appendingBehavior,
                      gmx_bool reproducibilityRequested);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
@@ -100,7 +135,7 @@ void read_checkpoint_trxframe(struct t_fileio *fp, t_trxframe *fr);
 /* Print the complete contents of checkpoint file fn to out */
 void list_checkpoint(const char *fn, FILE *out);
 
-/* ! \brief Read simulation step and part from a checkpoint file
+/*!\brief Read simulation step and part from a checkpoint file
  *
  * Used by tune_pme to handle tuning with a checkpoint file as part of the input.
  *
@@ -114,16 +149,14 @@ void read_checkpoint_part_and_step(const char  *filename,
                                    int         *simulation_part,
                                    int64_t     *step);
 
-/* ! \brief Read simulation part and output filenames from a checkpoint file
+/*!\brief Return header information from an open checkpoint file.
  *
  * Used by mdrun to handle restarts
  *
  * \param[in]  fp               Handle to open checkpoint file
- * \param[out] simulation_part  The part of the simulation that wrote the checkpoint
  * \param[out] outputfiles      Container of output file names from the previous run. */
-void
-read_checkpoint_simulation_part_and_filenames(struct t_fileio                  *fp,
-                                              int                              *simulation_part,
+CheckpointHeaderContents
+read_checkpoint_simulation_part_and_filenames(t_fileio                         *fp,
                                               std::vector<gmx_file_position_t> *outputfiles);
 
 #endif

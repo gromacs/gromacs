@@ -216,18 +216,14 @@ int gmx_mdrun(int argc, char *argv[])
         return 0;
     }
 
-    StartingBehavior startingBehavior = handleRestart(options.cr,
-                                                      options.ms,
-                                                      options.mdrunOptions.appendingBehavior,
-                                                      ssize(options.filenames),
-                                                      options.filenames.data());
-    if (MASTER(options.cr))
-    {
-        options.logFileGuard = openLogFile(ftp2fn(efLOG,
-                                                  options.filenames.size(),
-                                                  options.filenames.data()),
-                                           startingBehavior == StartingBehavior::RestartWithAppending);
-    }
+    StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
+    LogFilePtr       logFileGuard     = nullptr;
+    std::tie(startingBehavior,
+             logFileGuard) = handleRestart(options.cr,
+                                           options.ms,
+                                           options.mdrunOptions.appendingBehavior,
+                                           ssize(options.filenames),
+                                           options.filenames.data());
 
     /* The SimulationContext is a resource owned by the client code.
      * A more complete design should address handles to resources with appropriate
@@ -273,7 +269,7 @@ int gmx_mdrun(int argc, char *argv[])
     // \todo Implement lifetime management for gmx_output_env_t.
     // \todo Output environment should be configured outside of Mdrunner and provided as a resource.
     builder.addOutputEnvironment(options.oenv);
-    builder.addLogFile(options.logFileGuard.get());
+    builder.addLogFile(logFileGuard.get());
 
     auto runner = builder.build();
 
