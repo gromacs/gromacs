@@ -55,17 +55,15 @@
 namespace gmx
 {
 
-//! \internal \brief Options and settings for continuing from checkpoint
-struct ContinuationOptions
+//! Enumeration for mdrun appending behavior
+enum class AppendingBehavior
 {
-    //! True if we are continuing from a checkpoint and should append output files
-    bool appendFiles = false;
-    //! True if the -append option was explicitly set by the user (either to true of false
-    bool appendFilesOptionSet = false;
-    //! True if we started from a checkpoint file
-    bool startedFromCheckpoint = false;
-    //! True if we read the kinetic energy from checkpoint file
-    bool haveReadEkin = false;
+    //! Append only if user command-line and file input is correct
+    Auto,
+    //! Must append
+    Appending,
+    //! Must not append
+    NoAppending
 };
 
 //! \internal \brief Options for writing checkpoint files
@@ -110,8 +108,8 @@ struct MdrunOptions
     gmx_bool            reproducible = FALSE;
     //! Write confout.gro at the end of the run
     gmx_bool            writeConfout = TRUE;
-    //! Options for continuing a simulation from a checkpoint file
-    ContinuationOptions continuationOptions;
+    //! User option for appending.
+    AppendingBehavior   appendingBehavior = AppendingBehavior::Auto;
     //! Options for checkpointing th simulation
     CheckpointOptions   checkpointOptions;
     //! Number of steps to run, -2 is use inputrec, -1 is infinite

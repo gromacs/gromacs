@@ -100,6 +100,7 @@
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdrun/simulationcontext.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrunutility/printtime.h"
@@ -199,6 +200,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.replExParams        = replExParams;
     newRunner.pforce              = pforce;
     newRunner.ms                  = ms;
+    newRunner.startingBehavior    = startingBehavior;
     newRunner.stopHandlerBuilder_ = std::make_unique<StopHandlerBuilder>(*stopHandlerBuilder_);
 
     threadMpiMdrunnerAccessBarrier();
@@ -614,7 +616,7 @@ int Mdrunner::mdrunner()
     // to check that the old log file matches what the checkpoint file
     // expects. Otherwise, we should start to write log output now if
     // there is a file ready for it.
-    if (logFileHandle != nullptr && !mdrunOptions.continuationOptions.appendFiles)
+    if (logFileHandle != nullptr && startingBehavior != StartingBehavior::RestartWithAppending)
     {
         fplog = gmx_fio_getfp(logFileHandle);
     }
@@ -958,30 +960,18 @@ int Mdrunner::mdrunner()
 
     ObservablesHistory   observablesHistory = {};
 
-    ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
-
-    if (continuationOptions.startedFromCheckpoint)
+    if (startingBehavior != StartingBehavior::NewSimulation)
     {
-        /* Check if checkpoint file exists before doing continuation.
-         * This way we can use identical input options for the first and subsequent runs...
-         */
-        gmx_bool bReadEkin;
-
         load_checkpoint(opt2fn_master("-cpi", filenames.size(), filenames.data(), cr),
                         logFileHandle,
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
-                        &bReadEkin, &observablesHistory,
-                        continuationOptions.appendFiles,
-                        continuationOptions.appendFilesOptionSet,
+                        &observablesHistory,
+                        startingBehavior,
+                        mdrunOptions.appendingBehavior,
                         mdrunOptions.reproducible);
 
-        if (bReadEkin)
-        {
-            continuationOptions.haveReadEkin = true;
-        }
-
-        if (continuationOptions.appendFiles && logFileHandle)
+        if (startingBehavior == StartingBehavior::RestartWithAppending && logFileHandle)
         {
             // Now we can start normal logging to the truncated log file.
             fplog    = gmx_fio_getfp(logFileHandle);
@@ -1460,7 +1450,7 @@ int Mdrunner::mdrunner()
             {
                 init_pull_output_files(pull_work,
                                        filenames.size(), filenames.data(), oenv,
-                                       continuationOptions);
+                                       startingBehavior);
             }
         }
 
@@ -1477,7 +1467,8 @@ int Mdrunner::mdrunner()
                                         globalState.get(),
                                         &mtop,
                                         oenv,
-                                        mdrunOptions);
+                                        mdrunOptions,
+                                        startingBehavior);
         }
 
         t_swap *swap = nullptr;
@@ -1487,7 +1478,8 @@ int Mdrunner::mdrunner()
             swap = init_swapcoords(fplog, inputrec,
                                    opt2fn_master("-swap", filenames.size(), filenames.data(), cr),
                                    &mtop, globalState.get(), &observablesHistory,
-                                   cr, &atomSets, oenv, mdrunOptions);
+                                   cr, &atomSets, oenv, mdrunOptions,
+                                   startingBehavior);
         }
 
         /* Let makeConstraints know whether we have essential dynamics constraints.
@@ -1505,7 +1497,8 @@ int Mdrunner::mdrunner()
         /* Set up interactive MD (IMD) */
         auto imdSession = makeImdSession(inputrec, cr, wcycle, &enerd, ms, &mtop, mdlog,
                                          MASTER(cr) ? globalState->x.rvec_array() : nullptr,
-                                         filenames.size(), filenames.data(), oenv, mdrunOptions);
+                                         filenames.size(), filenames.data(), oenv, mdrunOptions.imdOptions,
+                                         startingBehavior);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1531,6 +1524,7 @@ int Mdrunner::mdrunner()
             fplog, cr, ms, mdlog, static_cast<int>(filenames.size()), filenames.data(),
             oenv,
             mdrunOptions,
+            startingBehavior,
             vsite.get(), constr.get(),
             enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
             deform.get(),
@@ -1687,7 +1681,8 @@ class Mdrunner::BuilderImplementation
         ~BuilderImplementation();
 
         BuilderImplementation &setExtraMdrunOptions(const MdrunOptions &options,
-                                                    real                forceWarningThreshold);
+                                                    real                forceWarningThreshold,
+                                                    StartingBehavior    startingBehavior);
 
         void addDomdec(const DomdecOptions &options);
 
@@ -1739,6 +1734,9 @@ class Mdrunner::BuilderImplementation
 
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real forceWarningThreshold_ = -1;
+
+        //! Whether the simulation will start afresh, or restart with/without appending.
+        StartingBehavior startingBehavior_ = StartingBehavior::NewSimulation;
 
         //! The modules that comprise the functionality of mdrun.
         std::unique_ptr<MDModules> mdModules_;
@@ -1793,11 +1791,13 @@ Mdrunner::BuilderImplementation::BuilderImplementation(std::unique_ptr<MDModules
 Mdrunner::BuilderImplementation::~BuilderImplementation() = default;
 
 Mdrunner::BuilderImplementation &
-Mdrunner::BuilderImplementation::setExtraMdrunOptions(const MdrunOptions &options,
-                                                      real                forceWarningThreshold)
+Mdrunner::BuilderImplementation::setExtraMdrunOptions(const MdrunOptions    &options,
+                                                      const real             forceWarningThreshold,
+                                                      const StartingBehavior startingBehavior)
 {
     mdrunOptions_          = options;
     forceWarningThreshold_ = forceWarningThreshold;
+    startingBehavior_      = startingBehavior;
     return *this;
 }
 
@@ -1827,8 +1827,10 @@ Mdrunner Mdrunner::BuilderImplementation::build()
 
     GMX_ASSERT(context_, "Bug found. It should not be possible to call build() without a valid context.");
 
-    newRunner.mdrunOptions    = mdrunOptions_;
-    newRunner.domdecOptions   = domdecOptions_;
+    newRunner.mdrunOptions          = mdrunOptions_;
+    newRunner.pforce                = forceWarningThreshold_;
+    newRunner.startingBehavior      = startingBehavior_;
+    newRunner.domdecOptions         = domdecOptions_;
 
     // \todo determine an invariant to check or confirm that all gmx_hw_opt_t objects are valid
     newRunner.hw_opt          = hardwareOptions_;
@@ -1959,10 +1961,11 @@ MdrunnerBuilder::MdrunnerBuilder(std::unique_ptr<MDModules>           mdModules,
 
 MdrunnerBuilder::~MdrunnerBuilder() = default;
 
-MdrunnerBuilder &MdrunnerBuilder::addSimulationMethod(const MdrunOptions &options,
-                                                      real                forceWarningThreshold)
+MdrunnerBuilder &MdrunnerBuilder::addSimulationMethod(const MdrunOptions    &options,
+                                                      real                   forceWarningThreshold,
+                                                      const StartingBehavior startingBehavior)
 {
-    impl_->setExtraMdrunOptions(options, forceWarningThreshold);
+    impl_->setExtraMdrunOptions(options, forceWarningThreshold, startingBehavior);
     return *this;
 }
 

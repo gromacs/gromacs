@@ -64,6 +64,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/awh_correlation_history.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -72,6 +73,7 @@
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
@@ -2483,9 +2485,10 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
                             int eIntegrator,
                             int *init_fep_state,
                             CheckpointHeaderContents *headerContents,
-                            t_state *state, gmx_bool *bReadEkin,
+                            t_state *state,
                             ObservablesHistory *observablesHistory,
-                            gmx_bool bAppendOutputFiles, gmx_bool bForceAppend,
+                            const gmx::StartingBehavior startingBehavior,
+                            const gmx::AppendingBehavior appendingBehavior,
                             gmx_bool reproducibilityRequested)
 {
     t_fileio            *fp;
@@ -2496,7 +2499,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
     fp = gmx_fio_open(fn, "r");
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, headerContents);
 
-    if (bAppendOutputFiles &&
+    if (appendingBehavior == gmx::AppendingBehavior::Appending &&
         headerContents->file_version >= 13 && headerContents->double_prec != GMX_DOUBLE)
     {
         gmx_fatal(FARGS, "Output file appending requested, but the code and checkpoint file precision (single/double) don't match");
@@ -2506,7 +2509,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
     // because we still need to compute a checksum for it. Otherwise
     // we report to the new log file about the checkpoint file that we
     // are reading from.
-    FILE *fplog = bAppendOutputFiles ? nullptr : gmx_fio_getfp(logfio);
+    FILE *fplog = (startingBehavior == gmx::StartingBehavior::RestartWithAppending) ? nullptr : gmx_fio_getfp(logfio);
     if (fplog)
     {
         fprintf(fplog, "\n");
@@ -2570,12 +2573,12 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
     {
         cp_error();
     }
-    *bReadEkin = (((headerContents->flags_eks & (1<<eeksEKINH)) != 0) ||
-                  ((headerContents->flags_eks & (1<<eeksEKINF)) != 0) ||
-                  ((headerContents->flags_eks & (1<<eeksEKINO)) != 0) ||
-                  (((headerContents->flags_eks & (1<<eeksEKINSCALEF)) |
-                    (headerContents->flags_eks & (1<<eeksEKINSCALEH)) |
-                    (headerContents->flags_eks & (1<<eeksVSCALE))) != 0));
+    state->ekinstate.hasReadEkinState = (((headerContents->flags_eks & (1<<eeksEKINH)) != 0) ||
+                                         ((headerContents->flags_eks & (1<<eeksEKINF)) != 0) ||
+                                         ((headerContents->flags_eks & (1<<eeksEKINO)) != 0) ||
+                                         (((headerContents->flags_eks & (1<<eeksEKINSCALEF)) |
+                                           (headerContents->flags_eks & (1<<eeksEKINSCALEH)) |
+                                           (headerContents->flags_eks & (1<<eeksVSCALE))) != 0));
 
     if (headerContents->flags_enh && observablesHistory->energyHistory == nullptr)
     {
@@ -2668,7 +2671,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
      * All files are md5sum checked such that we can be sure that
      * we do not truncate other (maybe imprortant) files.
      */
-    if (bAppendOutputFiles)
+    if (startingBehavior == gmx::StartingBehavior::RestartWithAppending)
     {
         if (outputfiles.empty())
         {
@@ -2700,7 +2703,8 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
             const gmx_file_position_t &logOutputFile   = outputfiles[0];
             if (!GMX_FAHCORE)
             {
-                lockLogFile(fplog, logfio, logOutputFile.filename, bForceAppend);
+                lockLogFile(fplog, logfio, logOutputFile.filename,
+                            appendingBehavior == gmx::AppendingBehavior::Appending);
                 checkOutputFile(logfio, logOutputFile);
 
                 if (gmx_fio_seek(logfio, logOutputFile.offset))
@@ -2737,9 +2741,9 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
 void load_checkpoint(const char *fn, t_fileio *logfio,
                      const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
-                     gmx_bool *bReadEkin,
                      ObservablesHistory *observablesHistory,
-                     gmx_bool bAppend, gmx_bool bForceAppend,
+                     const gmx::StartingBehavior startingBehavior,
+                     const gmx::AppendingBehavior appendingBehavior,
                      gmx_bool reproducibilityRequested)
 {
     CheckpointHeaderContents headerContents;
@@ -2750,14 +2754,14 @@ void load_checkpoint(const char *fn, t_fileio *logfio,
                         cr, dd_nc,
                         ir->eI, &(ir->fepvals->init_fep_state),
                         &headerContents,
-                        state, bReadEkin, observablesHistory,
-                        bAppend, bForceAppend,
+                        state, observablesHistory,
+                        startingBehavior,
+                        appendingBehavior,
                         reproducibilityRequested);
     }
     if (PAR(cr))
     {
         gmx_bcast(sizeof(headerContents.step), &headerContents.step, cr);
-        gmx_bcast(sizeof(*bReadEkin), bReadEkin, cr);
     }
     ir->bContinuation    = TRUE;
     // TODO Should the following condition be <=? Currently if you

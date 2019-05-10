@@ -148,6 +148,12 @@ class ekinstate_t
         std::vector<double>  vscale_nhc;     //!< Nose-Hoover velocity scaling factors
         real                 dekindl;        //!< dEkin/dlambda, with free-energy
         real                 mvcos;          //!< Cosine(z) component of the momentum, for viscosity calculations
+        /*! \brief Whether KE terms have been read from the checkpoint.
+         *
+         * Only used for managing whether the call to compute_globals
+         * before we enter the MD loop should compute these quantities
+         * fresh, or not. */
+        bool hasReadEkinState;
 };
 
 /*! \brief Free-energy sampling history struct

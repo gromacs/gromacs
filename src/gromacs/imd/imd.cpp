@@ -68,6 +68,7 @@
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stat.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/imdmodule.h"
@@ -197,7 +198,7 @@ class ImdSession::Impl
         void openOutputFile(const char                *fn,
                             int                        nat_total,
                             const gmx_output_env_t    *oenv,
-                            const ContinuationOptions &continuationOptions);
+                            StartingBehavior           startingBehavior);
         /*! \brief Creates the molecule start-end position array of molecules in the IMD group. */
         void prepareMoleculesInImdGroup(const gmx_mtop_t *top_global);
         /*! \brief Removes shifts of molecules diffused outside of the box. */
@@ -1007,10 +1008,10 @@ ImdSession::Impl::readCommand()
 
 
 void
-ImdSession::Impl::openOutputFile(const char                *fn,
-                                 int                        nat_total,
-                                 const gmx_output_env_t    *oenv,
-                                 const ContinuationOptions &continuationOptions)
+ImdSession::Impl::openOutputFile(const char                 *fn,
+                                 int                         nat_total,
+                                 const gmx_output_env_t     *oenv,
+                                 const gmx::StartingBehavior startingBehavior)
 {
     /* Open log file of applied IMD forces if requested */
     if (!fn || !oenv)
@@ -1021,7 +1022,7 @@ ImdSession::Impl::openOutputFile(const char                *fn,
     }
 
     /* If we append to an existing file, all the header information is already there */
-    if (continuationOptions.appendFiles)
+    if (startingBehavior == StartingBehavior::RestartWithAppending)
     {
         outf = gmx_fio_fopen(fn, "a+");
     }
@@ -1286,18 +1287,19 @@ static void imd_check_integrator_parallel(const t_inputrec *ir, const t_commrec 
 }
 
 std::unique_ptr<ImdSession>
-makeImdSession(const t_inputrec        *ir,
-               const t_commrec         *cr,
-               gmx_wallcycle           *wcycle,
-               gmx_enerdata_t          *enerd,
-               const gmx_multisim_t    *ms,
-               const gmx_mtop_t        *top_global,
-               const MDLogger          &mdlog,
-               const rvec               x[],
-               int                      nfile,
-               const t_filenm           fnm[],
-               const gmx_output_env_t  *oenv,
-               const MdrunOptions      &mdrunOptions)
+makeImdSession(const t_inputrec           *ir,
+               const t_commrec            *cr,
+               gmx_wallcycle              *wcycle,
+               gmx_enerdata_t             *enerd,
+               const gmx_multisim_t       *ms,
+               const gmx_mtop_t           *top_global,
+               const MDLogger             &mdlog,
+               const rvec                  x[],
+               int                         nfile,
+               const t_filenm              fnm[],
+               const gmx_output_env_t     *oenv,
+               const ImdOptions           &options,
+               const gmx::StartingBehavior startingBehavior)
 {
     std::unique_ptr<ImdSession> session(new ImdSession(mdlog));
     auto impl = session->impl_.get();
@@ -1335,8 +1337,6 @@ makeImdSession(const t_inputrec        *ir,
         GMX_LOG(mdlog.warning).appendTextFormatted("%s Cannot use IMD for multiple simulations or replica exchange, running normally instead", IMDstr);
         return session;
     }
-
-    const auto &options = mdrunOptions.imdOptions;
 
     bool        createSession = false;
     /* It seems we have a .tpr file that defines an IMD group and thus allows IMD connections.
@@ -1396,7 +1396,7 @@ makeImdSession(const t_inputrec        *ir,
     /* We might need to open an output file for IMD forces data */
     if (MASTER(cr))
     {
-        impl->openOutputFile(opt2fn("-if", nfile, fnm), nat_total, oenv, mdrunOptions.continuationOptions);
+        impl->openOutputFile(opt2fn("-if", nfile, fnm), nat_total, oenv, startingBehavior);
     }
 
     /* Make sure that we operate with a valid atom index array for the IMD atoms */

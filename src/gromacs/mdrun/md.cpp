@@ -98,6 +98,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdtypes/awh_history.h"
@@ -244,18 +245,20 @@ void gmx::Integrator::do_md()
                         top_global,
                         ir, cr, constr,
                         state_global, observablesHistory,
-                        oenv, mdrunOptions.continuationOptions.appendFiles);
+                        oenv,
+                        startingBehavior);
     }
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
     Update upd(ir, deform);
     bool   doSimulatedAnnealing = initSimulatedAnnealing(ir, &upd);
-    if (!mdrunOptions.continuationOptions.appendFiles)
+    if (startingBehavior != StartingBehavior::RestartWithAppending)
     {
         pleaseCiteCouplingAlgorithms(fplog, *ir);
     }
     init_nrnb(nrnb);
-    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle);
+    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, top_global, oenv, wcycle,
+                                         startingBehavior);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, ir, pull_work, mdoutf_get_fp_dhdl(outf));
 
@@ -332,9 +335,6 @@ void gmx::Integrator::do_md()
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
 
-    const ContinuationOptions &continuationOptions    = mdrunOptions.continuationOptions;
-    bool                       startingFromCheckpoint = continuationOptions.startedFromCheckpoint;
-
     if (ir->bExpanded)
     {
         /* Check nstexpanded here, because the grompp check was broken */
@@ -342,15 +342,16 @@ void gmx::Integrator::do_md()
         {
             gmx_fatal(FARGS, "With expanded ensemble, nstexpanded should be a multiple of nstcalcenergy");
         }
-        init_expanded_ensemble(startingFromCheckpoint, ir, state->dfhist);
+        init_expanded_ensemble(startingBehavior != StartingBehavior::NewSimulation,
+                               ir, state->dfhist);
     }
 
     if (MASTER(cr))
     {
-        if (startingFromCheckpoint)
+        if (startingBehavior != StartingBehavior::NewSimulation)
         {
             /* Restore from energy history if appending to output files */
-            if (continuationOptions.appendFiles)
+            if (startingBehavior == StartingBehavior::RestartWithAppending)
             {
                 /* If no history is available (because a checkpoint is from before
                  * it was written) make a new one later, otherwise restore it.
@@ -387,10 +388,11 @@ void gmx::Integrator::do_md()
         energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
     }
 
-    preparePrevStepPullCom(ir, pull_work, mdatoms, state, state_global, cr, startingFromCheckpoint);
+    preparePrevStepPullCom(ir, pull_work, mdatoms, state, state_global, cr,
+                           startingBehavior != StartingBehavior::NewSimulation);
 
     // TODO: Remove this by converting AWH into a ForceProvider
-    auto awh = prepareAwhModule(fplog, *ir, state_global, cr, ms, startingFromCheckpoint,
+    auto awh = prepareAwhModule(fplog, *ir, state_global, cr, ms, startingBehavior != StartingBehavior::NewSimulation,
                                 shellfc != nullptr,
                                 opt2fn("-awh", nfile, fnm), pull_work);
 
@@ -474,7 +476,22 @@ void gmx::Integrator::do_md()
      */
     bStopCM = (ir->comm_mode != ecmNO && !ir->bContinuation);
 
-    if (continuationOptions.haveReadEkin)
+    // When restarting from a checkpoint, it can be appropriate to
+    // initialize ekind from quantities in the checkpoint. Otherwise,
+    // compute_globals must initialize ekind before the simulation
+    // starts/restarts. However, only the master rank knows what was
+    // found in the checkpoint file, so we have to communicate in
+    // order to coordinate the restart.
+    //
+    // TODO Consider removing this communication if/when checkpoint
+    // reading directly follows .tpr reading, because all ranks can
+    // agree on hasReadEkinState at that time.
+    bool hasReadEkinState = MASTER(cr) ? state_global->ekinstate.hasReadEkinState : false;
+    if (PAR(cr))
+    {
+        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr);
+    }
+    if (hasReadEkinState)
     {
         restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
     }
@@ -482,7 +499,7 @@ void gmx::Integrator::do_md()
     cglo_flags = (CGLO_INITIALIZATION | CGLO_TEMPERATURE | CGLO_GSTAT
                   | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
                   | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
-                  | (continuationOptions.haveReadEkin ? CGLO_READEKIN : 0));
+                  | (hasReadEkinState ? CGLO_READEKIN : 0));
 
     bSumEkinhOld = FALSE;
 
@@ -527,7 +544,7 @@ void gmx::Integrator::do_md()
     }
 
     /* Calculate the initial half step temperature, and save the ekinh_old */
-    if (!continuationOptions.startedFromCheckpoint)
+    if (startingBehavior == StartingBehavior::NewSimulation)
     {
         for (i = 0; (i < ir->opts.ngtc); i++)
         {
@@ -621,7 +638,7 @@ void gmx::Integrator::do_md()
 
     bFirstStep       = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
-    bInitStep        = !startingFromCheckpoint || EI_VV(ir->eI);
+    bInitStep        = startingBehavior == StartingBehavior::NewSimulation || EI_VV(ir->eI);
     bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
@@ -723,7 +740,8 @@ void gmx::Integrator::do_md()
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = ((ir->efep != efepNO) && do_per_step(step, nstfep));
             bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
-                            && (ir->bExpanded) && (step > 0) && (!startingFromCheckpoint));
+                            && (ir->bExpanded) && (step > 0) &&
+                            (startingBehavior == StartingBehavior::NewSimulation));
         }
 
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep &&
@@ -748,7 +766,10 @@ void gmx::Integrator::do_md()
          * Note that the || bLastStep can result in non-exact continuation
          * beyond the last step. But we don't consider that to be an issue.
          */
-        do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !startingFromCheckpoint) || bLastStep;
+        do_log     =
+            (do_per_step(step, ir->nstlog) ||
+             (bFirstStep && startingBehavior == StartingBehavior::NewSimulation) ||
+             bLastStep);
         do_verbose = mdrunOptions.verbose &&
             (step % mdrunOptions.verboseStepPrintInterval == 0 || bFirstStep || bLastStep);
 
@@ -895,7 +916,7 @@ void gmx::Integrator::do_md()
                      ddBalanceRegionHandler);
         }
 
-        if (EI_VV(ir->eI) && !startingFromCheckpoint)
+        if (EI_VV(ir->eI) && startingBehavior == StartingBehavior::NewSimulation)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
             rvec *vbuf = nullptr;
@@ -985,7 +1006,7 @@ void gmx::Integrator::do_md()
                     /* TODO This is only needed when we're about to write
                      * a checkpoint, because we use it after the restart
                      * (in a kludge?). But what should we be doing if
-                     * startingFromCheckpoint or bInitStep are true? */
+                     * the startingBehavior is NewSimulation or bInitStep are true? */
                     if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir))
                     {
                         copy_mat(shake_vir, state->svir_prev);
@@ -1073,7 +1094,8 @@ void gmx::Integrator::do_md()
         bInteractiveMDstep = imdSession->run(step, bNS, state->box, state->x.rvec_array(), t);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
-        if (startingFromCheckpoint && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
+        if (startingBehavior != StartingBehavior::NewSimulation &&
+            (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
         {
             copy_mat(state->svir_prev, shake_vir);
             copy_mat(state->fvir_prev, force_vir);
@@ -1463,7 +1485,6 @@ void gmx::Integrator::do_md()
 
         bFirstStep             = FALSE;
         bInitStep              = FALSE;
-        startingFromCheckpoint = false;
 
         /* #######  SET VARIABLES FOR NEXT ITERATION IF THEY STILL NEED IT ###### */
         /* With all integrators, except VV, we need to retain the pressure

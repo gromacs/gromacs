@@ -68,6 +68,7 @@ class t_state;
 
 namespace gmx
 {
+enum class StartingBehavior;
 class LocalAtomSetManager;
 struct MdrunOptions;
 
@@ -107,12 +108,14 @@ class EnforcedRotation
  * \param mtop     Molecular topology.
  * \param oenv     Needed to open the rotation output xvgr file.
  * \param mdrunOptions  Options for mdrun.
+ * \param startingBehavior  Describes whether this is a restart appending to output files
  * \return         An enforced rotation module.
  */
 std::unique_ptr<gmx::EnforcedRotation>
 init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
          const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
-         const gmx::MdrunOptions &mdrunOptions);
+         const gmx::MdrunOptions &mdrunOptions,
+         gmx::StartingBehavior startingBehavior);
 
 /*! \brief Calculates the enforced rotation potential(s).
  *

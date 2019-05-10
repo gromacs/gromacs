@@ -85,6 +85,7 @@
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -1114,7 +1115,8 @@ Integrator::do_cg()
             state_global, top_global, s_min, &top,
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr);
-    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
+    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle,
+                                         StartingBehavior::NewSimulation);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr);
 
@@ -1753,7 +1755,8 @@ Integrator::do_lbfgs()
             state_global, top_global, &ems, &top,
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr);
-    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
+    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle,
+                                         StartingBehavior::NewSimulation);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr);
 
@@ -2447,7 +2450,8 @@ Integrator::do_steep()
             state_global, top_global, s_try, &top,
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr);
-    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
+    gmx_mdoutf       *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle,
+                                         StartingBehavior::NewSimulation);
     gmx::EnergyOutput energyOutput;
     energyOutput.prepare(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr);
 
@@ -2699,7 +2703,8 @@ Integrator::do_nm()
             state_global, top_global, &state_work, &top,
             nrnb, fr, &graph, mdAtoms, &gstat,
             vsite, constr, &shellfc);
-    gmx_mdoutf            *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle);
+    gmx_mdoutf            *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, inputrec, top_global, nullptr, wcycle,
+                                              StartingBehavior::NewSimulation);
 
     std::vector<int>       atom_index = get_atom_index(top_global);
     std::vector<gmx::RVec> fneg(atom_index.size(), {0, 0, 0});

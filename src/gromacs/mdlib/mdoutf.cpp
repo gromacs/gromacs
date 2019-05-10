@@ -47,6 +47,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/trajectory_writing.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -87,12 +88,14 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          const t_commrec *cr,
                          gmx::IMDOutputProvider *outputProvider,
                          const t_inputrec *ir, gmx_mtop_t *top_global,
-                         const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
+                         const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle,
+                         const gmx::StartingBehavior startingBehavior)
 {
     gmx_mdoutf_t   of;
     const char    *appendMode = "a+", *writeMode = "w+", *filemode;
-    gmx_bool       bAppendFiles, bCiteTng = FALSE;
+    gmx_bool       bCiteTng   = FALSE;
     int            i;
+    bool           restartWithAppending = (startingBehavior == gmx::StartingBehavior::RestartWithAppending);
 
     snew(of, 1);
 
@@ -114,11 +117,9 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
 
     if (MASTER(cr))
     {
-        bAppendFiles = mdrunOptions.continuationOptions.appendFiles;
-
         of->bKeepAndNumCPT = mdrunOptions.checkpointOptions.keepAndNumberCheckpointFiles;
 
-        filemode = bAppendFiles ? appendMode : writeMode;
+        filemode = restartWithAppending ? appendMode : writeMode;
 
         if (EI_DYNAMICS(ir->eI) &&
             ir->nstxout_compressed > 0)
@@ -188,7 +189,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
             (ir->fepvals->separate_dhdl_file == esepdhdlfileYES ) &&
             EI_DYNAMICS(ir->eI))
         {
-            if (bAppendFiles)
+            if (restartWithAppending)
             {
                 of->fp_dhdl = gmx_fio_fopen(opt2fn("-dhdl", nfile, fnm), filemode);
             }
@@ -198,7 +199,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
             }
         }
 
-        outputProvider->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+        outputProvider->initOutput(fplog, nfile, fnm, restartWithAppending, oenv);
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs

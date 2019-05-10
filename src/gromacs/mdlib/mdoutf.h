@@ -53,6 +53,7 @@ struct t_inputrec;
 
 namespace gmx
 {
+enum class StartingBehavior;
 class IMDOutputProvider;
 struct MdrunOptions;
 }
@@ -73,7 +74,8 @@ gmx_mdoutf_t init_mdoutf(FILE                    *fplog,
                          const t_inputrec        *ir,
                          gmx_mtop_t              *mtop,
                          const gmx_output_env_t  *oenv,
-                         gmx_wallcycle_t          wcycle);
+                         gmx_wallcycle_t          wcycle,
+                         gmx::StartingBehavior    startingBehavior);
 
 /*! \brief Getter for file pointer */
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);

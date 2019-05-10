@@ -168,19 +168,24 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             return nullptr;
         }
 
+        StartingBehavior startingBehavior = handleRestart(options_.cr,
+                                                          options_.ms,
+                                                          options_.mdrunOptions.appendingBehavior,
+                                                          ssize(options_.filenames),
+                                                          options_.filenames.data());
         if (MASTER(options_.cr))
         {
             options_.logFileGuard = openLogFile(ftp2fn(efLOG,
                                                        options_.filenames.size(),
                                                        options_.filenames.data()),
-                                                options_.mdrunOptions.continuationOptions.appendFiles);
+                                                startingBehavior == StartingBehavior::RestartWithAppending);
         }
 
         auto simulationContext = createSimulationContext(options_.cr);
 
         auto builder = MdrunnerBuilder(std::move(mdModules),
                                        compat::not_null<decltype( &simulationContext)>(&simulationContext));
-        builder.addSimulationMethod(options_.mdrunOptions, options_.pforce);
+        builder.addSimulationMethod(options_.mdrunOptions, options_.pforce, startingBehavior);
         builder.addDomainDecomposition(options_.domdecOptions);
         // \todo pass by value
         builder.addNonBonded(options_.nbpu_opt_choices[0]);

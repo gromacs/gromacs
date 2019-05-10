@@ -59,14 +59,20 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+namespace
+{
+
 /*! \brief Search for \p fnm_cp in fnm and return true iff found
  *
  * \todo This could be implemented sanely with a for loop. */
-static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm fnm[])
+gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm fnm[])
 {
     int i;
 
@@ -92,25 +98,20 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
  * to be able to rename the logfile correctly.
  * When file appending is requested, checks which output files are present,
  * and issue a fatal error if some are not.
- * Upon return, bAddPart will tell whether the simulation part
- * needs to be added to the output file name, i.e. when we are doing checkpoint
- * continuation without appending.
  *
  * This routine cannot print tons of data, since it is called before
  * the log file is opened. */
-static void
+StartingBehavior
 read_checkpoint_data(const char *filename, int *simulation_part,
                      t_commrec *cr,
-                     gmx_bool bTryToAppendFiles,
+                     const bool appendingBehaviorAutoOrAppend,
                      int nfile, const t_filenm fnm[],
-                     const char *part_suffix,
-                     gmx_bool *bAddPart,
-                     bool *bDoAppendFiles)
+                     const char *part_suffix)
 {
     t_fileio            *fp;
     char                *fn, suf_up[STRLEN];
 
-    *bDoAppendFiles = FALSE;
+    StartingBehavior     startingBehavior = StartingBehavior::RestartWithoutAppending;
 
     if (SIMMASTER(cr))
     {
@@ -120,6 +121,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
             /* We have already warned the user that no checkpoint file existed before, don't
              * need to do it again
              */
+            startingBehavior = StartingBehavior::NewSimulation;
         }
         else
         {
@@ -128,7 +130,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                                                           simulation_part,
                                                           &outputfiles);
 
-            if (bTryToAppendFiles)
+            if (appendingBehaviorAutoOrAppend)
             {
                 std::size_t nexist = 0;
                 for (const auto &outputfile : outputfiles)
@@ -140,7 +142,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                 }
                 if (nexist == outputfiles.size())
                 {
-                    *bDoAppendFiles = bTryToAppendFiles;
+                    startingBehavior = StartingBehavior::RestartWithAppending;
                 }
                 else
                 {
@@ -189,7 +191,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                 }
             }
 
-            if (*bDoAppendFiles)
+            if (startingBehavior == StartingBehavior::RestartWithAppending)
             {
                 if (outputfiles.empty())
                 {
@@ -201,13 +203,15 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                 {
                     gmx_fatal(FARGS, "File appending requested, but the log file is not the first file listed in the checkpoint file");
                 }
-                /* Set bAddPart to whether the suffix string '.part' is present
-                 * in the log file name.
-                 */
+                // Choose no appending based on whether the suffix
+                // string '.part' is present in the log file name.
                 strcpy(suf_up, part_suffix);
                 upstring(suf_up);
-                *bAddPart = (strstr(fn, part_suffix) != nullptr ||
-                             strstr(fn, suf_up) != nullptr);
+                if ((strstr(fn, part_suffix) != nullptr ||
+                     strstr(fn, suf_up) != nullptr))
+                {
+                    startingBehavior = StartingBehavior::RestartWithoutAppending;
+                }
             }
         }
     }
@@ -215,42 +219,40 @@ read_checkpoint_data(const char *filename, int *simulation_part,
     {
         // Make sure all settings are in sync
         gmx_bcast(sizeof(*simulation_part), simulation_part, cr);
-
-        if (*simulation_part > 0 && bTryToAppendFiles)
-        {
-            gmx_bcast(sizeof(*bDoAppendFiles), bDoAppendFiles, cr);
-            gmx_bcast(sizeof(*bAddPart), bAddPart, cr);
-        }
+        gmx_bcast(sizeof(startingBehavior), &startingBehavior, cr);
     }
+
+    return startingBehavior;
 }
 
-/* This routine cannot print tons of data, since it is called before the log file is opened. */
-void
-handleRestart(t_commrec            *cr,
-              const gmx_multisim_t *ms,
-              gmx_bool              bTryToAppendFiles,
-              const int             NFILE,
-              t_filenm              fnm[],
-              bool                 *bDoAppendFiles,
-              bool                 *bStartFromCpt)
-{
-    gmx_bool        bAddPart;
-    int             sim_part, sim_part_fn;
-    const char     *part_suffix = ".part";
-    FILE           *fpmulti;
+}   // namespace
 
+/* This routine cannot print tons of data, since it is called before the log file is opened. */
+StartingBehavior
+handleRestart(t_commrec              *cr,
+              const gmx_multisim_t   *ms,
+              const AppendingBehavior appendingBehavior,
+              const int               nfile,
+              t_filenm                fnm[])
+{
+    int              sim_part, sim_part_fn;
+    const char      *part_suffix = ".part";
+    FILE            *fpmulti;
+    StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
 
     /* Check if there is ANY checkpoint file available */
     sim_part    = 1;
     sim_part_fn = sim_part;
-    if (opt2bSet("-cpi", NFILE, fnm))
+    if (opt2bSet("-cpi", nfile, fnm))
     {
-        bAddPart = !bTryToAppendFiles;
+        const char *checkpointFilename = MASTER(cr) ? opt2fn("-cpi", nfile, fnm) : nullptr;
+        startingBehavior =
+            read_checkpoint_data(checkpointFilename,
+                                 &sim_part_fn, cr,
+                                 (appendingBehavior != AppendingBehavior::NoAppending),
+                                 nfile, fnm,
+                                 part_suffix);
 
-        read_checkpoint_data(opt2fn_master("-cpi", NFILE, fnm, cr),
-                             &sim_part_fn, cr,
-                             bTryToAppendFiles, NFILE, fnm,
-                             part_suffix, &bAddPart, bDoAppendFiles);
         if (sim_part_fn == 0 && isMasterSimMasterRank(ms, MASTER(cr)))
         {
             fprintf(stdout, "No previous checkpoint file present with -cpi option, assuming this is a new run.\n");
@@ -279,31 +281,23 @@ handleRestart(t_commrec            *cr,
             check_multi_int(fpmulti, ms, sim_part, "simulation part", TRUE);
         }
     }
-    else
-    {
-        *bDoAppendFiles = false;
-        bAddPart        = false;
-    }
 
-    *bStartFromCpt = sim_part > 1;
-
-    if (!*bDoAppendFiles)
-    {
-        sim_part_fn = sim_part;
-    }
-
-    if (bAddPart)
+    if (startingBehavior == StartingBehavior::RestartWithoutAppending)
     {
         char suffix[STRLEN];
 
         /* Rename all output files (except checkpoint files) */
         /* create new part name first (zero-filled) */
-        sprintf(suffix, "%s%04d", part_suffix, sim_part_fn);
+        sprintf(suffix, "%s%04d", part_suffix, sim_part);
 
-        add_suffix_to_output_names(fnm, NFILE, suffix);
+        add_suffix_to_output_names(fnm, nfile, suffix);
         if (isMasterSimMasterRank(ms, MASTER(cr)))
         {
             fprintf(stdout, "Checkpoint file is from part %d, new output files will be suffixed '%s'.\n", sim_part-1, suffix);
         }
     }
+
+    return startingBehavior;
 }
+
+} // namespace gmx

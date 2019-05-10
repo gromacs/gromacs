@@ -62,6 +62,7 @@
 #include "gromacs/mdrun/legacymdrunoptions.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrun/simulationcontext.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
@@ -215,12 +216,17 @@ int gmx_mdrun(int argc, char *argv[])
         return 0;
     }
 
+    StartingBehavior startingBehavior = handleRestart(options.cr,
+                                                      options.ms,
+                                                      options.mdrunOptions.appendingBehavior,
+                                                      ssize(options.filenames),
+                                                      options.filenames.data());
     if (MASTER(options.cr))
     {
         options.logFileGuard = openLogFile(ftp2fn(efLOG,
                                                   options.filenames.size(),
                                                   options.filenames.data()),
-                                           options.mdrunOptions.continuationOptions.appendFiles);
+                                           startingBehavior == StartingBehavior::RestartWithAppending);
     }
 
     /* The SimulationContext is a resource owned by the client code.
@@ -247,7 +253,7 @@ int gmx_mdrun(int argc, char *argv[])
      */
     auto builder = MdrunnerBuilder(std::move(mdModules),
                                    compat::not_null<decltype( &simulationContext)>(&simulationContext));
-    builder.addSimulationMethod(options.mdrunOptions, options.pforce);
+    builder.addSimulationMethod(options.mdrunOptions, options.pforce, startingBehavior);
     builder.addDomainDecomposition(options.domdecOptions);
     // \todo pass by value
     builder.addNonBonded(options.nbpu_opt_choices[0]);

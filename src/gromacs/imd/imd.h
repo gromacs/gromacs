@@ -83,10 +83,12 @@ class t_state;
 
 namespace gmx
 {
+enum class StartingBehavior;
 class IMDModule;
 class ImdSession;
 class InteractiveMolecularDynamics;
 class MDLogger;
+struct ImdOptions;
 struct MdrunOptions;
 
 /*! \brief
@@ -128,19 +130,23 @@ void write_IMDgroup_to_file(bool bIMD, t_inputrec *ir, const t_state *state,
  * \param nfile        Number of files.
  * \param fnm          Struct containing file names etc.
  * \param oenv         Output options.
- * \param mdrunOptions Options for mdrun.
+ * \param options      Options for interactive MD.
+ * \param startingBehavior  Describes whether this is a restart appending to output files
  */
 std::unique_ptr<ImdSession>
-makeImdSession(const t_inputrec *ir,
-               const t_commrec *cr,
-               gmx_wallcycle *wcycle,
-               gmx_enerdata_t *enerd,
-               const gmx_multisim_t *ms,
-               const gmx_mtop_t *top_global,
-               const MDLogger &mdlog,
-               const rvec x[],
-               int nfile, const t_filenm fnm[], const gmx_output_env_t *oenv,
-               const MdrunOptions &mdrunOptions);
+makeImdSession(const t_inputrec       *ir,
+               const t_commrec        *cr,
+               gmx_wallcycle          *wcycle,
+               gmx_enerdata_t         *enerd,
+               const gmx_multisim_t   *ms,
+               const gmx_mtop_t       *top_global,
+               const MDLogger         &mdlog,
+               const rvec              x[],
+               int                     nfile,
+               const t_filenm          fnm[],
+               const gmx_output_env_t *oenv,
+               const ImdOptions       &options,
+               StartingBehavior        startingBehavior);
 
 class ImdSession
 {
@@ -229,7 +235,8 @@ class ImdSession
                        int                     nfile,
                        const t_filenm          fnm[],
                        const gmx_output_env_t *oenv,
-                       const MdrunOptions     &mdrunOptions);
+                       const ImdOptions       &options,
+                       StartingBehavior        startingBehavior);
 };
 
 } // namespace gmx

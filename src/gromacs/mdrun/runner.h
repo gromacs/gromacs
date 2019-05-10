@@ -53,6 +53,7 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdrun/mdmodules.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -252,6 +253,9 @@ class Mdrunner
 
         //! \brief Non-owning handle to multi-simulation handler.
         gmx_multisim_t                         *ms = nullptr;
+
+        //! Whether the simulation will start afresh, or restart with/without appending.
+        StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
 
         /*!
          * \brief Handle to restraints manager for the current process.
@@ -458,13 +462,15 @@ class MdrunnerBuilder final
          *
          * \param options structure to copy
          * \param forceWarningThreshold Print a warning if any force is larger than this (in kJ/mol nm) (default -1)
+         * \param startingBehavior Whether the simulation will start afresh, or restart with/without appending.
          *
          * \internal
          * \todo Map these parameters to more appropriate encapsulating types.
          * Find a better way to indicate "unspecified" than a magic value of the parameter type.
          */
         MdrunnerBuilder &addSimulationMethod(const MdrunOptions &options,
-                                             real                forceWarningThreshold);
+                                             real                forceWarningThreshold,
+                                             StartingBehavior    startingBehavior);
 
         /*!
          * \brief Set the domain decomposition module.

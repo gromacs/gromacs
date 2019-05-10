@@ -73,6 +73,7 @@ struct ObservablesHistory;
 
 namespace gmx
 {
+enum class StartingBehavior;
 class IMDModule;
 class LocalAtomSetManager;
 struct MdrunOptions;
@@ -100,6 +101,7 @@ std::unique_ptr<IMDModule> createSwapCoordinatesModule();
  * \param[in] atomSets      Manager tending to swap atom indices.
  * \param[in] oenv          Needed to open the swap output XVGR file.
  * \param[in] mdrunOptions  Options for mdrun.
+ * \param[in] startingBehavior  Describes whether this is a restart appending to output files
  */
 t_swap *init_swapcoords(
         FILE                     *fplog,
@@ -111,7 +113,8 @@ t_swap *init_swapcoords(
         t_commrec                *cr,
         gmx::LocalAtomSetManager *atomSets,
         const gmx_output_env_t   *oenv,
-        const gmx::MdrunOptions  &mdrunOptions);
+        const gmx::MdrunOptions  &mdrunOptions,
+        gmx::StartingBehavior     startingBehavior);
 
 
 /*! \brief Finalizes ion / water position swapping, if it was active.

@@ -169,32 +169,21 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
     }
 #endif
 
-    if (!opt2bSet("-cpi",
-                  ssize(filenames), filenames.data()))
+    if (!opt2parg_bSet("-append", asize(pa), pa))
     {
-        // If we are not starting from a checkpoint we never allow files to be appended
-        // to, since that has caused a ton of strange behaviour and bugs in the past.
-        if (opt2parg_bSet("-append", asize(pa), pa))
+        mdrunOptions.appendingBehavior = AppendingBehavior::Auto;
+    }
+    else
+    {
+        if (opt2parg_bool("-append", asize(pa), pa))
         {
-            // If the user explicitly used the -append option, explain that it is not possible.
-            gmx_fatal(FARGS, "GROMACS can only append to files when restarting from a checkpoint.");
+            mdrunOptions.appendingBehavior = AppendingBehavior::Appending;
         }
         else
         {
-            // If the user did not say anything explicit, just disable appending.
-            bTryToAppendFiles = FALSE;
+            mdrunOptions.appendingBehavior = AppendingBehavior::NoAppending;
         }
     }
-
-    ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
-
-    continuationOptions.appendFilesOptionSet = opt2parg_bSet("-append", asize(pa), pa);
-
-    handleRestart(cr, ms, bTryToAppendFiles,
-                  ssize(filenames),
-                  filenames.data(),
-                  &continuationOptions.appendFiles,
-                  &continuationOptions.startedFromCheckpoint);
 
     mdrunOptions.rerun            = opt2bSet("-rerun",
                                              ssize(filenames),

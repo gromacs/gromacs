@@ -1240,8 +1240,9 @@ extern void init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir)
     ekinstate->ekinscalef_nhc.resize(ekinstate->ekin_n);
     ekinstate->ekinscaleh_nhc.resize(ekinstate->ekin_n);
     ekinstate->vscale_nhc.resize(ekinstate->ekin_n);
-    ekinstate->dekindl = 0;
-    ekinstate->mvcos   = 0;
+    ekinstate->dekindl          = 0;
+    ekinstate->mvcos            = 0;
+    ekinstate->hasReadEkinState = false;
 }
 
 void update_ekinstate(ekinstate_t *ekinstate, const gmx_ekindata_t *ekind)

@@ -74,6 +74,7 @@ class t_state;
 namespace gmx
 {
 
+enum class StartingBehavior;
 class BoxDeformation;
 class Constraints;
 class PpForceWorkload;
@@ -125,6 +126,8 @@ struct Integrator
     const gmx_output_env_t             *oenv;
     //! Contains command-line options to mdrun.
     const MdrunOptions                 &mdrunOptions;
+    //! Whether the simulation will start afresh, or restart with/without appending.
+    StartingBehavior                    startingBehavior;
     //! Handles virtual sites.
     gmx_vsite_t                        *vsite;
     //! Handles constraints.

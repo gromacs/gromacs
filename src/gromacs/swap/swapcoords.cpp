@@ -60,6 +60,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -1119,7 +1120,7 @@ static void print_ionlist_legend(const t_inputrec       *ir,
 static void detect_flux_per_channel_init(
         t_swap        *s,
         swaphistory_t *swapstate,
-        gmx_bool       bStartFromCpt)
+        const bool     isRestart)
 {
     t_swapgrp       *g;
     swapstateIons_t *gs;
@@ -1138,7 +1139,7 @@ static void detect_flux_per_channel_init(
         /******************************************************/
         /* Channel and domain history for the individual ions */
         /******************************************************/
-        if (bStartFromCpt) /* set the pointers right */
+        if (isRestart) /* set the pointers right */
         {
             g->comp_from     = gs->comp_from;
             g->channel_label = gs->channel_label;
@@ -1156,7 +1157,7 @@ static void detect_flux_per_channel_init(
         for (size_t i = 0; i < g->atomset.numAtomsGlobal()/g->apm; i++)
         {
             g->comp_now[i] = eDomainNotset;
-            if (!bStartFromCpt)
+            if (!isRestart)
             {
                 g->comp_from[i]     = eDomainNotset;
                 g->channel_label[i] = eChHistPassedNone;
@@ -1171,7 +1172,7 @@ static void detect_flux_per_channel_init(
         g->nCylBoth     = 0;
     }
 
-    if (bStartFromCpt)
+    if (isRestart)
     {
         fprintf(stderr, "%s Copying channel fluxes from checkpoint file data\n", SwS);
     }
@@ -1186,7 +1187,7 @@ static void detect_flux_per_channel_init(
         for (int ic = 0; ic < eChanNR; ic++)
         {
             fprintf(stderr, "%s Channel %d flux history for ion type %s (charge %g): ", SwS, ic, g->molname, g->q);
-            if (bStartFromCpt)
+            if (isRestart)
             {
                 g->fluxfromAtoB[ic] = gs->fluxfromAtoB[ic];
             }
@@ -1467,29 +1468,26 @@ static gmx_bool bConvertFromOldTpr(t_swapcoords *sc)
 
 
 t_swap *init_swapcoords(
-        FILE                     *fplog,
-        const t_inputrec         *ir,
-        const char               *fn,
-        gmx_mtop_t               *mtop,
-        const t_state            *globalState,
-        ObservablesHistory       *oh,
-        t_commrec                *cr,
-        gmx::LocalAtomSetManager *atomSets,
-        const gmx_output_env_t   *oenv,
-        const gmx::MdrunOptions  &mdrunOptions)
+        FILE                       *fplog,
+        const t_inputrec           *ir,
+        const char                 *fn,
+        gmx_mtop_t                 *mtop,
+        const t_state              *globalState,
+        ObservablesHistory         *oh,
+        t_commrec                  *cr,
+        gmx::LocalAtomSetManager   *atomSets,
+        const gmx_output_env_t     *oenv,
+        const gmx::MdrunOptions    &mdrunOptions,
+        const gmx::StartingBehavior startingBehavior)
 {
     t_swapgrp             *g;
     swapstateIons_t       *gs;
-    gmx_bool               bAppend, bStartFromCpt;
     swaphistory_t         *swapstate = nullptr;
 
     if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
     {
         gmx_fatal(FARGS, "Position swapping is only implemented for domain decomposition!");
     }
-
-    bAppend       = mdrunOptions.continuationOptions.appendFiles;
-    bStartFromCpt = mdrunOptions.continuationOptions.startedFromCheckpoint;
 
     auto sc     = ir->swap;
     auto s      = new t_swap();
@@ -1506,7 +1504,7 @@ t_swap *init_swapcoords(
         sc->nAverage = 1;  /* averaging makes no sense for reruns */
     }
 
-    if (MASTER(cr) && !bAppend)
+    if (MASTER(cr) && startingBehavior == gmx::StartingBehavior::NewSimulation)
     {
         fprintf(fplog, "\nInitializing ion/water position exchanges\n");
         please_cite(fplog, "Kutzner2011b");
@@ -1633,16 +1631,17 @@ t_swap *init_swapcoords(
      * chosen for an exchange can be made whole. */
     snew(s->pbc, 1);
 
+    bool restartWithAppending = (startingBehavior == gmx::StartingBehavior::RestartWithAppending);
     if (MASTER(cr))
     {
         if (bVerbose)
         {
-            fprintf(stderr, "%s Opening output file %s%s\n", SwS, fn, bAppend ? " for appending" : "");
+            fprintf(stderr, "%s Opening output file %s%s\n", SwS, fn, restartWithAppending ? " for appending" : "");
         }
 
-        s->fpout = gmx_fio_fopen(fn, bAppend ? "a" : "w" );
+        s->fpout = gmx_fio_fopen(fn, restartWithAppending ? "a" : "w" );
 
-        if (!bAppend)
+        if (!restartWithAppending)
         {
             xvgr_header(s->fpout, "Molecule counts", "Time (ps)", "counts", exvggtXNY, oenv);
 
@@ -1673,14 +1672,14 @@ t_swap *init_swapcoords(
             /* xc has the correct PBC representation for the two channels, so we do
              * not need to correct for that */
             get_center(g->xc, g->m, g->atomset.numAtomsGlobal(), g->center);
-            if (!bAppend)
+            if (!restartWithAppending)
             {
                 fprintf(s->fpout, "# %s group %s-center %5f nm\n", eSwapFixedGrp_names[j],
                         DimStr[s->swapdim], g->center[s->swapdim]);
             }
         }
 
-        if (!bAppend)
+        if (!restartWithAppending)
         {
             if ( (0 != sc->bulkOffset[eCompA]) || (0 != sc->bulkOffset[eCompB]) )
             {
@@ -1727,7 +1726,7 @@ t_swap *init_swapcoords(
     /* Get the initial particle concentrations and let the other nodes know */
     if (MASTER(cr))
     {
-        if (bStartFromCpt)
+        if (startingBehavior != gmx::StartingBehavior::NewSimulation)
         {
             get_initial_ioncounts_from_cpt(ir, s, swapstate, cr, bVerbose);
         }
@@ -1738,7 +1737,7 @@ t_swap *init_swapcoords(
         }
 
         /* Prepare (further) checkpoint writes ... */
-        if (bStartFromCpt)
+        if (startingBehavior != gmx::StartingBehavior::NewSimulation)
         {
             /* Consistency check */
             if (swapstate->nAverage != sc->nAverage)
@@ -1772,7 +1771,7 @@ t_swap *init_swapcoords(
         {
             fprintf(stderr, "%s Requested charge imbalance is Q(A) - Q(B) = %g e.\n", SwS, s->deltaQ);
         }
-        if (!bAppend)
+        if (!restartWithAppending)
         {
             fprintf(s->fpout, "# Requested charge imbalance is Q(A)-Q(B) = %g e.\n", s->deltaQ);
         }
@@ -1794,10 +1793,10 @@ t_swap *init_swapcoords(
     }
 
     /* Initialize arrays that keep track of through which channel the ions go */
-    detect_flux_per_channel_init(s, swapstate, bStartFromCpt);
+    detect_flux_per_channel_init(s, swapstate, startingBehavior != gmx::StartingBehavior::NewSimulation);
 
     /* We need to print the legend if we open this file for the first time. */
-    if (MASTER(cr) && !bAppend)
+    if (MASTER(cr) && !restartWithAppending)
     {
         print_ionlist_legend(ir, s, oenv);
     }

@@ -12,6 +12,10 @@ domdec -> ewald
 domdec -> mdlib
 domdec -> pulling
 fileio -> gmxlib
+
+# This can go away once restart handling is consolidated in handleRestart
+fileio -> mdrunutility
+
 mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
