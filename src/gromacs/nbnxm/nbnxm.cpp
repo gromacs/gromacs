@@ -160,11 +160,12 @@ gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
 }
 
 void
-nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality           locality,
-                                             rvec                               *f,
-                                             BufferOpsUseGpu                     useGpu,
-                                             GpuBufferOpsAccumulateForce         accumulateForce,
-                                             gmx_wallcycle                      *wcycle)
+nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality        locality,
+                                             rvec                            *f,
+                                             void                            *fPmeDeviceBuffer,
+                                             BufferOpsUseGpu                  useGpu,
+                                             GpuBufferOpsAccumulateForce      accumulateForce,
+                                             gmx_wallcycle                   *wcycle)
 {
 
     GMX_ASSERT(!((useGpu == BufferOpsUseGpu::False) &&
@@ -182,7 +183,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality          
     wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
 
     auto fn = useGpu == BufferOpsUseGpu::True ? reduceForces<true> : reduceForces<false>;
-    fn(nbat.get(), locality, pairSearch_->gridSet(), f, gpu_nbv, accumulateForce);
+    fn(nbat.get(), locality, pairSearch_->gridSet(), f, fPmeDeviceBuffer, gpu_nbv, accumulateForce);
 
     wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);

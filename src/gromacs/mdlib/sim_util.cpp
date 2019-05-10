@@ -619,12 +619,14 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
  *
  * \param[in]  pmedata        The PME structure
  * \param[in]  wcycle         The wallcycle structure
+ * \param[in]  transferPmeForces Specifies whether the device to host copy of forces should occur
  */
 static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
-                                     gmx_wallcycle_t   wcycle)
+                                     gmx_wallcycle_t   wcycle,
+                                     PmeDeviceHostCopy transferPmeForces)
 {
     pme_gpu_launch_complex_transforms(pmedata, wcycle);
-    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set);
+    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set, transferPmeForces);
 }
 
 /*! \brief
@@ -636,6 +638,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  * By doing that, unlike static scheduling order, it can always overlap
  * one of the reductions, regardless of the GPU task completion order.
  *
+ * \param[in]     fr               Force record pointer
  * \param[in]     nbv              Nonbonded verlet structure
  * \param[in,out] pmedata          PME module data
  * \param[in,out] force            Force array to reduce task outputs into.
@@ -646,7 +649,8 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  * \param[in]     pmeFlags         PME flags
  * \param[in]     wcycle           The wallcycle structure
  */
-static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv,
+static void alternatePmeNbGpuWaitReduce(const t_forcerec                    *fr,
+                                        nonbonded_verlet_t                  *nbv,
                                         gmx_pme_t                           *pmedata,
                                         gmx::ArrayRefWithPadding<gmx::RVec> *force,
                                         gmx::ForceWithVirial                *forceWithVirial,
@@ -692,6 +696,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
 
                 nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
                                               as_rvec_array(force->unpaddedArrayRef().data()),
+                                              pme_gpu_get_device_f(fr->pmedata),
                                               BufferOpsUseGpu::False,
                                               GpuBufferOpsAccumulateForce::Null,
                                               wcycle);
@@ -864,12 +869,21 @@ void do_force(FILE                                     *fplog,
         ((flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_ENERGY) ? GMX_PME_CALC_ENER_VIR : 0) |
         ((flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0);
+
+    // Switches on whether to use GPU for position and force buffer operations
+    // TODO consider all possible combinations of triggers, and how to combine optimally in each case.
+    const BufferOpsUseGpu useGpuXBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA)) ?
+        BufferOpsUseGpu::True : BufferOpsUseGpu::False;;
+    // GPU Force buffer ops are disabled on virial steps, because the virial calc is not yet ported to GPU
     const BufferOpsUseGpu useGpuFBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA))
         && !(flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) ?
         BufferOpsUseGpu::True : BufferOpsUseGpu::False;
-
-    const BufferOpsUseGpu useGpuXBufOps = (c_enableGpuBufOps && bUseGPU && (GMX_GPU == GMX_GPU_CUDA)) ?
-        BufferOpsUseGpu::True : BufferOpsUseGpu::False;;
+    bool useGpuFPmeReduction = (useGpuFBufOps == BufferOpsUseGpu::True);
+    if (thisRankHasDuty(cr, DUTY_PME) && !useGpuPme)
+    {
+        // GPU PME Reduction not supported if PME is on CPU
+        useGpuFPmeReduction = false;
+    }
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -1100,7 +1114,9 @@ void do_force(FILE                                     *fplog,
         // X copy/transform to allow overlap as well as after the GPU NB
         // launch to avoid FFT launch overhead hijacking the CPU and delaying
         // the nonbonded kernel.
-        launchPmeGpuFftAndGather(fr->pmedata, wcycle);
+        PmeDeviceHostCopy copyPmeForceBack = useGpuFPmeReduction ?
+            PmeDeviceHostCopy::DeviceHostCopyFalse : PmeDeviceHostCopy::DeviceHostCopyTrue;
+        launchPmeGpuFftAndGather(fr->pmedata, wcycle, copyPmeForceBack);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1289,6 +1305,7 @@ void do_force(FILE                                     *fplog,
          */
         wallcycle_stop(wcycle, ewcFORCE);
         nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::All, forceOut.f,
+                                      pme_gpu_get_device_f(fr->pmedata),
                                       BufferOpsUseGpu::False,
                                       GpuBufferOpsAccumulateForce::Null,
                                       wcycle);
@@ -1327,20 +1344,7 @@ void do_force(FILE                                     *fplog,
                          flags, &forceOut.forceWithVirial, enerd,
                          ed, bNS);
 
-    // flag to specify if CPU force output is preset in force
-    // buffer. For now, this is true even when useGpuPme == true
-    // (because on-GPU PME-nonbonded reduction will be added in
-    // follow-up)
-    // TODO adapt the below when on-GPU PME-nonbonded reduction is available.
-    bool                   useCpuPmeReduction = true;
-    bool                   haveCpuForces      = (ppForceWorkload->haveSpecialForces || ppForceWorkload->haveCpuListedForceWork || useCpuPmeReduction);
-    // flag to specify if forces should be accumulated in force buffer
-    // ops. For now, this is solely determined by above haveCpuForces
-    // flag, but in future developments it will also depend on
-    // e.g. whether the GPU force halo exchange is active.
-    GpuBufferOpsAccumulateForce accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) &&
-        haveCpuForces ? GpuBufferOpsAccumulateForce::True :
-        GpuBufferOpsAccumulateForce::False;
+    bool                   haveCpuForces      = (ppForceWorkload->haveSpecialForces || ppForceWorkload->haveCpuListedForceWork);
 
     // Will store the amount of cycles spent waiting for the GPU that
     // will be later used in the DLB accounting.
@@ -1372,8 +1376,15 @@ void do_force(FILE                                     *fplog,
             {
                 nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::NonLocal);
             }
+
+            // flag to specify if forces should be accumulated in force buffer
+            // ops. For non-local part, this just depends on whether CPU forces are present.
+            GpuBufferOpsAccumulateForce accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) &&
+                haveCpuForces ? GpuBufferOpsAccumulateForce::True :
+                GpuBufferOpsAccumulateForce::False;
             nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::NonLocal,
-                                          forceOut.f, useGpuFBufOps, accumulateForce, wcycle);
+                                          forceOut.f, pme_gpu_get_device_f(fr->pmedata),
+                                          useGpuFBufOps, accumulateForce, wcycle);
             if (useGpuFBufOps == BufferOpsUseGpu::True)
             {
                 nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::NonLocal);
@@ -1412,13 +1423,14 @@ void do_force(FILE                                     *fplog,
                              (useGpuFBufOps == BufferOpsUseGpu::False));
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &force, &forceOut.forceWithVirial, fr->fshift, enerd,
+        alternatePmeNbGpuWaitReduce(fr, fr->nbv.get(), fr->pmedata, &force, &forceOut.forceWithVirial, fr->fshift, enerd,
                                     flags, pmeFlags, wcycle);
     }
 
+    bool sumForces = !useGpuFPmeReduction;
     if (!alternateGpuWait && useGpuPme)
     {
-        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial, enerd);
+        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial, enerd, sumForces);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */
@@ -1477,12 +1489,22 @@ void do_force(FILE                                     *fplog,
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
 
-        if (useGpuFBufOps == BufferOpsUseGpu::True && haveCpuForces)
+        if (useGpuFBufOps == BufferOpsUseGpu::True && (haveCpuForces || DOMAINDECOMP(cr)))
         {
             nbv->launch_copy_f_to_gpu(forceOut.f, Nbnxm::AtomLocality::Local);
         }
+        // flag to specify if forces should be accumulated in force
+        // buffer ops. For local part, this depends on whether CPU
+        // forces are present, or if DD is active (in which case the
+        // halo exchange has resulted in contributions from the
+        // non-local part).
+        GpuBufferOpsAccumulateForce accumulateForce = (useGpuFBufOps == BufferOpsUseGpu::True) &&
+            (haveCpuForces || DOMAINDECOMP(cr)) ?
+            GpuBufferOpsAccumulateForce::True :
+            GpuBufferOpsAccumulateForce::False;
         nbv->atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality::Local,
-                                      forceOut.f, useGpuFBufOps, accumulateForce, wcycle);
+                                      forceOut.f, pme_gpu_get_device_f(fr->pmedata),
+                                      useGpuFBufOps, accumulateForce, wcycle);
         if (useGpuFBufOps == BufferOpsUseGpu::True)
         {
             nbv->launch_copy_f_from_gpu(forceOut.f, Nbnxm::AtomLocality::Local);

@@ -847,16 +847,18 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
 }
 
 /* F buffer operations on GPU: performs force summations and conversion from nb to rvec format. */
-void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                  atomLocality,
-                               gmx_nbnxn_gpu_t                    *nb,
-                               int                                 atomStart,
-                               int                                 nAtoms,
-                               GpuBufferOpsAccumulateForce         accumulateForce)
+void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality               atomLocality,
+                               gmx_nbnxn_gpu_t                 *nb,
+                               void                            *fPmeDevicePtr,
+                               int                              atomStart,
+                               int                              nAtoms,
+                               GpuBufferOpsAccumulateForce      accumulateForce)
 {
 
     cu_atomdata_t       *adat    = nb->atdat;
     cudaStream_t         stream  = atomLocality == AtomLocality::Local ?
         nb->stream[InteractionLocality::Local] : nb->stream[InteractionLocality::NonLocal];
+    bool                 addPmeF = (fPmeDevicePtr != nullptr);
 
     /* launch kernel */
 
@@ -870,16 +872,27 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                  atomLocality,
     config.sharedMemorySize = 0;
     config.stream           = stream;
 
-    auto              kernelFn = (accumulateForce == GpuBufferOpsAccumulateForce::True) ?
-        nbnxn_gpu_add_nbat_f_to_f_kernel<true> : nbnxn_gpu_add_nbat_f_to_f_kernel<false>;
-    const float3     *fPtr                    = adat->f;
-    rvec             *frvec                   = nb->frvec;
-    const int        *cell                    = nb->cell;
+    auto  kernelFn = (accumulateForce == GpuBufferOpsAccumulateForce::True) ?
+        nbnxn_gpu_add_nbat_f_to_f_kernel<true, false> :
+        nbnxn_gpu_add_nbat_f_to_f_kernel<false, false>;
+
+    if (addPmeF)
+    {
+        kernelFn = (accumulateForce == GpuBufferOpsAccumulateForce::True) ?
+            nbnxn_gpu_add_nbat_f_to_f_kernel<true, true> :
+            nbnxn_gpu_add_nbat_f_to_f_kernel<false, true>;
+    }
+
+    const float3     *d_f     = adat->f;
+    float3           *d_fNB   = (float3*) nb->frvec;
+    const float3     *d_fPme  = (float3*) fPmeDevicePtr;
+    const int        *d_cell  = nb->cell;
 
     const auto        kernelArgs   = prepareGpuKernelArguments(kernelFn, config,
-                                                               &fPtr,
-                                                               &frvec,
-                                                               &cell,
+                                                               &d_f,
+                                                               &d_fPme,
+                                                               &d_fNB,
+                                                               &d_cell,
                                                                &atomStart,
                                                                &nAtoms);
 

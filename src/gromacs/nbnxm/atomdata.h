@@ -344,6 +344,7 @@ void reduceForces(nbnxn_atomdata_t                   *nbat,
                   Nbnxm::AtomLocality                 locality,
                   const Nbnxm::GridSet               &gridSet,
                   rvec                               *f,
+                  void                               *pmeFDeviceBuffer,
                   gmx_nbnxn_gpu_t                    *gpu_nbv,
                   GpuBufferOpsAccumulateForce         accumulateForce);
 
@@ -353,6 +354,7 @@ void reduceForces<true>(nbnxn_atomdata_t             *nbat,
                         const Nbnxm::AtomLocality     locality,
                         const Nbnxm::GridSet         &gridSet,
                         rvec                         *f,
+                        void                         *fpme,
                         gmx_nbnxn_gpu_t              *gpu_nbv,
                         GpuBufferOpsAccumulateForce   accumulateForce);
 
@@ -361,6 +363,7 @@ void reduceForces<false>(nbnxn_atomdata_t             *nbat,
                          const Nbnxm::AtomLocality     locality,
                          const Nbnxm::GridSet         &gridSet,
                          rvec                         *f,
+                         void                         *fpme,
                          gmx_nbnxn_gpu_t              *gpu_nbv,
                          GpuBufferOpsAccumulateForce   accumulateForce);
 

@@ -418,7 +418,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
             {
                 std::copy(std::begin(forces), std::end(forces), std::begin(output.forces_));
             }
-            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid));
+            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid), PmeDeviceHostCopy::DeviceHostCopyTrue);
             std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;

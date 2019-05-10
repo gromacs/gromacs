@@ -139,24 +139,26 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColu
 
 /*! \brief CUDA kernel to add part of the force array(s) from nbnxn_atomdata_t to f
  *
- * \param[in]     fnb     Force in nbat format
- * \param[in,out] f       Force buffer to be reduced into
- * \param[in]     cell    Cell index mapping
- * \param[in]     a0      start atom index
- * \param[in]     a1      end atom index
- * \param[in]     stride  stride between atoms in memory
+ * \param[in]     fnb              Force in nbat format
+ * \param[in]     fPmeDeviceBuffer PME force
+ * \param[in,out] f                Force buffer to be reduced into
+ * \param[in]     cell             Cell index mapping
+ * \param[in]     atomStart        Start atom index
+ * \param[in]     nAtoms           Number of Atoms
  */
-template <bool accumulateForce>
+template <bool accumulateForce, bool addPmeF>
 __global__ void
 nbnxn_gpu_add_nbat_f_to_f_kernel(const float3 *__restrict__ fnb,
-                                 rvec                     * f,
+                                 const float3 *__restrict__ fPmeDeviceBuffer,
+                                 float3                   * f,
                                  const int *__restrict__    cell,
                                  const int                  atomStart,
                                  const int                  nAtoms);
-template <bool accumulateForce>
+template <bool accumulateForce, bool addPmeF>
 __global__ void
 nbnxn_gpu_add_nbat_f_to_f_kernel(const float3 *__restrict__ fnb,
-                                 rvec                     * f,
+                                 const float3 *__restrict__ fPmeDeviceBuffer,
+                                 float3                   * f,
                                  const int *__restrict__    cell,
                                  const int                  atomStart,
                                  const int                  nAtoms)
@@ -170,16 +172,23 @@ nbnxn_gpu_add_nbat_f_to_f_kernel(const float3 *__restrict__ fnb,
     {
 
         int     i        = cell[atomStart+threadIndex];
-        float3 *f_dest   = (float3 *)&f[atomStart+threadIndex][XX];
+        float3 *fDest    = (float3 *)&f[atomStart+threadIndex];
+        float3  temp;
 
         if (accumulateForce)
         {
-            *f_dest += fnb[i];
+            temp  = *fDest;
+            temp += fnb[i];
         }
         else
         {
-            *f_dest = fnb[i];
+            temp = fnb[i];
         }
+        if (addPmeF)
+        {
+            temp += fPmeDeviceBuffer[atomStart+threadIndex];
+        }
+        *fDest = temp;
 
     }
     return;

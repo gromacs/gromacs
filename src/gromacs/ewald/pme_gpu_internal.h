@@ -437,14 +437,18 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu    *GPU_FUNC_ARGUMENT(pmeGpu)
  * \param[in]     forceTreatment   Tells how data in h_forces should be treated.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
  * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
+ * \param[in]     transferPmeForces Specifies whether the device->host copy should occur.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *GPU_FUNC_ARGUMENT(pmeGpu),
                                        PmeForceOutputHandling GPU_FUNC_ARGUMENT(forceTreatment),
-                                       const float           *GPU_FUNC_ARGUMENT(h_grid)
-                                       ) GPU_FUNC_TERM
+                                       const float           *GPU_FUNC_ARGUMENT(h_grid),
+                                       PmeDeviceHostCopy      GPU_FUNC_ARGUMENT(transferPmeForces)) GPU_FUNC_TERM
 
 /*! \brief Return pointer to device copy of coordinate data. */
 GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr)
+
+/*! \brief Return pointer to device copy of force data. */
+GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_forces(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr)
 
 /* The inlined convenience PME GPU status getters */
 

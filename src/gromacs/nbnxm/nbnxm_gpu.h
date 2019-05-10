@@ -280,6 +280,7 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
 CUDA_FUNC_QUALIFIER
 void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality           gmx_unused  atomLocality,
                                gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
+                               void                         gmx_unused *fPmeDevicePtr,
                                int                          gmx_unused  atomStart,
                                int                          gmx_unused  nAtoms,
                                GpuBufferOpsAccumulateForce     gmx_unused  accumulateForce) CUDA_FUNC_TERM
