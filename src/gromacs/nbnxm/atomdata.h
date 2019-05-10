@@ -59,13 +59,13 @@ struct tMPI_Atomic;
 
 enum class BufferOpsUseGpu;
 
+class GpuEventSynchronizer;
+
 namespace Nbnxm
 {
 class GridSet;
 enum class KernelType;
 }
-
-enum class GpuBufferOpsAccumulateForce;
 
 /* Convenience type for vector with aligned memory */
 template<typename T>
@@ -344,8 +344,11 @@ void reduceForces(nbnxn_atomdata_t                   *nbat,
                   Nbnxm::AtomLocality                 locality,
                   const Nbnxm::GridSet               &gridSet,
                   rvec                               *f,
+                  void                               *pmeFDeviceBuffer,
+                  GpuEventSynchronizer               *pmeForcesReady,
                   gmx_nbnxn_gpu_t                    *gpu_nbv,
-                  GpuBufferOpsAccumulateForce         accumulateForce);
+                  bool                                useGpuFPmeReduction,
+                  bool                                accumulateForce);
 
 
 extern template
@@ -353,16 +356,22 @@ void reduceForces<true>(nbnxn_atomdata_t             *nbat,
                         const Nbnxm::AtomLocality     locality,
                         const Nbnxm::GridSet         &gridSet,
                         rvec                         *f,
+                        void                         *pmeFDeviceBuffer,
+                        GpuEventSynchronizer         *pmeForcesReady,
                         gmx_nbnxn_gpu_t              *gpu_nbv,
-                        GpuBufferOpsAccumulateForce   accumulateForce);
+                        bool                          useGpuFPmeReduction,
+                        bool                          accumulateForce);
 
 extern template
 void reduceForces<false>(nbnxn_atomdata_t             *nbat,
                          const Nbnxm::AtomLocality     locality,
                          const Nbnxm::GridSet         &gridSet,
                          rvec                         *f,
+                         void                         *pmeFDeviceBuffer,
+                         GpuEventSynchronizer         *pmeForcesReady,
                          gmx_nbnxn_gpu_t              *gpu_nbv,
-                         GpuBufferOpsAccumulateForce   accumulateForce);
+                         bool                          useGpuFPmeReduction,
+                         bool                          accumulateForce);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,

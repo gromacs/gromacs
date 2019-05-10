@@ -54,7 +54,6 @@
 
 struct nbnxn_atomdata_t;
 enum class GpuTaskCompletion;
-enum class GpuBufferOpsAccumulateForce;
 
 namespace gmx
 {
@@ -280,9 +279,12 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int               gmx_unused *cell,
 CUDA_FUNC_QUALIFIER
 void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality           gmx_unused  atomLocality,
                                gmx_nbnxn_gpu_t              gmx_unused *gpu_nbv,
+                               void                         gmx_unused *fPmeDevicePtr,
+                               GpuEventSynchronizer         gmx_unused *pmeForcesReady,
                                int                          gmx_unused  atomStart,
                                int                          gmx_unused  nAtoms,
-                               GpuBufferOpsAccumulateForce     gmx_unused  accumulateForce) CUDA_FUNC_TERM;
+                               bool                         gmx_unused  useGpuFPmeReduction,
+                               bool                         gmx_unused  accumulateForce) CUDA_FUNC_TERM;
 
 /*! \brief Copy force buffer from CPU to GPU */
 CUDA_FUNC_QUALIFIER

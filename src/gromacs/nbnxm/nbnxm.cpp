@@ -160,14 +160,40 @@ gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
 
 void
 nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality           locality,
-                                             rvec                               *f,
-                                             BufferOpsUseGpu                     useGpu,
-                                             GpuBufferOpsAccumulateForce         accumulateForce)
+                                             rvec                               *f)
 {
 
-    GMX_ASSERT(!((useGpu == BufferOpsUseGpu::False) &&
-                 (accumulateForce == GpuBufferOpsAccumulateForce::True)),
+    /* Skip the reduction if there was no short-range GPU work to do
+     * (either NB or both NB and bonded work). */
+    if (!pairlistIsSimple() && !haveGpuShortRangeWork(locality))
+    {
+        return;
+    }
+
+    wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle_, ewcsNB_F_BUF_OPS);
+
+    reduceForces<false>(nbat.get(), locality, pairSearch_->gridSet(), f, nullptr, nullptr, gpu_nbv, false, false);
+
+    wallcycle_sub_stop(wcycle_, ewcsNB_F_BUF_OPS);
+    wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
+}
+
+void
+nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality           locality,
+                                             rvec                               *f,
+                                             void                               *fPmeDeviceBuffer,
+                                             GpuEventSynchronizer               *pmeForcesReady,
+                                             BufferOpsUseGpu                     useGpu,
+                                             bool                                useGpuFPmeReduction,
+                                             bool                                accumulateForce)
+{
+
+    GMX_ASSERT(!((useGpu == BufferOpsUseGpu::False) && accumulateForce),
                "Accumulatation of force is only valid when GPU buffer ops are active");
+
+    GMX_ASSERT((useGpuFPmeReduction == (fPmeDeviceBuffer != nullptr)),
+               "GPU PME force reduction is only valid when a non-null GPU PME force pointer is available");
 
     /* Skip the reduction if there was no short-range GPU work to do
      * (either NB or both NB and bonded work). */
@@ -180,7 +206,7 @@ nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const Nbnxm::AtomLocality          
     wallcycle_sub_start(wcycle_, ewcsNB_F_BUF_OPS);
 
     auto fn = useGpu == BufferOpsUseGpu::True ? reduceForces<true> : reduceForces<false>;
-    fn(nbat.get(), locality, pairSearch_->gridSet(), f, gpu_nbv, accumulateForce);
+    fn(nbat.get(), locality, pairSearch_->gridSet(), f, fPmeDeviceBuffer, pmeForcesReady, gpu_nbv, useGpuFPmeReduction, accumulateForce);
 
     wallcycle_sub_stop(wcycle_, ewcsNB_F_BUF_OPS);
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);

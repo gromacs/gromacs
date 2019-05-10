@@ -437,13 +437,30 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu    *GPU_FUNC_ARGUMENT(pmeGpu)
  * \param[in]     forceTreatment   Tells how data in h_forces should be treated.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
  * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
+ * \param[in]     useGpuFPmeReduction Whether forces are reduced on GPU
  */
 GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *GPU_FUNC_ARGUMENT(pmeGpu),
                                        PmeForceOutputHandling GPU_FUNC_ARGUMENT(forceTreatment),
-                                       const float           *GPU_FUNC_ARGUMENT(h_grid)) GPU_FUNC_TERM;
+                                       const float           *GPU_FUNC_ARGUMENT(h_grid),
+                                       bool                   GPU_FUNC_ARGUMENT(useGpuFPmeReduction)) GPU_FUNC_TERM;
 
-/*! \brief Return pointer to device copy of coordinate data. */
+/*! \brief Return pointer to device copy of coordinate data.
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \returns                  Pointer to coordinate data
+ */
 GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_coordinates(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+
+/*! \brief Return pointer to device copy of force data.
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \returns                  Pointer to force data
+ */
+GPU_FUNC_QUALIFIER void * pme_gpu_get_kernelparam_forces(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+
+/*! \brief Return pointer to the sync object triggered after the PME force calculation completion
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \returns                  Pointer to sync object
+ */
+GPU_FUNC_QUALIFIER GpuEventSynchronizer *pme_gpu_get_forces_ready_synchronizer(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /* The inlined convenience PME GPU status getters */
 

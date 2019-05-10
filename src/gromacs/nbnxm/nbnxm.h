@@ -135,14 +135,7 @@ enum class BufferOpsUseGpu
     False
 };
 
-/*! \brief Switch for whether forces should accumulate in GPU buffer ops */
-enum class GpuBufferOpsAccumulateForce
-{
-    True,  // Force should be accumulated and format converted
-    False, // Force should be not accumulated, just format converted
-    Null   // GPU buffer ops are not in use, so this object is not applicable
-};
-
+class GpuEventSynchronizer;
 
 namespace gmx
 {
@@ -310,11 +303,29 @@ struct nonbonded_verlet_t
                                       int                         forceFlags,
                                       t_nrnb                     *nrnb);
 
-        //! Add the forces stored in nbat to f, zeros the forces in nbat */
+        /*! \brief Add the forces stored in nbat to f, zeros the forces in nbat
+         * \param [in] locality         Local or non-local
+         * \param [inout] f             Force to be added to
+         */
+        void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality                 locality,
+                                      rvec                               *f);
+
+        /*! \brief Add the forces stored in nbat to f, allowing for possibility that GPU buffer ops are active
+         * \param [in] locality         Local or non-local
+         * \param [inout] f             Force to be added to
+         * \param [in] fPme             Force from PME calculation
+         * \param [in] pmeForcesReady   Event triggered when PME force calculation has completed
+         * \param [in] useGpu           Whether GPU buffer ops are active
+         * \param [in] useGpuFPmeReduction   Whether PME force reduction is on GPU
+         * \param [in] accumulateForce  Whether force should be accumulated or stored
+         */
         void atomdata_add_nbat_f_to_f(Nbnxm::AtomLocality                 locality,
                                       rvec                               *f,
+                                      void                               *fPme,
+                                      GpuEventSynchronizer               *pmeForcesReady,
                                       BufferOpsUseGpu                     useGpu,
-                                      GpuBufferOpsAccumulateForce         accumulateForce);
+                                      bool                                useGpuFPmeReduction,
+                                      bool                                accumulateForce);
 
         /*! \brief Outer body of function to perform initialization for F buffer operations on GPU. */
         void atomdata_init_add_nbat_f_to_f_gpu();

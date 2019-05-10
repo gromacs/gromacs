@@ -1441,12 +1441,15 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t *nbat,
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
 template <bool  useGpu>
-void reduceForces(nbnxn_atomdata_t                   *nbat,
-                  const Nbnxm::AtomLocality           locality,
-                  const Nbnxm::GridSet               &gridSet,
-                  rvec                               *f,
-                  gmx_nbnxn_gpu_t                    *gpu_nbv,
-                  GpuBufferOpsAccumulateForce         accumulateForce)
+void reduceForces(nbnxn_atomdata_t                *nbat,
+                  const Nbnxm::AtomLocality        locality,
+                  const Nbnxm::GridSet            &gridSet,
+                  rvec                            *f,
+                  void                            *pmeFDeviceBuffer,
+                  GpuEventSynchronizer            *pmeForcesReady,
+                  gmx_nbnxn_gpu_t                 *gpu_nbv,
+                  bool                             useGpuFPmeReduction,
+                  bool                             accumulateForce)
 {
     int a0 = 0;
     int na = 0;
@@ -1463,9 +1466,11 @@ void reduceForces(nbnxn_atomdata_t                   *nbat,
     {
         Nbnxm::nbnxn_gpu_add_nbat_f_to_f(locality,
                                          gpu_nbv,
+                                         pmeFDeviceBuffer,
+                                         pmeForcesReady,
                                          a0, na,
+                                         useGpuFPmeReduction,
                                          accumulateForce);
-
     }
     else
     {
@@ -1510,16 +1515,22 @@ void reduceForces<true>(nbnxn_atomdata_t             *nbat,
                         const Nbnxm::AtomLocality     locality,
                         const Nbnxm::GridSet         &gridSet,
                         rvec                         *f,
+                        void                         *fpme,
+                        GpuEventSynchronizer         *pmeForcesReady,
                         gmx_nbnxn_gpu_t              *gpu_nbv,
-                        GpuBufferOpsAccumulateForce   accumulateForce);
+                        bool                          useGpuFPmeReduction,
+                        bool                          accumulateForce);
 
 template
 void reduceForces<false>(nbnxn_atomdata_t             *nbat,
                          const Nbnxm::AtomLocality     locality,
                          const Nbnxm::GridSet         &gridSet,
                          rvec                         *f,
+                         void                         *fpme,
+                         GpuEventSynchronizer         *pmeForcesReady,
                          gmx_nbnxn_gpu_t              *gpu_nbv,
-                         GpuBufferOpsAccumulateForce   accumulateForce);
+                         bool                          useGpuFPmeReduction,
+                         bool                          accumulateForce);
 
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift)

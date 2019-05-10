@@ -249,7 +249,8 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
 
 void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
                            gmx_wallcycle gmx_unused        *wcycle,
-                           PmeForceOutputHandling           forceTreatment)
+                           PmeForceOutputHandling           forceTreatment,
+                           bool                             useGpuFPmeReduction)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -262,7 +263,7 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
     wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
-    pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid));
+    pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid), useGpuFPmeReduction);
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
@@ -286,7 +287,8 @@ static void pme_gpu_reduce_outputs(const int             flags,
                                    const PmeOutput      &output,
                                    gmx_wallcycle        *wcycle,
                                    gmx::ForceWithVirial *forceWithVirial,
-                                   gmx_enerdata_t       *enerd)
+                                   gmx_enerdata_t       *enerd,
+                                   bool                  useGpuFPmeReduction)
 {
     wallcycle_start(wcycle, ewcPME_GPU_F_REDUCTION);
     GMX_ASSERT(forceWithVirial, "Invalid force pointer");
@@ -297,7 +299,10 @@ static void pme_gpu_reduce_outputs(const int             flags,
         forceWithVirial->addVirialContribution(output.coulombVirial_);
         enerd->term[F_COUL_RECIP] += output.coulombEnergy_;
     }
-    sum_forces(forceWithVirial->force_, output.forces_);
+    if (!useGpuFPmeReduction)
+    {
+        sum_forces(forceWithVirial->force_, output.forces_);
+    }
     wallcycle_stop(wcycle, ewcPME_GPU_F_REDUCTION);
 }
 
@@ -344,7 +349,7 @@ bool pme_gpu_try_finish_task(gmx_pme_t            *pme,
     PmeOutput output = pme_gpu_getOutput(*pme, flags);
     wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
 
-    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd);
+    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd, false);
 
     return true;
 }
@@ -357,7 +362,9 @@ PmeOutput pme_gpu_wait_finish_task(gmx_pme_t     *pme,
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
     wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
+
     // Synchronize the whole PME stream at once, including D2H result transfers.
+    // TODO: make this sync conditional with useGpuFPmeReduction to wait only for virial/energies
     pme_gpu_synchronize(pme->gpu);
 
     pme_gpu_update_timings(pme->gpu);
@@ -371,10 +378,11 @@ void pme_gpu_wait_and_reduce(gmx_pme_t            *pme,
                              const int             flags,
                              gmx_wallcycle        *wcycle,
                              gmx::ForceWithVirial *forceWithVirial,
-                             gmx_enerdata_t       *enerd)
+                             gmx_enerdata_t       *enerd,
+                             bool                  useGpuFPmeReduction)
 {
     PmeOutput output = pme_gpu_wait_finish_task(pme, flags, wcycle);
-    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd);
+    pme_gpu_reduce_outputs(flags, output, wcycle, forceWithVirial, enerd, useGpuFPmeReduction);
 }
 
 void pme_gpu_reinit_computation(const gmx_pme_t *pme,
@@ -399,4 +407,23 @@ void *pme_gpu_get_device_x(const gmx_pme_t *pme)
         return nullptr;
     }
     return pme_gpu_get_kernelparam_coordinates(pme->gpu);
+}
+
+void *pme_gpu_get_device_f(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+    return pme_gpu_get_kernelparam_forces(pme->gpu);
+}
+
+GpuEventSynchronizer * pme_gpu_get_f_ready_synchronizer(const gmx_pme_t *pme)
+{
+    if (!pme || !pme_gpu_active(pme))
+    {
+        return nullptr;
+    }
+
+    return pme_gpu_get_forces_ready_synchronizer(pme->gpu);
 }
