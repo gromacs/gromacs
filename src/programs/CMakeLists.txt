@@ -39,6 +39,8 @@ add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
 gmx_target_compile_options(mdrun_objlib)
 target_compile_definitions(mdrun_objlib PRIVATE HAVE_CONFIG_H)
 target_include_directories(mdrun_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+# Should be possible to remove this when resolving #3290
+target_include_directories(mdrun_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
@@ -71,8 +73,11 @@ else()
     add_library(view_objlib OBJECT ${VIEW_SOURCES})
     gmx_target_compile_options(view_objlib)
     target_compile_definitions(view_objlib PRIVATE HAVE_CONFIG_H)
+    target_include_directories(view_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+    add_library(gmx_objlib OBJECT ${GMX_MAIN_SOURCES})
+    target_include_directories(gmx_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
     add_executable(gmx
-        ${GMX_MAIN_SOURCES}
+        $<TARGET_OBJECTS:gmx_objlib>
         $<TARGET_OBJECTS:mdrun_objlib>
         $<TARGET_OBJECTS:view_objlib>)
     gmx_target_compile_options(gmx)

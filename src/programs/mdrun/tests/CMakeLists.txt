@@ -44,6 +44,7 @@ gmx_add_unit_test_library(mdrun_test_infrastructure
     trajectorycomparison.cpp
     trajectoryreader.cpp
     )
+target_include_directories(mdrun_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 
 set(testname "MdrunTests")
 set(exename "mdrun-test")

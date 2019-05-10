@@ -66,6 +66,8 @@ add_library(gmxapi SHARED
 gmx_target_compile_options(gmxapi)
 target_compile_definitions(gmxapi PRIVATE HAVE_CONFIG_H)
 target_include_directories(gmxapi SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+# Should be possible to change this when resolving #3290
+target_include_directories(gmxapi SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 
 # Define public interface. Make sure targets linking against `gmxapi` in the build
 # system don't accidentally have the implementation headers (this directory))

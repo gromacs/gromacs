@@ -38,6 +38,9 @@ if (WIN32)
     gmx_target_warning_suppression(template /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION_DOUBLE_TO_REAL)
     gmx_target_warning_suppression(template /wd4267 HAS_NO_MSVC_LOSSY_CONVERSION_SIZE_T_TO_INT)
 endif()
+# This should be removable once object libraries can directly use target_link_libraries
+# with CMake 3.12, #3290
+target_include_directories(template SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
 
 set(DOCUMENTATION_HTTP_URL_BASE
