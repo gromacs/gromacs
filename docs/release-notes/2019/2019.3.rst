@@ -37,6 +37,15 @@ Fix segmentation fault when using membrane embedding
 
 :issue:`2947`
 
+Allow AWH with pull-geometry 'direction' to be periodic
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When applying AWH to a pull coordinate with geometry 'direction'
+with a AWH interval length of more than 95% of the box size,
+the dimension is now made periodic.
+
+:issue:`2946`
+       
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

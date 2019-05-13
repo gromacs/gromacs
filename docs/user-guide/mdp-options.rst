@@ -2143,8 +2143,12 @@ AWH adaptive biasing
    (0.0) [nm] or [rad]
    Start value of the sampling interval along this dimension. The range of allowed
    values depends on the relevant pull geometry (see :mdp:`pull-coord1-geometry`).
-   For periodic geometries :mdp:`awh1-dim1-start` greater than :mdp:`awh1-dim1-end`
+   For dihedral geometries :mdp:`awh1-dim1-start` greater than :mdp:`awh1-dim1-end`
    is allowed. The interval will then wrap around from +period/2 to -period/2.
+   For the direction geometry, the dimension is made periodic when
+   the direction is along a box vector and covers more than 95%
+   of the box length. Note that one should not apply pressure coupling
+   along a periodic dimension.
 
 .. mdp:: awh1-dim1-end
 

@@ -554,20 +554,43 @@ AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> *inp, const t_inputrec *
  * Gets the period of a pull coordinate.
  *
  * \param[in] pullCoordParams   The parameters for the pull coordinate.
+ * \param[in] pbc               The PBC setup
+ * \param[in] intervalLength    The length of the AWH interval for this pull coordinate
  * \returns the period (or 0 if not periodic).
  */
-static double get_pull_coord_period(const t_pull_coord &pullCoordParams)
+static double get_pull_coord_period(const t_pull_coord &pullCoordParams,
+                                    const t_pbc        &pbc,
+                                    const real          intervalLength)
 {
-    double        period;
+    double period = 0;
 
-    if (pullCoordParams.eGeom == epullgDIHEDRAL)
+    if (pullCoordParams.eGeom == epullgDIR)
+    {
+        const real margin           = 0.001;
+        // Make dims periodic when the interval covers > 95%
+        const real periodicFraction = 0.95;
+
+        // Check if the pull direction is along a box vector
+        for (int dim = 0; dim < pbc.ndim_ePBC; dim++)
+        {
+            const real boxLength    = norm(pbc.box[dim]);
+            const real innerProduct = iprod(pullCoordParams.vec, pbc.box[dim]);
+            if (innerProduct >= (1 - margin)*boxLength &&
+                innerProduct <= (1 + margin)*boxLength)
+            {
+                GMX_RELEASE_ASSERT(intervalLength < (1 + margin)*boxLength,
+                                   "We have checked before that interval <= period");
+                if (intervalLength > periodicFraction*boxLength)
+                {
+                    period = boxLength;
+                }
+            }
+        }
+    }
+    else if (pullCoordParams.eGeom == epullgDIHEDRAL)
     {
         /* The dihedral angle is periodic in -180 to 180 deg */
         period = 360;
-    }
-    else
-    {
-        period = 0;
     }
 
     return period;
@@ -678,7 +701,7 @@ static void checkInputConsistencyInterval(const AwhParams *awhParams, warninp_t 
 
 void setStateDependentAwhParams(AwhParams *awhParams,
                                 const pull_params_t *pull_params, pull_t *pull_work,
-                                const matrix box,  int ePBC,
+                                const matrix box, int ePBC, const tensor &compressibility,
                                 const t_grpopts *inputrecGroupOptions, warninp_t wi)
 {
     /* The temperature is not really state depenendent but is not known
@@ -719,7 +742,27 @@ void setStateDependentAwhParams(AwhParams *awhParams,
 
             }
 
-            dimParams->period = get_pull_coord_period(pullCoordParams);
+            dimParams->period = get_pull_coord_period(pullCoordParams, pbc, dimParams->end - dimParams->origin);
+            // We would like to check for scaling, but we don't have the full inputrec available here
+            if (dimParams->period > 0 && !(pullCoordParams.eGeom == epullgANGLE ||
+                                           pullCoordParams.eGeom == epullgDIHEDRAL))
+            {
+                bool coordIsScaled = false;
+                for (int d2 = 0; d2 < DIM; d2++)
+                {
+                    if (pullCoordParams.vec[d2] != 0 && norm2(compressibility[d2]) != 0)
+                    {
+                        coordIsScaled = true;
+                    }
+                }
+                if (coordIsScaled)
+                {
+                    std::string mesg = gmx::formatString("AWH dimension %d of bias %d is periodic with pull geometry '%s', "
+                                                         "while you should are applying pressure scaling to the corresponding box vector, this is not supported.",
+                                                         d + 1, k + 1, EPULLGEOM(pullCoordParams.eGeom));
+                    warning(wi, mesg.c_str());
+                }
+            }
 
             /* The initial coordinate value, converted to external user units. */
             dimParams->coordValueInit =

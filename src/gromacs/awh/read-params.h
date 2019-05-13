@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,6 +78,7 @@ AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> *inp,
  * \param[in,out] pull_work             Pull working struct to register AWH bias in.
  * \param[in]     box                   Box vectors.
  * \param[in]     ePBC                  Periodic boundary conditions enum.
+ * \param[in]     compressibility       Compressibility matrix for pressure coupling, pass all 0 without pressure coupling
  * \param[in]     inputrecGroupOptions  Parameters for atom groups.
  * \param[in,out] wi                    Struct for bookeeping warnings.
  *
@@ -88,6 +89,7 @@ void setStateDependentAwhParams(AwhParams           *awhParams,
                                 pull_t              *pull_work,
                                 const matrix         box,
                                 int                  ePBC,
+                                const tensor        &compressibility,
                                 const t_grpopts     *inputrecGroupOptions,
                                 warninp_t            wi);
 
