@@ -1,0 +1,27 @@
+GROMACS 2018.7 release notes
+----------------------------
+
+This version was released on TODO. These release notes document
+the changes that have taken place in GROMACS since version 2018.6, to fix known
+issues. It also incorporates all fixes made in previous versions,
+which you can find described in the :ref:`release-notes`.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes to improve portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Updated release notes for 2018.6
+""""""""""""""""""""""""""""""""
+
+A :ref:`fix <release-notes-2018-6-gpu>` made to GPU kernels in 2018.6 was
+thought to resolve :issue:`2845` but further investigation suggests that
+the real cause is not yet known.
+
