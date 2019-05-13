@@ -1227,8 +1227,8 @@ Pressure coupling
 
       The reference coordinates for position restraints are not
       modified. Note that with this option the virial and pressure
-      will depend on the absolute positions of the reference
-      coordinates.
+      might be ill defined, see :ref:`here <reference-manual-position-restraints>`
+      for more details.
 
    .. mdp-value:: all
 
@@ -1243,7 +1243,9 @@ Pressure coupling
       one COM is used, even when there are multiple molecules with
       position restraints. For calculating the COM of the reference
       coordinates in the starting configuration, periodic boundary
-      conditions are not taken into account.
+      conditions are not taken into account. Note that with this option
+      the virial and pressure might be ill defined, see
+      :ref:`here <reference-manual-position-restraints>` for more details.
 
 
 Simulated annealing
