@@ -53,6 +53,14 @@ Add some information for grompp error with wrong line endings
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed wider reference SIMD setups
+"""""""""""""""""""""""""""""""""
+
+The reference SIMD builds could use a too small memory alignment,
+leading to mdrun exiting with an alignment error
+
+:issue:`2952`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
