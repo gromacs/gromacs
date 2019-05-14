@@ -4,7 +4,7 @@ GROMACS 2019.3 release notes
 This version was released on TODO, 2019. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2019.2 version, to fix known issues. It also incorporates all
-fixes made in version 2018.6 and earlier, which you can find described
+fixes made in version 2018.7 and earlier, which you can find described
 in the :ref:`release-notes`.
 
 .. Note to developers!
@@ -48,6 +48,11 @@ the dimension is now made periodic.
        
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed residue and molecule indexing in selections
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2951`
 
 Fix PQR formatting
 """"""""""""""""""""

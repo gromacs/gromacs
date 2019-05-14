@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -220,7 +220,7 @@ static const char *const help_resindex[] = {
     "[TT]resnr[tt] selects atoms using the residue numbering in the input",
     "file. [TT]resid[tt] is synonym for this keyword for VMD compatibility.",
     "",
-    "[TT]resindex N[tt] selects the [TT]N[tt]th residue starting from the",
+    "[TT]resindex N[tt] selects the [TT]N[tt] th residue starting from the",
     "beginning of the input file. This is useful for uniquely identifying",
     "residues if there are duplicate numbers in the input file (e.g., in",
     "multiple chains).",
