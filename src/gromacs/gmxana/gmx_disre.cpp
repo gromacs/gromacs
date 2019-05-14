@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <unordered_map>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -182,10 +183,6 @@ static void check_viol(FILE *log,
             fprintf(debug, "DISRE: ndr = %d, label = %d  i=%d, n =%d\n",
                     ndr, label, i, n);
         }
-        if (ndr != label)
-        {
-            gmx_fatal(FARGS, "tpr inconsistency. ndr = %d, label = %d\n", ndr, label);
-        }
         do
         {
             n += nat;
@@ -257,7 +254,7 @@ static void check_viol(FILE *log,
 }
 
 typedef struct {
-    int      index;
+    int      label;
     gmx_bool bCore;
     real     up1, r, rT3, rT6, viol, violT3, violT6;
 } t_dr_stats;
@@ -336,7 +333,7 @@ static void dump_viol(FILE *log, int ndr, t_dr_stats *drs, gmx_bool bLinear)
             break;
         }
         fprintf(log, "%6d%5s%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f\n",
-                drs[i].index, yesno_names[drs[i].bCore],
+                drs[i].label, yesno_names[drs[i].bCore],
                 drs[i].up1, drs[i].r, drs[i].rT3, drs[i].rT6,
                 drs[i].viol, drs[i].violT3, drs[i].violT6);
     }
@@ -355,30 +352,26 @@ static gmx_bool is_core(int i, int isize, const int index[])
     return bIC;
 }
 
-static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
+static void dump_stats(FILE *log, int nsteps,
+                       const t_disresdata &dd,
+                       const t_ilist *disres,
                        t_iparams ip[], t_dr_result *dr,
                        int isize, int index[], t_atoms *atoms)
 {
-    int         i, j, nra;
     t_dr_stats *drs;
 
     fprintf(log, "\n");
     fprintf(log, "++++++++++++++ STATISTICS ++++++++++++++++++++++++\n");
-    snew(drs, ndr);
-    j         = 0;
-    nra       = interaction_function[F_DISRES].nratoms+1;
-    for (i = 0; (i < ndr); i++)
+    snew(drs, dd.nres);
+    const int nra = interaction_function[F_DISRES].nratoms + 1;
+    for (int j = 0; j < disres->nr; j += nra)
     {
-        /* Search for the appropriate restraint */
-        for (; (j < disres->nr); j += nra)
-        {
-            if (ip[disres->iatoms[j]].disres.label == i)
-            {
-                break;
-            }
-        }
-        drs[i].index  = i;
-        drs[i].bCore  = is_core(i, isize, index);
+        // Note that the restraint i can be used by multiple pairs
+        const int i   = disres->iatoms[j] - dd.type_min;
+        GMX_RELEASE_ASSERT(i >= 0 && i < dd.nres, "The restraint index should be in range");
+
+        drs[i].label  = ip[disres->iatoms[j]].disres.label;
+        drs[i].bCore  = is_core(drs[i].label, isize, index);
         drs[i].up1    = ip[disres->iatoms[j]].disres.up1;
         drs[i].r      = dr->aver1[i]/nsteps;
         drs[i].rT3    = gmx::invcbrt(dr->aver_3[i]/nsteps);
@@ -394,23 +387,25 @@ static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
             atoms->pdbinfo[j2].bfac += drs[i].violT3*5;
         }
     }
-    dump_viol(log, ndr, drs, FALSE);
+    dump_viol(log, dd.nres, drs, FALSE);
 
     fprintf(log, "+++ Sorted by linear averaged violations: +++\n");
-    std::sort(drs, drs+ndr, [](const t_dr_stats &a, const t_dr_stats &b)
+    std::sort(drs, drs + dd.nres, [](const t_dr_stats &a, const t_dr_stats &b)
               {return a.viol > b.viol; });            //Reverse sort
-    dump_viol(log, ndr, drs, TRUE);
+    dump_viol(log, dd.nres, drs, TRUE);
 
-    dump_dump(log, ndr, drs);
+    dump_dump(log, dd.nres, drs);
 
     sfree(drs);
 }
 
-static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
+static void dump_clust_stats(FILE *fp,
+                             const t_disresdata &dd,
+                             const t_ilist *disres,
                              t_iparams ip[], t_blocka *clust, t_dr_result dr[],
                              char *clust_name[], int isize, int index[])
 {
-    int         i, j, k, nra, mmm = 0;
+    int         k, nra, mmm = 0;
     double      sumV, maxV, sumVT3, sumVT6, maxVT3, maxVT6;
     t_dr_stats *drs;
 
@@ -418,7 +413,7 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
     fprintf(fp, "++++++++++++++ STATISTICS ++++++++++++++++++++++\n");
     fprintf(fp, "Cluster  NFrames    SumV      MaxV     SumVT     MaxVT     SumVS     MaxVS\n");
 
-    snew(drs, ndr);
+    snew(drs, dd.nres);
 
     for (k = 0; (k < clust->nr); k++)
     {
@@ -437,21 +432,23 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
         {
             gmx_fatal(FARGS, "Inconsistency with cluster %d. Invalid name", k);
         }
-        j         = 0;
         nra       = interaction_function[F_DISRES].nratoms+1;
         sumV      = sumVT3 = sumVT6 = maxV = maxVT3 = maxVT6 = 0;
-        for (i = 0; (i < ndr); i++)
+
+        // Use a map to process each restraint only once while looping over all pairs
+        std::unordered_map<int, bool> restraintHasBeenProcessed;
+        for (int j = 0; j < dd.nres; j += nra)
         {
-            /* Search for the appropriate restraint */
-            for (; (j < disres->nr); j += nra)
+            // Note that the restraint i can be used by multiple pairs
+            const int i   = disres->iatoms[j] - dd.type_min;
+
+            if (restraintHasBeenProcessed[i])
             {
-                if (ip[disres->iatoms[j]].disres.label == i)
-                {
-                    break;
-                }
+                continue;
             }
-            drs[i].index  = i;
-            drs[i].bCore  = is_core(i, isize, index);
+
+            drs[i].label  = ip[disres->iatoms[j]].disres.label;
+            drs[i].bCore  = is_core(drs[i].label, isize, index);
             drs[i].up1    = ip[disres->iatoms[j]].disres.up1;
             drs[i].r      = dr[k].aver1[i]/dr[k].nframes;
             if ((dr[k].aver_3[i] <= 0) || !std::isfinite(dr[k].aver_3[i]))
@@ -469,6 +466,9 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
             maxV          = std::max(maxV, static_cast<double>(drs[i].viol));
             maxVT3        = std::max(maxVT3, static_cast<double>(drs[i].violT3));
             maxVT6        = std::max(maxVT6, static_cast<double>(drs[i].violT6));
+
+            // We have processed restraint i, mark it as such
+            restraintHasBeenProcessed[i] = true;
         }
         if (std::strcmp(clust_name[k], "1000") == 0)
         {
@@ -632,7 +632,7 @@ int gmx_disre(int argc, char *argv[])
         "because this analysis is done from a trajectory file afterwards",
         "it does not make sense to use time averaging. However,",
         "the time averaged values per restraint are given in the log file.[PAR]",
-        "An index file may be used to select specific restraints for",
+        "An index file may be used to select specific restraints by index group label for",
         "printing.[PAR]",
         "When the optional [TT]-q[tt] flag is given a [REF].pdb[ref] file coloured by the",
         "amount of average violations.[PAR]",
@@ -893,13 +893,13 @@ int gmx_disre(int argc, char *argv[])
 
     if (clust)
     {
-        dump_clust_stats(fplog, fcd.disres.nres, &(top->idef.il[F_DISRES]),
+        dump_clust_stats(fplog, fcd.disres, &(top->idef.il[F_DISRES]),
                          top->idef.iparams, clust->clust, dr_clust,
                          clust->grpname, isize, index);
     }
     else
     {
-        dump_stats(fplog, j, fcd.disres.nres, &(top->idef.il[F_DISRES]),
+        dump_stats(fplog, j, fcd.disres, &(top->idef.il[F_DISRES]),
                    top->idef.iparams, &dr, isize, index,
                    bPDB ? atoms : nullptr);
         if (bPDB)

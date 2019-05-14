@@ -48,6 +48,11 @@ The trajectories could become discontinuous with simulations longer than 100ns
 and exchange strides that are not a multiple of 1 ps. This only affected the
 post-processing of trajectories generated from replica exchange simulations.
 
+Made gmx disre work with non-consecutively labeled restraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2953`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
