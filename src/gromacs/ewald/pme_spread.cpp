@@ -59,18 +59,18 @@
 
 /* TODO consider split of pme-spline from this file */
 
-static void calc_interpolation_idx(const gmx_pme_t *pme, const pme_atomcomm_t *atc,
+static void calc_interpolation_idx(const gmx_pme_t *pme, PmeAtomComm *atc,
                                    int start, int grid_index, int end, int thread)
 {
     int             i;
     int            *idxptr, tix, tiy, tiz;
-    real           *xptr, *fptr, tx, ty, tz;
+    const real     *xptr;
+    real           *fptr, tx, ty, tz;
     real            rxx, ryx, ryy, rzx, rzy, rzz;
     int             nx, ny, nz;
     int            *g2tx, *g2ty, *g2tz;
     gmx_bool        bThreads;
     int            *thread_idx = nullptr;
-    thread_plist_t *tpl        = nullptr;
     int            *tpl_n      = nullptr;
     int             thread_i;
 
@@ -92,10 +92,9 @@ static void calc_interpolation_idx(const gmx_pme_t *pme, const pme_atomcomm_t *a
     bThreads = (atc->nthread > 1);
     if (bThreads)
     {
-        thread_idx = atc->thread_idx;
+        thread_idx = atc->thread_idx.data();
 
-        tpl   = &atc->thread_plist[thread];
-        tpl_n = tpl->n;
+        tpl_n = atc->threadMap[thread].n;
         for (i = 0; i < atc->nthread; i++)
         {
             tpl_n[i] = 0;
@@ -162,11 +161,8 @@ static void calc_interpolation_idx(const gmx_pme_t *pme, const pme_atomcomm_t *a
          * over the threads, so we could actually allocate for that
          * in pme_realloc_atomcomm_things.
          */
-        if (tpl_n[atc->nthread-1] > tpl->nalloc)
-        {
-            tpl->nalloc = over_alloc_large(tpl_n[atc->nthread-1]);
-            srenew(tpl->i, tpl->nalloc);
-        }
+        AtomToThreadMap &threadMap = atc->threadMap[thread];
+        threadMap.i.resize(tpl_n[atc->nthread - 1]);
         /* Set tpl_n to the cumulative start */
         for (i = atc->nthread-1; i >= 1; i--)
         {
@@ -177,17 +173,16 @@ static void calc_interpolation_idx(const gmx_pme_t *pme, const pme_atomcomm_t *a
         /* Fill our thread local array with indices sorted on thread */
         for (i = start; i < end; i++)
         {
-            tpl->i[tpl_n[atc->thread_idx[i]]++] = i;
+            threadMap.i[tpl_n[atc->thread_idx[i]]++] = i;
         }
         /* Now tpl_n contains the cummulative count again */
     }
 }
 
-static void make_thread_local_ind(const pme_atomcomm_t *atc,
+static void make_thread_local_ind(const PmeAtomComm *atc,
                                   int thread, splinedata_t *spline)
 {
     int             n, t, i, start, end;
-    thread_plist_t *tpl;
 
     /* Combine the indices made by each thread into one index */
 
@@ -195,16 +190,16 @@ static void make_thread_local_ind(const pme_atomcomm_t *atc,
     start = 0;
     for (t = 0; t < atc->nthread; t++)
     {
-        tpl = &atc->thread_plist[t];
+        const AtomToThreadMap &threadMap = atc->threadMap[t];
         /* Copy our part (start - end) from the list of thread t */
         if (thread > 0)
         {
-            start = tpl->n[thread-1];
+            start = threadMap.n[thread-1];
         }
-        end = tpl->n[thread];
+        end = threadMap.n[thread];
         for (i = start; i < end; i++)
         {
-            spline->ind[n++] = tpl->i[i];
+            spline->ind[n++] = threadMap.i[i];
         }
     }
 
@@ -313,7 +308,7 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
 
 
 static void spread_coefficients_bsplines_thread(const pmegrid_t                   *pmegrid,
-                                                const pme_atomcomm_t              *atc,
+                                                const PmeAtomComm                 *atc,
                                                 splinedata_t                      *spline,
                                                 struct pme_spline_work gmx_unused *work)
 {
@@ -321,7 +316,7 @@ static void spread_coefficients_bsplines_thread(const pmegrid_t                 
     /* spread coefficients from home atoms to local grid */
     real          *grid;
     int            i, nn, n, ithx, ithy, ithz, i0, j0, k0;
-    int       *    idxptr;
+    const int     *idxptr;
     int            order, norder, index_x, index_xy, index_xyz;
     real           valx, valxy, coefficient;
     real          *thx, *thy, *thz;
@@ -363,9 +358,9 @@ static void spread_coefficients_bsplines_thread(const pmegrid_t                 
             j0   = idxptr[YY] - offy;
             k0   = idxptr[ZZ] - offz;
 
-            thx = spline->theta[XX] + norder;
-            thy = spline->theta[YY] + norder;
-            thz = spline->theta[ZZ] + norder;
+            thx = spline->theta.coefficients[XX] + norder;
+            thy = spline->theta.coefficients[YY] + norder;
+            thz = spline->theta.coefficients[ZZ] + norder;
 
             switch (order)
             {
@@ -856,7 +851,7 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
 }
 
 void spread_on_grid(const gmx_pme_t *pme,
-                    const pme_atomcomm_t *atc, const pmegrids_t *grids,
+                    PmeAtomComm *atc, const pmegrids_t *grids,
                     gmx_bool bCalcSplines, gmx_bool bSpread,
                     real *fftgrid, gmx_bool bDoSplines, int grid_index)
 {
@@ -883,8 +878,8 @@ void spread_on_grid(const gmx_pme_t *pme,
             {
                 int start, end;
 
-                start = atc->n* thread   /nthread;
-                end   = atc->n*(thread+1)/nthread;
+                start = atc->numAtoms()* thread   /nthread;
+                end   = atc->numAtoms()*(thread+1)/nthread;
 
                 /* Compute fftgrid index for all atoms,
                  * with help of some extra variables.
@@ -914,7 +909,7 @@ void spread_on_grid(const gmx_pme_t *pme,
             {
                 spline = &atc->spline[0];
 
-                spline->n = atc->n;
+                spline->n = atc->numAtoms();
             }
             else
             {
@@ -923,7 +918,7 @@ void spread_on_grid(const gmx_pme_t *pme,
                 if (grids->nthread == 1)
                 {
                     /* One thread, we operate on all coefficients */
-                    spline->n = atc->n;
+                    spline->n = atc->numAtoms();
                 }
                 else
                 {
@@ -934,8 +929,11 @@ void spread_on_grid(const gmx_pme_t *pme,
 
             if (bCalcSplines)
             {
-                make_bsplines(spline->theta, spline->dtheta, pme->pme_order,
-                              atc->fractx, spline->n, spline->ind, atc->coefficient, bDoSplines);
+                make_bsplines(spline->theta.coefficients,
+                              spline->dtheta.coefficients,
+                              pme->pme_order,
+                              as_rvec_array(atc->fractx.data()), spline->n, spline->ind.data(),
+                              atc->coefficient.data(), bDoSplines);
             }
 
             if (bSpread)

@@ -98,27 +98,31 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t *ewc_t)
     }
 }
 
-void do_force_lowlevel(t_forcerec                   *fr,
-                       const t_inputrec             *ir,
-                       const t_idef                 *idef,
-                       const t_commrec              *cr,
-                       const gmx_multisim_t         *ms,
-                       t_nrnb                       *nrnb,
-                       gmx_wallcycle_t               wcycle,
-                       const t_mdatoms              *md,
-                       rvec                         *x,
-                       history_t                    *hist,
-                       rvec                         *forceForUseWithShiftForces,
-                       gmx::ForceWithVirial         *forceWithVirial,
-                       gmx_enerdata_t               *enerd,
-                       t_fcdata                     *fcd,
-                       const matrix                  box,
-                       const real                   *lambda,
-                       const t_graph                *graph,
-                       const rvec                   *mu_tot,
-                       const int                     flags,
-                       const DDBalanceRegionHandler &ddBalanceRegionHandler)
+void
+do_force_lowlevel(t_forcerec                               *fr,
+                  const t_inputrec                         *ir,
+                  const t_idef                             *idef,
+                  const t_commrec                          *cr,
+                  const gmx_multisim_t                     *ms,
+                  t_nrnb                                   *nrnb,
+                  gmx_wallcycle_t                           wcycle,
+                  const t_mdatoms                          *md,
+                  gmx::ArrayRefWithPadding<gmx::RVec>       coordinates,
+                  history_t                                *hist,
+                  rvec                                     *forceForUseWithShiftForces,
+                  gmx::ForceWithVirial                     *forceWithVirial,
+                  gmx_enerdata_t                           *enerd,
+                  t_fcdata                                 *fcd,
+                  const matrix                              box,
+                  const real                               *lambda,
+                  const t_graph                            *graph,
+                  const rvec                               *mu_tot,
+                  const int                                 flags,
+                  const DDBalanceRegionHandler             &ddBalanceRegionHandler)
 {
+    // TODO: Replace all uses of x by const coordinates
+    rvec *x = as_rvec_array(coordinates.paddedArrayRef().data());
+
     /* do QMMM first if requested */
     if (fr->bQMMM)
     {
@@ -301,9 +305,8 @@ void do_force_lowlevel(t_forcerec                   *fr,
 
                     wallcycle_start(wcycle, ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
-                                        0, md->homenr - fr->n_tpi,
-                                        x,
-                                        as_rvec_array(forceWithVirial->force_.data()),
+                                        gmx::constArrayRefFromArray(coordinates.unpaddedConstArrayRef().data(), md->homenr - fr->n_tpi),
+                                        forceWithVirial->force_,
                                         md->chargeA, md->chargeB,
                                         md->sqrt_c6A, md->sqrt_c6B,
                                         md->sigmaA, md->sigmaB,
@@ -341,9 +344,9 @@ void do_force_lowlevel(t_forcerec                   *fr,
                     /* Determine the PME grid energy of the test molecule
                      * with the PME grid potential of the other charges.
                      */
-                    gmx_pme_calc_energy(fr->pmedata, fr->n_tpi,
-                                        x + md->homenr - fr->n_tpi,
-                                        md->chargeA + md->homenr - fr->n_tpi,
+                    gmx_pme_calc_energy(fr->pmedata,
+                                        coordinates.unpaddedConstArrayRef().subArray(md->homenr - fr->n_tpi, fr->n_tpi),
+                                        gmx::arrayRefFromArray(md->chargeA + md->homenr - fr->n_tpi, fr->n_tpi),
                                         &Vlr_q);
                 }
             }

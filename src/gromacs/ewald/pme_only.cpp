@@ -632,7 +632,9 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         }
         else
         {
-            gmx_pme_do(pme, 0, natoms, as_rvec_array(pme_pp->x.data()), as_rvec_array(pme_pp->f.data()),
+            GMX_ASSERT(pme_pp->x.size() == static_cast<size_t>(natoms), "The coordinate buffer should have size natoms");
+
+            gmx_pme_do(pme, pme_pp->x, pme_pp->f,
                        pme_pp->chargeA.data(), pme_pp->chargeB.data(),
                        pme_pp->sqrt_c6A.data(), pme_pp->sqrt_c6B.data(),
                        pme_pp->sigmaA.data(), pme_pp->sigmaB.data(), box,

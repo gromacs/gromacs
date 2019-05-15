@@ -1312,7 +1312,7 @@ void do_force(FILE                                     *fplog,
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
-                      as_rvec_array(x.unpaddedArrayRef().data()), hist, forceOut.f, &forceOut.forceWithVirial, enerd, fcd,
+                      x, hist, forceOut.f, &forceOut.forceWithVirial, enerd, fcd,
                       box, lambda.data(), graph, fr->mu_tot,
                       flags,
                       ddBalanceRegionHandler);

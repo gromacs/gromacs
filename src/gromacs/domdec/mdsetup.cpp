@@ -138,12 +138,14 @@ void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
                            fr->gpuBonded != nullptr,
                            top->idef);
 
-    gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);
-    /* This handles the PP+PME rank case where fr->pmedata is valid.
-     * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
-     * TODO: this only handles the GPU logic so far, should handle CPU as well.
-     * TODO: this also does not account for TPI.
-     */
+    if (EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME))
+    {
+        /* This handles the PP+PME rank case where fr->pmedata is valid.
+         * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
+         */
+        const int numPmeAtoms = numHomeAtoms - fr->n_tpi;
+        gmx_pme_reinit_atoms(fr->pmedata, numPmeAtoms, mdatoms->chargeA);
+    }
 
     if (constr)
     {

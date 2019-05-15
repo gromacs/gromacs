@@ -138,7 +138,7 @@ bool gmx_pme_check_restrictions(int pme_order,
  */
 gmx_pme_t *gmx_pme_init(const t_commrec *cr,
                         const NumPmeDomains &numPmeDomains,
-                        const t_inputrec *ir, int homenr,
+                        const t_inputrec *ir,
                         gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                         gmx_bool bReproducible,
                         real ewaldcoeff_q, real ewaldcoeff_lj,
@@ -169,14 +169,18 @@ void gmx_pme_destroy(gmx_pme_t *pme);
 
 /*! \brief Do a PME calculation on a CPU for the long range electrostatics and/or LJ.
  *
+ * Computes the PME forces and the energy and viral, when requested,
+ * for all atoms in \p coordinates. Forces, when requested, are added
+ * to the buffer \p forces, which is allowed to contain more elements
+ * than the number of elements in \p coordinates.
  * The meaning of \p flags is defined above, and determines which
  * parts of the calculation are performed.
  *
  * \return 0 indicates all well, non zero is an error code.
  */
 int gmx_pme_do(struct gmx_pme_t *pme,
-               int start,       int homenr,
-               rvec x[],        rvec f[],
+               gmx::ArrayRef<const gmx::RVec> coordinates,
+               gmx::ArrayRef<gmx::RVec>       forces,
                real chargeA[],  real chargeB[],
                real c6A[],      real c6B[],
                real sigmaA[],   real sigmaB[],
@@ -204,7 +208,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
  * pme struct. Currently does not work in parallel or with free
  * energy.
  */
-void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V);
+void gmx_pme_calc_energy(gmx_pme_t                      *pme,
+                         gmx::ArrayRef<const gmx::RVec>  x,
+                         gmx::ArrayRef<const real>       q,
+                         real                           *V);
 
 /*! \brief Send the charges and maxshift to out PME-only node. */
 void gmx_pme_send_parameters(const t_commrec *cr,
@@ -239,11 +246,13 @@ void gmx_pme_receive_f(const t_commrec *cr,
  * TODO: it should update the PME CPU atom data as well.
  * (currently PME CPU call gmx_pme_do() gets passed the input pointers for each computation).
  *
- * \param[in] pme            The PME structure.
- * \param[in] nAtoms         The number of particles.
- * \param[in] charges        The pointer to the array of particle charges.
+ * \param[in,out] pme        The PME structure.
+ * \param[in]     numAtoms   The number of particles.
+ * \param[in]     charges    The pointer to the array of particle charges.
  */
-void gmx_pme_reinit_atoms(const gmx_pme_t *pme, int nAtoms, const real *charges);
+void gmx_pme_reinit_atoms(gmx_pme_t  *pme,
+                          int         numAtoms,
+                          const real *charges);
 
 /* A block of PME GPU functions */
 

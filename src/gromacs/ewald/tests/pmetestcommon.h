@@ -152,7 +152,7 @@ void pmeFinalizeTest(const gmx_pme_t *pme, CodePath mode);
 void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
                       const SplineParamsDimVector &splineValues, PmeSplineDataType type, int dimIndex);
 //! Setting gridline indices be used in spread/gather
-void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
+void pmeSetGridLineIndices(gmx_pme_t *pme, CodePath mode,
                            const GridLineIndicesVector &gridLineIndices);
 //! Setting real grid to be used in gather
 void pmeSetRealGrid(const gmx_pme_t *pme, CodePath mode,

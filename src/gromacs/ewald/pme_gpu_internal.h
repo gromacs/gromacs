@@ -56,7 +56,7 @@ struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_pme_t;                              // only used in pme_gpu_reinit
 struct gmx_wallclock_gpu_pme_t;
-struct pme_atomcomm_t;
+class PmeAtomComm;
 struct t_complex;
 
 namespace gmx
@@ -596,7 +596,7 @@ enum class PmeLayoutTransform
  * \param[in]  transform  Layout transform type
  */
 GPU_FUNC_QUALIFIER void pme_gpu_transform_spline_atom_data(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
-                                                           const pme_atomcomm_t *GPU_FUNC_ARGUMENT(atc),
+                                                           const PmeAtomComm *GPU_FUNC_ARGUMENT(atc),
                                                            PmeSplineDataType GPU_FUNC_ARGUMENT(type),
                                                            int GPU_FUNC_ARGUMENT(dimIndex),
                                                            PmeLayoutTransform GPU_FUNC_ARGUMENT(transform)) GPU_FUNC_TERM

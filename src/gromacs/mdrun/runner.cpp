@@ -1348,7 +1348,7 @@ int Mdrunner::mdrunner()
                 pmedata = gmx_pme_init(cr,
                                        getNumPmeDomains(cr->dd),
                                        inputrec,
-                                       mtop.natoms, nChargePerturbed != 0, nTypePerturbed != 0,
+                                       nChargePerturbed != 0, nTypePerturbed != 0,
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
                                        gmx_omp_nthreads_get(emntPME),

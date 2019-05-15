@@ -835,7 +835,7 @@ static void pme_gpu_init(gmx_pme_t               *pme,
     kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGpu->common->epsilon_r;
 }
 
-void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGpu, const pme_atomcomm_t *atc,
+void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGpu, const PmeAtomComm *atc,
                                         PmeSplineDataType type, int dimIndex, PmeLayoutTransform transform)
 {
     // The GPU atom spline data is laid out in a different way currently than the CPU one.
@@ -855,12 +855,12 @@ void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGpu, const pme_atomcomm
     switch (type)
     {
         case PmeSplineDataType::Values:
-            cpuSplineBuffer = atc->spline[threadIndex].theta[dimIndex];
+            cpuSplineBuffer = atc->spline[threadIndex].theta.coefficients[dimIndex];
             h_splineBuffer  = pmeGpu->staging.h_theta;
             break;
 
         case PmeSplineDataType::Derivatives:
-            cpuSplineBuffer = atc->spline[threadIndex].dtheta[dimIndex];
+            cpuSplineBuffer = atc->spline[threadIndex].dtheta.coefficients[dimIndex];
             h_splineBuffer  = pmeGpu->staging.h_dtheta;
             break;
 

@@ -2,7 +2,7 @@
    This source code file is part of thread_mpi.
    Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-   Copyright (c) 2009,2016,2018, Sander Pronk, Erik Lindahl.
+   Copyright (c) 2009,2016,2018,2019, Sander Pronk, Erik Lindahl.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -252,10 +252,10 @@ extern tMPI_Comm TMPI_COMM_WORLD;
 
 /** A pre-defined NULL communicator to compare against, to check comm
            validity */
-#define TMPI_COMM_NULL NULL
+#define TMPI_COMM_NULL nullptr
 /** A pre-defined NULL group to compare against, to check group
            validity */
-#define TMPI_GROUP_NULL NULL
+#define TMPI_GROUP_NULL nullptr
 
 /** the empty group */
 extern tMPI_Group TMPI_GROUP_EMPTY;
