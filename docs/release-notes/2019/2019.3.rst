@@ -16,6 +16,14 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix missing intermolecular interactions with domain decomposition
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running with domain decomposition, all intermolecular interactions
+(when present) were ignored.
+
+:issue:`2953`
+
 Fix possible floating point exception during minimization.
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
