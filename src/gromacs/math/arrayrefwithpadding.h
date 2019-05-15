@@ -111,6 +111,16 @@ class ArrayRefWithPadding
         //! Move constructor
         ArrayRefWithPadding(ArrayRefWithPadding &&o) noexcept
             : begin_(std::move(o.begin_)), end_(std::move(o.end_)), paddedEnd_(std::move(o.paddedEnd_)) {}
+        //! Convenience overload constructor to make an ArrayRefWithPadding<const T> from a non-const one.
+        template<typename U,
+                 typename = typename std::enable_if<
+                         std::is_same<value_type,
+                                      const typename std::remove_reference<U>::type::value_type>::value>::type>
+        ArrayRefWithPadding(U &&o)
+        {
+            auto constArrayRefWithPadding = o.constArrayRefWithPadding();
+            this->swap(constArrayRefWithPadding);
+        }
         //! Copy assignment operator
         ArrayRefWithPadding &operator=(ArrayRefWithPadding const &o)
         {
@@ -159,6 +169,11 @@ class ArrayRefWithPadding
         {
             return {begin_, paddedEnd_};
         }
+        //! Returns an identical ArrayRefWithPadding that refers to const elements.
+        ArrayRefWithPadding<const T> constArrayRefWithPadding() const
+        {
+            return {begin_, end_, paddedEnd_};
+        }
         /*! \brief
          * Swaps referenced memory with the other object.
          *
@@ -169,6 +184,7 @@ class ArrayRefWithPadding
         {
             std::swap(begin_, other.begin_);
             std::swap(end_, other.end_);
+            std::swap(paddedEnd_, other.paddedEnd_);
         }
 
     private:
