@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3892,6 +3892,32 @@ static void copySelectedListRange(const nbnxn_ci_t * gmx_restrict srcCi,
     dest->nci++;
 }
 
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__ICC) && __GNUC__ == 7
+/* Avoid gcc 7 avx512 loop vectorization bug (actually only needed with -mavx512f) */
+#pragma GCC push_options
+#pragma GCC optimize ("no-tree-vectorize")
+#endif
+
+/* Returns the number of cluster pairs that are in use summed over all lists */
+static int countClusterpairs(const int                        numLists,
+                             nbnxn_pairlist_t * const * const lists)
+{
+    /* gcc 7 with -mavx512f can miss the contributions of 16 consecutive
+     * elements to the sum calculated in this loop. Above we have disabled
+     * loop vectorization to avoid this bug.
+     */
+    int ncjTotal = 0;
+    for (int s = 0; s < numLists; s++)
+    {
+        ncjTotal += lists[s]->ncjInUse;
+    }
+    return ncjTotal;
+}
+
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__ICC) && __GNUC__ == 7
+#pragma GCC pop_options
+#endif
+
 /* This routine re-balances the pairlists such that all are nearly equally
  * sized. Only whole i-entries are moved between lists. These are moved
  * between the ends of the lists, such that the buffer reduction cost should
@@ -3905,11 +3931,7 @@ static void rebalanceSimpleLists(int                              numLists,
                                  nbnxn_pairlist_t               **destSet,
                                  nbnxn_search_work_t             *searchWork)
 {
-    int ncjTotal = 0;
-    for (int s = 0; s < numLists; s++)
-    {
-        ncjTotal += srcSet[s]->ncjInUse;
-    }
+    int ncjTotal  = countClusterpairs(numLists, srcSet);
     int ncjTarget = (ncjTotal + numLists - 1)/numLists;
 
 #pragma omp parallel num_threads(numLists)
@@ -3979,11 +4001,7 @@ static void rebalanceSimpleLists(int                              numLists,
     }
 
 #ifndef NDEBUG
-    int ncjTotalNew = 0;
-    for (int s = 0; s < numLists; s++)
-    {
-        ncjTotalNew += destSet[s]->ncjInUse;
-    }
+    int ncjTotalNew = countClusterpairs(numLists, destSet);
     GMX_RELEASE_ASSERT(ncjTotalNew == ncjTotal, "The total size of the lists before and after rebalancing should match");
 #endif
 }
