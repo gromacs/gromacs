@@ -409,12 +409,23 @@ struct ConstraintsTestData
 typedef std::tuple<std::string, std::string> ConstraintsTestParameters;
 
 /*! \brief Names of all availible algorithms
- *
- * Constructed from the algorithms_ field of the test class.
- * Used as the list of values of second parameter in ConstraintsTestParameters.
  */
 static std::vector<std::string> algorithmsNames;
 
+/*! \brief Method that fills and returns algorithmNames to the test macros.
+ *
+ */
+static std::vector<std::string> getAlgorithmsNames()
+{
+    algorithmsNames.emplace_back("SHAKE");
+    algorithmsNames.emplace_back("LINCS");
+    std::string errorMessage;
+    if (GMX_GPU == GMX_GPU_CUDA && canDetectGpus(&errorMessage))
+    {
+        algorithmsNames.emplace_back("LINCS_CUDA");
+    }
+    return algorithmsNames;
+}
 
 /*! \brief Test fixture for constraints.
  *
@@ -473,18 +484,8 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
             algorithms_["SHAKE"] = applyShake;
             // LINCS
             algorithms_["LINCS"] = applyLincs;
-            // LINCS using CUDA (if CUDA is available)
-#if GMX_GPU == GMX_GPU_CUDA
-            std::string errorMessage;
-            if (canDetectGpus(&errorMessage))
-            {
-                algorithms_["LINCS_CUDA"] = applyLincsCuda;
-            }
-#endif
-            for (const auto &algorithm : algorithms_)
-            {
-                algorithmsNames.push_back(algorithm.first);
-            }
+            // LINCS using CUDA (will be called only if CUDA is available)
+            algorithms_["LINCS_CUDA"] = applyLincsCuda;
         }
 
         /*! \brief
@@ -583,6 +584,12 @@ class ConstraintsTest : public ::testing::TestWithParam<ConstraintsTestParameter
          */
         static void applyLincsCuda(ConstraintsTestData *testData, t_pbc pbc)
         {
+            std::string errorMessage;
+            GMX_RELEASE_ASSERT(GMX_GPU == GMX_GPU_CUDA,
+                               "The test for CUDA version of LINCS was called non-CUDA build.");
+            GMX_RELEASE_ASSERT(canDetectGpus(&errorMessage),
+                               "The test for CUDA version of LINCS was called on host that is not CUDA capable.");
+
             auto lincsCuda = std::make_unique<LincsCuda>(testData->numAtoms_,
                                                          testData->ir_.nLincsIter,
                                                          testData->ir_.nProjOrder);
@@ -1160,17 +1167,9 @@ TEST_P(ConstraintsTest, TriangleOfConstraints){
 }
 
 
-#if GMX_GPU == GMX_GPU_CUDA
 INSTANTIATE_TEST_CASE_P(WithParameters, ConstraintsTest,
                             ::testing::Combine(::testing::Values("PBCNone", "PBCXYZ"),
-                                                   ::testing::ValuesIn(algorithmsNames)));
-#endif
-
-#if GMX_GPU != GMX_GPU_CUDA
-INSTANTIATE_TEST_CASE_P(WithParameters, ConstraintsTest,
-                            ::testing::Combine(::testing::Values("PBCNone", "PBCXYZ"),
-                                                   ::testing::Values("SHAKE", "LINCS")));
-#endif
+                                                   ::testing::ValuesIn(getAlgorithmsNames())));
 
 } // namespace test
 } // namespace gmx
