@@ -852,6 +852,18 @@ if (BUILD_TESTING)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
+    # Note: Though only documented as an output variable, PYTHON_EXECUTABLE is
+    # also effective as a CMake input variable to effectively hint the location
+    # of the Python interpreter. This may be helpful in environments with both
+    # Python 2 and Python 3 on the default PATH.
+    # Ref: https://cmake.org/cmake/help/latest/module/FindPythonInterp.html
+    if(FIND_PACKAGE_MESSAGE_DETAILS_PythonInterp)
+        # Keep quiet on subsequent runs of cmake
+        set(PythonInterp_FIND_QUIETLY ON)
+    endif()
+    # Older CMake versions might not search for Python newer than 3.7.
+    set(Python_ADDITIONAL_VERSIONS 3.8)
+    find_package(PythonInterp 3.5)
     find_package(ImageMagick QUIET COMPONENTS convert)
     include(gmxTestImageMagick)
     GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)

@@ -60,12 +60,11 @@ set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
 set(EXPECTED_SPHINX_VERSION 1.6.1)
 
-if (DEFINED PYTHON_EXECUTABLE)
-    # Keep quiet on subsequent runs of cmake
-    set(PythonInterp_FIND_QUIETLY ON)
+# By default, suppress output after first configuration.
+if(FIND_PACKAGE_MESSAGE_DETAILS_Sphinx)
+    set(Sphinx_FIND_QUIETLY ON)
 endif()
-find_package(PythonInterp 3.5)
-find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
+find_package(Sphinx ${EXPECTED_SPHINX_VERSION} COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -638,7 +637,7 @@ set(HTML_BUILD_NOT_POSSIBLE_REASON)
 set(HTML_BUILD_WARNINGS)
 
 # Next, turn it off if any of the preconditions are unsatisified
-if (NOT PYTHON_EXECUTABLE)
+if (NOT PythonInterp_FOUND)
     set(HTML_BUILD_IS_POSSIBLE OFF)
     set(HTML_BUILD_NOT_POSSIBLE_REASON "Python is required")
 elseif (NOT SPHINX_FOUND)
