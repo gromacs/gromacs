@@ -290,7 +290,7 @@ if(GMX_PHYSICAL_VALIDATION)
             message(FATAL_ERROR
                     "Python not found. Physical validation relies on python >= 3.3 (python 2.7 supported, but\
                     deprecated). Install python, set PYTHON_EXECUTABLE to the python location, or set\
-                    GMX_PHYSCIAL_VALIDATION=OFF to disable the physical validation tests.")
+                    GMX_PHYSICAL_VALIDATION=OFF to disable the physical validation tests.")
         endif()
         #
         foreach(module numpy scipy pymbar) # add further modules if necessary
@@ -299,7 +299,7 @@ if(GMX_PHYSICAL_VALIDATION)
             if(NOT PYTHONMODULE_${module_upper})
                 message(WARNING
                         "Python module ${module} not found. Physical validation relies on ${module}. Make sure\
-                        ${module} can be found by PYTHON_EXECUTABLE, or set GMX_PHYSCIAL_VALIDATION=OFF to disable\
+                        ${module} can be found by PYTHON_EXECUTABLE, or set GMX_PHYSICAL_VALIDATION=OFF to disable\
                         the physical validation tests.")
             endif()
         endforeach()
