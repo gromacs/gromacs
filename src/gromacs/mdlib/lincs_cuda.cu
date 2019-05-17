@@ -52,7 +52,7 @@
  */
 #include "gmxpre.h"
 
-#include "lincs_cuda_impl.h"
+#include "lincs_cuda.cuh"
 
 #include <assert.h>
 #include <stdio.h>
@@ -68,7 +68,6 @@
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
-#include "gromacs/mdlib/lincs_cuda.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 #include "gromacs/topology/ifunc.h"
@@ -431,13 +430,13 @@ inline auto getLincsKernelPtr(const bool  updateVelocities,
     return kernelPtr;
 }
 
-void LincsCuda::Impl::apply(const float3 *d_x,
-                            float3       *d_xp,
-                            const bool    updateVelocities,
-                            float3       *d_v,
-                            const real    invdt,
-                            const bool    computeVirial,
-                            tensor        virialScaled)
+void LincsCuda::apply(const float3 *d_x,
+                      float3       *d_xp,
+                      const bool    updateVelocities,
+                      float3       *d_v,
+                      const real    invdt,
+                      const bool    computeVirial,
+                      tensor        virialScaled)
 {
     ensureNoPendingCudaError("In CUDA version of LINCS");
 
@@ -519,45 +518,8 @@ void LincsCuda::Impl::apply(const float3 *d_x,
     return;
 }
 
-void LincsCuda::Impl::copyApplyCopy(const int   numAtoms,
-                                    const rvec *h_x,
-                                    rvec       *h_xp,
-                                    bool        updateVelocities,
-                                    rvec       *h_v,
-                                    real        invdt,
-                                    bool        computeVirial,
-                                    tensor      virialScaled)
-{
-
-    float3 *d_x, *d_xp, *d_v;
-
-    allocateDeviceBuffer(&d_x,  numAtoms, nullptr);
-    allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v,  numAtoms, nullptr);
-
-    copyToDeviceBuffer(&d_x, (float3*)h_x, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_xp, (float3*)h_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    if (updateVelocities)
-    {
-        copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    }
-    apply(d_x, d_xp,
-          updateVelocities, d_v, invdt,
-          computeVirial, virialScaled);
-
-    copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    if (updateVelocities)
-    {
-        copyFromDeviceBuffer((float3*)h_v, &d_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    }
-
-    freeDeviceBuffer(&d_x);
-    freeDeviceBuffer(&d_xp);
-    freeDeviceBuffer(&d_v);
-}
-
-LincsCuda::Impl::Impl(int numIterations,
-                      int expansionOrder)
+LincsCuda::LincsCuda(int numIterations,
+                     int expansionOrder)
 {
     kernelParams_.numIterations              = numIterations;
     kernelParams_.expansionOrder             = expansionOrder;
@@ -579,7 +541,7 @@ LincsCuda::Impl::Impl(int numIterations,
 
 }
 
-LincsCuda::Impl::~Impl()
+LincsCuda::~LincsCuda()
 {
     freeDeviceBuffer(&kernelParams_.d_virialScaled);
 
@@ -635,8 +597,8 @@ inline int countCoupled(int a, std::vector<int> *spaceNeeded,
     return counted;
 }
 
-void LincsCuda::Impl::set(const t_idef    &idef,
-                          const t_mdatoms &md)
+void LincsCuda::set(const t_idef    &idef,
+                    const t_mdatoms &md)
 {
     int                 numAtoms = md.nr;
     // List of constrained atoms (CPU memory)
@@ -891,42 +853,9 @@ void LincsCuda::Impl::set(const t_idef    &idef,
 
 }
 
-void LincsCuda::Impl::setPbc(const t_pbc *pbc)
-{
-    setPbcAiuc(pbc->ndim_ePBC, pbc->box, &kernelParams_.pbcAiuc);
-}
-
-LincsCuda::LincsCuda(const int numIterations,
-                     const int expansionOrder)
-    : impl_(new Impl(numIterations, expansionOrder))
-{
-}
-
-LincsCuda::~LincsCuda() = default;
-
-void LincsCuda::copyApplyCopy(const int   numAtoms,
-                              const rvec *h_x,
-                              rvec       *h_xp,
-                              const bool  updateVelocities,
-                              rvec       *h_v,
-                              const real  invdt,
-                              const bool  computeVirial,
-                              tensor      virialScaled)
-{
-    impl_->copyApplyCopy(numAtoms, h_x, h_xp,
-                         updateVelocities, h_v, invdt,
-                         computeVirial, virialScaled);
-}
-
 void LincsCuda::setPbc(const t_pbc *pbc)
 {
-    impl_->setPbc(pbc);
-}
-
-void LincsCuda::set(const t_idef    &idef,
-                    const t_mdatoms &md)
-{
-    impl_->set(idef, md);
+    setPbcAiuc(pbc->ndim_ePBC, pbc->box, &kernelParams_.pbcAiuc);
 }
 
 } // namespace gmx

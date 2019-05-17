@@ -46,6 +46,7 @@
 #ifndef GMX_MDLIB_UPDATE_CONSTRAIN_CUDA_IMPL_H
 #define GMX_MDLIB_UPDATE_CONSTRAIN_CUDA_IMPL_H
 
+#include "gromacs/mdlib/lincs_cuda.cuh"
 #include "gromacs/mdlib/update_constrain_cuda.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -53,7 +54,6 @@
 #include "gromacs/topology/idef.h"
 
 #include "leapfrog_cuda_impl.h"
-#include "lincs_cuda_impl.h"
 #include "settle_cuda_impl.h"
 
 namespace gmx
@@ -205,7 +205,7 @@ class UpdateConstrainCuda::Impl
         //! Leap-Frog integrator
         std::unique_ptr<LeapFrogCuda::Impl>  integrator_;
         //! LINCS CUDA object to use for non-water constraints
-        std::unique_ptr<LincsCuda::Impl>     lincsCuda_;
+        std::unique_ptr<LincsCuda>           lincsCuda_;
         //! SETTLE CUDA object for water constrains
         std::unique_ptr<SettleCuda::Impl>    settleCuda_;
 
