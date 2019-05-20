@@ -134,6 +134,52 @@ parseUserGpuIdString(const std::string &gpuIdString)
     return digits;
 }
 
+std::vector<int> makeGpuIdsToUse(const gmx_gpu_info_t &gpuInfo,
+                                 const std::string    &gpuIdsAvailableString)
+{
+    auto             compatibleGpus  = getCompatibleGpus(gpuInfo);
+    std::vector<int> gpuIdsAvailable = parseUserGpuIdString(gpuIdsAvailableString);
+
+    if (gpuIdsAvailable.empty())
+    {
+        return compatibleGpus;
+    }
+
+    std::vector<int> gpuIdsToUse;
+    gpuIdsToUse.reserve(gpuIdsAvailable.size());
+    std::vector<int> availableGpuIdsThatAreIncompatible;
+    for (const auto &availableGpuId : gpuIdsAvailable)
+    {
+        bool availableGpuIsCompatible = false;
+        for (const auto &compatibleGpuId : compatibleGpus)
+        {
+            if (availableGpuId == compatibleGpuId)
+            {
+                availableGpuIsCompatible = true;
+                break;
+            }
+        }
+        if (availableGpuIsCompatible)
+        {
+            gpuIdsToUse.push_back(availableGpuId);
+        }
+        else
+        {
+            // Prepare data for an error message about all incompatible available GPU IDs.
+            availableGpuIdsThatAreIncompatible.push_back(availableGpuId);
+        }
+    }
+    if (!availableGpuIdsThatAreIncompatible.empty())
+    {
+        auto message = "You requested mdrun to use GPUs with IDs " + gpuIdsAvailableString +
+            ", but that includes the following incompatible GPUs: " +
+            formatAndJoin(availableGpuIdsThatAreIncompatible, ",", StringFormatter("%d")) +
+            ". Request only compatible GPUs.";
+        GMX_THROW(InvalidInputError(message));
+    }
+    return gpuIdsToUse;
+}
+
 std::vector<int>
 parseUserTaskAssignmentString(const std::string &gpuIdString)
 {

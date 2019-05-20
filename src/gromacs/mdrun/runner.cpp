@@ -589,12 +589,6 @@ int Mdrunner::mdrunner()
     // Handle task-assignment related user options.
     EmulateGpuNonbonded emulateGpuNonbonded = (getenv("GMX_EMULATE_GPU") != nullptr ?
                                                EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
-    std::vector<int>    gpuIdsAvailable;
-    try
-    {
-        gpuIdsAvailable = parseUserGpuIdString(hw_opt.gpuIdsAvailable);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     std::vector<int> userGpuTaskAssignment;
     try
@@ -631,32 +625,7 @@ int Mdrunner::mdrunner()
 
     gmx_print_detected_hardware(fplog, isMasterSimMasterRank(ms, MASTER(cr)), mdlog, hwinfo);
 
-    std::vector<int> gpuIdsToUse;
-    auto             compatibleGpus = getCompatibleGpus(hwinfo->gpu_info);
-    if (gpuIdsAvailable.empty())
-    {
-        gpuIdsToUse = compatibleGpus;
-    }
-    else
-    {
-        for (const auto &availableGpuId : gpuIdsAvailable)
-        {
-            bool availableGpuIsCompatible = false;
-            for (const auto &compatibleGpuId : compatibleGpus)
-            {
-                if (availableGpuId == compatibleGpuId)
-                {
-                    availableGpuIsCompatible = true;
-                    break;
-                }
-            }
-            if (!availableGpuIsCompatible)
-            {
-                gmx_fatal(FARGS, "You limited the set of compatible GPUs to a set that included ID #%d, but that ID is not for a compatible GPU. List only compatible GPUs.", availableGpuId);
-            }
-            gpuIdsToUse.push_back(availableGpuId);
-        }
-    }
+    std::vector<int> gpuIdsToUse = makeGpuIdsToUse(hwinfo->gpu_info, hw_opt.gpuIdsAvailable);
 
     // Print citation requests after all software/hardware printing
     pleaseCiteGromacs(fplog);
