@@ -1641,7 +1641,7 @@ Trotter expansion
 .. math:: \begin{aligned}
           \exp(iL{\Delta t}) &\approx& \exp\left(iL_{\mathrm{NHC}}{\Delta t}/2\right) \exp\left(iL_2 {\Delta t}/2\right) \nonumber \\
           &&\exp\left(iL_1 {\Delta t}\right) \exp\left(iL_2 {\Delta t}/2\right) \exp\left(iL_{\mathrm{NHC}}{\Delta t}/2\right).\end{aligned}
-          :label:eqnVVNHTrotter
+          :label: eqnVVNHTrotter
 
 If the Nosé-Hoover chain is sufficiently slow with respect to the
 motions of the system, we can write an alternate integrator over
