@@ -52,18 +52,19 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <memory>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrun/legacymdrunoptions.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/logging.h"
-#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -211,23 +212,29 @@ int gmx_mdrun(int argc, char *argv[])
         return 0;
     }
 
-    StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
-    LogFilePtr       logFileGuard     = nullptr;
+    ArrayRef<const std::string> multiSimDirectoryNames =
+        opt2fnsIfOptionSet("-multidir", ssize(options.filenames), options.filenames.data());
+
+    // Set up the communicator, where possible (see docs for
+    // SimulationContext).
+    MPI_Comm communicator = GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL;
+    // The SimulationContext is necessary with gmxapi so that
+    // resources owned by the client code can have suitable
+    // lifetime. The gmx wrapper binary uses the same infrastructure,
+    // but the lifetime is now trivially that of the invocation of the
+    // wrapper binary.
+    SimulationContext simulationContext(communicator, multiSimDirectoryNames);
+
+    StartingBehavior  startingBehavior = StartingBehavior::NewSimulation;
+    LogFilePtr        logFileGuard     = nullptr;
+    gmx_multisim_t   *ms               = simulationContext.multiSimulation_.get();
     std::tie(startingBehavior,
-             logFileGuard) = handleRestart(options.cr.get(),
-                                           options.ms.get(),
+             logFileGuard) = handleRestart(findIsSimulationMasterRank(ms, communicator),
+                                           communicator,
+                                           ms,
                                            options.mdrunOptions.appendingBehavior,
                                            ssize(options.filenames),
                                            options.filenames.data());
-
-    /* The SimulationContext is a resource owned by the client code.
-     * A more complete design should address handles to resources with appropriate
-     * lifetimes and invariants for the resources allocated to the client,
-     * to the current simulation and to scheduled tasks within the simulation.
-     *
-     * \todo Clarify Context lifetime-management requirements and reconcile with scoped ownership.
-     */
-    auto simulationContext = createSimulationContext(std::move(options.cr));
 
     /* The named components for the builder exposed here are descriptive of the
      * state of mdrun at implementation and are not intended to be prescriptive
@@ -240,7 +247,8 @@ int gmx_mdrun(int argc, char *argv[])
      * We would prefer to rebuild resources only as necessary, but we defer such
      * details to future optimizations.
      */
-    auto builder = MdrunnerBuilder(std::move(mdModules));
+    auto builder = MdrunnerBuilder(std::move(mdModules),
+                                   compat::not_null<SimulationContext*>(&simulationContext));
     builder.addSimulationMethod(options.mdrunOptions, options.pforce, startingBehavior);
     builder.addDomainDecomposition(options.domdecOptions);
     // \todo pass by value
@@ -251,10 +259,6 @@ int gmx_mdrun(int argc, char *argv[])
     builder.addUpdateTaskAssignment(options.update_opt_choices[0]);
     builder.addNeighborList(options.nstlist_cmdline);
     builder.addReplicaExchange(options.replExParams);
-    // \todo take ownership of multisim resources (ms)
-    builder.addMultiSim(options.ms.get());
-    builder.addCommunicationRecord(simulationContext.communicationRecord_.get());
-    // \todo Provide parallelism resources through SimulationContext.
     // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
     builder.addHardwareOptions(options.hw_opt);
     // \todo File names are parameters that should be managed modularly through further factoring.

@@ -48,6 +48,7 @@
 #include <memory>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
@@ -55,13 +56,14 @@
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
 #include "replicaexchange.h"
 
+struct gmx_multisim_t;
 struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
-struct t_commrec;
 struct t_fileio;
 
 namespace gmx
@@ -167,8 +169,14 @@ class Mdrunner
         void addPotential(std::shared_ptr<IRestraintPotential> restraint,
                           const std::string                   &name);
 
-        //! Called when thread-MPI spawns threads.
-        t_commrec *spawnThreads(int numThreadsToLaunch) const;
+        /*! \brief Prepare the thread-MPI communicator to have \c
+         * numThreadsToLaunch ranks, by spawning new thread-MPI
+         * threads.
+         *
+         * Called by mdrunner() to start a specific number of threads
+         * (including the main thread) for thread-parallel runs. This
+         * in turn calls mdrunner() for each thread. */
+        void spawnThreads(int numThreadsToLaunch);
 
         /*! \brief Initializes a new Mdrunner from the master.
          *
@@ -256,8 +264,12 @@ class Mdrunner
         //! \brief Non-owning handle to file used for logging.
         t_fileio                               *logFileHandle = nullptr;
 
-        //! \brief Non-owning handle to communication data structure.
-        t_commrec                              *cr = nullptr;
+        /*! \brief Non-owning handle to communication data structure.
+         *
+         * With real MPI, gets a value from the SimulationContext
+         * supplied to the MdrunnerBuilder. With thread-MPI gets a
+         * value after threads have been spawned. */
+        MPI_Comm                                communicator = MPI_COMM_NULL;
 
         //! \brief Non-owning handle to multi-simulation handler.
         gmx_multisim_t                         *ms = nullptr;
@@ -339,13 +351,15 @@ class MdrunnerBuilder final
          * \brief Constructor requires a handle to a SimulationContext to share.
          *
          * \param mdModules  The handle to the set of modules active in mdrun
+         * \param context    Required handle to simulation context
          *
          * The calling code must guarantee that the
          * pointer remains valid for the lifetime of the builder, and that the
          * resources retrieved from the context remain valid for the lifetime of
          * the runner produced.
          */
-        explicit MdrunnerBuilder(std::unique_ptr<MDModules> mdModules);
+        explicit MdrunnerBuilder(std::unique_ptr<MDModules>           mdModules,
+                                 compat::not_null<SimulationContext*> context);
 
         //! \cond
         MdrunnerBuilder() = delete;
@@ -457,31 +471,6 @@ class MdrunnerBuilder final
          * \todo Make optional and/or encapsulate into task assignment module.
          */
         MdrunnerBuilder &addUpdateTaskAssignment(const char *update_opt);
-
-        /*!
-         * \brief Provide access to the multisim communicator to use.
-         *
-         * \param multisim borrowed handle to multisim record.
-         *
-         * Required. Client should create a `gmx_multisim_t` and pass its address.
-         * Client is responsible for calling done_multisim() on the handle after
-         * simulation.
-         *
-         * \internal Pointer is copied, but calling code retains ownership and
-         * responsibility for multisim. Mdrunner must not do anything that would
-         * invalidate the original copied-from pointer.
-         *
-         * \todo Clarify semantics of specifying optional multisim work
-         * \todo Clarify ownership and management of multisim resources.
-         */
-        MdrunnerBuilder &addMultiSim(gmx_multisim_t* multisim);
-
-        /*!
-         * \brief Provide a commrec for mdrun to use.
-         *
-         * This will come from the simulation context, but differently
-         * for command-line gmx and a gmxapi Context. */
-        MdrunnerBuilder &addCommunicationRecord(t_commrec *cr);
 
         /*!
          * \brief Set MD options not owned by some other module.

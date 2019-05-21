@@ -54,13 +54,11 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -150,17 +148,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             strcpy(argv[argvIndex], mdArg.c_str());
         }
 
-        auto mdModules = std::make_unique<MDModules>();
-
-        // pointer-to-t_commrec is the de facto handle type for communications record.
-        // Complete shared / borrowed ownership requires a reference to this stack variable
-        // (or pointer-to-pointer-to-t_commrec) since borrowing code may update the pointer.
-        // \todo Define the ownership and lifetime management semantics for a communication record, handle or value type.
-
-        // Note: this communications record initialization acts directly on
-        // MPI_COMM_WORLD and is incompatible with MPI environment sharing in
-        // gmxapi through 0.0.7, at least.
-        options_.cr = init_commrec();
+        auto        mdModules = std::make_unique<MDModules>();
 
         const char *desc[]  = {"gmxapi placeholder text"};
         if (options_.updateFromCommandLine(argc, argv.data(), desc) == 0)
@@ -168,17 +156,32 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             return nullptr;
         }
 
-        StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
-        LogFilePtr       logFileGuard     = nullptr;
+        ArrayRef<const std::string> multiSimDirectoryNames =
+            opt2fnsIfOptionSet("-multidir", ssize(options_.filenames), options_.filenames.data());
+        // Set up the communicator, where possible (see docs for
+        // SimulationContext).
+        MPI_Comm          communicator = GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL;
+        // The SimulationContext is necessary with gmxapi so that
+        // resources owned by the client code can have suitable
+        // lifetime. The gmx wrapper binary uses the same infrastructure,
+        // but the lifetime is now trivially that of the invocation of the
+        // wrapper binary.
+        SimulationContext simulationContext(communicator, multiSimDirectoryNames);
+
+
+        StartingBehavior  startingBehavior = StartingBehavior::NewSimulation;
+        LogFilePtr        logFileGuard     = nullptr;
+        gmx_multisim_t   *ms               = simulationContext.multiSimulation_.get();
         std::tie(startingBehavior,
-                 logFileGuard) = handleRestart(options_.cr.get(),
-                                               options_.ms.get(),
+                 logFileGuard) = handleRestart(findIsSimulationMasterRank(ms, communicator),
+                                               communicator,
+                                               ms,
                                                options_.mdrunOptions.appendingBehavior,
                                                ssize(options_.filenames),
                                                options_.filenames.data());
-        auto simulationContext = createSimulationContext(std::move(options_.cr));
 
-        auto builder = MdrunnerBuilder(std::move(mdModules));
+        auto builder = MdrunnerBuilder(std::move(mdModules),
+                                       compat::not_null<SimulationContext*>(&simulationContext));
         builder.addSimulationMethod(options_.mdrunOptions, options_.pforce, startingBehavior);
         builder.addDomainDecomposition(options_.domdecOptions);
         // \todo pass by value
@@ -189,9 +192,6 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         builder.addUpdateTaskAssignment(options_.update_opt_choices[0]);
         builder.addNeighborList(options_.nstlist_cmdline);
         builder.addReplicaExchange(options_.replExParams);
-        // \todo take ownership of multisim resources (ms)
-        builder.addMultiSim(options_.ms.get());
-        // \todo Provide parallelism resources through SimulationContext.
         // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
         builder.addHardwareOptions(options_.hw_opt);
         // \todo File names are parameters that should be managed modularly through further factoring.
@@ -206,8 +206,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         launchedSession = createSession(shared_from_this(),
                                         std::move(builder),
                                         std::move(simulationContext),
-                                        std::move(logFileGuard),
-                                        options_.ms.get());
+                                        std::move(logFileGuard));
 
         // Clean up argv once builder is no longer in use
         for (auto && string : argv)

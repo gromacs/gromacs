@@ -230,9 +230,6 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
         newRunner.restraintManager_ = std::make_unique<RestraintManager>(*restraintManager_);
     }
 
-    // Copy original cr pointer before master thread can pass the thread barrier
-    newRunner.cr  = reinitialize_commrec_for_this_thread(cr);
-
     // Copy members of master runner.
     // \todo Replace with builder when Simulation context and/or runner phases are better defined.
     // Ref https://redmine.gromacs.org/issues/2587 and https://redmine.gromacs.org/issues/2375
@@ -250,13 +247,14 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.nstlist_cmdline     = nstlist_cmdline;
     newRunner.replExParams        = replExParams;
     newRunner.pforce              = pforce;
+    // Give the spawned thread the newly created valid communicator
+    // for the simulation.
+    newRunner.communicator        = MPI_COMM_WORLD;
     newRunner.ms                  = ms;
     newRunner.startingBehavior    = startingBehavior;
     newRunner.stopHandlerBuilder_ = std::make_unique<StopHandlerBuilder>(*stopHandlerBuilder_);
 
     threadMpiMdrunnerAccessBarrier();
-
-    GMX_RELEASE_ASSERT(!MASTER(newRunner.cr), "cloneOnSpawnedThread should only be called on spawned threads");
 
     return newRunner;
 }
@@ -282,21 +280,8 @@ static void mdrunner_start_fn(const void *arg)
 }
 
 
-/*! \brief Start thread-MPI threads.
- *
- * Called by mdrunner() to start a specific number of threads
- * (including the main thread) for thread-parallel runs. This in turn
- * calls mdrunner() for each thread. All options are the same as for
- * mdrunner(). */
-t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch) const
+void Mdrunner::spawnThreads(int numThreadsToLaunch)
 {
-
-    /* first check whether we even need to start tMPI */
-    if (numThreadsToLaunch < 2)
-    {
-        return cr;
-    }
-
 #if GMX_THREAD_MPI
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns. Thread affinity is handled later. */
@@ -306,12 +291,14 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch) const
         GMX_THROW(gmx::InternalError("Failed to spawn thread-MPI threads"));
     }
 
+    // Give the master thread the newly created valid communicator for
+    // the simulation.
+    communicator = MPI_COMM_WORLD;
     threadMpiMdrunnerAccessBarrier();
 #else
+    GMX_UNUSED_VALUE(numThreadsToLaunch);
     GMX_UNUSED_VALUE(mdrunner_start_fn);
 #endif
-
-    return reinitialize_commrec_for_this_thread(cr);
 }
 
 }  // namespace gmx
@@ -449,14 +436,15 @@ static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger   &mdlog,
 }
 
 //! Initializes the logger for mdrun.
-static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
+static gmx::LoggerOwner buildLogger(FILE      *fplog,
+                                    const bool isSimulationMasterRank)
 {
     gmx::LoggerBuilder builder;
     if (fplog != nullptr)
     {
         builder.addTargetFile(gmx::MDLogger::LogLevel::Info, fplog);
     }
-    if (cr == nullptr || SIMMASTER(cr))
+    if (isSimulationMasterRank)
     {
         builder.addTargetStream(gmx::MDLogger::LogLevel::Warning,
                                 &gmx::TextOutputFile::standardError());
@@ -661,10 +649,7 @@ int Mdrunner::mdrunner()
     auto       updateTarget    = findTaskTarget(update_opt);
     PmeRunMode pmeRunMode      = PmeRunMode::None;
 
-    // Here we assume that SIMMASTER(cr) does not change even after the
-    // threads are started.
-
-    FILE *fplog = nullptr;
+    FILE      *fplog = nullptr;
     // If we are appending, we don't write log output because we need
     // to check that the old log file matches what the checkpoint file
     // expects. Otherwise, we should start to write log output now if
@@ -673,19 +658,25 @@ int Mdrunner::mdrunner()
     {
         fplog = gmx_fio_getfp(logFileHandle);
     }
-    gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
+    const bool       isSimulationMasterRank = findIsSimulationMasterRank(ms, communicator);
+    gmx::LoggerOwner logOwner(buildLogger(fplog, isSimulationMasterRank));
     gmx::MDLogger    mdlog(logOwner.logger());
 
     // report any development features that may be enabled by environment variables
     manageDevelopmentFeatures(mdlog);
 
-    // With thread-MPI, the communicator changes after threads are
-    // launched, so this is rebuilt for the master rank at that
-    // time. The non-master ranks are fine to keep the one made here.
-    PhysicalNodeCommunicator physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
+    // TODO The thread-MPI master rank makes a working
+    // PhysicalNodeCommunicator here, but it gets rebuilt by all ranks
+    // after the threads have been launched. This works because no use
+    // is made of that communicator until after the execution paths
+    // have rejoined. But it is likely that we can improve the way
+    // this is expressed, e.g. by expressly running detection only the
+    // master rank for thread-MPI, rather than relying on the mutex
+    // and reference count.
+    PhysicalNodeCommunicator physicalNodeComm(communicator, gmx_physicalnode_id_hash());
     hwinfo = gmx_detect_hardware(mdlog, physicalNodeComm);
 
-    gmx_print_detected_hardware(fplog, isMasterSimMasterRank(ms, MASTER(cr)), mdlog, hwinfo);
+    gmx_print_detected_hardware(fplog, isSimulationMasterRank && isMasterSim(ms), mdlog, hwinfo);
 
     std::vector<int> gpuIdsToUse = makeGpuIdsToUse(hwinfo->gpu_info, hw_opt.gpuIdsAvailable);
 
@@ -699,7 +690,7 @@ int Mdrunner::mdrunner()
 
     auto                     partialDeserializedTpr = std::make_unique<PartialDeserializedTprFile>();
 
-    if (SIMMASTER(cr))
+    if (isSimulationMasterRank)
     {
         /* Only the master rank has the global state */
         globalState = std::make_unique<t_state>();
@@ -712,9 +703,9 @@ int Mdrunner::mdrunner()
     }
 
     /* Check and update the hardware options for internal consistency */
-    checkAndUpdateHardwareOptions(mdlog, &hw_opt, SIMMASTER(cr), domdecOptions.numPmeRanks, inputrec);
+    checkAndUpdateHardwareOptions(mdlog, &hw_opt, isSimulationMasterRank, domdecOptions.numPmeRanks, inputrec);
 
-    if (GMX_THREAD_MPI && SIMMASTER(cr))
+    if (GMX_THREAD_MPI && isSimulationMasterRank)
     {
         bool useGpuForNonbonded = false;
         bool useGpuForPme       = false;
@@ -753,20 +744,21 @@ int Mdrunner::mdrunner()
                                                 doMembed);
 
         // Now start the threads for thread MPI.
-        cr = spawnThreads(hw_opt.nthreads_tmpi);
-        /* The main thread continues here with a new cr. We don't deallocate
-           the old cr because other threads may still be reading it. */
-        // TODO Both master and spawned threads call dup_tfn and
-        // reinitialize_commrec_for_this_thread. Find a way to express
-        // this better.
-        physicalNodeComm = PhysicalNodeCommunicator(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
+        spawnThreads(hw_opt.nthreads_tmpi);
+        // The spawned threads enter mdrunner() and execution of
+        // master and spawned threads joins at the end of this block.
+        physicalNodeComm = PhysicalNodeCommunicator(communicator, gmx_physicalnode_id_hash());
     }
-    // END OF CAUTION: cr and physicalNodeComm are now reliable
+
+    GMX_RELEASE_ASSERT(communicator == MPI_COMM_WORLD, "Must have valid world communicator");
+    CommrecHandle crHandle = init_commrec(communicator, ms);
+    t_commrec    *cr       = crHandle.get();
+    GMX_RELEASE_ASSERT(cr != nullptr, "Must have valid commrec");
 
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        if (!SIMMASTER(cr))
+        if (!isSimulationMasterRank)
         {
             inputrec = &inputrecInstance;
         }
@@ -775,10 +767,9 @@ int Mdrunner::mdrunner()
     GMX_RELEASE_ASSERT(inputrec != nullptr, "All ranks should have a valid inputrec now");
     partialDeserializedTpr.reset(nullptr);
 
-    // Now each rank knows the inputrec that SIMMASTER read and used,
-    // and (if applicable) cr->nnodes has been assigned the number of
-    // thread-MPI ranks that have been chosen. The ranks can now all
-    // run the task-deciding functions and will agree on the result
+    // Now the number of ranks is known to all ranks, and each knows
+    // the inputrec read by the master rank. The ranks can now all run
+    // the task-deciding functions and will agree on the result
     // without needing to communicate.
     //
     // TODO Should we do the communication in debug mode to support
@@ -1000,7 +991,7 @@ int Mdrunner::mdrunner()
             // Now we can start normal logging to the truncated log file.
             fplog    = gmx_fio_getfp(logFileHandle);
             prepareLogAppending(fplog);
-            logOwner = buildLogger(fplog, cr);
+            logOwner = buildLogger(fplog, MASTER(cr));
             mdlog    = logOwner.logger();
         }
     }
@@ -1673,7 +1664,8 @@ class Mdrunner::BuilderImplementation
 {
     public:
         BuilderImplementation() = delete;
-        BuilderImplementation(std::unique_ptr<MDModules> mdModules);
+        BuilderImplementation(std::unique_ptr<MDModules>           mdModules,
+                              compat::not_null<SimulationContext*> context);
         ~BuilderImplementation();
 
         BuilderImplementation &setExtraMdrunOptions(const MdrunOptions &options,
@@ -1685,10 +1677,6 @@ class Mdrunner::BuilderImplementation
         void addVerletList(int nstlist);
 
         void addReplicaExchange(const ReplicaExchangeParameters &params);
-
-        void addMultiSim(gmx_multisim_t* multisim);
-
-        void addCommunicationRecord(t_commrec *cr);
 
         void addNonBonded(const char* nbpu_opt);
 
@@ -1731,10 +1719,10 @@ class Mdrunner::BuilderImplementation
         int         nstlist_ = 0;
 
         //! Multisim communicator handle.
-        std::unique_ptr<gmx_multisim_t*>      multisim_ = nullptr;
+        gmx_multisim_t *multiSimulation_;
 
-        //! Non-owning communication record (only used when building command-line mdrun)
-        t_commrec *communicationRecord_ = nullptr;
+        //! mdrun communicator
+        MPI_Comm communicator_ = MPI_COMM_NULL;
 
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real forceWarningThreshold_ = -1;
@@ -1773,9 +1761,12 @@ class Mdrunner::BuilderImplementation
         std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_ = nullptr;
 };
 
-Mdrunner::BuilderImplementation::BuilderImplementation(std::unique_ptr<MDModules> mdModules) :
+Mdrunner::BuilderImplementation::BuilderImplementation(std::unique_ptr<MDModules>           mdModules,
+                                                       compat::not_null<SimulationContext*> context) :
     mdModules_(std::move(mdModules))
 {
+    communicator_    = context->communicator_;
+    multiSimulation_ = context->multiSimulation_.get();
 }
 
 Mdrunner::BuilderImplementation::~BuilderImplementation() = default;
@@ -1806,16 +1797,6 @@ void Mdrunner::BuilderImplementation::addReplicaExchange(const ReplicaExchangePa
     replicaExchangeParameters_ = params;
 }
 
-void Mdrunner::BuilderImplementation::addMultiSim(gmx_multisim_t* multisim)
-{
-    multisim_ = std::make_unique<gmx_multisim_t*>(multisim);
-}
-
-void Mdrunner::BuilderImplementation::addCommunicationRecord(t_commrec *cr)
-{
-    communicationRecord_ = cr;
-}
-
 Mdrunner Mdrunner::BuilderImplementation::build()
 {
     auto newRunner = Mdrunner(std::move(mdModules_));
@@ -1835,18 +1816,10 @@ Mdrunner Mdrunner::BuilderImplementation::build()
 
     newRunner.filenames = filenames_;
 
-    GMX_ASSERT(communicationRecord_, "Bug found. It should not be possible to call build() without a valid communicationRecord_.");
-    newRunner.cr = communicationRecord_;
+    newRunner.communicator = communicator_;
 
-    if (multisim_)
-    {
-        // nullptr is a valid value for the multisim handle, so we don't check the pointed-to pointer.
-        newRunner.ms = *multisim_;
-    }
-    else
-    {
-        GMX_THROW(gmx::APIError("MdrunnerBuilder::addMultiSim() is required before build()"));
-    }
+    // nullptr is a valid value for the multisim handle
+    newRunner.ms = multiSimulation_;
 
     // \todo Clarify ownership and lifetime management for gmx_output_env_t
     // \todo Update sanity checking when output environment has clearly specified invariants.
@@ -1961,8 +1934,9 @@ void Mdrunner::BuilderImplementation::addStopHandlerBuilder(std::unique_ptr<Stop
     stopHandlerBuilder_ = std::move(builder);
 }
 
-MdrunnerBuilder::MdrunnerBuilder(std::unique_ptr<MDModules>           mdModules) :
-    impl_ {std::make_unique<Mdrunner::BuilderImplementation>(std::move(mdModules))}
+MdrunnerBuilder::MdrunnerBuilder(std::unique_ptr<MDModules>           mdModules,
+                                 compat::not_null<SimulationContext*> context) :
+    impl_ {std::make_unique<Mdrunner::BuilderImplementation>(std::move(mdModules), context)}
 {
 }
 
@@ -1991,18 +1965,6 @@ MdrunnerBuilder &MdrunnerBuilder::addNeighborList(int nstlist)
 MdrunnerBuilder &MdrunnerBuilder::addReplicaExchange(const ReplicaExchangeParameters &params)
 {
     impl_->addReplicaExchange(params);
-    return *this;
-}
-
-MdrunnerBuilder &MdrunnerBuilder::addMultiSim(gmx_multisim_t* multisim)
-{
-    impl_->addMultiSim(multisim);
-    return *this;
-}
-
-MdrunnerBuilder &MdrunnerBuilder::addCommunicationRecord(t_commrec *cr)
-{
-    impl_->addCommunicationRecord(cr);
     return *this;
 }
 

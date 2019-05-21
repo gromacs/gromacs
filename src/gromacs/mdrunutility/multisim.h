@@ -72,14 +72,6 @@ struct gmx_multisim_t
     //! Destructor
     ~gmx_multisim_t();
 
-    //! Are we the master simulation of a possible multi-simulation?
-    bool isMasterSim() const;
-
-    /*! \brief Are we the master rank (of the master simulation, for a multi-sim).
-     *
-     * This rank prints the remaining run time etc. */
-    bool isMasterSimMasterRank(bool isMaster) const;
-
     //! The number of simulations in the set of multi-simulations
     int                                 nsim              = 1;
     //! The index of the simulation that owns this object within the set
@@ -136,6 +128,12 @@ static bool inline isMultiSim(const gmx_multisim_t *ms)
 {
     return ms != nullptr;
 }
+
+/*! \brief Return whether this rank is the master rank of a
+ * simulation, using \c ms (if it is valid) and otherwise \c
+ * communicator */
+bool findIsSimulationMasterRank(const gmx_multisim_t *ms,
+                                MPI_Comm              communicator);
 
 //! Are we the master simulation of a possible multi-simulation?
 bool isMasterSim(const gmx_multisim_t *ms);

@@ -48,6 +48,7 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
 
+struct gmx_multisim_t;
 struct t_commrec;
 struct t_filenm;
 
@@ -58,7 +59,8 @@ void done_commrec(t_commrec *cr);
 using CommrecHandle = gmx::unique_cptr<t_commrec, done_commrec>;
 
 //! Allocate, initialize and return the commrec.
-CommrecHandle init_commrec();
+CommrecHandle init_commrec(MPI_Comm              communicator,
+                           const gmx_multisim_t *ms);
 
 struct t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro);
 

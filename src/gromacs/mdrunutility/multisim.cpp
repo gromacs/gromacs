@@ -45,10 +45,11 @@
 
 #include "config.h"
 
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpiinplacebuffers.h"
 #include "gromacs/utility/smalloc.h"
 
 gmx_multisim_t::gmx_multisim_t() = default;
@@ -102,7 +103,7 @@ gmx_multisim_t::gmx_multisim_t(MPI_Comm                         comm,
     MPI_Group mpi_group_world;
     MPI_Comm_group(comm, &mpi_group_world);
     MPI_Group_incl(mpi_group_world, nsim, rank.data(), &mpi_group_masters);
-    MPI_Comm_create(MPI_COMM_WORLD, mpi_group_masters,
+    MPI_Comm_create(comm, mpi_group_masters,
                     &mpi_comm_masters);
 
 #if !MPI_IN_PLACE_EXISTS
@@ -384,6 +385,40 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     }
 
     sfree(ibuf);
+}
+
+bool findIsSimulationMasterRank(const gmx_multisim_t *ms,
+                                MPI_Comm              communicator)
+{
+    if (GMX_LIB_MPI)
+    {
+        // Ranks of multi-simulations know whether they are a master
+        // rank. Ranks of non-multi simulation do not know until a
+        // t_commrec is available.
+        if ((ms != nullptr) && (ms->nsim > 1))
+        {
+            return ms->mpi_comm_masters != MPI_COMM_NULL;
+        }
+        else
+        {
+#if GMX_LIB_MPI
+            int rank;
+            MPI_Comm_rank(communicator, &rank);
+            return (rank == 0);
+#endif
+        }
+    }
+    if (GMX_THREAD_MPI)
+    {
+        GMX_RELEASE_ASSERT(communicator == MPI_COMM_NULL ||
+                           communicator == MPI_COMM_WORLD, "Invalid communicator");
+        // Spawned threads have MPI_COMM_WORLD upon creation, so if
+        // the communicator is MPI_COMM_NULL this is not a spawned thread,
+        // ie is the master thread
+        return (communicator == MPI_COMM_NULL);
+    }
+    // No MPI means it must be the master (and only) rank.
+    return true;
 }
 
 bool isMasterSim(const gmx_multisim_t *ms)

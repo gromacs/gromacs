@@ -60,9 +60,9 @@
 
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 
 struct gmx_multisim_t;
-struct t_commrec;
 struct t_filenm;
 
 namespace gmx
@@ -105,7 +105,8 @@ enum class StartingBehavior : int
  * \throws GromacsException        On ranks upon which the error condition was
  *                                 not detected.
  *
- * \param[in]    cr                 Communication structure
+ * \param[in]    isSimulationMaster Whether this rank is the master rank of a simulation
+ * \param[in]    communicator       MPI communicator
  * \param[in]    ms                 Handles multi-simulations.
  * \param[in]    appendingBehavior  User choice for appending
  * \param[in]    nfile              Size of fnm struct
@@ -113,7 +114,8 @@ enum class StartingBehavior : int
  *
  * \return  Description of how mdrun is starting */
 std::tuple<StartingBehavior, LogFilePtr>
-handleRestart(t_commrec            *cr,
+handleRestart(bool                  isSimulationMaster,
+              MPI_Comm              communicator,
               const gmx_multisim_t *ms,
               AppendingBehavior     appendingBehavior,
               int                   nfile,

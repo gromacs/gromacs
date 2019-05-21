@@ -52,14 +52,10 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/domdec/options.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 
 #include "replicaexchange.h"
-
-struct gmx_multisim_t;
 
 namespace gmx
 {
@@ -76,8 +72,8 @@ namespace gmx
  * that all of these declarations and defaults are local to the
  * modules.
  *
- * \todo Contextual aspects, such as working directory, MPI
- * environment, and environment variable handling are more properly
+ * \todo Contextual aspects, such as working directory
+ * and environment variable handling are more properly
  * the role of SimulationContext, and should be moved there */
 class LegacyMdrunOptions
 {
@@ -271,11 +267,6 @@ class LegacyMdrunOptions
               "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
         };
         /*! \} */
-
-        //! Handle to communication object.
-        CommrecHandle                   cr = init_commrec();
-        //! Multi-simulation object.
-        std::unique_ptr<gmx_multisim_t> ms;
 
         //! Parses the command-line input and prepares to start mdrun.
         int updateFromCommandLine(int argc, char **argv, ArrayRef<const char *> desc);

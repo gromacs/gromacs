@@ -114,7 +114,6 @@ class SessionImpl
          * \param runnerBuilder MD simulation builder to take ownership of.
          * \param simulationContext Take ownership of the simulation resources.
          * \param logFilehandle Take ownership of filehandle for MD logging
-         * \param multiSim Take ownership of resources for Mdrunner multi-sim.
          *
          * \todo Log file management will be updated soon.
          *
@@ -123,8 +122,7 @@ class SessionImpl
         static std::unique_ptr<SessionImpl> create(std::shared_ptr<ContextImpl>  context,
                                                    gmx::MdrunnerBuilder        &&runnerBuilder,
                                                    gmx::SimulationContext      &&simulationContext,
-                                                   gmx::LogFilePtr               logFilehandle,
-                                                   gmx_multisim_t              * multiSim);
+                                                   gmx::LogFilePtr               logFilehandle);
 
         /*!
          * \brief Add a restraint to the simulation.
@@ -184,14 +182,12 @@ class SessionImpl
          * \param runnerBuilder ownership of the MdrunnerBuilder object.
          * \param simulationContext take ownership of a SimulationContext
          * \param logFilehandle Take ownership of filehandle for MD logging
-         * \param multiSim Take ownership of resources for Mdrunner multi-sim.
          *
          */
         SessionImpl(std::shared_ptr<ContextImpl>  context,
                     gmx::MdrunnerBuilder        &&runnerBuilder,
                     gmx::SimulationContext      &&simulationContext,
-                    gmx::LogFilePtr               logFilehandle,
-                    gmx_multisim_t              * multiSim);
+                    gmx::LogFilePtr               logFilehandle);
 
     private:
         /*!
@@ -233,17 +229,6 @@ class SessionImpl
          * \todo Move to RAII filehandle management; open and close in one place.
          */
         gmx::LogFilePtr logFilePtr_;
-
-        /*!
-         * \brief MultiSim resources for Mdrunner instance.
-         *
-         * May be null for no multi-simulation management at the Mdrunner level.
-         *
-         * \todo Lifetime of the multi-simulation handle is currently
-         * managed by LegacyMdrunOptions, but in the long term,
-         * session needs to manage it.
-         */
-        gmx_multisim_t* multiSim_;
 
         /*!
          * \brief Own and manager the signalling pathways for the current session.

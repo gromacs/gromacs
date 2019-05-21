@@ -70,9 +70,7 @@
 #include "gromacs/compat/optional.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -608,7 +606,8 @@ StartingBehaviorHandler::makeIndexOfNextPart(const AppendingBehavior appendingBe
 }   // namespace
 
 std::tuple<StartingBehavior, LogFilePtr>
-handleRestart(t_commrec              *cr,
+handleRestart(const bool              isSimulationMaster,
+              MPI_Comm                communicator,
               const gmx_multisim_t   *ms,
               const AppendingBehavior appendingBehavior,
               const int               nfile,
@@ -625,7 +624,7 @@ handleRestart(t_commrec              *cr,
     // Only the master rank of each simulation can do anything with
     // output files, so it is the only one that needs to consider
     // whether a restart might take place, and how to implement it.
-    if (MASTER(cr))
+    if (isSimulationMaster)
     {
         try
         {
@@ -667,18 +666,15 @@ handleRestart(t_commrec              *cr,
     //
     // TODO Evolve some re-usable infrastructure for this, because it
     // will be needed in many places while setting up simulations.
-    if (PAR(cr))
-    {
-        gmx_sumi(1, &numErrorsFound, cr);
-    }
-    if (isMultiSim(ms))
-    {
-        gmx_sumi_sim(1, &numErrorsFound, ms);
-        if (PAR(cr))
-        {
-            gmx_bcast(sizeof(numErrorsFound), &numErrorsFound, cr);
-        }
-    }
+#if GMX_LIB_MPI
+    int reducedNumErrorsFound;
+    MPI_Allreduce(&numErrorsFound, &reducedNumErrorsFound, 1, MPI_INT, MPI_SUM, communicator);
+    numErrorsFound = reducedNumErrorsFound;
+#else
+    // There is nothing to do with no MPI or thread-MPI, as there is
+    // only one rank at this point.
+    GMX_RELEASE_ASSERT(communicator == MPI_COMM_NULL, "Must have null communicator at this point");
+#endif
 
     // Throw in a globally coordinated way, if needed
     if (numErrorsFound > 0)
@@ -692,10 +688,14 @@ handleRestart(t_commrec              *cr,
             GMX_THROW(ParallelConsistencyError("Another MPI rank encountered an exception"));
         }
     }
-    if (PAR(cr))
-    {
-        gmx_bcast(sizeof(handler.startingBehavior), &handler.startingBehavior, cr);
-    }
+
+    // Ensure all ranks agree on the starting behavior, which is easy
+    // because all simulations in a multi-simulation already agreed on
+    // the starting behavior. There is nothing to do with no
+    // MPI or thread-MPI.
+#if GMX_LIB_MPI
+    MPI_Bcast(&handler.startingBehavior, 1, MPI_INT, 0, communicator);
+#endif
 
     return std::make_tuple(handler.startingBehavior, std::move(logFileGuard));
 }

@@ -49,15 +49,9 @@
 
 #include "legacymdrunoptions.h"
 
-#include "config.h"
-
 #include <cstring>
 
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -137,29 +131,6 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
     }
 
     hw_opt.threadAffinity = static_cast<ThreadAffinity>(nenum(thread_aff_opt_choices));
-
-    // now check for a multi-simulation
-    ArrayRef<const std::string> multidir = opt2fnsIfOptionSet("-multidir",
-                                                              ssize(filenames),
-                                                              filenames.data());
-    if (!multidir.empty())
-    {
-        ms = std::make_unique<gmx_multisim_t>(MPI_COMM_WORLD, multidir);
-    }
-
-    /* Prepare the intra-simulation communication */
-    // TODO consolidate this with init_commrec, after changing the
-    // relative ordering of init_commrec and ms initialization.
-    if (ms != nullptr)
-    {
-#if GMX_MPI
-        cr->nnodes = cr->nnodes / ms->nsim;
-        MPI_Comm_split(MPI_COMM_WORLD, ms->sim, cr->sim_nodeid, &cr->mpi_comm_mysim);
-        cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-        MPI_Comm_rank(cr->mpi_comm_mysim, &cr->sim_nodeid);
-        MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
-#endif
-    }
 
     if (!opt2parg_bSet("-append", asize(pa), pa))
     {

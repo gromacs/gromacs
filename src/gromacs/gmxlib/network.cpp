@@ -46,6 +46,7 @@
 #include <cstring>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
@@ -59,26 +60,8 @@
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-void gmx_fill_commrec_from_mpi(t_commrec *cr)
-{
-#if !GMX_MPI
-    gmx_call("gmx_fill_commrec_from_mpi");
-    GMX_UNUSED_VALUE(cr);
-#else
-    if (!gmx_mpi_initialized())
-    {
-        gmx_comm("MPI has not been initialized properly");
-    }
-
-    cr->nnodes           = gmx_node_num();
-    cr->nodeid           = gmx_node_rank();
-    cr->sim_nodeid       = cr->nodeid;
-    cr->mpi_comm_mysim   = MPI_COMM_WORLD;
-    cr->mpi_comm_mygroup = MPI_COMM_WORLD;
-#endif
-}
-
-CommrecHandle init_commrec()
+CommrecHandle init_commrec(MPI_Comm              communicator,
+                           const gmx_multisim_t *ms)
 {
     CommrecHandle handle;
     t_commrec    *cr;
@@ -86,15 +69,37 @@ CommrecHandle init_commrec()
     snew(cr, 1);
     handle.reset(cr);
 
-#if GMX_LIB_MPI
-    gmx_fill_commrec_from_mpi(cr);
+    int rankInCommunicator, sizeOfCommunicator;
+#if GMX_MPI
+#  if GMX_LIB_MPI
+    GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "Must have initialized MPI before building commrec");
+#  endif
+    MPI_Comm_rank(communicator, &rankInCommunicator);
+    MPI_Comm_size(communicator, &sizeOfCommunicator);
 #else
-    cr->mpi_comm_mysim   = MPI_COMM_NULL;
-    cr->mpi_comm_mygroup = MPI_COMM_NULL;
-    cr->nnodes           = 1;
-    cr->sim_nodeid       = 0;
-    cr->nodeid           = cr->sim_nodeid;
+    GMX_UNUSED_VALUE(communicator);
+    rankInCommunicator = 0;
+    sizeOfCommunicator = 1;
 #endif
+
+    if (ms != nullptr)
+    {
+#if GMX_MPI
+        cr->nnodes = sizeOfCommunicator / ms->nsim;
+        MPI_Comm_split(communicator, ms->sim, rankInCommunicator, &cr->mpi_comm_mysim);
+        cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
+        MPI_Comm_rank(cr->mpi_comm_mysim, &cr->sim_nodeid);
+        MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
+#endif
+    }
+    else
+    {
+        cr->nnodes           = sizeOfCommunicator;
+        cr->nodeid           = rankInCommunicator;
+        cr->sim_nodeid       = cr->nodeid;
+        cr->mpi_comm_mysim   = communicator;
+        cr->mpi_comm_mygroup = communicator;
+    }
 
     // TODO cr->duty should not be initialized here
     cr->duty = (DUTY_PP | DUTY_PME);
@@ -146,30 +151,6 @@ void done_commrec(t_commrec *cr)
     }
 #endif
     sfree(cr);
-}
-
-t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro)
-{
-#if GMX_THREAD_MPI
-    t_commrec *cr;
-
-    /* make a thread-specific commrec */
-    snew(cr, 1);
-    /* now copy the whole thing, so settings like the number of PME nodes
-       get propagated. */
-    *cr = *cro;
-
-    /* and we start setting our own thread-specific values for things */
-    gmx_fill_commrec_from_mpi(cr);
-
-    // TODO cr->duty should not be initialized here
-    cr->duty             = (DUTY_PP | DUTY_PME);
-
-    return cr;
-#else
-    GMX_UNUSED_VALUE(cro);
-    return nullptr;
-#endif
 }
 
 void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
