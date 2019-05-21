@@ -32,6 +32,14 @@ Fix segmentation fault when using membrane embedding
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix PQR formatting
+""""""""""""""""""""
+
+The formatting was incorrect for some tools that use PQR files.
+
+:issue:`2955`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
