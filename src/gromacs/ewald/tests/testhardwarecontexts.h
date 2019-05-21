@@ -115,8 +115,6 @@ class PmeTestEnvironment : public ::testing::Environment
     public:
         //! This is called by GTest framework once to query the hardware
         void SetUp() override;
-        //! This is called by GTest framework once to clean up
-        void TearDown() override;
         //! Get available hardware contexts.
         const TestHardwareContexts &getHardwareContexts() const {return hardwareContexts_; }
         //! Get available hardware information.

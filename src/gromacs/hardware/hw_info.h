@@ -35,6 +35,7 @@
 #ifndef GMX_HARDWARE_HWINFO_H
 #define GMX_HARDWARE_HWINFO_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -49,10 +50,15 @@ class HardwareTopology;
 
 /* Hardware information structure with CPU and GPU information.
  * It is initialized by gmx_detect_hardware().
- * NOTE: this structure may only contain structures that are globally valid
- *       (i.e. must be able to be shared among all threads) */
+ * NOTE: this structure may only contain structures that are
+ *       valid over the whole process (i.e. must be able to
+ *       be shared among all threads) */
 struct gmx_hw_info_t
 {
+    gmx_hw_info_t(std::unique_ptr<gmx::CpuInfo>          cpuInfo,
+                  std::unique_ptr<gmx::HardwareTopology> hardwareTopology);
+    ~gmx_hw_info_t();
+
     /* Data for our local physical node */
     struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
 
@@ -60,8 +66,10 @@ struct gmx_hw_info_t
                                                       is based on the number of CPUs reported as available
                                                       by the OS at the time of detection. */
 
-    const gmx::CpuInfo *         cpuInfo;          /* Information about CPU capabilities */
-    const gmx::HardwareTopology *hardwareTopology; /* Information about hardware topology */
+
+    std::unique_ptr<gmx::CpuInfo>          cpuInfo;           /* Information about CPU capabilities */
+    std::unique_ptr<gmx::HardwareTopology> hardwareTopology;  /* Information about hardware topology */
+
 
     /* Data reduced through MPI over all physical nodes */
     int                 nphysicalnode;       /* Number of physical nodes */

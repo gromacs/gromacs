@@ -623,14 +623,9 @@ int Mdrunner::mdrunner()
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
     gmx::MDLogger    mdlog(logOwner.logger());
 
-    // TODO The thread-MPI master rank makes a working
-    // PhysicalNodeCommunicator here, but it gets rebuilt by all ranks
-    // after the threads have been launched. This works because no use
-    // is made of that communicator until after the execution paths
-    // have rejoined. But it is likely that we can improve the way
-    // this is expressed, e.g. by expressly running detection only the
-    // master rank for thread-MPI, rather than relying on the mutex
-    // and reference count.
+    // With thread-MPI, the communicator changes after threads are
+    // launched, so this is rebuilt for the master rank at that
+    // time. The non-master ranks are fine to keep the one made here.
     PhysicalNodeCommunicator physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
     hwinfo = gmx_detect_hardware(mdlog, physicalNodeComm);
 
@@ -1573,8 +1568,6 @@ int Mdrunner::mdrunner()
     {
         free_membed(membed);
     }
-
-    gmx_hardware_info_free();
 
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
