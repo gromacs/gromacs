@@ -39,3 +39,8 @@ Removed non-existent mdp option awh1-dim1-period from user guide
 
 :issue:`2940`
 
+Add checks for too many interactions during memory allocation
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2932`
+

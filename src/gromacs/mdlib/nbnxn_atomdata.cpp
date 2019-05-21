@@ -84,7 +84,7 @@ void nbnxn_free_aligned(void *ptr)
 
 /* Reallocation wrapper function for nbnxn data structures */
 void nbnxn_realloc_void(void **ptr,
-                        int nbytes_copy, int nbytes_new,
+                        size_t nbytes_copy, size_t nbytes_new,
                         nbnxn_alloc_t *ma,
                         nbnxn_free_t  *mf)
 {
@@ -94,7 +94,7 @@ void nbnxn_realloc_void(void **ptr,
 
     if (nbytes_new > 0 && ptr_new == nullptr)
     {
-        gmx_fatal(FARGS, "Allocation of %d bytes failed", nbytes_new);
+        gmx_fatal(FARGS, "Allocation of %zu bytes failed", nbytes_new);
     }
 
     if (nbytes_copy > 0)
