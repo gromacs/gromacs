@@ -39,6 +39,8 @@ The formatting was incorrect for some tools that use PQR files.
 
 :issue:`2955`
 
+Add some information for grompp error with wrong line endings
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
