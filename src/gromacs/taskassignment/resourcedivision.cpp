@@ -156,9 +156,10 @@ static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo, gmx_bool bUseGPU)
         // Intel Nehalem
         nth = nthreads_omp_faster_Nehalem;
     }
-    else if (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Amd && cpuInfo.family() >= 23)
+    else if ((cpuInfo.vendor() == gmx::CpuInfo::Vendor::Amd && cpuInfo.family() >= 23) ||
+             cpuInfo.vendor() == gmx::CpuInfo::Vendor::Hygon)
     {
-        // AMD Ryzen
+        // AMD Ryzen || Hygon Dhyana
         nth = nthreads_omp_faster_AMD_Ryzen;
     }
     else

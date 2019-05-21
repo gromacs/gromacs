@@ -187,9 +187,12 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
                                      const PhysicalNodeCommunicator &physicalNodeComm)
 {
     const int  ncore        = hwinfo_g->hardwareTopology->numberOfCores();
-    /* Zen has family=23, for now we treat future AMD CPUs like Zen */
-    const bool cpuIsAmdZen  = (cpuInfo.vendor() == CpuInfo::Vendor::Amd &&
-                               cpuInfo.family() >= 23);
+    /* Zen has family=23, for now we treat future AMD CPUs like Zen
+     * and Hygon Dhyana like Zen */
+    const bool cpuIsAmdZen  = ((cpuInfo.vendor() == CpuInfo::Vendor::Amd &&
+                                cpuInfo.family() >= 23) ||
+                               cpuInfo.vendor() == CpuInfo::Vendor::Hygon);
+    ;
 
 #if GMX_LIB_MPI
     int       nhwthread, ngpu, i;

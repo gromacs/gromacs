@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -216,11 +216,12 @@ executeX86CpuID(unsigned int     gmx_unused level,
 
 /*! \brief Detect x86 vendors by using the cpuid assembly instructions
  *
- *  If support for the cpuid instruction is present, we check for Intel
- *  or AMD vendors.
+ *  If support for the cpuid instruction is present, we check for Intel,
+ *  AMD or Hygon vendors
  *
- *  \return gmx::CpuInfo::Vendor::Intel, gmx::CpuInfo::Vendor::Amd. If neither
- *          Intel nor Amd can be identified, or if the code fails to execute,
+ *  \return gmx::CpuInfo::Vendor::Intel, gmx::CpuInfo::Vendor::Amd,
+ *          gmx::CpuInfl::Vendor::Hygon, . If neither Intel, Amd  nor
+ *          Hygon can be identified, or if the code fails to execute,
  *          gmx::CpuInfo::Vendor::Unknown is returned.
  */
 CpuInfo::Vendor
@@ -238,6 +239,10 @@ detectX86Vendor()
         else if (ebx == 0x68747541 && ecx == 0x444d4163 && edx == 0x69746e65)
         {
             v = CpuInfo::Vendor::Amd; // ebx=='htuA', ecx=='DMAc', edx=='itne'
+        }
+        else if (ebx == 0x6f677948 && ecx == 0x656e6975 && edx == 0x6e65476e)
+        {
+            v = CpuInfo::Vendor::Hygon; // ebx=='ogyH', ecx=='eniu', edx=='neGn'
         }
     }
     return v;
@@ -618,7 +623,8 @@ detectX86LogicalProcessors()
         }
         else    // haveApic
         {
-            if (detectX86Vendor() == CpuInfo::Vendor::Amd)
+            if (detectX86Vendor() == CpuInfo::Vendor::Amd ||
+                detectX86Vendor() == CpuInfo::Vendor::Hygon)
             {
                 layout = detectAmdApicIdLayout(maxExtLevel);
 
@@ -747,6 +753,8 @@ detectProcCpuInfoVendor(const std::map<std::string, std::string> &cpuInfo)
         { "IBM",          CpuInfo::Vendor::Ibm     },
         { "POWER",        CpuInfo::Vendor::Ibm     },
         { "Oracle",       CpuInfo::Vendor::Oracle  },
+        { "HygonGenuine", CpuInfo::Vendor::Hygon   },
+        { "Hygon",        CpuInfo::Vendor::Hygon   },
     };
 
     // For each label in /proc/cpuinfo, compare the value to the name in the
@@ -966,6 +974,10 @@ CpuInfo CpuInfo::detect()
         {
             result.features_.insert(CpuInfo::Feature::X86_Amd);
         }
+        else if (result.vendor_ == CpuInfo::Vendor::Hygon)
+        {
+            result.features_.insert(CpuInfo::Feature::X86_Hygon);
+        }
         detectX86Features(&result.brandString_, &result.family_, &result.model_,
                           &result.stepping_, &result.features_);
         result.logicalProcessors_ = detectX86LogicalProcessors();
@@ -1035,6 +1047,7 @@ const std::string &CpuInfo::vendorString() const
         { Vendor::Ibm, "IBM"                                 },
         { Vendor::Arm, "ARM"                                 },
         { Vendor::Oracle, "Oracle"                           },
+        { Vendor::Hygon, "Hygon"                             },
     };
 
     return vendorStrings.at(vendor_);
@@ -1095,7 +1108,8 @@ const std::string &CpuInfo::featureString(Feature f)
         { Feature::Ibm_Qpx, "qpx"                            },
         { Feature::Ibm_Vmx, "vmx"                            },
         { Feature::Ibm_Vsx, "vsx"                            },
-        { Feature::Fujitsu_HpcAce, "hpc-ace"                 }
+        { Feature::Fujitsu_HpcAce, "hpc-ace"                 },
+        { Feature::X86_Hygon, "hygon"                        }
     };
     return featureStrings.at(f);
 }
