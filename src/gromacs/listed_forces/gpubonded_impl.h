@@ -52,6 +52,7 @@
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/pbcutil/pbc_aiuc.h"
 #include "gromacs/topology/idef.h"
 
 struct gmx_ffparams_t;
@@ -71,6 +72,57 @@ struct HostInteractionList
 
     //! List of interactions, see \c HostInteractionLists
     HostVector<int> iatoms = {{}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)};
+};
+
+/* \brief Bonded parameters and GPU pointers
+ *
+ * This is used to accumulate all the parameters and pointers so they can be passed
+ * to the GPU as a single structure.
+ *
+ */
+struct BondedCudaKernelParameters
+{
+    //! Periodic boundary data
+    PbcAiuc             pbcAiuc;
+    //! Scale factor
+    float               scaleFactor;
+    //! The bonded types on GPU
+    int                 ftypesOnGpu[nFtypesOnGpu];
+    //! The number of interaction atom (iatom) elements for every function type
+    int                 nrFTypeIAtoms[nFtypesOnGpu];
+    //! The number of bonds for every function type
+    int                 nrFTypeBonds[nFtypesOnGpu];
+    //! The start index in the range of each interaction type
+    int                 ftypeRangeStart[nFtypesOnGpu];
+    //! The end index in the range of each interaction type
+    int                 ftypeRangeEnd[nFtypesOnGpu];
+
+    //! Force parameters (on GPU)
+    t_iparams          *forceparamsDevice;
+    //! Coordinates before the timestep (on GPU)
+    const float4       *xqDevice;
+    //! Forces on atoms (on GPU)
+    fvec               *forceDevice;
+    //! Force shifts on atoms (on GPU)
+    fvec               *fshiftDevice;
+    //! Total Energy (on GPU)
+    float              *vtotDevice;
+    //! Interaction list atoms (on GPU)
+    t_iatom            *iatoms[nFtypesOnGpu];
+
+    BondedCudaKernelParameters()
+    {
+        matrix boxDummy = { {0, 0, 0}, {0, 0, 0}, {0, 0, 0} };
+
+        setPbcAiuc(0, boxDummy, &pbcAiuc);
+
+        scaleFactor       = 1.0;
+        forceparamsDevice = nullptr;
+        xqDevice          = nullptr;
+        forceDevice       = nullptr;
+        fshiftDevice      = nullptr;
+        vtotDevice        = nullptr;
+    }
 };
 
 /*! \internal \brief Implements GPU bondeds */
@@ -96,11 +148,11 @@ class GpuBonded::Impl
                                                     void                *forceDevice,
                                                     void                *fshiftDevice);
 
-        /*! \brief Launches bonded kernels on a GPU */
+        /*! \brief Launches bonded kernel on a GPU */
         template <bool calcVir, bool calcEner>
         void
-        launchKernels(const t_forcerec *fr,
-                      const matrix      box);
+        launchKernel(const t_forcerec *fr,
+                     const matrix      box);
         /*! \brief Returns whether there are bonded interactions
          * assigned to the GPU */
         bool haveInteractions() const;
@@ -136,6 +188,9 @@ class GpuBonded::Impl
 
         //! \brief Bonded GPU stream, not owned by this module
         CommandStream         stream;
+
+        //! Parameters and pointers, passed to the CUDA kernel
+        BondedCudaKernelParameters kernelParams_;
 };
 
 }   // namespace gmx

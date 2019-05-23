@@ -1079,7 +1079,7 @@ void do_force(FILE                                     *fplog,
         if (ppForceWorkload->haveGpuBondedWork && !havePPDomainDecomposition(cr))
         {
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_BONDED);
-            fr->gpuBonded->launchKernels(fr, flags, box);
+            fr->gpuBonded->launchKernel(fr, flags, box);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
         }
 
@@ -1146,7 +1146,7 @@ void do_force(FILE                                     *fplog,
             if (ppForceWorkload->haveGpuBondedWork)
             {
                 wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_BONDED);
-                fr->gpuBonded->launchKernels(fr, flags, box);
+                fr->gpuBonded->launchKernel(fr, flags, box);
                 wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
             }
 

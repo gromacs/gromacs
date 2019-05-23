@@ -192,9 +192,9 @@ GpuBonded::haveInteractions() const
 }
 
 void
-GpuBonded::launchKernels(const t_forcerec * /* fr */,
-                         int            /* forceFlags */,
-                         const matrix   /* box */)
+GpuBonded::launchKernel(const t_forcerec * /* fr */,
+                        int            /* forceFlags */,
+                        const matrix   /* box */)
 {
 }
 

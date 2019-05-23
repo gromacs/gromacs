@@ -39,6 +39,7 @@
  * \author Berk Hess <hess@kth.se>
  * \author Szilárd Páll <pall.szilard@gmail.com>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  *
  * \ingroup module_listed_forces
  */
@@ -47,6 +48,7 @@
 
 #include "gpubonded_impl.h"
 
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpu_vec.cuh"
@@ -85,6 +87,18 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t &ffparams,
         iListsDevice[ftype].nr     = 0;
         iListsDevice[ftype].iatoms = nullptr;
         iListsDevice[ftype].nalloc = 0;
+    }
+
+    kernelParams_.forceparamsDevice      = forceparamsDevice;
+    kernelParams_.xqDevice               = xqDevice;
+    kernelParams_.forceDevice            = forceDevice;
+    kernelParams_.fshiftDevice           = fshiftDevice;
+    kernelParams_.vtotDevice             = vtotDevice;
+    for (int i = 0; i < nFtypesOnGpu; i++)
+    {
+        kernelParams_.iatoms[i]          = nullptr;
+        kernelParams_.ftypeRangeStart[i] = 0;
+        kernelParams_.ftypeRangeEnd[i]   = -1;
     }
 }
 
@@ -136,6 +150,20 @@ static void convertIlistToNbnxnOrder(const t_ilist       &src,
     }
 }
 
+//! Returns \p input rounded up to the closest multiple of \p factor.
+static inline int roundUpToFactor(const int input, const int factor)
+{
+    GMX_ASSERT(factor > 0, "The factor to round up to must be > 0.");
+
+    int remainder = input % factor;
+
+    if (remainder == 0)
+    {
+        return (input);
+    }
+    return (input + (factor - remainder));
+}
+
 // TODO Consider whether this function should be a factory method that
 // makes an object that is the only one capable of the device
 // operations needed for the lifetime of an interaction list. This
@@ -143,7 +171,12 @@ static void convertIlistToNbnxnOrder(const t_ilist       &src,
 // of naming this method for the problem of what to name the
 // BondedDeviceInteractionListHandler type.
 
-//! Divides bonded interactions over threads and GPU
+/*! Divides bonded interactions over threads and GPU.
+ *  The bonded interactions are assigned by interaction type to GPU threads. The intereaction
+ *  types are assigned in blocks sized as <warp_size>. The beginning and end (thread index) of each
+ *  interaction type are stored in kernelParams_. Pointers to the relevant data structures on the
+ *  GPU are also stored in kernelParams_.
+ */
 void
 GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>  nbnxnAtomOrder,
                                                         const t_idef        &idef,
@@ -153,6 +186,7 @@ GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>  nbn
 {
     // TODO wallcycle sub start
     haveInteractions_ = false;
+    int ftypesCounter = 0;
 
     for (int ftype : ftypesOnGpu)
     {
@@ -189,11 +223,39 @@ GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>  nbn
                                0, iList.size(),
                                stream, GpuApiCallBehavior::Async, nullptr);
         }
+        kernelParams_.ftypesOnGpu[ftypesCounter]   = ftype;
+        kernelParams_.nrFTypeIAtoms[ftypesCounter] = iList.size();
+        int nBonds = iList.size() / (interaction_function[ftype].nratoms + 1);
+        kernelParams_.nrFTypeBonds[ftypesCounter]  = nBonds;
+        kernelParams_.iatoms[ftypesCounter]        = iListsDevice[ftype].iatoms;
+        if (ftypesCounter == 0)
+        {
+            kernelParams_.ftypeRangeStart[ftypesCounter] = 0;
+        }
+        else
+        {
+            kernelParams_.ftypeRangeStart[ftypesCounter] = kernelParams_.ftypeRangeEnd[ftypesCounter - 1] + 1;
+        }
+        kernelParams_.ftypeRangeEnd[ftypesCounter] = kernelParams_.ftypeRangeStart[ftypesCounter] + roundUpToFactor(nBonds, warp_size) - 1;
+
+        GMX_ASSERT(nBonds > 0 || kernelParams_.ftypeRangeEnd[ftypesCounter] <= kernelParams_.ftypeRangeStart[ftypesCounter],
+                   "Invalid GPU listed forces setup. nBonds must be > 0 if there are threads allocated to do work on that interaction function type.");
+        GMX_ASSERT(kernelParams_.ftypeRangeStart[ftypesCounter] % warp_size == 0 && (kernelParams_.ftypeRangeEnd[ftypesCounter] + 1) % warp_size == 0,
+                   "The bonded interactions must be assigned to the GPU in blocks of warp size.");
+
+        ftypesCounter++;
     }
 
     xqDevice     = static_cast<float4 *>(xqDevicePtr);
     forceDevice  = static_cast<fvec *>(forceDevicePtr);
     fshiftDevice = static_cast<fvec *>(fshiftDevicePtr);
+
+    kernelParams_.xqDevice          = xqDevice;
+    kernelParams_.forceDevice       = forceDevice;
+    kernelParams_.fshiftDevice      = fshiftDevice;
+    kernelParams_.forceparamsDevice = forceparamsDevice;
+    kernelParams_.vtotDevice        = vtotDevice;
+
     // TODO wallcycle sub stop
 }
 

@@ -16,3 +16,10 @@ if the (often noisy) FFTW auto-tuner picks an AVX512 kernel in a run that otherw
 only uses AVX/AVX2 which could run at higher CPU clocks without AVX512 clock speed limitation.
 Now AVX512 is only used for the internal FFTW if GROMACS is also configured with
 the same SIMD flavor.
+
+Bonded kernels on GPU have been fused
+"""""""""""""""""""""""""""""""""""""
+
+Instead of launching one GPU kernel for each listed interaction type there is now one
+GPU kernel that handles all listed interactions. This improves the performance when
+running bonded calculations on a GPU.
