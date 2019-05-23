@@ -32,62 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-/*! \internal \file
- * \brief Exports Python bindings for gmxapi._gmxapi module.
- *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
+/*! \file
+ * \brief Implement System helper code.
  *
  * \ingroup module_python
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
  */
 
-#include "module.h"
+#include "pysystem.h"
 
 #include <memory>
 
-#include "gmxapi/status.h"
-#include "gmxapi/version.h"
+namespace gmxpy
+{
 
-#include "pybind11/pybind11.h"
+std::shared_ptr<gmxapi::System> from_tpr(std::string filename)
+{
+    auto system = gmxapi::fromTprFile(filename);
+    return std::make_shared<gmxapi::System>(std::move(system));
+}
 
-namespace py = pybind11;
-
-// Export Python module.
-
-/// used to set __doc__
-/// pybind11 uses const char* objects for docstrings. C++ raw literals can be used.
-const char* const docstring = R"delimeter(
-gmxapi core module
-==================
-
-gmxapi._gmxapi provides Python access to the GROMACS C++ API so that client code can be
-implemented in Python, C++, or a mixture. The classes provided are mirrored on the
-C++ side in the gmxapi namespace as best as possible.
-
-This documentation is generated from C++ extension code. Refer to C++ source
-code and developer documentation for more details.
-
-)delimeter";
-
-/*! \brief Export gmxapi._gmxapi Python module in shared object file.
- *
- * \ingroup module_python
- */
-
-// Instantiate the Python module
-PYBIND11_MODULE(_gmxapi, m){
-    using namespace gmxpy::detail;
-    m.doc() = docstring;
-
-    // Export core bindings
-    m.def("has_feature",
-          &gmxapi::Version::hasFeature,
-          "Check the gmxapi library for a named feature.");
-
-    py::class_< ::gmxapi::Status > gmx_status(m, "Status", "Holds status for API operations.");
-
-    // Get bindings exported by the various components.
-    export_context(m);
-    export_system(m);
-
-} // end pybind11 module
+} // end namespace gmxpy

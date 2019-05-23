@@ -32,62 +32,59 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-/*! \internal \file
- * \brief Exports Python bindings for gmxapi._gmxapi module.
- *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
+/*! \file
+ * \brief Declarations for Context wrappers.
  *
  * \ingroup module_python
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
  */
 
-#include "module.h"
-
-#include <memory>
-
-#include "gmxapi/status.h"
-#include "gmxapi/version.h"
+#ifndef GMXPY_PYCONTEXT_H
+#define GMXPY_PYCONTEXT_H
 
 #include "pybind11/pybind11.h"
 
-namespace py = pybind11;
+#include "gmxapi/context.h"
+#include "gmxapi/md.h"
 
-// Export Python module.
+namespace gmxpy
+{
 
-/// used to set __doc__
-/// pybind11 uses const char* objects for docstrings. C++ raw literals can be used.
-const char* const docstring = R"delimeter(
-gmxapi core module
-==================
+using gmxapi::MDArgs;
 
-gmxapi._gmxapi provides Python access to the GROMACS C++ API so that client code can be
-implemented in Python, C++, or a mixture. The classes provided are mirrored on the
-C++ side in the gmxapi namespace as best as possible.
 
-This documentation is generated from C++ extension code. Refer to C++ source
-code and developer documentation for more details.
-
-)delimeter";
-
-/*! \brief Export gmxapi._gmxapi Python module in shared object file.
+/*!
+ * \brief Wrapper for gmxapi::Context
  *
- * \ingroup module_python
+ * Proxies gmxapi::Context methods and includes additions not yet provided by
+ * by upstream library.
  */
+class PyContext
+{
+    public:
+        PyContext();
+        void setMDArgs(const MDArgs &mdArgs);
+        std::shared_ptr<gmxapi::Session> launch(const gmxapi::Workflow &work);
+        std::shared_ptr<gmxapi::Context> get() const;
 
-// Instantiate the Python module
-PYBIND11_MODULE(_gmxapi, m){
-    using namespace gmxpy::detail;
-    m.doc() = docstring;
+        void addMDModule(pybind11::object forceProvider);
 
-    // Export core bindings
-    m.def("has_feature",
-          &gmxapi::Version::hasFeature,
-          "Check the gmxapi library for a named feature.");
+        /*!
+         * \brief Borrow shared ownership of the System's container of associated modules.
+         *
+         * Used with gmxapi::MDHolder to add MD Modules to the simulation to be run.
+         *
+         * \return handle to be passed to gmxapi::MDHolder
+         *
+         */
+        std::shared_ptr<gmxapi::MDWorkSpec> getSpec() const;
 
-    py::class_< ::gmxapi::Status > gmx_status(m, "Status", "Holds status for API operations.");
+    private:
+        std::shared_ptr<gmxapi::Context>    context_;
+        std::shared_ptr<gmxapi::MDWorkSpec> workNodes_;
+};
 
-    // Get bindings exported by the various components.
-    export_context(m);
-    export_system(m);
 
-} // end pybind11 module
+}      // end namespace gmxpy
+
+#endif //GMXPY_PYCONTEXT_H

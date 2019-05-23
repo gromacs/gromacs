@@ -32,62 +32,42 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-/*! \internal \file
- * \brief Exports Python bindings for gmxapi._gmxapi module.
+/*! \defgroup module_python Python module for accessing Gromacs library
+ * The Python module ``gmxapi`` consists of a high-level interface implemented in
+ * pure Python and a low-level interface implemented as a C++ extension in the
+ * submodule, gmxapi._gmxapi.
+ */
+/*! \file
+ * \brief Declares symbols to be exported to gmxapi._gmxapi Python module.
  *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- *
+ * Declares namespace gmxpy, used internally in the C++ extension.
  * \ingroup module_python
  */
-
-#include "module.h"
-
-#include <memory>
-
-#include "gmxapi/status.h"
-#include "gmxapi/version.h"
+#ifndef GMXPY_MODULE_H
+#define GMXPY_MODULE_H
 
 #include "pybind11/pybind11.h"
 
-namespace py = pybind11;
 
-// Export Python module.
-
-/// used to set __doc__
-/// pybind11 uses const char* objects for docstrings. C++ raw literals can be used.
-const char* const docstring = R"delimeter(
-gmxapi core module
-==================
-
-gmxapi._gmxapi provides Python access to the GROMACS C++ API so that client code can be
-implemented in Python, C++, or a mixture. The classes provided are mirrored on the
-C++ side in the gmxapi namespace as best as possible.
-
-This documentation is generated from C++ extension code. Refer to C++ source
-code and developer documentation for more details.
-
-)delimeter";
-
-/*! \brief Export gmxapi._gmxapi Python module in shared object file.
+/*! \brief API client code from which to export Python bindings
  *
+ * gmxpy is not a public interface. It implements bindings for the public
+ * Python API in the C++ Python extension it produces, and it uses the public
+ * C++ Gromacs API, but is itself an API *client* and its C++ interfaces are not
+ * intended to be used in external code.
  * \ingroup module_python
  */
+namespace gmxpy
+{
 
-// Instantiate the Python module
-PYBIND11_MODULE(_gmxapi, m){
-    using namespace gmxpy::detail;
-    m.doc() = docstring;
+namespace detail
+{
 
-    // Export core bindings
-    m.def("has_feature",
-          &gmxapi::Version::hasFeature,
-          "Check the gmxapi library for a named feature.");
+void export_context(pybind11::module &m);
+void export_system(pybind11::module &m);
 
-    py::class_< ::gmxapi::Status > gmx_status(m, "Status", "Holds status for API operations.");
+}      // end namespace gmxpy::detail
 
-    // Get bindings exported by the various components.
-    export_context(m);
-    export_system(m);
+}      // end namespace gmxpy
 
-} // end pybind11 module
+#endif // GMXPY_MODULE_H

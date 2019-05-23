@@ -132,3 +132,10 @@ Note: scikit-build can use CMake Toolchains to properly handle `pip` builds.
 
 The `pip install` options `--no-index` and `--find-links` allow for an offline stash of package archives so that
 satisfying dependencies for a new virtualenv does not require network access or lengthy build times.
+
+# Dependencies
+
+## OS X
+Some dependencies (notably, a Python installation itself) may require some fiddling
+with the XCode SDK.
+https://developer.apple.com/documentation/xcode_release_notes/xcode_10_release_notes#3035624

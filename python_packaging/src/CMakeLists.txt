@@ -85,6 +85,10 @@ add_subdirectory(external/pybind)
 
 set(GMXAPI_PYTHON_EXTENSION_SOURCES
     gmxapi/module.cpp
+    gmxapi/export_context.cpp
+    gmxapi/export_system.cpp
+    gmxapi/pycontext.cpp
+    gmxapi/pysystem.cpp
     )
 
 pybind11_add_module(_gmxapi

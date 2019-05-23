@@ -32,62 +32,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMXPY_SYSTEM_H
+#define GMXPY_SYSTEM_H
 
-/*! \internal \file
- * \brief Exports Python bindings for gmxapi._gmxapi module.
- *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
+/*! \file
+ * \brief Declare helpers for gmxapi::System.
  *
  * \ingroup module_python
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
  */
-
-#include "module.h"
 
 #include <memory>
+#include <string>
 
-#include "gmxapi/status.h"
-#include "gmxapi/version.h"
+#include "gmxapi/gmxapi.h"
+#include "gmxapi/system.h"
 
-#include "pybind11/pybind11.h"
+namespace gmxpy
+{
 
-namespace py = pybind11;
+std::shared_ptr<gmxapi::System> from_tpr(std::string filename);
 
-// Export Python module.
+}      // end namespace gmxpy
 
-/// used to set __doc__
-/// pybind11 uses const char* objects for docstrings. C++ raw literals can be used.
-const char* const docstring = R"delimeter(
-gmxapi core module
-==================
-
-gmxapi._gmxapi provides Python access to the GROMACS C++ API so that client code can be
-implemented in Python, C++, or a mixture. The classes provided are mirrored on the
-C++ side in the gmxapi namespace as best as possible.
-
-This documentation is generated from C++ extension code. Refer to C++ source
-code and developer documentation for more details.
-
-)delimeter";
-
-/*! \brief Export gmxapi._gmxapi Python module in shared object file.
- *
- * \ingroup module_python
- */
-
-// Instantiate the Python module
-PYBIND11_MODULE(_gmxapi, m){
-    using namespace gmxpy::detail;
-    m.doc() = docstring;
-
-    // Export core bindings
-    m.def("has_feature",
-          &gmxapi::Version::hasFeature,
-          "Check the gmxapi library for a named feature.");
-
-    py::class_< ::gmxapi::Status > gmx_status(m, "Status", "Holds status for API operations.");
-
-    // Get bindings exported by the various components.
-    export_context(m);
-    export_system(m);
-
-} // end pybind11 module
+#endif // header guard
