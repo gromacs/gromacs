@@ -34,10 +34,69 @@
 
 # Stub file for future higher-level CMake management. Ultimately, we want to
 # drive building and testing from the repository-level CMake configuration, but
-# in the initial packaging, tests are somewhat manual and installation of the
-# Python package is driven through the setup.py file in src.
+# in the initial packaging, tests are somewhat manual and Python package
+# installation is driven through the setup.py file in src.
 #
-# To be driven by a higher-level CMake configuration, a CMakeLists.txt file at this level would
+# Terminology note:
+#  * A "Python package" is a directory that can be imported as a Python module
+#    by the Python interpreter using the `import packagename` syntax.
+#  * A "distribution archive" is a file in any of several distribution
+#    formats (including archive files of specified directory structures)
+#    that a Python package management tool or framework
+#    (e.g. pypi.org, ``pip``, the ``setuptools`` module)
+#    knows how to download, upload, or install
+#    (building, if necessary, in the case of a source distribution).
+#  * Here, the verb "to package" means to produce a package distribitution archive.
+#    This terminology is used because
+#     * The verb "to produce a package distribution archive" is awkward to conjugate.
+#     * "To build a package" is otherwise ambiguous.
+#  * Here, the meaning of "install" varies with context. In the context of CMake
+#    or a build system like ``make``, "install" refers to the build system target
+#    or command. In the context of a Python package or Python tool, "install"
+#    refers to the managed installation of a Python package from a distribution
+#    archive to a "site-packages" directory for the Python environment.
+#    Note: a (valid and complete) Python does not need to be "installed" to be
+#    usable, such as if the ``import`` and dependencies can be resolved with the
+#    current ``PYTHONPATH`` environment variable or after ``sys.path.append()``.
+#  * "To build a package" means to create a package from sources that may need
+#    to be configured or compiled before the package can be imported. Reference
+#    the ``distutils`` ``build`` and ``build_ext`` commands. For example, when
+#    scikit-build is directed to build a package through the ``setuptools`` interface,
+#    it invokes CMake to build **and install** a CMake library target for the C++
+#    extension module in the Python package.
+#
+# For basic building and testing of the Python package, we don't necessarily
+# need to create a distribution archive or install the Python package outside
+# of the build tree. We can use a CMake ExternalProject to build and install the
+# ``_gmxapi`` binary extension module from `python_packaging/src` into the main
+# project build tree (note ``ExternalProject_add()`` option ``INSTALL_DIR``).
+# If avoiding Python packaging tools in this way, the Python source files (``.py`` files)
+# will have to be copied explicitly in additional CMake ``install(FILES)`` directives,
+# and the ExternalProject installation directory will have to be added to the
+# PYTHONPATH environment variable where the package needs to be available.
+#
+# Such an ExternalProject could be used as part of the process of packaging a
+# distribution archive through arguments to the Python side of ``skbuild``,
+# but coupling that machinery is not necessary. The packaging infrastructure may
+# be simplest and most maintainable by using scikit-build with its default
+# behavior (letting it maintain its own environment and artifacts).
+#
+# Note that a binary distribution needs to be built for a specific major and minor
+# Python release, and is often sensitive to a particular Python distribution or
+# packaging system. Instead, we can build `gmxapi` source distributions during
+# the CMake build phase at the GROMACS project level. These source distributions
+# can be installed into the GROMACS installation path or uploaded to, .e.g,
+# PyPI.org so that the binary extension is built in the context of a specific
+# (system or user) GROMACS installation and (user) Python environment. For a
+# system-wide Python environment, the package needs to be built and installed
+# (to the ``site-packages`` directory) for each supported Python interpreter.
+# ``setup.py`` can just be invoked with different Python interpreters. We can
+# add CMake infrastructure to allow multiple/repeated PYTHON_EXECUTABLE
+# specification at the GROMACS project level if such a use case is important to
+# HPC site administrators or Linux distribution packagers.
+#
+# To drive the packaging of a Python package distribution archive
+# by a higher-level CMake configuration, a CMakeLists.txt file at this level would
 # 1. configure: copy the contents of `src` to the build directory, potentially
 #    configuring version info and CMakeToolchain for GROMACS
 # 2. build: run (cd $CMAKE_CURRENT_BINARY_DIR/src && python setup.py sdist),
@@ -51,3 +110,6 @@
 #    2. create and activate a Python venv in the build dir
 #    3. `pip install <the_sdist_archive_file>` into the venv
 #    4. run `pytest copy_of_src/test`
+
+set(PYBIND11_PYTHON_VERSION "3")
+add_subdirectory(src)

@@ -55,6 +55,12 @@ set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
 
 project(gmxapi VERSION 0.1.0)
 
+# Check if Python package is being built directly or via add_subdirectory
+set(GMXAPI_MASTER_PROJECT OFF)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(GMXAPI_MASTER_PROJECT ON)
+endif()
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -63,9 +69,11 @@ cmake_policy(SET CMP0054 NEW)
 # honor the language standard settings for try_compile()
 cmake_policy(SET CMP0067 NEW)
 
-find_package(gmxapi 0.0.8 REQUIRED
-             HINTS "$ENV{GROMACS_DIR}"
-             )
+if(GMXAPI_MASTER_PROJECT)
+    find_package(gmxapi 0.0.8 REQUIRED
+                 HINTS "$ENV{GROMACS_DIR}"
+                 )
+endif()
 if(gmxapi_FOUND)
     set(_suffix "")
     # GROMACS master branch and development branches may have divergent
@@ -79,9 +87,14 @@ if(gmxapi_FOUND)
     message(STATUS "Found gmxapi version ${gmxapi_VERSION}${_suffix}")
 endif()
 
-# TODO: Account for externally-provided pybind headers where recommended by packaging system.
-# Reference https://redmine.gromacs.org/issues/2896
-add_subdirectory(external/pybind)
+set(GMXAPI_USE_BUNDLED_PYBIND ON CACHE BOOL
+    "Use pybind11 headers bundled with this repository. If OFF, CMake does `find_package(pybind11)`.")
+if(GMXAPI_USE_BUNDLED_PYBIND)
+    add_subdirectory(external/pybind)
+else()
+    # Reference https://redmine.gromacs.org/issues/2896
+    find_package(pybind11 2.2 REQUIRED)
+endif()
 
 set(GMXAPI_PYTHON_EXTENSION_SOURCES
     gmxapi/module.cpp
@@ -105,15 +118,59 @@ set_target_properties(_gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
 set_target_properties(_gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 set_target_properties(_gmxapi PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+# Python sources (*.py) will be packaged by scikit-build and setuptools.
+# Library target will be build in CMAKE_LIBRARY_OUTPUT_DIRECTORY if not overridden.
+# This may be an unexpected location whether inherited from the GROMACS build tree
+# or the SKBUILD framework. When scikit-build is invoked with setup.py, the CMake
+# build takes place in a subdirectory of ./_skbuild/.
+set_target_properties(_gmxapi PROPERTIES LIBRARY_OUTPUT_DIRECTORY gmxapi_staging/gmxapi)
 target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
 
-install(TARGETS _gmxapi LIBRARY DESTINATION gmxapi)
-
-if(NOT SKBUILD)
+# scikit-build sets SKBUILD when running Python packaging tools through setup.py
+# (e.g. with pip)
+if(SKBUILD)
+    # By default, scikit-build expects the library to be installed into a directory
+    # named for the Python package as in setup.py.
+    install(TARGETS _gmxapi LIBRARY DESTINATION gmxapi)
+else()
     # TODO: Determine packaging and installation cases and implementation.
     # Reference https://redmine.gromacs.org/issues/2896 for additional discussion.
-    message(WARNING "CMake should be run by scikit-build through setup.py for proper Python packaging.")
-    # Try to do something sensible. Collect Python sources as setup.py would.
-    file(GLOB_RECURSE _py_sources CONFIGURE_DEPENDS $CMAKE_CURRENT_SOURCE_DIR/gmxapi/*.py)
-    install(FILES ${_py_sources} DESTINATION gmxapi)
+    # Currently, CMake should be run by scikit-build through setup.py for proper Python packaging.
+    # We don't want to install by default in the outer scope of the GROMACS
+    # CMake procedure because we could end up trying to install to a system directory
+    # the user did not intend, or a user might install a Python-installation-specific
+    # package into an overly generic GROMACS path.
+
+    # Instead, we should probably build a source package and alert the user of its location.
+    # We can use CMake to call the Python packaging tools to create an 'sdist'
+    # source distribution archive to be installed in the GROMACS installation
+    # destination. We can use the build directory as the working directory for
+    # easier clean-up, as well.
+    # TODO: (ref issue #2896) Build and install 'sdist' with GROMACS.
+
+    # However, we can still produce an importable package for documentation builds and
+    # basic testing in ${CMAKE_CURRENT_BINARY_DIR}/gmxapi_staging
+    if(CMAKE_VERSION VERSION_LESS 3.12)
+        # CONFIGURE_DEPENDS appears in CMake 3.12 and can help to more robustly detect
+        # the need to update anything depending on the staged package.
+        file(GLOB_RECURSE _py_sources
+             CONFIGURE_DEPENDS
+             ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/*.py)
+    else()
+        file(GLOB_RECURSE _py_sources
+             ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/*.py)
+    endif()
+    foreach(_package_file IN LISTS _py_sources)
+        get_filename_component(_absolute_dir ${_package_file} DIRECTORY)
+        file(RELATIVE_PATH _relative_dir ${CMAKE_CURRENT_SOURCE_DIR} ${_absolute_dir})
+        file(COPY ${_package_file} DESTINATION gmxapi_staging/${_relative_dir})
+    endforeach()
+    file(COPY setup.py CMakeLists.txt DESTINATION gmxapi_staging)
+    # Set CMake variable pybind11_DIR to ${CMAKE_CURRENT_SOURCE_DIR}/external/pybind/tools
+    # if re-invoking CMake (including via Python setuptools) for the files in gmxapi_staging.
+
+    # Unit test and build docs using PYTHONPATH=$CMAKE_CURRENT_BINARY_DIR/gmxapi_staging/gmxapi
+
+    # Note: Integration testing for multiple Python versions and/or CMake-driven
+    # sdist preparation could be performed with CMake custom_commands and custom_targets.
 endif()

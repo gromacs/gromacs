@@ -851,6 +851,11 @@ if (BUILD_TESTING)
     include(tests/CheckTarget.cmake)
 endif()
 
+# TODO: Determine control flow and defaults for package installation and testing use cases.
+# Ref: http://redmine.gromacs.org/issues/2896
+option(GMX_PYTHON_PACKAGE "Configure gmxapi Python package" OFF)
+mark_as_advanced(GMX_PYTHON_PACKAGE)
+
 if (NOT GMX_BUILD_MDRUN_ONLY)
     # Note: Though only documented as an output variable, PYTHON_EXECUTABLE is
     # also effective as a CMake input variable to effectively hint the location
@@ -863,7 +868,14 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     endif()
     # Older CMake versions might not search for Python newer than 3.7.
     set(Python_ADDITIONAL_VERSIONS 3.8)
-    find_package(PythonInterp 3.5)
+    if(GMX_PYTHON_PACKAGE)
+        find_package(PythonInterp 3.5 REQUIRED)
+        # Note: PythonLibs will be found later by pybind11.
+        # TODO: (issue #2998) When CMake >= 3.12 is required, update detection.
+        # I.e.  find_package(Python3 3.5 COMPONENTS Interpreter Development REQUIRED)
+    else()
+        find_package(PythonInterp 3.5)
+    endif()
     find_package(ImageMagick QUIET COMPONENTS convert)
     include(gmxTestImageMagick)
     GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
@@ -875,6 +887,10 @@ add_subdirectory(src)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
+endif()
+
+if(GMX_PYTHON_PACKAGE AND NOT GMX_BUILD_MDRUN_ONLY)
+    add_subdirectory(python_packaging)
 endif()
 
 gmx_cpack_write_config()
