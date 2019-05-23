@@ -393,7 +393,7 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
 gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
                  real invmass[], int nblocks, int sblock[],
                  t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
-                 t_nrnb *nrnb, real *scaled_lagrange_multiplier, real lambda, real *dvdlambda,
+                 t_nrnb *nrnb, real * const scaled_lagrange_multiplier, real lambda, real *dvdlambda,
                  real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
                  gmx_bool bDumpOnError, int econq)
 {
@@ -420,7 +420,9 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         blen /= 3;
         n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
-                           ir->efep != efepNO, lambda, scaled_lagrange_multiplier, invdt, v, bCalcVir, vir_r_m_dr,
+                           ir->efep != efepNO, lambda,
+                           scaled_lagrange_multiplier + sblock[i]/3,
+                           invdt, v, bCalcVir, vir_r_m_dr,
                            econq);
 
 #ifdef DEBUGSHAKE
@@ -440,7 +442,6 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         tnit                       += n0*blen;
         trij                       += blen;
         iatoms                     += 3*blen; /* Increment pointer! */
-        scaled_lagrange_multiplier += blen;
         i++;
     }
     /* only for position part? */
