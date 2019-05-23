@@ -56,7 +56,7 @@ a release.
   prototype.
 * Use ``not_null<T>`` pointers wherever possible to convey the
   semantics that a pointer to a valid is required, and a reference
-  is inappropriate. See also |linkrefnotnull|.
+  is inappropriate. See also |linkrefnotnull1| and |linkrefnotnull2|.
 * Use ``string_view`` in cases where you want to only use a read-only-sequence
   of characters instead of using ``const std::string &``. See also |linkrefstringview|.
   Because null termination expected by some C APIs (e.g. fopen, fputs, fprintf)
@@ -158,7 +158,8 @@ a release.
 .. |linkref7| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c129-when-designing-a-class-hierarchy-distinguish-between-implementation-inheritance-and-interface-inheritance>`__
 .. |linkref8| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Renum-class>`__
 .. |linkref9| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rc-explicit>`__
-.. |linkrefnotnull| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Ri-nullptr> and here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-nullptr>`__
+.. |linkrefnotnull1| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Ri-nullptr>`__
+.. |linkrefnotnull2| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-nullptr>`__
 .. |linkrefstringview| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines.html#Rstr-view>`__
 
 
