@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -550,17 +550,10 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }
 
-#if GMX_MPI
-    int isInitialized;
-    MPI_Initialized(&isInitialized);
-    /* Before OpenMP initialization, thread-MPI is not yet initialized.
-     * With thread-MPI bAllSet will be the same on all MPI-ranks, but the
-     * MPI_Allreduce then functions as a barrier before setting affinities.
-     */
-    if (isInitialized)
+    // With thread-MPI, bAllSet must already be the same on all ranks.
+#if GMX_LIB_MPI
     {
-        gmx_bool  bAllSet_All;
-
+        bool bAllSet_All;
         MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
         bAllSet = bAllSet_All;
     }

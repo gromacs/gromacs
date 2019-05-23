@@ -660,7 +660,7 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
 
 void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
                                gmx_hw_opt_t        *hw_opt,
-                               const t_commrec     *cr,
+                               const bool           isSimulationMasterRank,
                                int                  nPmeRanks)
 {
     /* Currently hw_opt only contains default settings or settings supplied
@@ -698,7 +698,7 @@ void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
      * The other threads receive a partially processed hw_opt from the master
      * thread and should not set hw_opt->totNumThreadsIsAuto again.
      */
-    if (!GMX_THREAD_MPI || SIMMASTER(cr))
+    if (!GMX_THREAD_MPI || isSimulationMasterRank)
     {
         /* Check if mdrun is free to choose the total number of threads */
         hw_opt->totNumThreadsIsAuto = (hw_opt->nthreads_omp == 0 && hw_opt->nthreads_omp_pme == 0 && hw_opt->nthreads_tot == 0);
@@ -785,6 +785,11 @@ void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
         }
     }
 
+    if (GMX_THREAD_MPI && nPmeRanks > 0 && hw_opt->nthreads_tmpi <= 0)
+    {
+        gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
+    }
+
     if (debug)
     {
         print_hw_opt(debug, hw_opt);
@@ -794,23 +799,6 @@ void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
      * on. */
     GMX_RELEASE_ASSERT(!(hw_opt->nthreads_omp_pme >= 1 && hw_opt->nthreads_omp <= 0),
                        "PME thread count should only be set when the normal thread count is also set");
-}
-
-void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
-                               int           cutoff_scheme)
-{
-    if (cutoff_scheme == ecutsGROUP)
-    {
-        /* We only have OpenMP support for PME only nodes */
-        if (hw_opt->nthreads_omp > 1)
-        {
-            gmx_fatal(FARGS, "OpenMP threads have been requested with cut-off scheme %s, but these are only supported "
-                      "with cut-off scheme %s",
-                      ecutscheme_names[cutoff_scheme],
-                      ecutscheme_names[ecutsVERLET]);
-        }
-        hw_opt->nthreads_omp = 1;
-    }
 }
 
 void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,

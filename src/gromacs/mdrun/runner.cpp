@@ -248,7 +248,7 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch) const
 
 #if GMX_THREAD_MPI
     /* now spawn new threads that start mdrunner_start_fn(), while
-       the main thread returns, we set thread affinity later */
+       the main thread returns. Thread affinity is handled later. */
     if (tMPI_Init_fn(TRUE, numThreadsToLaunch, TMPI_AFFINITY_NONE,
                      mdrunner_start_fn, static_cast<const void*>(this)) != TMPI_SUCCESS)
     {
@@ -663,18 +663,8 @@ int Mdrunner::mdrunner()
         }
     }
 
-    if (fplog != nullptr)
-    {
-        /* Print references after all software/hardware printing */
-        please_cite(fplog, "Abraham2015");
-        please_cite(fplog, "Pall2015");
-        please_cite(fplog, "Pronk2013");
-        please_cite(fplog, "Hess2008b");
-        please_cite(fplog, "Spoel2005a");
-        please_cite(fplog, "Lindahl2001a");
-        please_cite(fplog, "Berendsen95a");
-        writeSourceDoi(fplog);
-    }
+    // Print citation requests after all software/hardware printing
+    pleaseCiteGromacs(fplog);
 
     std::unique_ptr<t_state> globalState;
 
@@ -685,47 +675,13 @@ int Mdrunner::mdrunner()
 
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()), inputrec, globalState.get(), &mtop);
-
-        /* In rerun, set velocities to zero if present */
-        if (doRerun && ((globalState->flags & (1 << estV)) != 0))
-        {
-            // rerun does not use velocities
-            GMX_LOG(mdlog.info).asParagraph().appendText(
-                    "Rerun trajectory contains velocities. Rerun does only evaluate "
-                    "potential energy and forces. The velocities will be ignored.");
-            for (int i = 0; i < globalState->natoms; i++)
-            {
-                clear_rvec(globalState->v[i]);
-            }
-            globalState->flags &= ~(1 << estV);
-        }
-
-        if (inputrec->cutoff_scheme != ecutsVERLET)
-        {
-            gmx_fatal(FARGS, "This group-scheme .tpr file can no longer be run by mdrun. Please update to the Verlet scheme, or use an earlier version of GROMACS if necessary.");
-        }
     }
 
-    /* Check and update the hardware options for internal consistency */
-    check_and_update_hw_opt_1(mdlog, &hw_opt, cr, domdecOptions.numPmeRanks);
-
-    /* Early check for externally set process affinity. */
-    gmx_check_thread_affinity_set(mdlog, cr,
-                                  &hw_opt, hwinfo->nthreads_hw_avail, FALSE);
+    // Check and update the hardware options for internal consistency
+    check_and_update_hw_opt_1(mdlog, &hw_opt, SIMMASTER(cr), domdecOptions.numPmeRanks);
 
     if (GMX_THREAD_MPI && SIMMASTER(cr))
     {
-        if (domdecOptions.numPmeRanks > 0 && hw_opt.nthreads_tmpi <= 0)
-        {
-            gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
-        }
-
-        /* Since the master knows the cut-off scheme, update hw_opt for this.
-         * This is done later for normal MPI and also once more with tMPI
-         * for all tMPI ranks.
-         */
-        check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
-
         bool useGpuForNonbonded = false;
         bool useGpuForPme       = false;
         try
@@ -861,6 +817,20 @@ int Mdrunner::mdrunner()
 
     if (SIMMASTER(cr))
     {
+        /* In rerun, set velocities to zero if present */
+        if (doRerun && ((globalState->flags & (1 << estV)) != 0))
+        {
+            // rerun does not use velocities
+            GMX_LOG(mdlog.info).asParagraph().appendText(
+                    "Rerun trajectory contains velocities. Rerun does only evaluate "
+                    "potential energy and forces. The velocities will be ignored.");
+            for (int i = 0; i < globalState->natoms; i++)
+            {
+                clear_rvec(globalState->v[i]);
+            }
+            globalState->flags &= ~(1 << estV);
+        }
+
         /* now make sure the state is initialized and propagated */
         set_state_entries(globalState.get(), inputrec);
     }
@@ -998,6 +968,10 @@ int Mdrunner::mdrunner()
         gmx_bcast(sizeof(box), box, cr);
     }
 
+    if (inputrec->cutoff_scheme != ecutsVERLET)
+    {
+        gmx_fatal(FARGS, "This group-scheme .tpr file can no longer be run by mdrun. Please update to the Verlet scheme, or use an earlier version of GROMACS if necessary.");
+    }
     /* Update rlist and nstlist. */
     if (inputrec->cutoff_scheme == ecutsVERLET)
     {
@@ -1057,9 +1031,13 @@ int Mdrunner::mdrunner()
     fflush(stderr);
 #endif
 
-    /* Check and update hw_opt for the cut-off scheme */
-    check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
-
+    // If mdrun -pin auto honors any affinity setting that already
+    // exists. If so, it is nice to provide feedback about whether
+    // that existing affinity setting was from OpenMP or something
+    // else, so we run this code both before and after we initialize
+    // the OpenMP support.
+    gmx_check_thread_affinity_set(mdlog, cr,
+                                  &hw_opt, hwinfo->nthreads_hw_avail, FALSE);
     /* Check and update the number of OpenMP threads requested */
     checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, ms, physicalNodeComm.size_,
                                             pmeRunMode, mtop);
