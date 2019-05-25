@@ -43,23 +43,23 @@
 
 #include "legacysimulator.h"
 
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
-
 //! \brief Run the correct integrator function.
-void LegacySimulator::run(unsigned int ei, bool doRerun)
+void LegacySimulator::run()
 {
-    switch (ei)
+    switch (inputrec->eI)
     {
         case eiMD:
         case eiBD:
         case eiSD1:
         case eiVV:
         case eiVVAK:
-            if (!EI_DYNAMICS(ei))
+            if (!EI_DYNAMICS(inputrec->eI))
             {
                 GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
             }
@@ -96,7 +96,7 @@ void LegacySimulator::run(unsigned int ei, bool doRerun)
             break;
         case eiTPI:
         case eiTPIC:
-            if (!EI_TPI(ei))
+            if (!EI_TPI(inputrec->eI))
             {
                 GMX_THROW(APIError("do_tpi integrator would be called for a non-TPI integrator"));
             }

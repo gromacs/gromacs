@@ -1492,28 +1492,28 @@ int Mdrunner::mdrunner()
 
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to simulator.");
         /* Now do whatever the user wants us to do (how flexible...) */
-        LegacySimulator simulator {
-            fplog, cr, ms, mdlog, static_cast<int>(filenames.size()), filenames.data(),
-            oenv,
-            mdrunOptions,
-            startingBehavior,
-            vsite.get(), constr.get(),
-            enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
-            deform.get(),
-            mdModules_->outputProvider(),
-            inputrec, imdSession.get(), pull_work, swap, &mtop,
-            fcd,
-            globalState.get(),
-            &observablesHistory,
-            mdAtoms.get(), &nrnb, wcycle, fr,
-            &enerd,
-            &ppForceWorkload,
-            replExParams,
-            membed,
-            walltime_accounting,
-            std::move(stopHandlerBuilder_)
-        };
-        simulator.run(inputrec->eI, doRerun);
+        std::unique_ptr<ISimulator> simulator = std::make_unique<LegacySimulator>(
+                    fplog, cr, ms, mdlog, static_cast<int>(filenames.size()), filenames.data(),
+                    oenv,
+                    mdrunOptions,
+                    startingBehavior,
+                    vsite.get(), constr.get(),
+                    enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
+                    deform.get(),
+                    mdModules_->outputProvider(),
+                    inputrec, imdSession.get(), pull_work, swap, &mtop,
+                    fcd,
+                    globalState.get(),
+                    &observablesHistory,
+                    mdAtoms.get(), &nrnb, wcycle, fr,
+                    &enerd,
+                    &ppForceWorkload,
+                    replExParams,
+                    membed,
+                    walltime_accounting,
+                    std::move(stopHandlerBuilder_),
+                    doRerun);
+        simulator->run();
 
         if (inputrec->bPull)
         {
