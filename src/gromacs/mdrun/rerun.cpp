@@ -133,9 +133,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "integrator.h"
 #include "replicaexchange.h"
 #include "shellfc.h"
+#include "simulator.h"
 
 using gmx::SimulationSignaller;
 
@@ -186,7 +186,7 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
     }
 }
 
-void gmx::Integrator::do_rerun()
+void gmx::Simulator::do_rerun()
 {
     // TODO Historically, the EM and MD "integrators" used different
     // names for the t_inputrec *parameter, but these must have the

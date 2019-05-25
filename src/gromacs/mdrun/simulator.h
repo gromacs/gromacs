@@ -89,7 +89,7 @@ struct MdrunOptions;
 using IntegratorFunctionType = void();
 
 /*! \internal
- * \brief Struct to handle setting up and running the different "integrators".
+ * \brief Struct to handle setting up and running the different simulation types.
  *
  * This struct is a mere aggregate of parameters to pass to evaluate an
  * energy, so that future changes to names and types of them consume
@@ -100,7 +100,7 @@ using IntegratorFunctionType = void();
  * updated, then the member will be value initialized, which will
  * typically mean initialization to zero.
  *
- * Having multiple integrators as member functions isn't a good
+ * Having multiple simulation types as member functions isn't a good
  * design, and we definitely only intend one to be called, but the
  * goal is to make it easy to change the names and types of members
  * without having to make identical changes in several places in the
@@ -108,7 +108,7 @@ using IntegratorFunctionType = void();
  * approach.
  *
  * Use a braced initializer list to construct one of these. */
-struct Integrator
+struct Simulator
 {
     //! Handles logging.
     FILE                               *fplog;

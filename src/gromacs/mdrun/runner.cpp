@@ -148,8 +148,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "integrator.h"
 #include "replicaexchange.h"
+#include "simulator.h"
 
 #if GMX_FAHCORE
 #include "corewrap.h"
@@ -1494,9 +1494,9 @@ int Mdrunner::mdrunner()
         // understood.
         PpForceWorkload ppForceWorkload;
 
-        GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to integrator.");
+        GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to simulator.");
         /* Now do whatever the user wants us to do (how flexible...) */
-        Integrator integrator {
+        Simulator simulator {
             fplog, cr, ms, mdlog, static_cast<int>(filenames.size()), filenames.data(),
             oenv,
             mdrunOptions,
@@ -1517,7 +1517,7 @@ int Mdrunner::mdrunner()
             walltime_accounting,
             std::move(stopHandlerBuilder_)
         };
-        integrator.run(inputrec->eI, doRerun);
+        simulator.run(inputrec->eI, doRerun);
 
         if (inputrec->bPull)
         {

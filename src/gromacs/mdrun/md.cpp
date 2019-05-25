@@ -137,9 +137,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "integrator.h"
 #include "replicaexchange.h"
 #include "shellfc.h"
+#include "simulator.h"
 
 #if GMX_FAHCORE
 #include "corewrap.h"
@@ -150,7 +150,7 @@ using gmx::SimulationSignaller;
 //! Whether the GPU version of Leap-Frog integrator should be used.
 static const bool c_useGpuLeapFrog = (getenv("GMX_INTEGRATE_GPU") != nullptr);
 
-void gmx::Integrator::do_md()
+void gmx::Simulator::do_md()
 {
     // TODO Historically, the EM and MD "integrators" used different
     // names for the t_inputrec *parameter, but these must have the

@@ -95,7 +95,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "integrator.h"
+#include "simulator.h"
 
 //! Global max algorithm
 static void global_max(t_commrec *cr, int *n)
@@ -134,7 +134,7 @@ namespace gmx
 
 // TODO: Convert to use the nbnxm kernels by putting the system and the teset molecule on two separate search grids
 void
-Integrator::do_tpi()
+Simulator::do_tpi()
 {
     gmx_localtop_t          top;
     PaddedVector<gmx::RVec> f {};

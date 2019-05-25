@@ -133,13 +133,13 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "integrator.h"
 #include "replicaexchange.h"
 #include "shellfc.h"
+#include "simulator.h"
 
 using gmx::SimulationSignaller;
 
-void gmx::Integrator::do_mimic()
+void gmx::Simulator::do_mimic()
 {
     t_inputrec              *ir   = inputrec;
     int64_t                  step, step_rel;

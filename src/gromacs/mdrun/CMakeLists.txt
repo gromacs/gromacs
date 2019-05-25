@@ -33,7 +33,6 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_libgromacs_sources(
-    integrator.cpp
     legacymdrunoptions.cpp
     shellfc.cpp
     md.cpp
@@ -44,6 +43,7 @@ gmx_add_libgromacs_sources(
     mimic.cpp
     runner.cpp
     simulationcontext.cpp
+    simulator.cpp
     tpi.cpp
     )
 
