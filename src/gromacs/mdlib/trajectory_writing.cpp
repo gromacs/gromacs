@@ -161,7 +161,7 @@ do_md_trajectory_writing(FILE                     *fplog,
                 energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
             }
         }
-        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
+        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global->natoms,
                                          step, t, state, state_global, observablesHistory, f);
         if (bLastStep && step_rel == ir->nsteps &&
             bDoConfOut && MASTER(cr) &&

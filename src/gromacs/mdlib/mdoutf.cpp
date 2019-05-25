@@ -248,7 +248,7 @@ gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of)
 void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
-                                      gmx_mtop_t *top_global,
+                                      int natoms,
                                       int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       ObservablesHistory *observablesHistory,
@@ -314,7 +314,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
             if (of->fp_trn)
             {
                 gmx_trr_write_frame(of->fp_trn, step, t, state_local->lambda[efptFEP],
-                                    state_local->box, top_global->natoms,
+                                    state_local->box, natoms,
                                     x, v, f);
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
@@ -328,7 +328,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
             {
                 gmx_fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
                                state_local->box,
-                               top_global->natoms,
+                               natoms,
                                x, v, f);
             }
             /* If only a TNG file is open for compressed coordinate output (no uncompressed
@@ -337,7 +337,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
             {
                 gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, state_local->lambda[efptFEP],
                                state_local->box,
-                               top_global->natoms,
+                               natoms,
                                x, v, f);
             }
         }
@@ -406,7 +406,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                     lambda = state_local->lambda[efptFEP];
                 }
                 gmx_fwrite_tng(of->tng, FALSE, step, t, lambda,
-                               box, top_global->natoms,
+                               box, natoms,
                                nullptr, nullptr, nullptr);
             }
         }
@@ -425,7 +425,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                     lambda = state_local->lambda[efptFEP];
                 }
                 gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, lambda,
-                               box, top_global->natoms,
+                               box, natoms,
                                nullptr, nullptr, nullptr);
             }
         }
