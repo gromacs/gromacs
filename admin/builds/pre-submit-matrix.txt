@@ -71,7 +71,8 @@ icc-19 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release hwloc
 # Test external clFFT (for build speed)
 # Test MPI + OpenCL
 # Test AVX2_256 SIMD
-gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 cmake-3.9.6 mpi simd=avx2_256
+# Test without MPI_IN_PLACE
+gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 cmake-3.9.6 mpi no-mpiinplace simd=avx2_256
 
 # Test AMD OpenCL
 # Test external clFFT (for build speed)

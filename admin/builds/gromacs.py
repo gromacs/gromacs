@@ -59,7 +59,7 @@ extra_options = {
     'npme': Option.string,
     'gpu_id': Option.string,
     'hwloc': Option.bool,
-    'tng': Option.bool
+    'mpiinplace': Option.bool
 }
 
 extra_projects = [Project.REGRESSIONTESTS]
@@ -117,6 +117,8 @@ def do_build(context):
         cmake_opts['GMX_THREAD_MPI'] = 'OFF'
     if context.opts.mpi:
         cmake_opts['GMX_MPI'] = 'ON'
+    if context.opts.mpiinplace is False:
+        cmake_opts['GMX_MPI_IN_PLACE'] = 'OFF'
     if context.opts.openmp is False:
         cmake_opts['GMX_OPENMP'] = 'OFF'
     if context.opts.tng is False:

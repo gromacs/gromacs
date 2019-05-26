@@ -208,6 +208,11 @@ init_replica_exchange(FILE                            *fplog,
     {
         gmx_fatal(FARGS, "Nothing to exchange with only one replica, maybe you forgot to set the -multidir option of mdrun?");
     }
+    if (replExParams.numExchanges < 0)
+    {
+        gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
+    }
+
     if (!EI_DYNAMICS(ir->eI))
     {
         gmx_fatal(FARGS, "Replica exchange is only supported by dynamical simulations");

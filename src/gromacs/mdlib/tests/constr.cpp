@@ -72,6 +72,7 @@
 #include "gromacs/mdlib/lincs.h"
 #include "gromacs/mdlib/lincs_cuda.h"
 #include "gromacs/mdlib/shake.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"

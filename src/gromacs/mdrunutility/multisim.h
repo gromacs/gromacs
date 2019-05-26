@@ -48,7 +48,18 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxmpi.h"
 
-struct gmx_multisim_t;
+struct mpi_in_place_buf_t;
+
+struct gmx_multisim_t
+{
+    int       nsim              = 1;
+    int       sim               = 0;
+    MPI_Group mpi_group_masters = MPI_GROUP_NULL;
+    MPI_Comm  mpi_comm_masters  = MPI_COMM_NULL;
+    /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
+       supported.*/
+    mpi_in_place_buf_t *mpb = nullptr;
+};
 
 /*! \brief Initializes multi-simulations.
  *
@@ -60,6 +71,40 @@ gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
 
 //! Cleans up multi-system handler.
 void done_multisim(gmx_multisim_t *ms);
+
+//! Calculate the sum over the simulations of an array of ints
+void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms);
+
+//! Calculate the sum over the simulations of an array of large ints
+void gmx_sumli_sim(int nr, int64_t r[], const gmx_multisim_t *ms);
+
+//! Calculate the sum over the simulations of an array of floats
+void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms);
+
+//! Calculate the sum over the simulations of an array of doubles
+void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
+
+/*! \brief Check if val is the same on all simulations for a mdrun
+ * -multidir run
+ *
+ * The string name is used to print to the log file and in a fatal error
+ * if the val's don't match. If bQuiet is true and the check passes,
+ * no output is written. */
+void check_multi_int(FILE *log, const gmx_multisim_t *ms,
+                     int val, const char *name,
+                     gmx_bool bQuiet);
+/*! \copydoc check_multi_int() */
+void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
+                       int64_t val, const char *name,
+                       gmx_bool bQuiet);
+
+#if GMX_DOUBLE
+//! Convenience define for sum of reals
+#define gmx_sum_sim   gmx_sumd_sim
+#else
+//! Convenience define for sum of reals
+#define gmx_sum_sim   gmx_sumf_sim
+#endif
 
 //! Are we doing multiple independent simulations?
 static bool inline isMultiSim(const gmx_multisim_t *ms)

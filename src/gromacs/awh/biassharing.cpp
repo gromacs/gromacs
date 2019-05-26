@@ -48,6 +48,7 @@
 #include <vector>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"

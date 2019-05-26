@@ -143,16 +143,6 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
                                                               ssize(filenames),
                                                               filenames.data());
 
-    if (replExParams.exchangeInterval != 0 && multidir.size() < 2)
-    {
-        gmx_fatal(FARGS, "Need at least two replicas for replica exchange (use option -multidir)");
-    }
-
-    if (replExParams.numExchanges < 0)
-    {
-        gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
-    }
-
     ms = init_multisystem(MPI_COMM_WORLD, multidir);
 
     /* Prepare the intra-simulation communication */
