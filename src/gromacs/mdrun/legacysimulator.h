@@ -39,8 +39,8 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
-#ifndef GMX_MDRUN_SIMULATOR_H
-#define GMX_MDRUN_SIMULATOR_H
+#ifndef GMX_MDRUN_LEGACYSIMULATOR_H
+#define GMX_MDRUN_LEGACYSIMULATOR_H
 
 #include <cstdio>
 
@@ -91,8 +91,8 @@ using SimulatorFunctionType = void();
 /*! \internal
  * \brief Struct to handle setting up and running the different simulation types.
  *
- * This struct is a mere aggregate of parameters to pass to evaluate an
- * energy, so that future changes to names and types of them consume
+ * This struct is a mere aggregate of parameters to pass to run a
+ * simulation, so that future changes to names and types of them consume
  * less time when refactoring other code.
  *
  * Aggregate initialization is used, for which the chief risk is that
@@ -108,7 +108,7 @@ using SimulatorFunctionType = void();
  * approach.
  *
  * Use a braced initializer list to construct one of these. */
-struct Simulator
+struct LegacySimulator
 {
     //! Handles logging.
     FILE                               *fplog;
@@ -197,4 +197,4 @@ struct Simulator
 
 }      // namespace gmx
 
-#endif // GMX_MDRUN_SIMULATOR_H
+#endif // GMX_MDRUN_LEGACYSIMULATOR_H

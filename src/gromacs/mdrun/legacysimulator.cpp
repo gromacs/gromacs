@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "simulator.h"
+#include "legacysimulator.h"
 
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/exceptions.h"
@@ -50,7 +50,7 @@ namespace gmx
 {
 
 //! \brief Run the correct integrator function.
-void Simulator::run(unsigned int ei, bool doRerun)
+void LegacySimulator::run(unsigned int ei, bool doRerun)
 {
     switch (ei)
     {

@@ -137,9 +137,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "legacysimulator.h"
 #include "replicaexchange.h"
 #include "shellfc.h"
-#include "simulator.h"
 
 #if GMX_FAHCORE
 #include "corewrap.h"
@@ -150,7 +150,7 @@ using gmx::SimulationSignaller;
 //! Whether the GPU versions of Leap-Frog integrator and LINCS and SHAKE constraints
 static const bool c_useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
 
-void gmx::Simulator::do_md()
+void gmx::LegacySimulator::do_md()
 {
     // TODO Historically, the EM and MD "integrators" used different
     // names for the t_inputrec *parameter, but these must have the
