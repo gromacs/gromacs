@@ -47,7 +47,6 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/settle_cuda.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
@@ -59,6 +58,8 @@
 
 #include "gromacs/mdlib/tests/watersystem.h"
 #include "testutils/testasserts.h"
+
+#include "settle_impl.h"
 
 namespace gmx
 {
@@ -291,21 +292,21 @@ TEST_P(SettleTest, SatisfiesConstraints)
     if (canDetectGpus(&errorMessage))
     {
         // Run the CUDA code and check if it gives identical results to CPU code
-        t_idef                        idef;
+        t_idef idef;
         idef.il[F_SETTLE] = ilist;
 
-        std::unique_ptr<SettleCuda>   settleCuda = std::make_unique<SettleCuda>(mtop);
-        settleCuda->setPbc(usePbc ? &pbcXyz_ : &pbcNone_);
-        settleCuda->set(idef, mdatoms);
-
-        settleCuda->copyApplyCopy(mdatoms.homenr,
-                                  as_rvec_array(startingPositions.data()),
-                                  as_rvec_array(updatedPositionsGpu.data()),
-                                  useVelocities,
-                                  as_rvec_array(velocitiesGpu.data()),
-                                  reciprocalTimeStep,
-                                  calcVirial,
-                                  virialGpu);
+        applySettleCuda(mdatoms.homenr,
+                        as_rvec_array(startingPositions.data()),
+                        as_rvec_array(updatedPositionsGpu.data()),
+                        useVelocities,
+                        as_rvec_array(velocitiesGpu.data()),
+                        reciprocalTimeStep,
+                        calcVirial,
+                        virialGpu,
+                        usePbc ? &pbcXyz_ : &pbcNone_,
+                        mtop,
+                        idef,
+                        mdatoms);
 
         FloatingPointTolerance toleranceGpuCpu = absoluteTolerance(0.0001);
 

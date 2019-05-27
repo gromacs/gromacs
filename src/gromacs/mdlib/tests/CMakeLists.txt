@@ -34,11 +34,13 @@
 
 file(GLOB MDLIB_TEST_SOURCES
      constr_impl.cpp
+     settle_impl.cpp
      )
 
 if (GMX_USE_CUDA)
     file(GLOB MDLIB_TEST_CUDA_SOURCES
          constr_impl.cu
+         settle_impl.cu
          )
 endif()
 

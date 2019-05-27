@@ -48,6 +48,8 @@
 #ifndef GMX_MDLIB_UPDATE_CONSTRAIN_CUDA_H
 #define GMX_MDLIB_UPDATE_CONSTRAIN_CUDA_H
 
+#include "gmxpre.h"
+
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"

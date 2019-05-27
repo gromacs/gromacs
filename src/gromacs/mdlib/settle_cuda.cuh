@@ -34,22 +34,25 @@
  */
 /*! \internal \file
  *
- * \brief Declares CUDA implementation class for SETTLE
- *
- * This header file is needed to include from both the device-side
- * kernels file, and the host-side management code.
+ * \brief Declares class for CUDA implementation of SETTLE
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \ingroup module_mdlib
  */
-#ifndef GMX_MDLIB_SETTLE_CUDA_IMPL_H
-#define GMX_MDLIB_SETTLE_CUDA_IMPL_H
+#ifndef GMX_MDLIB_SETTLE_CUDA_CUH
+#define GMX_MDLIB_SETTLE_CUDA_CUH
 
-#include "gromacs/mdlib/settle_cuda.h"
+#include "gmxpre.h"
+
+#include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/pbc_aiuc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
 
 namespace gmx
 {
@@ -61,7 +64,7 @@ namespace gmx
  * \todo Remove duplicates, check if recomputing makes more sense in some cases.
  * \todo Move the projection parameters into separate structure.
  */
-struct SettleCuda::SettleParameters
+struct SettleParameters
 {
     //! Mass of oxygen atom
     float   mO;
@@ -144,7 +147,7 @@ static void initializeProjectionMatrix(const real invmO, const real invmH,
  * \param[in]  dHH  Target H-H bond length
  */
 gmx_unused // Temporary solution to keep clang happy
-static void initSettleParameters(SettleCuda::SettleParameters *p,
+static void initSettleParameters(SettleParameters *p,
                                  const real mO,  const real mH,
                                  const real dOH, const real dHH)
 {
@@ -181,7 +184,7 @@ static void initSettleParameters(SettleCuda::SettleParameters *p,
 }
 
 /*! \internal \brief Class with interfaces and data for CUDA version of SETTLE. */
-class SettleCuda::Impl
+class SettleCuda
 {
 
     public:
@@ -195,7 +198,7 @@ class SettleCuda::Impl
          *                      target O-H and H-H distances. These values are also checked for
          *                      consistency.
          */
-        Impl(const gmx_mtop_t  &mtop);
+        SettleCuda(const gmx_mtop_t  &mtop);
 
         /*! \brief Create SETTLE object
          *
@@ -204,10 +207,10 @@ class SettleCuda::Impl
          * \param[in] dOH       Target distance for O-H bonds.
          * \param[in] dHH       Target for the distance between two hydrogen atoms.
          */
-        Impl(const real mO,  const real mH,
-             const real dOH, const real dHH);
+        SettleCuda(const real mO,  const real mH,
+                   const real dOH, const real dHH);
 
-        ~Impl();
+        ~SettleCuda();
 
         /*! \brief Apply SETTLE.
          *
@@ -235,38 +238,6 @@ class SettleCuda::Impl
                    const real    invdt,
                    const bool    computeVirial,
                    tensor        virialScaled);
-
-        /*! \brief Apply SETTLE to the coordinates/velocities stored in CPU memory.
-         *
-         * This method should not be used in any code-path, where performance is of any value.
-         * Only suitable for test and will be removed in future patch sets.
-         * Allocates GPU memory, copies data from CPU, applies SETTLE to coordinates and,
-         * if requested, to velocities, copies the results back, frees GPU memory.
-         * Method uses this class data structures which should be filled with set() and setPbc()
-         * methods.
-         *
-         * \todo Remove this method
-         *
-         * \param[in]     numAtoms          Number of atoms
-         * \param[in]     h_x               Coordinates before timestep (in CPU memory)
-         * \param[in,out] h_xp              Coordinates after timestep (in CPU memory). The
-         *                                  resulting constrained coordinates will be saved here.
-         * \param[in]     updateVelocities  If the velocities should be updated.
-         * \param[in,out] h_v               Velocities to update (in CPU memory, can be nullptr
-         *                                  if not updated)
-         * \param[in]     invdt             Reciprocal timestep (to scale Lagrange
-         *                                  multipliers when velocities are updated)
-         * \param[in]     computeVirial     If virial should be updated.
-         * \param[in,out] virialScaled      Scaled virial tensor to be updated.
-         */
-        void copyApplyCopy(const int   numAtoms,
-                           const rvec *h_x,
-                           rvec       *h_xp,
-                           const bool  updateVelocities,
-                           rvec       *h_v,
-                           const real  invdt,
-                           const bool  computeVirial,
-                           tensor      virialScaled);
 
         /*! \brief
          * Update data-structures (e.g. after NB search step).
