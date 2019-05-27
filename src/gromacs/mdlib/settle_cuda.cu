@@ -51,7 +51,7 @@
  */
 #include "gmxpre.h"
 
-#include "settle_cuda_impl.h"
+#include "settle_cuda.cuh"
 
 #include <assert.h>
 #include <stdio.h>
@@ -66,7 +66,6 @@
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/settle_cuda.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 
@@ -100,7 +99,7 @@ template <bool updateVelocities, bool computeVirial>
 __launch_bounds__(c_maxThreadsPerBlock)
 __global__ void settle_kernel(const int                            numSettles,
                               const int3*  __restrict__            gm_settles,
-                              const SettleCuda::SettleParameters   pars,
+                              const SettleParameters               pars,
                               const float3*  __restrict__          gm_x,
                               float3*  __restrict__                gm_xprime,
                               const PbcAiuc                        pbcAiuc,
@@ -412,13 +411,13 @@ inline auto getSettleKernelPtr(const bool  updateVelocities,
     return kernelPtr;
 }
 
-void SettleCuda::Impl::apply(const float3 *d_x,
-                             float3       *d_xp,
-                             const bool    updateVelocities,
-                             float3       *d_v,
-                             const real    invdt,
-                             const bool    computeVirial,
-                             tensor        virialScaled)
+void SettleCuda::apply(const float3 *d_x,
+                       float3       *d_xp,
+                       const bool    updateVelocities,
+                       float3       *d_v,
+                       const real    invdt,
+                       const bool    computeVirial,
+                       tensor        virialScaled)
 {
 
     ensureNoPendingCudaError("In CUDA version SETTLE");
@@ -499,43 +498,7 @@ void SettleCuda::Impl::apply(const float3 *d_x,
     return;
 }
 
-void SettleCuda::Impl::copyApplyCopy(const int   numAtoms,
-                                     const rvec *h_x,
-                                     rvec       *h_xp,
-                                     const bool  updateVelocities,
-                                     rvec       *h_v,
-                                     const real  invdt,
-                                     const bool  computeVirial,
-                                     tensor      virialScaled)
-{
-    float3 *d_x, *d_xp, *d_v;
-
-    allocateDeviceBuffer(&d_x,  numAtoms, nullptr);
-    allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v,  numAtoms, nullptr);
-
-    copyToDeviceBuffer(&d_x, (float3*)h_x, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_xp, (float3*)h_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    if (updateVelocities)
-    {
-        copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    }
-    apply(d_x, d_xp,
-          updateVelocities, d_v, invdt,
-          computeVirial, virialScaled);
-
-    copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    if (updateVelocities)
-    {
-        copyFromDeviceBuffer((float3*)h_v, &d_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    }
-
-    freeDeviceBuffer(&d_x);
-    freeDeviceBuffer(&d_xp);
-    freeDeviceBuffer(&d_v);
-}
-
-SettleCuda::Impl::Impl(const gmx_mtop_t &mtop)
+SettleCuda::SettleCuda(const gmx_mtop_t &mtop)
 {
     static_assert(sizeof(real) == sizeof(float),
                   "Real numbers should be in single precision in GPU code.");
@@ -636,7 +599,7 @@ SettleCuda::Impl::Impl(const gmx_mtop_t &mtop)
 
 }
 
-SettleCuda::Impl::Impl(const real mO,  const real mH,
+SettleCuda::SettleCuda(const real mO,  const real mH,
                        const real dOH, const real dHH)
 {
     static_assert(sizeof(real) == sizeof(float), "Real numbers should be in single precision in GPU code.");
@@ -653,7 +616,7 @@ SettleCuda::Impl::Impl(const real mO,  const real mH,
 
 }
 
-SettleCuda::Impl::~Impl()
+SettleCuda::~SettleCuda()
 {
     // Early exit if there is no settles
     if (numSettles_ == 0)
@@ -667,9 +630,8 @@ SettleCuda::Impl::~Impl()
     }
 }
 
-
-void SettleCuda::Impl::set(const t_idef               &idef,
-                           const t_mdatoms gmx_unused &md)
+void SettleCuda::set(const t_idef               &idef,
+                     const t_mdatoms gmx_unused &md)
 {
     const int  nral1     = 1 + NRAL(F_SETTLE);
     t_ilist    il_settle = idef.il[F_SETTLE];
@@ -692,47 +654,9 @@ void SettleCuda::Impl::set(const t_idef               &idef,
 
 }
 
-void SettleCuda::Impl::setPbc(const t_pbc *pbc)
-{
-    setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
-}
-
-SettleCuda::SettleCuda(const gmx_mtop_t &mtop)
-    : impl_(new Impl(mtop))
-{
-}
-
-SettleCuda::SettleCuda(const real mO,  const real mH,
-                       const real dOH, const real dHH)
-    : impl_(new Impl(mO, mH, dOH, dHH))
-{
-}
-
-SettleCuda::~SettleCuda() = default;
-
-void SettleCuda::copyApplyCopy(const int   numAtoms,
-                               const rvec *h_x,
-                               rvec       *h_xp,
-                               const bool  updateVelocities,
-                               rvec       *h_v,
-                               const real  invdt,
-                               const bool  computeVirial,
-                               tensor      virialScaled)
-{
-    impl_->copyApplyCopy(numAtoms, h_x, h_xp,
-                         updateVelocities, h_v, invdt,
-                         computeVirial, virialScaled);
-}
-
 void SettleCuda::setPbc(const t_pbc *pbc)
 {
-    impl_->setPbc(pbc);
-}
-
-void SettleCuda::set(const t_idef    &idef,
-                     const t_mdatoms &md)
-{
-    impl_->set(idef, md);
+    setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
 }
 
 } // namespace gmx

@@ -65,12 +65,12 @@
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/lincs_cuda.cuh"
+#include "gromacs/mdlib/settle_cuda.cuh"
 #include "gromacs/mdlib/update_constrain_cuda.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 
 #include "leapfrog_cuda_impl.h"
-#include "settle_cuda_impl.h"
 
 namespace gmx
 {
@@ -122,7 +122,7 @@ UpdateConstrainCuda::Impl::Impl(int                numAtoms,
     GMX_RELEASE_ASSERT(numAtoms == mtop.natoms, "State and topology number of atoms should be the same.");
     integrator_ = std::make_unique<LeapFrogCuda::Impl>();
     lincsCuda_  = std::make_unique<LincsCuda>(ir.nLincsIter, ir.nProjOrder);
-    settleCuda_ = std::make_unique<SettleCuda::Impl>(mtop);
+    settleCuda_ = std::make_unique<SettleCuda>(mtop);
 
 }
 
