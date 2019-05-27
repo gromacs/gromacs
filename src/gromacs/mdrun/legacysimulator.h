@@ -90,10 +90,12 @@ class LegacySimulator : public ISimulator
         SimulatorFunctionType               do_tpi;
         //! Implements MiMiC QM/MM workflow
         SimulatorFunctionType               do_mimic;
-
-    public:
         // Use the constructor of the base class
         using ISimulator::ISimulator;
+
+    public:
+        // Only builder can construct
+        friend class SimulatorBuilder;
 
         /*! \brief Function to run the correct SimulatorFunctionType,
          * based on the .mdp integrator field. */
