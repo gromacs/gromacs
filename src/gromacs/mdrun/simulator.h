@@ -33,14 +33,14 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal
- * \brief Declares the integrator interface for mdrun
+ * \brief Declares the simulator interface for mdrun
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
-#ifndef GMX_MDRUN_INTEGRATOR_H
-#define GMX_MDRUN_INTEGRATOR_H
+#ifndef GMX_MDRUN_SIMULATOR_H
+#define GMX_MDRUN_SIMULATOR_H
 
 #include <cstdio>
 
@@ -85,8 +85,8 @@ class MDAtoms;
 class StopHandlerBuilder;
 struct MdrunOptions;
 
-//! Function type for integrator code.
-using IntegratorFunctionType = void();
+//! Function type for simulator code.
+using SimulatorFunctionType = void();
 
 /*! \internal
  * \brief Struct to handle setting up and running the different simulation types.
@@ -174,27 +174,27 @@ struct Simulator
     gmx_walltime_accounting            *walltime_accounting;
     //! Registers stop conditions
     std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder;
-    //! Implements the normal MD integrators.
-    IntegratorFunctionType              do_md;
+    //! Implements the normal MD simulations.
+    SimulatorFunctionType               do_md;
     //! Implements the rerun functionality.
-    IntegratorFunctionType              do_rerun;
+    SimulatorFunctionType               do_rerun;
     //! Implements steepest descent EM.
-    IntegratorFunctionType              do_steep;
+    SimulatorFunctionType               do_steep;
     //! Implements conjugate gradient energy minimization
-    IntegratorFunctionType              do_cg;
+    SimulatorFunctionType               do_cg;
     //! Implements onjugate gradient energy minimization using the L-BFGS algorithm
-    IntegratorFunctionType              do_lbfgs;
+    SimulatorFunctionType               do_lbfgs;
     //! Implements normal mode analysis
-    IntegratorFunctionType              do_nm;
+    SimulatorFunctionType               do_nm;
     //! Implements test particle insertion
-    IntegratorFunctionType              do_tpi;
+    SimulatorFunctionType               do_tpi;
     //! Implements MiMiC QM/MM workflow
-    IntegratorFunctionType              do_mimic;
-    /*! \brief Function to run the correct IntegratorFunctionType,
+    SimulatorFunctionType               do_mimic;
+    /*! \brief Function to run the correct SimulatorFunctionType,
      * based on the .mdp integrator field. */
     void run(unsigned int ei, bool doRerun);
 };
 
 }      // namespace gmx
 
-#endif // GMX_MDRUN_INTEGRATOR_H
+#endif // GMX_MDRUN_SIMULATOR_H
