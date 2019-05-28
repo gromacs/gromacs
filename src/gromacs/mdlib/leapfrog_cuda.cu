@@ -1,3 +1,4 @@
+
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
@@ -48,7 +49,7 @@
  */
 #include "gmxpre.h"
 
-#include "leapfrog_cuda_impl.h"
+#include "leapfrog_cuda.cuh"
 
 #include <assert.h>
 #include <stdio.h>
@@ -62,7 +63,6 @@
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/leapfrog_cuda.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 
@@ -124,11 +124,11 @@ __global__ void leapfrog_kernel(const int                  numAtoms,
     return;
 }
 
-void LeapFrogCuda::Impl::integrate(const float3 *d_x,
-                                   float3       *d_xp,
-                                   float3       *d_v,
-                                   const float3 *d_f,
-                                   const real    dt)
+void LeapFrogCuda::integrate(const float3 *d_x,
+                             float3       *d_xp,
+                             float3       *d_v,
+                             const float3 *d_f,
+                             const real    dt)
 {
 
     ensureNoPendingCudaError("In CUDA version of Leap-Frog integrator");
@@ -159,38 +159,7 @@ void LeapFrogCuda::Impl::integrate(const float3 *d_x,
     return;
 }
 
-void LeapFrogCuda::Impl::copyIntegrateCopy(const int   numAtoms,
-                                           const rvec *h_x,
-                                           rvec       *h_xp,
-                                           rvec       *h_v,
-                                           const rvec *h_f,
-                                           const real  dt)
-{
-    float3 *d_x, *d_xp, *d_v, *d_f;
-
-    allocateDeviceBuffer(&d_x,  numAtoms, nullptr);
-    allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v,  numAtoms, nullptr);
-    allocateDeviceBuffer(&d_f,  numAtoms, nullptr);
-
-    copyToDeviceBuffer(&d_x,  (float3*)h_x,  0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_xp, (float3*)h_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_v,  (float3*)h_v,  0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_f,  (float3*)h_f,  0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-
-    integrate(d_x, d_xp, d_v, d_f, dt);
-
-    copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-    copyFromDeviceBuffer((float3*)h_v, &d_v, 0, numAtoms, stream_, GpuApiCallBehavior::Sync, nullptr);
-
-    freeDeviceBuffer(&d_x);
-    freeDeviceBuffer(&d_xp);
-    freeDeviceBuffer(&d_v);
-    freeDeviceBuffer(&d_f);
-
-}
-
-LeapFrogCuda::Impl::Impl()
+LeapFrogCuda::LeapFrogCuda()
 {
     numAtoms_ = 0;
 
@@ -198,18 +167,18 @@ LeapFrogCuda::Impl::Impl()
     stream_ = nullptr;
 }
 
-LeapFrogCuda::Impl::~Impl()
+LeapFrogCuda::~LeapFrogCuda()
 {
     freeDeviceBuffer(&d_inverseMasses_);
 
 }
 
-void LeapFrogCuda::Impl::setPbc(const t_pbc *pbc)
+void LeapFrogCuda::setPbc(const t_pbc *pbc)
 {
     setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
 }
 
-void LeapFrogCuda::Impl::set(const t_mdatoms &md)
+void LeapFrogCuda::set(const t_mdatoms &md)
 {
     if (md.nr > numAtoms_)
     {
@@ -222,34 +191,6 @@ void LeapFrogCuda::Impl::set(const t_mdatoms &md)
     }
     copyToDeviceBuffer(&d_inverseMasses_, (float*)md.invmass,
                        0, numAtoms_, stream_, GpuApiCallBehavior::Sync, nullptr);
-}
-
-
-LeapFrogCuda::LeapFrogCuda()
-    : impl_(new Impl())
-{
-}
-
-LeapFrogCuda::~LeapFrogCuda() = default;
-
-void LeapFrogCuda::copyIntegrateCopy(const int   numAtoms,
-                                     const rvec *h_x,
-                                     rvec       *h_xp,
-                                     rvec       *h_v,
-                                     const rvec *h_f,
-                                     const real  dt)
-{
-    impl_->copyIntegrateCopy(numAtoms, h_x, h_xp, h_v, h_f, dt);
-}
-
-void LeapFrogCuda::setPbc(const t_pbc *pbc)
-{
-    impl_->setPbc(pbc);
-}
-
-void LeapFrogCuda::set(const t_mdatoms &md)
-{
-    impl_->set(md);
 }
 
 } //namespace gmx

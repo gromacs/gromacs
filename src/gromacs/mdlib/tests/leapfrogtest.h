@@ -33,59 +33,50 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- *
- * \brief May be used to implement Leap-Frog CUDA interfaces for non-GPU builds.
- *
- * Currently, reports and exits if any of the interfaces are called.
- * Needed to satisfy compiler on systems, where CUDA is not available.
+ * \brief Declaration of interfaces to run integrator on various devices
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
- *
  * \ingroup module_mdlib
  */
-#include "gmxpre.h"
 
 #include "config.h"
 
-#include "gromacs/mdlib/leapfrog_cuda.h"
+#include "gromacs/math/vec.h"
 
-#if GMX_GPU != GMX_GPU_CUDA
+struct t_mdatoms;
 
 namespace gmx
 {
-
-class LeapFrogCuda::Impl
+namespace test
 {
-};
 
-LeapFrogCuda::LeapFrogCuda()
-    : impl_(nullptr)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
+#if GMX_GPU == GMX_GPU_CUDA
 
-LeapFrogCuda::~LeapFrogCuda() = default;
+/*! \brief Integrate using CUDA version of Leap-Frog
+ *
+ * Copies data from CPU to GPU, integrates the equation of motion
+ * for requested number of steps using Leap-Frog algorithm, copies
+ * the result back.
+ *
+ * \param[in]     numAtoms  Number of atoms.
+ * \param[in]     h_x       Initial coordinates.
+ * \param[out]    h_xp      Place to save the resulting coordinates to.
+ * \param[in,out] h_v       Velocities (will be updated).
+ * \param[in]     h_f       Forces.
+ * \param[in]     dt        Timestep.
+ * \param[in]     numSteps  Total number of steps to runtegration for.
+ * \param[in]     mdAtoms   Infromation on atoms (atom masses are used here).
+ */
+void integrateLeapFrogCuda(int         numAtoms,
+                           const rvec *h_x,
+                           rvec       *h_xp,
+                           rvec       *h_v,
+                           const rvec *h_f,
+                           real        dt,
+                           int         numSteps,
+                           t_mdatoms   mdAtoms);
 
-void LeapFrogCuda::copyIntegrateCopy(gmx_unused const int   numAtoms,
-                                     gmx_unused const rvec *h_x,
-                                     gmx_unused rvec       *h_xp,
-                                     gmx_unused rvec       *h_v,
-                                     gmx_unused const rvec *h_f,
-                                     gmx_unused const real  dt)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
+#endif // GMX_GPU == GMX_GPU_CUDA
 
-void LeapFrogCuda::setPbc(gmx_unused const t_pbc *pbc)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
-
-void LeapFrogCuda::set(gmx_unused const t_mdatoms &md)
-{
-    GMX_ASSERT(false, "A CPU stub for LeapFrog was called insted of the correct implementation.");
-}
-
+}      // namespace test
 }      // namespace gmx
-
-#endif /* GMX_GPU != GMX_GPU_CUDA */

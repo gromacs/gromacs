@@ -63,11 +63,13 @@
 
 #include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/leapfrog_cuda.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+
+#include "leapfrogtest.h"
 
 namespace gmx
 {
@@ -193,44 +195,30 @@ TEST_P(IntegratorTest, SimpleIntegration)
     real timestep;    // 2. Timestep
     rvec v0;          // 3. Velocity
     rvec f0;          // 4. Force
-    int  nStep;       // 5. Number of steps
-    std::tie(numAtoms, timestep, v0[XX], v0[YY], v0[ZZ], f0[XX], f0[YY], f0[ZZ], nStep) = GetParam();
+    int  numSteps;    // 5. Number of steps
+    std::tie(numAtoms, timestep, v0[XX], v0[YY], v0[ZZ], f0[XX], f0[YY], f0[ZZ], numSteps) = GetParam();
 
     std::string testDescription = formatString("while testing %d atoms for %d timestep (dt = %f, v0=(%f, %f, %f), f0=(%f, %f, %f))",
-                                               numAtoms, nStep, timestep,
+                                               numAtoms, numSteps, timestep,
                                                v0[XX], v0[YY], v0[ZZ],
                                                f0[XX], f0[YY], f0[ZZ]);
 
-
     init(numAtoms, timestep, v0, f0);
 
-    std::unique_ptr<LeapFrogCuda> integrator = std::make_unique<LeapFrogCuda>();
+    integrateLeapFrogCuda(numAtoms,
+                          (rvec*)(x_.data()),
+                          (rvec*)(xPrime_.data()),
+                          (rvec*)(v_.data()),
+                          (rvec*)(f_.data()),
+                          timestep_,
+                          numSteps,
+                          mdAtoms_);
 
-    integrator->set(mdAtoms_);
-
-    for (int step = 0; step < nStep; step++)
-    {
-        integrator->copyIntegrateCopy(numAtoms,
-                                      (rvec*)(x_.data()),
-                                      (rvec*)(xPrime_.data()),
-                                      (rvec*)(v_.data()),
-                                      (rvec*)(f_.data()),
-                                      timestep_);
-
-        for (int i = 0; i < numAtoms; i++)
-        {
-            for (int d = 0; d < DIM; d++)
-            {
-                x_.at(i)[d] = xPrime_.at(i)[d];
-            }
-        }
-    }
-
-    real totalTime = nStep*timestep;
+    real totalTime = numSteps*timestep;
     // TODO For the case of constant force, the numerical scheme is exact and
     //      the only source of errors is floating point arithmetic. Hence,
     //      the tolerance can be calculated.
-    FloatingPointTolerance tolerance = absoluteTolerance(nStep*0.000005);
+    FloatingPointTolerance tolerance = absoluteTolerance(numSteps*0.000005);
 
     for (unsigned i = 0; i < x_.size(); i++)
     {

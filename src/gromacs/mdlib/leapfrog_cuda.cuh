@@ -34,10 +34,8 @@
  */
 /*! \libinternal \file
  *
- * \brief Declaration of high-level functions of CUDA implementation of Leap-Frog.
+ * \brief Declarations for CUDA implementation of Leap-Frog.
  *
- * \todo This should only list interfaces needed for libgromacs clients (e.g.
- *       management of coordinates, velocities and forces should not be here).
  * \todo Reconsider naming towards using "gpu" suffix instead of "cuda".
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
@@ -45,11 +43,12 @@
  * \ingroup module_mdlib
  * \inlibraryapi
  */
-#ifndef GMX_MDLIB_LEAPFROG_CUDA_H
-#define GMX_MDLIB_LEAPFROG_CUDA_H
+#ifndef GMX_MDLIB_LEAPFROG_CUDA_CUH
+#define GMX_MDLIB_LEAPFROG_CUDA_CUH
 
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/pbc_aiuc.h"
 #include "gromacs/utility/classhelpers.h"
 
 namespace gmx
@@ -62,29 +61,6 @@ class LeapFrogCuda
 
         LeapFrogCuda();
         ~LeapFrogCuda();
-
-        /*! \brief Integrate
-         *
-         * Copies data from CPU to GPU, integrates the equation of motion
-         * using Leap-Frog algorithm, copies the result back. Should only
-         * be used for testing.
-         *
-         * \todo This is temporary solution and will be removed in the
-         *       following revisions.
-         *
-         * \param[in] numAtoms  Number of atoms.
-         * \param[in]     h_x   Initial coordinates.
-         * \param[out]    h_xp  Place to save the resulting coordinates to.
-         * \param[in,out] h_v   Velocities (will be updated).
-         * \param[in]     h_f   Forces.
-         * \param[in]     dt    Timestep.
-         */
-        void copyIntegrateCopy(int         numAtoms,
-                               const rvec *h_x,
-                               rvec       *h_xp,
-                               rvec       *h_v,
-                               const rvec *h_f,
-                               real        dt);
 
         /*! \brief
          * Update PBC data.
@@ -103,11 +79,34 @@ class LeapFrogCuda
          */
         void set(const t_mdatoms &md);
 
-        /*! \brief Class with hardware-specific interfaces and implementations.*/
-        class Impl;
+        /*! \brief Integrate
+         *
+         * Integrates the equation of motion using Leap-Frog algorithm.
+         * Updates coordinates and velocities on the GPU.
+         *
+         * \param[in]     d_x   Initial coordinates.
+         * \param[out]    d_xp  Place to save the resulting coordinates to.
+         * \param[in,out] d_v   Velocities (will be updated).
+         * \param[in]     d_f   Forces.
+         * \param[in]     dt    Timestep.
+         */
+        void integrate(const float3 *d_x,
+                       float3       *d_xp,
+                       float3       *d_v,
+                       const float3 *d_f,
+                       const real    dt);
 
     private:
-        gmx::PrivateImplPointer<Impl> impl_;
+
+        //! CUDA stream
+        cudaStream_t stream_;
+        //! Periodic boundary data
+        PbcAiuc      pbcAiuc_;
+        //! Number of atoms
+        int          numAtoms_;
+
+        //! 1/mass for all atoms (GPU)
+        real        *d_inverseMasses_;
 
 };
 

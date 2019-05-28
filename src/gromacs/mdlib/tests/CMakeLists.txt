@@ -32,14 +32,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MDLIB_TEST_SOURCES
-     constrtestrunners.cpp
-     constrtestdata.cpp
-     )
-
 gmx_add_unit_test(MdlibUnitTest mdlib-test
                   calc_verletbuf.cpp
                   constr.cpp
+                  constrtestdata.cpp
+                  constrtestrunners.cpp
                   ebin.cpp
                   energyoutput.cpp
                   leapfrog.cpp
@@ -53,5 +50,6 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
 # TODO: Make CUDA source to compile inside the testing framework
 if(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(constrtestrunners.cu
+                               leapfrog.cu
                                settle_runners.cu)
 endif()
