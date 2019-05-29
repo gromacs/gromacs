@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1260,7 +1260,7 @@ static void make_load_communicators(gmx_domdec_t gmx_unused *dd)
         fprintf(debug, "Making load communicators\n");
     }
 
-    snew(dd->comm->load,          std::max(dd->ndim, 1));
+    dd->comm->load = new domdec_load_t[std::max(dd->ndim, 1)];
     snew(dd->comm->mpi_comm_load, std::max(dd->ndim, 1));
 
     if (dd->ndim == 0)
