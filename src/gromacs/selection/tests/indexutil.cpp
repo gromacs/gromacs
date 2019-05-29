@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,28 +75,37 @@ TEST(IndexGroupTest, RemovesDuplicates)
     EXPECT_TRUE(gmx_ana_index_equals(&g, &e));
 }
 
-/********************************************************************
- * IndexBlockTest
- */
-
+//! Text fixture for index block operations
 class IndexBlockTest : public ::testing::Test
 {
     public:
         IndexBlockTest();
         ~IndexBlockTest() override;
 
+        //@{
+        //! Set the input group for the index block operation
         void setGroup(int count, const int atoms[]);
         template <int count>
         void setGroup(const int (&atoms)[count])
         {
             setGroup(count, atoms);
         }
+        //@}
+        /*! \brief Check the input group and output with refdata, with
+         * an optional \c id to name the refdata block */
+        void checkBlocka(const char *id = "Block");
+        //! Make a simple topology to check with
+        void makeSimpleTopology();
+        //! Make a complex topology to check with
+        void makeComplexTopology();
 
-        void checkBlocka();
-
+        //! Managers reference data for the tests
         gmx::test::TestReferenceData    data_;
+        //! Manages setting up a topology and matching data structures
         gmx::test::TopologyManager      topManager_;
+        //! The input group to test with
         gmx_ana_index_t                 g_;
+        //! The output block to test on
         t_blocka                        blocka_;
 };
 
@@ -122,10 +131,10 @@ void IndexBlockTest::setGroup(int count, const int atoms[])
     g_.index = const_cast<int *>(atoms);
 }
 
-void IndexBlockTest::checkBlocka()
+void IndexBlockTest::checkBlocka(const char *id)
 {
     gmx::test::TestReferenceChecker compound(
-            data_.rootChecker().checkCompound("BlockAtoms", "Block"));
+            data_.rootChecker().checkCompound("BlockAtoms", id));
     compound.checkSequenceArray(g_.isize, g_.index, "Input");
     compound.checkInteger(blocka_.nr, "Count");
     for (int i = 0; i < blocka_.nr; ++i)
@@ -136,6 +145,56 @@ void IndexBlockTest::checkBlocka()
                                     &blocka_.a[blocka_.index[i+1]],
                                     "Atoms");
     }
+}
+
+void IndexBlockTest::makeSimpleTopology()
+{
+    topManager_.initTopology(1, 1);
+    {
+        int              moleculeTypeIndex   = 0;
+        std::vector<int> numAtomsInResidues  = {3, 3, 3};
+        int              moleculeBlockIndex  = 0;
+        int              numMoleculesInBlock = 1;
+        topManager_.setMoleculeType(moleculeTypeIndex, numAtomsInResidues);
+        topManager_.setMoleculeBlock(moleculeBlockIndex, moleculeTypeIndex, numMoleculesInBlock);
+    }
+    topManager_.finalizeTopology();
+}
+
+void IndexBlockTest::makeComplexTopology()
+{
+    topManager_.initTopology(3, 4);
+    {
+        int              moleculeTypeIndex   = 0;
+        std::vector<int> numAtomsInResidues  = {2, 2, 1};
+        int              moleculeBlockIndex  = 0;
+        int              numMoleculesInBlock = 1;
+        topManager_.setMoleculeType(moleculeTypeIndex, numAtomsInResidues);
+        topManager_.setMoleculeBlock(moleculeBlockIndex, moleculeTypeIndex, numMoleculesInBlock);
+    }
+    {
+        int              moleculeTypeIndex   = 1;
+        std::vector<int> numAtomsInResidues  = {1};
+        int              moleculeBlockIndex  = 1;
+        int              numMoleculesInBlock = 3;
+        topManager_.setMoleculeType(moleculeTypeIndex, numAtomsInResidues);
+        topManager_.setMoleculeBlock(moleculeBlockIndex, moleculeTypeIndex, numMoleculesInBlock);
+    }
+    {
+        int              moleculeTypeIndex   = 2;
+        std::vector<int> numAtomsInResidues  = {3};
+        int              moleculeBlockIndex  = 2;
+        int              numMoleculesInBlock = 1;
+        topManager_.setMoleculeType(moleculeTypeIndex, numAtomsInResidues);
+        topManager_.setMoleculeBlock(moleculeBlockIndex, moleculeTypeIndex, numMoleculesInBlock);
+    }
+    {
+        int moleculeTypeIndex   = 0; // Re-using a moltype definition
+        int moleculeBlockIndex  = 3;
+        int numMoleculesInBlock = 1;
+        topManager_.setMoleculeBlock(moleculeBlockIndex, moleculeTypeIndex, numMoleculesInBlock);
+    }
+    topManager_.finalizeTopology();
 }
 
 /********************************************************************
@@ -162,50 +221,82 @@ TEST_F(IndexBlockTest, CreatesAtomBlock)
     checkBlocka();
 }
 
-TEST_F(IndexBlockTest, CreatesResidueBlock)
+TEST_F(IndexBlockTest, CreatesResidueBlocksForSimpleTopology)
 {
-    const int group[] = { 0, 1, 3, 6, 7 };
-    topManager_.initAtoms(9);
-    topManager_.initUniformResidues(3);
+    makeSimpleTopology();
+
+    const int group[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
     setGroup(group);
-    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_,
-                             INDEX_RES, false);
-    checkBlocka();
+    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_RES, false);
+    checkBlocka("FromAllAtoms");
+    done_blocka(&blocka_);
+    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_RES, true);
+    checkBlocka("FromAllAtoms");
 }
 
-TEST_F(IndexBlockTest, CreatesMoleculeBlock)
+TEST_F(IndexBlockTest, CreatesResidueBlocksForComplexTopology)
 {
-    const int group[] = { 3, 4, 7, 8, 13 };
-    topManager_.initAtoms(18);
-    topManager_.initUniformResidues(1);
-    topManager_.initUniformMolecules(3);
+    makeComplexTopology();
+
+    SCOPED_TRACE("Group with all atoms without completion");
+    const int group[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
     setGroup(group);
-    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_,
-                             INDEX_MOL, false);
-    checkBlocka();
+    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_RES, false);
+    checkBlocka("FromAllAtoms");
+    done_blocka(&blocka_);
+    //SCOPED_TRACE("Group with all atoms with completion");
+    //gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_RES, true);
+    //checkBlocka("FromAllAtoms");
+    //done_blocka(&blocka_);
+
+    SCOPED_TRACE("Group with some atoms without completion");
+    const int subgroup[] = { 0, 3, 4, 5, 6, 7, 8, 12, 13, 15 };
+    setGroup(subgroup);
+    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_RES, false);
+    checkBlocka("FromSomeAtomsWithoutCompletion");
+    //done_blocka(&blocka_);
+    //SCOPED_TRACE("Group with some atoms with completion");
+    //gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_RES, true);
+    //checkBlocka("FromSomeAtomsWithCompletion");
 }
 
-TEST_F(IndexBlockTest, CreatesResidueBlockWithCompletion)
+TEST_F(IndexBlockTest, CreatesMoleculeBlocksForSimpleTopology)
 {
-    const int group[] = { 3, 4, 7, 8, 13 };
-    topManager_.initAtoms(18);
-    topManager_.initUniformResidues(3);
+    makeSimpleTopology();
+
+    const int group[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
     setGroup(group);
-    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_,
-                             INDEX_RES, true);
-    checkBlocka();
+    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_MOL, false);
+    checkBlocka("FromAllAtoms");
+    done_blocka(&blocka_);
+    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_MOL, true);
+    checkBlocka("FromAllAtoms");
 }
 
-TEST_F(IndexBlockTest, CreatesMoleculeBlockWithCompletion)
+TEST_F(IndexBlockTest, CreatesMoleculeBlocksForComplexTopology)
 {
-    const int group[] = { 3, 4, 7, 8, 13 };
-    topManager_.initAtoms(18);
-    topManager_.initUniformResidues(1);
-    topManager_.initUniformMolecules(3);
+    makeComplexTopology();
+
+    SCOPED_TRACE("Group with all atoms without completion");
+    const int group[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
     setGroup(group);
-    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_,
-                             INDEX_MOL, true);
-    checkBlocka();
+    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_MOL, false);
+    checkBlocka("FromAllAtoms");
+    done_blocka(&blocka_);
+    //SCOPED_TRACE("Group with all atoms with completion");
+    //gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_MOL, true);
+    //checkBlocka("FromAllAtoms");
+    //done_blocka(&blocka_);
+
+    SCOPED_TRACE("Group with some atoms without completion");
+    const int subgroup[] = { 1, 5, 6, 7, 11, 12 };
+    setGroup(subgroup);
+    gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_MOL, false);
+    checkBlocka("FromSomeAtomsWithoutCompletion");
+    //done_blocka(&blocka_);
+    //SCOPED_TRACE("Group with some atoms with completion");
+    //gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_, INDEX_MOL, true);
+    //checkBlocka("FromSomeAtomsWithCompletion");
 }
 
 TEST_F(IndexBlockTest, CreatesSingleBlock)
