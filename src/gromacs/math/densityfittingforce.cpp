@@ -64,14 +64,13 @@ class DensityFittingForce::Impl
          * spread of function used to generate the density and spread range.
          * \param[in] kernelShapeParameters determine the shape of the spreading kernel
          */
-        Impl(const GaussianSpreadKernelParameters::Shape &kernelShapeParameters);
-        ~Impl() {}
+        explicit Impl(const GaussianSpreadKernelParameters::Shape &kernelShapeParameters);
         //! \copydoc DensityFittingForce::evaluateForce(const DensitySpreadKernelParameters::PositionAndAmplitude & localParameters, basic_mdspan<const float, dynamicExtents3D> densityDerivative)
         RVec evaluateForce(const GaussianSpreadKernelParameters::PositionAndAmplitude &localParameters, basic_mdspan<const float, dynamicExtents3D> densityDerivative);
         //! The width of the Gaussian in lattice spacing units
-        double sigma_;
+        DVec                                 sigma_;
         //! The spread range in lattice points
-        int    latticeSpreadRange_;
+        IVec                                 latticeSpreadRange_;
         //! The three one-dimensional Gaussians that are used in the force calculation
         std::array<GaussianOn1DLattice, DIM> gauss1d_;
         //! The outer product of a Gaussian along the z and y dimension
@@ -83,16 +82,19 @@ DensityFittingForce::Impl::Impl(const GaussianSpreadKernelParameters::Shape &ker
 latticeSpreadRange_ {
     kernelShapeParameters.latticeSpreadRange()
 },
-gauss1d_({GaussianOn1DLattice(latticeSpreadRange_, sigma_),
-          GaussianOn1DLattice(latticeSpreadRange_, sigma_),
-          GaussianOn1DLattice(latticeSpreadRange_, sigma_)})
+gauss1d_({GaussianOn1DLattice(latticeSpreadRange_[XX], sigma_[XX]),
+          GaussianOn1DLattice(latticeSpreadRange_[YY], sigma_[YY]),
+          GaussianOn1DLattice(latticeSpreadRange_[ZZ], sigma_[ZZ])})
 {
 }
 
 RVec DensityFittingForce::Impl::evaluateForce(const GaussianSpreadKernelParameters::PositionAndAmplitude &localParameters,
                                               basic_mdspan<const float, dynamicExtents3D> densityDerivative)
 {
-    const IVec closestLatticePoint(roundToInt(localParameters.coordinate_[XX]), roundToInt(localParameters.coordinate_[YY]), roundToInt(localParameters.coordinate_[ZZ]));
+    const IVec closestLatticePoint(
+            roundToInt(localParameters.coordinate_[XX]),
+            roundToInt(localParameters.coordinate_[YY]),
+            roundToInt(localParameters.coordinate_[ZZ]));
     const auto spreadRange = spreadRangeWithinLattice(closestLatticePoint, densityDerivative.extents(), latticeSpreadRange_);
 
     // do nothing if the added Gaussian will never reach the lattice
@@ -110,43 +112,43 @@ RVec DensityFittingForce::Impl::evaluateForce(const GaussianSpreadKernelParamete
 
     const auto  spreadZY         = outerProductZY_(gauss1d_[ZZ].view(), gauss1d_[YY].view());
     const auto  spreadX          = gauss1d_[XX].view();
-    const IVec  spreadGridOffset = {
-        latticeSpreadRange_ - closestLatticePoint[XX],
-        latticeSpreadRange_ - closestLatticePoint[YY],
-        latticeSpreadRange_ - closestLatticePoint[ZZ]
-    };
+    const IVec  spreadGridOffset(latticeSpreadRange_[XX] - closestLatticePoint[XX],
+                                 latticeSpreadRange_[YY] - closestLatticePoint[YY],
+                                 latticeSpreadRange_[ZZ] - closestLatticePoint[ZZ]);
 
-    const RVec  differenceVectorOffset =
-        (RVec(spreadRange.begin()[XX], spreadRange.begin()[YY], spreadRange.begin()[ZZ]) - localParameters.coordinate_) / square(sigma_);
-    RVec        differenceVector       = differenceVectorOffset;
-    const auto  differenceVectorScale  = 1./(square(sigma_));
+    const DVec differenceVectorScale  =
+    {1. / (square(sigma_[XX])), 1. / (square(sigma_[YY])), 1. / (square(sigma_[ZZ]))};
+    const DVec differenceVectorOffset =
+        scaleByVector(spreadRange.begin().toDVec() - localParameters.coordinate_.toDVec(), differenceVectorScale);
 
-    RVec        force = {0., 0., 0.};
+    DVec       differenceVector = differenceVectorOffset;
 
-    for (int zLatticeIndex = spreadRange.begin()[ZZ]; zLatticeIndex < spreadRange.end()[ZZ]; ++zLatticeIndex)
+    DVec       force = {0., 0., 0.};
+
+    for (int zLatticeIndex = spreadRange.begin()[ZZ]; zLatticeIndex < spreadRange.end()[ZZ];
+         ++zLatticeIndex, differenceVector[ZZ] += differenceVectorScale[ZZ])
     {
         auto zSliceOfDerivative = densityDerivative[zLatticeIndex];
-        for (int yLatticeIndex = spreadRange.begin()[YY]; yLatticeIndex < spreadRange.end()[YY]; ++yLatticeIndex)
+
+        differenceVector[YY] = differenceVectorOffset[YY];
+        for (int yLatticeIndex = spreadRange.begin()[YY]; yLatticeIndex < spreadRange.end()[YY];
+             ++yLatticeIndex, differenceVector[YY] += differenceVectorScale[YY])
         {
             auto       ySliceOfDerivative = zSliceOfDerivative[yLatticeIndex];
             const auto zyPrefactor        = spreadZY(zLatticeIndex + spreadGridOffset[ZZ],
                                                      yLatticeIndex + spreadGridOffset[YY]);
 
-            for (int xLatticeIndex = spreadRange.begin()[XX]; xLatticeIndex < spreadRange.end()[XX]; ++xLatticeIndex)
+            differenceVector[XX] = differenceVectorOffset[XX];
+            for (int xLatticeIndex = spreadRange.begin()[XX]; xLatticeIndex < spreadRange.end()[XX];
+                 ++xLatticeIndex, differenceVector[XX] += differenceVectorScale[XX])
             {
-                const real preFactor = zyPrefactor *
+                const double preFactor = zyPrefactor *
                     spreadX[xLatticeIndex + spreadGridOffset[XX]] * ySliceOfDerivative[xLatticeIndex];
                 force += preFactor * differenceVector;
-
-                differenceVector[XX] += differenceVectorScale;
             }
-            differenceVector[XX]  = differenceVectorOffset[XX];
-            differenceVector[YY] += differenceVectorScale;
         }
-        differenceVector[YY]  = differenceVectorOffset[YY];
-        differenceVector[ZZ] += differenceVectorScale;
     }
-    return localParameters.amplitude_*force;
+    return localParameters.amplitude_*force.toRVec();
 }
 
 /********************************************************************
@@ -167,5 +169,20 @@ RVec DensityFittingForce::evaluateForce(const GaussianSpreadKernelParameters::Po
 DensityFittingForce::~DensityFittingForce()
 {
 }
+
+DensityFittingForce::DensityFittingForce(const DensityFittingForce &other)
+    : impl_(new Impl(*other.impl_))
+{
+}
+
+DensityFittingForce &DensityFittingForce::operator=(const DensityFittingForce &other)
+{
+    *impl_ = *other.impl_;
+    return *this;
+}
+
+DensityFittingForce::DensityFittingForce(DensityFittingForce &&) noexcept = default;
+
+DensityFittingForce &DensityFittingForce::operator=(DensityFittingForce &&) noexcept = default;
 
 } // namespace gmx

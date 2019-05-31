@@ -175,8 +175,8 @@ class GaussTransformTest : public ::testing::Test
         }
     protected:
         extents<dynamic_extent, dynamic_extent, dynamic_extent> latticeExtent_ = {3, 3, 3 };
-        float                        sigma_          = 1;
-        float                        nSigma_         = 5;
+        DVec                         sigma_          = {1., 1., 1.};
+        double                       nSigma_         = 5;
         GaussTransform3D             gaussTransform_ = {latticeExtent_, {sigma_, nSigma_}};
         test::FloatingPointTolerance tolerance_      = test::defaultFloatTolerance();
         const RVec                   latticeCenter_  = {1, 1, 1};
@@ -206,19 +206,22 @@ TEST_F(GaussTransformTest, isZeroAfterSettingZero)
 
 TEST_F(GaussTransformTest, isZeroWhenOutsideRangeinX)
 {
-    gaussTransform_.add({{-nSigma_  * sigma_, 0, 0}, 1.});
+    DVec coordinateOutsideX(-nSigma_ * sigma_[XX], 0, 0);
+    gaussTransform_.add({coordinateOutsideX.toRVec(), 1.});
     isZeroWithinFloatTolerance();
 }
 
 TEST_F(GaussTransformTest, isZeroWhenOutsideRangeinY)
 {
-    gaussTransform_.add({{0, -nSigma_ * sigma_, 0}, 1.});
+    DVec coordinateOutsideY(0, -nSigma_ * sigma_[YY], 0);
+    gaussTransform_.add({coordinateOutsideY.toRVec(), 1.});
     isZeroWithinFloatTolerance();
 }
 
 TEST_F(GaussTransformTest, isZeroWhenOutsideRangeinZ)
 {
-    gaussTransform_.add({{0, 0, -nSigma_ * sigma_}, 1.});
+    RVec coordinateOutsideZ(0, 0, -nSigma_ * sigma_[ZZ]);
+    gaussTransform_.add({coordinateOutsideZ.toRVec(), 1.});
     isZeroWithinFloatTolerance();
 }
 

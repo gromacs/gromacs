@@ -68,7 +68,7 @@ TEST(DensityFittingForce, isZeroWhenMatchingDensity)
     const float         nSigma     = 5;
     const RVec          gridCenter = {1, 1, 1};
 
-    DensityFittingForce forceEvaluator({sigma, nSigma});
+    DensityFittingForce forceEvaluator({{sigma, sigma, sigma}, nSigma});
     MultiDimArray<std::vector<float>, dynamicExtents3D> densityDerivative(3, 3, 3);
     std::fill(begin(densityDerivative), end(densityDerivative), 0);
 
@@ -83,11 +83,11 @@ TEST(DensityFittingForce, isZeroWhenMatchingDensity)
 
 TEST(DensityFittingForce, isZeroWhenMismatchingSameAllDirections)
 {
-    const float         sigma      = 1;
-    const float         nSigma     = 5;
-    const RVec          gridCenter = {1, 1, 1};
+    const BasicVector<double>  sigma      = {1., 1., 1.};
+    const float                nSigma     = 5;
+    const RVec                 gridCenter = {1, 1, 1};
 
-    DensityFittingForce forceEvaluator({sigma, nSigma});
+    DensityFittingForce        forceEvaluator({{sigma}, nSigma});
     MultiDimArray<std::vector<float>, dynamicExtents3D> densityDerivative(3, 3, 3);
     std::fill(begin(densityDerivative), end(densityDerivative), 1);
 
@@ -110,7 +110,7 @@ TEST(DensityFittingForce, pullsTowardsDerivative)
     const float         nSigma     = 5;
     const RVec          gridCenter = {1, 1, 1};
 
-    DensityFittingForce forceEvaluator({sigma, nSigma});
+    DensityFittingForce forceEvaluator({{sigma, sigma, sigma}, nSigma});
     MultiDimArray<std::vector<float>, dynamicExtents3D> densityDerivative(3, 3, 3);
     std::fill(begin(densityDerivative), end(densityDerivative), 0);
     densityDerivative(0, 0, 0) = 1;

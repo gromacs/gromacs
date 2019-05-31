@@ -65,7 +65,7 @@ class GaussianOn1DLattice::Impl
 {
     public:
         Impl(int numGridPointsForSpreadingHalfWidth, real sigma);
-        ~Impl(){}
+        ~Impl() = default;
         Impl(const Impl &other)            = default;
         Impl &operator=(const Impl &other) = default;
 
@@ -159,7 +159,7 @@ void GaussianOn1DLattice::Impl::spread(double amplitude, real dx)
         spreadingResult_[numGridPointsForSpreadingHalfWidth_ - offset] = e1_3 / e2pow;
         e2pow *= e2;
     }
-    // seperate statement for gridpoints at the end of the range avoids
+    // separate statement for gridpoints at the end of the range avoids
     // overflow for large sigma and saves one e2 multiplication operation
     spreadingResult_[numGridPointsForSpreadingHalfWidth_ - maxEvaluatedSpreadDistance_] = (e1 / e2pow) * e3_[maxEvaluatedSpreadDistance_];
     spreadingResult_[numGridPointsForSpreadingHalfWidth_ + maxEvaluatedSpreadDistance_] = (e1 * e2pow) * e3_[maxEvaluatedSpreadDistance_];
@@ -219,13 +219,9 @@ IVec closestIntegerPoint(const RVec &coordinate)
  * \param[in] range to be shifted
  * \returns Shifted index or zero if shifted index is smaller than zero.
  */
-IVec rangeBeginWithinLattice(const IVec &index, int range)
+IVec rangeBeginWithinLattice(const IVec &index, const IVec &range)
 {
-    return {
-               std::max(0, index[XX] - range),
-               std::max(0, index[YY] - range),
-               std::max(0, index[ZZ] - range)
-    };
+    return elementWiseMax({0, 0, 0}, index - range);
 }
 
 /*! \brief Adds a range from a three-dimensional integer coordinate and ensures
@@ -235,14 +231,12 @@ IVec rangeBeginWithinLattice(const IVec &index, int range)
  * \param[in] range to be shifted
  * \returns Shifted index or the lattice extent if shifted index is larger than the extent
  */
-IVec rangeEndWithinLattice(const IVec &index, const dynamicExtents3D &extents, int range)
+IVec rangeEndWithinLattice(const IVec &index, const dynamicExtents3D &extents, const IVec &range)
 {
-    return {
-               std::min(static_cast<int>(extents.extent(XX)), index[XX] + range),
-               std::min(static_cast<int>(extents.extent(YY)), index[YY] + range),
-               std::min(static_cast<int>(extents.extent(ZZ)), index[ZZ] + range)
-    };
+    IVec extentAsIvec(static_cast<int>(extents.extent(XX)), static_cast<int>(extents.extent(YY)), static_cast<int>(extents.extent(ZZ)));
+    return elementWiseMin(extentAsIvec, index + range);
 }
+
 
 }   // namespace
 
@@ -277,7 +271,7 @@ const IVec &IntegerBox::end() const { return end_; }
 
 bool IntegerBox::empty() const { return !((begin_[XX] < end_[XX] ) && (begin_[YY] < end_[YY]) && (begin_[ZZ] < end_[ZZ])); }
 
-IntegerBox spreadRangeWithinLattice(const IVec &center, dynamicExtents3D extent, int range)
+IntegerBox spreadRangeWithinLattice(const IVec &center, dynamicExtents3D extent, IVec range)
 {
     const IVec begin = rangeBeginWithinLattice(center, range);
     const IVec end   = rangeEndWithinLattice(center, extent, range);
@@ -287,9 +281,10 @@ IntegerBox spreadRangeWithinLattice(const IVec &center, dynamicExtents3D extent,
  * GaussianSpreadKernel
  */
 
-int GaussianSpreadKernelParameters::Shape::latticeSpreadRange() const
+IVec GaussianSpreadKernelParameters::Shape::latticeSpreadRange() const
 {
-    return static_cast<int>(std::ceil(sigma_ * spreadWidthMultiplesOfSigma_));
+    DVec range(std::ceil(sigma_[XX] * spreadWidthMultiplesOfSigma_), std::ceil(sigma_[YY] * spreadWidthMultiplesOfSigma_), std::ceil(sigma_[ZZ] * spreadWidthMultiplesOfSigma_));
+    return range.toIVec();
 }
 
 /********************************************************************
@@ -305,13 +300,17 @@ class GaussTransform3D::Impl
         //! Construct from extent and spreading width and range
         Impl(const dynamicExtents3D                       &extent,
              const GaussianSpreadKernelParameters::Shape  &kernelShapeParameters);
-        ~Impl(){}
+        ~Impl()                            = default;
+        //! Copy constructor
+        Impl(const Impl &other)            = default;
+        //! Copy assignment
+        Impl &operator=(const Impl &other) = default;
         //! Add another gaussian
         void add(const GaussianSpreadKernelParameters::PositionAndAmplitude &localParamters );
         //! The width of the Gaussian in lattice spacing units
-        double                sigma_;
+        BasicVector<double>   sigma_;
         //! The spread range in lattice points
-        int                   spreadRange_;
+        IVec                  spreadRange_;
         //! The result of the Gauss transform
         MultiDimArray<std::vector<float>, dynamicExtents3D> data_;
         //! The outer product of a Gaussian along the z and y dimension
@@ -329,9 +328,9 @@ spreadRange_ {
 data_ {
     extent
 },
-gauss1d_( {GaussianOn1DLattice(spreadRange_, sigma_),
-           GaussianOn1DLattice(spreadRange_, sigma_),
-           GaussianOn1DLattice(spreadRange_, sigma_) } )
+gauss1d_( {GaussianOn1DLattice(spreadRange_[XX], sigma_[XX]),
+           GaussianOn1DLattice(spreadRange_[YY], sigma_[YY]),
+           GaussianOn1DLattice(spreadRange_[ZZ], sigma_[ZZ]) } )
 {
 }
 
@@ -355,7 +354,7 @@ void GaussTransform3D::Impl::add(const GaussianSpreadKernelParameters::PositionA
 
     const auto spreadZY         = outerProductZY_(gauss1d_[ZZ].view(), gauss1d_[YY].view());
     const auto spreadX          = gauss1d_[XX].view();
-    const IVec spreadGridOffset = {spreadRange_ - closestLatticePoint[XX], spreadRange_ - closestLatticePoint[YY], spreadRange_ - closestLatticePoint[ZZ]};
+    const IVec spreadGridOffset = spreadRange_ - closestLatticePoint;
 
     // \todo optimize these loops if performance critical
     // The looping strategy uses that the last, x-dimension is contiguous in the memory layout
@@ -403,5 +402,20 @@ const basic_mdspan<const float, dynamicExtents3D> GaussTransform3D::view()
 
 GaussTransform3D::~GaussTransform3D()
 { }
+
+GaussTransform3D::GaussTransform3D(const GaussTransform3D &other)
+    : impl_(new Impl(*other.impl_))
+{
+}
+
+GaussTransform3D &GaussTransform3D::operator=(const GaussTransform3D &other)
+{
+    *impl_ = *other.impl_;
+    return *this;
+}
+
+GaussTransform3D::GaussTransform3D(GaussTransform3D &&) noexcept = default;
+
+GaussTransform3D &GaussTransform3D::operator=(GaussTransform3D &&) noexcept = default;
 
 } // namespace gmx
