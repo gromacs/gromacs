@@ -50,6 +50,35 @@
 namespace gmx
 {
 
+class ScaleCoordinates
+{
+    public:
+        //! Set up coordinate scaling with the scaling factor in each dimension
+        explicit ScaleCoordinates(const RVec &scale);
+        ~ScaleCoordinates();
+
+        //! Copy constructor
+        ScaleCoordinates(const ScaleCoordinates &other);
+        //! Copy assignment
+        ScaleCoordinates &operator=(const ScaleCoordinates &other);
+        //! Move constructor
+        ScaleCoordinates(ScaleCoordinates &&other) noexcept;
+        //! Move assignment
+        ScaleCoordinates &operator=(ScaleCoordinates &&other) noexcept;
+
+        /*! \brief Perform a coordinate transformation on input coordinates.
+         * \param[in] coordinates to be transformed
+         */
+        void operator()(ArrayRef<RVec> coordinates) const;
+        /*! \brief Apply the inverse scale to coordinates, ignoring dimensions for which scale is zero.
+         * \param[in] coordinates to be transformed
+         */
+        void inverseIgnoringZeroScale(ArrayRef<RVec> coordinates) const;
+    private:
+        class Impl;
+        PrivateImplPointer<Impl> impl_;
+};
+
 /*! \libinternal \brief Transform coordinates in three dimensions by first
  * translating, then scaling them.
  */
@@ -66,15 +95,27 @@ class TranslateAndScale
 
         ~TranslateAndScale();
 
+        //! Copy constructor
+        TranslateAndScale(const TranslateAndScale &other);
+        //! Copy assignment
+        TranslateAndScale &operator=(const TranslateAndScale &other);
+        //! Move constructor
+        TranslateAndScale(TranslateAndScale &&other) noexcept;
+        //! Move assignment
+        TranslateAndScale &operator=(TranslateAndScale &&other) noexcept;
+
         /*! \brief Perform a coordinate transformation on input coordinates.
          * \param[in] coordinates to be transformed
          */
-        void operator()(ArrayRef<RVec> coordinates);
+        void operator()(ArrayRef<RVec> coordinates) const;
+
+        /*! \brief Returns the scaling operation, discarding the translation.
+         */
+        ScaleCoordinates scaleOperationOnly() const;
 
     private:
         class Impl;
         PrivateImplPointer<Impl> impl_;
 };
-
 }      // namespace gmx
 #endif // CoordinateTransformation
