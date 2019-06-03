@@ -58,6 +58,14 @@ or not-a-number output.
 Add some information for grompp error with wrong line endings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+Give meaningful error with too large grid in hbond
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using a grid that is too large :ref:`hbond <gmx hbond>` could try to
+allocate enough memory to cause a crash.
+
+:issue:`2962`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
