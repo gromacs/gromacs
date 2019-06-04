@@ -94,6 +94,16 @@ Hint: the fork point from `master` and the current git ref can be set as environ
     FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base gerrit_master HEAD`)
     REF=`git show -s --pretty=format:"%h"`
 
+## Sample MD extension code
+
+`sample_restraint` is a subtree containing a complete CMake project for building
+pluggable GROMACS MD extensions for execution through gmxapi. Up to and
+including version 0.0.7.3 of the sample code, the sub-project lived at
+https://github.com/kassonlab/sample_restraint/ and was supported by GROMACS 2019.
+
+The GROMACS repository becomes the upstream source for the sample code for
+GROMACS releases 2020 and higher.
+
 ## External project code
 
 Refer to `./src/external/README.md` for current details on the copied external
