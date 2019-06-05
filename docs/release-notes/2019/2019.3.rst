@@ -75,6 +75,11 @@ allocate enough memory to cause a crash.
 
 :issue:`2962`
 
+Add some information for syntax errors with include delimiters in grompp
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2911`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

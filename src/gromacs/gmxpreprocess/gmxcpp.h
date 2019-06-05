@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@ typedef struct gmx_cpp *gmx_cpp_t;
 /* The possible return codes for these functions */
 enum {
     eCPP_OK, eCPP_FILE_NOT_FOUND, eCPP_EOF, eCPP_SYNTAX, eCPP_INTERRUPT,
-    eCPP_INVALID_HANDLE,
+    eCPP_INVALID_HANDLE, eCPP_INVALID_INCLUDE_DELIMITER,
     eCPP_FILE_NOT_OPEN, eCPP_UNKNOWN, eCPP_NR
 };
 

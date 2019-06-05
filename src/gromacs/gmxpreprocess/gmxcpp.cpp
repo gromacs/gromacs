@@ -442,6 +442,11 @@ process_directive(gmx_cpp_t         *handlep,
         {
             return eCPP_SYNTAX;
         }
+        // An include needs to be followed by either a '"' or a '<' as a first character.
+        if ((dval[0] != '"') && (dval[0] != '<'))
+        {
+            return eCPP_INVALID_INCLUDE_DELIMITER;
+        }
         for (size_t i1 = 0; i1 < dval.size(); i1++)
         {
             if ((dval[i1] == '"') || (dval[i1] == '<') || (dval[i1] == '>'))
@@ -715,7 +720,7 @@ char *cpp_error(gmx_cpp_t *handlep, int status)
     char        buf[256];
     const char *ecpp[] = {
         "OK", "File not found", "End of file", "Syntax error", "Interrupted",
-        "Invalid file handle",
+        "Invalid file handle", "Invalid delimiter for filename in #include statement",
         "File not open", "Unknown error, perhaps your text file uses wrong line endings?", "Error status out of range"
     };
     gmx_cpp_t   handle = *handlep;
