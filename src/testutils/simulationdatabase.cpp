@@ -240,7 +240,6 @@ const MdpFileValues mdpFileValueDatabase_g
                                   sc-alpha            = 0.5
                                   sc-r-power          = 6
                                   nstdhdl             = 4
-                                  init-lambda-state   = 3
                                   mass-lambdas        = 0.0 0.5 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
                                   bonded-lambdas      = 0.0 0.0 0.0 0.5 1.0 1.0 1.0 1.0 1.0 1.0 1.0
                                   restraint-lambdas   = 0.0 0.0 0.0 0.0 0.0 0.5 1.0 1.0 1.0 1.0 1.0

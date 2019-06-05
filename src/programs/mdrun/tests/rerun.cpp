@@ -151,7 +151,7 @@ TEST_P(MdrunRerunFreeEnergyTest, WithinTolerances)
     auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
                                                 integrator.c_str(),
                                                 "no", "no");
-    mdpFieldValues["other"] += formatString("\ninit-lambda-state %d", initLambdaState);
+    mdpFieldValues["other"] += formatString("\ninit-lambda-state = %d", initLambdaState);
 
     EnergyTolerances energiesToMatch
     {{
