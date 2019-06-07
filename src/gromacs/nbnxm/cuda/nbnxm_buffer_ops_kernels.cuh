@@ -55,8 +55,7 @@
 
  * \param[in]     numColumns        extent of cell-level parallelism
  * \param[out]    xnb               position buffer in nbnxm layout
- * \param[in]     gridIndex         grid index
- * \param[in]     FillLocal         boolean to specify if Fill Local is true
+ * \param[in]     setFillerCoords   tells whether to set the coordinates of the filler particles
  * \param[in]     x                 position buffer
  * \param[in]     a                 atom index mapping stride between atoms in memory
  * \param[in]     cxy_na            array of extents
@@ -66,8 +65,7 @@
  */
 __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColumns,
                                              float *  __restrict__       xnb,
-                                             int                         gridIndex,
-                                             bool                        FillLocal,
+                                             bool                        setFillerCoords,
                                              const rvec *  __restrict__  x,
                                              const int *  __restrict__   a,
                                              const int *  __restrict__   cxy_na,
@@ -78,8 +76,7 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColu
 
 __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColumns,
                                              float *  __restrict__       xnb,
-                                             int                         gridIndex,
-                                             bool                        FillLocal,
+                                             bool                        setFillerCoords,
                                              const rvec *  __restrict__  x,
                                              const int *  __restrict__   a,
                                              const int *  __restrict__   cxy_na,
@@ -100,7 +97,7 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColu
         int na = cxy_na[cxy];
         int a0 = (cellOffset + cxy_ind[cxy])*numAtomsPerCell;
         int na_round;
-        if (gridIndex == 0 && FillLocal)
+        if (setFillerCoords)
         {
             // TODO: This can be done more efficiently
             na_round =

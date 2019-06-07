@@ -59,7 +59,7 @@
 #include "gromacs/nbnxm/gpu_common.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
-#include "gromacs/nbnxm/gridset.h"
+#include "gromacs/nbnxm/grid.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/nbnxm/cuda/nbnxm_buffer_ops_kernels.cuh"
@@ -738,32 +738,27 @@ void cuda_set_cacheconfig()
 }
 
 /* X buffer operations on GPU: performs conversion from rvec to nb format. */
-void nbnxn_gpu_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
-                           int                              gridIndex,
-                           bool                             FillLocal,
+void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
+                           bool                             setFillerCoords,
                            gmx_nbnxn_gpu_t                 *nb,
                            void                            *xPmeDevicePtr,
-                           int                              maxAtomsInColumn,
                            const Nbnxm::AtomLocality        locality,
                            const rvec                      *x)
 {
     cu_atomdata_t             *adat    = nb->atdat;
     bool                       bDoTime = nb->bDoTime;
 
-    const Nbnxm::Grid         &grid       = gridSet.grids()[gridIndex];
-
     const int                  numColumns                = grid.numColumns();
     const int                  cellOffset                = grid.cellOffset();
     const int                  numAtomsPerCell           = grid.numAtomsPerCell();
+    // TODO: Document this, one can not infer the interaction locality from the atom locality
     Nbnxm::InteractionLocality interactionLoc            = Nbnxm::InteractionLocality::Local;
-    int nCopyAtoms                                       = gridSet.numRealAtomsLocal();
-    int copyAtomStart                                    = 0;
+    int nCopyAtoms                                       = grid.srcAtomEnd() - grid.srcAtomBegin();
+    int copyAtomStart                                    = grid.srcAtomBegin();
 
     if (locality == Nbnxm::AtomLocality::NonLocal)
     {
         interactionLoc          = Nbnxm::InteractionLocality::NonLocal;
-        nCopyAtoms              = gridSet.numRealAtomsTotal()-gridSet.numRealAtomsLocal();
-        copyAtomStart           = gridSet.numRealAtomsLocal();
     }
 
     cudaStream_t   stream  = nb->stream[interactionLoc];
@@ -818,9 +813,10 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
     config.blockSize[0]     = threadsPerBlock;
     config.blockSize[1]     = 1;
     config.blockSize[2]     = 1;
-    config.gridSize[0]      = ((maxAtomsInColumn+1)+threadsPerBlock-1)/threadsPerBlock;
+    config.gridSize[0]      = (grid.numCellsColumnMax()*numAtomsPerCell + threadsPerBlock - 1)/threadsPerBlock;
     config.gridSize[1]      = numColumns;
     config.gridSize[2]      = 1;
+    GMX_ASSERT(config.gridSize[0] > 0, "Can not have empty grid, early return above avoids this");
     config.sharedMemorySize = 0;
     config.stream           = stream;
 
@@ -832,8 +828,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
     const auto kernelArgs         = prepareGpuKernelArguments(kernelFn, config,
                                                               &numColumns,
                                                               &xqPtr,
-                                                              &gridIndex,
-                                                              &FillLocal,
+                                                              &setFillerCoords,
                                                               &d_x,
                                                               &d_atomIndices,
                                                               &d_cxy_na,

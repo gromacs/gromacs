@@ -58,7 +58,7 @@ enum class GpuTaskCompletion;
 namespace Nbnxm
 {
 
-class GridSet;
+class Grid;
 
 /*! \brief
  * Launch asynchronously the xq buffer host to device copy.
@@ -226,12 +226,10 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused &gridSet,
 /*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
  */
 CUDA_FUNC_QUALIFIER
-void nbnxn_gpu_x_to_nbat_x(const Nbnxm::GridSet gmx_unused &gridSet,
-                           int                gmx_unused  g,
-                           bool               gmx_unused  FillLocal,
+void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid  gmx_unused &grid,
+                           bool               gmx_unused  setFillerCoords,
                            gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
                            void               gmx_unused *xPmeDevicePtr,
-                           int                gmx_unused  na_round_max,
                            Nbnxm::AtomLocality gmx_unused locality,
                            const rvec         gmx_unused *x) CUDA_FUNC_TERM
 

@@ -1034,69 +1034,60 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
         nbat->natoms_local = gridSet.grids()[0].atomIndexEnd();
     }
 
-    const int nth = useGpu ? 1 : gmx_omp_nthreads_get(emntPairsearch);
-
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (int th = 0; th < nth; th++)
+    if (useGpu)
     {
-        try
+        for (int g = gridBegin; g < gridEnd; g++)
         {
-            for (int g = gridBegin; g < gridEnd; g++)
+            nbnxn_gpu_x_to_nbat_x(gridSet.grids()[g],
+                                  FillLocal && g == 0,
+                                  gpu_nbv,
+                                  xPmeDevicePtr,
+                                  locality,
+                                  x);
+        }
+    }
+    else
+    {
+        const int nth = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for num_threads(nth) schedule(static)
+        for (int th = 0; th < nth; th++)
+        {
+            try
             {
-                const Nbnxm::Grid  &grid       = gridSet.grids()[g];
-
-                int                 maxAtomsInColumn = 0;
-
-                const int           numCellsXY = grid.numColumns();
-
-                const int           cxy0 = (numCellsXY* th      + nth - 1)/nth;
-                const int           cxy1 = (numCellsXY*(th + 1) + nth - 1)/nth;
-
-                for (int cxy = cxy0; cxy < cxy1; cxy++)
+                for (int g = gridBegin; g < gridEnd; g++)
                 {
-                    const int na  = grid.numAtomsInColumn(cxy);
-                    const int ash = grid.firstAtomInColumn(cxy);
+                    const Nbnxm::Grid  &grid       = gridSet.grids()[g];
+                    const int           numCellsXY = grid.numColumns();
 
-                    int       na_fill;
-                    if (g == 0 && FillLocal)
+                    const int           cxy0 = (numCellsXY* th      + nth - 1)/nth;
+                    const int           cxy1 = (numCellsXY*(th + 1) + nth - 1)/nth;
+
+                    for (int cxy = cxy0; cxy < cxy1; cxy++)
                     {
-                        na_fill = grid.paddedNumAtomsInColumn(cxy);
-                    }
-                    else
-                    {
-                        /* We fill only the real particle locations.
-                         * We assume the filling entries at the end have been
-                         * properly set before during pair-list generation.
-                         */
-                        na_fill = na;
-                    }
-                    if (useGpu)
-                    {
-                        // All columns will be processed in a single GPU kernel (below).
-                        // We need to determine the maximum number of atoms in a column
-                        maxAtomsInColumn = std::max(maxAtomsInColumn, na);
-                    }
-                    else
-                    {
+                        const int na  = grid.numAtomsInColumn(cxy);
+                        const int ash = grid.firstAtomInColumn(cxy);
+
+                        int       na_fill;
+                        if (g == 0 && FillLocal)
+                        {
+                            na_fill = grid.paddedNumAtomsInColumn(cxy);
+                        }
+                        else
+                        {
+                            /* We fill only the real particle locations.
+                             * We assume the filling entries at the end have been
+                             * properly set before during pair-list generation.
+                             */
+                            na_fill = na;
+                        }
                         copy_rvec_to_nbat_real(gridSet.atomIndices().data() + ash,
                                                na, na_fill, x,
                                                nbat->XFormat, nbat->x().data(), ash);
                     }
                 }
-                if (useGpu)
-                {
-                    nbnxn_gpu_x_to_nbat_x(gridSet,
-                                          g,
-                                          FillLocal,
-                                          gpu_nbv,
-                                          xPmeDevicePtr,
-                                          maxAtomsInColumn,
-                                          locality,
-                                          x);
-                }
             }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 

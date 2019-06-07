@@ -1307,7 +1307,10 @@ void Grid::setCellIndices(int                             ddZone,
                           const int                       numAtomsMoved,
                           nbnxn_atomdata_t               *nbat)
 {
-    cellOffset_ = cellOffset;
+    cellOffset_   = cellOffset;
+
+    srcAtomBegin_ = atomStart;
+    srcAtomEnd_   = atomEnd;
 
     const int nthread = gmx_omp_nthreads_get(emntPairsearch);
 
@@ -1342,7 +1345,8 @@ void Grid::setCellIndices(int                             ddZone,
         /* Clear cxy_na_, so we can reuse the array below */
         cxy_na_[i] = 0;
     }
-    numCellsTotal_ = cxy_ind_[numColumns()] - cxy_ind_[0];
+    numCellsTotal_     = cxy_ind_[numColumns()] - cxy_ind_[0];
+    numCellsColumnMax_ = ncz_max;
 
     /* Resize grid and atom data which depend on the number of cells */
     resizeForNumberOfCells(atomIndexEnd(), numAtomsMoved, gridSetData, nbat);
