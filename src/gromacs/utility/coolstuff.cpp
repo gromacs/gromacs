@@ -934,7 +934,13 @@ std::string getCoolQuote()
         { "Marie, you're looking more radiant every day!", "Pierre Curie" },
         { "I don't want to achieve immortality through my work... I want to achieve it through not dying!", "Woody Allen" },
         { "Well, I am a dilettante. It's only in England that dilettantism is considered a bad thing. In other countries it's called interdisciplinary research.", "Brian Eno" },
-        { "I think it would be a good idea.", "Mahatma Gandhi, when asked what he thought of Western civilization" }
+        { "I think it would be a good idea.", "Mahatma Gandhi, when asked what he thought of Western civilization" },
+        { "Nobody ever complained a seminar was too easy to understand.", "Ken Dill" },
+        { "Academia is kind of like applied Marxism. The workers really do own the means of production.", "Niklas Blomberg" },
+        { "The Lord of the Rings can be confusing to follow because many of the bad minions look and sound familiar; that's why Tolkien gave them each an ORCid.", "Caroline Bartman" },
+        { "Mendeleev's first attempt, the perfluoric table, was a total disaster, and his subsequent attempts, the perchloric and perbromic tables, were not favorably received. Only his fourth attempt, the periodic table, gained general acceptance.", "Anonymous" },
+        { "Don’t bring an anecdote to a data fight.", "Molly Hodgdon" },
+        { "Give someone a program, you frustrate them for a day; teach them how to program, you frustrate them for a lifetime.", "David Leinweber" }
     };
 
     if (beCool())
