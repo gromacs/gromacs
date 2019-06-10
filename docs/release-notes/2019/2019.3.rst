@@ -47,6 +47,14 @@ The formatting was incorrect for some tools that use PQR files.
 
 :issue:`2955`
 
+Fix gmx wham with angle geometries
+""""""""""""""""""""""""""""""""""
+
+gmx wham would mix up degree and radian units leading to no overlap
+or not-a-number output.
+
+:issue:`2609`
+
 Add some information for grompp error with wrong line endings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
