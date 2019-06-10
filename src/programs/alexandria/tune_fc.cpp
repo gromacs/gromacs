@@ -1739,7 +1739,7 @@ void Optimization::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-            TuneFc_.simulate();
+            TuneFc_.MCMC();
             TuneFc_.getBestParam(optx);
             TuneFc_.getPsigma(opts);
             TuneFc_.getPmean(optm);

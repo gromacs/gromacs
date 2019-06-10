@@ -119,6 +119,9 @@ class OptParam
 
         //! \brief Return the step
         real step() const { return step_; }
+        
+        //! \brief Addapt the step size for perturbing the parameter
+        void adapt_step(real factor) {step_ *= factor ;}
 
         //! \brief Return whether or not bounds are used for parameters
         bool bounds() const { return bBound_; }
@@ -182,10 +185,16 @@ template <class T> class Bayes : public OptParam
         void getPsigma(parm_t &psigma);
 
         /*! \brief
-         * Run the Bayesian Monte carlo (BMC) simulation
+         * Run the Markov chain Monte carlo (MCMC) simulation
          *
          */
-        void simulate();
+        void MCMC();
+        
+        /*! \brief
+         * Run the Delayed Rejected Adaptive Monte-Carlo (DRAM) simulation
+         *
+         */
+        void DRAM();
 
         ~Bayes() {};
 };
@@ -260,7 +269,7 @@ void Bayes<T>::changeParam(int j, real rand)
 }
 
 template <class T>
-void Bayes<T>::simulate()
+void Bayes<T>::MCMC()
 {
     T                                storeParam;
     int                              nsum            = 0;
@@ -366,6 +375,115 @@ void Bayes<T>::simulate()
         xvgrclose(fpe);
     }
 }
+
+template <class T>
+void Bayes<T>::DRAM()
+{
+    T                                storeParam;
+    int                              nsum            = 0;
+    int                              nParam          = 0; 
+    double                           currEval        = 0;
+    double                           prevEval        = 0;
+    double                           deltaEval       = 0;
+    double                           randProbability = 0;
+    double                           mcProbability   = 0; 
+    double                           halfIter        = maxIter()/2;   
+    parm_t                           sum, sum_of_sq;
+    
+    FILE                            *fpc             = nullptr;
+    FILE                            *fpe             = nullptr;
+    
+    std::random_device               rd;
+    std::mt19937                     gen(rd());
+    std::uniform_real_distribution<> uniform(0, 1);
+
+    if (nullptr != xvgConv())
+    {
+        fpc = xvgropen(xvgConv(), "Parameter convergence", "iteration", "", oenv());
+    }
+    if (nullptr != xvgEpot())
+    {
+        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
+    }
+
+    nParam = param_.size();
+    sum.resize(nParam, 0);
+    sum_of_sq.resize(nParam, 0);
+    pmean_.resize(nParam, 0);
+    psigma_.resize(nParam, 0);
+    
+    prevEval  = func_(param_.data());
+    *minEval_ = prevEval;
+    for (int iter = 0; iter < nParam*maxIter(); iter++)
+    {
+        double beta = computeBeta(iter/nParam);
+        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; // Pick random parameter to change
+        
+        storeParam = param_[j];
+        changeParam(j, uniform(gen));
+        currEval        = func_(param_.data());
+        deltaEval       = currEval-prevEval;
+        randProbability = uniform(gen);
+        mcProbability   = exp(-beta*deltaEval);
+        
+        if ((deltaEval < 0) || (mcProbability > randProbability))
+        {
+            if (currEval < *minEval_)
+            {
+                bestParam_ = param_;
+                *minEval_  = currEval;
+            }
+            prevEval = currEval;
+        }
+        else
+        {
+            param_[j] = storeParam;
+        }
+        double xiter = (1.0*iter)/nParam;
+        if (nullptr != fpc)
+        {
+            fprintf(fpc, "%8f", xiter);
+            for (auto value : param_)
+            {
+                fprintf(fpc, "  %10g", value);
+            }
+            fprintf(fpc, "\n");
+            fflush(fpc);
+        }
+        if (nullptr != fpe)
+        {
+            fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+            fflush(fpe);
+        }
+        if (iter >= halfIter)
+        {
+            for (auto k = 0; k < nParam; k++)
+            {
+                sum[k]       += param_[k];
+                sum_of_sq[k] += gmx::square(param_[k]);
+            }
+            nsum++;
+        }
+    }
+    if (nsum > 0)
+    {
+        for (auto k = 0; k < nParam; k++)
+        {
+            pmean_[k]     = (sum[k]/nsum);
+            sum_of_sq[k] /= nsum;
+            psigma_[k]    = sqrt(sum_of_sq[k]-gmx::square(pmean_[k]));
+        }
+    }
+    if (nullptr != fpc)
+    {
+        xvgrclose(fpc);
+    }
+    if (nullptr != fpe)
+    {
+        xvgrclose(fpe);
+    }
+}
+
 }
 
 #endif

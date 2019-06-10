@@ -726,7 +726,7 @@ void OptACM::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-            TuneACM_.simulate();
+            TuneACM_.MCMC();
             TuneACM_.getBestParam(optb);
             TuneACM_.getPsigma(opts);
             TuneACM_.getPmean(optm);

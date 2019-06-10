@@ -482,7 +482,7 @@ void OptZeta::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-            TuneZeta_.simulate();
+            TuneZeta_.MCMC();
             TuneZeta_.getBestParam(optb);
             TuneZeta_.getPsigma(opts);
             TuneZeta_.getPmean(optm);
