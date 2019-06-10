@@ -88,7 +88,7 @@ TEST(MrcSerializer, DefaultHeaderIdenticalAfterRoundTrip)
     serializeMrcDensityMapHeader(&serializer, inputHeader);
     const auto                serializedHeader = serializer.finishAndGetBuffer();
 
-    InMemoryDeserializer      deserializer(serializedHeader);
+    InMemoryDeserializer      deserializer(serializedHeader, false);
     const auto                deserializedHeader = deserializeMrcDensityMapHeader(&deserializer);
 
     // comparing serialized results saves MrcDensityHeaders comparison implementation

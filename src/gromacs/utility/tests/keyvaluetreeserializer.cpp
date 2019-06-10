@@ -47,6 +47,12 @@
 namespace
 {
 
+//! Dummy function to raise assert for use of unimplemented function.
+void raiseAssert()
+{
+    GMX_RELEASE_ASSERT(false, "Unimplemented function");
+}
+
 class RefDataSerializer : public gmx::ISerializer
 {
     public:
@@ -65,6 +71,14 @@ class RefDataSerializer : public gmx::ISerializer
         void doUChar(unsigned char *value) override
         {
             checker_.checkUChar(*value, nullptr);
+        }
+        void doChar(char * /* value */) override
+        {
+            raiseAssert();
+        }
+        void doUShort(unsigned short * /* value */) override
+        {
+            raiseAssert();
         }
         void doInt(int *value) override
         {
@@ -90,6 +104,18 @@ class RefDataSerializer : public gmx::ISerializer
         {
             checker_.checkString(*value, nullptr);
         }
+        void doReal(real * /* value */ ) override
+        {
+            raiseAssert();
+        }
+        void doIvec(ivec * /* value */) override
+        {
+            raiseAssert();
+        }
+        void doRvec(rvec * /* value */) override
+        {
+            raiseAssert();
+        }
 
     private:
         gmx::test::TestReferenceChecker checker_;
@@ -110,7 +136,7 @@ class KeyValueTreeSerializerTest : public ::testing::Test
             }
             std::vector<char>                 buffer = serializeTree(input);
             {
-                gmx::InMemoryDeserializer     deserializer(buffer);
+                gmx::InMemoryDeserializer     deserializer(buffer, false);
                 gmx::KeyValueTreeObject       output
                     = gmx::deserializeKeyValueTree(&deserializer);
                 checker.checkKeyValueTreeObject(output, "Input");

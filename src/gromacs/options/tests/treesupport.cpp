@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -315,7 +315,7 @@ class TreeValueSupportTest : public ::testing::Test
             // Check that serialization works.
             {
                 std::vector<char>             buffer = serializeTree(tree);
-                gmx::InMemoryDeserializer     deserializer(buffer);
+                gmx::InMemoryDeserializer     deserializer(buffer, false);
                 gmx::KeyValueTreeObject       output
                     = gmx::deserializeKeyValueTree(&deserializer);
                 SCOPED_TRACE("After serialization/deserialization\n  Buffer: "

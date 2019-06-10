@@ -73,6 +73,8 @@ gmx_bool gmx_fio_doe_int64(struct t_fileio *fio, int64_t *item,
                            const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_doe_uchar(struct t_fileio *fio, unsigned char *item,
                            const char *desc, const char *srcfile, int line);
+gmx_bool gmx_fio_doe_char(struct t_fileio *fio, char *item,
+                          const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_doe_ushort(struct t_fileio *fio, unsigned short *item,
                             const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_doe_rvec(struct t_fileio *fio, rvec *item,
@@ -123,6 +125,7 @@ gmx_bool gmx_fio_ndoe_string(struct t_fileio *fio, char *item[], int n,
 #define gmx_fio_do_int32(fio, item)             gmx_fio_doe_int32(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_int64(fio, item)             gmx_fio_doe_int64(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_uchar(fio, item)             gmx_fio_doe_uchar(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_char(fio, item)              gmx_fio_doe_char(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_ushort(fio, item)            gmx_fio_doe_ushort(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_rvec(fio, item)              gmx_fio_doe_rvec(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_ivec(fio, item)              gmx_fio_doe_ivec(fio, &(item), (#item), __FILE__, __LINE__)
@@ -144,24 +147,46 @@ gmx_bool gmx_fio_ndoe_string(struct t_fileio *fio, char *item[], int n,
 
 namespace gmx
 {
-
+/*!\internal \brief
+ * Serializer to read/write XDR data.
+ */
 class FileIOXdrSerializer : public ISerializer
 {
     public:
-        explicit FileIOXdrSerializer(t_fileio *fio) : fio_(fio) {}
+        //! Only create with valid file I/O handle.
+        explicit FileIOXdrSerializer(t_fileio *fio);
 
+        //! If file is open in reading mode.
         bool reading() const override;
-
+        //! Handle bool I/O.
         void doBool(bool *value) override;
+        //! Handle unsigned char I/O.
         void doUChar(unsigned char *value) override;
+        //! Handle char I/O.
+        void doChar(char *value) override;
+        //! Handle unsigned short I/O.
+        void doUShort(unsigned short *value) override;
+        //! Handle default integer I/O.
         void doInt(int *value) override;
+        //! Handle int32 I/O.
         void doInt32(int32_t *value) override;
+        //! Handle int64 I/O.
         void doInt64(int64_t *value) override;
+        //! Handle single precision float I/O.
         void doFloat(float *value) override;
+        //! Handle double precision float I/O.
         void doDouble(double *value) override;
+        //! Handle GROMACS floating point number I/O.
+        void doReal(real *value) override;
+        //! Handle I/O of integer vector of size DIM.
+        void doIvec(ivec *value) override;
+        //! Handle I/O of GROMACS real vector of size DIM.
+        void doRvec(rvec *value) override;
+        //! Handle I/O if string.
         void doString(std::string *value) override;
 
     private:
+        //! File I/O handle.
         t_fileio *fio_;
 };
 

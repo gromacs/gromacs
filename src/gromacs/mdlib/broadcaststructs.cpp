@@ -698,7 +698,7 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         size_t            size;
         block_bc(cr, size);
         nblock_abc(cr, size, &buffer);
-        gmx::InMemoryDeserializer serializer(buffer);
+        gmx::InMemoryDeserializer serializer(buffer, false);
         inputrec->params = new gmx::KeyValueTreeObject(
                     gmx::deserializeKeyValueTree(&serializer));
     }

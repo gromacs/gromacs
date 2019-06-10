@@ -73,7 +73,7 @@ TEST(MrcDensityMap, RoundTripIsIdempotent)
     const auto serializedFile = serializer.finishAndGetBuffer();
 
     // read and write again
-    InMemoryDeserializer       deserializer(serializedFile);
+    InMemoryDeserializer       deserializer(serializedFile, false);
     MrcDensityMapOfFloatReader mrcDensityMapReader(&deserializer);
 
     MrcDensityMapOfFloatWriter writerOfDeserializedOutput(mrcDensityMapReader.header(), mrcDensityMapReader.data());
