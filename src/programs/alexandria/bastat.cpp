@@ -180,8 +180,12 @@ static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     b->histo[index]++;
     if (nullptr != fplog)
     {
-        fprintf(fplog, "%s bond-%s-%s-%d %g\n", molname,
-                a1.c_str(), a2.c_str(), order, blen);
+        fprintf(fplog, "%s bond-%s-%s-%d %g\n", 
+                molname,
+                a1.c_str(), 
+                a2.c_str(), 
+                order, 
+                blen);
     }
 }
 
