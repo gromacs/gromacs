@@ -602,15 +602,17 @@ int alex_bastat(int argc, char *argv[])
     {
         return 0;
     }
+    
     iDistributionModel = name2eemtype(cqdist[0]);
-    fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
+    fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
+    
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
-    fprintf(fp, "# alexandria is part of GROMACS:\n#\n");
-    fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
+    fprintf(fp, "# The Alexandria Chemistry Toolkit.\n#\n");
     
     gms.read(opt2fn("-sel", NFILE, fnm));
     printf("There are %d molecules.\n", (gms.count(imsTrain) + gms.count(imsTest)));
+    fprintf(fp, "There are %d molecules.\n#\n", (gms.count(imsTrain) + gms.count(imsTest)));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
@@ -623,8 +625,8 @@ int alex_bastat(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     /* Read Molprops */
-    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm),
-                           mp, nullptr, nullptr, nullptr, aps, pd, true);
+    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), mp, nullptr, nullptr, nullptr, aps, pd, true);
+    
     if (nwarn > maxwarn)
     {
         printf("Too many warnings (%d). Terminating.\n", nwarn);
@@ -642,9 +644,17 @@ int alex_bastat(int argc, char *argv[])
                 printf("Empty molname for molecule with formula %s\n",
                        mmi.molProp()->formula().c_str());
                 continue;
-            }            
-            auto imm = mmi.GenerateTopology(aps, pd, lot, iDistributionModel,
-                                            false, false, bDih, true, nullptr);
+            }      
+                  
+            auto imm = mmi.GenerateTopology(aps, 
+                                            pd, 
+                                            lot, 
+                                            iDistributionModel,
+                                            false, 
+                                            false, 
+                                            bDih, 
+                                            true, 
+                                            nullptr);
             if (immOK != imm)
             {
                 if (nullptr != debug)
