@@ -98,12 +98,12 @@ void list_tpr(const char *fn,
     FILE         *gp;
     int           indent, atot;
     t_state       state;
-    t_tpxheader   tpx;
     gmx_mtop_t    mtop;
     t_topology    top;
 
-    read_tpxheader(fn, &tpx, TRUE);
-    t_inputrec     ir;
+    TpxFileHeader tpx = readTpxHeader(fn, true);
+    t_inputrec    ir;
+
     read_tpx_state(fn,
                    tpx.bIr ? &ir : nullptr,
                    &state,

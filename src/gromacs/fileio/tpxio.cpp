@@ -2572,18 +2572,26 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     }
 }
 
-/* If TopOnlyOK is TRUE then we can read even future versions
- * of tpx files, provided the fileGeneration hasn't changed.
- * If it is FALSE, we need the inputrecord too, and bail out
+/*! \brief
+ * Read the first part of the TPR file to find general system information.
+ *
+ * If \p TopOnlyOK is true then we can read even future versions
+ * of tpx files, provided the \p fileGeneration hasn't changed.
+ * If it is false, we need the \p ir too, and bail out
  * if the file is newer than the program.
  *
  * The version and generation of the topology (see top of this file)
- * are returned in the two last arguments, if those arguments are non-NULL.
+ * are returned in the two last arguments, if those arguments are non-nullptr.
  *
- * If possible, we will read the inputrec even when TopOnlyOK is TRUE.
+ * If possible, we will read the \p ir even when \p TopOnlyOK is true.
+ *
+ * \param[in,out] fio Fileio datastructure.
+ * \param[in,out] tpx File header datastructure.
+ * \param[in] bRead If we are reading or writing.
+ * \param[in] TopOnlyOK If not reading \p ir is fine or not.
  */
-static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
-                         gmx_bool TopOnlyOK, int *fileVersionPointer, int *fileGenerationPointer)
+static void do_tpxheader(t_fileio *fio, TpxFileHeader *tpx, bool bRead,
+                         bool TopOnlyOK)
 {
     char      buf[STRLEN];
     char      file_tag[STRLEN];
@@ -2591,8 +2599,6 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     int       precision;
     int       idum = 0;
     real      rdum = 0;
-    int       fileVersion;    /* Version number of the code that wrote the file */
-    int       fileGeneration; /* Generation version number of the code that wrote the file */
 
     /* XDR binary topology file */
     precision = sizeof(real);
@@ -2625,33 +2631,31 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
         bDouble = (precision == sizeof(double));
         gmx_fio_setprecision(fio, bDouble);
         gmx_fio_do_int(fio, precision);
-        fileVersion = tpx_version;
         sprintf(file_tag, "%s", tpx_tag);
-        fileGeneration = tpx_generation;
     }
 
     /* Check versions! */
-    gmx_fio_do_int(fio, fileVersion);
+    gmx_fio_do_int(fio, tpx->fileVersion);
 
     /* This is for backward compatibility with development versions 77-79
      * where the tag was, mistakenly, placed before the generation,
      * which would cause a segv instead of a proper error message
      * when reading the topology only from tpx with <77 code.
      */
-    if (fileVersion >= 77 && fileVersion <= 79)
+    if (tpx->fileVersion >= 77 && tpx->fileVersion <= 79)
     {
         gmx_fio_do_string(fio, file_tag);
     }
 
-    gmx_fio_do_int(fio, fileGeneration);
+    gmx_fio_do_int(fio, tpx->fileGeneration);
 
-    if (fileVersion >= 81)
+    if (tpx->fileVersion >= 81)
     {
         gmx_fio_do_string(fio, file_tag);
     }
     if (bRead)
     {
-        if (fileVersion < 77)
+        if (tpx->fileVersion < 77)
         {
             /* Versions before 77 don't have the tag, set it to release */
             sprintf(file_tag, "%s", TPX_TAG_RELEASE);
@@ -2665,42 +2669,33 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
             /* We only support reading tpx files with the same tag as the code
              * or tpx files with the release tag and with lower version number.
              */
-            if (std::strcmp(file_tag, TPX_TAG_RELEASE) != 0 && fileVersion < tpx_version)
+            if (std::strcmp(file_tag, TPX_TAG_RELEASE) != 0 && tpx->fileVersion < tpx_version)
             {
                 gmx_fatal(FARGS, "tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' with program for tpx version %d, tag '%s'",
-                          gmx_fio_getname(fio), fileVersion, file_tag,
+                          gmx_fio_getname(fio), tpx->fileVersion, file_tag,
                           tpx_version, tpx_tag);
             }
         }
     }
 
-    if (fileVersionPointer)
-    {
-        *fileVersionPointer = fileVersion;
-    }
-    if (fileGenerationPointer)
-    {
-        *fileGenerationPointer = fileGeneration;
-    }
-
-    if ((fileVersion <= tpx_incompatible_version) ||
-        ((fileVersion > tpx_version) && !TopOnlyOK) ||
-        (fileGeneration > tpx_generation) ||
+    if ((tpx->fileVersion <= tpx_incompatible_version) ||
+        ((tpx->fileVersion > tpx_version) && !TopOnlyOK) ||
+        (tpx->fileGeneration > tpx_generation) ||
         tpx_version == 80) /*80 was used by both 5.0-dev and 4.6-dev*/
     {
         gmx_fatal(FARGS, "reading tpx file (%s) version %d with version %d program",
-                  gmx_fio_getname(fio), fileVersion, tpx_version);
+                  gmx_fio_getname(fio), tpx->fileVersion, tpx_version);
     }
 
     gmx_fio_do_int(fio, tpx->natoms);
     gmx_fio_do_int(fio, tpx->ngtc);
 
-    if (fileVersion < 62)
+    if (tpx->fileVersion < 62)
     {
         gmx_fio_do_int(fio, idum);
         gmx_fio_do_real(fio, rdum);
     }
-    if (fileVersion >= 79)
+    if (tpx->fileVersion >= 79)
     {
         gmx_fio_do_int(fio, tpx->fep_state);
     }
@@ -2712,67 +2707,52 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     gmx_fio_do_gmx_bool(fio, tpx->bF);
     gmx_fio_do_gmx_bool(fio, tpx->bBox);
 
-    if ((fileGeneration > tpx_generation))
+    if ((tpx->fileGeneration > tpx_generation))
     {
         /* This can only happen if TopOnlyOK=TRUE */
         tpx->bIr = FALSE;
     }
 }
 
-static int do_tpx(t_fileio *fio, gmx_bool bRead,
-                  t_inputrec *ir, t_state *state, rvec *x, rvec *v,
-                  gmx_mtop_t *mtop)
+static int do_tpx_body(t_fileio      *fio,
+                       TpxFileHeader *tpx,
+                       bool           bRead,
+                       t_inputrec    *ir,
+                       t_state       *state,
+                       rvec          *x,
+                       rvec          *v,
+                       gmx_mtop_t    *mtop)
 {
-    t_tpxheader     tpx;
-    gmx_bool        TopOnlyOK;
     int             ePBC;
     gmx_bool        bPeriodicMols;
 
     if (!bRead)
     {
-        GMX_RELEASE_ASSERT(state != nullptr, "Cannot write a null state");
         GMX_RELEASE_ASSERT(x == nullptr && v == nullptr, "Passing separate x and v pointers to do_tpx() is not supported when writing");
-
-        tpx.natoms    = state->natoms;
-        tpx.ngtc      = state->ngtc;
-        tpx.fep_state = state->fep_state;
-        tpx.lambda    = state->lambda[efptFEP];
-        tpx.bIr       = ir       != nullptr;
-        tpx.bTop      = mtop     != nullptr;
-        tpx.bX        = (state->flags & (1 << estX)) != 0;
-        tpx.bV        = (state->flags & (1 << estV)) != 0;
-        tpx.bF        = FALSE;
-        tpx.bBox      = TRUE;
     }
     else
     {
         GMX_RELEASE_ASSERT(!(x == nullptr && v != nullptr), "Passing x==NULL and v!=NULL is not supported");
     }
 
-    TopOnlyOK = (ir == nullptr);
-
-    int fileVersion;    /* Version number of the code that wrote the file */
-    int fileGeneration; /* Generation version number of the code that wrote the file */
-    do_tpxheader(fio, bRead, &tpx, TopOnlyOK, &fileVersion, &fileGeneration);
-
     if (bRead)
     {
         state->flags = 0;
-        init_gtc_state(state, tpx.ngtc, 0, 0);
+        init_gtc_state(state, tpx->ngtc, 0, 0);
         if (x == nullptr)
         {
             // v is also nullptr by the above assertion, so we may
             // need to make memory in state for storing the contents
             // of the tpx file.
-            if (tpx.bX)
+            if (tpx->bX)
             {
                 state->flags |= (1 << estX);
             }
-            if (tpx.bV)
+            if (tpx->bV)
             {
                 state->flags |= (1 << estV);
             }
-            state_change_natoms(state, tpx.natoms);
+            state_change_natoms(state, tpx->natoms);
         }
     }
 
@@ -2784,11 +2764,11 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
 #define do_test(fio, b, p) if (bRead && ((p) != NULL) && !(b)) gmx_fatal(FARGS, "No %s in %s",#p, gmx_fio_getname(fio))
 
-    do_test(fio, tpx.bBox, state->box);
-    if (tpx.bBox)
+    do_test(fio, tpx->bBox, state->box);
+    if (tpx->bBox)
     {
         gmx_fio_ndo_rvec(fio, state->box, DIM);
-        if (fileVersion >= 51)
+        if (tpx->fileVersion >= 51)
         {
             gmx_fio_ndo_rvec(fio, state->box_rel, DIM);
         }
@@ -2798,7 +2778,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             clear_mat(state->box_rel);
         }
         gmx_fio_ndo_rvec(fio, state->boxv, DIM);
-        if (fileVersion < 56)
+        if (tpx->fileVersion < 56)
         {
             matrix mdum;
             gmx_fio_ndo_rvec(fio, mdum, DIM);
@@ -2809,7 +2789,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     {
         real *dumv;
         snew(dumv, state->ngtc);
-        if (fileVersion < 69)
+        if (tpx->fileVersion < 69)
         {
             gmx_fio_ndo_real(fio, dumv, state->ngtc);
         }
@@ -2818,45 +2798,45 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         sfree(dumv);
     }
 
-    do_test(fio, tpx.bTop, mtop);
-    if (tpx.bTop)
+    do_test(fio, tpx->bTop, mtop);
+    if (tpx->bTop)
     {
         if (mtop)
         {
-            do_mtop(fio, mtop, bRead, fileVersion);
+            do_mtop(fio, mtop, bRead, tpx->fileVersion);
         }
         else
         {
             gmx_mtop_t dum_top;
-            do_mtop(fio, &dum_top, bRead, fileVersion);
+            do_mtop(fio, &dum_top, bRead, tpx->fileVersion);
         }
     }
-    do_test(fio, tpx.bX, x);
-    if (tpx.bX)
+    do_test(fio, tpx->bX, x);
+    if (tpx->bX)
     {
         if (bRead)
         {
             state->flags |= (1<<estX);
         }
-        gmx_fio_ndo_rvec(fio, x, tpx.natoms);
+        gmx_fio_ndo_rvec(fio, x, tpx->natoms);
     }
 
-    do_test(fio, tpx.bV, v);
-    if (tpx.bV)
+    do_test(fio, tpx->bV, v);
+    if (tpx->bV)
     {
         if (bRead)
         {
             state->flags |= (1<<estV);
         }
-        gmx_fio_ndo_rvec(fio, v, tpx.natoms);
+        gmx_fio_ndo_rvec(fio, v, tpx->natoms);
     }
 
     // No need to run do_test when the last argument is NULL
-    if (tpx.bF)
+    if (tpx->bF)
     {
         rvec *dummyForces;
         snew(dummyForces, state->natoms);
-        gmx_fio_ndo_rvec(fio, dummyForces, tpx.natoms);
+        gmx_fio_ndo_rvec(fio, dummyForces, tpx->natoms);
         sfree(dummyForces);
     }
 
@@ -2870,10 +2850,10 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     ePBC          = -1;
     bPeriodicMols = FALSE;
 
-    do_test(fio, tpx.bIr, ir);
-    if (tpx.bIr)
+    do_test(fio, tpx->bIr, ir);
+    if (tpx->bIr)
     {
-        if (fileVersion >= 53)
+        if (tpx->fileVersion >= 53)
         {
             /* Removed the pbc info from do_inputrec, since we always want it */
             if (!bRead)
@@ -2884,20 +2864,20 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             gmx_fio_do_int(fio, ePBC);
             gmx_fio_do_gmx_bool(fio, bPeriodicMols);
         }
-        if (fileGeneration <= tpx_generation && ir)
+        if (tpx->fileGeneration <= tpx_generation && ir)
         {
-            do_inputrec(fio, ir, bRead, fileVersion);
-            if (fileVersion < 51)
+            do_inputrec(fio, ir, bRead, tpx->fileVersion);
+            if (tpx->fileVersion < 51)
             {
                 set_box_rel(ir, state);
             }
-            if (fileVersion < 53)
+            if (tpx->fileVersion < 53)
             {
                 ePBC          = ir->ePBC;
                 bPeriodicMols = ir->bPeriodicMols;
             }
         }
-        if (bRead && ir && fileVersion >= 53)
+        if (bRead && ir && tpx->fileVersion >= 53)
         {
             /* We need to do this after do_inputrec, since that initializes ir */
             ir->ePBC          = ePBC;
@@ -2907,16 +2887,16 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
     if (bRead)
     {
-        if (tpx.bIr && ir)
+        if (tpx->bIr && ir)
         {
             if (state->ngtc == 0)
             {
                 /* Reading old version without tcoupl state data: set it */
                 init_gtc_state(state, ir->opts.ngtc, 0, ir->opts.nhchainlength);
             }
-            if (tpx.bTop && mtop)
+            if (tpx->bTop && mtop)
             {
-                if (fileVersion < 57)
+                if (tpx->fileVersion < 57)
                 {
                     if (mtop->moltype[0].ilist[F_DISRES].size() > 0)
                     {
@@ -2931,7 +2911,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             }
         }
 
-        if (tpx.bTop && mtop)
+        if (tpx->bTop && mtop)
         {
             gmx_mtop_finalize(mtop);
         }
@@ -2950,19 +2930,53 @@ static void close_tpx(t_fileio *fio)
     gmx_fio_close(fio);
 }
 
+/*! \brief
+ * Fill information into the header only from state before writing.
+ *
+ * Populating the header needs to be independent from writing the information
+ * to file to allow things like writing the raw byte stream.
+ *
+ * \param[in] state The current simulation state. Can't write without it.
+ * \param[in] ir Parameter and system information.
+ * \param[in] mtop Global topology.
+ * \returns Fully populated header.
+ */
+static TpxFileHeader populateTpxHeader(const t_state    &state,
+                                       const t_inputrec *ir,
+                                       const gmx_mtop_t *mtop)
+{
+    TpxFileHeader header;
+    header.natoms         = state.natoms;
+    header.ngtc           = state.ngtc;
+    header.fep_state      = state.fep_state;
+    header.lambda         = state.lambda[efptFEP];
+    header.bIr            = ir       != nullptr;
+    header.bTop           = mtop     != nullptr;
+    header.bX             = (state.flags & (1 << estX)) != 0;
+    header.bV             = (state.flags & (1 << estV)) != 0;
+    header.bF             = false;
+    header.bBox           = true;
+    header.fileVersion    = tpx_version;
+    header.fileGeneration = tpx_generation;
+
+    return header;
+}
+
 /************************************************************
  *
  *  The following routines are the exported ones
  *
  ************************************************************/
 
-void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
+TpxFileHeader readTpxHeader(const char *fileName, bool canReadTopologyOnly)
 {
     t_fileio *fio;
 
-    fio = open_tpx(fn, "r");
-    do_tpxheader(fio, TRUE, tpx, TopOnlyOK, nullptr, nullptr);
+    fio = open_tpx(fileName, "r");
+    TpxFileHeader tpx;
+    do_tpxheader(fio, &tpx, true, canReadTopologyOnly);
     close_tpx(fio);
+    return tpx;
 }
 
 void write_tpx_state(const char *fn,
@@ -2971,20 +2985,42 @@ void write_tpx_state(const char *fn,
     t_fileio *fio;
 
     fio = open_tpx(fn, "w");
-    do_tpx(fio, FALSE,
-           const_cast<t_inputrec *>(ir),
-           const_cast<t_state *>(state), nullptr, nullptr,
-           const_cast<gmx_mtop_t *>(mtop));
+
+    TpxFileHeader tpx = populateTpxHeader(*state,
+                                          ir,
+                                          mtop);
+    do_tpxheader(fio,
+                 &tpx,
+                 false,
+                 ir == nullptr);
+    do_tpx_body(fio,
+                &tpx,
+                false,
+                const_cast<t_inputrec *>(ir),
+                const_cast<t_state *>(state), nullptr, nullptr,
+                const_cast<gmx_mtop_t *>(mtop));
     close_tpx(fio);
 }
 
 void read_tpx_state(const char *fn,
                     t_inputrec *ir, t_state *state, gmx_mtop_t *mtop)
 {
-    t_fileio *fio;
+    t_fileio     *fio;
 
+    TpxFileHeader tpx;
     fio = open_tpx(fn, "r");
-    do_tpx(fio, TRUE, ir, state, nullptr, nullptr, mtop);
+    do_tpxheader(fio,
+                 &tpx,
+                 true,
+                 ir == nullptr);
+    do_tpx_body(fio,
+                &tpx,
+                true,
+                ir,
+                state,
+                nullptr,
+                nullptr,
+                mtop);
     close_tpx(fio);
 }
 
@@ -2992,12 +3028,19 @@ int read_tpx(const char *fn,
              t_inputrec *ir, matrix box, int *natoms,
              rvec *x, rvec *v, gmx_mtop_t *mtop)
 {
-    t_fileio *fio;
-    t_state   state;
-    int       ePBC;
+    t_fileio     *fio;
+    t_state       state;
+    int           ePBC;
 
+    TpxFileHeader tpx;
     fio     = open_tpx(fn, "r");
-    ePBC    = do_tpx(fio, TRUE, ir, &state, x, v, mtop);
+    do_tpxheader(fio,
+                 &tpx,
+                 true,
+                 ir == nullptr);
+    ePBC    = do_tpx_body(fio,
+                          &tpx,
+                          true, ir, &state, x, v, mtop);
     close_tpx(fio);
     if (mtop != nullptr && natoms != nullptr)
     {
@@ -3030,7 +3073,7 @@ gmx_bool fn2bTPX(const char *file)
     return (efTPR == fn2ftp(file));
 }
 
-void pr_tpxheader(FILE *fp, int indent, const char *title, const t_tpxheader *sh)
+void pr_tpxheader(FILE *fp, int indent, const char *title, const TpxFileHeader *sh)
 {
     if (available(fp, sh, indent, title))
     {

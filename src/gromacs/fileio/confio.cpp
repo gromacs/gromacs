@@ -462,8 +462,7 @@ void readConfAndTopology(const char *infile,
     *haveTopology = fn2bTPX(infile);
     if (*haveTopology)
     {
-        t_tpxheader header;
-        read_tpxheader(infile, &header, TRUE);
+        TpxFileHeader header = readTpxHeader(infile, true);
         if (x)
         {
             snew(*x, header.natoms);
