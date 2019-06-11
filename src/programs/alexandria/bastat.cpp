@@ -612,7 +612,7 @@ int alex_bastat(int argc, char *argv[])
     
     gms.read(opt2fn("-sel", NFILE, fnm));
     printf("There are %d molecules.\n", (gms.count(imsTrain) + gms.count(imsTest)));
-    fprintf(fp, "There are %d molecules.\n#\n", (gms.count(imsTrain) + gms.count(imsTest)));
+    fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(imsTrain) + gms.count(imsTest)));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
