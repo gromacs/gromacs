@@ -50,12 +50,12 @@ USER testing
 # TODO: Clean up pip cache.
 RUN python3 -m venv $HOME/testing
 RUN . $HOME/testing/bin/activate && \
-    pip install --upgrade pip setuptools
+    pip install --no-cache-dir --upgrade pip setuptools
 
 ADD --chown=testing:testing requirements-test.txt /home/testing/gmxapi/
 
 RUN . $HOME/testing/bin/activate && \
-    pip install -r /home/testing/gmxapi/requirements-test.txt
+    pip install --no-cache-dir -r /home/testing/gmxapi/requirements-test.txt
 
 COPY --from=gromacs $CMAKE_ROOT $CMAKE_ROOT
 COPY --from=gromacs /usr/local/gromacs /usr/local/gromacs
@@ -66,7 +66,7 @@ ADD --chown=testing:testing src/gmxapi /home/testing/gmxapi/src/gmxapi
 RUN . $HOME/testing/bin/activate && \
     . /usr/local/gromacs/bin/GMXRC && \
     (cd $HOME/gmxapi/src && \
-     pip install . \
+     pip install --no-cache-dir . \
     )
 
 ADD --chown=testing:testing src/test /home/testing/gmxapi/test
