@@ -74,6 +74,15 @@ To be able to step through with gdb, run with something like the following, repl
 
     docker run --rm -ti --security-opt seccomp=unconfined imagename bash
 
+### notebook.dockerfile
+
+Built on `gmxapi/ci-mpich:latest`, this image adds a `notebook` entry point to
+be used as the new default command. Run with port mapping for http port 8888 for
+easy access to a Jupyter notebook server running in the docker container's
+`testing` user home directory.
+
+    docker run --rm -ti -p 8888:8888 gmxapi/notebook
+
 ## Automation
 
 *TODO: Update this section as Jenkins infrastructure evolves.*
