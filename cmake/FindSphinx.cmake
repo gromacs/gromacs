@@ -69,11 +69,13 @@ set(_find_deps_options)
 if (Sphinx_FIND_QUIETLY)
     set(_find_deps_options QUIET)
 endif()
+
+# Check if pygments module is available via the Unix error code (ie. 0
+# for success)
 execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
                 "import pygments"
-                RESULT_VARIABLE _pygments_status
-                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-if (_pygments_status)
+                RESULT_VARIABLE _pygments_status)
+if (_pygments_status EQUAL 0)
     set(Sphinx_pygments_FOUND 1)
 endif()
 
