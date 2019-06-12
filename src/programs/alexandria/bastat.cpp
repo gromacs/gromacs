@@ -459,7 +459,7 @@ static void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         sprintf(pbuf, "%g  %g", Dm, beta);
         round_numbers(&av, &sig); // Rounding the numbers to 1/10 pm and 1/10 degree
         atoms = {i.a1, i.a2};
-        morse->addForce(atoms, pbuf, av, sig, N);
+        morse->addForce(atoms, pbuf, av, sig, N, i.order);
 
         fprintf(fp, "bond-%s-%s len %g sigma %g (pm) N = %d%s\n",
                 i.a1.c_str(), i.a2.c_str(), av, sig, N,

@@ -517,7 +517,15 @@ class Poldata
 
         bool findForce(const std::vector<std::string> &atoms,
                        ListedForceConstIterator       *force) const;
+        
+        bool findForce(std::vector<std::string> &atoms,
+                       ListedForceIterator      *force,
+                       size_t                    bondOrder);
 
+
+        bool findForce(const std::vector<std::string> &atoms,
+                       ListedForceConstIterator       *force,
+                       size_t                          bondOrder) const;
 
         bool searchForce(std::vector<std::string> &atoms,
                          std::string              &params,
@@ -530,6 +538,21 @@ class Poldata
                          double                   *refValue,
                          double                   *sigma,
                          size_t                   *ntrain,
+                         InteractionType           iType) const;
+
+        bool searchForce(std::vector<std::string> &atoms,
+                         std::string              &params,
+                         double                   *refValue,
+                         double                   *sigma,
+                         size_t                   *ntrain,
+                         size_t                    bondorder) const;
+
+        bool searchForce(std::vector<std::string> &atoms,
+                         std::string              &params,
+                         double                   *refValue,
+                         double                   *sigma,
+                         size_t                   *ntrain,
+                         size_t                    bondorder,
                          InteractionType           iType) const;
 
         const std::string &getVdwFunction() const { return gtVdwFunction_; }

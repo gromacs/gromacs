@@ -374,6 +374,23 @@ class ListedForce
                     double                         refValue,
                     double                         sigma,
                     size_t                         ntrain);
+                    
+        /*! \brief
+         * ListedForce constructor
+         *
+         * \param[in] atoms       A vector of atom bond types invloved in the listed force
+         * \param[in] params      Listed force paramters
+         * \param[in] refvalue    The reference value such as the reference bond length
+         * \param[in] sigma       Uncertainty in the calculated reference value
+         * \param[in] ntrain      Number of molecules in the training set
+         * \param[in] bondOrder   The order of the covalent bond
+         */
+        ListedForce(const std::vector<std::string> atoms,
+                    std::string                    params,
+                    double                         refValue,
+                    double                         sigma,
+                    size_t                         ntrain,
+                    size_t                         bondOrder);
 
         /*! \brief
          * Return the vector of atom bond types invloved in the listed force
@@ -419,6 +436,16 @@ class ListedForce
          * Return the number of molecules in the training set
          */
         int ntrain() const { return ntrain_; }
+        
+        /*! \brief
+         * Set the bond order for a specific covalent bond
+         */
+        void setBondOrder(int bondOrder) {bondOrder_ = bondOrder;}
+        
+        /*! \brief
+         * Return the bond order for a specific covalent bond
+         */
+        size_t bondOrder() const {return bondOrder_;}
 
         CommunicationStatus Send(const t_commrec *cr, int dest);
 
@@ -431,6 +458,7 @@ class ListedForce
         double                         refValue_;
         double                         sigma_;
         size_t                         ntrain_;
+        size_t                         bondOrder_;
 };
 
 using ListedForceIterator      = typename std::vector<ListedForce>::iterator;
@@ -495,6 +523,24 @@ class ListedForces
          * \param[in] atoms   A vector of atom bond types invloved in the listed force
          */
         ListedForceConstIterator findForce(const std::vector<std::string> &atoms) const;
+                                           
+        /* \brief
+         * Find a listed force in the force_ vector
+         *
+         * \param[in] atoms     A vector of atom bond types invloved in the listed force
+         * \param[in] bondOrder bond order of the covalent bond
+         */
+        ListedForceIterator findForce(const std::vector<std::string> &atoms, 
+                                      size_t                          bondOrder);
+
+        /* \brief
+         * Find a listed force in the force_ vector
+         *
+         * \param[in] atoms   A vector of atom bond types invloved in the listed force
+         * \param[in] bondOrder bond order of the covalent bond
+         */
+        ListedForceConstIterator findForce(const std::vector<std::string> &atoms,
+                                           size_t                          bondOrder) const;
 
         /* \brief
          * Set the listed force paramters
@@ -510,6 +556,23 @@ class ListedForces
                             double                          refValue,
                             double                          sigma,
                             size_t                          ntrain);
+                            
+        /* \brief
+         * Set the listed force paramters
+         *
+         * \param[in] atoms       A vector of atom bond types invloved in the listed force
+         * \param[in] params      Listed force paramters
+         * \param[in] refvalue    The reference value such as the reference bond length
+         * \param[in] sigma       Uncertainty in the calculated reference value
+         * \param[in] ntrain      Number of molecules in the training set
+         * \param[in] bondOrder bond order of the covalent bond
+         */
+        bool setForceParams(const std::vector<std::string> &atoms,
+                            const std::string              &params,
+                            double                          refValue,
+                            double                          sigma,
+                            size_t                          ntrain,
+                            size_t                          bondOrder);
 
         /* \brief
          * Generate a ListedForce object and
@@ -526,6 +589,24 @@ class ListedForces
                       double                          refValue,
                       double                          sigma,
                       size_t                          ntrain);
+                      
+        /* \brief
+         * Generate a ListedForce object and
+         * add it to the force_ vector, if it does not exist already
+         *
+         * \param[in] atoms       A vector of atom bond types invloved in the listed force
+         * \param[in] params      Listed force paramters
+         * \param[in] refvalue    The reference value such as the reference bond length
+         * \param[in] sigma       Uncertainty in the calculated reference value
+         * \param[in] ntrain      Number of molecules in the training set
+         * \param[in] bondOrder bond order of the covalent bond
+         */
+        void addForce(const std::vector<std::string> &atoms,
+                      const std::string              &params,
+                      double                          refValue,
+                      double                          sigma,
+                      size_t                          ntrain,
+                      size_t                          bondOrder);
 
         /* \brief
          * Search a listed force in the force_ vector
@@ -541,6 +622,23 @@ class ListedForces
                          double                   *refValue,
                          double                   *sigma,
                          size_t                   *ntrain) const;
+                         
+        /* \brief
+         * Search a listed force in the force_ vector
+         *
+         * \param[in] atoms       A vector of atom bond types invloved in the listed force
+         * \param[in] params      Listed force paramters
+         * \param[in] refvalue    The reference value such as the reference bond length
+         * \param[in] sigma       Uncertainty in the calculated reference value
+         * \param[in] ntrain      Number of molecules in the training set
+         * \param[in] bondOrder bond order of the covalent bond
+         */
+        bool searchForce(std::vector<std::string> &atoms,
+                         std::string              &params,
+                         double                   *refValue,
+                         double                   *sigma,
+                         size_t                   *ntrain,
+                         size_t                    bondOrder) const;
 
 
         /*! \brief

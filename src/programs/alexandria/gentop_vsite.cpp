@@ -558,15 +558,16 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                               t_excls                   **excls,
                               t_state                    *state)
 {
-    int                      nvsite = 0;
-    size_t                   ntrain = 0;
-    double                   sigma  = 0;       
-    double                   akjl   = 0;
-    double                   bij    = 0;
-    double                   bjk    = 0;
-    double                   bjl    = 0;
-    double                   aijk   = 0;
-    double                   aijl   = 0;
+    int                      nvsite    = 0;
+    size_t                   ntrain    = 0;
+    size_t                   bondorder = 0;
+    double                   sigma     = 0;       
+    double                   akjl      = 0;
+    double                   bij       = 0;
+    double                   bjk       = 0;
+    double                   bjl       = 0;
+    double                   aijk      = 0;
+    double                   aijl      = 0;
     
     std::string              j, k, l, m;
     std::string              params;    
@@ -652,13 +653,13 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                     {
                         bij      = convert2gmx(vsite->distance(), lengthUnit);
                         aijk     = 
-                            aijl = DEG2RAD*vsite->angle(); // Must be in RAD here.
+                        aijl     = DEG2RAD*vsite->angle(); // Must be in RAD here.
                         Akjl     = {k, j, l};
                         Bjk      = {j, k};
                         Bjl      = {j, l};
-                        if (pd.searchForce(Akjl, params, &akjl, &sigma, &ntrain, eitANGLES) &&
-                            pd.searchForce(Bjk,  params, &bjk,  &sigma, &ntrain, eitBONDS)  &&
-                            pd.searchForce(Bjl,  params, &bjl,  &sigma, &ntrain, eitBONDS))
+                        if (pd.searchForce(Akjl, params, &akjl, &sigma, &ntrain, bondorder, eitANGLES) &&
+                            pd.searchForce(Bjk,  params, &bjk,  &sigma, &ntrain, bondorder, eitBONDS)  &&
+                            pd.searchForce(Bjl,  params, &bjl,  &sigma, &ntrain, bondorder, eitBONDS))
                         {   
                             bjk  = convert2gmx(bjk, lengthUnit);
                             bjl  = convert2gmx(bjl, lengthUnit);

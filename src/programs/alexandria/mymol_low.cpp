@@ -322,21 +322,23 @@ immStatus updatePlist(const Poldata             &pd,
 
             if (eitBONDS == iType)
             {
+                int bondOrder_index = 0;
                 lu = string2unit(fs->unit().c_str());
-                for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+                for (auto pwi = pw.beginParam(); pwi < pw.endParam(); ++pwi)
                 {
-                    if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-                        pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj))
+                    if (pd.atypeToBtype(*top->atoms.atomtype[pwi->a[0]], aai) &&
+                        pd.atypeToBtype(*top->atoms.atomtype[pwi->a[1]], aaj))
                     {
                         atoms = {aai, aaj};
+                        auto  bondOrder = pw.bondOrder(bondOrder_index);
                         n     = 0;
-                        if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                        if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain, bondOrder)) != 0)
                         {
-                            b->c[n++] = convert2gmx(value, lu);
+                            pwi->c[n++] = convert2gmx(value, lu);
                             ptr       = gmx::splitString(params);
                             for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                             {
-                                b->c[n++] = gmx::doubleFromString(pi->c_str());
+                                pwi->c[n++] = gmx::doubleFromString(pi->c_str());
                             }
                         }
                         else if (!bBASTAT)
@@ -348,11 +350,12 @@ immStatus updatePlist(const Poldata             &pd,
                             }
                             return immNotSupportedBond;
                         }
+                        bondOrder_index++;
                     }
                     else
                     {
                         gmx_fatal(FARGS, "Unsupported atom types: %d, %d!\n",
-                                  b->a[0], b->a[1]);
+                                  pwi->a[0], pwi->a[1]);
                     }
                 }
             }

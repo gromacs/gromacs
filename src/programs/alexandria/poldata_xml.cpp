@@ -492,7 +492,8 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
                                my_atof(xbuf[exmlREFVALUE].c_str()),
                                my_atof(xbuf[exmlSIGMA].c_str()),
-                               atoi(xbuf[exmlNTRAIN].c_str()));
+                               atoi(xbuf[exmlNTRAIN].c_str()),
+                               atoi(xbuf[exmlBONDORDER].c_str()));
             }
             break;
         case exmlGT_ANGLE:
@@ -781,6 +782,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
                 grandchild = add_xml_child(child, exml_names[exmlGT_BOND]);
                 add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
                 add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
+                add_xml_int(grandchild, exml_names[exmlBONDORDER], f->bondOrder());
                 add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
                 add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
                 add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());

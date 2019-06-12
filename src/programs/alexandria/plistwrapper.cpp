@@ -99,7 +99,7 @@ void delete_params(std::vector<PlistWrapper> &plist_,
                     {
                         if (nullptr != debug)
                         {
-                            fprintf(debug, "Removing bond beteen atoms %d %d\n",
+                            fprintf(debug, "Removing bond between atoms %d %d\n",
                                     alist[0], alist[1]);
                         }
                         j = pwi->eraseParam(j);
@@ -176,6 +176,27 @@ void add_param_to_plist(std::vector<PlistWrapper> &plist,
         pwi = plist.end() - 1;
     }
     pwi->addParam(p);
+}
+
+void add_param_to_plist(std::vector<PlistWrapper> &plist,
+                        int                        ftype,
+                        InteractionType            itype,
+                        const t_param             &p,
+                        size_t                     bondOrder)
+{
+    std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist, ftype);
+
+    if (plist.end() == pwi)
+    {
+        PlistWrapper pw(itype, ftype);
+        plist.push_back(pw);
+        pwi = plist.end() - 1;
+    }
+    pwi->addParam(p);
+    if (eitBONDS == itype)
+    {
+        pwi->addBondOrder(bondOrder);
+    }
 }
 
 }

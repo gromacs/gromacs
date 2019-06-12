@@ -326,7 +326,24 @@ ListedForce::ListedForce(const std::vector<std::string> atoms,
       params_(params),
       refValue_(refValue),
       sigma_(sigma),
-      ntrain_(ntrain)
+      ntrain_(ntrain),
+      bondOrder_(0)
+
+{}
+
+ListedForce::ListedForce(const std::vector<std::string> atoms,
+                         std::string                    params,
+                         double                         refValue,
+                         double                         sigma,
+                         size_t                         ntrain,
+                         size_t                         bondOrder)
+    :
+      atoms_(atoms),
+      params_(params),
+      refValue_(refValue),
+      sigma_(sigma),
+      ntrain_(ntrain),
+      bondOrder_(bondOrder)
 
 {}
 
@@ -340,6 +357,7 @@ CommunicationStatus ListedForce::Send(const t_commrec *cr, int dest)
         gmx_send_double(cr, dest, refValue_);
         gmx_send_double(cr, dest, sigma_);
         gmx_send_int(cr, dest, static_cast<int>(ntrain_));
+        gmx_send_int(cr, dest, static_cast<int>(bondOrder_));
         gmx_send_int(cr, dest, atoms_.size());
 
         for (auto &atom : atoms_)
@@ -366,10 +384,11 @@ CommunicationStatus ListedForce::Receive(const t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         gmx_recv_str(cr, src, &params_);
-        refValue_ = gmx_recv_double(cr, src);
-        sigma_    = gmx_recv_double(cr, src);
-        ntrain_   = static_cast<size_t>(gmx_recv_double(cr, src));
-        natom     = gmx_recv_int(cr, src);
+        refValue_  = gmx_recv_double(cr, src);
+        sigma_     = gmx_recv_double(cr, src);
+        ntrain_    = static_cast<size_t>(gmx_recv_double(cr, src));
+        bondOrder_ = static_cast<size_t>(gmx_recv_double(cr, src));
+        natom      = gmx_recv_int(cr, src);
 
         for (auto n = 0; n < natom; n++)
         {
@@ -513,6 +532,31 @@ ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> 
                         });
 }
 
+ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atoms,
+                                            size_t                         bondOrder)
+{
+    ListedForceIterator fb = forceBegin(), fe = forceEnd();
+    return std::find_if(fb, fe, [atoms, bondOrder](const ListedForce &force)
+                        {
+                            std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
+                            return ((atoms == force.atoms() || atoms_re == force.atoms()) 
+                                    && bondOrder == force.bondOrder());
+                        });
+}
+
+ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms, 
+                                                 size_t                          bondOrder) const
+{
+
+    ListedForceConstIterator fb = forceBegin(), fe = forceEnd();
+    return std::find_if(fb, fe, [atoms, bondOrder](const ListedForce &force)
+                        {
+                            std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
+                            return ((atoms == force.atoms() || atoms_re == force.atoms()) 
+                                    && bondOrder == force.bondOrder());
+                        });
+}
+
 bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
                                   const std::string              &params,
                                   double                          refValue,
@@ -526,7 +570,27 @@ bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
         force->setSigma(sigma);
         force->setNtrain(ntrain);
         force->setParams(params);
+        
+        return true;
+    }
+    return false;
+}
 
+bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
+                                  const std::string              &params,
+                                  double                          refValue,
+                                  double                          sigma,
+                                  size_t                          ntrain,
+                                  size_t                          bondOrder)
+{
+    auto force = findForce(atoms, bondOrder);
+    if (forceEnd() != force)
+    {
+        force->setRefValue(refValue);
+        force->setSigma(sigma);
+        force->setNtrain(ntrain);
+        force->setParams(params);
+        
         return true;
     }
     return false;
@@ -538,13 +602,26 @@ void ListedForces::addForce(const std::vector<std::string> &atoms,
                             double                          sigma,
                             size_t                          ntrain)
 {
-    if (setForceParams(atoms, params, refValue,
-                       sigma, ntrain))
+    if (setForceParams(atoms, params, refValue, sigma, ntrain))
     {
         return;
     }
-    ListedForce force(atoms, params, refValue,
-                      sigma, ntrain);
+    ListedForce force(atoms, params, refValue, sigma, ntrain);
+    force_.push_back(force);
+}
+
+void ListedForces::addForce(const std::vector<std::string> &atoms,
+                            const std::string              &params,
+                            double                          refValue,
+                            double                          sigma,
+                            size_t                          ntrain,
+                            size_t                          bondOrder)
+{
+    if (setForceParams(atoms, params, refValue, sigma, ntrain, bondOrder))
+    {
+        return;
+    }
+    ListedForce force(atoms, params, refValue, sigma, ntrain, bondOrder);
     force_.push_back(force);
 }
 
@@ -557,11 +634,31 @@ bool ListedForces::searchForce(std::vector<std::string> &atoms,
     auto force = findForce(atoms);
     if (forceEnd() != force)
     {
-        *refValue = force->refValue();
-        *sigma    = force->sigma();
-        *ntrain   = force->ntrain();
-        params    = force->params();
+        *refValue  = force->refValue();
+        *sigma     = force->sigma();
+        *ntrain    = force->ntrain();
+        params     = force->params();
 
+        return true;
+    }
+    return false;
+}
+
+bool ListedForces::searchForce(std::vector<std::string> &atoms,
+                               std::string              &params,
+                               double                   *refValue,
+                               double                   *sigma,
+                               size_t                   *ntrain,
+                               size_t                    bondOrder) const
+{
+    auto force = findForce(atoms, bondOrder);
+    if (forceEnd() != force)
+    {
+        *refValue  = force->refValue();
+        *sigma     = force->sigma();
+        *ntrain    = force->ntrain();
+        params     = force->params();
+        
         return true;
     }
     return false;
@@ -981,12 +1078,12 @@ typedef struct {
 } t_eemtype_props;
 
 t_eemtype_props eemtype_props[eqdNR] = {
-    { eqdAXp,      "AXp",      "Ghahremanpour2017a",   false },
-    { eqdAXg,      "AXg",      "Ghahremanpour2017a",   true },
-    { eqdAXs,      "AXs",      "Ghahremanpour2017a",   false },
-    { eqdAXpp,     "AXpp",     "Ghahremanpour2017a",   false },
-    { eqdAXpg,     "AXpg",     "Ghahremanpour2017a",   true },
-    { eqdAXps,     "AXps",     "Ghahremanpour2017a",   false },
+    { eqdAXp,      "AXp",      "Ghahremanpour2018a",   false },
+    { eqdAXg,      "AXg",      "Ghahremanpour2018a",   true },
+    { eqdAXs,      "AXs",      "Ghahremanpour2018a",   false },
+    { eqdAXpp,     "AXpp",     "Ghahremanpour2018a",   false },
+    { eqdAXpg,     "AXpg",     "Ghahremanpour2018a",   true },
+    { eqdAXps,     "AXps",     "Ghahremanpour2018a",   false },
     { eqdYang,     "Yang",     "Yang2006b",            true },
     { eqdBultinck, "Bultinck", "Bultinck2002a",        false },
     { eqdRappe,    "Rappe",    "Rappe1991a",           true }

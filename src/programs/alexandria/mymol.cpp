@@ -794,16 +794,16 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                         {
                             b.c[ii++] = d;
                         }
-                        add_param_to_plist(plist_, ftb, eitBONDS, b);
+                        add_param_to_plist(plist_, ftb, eitBONDS, b, bi->getBondOrder());
                     }
                     else
                     {
-                        // Insert dummy bond to be replaced later
+                        // Insert a dummy bond with a bond order of 1 to be replaced later
                         for (auto i = 0; i < MAXFORCEPARAM; i++)
                         {
                             b.c[i] = 0;
                         }
-                        add_param_to_plist(plist_, ftb, eitBONDS, b);
+                        add_param_to_plist(plist_, ftb, eitBONDS, b, 1);
                     }
                 }
             }

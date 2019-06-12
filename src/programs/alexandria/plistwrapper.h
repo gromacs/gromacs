@@ -63,20 +63,20 @@ enum InteractionType
 using ParamIterator      = typename std::vector<t_param>::iterator;
 using ConstParamIterator = typename std::vector<t_param>::const_iterator;
 
+using BondOrderIterator      = typename std::vector<size_t>::iterator;
+using ConstBondOrderIterator = typename std::vector<size_t>::const_iterator;
+
 //! Cleaner version of plist array
 class PlistWrapper
 {
-    private:
-        //! Function type
-        int                  ftype_;
-        //! Interaction type
-        InteractionType      itype_;
-        //! Array of parameters
-        std::vector<t_param> p_;
     public:
         //! Constructor
         PlistWrapper(InteractionType itype,
-                     int             ftype) : ftype_(ftype), itype_(itype) {}
+                     int             ftype) 
+                     : 
+                         ftype_(ftype), 
+                         itype_(itype)     
+                     {}
 
         //! Add one parameter
         void addParam(t_param p) { p_.push_back(p); }
@@ -113,6 +113,37 @@ class PlistWrapper
 
         //! Return number of parameters
         unsigned int nParam() const { return p_.size(); }
+        
+        //! Set bond order
+        void addBondOrder (size_t bondOrder) {bondOrder_.push_back(bondOrder);}
+        
+        //! Return bond order vector
+        std::vector<size_t> bondOrder () const {return bondOrder_;}
+        
+        //! Return bond order for bond j
+        size_t bondOrder (int j) const {return bondOrder_[j];}
+        
+        //! Loop over parameters
+        ConstBondOrderIterator beginBondOrder() const { return bondOrder_.begin(); }
+
+        //! Loop over parameters
+        ConstBondOrderIterator endBondOrder() const { return bondOrder_.end(); }
+
+        //! Loop over parameters
+        BondOrderIterator beginBondOrder() { return bondOrder_.begin(); }
+
+        //! Loop over parameters
+        BondOrderIterator endBondOrder() { return bondOrder_.end(); }
+    
+    private:
+        //! Function type
+        int                  ftype_;
+        //! Interaction type
+        InteractionType      itype_;
+        //! Array of parameters
+        std::vector<t_param> p_;
+        //! Bond order 
+        std::vector<size_t>  bondOrder_;
 };
 
 //! Another utility typedef for a looper
@@ -130,18 +161,21 @@ ConstPlistWrapperIterator SearchPlist(const std::vector<PlistWrapper> &plist, in
 
  unsigned int CountPlist(const std::vector<PlistWrapper> &plist, int ftype);
 
-void add_param_to_plist(std::vector<PlistWrapper> &plist,
-                        const int                  ftype,
-                        const t_param             &p);
-
 void delete_params(std::vector<PlistWrapper> &plist_,
                    const int                  ftype,
                    const int                  alist[]);
+                   
 
 void add_param_to_plist(std::vector<PlistWrapper> &plist,
                         int                        ftype,
                         InteractionType            itype,
                         const t_param             &p);
+                        
+void add_param_to_plist(std::vector<PlistWrapper> &plist,
+                        int                        ftype,
+                        InteractionType            itype,
+                        const t_param             &p,
+                        size_t                     bondOrder);
 }
 
 #endif

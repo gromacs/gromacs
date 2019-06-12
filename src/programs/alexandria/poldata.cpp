@@ -439,6 +439,7 @@ void Poldata::addBtype(const std::string &btype)
     }
 }
 
+
 bool Poldata::findForce(std::vector<std::string> &atoms,
                         ListedForceIterator      *force)
 {
@@ -460,6 +461,38 @@ bool Poldata::findForce(const std::vector<std::string> &atoms,
     for (const auto &f : forces_)
     {
         auto tmp = f.findForce(atoms);
+        if (f.forceEnd() != tmp)
+        {
+            *force = tmp;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Poldata::findForce(std::vector<std::string> &atoms,
+                        ListedForceIterator      *force,
+                        size_t                    bondOrder)
+{
+    for (auto &f : forces_)
+    {
+        auto tmp = f.findForce(atoms, bondOrder);
+        if (f.forceEnd() != tmp)
+        {
+            *force = tmp;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Poldata::findForce(const std::vector<std::string> &atoms,
+                        ListedForceConstIterator       *force,
+                        size_t                          bondOrder) const
+{
+    for (const auto &f : forces_)
+    {
+        auto tmp = f.findForce(atoms, bondOrder);
         if (f.forceEnd() != tmp)
         {
             *force = tmp;
@@ -498,6 +531,44 @@ bool Poldata::searchForce(std::vector<std::string> &atoms,
     {
         if (f->searchForce(atoms, params, refValue,
                            sigma, ntrain))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Poldata::searchForce(std::vector<std::string> &atoms,
+                          std::string              &params,
+                          double                   *refValue,
+                          double                   *sigma,
+                          size_t                   *ntrain,
+                          size_t                    bondOrder) const
+{
+    for (auto &f : forces_)
+    {
+        if (f.searchForce(atoms, params, refValue,
+                          sigma, ntrain, bondOrder))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Poldata::searchForce(std::vector<std::string> &atoms,
+                          std::string              &params,
+                          double                   *refValue,
+                          double                   *sigma,
+                          size_t                   *ntrain,
+                          size_t                    bondOrder,
+                          InteractionType           iType) const
+{
+    auto f  = findForces(iType);
+    if (forcesEnd() != f)
+    {
+        if (f->searchForce(atoms, params, refValue,
+                           sigma, ntrain, bondOrder))
         {
             return true;
         }
