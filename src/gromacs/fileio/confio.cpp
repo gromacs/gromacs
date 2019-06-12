@@ -167,7 +167,7 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
 }
 
 void write_sto_conf_mtop(const char *outfile, const char *title,
-                         gmx_mtop_t *mtop,
+                         const gmx_mtop_t *mtop,
                          const rvec x[], const rvec *v, int ePBC, const matrix box)
 {
     int     ftp;
