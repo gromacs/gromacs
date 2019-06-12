@@ -277,11 +277,11 @@ static inline int calc_shmem_required_nonbonded(const int num_threads_z, const g
  *
  *  As the point where the local stream tasks can be considered complete happens
  *  at the same call point where the nonlocal stream should be synced with the
- *  the local, this function recrds the event if called with the local stream as
+ *  the local, this function records the event if called with the local stream as
  *  argument and inserts in the GPU stream a wait on the event on the nonlocal.
  */
-static void insertNonlocalGpuDependency(const gmx_nbnxn_cuda_t   *nb,
-                                        const InteractionLocality interactionLocality)
+void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_cuda_t   *nb,
+                                      const InteractionLocality interactionLocality)
 {
     cudaStream_t stream  = nb->stream[interactionLocality];
 
@@ -375,7 +375,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t       *nb,
        This wait needs to precede any PP tasks, bonded or nonbonded, that may
        compute on interactions between local and nonlocal atoms.
      */
-    insertNonlocalGpuDependency(nb, iloc);
+    nbnxnInsertNonlocalGpuDependency(nb, iloc);
 }
 
 /*! As we execute nonbonded workload in separate streams, before launching
@@ -743,7 +743,9 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
                            gmx_nbnxn_gpu_t                 *nb,
                            void                            *xPmeDevicePtr,
                            const Nbnxm::AtomLocality        locality,
-                           const rvec                      *x)
+                           const rvec                      *x,
+                           int                              gridId,
+                           int                              numColumnsMax)
 {
     cu_atomdata_t             *adat    = nb->atdat;
     bool                       bDoTime = nb->bDoTime;
@@ -751,17 +753,11 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     const int                  numColumns                = grid.numColumns();
     const int                  cellOffset                = grid.cellOffset();
     const int                  numAtomsPerCell           = grid.numAtomsPerCell();
-    // TODO: Document this, one can not infer the interaction locality from the atom locality
-    Nbnxm::InteractionLocality interactionLoc            = Nbnxm::InteractionLocality::Local;
-    int nCopyAtoms                                       = grid.srcAtomEnd() - grid.srcAtomBegin();
-    int copyAtomStart                                    = grid.srcAtomBegin();
+    Nbnxm::InteractionLocality interactionLoc            = gpuAtomToInteractionLocality(locality);
+    int                        nCopyAtoms                = grid.srcAtomEnd() - grid.srcAtomBegin();
+    int                        copyAtomStart             = grid.srcAtomBegin();
 
-    if (locality == Nbnxm::AtomLocality::NonLocal)
-    {
-        interactionLoc          = Nbnxm::InteractionLocality::NonLocal;
-    }
-
-    cudaStream_t   stream  = nb->stream[interactionLoc];
+    cudaStream_t               stream  = nb->stream[interactionLoc];
 
     // FIXME: need to either let the local stream get to the
     // insertNonlocalGpuDependency call or call it separately here
@@ -769,7 +765,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     {
         if (interactionLoc == Nbnxm::InteractionLocality::Local)
         {
-            insertNonlocalGpuDependency(nb, interactionLoc);
+            nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
         }
         return;
     }
@@ -820,24 +816,24 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid               &grid,
     config.sharedMemorySize = 0;
     config.stream           = stream;
 
-    auto       kernelFn           = nbnxn_gpu_x_to_nbat_x_kernel;
-    float     *xqPtr              = &(adat->xq->x);
-    const int *d_atomIndices      = nb->atomIndices;
-    const int *d_cxy_na           = nb->cxy_na[locality];
-    const int *d_cxy_ind          = nb->cxy_ind[locality];
-    const auto kernelArgs         = prepareGpuKernelArguments(kernelFn, config,
-                                                              &numColumns,
-                                                              &xqPtr,
-                                                              &setFillerCoords,
-                                                              &d_x,
-                                                              &d_atomIndices,
-                                                              &d_cxy_na,
-                                                              &d_cxy_ind,
-                                                              &cellOffset,
-                                                              &numAtomsPerCell);
+    auto       kernelFn            = nbnxn_gpu_x_to_nbat_x_kernel;
+    float     *xqPtr               = &(adat->xq->x);
+    const int *d_atomIndices       = nb->atomIndices;
+    const int *d_cxy_na            = &nb->cxy_na[numColumnsMax*gridId];
+    const int *d_cxy_ind           = &nb->cxy_ind[numColumnsMax*gridId];
+    const auto kernelArgs          = prepareGpuKernelArguments(kernelFn, config,
+                                                               &numColumns,
+                                                               &xqPtr,
+                                                               &setFillerCoords,
+                                                               &d_x,
+                                                               &d_atomIndices,
+                                                               &d_cxy_na,
+                                                               &d_cxy_ind,
+                                                               &cellOffset,
+                                                               &numAtomsPerCell);
     launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
 
-    insertNonlocalGpuDependency(nb, interactionLoc);
+    nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
 }
 
 } // namespace Nbnxm

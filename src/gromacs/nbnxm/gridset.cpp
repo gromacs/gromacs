@@ -224,6 +224,14 @@ void GridSet::putOnGrid(const matrix                    box,
         /* We are done setting up all grids, we can resize the force buffers */
         nbat->resizeForceBuffers();
     }
+
+    int maxNumColumns = 0;
+    for (const auto &grid : grids())
+    {
+        maxNumColumns = std::max(maxNumColumns, grid.numColumns());
+    }
+    setNumColumnsMax(maxNumColumns);
+
 }
 
 } // namespace Nbnxm

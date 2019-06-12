@@ -1040,7 +1040,7 @@ void do_force(FILE                                     *fplog,
 
         if (useGpuXBufOps)
         {
-            nbv->atomdata_init_copy_x_to_nbat_x_gpu( Nbnxm::AtomLocality::Local);
+            nbv->atomdata_init_copy_x_to_nbat_x_gpu();
         }
 
     }
@@ -1107,12 +1107,6 @@ void do_force(FILE                                     *fplog,
                                    &top->excls, step, nrnb);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             wallcycle_stop(wcycle, ewcNS);
-
-            if (useGpuXBufOps)
-            {
-
-                nbv->atomdata_init_copy_x_to_nbat_x_gpu( Nbnxm::AtomLocality::NonLocal);
-            }
         }
         else
         {

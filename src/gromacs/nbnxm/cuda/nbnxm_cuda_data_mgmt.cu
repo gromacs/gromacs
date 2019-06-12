@@ -495,18 +495,14 @@ gpu_init(const gmx_device_info_t   *deviceInfo,
 
     cuda_init_const(nb, ic, listParams, nbat->params());
 
-    nb->natoms                = 0;
-    nb->natoms_alloc          = 0;
-    nb->atomIndicesSize       = 0;
-    nb->atomIndicesSize_alloc = 0;
-    nb->ncxy_na[AtomLocality::Local]                  = 0;
-    nb->ncxy_na[AtomLocality::NonLocal]               = 0;
-    nb->ncxy_na_alloc[AtomLocality::Local]            = 0;
-    nb->ncxy_na_alloc[AtomLocality::NonLocal]         = 0;
-    nb->ncxy_ind[AtomLocality::Local]                 = 0;
-    nb->ncxy_ind[AtomLocality::NonLocal]              = 0;
-    nb->ncxy_ind_alloc[AtomLocality::Local]           = 0;
-    nb->ncxy_ind_alloc[AtomLocality::NonLocal]        = 0;
+    nb->natoms                   = 0;
+    nb->natoms_alloc             = 0;
+    nb->atomIndicesSize          = 0;
+    nb->atomIndicesSize_alloc    = 0;
+    nb->ncxy_na                  = 0;
+    nb->ncxy_na_alloc            = 0;
+    nb->ncxy_ind                 = 0;
+    nb->ncxy_ind_alloc           = 0;
 
     if (debug)
     {
@@ -874,36 +870,20 @@ rvec *gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
 /* Initialization for X buffer operations on GPU. */
 /* TODO  Remove explicit pinning from host arrays from here and manage in a more natural way*/
 void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
-                                gmx_nbnxn_gpu_t                 *gpu_nbv,
-                                const Nbnxm::AtomLocality        locality)
+                                gmx_nbnxn_gpu_t                 *gpu_nbv)
 {
     cudaError_t                      stat;
-    const Nbnxm::InteractionLocality iloc = ((locality == AtomLocality::Local) ?
-                                             InteractionLocality::Local : InteractionLocality::NonLocal);
-    cudaStream_t                     stream    = gpu_nbv->stream[iloc];
+    cudaStream_t                     stream    = gpu_nbv->stream[InteractionLocality::Local];
     bool                             bDoTime   = gpu_nbv->bDoTime;
-    int                              gridBegin = 0, gridEnd = 0;
+    const int maxNumColumns                    = gridSet.numColumnsMax();
 
-    switch (locality)
-    {
-        case Nbnxm::AtomLocality::All:
-            gridBegin = 0;
-            gridEnd   = gridSet.grids().size();
-            break;
-        case Nbnxm::AtomLocality::Local:
-            gridBegin = 0;
-            gridEnd   = 1;
-            break;
-        case Nbnxm::AtomLocality::NonLocal:
-            gridBegin = 1;
-            gridEnd   = gridSet.grids().size();
-            break;
-        case Nbnxm::AtomLocality::Count:
-            GMX_ASSERT(false, "Count is invalid locality specifier");
-            break;
-    }
 
-    for (int g = gridBegin; g < gridEnd; g++)
+    reallocateDeviceBuffer(&gpu_nbv->cxy_na, maxNumColumns*gridSet.grids().size(),
+                           &gpu_nbv->ncxy_na, &gpu_nbv->ncxy_na_alloc, nullptr);
+    reallocateDeviceBuffer(&gpu_nbv->cxy_ind, maxNumColumns*gridSet.grids().size(),
+                           &gpu_nbv->ncxy_ind, &gpu_nbv->ncxy_ind_alloc, nullptr);
+
+    for (unsigned int g = 0; g < gridSet.grids().size(); g++)
     {
 
         const Nbnxm::Grid  &grid       = gridSet.grids()[g];
@@ -915,37 +895,30 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
         const int          *cxy_ind           = grid.cxy_ind().data();
         const int           numRealAtomsTotal = gridSet.numRealAtomsTotal();
 
-        if (iloc == Nbnxm::InteractionLocality::Local)
+        reallocateDeviceBuffer(&gpu_nbv->xrvec, numRealAtomsTotal, &gpu_nbv->natoms, &gpu_nbv->natoms_alloc, nullptr);
+        reallocateDeviceBuffer(&gpu_nbv->atomIndices, atomIndicesSize, &gpu_nbv->atomIndicesSize, &gpu_nbv->atomIndicesSize_alloc, nullptr);
+
+        if (atomIndicesSize > 0)
         {
+            // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
+            stat = cudaHostRegister((void*) atomIndices, atomIndicesSize*sizeof(int), cudaHostRegisterDefault);
+            CU_RET_ERR(stat, "cudaHostRegister failed on atomIndices");
 
-            reallocateDeviceBuffer(&gpu_nbv->xrvec, numRealAtomsTotal, &gpu_nbv->natoms, &gpu_nbv->natoms_alloc, nullptr);
-            reallocateDeviceBuffer(&gpu_nbv->atomIndices, atomIndicesSize, &gpu_nbv->atomIndicesSize, &gpu_nbv->atomIndicesSize_alloc, nullptr);
-
-            if (atomIndicesSize > 0)
+            if (bDoTime)
             {
-                // source data must be pinned for H2D assertion. This should be moved into place where data is (re-)alloced.
-                stat = cudaHostRegister((void*) atomIndices, atomIndicesSize*sizeof(int), cudaHostRegisterDefault);
-                CU_RET_ERR(stat, "cudaHostRegister failed on atomIndices");
-
-                if (bDoTime)
-                {
-                    gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
-                }
-
-                copyToDeviceBuffer(&gpu_nbv->atomIndices, atomIndices, 0, atomIndicesSize, stream, GpuApiCallBehavior::Async, nullptr);
-
-                if (bDoTime)
-                {
-                    gpu_nbv->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
-                }
-
-                stat = cudaHostUnregister((void*) atomIndices);
-                CU_RET_ERR(stat, "cudaHostUnRegister failed on atomIndices");
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(stream);
             }
-        }
 
-        reallocateDeviceBuffer(&gpu_nbv->cxy_na[locality], numColumns, &gpu_nbv->ncxy_na[locality], &gpu_nbv->ncxy_na_alloc[locality], nullptr);
-        reallocateDeviceBuffer(&gpu_nbv->cxy_ind[locality], numColumns, &gpu_nbv->ncxy_ind[locality], &gpu_nbv->ncxy_ind_alloc[locality], nullptr);
+            copyToDeviceBuffer(&gpu_nbv->atomIndices, atomIndices, 0, atomIndicesSize, stream, GpuApiCallBehavior::Async, nullptr);
+
+            if (bDoTime)
+            {
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(stream);
+            }
+
+            stat = cudaHostUnregister((void*) atomIndices);
+            CU_RET_ERR(stat, "cudaHostUnRegister failed on atomIndices");
+        }
 
         if (numColumns > 0)
         {
@@ -955,14 +928,15 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
 
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(stream);
             }
 
-            copyToDeviceBuffer(&gpu_nbv->cxy_na[locality], cxy_na, 0, numColumns, stream, GpuApiCallBehavior::Async, nullptr);
+            int* destPtr = &gpu_nbv->cxy_na[maxNumColumns*g];
+            copyToDeviceBuffer(&destPtr, cxy_na, 0, numColumns, stream, GpuApiCallBehavior::Async, nullptr);
 
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(stream);
             }
 
             stat = cudaHostUnregister((void*) cxy_na);
@@ -974,20 +948,31 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet            &gridSet,
 
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[locality].nb_h2d.openTimingRegion(stream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(stream);
             }
 
-            copyToDeviceBuffer(&gpu_nbv->cxy_ind[locality], cxy_ind, 0, numColumns, stream, GpuApiCallBehavior::Async, nullptr);
+            destPtr = &gpu_nbv->cxy_ind[maxNumColumns*g];
+            copyToDeviceBuffer(&destPtr, cxy_ind, 0, numColumns, stream, GpuApiCallBehavior::Async, nullptr);
 
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[locality].nb_h2d.closeTimingRegion(stream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(stream);
             }
 
             stat = cudaHostUnregister((void*) cxy_ind);
             CU_RET_ERR(stat, "cudaHostUnRegister failed on cxy_ind");
         }
     }
+
+    // The above data is transferred on the local stream but is a
+    // dependency of the nonlocal stream (specifically the nonlocal X
+    // buf ops kernel).  We therefore set a dependency to ensure
+    // that the nonlocal stream waits on the local stream here.
+    // This call records an event in the local stream:
+    nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::Local);
+    // ...and this call instructs the nonlocal stream to wait on that event:
+    nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
+
     return;
 }
 

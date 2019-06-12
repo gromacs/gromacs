@@ -1043,7 +1043,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet     &gridSet,
                                   gpu_nbv,
                                   xPmeDevicePtr,
                                   locality,
-                                  x);
+                                  x, g, gridSet.numColumnsMax());
         }
     }
     else

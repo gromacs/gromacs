@@ -248,9 +248,11 @@ struct nonbonded_verlet_t
                             void                           *xPmeDevicePtr,
                             gmx_wallcycle                  *wcycle);
 
-        //! Init for GPU version of setup coordinates in Nbnxm, for the given locality
-        void atomdata_init_copy_x_to_nbat_x_gpu(Nbnxm::AtomLocality        locality);
+        //! Init for GPU version of setup coordinates in Nbnxm
+        void atomdata_init_copy_x_to_nbat_x_gpu();
 
+        //! Sync the nonlocal GPU stream with dependent tasks in the local queue.
+        void insertNonlocalGpuDependency(Nbnxm::InteractionLocality interactionLocality);
 
         //! Returns a reference to the pairlist sets
         const PairlistSets &pairlistSets() const

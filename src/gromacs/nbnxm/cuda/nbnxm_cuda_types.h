@@ -229,18 +229,18 @@ struct gmx_nbnxn_cuda_t
     int                                                             atomIndicesSize;
     //! size of atom indices allocated in device buffer
     int                                                             atomIndicesSize_alloc;
-    //! x buf ops num of atoms (local and non-local)
-    gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               cxy_na;
+    //! x buf ops num of atoms
+    int                                                            *cxy_na;
     //! number of elements in cxy_na
-    gmx::EnumerationArray<Nbnxm::AtomLocality, int >                ncxy_na;
+    int                                                             ncxy_na;
     //! number of elements allocated allocated in device buffer
-    gmx::EnumerationArray<Nbnxm::AtomLocality, int >                ncxy_na_alloc;
-    //! x buf ops cell index mapping (local and non-local)
-    gmx::EnumerationArray<Nbnxm::AtomLocality, int *>               cxy_ind;
+    int                                                             ncxy_na_alloc;
+    //! x buf ops cell index mapping
+    int                                                            *cxy_ind;
     //! number of elements in cxy_ind
-    gmx::EnumerationArray<Nbnxm::AtomLocality, int >                ncxy_ind;
+    int                                                             ncxy_ind;
     //! number of elements allocated allocated in device buffer
-    gmx::EnumerationArray<Nbnxm::AtomLocality, int >                ncxy_ind_alloc;
+    int                                                             ncxy_ind_alloc;
     //! parameters required for the non-bonded calc.
     cu_nbparam_t                                                   *nbparam;
     //! pair-list data structures (local and non-local)
@@ -255,8 +255,10 @@ struct gmx_nbnxn_cuda_t
                                                    is done (and the local transfer can proceed)           */
     cudaEvent_t    misc_ops_and_local_H2D_done; /**< event triggered when the tasks issued in
                                                    the local stream that need to precede the
-                                                   non-local force calculations are done
-                                                   (e.g. f buffer 0-ing, local x/q H2D) */
+                                                   non-local force or buffer operation calculations are done
+                                                   (e.g. f buffer 0-ing, local x/q H2D, buffer op
+                                                   initialization in local stream that is required also
+                                                   by nonlocal stream ) */
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.

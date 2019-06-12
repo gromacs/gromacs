@@ -220,8 +220,7 @@ int gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETU
  * Called on the NS step and performs (re-)allocations and memory copies. !*/
 CUDA_FUNC_QUALIFIER
 void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused &gridSet,
-                                gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
-                                Nbnxm::AtomLocality gmx_unused locality) CUDA_FUNC_TERM
+                                gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv) CUDA_FUNC_TERM
 
 /*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
  */
@@ -231,7 +230,17 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid  gmx_unused &grid,
                            gmx_nbnxn_gpu_t    gmx_unused *gpu_nbv,
                            void               gmx_unused *xPmeDevicePtr,
                            Nbnxm::AtomLocality gmx_unused locality,
-                           const rvec         gmx_unused *x) CUDA_FUNC_TERM
+                           const rvec         gmx_unused *x,
+                           int                gmx_unused  gridId,
+                           int                gmx_unused  numColumnsMax) CUDA_FUNC_TERM
+
+/*! \brief Sync the nonlocal stream with dependent tasks in the local queue.
+ * \param[in] nb                   The nonbonded data GPU structure
+ * \param[in] interactionLocality  Local or NonLocal sync point
+ */
+CUDA_FUNC_QUALIFIER
+void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_gpu_t gmx_unused    *nb,
+                                      const InteractionLocality gmx_unused interactionLocality) CUDA_FUNC_TERM
 
 } // namespace Nbnxm
 

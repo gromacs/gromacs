@@ -185,6 +185,18 @@ class GridSet
             copy_mat(box_, box);
         }
 
+        //! Returns the maximum number of columns across all grids
+        int numColumnsMax() const
+        {
+            return numColumnsMax_;
+        }
+
+        //! Sets the maximum number of columns across all grids
+        void setNumColumnsMax(int numColumnsMax)
+        {
+            numColumnsMax_ = numColumnsMax;
+        }
+
     private:
         //! Returns collection of the data that covers all grids
         const GridSetData getGridSetData()
@@ -213,6 +225,9 @@ class GridSet
         int                   numRealAtomsTotal_;
         //! Working data for constructing a single grid, one entry per thread
         std::vector<GridWork> gridWork_;
+        //! Maximum number of columns across all grids
+        int                   numColumnsMax_;
+
 };
 
 } // namespace Nbnxm
