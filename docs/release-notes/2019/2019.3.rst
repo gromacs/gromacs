@@ -96,6 +96,11 @@ leading to mdrun exiting with an alignment error
 
 :issue:`2952`
 
+Fixed build failure with Apple Clang
+""""""""""""""""""""""""""""""""""""
+
+Builds would fail because of qsort being undefined.
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
