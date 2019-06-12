@@ -739,7 +739,8 @@ int Dump::run()
     if (!inputTprFilename_.empty())
     {
         list_tpr(inputTprFilename_.c_str(), bShowNumbers_, bShowParams_,
-                 outputMdpFilename_.c_str(), bSysTop_, bOriginalInputrec_);
+                 outputMdpFilename_.empty() ? nullptr : outputMdpFilename_.c_str(),
+                 bSysTop_, bOriginalInputrec_);
     }
     else if (!inputTrajectoryFilename_.empty())
     {
