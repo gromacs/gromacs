@@ -3,8 +3,8 @@
 <ReferenceData>
   <Sequence Name="chi">
     <Int Name="Length">3</Int>
-    <Real>2.2999999999999998</Real>
-    <Real>2.2999999999999998</Real>
-    <Real>2.2999999999999998</Real>
+    <Real>3.5</Real>
+    <Real>2.5493899999999998</Real>
+    <Real>3.5</Real>
   </Sequence>
 </ReferenceData>
