@@ -70,6 +70,15 @@ void gmx_fio_setprecision(t_fileio *fio, gmx_bool bDouble)
     gmx_fio_unlock(fio);
 }
 
+bool gmx_fio_is_double(t_fileio *fio)
+{
+    bool isDouble = false;
+    gmx_fio_lock(fio);
+    isDouble = fio->bDouble;
+    gmx_fio_unlock(fio);
+    return isDouble;
+}
+
 XDR *gmx_fio_getxdr(t_fileio *fio)
 {
     XDR *ret = nullptr;

@@ -50,6 +50,8 @@ struct t_fileio;
 void gmx_fio_setprecision(struct t_fileio *fio, gmx_bool bDouble);
 /* Select the floating point precision for reading and writing files */
 
+bool gmx_fio_is_double(struct t_fileio *fio);
+
 XDR *gmx_fio_getxdr(struct t_fileio *fio);
 /* Return the file pointer itself */
 

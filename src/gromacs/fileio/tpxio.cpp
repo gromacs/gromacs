@@ -72,6 +72,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/smalloc.h"
@@ -126,6 +127,7 @@ enum tpxv
     tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
     tpxv_GenericInternalParameters,                          /**< Added internal parameters for mdrun modules*/
     tpxv_VSite2FD,                                           /**< Added 2FD type virtual site */
+    tpxv_AddSizeField,                                       /**< Added field with information about the size of the serialized tpr file in bytes, excluding the header */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -155,8 +157,10 @@ static const int tpx_version = tpxv_Count - 1;
  *
  * In particular, it must be increased when adding new elements to
  * ftupd, so that old code can read new .tpr files.
+ *
+ * Updated for added field that contains the number of bytes of the tpr body, excluding the header.
  */
-static const int tpx_generation = 26;
+static const int tpx_generation = 27;
 
 /* This number should be the most recent backwards incompatible version
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -630,7 +634,7 @@ static void do_fepvals(gmx::ISerializer         *serializer,
                                       fepvals->lambda_neighbors + 1);
             if (fepvals->lambda_start_n < 0)
             {
-                fepvals->lambda_start_n = 0;;
+                fepvals->lambda_start_n = 0;
             }
             if (fepvals->lambda_stop_n >= fepvals->n_lambda)
             {
@@ -2761,6 +2765,15 @@ static void do_tpxheader(gmx::FileIOXdrSerializer *serializer,
     serializer->doBool(&tpx->bF);
     serializer->doBool(&tpx->bBox);
 
+    if (tpx->fileVersion >= tpxv_AddSizeField && tpx->fileGeneration >= 27)
+    {
+        if (!serializer->reading())
+        {
+            GMX_RELEASE_ASSERT(tpx->sizeOfTprBody != 0, "Not possible to write new file with zero TPR body size");
+        }
+        serializer->doInt64(&tpx->sizeOfTprBody);
+    }
+
     if ((tpx->fileGeneration > tpx_generation))
     {
         /* This can only happen if TopOnlyOK=TRUE */
@@ -3021,6 +3034,11 @@ static TpxFileHeader populateTpxHeader(const t_state    &state,
     return header;
 }
 
+static void doTpxBodyBuffer(gmx::ISerializer *topologySerializer, gmx::ArrayRef<char> buffer)
+{
+    topologySerializer->doCharArray(buffer.data(), buffer.size());
+}
+
 /************************************************************
  *
  *  The following routines are the exported ones
@@ -3043,27 +3061,91 @@ TpxFileHeader readTpxHeader(const char *fileName, bool canReadTopologyOnly)
 void write_tpx_state(const char *fn,
                      const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop)
 {
-    t_fileio *fio;
+    /* To write a state, we first need to write the state information to a buffer before
+     * we append the raw bytes to the file. For this, the header information needs to be
+     * populated before we write the main body because it has some information that is
+     * otherwise not available.
+     */
 
-    fio = open_tpx(fn, "w");
+    t_fileio     *fio;
 
     TpxFileHeader tpx = populateTpxHeader(*state,
                                           ir,
                                           mtop);
 
+    gmx::InMemorySerializer tprBodySerializer;
+
+    do_tpx_body(&tprBodySerializer,
+                &tpx,
+                const_cast<t_inputrec *>(ir),
+                const_cast<t_state *>(state), nullptr, nullptr,
+                const_cast<gmx_mtop_t *>(mtop));
+
+    std::vector<char> tprBody = tprBodySerializer.finishAndGetBuffer();
+    tpx.sizeOfTprBody = tprBody.size();
+
+    fio = open_tpx(fn, "w");
     gmx::FileIOXdrSerializer serializer(fio);
     do_tpxheader(&serializer,
                  &tpx,
                  fn,
                  fio,
                  ir == nullptr);
-    do_tpx_body(&serializer,
-                &tpx,
-                const_cast<t_inputrec *>(ir),
-                const_cast<t_state *>(state), nullptr, nullptr,
-                const_cast<gmx_mtop_t *>(mtop));
+    doTpxBodyBuffer(&serializer, tprBody);
+
     close_tpx(fio);
 }
+
+/*! \brief
+ * Wraps reading of header before and after introduction of size field.
+ *
+ * \param[in] tpx The file header.
+ * \param[in] serializer The Serialization interface used to read the TPR.
+ * \param[in] isDouble Whether the file is double or single precision.
+ * \param[out] ir Input rec to populate.
+ * \param[out] state State vectors to populate.
+ * \param[out] x Coordinates to populate if needed.
+ * \param[out] v Velocities to populate if needed.
+ * \param[out] mtop Global topology to populate.
+ *
+ * \returns Flag for pbc.
+ */
+static int do_tpx_body_dispatcher(TpxFileHeader *tpx,
+                                  gmx::ISerializer *serializer,
+                                  bool isDouble,
+                                  t_inputrec *ir,
+                                  t_state *state,
+                                  rvec *x, rvec *v,
+                                  gmx_mtop_t *mtop)
+{
+    int ePBC;
+    if (tpx->fileVersion >= tpxv_AddSizeField && tpx->fileGeneration >= 27)
+    {
+        std::vector<char>         tprBody(tpx->sizeOfTprBody);
+        doTpxBodyBuffer(serializer, tprBody);
+        gmx::InMemoryDeserializer tprBodyDeserializer(tprBody, isDouble);
+
+        ePBC = do_tpx_body(&tprBodyDeserializer,
+                           tpx,
+                           ir,
+                           state,
+                           x,
+                           v,
+                           mtop);
+    }
+    else
+    {
+        ePBC = do_tpx_body(serializer,
+                           tpx,
+                           ir,
+                           state,
+                           x,
+                           v,
+                           mtop);
+    }
+    return ePBC;
+}
+
 
 void read_tpx_state(const char *fn,
                     t_inputrec *ir, t_state *state, gmx_mtop_t *mtop)
@@ -3078,13 +3160,8 @@ void read_tpx_state(const char *fn,
                  fn,
                  fio,
                  ir == nullptr);
-    do_tpx_body(&serializer,
-                &tpx,
-                ir,
-                state,
-                nullptr,
-                nullptr,
-                mtop);
+    do_tpx_body_dispatcher(&tpx, &serializer, gmx_fio_is_double(fio),
+                           ir, state, nullptr, nullptr, mtop);
     close_tpx(fio);
 }
 
@@ -3104,9 +3181,8 @@ int read_tpx(const char *fn,
                  fn,
                  fio,
                  ir == nullptr);
-    ePBC    = do_tpx_body(&serializer,
-                          &tpx,
-                          ir, &state, x, v, mtop);
+    ePBC = do_tpx_body_dispatcher(&tpx, &serializer, gmx_fio_is_double(fio),
+                                  ir, &state, x, v, mtop);
     close_tpx(fio);
     if (mtop != nullptr && natoms != nullptr)
     {
@@ -3116,7 +3192,6 @@ int read_tpx(const char *fn,
     {
         copy_mat(state.box, box);
     }
-
     return ePBC;
 }
 
@@ -3161,5 +3236,7 @@ void pr_tpxheader(FILE *fp, int indent, const char *title, const TpxFileHeader *
         fprintf(fp, "natoms = %d\n", sh->natoms);
         pr_indent(fp, indent);
         fprintf(fp, "lambda = %e\n", sh->lambda);
+        pr_indent(fp, indent);
+        fprintf(fp, "buffer size = %" PRId64 "\n", sh->sizeOfTprBody);
     }
 }

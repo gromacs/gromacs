@@ -82,6 +82,8 @@ struct TpxFileHeader
        vary through a simulation, and cannot be completely described
        though a single lambda variable, or even a single state
        index. Eventually, should probably be a vector. MRS*/
+    //! Size of the TPR body in chars (equal to number of bytes) during I/O.
+    int64_t sizeOfTprBody = 0;
     //! File version.
     int     fileVersion = 0;
     //! File generation.
