@@ -341,7 +341,7 @@
     <gt_bond atom1="b_cu" atom2="b_p2" bondorder="1" refValue="164.29" sigma="0.5" ntrain="1" params="650  17"/>
     <gt_bond atom1="b_cv" atom2="b_cv" bondorder="2" refValue="134.35" sigma="3.66" ntrain="12" params="650  17"/>
     <gt_bond atom1="b_cv" atom2="b_cv" bondorder="1" refValue="144.8" sigma="0.5" ntrain="1" params="650  17"/>
-    <gt_bond atom1="b_cv" atom2="b_cy" bondorder="1"cd refValue="150.79" sigma="1.45" ntrain="23" params="650  17"/>
+    <gt_bond atom1="b_cv" atom2="b_cy" bondorder="1" refValue="150.79" sigma="1.45" ntrain="23" params="650  17"/>
     <gt_bond atom1="b_cv" atom2="b_f" bondorder="1" refValue="132.36" sigma="1.88" ntrain="4" params="650  17"/>
     <gt_bond atom1="b_cv" atom2="b_h1" bondorder="1" refValue="108.56" sigma="0.5" ntrain="1" params="650  17"/>
     <gt_bond atom1="b_cv" atom2="b_h2" bondorder="1" refValue="107.51" sigma="0.71" ntrain="2" params="650  17"/>
@@ -4262,37 +4262,37 @@
     <eemprop model="AXp" name="z_cl" jaa="6.86275" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="3"/>
     <eemprop model="AXp" name="z_br" jaa="5.83333" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="4"/>
     <eemprop model="AXp" name="z_i" jaa="5.03597" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="5"/>
-    <eemprop model="AXg" name="z_h1" jaa="14" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="11.8863" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop model="AXg" name="z_h4" jaa="14" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="11.8863" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop model="AXg" name="z_ha" jaa="14" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="11.8863" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop model="AXg" name="z_hc" jaa="14" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="11.8863" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop model="AXg" name="z_hp" jaa="14" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="11.8863" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop model="AXg" name="z_hw" jaa="14" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="11.8863" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop model="AXg" name="z_c1" jaa="10.1449" jaa_sigma="0" chi="5" chi_sigma="0" zeta="8.90036" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_ca" jaa="9.58904" jaa_sigma="0" chi="5" chi_sigma="0" zeta="8.41267" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_cz" jaa="9.58904" jaa_sigma="0" chi="5" chi_sigma="0" zeta="8.41267" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_c2" jaa="9.58904" jaa_sigma="0" chi="5" chi_sigma="0" zeta="8.41267" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_c3" jaa="9.21053" jaa_sigma="0" chi="5" chi_sigma="0" zeta="8.08059" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_cu" jaa="9.58904" jaa_sigma="0" chi="5" chi_sigma="0" zeta="8.41267" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_n" jaa="9.85915" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="8.64965" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_n1" jaa="9.85915" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="8.64965" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_n3" jaa="9.85915" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="8.64965" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_nb" jaa="9.85915" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="8.64965" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_n2" jaa="9.85915" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="8.64965" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_nh" jaa="9.85915" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="8.64965" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_no" jaa="9.85915" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="8.64965" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_oh" jaa="10.6061" jaa_sigma="0" chi="6" chi_sigma="0" zeta="9.30492" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_ow" jaa="10.6061" jaa_sigma="0" chi="6" chi_sigma="0" zeta="9.30492" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_o" jaa="10.6061" jaa_sigma="0" chi="6" chi_sigma="0" zeta="9.30492" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_os" jaa="10.6061" jaa_sigma="0" chi="6" chi_sigma="0" zeta="9.30492" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_f" jaa="12.2807" jaa_sigma="0" chi="7" chi_sigma="0" zeta="10.7741" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop model="AXg" name="z_p4" jaa="6.54206" jaa_sigma="0" chi="5.2" chi_sigma="0" zeta="8.03528" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop model="AXg" name="z_p2" jaa="6.54206" jaa_sigma="0" chi="5.2" chi_sigma="0" zeta="8.03528" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop model="AXg" name="z_s4" jaa="6.66667" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="8.18833" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop model="AXg" name="z_s" jaa="6.66667" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="8.18833" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop model="AXg" name="z_cl" jaa="6.86275" jaa_sigma="0" chi="6" chi_sigma="0" zeta="8.42917" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop model="AXg" name="z_br" jaa="5.83333" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="9.21188" zeta_sigma="0" charge="0" row="4"/>
-    <eemprop model="AXg" name="z_i" jaa="5.03597" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="9.71996" zeta_sigma="0" charge="0" row="5"/>
+    <eemprop model="AXg" name="z_h1" jaa="9.84618" jaa_sigma="0.0286813" chi="2.61635" chi_sigma="0.0124402" zeta="20.0978 " zeta_sigma="0.0725822 " charge="0" row="1"/>
+    <eemprop model="AXg" name="z_h4" jaa="6.19609" jaa_sigma="0.0363446" chi="3.00629" chi_sigma="0.0214289" zeta="14.9583 " zeta_sigma="0.175256 " charge="0" row="1"/>
+    <eemprop model="AXg" name="z_ha" jaa="9.07696" jaa_sigma="0.0337809" chi="2.8172" chi_sigma="0.00377505" zeta="30.0166 " zeta_sigma="0.081005 " charge="0" row="1"/>
+    <eemprop model="AXg" name="z_hc" jaa="19.6917" jaa_sigma="0.180368" chi="2.3" chi_sigma="0" zeta="29.9803 " zeta_sigma="0.19871 " charge="0" row="1"/>
+    <eemprop model="AXg" name="z_hp" jaa="9.21409" jaa_sigma="0.0456095" chi="2.71902" chi_sigma="0.00081416" zeta="20.1537 " zeta_sigma="0.0544997 " charge="0" row="1"/>
+    <eemprop model="AXg" name="z_hw" jaa="11.7803" jaa_sigma="0.864093" chi="2.58197" chi_sigma="0.175898" zeta="29.9115 " zeta_sigma="2.92945 " charge="0" row="1"/>
+    <eemprop model="AXg" name="z_c1" jaa="5.92659" jaa_sigma="0.00299186" chi="3.61399" chi_sigma="0.00958933" zeta="10.4527 " zeta_sigma="0.0166872 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_ca" jaa="5.07507" jaa_sigma="0.0120085" chi="3.32861" chi_sigma="0.00716008" zeta="8.49133 " zeta_sigma="0.0292687 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_cz" jaa="5.7174" jaa_sigma="0.0141051" chi="4.68884" chi_sigma="0.0131443" zeta="15.686 " zeta_sigma="0.085785 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_c2" jaa="5.55108" jaa_sigma="0.0133581" chi="3.29284" chi_sigma="0.00925944" zeta="8.52841 " zeta_sigma="0.0217858 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_c3" jaa="6.0188" jaa_sigma="0.0236086" chi="2.99495" chi_sigma="0.0169702" zeta="10.1721 " zeta_sigma="0.0641118 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_cu" jaa="6.6405" jaa_sigma="0.0617322" chi="3.15963" chi_sigma="0.0108216" zeta="10.7386 " zeta_sigma="0.128611 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_n" jaa="13.0414" jaa_sigma="0.205929" chi="5.14642" chi_sigma="0.0551531" zeta="22.3949 " zeta_sigma="0.498296 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_n1" jaa="10.0148" jaa_sigma="0.0740125" chi="6.51667" chi_sigma="0.0370144" zeta="10.036 " zeta_sigma="0.11982 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_n3" jaa="9.13171" jaa_sigma="0.0121619" chi="4.53399" chi_sigma="0.0164347" zeta="12.0268 " zeta_sigma="0.0415244 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_nb" jaa="12.2861" jaa_sigma="0.145781" chi="8.8901" chi_sigma="0.177214" zeta="9.06752 " zeta_sigma="0.0638519 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_n2" jaa="7.96304" jaa_sigma="0.024746" chi="4.88335" chi_sigma="0.0156304" zeta="12.0066 " zeta_sigma="0.0722042 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_nh" jaa="8.29347" jaa_sigma="0.0306064" chi="4.47835" chi_sigma="0.0435465" zeta="12.3903 " zeta_sigma="0.0940842 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_no" jaa="4.54994" jaa_sigma="0.00915228" chi="3.68459" chi_sigma="0.010627" zeta="6.91592 " zeta_sigma="0.0198153 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_oh" jaa="10.3619" jaa_sigma="0.0370556" chi="5.44859" chi_sigma="0.0271229" zeta="15.5046 " zeta_sigma="0.220202 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_ow" jaa="12.2488" jaa_sigma="0.527056" chi="6.34049" chi_sigma="0.24154" zeta="1225.22 " zeta_sigma="693.121 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_o" jaa="9.849" jaa_sigma="0.021538" chi="5.86264" chi_sigma="0.015662" zeta="23.0077 " zeta_sigma="0.268153 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_os" jaa="9.84971" jaa_sigma="0.0137743" chi="4.80957" chi_sigma="0.0100568" zeta="14.4131 " zeta_sigma="0.183178 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_f" jaa="11.3623" jaa_sigma="0.0726659" chi="4.62859" chi_sigma="0.0160594" zeta="11.7569 " zeta_sigma="0.120279 " charge="0" row="2"/>
+    <eemprop model="AXg" name="z_p4" jaa="6.18014" jaa_sigma="0.040834" chi="2.68831" chi_sigma="0.0156611" zeta="8.87425 " zeta_sigma="0.123214 " charge="0" row="3"/>
+    <eemprop model="AXg" name="z_p2" jaa="4.55202" jaa_sigma="0.0503865" chi="3.47504" chi_sigma="0.0137203" zeta="5.43275 " zeta_sigma="0.0548172 " charge="0" row="3"/>
+    <eemprop model="AXg" name="z_s4" jaa="4.73409" jaa_sigma="0.0206918" chi="3.54685" chi_sigma="0.0144062" zeta="7.14899 " zeta_sigma="0.0501603 " charge="0" row="3"/>
+    <eemprop model="AXg" name="z_s" jaa="5.20055" jaa_sigma="0.0287608" chi="3.60657" chi_sigma="0.00868573" zeta="6.92026 " zeta_sigma="0.0665504 " charge="0" row="3"/>
+    <eemprop model="AXg" name="z_cl" jaa="6.30262" jaa_sigma="0.0515138" chi="3.79916" chi_sigma="0.0110356" zeta="7.61811 " zeta_sigma="0.139777 " charge="0" row="3"/>
+    <eemprop model="AXg" name="z_br" jaa="5.29415" jaa_sigma="0.0287344" chi="3.65198" chi_sigma="0.00652685" zeta="8.60696 " zeta_sigma="0.139974 " charge="0" row="4"/>
+    <eemprop model="AXg" name="z_i" jaa="4.97309" jaa_sigma="0.0858056" chi="3.55119" chi_sigma="0.0127634" zeta="4.73949 " zeta_sigma="0.0973247 " charge="0" row="5"/>
     <eemprop model="AXs" name="z_h1" jaa="14" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="24.9444" zeta_sigma="0" charge="0" row="1"/>
     <eemprop model="AXs" name="z_h4" jaa="14" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="24.9444" zeta_sigma="0" charge="0" row="1"/>
     <eemprop model="AXs" name="z_ha" jaa="14" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="24.9444" zeta_sigma="0" charge="0" row="1"/>
