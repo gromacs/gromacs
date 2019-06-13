@@ -856,12 +856,12 @@ static void print_nblist_statistics(FILE                   *fp,
     }
 }
 
-/* Returns a pointer to the exclusion mask for j-cluster-group \p cj4 and warp \p warp
+/* Returns a reference to the exclusion mask for j-cluster-group \p cj4 and warp \p warp
  * Generates a new exclusion entry when the j-cluster-group uses
  * the default all-interaction mask at call time, so the returned mask
  * can be modified when needed.
  */
-static nbnxn_excl_t *get_exclusion_mask(NbnxnPairlistGpu *nbl,
+static nbnxn_excl_t &get_exclusion_mask(NbnxnPairlistGpu *nbl,
                                         int               cj4,
                                         int               warp)
 {
@@ -875,34 +875,39 @@ static nbnxn_excl_t *get_exclusion_mask(NbnxnPairlistGpu *nbl,
         nbl->cj4[cj4].imei[warp].excl_ind = oldSize;
     }
 
-    return &nbl->excl[nbl->cj4[cj4].imei[warp].excl_ind];
+    return nbl->excl[nbl->cj4[cj4].imei[warp].excl_ind];
 }
 
-static void set_self_and_newton_excls_supersub(NbnxnPairlistGpu *nbl,
-                                               int cj4_ind, int sj_offset,
-                                               int i_cluster_in_cell)
+/* Sets self exclusions and excludes half of the double pairs in the self cluster-pair \p nbl->cj4[cj4Index].cj[jOffsetInGroup]
+ *
+ * \param[in,out] nbl             The cluster pair list
+ * \param[in]     cj4Index        The j-cluster group index into \p nbl->cj4
+ * \param[in]     jOffsetInGroup  The j-entry offset in \p nbl->cj4[cj4Index]
+ * \param[in]     iClusterInCell  The i-cluster index in the cell
+ */
+static void
+setSelfAndNewtonExclusionsGpu(NbnxnPairlistGpu *nbl,
+                              const int         cj4Index,
+                              const int         jOffsetInGroup,
+                              const int         iClusterInCell)
 {
-    nbnxn_excl_t *excl[c_nbnxnGpuClusterpairSplit];
+    constexpr int numJatomsPerPart = c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit;
 
-    /* Here we only set the set self and double pair exclusions */
-
-    /* Reserve extra elements, so the resize() in get_exclusion_mask()
-     * will not invalidate excl entries in the loop below
-     */
-    nbl->excl.reserve(nbl->excl.size() + c_nbnxnGpuClusterpairSplit);
-    for (int w = 0; w < c_nbnxnGpuClusterpairSplit; w++)
+    /* The exclusions are stored separately for each part of the split */
+    for (int part = 0; part < c_nbnxnGpuClusterpairSplit; part++)
     {
-        excl[w] = get_exclusion_mask(nbl, cj4_ind, w);
-    }
+        const int     jOffset = part*numJatomsPerPart;
+        /* Make a new exclusion mask entry for each part, if we don't already have one yet */
+        nbnxn_excl_t &excl    = get_exclusion_mask(nbl, cj4Index, part);
 
-    /* Only minor < major bits set */
-    for (int ej = 0; ej < nbl->na_ci; ej++)
-    {
-        int w = (ej>>2);
-        for (int ei = ej; ei < nbl->na_ci; ei++)
+        /* Set all bits with j-index <= i-index */
+        for (int jIndexInPart = 0; jIndexInPart < numJatomsPerPart; jIndexInPart++)
         {
-            excl[w]->pair[(ej & (c_nbnxnGpuJgroupSize-1))*nbl->na_ci + ei] &=
-                ~(1U << (sj_offset*c_gpuNumClusterPerCell + i_cluster_in_cell));
+            for (int i = jOffset + jIndexInPart; i < c_nbnxnGpuClusterSize; i++)
+            {
+                excl.pair[jIndexInPart*c_nbnxnGpuClusterSize + i] &=
+                    ~(1U << (jOffsetInGroup*c_gpuNumClusterPerCell + iClusterInCell));
+            }
         }
     }
 }
@@ -1219,7 +1224,7 @@ static void make_cluster_list_supersub(const Grid         &iGrid,
              */
             if (excludeSubDiagonal && sci == scj)
             {
-                set_self_and_newton_excls_supersub(nbl, cj4_ind, cj_offset, subc);
+                setSelfAndNewtonExclusionsGpu(nbl, cj4_ind, cj_offset, subc);
             }
 
             /* Copy the cluster interaction mask to the list */
@@ -1806,7 +1811,7 @@ static void make_fep_list(gmx::ArrayRef<const int>  atomIndices,
                                     real          dx, dy, dz;
 
                                     const int     jHalf = j/(c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit);
-                                    nbnxn_excl_t *excl  =
+                                    nbnxn_excl_t &excl  =
                                         get_exclusion_mask(nbl, cj4_ind, jHalf);
 
                                     excl_pair = a_mod_wj(j)*nbl->na_ci + i;
@@ -1833,7 +1838,7 @@ static void make_fep_list(gmx::ArrayRef<const int>  atomIndices,
 
                                         /* Add it to the FEP list */
                                         nlist->jjnr[nlist->nrj]     = aj;
-                                        nlist->excl_fep[nlist->nrj] = (excl->pair[excl_pair] & excl_bit) ? 1 : 0;
+                                        nlist->excl_fep[nlist->nrj] = (excl.pair[excl_pair] & excl_bit) ? 1 : 0;
                                         nlist->nrj++;
                                     }
 
@@ -1842,7 +1847,7 @@ static void make_fep_list(gmx::ArrayRef<const int>  atomIndices,
                                      * been set to zero, but we need to avoid 0/0,
                                      * as perturbed atoms can be on top of each other.
                                      */
-                                    excl->pair[excl_pair] &= ~excl_bit;
+                                    excl.pair[excl_pair] &= ~excl_bit;
                                 }
                             }
 
@@ -1964,10 +1969,10 @@ setExclusionsForIEntry(const Nbnxm::GridSet &gridSet,
                             /* Determine which j-half (CUDA warp) we are in */
                             const int     jHalf = innerJ/(c_clusterSize/c_nbnxnGpuClusterpairSplit);
 
-                            nbnxn_excl_t *interactionMask =
+                            nbnxn_excl_t &interactionMask =
                                 get_exclusion_mask(nbl, cj_to_cj4(index), jHalf);
 
-                            interactionMask->pair[a_mod_wj(innerJ)*c_clusterSize + innerI] &= ~pairMask;
+                            interactionMask.pair[a_mod_wj(innerJ)*c_clusterSize + innerI] &= ~pairMask;
                         }
                     }
                 }
