@@ -657,6 +657,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                         Akjl     = {k, j, l};
                         Bjk      = {j, k};
                         Bjl      = {j, l};
+                        //bond order needs to be fixed. 
                         if (pd.searchForce(Akjl, params, &akjl, &sigma, &ntrain, bondorder, eitANGLES) &&
                             pd.searchForce(Bjk,  params, &bjk,  &sigma, &ntrain, bondorder, eitBONDS)  &&
                             pd.searchForce(Bjl,  params, &bjl,  &sigma, &ntrain, bondorder, eitBONDS))
