@@ -430,9 +430,10 @@ static void round_numbers(real *av, real *sig)
     *sig = ((int)(*sig*100+50))/100.0;
 }
 
-static void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
-                      real Dm, real beta, real kt, real klin,
-                      real kp, real kimp, real kub)
+static void update_pd(FILE *fp,      t_bonds *b,        Poldata &pd,
+                      real Dm,       real     beta,     real     kt, 
+                      real klin,     real     kp,       real     kimp, 
+                      real kub,      real     bond_tol, real     angle_tol)
 {
     int                      N;
     real                     av, sig;
@@ -463,7 +464,7 @@ static void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
 
         fprintf(fp, "bond-%s-%s len %g sigma %g (pm) N = %d%s\n",
                 i.a1.c_str(), i.a2.c_str(), av, sig, N,
-                (sig > 1.5) ? " WARNING" : "");
+                (sig > bond_tol) ? " WARNING" : "");
     }
     for (auto &i : b->angle)
     {
@@ -477,7 +478,7 @@ static void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
 
         fprintf(fp, "harmonic_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
-                (sig > 3) ? " WARNING" : "");
+                (sig > angle_tol) ? " WARNING" : "");
     }
     for (auto &i : b->linangle)
     {
@@ -491,7 +492,7 @@ static void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
 
         fprintf(fp, "linear_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
-                (sig > 3) ? " WARNING" : "");
+                (sig > angle_tol) ? " WARNING" : "");
     }
     for (auto &i : b->dih)
     {
@@ -536,7 +537,9 @@ int alex_bastat(int argc, char *argv[])
         { efDAT, "-sel", "molselect",  ffREAD },
         { efLOG, "-g",   "bastat",     ffWRITE }
     };
-#define NFILE sizeof(fnm)/sizeof(fnm[0])
+
+    const int                        NFILE       = asize(fnm);
+    
     static int                       compress    = 0;
     static int                       maxwarn     = 0;
     static real                      Dm          = 0;
@@ -546,6 +549,8 @@ int alex_bastat(int argc, char *argv[])
     static real                      beta        = 0;
     static real                      klin        = 0;
     static real                      kub         = 0;
+    static real                      bond_tol    = 5;
+    static real                      angle_tol   = 5;
     static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
     static gmx_bool                  bHisto      = false;
     static gmx_bool                  bDih        = false;
@@ -570,6 +575,10 @@ int alex_bastat(int argc, char *argv[])
           "Improper dihedral angle force constant (kJ/mol/rad^2)" },
         { "-kub",   FALSE, etREAL, {&kub},
           "Urey_Bradley force constant" },
+        { "-bond_tol",   FALSE, etREAL, {&bond_tol},
+          "Tolerance for bond length" },
+        { "-angle_tol",   FALSE, etREAL, {&angle_tol},
+          "Tolerance for harmonic and linear angles" },  
         { "-dih",   FALSE, etBOOL, {&bDih},
           "Generate proper dihedral terms" },
         { "-histo", FALSE, etBOOL, {&bHisto},
@@ -817,7 +826,7 @@ int alex_bastat(int argc, char *argv[])
     {
         dump_histo(bonds, bspacing, aspacing, oenv);
     }
-    update_pd(fp, bonds, pd, Dm, beta, kt, klin, kp, kimp, kub);
+    update_pd(fp, bonds, pd, Dm, beta, kt, klin, kp, kimp, kub, bond_tol, angle_tol);
     writePoldata(opt2fn("-o", NFILE, fnm), pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu dihedraltypes and %zu impropertypes.\n",
            bonds->bond.size(), bonds->angle.size(), bonds->dih.size(), bonds->imp.size());
